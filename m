@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab2GaRHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:07:42 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40911 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752681Ab2GaRHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:07:40 -0400
-Date: Tue, 31 Jul 2012 19:07:41 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: awful kconfig help texts.
-Message-ID: <20120731170741.GA4735@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Thierry Reding <thierry.reding@avionic-design.de>
-References: <20120731151600.GA19412@redhat.com>
+	id S1754059Ab2GaRHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:07:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57016 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab2GaRHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 13:07:39 -0400
+Date: Tue, 31 Jul 2012 12:07:32 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Andreas Heider <andreas@meetr.de>,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        linux-kernel@vger.kernel.org, airlied@redhat.com
+Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
+Message-ID: <20120731170732.GC19979@thinkpad-t410>
+Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Andreas Heider <andreas@meetr.de>,
+	Arun Raghavan <arun.raghavan@collabora.co.uk>,
+	linux-kernel@vger.kernel.org, airlied@redhat.com
+References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
+ <20120710160555.GA31562@srcf.ucam.org>
+ <20120710163516.GE10194@thinkpad-t410>
+ <4FFCC7FB.1090609@meetr.de>
+ <1343522547.2488.12.camel@shinybook.infradead.org>
+ <1343524730.1962.5.camel@shinybook.infradead.org>
+ <20120729193953.GA25132@srcf.ucam.org>
+ <1343595171.2511.1.camel@shinybook.infradead.org>
+ <20120729205859.GA25819@srcf.ucam.org>
+ <20120731151856.GA19979@thinkpad-t410>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120731151600.GA19412@redhat.com>
+In-Reply-To: <20120731151856.GA19979@thinkpad-t410>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 11:16:00AM -0400, Dave Jones wrote:
+On Tue, Jul 31, 2012 at 10:18:56AM -0500, Seth Forshee wrote:
+> On Sun, Jul 29, 2012 at 09:59:00PM +0100, Matthew Garrett wrote:
+> > On Sun, Jul 29, 2012 at 09:52:51PM +0100, David Woodhouse wrote:
+> > > On Sun, 2012-07-29 at 20:39 +0100, Matthew Garrett wrote:
+> > > > And it looks like intel_lvds->edid is only set during intel_lvds_init(). 
+> > > > That seems less than ideal. How about something like this entirely 
+> > > > untested patch? 
+> > > 
+> > > Actually, it works if I write 'MIGD' first and then 'IGD'. Looks like we
+> > > aren't switching the DDC over to the new gfx card soon enough in the
+> > > process?
+> > 
+> > Yes, the call to the switcheroo code only comes after the card is 
+> > powered on. Cc:ing Dave Airlie - what are the expectations here? It 
+> > looks like i915 should have a reprobe function.
 > 
-> PWM Support (PWM) [N/y/?] (NEW) ?
+> I dove into this yesterday and ended up with something similar to what
+> you had. I'm rescanning for the EDID from the reprobe callback, and I
+> also made it so that intel_lvds_init() will still keep the LVDS
+> connector even if the panel isn't attached at boot and
+> intel_lvds_detect() returns connected/disconnected based on whether or
+> not we found an EDID for the LVDS.
 > 
-> CONFIG_PWM:
+> All of this is working to the extent that I can boot with the Radeon
+> card active, switch over to the Intel card, and get the EDID for the
+> internal panel and an external monitor (although oddly on an HDMI
+> connector, no on the DP like I expected). Both screens are remaining
+> blank though. However I'm also getting blank screens if I mux over to
+> the Intel GPU from grub before loading the kernel, which used to work
+> for the LVDS panel at least.
 > 
-> This enables PWM support through the generic PWM framework.
-> 
-> 
-> Well that's.. enlightening.
+> I've copied the whole series of patches I'm running on top of 3.5 to
+> http://people.canonical.com/~sforshee/apple-gmux-patches if anyone else
+> wants to give them a try. The i915 changes are in patches 13-17. I've
+> also pushed the i915 patches to my gmux-switcheroo branch.
 
-Oh, there's one more enlightening sentence in the help:
+Aha! I forgot to add i915.lvds_use_ssc=0 to the kernel parameters. So
+with that and the above patches I can boot to the DGPU and successfully
+switch between it and the integrated GPU. My VT console isn't showing up
+with the IGPU, but the desktop does shows up.
 
-"You only need to enable this, if you also want to enable one or more of
-the PWM drivers below."
-
-Got it? :-)
-
-> I'm picking on PWM here, but this isn't an
-> isolated case.  Every merge window we see a slew of new options with useless
-> help texts. They may as well be non-existent. (Actually in some cases, they are).
-> 
-> If someone has to read the code to find out what the driver is, your help text probably sucks.
-> 
-> 
-> (I'll leave "why does this option even show up on x86" as a separate rant)
-
-Thierry, can you guys please fix this?
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
