@@ -1,120 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab2GaFtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:49:10 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33365 "EHLO e9.ny.us.ibm.com"
+	id S1755394Ab2GaFxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:53:55 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:60933 "EHLO serv04.lahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014Ab2GaFtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 01:49:08 -0400
-Message-ID: <501771CA.1090304@us.ibm.com>
-Date: Mon, 30 Jul 2012 22:48:58 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: CAI Qian <caiqian@redhat.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>
-Subject: Re: boot panic regression introduced in 3.5-rc7
-References: <1971950954.1278169.1343620316300.JavaMail.root@redhat.com>
-In-Reply-To: <1971950954.1278169.1343620316300.JavaMail.root@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1751710Ab2GaFxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 01:53:54 -0400
+Date: Tue, 31 Jul 2012 07:52:27 +0200
+From: Michael Leun <lkml20120218@newton.leun.net>
+To: linux@rainbow-software.org
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [3.5 regression / mcs7830 / bisected] bridge constantly
+ toggeling between disabled and forwarding
+Message-ID: <20120731075227.1064ced9@xenia.leun.net>
+In-Reply-To: <20120724013634.11bf1360@xenia.leun.net>
+References: <20120723091504.2d035d28@xenia.leun.net>
+	<20120724013634.11bf1360@xenia.leun.net>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073105-7182-0000-0000-0000021C1EF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2012 08:51 PM, CAI Qian wrote:
-> The bisecting pointed out this patch caused one of dell servers boot panic.
->
->    5baefd6d84163443215f4a99f6a20f054ef11236
->    hrtimer: Update hrtimer base offsets each hrtimer_interrupt
->
-> [    2.971092] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x10a/0x120()
-> [    2.971092] Hardware name: PowerEdge M605
+On Tue, 24 Jul 2012 01:36:34 +0200
+Michael Leun <lkml20120218@newton.leun.net> wrote:
 
-Ok. So I think I've chased this all the way down.
+My report might sound like I'm complaining that link state detection
+works because link state detection was implemented - sorry, but thats
+not true.
 
-The main issue as noted earlier, is that on this system, the RTC/CMOS is 
-returning a year of 8200 as seen in the dmesg:
+I do NOT see this link state changes if there is no traffic on the
+interface, but I start seeing them once I start pinging. I think this
+is not the idea of link state detection?
 
-[    0.000000] Extended CMOS year: 8200
+I would very much appreciate if you could have a look into that,
+because it is rather annoying.
 
-This causes problems because,  the (signed) 64bit ktime_t structure can 
-only store ~292 years of nanoseconds.  Thus, when initialize the time 
-from the persistent clock, and set the time to the year 8200, this 
-results in the timekeeper.offs_real being capped at KTIME_MAX ((1LL<<63)-1).
+> On Mon, 23 Jul 2012 09:15:04 +0200
+> Michael Leun <lkml20120218@newton.leun.net> wrote:
+> 
+> [see issue description below]
+> 
+> Bisecting yielded
+> 
+> b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113 is the first bad commit
+> commit b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113
+> Author: Ondrej Zary <linux@rainbow-software.org>
+> Date:   Fri Jun 1 10:29:08 2012 +0000
+> 
+>     mcs7830: Implement link state detection
+> 
+>     Add .status callback that detects link state changes.
+>     Tested with MCS7832CV-AA chip (9710:7830, identified as rev.C by the driver).
+>     Fixes https://bugzilla.kernel.org/show_bug.cgi?id=28532
+> 
+>     Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+>     Signed-off-by: David S. Miller <davem@davemloft.net>
+> 
+> :040000 040000 5480780cb5e75c57122a621fc3bab0108c16be27 d97efd9cc0a465dff76bcd3a3c547f718f2a5345 M    drivers
+> 
+> 
+> Reverting that from 3.5 makes the issue go away.
+> 
+> > Hi,
+> > 
+> > when I use my usb ethernet adapter
+> > 
+> > # > lsusb
+> > [...]
+> > Bus 002 Device 009: ID 9710:7830 MosChip Semiconductor MCS7830 10/100 Mbps Ethernet adapter
+> > [...]
+> > 
+> > as port of an bridge
+> > 
+> > > # brctl addbr br0
+> > > # brctl addif br0 eth0
+> > > # brctl addif br0 ue5
+> > > # ifconfig ue5 up
+> > > # ifconfig br0 up
+> > 
+> > (Also does happen when eth0 is not part of the bridge, but the logs I
+> > had available were from that situation...)
+> > 
+> > I constantly get messages showing the interface toggeling between
+> > disabled and forwarding state:
+> > 
+> > Jul 23 07:40:50 elektra kernel: [ 1539.497337] br0: port 2(ue5) entered disabled state
+> > Jul 23 07:40:50 elektra kernel: [ 1539.554992] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:40:50 elektra kernel: [ 1539.555005] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:40:51 elektra kernel: [ 1540.496242] br0: port 2(ue5) entered disabled state
+> > Jul 23 07:40:51 elektra kernel: [ 1540.552534] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:40:51 elektra kernel: [ 1540.552548] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:40:52 elektra kernel: [ 1541.550413] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:40:53 elektra kernel: [ 1542.529672] br0: port 2(ue5) entered disabled state
+> > Jul 23 07:40:53 elektra kernel: [ 1542.587162] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:40:53 elektra kernel: [ 1542.587175] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:40:54 elektra kernel: [ 1543.585309] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:41:00 elektra kernel: [ 1549.360600] br0: port 2(ue5) entered disabled state
+> > Jul 23 07:41:00 elektra kernel: [ 1549.442998] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:41:00 elektra kernel: [ 1549.443011] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:41:01 elektra kernel: [ 1550.357686] br0: port 2(ue5) entered disabled state
+> > Jul 23 07:41:01 elektra kernel: [ 1550.408208] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:41:01 elektra kernel: [ 1550.408222] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:41:02 elektra kernel: [ 1551.407656] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:41:03 elektra kernel: [ 1552.401578] br0: port 2(ue5) entered disabled state
+> > Jul 23 07:41:03 elektra kernel: [ 1552.474773] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:41:03 elektra kernel: [ 1552.474786] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:41:04 elektra kernel: [ 1553.472487] br0: port 2(ue5) entered forwarding state
+> > Jul 23 07:41:05 elektra kernel: [ 1554.356138] br0: port 2(ue5) entered disabled state
+> > [...]
+> > 
+> > This does (in the same situation, nothing else than the kernel changed)
+> > not happen with 3.4.5.
+> > 
+> > Does anybody have an idea what the issue might be or do I need to bisect?
+> 
+> 
+> -- 
+> MfG,
+> 
+> Michael Leun
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-So congrats! While most folks haven't started looking at the 2038 issue 
-on 32bit systems, you've already started pushing the internal limits on 
-64bit systems :)
 
-Now, while this is obviously problematic, this point confused me for a 
-bit:  Prior to the commit bisected in the original mail above, we stored 
-the same bad KTIME_MAX data in the 
-cpu_base->clock_base[HRTIMER_BASE_REALTIME].offset value.  We just 
-didn't read the value from the timekeeping core at each interrupt, and 
-the value isn't actually changing when the warning and panic is being 
-triggered.
+-- 
+MfG,
 
-So it was unclear as to why if we're providing the same bad KTIME_MAX 
-value to hrtimer_interrupt, why are we seeing problems now and not before?
-
-After hacking the kernel and forcing the persistent clock to return a 
-similar bad CMOS value of the year 8200, I could reproduce this and 
-finally track it down.
-
-Ends up there's a slight difference in  ktime_get_update_offsets() vs 
-ktime_get():
-
-ktime_get() does basically the following:
-         return timespec_to_ktime(timespec_add(xtime, wall_to_monotonic))
-
-Where as ktime_get_update_offsets does approximately:
-         return ktime_sub(timespec_to_ktime(xtime), realtime_offset);
-
-The problem is, at boot we set xtime = year 8200 and wall_to_monotonic = 
-year -8200,  ktime_get adds both values, mostly nulling the difference 
-out (leaving only how long the system has been up), then converts that 
-relatively small value to a ktime_t properly without losing any information.
-
-ktime_get_update_offsets however, since it converts xtime (again set to 
-some value greater then year 8200), to a ktime, it gets clamped at 
-KTIME_MAX, then we subtract realtime_offset, which is _also_ clamped at 
-KTIME_MAX, resulting in us always returning almost[1] zero.  This causes 
-us to stop expiring timers.
-
-Now, one of the reasons Thomas and I changed the logic was that using 
-the precalculated realtime_offset was slightly more efficient then 
-re-adding xtime and wall_to_monotonic's components separately. But how 
-valuable this unmeasured slight efficiency is vs extra robustness for 
-crazy time values is questionable.
-
-Additionally I suspect that your system probably corrects itself in 
-early boot via ntpdate, as I'm pretty sure you'd have other strange 
-timer behavior trying to run the system with a date larger then KTIME_MAX.
-
-So I suspect we need two fixes here:
-1) Fall back to using the full-precision ktime_get() method of 
-calculating the current monotonic time in ktime_get_update_offsets to 
-avoid what is in effect precision loss with very large timespecs.
-2) Validate that time values we accept are smaller the ktime_t before 
-using them.
-
-Thomas, does this sound reasonable? Patches to follow shortly.
-
-thanks
--john
-
-
-[1] So the reality is slightly more complicated, since 
-ktime_get_update_offsets actually returns:
-         return ktime_sub(ktime_add(ktime_set(xtime.tv_sec,0),nsecs), 
-realtime_offset);
-Which basically means we return some value that increases to ~4seconds 
-and then nsec overflows and we loop back to zero.
+Michael Leun
 
