@@ -1,93 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab2GaTsn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:48:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37341 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab2GaTon (ORCPT
+	id S1754076Ab2GaTsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:48:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58924 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399Ab2GaTom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 15:44:43 -0400
-Message-Id: <20120731192808.521216362@chello.nl>
+	Tue, 31 Jul 2012 15:44:42 -0400
+Message-Id: <20120731192809.489683051@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 31 Jul 2012 21:12:07 +0200
+Date: Tue, 31 Jul 2012 21:12:23 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 03/19] mm/mpol: Make MPOL_LOCAL a real policy
+Subject: [PATCH 19/19] mm, numa: retry failed page migrations
 References: <20120731191204.540691987@chello.nl>
-Content-Disposition: inline; filename=mm_mpol-Make_MPOL_LOCAL_a_real_policy.patch
+Content-Disposition: inline; filename=rik_van_riel-mm_numa-retry_failed_page_migrations.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make MPOL_LOCAL a real and exposed policy such that applications that
-relied on the previous default behaviour can explicitly request it.
+From: Rik van Riel <riel@redhat.com>
 
-Requested-by: Christoph Lameter <cl@linux.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Keep track of how many NUMA page migrations succeeded and
+failed (in a way that wants retrying later) per process.
+
+If a lot of the page migrations of a process fail, unmap the
+process pages some point later, so the migration can be tried
+again at the next fault.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/mempolicy.h |    1 +
- mm/mempolicy.c            |    9 ++++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index 4aa4273..fb515b4 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -20,6 +20,7 @@ enum {
- 	MPOL_PREFERRED,
- 	MPOL_BIND,
- 	MPOL_INTERLEAVE,
-+	MPOL_LOCAL,
- 	MPOL_MAX,	/* always last member of enum */
+ include/linux/mm_types.h |    2 ++
+ kernel/sched/core.c      |    2 ++
+ kernel/sched/fair.c      |   19 ++++++++++++++++++-
+ mm/memory.c              |   15 ++++++++++++---
+ 4 files changed, 34 insertions(+), 4 deletions(-)
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -397,6 +397,8 @@ struct mm_struct {
+ #ifdef CONFIG_NUMA
+ 	unsigned int  numa_big;
+ 	unsigned long numa_next_scan;
++	unsigned int  numa_migrate_success;
++	unsigned int  numa_migrate_failed;
+ #endif
+ 	struct uprobes_state uprobes_state;
  };
- 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 30bea02..e7e3b58 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -269,6 +269,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
- 			     (flags & MPOL_F_RELATIVE_NODES)))
- 				return ERR_PTR(-EINVAL);
- 		}
-+	} else if (mode == MPOL_LOCAL) {
-+		if (!nodes_empty(*nodes))
-+			return ERR_PTR(-EINVAL);
-+		mode = MPOL_PREFERRED;
- 	} else if (nodes_empty(*nodes))
- 		return ERR_PTR(-EINVAL);
- 	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
-@@ -2273,7 +2277,6 @@ void numa_default_policy(void)
-  * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
-  * Used only for mpol_parse_str() and mpol_to_str()
-  */
--#define MPOL_LOCAL MPOL_MAX
- static const char * const policy_modes[] =
- {
- 	[MPOL_DEFAULT]    = "default",
-@@ -2326,12 +2329,12 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
- 	if (flags)
- 		*flags++ = '\0';	/* terminate mode string */
- 
--	for (mode = 0; mode <= MPOL_LOCAL; mode++) {
-+	for (mode = 0; mode < MPOL_MAX; mode++) {
- 		if (!strcmp(str, policy_modes[mode])) {
- 			break;
- 		}
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1727,6 +1727,8 @@ static void __sched_fork(struct task_str
+ 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
+ 		p->mm->numa_big = 0;
+ 		p->mm->numa_next_scan = jiffies;
++		p->mm->numa_migrate_success = 0;
++		p->mm->numa_migrate_failed = 0;
  	}
--	if (mode > MPOL_LOCAL)
-+	if (mode >= MPOL_MAX)
- 		goto out;
  
- 	switch (mode) {
--- 
-1.7.2.3
-
+ 	p->node = -1;
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -857,6 +857,18 @@ static bool task_numa_big(struct task_st
+ 	return runtime > walltime * max(1, weight / 2);
+ }
+ 
++static bool many_migrate_failures(struct task_struct *p)
++{
++	if (!p->mm)
++		return false;
++
++	/* More than 1/4 of the attempted NUMA page migrations failed. */
++	if (p->mm->numa_migrate_failed * 3 > p->mm->numa_migrate_success)
++		return true;
++
++	return false;
++}
++
+ /*
+  * The expensive part of numa migration is done from task_work context.
+  */
+@@ -909,6 +921,10 @@ void task_numa_work(struct task_work *wo
+ 		rcu_read_unlock();
+ 	}
+ 
++	/* Age the numa migrate statistics. */
++	p->mm->numa_migrate_failed /= 2;
++	p->mm->numa_migrate_success /= 2;
++
+ 	/*
+ 	 * Trigger fault driven migration, small processes do direct
+ 	 * lazy migration, big processes do gradual task<->page relations.
+@@ -962,7 +978,8 @@ void task_tick_numa(struct rq *rq, struc
+ 		 * keep the task<->page map accurate.
+ 		 */
+ 		if (curr->node_last == node &&
+-		    (curr->node != node || curr->mm->numa_big)) {
++		    (curr->node != node || curr->mm->numa_big ||
++				many_migrate_failures(curr))) {
+ 			/*
+ 			 * We can re-use curr->rcu because we checked curr->mm
+ 			 * != NULL so release_task()->call_rcu() was not called
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3452,7 +3452,7 @@ static int do_prot_none(struct mm_struct
+ {
+ 	struct page *page = NULL;
+ 	spinlock_t *ptl;
+-	int node;
++	int node, ret;
+ 
+ 	ptl = pte_lockptr(mm, pmd);
+ 	spin_lock(ptl);
+@@ -3472,18 +3472,27 @@ static int do_prot_none(struct mm_struct
+ 	pte_unmap_unlock(ptep, ptl);
+ 
+ 	node = mpol_misplaced(page, vma, address, mm->numa_big);
+-	if (node == -1)
++	if (node == -1) {
++		mm->numa_migrate_success++;
+ 		goto do_fixup;
++	}
+ 
+ 	/*
+ 	 * Page migration will install a new pte with vma->vm_page_prot,
+ 	 * otherwise fall-through to the fixup. Next time,.. perhaps.
+ 	 */
+-	if (!migrate_misplaced_page(mm, page, node)) {
++	ret = migrate_misplaced_page(mm, page, node);
++	if (!ret) {
++		mm->numa_migrate_success++;
+ 		put_page(page);
+ 		return 0;
+ 	}
+ 
++	if (ret == -ENOMEM || ret == -EBUSY) {
++		/* This fault should be tried again later. */
++		mm->numa_migrate_failed++;
++	}
++
+ do_fixup:
+ 	/*
+ 	 * OK, nothing to do,.. change the protection back to what it
 
 
