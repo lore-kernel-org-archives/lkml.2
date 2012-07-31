@@ -1,57 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab2GaOEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:04:49 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:42807 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751710Ab2GaOEs (ORCPT
+	id S1754034Ab2GaOJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:09:45 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32352 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab2GaOJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:04:48 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: GXemR0gVM1nSxg4DnwQKUWvhUC2L81i6GbBvfXbQkqZHzOE
- tU4rCa8Z7Ol_gp9OXjgdrQ5Lw54Bnuby8L8RHx5kkTOTzpDbhdWJ_oTNjLsk
- 2_cEUpEFo6Son65EY5_jrUBYFntcIfGtwnwSUD25jX0t0eGHENFaYgecB6Yb
- S4hFPk6CjByxFX22TF9uLV0CvDXhUqjPUY.KGiGgwv0yWfes5JOzMc4.mH.Y
- hchre_5QcrNn4F2TVGS9m3YmWL9vr5BArXums1W5zIz210i3JwhdaD_caFhB
- WpeeUj2kGxaJOZ9uwyvLXofaPeaO0zqzMkQLz_KiBBAYFRO_vDoT8BBVUjr2
- YxOUTwOTV2LoNHRYwmW4dfuHRc1V9I8_vtSYau1LU50ODDH45s9enm8Y995A
- Wp5ZbSOk4dHlCpg8Bfsq4VIBE0lDPt2b6npaL03SDT86CISkLr0Y-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 31 Jul 2012 09:04:44 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: JoonSoo Kim <js1304@gmail.com>
-cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Brice Goglin <brice@myri.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [RESEND PATCH 4/4 v3] mm: fix possible incorrect return value
- of move_pages() syscall
-In-Reply-To: <CAAmzW4P6rqywK89q71DXzumREsJNGq0O4RrfdiHP2thrRSy9Gg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1207310903290.32295@router.home>
-References: <1343411703-2720-1-git-send-email-js1304@gmail.com> <1343411703-2720-4-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1207271550190.25434@router.home> <CAAmzW4MdiJOaZW_b+fz1uYyj0asTCveN=24st4xKymKEvkzdgQ@mail.gmail.com>
- <alpine.DEB.2.00.1207301425410.28838@router.home> <CAAmzW4P6rqywK89q71DXzumREsJNGq0O4RrfdiHP2thrRSy9Gg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 31 Jul 2012 10:09:44 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: fujita.tomonori@lab.ntt.co.jp, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com,
+        JBeulich@suse.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 5/5] xen/pcifront: Use Xen-SWIOTLB when initting if required.
+Date: Tue, 31 Jul 2012 10:00:23 -0400
+Message-Id: <1343743223-30092-6-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com>
+References: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jul 2012, JoonSoo Kim wrote:
+We piggyback on "xen/swiotlb: Use the swiotlb_late_init_with_tbl to init
+Xen-SWIOTLB late when PV PCI is used." functionality to start up
+the Xen-SWIOTLB if we are hot-plugged. This allows us to bypass
+the need to supply 'iommu=soft' on the Linux command line (mostly).
+With this patch, if a user forgot 'iommu=soft' on the command line,
+and hotplug a PCI device they will get:
 
-> In man page, there is following statement.
-> "status is an array of integers that return the status of each page.  The array
-> only contains valid values if move_pages() did not return an error."
+pcifront pci-0: Installing PCI frontend
+Warning: only able to allocate 4 MB for software IO TLB
+software IO TLB [mem 0x2a000000-0x2a3fffff] (4MB) mapped at [ffff88002a000000-ffff88002a3fffff]
+pcifront pci-0: Creating PCI Frontend Bus 0000:00
+pcifront pci-0: PCI host bridge to bus 0000:00
+pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+pci_bus 0000:00: root bus resource [mem 0x00000000-0xfffffffff]
+pci 0000:00:00.0: [8086:10d3] type 00 class 0x020000
+pci 0000:00:00.0: reg 10: [mem 0xfe5c0000-0xfe5dffff]
+pci 0000:00:00.0: reg 14: [mem 0xfe500000-0xfe57ffff]
+pci 0000:00:00.0: reg 18: [io  0xe000-0xe01f]
+pci 0000:00:00.0: reg 1c: [mem 0xfe5e0000-0xfe5e3fff]
+pcifront pci-0: claiming resource 0000:00:00.0/0
+pcifront pci-0: claiming resource 0000:00:00.0/1
+pcifront pci-0: claiming resource 0000:00:00.0/2
+pcifront pci-0: claiming resource 0000:00:00.0/3
+e1000e: Intel(R) PRO/1000 Network Driver - 2.0.0-k
+e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
+e1000e 0000:00:00.0: Disabling ASPM L0s L1
+e1000e 0000:00:00.0: enabling device (0000 -> 0002)
+e1000e 0000:00:00.0: Xen PCI mapped GSI16 to IRQ34
+e1000e 0000:00:00.0: (unregistered net_device): Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
+e1000e 0000:00:00.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:1b:21:ab:c6:13
+e1000e 0000:00:00.0: eth0: Intel(R) PRO/1000 Network Connection
+e1000e 0000:00:00.0: eth0: MAC: 3, PHY: 8, PBA No: E46981-005
 
-> And current implementation of move_pages() syscall doesn't return the number
-> of pages not moved, just return 0 when it encounter some failed pages.
-> So, if u want to fix the man page, u should fix do_pages_move() first.
+The "Warning only" will go away if one supplies 'iommu=soft' instead
+as we have a higher chance of being able to allocate large swaths of
+memory.
 
-Hmm... Yeah actually that is sufficient since the status is readily
-obtainable from the status array. It would be better though if the
-function would return the number of pages not moved in the same way as
-migrate_pages().
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/pci/xen-pcifront.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
 
-
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index d6cc62c..ca92801 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -21,6 +21,7 @@
+ #include <linux/bitops.h>
+ #include <linux/time.h>
+ 
++#include <asm/xen/swiotlb-xen.h>
+ #define INVALID_GRANT_REF (0)
+ #define INVALID_EVTCHN    (-1)
+ 
+@@ -668,7 +669,7 @@ static irqreturn_t pcifront_handler_aer(int irq, void *dev)
+ 	schedule_pcifront_aer_op(pdev);
+ 	return IRQ_HANDLED;
+ }
+-static int pcifront_connect(struct pcifront_device *pdev)
++static int pcifront_connect_and_init_dma(struct pcifront_device *pdev)
+ {
+ 	int err = 0;
+ 
+@@ -681,9 +682,13 @@ static int pcifront_connect(struct pcifront_device *pdev)
+ 		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
+ 		err = -EEXIST;
+ 	}
+-
+ 	spin_unlock(&pcifront_dev_lock);
+ 
++	if (!err && !swiotlb_nr_tbl()) {
++		err = pci_xen_swiotlb_init_late();
++		if (err)
++			dev_err(&pdev->xdev->dev, "Could not setup SWIOTLB!\n");
++	}
+ 	return err;
+ }
+ 
+@@ -699,6 +704,7 @@ static void pcifront_disconnect(struct pcifront_device *pdev)
+ 
+ 	spin_unlock(&pcifront_dev_lock);
+ }
++
+ static struct pcifront_device *alloc_pdev(struct xenbus_device *xdev)
+ {
+ 	struct pcifront_device *pdev;
+@@ -842,10 +848,10 @@ static int __devinit pcifront_try_connect(struct pcifront_device *pdev)
+ 	    XenbusStateInitialised)
+ 		goto out;
+ 
+-	err = pcifront_connect(pdev);
++	err = pcifront_connect_and_init_dma(pdev);
+ 	if (err) {
+ 		xenbus_dev_fatal(pdev->xdev, err,
+-				 "Error connecting PCI Frontend");
++				 "Error setting up PCI Frontend");
+ 		goto out;
+ 	}
+ 
+-- 
+1.7.7.6
 
