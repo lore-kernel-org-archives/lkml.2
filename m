@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab2GaFGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:06:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48515 "EHLO
+	id S1755909Ab2GaFGk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:06:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48499 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755301Ab2GaEuE (ORCPT
+	by vger.kernel.org with ESMTP id S1755263Ab2GaEuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 00:50:04 -0400
-Message-Id: <20120731044313.980351051@decadent.org.uk>
+Message-Id: <20120731044311.397258604@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:27 +0100
+Date: Tue, 31 Jul 2012 05:43:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mark Rustad <mark.d.rustad@intel.com>,
-        Marcus Dennis <marcusx.e.dennis@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 17/73] [SCSI] Fix NULL dereferences in scsi_cmd_to_driver
+        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Nai Xia <nai.xia@gmail.com>, Johannes Weiner <jweiner@redhat.com>
+Subject: [ 03/73] mm: compaction: determine if dirty pages can be migrated without blocking within ->migratepage
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,66 +31,374 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 222a806af830fda34ad1f6bc991cd226916de060 upstream.
+commit b969c4ab9f182a6e1b2a0848be349f99714947b0 upstream.
 
-Avoid crashing if the private_data pointer happens to be NULL. This has
-been seen sometimes when a host reset happens, notably when there are
-many LUNs:
+Stable note: Not tracked in Bugzilla. A fix aimed at preserving page
+	aging information by reducing LRU list churning had the side-effect
+	of reducing THP allocation success rates. This was part of a series
+	to restore the success rates while preserving the reclaim fix.
 
-host3: Assigned Port ID 0c1601
-scsi host3: libfc: Host reset succeeded on port (0c1601)
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000350
-IP: [<ffffffff81352bb8>] scsi_send_eh_cmnd+0x58/0x3a0
-<snip>
-Process scsi_eh_3 (pid: 4144, threadinfo ffff88030920c000, task ffff880326b160c0)
-Stack:
- 000000010372e6ba 0000000000000282 000027100920dca0 ffffffffa0038ee0
- 0000000000000000 0000000000030003 ffff88030920dc80 ffff88030920dc80
- 00000002000e0000 0000000a00004000 ffff8803242f7760 ffff88031326ed80
-Call Trace:
- [<ffffffff8105b590>] ? lock_timer_base+0x70/0x70
- [<ffffffff81352fbe>] scsi_eh_tur+0x3e/0xc0
- [<ffffffff81353a36>] scsi_eh_test_devices+0x76/0x170
- [<ffffffff81354125>] scsi_eh_host_reset+0x85/0x160
- [<ffffffff81354291>] scsi_eh_ready_devs+0x91/0x110
- [<ffffffff813543fd>] scsi_unjam_host+0xed/0x1f0
- [<ffffffff813546a8>] scsi_error_handler+0x1a8/0x200
- [<ffffffff81354500>] ? scsi_unjam_host+0x1f0/0x1f0
- [<ffffffff8106ec3e>] kthread+0x9e/0xb0
- [<ffffffff81509264>] kernel_thread_helper+0x4/0x10
- [<ffffffff8106eba0>] ? kthread_freezable_should_stop+0x70/0x70
- [<ffffffff81509260>] ? gs_change+0x13/0x13
-Code: 25 28 00 00 00 48 89 45 c8 31 c0 48 8b 87 80 00 00 00 48 8d b5 60 ff ff ff 89 d1 48 89 fb 41 89 d6 4c 89 fa 48 8b 80 b8 00 00 00
- <48> 8b 80 50 03 00 00 48 8b 00 48 89 85 38 ff ff ff 48 8b 07 4c
-RIP  [<ffffffff81352bb8>] scsi_send_eh_cmnd+0x58/0x3a0
- RSP <ffff88030920dc50>
-CR2: 0000000000000350
+Asynchronous compaction is used when allocating transparent hugepages to
+avoid blocking for long periods of time.  Due to reports of stalling,
+there was a debate on disabling synchronous compaction but this severely
+impacted allocation success rates.  Part of the reason was that many dirty
+pages are skipped in asynchronous compaction by the following check;
 
+	if (PageDirty(page) && !sync &&
+		mapping->a_ops->migratepage != migrate_page)
+			rc = -EBUSY;
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Tested-by: Marcus Dennis <marcusx.e.dennis@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[bwh: Backported to 3.2: adjust filename, context]
+This skips over all mapping aops using buffer_migrate_page() even though
+it is possible to migrate some of these pages without blocking.  This
+patch updates the ->migratepage callback with a "sync" parameter.  It is
+the responsibility of the callback to fail gracefully if migration would
+block.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andy Isaacson <adi@hexapodia.org>
+Cc: Nai Xia <nai.xia@gmail.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -785,7 +785,13 @@ static void scsi_done(struct scsi_cmnd *
- /* Move this to a header if it becomes more generally useful */
- static struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
+ fs/btrfs/disk-io.c      |    4 +-
+ fs/hugetlbfs/inode.c    |    3 +-
+ fs/nfs/internal.h       |    2 +-
+ fs/nfs/write.c          |    4 +-
+ include/linux/fs.h      |    9 ++--
+ include/linux/migrate.h |    2 +-
+ mm/migrate.c            |  129 +++++++++++++++++++++++++++++++++--------------
+ 7 files changed, 106 insertions(+), 47 deletions(-)
+
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index f99a099..1375494 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -872,7 +872,7 @@ static int btree_submit_bio_hook(struct inode *inode, int rw, struct bio *bio,
+ 
+ #ifdef CONFIG_MIGRATION
+ static int btree_migratepage(struct address_space *mapping,
+-			struct page *newpage, struct page *page)
++			struct page *newpage, struct page *page, bool sync)
  {
--	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
-+	struct scsi_driver **sdp;
-+
-+	sdp = (struct scsi_driver **)cmd->request->rq_disk->private_data;
-+	if (!sdp)
-+		return NULL;
-+
-+	return *sdp;
+ 	/*
+ 	 * we can't safely write a btree page from here,
+@@ -887,7 +887,7 @@ static int btree_migratepage(struct address_space *mapping,
+ 	if (page_has_private(page) &&
+ 	    !try_to_release_page(page, GFP_KERNEL))
+ 		return -EAGAIN;
+-	return migrate_page(mapping, newpage, page);
++	return migrate_page(mapping, newpage, page, sync);
+ }
+ #endif
+ 
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index e425ad9..06fd460 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -583,7 +583,8 @@ static int hugetlbfs_set_page_dirty(struct page *page)
  }
  
- /**
+ static int hugetlbfs_migrate_page(struct address_space *mapping,
+-				struct page *newpage, struct page *page)
++				struct page *newpage, struct page *page,
++				bool sync)
+ {
+ 	int rc;
+ 
+diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+index 5ee9253..114398a 100644
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -332,7 +332,7 @@ void nfs_commit_release_pages(struct nfs_write_data *data);
+ 
+ #ifdef CONFIG_MIGRATION
+ extern int nfs_migrate_page(struct address_space *,
+-		struct page *, struct page *);
++		struct page *, struct page *, bool);
+ #else
+ #define nfs_migrate_page NULL
+ #endif
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 0c38852..889e98b 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1688,7 +1688,7 @@ out_error:
+ 
+ #ifdef CONFIG_MIGRATION
+ int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
+-		struct page *page)
++		struct page *page, bool sync)
+ {
+ 	/*
+ 	 * If PagePrivate is set, then the page is currently associated with
+@@ -1703,7 +1703,7 @@ int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
+ 
+ 	nfs_fscache_release_page(page, GFP_KERNEL);
+ 
+-	return migrate_page(mapping, newpage, page);
++	return migrate_page(mapping, newpage, page, sync);
+ }
+ #endif
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index a7409bc..b92b73d 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -609,9 +609,12 @@ struct address_space_operations {
+ 			loff_t offset, unsigned long nr_segs);
+ 	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+ 						void **, unsigned long *);
+-	/* migrate the contents of a page to the specified target */
++	/*
++	 * migrate the contents of a page to the specified target. If sync
++	 * is false, it must not block.
++	 */
+ 	int (*migratepage) (struct address_space *,
+-			struct page *, struct page *);
++			struct page *, struct page *, bool);
+ 	int (*launder_page) (struct page *);
+ 	int (*is_partially_uptodate) (struct page *, read_descriptor_t *,
+ 					unsigned long);
+@@ -2537,7 +2540,7 @@ extern int generic_check_addressable(unsigned, u64);
+ 
+ #ifdef CONFIG_MIGRATION
+ extern int buffer_migrate_page(struct address_space *,
+-				struct page *, struct page *);
++				struct page *, struct page *, bool);
+ #else
+ #define buffer_migrate_page NULL
+ #endif
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index e39aeec..14e6d2a 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -11,7 +11,7 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
+ 
+ extern void putback_lru_pages(struct list_head *l);
+ extern int migrate_page(struct address_space *,
+-			struct page *, struct page *);
++			struct page *, struct page *, bool);
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+ 			unsigned long private, bool offlining,
+ 			bool sync);
+diff --git a/mm/migrate.c b/mm/migrate.c
+index fc39198..4e86f3b 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -216,6 +216,55 @@ out:
+ 	pte_unmap_unlock(ptep, ptl);
+ }
+ 
++#ifdef CONFIG_BLOCK
++/* Returns true if all buffers are successfully locked */
++static bool buffer_migrate_lock_buffers(struct buffer_head *head, bool sync)
++{
++	struct buffer_head *bh = head;
++
++	/* Simple case, sync compaction */
++	if (sync) {
++		do {
++			get_bh(bh);
++			lock_buffer(bh);
++			bh = bh->b_this_page;
++
++		} while (bh != head);
++
++		return true;
++	}
++
++	/* async case, we cannot block on lock_buffer so use trylock_buffer */
++	do {
++		get_bh(bh);
++		if (!trylock_buffer(bh)) {
++			/*
++			 * We failed to lock the buffer and cannot stall in
++			 * async migration. Release the taken locks
++			 */
++			struct buffer_head *failed_bh = bh;
++			put_bh(failed_bh);
++			bh = head;
++			while (bh != failed_bh) {
++				unlock_buffer(bh);
++				put_bh(bh);
++				bh = bh->b_this_page;
++			}
++			return false;
++		}
++
++		bh = bh->b_this_page;
++	} while (bh != head);
++	return true;
++}
++#else
++static inline bool buffer_migrate_lock_buffers(struct buffer_head *head,
++								bool sync)
++{
++	return true;
++}
++#endif /* CONFIG_BLOCK */
++
+ /*
+  * Replace the page in the mapping.
+  *
+@@ -225,7 +274,8 @@ out:
+  * 3 for pages with a mapping and PagePrivate/PagePrivate2 set.
+  */
+ static int migrate_page_move_mapping(struct address_space *mapping,
+-		struct page *newpage, struct page *page)
++		struct page *newpage, struct page *page,
++		struct buffer_head *head, bool sync)
+ {
+ 	int expected_count;
+ 	void **pslot;
+@@ -255,6 +305,19 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+ 	}
+ 
+ 	/*
++	 * In the async migration case of moving a page with buffers, lock the
++	 * buffers using trylock before the mapping is moved. If the mapping
++	 * was moved, we later failed to lock the buffers and could not move
++	 * the mapping back due to an elevated page count, we would have to
++	 * block waiting on other references to be dropped.
++	 */
++	if (!sync && head && !buffer_migrate_lock_buffers(head, sync)) {
++		page_unfreeze_refs(page, expected_count);
++		spin_unlock_irq(&mapping->tree_lock);
++		return -EAGAIN;
++	}
++
++	/*
+ 	 * Now we know that no one else is looking at the page.
+ 	 */
+ 	get_page(newpage);	/* add cache reference */
+@@ -409,13 +472,13 @@ EXPORT_SYMBOL(fail_migrate_page);
+  * Pages are locked upon entry and exit.
+  */
+ int migrate_page(struct address_space *mapping,
+-		struct page *newpage, struct page *page)
++		struct page *newpage, struct page *page, bool sync)
+ {
+ 	int rc;
+ 
+ 	BUG_ON(PageWriteback(page));	/* Writeback must be complete */
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page);
++	rc = migrate_page_move_mapping(mapping, newpage, page, NULL, sync);
+ 
+ 	if (rc)
+ 		return rc;
+@@ -432,28 +495,28 @@ EXPORT_SYMBOL(migrate_page);
+  * exist.
+  */
+ int buffer_migrate_page(struct address_space *mapping,
+-		struct page *newpage, struct page *page)
++		struct page *newpage, struct page *page, bool sync)
+ {
+ 	struct buffer_head *bh, *head;
+ 	int rc;
+ 
+ 	if (!page_has_buffers(page))
+-		return migrate_page(mapping, newpage, page);
++		return migrate_page(mapping, newpage, page, sync);
+ 
+ 	head = page_buffers(page);
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page);
++	rc = migrate_page_move_mapping(mapping, newpage, page, head, sync);
+ 
+ 	if (rc)
+ 		return rc;
+ 
+-	bh = head;
+-	do {
+-		get_bh(bh);
+-		lock_buffer(bh);
+-		bh = bh->b_this_page;
+-
+-	} while (bh != head);
++	/*
++	 * In the async case, migrate_page_move_mapping locked the buffers
++	 * with an IRQ-safe spinlock held. In the sync case, the buffers
++	 * need to be locked now
++	 */
++	if (sync)
++		BUG_ON(!buffer_migrate_lock_buffers(head, sync));
+ 
+ 	ClearPagePrivate(page);
+ 	set_page_private(newpage, page_private(page));
+@@ -530,10 +593,13 @@ static int writeout(struct address_space *mapping, struct page *page)
+  * Default handling if a filesystem does not provide a migration function.
+  */
+ static int fallback_migrate_page(struct address_space *mapping,
+-	struct page *newpage, struct page *page)
++	struct page *newpage, struct page *page, bool sync)
+ {
+-	if (PageDirty(page))
++	if (PageDirty(page)) {
++		if (!sync)
++			return -EBUSY;
+ 		return writeout(mapping, page);
++	}
+ 
+ 	/*
+ 	 * Buffers may be managed in a filesystem specific way.
+@@ -543,7 +609,7 @@ static int fallback_migrate_page(struct address_space *mapping,
+ 	    !try_to_release_page(page, GFP_KERNEL))
+ 		return -EAGAIN;
+ 
+-	return migrate_page(mapping, newpage, page);
++	return migrate_page(mapping, newpage, page, sync);
+ }
+ 
+ /*
+@@ -579,29 +645,18 @@ static int move_to_new_page(struct page *newpage, struct page *page,
+ 
+ 	mapping = page_mapping(page);
+ 	if (!mapping)
+-		rc = migrate_page(mapping, newpage, page);
+-	else {
++		rc = migrate_page(mapping, newpage, page, sync);
++	else if (mapping->a_ops->migratepage)
+ 		/*
+-		 * Do not writeback pages if !sync and migratepage is
+-		 * not pointing to migrate_page() which is nonblocking
+-		 * (swapcache/tmpfs uses migratepage = migrate_page).
++		 * Most pages have a mapping and most filesystems provide a
++		 * migratepage callback. Anonymous pages are part of swap
++		 * space which also has its own migratepage callback. This
++		 * is the most common path for page migration.
+ 		 */
+-		if (PageDirty(page) && !sync &&
+-		    mapping->a_ops->migratepage != migrate_page)
+-			rc = -EBUSY;
+-		else if (mapping->a_ops->migratepage)
+-			/*
+-			 * Most pages have a mapping and most filesystems
+-			 * should provide a migration function. Anonymous
+-			 * pages are part of swap space which also has its
+-			 * own migration function. This is the most common
+-			 * path for page migration.
+-			 */
+-			rc = mapping->a_ops->migratepage(mapping,
+-							newpage, page);
+-		else
+-			rc = fallback_migrate_page(mapping, newpage, page);
+-	}
++		rc = mapping->a_ops->migratepage(mapping,
++						newpage, page, sync);
++	else
++		rc = fallback_migrate_page(mapping, newpage, page, sync);
+ 
+ 	if (rc) {
+ 		newpage->mapping = NULL;
 
 
