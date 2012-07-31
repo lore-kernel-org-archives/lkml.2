@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2GaEuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:50:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48732 "EHLO
+	id S1755566Ab2GaEum (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:50:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48738 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755474Ab2GaEui (ORCPT
+	by vger.kernel.org with ESMTP id S1755179Ab2GaEuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:38 -0400
-Message-Id: <20120731044319.583795666@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:39 -0400
+Message-Id: <20120731044319.296239685@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:44:02 +0100
+Date: Tue, 31 Jul 2012 05:44:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 52/73] drm/radeon: Try harder to avoid HW cursor ending on a multiple of
- 128 columns.
+        David Henningsson <david.henningsson@canonical.com>,
+        Ray Chen <ray.chen@canonical.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 50/73] ALSA: hda - Add support for Realtek ALC282
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,45 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michel Dänzer <michel.daenzer@amd.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit f60ec4c7df043df81e62891ac45383d012afe0da upstream.
+commit 4e01ec636e64707d202a1ca21a47bbc6d53085b7 upstream.
 
-This could previously fail if either of the enabled displays was using a
-horizontal resolution that is a multiple of 128, and only the leftmost column
-of the cursor was (supposed to be) visible at the right edge of that display.
+This codec has a separate dmic path (separate dmic only ADC),
+and thus it looks mostly like ALC275.
 
-The solution is to move the cursor one pixel to the left in that case.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=33183
-
-Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+BugLink: https://bugs.launchpad.net/bugs/1025377
+Tested-by: Ray Chen <ray.chen@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_cursor.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_cursor.c b/drivers/gpu/drm/radeon/radeon_cursor.c
-index 42acc64..711e95a 100644
---- a/drivers/gpu/drm/radeon/radeon_cursor.c
-+++ b/drivers/gpu/drm/radeon/radeon_cursor.c
-@@ -262,8 +262,14 @@ int radeon_crtc_cursor_move(struct drm_crtc *crtc,
- 				if (!(cursor_end & 0x7f))
- 					w--;
- 			}
--			if (w <= 0)
-+			if (w <= 0) {
- 				w = 1;
-+				cursor_end = x - xorigin + w;
-+				if (!(cursor_end & 0x7f)) {
-+					x--;
-+					WARN_ON_ONCE(x < 0);
-+				}
-+			}
- 		}
- 	}
- 
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index a5b0b50..aef3139 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6988,6 +6988,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
+ 	{ .id = 0x10ec0275, .name = "ALC275", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0276, .name = "ALC276", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0280, .name = "ALC280", .patch = patch_alc269 },
++	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
+ 	  .patch = patch_alc861 },
+ 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
 
 
