@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab2GaLwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 07:52:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42477 "EHLO
+	id S1756072Ab2GaLwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 07:52:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42479 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756021Ab2GaLwp (ORCPT
+	with ESMTP id S1756016Ab2GaLwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 07:52:45 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
@@ -12,13 +12,12 @@ To: linux-kernel@vger.kernel.org
 Cc: oleg@redhat.com, ananth@in.ibm.com, a.p.zijlstra@chello.nl,
         mingo@redhat.com, srikar@linux.vnet.ibm.com, roland@hack.frob.com,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 2/2] x86/uprobes: implement x86 specific arch_uprobe_*_step
-Date: Tue, 31 Jul 2012 13:52:28 +0200
-Message-Id: <1343735548-18101-2-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 1/2] uprobes: Use a helper instead of ptrace's single step enable
+Date: Tue, 31 Jul 2012 13:52:27 +0200
+Message-Id: <1343735548-18101-1-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1343735548-18101-1-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <20120730141638.GA5306@redhat.com>
 References: <20120730141638.GA5306@redhat.com>
- <1343735548-18101-1-git-send-email-bigeasy@linutronix.de>
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,108 +25,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The arch specific implementation enables single stepping directly by
-setting the trap flag. "Single-Step on branches" is always disabled
-since only one opcode has to be executed.
+As Oleg pointed out in [0] utrace should not use the ptrace interface
+for enabling/disabling single stepping.
 
-The disable call removes the trap flag unless it was there before. It
-does not touch the flags register if the executed instruction was
-"popf". It does not take into account various prefixes like "lock popf"
-or "repz popf".
-SIGTRAP is sent to the process in case it was traced so the debugger
-knows once we advanced by one opcode. This isn't done in case we have to
-restore the BTF flag. In case the BTF flag is set, we should look at the
-opcode and send SIGTRAP depending on the jump/flag status. For now we
-wait for the next exception/jump to be taken.
+[0] http://lkml.kernel.org/20120730141638.GA5306@redhat.com
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- arch/x86/include/asm/uprobes.h |    3 ++
- arch/x86/kernel/uprobes.c      |   60 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 63 insertions(+)
+ include/linux/uprobes.h |    4 ++++
+ kernel/events/uprobes.c |   16 ++++++++++++++--
+ 2 files changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index f3971bb..47f4cf1 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -46,6 +46,9 @@ struct arch_uprobe_task {
- #ifdef CONFIG_X86_64
- 	unsigned long			saved_scratch_register;
- #endif
-+#define UPROBE_CLEAR_TF			(1 << 0)
-+#define UPROBE_SET_BTF			(1 << 1)
-+	unsigned int			restore_flags;
- };
- 
- extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 36fd420..6eec3e4 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -673,3 +673,63 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 	}
- 	return false;
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index efe4b33..ea6603b 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -111,6 +111,10 @@ extern void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsig
+ extern void uprobe_free_utask(struct task_struct *t);
+ extern void uprobe_copy_process(struct task_struct *t);
+ extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
++extern void __weak arch_uprobe_enable_step(struct task_struct *child,
++		struct arch_uprobe *arch);
++extern void __weak arch_uprobe_disable_step(struct task_struct *child,
++		struct arch_uprobe *arch);
+ extern int uprobe_post_sstep_notifier(struct pt_regs *regs);
+ extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
+ extern void uprobe_notify_resume(struct pt_regs *regs);
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index f935327..3a61f16 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1482,6 +1482,18 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+ 	return uprobe;
  }
-+
-+static int insn_is_popf(const u8 *insn)
+ 
++void __weak arch_uprobe_enable_step(struct task_struct *child,
++		struct arch_uprobe *arch)
 +{
-+	/* popf */
-+	if (insn[0] == 0x9d)
-+		return 1;
-+	return 0;
++	user_enable_single_step(current);
 +}
 +
-+void arch_uprobe_enable_step(struct task_struct *child,
-+		struct arch_uprobe *auprobe)
++void __weak arch_uprobe_disable_step(struct task_struct *child,
++		struct arch_uprobe *arch)
 +{
-+	struct uprobe_task	*utask		= child->utask;
-+	struct arch_uprobe_task	*autask		= &utask->autask;
-+	struct pt_regs		*regs		= task_pt_regs(child);
-+	unsigned long		debugctl;
-+
-+	autask->restore_flags = 0;
-+	if (!(regs->flags & X86_EFLAGS_TF) &&
-+			!insn_is_popf(auprobe->insn)) {
-+		autask->restore_flags |= UPROBE_CLEAR_TF;
-+
-+		debugctl = get_debugctlmsr();
-+		if (debugctl & DEBUGCTLMSR_BTF) {
-+			autask->restore_flags |= UPROBE_SET_BTF;
-+			debugctl &= ~DEBUGCTLMSR_BTF;
-+			update_debugctlmsr(debugctl);
-+		}
-+	}
-+	regs->flags |= X86_EFLAGS_TF;
++	user_disable_single_step(child);
 +}
 +
-+void arch_uprobe_disable_step(struct task_struct *child,
-+		struct arch_uprobe *auprobe)
-+{
-+	struct uprobe_task *utask	= child->utask;
-+	struct arch_uprobe_task	*autask		= &utask->autask;
-+	struct pt_regs *regs		= task_pt_regs(child);
-+
-+	/*
-+	 * Disable the single step flag if it was set by us. Notify the debugger
-+	 * via SIGTRAP in case it was already there so it learns that we
-+	 * advanced by an opcode unless the debugger is waiting for the next
-+	 * jump to be taken. This logic gets it wrong if the uprobe was set
-+	 * on jump instruction that would raise an exception.
-+	 */
-+	if (autask->restore_flags & UPROBE_CLEAR_TF) {
-+		regs->flags &= ~X86_EFLAGS_TF;
-+	} else {
-+		if (autask->restore_flags & UPROBE_SET_BTF) {
-+			unsigned long	debugctl;
-+
-+			debugctl = get_debugctlmsr();
-+			debugctl |= DEBUGCTLMSR_BTF;
-+			update_debugctlmsr(debugctl);
-+		} else {
-+			send_sig(SIGTRAP, current, 0);
-+		}
-+	}
-+}
+ /*
+  * Run handler and ask thread to singlestep.
+  * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
+@@ -1528,7 +1540,7 @@ static void handle_swbp(struct pt_regs *regs)
+ 
+ 	utask->state = UTASK_SSTEP;
+ 	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
+-		user_enable_single_step(current);
++		arch_uprobe_enable_step(current, &uprobe->arch);
+ 		return;
+ 	}
+ 
+@@ -1569,7 +1581,7 @@ static void handle_singlestep(struct uprobe_task *utask, struct pt_regs *regs)
+ 	put_uprobe(uprobe);
+ 	utask->active_uprobe = NULL;
+ 	utask->state = UTASK_RUNNING;
+-	user_disable_single_step(current);
++	arch_uprobe_disable_step(current, &uprobe->arch);
+ 	xol_free_insn_slot(current);
+ 
+ 	spin_lock_irq(&current->sighand->siglock);
 -- 
 1.7.10.4
 
