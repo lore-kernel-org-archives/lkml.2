@@ -1,33 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab2GaUVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 16:21:12 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54382 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab2GaUVK (ORCPT
+	id S1753562Ab2GaUXf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 16:23:35 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:12489 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab2GaUXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 16:21:10 -0400
+	Tue, 31 Jul 2012 16:23:30 -0400
+Date: Tue, 31 Jul 2012 22:23:28 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "Pieper, Jeffrey E" <jeffrey.e.pieper@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        Rick Jones <rick.jones2@hp.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
+Subject: RE: [PATCH] igb: correct hardware type (i210/i211) check in
+ igb_loopback_test()
+In-Reply-To: <9BBC4E0CF881AA4299206E2E1412B62630D64753@ORSMSX102.amr.corp.intel.com>
+Message-ID: <alpine.LNX.2.00.1207312219080.7100@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1207252059320.11754@swampdragon.chaosbits.net> <9BBC4E0CF881AA4299206E2E1412B62630D64753@ORSMSX102.amr.corp.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1343765829-6006-2-git-send-email-federico.vaga@gmail.com>
-References: <1343765829-6006-1-git-send-email-federico.vaga@gmail.com> <1343765829-6006-2-git-send-email-federico.vaga@gmail.com>
-From: Federico Vaga <federico.vaga@gmail.com>
-Date: Tue, 31 Jul 2012 22:20:49 +0200
-Message-ID: <CAH5GJ0rEU66x2HXSVcs9NOC0s5ORuYbTthqAEZkm3VnnLe22Ag@mail.gmail.com>
-Subject: Re: [PATCH 1/3] [media] adv7180: remove {query/g_/s_}ctrl
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        Federico Vaga <federico.vaga@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm sorry for the email duplication, I press the wrong key on git-send email.
-Ignore these emails. Sorry
+On Wed, 25 Jul 2012, Wyborny, Carolyn wrote:
+
+> 
+> > -----Original Message-----
+> > From: Jesper Juhl [mailto:jj@chaosbits.net] 
+> > Sent: Wednesday, July 25, 2012 12:06 PM
+> > To: linux-kernel@vger.kernel.org
+> > Cc: netdev@vger.kernel.org; e1000-devel@lists.sourceforge.net; Wyborny, Carolyn; Pieper, Jeffrey E; Kirsher, Jeffrey T; Rick Jones; Ronciak, John; Brandeburg, Jesse; Allan, Bruce W; Skidmore, Donald C; Rose, Gregory V; Waskiewicz Jr, Peter P; Duyck, Alexander H; David S. Miller
+> > Subject: [PATCH] igb: correct hardware type (i210/i211) check in igb_loopback_test()
+> > 
+> > In the original code
+> > ...
+> >  	if ((adapter->hw.mac.type == e1000_i210)
+> > 		|| (adapter->hw.mac.type == e1000_i210)) { ...
+> > the second check of 'adapter->hw.mac.type' is pointless since it tests for the exact same value as the first.
+> > 
+> > After reading through a few other parts of the driver I believe that the second check was actually intended to check for 'e1000_i211'
+> > rather than 'e1000_i210', but I admit that I'm not certain so someone with more knowledge about this driver should ACK the patch before it gets merged.
+> > 
+> > Unfortunately I have no hardware to actually test this on, so it is compile tested only.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  drivers/net/ethernet/intel/igb/igb_ethtool.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+> > index a19c84c..ad489b7 100644
+> > --- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
+> > +++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+> > @@ -1783,7 +1783,7 @@ static int igb_loopback_test(struct igb_adapter *adapter, u64 *data)
+> >  		goto out;
+> >  	}
+> >  	if ((adapter->hw.mac.type == e1000_i210)
+> > -		|| (adapter->hw.mac.type == e1000_i210)) {
+> > +		|| (adapter->hw.mac.type == e1000_i211)) {
+> >  		dev_err(&adapter->pdev->dev,
+> >  			"Loopback test not supported "
+> >  			"on this part at this time.\n");
+> > --
+> > 1.7.11.3
+> > 
+> 
+> ACK.
+> 
+> Good catch.  Thanks Jesper!
+> 
+> Carolyn
+> 
+> Carolyn Wyborny
+> Linux Development
+> LAN Access Division
+> Intel Corporation
+> 
+Thank you for the ack Carolyn.
+
+David: will you take this in the networking tree?
+
 
 -- 
-Federico Vaga
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
