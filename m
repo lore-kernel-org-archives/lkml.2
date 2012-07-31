@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab2GaOvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:51:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9332 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab2GaOvx (ORCPT
+	id S1754787Ab2GaOwl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:52:41 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:48917 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281Ab2GaOwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:51:53 -0400
-X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=I5RZEMmPgckA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=dK3baWGq6wwTgra2qNsA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343746311.27983.52.camel@gandalf.stny.rr.com>
-Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Date: Tue, 31 Jul 2012 10:51:51 -0400
-In-Reply-To: <20120731144453.GB2422@linux.vnet.ibm.com>
-References: <20120724090330.GA9830@localhost>
-	 <1343662752.3847.2.camel@fedora> <20120731120556.GB17252@localhost>
-	 <1343741625.27983.39.camel@gandalf.stny.rr.com>
-	 <20120731144453.GB2422@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jul 2012 10:52:37 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        jbeulich@suse.com, stefano.stabellini@eu.citrix.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 6/6] xen/mmu: Remove from __ka space PMD entries for pagetables.
+Date: Tue, 31 Jul 2012 10:43:24 -0400
+Message-Id: <1343745804-28028-7-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1343745804-28028-1-git-send-email-konrad.wilk@oracle.com>
+References: <1343745804-28028-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 07:44 -0700, Paul E. McKenney wrote:
+Please first read the description in "xen/mmu: Copy and revector the
+P2M tree."
 
-> > Found it (and Cc'd David).
-> > 
-> > In __update_max_tr() we have:
-> > 
-> > 	max_data = task_uid(tsk);
-> > 
-> > where task_uid() is:
-> > 
-> > #define task_uid(task)		(task_cred_xxx((task), uid))
-> > 
-> > #define task_cred_xxx(task, xxx)			\
-> > ({							\
-> > 	__typeof__(((struct cred *)NULL)->xxx) ___val;	\
-> > 	rcu_read_lock();				\
-> > 	___val = __task_cred((task))->xxx;		\
-> > 	rcu_read_unlock();				\
-> > 	___val;						\
-> > })
-> > 
-> > The __update_max_tr() is called at every location interrupts are enabled
-> > (and a max time is discovered). But now this can include places that
-> > rcu_read_lock can not be called, I'm not sure how to handle this. Is
-> > there a non rcu way to get a tasks uid?
-> 
-> OK, I will bite.  How about using something like RCU_NONIDLE(), either
-> directly or open-coded, to make it a legal call site?
+At this stage, the __ka address space (which is what the old
+P2M tree was using) is partially disassembled. The cleanup_highmap
+has removed the PMD entries from 0-16MB and anything past _brk_end
+up to the max_pfn_mapped (which is the end of the ramdisk).
 
-OK, then something like:
+The xen_remove_p2m_tree and code around has ripped out the __ka for
+the old P2M array.
 
-	RCU_NONIDLE(max_data = task_uid(tsk));
+Here we continue on doing it to where the Xen page-tables were.
+It is safe to do it, as the page-tables are addressed using __va.
+For good measure we delete anything that is within MODULES_VADDR
+and up to the end of the PMD.
 
-would work when called normally or with idle?
+At this point the __ka only contains PMD entries for the start
+of the kernel up to __brk.
 
--- Steve
+[v1: Per Stefano's suggestion wrapped the MODULES_VADDR in debug]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/mmu.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 9358b75..fa4d208 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1240,6 +1240,25 @@ static void __init xen_pagetable_setup_done(pgd_t *base)
+ 			xen_start_info->mfn_list = new_mfn_list;
+ 		}
+ 	}
++	/* At this stage, cleanup_highmap has already cleaned __ka space
++	 * from _brk_limit way up to the max_pfn_mapped (which is the end of
++	 * the ramdisk). We continue on, erasing PMD entries that point to page
++	 * tables - do note that they are accessible at this stage via __va.
++	 * For good measure we also round up to the PMD - which means that if
++	 * anybody is using __ka address to the initial boot-stack - and try
++	 * to use it - they are going to crash. The xen_start_info has been
++	 * taken care of already in xen_setup_kernel_pagetable. */
++	addr = xen_start_info->pt_base;
++	size = roundup(xen_start_info->nr_pt_frames * PAGE_SIZE, PMD_SIZE);
++
++	xen_cleanhighmap(addr, addr + size);
++	xen_start_info->pt_base = (unsigned long)__va(__pa(xen_start_info->pt_base));
++#ifdef DEBUG
++	/* This is superflous and shouldn't be neccessary, but you know what
++	 * lets do it. The MODULES_VADDR -> MODULES_END should be clear of
++	 * anything at this stage. */
++	xen_cleanhighmap(MODULES_VADDR, roundup(MODULES_VADDR, PUD_SIZE) - 1);
++#endif
+ #endif
+ 	xen_post_allocator_init();
+ }
+-- 
+1.7.7.6
 
