@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab2GaEvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:51:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48772 "EHLO
+	id S1755860Ab2GaEyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:54:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48847 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755626Ab2GaEuw (ORCPT
+	by vger.kernel.org with ESMTP id S1755691Ab2GaEvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:52 -0400
-Message-Id: <20120731044319.155857450@decadent.org.uk>
+	Tue, 31 Jul 2012 00:51:04 -0400
+Message-Id: <20120731044316.585695559@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:59 +0100
+Date: Tue, 31 Jul 2012 05:43:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 49/73] workqueue: perform cpu down operations from low priority
- cpu_notifier()
+        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 33/73] x86, microcode: Sanitize per-cpu microcode reloading interface
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,114 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit 6575820221f7a4dd6eadecf7bf83cdd154335eda upstream.
+commit c9fc3f778a6a215ace14ee556067c73982b6d40f upstream.
 
-Currently, all workqueue cpu hotplug operations run off
-CPU_PRI_WORKQUEUE which is higher than normal notifiers.  This is to
-ensure that workqueue is up and running while bringing up a CPU before
-other notifiers try to use workqueue on the CPU.
+Microcode reloading in a per-core manner is a very bad idea for both
+major x86 vendors. And the thing is, we have such interface with which
+we can end up with different microcode versions applied on different
+cores of an otherwise homogeneous wrt (family,model,stepping) system.
 
-Per-cpu workqueues are supposed to remain working and bound to the CPU
-for normal CPU_DOWN_PREPARE notifiers.  This holds mostly true even
-with workqueue offlining running with higher priority because
-workqueue CPU_DOWN_PREPARE only creates a bound trustee thread which
-runs the per-cpu workqueue without concurrency management without
-explicitly detaching the existing workers.
+So turn off the possibility of doing that per core and allow it only
+system-wide.
 
-However, if the trustee needs to create new workers, it creates
-unbound workers which may wander off to other CPUs while
-CPU_DOWN_PREPARE notifiers are in progress.  Furthermore, if the CPU
-down is cancelled, the per-CPU workqueue may end up with workers which
-aren't bound to the CPU.
+This is a minimal fix which we'd like to see in stable too thus the
+more-or-less arbitrary decision to allow system-wide reloading only on
+the BSP:
 
-While reliably reproducible with a convoluted artificial test-case
-involving scheduling and flushing CPU burning work items from CPU down
-notifiers, this isn't very likely to happen in the wild, and, even
-when it happens, the effects are likely to be hidden by the following
-successful CPU down.
+$ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
+...
 
-Fix it by using different priorities for up and down notifiers - high
-priority for up operations and low priority for down operations.
+and disable the interface on the other cores:
 
-Workqueue cpu hotplug operations will soon go through further cleanup.
+$ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
+-bash: echo: write error: Invalid argument
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Also, allowing the reload only from one CPU (the BSP in
+that case) doesn't allow the reload procedure to degenerate
+into an O(n^2) deal when triggering reloads from all
+/sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
+simultaneously.
+
+A more generic fix will follow.
+
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Link: http://lkml.kernel.org/r/1340280437-7718-2-git-send-email-bp@amd64.org
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/cpu.h |    5 +++--
- kernel/workqueue.c  |   38 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 40 insertions(+), 3 deletions(-)
+ arch/x86/kernel/microcode_core.c |   26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -66,8 +66,9 @@ enum {
- 	/* migration should happen before other stuff but after perf */
- 	CPU_PRI_PERF		= 20,
- 	CPU_PRI_MIGRATION	= 10,
--	/* prepare workqueues for other notifiers */
--	CPU_PRI_WORKQUEUE	= 5,
-+	/* bring up workqueues before normal notifiers and down after */
-+	CPU_PRI_WORKQUEUE_UP	= 5,
-+	CPU_PRI_WORKQUEUE_DOWN	= -5,
- };
- 
- #define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3586,6 +3586,41 @@ static int __devinit workqueue_cpu_callb
- 	return notifier_from_errno(0);
- }
- 
-+/*
-+ * Workqueues should be brought up before normal priority CPU notifiers.
-+ * This will be registered high priority CPU notifier.
-+ */
-+static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
-+					       unsigned long action,
-+					       void *hcpu)
-+{
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_UP_PREPARE:
-+	case CPU_UP_CANCELED:
-+	case CPU_DOWN_FAILED:
-+	case CPU_ONLINE:
-+		return workqueue_cpu_callback(nfb, action, hcpu);
-+	}
-+	return NOTIFY_OK;
-+}
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index fbdfc69..24b852b 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -298,19 +298,31 @@ static ssize_t reload_store(struct device *dev,
+ 			    const char *buf, size_t size)
+ {
+ 	unsigned long val;
+-	int cpu = dev->id;
+-	ssize_t ret = 0;
++	int cpu;
++	ssize_t ret = 0, tmp_ret;
 +
-+/*
-+ * Workqueues should be brought down after normal priority CPU notifiers.
-+ * This will be registered as low priority CPU notifier.
-+ */
-+static int __devinit workqueue_cpu_down_callback(struct notifier_block *nfb,
-+						 unsigned long action,
-+						 void *hcpu)
-+{
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_DOWN_PREPARE:
-+	case CPU_DYING:
-+	case CPU_POST_DEAD:
-+		return workqueue_cpu_callback(nfb, action, hcpu);
-+	}
-+	return NOTIFY_OK;
-+}
++	/* allow reload only from the BSP */
++	if (boot_cpu_data.cpu_index != dev->id)
++		return -EINVAL;
+ 
+ 	ret = kstrtoul(buf, 0, &val);
+ 	if (ret)
+ 		return ret;
+ 
+-	if (val == 1) {
+-		get_online_cpus();
+-		if (cpu_online(cpu))
+-			ret = reload_for_cpu(cpu);
+-		put_online_cpus();
++	if (val != 1)
++		return size;
 +
- #ifdef CONFIG_SMP
++	get_online_cpus();
++	for_each_online_cpu(cpu) {
++		tmp_ret = reload_for_cpu(cpu);
++		if (tmp_ret != 0)
++			pr_warn("Error reloading microcode on CPU %d\n", cpu);
++
++		/* save retval of the first encountered reload error */
++		if (!ret)
++			ret = tmp_ret;
+ 	}
++	put_online_cpus();
  
- struct work_for_cpu {
-@@ -3779,7 +3814,8 @@ static int __init init_workqueues(void)
- 	unsigned int cpu;
- 	int i;
- 
--	cpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
-+	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
-+	cpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
- 
- 	/* initialize gcwqs */
- 	for_each_gcwq_cpu(cpu) {
+ 	if (!ret)
+ 		ret = size;
 
 
