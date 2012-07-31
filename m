@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab2GaCII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 22:08:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38139 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab2GaCHX (ORCPT
+	id S1754929Ab2GaCWI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 22:22:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44983 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab2GaCWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 22:07:23 -0400
-Date: Mon, 30 Jul 2012 19:07:20 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@kernel.org>
-cc: shuah.khan@hp.com, cl@linux.com, glommer@parallels.com, js1304@gmail.com,
-        shuahkhan@gmail.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-In-Reply-To: <CAOJsxLHw8G0ChnOeBv1nNr3tqNPPjdnkY=RStyo3rRqC1bdDAA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1207301904520.24929@chino.kir.corp.google.com>
-References: <1342221125.17464.8.camel@lorien2> <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com> <alpine.DEB.2.00.1207301255320.24196@chino.kir.corp.google.com> <CAOJsxLHw8G0ChnOeBv1nNr3tqNPPjdnkY=RStyo3rRqC1bdDAA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 30 Jul 2012 22:22:06 -0400
+Message-ID: <1343701316.7557.1.camel@phoenix>
+Subject: Re: [PATCH] regulator: core: Add intermediate cast to uintptr_t
+ before casting to pointer
+From: Axel Lin <axel.lin@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Date: Tue, 31 Jul 2012 10:21:56 +0800
+In-Reply-To: <20120730153309.GK4468@opensource.wolfsonmicro.com>
+References: <1343605633.11323.1.camel@phoenix>
+	 <20120730153309.GK4468@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jul 2012, Pekka Enberg wrote:
+於 一，2012-07-30 於 16:33 +0100，Mark Brown 提到：
+> On Mon, Jul 30, 2012 at 07:47:13AM +0800, Axel Lin wrote:
+> 
+> >  		_notifier_call_chain(rdev, REGULATOR_EVENT_VOLTAGE_CHANGE,
+> > -				     (void *)best_val);
+> > +				     (void *)(uintptr_t)best_val);
+> 
+> This also looks problematic, you should never need to cast a pointer to
+> or from void.
 
-> > -Wunused-label is overridden in gcc for a label that is conditionally
-> > referenced by using __maybe_unused in the kernel.  I'm not sure what's so
-> > obscure about
-> >
-> > out: __maybe_unused
-> >
-> > Are label attributes really that obsecure?
-> 
-> I think they are.
-> 
-> The real problem, however, is that label attributes would just paper
-> over the badly thought out control flow in the function and not make the
-> code any better or easier to read.
-> 
+If I remove the cast to (void *), I got below build warning:
 
-So much for compromise, I thought we had agreed that at least some of the 
-checks for !name, in_interrupt() or bad size values should be moved out 
-from under the #ifdef CONFIG_DEBUG_VM, but this wasn't done.  This 
-discussion would be irrelevent if we actually did what we talked about.
+  CC      drivers/regulator/core.o
+drivers/regulator/core.c: In function '_regulator_do_set_voltage':
+drivers/regulator/core.c:2183:10: warning: passing argument 3 of
+'_notifier_call_chain' makes pointer from integer without a cast
+[enabled by default]
+drivers/regulator/core.c:94:13: note: expected 'void *' but argument is
+of type 'long unsigned int'
+
+( Sorry, I forgot to reply-all so I send the mail again )
+Axel
+
