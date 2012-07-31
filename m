@@ -1,84 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab2GaOPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:15:43 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:36242 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab2GaOPm (ORCPT
+	id S1754154Ab2GaOP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:15:58 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58309 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753203Ab2GaOP4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:15:42 -0400
-Date: Tue, 31 Jul 2012 16:15:36 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] samples/seccomp: fix endianness bug in LO_ARG define
-Message-ID: <20120731141536.GA4262@osiris.boeblingen.de.ibm.com>
-MIME-Version: 1.0
+	Tue, 31 Jul 2012 10:15:56 -0400
+Subject: Re: [PATCH v8 5/7] powerpc/85xx: add sleep and deep sleep support
+Mime-Version: 1.0 (Apple Message framework v1278)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12073114-5024-0000-0000-000003628841
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1342788159-27529-6-git-send-email-chenhui.zhao@freescale.com>
+Date: Tue, 31 Jul 2012 09:15:33 -0500
+Cc: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F8FE8505-6F6A-4A4B-8302-C1CF16B48B60@kernel.crashing.org>
+References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com> <1342788159-27529-6-git-send-email-chenhui.zhao@freescale.com>
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-The LO_ARG define needs to consider endianness also for 32 bit builds.
+On Jul 20, 2012, at 7:42 AM, Zhao Chenhui wrote:
 
-The "bpf_fancy" test case didn't work on s390 in 32 bit and compat mode
-because the LO_ARG define resulted in a BPF program which read the upper
-halve of the 64 bit system call arguments instead of the lower halves.
+> In sleep PM mode, the clocks of e500 core and unused IP blocks is
+> turned off. IP blocks which are allowed to wake up the processor
+> are still running.
+> 
+> Some Freescale chips like MPC8536 and P1022 has deep sleep PM mode
+> in addtion to the sleep PM mode.
+> 
+> While in deep sleep PM mode, additionally, the power supply is
+> removed from e500 core and most IP blocks. Only the blocks needed
+> to wake up the chip out of deep sleep are ON.
+> 
+> This patch supports 32-bit and 36-bit address space.
+> 
+> The sleep mode is equal to the Standby state in Linux. The deep sleep
+> mode is equal to the Suspend-to-RAM state of Linux Power Management.
+> 
+> Command to enter sleep mode.
+>  echo standby > /sys/power/state
+> Command to enter deep sleep mode.
+>  echo mem > /sys/power/state
+> 
+> Signed-off-by: Dave Liu <daveliu@freescale.com>
+> Signed-off-by: Li Yang <leoli@freescale.com>
+> Signed-off-by: Jin Qing <b24347@freescale.com>
+> Signed-off-by: Jerry Huang <Chang-Ming.Huang@freescale.com>
+> Cc: Scott Wood <scottwood@freescale.com>
+> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> ---
+> arch/powerpc/Kconfig                  |    2 +-
+> arch/powerpc/include/asm/cacheflush.h |    2 +
+> arch/powerpc/kernel/Makefile          |    3 +
+> arch/powerpc/kernel/l2cache_85xx.S    |   56 +++
+> arch/powerpc/platforms/85xx/Makefile  |    2 +-
+> arch/powerpc/platforms/85xx/sleep.S   |  621 +++++++++++++++++++++++++++++++++
+> arch/powerpc/sysdev/fsl_pmc.c         |   98 +++++-
+> arch/powerpc/sysdev/fsl_soc.h         |    5 +
+> 8 files changed, 769 insertions(+), 20 deletions(-)
+> create mode 100644 arch/powerpc/kernel/l2cache_85xx.S
+> create mode 100644 arch/powerpc/platforms/85xx/sleep.S
+> 
+> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> index a7c6914..9d6de82 100644
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@ -665,7 +665,7 @@ config FSL_PCI
+> config FSL_PMC
+> 	bool
+> 	default y
+> -	depends on SUSPEND && (PPC_85xx || PPC_86xx)
+> +	depends on SUSPEND && (PPC_85xx || PPC_86xx) && !PPC_E500MC
+> 	help
+> 	  Freescale MPC85xx/MPC86xx power management controller support
+> 	  (suspend/resume). For MPC83xx see platforms/83xx/suspend.c
+> diff --git a/arch/powerpc/include/asm/cacheflush.h b/arch/powerpc/include/asm/cacheflush.h
+> index b843e35..6c5f1c2 100644
+> --- a/arch/powerpc/include/asm/cacheflush.h
+> +++ b/arch/powerpc/include/asm/cacheflush.h
+> @@ -58,6 +58,8 @@ extern void flush_inval_dcache_range(unsigned long start, unsigned long stop);
+> extern void flush_dcache_phys_range(unsigned long start, unsigned long stop);
+> #endif
+> 
+> +extern void flush_dcache_L1(void);
+> +
+> #define copy_to_user_page(vma, page, vaddr, dst, src, len) \
+> 	do { \
+> 		memcpy(dst, src, len); \
+> diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
+> index 83afacd..0ddef24 100644
+> --- a/arch/powerpc/kernel/Makefile
+> +++ b/arch/powerpc/kernel/Makefile
+> @@ -64,6 +64,9 @@ obj-$(CONFIG_FA_DUMP)		+= fadump.o
+> ifeq ($(CONFIG_PPC32),y)
+> obj-$(CONFIG_E500)		+= idle_e500.o
+> endif
+> +ifneq ($(CONFIG_PPC_E500MC),y)
+> +obj-$(CONFIG_PPC_85xx)		+= l2cache_85xx.o
+> +endif
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- samples/seccomp/bpf-helper.h | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+why do we need this, beyond reduce code size on an e500mc kernel build?  If so why isn't 85xx/sleep.S doing the same thing?
 
-diff --git a/samples/seccomp/bpf-helper.h b/samples/seccomp/bpf-helper.h
-index 643279d..38ee70f 100644
---- a/samples/seccomp/bpf-helper.h
-+++ b/samples/seccomp/bpf-helper.h
-@@ -59,6 +59,16 @@ void seccomp_bpf_print(struct sock_filter *filter, size_t count);
- #define FIND_LABEL(labels, label) seccomp_bpf_label((labels), #label)
- 
- #define EXPAND(...) __VA_ARGS__
-+
-+/* Ensure that we load the logically correct offset. */
-+#if __BYTE_ORDER == __LITTLE_ENDIAN
-+#define LO_ARG(idx) offsetof(struct seccomp_data, args[(idx)])
-+#elif __BYTE_ORDER == __BIG_ENDIAN
-+#define LO_ARG(idx) offsetof(struct seccomp_data, args[(idx)]) + sizeof(__u32)
-+#else
-+#error "Unknown endianness"
-+#endif
-+
- /* Map all width-sensitive operations */
- #if __BITS_PER_LONG == 32
- 
-@@ -70,21 +80,16 @@ void seccomp_bpf_print(struct sock_filter *filter, size_t count);
- #define JLE(x, jt) JLE32(x, EXPAND(jt))
- #define JA(x, jt) JA32(x, EXPAND(jt))
- #define ARG(i) ARG_32(i)
--#define LO_ARG(idx) offsetof(struct seccomp_data, args[(idx)])
- 
- #elif __BITS_PER_LONG == 64
- 
- /* Ensure that we load the logically correct offset. */
- #if __BYTE_ORDER == __LITTLE_ENDIAN
- #define ENDIAN(_lo, _hi) _lo, _hi
--#define LO_ARG(idx) offsetof(struct seccomp_data, args[(idx)])
- #define HI_ARG(idx) offsetof(struct seccomp_data, args[(idx)]) + sizeof(__u32)
- #elif __BYTE_ORDER == __BIG_ENDIAN
- #define ENDIAN(_lo, _hi) _hi, _lo
--#define LO_ARG(idx) offsetof(struct seccomp_data, args[(idx)]) + sizeof(__u32)
- #define HI_ARG(idx) offsetof(struct seccomp_data, args[(idx)])
--#else
--#error "Unknown endianness"
- #endif
- 
- union arg64 {
--- 
-1.7.11.4
+> obj-$(CONFIG_6xx)		+= idle_6xx.o l2cr_6xx.o cpu_setup_6xx.o
+> obj-$(CONFIG_TAU)		+= tau_6xx.o
+> obj-$(CONFIG_HIBERNATION)	+= swsusp.o suspend.o
+> diff --git a/arch/powerpc/kernel/l2cache_85xx.S b/arch/powerpc/kernel/l2cache_85xx.S
+> new file mode 100644
+> index 0000000..e920d69
+> --- /dev/null
+> +++ b/arch/powerpc/kernel/l2cache_85xx.S
+> @@ -0,0 +1,56 @@
+> +/*
+> + * Copyright (C) 2009-2012 Freescale Semiconductor, Inc. All rights reserved.
+> + *	Scott Wood <scottwood@freescale.com>
+> + *	Dave Liu <daveliu@freescale.com>
+> + * implement the L2 cache operations of e500 based L2 controller
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#include <asm/reg.h>
+> +#include <asm/cputable.h>
+> +#include <asm/ppc_asm.h>
+> +#include <asm/asm-offsets.h>
+> +
+> +#define L2CTL_L2E	0x80000000
+> +#define L2CTL_L2I	0x40000000
+> +
+> +	.section .text
+> +
+> +	/* r3 = virtual address of L2 controller, WIMG = 01xx */
+> +_GLOBAL(flush_disable_L2)
+> +	/* It's a write-through cache, so only invalidation is needed. */
+> +	mbar
+> +	isync
+> +	lwz	r4, 0(r3)
+> +	li	r5, 1
+> +	rlwimi	r4, r5, 30, L2CTL_L2E | L2CTL_L2I
+> +	stw	r4, 0(r3)
+> +
+> +	/* Wait for the invalidate to finish */
+> +1:	lwz	r4, 0(r3)
+> +	andis.	r4, r4, L2CTL_L2I@h
+> +	bne	1b
+> +	mbar
+> +
+> +	blr
+> +
+> +	/* r3 = virtual address of L2 controller, WIMG = 01xx */
+> +_GLOBAL(invalidate_enable_L2)
+> +	mbar
+> +	isync
+> +	lwz	r4, 0(r3)
+> +	li	r5, 3
+> +	rlwimi	r4, r5, 30, L2CTL_L2E | L2CTL_L2I
+> +	stw	r4, 0(r3)
+> +
+> +	/* Wait for the invalidate to finish */
+> +1:	lwz	r4, 0(r3)
+> +	andis.	r4, r4, L2CTL_L2I@h
+> +	bne	1b
+> +	mbar
+> +
+> +	blr
+> diff --git a/arch/powerpc/platforms/85xx/Makefile b/arch/powerpc/platforms/85xx/Makefile
+> index 3dfe811..405ab79 100644
+> --- a/arch/powerpc/platforms/85xx/Makefile
+> +++ b/arch/powerpc/platforms/85xx/Makefile
+> @@ -3,7 +3,7 @@
+> #
+> obj-$(CONFIG_SMP) += smp.o
+> 
+> -obj-y += common.o
+> +obj-y += common.o sleep.o
+> 
+> obj-$(CONFIG_BSC9131_RDB) += bsc913x_rdb.o
+> obj-$(CONFIG_MPC8540_ADS) += mpc85xx_ads.o
+> 
+
+- k
 
