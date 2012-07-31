@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab2GaUKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 16:10:35 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33956 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756320Ab2GaUK3 (ORCPT
+	id S1756424Ab2GaUKq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 16:10:46 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35142 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756367Ab2GaUKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 16:10:29 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        Federico Vaga <federico.vaga@gmail.com>
-Subject: [PATCH 1/3 RFC] [media] adv7180: remove {query/g_/s_}ctrl
-Date: Tue, 31 Jul 2012 22:13:31 +0200
-Message-Id: <1343765616-5780-2-git-send-email-federico.vaga@gmail.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1343765616-5780-1-git-send-email-federico.vaga@gmail.com>
-References: <1343765616-5780-1-git-send-email-federico.vaga@gmail.com>
+	Tue, 31 Jul 2012 16:10:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120731191731.GB30493@redhat.com>
+References: <20120731191731.GB30493@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 31 Jul 2012 13:10:19 -0700
+X-Google-Sender-Auth: OGHDnBoBnfui_4WlnKZa1tQhfeI
+Message-ID: <CA+55aFzDcnq3kB6zD7P+A7fizbSo-YZwUTiBs6JyO9GQxsYfFg@mail.gmail.com>
+Subject: Re: post 3.5, phantom signals.
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, oleg@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
----
- drivers/media/video/adv7180.c | 3 ---
- 1 file modificato, 3 rimozioni(-)
+On Tue, Jul 31, 2012 at 12:17 PM, Dave Jones <davej@redhat.com> wrote:
+> Since 3.5, I've started noticing weird things happening with signal delivery.
+> Things I've seen so far..
+>
+> - long running tasks SIGINT, even though I wasn't even anywhere near the keyboard.
+> - processes running inside screen/tmux disappearing (and taking the whole session with them).
 
-diff --git a/drivers/media/video/adv7180.c b/drivers/media/video/adv7180.c
-index 07bb550..bcc7d60 100644
---- a/drivers/media/video/adv7180.c
-+++ b/drivers/media/video/adv7180.c
-@@ -402,9 +402,6 @@ static const struct v4l2_subdev_video_ops adv7180_video_ops = {
- static const struct v4l2_subdev_core_ops adv7180_core_ops = {
- 	.g_chip_ident = adv7180_g_chip_ident,
- 	.s_std = adv7180_s_std,
--	.queryctrl = v4l2_subdev_queryctrl,
--	.g_ctrl = v4l2_subdev_g_ctrl,
--	.s_ctrl = v4l2_subdev_s_ctrl,
- };
- 
- static const struct v4l2_subdev_ops adv7180_ops = {
--- 
-1.7.11.2
+I can't even *begin* to guess how something like that could happen due
+to kernel issues.
 
+The signals you see are TTY signals, but SIGINT/HUP really don't make
+sense as a tty layer bug either. If it was *just* SIGHUP I'd think it
+was some tty refcounting issue, but with different signals that sounds
+very very unlikely.
+
+Quite frankly, from those symptoms I'd suspect the terminal program
+being confused over a kernel issue. Of course, it could be a kernel
+change that in turn confuses a terminal program.
+
+             Linus
