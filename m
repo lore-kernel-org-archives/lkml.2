@@ -1,190 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab2GaTov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:44:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37336 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab2GaTom (ORCPT
+	id S1755596Ab2GaToy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:44:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58925 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437Ab2GaTon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 15:44:42 -0400
-Message-Id: <20120731192808.459705289@chello.nl>
+	Tue, 31 Jul 2012 15:44:43 -0400
+Message-Id: <20120731192808.891463219@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 31 Jul 2012 21:12:06 +0200
+Date: Tue, 31 Jul 2012 21:12:13 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 02/19] mm/mpol: Remove NUMA_INTERLEAVE_HIT
+Subject: [PATCH 09/19] mm, migrate: Introduce migrate_misplaced_page()
 References: <20120731191204.540691987@chello.nl>
-Content-Disposition: inline; filename=mm_mpol-Remove_NUMA_INTERLEAVE_HIT.patch
+Content-Disposition: inline; filename=numa-migrate_misplaced_page.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the NUMA_INTERLEAVE_HIT statistic is useless on its own; it wants
-to be compared to either a total of interleave allocations or to a miss
-count, remove it.
+Add migrate_misplaced_page() which deals with migrating pages from
+faults. This includes adding a new MIGRATE_FAULT migration mode to
+deal with the extra page reference required due to having to look up
+the page.
 
-Fixing it would be possible, but since we've gone years without these
-statistics I figure we can continue that way.
-
-Also NUMA_HIT fully includes NUMA_INTERLEAVE_HIT so users might
-switch to using that.
-
-This cleans up some of the weird MPOL_INTERLEAVE allocation exceptions.
-
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Paul Turner <pjt@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- drivers/base/node.c    |    2 -
- include/linux/mmzone.h |    1 
- mm/mempolicy.c         |   68 +++++++++++++++----------------------------------
- mm/vmstat.c            |    1 
- 4 files changed, 22 insertions(+), 50 deletions(-)
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -169,7 +169,7 @@ static ssize_t node_read_numastat(struct
- 		       node_page_state(dev->id, NUMA_HIT),
- 		       node_page_state(dev->id, NUMA_MISS),
- 		       node_page_state(dev->id, NUMA_FOREIGN),
--		       node_page_state(dev->id, NUMA_INTERLEAVE_HIT),
-+		       0UL,
- 		       node_page_state(dev->id, NUMA_LOCAL),
- 		       node_page_state(dev->id, NUMA_OTHER));
- }
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -137,7 +137,6 @@ enum zone_stat_item {
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
- 	NUMA_FOREIGN,		/* was intended here, hit elsewhere */
--	NUMA_INTERLEAVE_HIT,	/* interleaver preferred this zone */
- 	NUMA_LOCAL,		/* allocation from local node */
- 	NUMA_OTHER,		/* allocation from other node */
- #endif
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1553,11 +1553,29 @@ static nodemask_t *policy_nodemask(gfp_t
- 	return NULL;
- }
+ include/linux/migrate.h      |    7 +++
+ include/linux/migrate_mode.h |    3 +
+ mm/migrate.c                 |   85 ++++++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 87 insertions(+), 8 deletions(-)
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -30,6 +30,7 @@ extern int migrate_vmas(struct mm_struct
+ extern void migrate_page_copy(struct page *newpage, struct page *page);
+ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 				  struct page *newpage, struct page *page);
++extern int migrate_misplaced_page(struct mm_struct *, struct page *, int);
+ #else
  
-+/* Do dynamic interleaving for a process */
-+static unsigned interleave_nodes(struct mempolicy *policy)
+ static inline void putback_lru_pages(struct list_head *l) {}
+@@ -63,5 +64,11 @@ static inline int migrate_huge_page_move
+ #define migrate_page NULL
+ #define fail_migrate_page NULL
+ 
++static inline
++int migrate_misplaced_page(struct mm_struct *mm, struct page *page, int node)
 +{
-+	unsigned nid, next;
-+	struct task_struct *me = current;
++	return -EAGAIN; /* can't migrate now */
++}
+ #endif /* CONFIG_MIGRATION */
 +
-+	nid = me->il_next;
-+	next = next_node(nid, policy->v.nodes);
-+	if (next >= MAX_NUMNODES)
-+		next = first_node(policy->v.nodes);
-+	if (next < MAX_NUMNODES)
-+		me->il_next = next;
-+	return nid;
+ #endif /* _LINUX_MIGRATE_H */
+--- a/include/linux/migrate_mode.h
++++ b/include/linux/migrate_mode.h
+@@ -6,11 +6,14 @@
+  *	on most operations but not ->writepage as the potential stall time
+  *	is too significant
+  * MIGRATE_SYNC will block when migrating pages
++ * MIGRATE_FAULT called from the fault path to migrate-on-fault for mempolicy
++ *	this path has an extra reference count
+  */
+ enum migrate_mode {
+ 	MIGRATE_ASYNC,
+ 	MIGRATE_SYNC_LIGHT,
+ 	MIGRATE_SYNC,
++	MIGRATE_FAULT,
+ };
+ 
+ #endif		/* MIGRATE_MODE_H_INCLUDED */
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -224,7 +224,7 @@ static bool buffer_migrate_lock_buffers(
+ 	struct buffer_head *bh = head;
+ 
+ 	/* Simple case, sync compaction */
+-	if (mode != MIGRATE_ASYNC) {
++	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT) {
+ 		do {
+ 			get_bh(bh);
+ 			lock_buffer(bh);
+@@ -278,12 +278,22 @@ static int migrate_page_move_mapping(str
+ 		struct page *newpage, struct page *page,
+ 		struct buffer_head *head, enum migrate_mode mode)
+ {
+-	int expected_count;
++	int expected_count = 0;
+ 	void **pslot;
+ 
++	if (mode == MIGRATE_FAULT) {
++		/*
++		 * MIGRATE_FAULT has an extra reference on the page and
++		 * otherwise acts like ASYNC, no point in delaying the
++		 * fault, we'll try again next time.
++		 */
++		expected_count++;
++	}
++
+ 	if (!mapping) {
+ 		/* Anonymous page without mapping */
+-		if (page_count(page) != 1)
++		expected_count += 1;
++		if (page_count(page) != expected_count)
+ 			return -EAGAIN;
+ 		return 0;
+ 	}
+@@ -293,7 +303,7 @@ static int migrate_page_move_mapping(str
+ 	pslot = radix_tree_lookup_slot(&mapping->page_tree,
+  					page_index(page));
+ 
+-	expected_count = 2 + page_has_private(page);
++	expected_count += 2 + page_has_private(page);
+ 	if (page_count(page) != expected_count ||
+ 		radix_tree_deref_slot_protected(pslot, &mapping->tree_lock) != page) {
+ 		spin_unlock_irq(&mapping->tree_lock);
+@@ -312,7 +322,7 @@ static int migrate_page_move_mapping(str
+ 	 * the mapping back due to an elevated page count, we would have to
+ 	 * block waiting on other references to be dropped.
+ 	 */
+-	if (mode == MIGRATE_ASYNC && head &&
++	if ((mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT) && head &&
+ 			!buffer_migrate_lock_buffers(head, mode)) {
+ 		page_unfreeze_refs(page, expected_count);
+ 		spin_unlock_irq(&mapping->tree_lock);
+@@ -520,7 +530,7 @@ int buffer_migrate_page(struct address_s
+ 	 * with an IRQ-safe spinlock held. In the sync case, the buffers
+ 	 * need to be locked now
+ 	 */
+-	if (mode != MIGRATE_ASYNC)
++	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT)
+ 		BUG_ON(!buffer_migrate_lock_buffers(head, mode));
+ 
+ 	ClearPagePrivate(page);
+@@ -687,7 +697,7 @@ static int __unmap_and_move(struct page 
+ 	struct anon_vma *anon_vma = NULL;
+ 
+ 	if (!trylock_page(page)) {
+-		if (!force || mode == MIGRATE_ASYNC)
++		if (!force || mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT)
+ 			goto out;
+ 
+ 		/*
+@@ -1428,4 +1438,63 @@ int migrate_vmas(struct mm_struct *mm, c
+  	}
+  	return err;
+ }
+-#endif
++
++/*
++ * Attempt to migrate a misplaced page to the specified destination
++ * node.
++ */
++int migrate_misplaced_page(struct mm_struct *mm, struct page *page, int node)
++{
++	struct address_space *mapping = page_mapping(page);
++	int page_lru = page_is_file_cache(page);
++	struct page *newpage;
++	int ret = -EAGAIN;
++	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
++
++	/*
++	 * Don't migrate pages that are mapped in multiple processes.
++	 */
++	if (page_mapcount(page) != 1)
++		goto out;
++
++	/*
++	 * Never wait for allocations just to migrate on fault, but don't dip
++	 * into reserves. And, only accept pages from the specified node. No
++	 * sense migrating to a different "misplaced" page!
++	 */
++	if (mapping)
++		gfp = mapping_gfp_mask(mapping);
++	gfp &= ~__GFP_WAIT;
++	gfp |= __GFP_NOMEMALLOC | GFP_THISNODE;
++
++	newpage = alloc_pages_node(node, gfp, 0);
++	if (!newpage) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	if (isolate_lru_page(page)) {
++		ret = -EBUSY;
++		goto put_new;
++	}
++
++	inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
++	ret = __unmap_and_move(page, newpage, 0, 0, MIGRATE_FAULT);
++	/*
++	 * A page that has been migrated has all references removed and will be
++	 * freed. A page that has not been migrated will have kepts its
++	 * references and be restored.
++	 */
++	dec_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
++	putback_lru_page(page);
++put_new:
++	/*
++	 * Move the new page to the LRU. If migration was not successful
++	 * then this will free the page.
++	 */
++	putback_lru_page(newpage);
++out:
++	return ret;
 +}
 +
- /* Return a zonelist indicated by gfp for node representing a mempolicy */
- static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
- 	int nd)
- {
- 	switch (policy->mode) {
-+	case MPOL_INTERLEAVE:
-+		nd = interleave_nodes(policy);
-+		break;
- 	case MPOL_PREFERRED:
- 		if (!(policy->flags & MPOL_F_LOCAL))
- 			nd = policy->v.preferred_node;
-@@ -1579,21 +1597,6 @@ static struct zonelist *policy_zonelist(
- 	return node_zonelist(nd, gfp);
- }
- 
--/* Do dynamic interleaving for a process */
--static unsigned interleave_nodes(struct mempolicy *policy)
--{
--	unsigned nid, next;
--	struct task_struct *me = current;
--
--	nid = me->il_next;
--	next = next_node(nid, policy->v.nodes);
--	if (next >= MAX_NUMNODES)
--		next = first_node(policy->v.nodes);
--	if (next < MAX_NUMNODES)
--		me->il_next = next;
--	return nid;
--}
--
- /*
-  * Depending on the memory policy provide a node from which to allocate the
-  * next slab entry.
-@@ -1824,21 +1827,6 @@ bool mempolicy_nodemask_intersects(struc
- 	return ret;
- }
- 
--/* Allocate a page in interleaved policy.
--   Own path because it needs to do special accounting. */
--static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
--					unsigned nid)
--{
--	struct zonelist *zl;
--	struct page *page;
--
--	zl = node_zonelist(nid, gfp);
--	page = __alloc_pages(gfp, order, zl);
--	if (page && page_zone(page) == zonelist_zone(&zl->_zonerefs[0]))
--		inc_zone_page_state(page, NUMA_INTERLEAVE_HIT);
--	return page;
--}
--
- /**
-  * 	alloc_pages_vma	- Allocate a page for a VMA.
-  *
-@@ -1875,17 +1863,6 @@ alloc_pages_vma(gfp_t gfp, int order, st
- 	pol = get_vma_policy(current, vma, addr);
- 	cpuset_mems_cookie = get_mems_allowed();
- 
--	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
--		unsigned nid;
--
--		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
--		mpol_cond_put(pol);
--		page = alloc_page_interleave(gfp, order, nid);
--		if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
--			goto retry_cpuset;
--
--		return page;
--	}
- 	zl = policy_zonelist(gfp, pol, node);
- 	if (unlikely(mpol_needs_cond_ref(pol))) {
- 		/*
-@@ -1943,12 +1920,9 @@ struct page *alloc_pages_current(gfp_t g
- 	 * No reference counting needed for current->mempolicy
- 	 * nor system default_policy
- 	 */
--	if (pol->mode == MPOL_INTERLEAVE)
--		page = alloc_page_interleave(gfp, order, interleave_nodes(pol));
--	else
--		page = __alloc_pages_nodemask(gfp, order,
--				policy_zonelist(gfp, pol, numa_node_id()),
--				policy_nodemask(gfp, pol));
-+	page = __alloc_pages_nodemask(gfp, order,
-+			policy_zonelist(gfp, pol, numa_node_id()),
-+			policy_nodemask(gfp, pol));
- 
- 	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
- 		goto retry_cpuset;
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -717,7 +717,6 @@ const char * const vmstat_text[] = {
- 	"numa_hit",
- 	"numa_miss",
- 	"numa_foreign",
--	"numa_interleave",
- 	"numa_local",
- 	"numa_other",
- #endif
++#endif /* CONFIG_NUMA */
 
 
