@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab2GaNEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:04:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33639 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754675Ab2GaNEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:04:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="191123693"
-Date: Tue, 31 Jul 2012 21:04:42 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Jonathan Cameron <jic23@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: NULL pointer dereference in iio_buffer_register()
-Message-ID: <20120731130442.GA19051@localhost>
-References: <20120708115331.GA16281@localhost>
- <20120731103155.GA16388@localhost>
- <5017D2BD.1070109@metafoo.de>
- <20120731125547.GA18655@localhost>
- <5017D843.8070001@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5017D843.8070001@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756289Ab2GaNFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:05:46 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:34028 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755090Ab2GaNFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 09:05:44 -0400
+Message-ID: <1343739939.2633.34.camel@deskari>
+Subject: Re: [PATCH 15/15] workqueue: deprecate __cancel_delayed_work()
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, padovan@profusion.mobi, marcel@holtmann.org,
+        peterz@infradead.org, mingo@redhat.com, davem@davemloft.net,
+        dougthompson@xmission.com, ibm-acpi@hmh.eng.br, cbou@mail.ru,
+        rui.zhang@intel.com, Jens Axboe <axboe@kernel.dk>,
+        Jiri Kosina <jkosina@suse.cz>, Roland Dreier <roland@kernel.org>
+Date: Tue, 31 Jul 2012 16:05:39 +0300
+In-Reply-To: <1343433308-26614-16-git-send-email-tj@kernel.org>
+References: <1343433308-26614-1-git-send-email-tj@kernel.org>
+	 <1343433308-26614-16-git-send-email-tj@kernel.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-95Y2iAoWa8AxpC+iOUg8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 03:06:11PM +0200, Lars-Peter Clausen wrote:
-> On 07/31/2012 02:55 PM, Fengguang Wu wrote:
-> >>> The panic happens while trying to dereference the NULL indio_dev->buffer:
-> >>>
-> >>>         266 int iio_buffer_register(struct iio_dev *indio_dev,
-> >>>         267                         const struct iio_chan_spec *channels,
-> >>>         268                         int num_channels)
-> >>>         269 {  
-> >>>         270         struct iio_dev_attr *p;
-> >>>         271         struct attribute **attr;
-> >>>         272         struct iio_buffer *buffer = indio_dev->buffer;
-> >>>         273         int ret, i, attrn, attrcount, attrcount_orig = 0;
-> >>>         274 
-> >>> ==>     275         if (buffer->attrs)
-> >>>         276                 indio_dev->groups[indio_dev->groupcounter++] = buffer->attrs;
-> >>>
-> >>> iio_dummy_probe() has the code to configure that buffer, however
-> >>> iio_simple_dummy_configure_buffer() is defined to do nothing on
-> >>> !CONFIG_IIO_SIMPLE_DUMMY_BUFFER..
-> >>>
-> >>>         448         /* Configure buffered capture support. */
-> >>> ==>     449         ret = iio_simple_dummy_configure_buffer(indio_dev);
-> >>>         450         if (ret < 0)
-> >>>         451                 goto error_unregister_events;
-> >>>         452 
-> >>>         453         /*
-> >>>         454          * Register the channels with the buffer, but avoid the output
-> >>>         455          * channel being registered by reducing the number of channels by 1.
-> >>>         456          */
-> >>>         457         ret = iio_buffer_register(indio_dev, iio_dummy_channels, 5);
-> >>>         458         if (ret < 0)
-> >>>         459                 goto error_unconfigure_buffer;
-> >>>
-> >>> Any ideas to fix it?
-> >>>
-> >>
-> >> Hi,
-> >>
-> >> I think the best would be to move the iio_buffer_register to
-> >> iio_simple_dummy_configure_buffer.
-> > 
-> > Lars, thanks for the quick reply! Hmm, that looks more like a code
-> > refactor recommendation than fix ;)  In the simplest form, can the
-> > bug fixed like this?
-> > 
-> >   static inline int iio_simple_dummy_configure_buffer(struct iio_dev *indio_dev)
-> >   {
-> > -         return 0;
-> > +         return -1;
-> >   };
-> > 
-> 
-> No, we want iio_simple_dummy_configure_buffer to be a noop if buffer support
-> is disabled, since the driver works fine without it. Except for the issue
-> you discovered. This issue only appears if CONFIG_IIO_BUFFER=y and
-> CONFIG_IIO_SIMPLE_DUMMY_BUFFER=n. E.g. if both are not set the driver works
-> fine without buffers.
 
-OK.
+--=-95Y2iAoWa8AxpC+iOUg8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> I can prepare a patch which moves the iio_buffer_register to
-> iio_simple_dummy_configure_buffer if you want to.
+Hi,
 
-That would be good, thank you very much!
+On Fri, 2012-07-27 at 16:55 -0700, Tejun Heo wrote:
+> __cancel_delayed_work() is different from cancel_delayed_work() in
+> that it uses del_timer() instead of del_timer_sync().  This adds
+> confusion to already complicated flush / cancel API and given that the
+> only thing delayed_work->timer does is queueing the work, the
+> difference between cancel_delayed_work() and __cancel_delayed_work()
+> isn't anything material.
+>=20
+> Furthermore, none of the remaining users are on hot path racing
+> against high-frequency work item making the chance of actually waiting
+> for delayed_work_timer_fn() very slim.
+>=20
+> Use cancel_delayed_work() instead of __cancel_delayed_work() and mark
+> the latter deprecated.
 
-Thanks,
-Fengguang
+I used __cancel_delayed_work() in drivers/video/omap2/dss/dsi.c as the
+cancel is done in an interrupt handler. Is it safe to use
+cancel_delayed_work() in atomic context? I presume not, as it uses
+del_timer_sync().
+
+ Tomi
+
+
+--=-95Y2iAoWa8AxpC+iOUg8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJQF9gjAAoJEPo9qoy8lh719aQP/2SfIZXPyIpfgJ1nT3pnRAKx
+hox2zoQetPIJ1WP5gZNNOkqpfDB07RpV7UpYUHQeB0do+o30WHF/CVtObnZnbexQ
+t+gS8PuqBDj1m7SOmOO+Phz1wdYRon6pJW1PZ8mj3ORkpWxjJefT081ypKJ7MqbU
+NrWnOOTfIw0veTcUdsuzy36VdPsW41OcPEBBKgNkWDyqVZ28nOnfndZhzGWWG/I2
+1EIO2WjMDwH58MmlIwTJrMg592AdI9Rqd6IGEWkiMgDospyNLvwfZW1uwlFrggSv
+P+1Hb1QvUsyj91Xd9NP/r9C0/dprHLKWe0qZUzlsK18VCPBSB8M6rwNauZOKpAI8
+yJ9KtVMyfakSQ0PQCuqlFE3b6gPuAlIKNVJr0vc9UmhKfbtAfe0dWFS4378nzWqL
+NKAPzDKUfymwv81XIlUd0crooDlAmH+08qyNoaPemNKvU8nriebFSYFz0lgpaVjz
+3FLy82keazpxFMmgTKXWbxzG+MF/7Fue6qBiYl5hTtYI9XlrEieqxaRebz/w9ySu
+T7siNpxL7OazTJ3jhe5B9vnHpCLIgv0LZLmXniGHlGNiqZNGIBrwYUzTJqv6gTAW
+hrrFUsVXcFxfELSQp97IdJLqDcRABDMQ1VPoWt4NR9JquCpTnb+c3TU/6UiHqEWq
+TMtN7HGOV16WuUMrBIt5
+=GYhW
+-----END PGP SIGNATURE-----
+
+--=-95Y2iAoWa8AxpC+iOUg8--
+
