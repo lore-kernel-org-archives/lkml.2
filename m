@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab2GaFId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:08:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48506 "EHLO
+	id S1755822Ab2GaFIt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:08:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48491 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755270Ab2GaEuB (ORCPT
+	by vger.kernel.org with ESMTP id S1754914Ab2GaEtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:01 -0400
-Message-Id: <20120731044312.538048088@decadent.org.uk>
+	Tue, 31 Jul 2012 00:49:51 -0400
+Message-Id: <20120731044310.013763753@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:18 +0100
+Date: Tue, 31 Jul 2012 05:43:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Nai Xia <nai.xia@gmail.com>, Johannes Weiner <jweiner@redhat.com>
-Subject: [ 08/73] mm: vmscan: do not OOM if aborting reclaim to start compaction
-In-Reply-To: <20120731044310.013763753@decadent.org.uk>
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/73] 3.2.25-stable review
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
 X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
@@ -27,71 +22,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.2.25 release.
+There are 73 patches in this series, which will be posted as responses
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Aug  2 10:00:00 UTC 2012.
+Anything received after that time might be too late.
 
-From: Mel Gorman <mgorman@suse.de>
+A combined patch relative to 3.2.24 will be posted as an additional
+response to this, and the diffstat can be found below.
 
-commit 7335084d446b83cbcb15da80497d03f0c1dc9e21 upstream.
+Ben.
 
-Stable note: Not tracked in Bugzilla. This patch makes later patches
-	easier to apply but otherwise has little to justify it. The
-	problem it fixes was never observed but the source of the
-	theoretical problem did not exist for very long.
+-------------
+ Makefile                                     |    4 +-
+ arch/arm/mach-omap2/opp.c                    |    3 +-
+ arch/powerpc/include/asm/reg.h               |    3 +-
+ arch/powerpc/kernel/ftrace.c                 |   12 +-
+ arch/s390/kernel/processor.c                 |    2 +
+ arch/s390/kernel/smp.c                       |    3 -
+ arch/x86/kernel/microcode_core.c             |   31 +++--
+ arch/x86/pci/fixup.c                         |   17 +++
+ block/blk-core.c                             |    6 +-
+ block/blk-exec.c                             |    2 +-
+ block/blk-sysfs.c                            |    4 +-
+ block/blk-throttle.c                         |    4 +-
+ block/blk.h                                  |    2 +-
+ drivers/acpi/ac.c                            |    4 +-
+ drivers/gpu/drm/nouveau/nva3_copy.fuc        |    4 +-
+ drivers/gpu/drm/nouveau/nva3_copy.fuc.h      |   94 +++++++++++++-
+ drivers/gpu/drm/nouveau/nvc0_copy.fuc.h      |   87 ++++++++++++-
+ drivers/gpu/drm/radeon/atombios_dp.c         |   10 +-
+ drivers/gpu/drm/radeon/radeon_connectors.c   |   35 ++++--
+ drivers/gpu/drm/radeon/radeon_cursor.c       |    8 +-
+ drivers/gpu/drm/radeon/radeon_object.c       |    3 +-
+ drivers/iommu/amd_iommu.c                    |   10 +-
+ drivers/media/video/cx25821/cx25821-core.c   |    3 -
+ drivers/media/video/cx25821/cx25821.h        |    2 +-
+ drivers/mmc/host/sdhci-pci.c                 |    1 +
+ drivers/net/ethernet/realtek/r8169.c         |    1 +
+ drivers/net/wireless/mwifiex/cfg80211.c      |    4 +-
+ drivers/net/wireless/rt2x00/rt2800usb.c      |   23 +++-
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c |    6 +-
+ drivers/scsi/hosts.c                         |    7 +-
+ drivers/scsi/libsas/sas_expander.c           |   47 +++----
+ drivers/scsi/scsi.c                          |    8 +-
+ drivers/scsi/scsi_error.c                    |   14 +++
+ drivers/scsi/scsi_lib.c                      |   43 +++----
+ drivers/scsi/scsi_priv.h                     |    1 -
+ drivers/scsi/scsi_scan.c                     |    3 +
+ drivers/scsi/scsi_sysfs.c                    |   46 ++++---
+ drivers/target/iscsi/iscsi_target.c          |   22 +---
+ drivers/target/iscsi/iscsi_target_core.h     |    2 -
+ drivers/target/iscsi/iscsi_target_login.c    |   60 +--------
+ drivers/target/target_core_cdb.c             |   43 +++++--
+ drivers/target/target_core_transport.c       |   10 ++
+ drivers/usb/core/devio.c                     |   10 +-
+ drivers/usb/gadget/u_ether.c                 |   12 +-
+ drivers/usb/serial/option.c                  |    8 +-
+ fs/btrfs/async-thread.c                      |    9 +-
+ fs/btrfs/disk-io.c                           |    5 +-
+ fs/cifs/cifssmb.c                            |   30 +++++
+ fs/ext4/balloc.c                             |    3 +-
+ fs/ext4/bitmap.c                             |   12 +-
+ fs/ext4/ext4.h                               |    6 +-
+ fs/ext4/ialloc.c                             |    3 +-
+ fs/ext4/inode.c                              |   41 ++++--
+ fs/ext4/resize.c                             |    5 +
+ fs/ext4/super.c                              |  174 ++++++++++++++++++--------
+ fs/hugetlbfs/inode.c                         |    3 +-
+ fs/locks.c                                   |    6 +-
+ fs/nfs/internal.h                            |    2 +-
+ fs/nfs/write.c                               |    4 +-
+ fs/udf/super.c                               |    2 +-
+ include/linux/blkdev.h                       |    1 +
+ include/linux/cpu.h                          |    5 +-
+ include/linux/cpuset.h                       |   47 +++----
+ include/linux/fs.h                           |   11 +-
+ include/linux/init_task.h                    |    8 ++
+ include/linux/migrate.h                      |   23 +++-
+ include/linux/mmzone.h                       |    2 +
+ include/linux/sched.h                        |    3 +-
+ include/target/target_core_base.h            |    1 +
+ kernel/cpuset.c                              |   43 ++-----
+ kernel/fork.c                                |    3 +
+ kernel/power/hibernate.c                     |    6 +
+ kernel/power/suspend.c                       |    3 +
+ kernel/sched.c                               |   86 +++++++++++--
+ kernel/sched_fair.c                          |    2 +-
+ kernel/time/tick-sched.c                     |    1 +
+ kernel/workqueue.c                           |   38 +++++-
+ mm/compaction.c                              |    4 +-
+ mm/filemap.c                                 |   11 +-
+ mm/hugetlb.c                                 |   13 +-
+ mm/memory-failure.c                          |    2 +-
+ mm/memory_hotplug.c                          |    2 +-
+ mm/mempolicy.c                               |   30 +++--
+ mm/migrate.c                                 |  171 +++++++++++++++++--------
+ mm/page_alloc.c                              |  118 +++++++++++------
+ mm/slab.c                                    |   13 +-
+ mm/slub.c                                    |   40 +++---
+ mm/vmscan.c                                  |  114 ++++++++++++++---
+ sound/pci/hda/patch_hdmi.c                   |   12 +-
+ sound/pci/hda/patch_realtek.c                |    1 +
+ sound/soc/soc-dapm.c                         |   15 ++-
+ 91 files changed, 1268 insertions(+), 590 deletions(-)
 
-During direct reclaim it is possible that reclaim will be aborted so that
-compaction can be attempted to satisfy a high-order allocation.  If this
-decision is made before any pages are reclaimed, it is possible that 0 is
-returned to the page allocator potentially triggering an OOM.  This has
-not been observed but it is a possibility so this patch addresses it.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andy Isaacson <adi@hexapodia.org>
-Cc: Nai Xia <nai.xia@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- mm/vmscan.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2284,6 +2284,7 @@ static unsigned long do_try_to_free_page
- 	struct zoneref *z;
- 	struct zone *zone;
- 	unsigned long writeback_threshold;
-+	bool should_abort_reclaim;
- 
- 	get_mems_allowed();
- 	delayacct_freepages_start();
-@@ -2295,7 +2296,8 @@ static unsigned long do_try_to_free_page
- 		sc->nr_scanned = 0;
- 		if (!priority)
- 			disable_swap_token(sc->mem_cgroup);
--		if (shrink_zones(priority, zonelist, sc))
-+		should_abort_reclaim = shrink_zones(priority, zonelist, sc);
-+		if (should_abort_reclaim)
- 			break;
- 
- 		/*
-@@ -2363,6 +2365,10 @@ out:
- 	if (oom_killer_disabled)
- 		return 0;
- 
-+	/* Aborting reclaim to try compaction? don't OOM, then */
-+	if (should_abort_reclaim)
-+		return 1;
-+
- 	/* top priority shrink_zones still had more to do? don't OOM, then */
- 	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
- 		return 1;
-
+-- 
+Ben Hutchings
+It is impossible to make anything foolproof because fools are so ingenious.
 
