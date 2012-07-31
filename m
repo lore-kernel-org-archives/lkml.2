@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab2GaFGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:06:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48531 "EHLO
+	id S1755848Ab2GaFGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:06:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48515 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755296Ab2GaEuF (ORCPT
+	by vger.kernel.org with ESMTP id S1755301Ab2GaEuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:05 -0400
-Message-Id: <20120731044313.336825152@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:04 -0400
+Message-Id: <20120731044313.980351051@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:23 +0100
+Date: Tue, 31 Jul 2012 05:43:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [ 13/73] mm: test PageSwapBacked in lumpy reclaim
+        alan@lxorguk.ukuu.org.uk, Mark Rustad <mark.d.rustad@intel.com>,
+        Marcus Dennis <marcusx.e.dennis@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 17/73] [SCSI] Fix NULL dereferences in scsi_cmd_to_driver
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,41 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit 043bcbe5ec51e0478ef2b44acef17193e01d7f70 upstream.
+commit 222a806af830fda34ad1f6bc991cd226916de060 upstream.
 
-Stable note: Not tracked in Bugzilla. There were reports of shared
-	mapped pages being unfairly reclaimed in comparison to older kernels.
-	This is being addressed over time. Even though the subject
-	refers to lumpy reclaim, it impacts compaction as well.
+Avoid crashing if the private_data pointer happens to be NULL. This has
+been seen sometimes when a host reset happens, notably when there are
+many LUNs:
 
-Lumpy reclaim does well to stop at a PageAnon when there's no swap, but
-better is to stop at any PageSwapBacked, which includes shmem/tmpfs too.
+host3: Assigned Port ID 0c1601
+scsi host3: libfc: Host reset succeeded on port (0c1601)
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000350
+IP: [<ffffffff81352bb8>] scsi_send_eh_cmnd+0x58/0x3a0
+<snip>
+Process scsi_eh_3 (pid: 4144, threadinfo ffff88030920c000, task ffff880326b160c0)
+Stack:
+ 000000010372e6ba 0000000000000282 000027100920dca0 ffffffffa0038ee0
+ 0000000000000000 0000000000030003 ffff88030920dc80 ffff88030920dc80
+ 00000002000e0000 0000000a00004000 ffff8803242f7760 ffff88031326ed80
+Call Trace:
+ [<ffffffff8105b590>] ? lock_timer_base+0x70/0x70
+ [<ffffffff81352fbe>] scsi_eh_tur+0x3e/0xc0
+ [<ffffffff81353a36>] scsi_eh_test_devices+0x76/0x170
+ [<ffffffff81354125>] scsi_eh_host_reset+0x85/0x160
+ [<ffffffff81354291>] scsi_eh_ready_devs+0x91/0x110
+ [<ffffffff813543fd>] scsi_unjam_host+0xed/0x1f0
+ [<ffffffff813546a8>] scsi_error_handler+0x1a8/0x200
+ [<ffffffff81354500>] ? scsi_unjam_host+0x1f0/0x1f0
+ [<ffffffff8106ec3e>] kthread+0x9e/0xb0
+ [<ffffffff81509264>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8106eba0>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff81509260>] ? gs_change+0x13/0x13
+Code: 25 28 00 00 00 48 89 45 c8 31 c0 48 8b 87 80 00 00 00 48 8d b5 60 ff ff ff 89 d1 48 89 fb 41 89 d6 4c 89 fa 48 8b 80 b8 00 00 00
+ <48> 8b 80 50 03 00 00 48 8b 00 48 89 85 38 ff ff ff 48 8b 07 4c
+RIP  [<ffffffff81352bb8>] scsi_send_eh_cmnd+0x58/0x3a0
+ RSP <ffff88030920dc50>
+CR2: 0000000000000350
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Tested-by: Marcus Dennis <marcusx.e.dennis@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+[bwh: Backported to 3.2: adjust filename, context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b935e6f..8a4e767 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1166,7 +1166,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 			 * anon page which don't already have a swap slot is
- 			 * pointless.
- 			 */
--			if (nr_swap_pages <= 0 && PageAnon(cursor_page) &&
-+			if (nr_swap_pages <= 0 && PageSwapBacked(cursor_page) &&
- 			    !PageSwapCache(cursor_page))
- 				break;
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -785,7 +785,13 @@ static void scsi_done(struct scsi_cmnd *
+ /* Move this to a header if it becomes more generally useful */
+ static struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
+ {
+-	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
++	struct scsi_driver **sdp;
++
++	sdp = (struct scsi_driver **)cmd->request->rq_disk->private_data;
++	if (!sdp)
++		return NULL;
++
++	return *sdp;
+ }
  
+ /**
 
 
