@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab2GaS6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 14:58:40 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:41370 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab2GaS6g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 14:58:36 -0400
-Message-ID: <50182ACF.6070704@gmail.com>
-Date: Tue, 31 Jul 2012 14:58:23 -0400
-From: Salar Ali Mumtaz <salaarali@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1756393Ab2GaTAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:00:40 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:38359 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753083Ab2GaTAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 15:00:38 -0400
+X-IronPort-AV: E=Sophos;i="4.77,688,1336374000"; 
+   d="scan'208";a="670560888"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Layton <jlayton@redhat.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the nfs tree
+Thread-Topic: linux-next: manual merge of the akpm tree with the nfs tree
+Thread-Index: AQHNbtR4a/OwVO3zl0Gi+NGAKMKYSZdDp5EAgABEHACAAAvMAIAABFUAgAAlywCAAA8bAIAABIGA
+Date: Tue, 31 Jul 2012 19:00:35 +0000
+Message-ID: <1343761233.5528.27.camel@lade.trondhjem.org>
+References: <20120731142441.0d01100f9d050ec6e479c923@canb.auug.org.au>
+	 <20120731103336.GN612@suse.de> <1343745442.519.20.camel@lade.trondhjem.org>
+	 <20120731151936.GR612@suse.de>
+	 <1343748906.5528.17.camel@lade.trondhjem.org>
+	 <20120731175022.GU612@suse.de>
+	 <20120731114426.029644e0.akpm@linux-foundation.org>
+In-Reply-To: <20120731114426.029644e0.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <D19DA7C956281D4096902162AA82FE3B@tahoe.netapp.com>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] xconfig: Display dependency values in debug_info
-References: <1343256982-11421-1-git-send-email-salaarali@gmail.com> <50107EB7.8000009@xenotime.net> <CA+jpPM=nrbpDJpaka6xAp4dbEOQjJrtwQWtUXwi_gGS9b4yK-A@mail.gmail.com> <50117812.5080302@xenotime.net>
-In-Reply-To: <50117812.5080302@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6VJ0j5m012898
 
-Now the debug_info only shows y/n/m values.
+On Tue, 2012-07-31 at 11:44 -0700, Andrew Morton wrote:
+> On Tue, 31 Jul 2012 18:50:22 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > Stephen Rothwell reported a merge conflict between a MM patch "nfs:
+> > enable swap on NFS" and an NFS patch "nfs: skip commit in
+> > releasepage if we're freeing memory for fs-related reasons".
+> 
+> grumble.  This happened becase new stuff was added to -next right in
+> the middle of the merge window.  Please don't dothat.
+> 
+Normally, I would have added it when Jeff asked me to, but I've been on
+vacation for 2 weeks, and this is a bugfix that needs to go into
+stable...
 
-Signed-off-by: Salar Ali Mumtaz <salaarali@gmail.com>
----
- scripts/kconfig/qconf.cc |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
-
-diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
-index df274fe..b6a7cc5 100644
---- a/scripts/kconfig/qconf.cc
-+++ b/scripts/kconfig/qconf.cc
-@@ -1073,8 +1073,10 @@ QString ConfigInfoView::debug_info(struct symbol *sym)
- 		debug += " (choice)";
- 	debug += "<br>";
- 	if (sym->rev_dep.expr) {
--		debug += "reverse dep: ";
-+		debug += "reverse dep: (";
- 		expr_print(sym->rev_dep.expr, expr_print_help, &debug, E_NONE);
-+		debug += " )  =";
-+		debug += print_filter(sym_get_string_value(sym));
- 		debug += "<br>";
- 	}
- 	for (struct property *prop = sym->prop; prop; prop = prop->next) {
-@@ -1108,7 +1110,10 @@ QString ConfigInfoView::debug_info(struct symbol *sym)
- 		}
- 		if (prop->visible.expr) {
- 			debug += "&nbsp;&nbsp;&nbsp;&nbsp;dep: ";
-+			debug += " ( ";
- 			expr_print(prop->visible.expr, expr_print_help, &debug, E_NONE);
-+			debug += " )  =";
-+			debug += print_filter(sym_get_string_value(sym));
- 			debug += "<br>";
- 		}
- 	}
-@@ -1152,11 +1157,18 @@ void ConfigInfoView::expr_print_help(void *data, struct symbol *sym, const char
- {
- 	QString* text = reinterpret_cast<QString*>(data);
- 	QString str2 = print_filter(str);
-+	QString value;
- 
- 	if (sym && sym->name && !(sym->flags & SYMBOL_CONST)) {
-+		value = print_filter(sym_get_string_value(sym));
-+
- 		*text += QString().sprintf("<a href=\"s%p\">", sym);
- 		*text += str2;
- 		*text += "</a>";
-+		*text += "<b>   ";
-+		if(value == "y" || value == "m" || value == "n")
-+			*text += print_filter(sym_get_string_value(sym));
-+		*text += "</b>";
- 	} else
- 		*text += str2;
- }
+Trond
 -- 
-1.7.5.4
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
