@@ -1,343 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab2GaTrC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:47:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37345 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab2GaTon (ORCPT
+	id S1756374Ab2GaTrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:47:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58934 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab2GaTon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 15:44:43 -0400
-Message-Id: <20120731192808.647625186@chello.nl>
+Message-Id: <20120731192808.397264606@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 31 Jul 2012 21:12:09 +0200
+Date: Tue, 31 Jul 2012 21:12:05 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 05/19] mm, mpol: Create special PROT_NONE infrastructure
+Subject: [PATCH 01/19] task_work: Remove dependency on sched.h
 References: <20120731191204.540691987@chello.nl>
-Content-Disposition: inline; filename=numa-prot-none.patch
+Content-Disposition: inline; filename=decouple-sched-task_work.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to facilitate a lazy -- fault driven -- migration of pages,
-create a special transient PROT_NONE variant, we can then use the
-'spurious' protection faults to drive our migrations from.
+Remove the need for sched.h from task_work.h so that we can use struct
+task_work in struct task_struct in a later patch.
 
-Pages that already had an effective PROT_NONE mapping will not
-be detected to generate these 'spuriuos' faults for the simple reason
-that we cannot distinguish them on their protection bits, see
-pte_prot_none.
-
-This isn't a problem since PROT_NONE (and possible PROT_WRITE with
-dirty tracking) aren't used or are rare enough for us to not care
-about their placement.
-
-Suggested-by: Rik van Riel <riel@redhat.com>
-Cc: Paul Turner <pjt@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/huge_mm.h   |    3 +
- include/linux/mempolicy.h |    4 +-
- include/linux/mm.h        |   12 ++++++
- mm/huge_memory.c          |   21 +++++++++++
- mm/memory.c               |   86 ++++++++++++++++++++++++++++++++++++++++++----
- mm/mempolicy.c            |   24 ++++++++++++
- mm/mprotect.c             |   24 +++++++++---
- 7 files changed, 159 insertions(+), 15 deletions(-)
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -11,6 +11,9 @@ extern int copy_huge_pmd(struct mm_struc
- extern int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			       unsigned long address, pmd_t *pmd,
- 			       pmd_t orig_pmd);
-+extern void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+				  unsigned long address, pmd_t *pmd,
-+				  unsigned int flags, pmd_t orig_pmd);
- extern pgtable_t get_pmd_huge_pte(struct mm_struct *mm);
- extern struct page *follow_trans_huge_pmd(struct mm_struct *mm,
- 					  unsigned long addr,
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -254,7 +254,9 @@ static inline int vma_migratable(struct 
- 	return 1;
- }
+ include/linux/task_work.h |    7 -------
+ kernel/exit.c             |    5 ++++-
+ 2 files changed, 4 insertions(+), 8 deletions(-)
+--- a/include/linux/task_work.h
++++ b/include/linux/task_work.h
+@@ -2,7 +2,6 @@
+ #define _LINUX_TASK_WORK_H
  
--#else
-+extern void lazy_migrate_process(struct mm_struct *mm);
-+
-+#else /* CONFIG_NUMA */
+ #include <linux/list.h>
+-#include <linux/sched.h>
  
- struct mempolicy {};
+ typedef void (*task_work_func_t)(struct callback_head *);
  
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1046,6 +1046,9 @@ extern unsigned long move_page_tables(st
- extern unsigned long do_mremap(unsigned long addr,
- 			       unsigned long old_len, unsigned long new_len,
- 			       unsigned long flags, unsigned long new_addr);
-+extern void change_protection(struct vm_area_struct *vma, unsigned long start,
-+			      unsigned long end, pgprot_t newprot,
-+			      int dirty_accountable);
- extern int mprotect_fixup(struct vm_area_struct *vma,
- 			  struct vm_area_struct **pprev, unsigned long start,
- 			  unsigned long end, unsigned long newflags);
-@@ -1495,6 +1498,15 @@ static inline pgprot_t vm_get_page_prot(
- }
- #endif
+@@ -16,10 +15,4 @@ int task_work_add(struct task_struct *ta
+ struct callback_head *task_work_cancel(struct task_struct *, task_work_func_t);
+ void task_work_run(void);
  
-+static inline pgprot_t vma_prot_none(struct vm_area_struct *vma)
-+{
-+	/*
-+	 * obtain PROT_NONE by removing READ|WRITE|EXEC privs
-+	 */
-+	vm_flags_t vmflags = vma->vm_flags & ~(VM_READ|VM_WRITE|VM_EXEC);
-+	return pgprot_modify(vma->vm_page_prot, vm_get_page_prot(vmflags));
-+}
+-static inline void exit_task_work(struct task_struct *task)
+-{
+-	if (unlikely(task->task_works))
+-		task_work_run();
+-}
+-
+ #endif	/* _LINUX_TASK_WORK_H */
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -992,7 +992,10 @@ void do_exit(long code)
+ 	exit_shm(tsk);
+ 	exit_files(tsk);
+ 	exit_fs(tsk);
+-	exit_task_work(tsk);
 +
- struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
- int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
- 			unsigned long pfn, unsigned long size, pgprot_t);
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -750,6 +750,27 @@ int do_huge_pmd_anonymous_page(struct mm
- 	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
- }
++	if (unlikely(tsk->task_works))
++		task_work_run();
++
+ 	check_stack_usage();
+ 	exit_thread();
  
-+void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+			   unsigned long address, pmd_t *pmd,
-+			   unsigned int flags, pmd_t entry)
-+{
-+	unsigned long haddr = address & HPAGE_PMD_MASK;
-+
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(*pmd, entry)))
-+		goto out_unlock;
-+
-+	/* do fancy stuff */
-+
-+	/* change back to regular protection */
-+	entry = pmd_modify(entry, vma->vm_page_prot);
-+	if (pmdp_set_access_flags(vma, haddr, pmd, entry, 1))
-+		update_mmu_cache(vma, address, entry);
-+
-+out_unlock:
-+	spin_unlock(&mm->page_table_lock);
-+}
-+
- int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		  pmd_t *dst_pmd, pmd_t *src_pmd, unsigned long addr,
- 		  struct vm_area_struct *vma)
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3415,6 +3415,71 @@ static int do_nonlinear_fault(struct mm_
- 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
- }
- 
-+static bool pte_prot_none(struct vm_area_struct *vma, pte_t pte)
-+{
-+	/*
-+	 * If we have the normal vma->vm_page_prot protections we're not a
-+	 * 'special' PROT_NONE page.
-+	 *
-+	 * This means we cannot get 'special' PROT_NONE faults from genuine
-+	 * PROT_NONE maps, nor from PROT_WRITE file maps that do dirty
-+	 * tracking.
-+	 *
-+	 * Neither case is really interesting for our current use though so we
-+	 * don't care.
-+	 */
-+	if (pte_same(pte, pte_modify(pte, vma->vm_page_prot)))
-+		return false;
-+
-+	return pte_same(pte, pte_modify(pte, vma_prot_none(vma)));
-+}
-+
-+static bool pmd_prot_none(struct vm_area_struct *vma, pmd_t pmd)
-+{
-+	/*
-+	 * See pte_prot_none().
-+	 */
-+	if (pmd_same(pmd, pmd_modify(pmd, vma->vm_page_prot)))
-+		return false;
-+
-+	return pmd_same(pmd, pmd_modify(pmd, vma_prot_none(vma)));
-+}
-+
-+static int do_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+			unsigned long address, pte_t *ptep, pmd_t *pmd,
-+			unsigned int flags, pte_t entry)
-+{
-+	spinlock_t *ptl;
-+	int ret = 0;
-+
-+	if (!pte_unmap_same(mm, pmd, ptep, entry))
-+		goto out;
-+
-+	/*
-+	 * Do fancy stuff...
-+	 */
-+
-+	/*
-+	 * OK, nothing to do,.. change the protection back to what it
-+	 * ought to be.
-+	 */
-+	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
-+	if (unlikely(!pte_same(*ptep, entry)))
-+		goto unlock;
-+
-+	flush_cache_page(vma, address, pte_pfn(entry));
-+
-+	ptep_modify_prot_start(mm, address, ptep);
-+	entry = pte_modify(entry, vma->vm_page_prot);
-+	ptep_modify_prot_commit(mm, address, ptep, entry);
-+
-+	update_mmu_cache(vma, address, ptep);
-+unlock:
-+	pte_unmap_unlock(ptep, ptl);
-+out:
-+	return ret;
-+}
-+
- /*
-  * These routines also need to handle stuff like marking pages dirty
-  * and/or accessed for architectures that don't do it in hardware (most
-@@ -3453,6 +3518,9 @@ int handle_pte_fault(struct mm_struct *m
- 					pte, pmd, flags, entry);
- 	}
- 
-+	if (pte_prot_none(vma, entry))
-+		return do_prot_none(mm, vma, address, pte, pmd, flags, entry);
-+
- 	ptl = pte_lockptr(mm, pmd);
- 	spin_lock(ptl);
- 	if (unlikely(!pte_same(*pte, entry)))
-@@ -3517,13 +3585,16 @@ int handle_mm_fault(struct mm_struct *mm
- 							  pmd, flags);
- 	} else {
- 		pmd_t orig_pmd = *pmd;
--		int ret;
-+		int ret = 0;
- 
- 		barrier();
--		if (pmd_trans_huge(orig_pmd)) {
--			if (flags & FAULT_FLAG_WRITE &&
--			    !pmd_write(orig_pmd) &&
--			    !pmd_trans_splitting(orig_pmd)) {
-+		if (pmd_trans_huge(orig_pmd) && !pmd_trans_splitting(orig_pmd)) {
-+			if (pmd_prot_none(vma, orig_pmd)) {
-+				do_huge_pmd_prot_none(mm, vma, address, pmd,
-+						      flags, orig_pmd);
-+			}
-+
-+			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
- 				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
- 							  orig_pmd);
- 				/*
-@@ -3533,12 +3604,13 @@ int handle_mm_fault(struct mm_struct *mm
- 				 */
- 				if (unlikely(ret & VM_FAULT_OOM))
- 					goto retry;
--				return ret;
- 			}
--			return 0;
-+
-+			return ret;
- 		}
- 	}
- 
-+
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
- 	 * run pte_offset_map on the pmd, if an huge pmd could
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -565,6 +565,12 @@ static inline int check_pgd_range(struct
- 	return 0;
- }
- 
-+static void
-+change_prot_none(struct vm_area_struct *vma, unsigned long start, unsigned long end)
-+{
-+	change_protection(vma, start, end, vma_prot_none(vma), 0);
-+}
-+
- /*
-  * Check if all pages in a range are on a set of nodes.
-  * If pagelist != NULL then isolate pages from the LRU and
-@@ -1197,6 +1203,24 @@ static long do_mbind(unsigned long start
- 	return err;
- }
- 
-+static void lazy_migrate_vma(struct vm_area_struct *vma)
-+{
-+	if (!vma_migratable(vma))
-+		return;
-+
-+	change_prot_none(vma, vma->vm_start, vma->vm_end);
-+}
-+
-+void lazy_migrate_process(struct mm_struct *mm)
-+{
-+	struct vm_area_struct *vma;
-+
-+	down_read(&mm->mmap_sem);
-+	for (vma = mm->mmap; vma; vma = vma->vm_next)
-+		lazy_migrate_vma(vma);
-+	up_read(&mm->mmap_sem);
-+}
-+
- /*
-  * User space interface with variable sized bitmaps for nodelists.
-  */
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -119,7 +119,7 @@ static inline void change_pud_range(stru
- 	} while (pud++, addr = next, addr != end);
- }
- 
--static void change_protection(struct vm_area_struct *vma,
-+static void change_protection_range(struct vm_area_struct *vma,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
- {
-@@ -141,6 +141,20 @@ static void change_protection(struct vm_
- 	flush_tlb_range(vma, start, end);
- }
- 
-+void change_protection(struct vm_area_struct *vma, unsigned long start,
-+		       unsigned long end, pgprot_t newprot,
-+		       int dirty_accountable)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+
-+	mmu_notifier_invalidate_range_start(mm, start, end);
-+	if (is_vm_hugetlb_page(vma))
-+		hugetlb_change_protection(vma, start, end, newprot);
-+	else
-+		change_protection_range(vma, start, end, newprot, dirty_accountable);
-+	mmu_notifier_invalidate_range_end(mm, start, end);
-+}
-+
- int
- mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
- 	unsigned long start, unsigned long end, unsigned long newflags)
-@@ -213,12 +227,8 @@ mprotect_fixup(struct vm_area_struct *vm
- 		dirty_accountable = 1;
- 	}
- 
--	mmu_notifier_invalidate_range_start(mm, start, end);
--	if (is_vm_hugetlb_page(vma))
--		hugetlb_change_protection(vma, start, end, vma->vm_page_prot);
--	else
--		change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
--	mmu_notifier_invalidate_range_end(mm, start, end);
-+	change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
-+
- 	vm_stat_account(mm, oldflags, vma->vm_file, -nrpages);
- 	vm_stat_account(mm, newflags, vma->vm_file, nrpages);
- 	perf_event_mmap(vma);
 
 
