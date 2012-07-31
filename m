@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab2GaPl5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 11:41:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39203 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754555Ab2GaPlz (ORCPT
+	id S1755217Ab2GaPoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 11:44:20 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:33275 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054Ab2GaPoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 11:41:55 -0400
-Date: Tue, 31 Jul 2012 16:41:54 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: core: Add intermediate cast to uintptr_t
- before casting to pointer
-Message-ID: <20120731154153.GI4468@opensource.wolfsonmicro.com>
-References: <1343605633.11323.1.camel@phoenix>
- <20120730153309.GK4468@opensource.wolfsonmicro.com>
- <1343701316.7557.1.camel@phoenix>
+	Tue, 31 Jul 2012 11:44:18 -0400
+Message-ID: <5017FD3E.7090003@linux.vnet.ibm.com>
+Date: Tue, 31 Jul 2012 21:13:58 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1343701316.7557.1.camel@phoenix>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Colin Cross <ccross@android.com>
+CC: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] cpuidle: coupled: fix sleeping while atomic in cpu notifier
+References: <1343251216-24106-1-git-send-email-ccross@android.com>
+In-Reply-To: <1343251216-24106-1-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12073115-8878-0000-0000-00000372F614
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 10:21:56AM +0800, Axel Lin wrote:
-> 於 一，2012-07-30 於 16:33 +0100，Mark Brown 提到：
-> > On Mon, Jul 30, 2012 at 07:47:13AM +0800, Axel Lin wrote:
+On 07/26/2012 02:50 AM, Colin Cross wrote:
+> The cpu hotplug notifier gets called in both atomic and non-atomic
+> contexts, it is not always safe to lock a mutex.  Filter out all events
+> except the six necessary ones, which are all sleepable, before taking
+> the mutex.
+> 
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+>  drivers/cpuidle/coupled.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+> index 2c9bf26..c24dda0 100644
+> --- a/drivers/cpuidle/coupled.c
+> +++ b/drivers/cpuidle/coupled.c
+> @@ -678,6 +678,18 @@ static int cpuidle_coupled_cpu_notify(struct notifier_block *nb,
+>  	int cpu = (unsigned long)hcpu;
+>  	struct cpuidle_device *dev;
+> 
+> +	switch (action & ~CPU_TASKS_FROZEN) {
+> +	case CPU_UP_PREPARE:
+> +	case CPU_DOWN_PREPARE:
+> +	case CPU_ONLINE:
+> +	case CPU_DEAD:
+> +	case CPU_UP_CANCELED:
+> +	case CPU_DOWN_FAILED:
+> +		break;
+> +	default:
+> +		return NOTIFY_OK;
+> +	}
+> +
 
-> > >  		_notifier_call_chain(rdev, REGULATOR_EVENT_VOLTAGE_CHANGE,
-> > > -				     (void *)best_val);
-> > > +				     (void *)(uintptr_t)best_val);
+Instead, wouldn't it be better to have case statements for the
+2 cases that imply atomic context and return immediately?
 
-> > This also looks problematic, you should never need to cast a pointer to
-> > or from void.
+Something like:
+	switch (action & ~CPU_TASKS_FROZEN) {
+	case CPU_STARTING:
+	case CPU_DYING:
+		return NOTIFY_OK;
+	}
 
-> If I remove the cast to (void *), I got below build warning:
+Regards,
+Srivatsa S. Bhat
 
->   CC      drivers/regulator/core.o
-> drivers/regulator/core.c: In function '_regulator_do_set_voltage':
-> drivers/regulator/core.c:2183:10: warning: passing argument 3 of
-> '_notifier_call_chain' makes pointer from integer without a cast
-> [enabled by default]
-> drivers/regulator/core.c:94:13: note: expected 'void *' but argument is
-> of type 'long unsigned int'
+>  	mutex_lock(&cpuidle_lock);
+> 
+>  	dev = per_cpu(cpuidle_devices, cpu);
+> 
 
-So the above cast probably isn't right...  you shouldn't need a double
-cast here.
