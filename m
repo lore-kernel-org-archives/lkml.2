@@ -1,97 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab2GaOTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:19:36 -0400
-Received: from smtp-out-178.synserver.de ([212.40.185.178]:1062 "EHLO
-	smtp-out-178.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab2GaOTe (ORCPT
+	id S1754204Ab2GaOVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:21:55 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58221 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab2GaOVy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:19:34 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 18226
-Message-ID: <5017EA72.8030003@metafoo.de>
-Date: Tue, 31 Jul 2012 16:23:46 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
-MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com
-Subject: Re: [PATCH] drivers/iio/adc/at91_adc.c: use devm_ functions
-References: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr> <5017D148.6030006@metafoo.de> <alpine.DEB.2.02.1207311552440.1894@hadrien>
-In-Reply-To: <alpine.DEB.2.02.1207311552440.1894@hadrien>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jul 2012 10:21:54 -0400
+Subject: Re: [PATCH v8 7/7] powerpc/85xx: add support to JOG feature using cpufreq interface
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1342788159-27529-8-git-send-email-chenhui.zhao@freescale.com>
+Date: Tue, 31 Jul 2012 09:21:46 -0500
+Cc: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <EF2169E9-2F7B-4093-B87D-63E3D8121EB1@kernel.crashing.org>
+References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com> <1342788159-27529-8-git-send-email-chenhui.zhao@freescale.com>
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 03:54 PM, Julia Lawall wrote:
-> 
-> 
-> On Tue, 31 Jul 2012, Lars-Peter Clausen wrote:
-> 
->> Hi,
->>
->> On 07/31/2012 12:09 PM, Julia Lawall wrote:
->>> From: Julia Lawall <Julia.Lawall@lip6.fr>
->>> @@ -720,20 +698,14 @@ error_ret:
->>>  static int __devexit at91_adc_remove(struct platform_device *pdev)
->>>  {
->>>  	struct iio_dev *idev = platform_get_drvdata(pdev);
->>> -	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>>  	struct at91_adc_state *st = iio_priv(idev);
->>>
->>>  	iio_device_unregister(idev);
->>> [...]
->>> -	free_irq(st->irq, idev);
->>> [...]
->>>  	iio_device_free(idev);
->>
->> I think we have to be careful here. The interrupted is now freed after the
->> device has been freed, which means that it could trigger after the device
->> has been freed. And since we use the device in the interrupt handler we'll
->> get a use after free.
-> 
-> Perhaps the same would be true in the following code, from the file
-> drivers/edac/highbank_l2_edac.c:
-> 
->         res = devm_request_irq(&pdev->dev, drvdata->sb_irq,
->                                highbank_l2_err_handler,
->                                0, dev_name(&pdev->dev), dci);
->         if (res < 0)
->                 goto err;
-> 
->         dci->mod_name = dev_name(&pdev->dev);
->         dci->dev_name = dev_name(&pdev->dev);
-> 
->         if (edac_device_add_device(dci))
->                 goto err;
-> 
->         devres_close_group(&pdev->dev, NULL);
->         return 0;
-> err:
->     	devres_release_group(&pdev->dev, NULL);
->         edac_device_free_ctl_info(dci);
 
-Yes looks like this has the same issue.
+On Jul 20, 2012, at 7:42 AM, Zhao Chenhui wrote:
 
+> Some 85xx silicons like MPC8536 and P1022 have a JOG feature, which provides
+> a dynamic mechanism to lower or raise the CPU core clock at runtime.
 > 
-> Is devm_request_irq perhaps not a very good idea?
+> This patch adds the support to change CPU frequency using the standard
+> cpufreq interface. The ratio CORE to CCB can be 1:1(except MPC8536), 3:2,
+> 2:1, 5:2, 3:1, 7:2 and 4:1.
 > 
+> Two CPU cores on P1022 must not in the low power state during the frequency
+> transition. The driver uses a atomic counter to meet the requirement.
+> 
+> The jog mode frequency transition process on the MPC8536 is similar to
+> the deep sleep process. The driver need save the CPU state and restore
+> it after CPU warm reset.
+> 
+> Note:
+> * The I/O peripherals such as PCIe and eTSEC may lose packets during
+>   the jog mode frequency transition.
+> * The driver doesn't support MPC8536 Rev 1.0 due to a JOG erratum.
+>   Subsequent revisions of MPC8536 have corrected the erratum.
+> 
+> Signed-off-by: Dave Liu <daveliu@freescale.com>
+> Signed-off-by: Li Yang <leoli@freescale.com>
+> Signed-off-by: Jerry Huang <Chang-Ming.Huang@freescale.com>
+> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> CC: Scott Wood <scottwood@freescale.com>
+> ---
+> arch/powerpc/platforms/85xx/Makefile      |    1 +
+> arch/powerpc/platforms/85xx/cpufreq-jog.c |  388 +++++++++++++++++++++++++++++
+> arch/powerpc/platforms/Kconfig            |   11 +
+> arch/powerpc/sysdev/fsl_pmc.c             |    3 +
+> arch/powerpc/sysdev/fsl_soc.h             |    2 +
+> include/linux/cpu.h                       |    4 +
+> 6 files changed, 409 insertions(+), 0 deletions(-)
+> create mode 100644 arch/powerpc/platforms/85xx/cpufreq-jog.c
 
-devm_request_irq has to be used carefully. It is ok to use it if the objects
-which are accessed in the interrupt handler are also devres managed. devres
-will free objects in the reverse order of which they are allocated.
+[snip]
 
-E.g. if you do
+> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+> index 2e9b9eb..c1ba260 100644
+> --- a/include/linux/cpu.h
+> +++ b/include/linux/cpu.h
+> @@ -145,6 +145,8 @@ void notify_cpu_starting(unsigned int cpu);
+> extern void cpu_maps_update_begin(void);
+> extern void cpu_maps_update_done(void);
+> 
+> +extern void cpu_hotplug_disable_before_freeze(void);
+> +extern void cpu_hotplug_enable_after_thaw(void);
+> #else	/* CONFIG_SMP */
+> 
+> #define cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+> @@ -166,6 +168,8 @@ static inline void cpu_maps_update_done(void)
+> {
+> }
+> 
+> +static inline void cpu_hotplug_disable_before_freeze(void)	{}
+> +static inline void cpu_hotplug_enable_after_thaw(void)	{}
+> #endif /* CONFIG_SMP */
+> extern struct bus_type cpu_subsys;
 
-obj = dev_kzalloc(...);
-...
-devm_request_irq(..., obj);
+Can you pull this change into a separate patch.  I want an ACK by Rafael J. Wysocki on it.
 
-it is save to use, because 'obj' will be freed after the IRQ has been freed.
-
-- Lars
+- k
