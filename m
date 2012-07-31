@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab2GaGFk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:05:40 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47325 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754832Ab2GaGFj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:05:39 -0400
-Date: Tue, 31 Jul 2012 09:05:36 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: David Rientjes <rientjes@google.com>
-cc: shuah.khan@hp.com, cl@linux.com, glommer@parallels.com, js1304@gmail.com,
-        shuahkhan@gmail.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-In-Reply-To: <alpine.DEB.2.00.1207301904520.24929@chino.kir.corp.google.com>
-Message-ID: <alpine.LFD.2.02.1207310904370.2380@tux.localdomain>
-References: <1342221125.17464.8.camel@lorien2> <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com> <alpine.DEB.2.00.1207301255320.24196@chino.kir.corp.google.com> <CAOJsxLHw8G0ChnOeBv1nNr3tqNPPjdnkY=RStyo3rRqC1bdDAA@mail.gmail.com>
- <alpine.DEB.2.00.1207301904520.24929@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1755448Ab2GaGIH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:08:07 -0400
+Received: from linux-sh.org ([111.68.239.195]:49803 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755301Ab2GaGIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 02:08:05 -0400
+Date: Tue, 31 Jul 2012 15:07:55 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-sh@vger.kernel.org, "Koul, Vinod" <vinod.koul@intel.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] serial: sh-sci: fix compilation breakage (3.6)
+Message-ID: <20120731060754.GB15380@linux-sh.org>
+References: <Pine.LNX.4.64.1207302114440.28003@axis700.grange>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1207302114440.28003@axis700.grange>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jul 2012, David Rientjes wrote:
-> So much for compromise, I thought we had agreed that at least some of the 
-> checks for !name, in_interrupt() or bad size values should be moved out 
-> from under the #ifdef CONFIG_DEBUG_VM, but this wasn't done.  This 
-> discussion would be irrelevent if we actually did what we talked about.
-
-I didn't want to change the checks at the last minute and invalidate 
-testing in linux-next but I'm more than happy to merge such a patch when 
-the merge window closes.
-
-			Pekka
+On Mon, Jul 30, 2012 at 09:28:18PM +0200, Guennadi Liakhovetski wrote:
+> Hi all
+> 
+> as has been reported in this
+> 
+> http://thread.gmane.org/gmane.linux.kernel/1294256/focus=16001
+> 
+> thread, currently sh-sci doesn't comiple in the mainline and in -next if 
+> CONFIG_SERIAL_SH_SCI_DMA is enabled. This patch series fixes this 
+> breakage.
+> 
+Looks alright to me. Vinod, how do you want to handle this? I can roll
+both of these patches in to my tree with your Acked-by, or I can provide
+you with mine for the sh-sci bits if you want to take it via yours. I'm
+planning on sending my next round of updates to Linus in the next couple
+of days.
