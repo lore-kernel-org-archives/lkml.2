@@ -1,348 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab2GaTsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:48:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37343 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab2GaTon (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 15:44:43 -0400
-Message-Id: <20120731192809.428855038@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Tue, 31 Jul 2012 21:12:22 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, Lee.Schermerhorn@hp.com
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 18/19] sched, numa: Per task memory placement for big processes
-References: <20120731191204.540691987@chello.nl>
-Content-Disposition: inline; filename=numa-3.patch
+	id S1756012Ab2GaT4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:56:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752271Ab2GaT4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 15:56:33 -0400
+Message-ID: <50183865.9090700@redhat.com>
+Date: Tue, 31 Jul 2012 16:56:21 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-media <linux-media@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: Re: linux-next: Tree for July 31 (media/radio-tea5777)
+References: <20120731152614.de6ebe9e0d4b8fc6645b793a@canb.auug.org.au> <50181451.5040202@xenotime.net>
+In-Reply-To: <50181451.5040202@xenotime.net>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement a per-task memory placement scheme for 'big' tasks (as per
-the last patch). It relies on a regular PROT_NONE 'migration' fault to
-scan the memory space of the procress and uses a two stage migration
-scheme to reduce the invluence of unlikely usage relations.
+Em 31-07-2012 14:22, Randy Dunlap escreveu:
+> drivers/built-in.o: In function `radio_tea5777_set_freq':
+> radio-tea5777.c:(.text+0x4d8704): undefined reference to `__udivdi3'
+> 
+The patch below should fix it.
 
-It relies on the assumption that the compute part is tied to a
-paticular task and builds a task<->page relation set to model the
-compute<->data relation.
+Thanks for reporting it!
 
-Probability says that the task faulting on a page after we protect it,
-is most likely to be the task that uses that page most.
+Regards,
+Mauro
 
-To decrease the likelyhood of acting on a false relation, we only
-migrate a page when two consecutive samples are from the same task.
+[media] radio-tea5777: use library for 64bits div
 
-I'm still not entirely convinced this scheme is sound, esp. for things
-like virtualization and n:m threading solutions in general the
-compute<->task relation is fundamentally untrue.
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-NOTES:
- - we don't actually sample the task, but the task's home-node as a
-   migration target, so we're effectively building home-node<->page
-   relations not task<->page relations.
+drivers/built-in.o: In function `radio_tea5777_set_freq':
+radio-tea5777.c:(.text+0x4d8704): undefined reference to `__udivdi3'
 
- - we migrate to the task's home-node, not the node the task is
-   currently running on, since the home-node is the long term target
-   for the task to run on, irrespective of whatever node it might
-   temporarily run on.
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-Suggested-by: Rik van Riel <riel@redhat.com>
-Cc: Paul Turner <pjt@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- include/linux/mempolicy.h |    6 ++--
- include/linux/mm_types.h  |    6 ++++
- kernel/sched/fair.c       |   67 ++++++++++++++++++++++++++++++++++------------
- kernel/sched/features.h   |    1 
- mm/huge_memory.c          |    3 +-
- mm/memory.c               |    2 -
- mm/mempolicy.c            |   39 +++++++++++++++++++++++++-
- 7 files changed, 101 insertions(+), 23 deletions(-)
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -69,6 +69,7 @@ enum mpol_rebind_step {
- #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
- #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
- #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
-+#define MPOL_F_HOME	(1 << 4) /* this is the home-node policy */
+diff --git a/drivers/media/radio/radio-tea5777.c b/drivers/media/radio/radio-tea5777.c
+index 3e12179..5bc9fa6 100644
+--- a/drivers/media/radio/radio-tea5777.c
++++ b/drivers/media/radio/radio-tea5777.c
+@@ -33,6 +33,7 @@
+ #include <media/v4l2-fh.h>
+ #include <media/v4l2-ioctl.h>
+ #include <media/v4l2-event.h>
++#include <asm/div64.h>
+ #include "radio-tea5777.h"
  
- #ifdef __KERNEL__
+ MODULE_AUTHOR("Hans de Goede <perex@perex.cz>");
+@@ -158,10 +159,11 @@ static int radio_tea5777_set_freq(struct radio_tea5777 *tea)
+ 	int res;
  
-@@ -263,7 +264,8 @@ static inline int vma_migratable(struct 
- 	return 1;
- }
+ 	freq = clamp_t(u32, tea->freq,
+-		       TEA5777_FM_RANGELOW, TEA5777_FM_RANGEHIGH);
+-	freq = (freq + 8) / 16; /* to kHz */
++		       TEA5777_FM_RANGELOW, TEA5777_FM_RANGEHIGH) + 8;
++	do_div(freq, 16); /* to kHz */
  
--extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
-+extern int mpol_misplaced(struct page *, struct vm_area_struct *,
-+			  unsigned long, int);
+-	freq = (freq - TEA5777_FM_IF) / TEA5777_FM_FREQ_STEP;
++	freq -= TEA5777_FM_IF;
++	do_div(freq, TEA5777_FM_FREQ_STEP);
  
- extern void lazy_migrate_process(struct mm_struct *mm);
- 
-@@ -393,7 +395,7 @@ static inline int mpol_to_str(char *buff
- }
- 
- static inline int mpol_misplaced(struct page *page, struct vm_area_struct *vma,
--				 unsigned long address)
-+				 unsigned long address, int multi)
- {
- 	return -1; /* no node preference */
- }
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -160,6 +160,12 @@ struct page {
- 	 */
- 	void *shadow;
- #endif
-+#ifdef CONFIG_NUMA
-+	/*
-+	 * XXX fold this into flags for 64bit or so...
-+	 */
-+	int nid_last;
-+#endif
- }
- /*
-  * The struct page can be forced to be double word aligned so that atomic ops
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -785,6 +785,16 @@ update_stats_curr_start(struct cfs_rq *c
-  * Tasks start out with their home-node unset (-1) this effectively means
-  * they act !NUMA until we've established the task is busy enough to bother
-  * with placement.
-+ *
-+ * Once we start doing NUMA placement there's two modes, 'small' process-wide
-+ * and 'big' per-task. For the small mode we have a process-wide home node
-+ * and lazily mirgrate all memory only when this home-node changes.
-+ *
-+ * For big mode we keep a home-node per task and use periodic fault scans
-+ * to try and estalish a task<->page relation. This assumes the task<->page
-+ * relation is a compute<->data relation, this is false for things like virt.
-+ * and n:m threading solutions but its the best we can do given the
-+ * information we have.
-  */
- 
- static unsigned long task_h_load(struct task_struct *p);
-@@ -796,6 +806,7 @@ static void account_offnode_enqueue(stru
- 	rq->offnode_weight += p->numa_contrib;
- 	rq->offnode_running++;
- }
-+
- static void account_offnode_dequeue(struct rq *rq, struct task_struct *p)
- {
- 	rq->offnode_weight -= p->numa_contrib;
-@@ -818,6 +829,9 @@ static bool task_numa_big(struct task_st
- 	u64 runtime = 0;
- 	int weight = 0;
- 
-+	if (sched_feat(NUMA_FORCE_BIG))
-+		return true;
-+
- 	rcu_read_lock();
- 	t = p;
- 	do {
-@@ -851,7 +865,7 @@ void task_numa_work(struct callback_head
- 	unsigned long migrate, next_scan, now = jiffies;
- 	struct task_struct *t, *p = current;
- 	int node = p->node_last;
--	int big;
-+	int big = p->mm->numa_big;
- 
- 	WARN_ON_ONCE(p != container_of(work, struct task_struct, rcu));
- 
-@@ -862,7 +876,7 @@ void task_numa_work(struct callback_head
- 		return;
- 
- 	/*
--	 * Enforce maximal migration frequency..
-+	 * Enforce maximal scan/migration frequency..
- 	 */
- 	migrate = p->mm->numa_next_scan;
- 	if (time_before(now, migrate))
-@@ -872,20 +886,34 @@ void task_numa_work(struct callback_head
- 	if (cmpxchg(&p->mm->numa_next_scan, migrate, next_scan) != migrate)
- 		return;
- 
--	/*
--	 * If this task is too big, we bail on NUMA placement of the process.
--	 */
--	big = p->mm->numa_big = task_numa_big(p);
--	if (big)
--		node = -1;
-+	if (!big)
-+		big = p->mm->numa_big = task_numa_big(p);
- 
--	rcu_read_lock();
--	t = p;
--	do {
--		sched_setnode(t, node);
--	} while ((t = next_thread(p)) != p);
--	rcu_read_unlock();
-+	if (big) {
-+		/*
-+		 * For 'big' processes we do per-thread home-node, combined
-+		 * with periodic fault scans.
-+		 */
-+		if (p->node != node)
-+			sched_setnode(p, node);
-+	} else {
-+		/*
-+		 * For 'small' processes we keep the entire process on a
-+		 * node and migrate all memory once.
-+		 */
-+		rcu_read_lock();
-+		t = p;
-+		do {
-+			sched_setnode(t, node);
-+		} while ((t = next_thread(p)) != p);
-+		rcu_read_unlock();
-+	}
- 
-+	/*
-+	 * Trigger fault driven migration, small processes do direct
-+	 * lazy migration, big processes do gradual task<->page relations.
-+	 * See mpol_misplaced().
-+	 */
- 	lazy_migrate_process(p->mm);
- }
- 
-@@ -902,9 +930,8 @@ void task_tick_numa(struct rq *rq, struc
- 
- 	/*
- 	 * We don't care about NUMA placement if we don't have memory.
--	 * We also bail on placement if we're too big.
- 	 */
--	if (!curr->mm || curr->mm->numa_big)
-+	if (!curr->mm)
- 		return;
- 
- 	/*
-@@ -929,7 +956,13 @@ void task_tick_numa(struct rq *rq, struc
- 		curr->node_stamp = now;
- 		node = numa_node_id();
- 
--		if (curr->node_last == node && curr->node != node) {
-+		/*
-+		 * 'small' tasks only migrate once when their process home-node
-+		 * changes, 'big' tasks need continuous 'migration' faults to
-+		 * keep the task<->page map accurate.
-+		 */
-+		if (curr->node_last == node &&
-+		    (curr->node != node || curr->mm->numa_big)) {
- 			/*
- 			 * We can re-use curr->rcu because we checked curr->mm
- 			 * != NULL so release_task()->call_rcu() was not called
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -72,6 +72,7 @@ SCHED_FEAT(LB_MIN, false)
- 
- #ifdef CONFIG_NUMA
- SCHED_FEAT(NUMA,           true)
-+SCHED_FEAT(NUMA_FORCE_BIG, false)
- SCHED_FEAT(NUMA_HOT,       true)
- SCHED_FEAT(NUMA_BIAS,      true)
- SCHED_FEAT(NUMA_PULL,      true)
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -780,7 +780,7 @@ void do_huge_pmd_prot_none(struct mm_str
- 	 * XXX should we serialize against split_huge_page ?
- 	 */
- 
--	node = mpol_misplaced(page, vma, haddr);
-+	node = mpol_misplaced(page, vma, haddr, mm->numa_big);
- 	if (node == -1)
- 		goto do_fixup;
- 
-@@ -1366,6 +1366,7 @@ static void __split_huge_page_refcount(s
- 		page_tail->mapping = page->mapping;
- 
- 		page_tail->index = page->index + i;
-+		page_tail->nid_last = page->nid_last;
- 
- 		BUG_ON(!PageAnon(page_tail));
- 		BUG_ON(!PageUptodate(page_tail));
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3471,7 +3471,7 @@ static int do_prot_none(struct mm_struct
- 	get_page(page);
- 	pte_unmap_unlock(ptep, ptl);
- 
--	node = mpol_misplaced(page, vma, address);
-+	node = mpol_misplaced(page, vma, address, mm->numa_big);
- 	if (node == -1)
- 		goto do_fixup;
- 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2168,6 +2168,7 @@ mpol_shared_policy_lookup(struct shared_
-  * @page   - page to be checked
-  * @vma    - vm area where page mapped
-  * @addr   - virtual address where page mapped
-+ * @multi  - use multi-stage node binding
-  *
-  * Lookup current policy node id for vma,addr and "compare to" page's
-  * node id.
-@@ -2179,7 +2180,8 @@ mpol_shared_policy_lookup(struct shared_
-  * Policy determination "mimics" alloc_page_vma().
-  * Called from fault path where we know the vma and faulting address.
-  */
--int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr)
-+int mpol_misplaced(struct page *page, struct vm_area_struct *vma,
-+		   unsigned long addr, int multi)
- {
- 	struct mempolicy *pol;
- 	struct zone *zone;
-@@ -2230,6 +2232,39 @@ int mpol_misplaced(struct page *page, st
- 	default:
- 		BUG();
- 	}
-+
-+	/*
-+	 * Multi-stage node selection is used in conjunction with a periodic
-+	 * migration fault to build a temporal task<->page relation. By
-+	 * using a two-stage filter we remove short/unlikely relations.
-+	 *
-+	 * Using P(p) ~ n_p / n_t as per frequentist probability, we can
-+	 * equate a task's usage of a particular page (n_p) per total usage
-+	 * of this page (n_t) (in a given time-span) to a probability.
-+	 *
-+	 * Our periodic faults will then sample this probability and getting
-+	 * the same result twice in a row, given these samples are fully
-+	 * independent, is then given by P(n)^2, provided our sample period
-+	 * is sufficiently short compared to the usage pattern.
-+	 *
-+	 * This quadric squishes small probabilities, making it less likely
-+	 * we act on an unlikely task<->page relation.
-+	 *
-+	 * NOTE: effectively we're using task-home-node<->page-node relations
-+	 * since those are the only thing we can affect.
-+	 *
-+	 * NOTE: we're using task-home-node as opposed to the current node
-+	 * the task might be running on, since the task-home-node is the
-+	 * long-term node of this task, further reducing noise. Also see
-+	 * task_tick_numa().
-+	 */
-+	if (multi && (pol->flags & MPOL_F_HOME)) {
-+		if (page->nid_last != polnid) {
-+			page->nid_last = polnid;
-+			goto out;
-+		}
-+	}
-+
- 	if (curnid != polnid)
- 		ret = polnid;
- out:
-@@ -2421,7 +2456,7 @@ void __init numa_policy_init(void)
- 		preferred_node_policy[nid] = (struct mempolicy) {
- 			.refcnt = ATOMIC_INIT(1),
- 			.mode = MPOL_PREFERRED,
--			.flags = MPOL_F_MOF,
-+			.flags = MPOL_F_MOF | MPOL_F_HOME,
- 			.v = { .preferred_node = nid, },
- 		};
- 	}
-
+ 	tea->write_reg &= ~(TEA5777_W_FM_PLL_MASK | TEA5777_W_FM_FREF_MASK);
+ 	tea->write_reg |= freq << TEA5777_W_FM_PLL_SHIFT;
 
