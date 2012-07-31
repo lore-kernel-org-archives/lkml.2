@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab2GaUwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 16:52:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29751 "EHLO mx1.redhat.com"
+	id S1753189Ab2GaUxP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 16:53:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8294 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754051Ab2GaUwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 16:52:44 -0400
-Message-ID: <5018458D.50100@redhat.com>
-Date: Tue, 31 Jul 2012 16:52:29 -0400
+	id S1752459Ab2GaUxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 16:53:09 -0400
+Message-ID: <501845AB.1070904@redhat.com>
+Date: Tue, 31 Jul 2012 16:52:59 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -16,9 +16,9 @@ CC: mingo@kernel.org, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/19] mm/mpol: Remove NUMA_INTERLEAVE_HIT
-References: <20120731191204.540691987@chello.nl> <20120731192808.459705289@chello.nl>
-In-Reply-To: <20120731192808.459705289@chello.nl>
+Subject: Re: [PATCH 03/19] mm/mpol: Make MPOL_LOCAL a real policy
+References: <20120731191204.540691987@chello.nl> <20120731192808.521216362@chello.nl>
+In-Reply-To: <20120731192808.521216362@chello.nl>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
