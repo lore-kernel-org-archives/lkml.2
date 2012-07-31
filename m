@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab2GaO0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:26:48 -0400
-Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:23759 "EHLO
+	id S1754468Ab2GaO1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:27:10 -0400
+Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:24114 "EHLO
 	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754170Ab2GaO0q (ORCPT
+	by vger.kernel.org with ESMTP id S1754317Ab2GaO1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:26:46 -0400
+	Tue, 31 Jul 2012 10:27:04 -0400
 From: Maya Erez <merez@codeaurora.org>
 To: linux-mmc@vger.kernel.org
 Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
+        Lee Susman <lsusman@codeaurora.org>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v5 2/3] mmc: block: Add MMC write packing statistics
-Date: Tue, 31 Jul 2012 17:25:09 +0300
-Message-Id: <1343744710-31700-3-git-send-email-merez@codeaurora.org>
+Subject: [PATCH v5 3/3] mmc: card: Add eMMC4.5 write packed commands unit-tests
+Date: Tue, 31 Jul 2012 17:25:10 +0300
+Message-Id: <1343744710-31700-4-git-send-email-merez@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <n>
 References: <n>
@@ -21,445 +22,1723 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The write packing statistics are used for the packed commands unit tests
-in order to determine test success or failure
+Expose the following packed commands tests:
+- Test the write packed commands list preparation
+- Simulate a returned error code
+- Send an invalid packed command to the card
 
+Signed-off-by: Lee Susman <lsusman@codeaurora.org>
 Signed-off-by: Maya Erez <merez@codeaurora.org>
 ---
- drivers/mmc/card/block.c   |   57 ++++++++++++++-
- drivers/mmc/core/bus.c     |    4 +
- drivers/mmc/core/debugfs.c |  176 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/mmc.c     |   18 +++++
- include/linux/mmc/card.h   |   25 ++++++
- 5 files changed, 279 insertions(+), 1 deletions(-)
+ drivers/mmc/card/Kconfig          |   11 +
+ drivers/mmc/card/Makefile         |    1 +
+ drivers/mmc/card/block.c          |   82 ++-
+ drivers/mmc/card/mmc_block_test.c | 1522 +++++++++++++++++++++++++++++++++++++
+ drivers/mmc/card/queue.h          |   15 +
+ 5 files changed, 1619 insertions(+), 12 deletions(-)
+ create mode 100644 drivers/mmc/card/mmc_block_test.c
 
+diff --git a/drivers/mmc/card/Kconfig b/drivers/mmc/card/Kconfig
+index 3b1f783..bbe8cac 100644
+--- a/drivers/mmc/card/Kconfig
++++ b/drivers/mmc/card/Kconfig
+@@ -67,3 +67,14 @@ config MMC_TEST
+ 
+ 	  This driver is only of interest to those developing or
+ 	  testing a host driver. Most people should say N here.
++
++config MMC_BLOCK_TEST
++	tristate "MMC block test"
++	depends on MMC_BLOCK && IOSCHED_TEST
++	default m
++	help
++	  MMC block test can be used with test iosched to test the MMC block
++	  device.
++	  Currently used to test eMMC 4.5 features (packed commands, sanitize,
++	  BKOPs).
++
+diff --git a/drivers/mmc/card/Makefile b/drivers/mmc/card/Makefile
+index c73b406..d55107f 100644
+--- a/drivers/mmc/card/Makefile
++++ b/drivers/mmc/card/Makefile
+@@ -8,3 +8,4 @@ obj-$(CONFIG_MMC_TEST)		+= mmc_test.o
+ 
+ obj-$(CONFIG_SDIO_UART)		+= sdio_uart.o
+ 
++obj-$(CONFIG_MMC_BLOCK_TEST)		+= mmc_block_test.o
 diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index c965f2b..92a6e25 100644
+index 92a6e25..e4239cc 100644
 --- a/drivers/mmc/card/block.c
 +++ b/drivers/mmc/card/block.c
-@@ -63,6 +63,11 @@ MODULE_ALIAS("mmc:block");
- 			(rq_data_dir(req) == WRITE))
- #define PACKED_CMD_VER		0x01
- #define PACKED_CMD_WR		0x02
-+#define MMC_BLK_UPDATE_STOP_REASON(stats, reason)			\
-+	do {								\
-+		if (stats->enabled)					\
-+			stats->pack_stop_reason[reason]++;		\
-+	} while (0)
+@@ -123,17 +123,6 @@ struct mmc_blk_data {
  
- static DEFINE_MUTEX(block_mutex);
+ static DEFINE_MUTEX(open_lock);
  
-@@ -1296,6 +1301,35 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
- 	mmc_queue_bounce_pre(mqrq);
+-enum mmc_blk_status {
+-	MMC_BLK_SUCCESS = 0,
+-	MMC_BLK_PARTIAL,
+-	MMC_BLK_CMD_ERR,
+-	MMC_BLK_RETRY,
+-	MMC_BLK_ABORT,
+-	MMC_BLK_DATA_ERR,
+-	MMC_BLK_ECC_ERR,
+-	MMC_BLK_NOMEDIUM,
+-};
+-
+ enum {
+ 	MMC_PACKED_N_IDX = -1,
+ 	MMC_PACKED_N_ZERO,
+@@ -1330,6 +1319,64 @@ void mmc_blk_init_packed_statistics(struct mmc_card *card)
  }
+ EXPORT_SYMBOL(mmc_blk_init_packed_statistics);
  
-+struct mmc_wr_pack_stats *mmc_blk_get_packed_statistics(struct mmc_card *card)
++void print_mmc_packing_stats(struct mmc_card *card)
 +{
-+	if (!card)
-+		return NULL;
-+
-+	return &card->wr_pack_stats;
-+}
-+EXPORT_SYMBOL(mmc_blk_get_packed_statistics);
-+
-+void mmc_blk_init_packed_statistics(struct mmc_card *card)
-+{
++	int i;
 +	int max_num_of_packed_reqs = 0;
 +
-+	if (!card || !card->wr_pack_stats.packing_events)
++	if ((!card) || (!card->wr_pack_stats.packing_events))
 +		return;
 +
 +	max_num_of_packed_reqs = card->ext_csd.max_packed_writes;
 +
 +	spin_lock(&card->wr_pack_stats.lock);
-+	memset(card->wr_pack_stats.packing_events, 0,
-+		(max_num_of_packed_reqs + 1) *
-+	       sizeof(*card->wr_pack_stats.packing_events));
-+	memset(&card->wr_pack_stats.pack_stop_reason, 0,
-+		sizeof(card->wr_pack_stats.pack_stop_reason));
-+	card->wr_pack_stats.enabled = true;
++
++	pr_info("%s: write packing statistics:\n",
++		mmc_hostname(card->host));
++
++	for (i = 1 ; i <= max_num_of_packed_reqs ; ++i) {
++		if (card->wr_pack_stats.packing_events[i] != 0)
++			pr_info("%s: Packed %d reqs - %d times\n",
++				mmc_hostname(card->host), i,
++				card->wr_pack_stats.packing_events[i]);
++	}
++
++	pr_info("%s: stopped packing due to the following reasons:\n",
++		mmc_hostname(card->host));
++
++	if (card->wr_pack_stats.pack_stop_reason[EXCEEDS_SEGMENTS])
++		pr_info("%s: %d times: exceedmax num of segments\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[EXCEEDS_SEGMENTS]);
++	if (card->wr_pack_stats.pack_stop_reason[EXCEEDS_SECTORS])
++		pr_info("%s: %d times: exceeding the max num of sectors\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[EXCEEDS_SECTORS]);
++	if (card->wr_pack_stats.pack_stop_reason[WRONG_DATA_DIR])
++		pr_info("%s: %d times: wrong data direction\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[WRONG_DATA_DIR]);
++	if (card->wr_pack_stats.pack_stop_reason[FLUSH_OR_DISCARD])
++		pr_info("%s: %d times: flush or discard\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[FLUSH_OR_DISCARD]);
++	if (card->wr_pack_stats.pack_stop_reason[EMPTY_QUEUE])
++		pr_info("%s: %d times: empty queue\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[EMPTY_QUEUE]);
++	if (card->wr_pack_stats.pack_stop_reason[REL_WRITE])
++		pr_info("%s: %d times: rel write\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[REL_WRITE]);
++	if (card->wr_pack_stats.pack_stop_reason[THRESHOLD])
++		pr_info("%s: %d times: Threshold\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[THRESHOLD]);
++
 +	spin_unlock(&card->wr_pack_stats.lock);
 +}
-+EXPORT_SYMBOL(mmc_blk_init_packed_statistics);
++EXPORT_SYMBOL(print_mmc_packing_stats);
 +
  static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
  {
  	struct request_queue *q = mq->queue;
-@@ -1308,6 +1342,7 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
- 	u8 put_back = 0;
- 	u8 max_packed_rw = 0;
- 	u8 reqs = 0;
-+	struct mmc_wr_pack_stats *stats = &card->wr_pack_stats;
+@@ -1539,7 +1586,18 @@ static void mmc_blk_packed_hdr_wrq_prep(struct mmc_queue_req *mqrq,
+ 	brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
  
- 	mmc_blk_clear_packed(mq->mqrq_cur);
- 
-@@ -1345,26 +1380,33 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
- 		phys_segments++;
- 	}
- 
-+	spin_lock(&stats->lock);
-+
- 	while (reqs < max_packed_rw - 1) {
- 		spin_lock_irq(q->queue_lock);
- 		next = blk_fetch_request(q);
- 		spin_unlock_irq(q->queue_lock);
--		if (!next)
-+		if (!next) {
-+			MMC_BLK_UPDATE_STOP_REASON(stats, EMPTY_QUEUE);
- 			break;
-+		}
- 
- 		if (mmc_large_sec(card) &&
- 				!IS_ALIGNED(blk_rq_sectors(next), 8)) {
-+			MMC_BLK_UPDATE_STOP_REASON(stats, LARGE_SEC_ALIGN);
- 			put_back = 1;
- 			break;
- 		}
- 
- 		if (next->cmd_flags & REQ_DISCARD ||
- 				next->cmd_flags & REQ_FLUSH) {
-+			MMC_BLK_UPDATE_STOP_REASON(stats, FLUSH_OR_DISCARD);
- 			put_back = 1;
- 			break;
- 		}
- 
- 		if (rq_data_dir(cur) != rq_data_dir(next)) {
-+			MMC_BLK_UPDATE_STOP_REASON(stats, WRONG_DATA_DIR);
- 			put_back = 1;
- 			break;
- 		}
-@@ -1372,18 +1414,22 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
- 		if (mmc_req_rel_wr(next) &&
- 				(md->flags & MMC_BLK_REL_WR) &&
- 				!en_rel_wr) {
-+			MMC_BLK_UPDATE_STOP_REASON(stats, REL_WRITE);
- 			put_back = 1;
- 			break;
- 		}
- 
- 		req_sectors += blk_rq_sectors(next);
- 		if (req_sectors > max_blk_count) {
-+			if (stats->enabled)
-+				stats->pack_stop_reason[EXCEEDS_SECTORS]++;
- 			put_back = 1;
- 			break;
- 		}
- 
- 		phys_segments +=  next->nr_phys_segments;
- 		if (phys_segments > max_phys_segs) {
-+			MMC_BLK_UPDATE_STOP_REASON(stats, EXCEEDS_SEGMENTS);
- 			put_back = 1;
- 			break;
- 		}
-@@ -1399,6 +1445,15 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
- 		spin_unlock_irq(q->queue_lock);
- 	}
- 
-+	if (stats->enabled) {
-+		if (reqs + 1 <= card->ext_csd.max_packed_writes)
-+			stats->packing_events[reqs + 1]++;
-+		if (reqs + 1 == max_packed_rw)
-+			MMC_BLK_UPDATE_STOP_REASON(stats, THRESHOLD);
-+	}
-+
-+	spin_unlock(&stats->lock);
-+
- 	if (reqs > 0) {
- 		list_add(&req->queuelist, &mq->mqrq_cur->packed_list);
- 		mq->mqrq_cur->packed_num = ++reqs;
-diff --git a/drivers/mmc/core/bus.c b/drivers/mmc/core/bus.c
-index 9b68933..e3b0e74 100644
---- a/drivers/mmc/core/bus.c
-+++ b/drivers/mmc/core/bus.c
-@@ -251,6 +251,8 @@ struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)
- 	card->dev.release = mmc_release_card;
- 	card->dev.type = type;
- 
-+	spin_lock_init(&card->wr_pack_stats.lock);
-+
- 	return card;
- }
- 
-@@ -353,6 +355,8 @@ void mmc_remove_card(struct mmc_card *card)
- 		device_del(&card->dev);
- 	}
- 
-+	kfree(card->wr_pack_stats.packing_events);
-+
- 	put_device(&card->dev);
- }
- 
-diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-index 9ab5b17..d0bc74b 100644
---- a/drivers/mmc/core/debugfs.c
-+++ b/drivers/mmc/core/debugfs.c
-@@ -318,6 +318,176 @@ static const struct file_operations mmc_dbg_ext_csd_fops = {
- 	.llseek		= default_llseek,
- };
- 
-+static int mmc_wr_pack_stats_open(struct inode *inode, struct file *filp)
-+{
-+	struct mmc_card *card = inode->i_private;
-+
-+	filp->private_data = card;
-+	card->wr_pack_stats.print_in_read = 1;
-+	return 0;
-+}
-+
-+#define TEMP_BUF_SIZE 256
-+static ssize_t mmc_wr_pack_stats_read(struct file *filp, char __user *ubuf,
-+				size_t cnt, loff_t *ppos)
-+{
-+	struct mmc_card *card = filp->private_data;
-+	struct mmc_wr_pack_stats *pack_stats;
-+	int i;
-+	int max_num_of_packed_reqs = 0;
-+	char *temp_buf;
-+
-+	if (!card)
-+		return cnt;
-+
-+	if (!card->wr_pack_stats.print_in_read)
-+		return 0;
-+
-+	if (!card->wr_pack_stats.enabled) {
-+		pr_info("%s: write packing statistics are disabled\n",
-+			 mmc_hostname(card->host));
-+		goto exit;
-+	}
-+
-+	pack_stats = &card->wr_pack_stats;
-+
-+	if (!pack_stats->packing_events) {
-+		pr_info("%s: NULL packing_events\n", mmc_hostname(card->host));
-+		goto exit;
-+	}
-+
-+	max_num_of_packed_reqs = card->ext_csd.max_packed_writes;
-+
-+	temp_buf = kmalloc(TEMP_BUF_SIZE, GFP_KERNEL);
-+	if (!temp_buf)
-+		goto exit;
-+
-+	spin_lock(&pack_stats->lock);
-+
-+	snprintf(temp_buf, TEMP_BUF_SIZE, "%s: write packing statistics:\n",
-+		mmc_hostname(card->host));
-+	strlcat(ubuf, temp_buf, cnt);
+ 	mqrq->mmc_active.mrq = &brq->mrq;
+-	mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
 +
 +	/*
-+	 * The statistics are kept in the index that equals the number of
-+	 * packed requests. Therefore we need to print the values in indexes
-+	 * 1 to max_num_of_packed_reqs.
++	 * This is intended for packed commands tests usage - in case these
++	 * functions are not in use the respective pointers are NULL
 +	 */
-+	for (i = 1 ; i <= max_num_of_packed_reqs ; ++i) {
-+		if (pack_stats->packing_events[i]) {
-+			snprintf(temp_buf, TEMP_BUF_SIZE,
-+				 "%s: Packed %d reqs - %d times\n",
-+				mmc_hostname(card->host), i,
-+				pack_stats->packing_events[i]);
-+			strlcat(ubuf, temp_buf, cnt);
++	if (mq->err_check_fn)
++		mqrq->mmc_active.err_check = mq->err_check_fn;
++	else
++		mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
++
++	if (mq->packed_test_fn)
++		mq->packed_test_fn(mq->queue, mqrq);
+ 
+ 	mmc_queue_bounce_pre(mqrq);
+ }
+diff --git a/drivers/mmc/card/mmc_block_test.c b/drivers/mmc/card/mmc_block_test.c
+new file mode 100644
+index 0000000..cb5e160
+--- /dev/null
++++ b/drivers/mmc/card/mmc_block_test.c
+@@ -0,0 +1,1522 @@
++
++/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++/* MMC block test */
++
++#include <linux/module.h>
++#include <linux/blkdev.h>
++#include <linux/debugfs.h>
++#include <linux/mmc/card.h>
++#include <linux/mmc/host.h>
++#include <linux/delay.h>
++#include <linux/test-iosched.h>
++#include "queue.h"
++
++#define MODULE_NAME "mmc_block_test"
++#define TEST_MAX_SECTOR_RANGE		(600*1024*1024) /* 600 MB */
++#define TEST_MAX_BIOS_PER_REQ		120
++#define CMD23_PACKED_BIT	(1 << 30)
++#define LARGE_PRIME_1	1103515367
++#define LARGE_PRIME_2	35757
++#define PACKED_HDR_VER_MASK 0x000000FF
++#define PACKED_HDR_RW_MASK 0x0000FF00
++#define PACKED_HDR_NUM_REQS_MASK 0x00FF0000
++#define PACKED_HDR_BITS_16_TO_29_SET 0x3FFF0000
++
++#define test_pr_debug(fmt, args...) pr_debug("%s: "fmt"\n", MODULE_NAME, args)
++#define test_pr_info(fmt, args...) pr_info("%s: "fmt"\n", MODULE_NAME, args)
++#define test_pr_err(fmt, args...) pr_err("%s: "fmt"\n", MODULE_NAME, args)
++
++enum is_random {
++	NON_RANDOM_TEST,
++	RANDOM_TEST,
++};
++
++enum mmc_block_test_testcases {
++	/* Start of send write packing test group */
++	SEND_WRITE_PACKING_MIN_TESTCASE,
++	TEST_STOP_DUE_TO_READ = SEND_WRITE_PACKING_MIN_TESTCASE,
++	TEST_STOP_DUE_TO_READ_AFTER_MAX_REQS,
++	TEST_STOP_DUE_TO_FLUSH,
++	TEST_STOP_DUE_TO_FLUSH_AFTER_MAX_REQS,
++	TEST_STOP_DUE_TO_EMPTY_QUEUE,
++	TEST_STOP_DUE_TO_MAX_REQ_NUM,
++	TEST_STOP_DUE_TO_THRESHOLD,
++	SEND_WRITE_PACKING_MAX_TESTCASE = TEST_STOP_DUE_TO_THRESHOLD,
++
++	/* Start of err check test group */
++	ERR_CHECK_MIN_TESTCASE,
++	TEST_RET_ABORT = ERR_CHECK_MIN_TESTCASE,
++	TEST_RET_PARTIAL_FOLLOWED_BY_SUCCESS,
++	TEST_RET_PARTIAL_FOLLOWED_BY_ABORT,
++	TEST_RET_PARTIAL_MULTIPLE_UNTIL_SUCCESS,
++	TEST_RET_PARTIAL_MAX_FAIL_IDX,
++	TEST_RET_RETRY,
++	TEST_RET_CMD_ERR,
++	TEST_RET_DATA_ERR,
++	ERR_CHECK_MAX_TESTCASE = TEST_RET_DATA_ERR,
++
++	/* Start of send invalid test group */
++	INVALID_CMD_MIN_TESTCASE,
++	TEST_HDR_INVALID_VERSION = INVALID_CMD_MIN_TESTCASE,
++	TEST_HDR_WRONG_WRITE_CODE,
++	TEST_HDR_INVALID_RW_CODE,
++	TEST_HDR_DIFFERENT_ADDRESSES,
++	TEST_HDR_REQ_NUM_SMALLER_THAN_ACTUAL,
++	TEST_HDR_REQ_NUM_LARGER_THAN_ACTUAL,
++	TEST_HDR_CMD23_PACKED_BIT_SET,
++	TEST_CMD23_MAX_PACKED_WRITES,
++	TEST_CMD23_ZERO_PACKED_WRITES,
++	TEST_CMD23_PACKED_BIT_UNSET,
++	TEST_CMD23_REL_WR_BIT_SET,
++	TEST_CMD23_BITS_16TO29_SET,
++	TEST_CMD23_HDR_BLK_NOT_IN_COUNT,
++	INVALID_CMD_MAX_TESTCASE = TEST_CMD23_HDR_BLK_NOT_IN_COUNT,
++};
++
++enum mmc_block_test_group {
++	TEST_NO_GROUP,
++	TEST_GENERAL_GROUP,
++	TEST_SEND_WRITE_PACKING_GROUP,
++	TEST_ERR_CHECK_GROUP,
++	TEST_SEND_INVALID_GROUP,
++};
++
++struct mmc_block_test_debug {
++	struct dentry *send_write_packing_test;
++	struct dentry *err_check_test;
++	struct dentry *send_invalid_packed_test;
++	struct dentry *random_test_seed;
++};
++
++struct mmc_block_test_data {
++	/* The number of write requests that the test will issue */
++	int num_requests;
++	/* The expected write packing statistics for the current test */
++	struct mmc_wr_pack_stats exp_packed_stats;
++	/*
++	 * A user-defined seed for random choices of number of bios written in
++	 * a request, and of number of requests issued in a test
++	 * This field is randomly updated after each use
++	 */
++	unsigned int random_test_seed;
++	/* A retry counter used in err_check tests */
++	int err_check_counter;
++	/* Can be one of the values of enum test_group */
++	enum mmc_block_test_group test_group;
++	/*
++	 * Indicates if the current testcase is running with random values of
++	 * num_requests and num_bios (in each request)
++	 */
++	int is_random;
++	/* Data structure for debugfs dentrys */
++	struct mmc_block_test_debug debug;
++	/*
++	 * Data structure containing individual test information, including
++	 * self-defined specific data
++	 */
++	struct test_info test_info;
++	/* mmc block device test */
++	struct blk_dev_test_type bdt;
++};
++
++static struct mmc_block_test_data *mbtd;
++
++/*
++ * A callback assigned to the packed_test_fn field.
++ * Called from block layer in mmc_blk_packed_hdr_wrq_prep.
++ * Here we alter the packed header or CMD23 in order to send an invalid
++ * packed command to the card.
++ */
++static void test_invalid_packed_cmd(struct request_queue *q,
++				    struct mmc_queue_req *mqrq)
++{
++	struct mmc_queue *mq = q->queuedata;
++	u32 *packed_cmd_hdr = mqrq->packed_cmd_hdr;
++	struct request *req = mqrq->req;
++	struct request *second_rq;
++	struct test_request *test_rq;
++	struct mmc_blk_request *brq = &mqrq->brq;
++	int num_requests;
++	int max_packed_reqs;
++
++	if (!mq) {
++		test_pr_err("%s: NULL mq", __func__);
++		return;
++	}
++
++	test_rq = (struct test_request *)req->elv.priv[0];
++	if (!test_rq) {
++		test_pr_err("%s: NULL test_rq", __func__);
++		return;
++	}
++	max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++
++	switch (mbtd->test_info.testcase) {
++	case TEST_HDR_INVALID_VERSION:
++		test_pr_info("%s: set invalid header version", __func__);
++		/* Put 0 in header version field (1 byte, offset 0 in header) */
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] & ~PACKED_HDR_VER_MASK;
++		break;
++	case TEST_HDR_WRONG_WRITE_CODE:
++		test_pr_info("%s: wrong write code", __func__);
++		/* Set R/W field with R value (1 byte, offset 1 in header) */
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] & ~PACKED_HDR_RW_MASK;
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] | 0x00000100;
++		break;
++	case TEST_HDR_INVALID_RW_CODE:
++		test_pr_info("%s: invalid r/w code", __func__);
++		/* Set R/W field with invalid value */
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] & ~PACKED_HDR_RW_MASK;
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] | 0x00000400;
++		break;
++	case TEST_HDR_DIFFERENT_ADDRESSES:
++		test_pr_info("%s: different addresses", __func__);
++		second_rq = list_entry(req->queuelist.next, struct request,
++				queuelist);
++		test_pr_info("%s: test_rq->sector=%ld, second_rq->sector=%ld",
++			      __func__, (long)req->__sector,
++			     (long)second_rq->__sector);
++		/*
++		 * Put start sector of second write request in the first write
++		 * request's cmd25 argument in the packed header
++		 */
++		packed_cmd_hdr[3] = second_rq->__sector;
++		break;
++	case TEST_HDR_REQ_NUM_SMALLER_THAN_ACTUAL:
++		test_pr_info("%s: request num smaller than actual" , __func__);
++		num_requests = (packed_cmd_hdr[0] & PACKED_HDR_NUM_REQS_MASK)
++									>> 16;
++		/* num of entries is decremented by 1 */
++		num_requests = (num_requests - 1) << 16;
++		/*
++		 * Set number of requests field in packed write header to be
++		 * smaller than the actual number (1 byte, offset 2 in header)
++		 */
++		packed_cmd_hdr[0] = (packed_cmd_hdr[0] &
++				     ~PACKED_HDR_NUM_REQS_MASK) + num_requests;
++		break;
++	case TEST_HDR_REQ_NUM_LARGER_THAN_ACTUAL:
++		test_pr_info("%s: request num larger than actual" , __func__);
++		num_requests = (packed_cmd_hdr[0] & PACKED_HDR_NUM_REQS_MASK)
++									>> 16;
++		/* num of entries is incremented by 1 */
++		num_requests = (num_requests + 1) << 16;
++		/*
++		 * Set number of requests field in packed write header to be
++		 * larger than the actual number (1 byte, offset 2 in header).
++		 */
++		packed_cmd_hdr[0] = (packed_cmd_hdr[0] &
++				     ~PACKED_HDR_NUM_REQS_MASK) + num_requests;
++		break;
++	case TEST_HDR_CMD23_PACKED_BIT_SET:
++		test_pr_info("%s: header CMD23 packed bit set" , __func__);
++		/*
++		 * Set packed bit (bit 30) in cmd23 argument of first and second
++		 * write requests in packed write header.
++		 * These are located at bytes 2 and 4 in packed write header
++		 */
++		packed_cmd_hdr[2] = packed_cmd_hdr[2] | CMD23_PACKED_BIT;
++		packed_cmd_hdr[4] = packed_cmd_hdr[4] | CMD23_PACKED_BIT;
++		break;
++	case TEST_CMD23_MAX_PACKED_WRITES:
++		test_pr_info("%s: CMD23 request num > max_packed_reqs",
++			      __func__);
++		/*
++		 * Set the individual packed cmd23 request num to
++		 * max_packed_reqs + 1
++		 */
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED | (max_packed_reqs + 1);
++		break;
++	case TEST_CMD23_ZERO_PACKED_WRITES:
++		test_pr_info("%s: CMD23 request num = 0", __func__);
++		/* Set the individual packed cmd23 request num to zero */
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED;
++		break;
++	case TEST_CMD23_PACKED_BIT_UNSET:
++		test_pr_info("%s: CMD23 packed bit unset", __func__);
++		/*
++		 * Set the individual packed cmd23 packed bit to 0,
++		 *  although there is a packed write request
++		 */
++		brq->sbc.arg &= ~CMD23_PACKED_BIT;
++		break;
++	case TEST_CMD23_REL_WR_BIT_SET:
++		test_pr_info("%s: CMD23 REL WR bit set", __func__);
++		/* Set the individual packed cmd23 reliable write bit */
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED | MMC_CMD23_ARG_REL_WR;
++		break;
++	case TEST_CMD23_BITS_16TO29_SET:
++		test_pr_info("%s: CMD23 bits [16-29] set", __func__);
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED |
++			PACKED_HDR_BITS_16_TO_29_SET;
++		break;
++	case TEST_CMD23_HDR_BLK_NOT_IN_COUNT:
++		test_pr_info("%s: CMD23 hdr not in block count", __func__);
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED |
++		((rq_data_dir(req) == READ) ? 0 : mqrq->packed_blocks);
++		break;
++	default:
++		test_pr_err("%s: unexpected testcase %d",
++			__func__, mbtd->test_info.testcase);
++		break;
++	}
++}
++
++/*
++ * A callback assigned to the err_check_fn field of the mmc_request by the
++ * MMC/card/block layer.
++ * Called upon request completion by the MMC/core layer.
++ * Here we emulate an error return value from the card.
++ */
++static int test_err_check(struct mmc_card *card, struct mmc_async_req *areq)
++{
++	struct mmc_queue_req *mq_rq = container_of(areq, struct mmc_queue_req,
++			mmc_active);
++	struct request_queue *req_q = test_iosched_get_req_queue();
++	struct mmc_queue *mq;
++	int max_packed_reqs;
++	int ret = 0;
++
++	if (req_q)
++		mq = req_q->queuedata;
++	else {
++		test_pr_err("%s: NULL request_queue", __func__);
++		return 0;
++	}
++
++	if (!mq) {
++		test_pr_err("%s: %s: NULL mq", __func__,
++			mmc_hostname(card->host));
++		return 0;
++	}
++
++	max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++
++	if (!mq_rq) {
++		test_pr_err("%s: %s: NULL mq_rq", __func__,
++			mmc_hostname(card->host));
++		return 0;
++	}
++
++	switch (mbtd->test_info.testcase) {
++	case TEST_RET_ABORT:
++		test_pr_info("%s: return abort", __func__);
++		ret = MMC_BLK_ABORT;
++		break;
++	case TEST_RET_PARTIAL_FOLLOWED_BY_SUCCESS:
++		test_pr_info("%s: return partial followed by success",
++			      __func__);
++		/*
++		 * Since in this testcase num_requests is always >= 2,
++		 * we can be sure that packed_fail_idx is always >= 1
++		 */
++		mq_rq->packed_fail_idx = (mbtd->num_requests / 2);
++		test_pr_info("%s: packed_fail_idx = %d"
++			, __func__, mq_rq->packed_fail_idx);
++		mq->err_check_fn = NULL;
++		ret = MMC_BLK_PARTIAL;
++		break;
++	case TEST_RET_PARTIAL_FOLLOWED_BY_ABORT:
++		if (!mbtd->err_check_counter) {
++			test_pr_info("%s: return partial followed by abort",
++				      __func__);
++			mbtd->err_check_counter++;
++			/*
++			 * Since in this testcase num_requests is always >= 3,
++			 * we have that packed_fail_idx is always >= 1
++			 */
++			mq_rq->packed_fail_idx = (mbtd->num_requests / 2);
++			test_pr_info("%s: packed_fail_idx = %d"
++				, __func__, mq_rq->packed_fail_idx);
++			ret = MMC_BLK_PARTIAL;
++			break;
++		}
++		mbtd->err_check_counter = 0;
++		mq->err_check_fn = NULL;
++		ret = MMC_BLK_ABORT;
++		break;
++	case TEST_RET_PARTIAL_MULTIPLE_UNTIL_SUCCESS:
++		test_pr_info("%s: return partial multiple until success",
++			     __func__);
++		if (++mbtd->err_check_counter >= (mbtd->num_requests)) {
++			mq->err_check_fn = NULL;
++			mbtd->err_check_counter = 0;
++			ret = MMC_BLK_PARTIAL;
++			break;
++		}
++		mq_rq->packed_fail_idx = 1;
++		ret = MMC_BLK_PARTIAL;
++		break;
++	case TEST_RET_PARTIAL_MAX_FAIL_IDX:
++		test_pr_info("%s: return partial max fail_idx", __func__);
++		mq_rq->packed_fail_idx = max_packed_reqs - 1;
++		mq->err_check_fn = NULL;
++		ret = MMC_BLK_PARTIAL;
++		break;
++	case TEST_RET_RETRY:
++		test_pr_info("%s: return retry", __func__);
++		ret = MMC_BLK_RETRY;
++		break;
++	case TEST_RET_CMD_ERR:
++		test_pr_info("%s: return cmd err", __func__);
++		ret = MMC_BLK_CMD_ERR;
++		break;
++	case TEST_RET_DATA_ERR:
++		test_pr_info("%s: return data err", __func__);
++		ret = MMC_BLK_DATA_ERR;
++		break;
++	default:
++		test_pr_err("%s: unexpected testcase %d",
++			__func__, mbtd->test_info.testcase);
++	}
++
++	return ret;
++}
++
++/*
++ * This is a specific implementation for the get_test_case_str_fn function
++ * pointer in the test_info data structure. Given a valid test_data instance,
++ * the function returns a string resembling the test name, based on the testcase
++ */
++static char *get_test_case_str(struct test_data *td)
++{
++	if (!td) {
++		test_pr_err("%s: NULL td", __func__);
++		return NULL;
++	}
++
++	switch (td->test_info.testcase) {
++	case TEST_STOP_DUE_TO_FLUSH:
++		return "Test stop due to flush";
++	case TEST_STOP_DUE_TO_FLUSH_AFTER_MAX_REQS:
++		return "Test stop due to flush after max-1 reqs";
++	case TEST_STOP_DUE_TO_READ:
++		return "Test stop due to read";
++	case TEST_STOP_DUE_TO_READ_AFTER_MAX_REQS:
++		return "Test stop due to read after max-1 reqs";
++	case TEST_STOP_DUE_TO_EMPTY_QUEUE:
++		return "Test stop due to empty queue";
++	case TEST_STOP_DUE_TO_MAX_REQ_NUM:
++		return "Test stop due to max req num";
++	case TEST_STOP_DUE_TO_THRESHOLD:
++		return "Test stop due to exceeding threshold";
++	case TEST_RET_ABORT:
++		return "Test err_check return abort";
++	case TEST_RET_PARTIAL_FOLLOWED_BY_SUCCESS:
++		return "Test err_check return partial followed by success";
++	case TEST_RET_PARTIAL_FOLLOWED_BY_ABORT:
++		return "Test err_check return partial followed by abort";
++	case TEST_RET_PARTIAL_MULTIPLE_UNTIL_SUCCESS:
++		return "Test err_check return partial multiple until success";
++	case TEST_RET_PARTIAL_MAX_FAIL_IDX:
++		return "Test err_check return partial max fail index";
++	case TEST_RET_RETRY:
++		return "Test err_check return retry";
++	case TEST_RET_CMD_ERR:
++		return "Test err_check return cmd error";
++	case TEST_RET_DATA_ERR:
++		return "Test err_check return data error";
++	case TEST_HDR_INVALID_VERSION:
++		return "Test invalid - wrong header version";
++	case TEST_HDR_WRONG_WRITE_CODE:
++		return "Test invalid - wrong write code";
++	case TEST_HDR_INVALID_RW_CODE:
++		return "Test invalid - wrong R/W code";
++	case TEST_HDR_DIFFERENT_ADDRESSES:
++		return "Test invalid - header different addresses";
++	case TEST_HDR_REQ_NUM_SMALLER_THAN_ACTUAL:
++		return "Test invalid - header req num smaller than actual";
++	case TEST_HDR_REQ_NUM_LARGER_THAN_ACTUAL:
++		return "Test invalid - header req num larger than actual";
++	case TEST_HDR_CMD23_PACKED_BIT_SET:
++		return "Test invalid - header cmd23 packed bit set";
++	case TEST_CMD23_MAX_PACKED_WRITES:
++		return "Test invalid - cmd23 max packed writes";
++	case TEST_CMD23_ZERO_PACKED_WRITES:
++		return "Test invalid - cmd23 zero packed writes";
++	case TEST_CMD23_PACKED_BIT_UNSET:
++		return "Test invalid - cmd23 packed bit unset";
++	case TEST_CMD23_REL_WR_BIT_SET:
++		return "Test invalid - cmd23 rel wr bit set";
++	case TEST_CMD23_BITS_16TO29_SET:
++		return "Test invalid - cmd23 bits [16-29] set";
++	case TEST_CMD23_HDR_BLK_NOT_IN_COUNT:
++		return "Test invalid - cmd23 header block not in count";
++	default:
++		 return "Unknown testcase";
++	}
++
++	return NULL;
++}
++
++/*
++ * Compare individual testcase's statistics to the expected statistics:
++ * Compare stop reason and number of packing events
++ */
++static int check_wr_packing_statistics(struct test_data *td)
++{
++	struct mmc_wr_pack_stats *mmc_packed_stats;
++	struct mmc_queue *mq = td->req_q->queuedata;
++	int max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++	int i;
++	struct mmc_card *card = mq->card;
++	struct mmc_wr_pack_stats expected_stats;
++	int *stop_reason;
++	int ret = 0;
++
++	if (!mq) {
++		test_pr_err("%s: NULL mq", __func__);
++		return -EINVAL;
++	}
++
++	expected_stats = mbtd->exp_packed_stats;
++
++	mmc_packed_stats = mmc_blk_get_packed_statistics(card);
++	if (!mmc_packed_stats) {
++		test_pr_err("%s: NULL mmc_packed_stats", __func__);
++		return -EINVAL;
++	}
++
++	if (!mmc_packed_stats->packing_events) {
++		test_pr_err("%s: NULL packing_events", __func__);
++		return -EINVAL;
++	}
++
++	spin_lock(&mmc_packed_stats->lock);
++
++	if (!mmc_packed_stats->enabled) {
++		test_pr_err("%s write packing statistics are not enabled",
++			     __func__);
++		ret = -EINVAL;
++		goto exit_err;
++	}
++
++	stop_reason = mmc_packed_stats->pack_stop_reason;
++
++	for (i = 1; i <= max_packed_reqs; ++i) {
++		if (mmc_packed_stats->packing_events[i] !=
++		    expected_stats.packing_events[i]) {
++			test_pr_err(
++			"%s: Wrong pack stats in index %d, got %d, expected %d",
++			__func__, i, mmc_packed_stats->packing_events[i],
++			       expected_stats.packing_events[i]);
++			if (td->fs_wr_reqs_during_test)
++				goto cancel_round;
++			ret = -EINVAL;
++			goto exit_err;
 +		}
 +	}
 +
-+	snprintf(temp_buf, TEMP_BUF_SIZE,
-+		 "%s: stopped packing due to the following reasons:\n",
-+		 mmc_hostname(card->host));
-+	strlcat(ubuf, temp_buf, cnt);
-+
-+	if (pack_stats->pack_stop_reason[EXCEEDS_SEGMENTS]) {
-+		snprintf(temp_buf, TEMP_BUF_SIZE,
-+			 "%s: %d times: exceed max num of segments\n",
-+			 mmc_hostname(card->host),
-+			 pack_stats->pack_stop_reason[EXCEEDS_SEGMENTS]);
-+		strlcat(ubuf, temp_buf, cnt);
-+	}
-+	if (pack_stats->pack_stop_reason[EXCEEDS_SECTORS]) {
-+		snprintf(temp_buf, TEMP_BUF_SIZE,
-+			 "%s: %d times: exceed max num of sectors\n",
-+			mmc_hostname(card->host),
-+			pack_stats->pack_stop_reason[EXCEEDS_SECTORS]);
-+		strlcat(ubuf, temp_buf, cnt);
-+	}
-+	if (pack_stats->pack_stop_reason[WRONG_DATA_DIR]) {
-+		snprintf(temp_buf, TEMP_BUF_SIZE,
-+			 "%s: %d times: wrong data direction\n",
-+			mmc_hostname(card->host),
-+			pack_stats->pack_stop_reason[WRONG_DATA_DIR]);
-+		strlcat(ubuf, temp_buf, cnt);
-+	}
-+	if (pack_stats->pack_stop_reason[FLUSH_OR_DISCARD]) {
-+		snprintf(temp_buf, TEMP_BUF_SIZE,
-+			 "%s: %d times: flush or discard\n",
-+			mmc_hostname(card->host),
-+			pack_stats->pack_stop_reason[FLUSH_OR_DISCARD]);
-+		strlcat(ubuf, temp_buf, cnt);
-+	}
-+	if (pack_stats->pack_stop_reason[EMPTY_QUEUE]) {
-+		snprintf(temp_buf, TEMP_BUF_SIZE,
-+			 "%s: %d times: empty queue\n",
-+			mmc_hostname(card->host),
-+			pack_stats->pack_stop_reason[EMPTY_QUEUE]);
-+		strlcat(ubuf, temp_buf, cnt);
-+	}
-+	if (pack_stats->pack_stop_reason[REL_WRITE]) {
-+		snprintf(temp_buf, TEMP_BUF_SIZE,
-+			 "%s: %d times: rel write\n",
-+			mmc_hostname(card->host),
-+			pack_stats->pack_stop_reason[REL_WRITE]);
-+		strlcat(ubuf, temp_buf, cnt);
-+	}
-+	if (pack_stats->pack_stop_reason[THRESHOLD]) {
-+		snprintf(temp_buf, TEMP_BUF_SIZE,
-+			 "%s: %d times: Threshold\n",
-+			mmc_hostname(card->host),
-+			pack_stats->pack_stop_reason[THRESHOLD]);
-+		strlcat(ubuf, temp_buf, cnt);
-+	}
-+	if (pack_stats->pack_stop_reason[LARGE_SEC_ALIGN]) {
-+		snprintf(temp_buf, TEMP_BUF_SIZE,
-+			 "%s: %d times: large sector alignment\n",
-+			mmc_hostname(card->host),
-+			pack_stats->pack_stop_reason[LARGE_SEC_ALIGN]);
-+		strlcat(ubuf, temp_buf, cnt);
++	if (mmc_packed_stats->pack_stop_reason[EXCEEDS_SEGMENTS] !=
++	    expected_stats.pack_stop_reason[EXCEEDS_SEGMENTS]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason EXCEEDS_SEGMENTS %d, expected %d",
++			__func__, stop_reason[EXCEEDS_SEGMENTS],
++		       expected_stats.pack_stop_reason[EXCEEDS_SEGMENTS]);
++		if (td->fs_wr_reqs_during_test)
++			goto cancel_round;
++		ret = -EINVAL;
++		goto exit_err;
 +	}
 +
-+	spin_unlock(&pack_stats->lock);
++	if (mmc_packed_stats->pack_stop_reason[EXCEEDS_SECTORS] !=
++	    expected_stats.pack_stop_reason[EXCEEDS_SECTORS]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason EXCEEDS_SECTORS %d, expected %d",
++			__func__, stop_reason[EXCEEDS_SECTORS],
++		       expected_stats.pack_stop_reason[EXCEEDS_SECTORS]);
++		if (td->fs_wr_reqs_during_test)
++			goto cancel_round;
++		ret = -EINVAL;
++		goto exit_err;
++	}
 +
-+	kfree(temp_buf);
++	if (mmc_packed_stats->pack_stop_reason[WRONG_DATA_DIR] !=
++	    expected_stats.pack_stop_reason[WRONG_DATA_DIR]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason WRONG_DATA_DIR %d, expected %d",
++		       __func__, stop_reason[WRONG_DATA_DIR],
++		       expected_stats.pack_stop_reason[WRONG_DATA_DIR]);
++		if (td->fs_wr_reqs_during_test)
++			goto cancel_round;
++		ret = -EINVAL;
++		goto exit_err;
++	}
 +
-+	pr_info("%s", ubuf);
++	if (mmc_packed_stats->pack_stop_reason[FLUSH_OR_DISCARD] !=
++	    expected_stats.pack_stop_reason[FLUSH_OR_DISCARD]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason FLUSH_OR_DISCARD %d, expected %d",
++		       __func__, stop_reason[FLUSH_OR_DISCARD],
++		       expected_stats.pack_stop_reason[FLUSH_OR_DISCARD]);
++		if (td->fs_wr_reqs_during_test)
++			goto cancel_round;
++		ret = -EINVAL;
++		goto exit_err;
++	}
 +
-+exit:
-+	if (card->wr_pack_stats.print_in_read == 1) {
-+		card->wr_pack_stats.print_in_read = 0;
-+		return strnlen(ubuf, cnt);
++	if (mmc_packed_stats->pack_stop_reason[EMPTY_QUEUE] !=
++	    expected_stats.pack_stop_reason[EMPTY_QUEUE]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason EMPTY_QUEUE %d, expected %d",
++		       __func__, stop_reason[EMPTY_QUEUE],
++		       expected_stats.pack_stop_reason[EMPTY_QUEUE]);
++		if (td->fs_wr_reqs_during_test)
++			goto cancel_round;
++		ret = -EINVAL;
++		goto exit_err;
++	}
++
++	if (mmc_packed_stats->pack_stop_reason[REL_WRITE] !=
++	    expected_stats.pack_stop_reason[REL_WRITE]) {
++		test_pr_err(
++			"%s: Wrong pack stop reason REL_WRITE %d, expected %d",
++		       __func__, stop_reason[REL_WRITE],
++		       expected_stats.pack_stop_reason[REL_WRITE]);
++		if (td->fs_wr_reqs_during_test)
++			goto cancel_round;
++		ret = -EINVAL;
++		goto exit_err;
++	}
++
++exit_err:
++	spin_unlock(&mmc_packed_stats->lock);
++	if (ret && mmc_packed_stats->enabled)
++		print_mmc_packing_stats(card);
++	return ret;
++cancel_round:
++	spin_unlock(&mmc_packed_stats->lock);
++	test_iosched_set_ignore_round(true);
++	return 0;
++}
++
++/*
++ * Pseudo-randomly choose a seed based on the last seed, and update it in
++ * seed_number. then return seed_number (mod max_val), or min_val.
++ */
++static unsigned int pseudo_random_seed(unsigned int *seed_number,
++				       unsigned int min_val,
++				       unsigned int max_val)
++{
++	int ret = 0;
++
++	if (!seed_number)
++		return 0;
++
++	*seed_number = ((unsigned int)(((unsigned long)*seed_number *
++				(unsigned long)LARGE_PRIME_1) + LARGE_PRIME_2));
++	ret = (unsigned int)((*seed_number) % max_val);
++
++	return (ret > min_val ? ret : min_val);
++}
++
++/*
++ * Given a pseudo-random seed, find a pseudo-random num_of_bios.
++ * Make sure that num_of_bios is not larger than TEST_MAX_SECTOR_RANGE
++ */
++static void pseudo_rnd_num_of_bios(unsigned int *num_bios_seed,
++				   unsigned int *num_of_bios)
++{
++	do {
++		*num_of_bios = pseudo_random_seed(num_bios_seed, 1,
++						  TEST_MAX_BIOS_PER_REQ);
++		if (!(*num_of_bios))
++			*num_of_bios = 1;
++	} while ((*num_of_bios) * BIO_U32_SIZE * 4 > TEST_MAX_SECTOR_RANGE);
++}
++
++/* Add a single read request to the given td's request queue */
++static int prepare_request_add_read(struct test_data *td)
++{
++	int ret;
++	int start_sec;
++
++	if (td)
++		start_sec = td->start_sector;
++	else {
++		test_pr_err("%s: NULL td", __func__);
++		return 0;
++	}
++
++	test_pr_info("%s: Adding a read request, first req_id=%d", __func__,
++		     td->wr_rd_next_req_id);
++
++	ret = test_iosched_add_wr_rd_test_req(0, READ, start_sec, 2,
++					      TEST_PATTERN_5A, NULL);
++	if (ret) {
++		test_pr_err("%s: failed to add a read request", __func__);
++		return ret;
 +	}
 +
 +	return 0;
 +}
 +
-+static ssize_t mmc_wr_pack_stats_write(struct file *filp,
-+				       const char __user *ubuf, size_t cnt,
-+				       loff_t *ppos)
++/* Add a single flush request to the given td's request queue */
++static int prepare_request_add_flush(struct test_data *td)
 +{
-+	struct mmc_card *card = filp->private_data;
-+	int value;
++	int ret;
 +
-+	if (!card)
-+		return cnt;
-+
-+	sscanf(ubuf, "%d", &value);
-+	if (value) {
-+		mmc_blk_init_packed_statistics(card);
-+	} else {
-+		spin_lock(&card->wr_pack_stats.lock);
-+		card->wr_pack_stats.enabled = false;
-+		spin_unlock(&card->wr_pack_stats.lock);
++	if (!td) {
++		test_pr_err("%s: NULL td", __func__);
++		return 0;
 +	}
 +
-+	return cnt;
++	test_pr_info("%s: Adding a flush request, first req_id=%d", __func__,
++		     td->unique_next_req_id);
++	ret = test_iosched_add_unique_test_req(0, REQ_UNIQUE_FLUSH,
++				  0, 0, NULL);
++	if (ret) {
++		test_pr_err("%s: failed to add a flush request", __func__);
++		return ret;
++	}
++
++	return ret;
 +}
 +
-+static const struct file_operations mmc_dbg_wr_pack_stats_fops = {
-+	.open		= mmc_wr_pack_stats_open,
-+	.read		= mmc_wr_pack_stats_read,
-+	.write		= mmc_wr_pack_stats_write,
-+};
++/*
++ * Add num_requets amount of write requests to the given td's request queue.
++ * If random test mode is chosen we pseudo-randomly choose the number of bios
++ * for each write request, otherwise add between 1 to 5 bio per request.
++ */
++static int prepare_request_add_write_reqs(struct test_data *td,
++					  int num_requests, int is_err_expected,
++					  int is_random)
++{
++	int i;
++	unsigned int start_sec;
++	int num_bios;
++	int ret = 0;
++	unsigned int *bio_seed = &mbtd->random_test_seed;
 +
- void mmc_add_card_debugfs(struct mmc_card *card)
- {
- 	struct mmc_host	*host = card->host;
-@@ -350,6 +520,12 @@ void mmc_add_card_debugfs(struct mmc_card *card)
- 					&mmc_dbg_ext_csd_fops))
- 			goto err;
- 
-+	if (mmc_card_mmc(card) && (card->ext_csd.rev >= 6) &&
-+	    (card->host->caps2 & MMC_CAP2_PACKED_WR))
-+		if (!debugfs_create_file("wr_pack_stats", S_IRUSR, root, card,
-+					 &mmc_dbg_wr_pack_stats_fops))
-+			goto err;
-+
- 	return;
- 
- err:
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 0c36911..aa674ff 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -1270,6 +1270,24 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
- 		} else {
- 			card->ext_csd.packed_event_en = 1;
- 		}
-+
++	if (td)
++		start_sec = td->start_sector;
++	else {
++		test_pr_err("%s: NULL td", __func__);
++		return ret;
 +	}
 +
-+	if (!oldcard) {
-+		if ((host->caps2 & MMC_CAP2_PACKED_CMD) &&
-+		    (card->ext_csd.max_packed_writes > 0)) {
++	test_pr_info("%s: Adding %d write requests, first req_id=%d", __func__,
++		     num_requests, td->wr_rd_next_req_id);
++
++	for (i = 1; i <= num_requests; i++) {
++		start_sec = td->start_sector + 4096 * td->num_of_write_bios;
++		if (is_random)
++			pseudo_rnd_num_of_bios(bio_seed, &num_bios);
++		else
 +			/*
-+			 * We would like to keep the statistics in an index
-+			 * that equals the num of packed requests
-+			 * (1 to max_packed_writes)
++			 * For the non-random case, give num_bios a value
++			 * between 1 and 5, to keep a small number of BIOs
 +			 */
-+			card->wr_pack_stats.packing_events = kzalloc(
-+				(card->ext_csd.max_packed_writes + 1) *
-+				sizeof(*card->wr_pack_stats.packing_events),
-+				GFP_KERNEL);
-+			if (!card->wr_pack_stats.packing_events)
-+				goto free_card;
++			num_bios = (i%5)+1;
++
++		ret = test_iosched_add_wr_rd_test_req(is_err_expected, WRITE,
++				start_sec, num_bios, TEST_PATTERN_5A, NULL);
++
++		if (ret) {
++			test_pr_err("%s: failed to add a write request",
++				    __func__);
++			return ret;
 +		}
- 	}
- 
- 	if (!oldcard)
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index cdfbc3c..f296e25 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -206,6 +206,26 @@ struct mmc_part {
- #define MMC_BLK_DATA_AREA_GP	(1<<2)
- };
- 
-+enum mmc_packed_stop_reasons {
-+	EXCEEDS_SEGMENTS = 0,
-+	EXCEEDS_SECTORS,
-+	WRONG_DATA_DIR,
-+	FLUSH_OR_DISCARD,
-+	EMPTY_QUEUE,
-+	REL_WRITE,
-+	THRESHOLD,
-+	LARGE_SEC_ALIGN,
-+	MAX_REASONS,
++	}
++	return 0;
++}
++
++/*
++ * Prepare the write, read and flush requests for a generic packed commands
++ * testcase
++ */
++static int prepare_packed_requests(struct test_data *td, int is_err_expected,
++				   int num_requests, int is_random)
++{
++	int ret = 0;
++	struct mmc_queue *mq;
++	int max_packed_reqs;
++	struct request_queue *req_q;
++
++	if (!td) {
++		pr_err("%s: NULL td", __func__);
++		return -EINVAL;
++	}
++
++	req_q = td->req_q;
++
++	if (!req_q) {
++		pr_err("%s: NULL request queue", __func__);
++		return -EINVAL;
++	}
++
++	mq = req_q->queuedata;
++	if (!mq) {
++		test_pr_err("%s: NULL mq", __func__);
++		return -EINVAL;
++	}
++
++	max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++
++	if (mbtd->random_test_seed <= 0) {
++		mbtd->random_test_seed =
++			(unsigned int)(get_jiffies_64() & 0xFFFF);
++		test_pr_info("%s: got seed from jiffies %d",
++			     __func__, mbtd->random_test_seed);
++	}
++
++	mmc_blk_init_packed_statistics(mq->card);
++
++	ret = prepare_request_add_write_reqs(td, num_requests, is_err_expected,
++					     is_random);
++	if (ret)
++		return ret;
++
++	/* Avoid memory corruption in upcoming stats set */
++	if (td->test_info.testcase == TEST_STOP_DUE_TO_THRESHOLD)
++		num_requests--;
++
++	memset((void *)mbtd->exp_packed_stats.pack_stop_reason, 0,
++		sizeof(mbtd->exp_packed_stats.pack_stop_reason));
++	memset(mbtd->exp_packed_stats.packing_events, 0,
++		(max_packed_reqs + 1) * sizeof(u32));
++	if (num_requests <= max_packed_reqs)
++		mbtd->exp_packed_stats.packing_events[num_requests] = 1;
++
++	switch (td->test_info.testcase) {
++	case TEST_STOP_DUE_TO_FLUSH:
++	case TEST_STOP_DUE_TO_FLUSH_AFTER_MAX_REQS:
++		ret = prepare_request_add_flush(td);
++		if (ret)
++			return ret;
++
++		mbtd->exp_packed_stats.pack_stop_reason[FLUSH_OR_DISCARD] = 1;
++		break;
++	case TEST_STOP_DUE_TO_READ:
++	case TEST_STOP_DUE_TO_READ_AFTER_MAX_REQS:
++		ret = prepare_request_add_read(td);
++		if (ret)
++			return ret;
++
++		mbtd->exp_packed_stats.pack_stop_reason[WRONG_DATA_DIR] = 1;
++		break;
++	case TEST_STOP_DUE_TO_THRESHOLD:
++		mbtd->exp_packed_stats.packing_events[num_requests] = 1;
++		mbtd->exp_packed_stats.packing_events[1] = 1;
++		mbtd->exp_packed_stats.pack_stop_reason[THRESHOLD] = 1;
++		mbtd->exp_packed_stats.pack_stop_reason[EMPTY_QUEUE] = 1;
++		break;
++	case TEST_STOP_DUE_TO_MAX_REQ_NUM:
++	case TEST_RET_PARTIAL_MAX_FAIL_IDX:
++		mbtd->exp_packed_stats.pack_stop_reason[THRESHOLD] = 1;
++		break;
++	default:
++		mbtd->exp_packed_stats.pack_stop_reason[EMPTY_QUEUE] = 1;
++	}
++	mbtd->num_requests = num_requests;
++
++	return 0;
++}
++
++/*
++ * Prepare requests for the TEST_RET_PARTIAL_FOLLOWED_BY_ABORT testcase.
++ * In this testcase we have mixed error expectations from different
++ * write requests, hence the special prepare function.
++ */
++static int prepare_partial_followed_by_abort(struct test_data *td,
++					      int num_requests)
++{
++	int i, start_address;
++	int is_err_expected = 0;
++	int ret = 0;
++	struct mmc_queue *mq = test_iosched_get_req_queue()->queuedata;
++	int max_packed_reqs;
++
++	if (!mq) {
++		test_pr_err("%s: NULL mq", __func__);
++		return -EINVAL;
++	}
++
++	max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++
++	mmc_blk_init_packed_statistics(mq->card);
++
++	for (i = 1; i <= num_requests; i++) {
++		if (i > (num_requests / 2))
++			is_err_expected = 1;
++
++		start_address = td->start_sector + 4096*td->num_of_write_bios;
++		ret = test_iosched_add_wr_rd_test_req(is_err_expected, WRITE,
++				start_address, (i%5)+1, TEST_PATTERN_5A, NULL);
++		if (ret) {
++			test_pr_err("%s: failed to add a write request",
++				    __func__);
++			return ret;
++		}
++	}
++
++	memset((void *)&mbtd->exp_packed_stats.pack_stop_reason, 0,
++		sizeof(mbtd->exp_packed_stats.pack_stop_reason));
++	memset(mbtd->exp_packed_stats.packing_events, 0,
++		(max_packed_reqs + 1) * sizeof(u32));
++	mbtd->exp_packed_stats.packing_events[num_requests] = 1;
++	mbtd->exp_packed_stats.pack_stop_reason[EMPTY_QUEUE] = 1;
++
++	mbtd->num_requests = num_requests;
++
++	return ret;
++}
++
++/*
++ * Get number of write requests for current testcase. If random test mode was
++ * chosen, pseudo-randomly choose the number of requests, otherwise set to
++ * two less than the packing threshold.
++ */
++static int get_num_requests(struct test_data *td)
++{
++	int *seed = &mbtd->random_test_seed;
++	struct request_queue *req_q;
++	struct mmc_queue *mq;
++	int max_num_requests;
++	int num_requests;
++	int min_num_requests = 2;
++	int is_random = mbtd->is_random;
++
++	req_q = test_iosched_get_req_queue();
++	if (req_q)
++		mq = req_q->queuedata;
++	else {
++		test_pr_err("%s: NULL request queue", __func__);
++		return 0;
++	}
++
++	if (!mq) {
++		test_pr_err("%s: NULL mq", __func__);
++		return -EINVAL;
++	}
++
++	max_num_requests = mq->card->ext_csd.max_packed_writes;
++	num_requests = max_num_requests - 2;
++
++	if (is_random) {
++		if (td->test_info.testcase ==
++		    TEST_RET_PARTIAL_FOLLOWED_BY_ABORT)
++			min_num_requests = 3;
++
++		num_requests = pseudo_random_seed(seed, min_num_requests,
++						  max_num_requests - 1);
++	}
++
++	return num_requests;
++}
++
++/*
++ * An implementation for the prepare_test_fn pointer in the test_info
++ * data structure. According to the testcase we add the right number of requests
++ * and decide if an error is expected or not.
++ */
++static int prepare_test(struct test_data *td)
++{
++	struct mmc_queue *mq = test_iosched_get_req_queue()->queuedata;
++	int max_num_requests;
++	int num_requests = 0;
++	int ret = 0;
++	int is_random = mbtd->is_random;
++
++	if (!mq) {
++		test_pr_err("%s: NULL mq", __func__);
++		return -EINVAL;
++	}
++
++	max_num_requests = mq->card->ext_csd.max_packed_writes;
++
++	if (is_random && mbtd->random_test_seed == 0) {
++		mbtd->random_test_seed =
++			(unsigned int)(get_jiffies_64() & 0xFFFF);
++		test_pr_info("%s: got seed from jiffies %d",
++			__func__, mbtd->random_test_seed);
++	}
++
++	num_requests = get_num_requests(td);
++
++	if (mbtd->test_group == TEST_SEND_INVALID_GROUP)
++		mq->packed_test_fn =
++				test_invalid_packed_cmd;
++
++	if (mbtd->test_group == TEST_ERR_CHECK_GROUP)
++		mq->err_check_fn = test_err_check;
++
++	switch (td->test_info.testcase) {
++	case TEST_STOP_DUE_TO_FLUSH:
++	case TEST_STOP_DUE_TO_READ:
++	case TEST_RET_PARTIAL_FOLLOWED_BY_SUCCESS:
++	case TEST_RET_PARTIAL_MULTIPLE_UNTIL_SUCCESS:
++	case TEST_STOP_DUE_TO_EMPTY_QUEUE:
++	case TEST_CMD23_PACKED_BIT_UNSET:
++		ret = prepare_packed_requests(td, 0, num_requests, is_random);
++		break;
++	case TEST_STOP_DUE_TO_FLUSH_AFTER_MAX_REQS:
++	case TEST_STOP_DUE_TO_READ_AFTER_MAX_REQS:
++		ret = prepare_packed_requests(td, 0, max_num_requests - 1,
++					      is_random);
++		break;
++	case TEST_RET_PARTIAL_FOLLOWED_BY_ABORT:
++		ret = prepare_partial_followed_by_abort(td, num_requests);
++		break;
++	case TEST_STOP_DUE_TO_MAX_REQ_NUM:
++	case TEST_RET_PARTIAL_MAX_FAIL_IDX:
++		ret = prepare_packed_requests(td, 0, max_num_requests,
++					      is_random);
++		break;
++	case TEST_STOP_DUE_TO_THRESHOLD:
++		ret = prepare_packed_requests(td, 0, max_num_requests + 1,
++					      is_random);
++		break;
++	case TEST_RET_ABORT:
++	case TEST_RET_RETRY:
++	case TEST_RET_CMD_ERR:
++	case TEST_RET_DATA_ERR:
++	case TEST_HDR_INVALID_VERSION:
++	case TEST_HDR_WRONG_WRITE_CODE:
++	case TEST_HDR_INVALID_RW_CODE:
++	case TEST_HDR_DIFFERENT_ADDRESSES:
++	case TEST_HDR_REQ_NUM_SMALLER_THAN_ACTUAL:
++	case TEST_HDR_REQ_NUM_LARGER_THAN_ACTUAL:
++	case TEST_CMD23_MAX_PACKED_WRITES:
++	case TEST_CMD23_ZERO_PACKED_WRITES:
++	case TEST_CMD23_REL_WR_BIT_SET:
++	case TEST_CMD23_BITS_16TO29_SET:
++	case TEST_CMD23_HDR_BLK_NOT_IN_COUNT:
++	case TEST_HDR_CMD23_PACKED_BIT_SET:
++		ret = prepare_packed_requests(td, 1, num_requests, is_random);
++		break;
++	default:
++		test_pr_info("%s: Invalid test case...", __func__);
++		return -EINVAL;
++	}
++
++	return ret;
++}
++
++/*
++ * An implementation for the post_test_fn in the test_info data structure.
++ * In our case we just reset the function pointers in the mmc_queue in order for
++ * the FS to be able to dispatch it's requests correctly after the test is
++ * finished.
++ */
++static int post_test(struct test_data *td)
++{
++	struct mmc_queue *mq;
++
++	if (!td)
++		return -EINVAL;
++
++	mq = td->req_q->queuedata;
++
++	if (!mq) {
++		test_pr_err("%s: NULL mq", __func__);
++		return -EINVAL;
++	}
++
++	mq->packed_test_fn = NULL;
++	mq->err_check_fn = NULL;
++
++	return 0;
++}
++
++/*
++ * This function checks, based on the current test's test_group, that the
++ * packed commands capability and control are set right. In addition, we check
++ * if the card supports the packed command feature.
++ */
++static int validate_packed_commands_settings(void)
++{
++	struct request_queue *req_q;
++	struct mmc_queue *mq;
++	int max_num_requests;
++	struct mmc_host *host;
++
++	req_q = test_iosched_get_req_queue();
++	if (!req_q) {
++		test_pr_err("%s: test_iosched_get_req_queue failed", __func__);
++		test_iosched_set_test_result(TEST_FAILED);
++		return -EINVAL;
++	}
++
++	mq = req_q->queuedata;
++	if (!mq) {
++		test_pr_err("%s: NULL mq", __func__);
++		return -EINVAL;
++	}
++
++	max_num_requests = mq->card->ext_csd.max_packed_writes;
++	host = mq->card->host;
++
++	if (!(host->caps2 && MMC_CAP2_PACKED_WR)) {
++		test_pr_err("%s: Packed Write capability disabled, exit test",
++			    __func__);
++		test_iosched_set_test_result(TEST_NOT_SUPPORTED);
++		return -EINVAL;
++	}
++
++	if (max_num_requests == 0) {
++		test_pr_err(
++		"%s: no write packing support, ext_csd.max_packed_writes=%d",
++		__func__, mq->card->ext_csd.max_packed_writes);
++		test_iosched_set_test_result(TEST_NOT_SUPPORTED);
++		return -EINVAL;
++	}
++
++	test_pr_info("%s: max number of packed requests supported is %d ",
++		     __func__, max_num_requests);
++
++	return 0;
++}
++
++static bool message_repeat;
++static int test_open(struct inode *inode, struct file *file)
++{
++	file->private_data = inode->i_private;
++	message_repeat = 1;
++	return 0;
++}
++
++/* send_packing TEST */
++static ssize_t send_write_packing_test_write(struct file *file,
++				const char __user *buf,
++				size_t count,
++				loff_t *ppos)
++{
++	int ret = 0;
++	int i = 0;
++	int number = -1;
++	int j = 0;
++
++	test_pr_info("%s: -- send_write_packing TEST --", __func__);
++
++	sscanf(buf, "%d", &number);
++
++	if (number <= 0)
++		number = 1;
++
++
++	mbtd->test_group = TEST_SEND_WRITE_PACKING_GROUP;
++
++	if (validate_packed_commands_settings())
++		return count;
++
++	if (mbtd->random_test_seed > 0)
++		test_pr_info("%s: Test seed: %d", __func__,
++			      mbtd->random_test_seed);
++
++	memset(&mbtd->test_info, 0, sizeof(struct test_info));
++
++	mbtd->test_info.data = mbtd;
++	mbtd->test_info.prepare_test_fn = prepare_test;
++	mbtd->test_info.check_test_result_fn = check_wr_packing_statistics;
++	mbtd->test_info.get_test_case_str_fn = get_test_case_str;
++	mbtd->test_info.post_test_fn = post_test;
++
++	for (i = 0; i < number; ++i) {
++		test_pr_info("%s: Cycle # %d / %d", __func__, i+1, number);
++		test_pr_info("%s: ====================", __func__);
++
++		for (j = SEND_WRITE_PACKING_MIN_TESTCASE;
++		      j <= SEND_WRITE_PACKING_MAX_TESTCASE; j++) {
++
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				break;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = NON_RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				break;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++		}
++	}
++
++	test_pr_info("%s: Completed all the test cases.", __func__);
++
++	return count;
++}
++
++static ssize_t send_write_packing_test_read(struct file *file,
++			       char __user *buffer,
++			       size_t count,
++			       loff_t *offset)
++{
++	memset((void *)buffer, 0, count);
++
++	snprintf(buffer, count,
++		 "\nsend_write_packing_test\n"
++		 "=========\n"
++		 "Description:\n"
++		 "This test checks the following scenarios\n"
++		 "- Pack due to FLUSH message\n"
++		 "- Pack due to FLUSH after threshold writes\n"
++		 "- Pack due to READ message\n"
++		 "- Pack due to READ after threshold writes\n"
++		 "- Pack due to empty queue\n"
++		 "- Pack due to threshold writes\n"
++		 "- Pack due to one over threshold writes\n");
++
++	if (message_repeat == 1) {
++		message_repeat = 0;
++		return strnlen(buffer, count);
++	} else {
++		return 0;
++	}
++}
++
++const struct file_operations send_write_packing_test_ops = {
++	.open = test_open,
++	.write = send_write_packing_test_write,
++	.read = send_write_packing_test_read,
 +};
 +
-+struct mmc_wr_pack_stats {
-+	u32 *packing_events;
-+	u32 pack_stop_reason[MAX_REASONS];
-+	spinlock_t lock;
-+	bool enabled;
-+	bool print_in_read;
++/* err_check TEST */
++static ssize_t err_check_test_write(struct file *file,
++				const char __user *buf,
++				size_t count,
++				loff_t *ppos)
++{
++	int ret = 0;
++	int i = 0;
++	int number = -1;
++	int j = 0;
++
++	test_pr_info("%s: -- err_check TEST --", __func__);
++
++	sscanf(buf, "%d", &number);
++
++	if (number <= 0)
++		number = 1;
++
++	mbtd->test_group = TEST_ERR_CHECK_GROUP;
++
++	if (validate_packed_commands_settings())
++		return count;
++
++	if (mbtd->random_test_seed > 0)
++		test_pr_info("%s: Test seed: %d", __func__,
++			      mbtd->random_test_seed);
++
++	memset(&mbtd->test_info, 0, sizeof(struct test_info));
++
++	mbtd->test_info.data = mbtd;
++	mbtd->test_info.prepare_test_fn = prepare_test;
++	mbtd->test_info.check_test_result_fn = check_wr_packing_statistics;
++	mbtd->test_info.get_test_case_str_fn = get_test_case_str;
++	mbtd->test_info.post_test_fn = post_test;
++
++	for (i = 0; i < number; ++i) {
++		test_pr_info("%s: Cycle # %d / %d", __func__, i+1, number);
++		test_pr_info("%s: ====================", __func__);
++
++		for (j = ERR_CHECK_MIN_TESTCASE;
++					j <= ERR_CHECK_MAX_TESTCASE; j++) {
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				break;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = NON_RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				break;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++		}
++	}
++
++	test_pr_info("%s: Completed all the test cases.", __func__);
++
++	return count;
++}
++
++static ssize_t err_check_test_read(struct file *file,
++			       char __user *buffer,
++			       size_t count,
++			       loff_t *offset)
++{
++	memset((void *)buffer, 0, count);
++
++	snprintf(buffer, count,
++		 "\nerr_check_TEST\n"
++		 "=========\n"
++		 "Description:\n"
++		 "This test checks the following scenarios\n"
++		 "- Return ABORT\n"
++		 "- Return PARTIAL followed by success\n"
++		 "- Return PARTIAL followed by abort\n"
++		 "- Return PARTIAL multiple times until success\n"
++		 "- Return PARTIAL with fail index = threshold\n"
++		 "- Return RETRY\n"
++		 "- Return CMD_ERR\n"
++		 "- Return DATA_ERR\n");
++
++	if (message_repeat == 1) {
++		message_repeat = 0;
++		return strnlen(buffer, count);
++	} else {
++		return 0;
++	}
++}
++
++const struct file_operations err_check_test_ops = {
++	.open = test_open,
++	.write = err_check_test_write,
++	.read = err_check_test_read,
 +};
 +
- /*
-  * MMC device
-  */
-@@ -278,6 +298,7 @@ struct mmc_card {
- 	struct dentry		*debugfs_root;
- 	struct mmc_part	part[MMC_NUM_PHY_PARTITION]; /* physical partitions */
- 	unsigned int    nr_parts;
-+	struct mmc_wr_pack_stats wr_pack_stats; /* packed commands stats*/
++/* send_invalid_packed TEST */
++static ssize_t send_invalid_packed_test_write(struct file *file,
++				const char __user *buf,
++				size_t count,
++				loff_t *ppos)
++{
++	int ret = 0;
++	int i = 0;
++	int number = -1;
++	int j = 0;
++	int num_of_failures = 0;
++
++	test_pr_info("%s: -- send_invalid_packed TEST --", __func__);
++
++	sscanf(buf, "%d", &number);
++
++	if (number <= 0)
++		number = 1;
++
++	mbtd->test_group = TEST_SEND_INVALID_GROUP;
++
++	if (validate_packed_commands_settings())
++		return count;
++
++	if (mbtd->random_test_seed > 0)
++		test_pr_info("%s: Test seed: %d", __func__,
++			      mbtd->random_test_seed);
++
++	memset(&mbtd->test_info, 0, sizeof(struct test_info));
++
++	mbtd->test_info.data = mbtd;
++	mbtd->test_info.prepare_test_fn = prepare_test;
++	mbtd->test_info.check_test_result_fn = check_wr_packing_statistics;
++	mbtd->test_info.get_test_case_str_fn = get_test_case_str;
++	mbtd->test_info.post_test_fn = post_test;
++
++	for (i = 0; i < number; ++i) {
++		test_pr_info("%s: Cycle # %d / %d", __func__, i+1, number);
++		test_pr_info("%s: ====================", __func__);
++
++		for (j = INVALID_CMD_MIN_TESTCASE;
++				j <= INVALID_CMD_MAX_TESTCASE; j++) {
++
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				num_of_failures++;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = NON_RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				num_of_failures++;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++		}
++	}
++
++	test_pr_info("%s: Completed all the test cases.", __func__);
++
++	if (num_of_failures > 0) {
++		test_iosched_set_test_result(TEST_FAILED);
++		test_pr_err(
++			"There were %d failures during the test, TEST FAILED",
++			num_of_failures);
++	}
++	return count;
++}
++
++static ssize_t send_invalid_packed_test_read(struct file *file,
++			       char __user *buffer,
++			       size_t count,
++			       loff_t *offset)
++{
++	memset((void *)buffer, 0, count);
++
++	snprintf(buffer, count,
++		 "\nsend_invalid_packed_TEST\n"
++		 "=========\n"
++		 "Description:\n"
++		 "This test checks the following scenarios\n"
++		 "- Send an invalid header version\n"
++		 "- Send the wrong write code\n"
++		 "- Send an invalid R/W code\n"
++		 "- Send wrong start address in header\n"
++		 "- Send header with block_count smaller than actual\n"
++		 "- Send header with block_count larger than actual\n"
++		 "- Send header CMD23 packed bit set\n"
++		 "- Send CMD23 with block count over threshold\n"
++		 "- Send CMD23 with block_count equals zero\n"
++		 "- Send CMD23 packed bit unset\n"
++		 "- Send CMD23 reliable write bit set\n"
++		 "- Send CMD23 bits [16-29] set\n"
++		 "- Send CMD23 header block not in block_count\n");
++
++	if (message_repeat == 1) {
++		message_repeat = 0;
++		return strnlen(buffer, count);
++	} else {
++		return 0;
++	}
++}
++
++const struct file_operations send_invalid_packed_test_ops = {
++	.open = test_open,
++	.write = send_invalid_packed_test_write,
++	.read = send_invalid_packed_test_read,
++};
++
++static void mmc_block_test_debugfs_cleanup(void)
++{
++	debugfs_remove(mbtd->debug.random_test_seed);
++	debugfs_remove(mbtd->debug.send_write_packing_test);
++	debugfs_remove(mbtd->debug.err_check_test);
++	debugfs_remove(mbtd->debug.send_invalid_packed_test);
++}
++
++static int mmc_block_test_debugfs_init(void)
++{
++	struct dentry *utils_root, *tests_root;
++
++	utils_root = test_iosched_get_debugfs_utils_root();
++	tests_root = test_iosched_get_debugfs_tests_root();
++
++	if (!utils_root || !tests_root)
++		return -EINVAL;
++
++	mbtd->debug.random_test_seed = debugfs_create_u32(
++					"random_test_seed",
++					S_IRUGO | S_IWUGO,
++					utils_root,
++					&mbtd->random_test_seed);
++
++	if (!mbtd->debug.random_test_seed)
++		goto err_nomem;
++
++	mbtd->debug.send_write_packing_test =
++		debugfs_create_file("send_write_packing_test",
++				    S_IRUGO | S_IWUGO,
++				    tests_root,
++				    NULL,
++				    &send_write_packing_test_ops);
++
++	if (!mbtd->debug.send_write_packing_test)
++		goto err_nomem;
++
++	mbtd->debug.err_check_test =
++		debugfs_create_file("err_check_test",
++				    S_IRUGO | S_IWUGO,
++				    tests_root,
++				    NULL,
++				    &err_check_test_ops);
++
++	if (!mbtd->debug.err_check_test)
++		goto err_nomem;
++
++	mbtd->debug.send_invalid_packed_test =
++		debugfs_create_file("send_invalid_packed_test",
++				    S_IRUGO | S_IWUGO,
++				    tests_root,
++				    NULL,
++				    &send_invalid_packed_test_ops);
++
++	if (!mbtd->debug.send_invalid_packed_test)
++		goto err_nomem;
++
++	return 0;
++
++err_nomem:
++	mmc_block_test_debugfs_cleanup();
++	return -ENOMEM;
++}
++
++static void mmc_block_test_probe(void)
++{
++	struct request_queue *q = test_iosched_get_req_queue();
++	struct mmc_queue *mq;
++	int max_packed_reqs;
++
++	if (!q) {
++		test_pr_err("%s: NULL request queue", __func__);
++		return;
++	}
++
++	mq = q->queuedata;
++	if (!mq) {
++		test_pr_err("%s: NULL mq", __func__);
++		return;
++	}
++
++	max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++	mbtd->exp_packed_stats.packing_events =
++			kzalloc((max_packed_reqs + 1) *
++				sizeof(*mbtd->exp_packed_stats.packing_events),
++				GFP_KERNEL);
++
++	mmc_block_test_debugfs_init();
++}
++
++static void mmc_block_test_remove(void)
++{
++	mmc_block_test_debugfs_cleanup();
++}
++
++static int __init mmc_block_test_init(void)
++{
++	mbtd = kzalloc(sizeof(struct mmc_block_test_data), GFP_KERNEL);
++	if (!mbtd) {
++		test_pr_err("%s: failed to allocate mmc_block_test_data",
++			    __func__);
++		return -ENODEV;
++	}
++
++	mbtd->bdt.init_fn = mmc_block_test_probe;
++	mbtd->bdt.exit_fn = mmc_block_test_remove;
++	INIT_LIST_HEAD(&mbtd->bdt.list);
++	test_iosched_register(&mbtd->bdt);
++
++	return 0;
++}
++
++static void __exit mmc_block_test_exit(void)
++{
++	test_iosched_unregister(&mbtd->bdt);
++	kfree(mbtd);
++}
++
++module_init(mmc_block_test_init);
++module_exit(mmc_block_test_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("MMC block test");
+diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
+index 5e04938..4214f69 100644
+--- a/drivers/mmc/card/queue.h
++++ b/drivers/mmc/card/queue.h
+@@ -12,6 +12,17 @@ struct mmc_blk_request {
+ 	struct mmc_data		data;
  };
  
- /*
-@@ -504,4 +525,8 @@ extern void mmc_unregister_driver(struct mmc_driver *);
- extern void mmc_fixup_device(struct mmc_card *card,
- 			     const struct mmc_fixup *table);
- 
-+extern struct mmc_wr_pack_stats *mmc_blk_get_packed_statistics(
-+			struct mmc_card *card);
-+extern void mmc_blk_init_packed_statistics(struct mmc_card *card);
++enum mmc_blk_status {
++	MMC_BLK_SUCCESS = 0,
++	MMC_BLK_PARTIAL,
++	MMC_BLK_CMD_ERR,
++	MMC_BLK_RETRY,
++	MMC_BLK_ABORT,
++	MMC_BLK_DATA_ERR,
++	MMC_BLK_ECC_ERR,
++	MMC_BLK_NOMEDIUM,
++};
 +
- #endif /* LINUX_MMC_CARD_H */
+ enum mmc_packed_cmd {
+ 	MMC_PACKED_NONE = 0,
+ 	MMC_PACKED_WRITE,
+@@ -45,6 +56,8 @@ struct mmc_queue {
+ 	struct mmc_queue_req	mqrq[2];
+ 	struct mmc_queue_req	*mqrq_cur;
+ 	struct mmc_queue_req	*mqrq_prev;
++	int (*err_check_fn) (struct mmc_card *, struct mmc_async_req *);
++	void (*packed_test_fn) (struct request_queue *, struct mmc_queue_req *);
+ };
+ 
+ extern int mmc_init_queue(struct mmc_queue *, struct mmc_card *, spinlock_t *,
+@@ -58,4 +71,6 @@ extern unsigned int mmc_queue_map_sg(struct mmc_queue *,
+ extern void mmc_queue_bounce_pre(struct mmc_queue_req *);
+ extern void mmc_queue_bounce_post(struct mmc_queue_req *);
+ 
++extern void print_mmc_packing_stats(struct mmc_card *card);
++
+ #endif
 -- 
 1.7.3.3
 -- 
