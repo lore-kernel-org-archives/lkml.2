@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab2GaR0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:26:14 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:55925 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752353Ab2GaR0N (ORCPT
+	id S1753378Ab2GaR0m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:26:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11434 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab2GaR0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:26:13 -0400
-Message-ID: <501814F0.5050008@xenotime.net>
-Date: Tue, 31 Jul 2012 10:25:04 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 31 Jul 2012 13:26:40 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=wom5GMh1gUkA:10 a=aqDLzf-sAsEA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=MOAlSWJXwOALvgJcYAAA:9 a=CjuIK1q_8ugA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Date: Tue, 31 Jul 2012 13:26:38 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: awful kconfig help texts.
+Message-ID: <20120731172638.GE16873@home.goodmis.org>
+References: <20120731151600.GA19412@redhat.com>
+ <20120731170741.GA4735@x1.osrc.amd.com>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org
-Subject: Re: [PATCH] sched: Document schedule() entry points
-References: <1343715300-6315-1-git-send-email-penberg@kernel.org>
-In-Reply-To: <1343715300-6315-1-git-send-email-penberg@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731170741.GA4735@x1.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 11:15 PM, Pekka Enberg wrote:
-
-> This patch adds a comment on top of the schedule() function to explain
-> to scheduler newbies how the main scheduler function is entered.
+On Tue, Jul 31, 2012 at 07:07:41PM +0200, Borislav Petkov wrote:
+> On Tue, Jul 31, 2012 at 11:16:00AM -0400, Dave Jones wrote:
+> > 
+> > PWM Support (PWM) [N/y/?] (NEW) ?
+> > 
+> > CONFIG_PWM:
+> > 
+> > This enables PWM support through the generic PWM framework.
+> > 
+> > 
+> > Well that's.. enlightening.
 > 
-> Explained-by: Ingo Molnar <mingo@kernel.org>
-> Explained-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
-> ---
->  kernel/sched/core.c |   34 ++++++++++++++++++++++++++++++++++
->  1 files changed, 34 insertions(+), 0 deletions(-)
+> Oh, there's one more enlightening sentence in the help:
 > 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 468bdd4..9f31bbd 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -3361,6 +3361,40 @@ pick_next_task(struct rq *rq)
->  
->  /*
->   * __schedule() is the main scheduler function.
-> + *
-> + * The main means of driving the scheduler and thus entering this function are:
-> + *
-> + *   1. Explicit blocking: mutex, semaphore, waitqueue, etc.
-> + *
-> + *   2. TIF_NEED_RESCHED flag is checked on interrupt and userspace return
-> + *      paths. For example, see arch/x86/entry_64.S.
-> + *
-> + *      To drive preemption between tasks, the scheduler sets the flag is set
+> "You only need to enable this, if you also want to enable one or more of
+> the PWM drivers below."
+
+Then shouldn't this not have a prompt and just be selected by those
+PWM drivers below?
 
 
-eh?
+> 
+> Got it? :-)
+> 
+> > I'm picking on PWM here, but this isn't an
+> > isolated case.  Every merge window we see a slew of new options with useless
+> > help texts. They may as well be non-existent. (Actually in some cases, they are).
+> > 
+> > If someone has to read the code to find out what the driver is, your help text probably sucks.
+> > 
+> > 
+> > (I'll leave "why does this option even show up on x86" as a separate rant)
 
-> + *      in timer interrupt handler scheduler_tick().
-> + *
-> + *   3. Wakeups don't really cause entry into schedule(). They add a
-> + *      task to the run-queue and that's it.
-> + *
-> + *      Now, if the new task added to the run-queue preempts the current
-> + *      task, then the wakeup sets TIF_NEED_RESCHED and schedule() gets
-> + *      called on the nearest possible occasion:
-> + *
-> + *       - If the kernel is preemptible (CONFIG_PREEMPT=y):
-> + *
-> + *         - in syscall or exception context, at the next outmost
-> + *           preempt_enable(). (this might be as soon as the wake_up()'s
-> + *           spin_unlock()!)
-> + *
-> + *         - in IRQ context, return from interrupt-handler to
-> + *           preemptible context
-> + *
-> + *       - If the kernel is not preemptible (CONFIG_PREEMPT is not set)
-> + *         then at the next:
-> + *
-> + *          - cond_resched() call
-> + *          - explicit schedule() call
-> + *          - return from syscall or exception to user-space
-> + *          - return from interrupt-handler to user-space
->   */
->  static void __sched __schedule(void)
->  {
+/me is looking forward to this rant ;-)
 
+-- Steve
 
-
--- 
-~Randy
