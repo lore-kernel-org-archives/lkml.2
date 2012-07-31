@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab2GaR4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:56:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59231 "EHLO
+	id S1753879Ab2GaR4z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:56:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59243 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab2GaR4G (ORCPT
+	with ESMTP id S1752776Ab2GaR4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:56:06 -0400
-Date: Tue, 31 Jul 2012 10:55:46 -0700
-From: tip-bot for Michael Wang <wangyun@linux.vnet.ibm.com>
-Message-ID: <tip-b9403130a5350fca59a50ed11c198cb8c7e54119@git.kernel.org>
+	Tue, 31 Jul 2012 13:56:54 -0400
+Date: Tue, 31 Jul 2012 10:56:39 -0700
+From: tip-bot for Andrew Morton <akpm@linux-foundation.org>
+Message-ID: <tip-h84qlqj02zrojmxxybzmy9hi@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, wangyun@linux.vnet.ibm.com, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, akpm@linux-foundation.org,
+        zheng.z.yan@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, wangyun@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <4FFE8665.3080705@linux.vnet.ibm.com>
-References: <4FFE8665.3080705@linux.vnet.ibm.com>
+        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
+        zheng.z.yan@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/cleanups:
-  Add load balance cpumask pointer to 'struct lb_env'
-Git-Commit-ID: b9403130a5350fca59a50ed11c198cb8c7e54119
+Subject: [tip:perf/urgent] perf/x86/intel/uncore:
+  Make UNCORE_PMU_HRTIMER_INTERVAL 64-bit
+Git-Commit-ID: 7740dfc0363a70546ef25c0383aca252f95a91d2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,152 +28,46 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jul 2012 10:55:53 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jul 2012 10:56:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b9403130a5350fca59a50ed11c198cb8c7e54119
-Gitweb:     http://git.kernel.org/tip/b9403130a5350fca59a50ed11c198cb8c7e54119
-Author:     Michael Wang <wangyun@linux.vnet.ibm.com>
-AuthorDate: Thu, 12 Jul 2012 16:10:13 +0800
+Commit-ID:  7740dfc0363a70546ef25c0383aca252f95a91d2
+Gitweb:     http://git.kernel.org/tip/7740dfc0363a70546ef25c0383aca252f95a91d2
+Author:     Andrew Morton <akpm@linux-foundation.org>
+AuthorDate: Sat, 21 Jul 2012 10:53:46 +1000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 31 Jul 2012 17:00:16 +0200
+CommitDate: Tue, 31 Jul 2012 17:02:03 +0200
 
-sched/cleanups: Add load balance cpumask pointer to 'struct lb_env'
+perf/x86/intel/uncore: Make UNCORE_PMU_HRTIMER_INTERVAL 64-bit
 
-With this patch struct ld_env will have a pointer of the load balancing
-cpumask and we don't need to pass a cpumask around anymore.
+i386 allmodconfig:
 
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c: In function 'uncore_pmu_hrtimer':
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c:728: warning: integer overflow in expression
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c: In function 'uncore_pmu_start_hrtimer':
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c:735: warning: integer overflow in expression
+
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: Zheng Yan <zheng.z.yan@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/4FFE8665.3080705@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/n/tip-h84qlqj02zrojmxxybzmy9hi@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 22321db..d0cc03b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3069,6 +3069,9 @@ struct lb_env {
- 	int			new_dst_cpu;
- 	enum cpu_idle_type	idle;
- 	long			imbalance;
-+	/* The set of CPUs under consideration for load-balancing */
-+	struct cpumask		*cpus;
-+
- 	unsigned int		flags;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index f385189..c9e5dc5 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -5,7 +5,7 @@
+ #include "perf_event.h"
  
- 	unsigned int		loop;
-@@ -3653,8 +3656,7 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
-  */
- static inline void update_sg_lb_stats(struct lb_env *env,
- 			struct sched_group *group, int load_idx,
--			int local_group, const struct cpumask *cpus,
--			int *balance, struct sg_lb_stats *sgs)
-+			int local_group, int *balance, struct sg_lb_stats *sgs)
- {
- 	unsigned long nr_running, max_nr_running, min_nr_running;
- 	unsigned long load, max_cpu_load, min_cpu_load;
-@@ -3671,7 +3673,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 	max_nr_running = 0;
- 	min_nr_running = ~0UL;
+ #define UNCORE_PMU_NAME_LEN		32
+-#define UNCORE_PMU_HRTIMER_INTERVAL	(60 * NSEC_PER_SEC)
++#define UNCORE_PMU_HRTIMER_INTERVAL	(60LL * NSEC_PER_SEC)
  
--	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
-+	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
- 		struct rq *rq = cpu_rq(i);
- 
- 		nr_running = rq->nr_running;
-@@ -3800,8 +3802,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
-  * @sds: variable to hold the statistics for this sched_domain.
-  */
- static inline void update_sd_lb_stats(struct lb_env *env,
--				      const struct cpumask *cpus,
--				      int *balance, struct sd_lb_stats *sds)
-+					int *balance, struct sd_lb_stats *sds)
- {
- 	struct sched_domain *child = env->sd->child;
- 	struct sched_group *sg = env->sd->groups;
-@@ -3818,8 +3819,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
- 
- 		local_group = cpumask_test_cpu(env->dst_cpu, sched_group_cpus(sg));
- 		memset(&sgs, 0, sizeof(sgs));
--		update_sg_lb_stats(env, sg, load_idx, local_group,
--				   cpus, balance, &sgs);
-+		update_sg_lb_stats(env, sg, load_idx, local_group, balance, &sgs);
- 
- 		if (local_group && !(*balance))
- 			return;
-@@ -4055,7 +4055,6 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
-  * to restore balance.
-  *
-  * @env: The load balancing environment.
-- * @cpus: The set of CPUs under consideration for load-balancing.
-  * @balance: Pointer to a variable indicating if this_cpu
-  *	is the appropriate cpu to perform load balancing at this_level.
-  *
-@@ -4065,7 +4064,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
-  *		   put to idle by rebalancing its tasks onto our group.
-  */
- static struct sched_group *
--find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
-+find_busiest_group(struct lb_env *env, int *balance)
- {
- 	struct sd_lb_stats sds;
- 
-@@ -4075,7 +4074,7 @@ find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
- 	 * Compute the various statistics relavent for load balancing at
- 	 * this level.
- 	 */
--	update_sd_lb_stats(env, cpus, balance, &sds);
-+	update_sd_lb_stats(env, balance, &sds);
- 
- 	/*
- 	 * this_cpu is not the appropriate cpu to perform load balancing at
-@@ -4155,8 +4154,7 @@ ret:
-  * find_busiest_queue - find the busiest runqueue among the cpus in group.
-  */
- static struct rq *find_busiest_queue(struct lb_env *env,
--				     struct sched_group *group,
--				     const struct cpumask *cpus)
-+				     struct sched_group *group)
- {
- 	struct rq *busiest = NULL, *rq;
- 	unsigned long max_load = 0;
-@@ -4171,7 +4169,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 		if (!capacity)
- 			capacity = fix_small_capacity(env->sd, group);
- 
--		if (!cpumask_test_cpu(i, cpus))
-+		if (!cpumask_test_cpu(i, env->cpus))
- 			continue;
- 
- 		rq = cpu_rq(i);
-@@ -4252,6 +4250,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		.dst_grpmask    = sched_group_cpus(sd->groups),
- 		.idle		= idle,
- 		.loop_break	= sched_nr_migrate_break,
-+		.cpus		= cpus,
- 	};
- 
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -4260,7 +4259,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 	schedstat_inc(sd, lb_count[idle]);
- 
- redo:
--	group = find_busiest_group(&env, cpus, balance);
-+	group = find_busiest_group(&env, balance);
- 
- 	if (*balance == 0)
- 		goto out_balanced;
-@@ -4270,7 +4269,7 @@ redo:
- 		goto out_balanced;
- 	}
- 
--	busiest = find_busiest_queue(&env, group, cpus);
-+	busiest = find_busiest_queue(&env, group);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
+ #define UNCORE_FIXED_EVENT		0xff
+ #define UNCORE_PMC_IDX_MAX_GENERIC	8
