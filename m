@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab2GaEvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:51:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48798 "EHLO
+	id S1755866Ab2GaEva (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:51:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48889 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755651Ab2GaEvB (ORCPT
+	by vger.kernel.org with ESMTP id S1755731Ab2GaEvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:51:01 -0400
-Message-Id: <20120731044317.046367408@decadent.org.uk>
+	Tue, 31 Jul 2012 00:51:09 -0400
+Message-Id: <20120731044314.682435444@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:46 +0100
+Date: Tue, 31 Jul 2012 05:43:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Theodore Tso <tytso@mit.edu>
-Subject: [ 36/73] ext4: fix overhead calculation used by ext4_statfs()
+        alan@lxorguk.ukuu.org.uk, Ezequiel Garcia <elezegarcia@gmail.com>,
+        Radek Masin <radek@masin.eu>
+Subject: [ 21/73] cx25821: Remove bad strcpy to read-only char*
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,290 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Ezequiel Garcia <elezegarcia@gmail.com>
 
-commit 952fc18ef9ec707ebdc16c0786ec360295e5ff15 upstream.
+commit 380e99fc44d79bc35af9ff1d3316ef4027ce775e upstream.
 
-Commit f975d6bcc7a introduced bug which caused ext4_statfs() to
-miscalculate the number of file system overhead blocks.  This causes
-the f_blocks field in the statfs structure to be larger than it should
-be.  This would in turn cause the "df" output to show the number of
-data blocks in the file system and the number of data blocks used to
-be larger than they should be.
+The strcpy was being used to set the name of the board.  Since the
+destination char* was read-only and the name is set statically at
+compile time; this was both wrong and redundant.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[bwh: Backported to 3.2: adjust context]
+The type of char* is changed to const char* to prevent future errors.
+
+Reported-by: Radek Masin <radek@masin.eu>
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+[ Taking directly due to vacations   - Linus ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
-I put the call to ext4_calculate_overhead() in ext4_group_add(); is
-it the right place?
+ drivers/media/video/cx25821/cx25821-core.c |    3 ---
+ drivers/media/video/cx25821/cx25821.h      |    2 +-
+ 2 files changed, 1 insertion(+), 4 deletions(-)
 
-Ben.
----
- fs/ext4/bitmap.c |    4 --
- fs/ext4/ext4.h   |    4 +-
- fs/ext4/resize.c |    7 ++-
- fs/ext4/super.c  |  174 ++++++++++++++++++++++++++++++++++++++----------------
- 4 files changed, 132 insertions(+), 57 deletions(-)
-
---- a/fs/ext4/bitmap.c
-+++ b/fs/ext4/bitmap.c
-@@ -11,8 +11,6 @@
- #include <linux/jbd2.h>
- #include "ext4.h"
+diff --git a/drivers/media/video/cx25821/cx25821-core.c b/drivers/media/video/cx25821/cx25821-core.c
+index 83c1aa6..f11f6f0 100644
+--- a/drivers/media/video/cx25821/cx25821-core.c
++++ b/drivers/media/video/cx25821/cx25821-core.c
+@@ -904,9 +904,6 @@ static int cx25821_dev_setup(struct cx25821_dev *dev)
+ 	list_add_tail(&dev->devlist, &cx25821_devlist);
+ 	mutex_unlock(&cx25821_devlist_mutex);
  
--#ifdef EXT4FS_DEBUG
+-	strcpy(cx25821_boards[UNKNOWN_BOARD].name, "unknown");
+-	strcpy(cx25821_boards[CX25821_BOARD].name, "cx25821");
 -
- static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
+ 	if (dev->pci->device != 0x8210) {
+ 		pr_info("%s(): Exiting. Incorrect Hardware device = 0x%02x\n",
+ 			__func__, dev->pci->device);
+diff --git a/drivers/media/video/cx25821/cx25821.h b/drivers/media/video/cx25821/cx25821.h
+index b9aa801..029f293 100644
+--- a/drivers/media/video/cx25821/cx25821.h
++++ b/drivers/media/video/cx25821/cx25821.h
+@@ -187,7 +187,7 @@ enum port {
+ };
  
- unsigned int ext4_count_free(char *bitmap, unsigned int numchars)
-@@ -25,5 +23,3 @@ unsigned int ext4_count_free(char *bitma
- 	return sum;
- }
- 
--#endif  /*  EXT4FS_DEBUG  */
--
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1123,8 +1123,7 @@ struct ext4_sb_info {
- 	unsigned long s_desc_per_block;	/* Number of group descriptors per block */
- 	ext4_group_t s_groups_count;	/* Number of groups in the fs */
- 	ext4_group_t s_blockfile_groups;/* Groups acceptable for non-extent files */
--	unsigned long s_overhead_last;  /* Last calculated overhead */
--	unsigned long s_blocks_last;    /* Last seen block count */
-+	unsigned long s_overhead;  /* # of fs overhead clusters */
- 	unsigned int s_cluster_ratio;	/* Number of blocks per cluster */
- 	unsigned int s_cluster_bits;	/* log2 of s_cluster_ratio */
- 	loff_t s_bitmap_maxbytes;	/* max bytes for bitmap files */
-@@ -1925,6 +1924,7 @@ extern int ext4_group_extend(struct supe
- 				ext4_fsblk_t n_blocks_count);
- 
- /* super.c */
-+extern int ext4_calculate_overhead(struct super_block *sb);
- extern void *ext4_kvmalloc(size_t size, gfp_t flags);
- extern void *ext4_kvzalloc(size_t size, gfp_t flags);
- extern void ext4_kvfree(void *ptr);
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -952,6 +952,11 @@ int ext4_group_add(struct super_block *s
- 			   &sbi->s_flex_groups[flex_group].free_inodes);
- 	}
- 
-+	/*
-+	 * Update the fs overhead information
-+	 */
-+	ext4_calculate_overhead(sb);
-+
- 	ext4_handle_dirty_super(handle, sb);
- 
- exit_journal:
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3083,6 +3083,114 @@ static void ext4_destroy_lazyinit_thread
- 	kthread_stop(ext4_lazyinit_task);
- }
- 
-+/*
-+ * Note: calculating the overhead so we can be compatible with
-+ * historical BSD practice is quite difficult in the face of
-+ * clusters/bigalloc.  This is because multiple metadata blocks from
-+ * different block group can end up in the same allocation cluster.
-+ * Calculating the exact overhead in the face of clustered allocation
-+ * requires either O(all block bitmaps) in memory or O(number of block
-+ * groups**2) in time.  We will still calculate the superblock for
-+ * older file systems --- and if we come across with a bigalloc file
-+ * system with zero in s_overhead_clusters the estimate will be close to
-+ * correct especially for very large cluster sizes --- but for newer
-+ * file systems, it's better to calculate this figure once at mkfs
-+ * time, and store it in the superblock.  If the superblock value is
-+ * present (even for non-bigalloc file systems), we will use it.
-+ */
-+static int count_overhead(struct super_block *sb, ext4_group_t grp,
-+			  char *buf)
-+{
-+	struct ext4_sb_info	*sbi = EXT4_SB(sb);
-+	struct ext4_group_desc	*gdp;
-+	ext4_fsblk_t		first_block, last_block, b;
-+	ext4_group_t		i, ngroups = ext4_get_groups_count(sb);
-+	int			s, j, count = 0;
-+
-+	first_block = le32_to_cpu(sbi->s_es->s_first_data_block) +
-+		(grp * EXT4_BLOCKS_PER_GROUP(sb));
-+	last_block = first_block + EXT4_BLOCKS_PER_GROUP(sb) - 1;
-+	for (i = 0; i < ngroups; i++) {
-+		gdp = ext4_get_group_desc(sb, i, NULL);
-+		b = ext4_block_bitmap(sb, gdp);
-+		if (b >= first_block && b <= last_block) {
-+			ext4_set_bit(EXT4_B2C(sbi, b - first_block), buf);
-+			count++;
-+		}
-+		b = ext4_inode_bitmap(sb, gdp);
-+		if (b >= first_block && b <= last_block) {
-+			ext4_set_bit(EXT4_B2C(sbi, b - first_block), buf);
-+			count++;
-+		}
-+		b = ext4_inode_table(sb, gdp);
-+		if (b >= first_block && b + sbi->s_itb_per_group <= last_block)
-+			for (j = 0; j < sbi->s_itb_per_group; j++, b++) {
-+				int c = EXT4_B2C(sbi, b - first_block);
-+				ext4_set_bit(c, buf);
-+				count++;
-+			}
-+		if (i != grp)
-+			continue;
-+		s = 0;
-+		if (ext4_bg_has_super(sb, grp)) {
-+			ext4_set_bit(s++, buf);
-+			count++;
-+		}
-+		for (j = ext4_bg_num_gdb(sb, grp); j > 0; j--) {
-+			ext4_set_bit(EXT4_B2C(sbi, s++), buf);
-+			count++;
-+		}
-+	}
-+	if (!count)
-+		return 0;
-+	return EXT4_CLUSTERS_PER_GROUP(sb) -
-+		ext4_count_free(buf, EXT4_CLUSTERS_PER_GROUP(sb) / 8);
-+}
-+
-+/*
-+ * Compute the overhead and stash it in sbi->s_overhead
-+ */
-+int ext4_calculate_overhead(struct super_block *sb)
-+{
-+	struct ext4_sb_info *sbi = EXT4_SB(sb);
-+	struct ext4_super_block *es = sbi->s_es;
-+	ext4_group_t i, ngroups = ext4_get_groups_count(sb);
-+	ext4_fsblk_t overhead = 0;
-+	char *buf = (char *) get_zeroed_page(GFP_KERNEL);
-+
-+	memset(buf, 0, PAGE_SIZE);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	/*
-+	 * Compute the overhead (FS structures).  This is constant
-+	 * for a given filesystem unless the number of block groups
-+	 * changes so we cache the previous value until it does.
-+	 */
-+
-+	/*
-+	 * All of the blocks before first_data_block are overhead
-+	 */
-+	overhead = EXT4_B2C(sbi, le32_to_cpu(es->s_first_data_block));
-+
-+	/*
-+	 * Add the overhead found in each block group
-+	 */
-+	for (i = 0; i < ngroups; i++) {
-+		int blks;
-+
-+		blks = count_overhead(sb, i, buf);
-+		overhead += blks;
-+		if (blks)
-+			memset(buf, 0, PAGE_SIZE);
-+		cond_resched();
-+	}
-+	sbi->s_overhead = overhead;
-+	smp_wmb();
-+	free_page((unsigned long) buf);
-+	return 0;
-+}
-+
- static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- {
- 	char *orig_data = kstrdup(data, GFP_KERNEL);
-@@ -3695,6 +3803,18 @@ static int ext4_fill_super(struct super_
- 
- no_journal:
- 	/*
-+	 * Get the # of file system overhead blocks from the
-+	 * superblock if present.
-+	 */
-+	if (es->s_overhead_clusters)
-+		sbi->s_overhead = le32_to_cpu(es->s_overhead_clusters);
-+	else {
-+		ret = ext4_calculate_overhead(sb);
-+		if (ret)
-+			goto failed_mount_wq;
-+	}
-+
-+	/*
- 	 * The maximum number of concurrent works can be high and
- 	 * concurrency isn't really necessary.  Limit it to 1.
- 	 */
-@@ -4568,67 +4688,21 @@ restore_opts:
- 	return err;
- }
- 
--/*
-- * Note: calculating the overhead so we can be compatible with
-- * historical BSD practice is quite difficult in the face of
-- * clusters/bigalloc.  This is because multiple metadata blocks from
-- * different block group can end up in the same allocation cluster.
-- * Calculating the exact overhead in the face of clustered allocation
-- * requires either O(all block bitmaps) in memory or O(number of block
-- * groups**2) in time.  We will still calculate the superblock for
-- * older file systems --- and if we come across with a bigalloc file
-- * system with zero in s_overhead_clusters the estimate will be close to
-- * correct especially for very large cluster sizes --- but for newer
-- * file systems, it's better to calculate this figure once at mkfs
-- * time, and store it in the superblock.  If the superblock value is
-- * present (even for non-bigalloc file systems), we will use it.
-- */
- static int ext4_statfs(struct dentry *dentry, struct kstatfs *buf)
- {
- 	struct super_block *sb = dentry->d_sb;
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
- 	struct ext4_super_block *es = sbi->s_es;
--	struct ext4_group_desc *gdp;
-+	ext4_fsblk_t overhead = 0;
- 	u64 fsid;
- 	s64 bfree;
- 
--	if (test_opt(sb, MINIX_DF)) {
--		sbi->s_overhead_last = 0;
--	} else if (es->s_overhead_clusters) {
--		sbi->s_overhead_last = le32_to_cpu(es->s_overhead_clusters);
--	} else if (sbi->s_blocks_last != ext4_blocks_count(es)) {
--		ext4_group_t i, ngroups = ext4_get_groups_count(sb);
--		ext4_fsblk_t overhead = 0;
--
--		/*
--		 * Compute the overhead (FS structures).  This is constant
--		 * for a given filesystem unless the number of block groups
--		 * changes so we cache the previous value until it does.
--		 */
--
--		/*
--		 * All of the blocks before first_data_block are
--		 * overhead
--		 */
--		overhead = EXT4_B2C(sbi, le32_to_cpu(es->s_first_data_block));
--
--		/*
--		 * Add the overhead found in each block group
--		 */
--		for (i = 0; i < ngroups; i++) {
--			gdp = ext4_get_group_desc(sb, i, NULL);
--			overhead += ext4_num_overhead_clusters(sb, i, gdp);
--			cond_resched();
--		}
--		sbi->s_overhead_last = overhead;
--		smp_wmb();
--		sbi->s_blocks_last = ext4_blocks_count(es);
--	}
-+	if (!test_opt(sb, MINIX_DF))
-+		overhead = sbi->s_overhead;
- 
- 	buf->f_type = EXT4_SUPER_MAGIC;
- 	buf->f_bsize = sb->s_blocksize;
--	buf->f_blocks = (ext4_blocks_count(es) -
--			 EXT4_C2B(sbi, sbi->s_overhead_last));
-+	buf->f_blocks = ext4_blocks_count(es) - EXT4_C2B(sbi, sbi->s_overhead);
- 	bfree = percpu_counter_sum_positive(&sbi->s_freeclusters_counter) -
- 		percpu_counter_sum_positive(&sbi->s_dirtyclusters_counter);
- 	/* prevent underflow in case that few free space is available */
+ struct cx25821_board {
+-	char *name;
++	const char *name;
+ 	enum port porta;
+ 	enum port portb;
+ 	enum port portc;
 
 
