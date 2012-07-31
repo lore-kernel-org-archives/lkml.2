@@ -1,66 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab2GaKwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:52:14 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:34167 "EHLO
+	id S1755923Ab2GaKwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:52:08 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34077 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab2GaKwK (ORCPT
+	with ESMTP id S1755475Ab2GaKwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:52:10 -0400
+	Tue, 31 Jul 2012 06:52:05 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         Ian.Campbell@citrix.com, hpa@zytor.com, x86@kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/3] xen/p2m: Reserve 4MB of _brk space for P2M leafs when populating back.
-Date: Tue, 31 Jul 2012 06:42:55 -0400
-Message-Id: <1343731376-20658-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 1/3] xen/mmu/p2m: Check extend_brk for NULL
+Date: Tue, 31 Jul 2012 06:42:54 -0400
+Message-Id: <1343731376-20658-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1343731376-20658-1-git-send-email-konrad.wilk@oracle.com>
 References: <1343731376-20658-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we release pages back during bootup:
+Which allows us to be a bit smarter in case we exhaust the reserved
+virtual space.
 
-Freeing  9d-100 pfn range: 99 pages freed
-Freeing  9cf36-9d0d2 pfn range: 412 pages freed
-Freeing  9f6bd-9f6bf pfn range: 2 pages freed
-Freeing  9f714-9f7bf pfn range: 171 pages freed
-Freeing  9f7e0-9f7ff pfn range: 31 pages freed
-Freeing  9f800-100000 pfn range: 395264 pages freed
-Released 395979 pages of unused memory
-
-We then try to populate those pages back. In the P2M tree however
-the space for those leafs must be reserved - as such we use extend_brk.
-We reserve 4MB of _brk space, which means we can fit over
-524288 PFNs - which should be more than enough to cover. If we do
-run over that number, the code is smart enough to stop and not
-allocate anymore leafs.
-
+[v1: Suggested by Ian Campbell]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/p2m.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ arch/x86/xen/enlighten.c |    2 ++
+ arch/x86/xen/mmu.c       |    5 ++++-
+ arch/x86/xen/p2m.c       |   35 ++++++++++++++++++++++++-----------
+ 3 files changed, 30 insertions(+), 12 deletions(-)
 
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 993e2a5..923d98e 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1519,6 +1519,8 @@ void __ref xen_hvm_init_shared_info(void)
+ 	if (!shared_info_page)
+ 		shared_info_page = (struct shared_info *)
+ 			extend_brk(PAGE_SIZE, PAGE_SIZE);
++	if (!shared_info_page)
++		return;
+ 	xatp.domid = DOMID_SELF;
+ 	xatp.idx = 0;
+ 	xatp.space = XENMAPSPACE_shared_info;
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 993ba07..d7a2044 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1711,6 +1711,8 @@ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+ 
+ 	level1_ident_pgt = extend_brk(sizeof(pte_t) * LEVEL1_IDENT_ENTRIES,
+ 				      PAGE_SIZE);
++	if (!level_ident_pgt)
++		goto out;
+ 
+ 	ident_pte = 0;
+ 	pfn = 0;
+@@ -1750,7 +1752,7 @@ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+ 
+ 	for (pteidx = 0; pteidx < ident_pte; pteidx += PTRS_PER_PTE)
+ 		set_page_prot(&level1_ident_pgt[pteidx], PAGE_KERNEL_RO);
+-
++out:
+ 	set_page_prot(pmd, PAGE_KERNEL_RO);
+ }
+ #endif
+@@ -1948,6 +1950,7 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 
+ 	initial_kernel_pmd =
+ 		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
++	BUG_ON(!initial_kernel_pmd);
+ 
+ 	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
+ 				  xen_start_info->nr_pt_frames * PAGE_SIZE +
 diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 1658af0..0aa61ef 100644
+index bbfd085..1658af0 100644
 --- a/arch/x86/xen/p2m.c
 +++ b/arch/x86/xen/p2m.c
-@@ -194,6 +194,12 @@ RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID
-  * boundary violation will require three middle nodes. */
- RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 2 * 3);
+@@ -258,6 +258,13 @@ static void p2m_init(unsigned long *p2m)
+ 		p2m[i] = INVALID_P2M_ENTRY;
+ }
  
-+/* When we populate back during bootup, the amount of pages can vary. The
-+ * max we have is seen is 395979, but that does not mean it can't be more.
-+ * So reserve enough for 524288 pages (2G of I/O and E820 holes). Note:
-+ * We are smart enough to stop exhausting the _brk if we are close to
-+ * exhaustion. */
-+RESERVE_BRK(p2m_populated, PMD_SIZE * 2);
- static inline unsigned p2m_top_index(unsigned long pfn)
- {
- 	BUG_ON(pfn >= MAX_P2M_PFN);
++static __always_inline __init void *brk_alloc_page(void)
++{
++	void *p = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	/* So early that printk does not function. */
++	BUG_ON(p == NULL);
++	return p;
++}
+ /*
+  * Build the parallel p2m_top_mfn and p2m_mid_mfn structures
+  *
+@@ -274,13 +281,13 @@ void __ref xen_build_mfn_list_list(void)
+ 
+ 	/* Pre-initialize p2m_top_mfn to be completely missing */
+ 	if (p2m_top_mfn == NULL) {
+-		p2m_mid_missing_mfn = extend_brk(PAGE_SIZE, PAGE_SIZE);
++		p2m_mid_missing_mfn = brk_alloc_page();
+ 		p2m_mid_mfn_init(p2m_mid_missing_mfn);
+ 
+-		p2m_top_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
++		p2m_top_mfn_p = brk_alloc_page();
+ 		p2m_top_mfn_p_init(p2m_top_mfn_p);
+ 
+-		p2m_top_mfn = extend_brk(PAGE_SIZE, PAGE_SIZE);
++		p2m_top_mfn = brk_alloc_page();
+ 		p2m_top_mfn_init(p2m_top_mfn);
+ 	} else {
+ 		/* Reinitialise, mfn's all change after migration */
+@@ -312,10 +319,10 @@ void __ref xen_build_mfn_list_list(void)
+ 			/*
+ 			 * XXX boot-time only!  We should never find
+ 			 * missing parts of the mfn tree after
+-			 * runtime.  extend_brk() will BUG if we call
++			 * runtime.  brk_alloc_page() will BUG if we call
+ 			 * it too late.
+ 			 */
+-			mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
++			mid_mfn_p = brk_alloc_page();
+ 			p2m_mid_mfn_init(mid_mfn_p);
+ 
+ 			p2m_top_mfn_p[topidx] = mid_mfn_p;
+@@ -344,16 +351,16 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 
+ 	xen_max_p2m_pfn = max_pfn;
+ 
+-	p2m_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_missing = brk_alloc_page();
+ 	p2m_init(p2m_missing);
+ 
+-	p2m_mid_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_mid_missing = brk_alloc_page();
+ 	p2m_mid_init(p2m_mid_missing);
+ 
+-	p2m_top = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_top = brk_alloc_page();
+ 	p2m_top_init(p2m_top);
+ 
+-	p2m_identity = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_identity = brk_alloc_page();
+ 	p2m_init(p2m_identity);
+ 
+ 	/*
+@@ -366,7 +373,7 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 		unsigned mididx = p2m_mid_index(pfn);
+ 
+ 		if (p2m_top[topidx] == p2m_mid_missing) {
+-			unsigned long **mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
++			unsigned long **mid = brk_alloc_page();
+ 			p2m_mid_init(mid);
+ 
+ 			p2m_top[topidx] = mid;
+@@ -600,6 +607,8 @@ static bool __init early_alloc_p2m_middle(unsigned long pfn, bool check_boundary
+ 
+ 	/* Boundary cross-over for the edges: */
+ 	p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	if (!p2m)
++		return false;
+ 
+ 	p2m_init(p2m);
+ 
+@@ -626,7 +635,8 @@ static bool __init early_alloc_p2m(unsigned long pfn)
+ 	mid_mfn_p = p2m_top_mfn_p[topidx];
+ 	if (mid == p2m_mid_missing) {
+ 		mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
+-
++		if (!mid)
++			return false;
+ 		p2m_mid_init(mid);
+ 
+ 		p2m_top[topidx] = mid;
+@@ -636,6 +646,8 @@ static bool __init early_alloc_p2m(unsigned long pfn)
+ 	/* And the save/restore P2M tables.. */
+ 	if (mid_mfn_p == p2m_mid_missing_mfn) {
+ 		mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
++		if (!mid_mfn_p)
++			return false;
+ 		p2m_mid_mfn_init(mid_mfn_p);
+ 
+ 		p2m_top_mfn_p[topidx] = mid_mfn_p;
+@@ -762,6 +774,7 @@ static void __init m2p_override_init(void)
+ 
+ 	m2p_overrides = extend_brk(sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
+ 				   sizeof(unsigned long));
++	BUG_ON(!m2p_overrides);
+ 
+ 	for (i = 0; i < M2P_OVERRIDE_HASH; i++)
+ 		INIT_LIST_HEAD(&m2p_overrides[i]);
 -- 
 1.7.7.6
 
