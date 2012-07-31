@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab2GaNcD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:32:03 -0400
+	id S1753300Ab2GaNb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:31:59 -0400
 Received: from mail-wi0-f178.google.com ([209.85.212.178]:40006 "EHLO
 	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141Ab2GaNb7 (ORCPT
+	with ESMTP id S1753141Ab2GaNbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:31:59 -0400
+	Tue, 31 Jul 2012 09:31:55 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
         alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
         lrg@ti.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 5/6] ARM: ux500: Ensure probing of Audio devices when Device Tree is enabled
-Date: Tue, 31 Jul 2012 14:31:31 +0100
-Message-Id: <1343741493-17671-11-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 4/6] ARM: ux500: Ensure probing of Audio devices when Device Tree is enabled
+Date: Tue, 31 Jul 2012 14:31:28 +0100
+Message-Id: <1343741493-17671-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
 References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
