@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab2GaOXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:23:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53560 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754119Ab2GaOXQ (ORCPT
+	id S1754223Ab2GaOZM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:25:12 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58297 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751582Ab2GaOZK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:23:16 -0400
-Date: Tue, 31 Jul 2012 15:23:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Simon Glass <sjg@chromium.org>, Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-Message-ID: <20120731142313.GU4468@opensource.wolfsonmicro.com>
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
- <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
- <CAPnjgZ0H2xrJcL-ytMaX11iYrrhCg7LEM00u_NgEaveM4gHMPw@mail.gmail.com>
- <50179933.9090501@nvidia.com>
-MIME-Version: 1.0
+	Tue, 31 Jul 2012 10:25:10 -0400
+Subject: Re: [PATCH v8 1/7] powerpc/smp: use a struct epapr_spin_table to replace macros
+Mime-Version: 1.0 (Apple Message framework v1278)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50179933.9090501@nvidia.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1342788159-27529-2-git-send-email-chenhui.zhao@freescale.com>
+Date: Tue, 31 Jul 2012 09:24:16 -0500
+Cc: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4C0232AB-6B1D-4D35-9400-941F3BE9AFC2@kernel.crashing.org>
+References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com> <1342788159-27529-2-git-send-email-chenhui.zhao@freescale.com>
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 05:37:07PM +0900, Alex Courbot wrote:
-> On 07/30/2012 08:00 PM, Simon Glass wrote:
 
-> >For the delay, I think milliseconds is reasonable. I suppose there is
-> >no reasonable need for microseconds?
+On Jul 20, 2012, at 7:42 AM, Zhao Chenhui wrote:
 
-> I don't see any need for microseconds myself - anybody sees use for
-> finer-grained delays?
+> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> ---
+> arch/powerpc/platforms/85xx/smp.c |   46 ++++++++++++++++++------------------
+> 1 files changed, 23 insertions(+), 23 deletions(-)
 
-Bouncing reset lines, often the time required for reset is down in the
-microseconds.
+applied to next
+
+- k
