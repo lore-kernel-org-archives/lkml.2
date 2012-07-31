@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab2GaX5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:57:21 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:39301 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab2GaX5U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:57:20 -0400
-Date: Tue, 31 Jul 2012 16:57:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	id S1756559Ab2GaX5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:57:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:52058 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754721Ab2GaX53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 19:57:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="191516379"
+Date: Wed, 1 Aug 2012 07:57:25 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Avi Kivity <avi@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
+Cc: Avi Kivity <avi@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         "kvm@vger.kernel.org" <kvm@vger.kernel.org>
 Subject: Re: Testing tracer wakeup_rt: .. no entries found ..FAILED!
-Message-ID: <20120731235705.GW2422@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+Message-ID: <20120731235725.GB5673@localhost>
 References: <20120724090330.GA9830@localhost>
  <20120724090720.GA10434@localhost>
  <1343663105.3847.7.camel@fedora>
@@ -32,8 +33,6 @@ Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <1343778699.27983.70.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073123-2398-0000-0000-00000905C173
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -101,7 +100,19 @@ On Tue, Jul 31, 2012 at 07:51:39PM -0400, Steven Rostedt wrote:
 > not fail. This is the second bug you found that has to do with RCU being
 > called in 'idle'. The one that Paul posted a patch for.
 
-Though it needs another patch to actually use it in the right place...
+Yeah, PASSED!
 
-							Thanx, Paul
+[    2.898070]  [<8117ea5e>] time_hardirqs_on+0x1de/0x220
+[    2.898070]  [<81013313>] ? default_idle+0x593/0xc30
+[    2.898070]  [<81109d6d>] trace_hardirqs_on_caller+0x2d/0x380
+[    2.898070]  [<8110a0e7>] trace_hardirqs_on+0x27/0x40
+[    2.898070]  [<81013313>] default_idle+0x593/0xc30
+[    2.898070]  [<8101692d>] cpu_idle+0x2dd/0x390
+[    2.898070]  [<817fbe97>] start_secondary+0x44b/0x460
+[    3.150115] PASSED
+[    3.390079] Testing tracer function_graph: PASSED
 
+I'll test Paul's patch on top of yours right away.
+
+Thanks,
+Fengguang
