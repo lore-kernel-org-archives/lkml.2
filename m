@@ -1,44 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab2GaO2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:28:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41761 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751618Ab2GaO2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:28:23 -0400
-Date: Tue, 31 Jul 2012 15:28:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-Message-ID: <20120731142820.GW4468@opensource.wolfsonmicro.com>
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
- <1343741493-17671-3-git-send-email-lee.jones@linaro.org>
- <20120731134214.GK4468@opensource.wolfsonmicro.com>
- <5017EAC3.3080504@linaro.org>
+	id S1754420Ab2GaO3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:29:50 -0400
+Received: from fieldses.org ([174.143.236.118]:43492 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab2GaO3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 10:29:49 -0400
+Date: Tue, 31 Jul 2012 10:29:48 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: nfsd changes for 3.6
+Message-ID: <20120731142948.GC27834@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5017EAC3.3080504@linaro.org>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 03:25:07PM +0100, Lee Jones wrote:
-> On 31/07/12 14:42, Mark Brown wrote:
+Please pull nfsd (and some lockd and a couple locks/lease) changes from:
 
-> >You're posting this *again* without bothering to respond to my review
-> >comments.
+	git://linux-nfs.org/~bfields/linux.git nfsd-next
 
-> I didn't see any comments on this.
+This has been an unusually quiet cycle--mostly bugfixes and cleanup.
+The one large piece is Stanislav's work to containerize the server's
+grace period--but that in itself is just one more step in a
+not-yet-complete project to allow fully containerized nfs service.
 
-Read your email.  <20120726115450.GE3099@opensource.wolfsonmicro.com>
-and <20120729202510.GB4384@opensource.wolfsonmicro.com>, the second one
-even includes a complaint about you ignoring the first mail.
+There are a number of outstanding delegation, container, v4 state, and
+gss patches that aren't quite ready yet; 3.7 may be wilder.
+
+--b.
+
+----------------------------------------------------------------
+Chuck Lever (1):
+      NFSD: TEST_STATEID should not return NFS4ERR_STALE_STATEID
+
+Eldad Zack (2):
+      sunrpc/cache.h: fix coding style
+      sunrpc/cache.h: replace simple_strtoul
+
+Filipe Brandenburger (1):
+      locks: prevent side-effects of locks_release_private before file_lock is initialized
+
+J. Bruce Fields (10):
+      nfsd4: remove unnecessary comment
+      nfsd4: nfsd4_lock() cleanup
+      nfsd4: process_open2 cleanup
+      nfsd4: our filesystems are normally case sensitive
+      nfsd4: release openowners on free in >=4.1 case
+      nfsd: allow owner_override only for regular files
+      nfsd: share some function prototypes
+      nfsd: add get_uint for u32's
+      locks: move lease-specific code out of locks_delete_lock
+      nfsd4: fix missing fault_inject.h include
+
+NeilBrown (1):
+      SUNRPC/cache: fix reporting of expired cache entries in 'content' file.
+
+Stanislav Kinsbursky (18):
+      NFSd: fix locking in nfsd_forget_delegations()
+      NFSd: introduce nfsd_destroy() helper
+      NFSd: set nfsd_serv to NULL after service destruction
+      LockD: mark host per network namespace on garbage collect
+      LockD: make garbage collector network namespace aware.
+      LockD: manage garbage collection timeout per networks namespace
+      LockD: manage used host count per networks namespace
+      Lockd: host complaining function introduced
+      Lockd: add more debug to host shutdown functions
+      LockD: manage grace period per network namespace
+      LockD: make lockd manager allocated per network namespace
+      NFSd: make nfsd4_manager allocated per network namespace context.
+      SUNRPC: service request network namespace helper introduced
+      LockD: manage grace list per network namespace
+      LockD: pass actual network namespace to grace period management functions
+      Lockd: move grace period management from lockd() to per-net functions
+      NFSd: make grace end flag per network namespace
+      NFSd: make boot_time variable per network namespace
+
+Vivek Trivedi (1):
+      nfsd4: fix cr_principal comparison check in same_creds
+
+Weston Andros Adamson (1):
+      nfsd: probe the back channel on new connections
+
+ fs/lockd/grace.c             |   16 ++--
+ fs/lockd/host.c              |   92 ++++++++++++-------
+ fs/lockd/netns.h             |    7 ++
+ fs/lockd/svc.c               |   43 +++++----
+ fs/lockd/svc4proc.c          |   13 +--
+ fs/lockd/svclock.c           |   16 ++--
+ fs/lockd/svcproc.c           |   15 ++--
+ fs/lockd/svcsubs.c           |   19 ++--
+ fs/locks.c                   |   28 +++---
+ fs/nfs/callback_xdr.c        |    4 +-
+ fs/nfsd/export.c             |   10 +--
+ fs/nfsd/netns.h              |    4 +
+ fs/nfsd/nfs4callback.c       |    1 -
+ fs/nfsd/nfs4idmap.c          |    4 +-
+ fs/nfsd/nfs4proc.c           |   18 ++--
+ fs/nfsd/nfs4state.c          |  201 +++++++++++++++++++++++++-----------------
+ fs/nfsd/nfs4xdr.c            |    2 +-
+ fs/nfsd/nfsctl.c             |    8 +-
+ fs/nfsd/nfsd.h               |   13 +++
+ fs/nfsd/nfssvc.c             |   24 ++---
+ fs/nfsd/state.h              |    5 +-
+ fs/nfsd/vfs.c                |   10 ++-
+ include/linux/fs.h           |    5 +-
+ include/linux/lockd/lockd.h  |    6 +-
+ include/linux/sunrpc/cache.h |   34 +++++--
+ include/linux/sunrpc/svc.h   |    2 +
+ net/sunrpc/cache.c           |    5 +-
+ 27 files changed, 368 insertions(+), 237 deletions(-)
