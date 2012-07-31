@@ -1,105 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab2GaSLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 14:11:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46150 "EHLO mail.skyhub.de"
+	id S1755443Ab2GaSNG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 14:13:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59467 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754319Ab2GaSLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 14:11:38 -0400
-Date: Tue, 31 Jul 2012 20:11:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: wei_wang@realsil.com.cn
-Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, arnd@arndb.de, aaron.lu@amd.come
-Subject: Re: [PATCH 3/3] drivers/mmc/host: Add realtek sdmmc interface driver
-Message-ID: <20120731181138.GA5825@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, wei_wang@realsil.com.cn,
-	gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
-	linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-	cjb@laptop.org, arnd@arndb.de, aaron.lu@amd.come
-References: <1343720576-22181-1-git-send-email-wei_wang@realsil.com.cn>
+	id S1755085Ab2GaSNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 14:13:04 -0400
+Message-ID: <50181FDC.4030200@zytor.com>
+Date: Tue, 31 Jul 2012 11:11:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1343720576-22181-1-git-send-email-wei_wang@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>, eranian@google.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org,
+        Robert Richter <robert.richter@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [tip:perf/core] perf/x86: Fix USER/KERNEL tagging of samples
+References: <tip-xxrt0a1zronm1sm36obwc2vy@git.kernel.org> <CA+55aFxY7SqwSQWuRXSg+W=ftp9FtCT1MMEqMiCi1H279Fis-A@mail.gmail.com> <1341598329.7709.57.camel@twins> <CA+55aFzqoz7dcUCQfSrXxX2T8=2wgWdb1H2vaBhk7V-r0uaogw@mail.gmail.com> <CA+55aFw+vE4zMe1bJohLuoMDaFpqGCz6sBNRE8gkV7JOvtro0g@mail.gmail.com> <1341832997.3462.41.camel@twins> <20120709184145.GA7666@gmail.com> <1341906848.3462.92.camel@twins> <20120710082104.GA11187@gmail.com> <1341910360.3462.99.camel@twins> <20120710094803.GA14821@gmail.com>
+In-Reply-To: <20120710094803.GA14821@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 03:42:56PM +0800, wei_wang@realsil.com.cn wrote:
-> From: Wei WANG <wei_wang@realsil.com.cn>
-> 
-> Realtek SD/MMC card interface driver is used to access
-> SD/MMC card, with the help of Realtek card reader adapter driver.
-> 
-> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
-> ---
+On 07/10/2012 02:48 AM, Ingo Molnar wrote:
+>
+> We could read out the current GDT [the SGDT instruction] instead
+> of looking at gdt_page.
+>
+> Then we'd have to decode that descriptor, the limit. Decide
+> whether the selector points to the GDT or LDT. All the fun x86
+> legacies that we mostly forgot already after two decades of
+> running the kernel in flat linear mode...
+>
 
-[ … ]
+In 32-bit mode there are actually instructions that do that work for you.
 
-> +static void __devexit realtek_sdmmc_remove(struct rtsx_dev *sock)
-> +{
-> +	struct mmc_host *mmc = rtsx_get_drvdata(sock);
-> +	struct realtek_sdmmc *host;
-> +
-> +	host = mmc_priv(mmc);
-> +	host->eject = 1;
-> +
-> +	mutex_lock(&host->host_mutex);
-> +	if (host->mrq) {
-> +		dev_dbg(&(sock->dev),
-> +			"%s: Controller removed during transfer\n",
-> +			mmc_hostname(mmc));
-> +
-> +		rtsx_complete_unfinished_transfer(sock);
-> +
-> +		host->mrq->cmd->error = -ENOMEDIUM;
-> +		if (host->mrq->stop)
-> +			host->mrq->stop->error = -ENOMEDIUM;
-> +		mmc_request_done(mmc, host->mrq);
-> +	}
-> +	mutex_unlock(&host->host_mutex);
-> +
-> +	mmc_remove_host(mmc);
-> +	mmc_free_host(mmc);
-> +
-> +	pr_info(DRV_NAME
-> +		": Realtek SDMMC controller has been removed\n");
-
-Oh and this appears in the logs when I remove the card:
-
-[11721.313471] rtsx_sdmmc: Realtek SDMMC controller has been removed
-
-but it is simply polluting the logs with useless info that a card has
-been removed.
-
-If you really need those printk (same with the PCI-E driver) you could
-try to use dev_dbg() like you do above.
-
-Same for the probe function.
-
-But, more importantly and while playing with this, I replugged the card
-and it said:
-
-[12072.632332] rtsx_core: MMC/SD card detected in socket 0:0
-[12072.642855] rtsx_sdmmc: Realtek SDMMC controller found
-[12073.839561] mmc0: error -110 whilst initialising SD card
-[12075.138833] mmc0: error -110 whilst initialising SD card
-[12076.438158] mmc0: error -110 whilst initialising SD card
-
-and now I can't mount the card anymore:
-
-$ mount /dev/mmcblk0 /mnt/tmp/
-mount: /dev/mmcblk0 is not a valid block device
-
-$ mount /dev/mmcblk0p1 /mnt/tmp/
-mount: /dev/mmcblk0p1 is not a valid block device
-
-Hmm..
+	-hpa
 
 -- 
-Regards/Gruss,
-Boris.
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
