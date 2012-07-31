@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab2GaMSI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:18:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:26496 "EHLO mga01.intel.com"
+	id S1756161Ab2GaMWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:22:34 -0400
+Received: from rs130.luxsci.com ([72.32.115.17]:44856 "EHLO rs130.luxsci.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756026Ab2GaMSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:18:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="191093612"
-Date: Tue, 31 Jul 2012 20:17:59 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Steven Rostedt <srostedt@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: Testing tracer wakeup_rt: .. no entries found ..FAILED!
-Message-ID: <20120731121759.GA17822@localhost>
-References: <20120724090330.GA9830@localhost>
- <20120724090720.GA10434@localhost>
- <1343663105.3847.7.camel@fedora>
+	id S1756026Ab2GaMWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 08:22:32 -0400
+Message-ID: <5017CDF9.2060304@firmworks.com>
+Date: Tue, 31 Jul 2012 20:22:17 +0800
+From: Mitch Bradley <wmb@firmworks.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343663105.3847.7.camel@fedora>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Alex Courbot <acourbot@nvidia.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <50170EA0.1010408@wwwdotorg.org> <5017B434.2010706@nvidia.com> <20120731105640.GD16155@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20120731105640.GD16155@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Lux-Comment: Message q6VCMHTt024429 sent by user #11875
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC kvm developers]
+On 7/31/2012 6:56 PM, Thierry Reding wrote:
+> On Tue, Jul 31, 2012 at 07:32:20PM +0900, Alex Courbot wrote:
+>> On 07/31/2012 07:45 AM, Stephen Warren wrote:
+>>> I wonder if using the same structure/array as input and output would
+>>> simplify the API; the platform data would fill in the fields mentioned
+>>> above, and power_seq_build() would parse those, then set other fields in
+>>> the same structs to the looked-up handle values?
+>>
+>> The thing is that I am not sure what happens to the platform data
+>> once probe() is done. Isn't it customary to mark it with __devinit
+>> and have it freed after probing is successful?
+> 
+> No, platform data should stay around forever. Otherwise, consider what
+> would happen if your driver is built as a module and you unload and load
+> it again.
+> 
+>> More generally, I think it is a good practice to have data
+>> structures tailored right for what they need to do - code with
+>> members that are meaningful only at given points of an instance's
+>> life tends to be more confusing.
+> 
+> I agree. Furthermore the driver unload/reload would be another reason
+> not to reuse platform data as the output of the build() function.
+> 
+> But maybe what Stephen meant was more like filling a structure with data
+> taken from the platform data and pass that to a resolve() function which
+> would fill in the missing pieces like pointers to actual resources. I
+> imagine a managed interface would become a little trickier to do using
+> such an approach.
+> 
+>>> If the nodes have a unit address (i.e. end in "@n"), which they will
+>>> have to if all named "step" and there's more than one of them, then they
+>>> will need a matching reg property. Equally, the parent node will need
+>>> #address-cells and #size-cells too. So, the last couple lines would be:
+>>>
+>>> 		power-on-sequence {
+>>> 			#address-cells = <1>;
+>>> 			#size-cells = <0>;
+>>> 			step@0 {
+>>> 				reg = <0>;
+>>
+>> That's precisely what I would like to avoid - I don't need the steps
+>> to be numbered and I certainly have no use for a reg property. Isn't
+>> there a way to make it simpler?
+> 
+> It's not technically valid to not have the reg property. Or
+> #address-cells and #size-cells properties for that matter.
 
-On Mon, Jul 30, 2012 at 11:45:05AM -0400, Steven Rostedt wrote:
-> On Tue, 2012-07-24 at 17:07 +0800, Fengguang Wu wrote:
-> > On Tue, Jul 24, 2012 at 05:03:30PM +0800, Fengguang Wu wrote:
-> 
-> > And this warning shows up in one of the dozens of boots, for the same
-> > kconfig.
-> > 
-> > [    2.320434] Testing tracer wakeup: PASSED
-> > [    2.840288] Testing tracer wakeup_rt: .. no entries found ..FAILED!
-> > [    3.280861] ------------[ cut here ]------------
-> > [    3.281967] WARNING: at /c/kernel-tests/src/linux/kernel/trace/trace.c:834 register_tracer+0x1b0/0x270()
-> > [    3.284162] Hardware name: Bochs
-> > [    3.284933] Modules linked in:
-> > [    3.285695] Pid: 1, comm: swapper/0 Not tainted 3.5.0+ #1371
-> > [    3.287032] Call Trace:
-> > [    3.287626]  [<41035c32>] warn_slowpath_common+0x72/0xa0
-> > [    3.288938]  [<410e7dd0>] ? register_tracer+0x1b0/0x270
-> > [    3.290280]  [<410e7dd0>] ? register_tracer+0x1b0/0x270
-> > [    3.291516]  [<41035c82>] warn_slowpath_null+0x22/0x30
-> > [    3.292723]  [<410e7dd0>] register_tracer+0x1b0/0x270
-> > [    3.293921]  [<41434c7a>] ? init_irqsoff_tracer+0x11/0x11
-> > [    3.295269]  [<41434c95>] init_wakeup_tracer+0x1b/0x1d
-> > [    3.296464]  [<41001112>] do_one_initcall+0x112/0x160
-> > [    3.297639]  [<4141fadd>] kernel_init+0xf7/0x18e
-> > [    3.298724]  [<4141f455>] ? do_early_param+0x7a/0x7a
-> > [    3.299879]  [<4141f9e6>] ? start_kernel+0x375/0x375
-> > [    3.301093]  [<412b15c2>] kernel_thread_helper+0x6/0x10
-> > [    3.302352] ---[ end trace 57f7151f6a5def05 ]---
-> > 
-> 
-> The comment above this test shows:
-> 
-> 	 * Yes this is slightly racy. It is possible that for some
-> 	 * strange reason that the RT thread we created, did not
-> 	 * call schedule for 100ms after doing the completion,
-> 	 * and we do a wakeup on a task that already is awake.
-> 	 * But that is extremely unlikely, and the worst thing that
-> 	 * happens in such a case, is that we disable tracing.
-> 	 * Honestly, if this race does happen something is horrible
-> 	 * wrong with the system.
-> 
-> I guess the question now is, why didn't the RT test wake up?
-> 
-> Oh wait! You did this on a virt machine. This test isn't designed for
-> virt machines because the thread could have woken on another vcpu, but
-> due to scheduling of the host system, it didn't get to run for 100ms,
-> thus the test will fail because it never recorded the wakeup of the RT
-> task.
-> 
-> In other-words, the test is bogus on virt boxes :-/
+I'm not keen on this representation where individual steps are nodes.
+That seems like it could end up being too "heavyweight" for a long sequence.
 
-It's good to quickly get to the root cause :) Can we possibly detect
-whether we are in a virtual machine and hence skip this particular
-test case?
 
-Thanks,
-Fengguang
+> 
+> Thierry
+> 
+> 
+> 
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> 
