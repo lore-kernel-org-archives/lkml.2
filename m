@@ -1,50 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab2GaKhJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:37:09 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54889 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755024Ab2GaKeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:34:13 -0400
+	id S1754699Ab2GaKk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:40:27 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:57935 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753172Ab2GaKkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 06:40:25 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: lkml <linux-kernel@vger.kernel.org>
+CC: Jan Kara <jack@suze.cz>, Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH v2] UDF: Add support for O_DIRECT
+Date: Tue, 31 Jul 2012 11:40:12 +0100
+Message-ID: <1343731212-4381-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1343132226-3806-1-git-send-email-abbotti@mev.co.uk>
+References: <1343132226-3806-1-git-send-email-abbotti@mev.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120731144054.59b0a6da6d071ea1bc061db0@canb.auug.org.au>
-References: <20120731144054.59b0a6da6d071ea1bc061db0@canb.auug.org.au>
-Date: Tue, 31 Jul 2012 03:34:12 -0700
-Message-ID: <CANN689FGMfL_Y3afhYbmSdvQH4tU+7CErODb=NoqAZnmoZEa3w@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-From: Michel Lespinasse <walken@google.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sage Weil <sage@inktank.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 9:40 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Andrew,
->
-> After merging the akpm tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> net/ceph/osd_client.c: In function 'ceph_osdc_alloc_request':
-> net/ceph/osd_client.c:216:2: error: implicit declaration of function 'rb_init_node' [-Werror=implicit-function-declaration]
->
-> Caused by commit 753b960e52b7 ("rbtree: empty nodes have no color") from
-> the akpm tree interacting with commit cd43045c2de6 ("libceph: initialize
-> rb, list nodes in ceph_osd_request") from the ceph tree.
->
-> I added the following merge fix patch for today:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 31 Jul 2012 14:37:35 +1000
-> Subject: [PATCH] libceph: remove rb_node initialisation
->
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Reviewed-by: Michel Lespinasse <walken@google.com>
+Add support for the O_DIRECT flag.  There are two cases to deal with:
 
+1. Small files stored in the ICB (inode control block?): just return 0
+from the new udf_adinicb_direct_IO() handler to fall back to buffered
+I/O.  For direct writes, there is a "gotcha" to deal with when
+generic_file_direct_write() in mm/filemap.c invalidates the pages.  In
+the udf_adinicb_writepage() handler, only part of the page data will be
+valid and the rest will be zeroed out, so only copy the valid part into
+the ICB.  (This is actually a bit inefficient as udf_adinicb_write_end()
+will have already copied the data into the ICB once, but it's pretty
+likely that the file will grow to the point where its data can no longer
+be stored in the ICB and will be moved to a different area of the file
+system.  At that point, a different direct_IO handler will be used - see
+below.)
+
+2. Larger files, not stored in the ICB: nothing special here.  Just call
+blockdev_direct_IO() from our new udf_direct_IO() handler and tidy up
+any blocks instantiated outside i_size on error.  This is pretty
+standard.  Factor error handling code out of udf_write_begin() into new
+function udf_write_failed() so it can also be called by udf_direct_IO().
+
+Also change the whitespace in udf_aops and udf_adinicb_aops to make them
+a bit neater.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+v2: Rework error handling in udf_direct_IO to avoid calling deprecated
+    vmtruncate().
+---
+ fs/udf/file.c  |   29 +++++++++++++++++++++++++----
+ fs/udf/inode.c |   52 ++++++++++++++++++++++++++++++++++++----------------
+ 2 files changed, 61 insertions(+), 20 deletions(-)
+
+diff --git a/fs/udf/file.c b/fs/udf/file.c
+index 7f3f7ba..f5f9ddd 100644
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -34,6 +34,7 @@
+ #include <linux/errno.h>
+ #include <linux/pagemap.h>
+ #include <linux/buffer_head.h>
++#include <linux/writeback.h>
+ #include <linux/aio.h>
+ 
+ #include "udf_i.h"
+@@ -64,12 +65,23 @@ static int udf_adinicb_writepage(struct page *page,
+ 	struct inode *inode = page->mapping->host;
+ 	char *kaddr;
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
++	loff_t start, end, page_start, page_offset;
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
+ 	kaddr = kmap(page);
+-	memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr, kaddr, inode->i_size);
+-	mark_inode_dirty(inode);
++	/* The beginning and/or end of the page data is likely to be invalid
++	 * for O_DIRECT, so only copy the valid part. */
++	page_start = (loff_t)page->index << PAGE_CACHE_SHIFT;
++	start = max(page_start, wbc->range_start);
++	end = min3(page_start + (loff_t)PAGE_CACHE_SIZE - 1,
++		   wbc->range_end, inode->i_size - 1);
++	if (likely(start <= end)) {
++		page_offset = start - page_start;
++		memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr + start,
++		       kaddr + page_offset, (end + 1 - start));
++		mark_inode_dirty(inode);
++	}
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+ 	unlock_page(page);
+@@ -95,11 +107,20 @@ static int udf_adinicb_write_end(struct file *file,
+ 	return simple_write_end(file, mapping, pos, len, copied, page, fsdata);
+ }
+ 
++static ssize_t udf_adinicb_direct_IO(int rw, struct kiocb *iocb,
++				     const struct iovec *iov,
++				     loff_t offset, unsigned long nr_segs)
++{
++	/* Fallback to buffered I/O. */
++	return 0;
++}
++
+ const struct address_space_operations udf_adinicb_aops = {
+ 	.readpage	= udf_adinicb_readpage,
+ 	.writepage	= udf_adinicb_writepage,
+-	.write_begin = simple_write_begin,
+-	.write_end = udf_adinicb_write_end,
++	.write_begin	= simple_write_begin,
++	.write_end	= udf_adinicb_write_end,
++	.direct_IO	= udf_adinicb_direct_IO,
+ };
+ 
+ static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+index fafaad7..165e48e 100644
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -95,6 +95,22 @@ void udf_evict_inode(struct inode *inode)
+ 	}
+ }
+ 
++static void udf_write_failed(struct address_space *mapping, loff_t to)
++{
++	struct inode *inode = mapping->host;
++	struct udf_inode_info *iinfo = UDF_I(inode);
++	loff_t isize = inode->i_size;
++
++	if (to > isize) {
++		truncate_pagecache(inode, to, isize);
++		if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB) {
++			down_write(&iinfo->i_data_sem);
++			udf_truncate_extents(inode);
++			up_write(&iinfo->i_data_sem);
++		}
++	}
++}
++
+ static int udf_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	return block_write_full_page(page, udf_get_block, wbc);
+@@ -118,21 +134,24 @@ static int udf_write_begin(struct file *file, struct address_space *mapping,
+ 	int ret;
+ 
+ 	ret = block_write_begin(mapping, pos, len, flags, pagep, udf_get_block);
+-	if (unlikely(ret)) {
+-		struct inode *inode = mapping->host;
+-		struct udf_inode_info *iinfo = UDF_I(inode);
+-		loff_t isize = inode->i_size;
+-
+-		if (pos + len > isize) {
+-			truncate_pagecache(inode, pos + len, isize);
+-			if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB) {
+-				down_write(&iinfo->i_data_sem);
+-				udf_truncate_extents(inode);
+-				up_write(&iinfo->i_data_sem);
+-			}
+-		}
+-	}
++	if (unlikely(ret))
++		udf_write_failed(mapping, pos + len);
++	return ret;
++}
+ 
++static ssize_t udf_direct_IO(int rw, struct kiocb *iocb,
++			     const struct iovec *iov,
++			     loff_t offset, unsigned long nr_segs)
++{
++	struct file *file = iocb->ki_filp;
++	struct address_space *mapping = file->f_mapping;
++	struct inode *inode = mapping->host;
++	ssize_t ret;
++
++	ret = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
++				  udf_get_block);
++	if (unlikely(ret < 0 && (rw && WRITE)))
++		udf_write_failed(mapping, offset + iov_length(iov, nr_segs));
+ 	return ret;
+ }
+ 
+@@ -145,8 +164,9 @@ const struct address_space_operations udf_aops = {
+ 	.readpage	= udf_readpage,
+ 	.readpages	= udf_readpages,
+ 	.writepage	= udf_writepage,
+-	.write_begin		= udf_write_begin,
+-	.write_end		= generic_write_end,
++	.write_begin	= udf_write_begin,
++	.write_end	= generic_write_end,
++	.direct_IO	= udf_direct_IO,
+ 	.bmap		= udf_bmap,
+ };
+ 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.8.6
+
