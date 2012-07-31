@@ -1,63 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab2GaNH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:07:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382Ab2GaNHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:07:24 -0400
-Message-ID: <5017D882.6040007@redhat.com>
-Date: Tue, 31 Jul 2012 09:07:14 -0400
-From: Larry Woodman <lwoodman@redhat.com>
-Reply-To: lwoodman@redhat.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
+	id S1753328Ab2GaNIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:08:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63832 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032Ab2GaNIJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 09:08:09 -0400
+Date: Tue, 31 Jul 2012 06:05:22 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20120731130522.GA7287@lizard>
+Reply-To: cbouatmailru@gmail.com
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118E7F.8000609@redhat.com> <50120FA8.20409@redhat.com> <20120727102356.GD612@suse.de> <5016DC5F.7030604@redhat.com> <20120731124650.GO612@suse.de>
-In-Reply-To: <20120731124650.GO612@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 08:46 AM, Mel Gorman wrote:
-> On Mon, Jul 30, 2012 at 03:11:27PM -0400, Larry Woodman wrote:
->>> <SNIP>
->>> That is a surprise. Can you try your test case on 3.4 and tell us if the
->>> patch fixes the problem there? I would like to rule out the possibility
->>> that the locking rules are slightly different in RHEL. If it hits on 3.4
->>> then it's also possible you are seeing a different bug, more on this later.
->>>
->> Sorry for the delay Mel, here is the BUG() traceback from the 3.4
->> kernel with your
->> patches:
->>
->> --------------------------------------------------------------------------------------------------------------------------------------------
->> [ 1106.156569] ------------[ cut here ]------------
->> [ 1106.161731] kernel BUG at mm/filemap.c:135!
->> [ 1106.166395] invalid opcode: 0000 [#1] SMP
->> [ 1106.170975] CPU 22
->> [ 1106.173115] Modules linked in: bridge stp llc sunrpc binfmt_misc
->> dcdbas microcode pcspkr acpi_pad acpi]
->> [ 1106.201770]
-> Thanks, looks very similar.
->
->> [ 1106.203426] Pid: 18001, comm: mpitest Tainted: G        W
->> 3.3.0+ #4 Dell Inc. PowerEdge R620/07NDJ2
-> You say this was a 3.4 kernel but the message says 3.3. Probably not
-> relevant, just interesting.
->
-Oh, sorry I posted the wrong traceback.  I tested both 3.3 & 3.4 and had 
-the same results.
-I'll do it again and post the 3.4 traceback for you,
+Hello Linus,
 
-Larry
+It's almost a normal pull request: a bunch of small fixes and assorted
+enhancements, and as usual my gpg key is not signed, etc.
 
+One thing makes it unusual, though: one of our patches added thermal
+support for power supply class, but thermal/ subsystem changed under our
+feet. We (well, Stephen, that is) caught the issue and it was decided[1]
+that I'd just delay the battery pull request, and then will fix it up by
+merging your tree back into mine at the specific commit. And I did
+exactly that.
+
+That's not all though: another[2] small fixup for thermal subsystem was
+needed to get rid of a warning in power supply subsystem (the warning
+was not drivers/power's "fault", the thermal registration function just
+needed a proper const annotation, which is also done by a small commit
+on top of the merge.
+
+So, to sum this up:
+- The 'master' branch of the battery tree was in -next for weeks,
+  and was never rebased, altered etc;
+- for-v3.6 tag contains the 'master' branch + merge + the warning fix.
+
+Thanks!
+
+
+[1] http://lkml.org/lkml/2012/6/19/23
+[2] http://lkml.org/lkml/2012/6/18/28
+
+The following changes since commit c56f5c0342dfee11a1a13d2f5bb7618de5b17590:
+
+  Thermal: Make Thermal trip points writeable (2012-07-24 23:17:20 -0400)
+
+are available in the git repository at:
+
+  git://git.infradead.org/battery-2.6.git tags/for-v3.6
+
+for you to fetch changes up to 4b1bf5871f7d59de6484cc887e205d6d2f1e6fbd:
+
+  thermal: Constify 'type' argument for the registration routine (2012-07-31 05:45:37 -0700)
+
+----------------------------------------------------------------
+Anton Vorontsov (3):
+      ds2781_battery: w1_ds2781_read() should be static
+      Merge with upstream to accommodate with thermal changes
+      thermal: Constify 'type' argument for the registration routine
+
+Chanwoo Choi (3):
+      charger-manager: Use EXTCON Subsystem to detect charger cables for charging
+      charger-manager: Set current limit of regulator for over current protection
+      charger-manager: Fix build break related to EXTCON
+
+Dmitry Eremin-Solenikov (2):
+      test_power: Add support for USB AC source
+      test_power: Add VOLTAGE_NOW and BATTERY_TEMP properties
+
+Jenny TC (1):
+      power_supply: Register battery as a thermal zone
+
+Kim, Milo (1):
+      lp8727_charger: Move header file into platform_data directory
+
+Mark Brown (1):
+      pda_power: Complain if regulator operations fail
+
+NeilBrown (3):
+      twl4030_charger: Fix some typos
+      twl4030_charger: Add backup-battery charging
+      twl4030_charger: Allow charger to control the regulator that feeds it
+
+Nikolaus Voss (1):
+      sbs-battery: Don't trigger false supply_changed event
+
+Pritesh Raithatha (1):
+      gpio-charger: Use cansleep version of gpio_set_value
+
+Ramakrishna Pallala (4):
+      power_supply: Add constant charge_current and charge_voltage properties
+      smb347-charger: Add constant charge and current properties
+      max17042_battery: Support CHARGE_COUNTER power supply attribute
+      power_supply: Add min/max alert properties for CAPACITY, TEMP, TEMP_AMBIENT
+
+Richard A. Smith (2):
+      olpc-battery: Add VOLTAGE_MAX_DESIGN property
+      olpc-battery: update CHARGE_FULL_DESIGN property for BYD LiFe batteries
+
+Saranya Gopal (1):
+      bq27x00_battery: Add support for BQ27425 chip
+
+Syed Rafiuddin (1):
+      bq27x00_battery: Add support for power average and health properties
+
+ Documentation/power/power_supply_class.txt |   10 ++
+ drivers/mfd/twl-core.c                     |    9 +-
+ drivers/power/Kconfig                      |    1 +
+ drivers/power/bq27x00_battery.c            |  155 +++++++++++++++++++++++++---
+ drivers/power/charger-manager.c            |  152 ++++++++++++++++++++++++---
+ drivers/power/ds2781_battery.c             |    2 +-
+ drivers/power/gpio-charger.c               |    2 +-
+ drivers/power/lp8727_charger.c             |    2 +-
+ drivers/power/max17042_battery.c           |    8 ++
+ drivers/power/olpc_battery.c               |   62 ++++++++++-
+ drivers/power/pda_power.c                  |    4 +-
+ drivers/power/power_supply_core.c          |   65 ++++++++++++
+ drivers/power/power_supply_sysfs.c         |    8 ++
+ drivers/power/sbs-battery.c                |    2 +-
+ drivers/power/smb347-charger.c             |  123 ++++++++++++++++++++--
+ drivers/power/test_power.c                 |   75 ++++++++++++++
+ drivers/power/twl4030_charger.c            |   80 +++++++++++++-
+ drivers/thermal/thermal_sys.c              |    2 +-
+ include/linux/i2c/twl.h                    |    2 +
+ include/linux/{ => platform_data}/lp8727.h |    0
+ include/linux/power/charger-manager.h      |   67 +++++++++++-
+ include/linux/power_supply.h               |   13 +++
+ include/linux/thermal.h                    |    2 +-
+ 23 files changed, 789 insertions(+), 57 deletions(-)
+ rename include/linux/{ => platform_data}/lp8727.h (100%)
