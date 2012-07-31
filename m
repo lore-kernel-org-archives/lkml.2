@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab2GaPKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 11:10:13 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:51616 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754694Ab2GaPKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 11:10:11 -0400
-Date: Tue, 31 Jul 2012 08:00:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
-Message-ID: <20120731150053.GE2422@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120724090330.GA9830@localhost>
- <1343662752.3847.2.camel@fedora>
- <20120731120556.GB17252@localhost>
- <1343741625.27983.39.camel@gandalf.stny.rr.com>
- <20120731144453.GB2422@linux.vnet.ibm.com>
- <1343746311.27983.52.camel@gandalf.stny.rr.com>
+	id S1754950Ab2GaPK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 11:10:29 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47091 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754926Ab2GaPK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 11:10:27 -0400
+Date: Tue, 31 Jul 2012 16:10:24 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 18/19] Documentation: Define the MSP Driver Device Tree
+ bindings
+Message-ID: <20120731151024.GA4468@opensource.wolfsonmicro.com>
+References: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
+ <1343741953-17828-19-git-send-email-lee.jones@linaro.org>
+ <20120731135539.GO4468@opensource.wolfsonmicro.com>
+ <5017F2E2.4040100@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343746311.27983.52.camel@gandalf.stny.rr.com>
+In-Reply-To: <5017F2E2.4040100@linaro.org>
+X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073115-7182-0000-0000-0000021D3C77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 10:51:51AM -0400, Steven Rostedt wrote:
-> On Tue, 2012-07-31 at 07:44 -0700, Paul E. McKenney wrote:
-> 
-> > > Found it (and Cc'd David).
-> > > 
-> > > In __update_max_tr() we have:
-> > > 
-> > > 	max_data = task_uid(tsk);
-> > > 
-> > > where task_uid() is:
-> > > 
-> > > #define task_uid(task)		(task_cred_xxx((task), uid))
-> > > 
-> > > #define task_cred_xxx(task, xxx)			\
-> > > ({							\
-> > > 	__typeof__(((struct cred *)NULL)->xxx) ___val;	\
-> > > 	rcu_read_lock();				\
-> > > 	___val = __task_cred((task))->xxx;		\
-> > > 	rcu_read_unlock();				\
-> > > 	___val;						\
-> > > })
-> > > 
-> > > The __update_max_tr() is called at every location interrupts are enabled
-> > > (and a max time is discovered). But now this can include places that
-> > > rcu_read_lock can not be called, I'm not sure how to handle this. Is
-> > > there a non rcu way to get a tasks uid?
-> > 
-> > OK, I will bite.  How about using something like RCU_NONIDLE(), either
-> > directly or open-coded, to make it a legal call site?
-> 
-> OK, then something like:
-> 
-> 	RCU_NONIDLE(max_data = task_uid(tsk));
-> 
-> would work when called normally or with idle?
+On Tue, Jul 31, 2012 at 03:59:46PM +0100, Lee Jones wrote:
+> On 31/07/12 14:55, Mark Brown wrote:
 
-As long as you don't nest too deeply, both.  There are seven bits for
-the count, so you would have to nest quite deeply for there to be
-a problem.  And I can safely add several more bits if needed.
+> >>+Optional properties:
+> >>+ - interrupts       : The interrupt outputs from the device.
 
-							Thanx, Paul
+> >If there's more than one interrupt then how are they ordered?
 
+> It doesn't matter. If there are any more than one (which there
+> aren't in this case), we usually use the interrupt-names property
+> then request them by name in the driver.
+
+So the binding therefore needs to say "The interrupt output from the
+device" as there's only one output supported.  If we were using
+interrupt-names then we'd need to document what the supported names are.
