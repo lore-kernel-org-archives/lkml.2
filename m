@@ -1,128 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab2GaVTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 17:19:41 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:13349 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab2GaVTj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 17:19:39 -0400
-Date: Tue, 31 Jul 2012 23:19:38 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "Pieper, Jeffrey E" <jeffrey.e.pieper@intel.com>,
-        Rick Jones <rick.jones2@hp.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
-Subject: Re: [PATCH] igb: correct hardware type (i210/i211) check in
- igb_loopback_test()
-In-Reply-To: <1343769121.2230.28.camel@jtkirshe-mobl>
-Message-ID: <alpine.LNX.2.00.1207312315310.7100@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1207252059320.11754@swampdragon.chaosbits.net>  <9BBC4E0CF881AA4299206E2E1412B62630D64753@ORSMSX102.amr.corp.intel.com>  <alpine.LNX.2.00.1207312219080.7100@swampdragon.chaosbits.net> <1343769121.2230.28.camel@jtkirshe-mobl>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754204Ab2GaVTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 17:19:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33803 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754057Ab2GaVTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 17:19:43 -0400
+Message-ID: <50184BF4.6080102@dsbmail.itg.ti.com>
+Date: Tue, 31 Jul 2012 16:19:48 -0500
+From: Alexis Cortes <x0095842@dsbmail.itg.ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: <sarah.a.sharp@linux.intel.com>
+CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <brian.quach@ti.com>,
+        <jorge.llamas@ti.com>
+Subject: [PATCH] usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP Hardware
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jul 2012, Jeff Kirsher wrote:
+This patch is intended to work around a known issue on the
+SN65LVPE502CP USB3.0 re-driver that can delay the negotiation
+between a device and the host past the usual handshake timeout,
+and if that happens on the first insertion, the host controller
+port will enter in Compliance Mode as per xHCI Spec. The patch
+creates a timer which polls every 2 seconds the link state of each
+host controller's port (this by reading the PORTSC register) and
+recovers the port by issuing a Warm reset every time Compliance mode
+is detected.
 
-> On Tue, 2012-07-31 at 22:23 +0200, Jesper Juhl wrote:
-> > On Wed, 25 Jul 2012, Wyborny, Carolyn wrote:
-> > 
-> > > 
-> > > > -----Original Message-----
-> > > > From: Jesper Juhl [mailto:jj@chaosbits.net] 
-> > > > Sent: Wednesday, July 25, 2012 12:06 PM
-> > > > To: linux-kernel@vger.kernel.org
-> > > > Cc: netdev@vger.kernel.org; e1000-devel@lists.sourceforge.net;
-> > Wyborny, Carolyn; Pieper, Jeffrey E; Kirsher, Jeffrey T; Rick Jones;
-> > Ronciak, John; Brandeburg, Jesse; Allan, Bruce W; Skidmore, Donald C;
-> > Rose, Gregory V; Waskiewicz Jr, Peter P; Duyck, Alexander H; David S.
-> > Miller
-> > > > Subject: [PATCH] igb: correct hardware type (i210/i211) check in
-> > igb_loopback_test()
-> > > > 
-> > > > In the original code
-> > > > ...
-> > > >     if ((adapter->hw.mac.type == e1000_i210)
-> > > >             || (adapter->hw.mac.type == e1000_i210)) { ...
-> > > > the second check of 'adapter->hw.mac.type' is pointless since it
-> > tests for the exact same value as the first.
-> > > > 
-> > > > After reading through a few other parts of the driver I believe
-> > that the second check was actually intended to check for 'e1000_i211'
-> > > > rather than 'e1000_i210', but I admit that I'm not certain so
-> > someone with more knowledge about this driver should ACK the patch
-> > before it gets merged.
-> > > > 
-> > > > Unfortunately I have no hardware to actually test this on, so it
-> > is compile tested only.
-> > > > 
-> > > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > > > ---
-> > > >  drivers/net/ethernet/intel/igb/igb_ethtool.c | 2 +-
-> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > 
-> > > > diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c
-> > b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-> > > > index a19c84c..ad489b7 100644
-> > > > --- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
-> > > > +++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-> > > > @@ -1783,7 +1783,7 @@ static int igb_loopback_test(struct
-> > igb_adapter *adapter, u64 *data)
-> > > >             goto out;
-> > > >     }
-> > > >     if ((adapter->hw.mac.type == e1000_i210)
-> > > > -           || (adapter->hw.mac.type == e1000_i210)) {
-> > > > +           || (adapter->hw.mac.type == e1000_i211)) {
-> > > >             dev_err(&adapter->pdev->dev,
-> > > >                     "Loopback test not supported "
-> > > >                     "on this part at this time.\n");
-> > > > --
-> > > > 1.7.11.3
-> > > > 
-> > > 
-> > > ACK.
-> > > 
-> > > Good catch.  Thanks Jesper!
-> > > 
-> > > Carolyn
-> > > 
-> > > Carolyn Wyborny
-> > > Linux Development
-> > > LAN Access Division
-> > > Intel Corporation
-> > > 
-> > Thank you for the ack Carolyn.
-> > 
-> > David: will you take this in the networking tree? 
-> 
-> I have a few igb patches already, so I will send a pull request for Dave
-> with this patch added to the igb patches I already have.  Ok?
-> 
-That's perfectly fine with me.
+Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
+---
+ drivers/usb/host/xhci-hub.c |   27 ++++++++++++++
+ drivers/usb/host/xhci.c     |   81
++++++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/xhci.h     |    6 +++
+ 3 files changed, 114 insertions(+), 0 deletions(-)
 
-Perhaps you could consider also picking up the other one I sent a few 
-minutes after this one ?
-  Subject: [PATCH] igb: don't break user visible strings over multiple lines in igb_ethtool.c
-  Message-ID: <alpine.LNX.2.00.1207252115321.11754@swampdragon.chaosbits.net>
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 7b01094..4ea498d 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -493,7 +493,19 @@ static void xhci_hub_report_link_state(u32 *status,
+u32 status_reg)
+ 		 * when this bit is set.
+ 		 */
+ 		pls |= USB_PORT_STAT_CONNECTION;
++	} else {
++		/*
++		 * If CAS bit isn't set but the Port is already at
++		 * Compliance Mode, fake a connection so the USB core
++		 * notices the Compliance state and resets the port.
++		 * This resolves an issue generated by the SN65LVPE502CP
++		 * in which sometimes the port enters compliance mode
++		 * caused by a delay on the host-device negotiation.
++		 */
++		if (pls == USB_SS_PORT_LS_COMP_MOD)
++			pls |= USB_PORT_STAT_CONNECTION;
+ 	}
++
+ 	/* update status field */
+ 	*status |= pls;
+ }
+@@ -645,6 +657,21 @@ int xhci_hub_control(struct usb_hcd *hcd, u16
+typeReq, u16 wValue,
+ 		/* Update Port Link State for super speed ports*/
+ 		if (hcd->speed == HCD_USB3) {
+ 			xhci_hub_report_link_state(&status, temp);
++			/*
++			 * Verify if all USB3 Ports Have entered U0. Delete compliance
++			 * mode timer if so.
++			 */
++			if (xhci->quirks & XHCI_COMP_MODE_QUIRK) {
++				if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1)) {
++					if ((temp & PORT_PLS_MASK) == XDEV_U0)
++						xhci->port_status_u0 |= 1 << wIndex;
++				} else {
++					/* Deleting Compliance Mode Recovery Timer */
++					if (del_timer_sync(&xhci->comp_mode_recovery_timer))
++						xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted. "
++							       "All USB3 ports have entered U0 at least once.\n");
++				}
++			}
+ 		}
+ 		if (bus_state->port_c_suspend & (1 << wIndex))
+ 			status |= 1 << USB_PORT_FEAT_C_SUSPEND;
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index a979cd0..d1f1cda 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -26,6 +26,7 @@
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/slab.h>
++#include <linux/dmi.h>
 
+ #include "xhci.h"
 
+@@ -397,6 +398,62 @@ static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+
+ #endif
+
++static void compliance_mode_recovery(unsigned long arg)
++{
++	struct xhci_hcd *xhci;
++	struct usb_hcd *hcd;
++	u32 temp;
++	int i;
++
++	xhci = (struct xhci_hcd *)arg;
++
++	for (i = 0; i < xhci->num_usb3_ports; i++) {
++		temp = xhci_readl(xhci, xhci->usb3_ports[i]);
++		if ((temp & PORT_PLS_MASK) == USB_SS_PORT_LS_COMP_MOD) {
++			/* Compliance Mode Detected. Letting USB Core handle the Warm Reset */
++			xhci_dbg(xhci, "Compliance Mode Detected on port %d! Attempting
+recovery routine.\n", i + 1);
++			hcd = xhci->shared_hcd;
++
++			if (hcd->state == HC_STATE_SUSPENDED)
++				usb_hcd_resume_root_hub(hcd);
++
++			usb_hcd_poll_rh_status(hcd);
++		}
++	}
++
++	if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1))
++		mod_timer(&xhci->comp_mode_recovery_timer, jiffies +
+msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
++}
++
++static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
++{
++	xhci->port_status_u0 = 0;
++	init_timer(&xhci->comp_mode_recovery_timer);
++	xhci->comp_mode_recovery_timer.data = (unsigned long) xhci;
++	xhci->comp_mode_recovery_timer.function = compliance_mode_recovery;
++	xhci->comp_mode_recovery_timer.expires = jiffies +
+msecs_to_jiffies(COMP_MODE_RCVRY_MSECS);
++	set_timer_slack(&xhci->comp_mode_recovery_timer,
+msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
++	add_timer(&xhci->comp_mode_recovery_timer);
++	xhci_dbg(xhci, "Compliance Mode Recovery Timer Initialized.\n");
++}
++
++static bool compliance_mode_recovery_timer_quirk_check(void)
++{
++	const char *dmi_product_name, *dmi_sys_vendor;
++
++	dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
++	dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
++
++	if (strstr(dmi_sys_vendor, "Hewlett-Packard")) {
++		if (strstr(dmi_product_name, "Z420") || strstr(dmi_product_name,
+"Z620") ||
++				strstr(dmi_product_name, "Z820")) {
++			return true;
++		}
++	}
++
++	return false;
++}
++
+ /*
+  * Initialize memory for HCD and xHC (one-time init).
+  *
+@@ -420,6 +477,12 @@ int xhci_init(struct usb_hcd *hcd)
+ 	retval = xhci_mem_init(xhci, GFP_KERNEL);
+ 	xhci_dbg(xhci, "Finished xhci_init\n");
+
++	/* Initializing Compliance Mode Recovery Data If Needed */
++	if (compliance_mode_recovery_timer_quirk_check()) {
++		xhci->quirks |= XHCI_COMP_MODE_QUIRK;
++		compliance_mode_recovery_timer_init(xhci);
++	}
++
+ 	return retval;
+ }
+
+@@ -628,6 +691,10 @@ void xhci_stop(struct usb_hcd *hcd)
+ 	del_timer_sync(&xhci->event_ring_timer);
+ #endif
+
++	/* Deleting Compliance Mode Recovery Timer */
++	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
++		del_timer_sync(&xhci->comp_mode_recovery_timer);
++
+ 	if (xhci->quirks & XHCI_AMD_PLL_FIX)
+ 		usb_amd_dev_put();
+
+@@ -802,6 +869,15 @@ int xhci_suspend(struct xhci_hcd *xhci)
+ 	}
+ 	spin_unlock_irq(&xhci->lock);
+
++	/*
++	 * Deleting Compliance Mode Recovery Timer because the xHCI Host
++	 * is about to be suspended.
++	 */
++	if (xhci->quirks & XHCI_COMP_MODE_QUIRK) {
++		del_timer_sync(&xhci->comp_mode_recovery_timer);
++		xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted - xHC
+suspended\n");
++	}
++
+ 	/* step 5: remove core well power */
+ 	/* synchronize irq when using MSI-X */
+ 	xhci_msix_sync_irqs(xhci);
+@@ -934,6 +1010,11 @@ int xhci_resume(struct xhci_hcd *xhci, bool
+hibernated)
+ 		usb_hcd_resume_root_hub(hcd);
+ 		usb_hcd_resume_root_hub(xhci->shared_hcd);
+ 	}
++
++	/* Initializing Compliance Mode Recovery Timer */
++	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
++		compliance_mode_recovery_timer_init(xhci);
++
+ 	return retval;
+ }
+ #endif	/* CONFIG_PM */
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 55c0785..f1e7874 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1494,6 +1494,7 @@ struct xhci_hcd {
+ #define XHCI_TRUST_TX_LENGTH	(1 << 10)
+ #define XHCI_LPM_SUPPORT	(1 << 11)
+ #define XHCI_INTEL_HOST		(1 << 12)
++#define XHCI_COMP_MODE_QUIRK	(1 << 13)
+ 	unsigned int		num_active_eps;
+ 	unsigned int		limit_active_eps;
+ 	/* There are two roothubs to keep track of bus suspend info for */
+@@ -1510,6 +1511,11 @@ struct xhci_hcd {
+ 	unsigned		sw_lpm_support:1;
+ 	/* support xHCI 1.0 spec USB2 hardware LPM */
+ 	unsigned		hw_lpm_support:1;
++	/* Compliance Mode Recovery Data */
++	struct timer_list	comp_mode_recovery_timer;
++	u32			port_status_u0;
++/* Compliance Mode Timer Triggered every 2 seconds */
++#define COMP_MODE_RCVRY_MSECS 2000
+ };
+
+ /* convert between an HCD pointer and the corresponding EHCI_HCD */
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.1
 
