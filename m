@@ -1,76 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab2GaHGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 03:06:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51271 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab2GaHGq (ORCPT
+	id S1755587Ab2GaHKQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 03:10:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45503 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab2GaHKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 03:06:46 -0400
-Date: Tue, 31 Jul 2012 09:06:40 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
-Message-ID: <20120731070640.GA2950@gmail.com>
-References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
- <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
- <1343660892.20897.3.camel@twins>
- <20120730155059.GB17078@somewhere.redhat.com>
+	Tue, 31 Jul 2012 03:10:15 -0400
+Message-ID: <501784C8.9050803@pengutronix.de>
+Date: Tue, 31 Jul 2012 09:10:00 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120730155059.GB17078@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+CC: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH can-next v3 1/2] can: add tx/rx LED trigger support
+References: <1343676041-29572-1-git-send-email-fabio.baltieri@gmail.com> <5016FA01.5000109@pengutronix.de> <20120731065733.GA30267@gmail.com>
+In-Reply-To: <20120731065733.GA30267@gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigB633E90602D98D6AD02725E4"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigB633E90602D98D6AD02725E4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On 07/31/2012 08:57 AM, Fabio Baltieri wrote:
+> Hi Marc,
+>=20
+> On Mon, Jul 30, 2012 at 11:17:53PM +0200, Marc Kleine-Budde wrote:
+>> On 07/30/2012 09:20 PM, Fabio Baltieri wrote:
+>>> This patch implements the functions to add two LED triggers, named
+>>> <ifname>-tx and <ifname>-rx, to a canbus device driver.
+>>>
+>>> Triggers are called from specific handlers by each CAN device driver =
+and
+>>> can be disabled altogether with a Kconfig option.
+>>>
+>>> The implementation keeps the LED on when the interface is UP and blin=
+ks
+>>> the LED on network activity at a configurable rate.
+>>>
+>>> This only supports can-dev based drivers, as it uses some support fie=
+ld
+>>> in the can_priv structure.
+>>>
+>>> Supported drivers should call can_led_init(), can_led_exit() and
+>>> can_led_event() as needed.
+>>>
+>>> Supported events are:
+>>> - CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
+>>> - CAN_LED_EVENT_STOP: turn off tx/rx LEDs
+>>> - CAN_LED_EVENT_TX: trigger tx LED blink
+>>> - CAN_LED_EVENT_RX: trigger tx LED blink
+>>>
+>>> Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+>>> Cc: Wolfgang Grandegger <wg@grandegger.com>
+>>> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+>>> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+>>> ---
+>>>
+>>> Hi all!
+>>>
+>>> This is the v3 of my CAN LED trigger patch.  It's a major refactoring=
+ of the v2
+>>> that was discussed about three months ago concluding with the idea th=
+at
+>>> implementing the oneshot triggering code in the LED framework would b=
+e a better
+>>> solution.
+>>>
+>>> This is the old thread for reference:
+>>> http://marc.info/?l=3Dlinux-can&m=3D133521499002898&w=3D2
+>>>
+>>> So, generic oneshot trigger code is now merged in mainline (see 5bb62=
+9c), and
+>>> these are the changes in the v3:
+>>>
+>>> - use the new led_trigger_blink_oneshot() function for LED triggering=
 
-> On Mon, Jul 30, 2012 at 05:08:12PM +0200, Peter Zijlstra wrote:
-> > On Fri, 2012-07-27 at 17:40 +0200, Frederic Weisbecker wrote:
-> > > +++ b/kernel/user_hooks.c
-> > > @@ -0,0 +1,56 @@
-> > > +#include <linux/user_hooks.h>
-> > > +#include <linux/rcupdate.h>
-> > > +#include <linux/sched.h>
-> > > +#include <linux/percpu.h>
-> > > +
-> > > +struct user_hooks {
-> > > +       bool hooking;
-> > > +       bool in_user;
-> > > +};
-> > 
-> > I really detest using bool in structures.. but that's just me. Also this
-> > really wants a comment as to wtf 'hooking' means. in_user I can just
-> > about guess.
-> 
-> I really don't mind changing that to int. I just like them as 
-> bool because they better describe the purpose of the field.
-> 
-> hooking means that the hooks are set (the TIF flag is set on 
-> the current task and we also handle the exception hooks).
-> 
-> I can call that is_hooking instead? And/or add a comment to 
-> explain the purpose of this.
+>>> - use kasprintf() and led_trigger_{un}register_simple for LED allocat=
+ion
+>>> - add some usage note in the comments
+>>>
+>>> The resulting code is quite simple now and - I think - a bit less int=
+rusive.
+>>> Still, I hope on some feedback from the community as I don't have tha=
+t much
+>>> hardware to test it - this version has been tested mainly on an x86 w=
+ith a
+>>> custom usb-can interface.
+>>>
+>>> In 2/2 there is a sample implementation for the flexcan driver, which=
+ is
+>>> basically unchanged from the old version.
+>>>
+>>> Any comments?
+>>> Fabio
+>>
+>> Looks quite clean now. Can you provide a devm implementation, too?
+>>
+>> Marc
+>>>
+>>>  drivers/net/can/Kconfig  | 12 ++++++
+>>>  drivers/net/can/Makefile |  2 +
+>>>  drivers/net/can/led.c    | 99 ++++++++++++++++++++++++++++++++++++++=
+++++++++++
+>>>  include/linux/can/dev.h  |  8 ++++
+>>>  include/linux/can/led.h  | 38 +++++++++++++++++++
+>>>  5 files changed, 159 insertions(+)
+>>>  create mode 100644 drivers/net/can/led.c
+>>>  create mode 100644 include/linux/can/led.h
+>>>
+>>> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+>>> index bb709fd..19dec19 100644
+>>> --- a/drivers/net/can/Kconfig
+>>> +++ b/drivers/net/can/Kconfig
+>>> @@ -54,6 +54,18 @@ config CAN_CALC_BITTIMING
+>>>  	  arguments "tq", "prop_seg", "phase_seg1", "phase_seg2" and "sjw".=
 
-Please don't use this horrible naming - use something more 
-technical like struct user_callback and callback::active, ok?
+>>>  	  If unsure, say Y.
+>>> =20
+>>> +config CAN_LEDS
+>>> +	bool "Enable LED triggers for Netlink based drivers"
+>>> +	depends on CAN_DEV
+>>> +	depends on LEDS_CLASS
+>>> +	select LEDS_TRIGGERS
+>>> +	---help---
+>>> +	  This option adds two LED triggers for packet receive and transmit=
 
-Thanks,
+>>> +	  events on each supported CAN device.
+>>> +
+>>> +	  Say Y here if you are working on a system with led-class supporte=
+d
+>>> +	  LEDs and you want to use them as canbus activity indicators.
+>>> +
+>>>  config CAN_AT91
+>>>  	tristate "Atmel AT91 onchip CAN controller"
+>>>  	depends on CAN_DEV && (ARCH_AT91SAM9263 || ARCH_AT91SAM9X5)
+>>> diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
+>>> index 938be37..24ee98b 100644
+>>> --- a/drivers/net/can/Makefile
+>>> +++ b/drivers/net/can/Makefile
+>>> @@ -8,6 +8,8 @@ obj-$(CONFIG_CAN_SLCAN)		+=3D slcan.o
+>>>  obj-$(CONFIG_CAN_DEV)		+=3D can-dev.o
+>>>  can-dev-y			:=3D dev.o
+>>> =20
+>>> +can-dev-$(CONFIG_CAN_LEDS)	+=3D led.o
+>>> +
+>>>  obj-y				+=3D usb/
+>>>  obj-y				+=3D softing/
+>>> =20
+>>> diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
+>>> new file mode 100644
+>>> index 0000000..68c4f30
+>>> --- /dev/null
+>>> +++ b/drivers/net/can/led.c
+>>> @@ -0,0 +1,99 @@
+>>> +/*
+>>> + * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or mod=
+ify
+>>> + * it under the terms of the GNU General Public License version 2 as=
 
-	Ingo
+>>> + * published by the Free Software Foundation.
+>>> + */
+>>> +
+>>> +#include <linux/module.h>
+>>> +#include <linux/kernel.h>
+>>> +#include <linux/slab.h>
+>>> +#include <linux/netdevice.h>
+>>> +#include <linux/can/dev.h>
+>>> +
+>>> +#include <linux/can/led.h>
+>>> +
+>>> +static unsigned long led_delay =3D 50;
+>>> +module_param(led_delay, ulong, 0644);
+>>> +MODULE_PARM_DESC(led_delay,
+>>> +		"blink delay time for activity leds (msecs, default: 50).");
+>>> +
+>>> +/*
+>>> + * Trigger a LED event in response to a CAN device event
+>>> + */
+>>> +void can_led_event(struct net_device *netdev, enum can_led_event eve=
+nt)
+>>> +{
+>>> +	struct can_priv *priv =3D netdev_priv(netdev);
+>>> +
+>>> +	switch (event) {
+>>> +	case CAN_LED_EVENT_OPEN:
+>>> +		led_trigger_event(priv->tx_led_trig, LED_FULL);
+>>> +		led_trigger_event(priv->rx_led_trig, LED_FULL);
+>>> +		break;
+>>> +	case CAN_LED_EVENT_STOP:
+>>> +		led_trigger_event(priv->tx_led_trig, LED_OFF);
+>>> +		led_trigger_event(priv->rx_led_trig, LED_OFF);
+>>> +		break;
+>>> +	case CAN_LED_EVENT_TX:
+>>> +		if (led_delay)
+>>> +			led_trigger_blink_oneshot(priv->tx_led_trig,
+>>> +						  &led_delay, &led_delay, 1);
+>>> +		break;
+>>> +	case CAN_LED_EVENT_RX:
+>>> +		if (led_delay)
+>>> +			led_trigger_blink_oneshot(priv->rx_led_trig,
+>>> +						  &led_delay, &led_delay, 1);
+>>> +		break;
+>>> +	}
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(can_led_event);
+>>> +
+>>> +/*
+>>> + * Register CAN LED triggers for a CAN device
+>>> + *
+>>> + * This is normally called from a driver's probe function
+>>> + */
+>>> +void can_led_init(struct net_device *netdev)
+>>> +{
+>>> +	struct can_priv *priv =3D netdev_priv(netdev);
+>>> +
+>>> +	priv->tx_led_trig_name =3D kasprintf(GFP_KERNEL, "%s-tx", netdev->n=
+ame);
+>>> +	if (!priv->tx_led_trig_name)
+>>> +		goto tx_led_failed;
+>>> +
+>>> +	priv->rx_led_trig_name =3D kasprintf(GFP_KERNEL, "%s-rx", netdev->n=
+ame);
+>>> +	if (!priv->rx_led_trig_name)
+>>> +		goto rx_led_failed;
+>>> +
+>>> +	led_trigger_register_simple(priv->tx_led_trig_name,
+>>> +				    &priv->tx_led_trig);
+>>> +	led_trigger_register_simple(priv->rx_led_trig_name,
+>>> +				    &priv->rx_led_trig);
+>>> +
+>>> +	return;
+>>> +
+>>> +rx_led_failed:
+>>> +	kfree(priv->tx_led_trig_name);
+>>> +	priv->tx_led_trig_name =3D NULL;
+>>> +tx_led_failed:
+>>> +	return;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(can_led_init);
+>>
+>> Can you provide a devm implementation for can_led?
+>=20
+> Sounds reasonable, you mean like a devm_kasprintf implementation to
+> remove kfree and unwinding code?
+
+IMHO it would be sufficient if you implement the devm cleanup functions
+here.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enigB633E90602D98D6AD02725E4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAlAXhNEACgkQjTAFq1RaXHOXoQCfeFUHV/4djh9v+eg4Mx7ebBsL
+eOQAniL16MydLbYcFuVeH3nqKQ7uKxGF
+=CHBc
+-----END PGP SIGNATURE-----
+
+--------------enigB633E90602D98D6AD02725E4--
