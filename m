@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab2GaMkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:40:14 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:45669 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756183Ab2GaMkK convert rfc822-to-8bit (ORCPT
+	id S1756177Ab2GaMlq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:41:46 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:52583 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753636Ab2GaMlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:40:10 -0400
-Date: Tue, 31 Jul 2012 14:40:00 +0200
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [RFC PATCH v5 12/19] memory-hotplug: introduce new function
- arch_remove_memory()
-Message-ID: <20120731144000.33fd4a0a@thinkpad>
-In-Reply-To: <50166379.4090305@cn.fujitsu.com>
-References: <50126B83.3050201@cn.fujitsu.com>
-	<50126E2F.8010301@cn.fujitsu.com>
-	<20120730102305.GB3631@osiris.boeblingen.de.ibm.com>
-	<50166379.4090305@cn.fujitsu.com>
-Reply-To: gerald.schaefer@de.ibm.com
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12073112-1948-0000-0000-0000028B946C
+	Tue, 31 Jul 2012 08:41:44 -0400
+X-IronPort-AV: E=Sophos;i="4.77,686,1336341600"; 
+   d="scan'208";a="168673952"
+Date: Tue, 31 Jul 2012 14:41:42 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Lars-Peter Clausen <lars@metafoo.de>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, Jonathan Cameron <jic23@cam.ac.uk>,
+        kernel-janitors@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/iio/adc/at91_adc.c: use devm_ functions
+In-Reply-To: <5017D148.6030006@metafoo.de>
+Message-ID: <alpine.DEB.2.02.1207311435040.1894@hadrien>
+References: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr> <5017D148.6030006@metafoo.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jul 2012 18:35:37 +0800
-Wen Congyang <wency@cn.fujitsu.com> wrote:
+On Tue, 31 Jul 2012, Lars-Peter Clausen wrote:
 
-> At 07/30/2012 06:23 PM, Heiko Carstens Wrote:
-> > On Fri, Jul 27, 2012 at 06:32:15PM +0800, Wen Congyang wrote:
-> >> We don't call __add_pages() directly in the function add_memory()
-> >> because some other architecture related things need to be done
-> >> before or after calling __add_pages(). So we should introduce
-> >> a new function arch_remove_memory() to revert the things
-> >> done in arch_add_memory().
-> >>
-> >> Note: the function for s390 is not implemented(I don't know how to
-> >> implement it for s390).
-> > 
-> > There is no hardware or firmware interface which could trigger a
-> > hot memory remove on s390. So there is nothing that needs to be
-> > implemented.
-> 
-> Thanks for providing this information.
-> 
-> According to this, arch_remove_memory() for s390 can just return
-> -EBUSY.
+> Hi,
+>
+> On 07/31/2012 12:09 PM, Julia Lawall wrote:
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> > @@ -720,20 +698,14 @@ error_ret:
+> >  static int __devexit at91_adc_remove(struct platform_device *pdev)
+> >  {
+> >  	struct iio_dev *idev = platform_get_drvdata(pdev);
+> > -	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >  	struct at91_adc_state *st = iio_priv(idev);
+> >
+> >  	iio_device_unregister(idev);
+> > [...]
+> > -	free_irq(st->irq, idev);
+> > [...]
+> >  	iio_device_free(idev);
+>
+> I think we have to be careful here. The interrupted is now freed after the
+> device has been freed, which means that it could trigger after the device
+> has been freed. And since we use the device in the interrupt handler we'll
+> get a use after free.
 
-Yes, but there is a prototype mismatch for arch_remove_memory() on s390
-and also other architectures (u64 vs. unsigned long).
+OK, thanks for the feedback.  I'll try again, and un-devm_ this function.
 
-arch/s390/mm/init.c:262: error: conflicting types for
-‘arch_remove_memory’ include/linux/memory_hotplug.h:88: error: previous
-declaration of ‘arch_remove_memory’ was here
-
-In memory_hotplug.h you have:
-extern int arch_remove_memory(unsigned long start, unsigned long size);
-
-On all archs other than x86 you have:
-int arch_remove_memory(u64 start, u64 size)
-
+julia
