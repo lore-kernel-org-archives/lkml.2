@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab2GaPTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 11:19:07 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:45706 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961Ab2GaPTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 11:19:05 -0400
-Date: Tue, 31 Jul 2012 08:18:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
-Message-ID: <20120731151808.GF2422@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120724090330.GA9830@localhost>
- <1343662752.3847.2.camel@fedora>
- <20120731120556.GB17252@localhost>
- <1343741625.27983.39.camel@gandalf.stny.rr.com>
- <20120731144453.GB2422@linux.vnet.ibm.com>
- <1343746311.27983.52.camel@gandalf.stny.rr.com>
- <1343746583.27983.55.camel@gandalf.stny.rr.com>
+	id S1755149Ab2GaPTm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 11:19:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59658 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754955Ab2GaPTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 11:19:41 -0400
+Date: Tue, 31 Jul 2012 16:19:36 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Layton <jlayton@redhat.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the nfs tree
+Message-ID: <20120731151936.GR612@suse.de>
+References: <20120731142441.0d01100f9d050ec6e479c923@canb.auug.org.au>
+ <20120731103336.GN612@suse.de>
+ <1343745442.519.20.camel@lade.trondhjem.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1343746583.27983.55.camel@gandalf.stny.rr.com>
+In-Reply-To: <1343745442.519.20.camel@lade.trondhjem.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073115-2356-0000-0000-000000DCA1DB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 10:56:23AM -0400, Steven Rostedt wrote:
-> On Tue, 2012-07-31 at 10:51 -0400, Steven Rostedt wrote:
-> 
-> > > OK, I will bite.  How about using something like RCU_NONIDLE(), either
-> > > directly or open-coded, to make it a legal call site?
+On Tue, Jul 31, 2012 at 02:37:24PM +0000, Myklebust, Trond wrote:
+> On Tue, 2012-07-31 at 11:33 +0100, Mel Gorman wrote:
+> > On Tue, Jul 31, 2012 at 02:24:41PM +1000, Stephen Rothwell wrote:
+> > > Hi Andrew,
+> > > 
+> > > Today's linux-next merge of the akpm tree got a conflict in
+> > > net/sunrpc/xprtsock.c between commit 5cf02d09b50b ("nfs: skip commit in
+> > > releasepage if we're freeing memory for fs-related reasons") from the nfs
+> > > tree and commit "nfs: enable swap on NFS" from the akpm tree.
+> > > 
+> > > Just context changes?  I fixed it up (I think - see below) and can carry
+> > > the fix as necessary.
 > > 
-> > OK, then something like:
+> > Functionally it looks fine. As you say, it all looks like context
+> > changes. Arguably code like this
 > > 
-> > 	RCU_NONIDLE(max_data = task_uid(tsk));
+> > current->flags &= ~PF_FSTRANS
 > > 
-> > would work when called normally or with idle?
+> > could use tsk_restore_flags instead() even though it should never be
+> > necessary as PF_FSTRANS would not be set on function entry. However,
+> > it would set up a depedency between the patch sets that is undesirable.
+> > If both sets get merged then it might make sense as a cleanup to use
+> > tsk_restore_flags() but not until then.
+> > 
+> > Thanks Stephen.
 > > 
 > 
-> The comment above RCU_NONIDLE() says:
-> 
-> 	This macro may be used from process-level code only.
-> 
-> Although I'm not sure what a 'level' is. Do you mean process-context? If
-> so, then this will not work because it can be called from non process
-> level code (return from interrupt), or any interrupt that enables
-> interrupts.
+> Do we really need to set both PF_FSTRANS and PF_MEMALLOC here? The
+> reason why I merged the PF_FSTRANS patch is that we have the deadlock
+> problem when allocating a new socket even before we add swap-over-nfs.
+> Adding PF_FSTRANS to disallow entry into the NFS layer by the memory
+> allocator fixes that issue.
 
-Yep, process context.  It seems that I was naively expecting the
-calls in interrupt context to be covered by rcu_irq_enter() and
-rcu_irq_exit().  I take it that these calls are happening outside of
-the rcu_irq_enter()-protected region?
+PF_FSTRANS is to prevent recursion into NFS and is set whether swap-over-NFS
+is used or not and for all requests.
 
-							Thanx, Paul
+> What value does PF_MEMALLOC add? Is that in order to prevent recursion
+> into other areas of the swap code (say, if you mix swap-over-nfs with
+> ordinary swap-to-disk)?
+> 
 
+PF_MEMALLOC is normally to prevent the page reclaim recursing into
+itself. Page reclaim can call the page allocator and that cannot re-enter
+page reclaim.
+
+In the case of swap-over-NFS, PF_MEMALLOC is set only if the socket is
+being used for swapping. In softirq context, the allocation request is
+allowed to use PFMEMALLOC reserves to avoid deadlock.
+
+I do not see an obvious way to collapse the two flags together.
+PF_FSTRANS should not mean the PFMEMALLOC reserves can be used and
+PFMEMALLOC is not set for all requests.
+
+-- 
+Mel Gorman
+SUSE Labs
