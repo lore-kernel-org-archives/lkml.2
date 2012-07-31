@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab2GaQOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:14:39 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35973 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202Ab2GaQOi (ORCPT
+	id S1755535Ab2GaQPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:15:08 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:51151 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab2GaQPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:14:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <1343607994-32415-2-git-send-email-jon.mason@intel.com>
-References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
-	<1343607994-32415-2-git-send-email-jon.mason@intel.com>
-Date: Tue, 31 Jul 2012 12:14:36 -0400
-Message-ID: <CAAsGZS4NBM0_o1-RHEZGbYDmJkwTx_RrkYFm7a7-AZRpx0dYAQ@mail.gmail.com>
-Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
-From: chetan loke <loke.chetan@gmail.com>
-To: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 31 Jul 2012 12:15:05 -0400
+Message-ID: <1343751179.1803.73.camel@aeonflux>
+Subject: Re: Unable to Detect Bluetooth Device on Macbook Pro 9,2 (Mid-2012
+ 13")
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Shea Levy <shea@shealevy.com>
+Cc: linux-bluetooth@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 31 Jul 2012 09:12:59 -0700
+In-Reply-To: <50180209.1090002@shealevy.com>
+References: <5017E234.2000207@shealevy.com>
+	 <1343749923.1803.68.camel@aeonflux> <50180209.1090002@shealevy.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 29, 2012 at 8:26 PM, Jon Mason <jon.mason@intel.com> wrote:
+Hi Shea,
+
+> > include /sys/kernel/debug/usb/devices details for this device.
+> 
+> Not sure, which device it is, so here's all of bus 4:
 
 <snip>
 
-> +static void ntb_tx_copy_task(struct ntb_transport_qp *qp,
-> +                            struct ntb_queue_entry *entry,
-> +                            void *offset)
-> +{
-> +       struct ntb_payload_header *hdr = offset;
-> +
-> +       offset += sizeof(struct ntb_payload_header);
-> +       memcpy_toio(offset, entry->buf, entry->len);
-> +
-> +       hdr->len = entry->len;
-> +       hdr->ver = qp->tx_pkts;
-> +
-> +       /* Ensure that the data is fully copied out before setting the flag */
-> +       wmb();
-> +       hdr->flags = entry->flags | DESC_DONE_FLAG;
-> +
-> +       ntb_ring_sdb(qp->ndev, qp->qp_num);
-> +
-> +       /* The entry length can only be zero if the packet is intended to be a
-> +        * "link down" or similar.  Since no payload is being sent in these
-> +        * cases, there is nothing to add to the completion queue.
-> +        */
-> +       if (entry->len > 0) {
-> +               qp->tx_bytes += entry->len;
-> +
-> +               /* Add fully transmitted data to completion queue */
-> +               ntb_list_add_tail(&qp->ntb_tx_comp_q_lock, &entry->entry,
-> +                                 &qp->tx_comp_q);
-> +
-> +               if (qp->tx_handler)
-> +                       qp->tx_handler(qp->cb_data, qp);
-> +       } else
-> +               ntb_list_add_tail(&qp->ntb_tx_free_q_lock, &entry->entry,
-> +                                 &qp->tx_free_q);
-> +}
+> T:  Bus=04 Lev=04 Prnt=04 Port=02 Cnt=03 Dev#=  9 Spd=12   MxCh= 0
+> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=05ac ProdID=821d Rev= 0.86
+> S:  Manufacturer=Apple Inc.
+> S:  Product=Bluetooth USB Host Controller
+> C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+> E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+> I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 
-I know you talked about a fixed array. But it's not here yet. So at
-all the call-sites, for [r/t]x_free_q , add the 'entry' to the head -
-change to ntb_list_add_head here and else where.
+lets take the one that says Bluetooth USB Host Controller ;)
 
-Chetan Loke
+Regards
+
+Marcel
+
+
