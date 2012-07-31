@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2GaOxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:53:32 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:49492 "EHLO
+	id S1754753Ab2GaOxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:53:31 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:49491 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561Ab2GaOx3 (ORCPT
+	with ESMTP id S1754311Ab2GaOx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 10:53:29 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         jbeulich@suse.com, stefano.stabellini@eu.citrix.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/6] xen/mmu: For 64-bit do not call xen_map_identity_early
-Date: Tue, 31 Jul 2012 10:43:20 -0400
-Message-Id: <1343745804-28028-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 3/6] xen/mmu: Recycle the Xen provided L4, L3, and L2 pages
+Date: Tue, 31 Jul 2012 10:43:21 -0400
+Message-Id: <1343745804-28028-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1343745804-28028-1-git-send-email-konrad.wilk@oracle.com>
 References: <1343745804-28028-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,69 +22,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B/c we do not need it. During the startup the Xen provides
-us with all the memory mapped that we need to function.
+As we are not using them. We end up only using the L1 pagetables
+and grafting those to our page-tables.
 
+[v1: Per Stefano's suggestion squashed two commits]
+[v2: Per Stefano's suggestion simplified loop]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/mmu.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+ arch/x86/xen/mmu.c |   40 +++++++++++++++++++++++++++++++++-------
+ 1 files changed, 33 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 7247e5a..a59070b 100644
+index a59070b..de4b8fd 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
-@@ -84,6 +84,7 @@
-  */
- DEFINE_SPINLOCK(xen_reservation_lock);
- 
-+#ifdef CONFIG_X86_32
+@@ -1708,7 +1708,20 @@ static void convert_pfn_mfn(void *v)
+ 	for (i = 0; i < PTRS_PER_PTE; i++)
+ 		pte[i] = xen_make_pte(pte[i].pte);
+ }
+-
++static __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
++			    unsigned long addr)
++{
++	if (pt_base == PFN_DOWN(__pa(addr))) {
++		set_page_prot((void *)addr, PAGE_KERNEL);
++		clear_page((void *)addr);
++		*pt_base++;
++	}
++	if (pt_end == PFN_DOWN(__pa(addr))) {
++		set_page_prot((void *)addr, PAGE_KERNEL);
++		clear_page((void *)addr);
++		*pt_end--;
++	}
++}
  /*
-  * Identity map, in addition to plain kernel map.  This needs to be
-  * large enough to allocate page table pages to allocate the rest.
-@@ -91,7 +92,7 @@ DEFINE_SPINLOCK(xen_reservation_lock);
-  */
- #define LEVEL1_IDENT_ENTRIES	(PTRS_PER_PTE * 4)
- static RESERVE_BRK_ARRAY(pte_t, level1_ident_pgt, LEVEL1_IDENT_ENTRIES);
--
-+#endif
- #ifdef CONFIG_X86_64
- /* l3 pud for userspace vsyscall mapping */
- static pud_t level3_user_vsyscall[PTRS_PER_PUD] __page_aligned_bss;
-@@ -1628,7 +1629,7 @@ static void set_page_prot(void *addr, pgprot_t prot)
- 	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, 0))
- 		BUG();
- }
--
-+#ifdef CONFIG_X86_32
- static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+  * Set up the initial kernel pagetable.
+  *
+@@ -1724,6 +1737,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
  {
- 	unsigned pmdidx, pteidx;
-@@ -1679,7 +1680,7 @@ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+ 	pud_t *l3;
+ 	pmd_t *l2;
++	unsigned long addr[3];
++	unsigned long pt_base, pt_end;
++	unsigned i;
  
- 	set_page_prot(pmd, PAGE_KERNEL_RO);
+ 	/* max_pfn_mapped is the last pfn mapped in the initial memory
+ 	 * mappings. Considering that on Xen after the kernel mappings we
+@@ -1731,6 +1747,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	 * set max_pfn_mapped to the last real pfn mapped. */
+ 	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
+ 
++	pt_base = PFN_DOWN(__pa(xen_start_info->pt_base));
++	pt_end = PFN_DOWN(__pa(xen_start_info->pt_base + (xen_start_info->nr_pt_frames * PAGE_SIZE)));
++
+ 	/* Zap identity mapping */
+ 	init_level4_pgt[0] = __pgd(0);
+ 
+@@ -1749,6 +1768,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	l3 = m2v(pgd[pgd_index(__START_KERNEL_map)].pgd);
+ 	l2 = m2v(l3[pud_index(__START_KERNEL_map)].pud);
+ 
++	addr[0] = (unsigned long)pgd;
++	addr[1] = (unsigned long)l3;
++	addr[2] = (unsigned long)l2;
+ 	/* Graft it onto L4[272][0]. Note that we creating an aliasing problem:
+ 	 * Both L4[272][0] and L4[511][511] have entries that point to the same
+ 	 * L2 (PMD) tables. Meaning that if you modify it in __va space
+@@ -1782,20 +1804,24 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	/* Unpin Xen-provided one */
+ 	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
+ 
+-	/* Switch over */
+-	pgd = init_level4_pgt;
+-
+ 	/*
+ 	 * At this stage there can be no user pgd, and no page
+ 	 * structure to attach it to, so make sure we just set kernel
+ 	 * pgd.
+ 	 */
+ 	xen_mc_batch();
+-	__xen_write_cr3(true, __pa(pgd));
++	__xen_write_cr3(true, __pa(init_level4_pgt));
+ 	xen_mc_issue(PARAVIRT_LAZY_CPU);
+ 
+-	memblock_reserve(__pa(xen_start_info->pt_base),
+-			 xen_start_info->nr_pt_frames * PAGE_SIZE);
++	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
++	 * set out this way: [L4], [L1], [L2], [L3], [L1], [L1] ...  for
++	 * the initial domain. For guests using the toolstack, they are in:
++	 * [L4], [L3], [L2], [L1], [L1], order .. */
++	for (i = 0; i < ARRAY_SIZE(addr); i++)
++		check_pt_base(&pt_base, &pt_end, addr[i]);
++
++	/* Our (by three pages) smaller Xen pagetable that we are using */
++	memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
  }
--
-+#endif
- void __init xen_setup_machphys_mapping(void)
- {
- 	struct xen_machphys_mapping mapping;
-@@ -1765,14 +1766,12 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- 	/* Note that we don't do anything with level1_fixmap_pgt which
- 	 * we don't need. */
- 
--	/* Set up identity map */
--	xen_map_identity_early(level2_ident_pgt, max_pfn);
--
- 	/* Make pagetable pieces RO */
- 	set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
- 	set_page_prot(level3_ident_pgt, PAGE_KERNEL_RO);
- 	set_page_prot(level3_kernel_pgt, PAGE_KERNEL_RO);
- 	set_page_prot(level3_user_vsyscall, PAGE_KERNEL_RO);
-+	set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
- 	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
- 	set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
- 
+ #else	/* !CONFIG_X86_64 */
+ static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
 -- 
 1.7.7.6
 
