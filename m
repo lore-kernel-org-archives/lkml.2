@@ -1,208 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab2GaGRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:17:31 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:48346 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab2GaGR2 (ORCPT
+	id S1755495Ab2GaGTM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:19:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59111 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239Ab2GaGTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:17:28 -0400
+	Tue, 31 Jul 2012 02:19:10 -0400
+Message-ID: <501778DA.5020107@gmail.com>
+Date: Tue, 31 Jul 2012 08:19:06 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CA+=dFzh1wQx2rBs_2RAwrXsz79WS3njnO8=2ntQZUbB5So69gg@mail.gmail.com>
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
-	<500CDE35.6000009@windriver.com>
-	<42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com>
-	<500E1057.3020509@windriver.com>
-	<75bdd73e-1c47-4fd6-bc29-5b86ee6da69a@email.android.com>
-	<CA+=dFzg=Bpsv5bMzECoAXYVcbD95eYy6xDAzL6fwiHrunfq-tg@mail.gmail.com>
-	<e7f8a685-9635-4aa9-bd67-1044e0720b29@email.android.com>
-	<CA+=dFzifKwbiXmw=pu0+rWmz72+4jsbv6bXOBHyL0LmxaL9byg@mail.gmail.com>
-	<CA+=dFzgXq3Sx-Ny+6oDZ3BEdsMQCgswNEVPVnhmhedHFvazzWw@mail.gmail.com>
-	<50100A29.8010705@gmail.com>
-	<CA+=dFzj11c9K0TS0T7D1aBVz+ppdFK91ZzBbevLV23FrWJNzmw@mail.gmail.com>
-	<CA+=dFziK09TVcK29x1SLg+JanOj6o__bJKf8yohw6dTYCUCF5A@mail.gmail.com>
-	<8ea83e51-81d1-407a-be06-98d2c99c876d@email.android.com>
-	<CA+=dFzguqjjnnqHO53Mx859VB6NU=4MaPWAUzGQB2qtZGfdAUg@mail.gmail.com>
-	<5013069F.3080306@gmail.com>
-	<CA+=dFzh4dFatOy42FydbVvoXB8=5CvLu5AwPvUA16h+kymq0Lw@mail.gmail.com>
-	<CA+=dFzh1wQx2rBs_2RAwrXsz79WS3njnO8=2ntQZUbB5So69gg@mail.gmail.com>
-Date: Tue, 31 Jul 2012 14:17:27 +0800
-Message-ID: <CA+=dFzhXY9aJ6_Yu-4a3g+6RyN5_mxXY=U3HnzKdi8TH-rqWcA@mail.gmail.com>
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK
- when bundling
-From: Xufeng Zhang <xufengzhang.main@gmail.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        xufeng zhang <xufeng.zhang@windriver.com>, sri@us.ibm.com,
-        davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <syrjala@sci.fi>,
+        Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
+        GregKH <greg@kroah.com>
+Subject: Re: [PATCH 1/2] onewire: w1-gpio: add ext_pullup_enable pin in platform
+ data
+References: <1343249670-14985-1-git-send-email-zonque@gmail.com> <20120730181238.GA23443@ioremap.net> <20120731005929.GP27847@sci.fi>
+In-Reply-To: <20120731005929.GP27847@sci.fi>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/mixed;
+ boundary="------------060706080404000502030709"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm wondering if the below solution is fine to you which is based on
-your changes.
-BTW, I have verified this patch and it works ok for all the situation,
-but only one problem persists:
-there is a potential that commands will exceeds SCTP_MAX_NUM_COMMANDS
-which happens during sending lots of small error DATA chunks.
+This is a multi-part message in MIME format.
+--------------060706080404000502030709
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 
-Thanks,
-Xufeng Zhang
+On 31.07.2012 02:59, Ville Syrjälä wrote:
+> On Mon, Jul 30, 2012 at 10:12:39PM +0400, Evgeniy Polyakov wrote:
+>> Hi
+>>
+>> Sorry for long delay
+>> [resend with fixed Greg's address :)]
+>>
+>> On Wed, Jul 25, 2012 at 10:54:29PM +0200, Daniel Mack (zonque@gmail.com) wrote:
+>>> In the process of porting boards to devicetree implemenation, we should
+>>> keep information about external circuitry where they belong - the
+>>> individual drivers.
+>>>
+>>> This patch adds a way to specify a GPIO to drive the (optional) external
+>>> pull-up logic, rather than using a function pointer for that.
+>>
+>> I do not object against this patch, but I have rather limited knowledge
+>> about gpio driver. Patch looks good, feel free to add my
+>> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+>>
+>> Greg, please pull it into your tree, if Ville does not object.
+> 
+> No objections from me.
 
+I take this as an Acked-by:?
+
+> The only cosmetic issue I spotted was 'pdata' being assigned twice in
+> w1_gpio_probe().
+
+Right. Amended patch below.
+
+
+Thanks a lot,
+Daniel
+
+
+
+
+--------------060706080404000502030709
+Content-Type: text/x-patch;
+ name="0001-onewire-w1-gpio-add-DT-bindings.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-onewire-w1-gpio-add-DT-bindings.patch"
+
+>From 37385d15bbd9dbc637f1e46d962c90be5eeb1409 Mon Sep 17 00:00:00 2001
+From: Daniel Mack <zonque@gmail.com>
+Date: Mon, 23 Jul 2012 16:36:35 +0200
+Subject: [PATCH v2] onewire: w1-gpio: add DT bindings
+
+This patch add DT bindings to the w1-gpio driver, along with some
+documentation on how to use them.
+
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Acked-by: Ville Syrjala <syrjala@sci.fi>
 ---
-diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
-index 712b3be..62c34f5 100644
---- a/include/net/sctp/command.h
-+++ b/include/net/sctp/command.h
-@@ -110,6 +110,7 @@ typedef enum {
-        SCTP_CMD_SEND_NEXT_ASCONF, /* Send the next ASCONF after ACK */
-        SCTP_CMD_PURGE_ASCONF_QUEUE, /* Purge all asconf queues.*/
-        SCTP_CMD_SET_ASOC,       /* Restore association context */
-+       SCTP_CMD_GEN_BAD_STREAM, /* Invalid Stream errors happened command */
-        SCTP_CMD_LAST
- } sctp_verb_t;
+ Documentation/devicetree/bindings/w1/w1-gpio.txt | 22 +++++++++++
+ drivers/w1/masters/w1-gpio.c                     | 48 +++++++++++++++++++++++-
+ 2 files changed, 69 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/w1/w1-gpio.txt
 
-diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
-index fc5e600..3d218e0 100644
---- a/include/net/sctp/structs.h
-+++ b/include/net/sctp/structs.h
-@@ -1183,6 +1183,9 @@ struct sctp_outq {
-         */
-        struct list_head abandoned;
-
-+       /* Put Invalid Stream error chunks on this list */
-+       struct list_head bad_stream_err;
+diff --git a/Documentation/devicetree/bindings/w1/w1-gpio.txt b/Documentation/devicetree/bindings/w1/w1-gpio.txt
+new file mode 100644
+index 0000000..6e09c35
+--- /dev/null
++++ b/Documentation/devicetree/bindings/w1/w1-gpio.txt
+@@ -0,0 +1,22 @@
++w1-gpio devicetree bindings
 +
-        /* How many unackd bytes do we have in-flight?  */
-        __u32 outstanding_bytes;
-
-diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-index e7aa177..1e87b0b 100644
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -211,6 +211,7 @@ void sctp_outq_init(struct sctp_association *asoc,
-struct sctp_outq *q)
-        INIT_LIST_HEAD(&q->retransmit);
-        INIT_LIST_HEAD(&q->sacked);
-        INIT_LIST_HEAD(&q->abandoned);
-+       INIT_LIST_HEAD(&q->bad_stream_err);
-
-        q->fast_rtx = 0;
-        q->outstanding_bytes = 0;
-@@ -283,6 +284,12 @@ void sctp_outq_teardown(struct sctp_outq *q)
-                list_del_init(&chunk->list);
-                sctp_chunk_free(chunk);
-        }
++Required properties:
 +
-+       /* Throw away any pending Invalid Stream error chunks */
-+       list_for_each_entry_safe(chunk, tmp, &q->bad_stream_err, list) {
-+               list_del_init(&chunk->list);
-+               sctp_chunk_free(chunk);
-+       }
++ - compatible: "w1-gpio"
++ - gpios: one or two GPIO specs:
++		- the first one is used as data I/O pin
++		- the second one is optional. If specified, it is used as
++		  enable pin for an external pin pullup.
++
++Optional properties:
++
++ - linux,open-drain: if specified, the data pin is considered in
++		     open-drain mode.
++
++Examples:
++
++	onewire@0 {
++		compatible = "w1-gpio";
++		gpios = <&gpio 126 0>, <&gpio 105 0>;
++	};
++
+diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
+index dac88ff..6012c4e 100644
+--- a/drivers/w1/masters/w1-gpio.c
++++ b/drivers/w1/masters/w1-gpio.c
+@@ -14,6 +14,8 @@
+ #include <linux/slab.h>
+ #include <linux/w1-gpio.h>
+ #include <linux/gpio.h>
++#include <linux/of_platform.h>
++#include <linux/of_gpio.h>
+ 
+ #include "../w1.h"
+ #include "../w1_int.h"
+@@ -42,12 +44,55 @@ static u8 w1_gpio_read_bit(void *data)
+ 	return gpio_get_value(pdata->pin) ? 1 : 0;
  }
-
- /* Free the outqueue structure and any related pending chunks.  */
-diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
-index fe99628..ab63fa1 100644
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -1060,6 +1060,17 @@ static void sctp_cmd_send_asconf(struct
-sctp_association *asoc)
-        }
- }
-
-+static void sctp_cmd_make_inv_stream_err(sctp_cmd_seq_t *commands,
-+               struct sctp_association *asoc)
-+{
-+       struct sctp_chunk *err, *tmp;
-+       struct sctp_outq *q = &asoc->outqueue;
+ 
++#ifdef CONFIG_OF
++static struct of_device_id w1_gpio_dt_ids[] = {
++	{ .compatible = "w1-gpio" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, w1_gpio_dt_ids);
 +
-+       list_for_each_entry_safe(err, tmp, &q->bad_stream_err, list) {
-+               list_del_init(&err->list);
-+               sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(err));
-+               struct sctp_association *asoc)
++static int w1_gpio_probe_dt(struct platform_device *pdev)
 +{
-+       struct sctp_chunk *err, *tmp;
-+       struct sctp_outq *q = &asoc->outqueue;
++	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
++	struct device_node *np = pdev->dev.of_node;
++	const struct of_device_id *of_id =
++			of_match_device(w1_gpio_dt_ids, &pdev->dev);
 +
-+       list_for_each_entry_safe(err, tmp, &q->bad_stream_err, list) {
-+               list_del_init(&err->list);
-+               sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(err));
-+       }
++	if (!of_id)
++		return 0;
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return -ENOMEM;
++
++	if (of_get_property(np, "linux,open-drain", NULL))
++		pdata->is_open_drain = 1;
++
++	pdata->pin = of_get_gpio(np, 0);
++	pdata->ext_pullup_enable_pin = of_get_gpio(np, 1);
++	pdev->dev.platform_data = pdata;
++
++	return 0;
 +}
-
- /* These three macros allow us to pull the debugging code out of the
-  * main flow of sctp_do_sm() to keep attention focused on the real
-@@ -1724,6 +1735,10 @@ static int sctp_cmd_interpreter(sctp_event_t event_type,
-                        asoc = cmd->obj.asoc;
-                        break;
-
-+               case SCTP_CMD_GEN_BAD_STREAM:
-+                       sctp_cmd_make_inv_stream_err(commands, asoc);
-+                       break;
++#else
++static int w1_gpio_probe_dt(struct platform_device *pdev)
++{
++	return 0;
++}
++#endif
 +
-                default:
-                        pr_warn("Impossible command: %u, %p\n",
-                                cmd->verb, cmd->obj.ptr);
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 9fca103..cab539f 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -2967,8 +2967,14 @@ discard_force:
-        return SCTP_DISPOSITION_DISCARD;
-
- discard_noforce:
--       if (chunk->end_of_packet)
-+       if (chunk->end_of_packet) {
-+               struct sctp_outq *q = &asoc->outqueue;
+ static int __init w1_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct w1_bus_master *master;
+-	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
++	struct w1_gpio_platform_data *pdata;
+ 	int err;
+ 
++	err = w1_gpio_probe_dt(pdev);
++	if (err < 0)
++		return err;
 +
-                sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, force);
-+               /* Queue the INVALID STREAM error after the SACK if
-one is needed. */
-+               if (!list_empty(&q->bad_stream_err))
-+                       sctp_add_cmd_sf(commands,
-SCTP_CMD_GEN_BAD_STREAM, SCTP_NULL());
-+       }
++	pdata = pdev->dev.platform_data;
++
+ 	if (!pdata)
+ 		return -ENXIO;
+ 
+@@ -151,6 +196,7 @@ static struct platform_driver w1_gpio_driver = {
+ 	.driver = {
+ 		.name	= "w1-gpio",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
+ 	},
+ 	.remove	= __exit_p(w1_gpio_remove),
+ 	.suspend = w1_gpio_suspend,
+-- 
+1.7.11.2
 
-        return SCTP_DISPOSITION_DISCARD;
- consume:
-@@ -3037,11 +3043,15 @@ sctp_disposition_t
-sctp_sf_eat_data_fast_4_4(const struct sctp_endpoint *ep,
-         * with a SACK, a SHUTDOWN chunk, and restart the T2-shutdown timer
-         */
-        if (chunk->end_of_packet) {
-+               struct sctp_outq *q = &asoc->outqueue;
-                /* We must delay the chunk creation since the cumulative
-                 * TSN has not been updated yet.
-                 */
-                sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SHUTDOWN, SCTP_NULL());
-                sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, SCTP_FORCE());
-+               /* Queue the INVALID STREAM error after the SACK if
-one is needed. */
-+               if (!list_empty(&q->bad_stream_err))
-+                       sctp_add_cmd_sf(commands,
-SCTP_CMD_GEN_BAD_STREAM, SCTP_NULL());
-                sctp_add_cmd_sf(commands, SCTP_CMD_TIMER_RESTART,
-                                SCTP_TO(SCTP_EVENT_TIMEOUT_T2_SHUTDOWN));
-        }
-@@ -6136,6 +6146,7 @@ static int sctp_eat_data(const struct
-sctp_association *asoc,
-         */
-        sid = ntohs(data_hdr->stream);
-        if (sid >= asoc->c.sinit_max_instreams) {
-+               struct sctp_outq *q = &asoc->outqueue;
-                /* Mark tsn as received even though we drop it */
-                sctp_add_cmd_sf(commands, SCTP_CMD_REPORT_TSN, SCTP_U32(tsn));
 
-@@ -6144,8 +6155,7 @@ static int sctp_eat_data(const struct
-sctp_association *asoc,
-                                         sizeof(data_hdr->stream),
-                                         sizeof(u16));
-                if (err)
--                       sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
--                                       SCTP_CHUNK(err));
-+                       list_add_tail(&err->list, &q->bad_stream_err);
-                return SCTP_IERROR_BAD_STREAM;
-        }
+--------------060706080404000502030709--
