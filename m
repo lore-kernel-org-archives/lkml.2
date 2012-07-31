@@ -1,215 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab2GaIM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 04:12:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60617 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab2GaIMZ (ORCPT
+	id S1755825Ab2GaINV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 04:13:21 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55800 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab2GaINS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 04:12:25 -0400
-Date: Tue, 31 Jul 2012 10:12:21 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] PWM subsystem for 3.6
-Message-ID: <20120731081221.GA14593@avionic-0098.adnet.avionic-design.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:mF/iXzArNx64gHdsRNZpnlafqAxkw9wqQL4NHRRPi19
- 8lIg/YU62gTUKNnMuLAeoP5JebCHwWijJR8G2m7i760mQuW9U+
- gPSc3C6I9eEHnmu6UlNh4Pu/Bqk91bjKjzZVqWknHtfCToKYWw
- DJE2oWKgwcBwV5YS0T014fmb7VymSSZ4Awuk9/V/EF8QqrnLji
- fpWqJm4S2jXQkIRzbCrB5jDW3p+Rv3uH8p7Yh9Ud9QthRgm8Dz
- MJXNQdrAEIZcTqWqBtceHxWemw1J51p4er9VvqBCZzk/OVA8I5
- AEvUg2495y0cdfTAM0o4aq1tQrh6C0pwIU8eF/3i5GbmrLb3AW
- 0+y1N/sGW+CbU+SNfzv92INShmE5OIitwEKF0hF9C1Ok1VHpKq
- XuCgT9Z3n5HKPBJdslsrzWmgG8tOpEzYHE=
+	Tue, 31 Jul 2012 04:13:18 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        David Brown <davidb@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [PATCH v2 1/1] ARM: dove: DT support for sdhci-dove
+Date: Tue, 31 Jul 2012 10:12:59 +0200
+Message-Id: <1343722379-32699-1-git-send-email-sebastian.hesselbarth@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1343666134-21205-1-git-send-email-sebastian.hesselbarth@googlemail.com>
+References: <1343666134-21205-1-git-send-email-sebastian.hesselbarth@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds device tree support and binding documentiation for
+sdhci-dove.
 
---BOKacYhQ+x31HxR3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+v2: extended documentation and removed second interrupt as it is marked 
+    'reserved' in dove datasheet.
 
-Hi Linus,
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Manuel Lauss <manuel.lauss@googlemail.com>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org
 
-The following changes since commit cfaf025112d3856637ff34a767ef785ef5cf2ca9:
+---
+ Documentation/devicetree/bindings/mmc/sdhci-dove.txt |   14 ++++++++++++++
+ drivers/mmc/host/sdhci-dove.c                        |    8 ++++++++
+ 2 files changed, 22 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-dove.txt
 
-  Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
+diff --git a/Documentation/devicetree/bindings/mmc/sdhci-dove.txt b/Documentation/devicetree/bindings/mmc/sdhci-dove.txt
+new file mode 100644
+index 0000000..f08bb30
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mmc/sdhci-dove.txt
+@@ -0,0 +1,14 @@
++* Marvell sdhci-dove controller
++
++Required properties:
++- compatible: Should be "marvell,dove-sdhci".
++- reg: Physical base address of the sdhci controller.
++- interrupts: interrupt nr of the sdhci controller.
++
++Example:
++
++sdio0: sdio@92000 {
++	compatible = "marvell,dove-sdhci";
++	reg = <0x92000 0x100>;
++	interrupts = <35>;
++};
+diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
+index a6e53a1..90140eb 100644
+--- a/drivers/mmc/host/sdhci-dove.c
++++ b/drivers/mmc/host/sdhci-dove.c
+@@ -24,6 +24,7 @@
+ #include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/mmc/host.h>
++#include <linux/of.h>
+ 
+ #include "sdhci-pltfm.h"
+ 
+@@ -126,11 +127,18 @@ static int __devexit sdhci_dove_remove(struct platform_device *pdev)
+ 	return sdhci_pltfm_unregister(pdev);
+ }
+ 
++static const struct of_device_id sdhci_dove_of_match_table[] __devinitdata = {
++	{ .compatible = "marvell,dove-sdhci", },
++	{}
++};
++MODULE_DEVICE_TABLE(of, sdhci_dove_of_match_table);
++
+ static struct platform_driver sdhci_dove_driver = {
+ 	.driver		= {
+ 		.name	= "sdhci-dove",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= SDHCI_PLTFM_PMOPS,
++		.of_match_table = of_match_ptr(sdhci_dove_of_match_table),
+ 	},
+ 	.probe		= sdhci_dove_probe,
+ 	.remove		= __devexit_p(sdhci_dove_remove),
+-- 
+1.7.10.4
 
-are available in the git repository at:
-
-  git://gitorious.org/linux-pwm/linux-pwm.git tags/for-3.6
-
-for you to fetch changes up to 19891b20e7c275feb92d669f4b1879861f7e8c25:
-
-  pwm: pwm-tiehrpwm: PWM driver support for EHRPWM (2012-07-26 07:45:20 +0200)
-
-----------------------------------------------------------------
-PWM subsystem for Linux 3.6
-
-The new PWM subsystem aims at collecting all implementations of the
-legacy PWM API and to eventually replace it completely. The subsystem
-has been in development for over half a year now and many drivers have
-already been converted. It has been in linux-next for a couple of weeks
-and there have been no major issues so I think it is ready for mainline
-inclusion.
-
-The biggest disadvantage of the legacy PWM API is that it allows only a
-single implementation and therefore prevents multiple PWM drivers to be
-built into the same kernel image. The PWM framework solves this issue
-by keeping the same public API, but at the same time adding a core to
-which PWM providers can register. This has the advantage that nothing
-changes for users of the legacy API, while at the same time allowing the
-implementation changes that are required to move away from the global
-namespace of PWM devices in order to support multiple PWM providers in
-the same system.
-
-----------------------------------------------------------------
-Alexandre Courbot (1):
-      pwm_backlight: pass correct brightness to callback
-
-Alexandre Pereira da Silva (1):
-      pwm: add lpc32xx PWM support
-
-Axel Lin (7):
-      pwm: Convert pwm-imx to use devm_* APIs
-      pwm: Convert pwm-vt8500 to use devm_* APIs
-      pwm: Convert pwm-pxa to use devm_* APIs
-      pwm: pwm-bfin: Return proper error if pwmchip_remove() fails
-      pwm: pwm-mxs: Return proper error if pwmchip_remove() fails
-      pwm: Convert pwm-tegra to use devm_clk_get()
-      pwm: Convert pwm-samsung to use devm_* APIs
-
-Philip, Avinash (2):
-      pwm: pwm-tiecap: PWM driver support for ECAP APWM
-      pwm: pwm-tiehrpwm: PWM driver support for EHRPWM
-
-Sachin Kamat (1):
-      pwm: Use pr_* functions in pwm-samsung.c file
-
-Sascha Hauer (4):
-      pwm: Add PWM framework support
-      ARM i.MX: Move i.MX pwm driver to pwm framework
-      ARM Samsung: Move s3c pwm driver to pwm framework
-      ARM vt8500: Move vt8500 pwm driver to pwm framework
-
-Shawn Guo (5):
-      pwm: add pwm-mxs support
-      pwm: pwm-mxs: encode soc name in compatible string
-      pwm: pwm-mxs: use global reset function stmp_reset_block
-      pwm: pwm-mxs: use devm_* managed functions
-      pwm: pwm-mxs: add pinctrl support
-
-Thierry Reding (15):
-      pwm: Allow chips to support multiple PWMs
-      pwm: Add debugfs interface
-      pwm: Add table-based lookup for static mappings
-      dt: Add empty of_property_match_string() function
-      dt: Add empty of_parse_phandle_with_args() function
-      pwm: Add device tree support
-      pwm: Add NVIDIA Tegra SoC support
-      pwm: tegra: Add device tree support
-      pwm: Move Blackfin PWM driver to PWM framework
-      pwm: Move PXA PWM driver to PWM framework
-      pwm-backlight: Add rudimentary device tree support
-      pwm: Take over maintainership of the PWM subsystem
-      pwm: Conflict with legacy PWM API
-      pwm: pxa: Propagate pwmchip_remove() error
-      pwm: fix used-uninitialized warning in pwm_get()
-
- .../devicetree/bindings/pwm/lpc32xx-pwm.txt        |  12 +
- Documentation/devicetree/bindings/pwm/mxs-pwm.txt  |  17 +
- .../devicetree/bindings/pwm/nvidia,tegra20-pwm.txt |  18 +
- Documentation/devicetree/bindings/pwm/pwm.txt      |  57 ++
- .../bindings/video/backlight/pwm-backlight.txt     |  28 +
- Documentation/pwm.txt                              |  76 +++
- MAINTAINERS                                        |  12 +
- arch/arm/Kconfig                                   |   1 -
- arch/arm/boot/dts/tegra20.dtsi                     |   6 +
- arch/arm/boot/dts/tegra30.dtsi                     |   6 +
- arch/arm/mach-tegra/board-dt-tegra20.c             |   1 +
- arch/arm/mach-tegra/board-dt-tegra30.c             |   3 +
- arch/arm/mach-vt8500/Makefile                      |   2 -
- arch/arm/mach-vt8500/pwm.c                         | 265 --------
- arch/arm/plat-mxc/Kconfig                          |   6 -
- arch/arm/plat-mxc/Makefile                         |   1 -
- arch/arm/plat-pxa/Makefile                         |   1 -
- arch/arm/plat-pxa/pwm.c                            | 304 ---------
- arch/arm/plat-samsung/Makefile                     |   4 -
- arch/blackfin/Kconfig                              |  10 -
- arch/blackfin/kernel/Makefile                      |   1 -
- arch/blackfin/kernel/pwm.c                         | 100 ---
- drivers/Kconfig                                    |   2 +
- drivers/Makefile                                   |   1 +
- drivers/mfd/Kconfig                                |   1 +
- drivers/misc/Kconfig                               |   1 +
- drivers/pwm/Kconfig                                | 108 ++++
- drivers/pwm/Makefile                               |  11 +
- drivers/pwm/core.c                                 | 713 +++++++++++++++++++++
- drivers/pwm/pwm-bfin.c                             | 162 +++++
- arch/arm/plat-mxc/pwm.c => drivers/pwm/pwm-imx.c   | 204 ++----
- drivers/pwm/pwm-lpc32xx.c                          | 148 +++++
- drivers/pwm/pwm-mxs.c                              | 203 ++++++
- drivers/pwm/pwm-pxa.c                              | 218 +++++++
- .../pwm.c => drivers/pwm/pwm-samsung.c             | 238 +++----
- drivers/pwm/pwm-tegra.c                            | 261 ++++++++
- drivers/pwm/pwm-tiecap.c                           | 232 +++++++
- drivers/pwm/pwm-tiehrpwm.c                         | 411 ++++++++++++
- drivers/pwm/pwm-vt8500.c                           | 177 +++++
- drivers/video/backlight/Kconfig                    |   2 +-
- drivers/video/backlight/pwm_bl.c                   | 159 ++++-
- include/linux/of.h                                 |  16 +
- include/linux/pwm.h                                | 117 ++++
- include/linux/pwm_backlight.h                      |   1 +
- 44 files changed, 3307 insertions(+), 1010 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/mxs-pwm.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/nvidia,tegra20-pwm.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm.txt
- create mode 100644 Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
- create mode 100644 Documentation/pwm.txt
- delete mode 100644 arch/arm/mach-vt8500/pwm.c
- delete mode 100644 arch/arm/plat-pxa/pwm.c
- delete mode 100644 arch/blackfin/kernel/pwm.c
- create mode 100644 drivers/pwm/Kconfig
- create mode 100644 drivers/pwm/Makefile
- create mode 100644 drivers/pwm/core.c
- create mode 100644 drivers/pwm/pwm-bfin.c
- rename arch/arm/plat-mxc/pwm.c => drivers/pwm/pwm-imx.c (50%)
- create mode 100644 drivers/pwm/pwm-lpc32xx.c
- create mode 100644 drivers/pwm/pwm-mxs.c
- create mode 100644 drivers/pwm/pwm-pxa.c
- rename arch/arm/plat-samsung/pwm.c => drivers/pwm/pwm-samsung.c (55%)
- create mode 100644 drivers/pwm/pwm-tegra.c
- create mode 100644 drivers/pwm/pwm-tiecap.c
- create mode 100644 drivers/pwm/pwm-tiehrpwm.c
- create mode 100644 drivers/pwm/pwm-vt8500.c
-
---BOKacYhQ+x31HxR3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQF5NlAAoJEN0jrNd/PrOhH9QP/ib1+wyEuVrb7fJrH64M/rLn
-Xq3Zm0X0HzEx3p7vqH9EaOHB45+TxiotNPOs6CvQzQkrIMrIUS3O+i4S0N1eF5ha
-Ub7Ct3MCl0JY2tFm9+sBq6YaOOAi6K0yrLZXTZ1+7RPlCXqRad0Qoa4MDEFa2px5
-wDwebBsIKPE3FrE12ljaue3r3kD5E0F2sub1KXGOGmLzw1JoGxmYtBj1t6RFSgmX
-ii3hhD4OcS4GQejI29nHDpP/cPpC0gAZELx7+3YKwQxA4WWAgITuZ3tqVEtNFN7+
-bLdRkP/wHt+VJKEjZR3cjPZniG1u4xEtin+JqgXe4UKvB2Le/eD6PikdSjkIzNbz
-YcYHTEBoARHnz0JLqLXwYiwZ5TDi2nBJXZ9/rkJHLC6ClttrKnN3JdGaP4UVegFS
-w8r913BhUiIAJaIltagJI9itWOKn04QiSZGfnOOb68Mvs3iAP3SwK2yAao/MTd1g
-i3nd0HCJ1MOi4ZNqIE1uHJOaqoHFuk/ivUI2uw86y9b3gRWEzps9mOYnARYyvxpr
-fJD+TKNSenlWfNfUzMzqjfw6TLUqTRxNPVfwbq0UPLrHkvAK5+WNCCzYY2jVKnkZ
-8vrrsK/Y16u3S/ESFZAj4Z/+zbDKXFRNBv7sBry7D0srsjy/p6KGBia4qWFM7ne2
-zkMIqk6wKVubQQ4S30/n
-=4O5R
------END PGP SIGNATURE-----
-
---BOKacYhQ+x31HxR3--
