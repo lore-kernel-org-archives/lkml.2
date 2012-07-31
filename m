@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab2GaITg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 04:19:36 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61309 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809Ab2GaITd (ORCPT
+	id S1755871Ab2GaIUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 04:20:23 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:54972 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728Ab2GaITt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 04:19:33 -0400
-Date: Tue, 31 Jul 2012 11:19:22 +0300
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: dedekind1@gmail.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: Re: [PATCH 0/5] ubi: Fix bad PEBs reserve caclulation
-Message-ID: <20120731111922.2cfbcc7a@pixies.home.jungo.com>
-In-Reply-To: <1343656610.1513.14.camel@kyv>
-References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
-	<1343656610.1513.14.camel@kyv>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jul 2012 04:19:49 -0400
+Date: Tue, 31 Jul 2012 10:19:45 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] PWM subsystem for v3.6
+Message-ID: <20120731081945.GB14593@avionic-0098.adnet.avionic-design.de>
+References: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
+ <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3uo+9/B/ebqu+fSQ"
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:l62zFbSsauip8SWsUcUCkUtHv3zaqdEBE9UjGEebtA+
+ 669hhW0Qgsd9nQdHhnfBq78uyChrJl+A5EiDYeJMQlVP69a9Ga
+ A1H9HrG4t+SP+jMHWPhtqnGRFDYk9UoiI4dVbXKzShEgvMy2c4
+ eBpoD180XQhIgnpV7Q9L0RJxRfdH3TJWXm4YlVYUsqBNiLNGzA
+ IGmwpHayisckVgJR0J9JTCOIIVB1EuY+i/TL2IUKW65g63je1S
+ z7QkDR31He1KBXKAcztEUYdOLuGSvXFhZaNsObly3KYUDmdSuy
+ hsc84ms41xOTCHHVec7Dev4eFVHsMsbIrIbT3OifT4JV5CSfRC
+ c9QzHMtq+EfxX4I/7J7TZZJ99ihwI5n+ebdQJUmInj4XJaF6DB
+ YHYyzA3NETDV4XOAHp+7Of5R95qU6T+VF8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Artem,
 
-On Mon, 30 Jul 2012 16:56:50 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> Hi Shmulik, I've separated out the defconfig changes and pushed patches
-> 1,2, and 3 to the UBI tree (the master branch). Patches 4 and 5 are
-> already merged upstream. I did a couple of minor modifications in
-> commentaries and messages and I think in variables declaration section,
-> nothing else. I'll send you the patches separately.
+--3uo+9/B/ebqu+fSQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks!
+On Thu, Jul 26, 2012 at 02:11:58PM -0700, Linus Torvalds wrote:
+> On Thu, Jul 26, 2012 at 12:16 AM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> >
+> > The new PWM subsystem aims at collecting all implementations of the
+> > legacy PWM API and to eventually replace it completely. The subsystem
+> > has been in development for over half a year now and many drivers have
+> > already been converted. It has been in linux-next for a couple of weeks
+> > and there have been no major issues so I think it is ready for inclusion
+> > in your tree.
+>=20
+> For new subsystems like this, I really want ack's from the people who
+> are expected to use it.
+>=20
+> For a gitorious pull like this, I also want signed tags with the gpg
+> key having signatures from people I recognize. I don't think I have
+> such a key from you.
 
-I've noticed a diff in the Kconfig describing MTD_UBI_BEB_LIMIT.
+I just sent a new pull request with a signed tag. I've also included a
+more detailed description of why this is useful, along the lines of what
+Arnd already mentioned.
 
-In my original [PATCH 2/5] "ubi: Limit amount of reserved eraseblocks
-for bad PEB handling" I've amended the MTD_UBI_BEB_LIMIT explanation a
-bit.
+My key was signed by Sebastian Andrzej Siewior today and I uploaded the
+signature only now, so it may take some time to propagate.
 
-The diff between what's on linux-ubi and my suggested description is:
+Thierry
 
--	  This option specifies the maximum bad physical eraseblocks UBI
--	  expects on the UBI device (percents of total number of physical
--	  eraseblocks on this MTD partition). If the underlying flash does not
--	  admit of bad eraseblocks (e.g. NOR flash), this value is ignored.
-+	  If the MTD device admits of bad eraseblocks (e.g. NAND flash), UBI
-+	  reserves some amount of physical eraseblocks to handle new bad
-+	  eraseblocks.
-+	  This option specifies the maximum bad eraseblocks UBI expects on the
-+	  ubi device (percents of total number of flash eraseblocks).
-+	  This limit is used in order to derive amount of eraseblock UBI
-+	  reserves for handling new bad blocks.
-+	  If the device has more bad eraseblocks than this limit, UBI does not
-+	  reserve any physical eraseblocks for new bad eraseblocks, but
-+	  attempts to use available eraseblocks (if any).
-+	  If the underlying flash does not admit of bad eraseblocks (e.g. NOR
-+	  flash), this value is ignored.
+--3uo+9/B/ebqu+fSQ
+Content-Type: application/pgp-signature
 
-Just wanted to make sure you deliberately discarded these amendments.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Regards,
-Shmulik
+iQIcBAEBAgAGBQJQF5UhAAoJEN0jrNd/PrOhjwcP/Akr5A78aR8MRfFUYBWNQG8U
+NcM4esFUZlDdsB6kxikj9ZQtcVbfUjNRibx3DqT6agZ0gjTudxgxOAZkVP8gKC+R
+GuwNZwY/lQzSPC7hsJ2eb+y1qAChcxC/vSdX+WQQCcLot5GA/401sFfyYpN3VdEG
+bKffm2N2q/SsrP63rw84Csh31MbG7SP5lu01oVoNUMFVxF8P4KOzBLk+93G8nF6d
+sU530UsFbnQodWAN4HzVaFhlGJP9QBtDc0Jm0cM8ZauG5oV4ixCvgRWrXI6dHCMp
+zFkQ6rzwU7V/qj1cJ0gRo5O1K/hqQ9uQz8a6eY1+7LC7GcUj2PH/3+e6ECXDZiJG
+tldTJsg2OVzDouK88RUvlhpKYUqe51wcZ+MSpy1Zt9Z9y0PHMKggmOsJ+aDyAU6x
+LuHaExjowDVq4nDgEeHEjnQRTW/OhFdTmPebUrxPb3M+mDPnQXl6owJZWJBb6JQa
+eqEqc4REAw9f4X/ivin28VYEIBz7/oLZIJ1nkYZlb0GE6y8ZQvYlUwGmz+TKp5NK
+wJm0XWjOFi+b4aQu+4a8xt/vGa2/2WeYXBLWB3fvh9kalczi6z+rhwnQiWJlRtKJ
+9GSVASytslPDTbpdcGqlNgffWnJG1A+UI+WSn8B6YV0eNT56L4SNf5kq5LPLYoQG
+Q2wJOoFTznYxPpZ15EYc
+=c2kK
+-----END PGP SIGNATURE-----
+
+--3uo+9/B/ebqu+fSQ--
