@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab2GaKwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:52:09 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40518 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab2GaKwG (ORCPT
+	id S1755964Ab2GaKwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:52:14 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34167 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755495Ab2GaKwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:52:06 -0400
+	Tue, 31 Jul 2012 06:52:10 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         Ian.Campbell@citrix.com, hpa@zytor.com, x86@kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/3] x86: Let extend_brk return a NULL pointer instead of just BUG_ON.
-Date: Tue, 31 Jul 2012 06:42:56 -0400
-Message-Id: <1343731376-20658-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] xen/p2m: Reserve 4MB of _brk space for P2M leafs when populating back.
+Date: Tue, 31 Jul 2012 06:42:55 -0400
+Message-Id: <1343731376-20658-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1343731376-20658-1-git-send-email-konrad.wilk@oracle.com>
 References: <1343731376-20658-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,32 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The callers of this function (dmi_alloc) and the various
-Xen related ones can deal with a NULL pointer.
+When we release pages back during bootup:
 
-Suggested-by: Ian Campbell <Ian.Campbell@citrix.com>
+Freeing  9d-100 pfn range: 99 pages freed
+Freeing  9cf36-9d0d2 pfn range: 412 pages freed
+Freeing  9f6bd-9f6bf pfn range: 2 pages freed
+Freeing  9f714-9f7bf pfn range: 171 pages freed
+Freeing  9f7e0-9f7ff pfn range: 31 pages freed
+Freeing  9f800-100000 pfn range: 395264 pages freed
+Released 395979 pages of unused memory
+
+We then try to populate those pages back. In the P2M tree however
+the space for those leafs must be reserved - as such we use extend_brk.
+We reserve 4MB of _brk space, which means we can fit over
+524288 PFNs - which should be more than enough to cover. If we do
+run over that number, the code is smart enough to stop and not
+allocate anymore leafs.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/kernel/setup.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/xen/p2m.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 16be6dc..13d6c51 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -268,9 +268,10 @@ void * __init extend_brk(size_t size, size_t align)
- 	BUG_ON(_brk_start == 0);
- 	BUG_ON(align & mask);
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 1658af0..0aa61ef 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -194,6 +194,12 @@ RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID
+  * boundary violation will require three middle nodes. */
+ RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 2 * 3);
  
--	_brk_end = (_brk_end + mask) & ~mask;
--	BUG_ON((char *)(_brk_end + size) > __brk_limit);
-+	if ((char *)(((_brk_end + mask) & ~mask) + size) > __brk_limit)
-+		return NULL;
- 
-+	_brk_end = (_brk_end + mask) & ~mask;
- 	ret = (void *)_brk_end;
- 	_brk_end += size;
- 
++/* When we populate back during bootup, the amount of pages can vary. The
++ * max we have is seen is 395979, but that does not mean it can't be more.
++ * So reserve enough for 524288 pages (2G of I/O and E820 holes). Note:
++ * We are smart enough to stop exhausting the _brk if we are close to
++ * exhaustion. */
++RESERVE_BRK(p2m_populated, PMD_SIZE * 2);
+ static inline unsigned p2m_top_index(unsigned long pfn)
+ {
+ 	BUG_ON(pfn >= MAX_P2M_PFN);
 -- 
 1.7.7.6
 
