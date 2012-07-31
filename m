@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab2GaVxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 17:53:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47233 "EHLO mx1.redhat.com"
+	id S1754555Ab2GaVyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 17:54:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58681 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753640Ab2GaVxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 17:53:06 -0400
-Message-ID: <501853B3.9030302@redhat.com>
-Date: Tue, 31 Jul 2012 17:52:51 -0400
+	id S1754439Ab2GaVyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 17:54:01 -0400
+Message-ID: <501853EA.10604@redhat.com>
+Date: Tue, 31 Jul 2012 17:53:46 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -16,9 +16,9 @@ CC: mingo@kernel.org, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/19] sched, numa: NUMA home-node selection code
-References: <20120731191204.540691987@chello.nl> <20120731192809.308468547@chello.nl>
-In-Reply-To: <20120731192809.308468547@chello.nl>
+Subject: Re: [PATCH 17/19] sched, numa: Detect big processes
+References: <20120731191204.540691987@chello.nl> <20120731192809.369386517@chello.nl>
+In-Reply-To: <20120731192809.369386517@chello.nl>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,6 +26,18 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 07/31/2012 03:12 PM, Peter Zijlstra wrote:
+
+> The current heuristic for determining if a task is 'big' is if its
+> consuming more than 1/2 a node's worth of cputime. We might want to
+> add a term here looking at the RSS of the process and compare this
+> against the available memory per node.
+
+This could probably use some refinement in the future, but
+it looks like a reasonable start.
+
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Paul Turner <pjt@google.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
 Acked-by: Rik van Riel <riel@redhat.com>
 
