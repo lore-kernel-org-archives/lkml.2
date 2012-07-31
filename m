@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab2GaEuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:50:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48525 "EHLO
+	id S1755524Ab2GaEu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:50:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48664 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755332Ab2GaEuF (ORCPT
+	by vger.kernel.org with ESMTP id S1755499Ab2GaEu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:05 -0400
-Message-Id: <20120731044313.162306105@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:26 -0400
+Message-Id: <20120731044320.598387954@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:22 +0100
+Date: Tue, 31 Jul 2012 05:44:08 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 12/73] mm/vmscan.c: consider swap space when deciding whether to continue reclaim
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dan.j.williams@intel.com>,
+        Tom Jackson <thomas.p.jackson@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 58/73] [SCSI] fix eh wakeup (scsi_schedule_eh vs scsi_restart_operations)
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,48 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minchan Kim <minchan@kernel.org>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 86cfd3a45042ab242d47f3935a02811a402beab6 upstream.
+commit 57fc2e335fd3c2f898ee73570dc81426c28dc7b4 upstream.
 
-Stable note: Not tracked in Bugzilla. This patch reduces kswapd CPU
-	usage on swapless systems with high anonymous memory usage.
+Rapid ata hotplug on a libsas controller results in cases where libsas
+is waiting indefinitely on eh to perform an ata probe.
 
-It's pointless to continue reclaiming when we have no swap space and lots
-of anon pages in the inactive list.
+A race exists between scsi_schedule_eh() and scsi_restart_operations()
+in the case when scsi_restart_operations() issues i/o to other devices
+in the sas domain.  When this happens the host state transitions from
+SHOST_RECOVERY (set by scsi_schedule_eh) back to SHOST_RUNNING and
+->host_busy is non-zero so we put the eh thread to sleep even though
+->host_eh_scheduled is active.
 
-Without this patch, it is possible when swap is disabled to continue
-trying to reclaim when there are only anonymous pages in the system even
-though that will not make any progress.
+Before putting the error handler to sleep we need to check if the
+host_state needs to return to SHOST_RECOVERY for another trip through
+eh.  Since i/o that is released by scsi_restart_operations has been
+blocked for at least one eh cycle, this implementation allows those
+i/o's to run before another eh cycle starts to discourage hung task
+timeouts.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Tom Jackson <thomas.p.jackson@intel.com>
+Tested-by: Tom Jackson <thomas.p.jackson@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/vmscan.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/scsi/scsi_error.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 974162c..b935e6f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2000,8 +2000,9 @@ static inline bool should_continue_reclaim(struct zone *zone,
- 	 * inactive lists are large enough, continue reclaiming
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index d0f71e5..804f632 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -1687,6 +1687,20 @@ static void scsi_restart_operations(struct Scsi_Host *shost)
+ 	 * requests are started.
  	 */
- 	pages_for_compaction = (2UL << sc->order);
--	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON) +
--				zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+	if (nr_swap_pages > 0)
-+		inactive_lru_pages += zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
- 	if (sc->nr_reclaimed < pages_for_compaction &&
- 			inactive_lru_pages > pages_for_compaction)
- 		return true;
+ 	scsi_run_host_queues(shost);
++
++	/*
++	 * if eh is active and host_eh_scheduled is pending we need to re-run
++	 * recovery.  we do this check after scsi_run_host_queues() to allow
++	 * everything pent up since the last eh run a chance to make forward
++	 * progress before we sync again.  Either we'll immediately re-run
++	 * recovery or scsi_device_unbusy() will wake us again when these
++	 * pending commands complete.
++	 */
++	spin_lock_irqsave(shost->host_lock, flags);
++	if (shost->host_eh_scheduled)
++		if (scsi_host_set_state(shost, SHOST_RECOVERY))
++			WARN_ON(scsi_host_set_state(shost, SHOST_CANCEL_RECOVERY));
++	spin_unlock_irqrestore(shost->host_lock, flags);
+ }
+ 
+ /**
 
 
