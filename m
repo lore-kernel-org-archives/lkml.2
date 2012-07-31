@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab2GaEdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:33:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53208 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751861Ab2GaEdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:33:44 -0400
-References: <1343688375.3696.597.camel@sbsiddha-desk.sc.intel.com> <20120731142049.7d0ab5f9@notabene.brown>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120731142049.7d0ab5f9@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [patch] x86, avx: don't use avx instructions with "noxsave" boot param
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 30 Jul 2012 21:33:33 -0700
-To: NeilBrown <neilb@suse.de>, Suresh Siddha <suresh.b.siddha@intel.com>
-CC: james.t.kukunas@linux.intel.com, LKML <linux-kernel@vger.kernel.org>
-Message-ID: <7b101443-b8d7-4474-ab54-03692d232469@email.android.com>
+	id S1754804Ab2GaElF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:41:05 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50837 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968Ab2GaElD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 00:41:03 -0400
+Date: Tue, 31 Jul 2012 14:40:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sage Weil <sage@inktank.com>, Michel Lespinasse <walken@google.com>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20120731144054.59b0a6da6d071ea1bc061db0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__31_Jul_2012_14_40_54_+1000_gNgMG/1b=a7IM6rX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm wondering if we shouldn't just kill the affected CPUID bits if osxsave is off...
+--Signature=_Tue__31_Jul_2012_14_40_54_+1000_gNgMG/1b=a7IM6rX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-NeilBrown <neilb@suse.de> wrote:
+Hi Andrew,
 
->On Mon, 30 Jul 2012 15:46:15 -0700 Suresh Siddha
-><suresh.b.siddha@intel.com>
->wrote:
->
->> Check the kernel has indeed enabled xsave before using AVX
->instructions.
->> 
->> Fixes the kernel boot panic with "noxsave" boot parameter.
->> 
->> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
->
->Looks consistent with other usage - thanks.
->Applied.
->
->Should it go in '-stable' kernels too?
->
->NeilBrown
->
->> ---
->>  arch/x86/include/asm/xor_avx.h |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->> 
->> diff --git a/arch/x86/include/asm/xor_avx.h
->b/arch/x86/include/asm/xor_avx.h
->> index 2510d35..77987cd 100644
->> --- a/arch/x86/include/asm/xor_avx.h
->> +++ b/arch/x86/include/asm/xor_avx.h
->> @@ -197,12 +197,12 @@ static struct xor_block_template xor_block_avx
->= {
->>  
->>  #define AVX_XOR_SPEED \
->>  do { \
->> -	if (cpu_has_avx) \
->> +	if (cpu_has_avx && cpu_has_osxsave) \
->>  		xor_speed(&xor_block_avx); \
->>  } while (0)
->>  
->>  #define AVX_SELECT(FASTEST) \
->> -	(cpu_has_avx ? &xor_block_avx : FASTEST)
->> +	((cpu_has_avx && cpu_has_osxsave) ? &xor_block_avx : FASTEST)
->>  
->>  #else
->>  
->> 
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+net/ceph/osd_client.c: In function 'ceph_osdc_alloc_request':
+net/ceph/osd_client.c:216:2: error: implicit declaration of function 'rb_in=
+it_node' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit 753b960e52b7 ("rbtree: empty nodes have no color") from
+the akpm tree interacting with commit cd43045c2de6 ("libceph: initialize
+rb, list nodes in ceph_osd_request") from the ceph tree.
+
+I added the following merge fix patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 31 Jul 2012 14:37:35 +1000
+Subject: [PATCH] libceph: remove rb_node initialisation
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/ceph/osd_client.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+index ad427e6..06fb7a9 100644
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -213,7 +213,6 @@ struct ceph_osd_request *ceph_osdc_alloc_request(struct=
+ ceph_osd_client *osdc,
+ 	kref_init(&req->r_kref);
+ 	init_completion(&req->r_completion);
+ 	init_completion(&req->r_safe_completion);
+-	rb_init_node(&req->r_node);
+ 	INIT_LIST_HEAD(&req->r_unsafe_item);
+ 	INIT_LIST_HEAD(&req->r_linger_item);
+ 	INIT_LIST_HEAD(&req->r_linger_osd);
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__31_Jul_2012_14_40_54_+1000_gNgMG/1b=a7IM6rX
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQF2HWAAoJEECxmPOUX5FE1V4P/3Xf1GU5E55ET0ijKSRoEobx
+2v4HrvYfGFBgRdXiNp41tgiLRLcscfFrsSM7bfsSYp7CT3Yoe3WvAnk8SZwKmZck
+/szbY5eLJARTBS84LnzATVz+BJvGbxBgS5U74+knm+HXdMZd2Baf48SVwR97mF3F
+W6y/IkzNdV/fqvUU8S/HiJf+6YX+CttACF/u5xIFcmt7LYD5g+eFE0oyqL11IWX0
+/JWZCitAULXmyvpXSu4UfYwhGC3I9kvjYM4KyTirA4rYfO81ZSM8FmL8S0EHa5qR
+oLF2trEmHiDK5DTWoMfN6txelQ28s0tFMFIWM4ou0yKCarh6oK8+R+PPg/xmsAev
+XyHaCkVHF2x1iGqAQiI9gpvXbPS30Ju3CvdaARyRYauAmcx5gP2eSkxtCcFOHmql
+KmkehyDcruaSx5upI7zN0EItiTTiTT+2nVjg21lCUs7miuvlF629ns+9EwQynKpO
+fQ3IPliBzOHeCm5c3at3KDGzD3RDrskCjlqJN54yeTtIiOYfc6mJEG57eioFa2Pa
+p0PzaVaZL9pUQxL670PV7ffy1fx1BjsmxzUjWS5LzJWEyVoGFEn1pwdrqbDga09Y
+TSS63b4+v0bCwq9d7DgLO0THJ6RPhjWbLzkc80IV8ZlmVgrD6REewAIktTCRK9Pz
+B6Ur7aaxPzJ1BcKYmGM1
+=XruD
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__31_Jul_2012_14_40_54_+1000_gNgMG/1b=a7IM6rX--
