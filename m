@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab2GaVzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 17:55:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40807 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab2GaVzg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 17:55:36 -0400
-Date: Tue, 31 Jul 2012 14:55:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
-        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2] dynamic_debug: Restore dev_dbg functionality,
- optimize stack
-Message-Id: <20120731145534.5606e840.akpm@linux-foundation.org>
-In-Reply-To: <333324dcdfdc891ba214d2de8f9a3d056dd7aea9.1343461712.git.joe@perches.com>
-References: <1343334310.17538.32.camel@joe2Laptop>
-	<333324dcdfdc891ba214d2de8f9a3d056dd7aea9.1343461712.git.joe@perches.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755775Ab2GaV41 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 17:56:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9564 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753640Ab2GaV4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 17:56:24 -0400
+Message-ID: <5018547B.4020000@redhat.com>
+Date: Tue, 31 Jul 2012 17:56:11 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@kernel.org, oleg@redhat.com, pjt@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/19] sched, numa: Per task memory placement for big
+ processes
+References: <20120731191204.540691987@chello.nl> <20120731192809.428855038@chello.nl>
+In-Reply-To: <20120731192809.428855038@chello.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jul 2012 00:55:07 -0700
-Joe Perches <joe@perches.com> wrote:
+On 07/31/2012 03:12 PM, Peter Zijlstra wrote:
+> Probability says that the task faulting on a page after we protect it,
+> is most likely to be the task that uses that page most.
+>
+> To decrease the likelyhood of acting on a false relation, we only
+> migrate a page when two consecutive samples are from the same task.
+>
+> I'm still not entirely convinced this scheme is sound, esp. for things
+> like virtualization and n:m threading solutions in general the
+> compute<->task relation is fundamentally untrue.
 
-> commit c4e00daaa9 ("driver-core: extend dev_printk() to pass structured data")
-> changed __dev_printk and broke dynamic-debug's ability to control the
-> dynamic prefix of dev_dbg(dev,..).
-> 
-> dynamic_emit_prefix() adds "[tid] module:func:line:" to the output and
-> those additions got lost.
-> 
-> In addition, the current dynamic debug code uses up to 3 recursion
-> levels via %pV.  This can consume quite a bit of stack.  Directly
-> call printk_emit to reduce the recursion depth.
-> 
-> These changes include:
-> 
-> o Remove KERN_DEBUG from dynamic_emit_prefix
-> o Create and use function create_syslog_header to format the syslog
->   header for printk_emit uses.
-> o Call create_syslog_header and neaten __dev_printk
-> o Call create_syslog_header and printk_emit from dynamic_dev_dbg
-> o Call create_syslog_header and printk_emit from dynamic_netdev_dbg
-> o Make __dev_printk and __netdev_printk static not global
-> o Remove include header declarations of __dev_printk and __netdev_printk
-> o Remove now unused EXPORT_SYMBOL()s of __dev_printk and __netdev_printk
-> o Whitespace neatening
-> 
-> Changes in v2:
-> 
-> o Fix dynamic_emit_prefix to always initialize output
-> o Call create_syslog_header and emit_printk from__netdev_printk and
->   eliminate call to dev_printk to remove another recursion via %pV
+Again, we may need some additional code on top in the future,
+eg. something like Andrea's policy that tries grouping related
+tasks/threads together, but this looks like a very good way
+to start.
 
-This one causes an oops-on-boot
-(http://ozlabs.org/~akpm/stuff/IMG_20120731_144047.jpg).  v1 didn't do
-that.
+We can introduce complexity if it is needed. Simplicity is good.
 
-config: http://ozlabs.org/~akpm/stuff/config-akpm2
+Acked-by: Rik van Riel
+
+-- 
+All rights reversed
