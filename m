@@ -1,91 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab2GaXUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:20:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56569 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754979Ab2GaXUV (ORCPT
+	id S1756224Ab2GaXVy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:21:54 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:38370 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab2GaXVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:20:21 -0400
-Message-ID: <1343776816.4642.73.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 35/73] ASoC: dapm: Fix locking during codec shutdown
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Liam Girdwood <lrg@ti.com>,
-        Misael Lopez Cruz <misael.lopez@ti.com>
-Date: Wed, 01 Aug 2012 00:20:16 +0100
-In-Reply-To: <20120731161325.GD11892@opensource.wolfsonmicro.com>
-References: <20120731044310.013763753@decadent.org.uk>
-	 <20120731044316.865191013@decadent.org.uk>
-	 <20120731161100.GB3111@herton-Z68MA-D2H-B3>
-	 <20120731161325.GD11892@opensource.wolfsonmicro.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-oZBl+bKT276IYKxJpW0J"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 31 Jul 2012 19:21:50 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-e5-5018688c9cf6
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Damien Cassou'" <damien.cassou@lifl.fr>
+Cc: kernel-janitors@vger.kernel.org,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1343752762-16861-1-git-send-email-damien.cassou@lifl.fr>
+ <1343752762-16861-6-git-send-email-damien.cassou@lifl.fr>
+In-reply-to: <1343752762-16861-6-git-send-email-damien.cassou@lifl.fr>
+Subject: Re: [PATCH 5/5] drivers/video/exynos/exynos_dp_core.c: use devm_
+ functions
+Date: Wed, 01 Aug 2012 08:21:48 +0900
+Message-id: <002c01cd6f73$4252b090$c6f811b0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1vOw8Oecq/0EDuSGa/YjFArJSW8QANo8xg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jAd3eDIkAg/dLmSy23pK2ONH3gdXi
+	8q45bA7MHp83yQUwRnHZpKTmZJalFunbJXBlnJv1l63gkExF98OrrA2Me8S6GDk4JARMJGac
+	tupi5AQyxSQu3FvP1sXIxSEksIhRYsXJjawgCSGBX4wSMw/Ig9hsAmoSX74cZgexRQS0JR78
+	PsUM0sAscIBR4sWFViaI7kZGiYVnt7GBVHEKuEmcW7+PGcQWFgiV6D36BqybRUBV4tqTvUwg
+	Nq+ArcSb1i42CFtQ4sfkeywgNrOAlsT6nceZIGx5ic1r3jJDXK0u8eivLsQRRhKfXu9lgygR
+	kdj34h3jBEahWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERza
+	z6R3MK5qsDjEKMDBqMTD+8JMIkCINbGsuDL3EKMEB7OSCK9aBFCINyWxsiq1KD++qDQntfgQ
+	ozQHi5I4r4n3V38hgfTEktTs1NSC1CKYLBMHp1QDI/eG73znBU32GKZs2+bukvp5d1RhjsDz
+	4+eMLli5rDe6Y/7Qdabw1dwpaiq6wpu2VDtKVQVy/t6r4CvncmTiiSmtXm/eKjC06xhmT098
+	oX6tNs29+czevwmrnVfN/siz1rjj3txLl9obCr7u4eJhO1V8Q8VKXi33Vdf+8hN31zLq1Uto
+	cKnoKbEUZyQaajEXFScCAMm7WchpAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, August 01, 2012 1:39 AM Damien Cassou wrote:
+> 
+> From: Damien Cassou <damien.cassou@lifl.fr>
+> 
+> The various devm_ functions allocate memory that is released when a driver
+> detaches.  This patch uses these functions for data that is allocated in
+> the probe function of a platform device and is only freed in the remove
+> function.
+> 
+> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
+> 
+> ---
+>  drivers/video/exynos/exynos_dp_core.c |   27 +++++++--------------------
+>  1 file changed, 7 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
+> index c6c016a..00fe4f0 100644
+> --- a/drivers/video/exynos/exynos_dp_core.c
+> +++ b/drivers/video/exynos/exynos_dp_core.c
+> @@ -872,7 +872,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+> 
+>  	dp->dev = &pdev->dev;
+> 
+> -	dp->clock = clk_get(&pdev->dev, "dp");
+> +	dp->clock = devm_clk_get(&pdev->dev, "dp");
+>  	if (IS_ERR(dp->clock)) {
+>  		dev_err(&pdev->dev, "failed to get clock\n");
+>  		return PTR_ERR(dp->clock);
+> @@ -881,31 +881,24 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+>  	clk_enable(dp->clock);
+> 
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res) {
+> -		dev_err(&pdev->dev, "failed to get registers\n");
+> -		ret = -EINVAL;
+> -		goto err_clock;
+> -	}
 
---=-oZBl+bKT276IYKxJpW0J
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Why do you remove this return check?
+If there is no reason, please, do it as follows:
 
-On Tue, 2012-07-31 at 17:13 +0100, Mark Brown wrote:
-> On Tue, Jul 31, 2012 at 01:11:01PM -0300, Herton Ronaldo Krzesinski wrote=
-:
->=20
-> > Hi, this doesn't build on 3.2:
->=20
-> > linux-stable/sound/soc/soc-dapm.c: In function 'soc_dapm_shutdown_codec=
-':
-> > linux-stable/sound/soc/soc-dapm.c:2982:18: error: 'struct snd_soc_card'=
- has no member named 'dapm_mutex'
-> > linux-stable/sound/soc/soc-dapm.c:3007:20: error: 'struct snd_soc_card'=
- has no member named 'dapm_mutex'
->=20
-> > Looking at it, I'm not sure the fix is needed on 3.2, and introducing
-> > dapm_mutex would be several changes.
->=20
-> Yes, this is irrelevant on v3.2.
+  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (!res) {
+		dev_err(&pdev->dev, "failed to get registers\n");
+-		ret = -EINVAL;
+-		goto err_clock;
++		return -EINVAL;
+	}
 
-OK, I've dropped this.
 
-Ben.
+Best regards,
+Jingoo Han
 
---=20
-Ben Hutchings
-Experience is directly proportional to the value of equipment destroyed.
-                                                         - Carolyn Scheppne=
-r
 
---=-oZBl+bKT276IYKxJpW0J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> 
+>  	dp->reg_base = devm_request_and_ioremap(&pdev->dev, res);
+>  	if (!dp->reg_base) {
+>  		dev_err(&pdev->dev, "failed to ioremap\n");
+> -		ret = -ENOMEM;
+> -		goto err_clock;
+> +		return -ENOMEM;
+>  	}
+> 
+>  	dp->irq = platform_get_irq(pdev, 0);
+>  	if (!dp->irq) {
+>  		dev_err(&pdev->dev, "failed to get irq\n");
+> -		ret = -ENODEV;
+> -		goto err_clock;
+> +		return -ENODEV;
+>  	}
+> 
+>  	ret = devm_request_irq(&pdev->dev, dp->irq, exynos_dp_irq_handler, 0,
+>  				"exynos-dp", dp);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "failed to request irq\n");
+> -		goto err_clock;
+> +		return ret;
+>  	}
+> 
+>  	dp->video_info = pdata->video_info;
+> @@ -917,7 +910,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+>  	ret = exynos_dp_detect_hpd(dp);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to detect hpd\n");
+> -		goto err_clock;
+> +		return ret;
+>  	}
+> 
+>  	exynos_dp_handle_edid(dp);
+> @@ -926,7 +919,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+>  				dp->video_info->link_rate);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to do link train\n");
+> -		goto err_clock;
+> +		return ret;
+>  	}
+> 
+>  	exynos_dp_enable_scramble(dp, 1);
+> @@ -940,17 +933,12 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+>  	ret = exynos_dp_config_video(dp, dp->video_info);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to config video\n");
+> -		goto err_clock;
+> +		return ret;
+>  	}
+> 
+>  	platform_set_drvdata(pdev, dp);
+> 
+>  	return 0;
+> -
+> -err_clock:
+> -	clk_put(dp->clock);
+> -
+> -	return ret;
+>  }
+> 
+>  static int __devexit exynos_dp_remove(struct platform_device *pdev)
+> @@ -962,7 +950,6 @@ static int __devexit exynos_dp_remove(struct platform_device *pdev)
+>  		pdata->phy_exit();
+> 
+>  	clk_disable(dp->clock);
+> -	clk_put(dp->clock);
+> 
+>  	return 0;
+>  }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUBhoMOe/yOyVhhEJAQrIzw//bnJ4hcG830jLXumQfu4arX8vPs9Jment
-kSuTL3puF+VjQKu4zjPXGWPPH0h3wUDuxdgdcHNnZUtqyEwpdAb8PbOTrVGK1FBZ
-88ZEJtFGnLcwArcd8cKYIfon5uLCv+6c5+IpppZl3tvCRtR2IfjAZhPQ0RO14Hfw
-f1FttoSyLhRsKKh9pl9QbRxpS804im3cNdN6VlJE2bZ0tLtcM7TUF2G9nM29qigj
-86ZX/pevMBgdfbqo9a+g8OKzCZxD1OiskBdFXQngBEM7FYEBjb85qswiM/5prcC2
-b4sylX66TcnAJ+Jx8LVEhMb9GiaElgmAxaB7/PiUdwcDzht/znJt1sq0xJsyWsnL
-ZTfEJMEFCSxS2p10bxP5MOuFvcb9oBOXy4QFIqRC61k2lcPRn3Y00Ssm0/3hXmj7
-gwuizjQyWfhXkJFy9WOD4J57TKCKxWu0o3FJy58X3IEyhkODXxrfMXehPU6bEC2Q
-dKHjoEQWuIuhdiGoUcEVuM+7cgmyeUBl/hlWWsI00X/NAwg9N6MzA7P9Qh94O3MV
-83Pm76NZberSZfBSr5KumECkFzwt3+eXpnWPT9ZC+1kZouw1YI2NI0xyUcqwt57E
-GU9phmdlYrO4gVYEOuEBUP8tyKL8tAYPDHE/KxrTN00WIAosQBjJxGOR9bpUrGaX
-PL3g9iqSug4=
-=lqIf
------END PGP SIGNATURE-----
-
---=-oZBl+bKT276IYKxJpW0J--
