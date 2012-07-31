@@ -1,67 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab2GaQCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:02:45 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49539 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755366Ab2GaQCW (ORCPT
+	id S1755412Ab2GaQEc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:04:32 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:39199 "EHLO
+	homiemail-a58.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753818Ab2GaQEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:02:22 -0400
+	Tue, 31 Jul 2012 12:04:30 -0400
+X-Greylist: delayed 8152 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Jul 2012 12:04:30 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=dh1WvXjBdsh118crcYrpMDbt7pGbl73Gulindx1WbQkjnoCZlItrA9yrGjybE
+	ZZ1VzI4qMVdQ7idefN06WVeapU9pugHdwQ1plyU/X7iX6xvPRZnwJClujGJNU2RV
+	8JwlxW+IW/VaxNcl6hpjNGFVuYI17L51WHrjE3maylXlws=
+Message-ID: <50180209.1090002@shealevy.com>
+Date: Tue, 31 Jul 2012 12:04:25 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120703 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
-References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
-	<1343607994-32415-2-git-send-email-jon.mason@intel.com>
-	<CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
-	<20120730181542.GA987@jonmason-lab>
-	<CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
-Date: Tue, 31 Jul 2012 12:02:20 -0400
-Message-ID: <CAAsGZS5kOyQ5FQ7Jg3HxOmmPNYS+F6XcB-_3tm=rcgDV7wAvRQ@mail.gmail.com>
-Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
-From: chetan loke <loke.chetan@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jon Mason <jon.mason@intel.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: linux-bluetooth@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Unable to Detect Bluetooth Device on Macbook Pro 9,2 (Mid-2012
+ 13")
+References: <5017E234.2000207@shealevy.com> <1343749923.1803.68.camel@aeonflux>
+In-Reply-To: <1343749923.1803.68.camel@aeonflux>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 9:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Mon, Jul 30, 2012 at 12:15 PM, Jon Mason <jon.mason@intel.com> wrote:
->>
->> I've tried to make it all generic enough that non-Intel NTBs should plug in with
->> minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
->> redesign of ntb_hw.c might be necessary.  But from what I've seen of other
->> designs on the internet, they appear to be extremely similar.  The transport and
->> client drivers were written with the hardware abstracted away as much as
->> possible to prevent the need to modify it for different hardware.  If there is
->> anything which is Intel hardware specific, I'd be happy to change it to make it
->> more generic.
+On 07/31/2012 11:52 AM, Marcel Holtmann wrote:
+> Hi Shea,
 >
-> That makes sense from a technical point of view, but I think it's
-> going to cause maintenance issues.  For example, assume PLX NTB
-> support is added.  Will PLX be happy about having to convince you to
-> accept changes?  Will Intel be happy about having to release a new
+>> Please CC me on response, I am not subscribed to the list.
+>>
+>> hcitool is unable to detect my laptop's bluetooth device:
+>>
+>> $ lsusb
+>> Bus 004 Device 009: ID 05ac:821d Apple, Inc.
+>> Bus 004 Device 008: ID 05ac:820b Apple, Inc.
+>> Bus 004 Device 007: ID 05ac:820a Apple, Inc.
+>> Bus 004 Device 006: ID 05ac:0252 Apple, Inc.
+>> Bus 004 Device 005: ID 05ac:8242 Apple, Inc. IR Receiver [built-in]
+>> Bus 004 Device 004: ID 0a5c:4500 Broadcom Corp. BCM2046B1 USB 2.0 Hub
+>> (part of BCM2046 Bluetooth)
+>> Bus 004 Device 003: ID 0424:2513 Standard Microsystems Corp.
+>> Bus 004 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+>> Bus 004 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+>> Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+>> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+>> Bus 003 Device 003: ID 05ac:8509 Apple, Inc.
+>> Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+>> Bus 003 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+>>
+>> $ dmesg
+>> <snip>
+>> [    4.744248] usb 4-1.8.1.3: new full-speed USB device number 9 using
+>> ehci_hcd
+>> [    4.822041] usb 4-1.8.1.3: New USB device found, idVendor=05ac,
+>> idProduct=821d
+>> [    4.822830] usb 4-1.8.1.3: New USB device strings: Mfr=1, Product=2,
+>> SerialNumber=0
+>> [    4.823582] usb 4-1.8.1.3: Product: Bluetooth USB Host Controller
+>> [    4.824329] usb 4-1.8.1.3: Manufacturer: Apple Inc.
+>> <snip>
+>>
+>> $ hciconfig -a
+>>
+>> $ hcitool dev
+>> Devices:
+>>
+>> $ lsmod | grep bluetooth
+>> bluetooth             187731  0
+>> rfkill                 15546  2 bluetooth,cfg80211
+>> crc16                   1311  2 bluetooth,ext4
+>>
+>> Any ideas?
+> include /sys/kernel/debug/usb/devices details for this device.
 
-Do you mean convince Intel? Well, if we think of ntb as the class
-driver then the onus is on the community to vet the changes and NOT
-intel.
-And since this is the first NTB part for which the support is
-introduced the class driver design could be a moving target. As
-someone else mentioned, the async/sync tx-dma is another hook that
-could change the class driver's design.
+Not sure, which device it is, so here's all of bus 4:
+
+T:  Bus=04 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=480  MxCh= 2
+B:  Alloc=  7/800 us ( 1%), #Int=  8, #Iso=  0
+D:  Ver= 2.00 Cls=09(hub  ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=1d6b ProdID=0002 Rev= 3.05
+S:  Manufacturer=Linux 3.5.0 ehci_hcd
+S:  Product=EHCI Host Controller
+S:  SerialNumber=0000:00:1d.0
+C:* #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=  0mA
+I:* If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+E:  Ad=81(I) Atr=03(Int.) MxPS=   4 Ivl=256ms
+
+T:  Bus=04 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=480  MxCh= 8
+D:  Ver= 2.00 Cls=09(hub  ) Sub=00 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=8087 ProdID=0024 Rev= 0.00
+C:* #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=  0mA
+I:* If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+E:  Ad=81(I) Atr=03(Int.) MxPS=   2 Ivl=256ms
+
+T:  Bus=04 Lev=02 Prnt=02 Port=07 Cnt=01 Dev#=  3 Spd=480  MxCh= 3
+D:  Ver= 2.00 Cls=09(hub  ) Sub=00 Prot=02 MxPS=64 #Cfgs=  1
+P:  Vendor=0424 ProdID=2513 Rev= b.b3
+C:* #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=  2mA
+I:  If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=01 Driver=hub
+E:  Ad=81(I) Atr=03(Int.) MxPS=   1 Ivl=256ms
+I:* If#= 0 Alt= 1 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=02 Driver=hub
+E:  Ad=81(I) Atr=03(Int.) MxPS=   1 Ivl=256ms
+
+T:  Bus=04 Lev=03 Prnt=03 Port=00 Cnt=01 Dev#=  4 Spd=12   MxCh= 3
+D:  Ver= 2.00 Cls=09(hub  ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+P:  Vendor=0a5c ProdID=4500 Rev= 1.00
+S:  Manufacturer=Apple Inc.
+S:  Product=BRCM20702 Hub
+C:* #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr= 94mA
+I:* If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+E:  Ad=81(I) Atr=03(Int.) MxPS=   1 Ivl=255ms
+
+T:  Bus=04 Lev=04 Prnt=04 Port=00 Cnt=01 Dev#=  7 Spd=12   MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+P:  Vendor=05ac ProdID=820a Rev= 1.00
+C:* #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=  0mA
+I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=01 Driver=usbhid
+E:  Ad=81(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
+
+T:  Bus=04 Lev=04 Prnt=04 Port=01 Cnt=02 Dev#=  8 Spd=12   MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+P:  Vendor=05ac ProdID=820b Rev= 1.00
+C:* #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=  0mA
+I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=02 Driver=usbhid
+E:  Ad=81(I) Atr=03(Int.) MxPS=   4 Ivl=10ms
+
+T:  Bus=04 Lev=04 Prnt=04 Port=02 Cnt=03 Dev#=  9 Spd=12   MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=05ac ProdID=821d Rev= 0.86
+S:  Manufacturer=Apple Inc.
+S:  Product=Bluetooth USB Host Controller
+C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+
+T:  Bus=04 Lev=03 Prnt=03 Port=01 Cnt=02 Dev#=  5 Spd=1.5  MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+P:  Vendor=05ac ProdID=8242 Rev= 0.16
+S:  Manufacturer=Apple Computer, Inc.
+S:  Product=IR Receiver
+C:* #Ifs= 1 Cfg#= 1 Atr=a0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=00 Prot=00 Driver=usbhid
+E:  Ad=82(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
+
+T:  Bus=04 Lev=03 Prnt=03 Port=02 Cnt=03 Dev#=  6 Spd=12   MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+P:  Vendor=05ac ProdID=0252 Rev= 2.19
+S:  Manufacturer=Apple Inc.
+S:  Product=Apple Internal Keyboard / Trackpad
+C:* #Ifs= 3 Cfg#= 1 Atr=a0 MxPwr= 40mA
+I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=01 Driver=usbhid
+E:  Ad=83(I) Atr=03(Int.) MxPS=  10 Ivl=8ms
+I:* If#= 1 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=00 Prot=00 Driver=usbhid
+E:  Ad=81(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+I:* If#= 2 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=02 Driver=bcm5974
+E:  Ad=84(I) Atr=03(Int.) MxPS=   8 Ivl=8ms
 
 
-> driver for their hardware just to incorporate a PLX bug fix?  Will
-> users of PLX hardware accept a new driver release that only benefits
-> Intel users?
 
-May be till the class driver is stable, the client(intel/PLX) drivers
-might have to be modified.  This is a cue for other vendors to
-chime-in and review this design?
-Just thinking if this could sit in staging for some time(so that
-others get a chance to review/suggest changes as well) and then get
-promoted out of staging.
+> Regards
+>
+> Marcel
+>
+>
 
-Chetan Loke
+Thanks,
+Shea
