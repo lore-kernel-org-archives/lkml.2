@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab2GaFAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:00:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48684 "EHLO
+	id S1755857Ab2GaFBt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:01:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49059 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755517Ab2GaEuc (ORCPT
+	by vger.kernel.org with ESMTP id S1755755Ab2GaFBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:32 -0400
-Message-Id: <20120731044321.118071360@decadent.org.uk>
+	Tue, 31 Jul 2012 01:01:47 -0400
+Message-Id: <20120731044322.420055362@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:44:11 +0100
+Date: Tue, 31 Jul 2012 05:44:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@ZenIV.linux.org.uk>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 61/73] iscsi-target: Drop bogus struct file usage for iSCSI/SCTP
+        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 69/73] drm/radeon: fix non revealent error message
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,222 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit bf6932f44a7b3fa7e2246a8b18a44670e5eab6c2 upstream.
+commit 8d1c702aa0b2c4b22b0742b72a1149d91690674b upstream.
 
->From Al Viro:
+We want to print link status query failed only if it's
+an unexepected fail. If we query to see if we need
+link training it might be because there is nothing
+connected and thus link status query have the right
+to fail in that case.
 
-	BTW, speaking of struct file treatment related to sockets -
-        there's this piece of code in iscsi:
-        /*
-         * The SCTP stack needs struct socket->file.
-         */
-        if ((np->np_network_transport == ISCSI_SCTP_TCP) ||
-            (np->np_network_transport == ISCSI_SCTP_UDP)) {
-                if (!new_sock->file) {
-                        new_sock->file = kzalloc(
-                                        sizeof(struct file), GFP_KERNEL);
+To avoid printing failure when it's expected, move the
+failure message to proper place.
 
-For one thing, as far as I can see it'not true - sctp does *not* depend on
-socket->file being non-NULL; it does, in one place, check socket->file->f_flags
-for O_NONBLOCK, but there it treats NULL socket->file as "flag not set".
-Which is the case here anyway - the fake struct file created in
-__iscsi_target_login_thread() (and in iscsi_target_setup_login_socket(), with
-the same excuse) do *not* get that flag set.
-
-Moreover, it's a bloody serious violation of a bunch of asserts in VFS;
-all struct file instances should come from filp_cachep, via get_empty_filp()
-(or alloc_file(), which is a wrapper for it).  FWIW, I'm very tempted to
-do this and be done with the entire mess:
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/iscsi/iscsi_target.c       |   22 ++---------
- drivers/target/iscsi/iscsi_target_core.h  |    2 -
- drivers/target/iscsi/iscsi_target_login.c |   60 ++---------------------------
- 3 files changed, 6 insertions(+), 78 deletions(-)
+ drivers/gpu/drm/radeon/atombios_dp.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -427,19 +427,8 @@ int iscsit_reset_np_thread(
- 
- int iscsit_del_np_comm(struct iscsi_np *np)
- {
--	if (!np->np_socket)
--		return 0;
--
--	/*
--	 * Some network transports allocate their own struct sock->file,
--	 * see  if we need to free any additional allocated resources.
--	 */
--	if (np->np_flags & NPF_SCTP_STRUCT_FILE) {
--		kfree(np->np_socket->file);
--		np->np_socket->file = NULL;
--	}
--
--	sock_release(np->np_socket);
-+	if (np->np_socket)
-+		sock_release(np->np_socket);
- 	return 0;
- }
- 
-@@ -4105,13 +4094,8 @@ int iscsit_close_connection(
- 	kfree(conn->conn_ops);
- 	conn->conn_ops = NULL;
- 
--	if (conn->sock) {
--		if (conn->conn_flags & CONNFLAG_SCTP_STRUCT_FILE) {
--			kfree(conn->sock->file);
--			conn->sock->file = NULL;
--		}
-+	if (conn->sock)
- 		sock_release(conn->sock);
--	}
- 	conn->thread_set = NULL;
- 
- 	pr_debug("Moving to TARG_CONN_STATE_FREE.\n");
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -224,7 +224,6 @@ enum iscsi_timer_flags_table {
- /* Used for struct iscsi_np->np_flags */
- enum np_flags_table {
- 	NPF_IP_NETWORK		= 0x00,
--	NPF_SCTP_STRUCT_FILE	= 0x01 /* Bugfix */
- };
- 
- /* Used for struct iscsi_np->np_thread_state */
-@@ -511,7 +510,6 @@ struct iscsi_conn {
- 	u16			local_port;
- 	int			net_size;
- 	u32			auth_id;
--#define CONNFLAG_SCTP_STRUCT_FILE			0x01
- 	u32			conn_flags;
- 	/* Used for iscsi_tx_login_rsp() */
- 	u32			login_itt;
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -793,22 +793,6 @@ int iscsi_target_setup_login_socket(
+diff --git a/drivers/gpu/drm/radeon/atombios_dp.c b/drivers/gpu/drm/radeon/atombios_dp.c
+index 0355536..7712cf5 100644
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -22,6 +22,7 @@
+  *
+  * Authors: Dave Airlie
+  *          Alex Deucher
++ *          Jerome Glisse
+  */
+ #include "drmP.h"
+ #include "radeon_drm.h"
+@@ -654,7 +655,6 @@ static bool radeon_dp_get_link_status(struct radeon_connector *radeon_connector,
+ 	ret = radeon_dp_aux_native_read(radeon_connector, DP_LANE0_1_STATUS,
+ 					link_status, DP_LINK_STATUS_SIZE, 100);
+ 	if (ret <= 0) {
+-		DRM_ERROR("displayport link status failed\n");
+ 		return false;
  	}
- 	np->np_socket = sock;
- 	/*
--	 * The SCTP stack needs struct socket->file.
--	 */
--	if ((np->np_network_transport == ISCSI_SCTP_TCP) ||
--	    (np->np_network_transport == ISCSI_SCTP_UDP)) {
--		if (!sock->file) {
--			sock->file = kzalloc(sizeof(struct file), GFP_KERNEL);
--			if (!sock->file) {
--				pr_err("Unable to allocate struct"
--						" file for SCTP\n");
--				ret = -ENOMEM;
--				goto fail;
--			}
--			np->np_flags |= NPF_SCTP_STRUCT_FILE;
--		}
--	}
--	/*
- 	 * Setup the np->np_sockaddr from the passed sockaddr setup
- 	 * in iscsi_target_configfs.c code..
- 	 */
-@@ -857,21 +841,15 @@ int iscsi_target_setup_login_socket(
  
- fail:
- 	np->np_socket = NULL;
--	if (sock) {
--		if (np->np_flags & NPF_SCTP_STRUCT_FILE) {
--			kfree(sock->file);
--			sock->file = NULL;
--		}
--
-+	if (sock)
- 		sock_release(sock);
--	}
- 	return ret;
- }
+@@ -833,8 +833,10 @@ static int radeon_dp_link_train_cr(struct radeon_dp_link_train_info *dp_info)
+ 		else
+ 			mdelay(dp_info->rd_interval * 4);
  
- static int __iscsi_target_login_thread(struct iscsi_np *np)
- {
- 	u8 buffer[ISCSI_HDR_LEN], iscsi_opcode, zero_tsih = 0;
--	int err, ret = 0, ip_proto, sock_type, set_sctp_conn_flag, stop;
-+	int err, ret = 0, ip_proto, sock_type, stop;
- 	struct iscsi_conn *conn = NULL;
- 	struct iscsi_login *login;
- 	struct iscsi_portal_group *tpg = NULL;
-@@ -882,7 +860,6 @@ static int __iscsi_target_login_thread(s
- 	struct sockaddr_in6 sock_in6;
+-		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status))
++		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status)) {
++			DRM_ERROR("displayport link status failed\n");
+ 			break;
++		}
  
- 	flush_signals(current);
--	set_sctp_conn_flag = 0;
- 	sock = np->np_socket;
- 	ip_proto = np->np_ip_proto;
- 	sock_type = np->np_sock_type;
-@@ -907,35 +884,12 @@ static int __iscsi_target_login_thread(s
- 		spin_unlock_bh(&np->np_thread_lock);
- 		goto out;
- 	}
--	/*
--	 * The SCTP stack needs struct socket->file.
--	 */
--	if ((np->np_network_transport == ISCSI_SCTP_TCP) ||
--	    (np->np_network_transport == ISCSI_SCTP_UDP)) {
--		if (!new_sock->file) {
--			new_sock->file = kzalloc(
--					sizeof(struct file), GFP_KERNEL);
--			if (!new_sock->file) {
--				pr_err("Unable to allocate struct"
--						" file for SCTP\n");
--				sock_release(new_sock);
--				/* Get another socket */
--				return 1;
--			}
--			set_sctp_conn_flag = 1;
--		}
--	}
--
- 	iscsi_start_login_thread_timer(np);
+ 		if (dp_clock_recovery_ok(dp_info->link_status, dp_info->dp_lane_count)) {
+ 			clock_recovery = true;
+@@ -896,8 +898,10 @@ static int radeon_dp_link_train_ce(struct radeon_dp_link_train_info *dp_info)
+ 		else
+ 			mdelay(dp_info->rd_interval * 4);
  
- 	conn = kzalloc(sizeof(struct iscsi_conn), GFP_KERNEL);
- 	if (!conn) {
- 		pr_err("Could not allocate memory for"
- 			" new connection\n");
--		if (set_sctp_conn_flag) {
--			kfree(new_sock->file);
--			new_sock->file = NULL;
--		}
- 		sock_release(new_sock);
- 		/* Get another socket */
- 		return 1;
-@@ -945,9 +899,6 @@ static int __iscsi_target_login_thread(s
- 	conn->conn_state = TARG_CONN_STATE_FREE;
- 	conn->sock = new_sock;
+-		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status))
++		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status)) {
++			DRM_ERROR("displayport link status failed\n");
+ 			break;
++		}
  
--	if (set_sctp_conn_flag)
--		conn->conn_flags |= CONNFLAG_SCTP_STRUCT_FILE;
--
- 	pr_debug("Moving to TARG_CONN_STATE_XPT_UP.\n");
- 	conn->conn_state = TARG_CONN_STATE_XPT_UP;
- 
-@@ -1195,13 +1146,8 @@ old_sess_out:
- 		iscsi_release_param_list(conn->param_list);
- 		conn->param_list = NULL;
- 	}
--	if (conn->sock) {
--		if (conn->conn_flags & CONNFLAG_SCTP_STRUCT_FILE) {
--			kfree(conn->sock->file);
--			conn->sock->file = NULL;
--		}
-+	if (conn->sock)
- 		sock_release(conn->sock);
--	}
- 	kfree(conn);
- 
- 	if (tpg) {
+ 		if (dp_channel_eq_ok(dp_info->link_status, dp_info->dp_lane_count)) {
+ 			channel_eq = true;
 
 
