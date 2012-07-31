@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab2GaOTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:19:13 -0400
-Received: from fieldses.org ([174.143.236.118]:42558 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab2GaOTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:19:12 -0400
-Date: Tue, 31 Jul 2012 10:19:09 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2 00/15] Lockd: grace period containerization
-Message-ID: <20120731141909.GB27834@fieldses.org>
-References: <20120725125258.24376.82525.stgit@localhost.localdomain>
- <20120727215431.GE6388@fieldses.org>
- <50165C0D.1070200@parallels.com>
+	id S1754219Ab2GaOTg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:19:36 -0400
+Received: from smtp-out-178.synserver.de ([212.40.185.178]:1062 "EHLO
+	smtp-out-178.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116Ab2GaOTe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 10:19:34 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 18226
+Message-ID: <5017EA72.8030003@metafoo.de>
+Date: Tue, 31 Jul 2012 16:23:46 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50165C0D.1070200@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com
+Subject: Re: [PATCH] drivers/iio/adc/at91_adc.c: use devm_ functions
+References: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr> <5017D148.6030006@metafoo.de> <alpine.DEB.2.02.1207311552440.1894@hadrien>
+In-Reply-To: <alpine.DEB.2.02.1207311552440.1894@hadrien>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 02:03:57PM +0400, Stanislav Kinsbursky wrote:
-> 28.07.2012 01:54, J. Bruce Fields пишет:
-> >On Wed, Jul 25, 2012 at 04:55:45PM +0400, Stanislav Kinsbursky wrote:
-> >>Bruce, I feel this patch set is ready for inclusion.
-> >>
-> >>v2:
-> >>1) Rebase on Bruce's "for-3.6" branch.
-> >>
-> >>This patch set makes grace period and hosts reclaiming network namespace
-> >>aware.
-> >
-> >On a quick skim--yes, that looks reasonable to me.
-> >
-> >It doesn't help with active/active cluster exports, because in that case
-> >we need some additional coordination between nfsd's.
-> >
-> >But it looks good enough to handle the case where each filesystem is
-> >exported from at most one server at a time, which is more than we
-> >currently handle.
-> >
-> >It's a little late for 3.6.  Also I get the impression Al Viro has some
-> >lockd rework in progress, which we may want to wait for.
-> >
-> >So I'll likely look again into queueing this up for 3.7 once 3.6-rc1 is
-> >out.
+On 07/31/2012 03:54 PM, Julia Lawall wrote:
 > 
 > 
-> Ok.
-> Will Al Viro's lockd rework be a part of 3.6 kernel?
+> On Tue, 31 Jul 2012, Lars-Peter Clausen wrote:
+> 
+>> Hi,
+>>
+>> On 07/31/2012 12:09 PM, Julia Lawall wrote:
+>>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>> @@ -720,20 +698,14 @@ error_ret:
+>>>  static int __devexit at91_adc_remove(struct platform_device *pdev)
+>>>  {
+>>>  	struct iio_dev *idev = platform_get_drvdata(pdev);
+>>> -	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>  	struct at91_adc_state *st = iio_priv(idev);
+>>>
+>>>  	iio_device_unregister(idev);
+>>> [...]
+>>> -	free_irq(st->irq, idev);
+>>> [...]
+>>>  	iio_device_free(idev);
+>>
+>> I think we have to be careful here. The interrupted is now freed after the
+>> device has been freed, which means that it could trigger after the device
+>> has been freed. And since we use the device in the interrupt handler we'll
+>> get a use after free.
+> 
+> Perhaps the same would be true in the following code, from the file
+> drivers/edac/highbank_l2_edac.c:
+> 
+>         res = devm_request_irq(&pdev->dev, drvdata->sb_irq,
+>                                highbank_l2_err_handler,
+>                                0, dev_name(&pdev->dev), dci);
+>         if (res < 0)
+>                 goto err;
+> 
+>         dci->mod_name = dev_name(&pdev->dev);
+>         dci->dev_name = dev_name(&pdev->dev);
+> 
+>         if (edac_device_add_device(dci))
+>                 goto err;
+> 
+>         devres_close_group(&pdev->dev, NULL);
+>         return 0;
+> err:
+>     	devres_release_group(&pdev->dev, NULL);
+>         edac_device_free_ctl_info(dci);
 
-Actually I think it mostly won't be.
+Yes looks like this has the same issue.
 
-And this looks pretty safe, really.  I've gone ahead and merged it.
+> 
+> Is devm_request_irq perhaps not a very good idea?
+> 
 
---b.
+devm_request_irq has to be used carefully. It is ok to use it if the objects
+which are accessed in the interrupt handler are also devres managed. devres
+will free objects in the reverse order of which they are allocated.
+
+E.g. if you do
+
+obj = dev_kzalloc(...);
+...
+devm_request_irq(..., obj);
+
+it is save to use, because 'obj' will be freed after the IRQ has been freed.
+
+- Lars
