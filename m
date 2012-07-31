@@ -1,122 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab2GaKJv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:09:51 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2317 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab2GaKJt (ORCPT
+	id S1753207Ab2GaKNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:13:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60727 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625Ab2GaKNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:09:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 31 Jul 2012 03:09:48 -0700
-Message-ID: <5017AF5D.2010204@nvidia.com>
-Date: Tue, 31 Jul 2012 19:11:41 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 31 Jul 2012 06:13:09 -0400
+Message-ID: <5017AFAB.1040609@pengutronix.de>
+Date: Tue, 31 Jul 2012 12:12:59 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Simon Glass <sjg@chromium.org>, Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <CAPnjgZ0H2xrJcL-ytMaX11iYrrhCg7LEM00u_NgEaveM4gHMPw@mail.gmail.com> <50179933.9090501@nvidia.com> <20120731091324.GA15557@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20120731091324.GA15557@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Wolfgang Grandegger <wg@grandegger.com>
+CC: Fabio Baltieri <fabio.baltieri@gmail.com>, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Oliver Hartkopp <socketcan@hartkopp.net>
+Subject: Re: [PATCH can-next v3 1/2] can: add tx/rx LED trigger support
+References: <1343676041-29572-1-git-send-email-fabio.baltieri@gmail.com> <50179B81.3040907@grandegger.com>
+In-Reply-To: <50179B81.3040907@grandegger.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig4BCB6252EE6DFCC4827B9A29"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 06:13 PM, Thierry Reding wrote:
->> I don't see any need for microseconds myself - anybody sees use for
->> finer-grained delays?
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig4BCB6252EE6DFCC4827B9A29
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 07/31/2012 10:46 AM, Wolfgang Grandegger wrote:
+> Hi Fabio,
+>=20
+> On 07/30/2012 09:20 PM, Fabio Baltieri wrote:
+>> This patch implements the functions to add two LED triggers, named
+>> <ifname>-tx and <ifname>-rx, to a canbus device driver.
 >>
->> Btw, I noticed I was using mdelay instead of msleep - caught and fixed that.
->
-> You might want to take a look at Documentation/timers/timers-howto.txt.
-> msleep() isn't very accurate for periods shorter than 20 ms.
-
-Ok, looks like usleep_range is the way to go here. In that case it would 
-probably not hurt to specify delays in microseconds in the DT and 
-platform data as well.
-
->>>> +Device tree
->>>> +-----------
->>>> +All the same, power sequences can be encoded as device tree nodes. The following
->>>> +properties and nodes are equivalent to the platform data defined previously:
->>>> +
->>>> +               power-supply = <&mydevice_reg>;
->>>> +               enable-gpio = <&gpio 6 0>;
->>>> +
->>>> +               power-on-sequence {
->>>> +                       regulator@0 {
->>>> +                               id = "power";
->>>
->>> Is there a reason not to put the phandle here, like:
->>>
->>>                                     id = <&mydevice_reg>;
->>>
->>> (or maybe 'device' instead of id?)
+>> Triggers are called from specific handlers by each CAN device driver a=
+nd
+>> can be disabled altogether with a Kconfig option.
 >>
->> There is one reason, but it might be a bad one. On Tegra, PWM
->> phandle uses an extra cell to encode the duty-cycle the PWM should
->> have when we call get_pwm().
->
-> This is not only the case on Tegra, but it is the default unless a
-> driver specifically overrides it. The second cell specifies the index of
-> the PWM device within the PWM chip.  The third cell doesn't specify the
-> duty cycle but the period of the PWM.
+>> The implementation keeps the LED on when the interface is UP and blink=
+s
+>> the LED on network activity at a configurable rate.
+>>
+>> This only supports can-dev based drivers, as it uses some support fiel=
+d
+>> in the can_priv structure.
+>>
+>> Supported drivers should call can_led_init(), can_led_exit() and
+>> can_led_event() as needed.
+>>
+>> Supported events are:
+>> - CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
+>> - CAN_LED_EVENT_STOP: turn off tx/rx LEDs
+>> - CAN_LED_EVENT_TX: trigger tx LED blink
+>> - CAN_LED_EVENT_RX: trigger tx LED blink
+>>
+>> Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+>> Cc: Wolfgang Grandegger <wg@grandegger.com>
+>> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+>> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+>> ---
+>>
+>> Hi all!
+>>
+>> This is the v3 of my CAN LED trigger patch.  It's a major refactoring =
+of the v2
+>> that was discussed about three months ago concluding with the idea tha=
+t
+>> implementing the oneshot triggering code in the LED framework would be=
+ a better
+>> solution.
+>>
+>> This is the old thread for reference:
+>> http://marc.info/?l=3Dlinux-can&m=3D133521499002898&w=3D2
+>>
+>> So, generic oneshot trigger code is now merged in mainline (see 5bb629=
+c), and
+>> these are the changes in the v3:
+>=20
+> Nice, thanks for your patience (and not giving up).
+>=20
+>>
+>> - use the new led_trigger_blink_oneshot() function for LED triggering
+>> - use kasprintf() and led_trigger_{un}register_simple for LED allocati=
+on
+>> - add some usage note in the comments
+>>
+>> The resulting code is quite simple now and - I think - a bit less intr=
+usive.
+>> Still, I hope on some feedback from the community as I don't have that=
+ much
+>> hardware to test it - this version has been tested mainly on an x86 wi=
+th a
+>> custom usb-can interface.
+>>
+>> In 2/2 there is a sample implementation for the flexcan driver, which =
+is
+>> basically unchanged from the old version.
+>>
+>> Any comments?
+>> Fabio
+>>
+>>  drivers/net/can/Kconfig  | 12 ++++++
+>>  drivers/net/can/Makefile |  2 +
+>>  drivers/net/can/led.c    | 99 +++++++++++++++++++++++++++++++++++++++=
++++++++++
+>>  include/linux/can/dev.h  |  8 ++++
+>>  include/linux/can/led.h  | 38 +++++++++++++++++++
+>>  5 files changed, 159 insertions(+)
+>>  create mode 100644 drivers/net/can/led.c
+>>  create mode 100644 include/linux/can/led.h
+>>
+>> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+>> index bb709fd..19dec19 100644
+>> --- a/drivers/net/can/Kconfig
+>> +++ b/drivers/net/can/Kconfig
+>> @@ -54,6 +54,18 @@ config CAN_CALC_BITTIMING
+>>  	  arguments "tq", "prop_seg", "phase_seg1", "phase_seg2" and "sjw".
+>>  	  If unsure, say Y.
+>> =20
+>> +config CAN_LEDS
+>> +	bool "Enable LED triggers for Netlink based drivers"
+>> +	depends on CAN_DEV
+>> +	depends on LEDS_CLASS
+>> +	select LEDS_TRIGGERS
+>> +	---help---
+>> +	  This option adds two LED triggers for packet receive and transmit
+>> +	  events on each supported CAN device.
+>> +
+>> +	  Say Y here if you are working on a system with led-class supported=
 
-Then I think there is a mistake in 
-Documentation/devicetree/bindings/pwm/nvidia,tegra20-pwm.txt:
+>> +	  LEDs and you want to use them as canbus activity indicators.
+>> +
+>>  config CAN_AT91
+>>  	tristate "Atmel AT91 onchip CAN controller"
+>>  	depends on CAN_DEV && (ARCH_AT91SAM9263 || ARCH_AT91SAM9X5)
+>> diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
+>> index 938be37..24ee98b 100644
+>> --- a/drivers/net/can/Makefile
+>> +++ b/drivers/net/can/Makefile
+>> @@ -8,6 +8,8 @@ obj-$(CONFIG_CAN_SLCAN)		+=3D slcan.o
+>>  obj-$(CONFIG_CAN_DEV)		+=3D can-dev.o
+>>  can-dev-y			:=3D dev.o
+>> =20
+>> +can-dev-$(CONFIG_CAN_LEDS)	+=3D led.o
+>> +
+>>  obj-y				+=3D usb/
+>>  obj-y				+=3D softing/
+>> =20
+>> diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
+>> new file mode 100644
+>> index 0000000..68c4f30
+>> --- /dev/null
+>> +++ b/drivers/net/can/led.c
+>> @@ -0,0 +1,99 @@
+>> +/*
+>> + * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modi=
+fy
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/netdevice.h>
+>> +#include <linux/can/dev.h>
+>> +
+>> +#include <linux/can/led.h>
+>> +
+>> +static unsigned long led_delay =3D 50;
+>> +module_param(led_delay, ulong, 0644);
+>> +MODULE_PARM_DESC(led_delay,
+>> +		"blink delay time for activity leds (msecs, default: 50).");
+>> +
+>> +/*
+>> + * Trigger a LED event in response to a CAN device event
+>> + */
+>> +void can_led_event(struct net_device *netdev, enum can_led_event even=
+t)
+>> +{
+>> +	struct can_priv *priv =3D netdev_priv(netdev);
+>> +
+>> +	switch (event) {
+>> +	case CAN_LED_EVENT_OPEN:
+>> +		led_trigger_event(priv->tx_led_trig, LED_FULL);
+>> +		led_trigger_event(priv->rx_led_trig, LED_FULL);
+>> +		break;
+>> +	case CAN_LED_EVENT_STOP:
+>> +		led_trigger_event(priv->tx_led_trig, LED_OFF);
+>> +		led_trigger_event(priv->rx_led_trig, LED_OFF);
+>> +		break;
+>> +	case CAN_LED_EVENT_TX:
+>> +		if (led_delay)
+>> +			led_trigger_blink_oneshot(priv->tx_led_trig,
+>> +						  &led_delay, &led_delay, 1);
+>> +		break;
+>> +	case CAN_LED_EVENT_RX:
+>> +		if (led_delay)
+>> +			led_trigger_blink_oneshot(priv->rx_led_trig,
+>> +						  &led_delay, &led_delay, 1);
+>> +		break;
+>> +	}
+>> +}
+>> +EXPORT_SYMBOL_GPL(can_led_event);
+>> +
+>> +/*
+>> + * Register CAN LED triggers for a CAN device
+>> + *
+>> + * This is normally called from a driver's probe function
+>> + */
+>> +void can_led_init(struct net_device *netdev)
+>> +{
+>> +	struct can_priv *priv =3D netdev_priv(netdev);
+>> +
+>> +	priv->tx_led_trig_name =3D kasprintf(GFP_KERNEL, "%s-tx", netdev->na=
+me);
+>> +	if (!priv->tx_led_trig_name)
+>> +		goto tx_led_failed;
+>=20
+> Just return here?
+>=20
+>> +	priv->rx_led_trig_name =3D kasprintf(GFP_KERNEL, "%s-rx", netdev->na=
+me);
+>> +	if (!priv->rx_led_trig_name)
+>> +		goto rx_led_failed;
+>> +
+>> +	led_trigger_register_simple(priv->tx_led_trig_name,
+>> +				    &priv->tx_led_trig);
+>> +	led_trigger_register_simple(priv->rx_led_trig_name,
+>> +				    &priv->rx_led_trig);
+>> +
+>> +	return;
+>> +
+>> +rx_led_failed:
+>> +	kfree(priv->tx_led_trig_name);
+>> +	priv->tx_led_trig_name =3D NULL;
+>> +tx_led_failed:
+>> +	return;
+>=20
+> In case of error the function returns silently. Is this by purpose? Wha=
+t
+> happens if CAN_LEDS is enabled but no LEDs are assigned?
 
-"the second cell is the duty cycle in nanoseconds."
+It's a bit strange, but led_trigger_register_simple() can fail silently,
+too. Or better it has no return value, but does a warning printk in case
+of an error.
 
->> This makes it possible to address the
->> same PWM with different phandles (and different duty cycles),
->
-> How so? A phandle will always refer to a PWM chip. Paired with the
-> second cell, of_pwm_request() will resolve that into the correct PWM
-> device.
+>=20
+>> +}
+>> +EXPORT_SYMBOL_GPL(can_led_init);
+>> +
+>> +/*
+>> + * Unregister CAN LED triggers for a CAN device
+>> + *
+>> + * This is normally called from a driver's remove function
+>> + */
+>> +void can_led_exit(struct net_device *netdev)
+>> +{
+>> +	struct can_priv *priv =3D netdev_priv(netdev);
+>> +
+>> +	led_trigger_unregister_simple(priv->tx_led_trig);
+>> +	led_trigger_unregister_simple(priv->rx_led_trig);
+>> +
+>> +	kfree(priv->tx_led_trig_name);
+>> +	kfree(priv->rx_led_trig_name);
+>> +}
+>> +EXPORT_SYMBOL_GPL(can_led_exit);
+>> diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+>> index 2b2fc34..167b04a 100644
+>> --- a/include/linux/can/dev.h
+>> +++ b/include/linux/can/dev.h
+>> @@ -16,6 +16,7 @@
+>>  #include <linux/can.h>
+>>  #include <linux/can/netlink.h>
+>>  #include <linux/can/error.h>
+>> +#include <linux/can/led.h>
+>> =20
+>>  /*
+>>   * CAN mode
+>> @@ -52,6 +53,13 @@ struct can_priv {
+>> =20
+>>  	unsigned int echo_skb_max;
+>>  	struct sk_buff **echo_skb;
+>> +
+>> +#ifdef CONFIG_CAN_LEDS
+>> +	struct led_trigger *tx_led_trig;
+>> +	char *tx_led_trig_name;
+>> +	struct led_trigger *rx_led_trig;
+>> +	char *rx_led_trig_name;
+>> +#endif
+>=20
+> Do we need to store the names?
 
-For tegra, we can only address PWMs this way IIRC:
+Yes, Seems, so the name is not copied:
 
-pwm = <&pwm 2 5000000>;
+http://lxr.free-electrons.com/source/drivers/leds/led-triggers.c#L253
 
-If we had <&pwm 2>, I agree that there would be no problem. But here the 
-period of the PWM is also given - and in practice, we can request the 
-same PWM using different phandles. For instance, if the above property 
-was part of the power-on sequence, and the following
+Marc
 
-pwm = <&pwm 2 0>;
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-was part of power-off, how can I know that these two different phandles 
-refer to the same PWM without calling pwm_get a second time and getting 
--EBUSY?
 
-Of course if the same period is specified for both, I will not have this 
-issue as the phandles will be identical, but the possibility remains 
-open that we are given a faulty tree here.
+--------------enig4BCB6252EE6DFCC4827B9A29
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-More generally speaking, wouldn't it make more sense to have the 
-period/duty cycle of a PWM encoded into separate properties when needed 
-and have the phandle just reference the PWM instance? This also seems to 
-stand from an API point of view, since the period is not specified when 
-invoking pwm_request or pwm_get, but set by its own pwm_set_period function?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-On an unrelated note, I also don't understand why the period is also a 
-parameter of pwm_config and why pwm_set_period does not do anything 
-beyond setting a struct member that is returned by pwm_get_period (but 
-maybe I am missing something here).
+iEYEARECAAYFAlAXr64ACgkQjTAFq1RaXHNEIgCgi/SkULG8qU5vzJePeMmDdbbi
+UMUAn1itKfhkSN3rziClbYG9fNpw7EdV
+=4yUU
+-----END PGP SIGNATURE-----
 
-Alex.
-
+--------------enig4BCB6252EE6DFCC4827B9A29--
