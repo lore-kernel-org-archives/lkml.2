@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2GaKOH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:14:07 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15095 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625Ab2GaKOF (ORCPT
+	id S1753677Ab2GaKQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:16:11 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60505 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab2GaKQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:14:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 31 Jul 2012 03:09:18 -0700
-Message-ID: <5017B05D.9020506@nvidia.com>
-Date: Tue, 31 Jul 2012 19:15:57 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 31 Jul 2012 06:16:09 -0400
+Date: Tue, 31 Jul 2012 14:16:03 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "lwn@lwn.net" <lwn@lwn.net>, "criu@openvz.org" <criu@openvz.org>,
+        "users@openvz.org" <users@openvz.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: [Announce] Checkpoint-restore tool v0.1
+Message-ID: <20120731101603.GD2007@moon>
+References: <500D09C9.7060903@parallels.com>
+ <500D1116.7070301@parallels.com>
+ <CAFLxGvwUhEPNdQvUnue2QFu_EipmBKD3nf0MfMWkqwLTf7jd5Q@mail.gmail.com>
+ <50179CF0.7050200@parallels.com>
+ <CAFLxGvygCxER3gHfj-onwnm_m6xugOVkynGyJU2CDheD3A2HOQ@mail.gmail.com>
+ <5017A053.9000206@parallels.com>
+ <CAFLxGvy396+BfYSaSnvAwJb0GO4WZCKbPXSbU7YfrOJTo6zk6A@mail.gmail.com>
+ <5017AB41.60700@parallels.com>
+ <CAFLxGvwu8-ii7hDbDfco3JrgKgOK+hsdTN_Q--AHbom0Ni8WYA@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Rob Herring <robherring2@gmail.com>, Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <5016ABDD.5010809@gmail.com> <50170A14.6000201@wwwdotorg.org>
-In-Reply-To: <50170A14.6000201@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvwu8-ii7hDbDfco3JrgKgOK+hsdTN_Q--AHbom0Ni8WYA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 07:26 AM, Stephen Warren wrote:
-> On 07/30/2012 09:44 AM, Rob Herring wrote:
->> On 07/27/2012 07:05 AM, Alexandre Courbot wrote:
->>> Some device drivers (panel backlights especially) need to follow precise
->>> sequences for powering on and off, involving gpios, regulators, PWMs
->>> with a precise powering order and delays to respect between each steps.
->>> These sequences are board-specific, and do not belong to a particular
->>> driver - therefore they have been performed by board-specific hook
->>> functions to far.
->>>
->>> With the advent of the device tree and of ARM kernels that are not
->>> board-tied, we cannot rely on these board-specific hooks anymore but
->>> need a way to implement these sequences in a portable manner. This patch
->>> introduces a simple interpreter that can execute such power sequences
->>> encoded either as platform data or within the device tree.
->>>
->>
->> Why not? We'll always have some amount of board code. The key is to
->> limit parts that are just data. I'm not sure this is something that
->> should be in devicetree.
->>
->> Perhaps what is needed is a better way to hook into the driver like
->> notifiers?
->
-> I would answer that by asking the reverse question - why should we have
-> to put some data in DT, and some data into board files still?
->
-> I'd certainly argue that the sequence of which GPIOs/regulators/PWMs to
-> manipulate is just data.
->
-> To be honest, if we're going to have to put some parts of a board's
-> configuration into board files anyway, then the entirety of DT seems
-> useless; I'd far rather see all the configuration in one cohesive place
-> than arbitrarily split into two/n different locations - that would make
-> everything harder to maintain.
+On Tue, Jul 31, 2012 at 12:08:22PM +0200, richard -rw- weinberger wrote:
+> On Tue, Jul 31, 2012 at 11:54 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
+> >> Yeah, but I fear it's not that easy.
+> >> We'd have to change crtools to work without ptrace().
+> >
+> > Well, this is hard. Using ptrace saved us from having many special-purpose
+> > APIs for dumping various stuff (there will be an article about it). Thus I
+> > don't know which way is simpler -- stop using ptrace or teach ptrece to allow
+> > several tracers to attach to one task %)
+> 
+> Allowing multiple tracers in a safe way is IMHO even more harder.
+> 
+> BTW:  While reading prctl_set_mm() I noticed two things.
+> 1.  Why isn't the return value of find_vma() verified?
 
-Also, having these sequences into the DT would allow an older kernel to 
-boot on and correctly initialize a newer board with - which is also part 
-of the DT's purpose if I am not mistaken.
+prctl_set_mm
+	vma = find_vma(mm, addr);
+	...
+	if (!vma) {
+		error = -EFAULT;
+		goto out;
+	}
 
-Alex.
+these values are used in procfs statistics only. So I don't get
+which verify you mean here.
 
+> It looks like one can set an addr which does not belong to any vma.
+> 2. What will happen if addr is not page aligned?
+
+you'll have a bit weird output in procfs stat (probably I should add
+page alignment check here).
+
+	Cyrill
