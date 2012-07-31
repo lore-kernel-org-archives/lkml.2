@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab2GaDXb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 23:23:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:33755 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752119Ab2GaDXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 23:23:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="128661870"
-Date: Tue, 31 Jul 2012 11:18:32 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: <paulmck@linux.vnet.ibm.com>
-Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mail List <linux-kernel@vger.kernel.org>
-Subject: Re: [Regression 3.4] tick_broadcast_mask is not restored after a
- CPU has been offline/onlined
-Message-ID: <20120731111832.435b8bd9@feng-i7>
-In-Reply-To: <20120730174218.GA30772@linux.vnet.ibm.com>
-References: <20120730151559.772d4055@feng-i7>
-	<20120730133913.GK2556@linux.vnet.ibm.com>
-	<20120730230747.7637112a@feng-i7>
-	<20120730170847.GE2391@linux.vnet.ibm.com>
-	<20120730174218.GA30772@linux.vnet.ibm.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755256Ab2GaD0z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 23:26:55 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52390 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755179Ab2GaD0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 23:26:54 -0400
+Date: Mon, 30 Jul 2012 20:26:10 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Meelis Roos <mroos@linux.ee>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] mm: change nr_ptes BUG_ON to WARN_ON
+Message-ID: <alpine.LSU.2.00.1207302017040.6310@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+>From time to time an isolated BUG_ON(mm->nr_ptes) gets reported,
+indicating that not all the page tables allocated could be found
+and freed when exit_mmap() tore down the user address space.
 
-On Mon, 30 Jul 2012 10:42:18 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+There's usually nothing we can say about it, beyond that it's
+probably a sign of some bad memory or memory corruption; though
+it might still indicate a bug in vma or page table management
+(and did recently reveal a race in THP, fixed a few months ago).
 
-> On Mon, Jul 30, 2012 at 10:08:47AM -0700, Paul E. McKenney wrote:
-> > On Mon, Jul 30, 2012 at 11:07:47PM +0800, Feng Tang wrote:
-> > > Hi Paul,
-> > > 
-> > > On Mon, 30 Jul 2012 06:39:13 -0700
-> > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > On Mon, Jul 30, 2012 at 03:15:59PM +0800, Feng Tang wrote:
-> > > > > Hi All,
-> > > > > 
-> > > > > When I debugged a suspend/resume bug, I found that
-> > > > > tick_broadcast_mask is not restored for a CPU after it is
-> > > > > offline/onlined since kernel 3.4, while it's fine for 3.3.
-> > > > 
-> > > > Could you please try 3.5?
-> > > 
-> > > Yes, it's the same for 3.5
-> > 
-> > Thank you for checking, Feng.
-> > 
-> > Len, the comment above the change says:
-> > 
-> > 	/*
-> > 	 * FIXME:  Design the ACPI notification to make it once per
-> > 	 * system instead of once per-cpu.  This condition is a hack
-> > 	 * to make the code that updates C-States be called once.
-> > 	 */
-> > 
-> > Is it time for this design-level change?  Or is there something obvious
-> > that I missed when fixing the smp_processor_id() splat?
-> > 
-> > I could revert back, but use raw_smp_processor_id() rather than
-> > smp_processor_id(), but that feels like papering over a problem rather
-> > than fixing it.
-> 
-> But should papering be appropriate, here is the patch.
-> 
-> 							Thanx, Paul
+But one overdue change we can make is from BUG_ON to WARN_ON.
 
-Just found and have a patch to fix a typo in acpi processor_driver.c, which
-could also fix  this tick_broadcast_mask issue.
-	
-Patch is in https://lkml.org/lkml/2012/7/30/483 
+It's fairly likely that the system will crash shortly afterwards
+in some other way (for example, the BUG_ON(page_mapped(page)) in
+__delete_from_page_cache(), once an inode mapped into the lost
+page tables gets evicted); but might tell us more before that.
 
-So I think we don't need this "papering over" patch :)
+Change the BUG_ON(page_mapped) to WARN_ON too?  Later perhaps:
+I'm less eager, since that one has several times led to fixes.
 
-Thanks,
-Feng
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
 
-> 
-> ------------------------------------------------------------------------
-> 
-> ACPI: Repair fix to unprotected smp_processor_id()
-> 
-> Commit 9505626d (ACPI: Fix unprotected smp_processor_id() in
-> acpi_processor_cst_has_changed()) introduced a suspend/resume bug.
-> This commit therefore introduces a bug-for-bug compatible fix for the
-> original problem.
-> 
-> Reported-by: Feng Tang <feng.tang@intel.com>
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> 
-> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> index 47a8caa..19c151a 100644
-> --- a/drivers/acpi/processor_idle.c
-> +++ b/drivers/acpi/processor_idle.c
-> @@ -1218,7 +1218,8 @@ int acpi_processor_cst_has_changed(struct
-> acpi_processor *pr)
->  	 * to make the code that updates C-States be called once.
->  	 */
->  
-> -	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
-> +	if (raw_smp_processor_id() == 0 &&
-> +	    cpuidle_get_driver() == &acpi_idle_driver) {
->  
->  		cpuidle_pause_and_lock();
->  		/* Protect against cpu-hotplug */
-> 
+ mm/mmap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- v3.5/mm/mmap.c	2012-07-21 13:58:29.000000000 -0700
++++ linux/mm/mmap.c	2012-07-30 19:38:41.977203670 -0700
+@@ -2310,7 +2310,7 @@ void exit_mmap(struct mm_struct *mm)
+ 	}
+ 	vm_unacct_memory(nr_accounted);
+ 
+-	BUG_ON(mm->nr_ptes > (FIRST_USER_ADDRESS+PMD_SIZE-1)>>PMD_SHIFT);
++	WARN_ON(mm->nr_ptes > (FIRST_USER_ADDRESS+PMD_SIZE-1)>>PMD_SHIFT);
+ }
+ 
+ /* Insert vm structure into process list sorted by address
