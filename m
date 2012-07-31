@@ -1,75 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2GaVQY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 17:16:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23616 "EHLO mga11.intel.com"
+	id S1753750Ab2GaVRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 17:17:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12400 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751789Ab2GaVQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 17:16:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="191423372"
-Subject: Re: [PATCH 0/3] x86, MSI: Support multiple MSIs in presense of IRQ
- remapping
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>
-Date: Tue, 31 Jul 2012 14:12:49 -0700
-In-Reply-To: <cover.1343732015.git.agordeev@redhat.com>
-References: <cover.1343732015.git.agordeev@redhat.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1753039Ab2GaVRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 17:17:01 -0400
+Message-ID: <50184B3D.2040403@redhat.com>
+Date: Tue, 31 Jul 2012 17:16:45 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@kernel.org, oleg@redhat.com, pjt@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/19] mm, migrate: Introduce migrate_misplaced_page()
+References: <20120731191204.540691987@chello.nl> <20120731192808.891463219@chello.nl>
+In-Reply-To: <20120731192808.891463219@chello.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <1343769169.2041.10.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 13:41 +0200, Alexander Gordeev wrote:
-> Currently multiple MSI mode is limited to a single vector per device (at
-> least on x86 and PPC). This series breathes life into pci_enable_msi_block()
-> and makes it possible to set interrupt affinity for multiple IRQs, similarly
-> to MSI-X. Yet, only for x86 and only when IOMMUs are present.
-> 
-> Although IRQ and PCI subsystems are modified, the current behaviour left
-> intact. The drivers could just start using multiple MSIs just by following
-> the existing documentation.
+On 07/31/2012 03:12 PM, Peter Zijlstra wrote:
 
-So while I am ok with the proposed changes, I will hold off acking until
-I see the corresponding driver changes (using pci_enable_msi_block()
-etc) that take advantage of these changes ;)
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Did you have a specific device in mind and are the driver changes
-coming?
-
-thanks,
-suresh
-
-> 
-> The patches are adapted to Ingo's -tip repository, x86/apic branch.
-> 
-> Alexander Gordeev (3):
->   x86, MSI: Support multiple MSIs in presense of IRQ remapping
->   x86, MSI: Allocate as many multiple IRQs as requested
->   x86, MSI: Minor readability fixes
-> 
->  arch/x86/kernel/apic/io_apic.c |  170 +++++++++++++++++++++++++++++++++++++---
->  drivers/pci/msi.c              |   10 ++-
->  include/linux/irq.h            |    6 ++
->  include/linux/msi.h            |    1 +
->  kernel/irq/chip.c              |   30 +++++--
->  kernel/irq/irqdesc.c           |   31 +++++++
->  6 files changed, 226 insertions(+), 22 deletions(-)
-> 
-> -- 
-> 1.7.7.6
-> 
-> 
-
-
+-- 
+All rights reversed
