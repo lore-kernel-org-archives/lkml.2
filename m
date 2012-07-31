@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab2GaMia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:38:30 -0400
-Received: from smtp-out-178.synserver.de ([212.40.185.178]:1175 "EHLO
-	smtp-out-178.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212Ab2GaMiW (ORCPT
+	id S1756228Ab2GaMkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:40:14 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:45669 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756183Ab2GaMkK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:38:22 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22363
-Message-ID: <5017D2BD.1070109@metafoo.de>
-Date: Tue, 31 Jul 2012 14:42:37 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Jonathan Cameron <jic23@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: NULL pointer dereference in iio_buffer_register()
-References: <20120708115331.GA16281@localhost> <20120731103155.GA16388@localhost>
-In-Reply-To: <20120731103155.GA16388@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jul 2012 08:40:10 -0400
+Date: Tue, 31 Jul 2012 14:40:00 +0200
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [RFC PATCH v5 12/19] memory-hotplug: introduce new function
+ arch_remove_memory()
+Message-ID: <20120731144000.33fd4a0a@thinkpad>
+In-Reply-To: <50166379.4090305@cn.fujitsu.com>
+References: <50126B83.3050201@cn.fujitsu.com>
+	<50126E2F.8010301@cn.fujitsu.com>
+	<20120730102305.GB3631@osiris.boeblingen.de.ibm.com>
+	<50166379.4090305@cn.fujitsu.com>
+Reply-To: gerald.schaefer@de.ibm.com
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+x-cbid: 12073112-1948-0000-0000-0000028B946C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 12:31 PM, Fengguang Wu wrote:
->> [    7.623739] BUG: unable to handle kernel NULL pointer dereference at 00000000000000b0
-> 
-> I managed to root cause it:
-> 
->         [    2.108085] BUG: unable to handle kernel NULL pointer dereference at 00000060
->         [    2.112015] EIP: [<c19b4f4f>] iio_buffer_register+0x1f/0x360 SS:ESP 0068:ce837f34
-> 
->         $ addr2line -e vmlinux -i c19b4f4f
->         /c/wfg/linux/drivers/iio/industrialio-buffer.c:275
-> 
->         (gdb) p &((struct iio_buffer *) 0)->attrs
->         $1 = (const struct attribute_group **) 0x60
-> 
-> The panic happens while trying to dereference the NULL indio_dev->buffer:
-> 
->         266 int iio_buffer_register(struct iio_dev *indio_dev,
->         267                         const struct iio_chan_spec *channels,
->         268                         int num_channels)
->         269 {  
->         270         struct iio_dev_attr *p;
->         271         struct attribute **attr;
->         272         struct iio_buffer *buffer = indio_dev->buffer;
->         273         int ret, i, attrn, attrcount, attrcount_orig = 0;
->         274 
-> ==>     275         if (buffer->attrs)
->         276                 indio_dev->groups[indio_dev->groupcounter++] = buffer->attrs;
-> 
-> iio_dummy_probe() has the code to configure that buffer, however
-> iio_simple_dummy_configure_buffer() is defined to do nothing on
-> !CONFIG_IIO_SIMPLE_DUMMY_BUFFER..
-> 
->         448         /* Configure buffered capture support. */
-> ==>     449         ret = iio_simple_dummy_configure_buffer(indio_dev);
->         450         if (ret < 0)
->         451                 goto error_unregister_events;
->         452 
->         453         /*
->         454          * Register the channels with the buffer, but avoid the output
->         455          * channel being registered by reducing the number of channels by 1.
->         456          */
->         457         ret = iio_buffer_register(indio_dev, iio_dummy_channels, 5);
->         458         if (ret < 0)
->         459                 goto error_unconfigure_buffer;
-> 
-> Any ideas to fix it?
-> 
+On Mon, 30 Jul 2012 18:35:37 +0800
+Wen Congyang <wency@cn.fujitsu.com> wrote:
 
-Hi,
+> At 07/30/2012 06:23 PM, Heiko Carstens Wrote:
+> > On Fri, Jul 27, 2012 at 06:32:15PM +0800, Wen Congyang wrote:
+> >> We don't call __add_pages() directly in the function add_memory()
+> >> because some other architecture related things need to be done
+> >> before or after calling __add_pages(). So we should introduce
+> >> a new function arch_remove_memory() to revert the things
+> >> done in arch_add_memory().
+> >>
+> >> Note: the function for s390 is not implemented(I don't know how to
+> >> implement it for s390).
+> > 
+> > There is no hardware or firmware interface which could trigger a
+> > hot memory remove on s390. So there is nothing that needs to be
+> > implemented.
+> 
+> Thanks for providing this information.
+> 
+> According to this, arch_remove_memory() for s390 can just return
+> -EBUSY.
 
-I think the best would be to move the iio_buffer_register to
-iio_simple_dummy_configure_buffer.
+Yes, but there is a prototype mismatch for arch_remove_memory() on s390
+and also other architectures (u64 vs. unsigned long).
 
-- Lars
+arch/s390/mm/init.c:262: error: conflicting types for
+‘arch_remove_memory’ include/linux/memory_hotplug.h:88: error: previous
+declaration of ‘arch_remove_memory’ was here
+
+In memory_hotplug.h you have:
+extern int arch_remove_memory(unsigned long start, unsigned long size);
+
+On all archs other than x86 you have:
+int arch_remove_memory(u64 start, u64 size)
+
