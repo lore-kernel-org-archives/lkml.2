@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab2GaKgv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:36:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35648 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755526Ab2GaKgu (ORCPT
+	id S1755625Ab2GaKhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:37:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54889 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755024Ab2GaKeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:36:50 -0400
+	Tue, 31 Jul 2012 06:34:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <201207251331.52883.arnd@arndb.de>
-References: <1342000670-1005-1-git-send-email-tomoya.rohm@gmail.com>
-	<CANKRQni4SU=876iPtHJ2WC3Ub7QProJqHZ53Ru-n-njsdg8D5A@mail.gmail.com>
-	<CANKRQnhcFr+e1H5p==UUTWfYb2nzdt8aVnOn2NvmYAXFiDxqew@mail.gmail.com>
-	<201207251331.52883.arnd@arndb.de>
-Date: Tue, 31 Jul 2012 19:36:49 +0900
-Message-ID: <CANKRQnimtFQapk-u_ipYYOqrVVavGBCqcAG6x82WNWCH_Jcdkw@mail.gmail.com>
-Subject: Re: [PATCH] misc/pch_phub: Enable UART clock setting by module parameter
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20120731144054.59b0a6da6d071ea1bc061db0@canb.auug.org.au>
+References: <20120731144054.59b0a6da6d071ea1bc061db0@canb.auug.org.au>
+Date: Tue, 31 Jul 2012 03:34:12 -0700
+Message-ID: <CANN689FGMfL_Y3afhYbmSdvQH4tU+7CErODb=NoqAZnmoZEa3w@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+From: Michel Lespinasse <walken@google.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sage Weil <sage@inktank.com>
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 10:31 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> What I think should work better here would be to use the clk API,
-> so that the phub driver registers a 'struct clk' using
-> (I assume) clk_register_divider_table().
-> The UART driver would then call clk_get() to find that clk for
-> the uart device and call clk_set_rate when it needs to change
-> that clock in order to set a different baud rate.
+On Mon, Jul 30, 2012 at 9:40 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Andrew,
 >
-> Does this make sense?
+> After merging the akpm tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 >
-
-Thank you for your comments. This sounds good idea.
-However, it seems the latest kernel doesn't have clk_register_divider_table().
-Will the clk_register_divider_table function be applied soon ?
-
-Thanks.
+> net/ceph/osd_client.c: In function 'ceph_osdc_alloc_request':
+> net/ceph/osd_client.c:216:2: error: implicit declaration of function 'rb_init_node' [-Werror=implicit-function-declaration]
+>
+> Caused by commit 753b960e52b7 ("rbtree: empty nodes have no color") from
+> the akpm tree interacting with commit cd43045c2de6 ("libceph: initialize
+> rb, list nodes in ceph_osd_request") from the ceph tree.
+>
+> I added the following merge fix patch for today:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 31 Jul 2012 14:37:35 +1000
+> Subject: [PATCH] libceph: remove rb_node initialisation
+>
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Reviewed-by: Michel Lespinasse <walken@google.com>
 
 -- 
-ROHM Co., Ltd.
-tomoya
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
