@@ -1,348 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab2GaKTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:19:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59913 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab2GaKTp (ORCPT
+	id S1754011Ab2GaKWB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:22:01 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56829 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab2GaKV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:19:45 -0400
-Date: Tue, 31 Jul 2012 12:19:31 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-Message-ID: <20120731101931.GB16155@avionic-0098.adnet.avionic-design.de>
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
- <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
- <20120730113323.GA7303@avionic-0098.adnet.avionic-design.de>
- <5017AA87.2040503@nvidia.com>
+	Tue, 31 Jul 2012 06:21:59 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
-Content-Disposition: inline
-In-Reply-To: <5017AA87.2040503@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:omhAQYqUJU23F9/JUn02F1adhcsdS+XmRd33D6+jTya
- qy7raJOhOgFBlDNYP0qP63NpfiQadeNhfEegl+4D5Q9tYSP7Kc
- FA4eKVhXtDVddHDsTuSRPIBHrynpzehTjMyEHdHDT5z5klN3zK
- j88o2AW+dmkdT6AW7SfnBvxdCsWUJh13LPUib38dxAPuscX1VW
- F6oYY4z6tejNZr2S3fJawkbXxNa0tYajXZcBJnSwqpHaDMJfSZ
- RfyXWuCZKXDwO7nZk8U+YtWb1LY5LY9Ffz5PVmb73u8eRT8NLd
- Lk0jQXVWbgJnzs1vc1bdF0eApk3tp3+w7rE8f3HDsCharOPXIB
- A8mOTeqraBllJyrONDGrRNxqhCEDxoOUkbPfadhxw7h343x1jy
- BGwTElA0nA7tCe53grLSKcAQDtGNG2yJu8=
+In-Reply-To: <20120731101603.GD2007@moon>
+References: <500D09C9.7060903@parallels.com>
+	<500D1116.7070301@parallels.com>
+	<CAFLxGvwUhEPNdQvUnue2QFu_EipmBKD3nf0MfMWkqwLTf7jd5Q@mail.gmail.com>
+	<50179CF0.7050200@parallels.com>
+	<CAFLxGvygCxER3gHfj-onwnm_m6xugOVkynGyJU2CDheD3A2HOQ@mail.gmail.com>
+	<5017A053.9000206@parallels.com>
+	<CAFLxGvy396+BfYSaSnvAwJb0GO4WZCKbPXSbU7YfrOJTo6zk6A@mail.gmail.com>
+	<5017AB41.60700@parallels.com>
+	<CAFLxGvwu8-ii7hDbDfco3JrgKgOK+hsdTN_Q--AHbom0Ni8WYA@mail.gmail.com>
+	<20120731101603.GD2007@moon>
+Date: Tue, 31 Jul 2012 12:21:58 +0200
+Message-ID: <CAFLxGvxgq9HJJvRgz=z48D7V_j=dTv4jSCLqEZcE=oCBAXnSug@mail.gmail.com>
+Subject: Re: [Announce] Checkpoint-restore tool v0.1
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "lwn@lwn.net" <lwn@lwn.net>, "criu@openvz.org" <criu@openvz.org>,
+        "users@openvz.org" <users@openvz.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 31, 2012 at 12:16 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> On Tue, Jul 31, 2012 at 12:08:22PM +0200, richard -rw- weinberger wrote:
+>> On Tue, Jul 31, 2012 at 11:54 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
+>> >> Yeah, but I fear it's not that easy.
+>> >> We'd have to change crtools to work without ptrace().
+>> >
+>> > Well, this is hard. Using ptrace saved us from having many special-purpose
+>> > APIs for dumping various stuff (there will be an article about it). Thus I
+>> > don't know which way is simpler -- stop using ptrace or teach ptrece to allow
+>> > several tracers to attach to one task %)
+>>
+>> Allowing multiple tracers in a safe way is IMHO even more harder.
+>>
+>> BTW:  While reading prctl_set_mm() I noticed two things.
+>> 1.  Why isn't the return value of find_vma() verified?
+>
+> prctl_set_mm
+>         vma = find_vma(mm, addr);
+>         ...
+>         if (!vma) {
+>                 error = -EFAULT;
+>                 goto out;
+>         }
+>
+> these values are used in procfs statistics only. So I don't get
+> which verify you mean here.
 
---Fba/0zbH8Xs+Fj9o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If I do PR_SET_MM_START_BRK the if(!vma) will never be executed because
+there a break in case PR_SET_MM_START_BRK.
 
-On Tue, Jul 31, 2012 at 06:51:03PM +0900, Alex Courbot wrote:
-> On 07/30/2012 08:33 PM, Thierry Reding wrote:
-> >>+You will need an instance of power_seq_resources to keep track of the =
-resources
-> >>+that are already allocated. On success, the function returns a devm al=
-located
-> >>+resolved sequence that is ready to be passed to power_seq_run(). In ca=
-se of
-> >>+failure, and error code is returned.
-> >
-> >I don't quite understand why the struct power_seq_resources is needed.
-> >Can this not be stored within power_seq?
->=20
-> power_seq_resources serves two purposes:
-> 1) When parsing sequences, it keeps track of the resources we have
-> already allocated to avoid getting the same resource twice
-> 2) On cleanup, it cleans the resources that needs to be freed (i.e.
-> those that are not devm-handled).
->=20
-> 2) can certainly be removed either by enforcing use of devm, or by
-> doing reference counting. 1) seems more difficult to avoid - we need
-> to keep track of the resources we already own between calls to
-> power_seq_build(). I'd certainly be glad to remove that structure
-> from public view and simplify the code if that is possible though.
-
-I still don't see the problem. Managing the resources should be part of
-the power_seq core and shouldn't be visible to users. Maybe what you are
-worried about is that you may need the same resource both for a power-up
-and a power-down sequence? I can see how that would require a global
-list of resources.
-
-However I still think it would be easier to encapsulate that completely.
-Maybe another level of abstraction is required. You could for example
-add another type to encapsulate several power sequences and that could
-keep a list of used resources. I can't think of a good name, but maybe
-the following DT snippet clarifies what I mean:
-
-	power-sequences {
-		#address-cells =3D <1>;
-		#size-cells =3D <0>;
-
-		sequence@0 {
-			name =3D "up";
-
-			#address-cells =3D <1>;
-			#size-cells =3D <0>;
-
-			step@0 {
-				...
-			};
-
-			...
-		};
-
-		sequence@1 {
-			name =3D "down";
-
-			#address-cells =3D <1>;
-			#size-cells =3D <0>;
-
-			step@0 {
-				...
-			};
-
-			...
-		};
-	};
-
-If you add a name property like this, you could extend the API to
-support running a named sequence:
-
-	power_seq_run(seq, "up");
-	...
-	power_seq_run(seq, "down);
-
-> >Also, is there some way we can make the id property for GPIOs not
-> >require the -gpio suffix? If the resource type is already GPIO, then it
-> >seems redundant to add -gpio to the ID.
->=20
-> There is unfortunately an inconsistency between the way regulators
-> and GPIOs are gotten by name. regulator_get(id) will expect to find
-> a property named "id-supply", while gpio_request_one(id) expects a
-> property named exactly "id". To workaround this we could sprintf the
-> correct property name from a non-suffixed property name within the
-> driver, but I think this actually speaks more in favor of having
-> phandles directly into the sequences.
-
-Yes, if it can be made to work by specifying the phandle directly that
-is certainly better.
-
-> >>+static int power_seq_step_run(struct power_seq_step *step)
-> >>+{
-> >>+     int err =3D 0;
-> >>+
-> >>+     if (step->params.pre_delay)
-> >>+             mdelay(step->params.pre_delay);
-> >>+
-> >>+     switch (step->resource->type) {
-> >>+#ifdef CONFIG_REGULATOR
-> >>+     case POWER_SEQ_REGULATOR:
-> >>+             if (step->params.enable)
-> >>+                     err =3D regulator_enable(step->resource->regulato=
-r);
-> >>+             else
-> >>+                     err =3D regulator_disable(step->resource->regulat=
-or);
-> >>+             break;
-> >>+#endif
-> >>+#ifdef CONFIG_PWM
-> >>+     case POWER_SEQ_PWM:
-> >>+             if (step->params.enable)
-> >>+                     err =3D pwm_enable(step->resource->pwm);
-> >>+             else
-> >>+                     pwm_disable(step->resource->pwm);
-> >>+             break;
-> >>+#endif
-> >>+#ifdef CONFIG_GPIOLIB
-> >>+     case POWER_SEQ_GPIO:
-> >>+             gpio_set_value_cansleep(step->resource->gpio,
-> >>+                                     step->params.enable);
-> >>+             break;
-> >>+#endif
-> >
-> >This kind of #ifdef'ery is quite ugly. I don't know if adding separate
-> >*_run() functions for each type of resource would be any better, though.
-> >Alternatively, maybe POWER_SEQ should depend on the REGULATOR, PWM and
-> >GPIOLIB symbols to side-step the issue completely?
->=20
-> If it is not realistic to consider a kernel built without regulator,
-> pwm or gpiolib support, then we might as well do that. But isn't
-> that a possibility?
-
-I'd say that anything complex enough to make use of power-sequencing
-probably has all of these enabled anyway. But maybe I'm not very
-qualified to judge.
-
->=20
-> >>+     if (!seq) return 0;
-> >
-> >I don't think this is acceptable according to the coding style. Also,
-> >perhaps returning -EINVAL would be more meaningful?
->=20
-> I neglected running checkpatch before submitting, apologies for
-> that. The return value seems correct to me, a NULL sequence has no
-> effect.
-
-But seq =3D=3D NULL should never happen anyway, right?
-
->=20
-> >>+
-> >>+     while (seq->resource) {
-> >
-> >Perhaps this should check for POWER_SEQ_STOP instead?
->=20
-> There is no resource for POWER_SEQ_STOP - therefore, a NULL resource
-> is used instead.
-
-Still, you use POWER_SEQ_STOP as an explicit sentinel to mark the end of
-a sequence, so intuitively I'd be looking for that as a stop condition.
-
-> >>+typedef struct platform_power_seq_step platform_power_seq;
-> >
-> >Why are the parameters kept in a separate structure? What are the
-> >disadvantages of keeping the in the sequence step structure directly?
->=20
-> This ensures the same parameters are used for the platform data and
-> resolved sequences, and also ensures they are all copied correctly
-> using memcpy. But maybe I am just making something complex out of
-> something that ought to be simpler.
->=20
-> >>+struct power_seq_step {
-> >>+     struct power_seq_resource *resource;
-> >>+     struct power_step_params params;
-> >>+};
-> >>+typedef struct power_seq_step power_seq;
-> >
-> >Would it make sense to make the struct power_seq opaque? I don't see why
-> >anyone but the power_seq code should access the internals.
->=20
-> I would like to do that actually. The issue is that it did not work
-> go well with the legacy pwm_backlight behavior: a power sequence
-> needs to be constructed out of a PWM obtained through
-> pwm_request(int pwm_id, char *label) and this behavior cannot be
-> emulated using the new platform data interface (which only works
-> with pwm_get()). But if I remove this old behavior, then I could
-> make power_seq opaque. I don't think many drivers are using it. What
-> do you think?
-
-I don't see how that is relevant here, since this power-sequencing code
-is supposed to be generic and not tied to any specific implementation.
-Can you explain further?
-
-In any case you shouldn't be using pwm_request() in new code.
-
-> >For resource
-> >managing it might also be easier to separate struct power_seq_step and
-> >struct power_seq, making the power_seq basically something like:
-> >
-> >         struct power_seq {
-> >                 struct power_seq_step *steps;
-> >                 unsigned int num_steps;
-> >         };
-> >
-> >Perhaps a name field can be included for diagnostic purposes.
->=20
-> Yes, looks like we are going in that direction. If this can be made
-> private then the number of public data structures will not be too
-> confusing (platform data only, basically).
-
-Yes, that sounds like a much cleaner approach.
-
->=20
-> >>+power_seq *power_seq_build(struct device *dev, power_seq_resources *re=
-ss,
-> >>+                        platform_power_seq *pseq);
-> >
-> >I already mentioned this above: I fail to see why the ress parameter is
-> >needed here. It is an internal implementation detail of the power
-> >sequence code. Maybe a better place would be to include it within the
-> >struct power_seq.
->=20
-> Problem is that I need to track which resources are already
-> allocated between calls to power_seq_build(). Even if I attach the
-> resources into struct power_seq, they won't be attainable by the
-> next call. So I'm afraid we are bound to pass a tracking structure
-> at least to power_seq_build.
-
-I think this could be solved nicely by what I proposed earlier.
-
-> >>+/**
-> >>+ * Free all the resources previously allocated by power_seq_allocate_r=
-esources.
-> >>+ */
-> >>+void power_seq_free_resources(power_seq_resources *ress);
-> >>+
-> >>+/**
-> >>+ * Run the given power sequence. Returns 0 on success, error code in c=
-ase of
-> >>+ * failure.
-> >>+ */
-> >>+int power_seq_run(struct device *dev, power_seq *seq);
-> >
-> >I think the API is too fine grained here. From a user's point of view,
-> >I'd expect a sequence like this:
-> >
-> >         seq =3D power_seq_build(dev, sequence);
-> >         ...
-> >         power_seq_run(seq);
-> >         ...
-> >         power_seq_free(seq);
-> >
-> >Perhaps with managed variants where the power_seq_free() is executed
-> >automatically:
-> >
-> >         seq =3D devm_power_seq_build(dev, sequence);
-> >         ...
-> >         power_seq_run(seq);
->=20
-> I agree. On top of that, of_parse_power_seq() should directly return
-> a resolved power sequence, not the platform data.
-
-I'm not sure. The idiom seems to be to use DT as an alternative source
-for platform data, which I guess is due to most drivers already using
-platform data. But it has the advantage that after you have the platform
-data, be it from DT or directly specified, the subsequent code remains
-the same.
-
-Of course you could provide a separate of_build_power_seq() that wraps
-both steps for convenience.
-
-Thierry
-
---Fba/0zbH8Xs+Fj9o
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQF7EzAAoJEN0jrNd/PrOhigMP/jSANbgrdwaOq6PfjxUUtXeI
-OcgtBTDfTDsu5rrO6dSJ3dlBLbv71eOLHpHpgOo71DCMkDz/oqeHu7XQ7fP1atPV
-7FMYomsS9jbWIZld1XDx6Phb3bmpTcqC6l5qGr11wKxU4+nU6hvWN2KZLQNjZSIj
-rLm1hxc5YwnIN1QofwLvTj/9c08gDD8ZQfFM2NJr2neKlCLUOmsT/43RHS4hJhW7
-xLw68ehTo0I+mPxCDburilAAoKWV+LCLC8GOonOUxD8bMTMXBXsokB2fG/aks42p
-JSDDvhMzRD43ay6OR0sYRKvs+JMAXdt5fgemQnKM3cKIfsrbo9b4udcgOQ873vft
-ko7Ai4201NdVenkcOKbrMYm4fxyD5iK41XNTrNhgiL7U2ZNmiiwKuChJ/EaWUpZE
-JcTgBfu2jg352UKqVWCTHAhPZJ6M2lNd0mJo0Gajv0qr3jrZlC04LFqAzDdIrcmw
-Ue6hcSg7ZpgnF8Qv7oOHg2UKsI1KFPNYBrVtLgc+ToCjo6MoIgvKRiIy7ai6tUtz
-8CxKi4Vw0QPC9zAeNsFq63je86SKksWE3xZ5+k5QUjaQB7zT1BJpxuBgtBcrnl0A
-F6m4nqasbefGBXLKqFyq6oTzZy3EIbue7ilVD34ycb5m3tuNcPfWBLJEYdqZILD3
-mkNUKXnS97+YBc1v0IpE
-=yifk
------END PGP SIGNATURE-----
-
---Fba/0zbH8Xs+Fj9o--
+-- 
+Thanks,
+//richard
