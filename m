@@ -1,128 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab2GaOxy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:53:54 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:49494 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656Ab2GaOx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:53:29 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        jbeulich@suse.com, stefano.stabellini@eu.citrix.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 5/6] xen/mmu: Copy and revector the P2M tree.
-Date: Tue, 31 Jul 2012 10:43:23 -0400
-Message-Id: <1343745804-28028-6-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1343745804-28028-1-git-send-email-konrad.wilk@oracle.com>
-References: <1343745804-28028-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1754843Ab2GaOyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:54:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40758 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754157Ab2GaOyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 10:54:25 -0400
+Message-ID: <1343746415.3368.5.camel@ul30vt>
+Subject: Re: [GIT PULL (PATCH 0/4)] VFIO driver for v3.6
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Mackerras <paulus@samba.org>, benh@kernel.crashing.org, aik@ozlabs.ru,
+        david@gibson.dropbear.id.au, gregkh@linuxfoundation.org,
+        joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
+        agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
+        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
+        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com, ddutile@redhat.com
+Date: Tue, 31 Jul 2012 08:53:35 -0600
+In-Reply-To: <CA+55aFzTzO-jzHNYSW6Hb5_kmP6aYCWH_hbAauLUn9rf9iLg_w@mail.gmail.com>
+References: <20120725142254.12800.61860.stgit@bling.home>
+	 <20120727053206.GC11870@drongo> <1343690279.8073.215.camel@ul30vt>
+	 <CA+55aFzTzO-jzHNYSW6Hb5_kmP6aYCWH_hbAauLUn9rf9iLg_w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please first read the description in "xen/p2m: Add logic to revector a
-P2M tree to use __va leafs" patch.
+On Mon, 2012-07-30 at 22:11 -0700, Linus Torvalds wrote:
+> On Mon, Jul 30, 2012 at 4:17 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> >
+> > I'm pretty anxious to find out as well.  Linus, ping, any thoughts on
+> > including this in 3.6?  Thanks,
+> 
+> I just pulled it, but then I unpulled again when I realized it's not a
+> signed tag and it's on github.
+> 
+> Please, people. Do tagged releases with proper signatures if you're
+> not using kernel.org or other controlled servers. In fact, I prefer
+> signed tags even if you *do* use kernel.org etc.
 
-The 'xen_revector_p2m_tree()' function allocates a new P2M tree
-copies the contents of the old one in it, and returns the new one.
+Sorry about that, Linus.  I think this is a properly signed tag, please
+let me know if I'm still screwing up.  Thanks,
 
-At this stage, the __ka address space (which is what the old
-P2M tree was using) is partially disassembled. The cleanup_highmap
-has removed the PMD entries from 0-16MB and anything past _brk_end
-up to the max_pfn_mapped (which is the end of the ramdisk).
+Alex
 
-We have revectored the P2M tree (and the one for save/restore as well)
-to use new shiny __va address to new MFNs. The xen_start_info
-has been taken care of already in 'xen_setup_kernel_pagetable()' and
-xen_start_info->shared_info in 'xen_setup_shared_info()', so
-we are free to roam and delete PMD entries - which is exactly what
-we are going to do. We rip out the __ka for the old P2M array.
+The following changes since commit 2e3ee613480563a6d5c01b57d342e65cc58c06df:
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/mmu.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 57 insertions(+), 0 deletions(-)
+  Merge tag 'writeback-proportions' of git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux (2012-07-30 22:14:04 -0700)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index de4b8fd..9358b75 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1183,9 +1183,64 @@ static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
- 
- static void xen_post_allocator_init(void);
- 
-+#ifdef CONFIG_X86_64
-+void __init xen_cleanhighmap(unsigned long vaddr, unsigned long vaddr_end)
-+{
-+	unsigned long kernel_end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
-+	pmd_t *pmd = level2_kernel_pgt + pmd_index(vaddr);
-+
-+	/* NOTE: The loop is more greedy than the cleanup_highmap variant.
-+	 * We include the PMD passed in on _both_ boundaries. */
-+	for (; vaddr <= vaddr_end && (pmd < (level2_kernel_pgt + PAGE_SIZE));
-+			pmd++, vaddr += PMD_SIZE) {
-+		if (pmd_none(*pmd))
-+			continue;
-+		if (vaddr < (unsigned long) _text || vaddr > kernel_end)
-+			set_pmd(pmd, __pmd(0));
-+	}
-+	/* In case we did something silly, we should crash in this function
-+	 * instead of somewhere later and be confusing. */
-+	xen_mc_flush();
-+}
-+#endif
- static void __init xen_pagetable_setup_done(pgd_t *base)
- {
-+#ifdef CONFIG_X86_64
-+	unsigned long size;
-+	unsigned long addr;
-+#endif
-+
- 	xen_setup_shared_info();
-+#ifdef CONFIG_X86_64
-+	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-+		unsigned long new_mfn_list;
-+
-+		size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-+
-+		new_mfn_list = xen_revector_p2m_tree();
-+
-+		/* On 32-bit, we get zero so this never gets executed. */
-+		if (new_mfn_list && new_mfn_list != xen_start_info->mfn_list) {
-+			/* using __ka address! */
-+			memset((void *)xen_start_info->mfn_list, 0, size);
-+
-+			/* We should be in __ka space. */
-+			BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
-+			addr = xen_start_info->mfn_list;
-+			size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-+			/* We roundup to the PMD, which means that if anybody at this stage is
-+			 * using the __ka address of xen_start_info or xen_start_info->shared_info
-+			 * they are in going to crash. Fortunatly we have already revectored
-+			 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
-+			size = roundup(size, PMD_SIZE);
-+			xen_cleanhighmap(addr, addr + size);
-+
-+			memblock_free(__pa(xen_start_info->mfn_list), size);
-+			/* And revector! Bye bye old array */
-+			xen_start_info->mfn_list = new_mfn_list;
-+		}
-+	}
-+#endif
- 	xen_post_allocator_init();
- }
- 
-@@ -1822,6 +1877,8 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- 
- 	/* Our (by three pages) smaller Xen pagetable that we are using */
- 	memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
-+	/* Revector the xen_start_info */
-+	xen_start_info = (struct start_info *)__va(__pa(xen_start_info));
- }
- #else	/* !CONFIG_X86_64 */
- static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
--- 
-1.7.7.6
+are available in the git repository at:
+
+
+  git@github.com:awilliam/linux-vfio.git tags/vfio-for-v3.6
+
+for you to fetch changes up to 89e1f7d4c66d85f42c3d52ea3866eb10cadf6153:
+
+  vfio: Add PCI device driver (2012-07-31 08:16:24 -0600)
+
+----------------------------------------------------------------
+VFIO for v3.6
+
+----------------------------------------------------------------
+Alex Williamson (4):
+      vfio: VFIO core
+      vfio: Add documentation
+      vfio: Type1 IOMMU implementation
+      vfio: Add PCI device driver
+
+ Documentation/ioctl/ioctl-number.txt |    1 +
+ Documentation/vfio.txt               |  314 +++++++
+ MAINTAINERS                          |    8 +
+ drivers/Kconfig                      |    2 +
+ drivers/Makefile                     |    1 +
+ drivers/vfio/Kconfig                 |   16 +
+ drivers/vfio/Makefile                |    3 +
+ drivers/vfio/pci/Kconfig             |    8 +
+ drivers/vfio/pci/Makefile            |    4 +
+ drivers/vfio/pci/vfio_pci.c          |  579 +++++++++++++
+ drivers/vfio/pci/vfio_pci_config.c   | 1540 ++++++++++++++++++++++++++++++++++
+ drivers/vfio/pci/vfio_pci_intrs.c    |  740 ++++++++++++++++
+ drivers/vfio/pci/vfio_pci_private.h  |   91 ++
+ drivers/vfio/pci/vfio_pci_rdwr.c     |  269 ++++++
+ drivers/vfio/vfio.c                  | 1420 +++++++++++++++++++++++++++++++
+ drivers/vfio/vfio_iommu_type1.c      |  753 +++++++++++++++++
+ include/linux/vfio.h                 |  445 ++++++++++
+ 17 files changed, 6194 insertions(+)
+ create mode 100644 Documentation/vfio.txt
+ create mode 100644 drivers/vfio/Kconfig
+ create mode 100644 drivers/vfio/Makefile
+ create mode 100644 drivers/vfio/pci/Kconfig
+ create mode 100644 drivers/vfio/pci/Makefile
+ create mode 100644 drivers/vfio/pci/vfio_pci.c
+ create mode 100644 drivers/vfio/pci/vfio_pci_config.c
+ create mode 100644 drivers/vfio/pci/vfio_pci_intrs.c
+ create mode 100644 drivers/vfio/pci/vfio_pci_private.h
+ create mode 100644 drivers/vfio/pci/vfio_pci_rdwr.c
+ create mode 100644 drivers/vfio/vfio.c
+ create mode 100644 drivers/vfio/vfio_iommu_type1.c
+ create mode 100644 include/linux/vfio.h
+
+
 
