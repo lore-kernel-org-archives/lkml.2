@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab2GaXGD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:06:03 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42740 "EHLO
+	id S1755365Ab2GaXFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:05:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42728 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178Ab2GaXF4 (ORCPT
+	with ESMTP id S1754970Ab2GaXFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:05:56 -0400
+	Tue, 31 Jul 2012 19:05:40 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <nico@linaro.org>,
         <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
         Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH 19/22] ARM: recreate kernel mappings in early_paging_init()
-Date: Tue, 31 Jul 2012 19:04:55 -0400
-Message-ID: <1343775898-28345-20-git-send-email-cyril@ti.com>
+Subject: [PATCH 10/22] ARM: LPAE: use 64-bit accessors for TTBR registers
+Date: Tue, 31 Jul 2012 19:04:46 -0400
+Message-ID: <1343775898-28345-11-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343775898-28345-1-git-send-email-cyril@ti.com>
 References: <1343775898-28345-1-git-send-email-cyril@ti.com>
@@ -24,129 +24,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a step in the init sequence, in order to recreate the kernel
-code/data page table mappings prior to full paging initialization.  This is
-necessary on LPAE systems that run out of a physical address space outside the
-4G limit.  On these systems, this implementation provides a machine descriptor
-hook that allows the PHYS_OFFSET to be overridden in a machine specific
-fashion.
+This patch adds TTBR accessor macros, and modifies cpu_get_pgd() and
+the LPAE version of cpu_set_reserved_ttbr0() to use these instead.
+
+In the process, we also fix these functions to correctly handle cases
+where the physical address lies beyond the 4G limit of 32-bit addressing.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 ---
- arch/arm/include/asm/mach/arch.h |    1 +
- arch/arm/kernel/setup.c          |    3 ++
- arch/arm/mm/mmu.c                |   57 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 61 insertions(+)
+ arch/arm/include/asm/proc-fns.h |   24 +++++++++++++++++++-----
+ arch/arm/mm/context.c           |   13 ++-----------
+ 2 files changed, 21 insertions(+), 16 deletions(-)
 
-diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-index 0b1c94b..2b9ecc5 100644
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -37,6 +37,7 @@ struct machine_desc {
- 	char			restart_mode;	/* default restart mode	*/
- 	void			(*fixup)(struct tag *, char **,
- 					 struct meminfo *);
-+	void			(*init_meminfo)(void);
- 	void			(*reserve)(void);/* reserve mem blocks	*/
- 	void			(*map_io)(void);/* IO mapping function	*/
- 	void			(*init_early)(void);
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index bba3fdc..ccf052c 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -93,6 +93,7 @@ static int __init fpe_setup(char *line)
- __setup("fpe=", fpe_setup);
- #endif
+diff --git a/arch/arm/include/asm/proc-fns.h b/arch/arm/include/asm/proc-fns.h
+index fa6554e..918b4f9 100644
+--- a/arch/arm/include/asm/proc-fns.h
++++ b/arch/arm/include/asm/proc-fns.h
+@@ -116,13 +116,27 @@ extern void cpu_resume(void);
+ #define cpu_switch_mm(pgd,mm) cpu_do_switch_mm(virt_to_phys(pgd),mm)
  
-+extern void early_paging_init(struct machine_desc *, struct proc_info_list *);
- extern void paging_init(struct machine_desc *desc);
- extern void sanity_check_meminfo(void);
- extern void reboot_setup(char *str);
-@@ -1152,6 +1153,8 @@ void __init setup_arch(char **cmdline_p)
- 	parse_early_param();
- 
- 	sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
+ #ifdef CONFIG_ARM_LPAE
 +
-+	early_paging_init(mdesc, lookup_processor_type(read_cpuid_id()));
- 	sanity_check_meminfo();
- 	arm_memblock_init(&meminfo, mdesc);
++#define cpu_get_ttbr(nr)					\
++	({							\
++		u64 ttbr;					\
++		__asm__("mrrc	p15, " #nr ", %Q0, %R0, c2"	\
++			: "=r" (ttbr)				\
++			: : "cc");				\
++		ttbr;						\
++	})
++
++#define cpu_set_ttbr(nr, val)					\
++	do {							\
++		u64 ttbr = val;					\
++		__asm__("mcrr	p15, " #nr ", %Q0, %R0, c2"	\
++			: : "r" (ttbr)				\
++			: "cc");				\
++	} while (0)
++
+ #define cpu_get_pgd()	\
+ 	({						\
+-		unsigned long pg, pg2;			\
+-		__asm__("mrrc	p15, 0, %0, %1, c2"	\
+-			: "=r" (pg), "=r" (pg2)		\
+-			:				\
+-			: "cc");			\
++		u64 pg = cpu_get_ttbr(0);		\
+ 		pg &= ~(PTRS_PER_PGD*sizeof(pgd_t)-1);	\
+ 		(pgd_t *)phys_to_virt(pg);		\
+ 	})
+diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
+index 806cc4f..ad70bd8 100644
+--- a/arch/arm/mm/context.c
++++ b/arch/arm/mm/context.c
+@@ -15,6 +15,7 @@
  
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 6b0baf3..21fb171 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -28,6 +28,7 @@
- #include <asm/highmem.h>
- #include <asm/system_info.h>
- #include <asm/traps.h>
-+#include <asm/procinfo.h>
+ #include <asm/mmu_context.h>
+ #include <asm/tlbflush.h>
++#include <asm/proc-fns.h>
  
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -1175,6 +1176,62 @@ static void __init map_lowmem(void)
+ static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
+ unsigned int cpu_last_asid = ASID_FIRST_VERSION;
+@@ -22,17 +23,7 @@ unsigned int cpu_last_asid = ASID_FIRST_VERSION;
+ #ifdef CONFIG_ARM_LPAE
+ void cpu_set_reserved_ttbr0(void)
+ {
+-	unsigned long ttbl = __pa(swapper_pg_dir);
+-	unsigned long ttbh = 0;
+-
+-	/*
+-	 * Set TTBR0 to swapper_pg_dir which contains only global entries. The
+-	 * ASID is set to 0.
+-	 */
+-	asm volatile(
+-	"	mcrr	p15, 0, %0, %1, c2		@ set TTBR0\n"
+-	:
+-	: "r" (ttbl), "r" (ttbh));
++	cpu_set_ttbr(0, __pa(swapper_pg_dir));
+ 	isb();
  }
- 
- /*
-+ * early_paging_init() recreates boot time page table setup, allowing machines
-+ * to switch over to a high (>4G) address space on LPAE systems
-+ */
-+void __init early_paging_init(struct machine_desc *mdesc,
-+			      struct proc_info_list *procinfo)
-+{
-+	bool lpae = IS_ENABLED(CONFIG_ARM_LPAE);
-+	pmdval_t pmdprot = procinfo->__cpu_mm_mmu_flags;
-+	unsigned long map_start, map_end;
-+	pgd_t *pgd0, *pgdk;
-+	pud_t *pud0, *pudk;
-+	pmd_t *pmd0, *pmdk;
-+	phys_addr_t phys;
-+	int i;
-+
-+	if (!lpae)
-+		return;
-+
-+	/* remap kernel code and data */
-+	map_start = init_mm.start_code;
-+	map_end   = init_mm.brk;
-+
-+	/* get a handle on things... */
-+	pgd0 = pgd_offset_k(0);
-+	pud0 = pud_offset(pgd0, 0);
-+	pmd0 = pmd_offset(pud0, 0);
-+
-+	pgdk = pgd_offset_k(map_start);
-+	pudk = pud_offset(pgdk, map_start);
-+	pmdk = pmd_offset(pudk, map_start);
-+
-+	phys = PHYS_OFFSET;
-+
-+	if (mdesc->init_meminfo)
-+		mdesc->init_meminfo();
-+
-+	/* remap level 1 table */
-+	for (i = 0; i < PTRS_PER_PGD; i++) {
-+		*pud0++ = __pud(__pa(pmd0) | PMD_TYPE_TABLE | L_PGD_SWAPPER);
-+		pmd0 += PTRS_PER_PMD;
-+	}
-+
-+	/* remap pmds for kernel mapping */
-+	phys = __pa(map_start) & PMD_MASK;
-+	do {
-+		*pmdk++ = __pmd(phys | pmdprot);
-+		phys += PMD_SIZE;
-+	} while (phys < map_end);
-+
-+	flush_cache_all();
-+	cpu_set_ttbr(0, __pa(pgd0));
-+	cpu_set_ttbr(1, __pa(pgd0) + TTBR1_OFFSET);
-+	local_flush_tlb_all();
-+}
-+
-+/*
-  * paging_init() sets up the page tables, initialises the zone memory
-  * maps, and sets up the zero page, bad page and bad page tables.
-  */
+ #else
 -- 
 1.7.9.5
 
