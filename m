@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab2GaDe6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 23:34:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60424 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab2GaDe5 (ORCPT
+	id S1755263Ab2GaDfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 23:35:37 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:41541 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754123Ab2GaDfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 23:34:57 -0400
+	Mon, 30 Jul 2012 23:35:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1207301425410.28838@router.home>
-References: <1343411703-2720-1-git-send-email-js1304@gmail.com>
-	<1343411703-2720-4-git-send-email-js1304@gmail.com>
-	<alpine.DEB.2.00.1207271550190.25434@router.home>
-	<CAAmzW4MdiJOaZW_b+fz1uYyj0asTCveN=24st4xKymKEvkzdgQ@mail.gmail.com>
-	<alpine.DEB.2.00.1207301425410.28838@router.home>
-Date: Tue, 31 Jul 2012 12:34:57 +0900
-Message-ID: <CAAmzW4P6rqywK89q71DXzumREsJNGq0O4RrfdiHP2thrRSy9Gg@mail.gmail.com>
-Subject: Re: [RESEND PATCH 4/4 v3] mm: fix possible incorrect return value of
- move_pages() syscall
-From: JoonSoo Kim <js1304@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Brice Goglin <brice@myri.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
+In-Reply-To: <20120730181542.GA987@jonmason-lab>
+References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
+	<1343607994-32415-2-git-send-email-jon.mason@intel.com>
+	<CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
+	<20120730181542.GA987@jonmason-lab>
+Date: Tue, 31 Jul 2012 11:35:33 +0800
+Message-ID: <CAF8raN6M0_TWyCCzjyXZcFYP=vgFaqQg4hNmNpBxSM+D0C_Bpg@mail.gmail.com>
+Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
+From: Jianbin Kang <kjbmail@gmail.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        Dave Jiang <dave.jiang@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/31 Christoph Lameter <cl@linux.com>:
-> On Sat, 28 Jul 2012, JoonSoo Kim wrote:
->
->> 2012/7/28 Christoph Lameter <cl@linux.com>:
->> > On Sat, 28 Jul 2012, Joonsoo Kim wrote:
->> >
->> >> move_pages() syscall may return success in case that
->> >> do_move_page_to_node_array return positive value which means migration failed.
->> >
->> > Nope. It only means that the migration for some pages has failed. This may
->> > still be considered successful for the app if it moves 10000 pages and one
->> > failed.
->> >
->> > This patch would break the move_pages() syscall because an error code
->> > return from do_move_pages_to_node_array() will cause the status byte for
->> > each page move to not be updated anymore. Application will not be able to
->> > tell anymore which pages were successfully moved and which are not.
->>
->> In case of returning non-zero, valid status is not required according
->> to man page.
->
-> Cannot find a statement like that in the man page. The return code
-> description is incorrect. It should that that is returns the number of
-> pages not moved otherwise an error code (Michael please fix the manpage).
+> I've tried to make it all generic enough that non-Intel NTBs should plug in with
+> minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
+> redesign of ntb_hw.c might be necessary.  But from what I've seen of other
+> designs on the internet, they appear to be extremely similar.  The transport and
+> client drivers were written with the hardware abstracted away as much as
+> possible to prevent the need to modify it for different hardware.  If there is
+> anything which is Intel hardware specific, I'd be happy to change it to make it
+> more generic.
+  In ntb_process_tx(), ntb uses hard-coding 'memcpy_toio' to copy data
+to remote.
+  Is it better to provide a function pointer like 'tx()' and call qp->tx().
+  memcpy_toio is a slow operation. Some hardware can setup a dma
+transfer and wait.
 
-In man page, there is following statement.
-"status is an array of integers that return the status of each page.  The array
-only contains valid values if move_pages() did not return an error."
-
-And current implementation of move_pages() syscall doesn't return the number
-of pages not moved, just return 0 when it encounter some failed pages.
-So, if u want to fix the man page, u should fix do_pages_move() first.
+  IMHO, the best way is to handle tx in async mode. But it requires
+lots of modification.
