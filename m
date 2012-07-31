@@ -1,181 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab2GaKJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:09:53 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:33192
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752334Ab2GaKJv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752934Ab2GaKJv (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 31 Jul 2012 06:09:51 -0400
-X-IronPort-AV: E=Sophos;i="4.77,682,1336341600"; 
-   d="scan'208";a="152101200"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: kernel-janitors@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/iio/adc/at91_adc.c: use devm_ functions
-Date: Tue, 31 Jul 2012 12:09:43 +0200
-Message-Id: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2317 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab2GaKJt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 06:09:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 31 Jul 2012 03:09:48 -0700
+Message-ID: <5017AF5D.2010204@nvidia.com>
+Date: Tue, 31 Jul 2012 19:11:41 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Simon Glass <sjg@chromium.org>, Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <CAPnjgZ0H2xrJcL-ytMaX11iYrrhCg7LEM00u_NgEaveM4gHMPw@mail.gmail.com> <50179933.9090501@nvidia.com> <20120731091324.GA15557@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20120731091324.GA15557@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 07/31/2012 06:13 PM, Thierry Reding wrote:
+>> I don't see any need for microseconds myself - anybody sees use for
+>> finer-grained delays?
+>>
+>> Btw, I noticed I was using mdelay instead of msleep - caught and fixed that.
+>
+> You might want to take a look at Documentation/timers/timers-howto.txt.
+> msleep() isn't very accurate for periods shorter than 20 ms.
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+Ok, looks like usleep_range is the way to go here. In that case it would 
+probably not hurt to specify delays in microseconds in the DT and 
+platform data as well.
 
-The call to platform_get_resource(pdev, IORESOURCE_MEM, 0) is moved closer
-to the new call to devm_request_and_ioremap where its result is first
-used.  devm_request_and_ioremap takes case of the NULL test on the result
-of platform_get_resource(pdev, IORESOURCE_MEM, 0), so that is dropped.
+>>>> +Device tree
+>>>> +-----------
+>>>> +All the same, power sequences can be encoded as device tree nodes. The following
+>>>> +properties and nodes are equivalent to the platform data defined previously:
+>>>> +
+>>>> +               power-supply = <&mydevice_reg>;
+>>>> +               enable-gpio = <&gpio 6 0>;
+>>>> +
+>>>> +               power-on-sequence {
+>>>> +                       regulator@0 {
+>>>> +                               id = "power";
+>>>
+>>> Is there a reason not to put the phandle here, like:
+>>>
+>>>                                     id = <&mydevice_reg>;
+>>>
+>>> (or maybe 'device' instead of id?)
+>>
+>> There is one reason, but it might be a bad one. On Tegra, PWM
+>> phandle uses an extra cell to encode the duty-cycle the PWM should
+>> have when we call get_pwm().
+>
+> This is not only the case on Tegra, but it is the default unless a
+> driver specifically overrides it. The second cell specifies the index of
+> the PWM device within the PWM chip.  The third cell doesn't specify the
+> duty cycle but the period of the PWM.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Then I think there is a mistake in 
+Documentation/devicetree/bindings/pwm/nvidia,tegra20-pwm.txt:
 
----
-Not compiled.
+"the second cell is the duty cycle in nanoseconds."
 
- drivers/iio/adc/at91_adc.c |   56 +++++++++++----------------------------------
- 1 file changed, 14 insertions(+), 42 deletions(-)
+>> This makes it possible to address the
+>> same PWM with different phandles (and different duty cycles),
+>
+> How so? A phandle will always refer to a PWM chip. Paired with the
+> second cell, of_pwm_request() will resolve that into the correct PWM
+> device.
 
-diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
-index f61780a..b0277bf 100644
---- a/drivers/iio/adc/at91_adc.c
-+++ b/drivers/iio/adc/at91_adc.c
-@@ -545,13 +545,6 @@ static int __devinit at91_adc_probe(struct platform_device *pdev)
- 		goto error_free_device;
- 	}
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "No resource defined\n");
--		ret = -ENXIO;
--		goto error_ret;
--	}
--
- 	platform_set_drvdata(pdev, idev);
- 
- 	idev->dev.parent = &pdev->dev;
-@@ -566,18 +559,13 @@ static int __devinit at91_adc_probe(struct platform_device *pdev)
- 		goto error_free_device;
- 	}
- 
--	if (!request_mem_region(res->start, resource_size(res),
--				"AT91 adc registers")) {
--		dev_err(&pdev->dev, "Resources are unavailable.\n");
--		ret = -EBUSY;
--		goto error_free_device;
--	}
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	st->reg_base = ioremap(res->start, resource_size(res));
-+	st->reg_base = devm_request_and_ioremap(&pdev->dev, res);
- 	if (!st->reg_base) {
- 		dev_err(&pdev->dev, "Failed to map registers.\n");
- 		ret = -ENOMEM;
--		goto error_release_mem;
-+		goto error_free_device;
- 	}
- 
- 	/*
-@@ -585,27 +573,27 @@ static int __devinit at91_adc_probe(struct platform_device *pdev)
- 	 */
- 	at91_adc_writel(st, AT91_ADC_CR, AT91_ADC_SWRST);
- 	at91_adc_writel(st, AT91_ADC_IDR, 0xFFFFFFFF);
--	ret = request_irq(st->irq,
--			  at91_adc_eoc_trigger,
--			  0,
--			  pdev->dev.driver->name,
--			  idev);
-+	ret = devm_request_irq(&pdev->dev, st->irq,
-+			       at91_adc_eoc_trigger,
-+			       0,
-+			       pdev->dev.driver->name,
-+			       idev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to allocate IRQ.\n");
--		goto error_unmap_reg;
-+		goto error_free_device;
- 	}
- 
--	st->clk = clk_get(&pdev->dev, "adc_clk");
-+	st->clk = devm_clk_get(&pdev->dev, "adc_clk");
- 	if (IS_ERR(st->clk)) {
- 		dev_err(&pdev->dev, "Failed to get the clock.\n");
- 		ret = PTR_ERR(st->clk);
--		goto error_free_irq;
-+		goto error_free_device;
- 	}
- 
- 	ret = clk_prepare(st->clk);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Could not prepare the clock.\n");
--		goto error_free_clk;
-+		goto error_free_device;
- 	}
- 
- 	ret = clk_enable(st->clk);
-@@ -614,7 +602,7 @@ static int __devinit at91_adc_probe(struct platform_device *pdev)
- 		goto error_unprepare_clk;
- 	}
- 
--	st->adc_clk = clk_get(&pdev->dev, "adc_op_clk");
-+	st->adc_clk = devm_clk_get(&pdev->dev, "adc_op_clk");
- 	if (IS_ERR(st->adc_clk)) {
- 		dev_err(&pdev->dev, "Failed to get the ADC clock.\n");
- 		ret = PTR_ERR(st->clk);
-@@ -624,7 +612,7 @@ static int __devinit at91_adc_probe(struct platform_device *pdev)
- 	ret = clk_prepare(st->adc_clk);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Could not prepare the ADC clock.\n");
--		goto error_free_adc_clk;
-+		goto error_disable_clk;
- 	}
- 
- 	ret = clk_enable(st->adc_clk);
-@@ -697,20 +685,10 @@ error_disable_adc_clk:
- 	clk_disable(st->adc_clk);
- error_unprepare_adc_clk:
- 	clk_unprepare(st->adc_clk);
--error_free_adc_clk:
--	clk_put(st->adc_clk);
- error_disable_clk:
- 	clk_disable(st->clk);
- error_unprepare_clk:
- 	clk_unprepare(st->clk);
--error_free_clk:
--	clk_put(st->clk);
--error_free_irq:
--	free_irq(st->irq, idev);
--error_unmap_reg:
--	iounmap(st->reg_base);
--error_release_mem:
--	release_mem_region(res->start, resource_size(res));
- error_free_device:
- 	iio_device_free(idev);
- error_ret:
-@@ -720,20 +698,14 @@ error_ret:
- static int __devexit at91_adc_remove(struct platform_device *pdev)
- {
- 	struct iio_dev *idev = platform_get_drvdata(pdev);
--	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	struct at91_adc_state *st = iio_priv(idev);
- 
- 	iio_device_unregister(idev);
- 	at91_adc_trigger_remove(idev);
- 	at91_adc_buffer_remove(idev);
- 	clk_disable_unprepare(st->adc_clk);
--	clk_put(st->adc_clk);
- 	clk_disable(st->clk);
- 	clk_unprepare(st->clk);
--	clk_put(st->clk);
--	free_irq(st->irq, idev);
--	iounmap(st->reg_base);
--	release_mem_region(res->start, resource_size(res));
- 	iio_device_free(idev);
- 
- 	return 0;
+For tegra, we can only address PWMs this way IIRC:
+
+pwm = <&pwm 2 5000000>;
+
+If we had <&pwm 2>, I agree that there would be no problem. But here the 
+period of the PWM is also given - and in practice, we can request the 
+same PWM using different phandles. For instance, if the above property 
+was part of the power-on sequence, and the following
+
+pwm = <&pwm 2 0>;
+
+was part of power-off, how can I know that these two different phandles 
+refer to the same PWM without calling pwm_get a second time and getting 
+-EBUSY?
+
+Of course if the same period is specified for both, I will not have this 
+issue as the phandles will be identical, but the possibility remains 
+open that we are given a faulty tree here.
+
+More generally speaking, wouldn't it make more sense to have the 
+period/duty cycle of a PWM encoded into separate properties when needed 
+and have the phandle just reference the PWM instance? This also seems to 
+stand from an API point of view, since the period is not specified when 
+invoking pwm_request or pwm_get, but set by its own pwm_set_period function?
+
+On an unrelated note, I also don't understand why the period is also a 
+parameter of pwm_config and why pwm_set_period does not do anything 
+beyond setting a struct member that is returned by pwm_get_period (but 
+maybe I am missing something here).
+
+Alex.
 
