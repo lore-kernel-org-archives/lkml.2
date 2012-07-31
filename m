@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815Ab2GaEvV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:51:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48875 "EHLO
+	id S1755803Ab2GaEvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:51:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48872 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755725Ab2GaEvJ (ORCPT
+	by vger.kernel.org with ESMTP id S1755719Ab2GaEvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 00:51:09 -0400
-Message-Id: <20120731044315.770748839@decadent.org.uk>
+Message-Id: <20120731044315.148115472@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:38 +0100
+Date: Tue, 31 Jul 2012 05:43:34 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nishanth Menon <nm@ti.com>,
-        Steve Sakoman <steve@sakoman.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>
-Subject: [ 28/73] ARM: OMAP2+: OPP: Fix to ensure check of right oppdef after bad one
+        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
+        Jian Li <jiali@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 24/73] cifs: when CONFIG_HIGHMEM is set, serialize the  read/write kmaps
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,58 +28,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nishanth Menon <nm@ti.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit b110547e586eb5825bc1d04aa9147bff83b57672 upstream.
+commit 3cf003c08be785af4bee9ac05891a15bcbff856a upstream.
 
-Commit 9fa2df6b90786301b175e264f5fa9846aba81a65
-(ARM: OMAP2+: OPP: allow OPP enumeration to continue if device is not present)
-makes the logic:
-for (i = 0; i < opp_def_size; i++) {
-	<snip>
-	if (!oh || !oh->od) {
-		<snip>
-		continue;
-	}
-<snip>
-opp_def++;
-}
+Jian found that when he ran fsx on a 32 bit arch with a large wsize the
+process and one of the bdi writeback kthreads would sometimes deadlock
+with a stack trace like this:
 
-In short, the moment we hit a "Bad OPP", we end up looping the list
-comparing against the bad opp definition pointer for the rest of the
-iteration count. Instead, increment opp_def in the for loop itself
-and allow continue to be used in code without much thought so that
-we check the next set of OPP definition pointers :)
+crash> bt
+PID: 2789   TASK: f02edaa0  CPU: 3   COMMAND: "fsx"
+ #0 [eed63cbc] schedule at c083c5b3
+ #1 [eed63d80] kmap_high at c0500ec8
+ #2 [eed63db0] cifs_async_writev at f7fabcd7 [cifs]
+ #3 [eed63df0] cifs_writepages at f7fb7f5c [cifs]
+ #4 [eed63e50] do_writepages at c04f3e32
+ #5 [eed63e54] __filemap_fdatawrite_range at c04e152a
+ #6 [eed63ea4] filemap_fdatawrite at c04e1b3e
+ #7 [eed63eb4] cifs_file_aio_write at f7fa111a [cifs]
+ #8 [eed63ecc] do_sync_write at c052d202
+ #9 [eed63f74] vfs_write at c052d4ee
+#10 [eed63f94] sys_write at c052df4c
+#11 [eed63fb0] ia32_sysenter_target at c0409a98
+    EAX: 00000004  EBX: 00000003  ECX: abd73b73  EDX: 012a65c6
+    DS:  007b      ESI: 012a65c6  ES:  007b      EDI: 00000000
+    SS:  007b      ESP: bf8db178  EBP: bf8db1f8  GS:  0033
+    CS:  0073      EIP: 40000424  ERR: 00000004  EFLAGS: 00000246
 
-Cc: Steve Sakoman <steve@sakoman.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Kevin Hilman <khilman@ti.com>
+Each task would kmap part of its address array before getting stuck, but
+not enough to actually issue the write.
+
+This patch fixes this by serializing the marshal_iov operations for
+async reads and writes. The idea here is to ensure that cifs
+aggressively tries to populate a request before attempting to fulfill
+another one. As soon as all of the pages are kmapped for a request, then
+we can unlock and allow another one to proceed.
+
+There's no need to do this serialization on non-CONFIG_HIGHMEM arches
+however, so optimize all of this out when CONFIG_HIGHMEM isn't set.
+
+Reported-by: Jian Li <jiali@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mach-omap2/opp.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/cifs/cifssmb.c |   30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/opp.c b/arch/arm/mach-omap2/opp.c
-index de6d464..d8f6dbf 100644
---- a/arch/arm/mach-omap2/opp.c
-+++ b/arch/arm/mach-omap2/opp.c
-@@ -53,7 +53,7 @@ int __init omap_init_opp_table(struct omap_opp_def *opp_def,
- 	omap_table_init = 1;
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -89,6 +89,32 @@ static struct {
+ /* Forward declarations */
+ static void cifs_readv_complete(struct work_struct *work);
  
- 	/* Lets now register with OPP library */
--	for (i = 0; i < opp_def_size; i++) {
-+	for (i = 0; i < opp_def_size; i++, opp_def++) {
- 		struct omap_hwmod *oh;
- 		struct device *dev;
++#ifdef CONFIG_HIGHMEM
++/*
++ * On arches that have high memory, kmap address space is limited. By
++ * serializing the kmap operations on those arches, we ensure that we don't
++ * end up with a bunch of threads in writeback with partially mapped page
++ * arrays, stuck waiting for kmap to come back. That situation prevents
++ * progress and can deadlock.
++ */
++static DEFINE_MUTEX(cifs_kmap_mutex);
++
++static inline void
++cifs_kmap_lock(void)
++{
++	mutex_lock(&cifs_kmap_mutex);
++}
++
++static inline void
++cifs_kmap_unlock(void)
++{
++	mutex_unlock(&cifs_kmap_mutex);
++}
++#else /* !CONFIG_HIGHMEM */
++#define cifs_kmap_lock() do { ; } while(0)
++#define cifs_kmap_unlock() do { ; } while(0)
++#endif /* CONFIG_HIGHMEM */
++
+ /* Mark as invalid, all open files on tree connections since they
+    were closed when session to server was lost */
+ static void mark_open_files_invalid(struct cifs_tcon *pTcon)
+@@ -1540,6 +1566,7 @@ cifs_readv_receive(struct TCP_Server_Inf
+ 	eof_index = eof ? (eof - 1) >> PAGE_CACHE_SHIFT : 0;
+ 	cFYI(1, "eof=%llu eof_index=%lu", eof, eof_index);
  
-@@ -86,7 +86,6 @@ int __init omap_init_opp_table(struct omap_opp_def *opp_def,
- 					__func__, opp_def->freq,
- 					opp_def->hwmod_name, i, r);
++	cifs_kmap_lock();
+ 	list_for_each_entry_safe(page, tpage, &rdata->pages, lru) {
+ 		if (remaining >= PAGE_CACHE_SIZE) {
+ 			/* enough data to fill the page */
+@@ -1589,6 +1616,7 @@ cifs_readv_receive(struct TCP_Server_Inf
+ 			page_cache_release(page);
  		}
--		opp_def++;
  	}
++	cifs_kmap_unlock();
  
- 	return 0;
+ 	/* issue the read if we have any iovecs left to fill */
+ 	if (rdata->nr_iov > 1) {
+@@ -2171,6 +2199,7 @@ cifs_async_writev(struct cifs_writedata
+ 	iov[0].iov_base = smb;
+ 
+ 	/* marshal up the pages into iov array */
++	cifs_kmap_lock();
+ 	wdata->bytes = 0;
+ 	for (i = 0; i < wdata->nr_pages; i++) {
+ 		iov[i + 1].iov_len = min(inode->i_size -
+@@ -2179,6 +2208,7 @@ cifs_async_writev(struct cifs_writedata
+ 		iov[i + 1].iov_base = kmap(wdata->pages[i]);
+ 		wdata->bytes += iov[i + 1].iov_len;
+ 	}
++	cifs_kmap_unlock();
+ 
+ 	cFYI(1, "async write at %llu %u bytes", wdata->offset, wdata->bytes);
+ 
 
 
