@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab2GaOJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:09:59 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32416 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab2GaOJw (ORCPT
+	id S1754102Ab2GaOJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:09:57 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:46676 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048Ab2GaOJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:09:52 -0400
+	Tue, 31 Jul 2012 10:09:51 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: fujita.tomonori@lab.ntt.co.jp, xen-devel@lists.xensource.com,
         linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com,
         JBeulich@suse.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/5] swiotlb: add the late swiotlb initialization function with iotlb memory
-Date: Tue, 31 Jul 2012 10:00:21 -0400
-Message-Id: <1343743223-30092-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH] Xen-SWIOTLB fixes (v2) for 3.7
+Date: Tue, 31 Jul 2012 10:00:18 -0400
+Message-Id: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com>
-References: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables the caller to initialize swiotlb with its own iotlb
-memory late in the bootup.
+The original problem I mentioned in the above mentioned URL:
+"if one boots a PV 64-bit guests with more than 4GB, the SWIOTLB [Xen]
+gets turned on - and 64MB of precious low-memory gets used." was totally
+bogus. The SWIOTLB that gets turned on is the *native* one - which does
+not exhaust any low-memory of the host. But it does eat up perfectly
+fine 64MB of the guest and never gets used.
 
-See git commit eb605a5754d050a25a9f00d718fb173f24c486ef
-"swiotlb: add swiotlb_tbl_map_single library function" which will
-explain the full details of what it can be used for.
+So this patchset has some things I wanted to do for some time:
+ [PATCH 1/5] xen/swiotlb: Simplify the logic.
 
-CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- include/linux/swiotlb.h |    1 +
- lib/swiotlb.c           |   31 +++++++++++++++++++++++--------
- 2 files changed, 24 insertions(+), 8 deletions(-)
+Just so that next time I am not confused.
+ [PATCH 2/5] xen/swiotlb: With more than 4GB on 64-bit, disable the
 
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index e872526..8d08b3e 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -25,6 +25,7 @@ extern int swiotlb_force;
- extern void swiotlb_init(int verbose);
- extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
- extern unsigned long swiotlb_nr_tbl(void);
-+extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
- 
- /*
-  * Enumeration for sync targets
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 45bc1f8..5d33651 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -206,8 +206,9 @@ swiotlb_init(int verbose)
- int
- swiotlb_late_init_with_default_size(size_t default_size)
- {
--	unsigned long i, bytes, req_nslabs = io_tlb_nslabs;
-+	unsigned long bytes, req_nslabs = io_tlb_nslabs;
- 	unsigned int order;
-+	int rc = 0;
- 
- 	if (!io_tlb_nslabs) {
- 		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
-@@ -229,16 +230,32 @@ swiotlb_late_init_with_default_size(size_t default_size)
- 		order--;
- 	}
- 
--	if (!io_tlb_start)
--		goto cleanup1;
--
-+	if (!io_tlb_start) {
-+		io_tlb_nslabs = req_nslabs;
-+		return -ENOMEM;
-+	}
- 	if (order != get_order(bytes)) {
- 		printk(KERN_WARNING "Warning: only able to allocate %ld MB "
- 		       "for software IO TLB\n", (PAGE_SIZE << order) >> 20);
- 		io_tlb_nslabs = SLABS_PER_PAGE << order;
--		bytes = io_tlb_nslabs << IO_TLB_SHIFT;
- 	}
-+	rc = swiotlb_late_init_with_tbl(io_tlb_start, io_tlb_nslabs);
-+	if (rc)
-+		free_pages((unsigned long)io_tlb_start, order);
-+	return rc;
-+}
-+
-+int
-+swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs)
-+{
-+	unsigned long i, bytes;
-+
-+	bytes = nslabs << IO_TLB_SHIFT;
-+
-+	io_tlb_nslabs = nslabs;
-+	io_tlb_start = tlb;
- 	io_tlb_end = io_tlb_start + bytes;
-+
- 	memset(io_tlb_start, 0, bytes);
- 
- 	/*
-@@ -288,10 +305,8 @@ cleanup3:
- 	io_tlb_list = NULL;
- cleanup2:
- 	io_tlb_end = NULL;
--	free_pages((unsigned long)io_tlb_start, order);
- 	io_tlb_start = NULL;
--cleanup1:
--	io_tlb_nslabs = req_nslabs;
-+	io_tlb_nslabs = 0;
- 	return -ENOMEM;
- }
- 
--- 
-1.7.7.6
+and don't turn the *native* SWIOTLB on PV guests and waste those 64MB.
 
+Here are the exciting new patches - basically I want to emulate what
+IA64 does which is to turn on the SWIOTLB late in the bootup cycle.
+This means not using the alloc_bootmem and having a "late" variant
+to initialize SWIOTLB. There is some surgery in the SWIOTLB library:
+ [PATCH 3/5] swiotlb: add the late swiotlb initialization function
+
+to allow it to use an io_tlb passed in. Note: I hadn't tested this
+on IA64 and that is something I need to do.
+
+And then the implementation in the Xen-SWIOTLB to use it:
+ [PATCH 4/5] xen/swiotlb: Use the swiotlb_late_init_with_tbl to init
+along with Xen PCI frontend to utilize it.
+ [PATCH 5/5] xen/pcifront: Use Xen-SWIOTLB when initting if required.
+
+The end result is that a PV guest can now dynamically(*) deal with
+PCI passthrough cards. I say "dynamically" b/c if one boots a PV guest
+with more than 3GB without using 'e820_hole' (or is it called 'e820_host'
+now?) the PCI subsystem won't be able to squeeze the BARs as they
+are RAM occupied. The workaround is to boot with 'e820_hole' or some
+new work where we manipulate at boot time the E820 to leave a nice
+big 1GB hole under 4G - and with all the work on the P2M tree that
+should be fairly easy actually.
+
+Note: If one uses 'iommu=soft' on the Linux command line, the Xen-SWIOTLB
+still gets turned on.
