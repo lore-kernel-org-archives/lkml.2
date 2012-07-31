@@ -1,54 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab2GaVjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 17:39:39 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:13487 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab2GaVji (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 17:39:38 -0400
-Date: Tue, 31 Jul 2012 23:39:37 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Eilon Greenstein <eilong@broadcom.com>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] bnx2x: fix mem leak when command is unknown
-Message-ID: <alpine.LNX.2.00.1207312337590.7100@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754378Ab2GaVwY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 17:52:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752145Ab2GaVwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 17:52:23 -0400
+Message-ID: <50185386.6050007@redhat.com>
+Date: Tue, 31 Jul 2012 17:52:06 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@kernel.org, oleg@redhat.com, pjt@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
+        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 15/19] sched: Implement home-node awareness
+References: <20120731191204.540691987@chello.nl> <20120731192809.247593041@chello.nl>
+In-Reply-To: <20120731192809.247593041@chello.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In bnx2x_mcast_enqueue_cmd() we'll leak the memory allocated to
-'new_cmd' if we hit the deafault case of the 'switch (cmd)'.
-Add a 'kfree(new_cmd)' to that case to avoid the leak.
+On 07/31/2012 03:12 PM, Peter Zijlstra wrote:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c | 1 +
- 1 file changed, 1 insertion(+)
-
-  note: due to lack of hardware this patch is compile tested only.
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
-index 734fd87..62f754b 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
-@@ -2485,6 +2485,7 @@ static int bnx2x_mcast_enqueue_cmd(struct bnx2x *bp,
- 		break;
- 
- 	default:
-+		kfree(new_cmd);
- 		BNX2X_ERR("Unknown command: %d\n", cmd);
- 		return -EINVAL;
- 	}
--- 
-1.7.11.3
-
+Acked-by: Rik van Riel <riel@redhat.com>
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+All rights reversed
