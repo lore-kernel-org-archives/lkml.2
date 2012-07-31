@@ -1,331 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2GaGzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:55:47 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43762 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab2GaGzp (ORCPT
+	id S1755551Ab2GaGzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:55:52 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:35709 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750789Ab2GaGzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:55:45 -0400
-Date: Tue, 31 Jul 2012 08:57:33 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH can-next v3 1/2] can: add tx/rx LED trigger support
-Message-ID: <20120731065733.GA30267@gmail.com>
-References: <1343676041-29572-1-git-send-email-fabio.baltieri@gmail.com>
- <5016FA01.5000109@pengutronix.de>
+	Tue, 31 Jul 2012 02:55:49 -0400
+Date: Tue, 31 Jul 2012 09:52:26 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: "Poddar, Sourav" <sourav.poddar@ti.com>
+Cc: Kevin Hilman <khilman@ti.com>,
+        "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>,
+        lo <linux-omap@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [GPIO] Crashed when not using
+Message-ID: <20120731065224.GE6004@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <CAKdam54gXixs4F-a07ajj9GNMth46d4NTdoUL3GokzvjuWaGyg@mail.gmail.com>
+ <CAC83ZvKnOw+UBOWYtt294k-5Xk8S6Gy1pChSF7aXGmGjLGSeCA@mail.gmail.com>
+ <CAKdam56QEXY55SYC7YND4BP=tQmiyAa=avVCADTj3Ym6X9cCvg@mail.gmail.com>
+ <87fw89gf4w.fsf@ti.com>
+ <CAKdam57xtXnKAgvneqATSTr0ng978T5HbkTB0T3sYp96N=Qfww@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MIdTMoZhcV1D07fI"
 Content-Disposition: inline
-In-Reply-To: <5016FA01.5000109@pengutronix.de>
-X-Operating-System: Linux balto-eee 3.5.0-balto-eee-07086-g6f8d3bf GNU/Linux
+In-Reply-To: <CAKdam57xtXnKAgvneqATSTr0ng978T5HbkTB0T3sYp96N=Qfww@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
 
-On Mon, Jul 30, 2012 at 11:17:53PM +0200, Marc Kleine-Budde wrote:
-> On 07/30/2012 09:20 PM, Fabio Baltieri wrote:
-> > This patch implements the functions to add two LED triggers, named
-> > <ifname>-tx and <ifname>-rx, to a canbus device driver.
-> > 
-> > Triggers are called from specific handlers by each CAN device driver and
-> > can be disabled altogether with a Kconfig option.
-> > 
-> > The implementation keeps the LED on when the interface is UP and blinks
-> > the LED on network activity at a configurable rate.
-> > 
-> > This only supports can-dev based drivers, as it uses some support field
-> > in the can_priv structure.
-> > 
-> > Supported drivers should call can_led_init(), can_led_exit() and
-> > can_led_event() as needed.
-> > 
-> > Supported events are:
-> > - CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
-> > - CAN_LED_EVENT_STOP: turn off tx/rx LEDs
-> > - CAN_LED_EVENT_TX: trigger tx LED blink
-> > - CAN_LED_EVENT_RX: trigger tx LED blink
-> > 
-> > Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-> > Cc: Wolfgang Grandegger <wg@grandegger.com>
-> > Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-> > Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-> > ---
-> > 
-> > Hi all!
-> > 
-> > This is the v3 of my CAN LED trigger patch.  It's a major refactoring of the v2
-> > that was discussed about three months ago concluding with the idea that
-> > implementing the oneshot triggering code in the LED framework would be a better
-> > solution.
-> > 
-> > This is the old thread for reference:
-> > http://marc.info/?l=linux-can&m=133521499002898&w=2
-> > 
-> > So, generic oneshot trigger code is now merged in mainline (see 5bb629c), and
-> > these are the changes in the v3:
-> > 
-> > - use the new led_trigger_blink_oneshot() function for LED triggering
-> > - use kasprintf() and led_trigger_{un}register_simple for LED allocation
-> > - add some usage note in the comments
-> > 
-> > The resulting code is quite simple now and - I think - a bit less intrusive.
-> > Still, I hope on some feedback from the community as I don't have that much
-> > hardware to test it - this version has been tested mainly on an x86 with a
-> > custom usb-can interface.
-> > 
-> > In 2/2 there is a sample implementation for the flexcan driver, which is
-> > basically unchanged from the old version.
-> > 
-> > Any comments?
-> > Fabio
-> 
-> Looks quite clean now. Can you provide a devm implementation, too?
-> 
-> Marc
-> > 
-> >  drivers/net/can/Kconfig  | 12 ++++++
-> >  drivers/net/can/Makefile |  2 +
-> >  drivers/net/can/led.c    | 99 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/can/dev.h  |  8 ++++
-> >  include/linux/can/led.h  | 38 +++++++++++++++++++
-> >  5 files changed, 159 insertions(+)
-> >  create mode 100644 drivers/net/can/led.c
-> >  create mode 100644 include/linux/can/led.h
-> > 
-> > diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
-> > index bb709fd..19dec19 100644
-> > --- a/drivers/net/can/Kconfig
-> > +++ b/drivers/net/can/Kconfig
-> > @@ -54,6 +54,18 @@ config CAN_CALC_BITTIMING
-> >  	  arguments "tq", "prop_seg", "phase_seg1", "phase_seg2" and "sjw".
-> >  	  If unsure, say Y.
-> >  
-> > +config CAN_LEDS
-> > +	bool "Enable LED triggers for Netlink based drivers"
-> > +	depends on CAN_DEV
-> > +	depends on LEDS_CLASS
-> > +	select LEDS_TRIGGERS
-> > +	---help---
-> > +	  This option adds two LED triggers for packet receive and transmit
-> > +	  events on each supported CAN device.
-> > +
-> > +	  Say Y here if you are working on a system with led-class supported
-> > +	  LEDs and you want to use them as canbus activity indicators.
-> > +
-> >  config CAN_AT91
-> >  	tristate "Atmel AT91 onchip CAN controller"
-> >  	depends on CAN_DEV && (ARCH_AT91SAM9263 || ARCH_AT91SAM9X5)
-> > diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
-> > index 938be37..24ee98b 100644
-> > --- a/drivers/net/can/Makefile
-> > +++ b/drivers/net/can/Makefile
-> > @@ -8,6 +8,8 @@ obj-$(CONFIG_CAN_SLCAN)		+= slcan.o
-> >  obj-$(CONFIG_CAN_DEV)		+= can-dev.o
-> >  can-dev-y			:= dev.o
-> >  
-> > +can-dev-$(CONFIG_CAN_LEDS)	+= led.o
-> > +
-> >  obj-y				+= usb/
-> >  obj-y				+= softing/
-> >  
-> > diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
-> > new file mode 100644
-> > index 0000000..68c4f30
-> > --- /dev/null
-> > +++ b/drivers/net/can/led.c
-> > @@ -0,0 +1,99 @@
-> > +/*
-> > + * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/netdevice.h>
-> > +#include <linux/can/dev.h>
-> > +
-> > +#include <linux/can/led.h>
-> > +
-> > +static unsigned long led_delay = 50;
-> > +module_param(led_delay, ulong, 0644);
-> > +MODULE_PARM_DESC(led_delay,
-> > +		"blink delay time for activity leds (msecs, default: 50).");
-> > +
-> > +/*
-> > + * Trigger a LED event in response to a CAN device event
-> > + */
-> > +void can_led_event(struct net_device *netdev, enum can_led_event event)
-> > +{
-> > +	struct can_priv *priv = netdev_priv(netdev);
-> > +
-> > +	switch (event) {
-> > +	case CAN_LED_EVENT_OPEN:
-> > +		led_trigger_event(priv->tx_led_trig, LED_FULL);
-> > +		led_trigger_event(priv->rx_led_trig, LED_FULL);
-> > +		break;
-> > +	case CAN_LED_EVENT_STOP:
-> > +		led_trigger_event(priv->tx_led_trig, LED_OFF);
-> > +		led_trigger_event(priv->rx_led_trig, LED_OFF);
-> > +		break;
-> > +	case CAN_LED_EVENT_TX:
-> > +		if (led_delay)
-> > +			led_trigger_blink_oneshot(priv->tx_led_trig,
-> > +						  &led_delay, &led_delay, 1);
-> > +		break;
-> > +	case CAN_LED_EVENT_RX:
-> > +		if (led_delay)
-> > +			led_trigger_blink_oneshot(priv->rx_led_trig,
-> > +						  &led_delay, &led_delay, 1);
-> > +		break;
-> > +	}
-> > +}
-> > +EXPORT_SYMBOL_GPL(can_led_event);
-> > +
-> > +/*
-> > + * Register CAN LED triggers for a CAN device
-> > + *
-> > + * This is normally called from a driver's probe function
-> > + */
-> > +void can_led_init(struct net_device *netdev)
-> > +{
-> > +	struct can_priv *priv = netdev_priv(netdev);
-> > +
-> > +	priv->tx_led_trig_name = kasprintf(GFP_KERNEL, "%s-tx", netdev->name);
-> > +	if (!priv->tx_led_trig_name)
-> > +		goto tx_led_failed;
-> > +
-> > +	priv->rx_led_trig_name = kasprintf(GFP_KERNEL, "%s-rx", netdev->name);
-> > +	if (!priv->rx_led_trig_name)
-> > +		goto rx_led_failed;
-> > +
-> > +	led_trigger_register_simple(priv->tx_led_trig_name,
-> > +				    &priv->tx_led_trig);
-> > +	led_trigger_register_simple(priv->rx_led_trig_name,
-> > +				    &priv->rx_led_trig);
-> > +
-> > +	return;
-> > +
-> > +rx_led_failed:
-> > +	kfree(priv->tx_led_trig_name);
-> > +	priv->tx_led_trig_name = NULL;
-> > +tx_led_failed:
-> > +	return;
-> > +}
-> > +EXPORT_SYMBOL_GPL(can_led_init);
-> 
-> Can you provide a devm implementation for can_led?
+--MIdTMoZhcV1D07fI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sounds reasonable, you mean like a devm_kasprintf implementation to
-remove kfree and unwinding code?
+Hi,
 
-Fabio
+On Tue, Jul 31, 2012 at 10:23:16AM +0530, Poddar, Sourav wrote:
+> >>>> The device tree data for acquiring the above GPIO interrupt line loo=
+ks
+> >>>> like this.
+> >>>>
+> >>>> +++ linux-omap-storage/arch/arm/boot/dts/omap5-evm.dts  2012-07-30
+> >>>> 14:11:08.931694001 +0530
+> >>>> @@ -42,7 +42,8 @@
+> >>>>         tsl2771@39 {
+> >>>>                 compatible =3D "taos,tsl2771";
+> >>>>                 reg =3D <0x39>;
+> >>>> +                interrupt-parent =3D <&gpio5>;
+> >>>> +                interrupts =3D <21>; /* gpio line 149 */
+> >>>>         };
+> >>>>  };
+> >>>>
+> >>>> Note: using "gpio_request_one" in the driver solves the issue.
+> >>>> Is using this api in the driver required?
+> >>>> Any pointer on the above crash?
+> >>>
+> >> Hi Tarun,
+> >>> Any user/client driver of GPIO is supposed to go through
+> >>> gpio_request() API so that module clock
+> >>> is enabled correctly. Overriding of APIs would put the power
+> >>> management state machine in jeopardy.
+> >>> --
+> >> I tried putting "pm_runtime_get_sync" in gpio_irq_type api where the k=
+ernel
+> >> is crashing and the crash is no longer observed. So indeed, its about
+> >> enabling clocks.
+> >>
+> >> One doubt: Can't we put runtime apis in "gpio_irq_type" and eliminate
+> >> the use of
+> >> "gpio_request_one"??
+> >
+> > No.
+> >
+> > You must use the GPIO requiest/free APIs to tell the GPIO core that
+> > the GPIO line is in use.
+> >
+> Thanks for this confirmation.
+> > Why do you want to avoid using gpio_request/gpio_free?
+> >
+> I was assuming that DT based gpio IRQ registration will automatically
+> take care of
+> the above APIs. But since that is not the case(as mentioned by
+> santosh),  we need to use the
+> gpio_request/free apis.
 
-> > +
-> > +/*
-> > + * Unregister CAN LED triggers for a CAN device
-> > + *
-> > + * This is normally called from a driver's remove function
-> > + */
-> > +void can_led_exit(struct net_device *netdev)
-> > +{
-> > +	struct can_priv *priv = netdev_priv(netdev);
-> > +
-> > +	led_trigger_unregister_simple(priv->tx_led_trig);
-> > +	led_trigger_unregister_simple(priv->rx_led_trig);
-> > +
-> > +	kfree(priv->tx_led_trig_name);
-> > +	kfree(priv->rx_led_trig_name);
-> > +}
-> > +EXPORT_SYMBOL_GPL(can_led_exit);
-> > diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
-> > index 2b2fc34..167b04a 100644
-> > --- a/include/linux/can/dev.h
-> > +++ b/include/linux/can/dev.h
-> > @@ -16,6 +16,7 @@
-> >  #include <linux/can.h>
-> >  #include <linux/can/netlink.h>
-> >  #include <linux/can/error.h>
-> > +#include <linux/can/led.h>
-> >  
-> >  /*
-> >   * CAN mode
-> > @@ -52,6 +53,13 @@ struct can_priv {
-> >  
-> >  	unsigned int echo_skb_max;
-> >  	struct sk_buff **echo_skb;
-> > +
-> > +#ifdef CONFIG_CAN_LEDS
-> > +	struct led_trigger *tx_led_trig;
-> > +	char *tx_led_trig_name;
-> > +	struct led_trigger *rx_led_trig;
-> > +	char *rx_led_trig_name;
-> > +#endif
-> >  };
-> >  
-> >  /*
-> > diff --git a/include/linux/can/led.h b/include/linux/can/led.h
-> > new file mode 100644
-> > index 0000000..274c7fd
-> > --- /dev/null
-> > +++ b/include/linux/can/led.h
-> > @@ -0,0 +1,38 @@
-> > +/*
-> > + * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +
-> > +#ifndef CAN_LED_H
-> > +#define CAN_LED_H
-> > +
-> > +#include <linux/leds.h>
-> > +
-> > +enum can_led_event {
-> > +	CAN_LED_EVENT_OPEN,
-> > +	CAN_LED_EVENT_STOP,
-> > +	CAN_LED_EVENT_TX,
-> > +	CAN_LED_EVENT_RX,
-> > +};
-> > +
-> > +#ifdef CONFIG_CAN_LEDS
-> > +void can_led_event(struct net_device *netdev, enum can_led_event event);
-> > +void can_led_init(struct net_device *netdev);
-> > +void can_led_exit(struct net_device *netdev);
-> > +#else
-> > +static inline void can_led_event(struct net_device *netdev,
-> > +				 enum can_led_event event)
-> > +{
-> > +}
-> > +static inline void can_led_init(struct net_device *netdev)
-> > +{
-> > +}
-> > +static inline void can_led_exit(struct net_device *netdev)
-> > +{
-> > +}
-> > +#endif
-> > +
-> > +#endif
-> > 
-> 
-> 
-> -- 
-> Pengutronix e.K.                  | Marc Kleine-Budde           |
-> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-> 
+Hang on for a while, let's try to get to the bottom of this debate first
+;-)
+
+We have a canonical way of passing IRQ numbers to drivers through DT and
+that is the "interrupts" attribute. It shouldn't matter if that IRQ pin
+is connected to a real IRQ line or through a GPIO controller. In both
+cases we should use the "interrupts" attribute.
+
+If DT core doesn't allocate the GPIO for us then how does this work:
+
+(omap4-sdp.dts)
+
+127 &mcspi1 {
+128         eth@0 {
+129                 compatible =3D "ks8851";
+130                 spi-max-frequency =3D <24000000>;
+131                 reg =3D <0>;
+132                 interrupt-parent =3D <&gpio2>;
+133                 interrupts =3D <2>; /* gpio line 34 */
+134                 vdd-supply =3D <&vdd_eth>;
+135         };
+136 };
 
 
+There's no gpio request on the driver:
+
+$ git grep -e gpio_request drivers/net/ethernet/micrel/ks8851.c
+$
+
+Since Benoit was the one who added that to the dts file (commit
+e7c64db9), I assume he tested his patch before posting, so again I ask -
+How does that work and why doesn't this work for Sourav's tsl2771
+controller ?
+
+This is either a regression on drivers/of, or commit e7c64db9 is also
+broken...
+
+Benoit, do you know how should this work ?
+
+--=20
+balbi
+
+--MIdTMoZhcV1D07fI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQF4CoAAoJEIaOsuA1yqRE1XsP/ifm46Exy1QL2lpopNR7YRkz
+gN5tElKpODablne0m+sZ/GREDvgr7VpK856ZfwhLv2p9EaaQxWjeeXU7WHM+TsBz
+0MU1m9vymXIO2NN/Yz0plKrWP2y4u/8491yGgZL2eOe12h5ga3bGG0Vxsy7T3KfO
+itoqhhXlr+Uj1qIBQnJByBB+HG3ZlMJy2Ze2UHBOtTX1HkrFKZamwaa0j9wHY+B+
+BsnQ93Xi7cTnaJCXQf2Ei9+NRbJLQhC/c8EiiL+qaA1wmaNbv0CJsksC031v0MKM
+9erfxFiHxyhOIiXYQwmUfgdxGLPL5j3wCpAXokubEdnqNdsqVG47QAKTx7bIjQkn
+JF4FCGCyoZz3wIc0IPVOUoQKid6Gt9ia2GdtwJD/WJMIVW+Xzs9RVHepYbYscP39
+YKzZWQ3pKZm3A7jEOEoo1D/zyIUG1yabbk0b2a5yuRyguZY6iJztYBVLJP3gxbYl
+CQmN97ubAE8cogXzBcPwjxTjI1PJANUYvBgmBIaUsc9sgg3zpEyAXzmzDbZDpci+
+LEWKbDyf1sE0j2ZpNjABAp18bDLqJWJ8dFYx3FGbCys0xax1D27gNxNcoxeOcPCv
+SM9mXETTihjON/vHiXxlFzSFOU0UAij2DK6s8fGi3jMLevAp40ZUEUX2XanK82eG
+wi+uZRXOs27jBD8mRGLO
+=kZv5
+-----END PGP SIGNATURE-----
+
+--MIdTMoZhcV1D07fI--
