@@ -1,116 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab2GaSFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 14:05:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34574 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059Ab2GaSFH (ORCPT
+	id S1755204Ab2GaSGn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 14:06:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18979 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776Ab2GaSGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 14:05:07 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [RFC 3/4] mm,ksm: use new hashtable implementation
-Date: Tue, 31 Jul 2012 20:05:19 +0200
-Message-Id: <1343757920-19713-4-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com>
-References: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com>
+	Tue, 31 Jul 2012 14:06:42 -0400
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=I5RZEMmPgckA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=mkhFjgIERGt2ff7qgW8A:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343758001.27983.66.camel@gandalf.stny.rr.com>
+Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Date: Tue, 31 Jul 2012 14:06:41 -0400
+In-Reply-To: <20120731174440.GM2422@linux.vnet.ibm.com>
+References: <1343662752.3847.2.camel@fedora>
+	 <20120731120556.GB17252@localhost>
+	 <1343741625.27983.39.camel@gandalf.stny.rr.com>
+	 <20120731144453.GB2422@linux.vnet.ibm.com>
+	 <1343746311.27983.52.camel@gandalf.stny.rr.com>
+	 <1343746583.27983.55.camel@gandalf.stny.rr.com>
+	 <20120731151808.GF2422@linux.vnet.ibm.com>
+	 <1343749502.27983.57.camel@gandalf.stny.rr.com>
+	 <20120731171733.GK2422@linux.vnet.ibm.com>
+	 <1343755497.27983.59.camel@gandalf.stny.rr.com>
+	 <20120731174440.GM2422@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch ksm to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the ksm module.
+On Tue, 2012-07-31 at 10:44 -0700, Paul E. McKenney wrote:
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- mm/ksm.c |   29 +++++++++--------------------
- 1 files changed, 9 insertions(+), 20 deletions(-)
+> OK, I interpret this as excluding NMI handlers, but please let me
+> know if I am still being naive.  ;-)
+> 
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 47c8853..2f57def 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -33,7 +33,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/swap.h>
- #include <linux/ksm.h>
--#include <linux/hash.h>
-+#include <linux/hashtable.h>
- #include <linux/freezer.h>
- #include <linux/oom.h>
- 
-@@ -157,8 +157,8 @@ static struct rb_root root_stable_tree = RB_ROOT;
- static struct rb_root root_unstable_tree = RB_ROOT;
- 
- #define MM_SLOTS_HASH_SHIFT 10
--#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
--static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
-+#define mm_hash_cmp(slot, key) ((slot)->mm == (key))
-+static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_SHIFT);
- 
- static struct mm_slot ksm_mm_head = {
- 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
-@@ -275,26 +275,15 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
- 
- static struct mm_slot *get_mm_slot(struct mm_struct *mm)
- {
--	struct mm_slot *mm_slot;
--	struct hlist_head *bucket;
--	struct hlist_node *node;
--
--	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
--	hlist_for_each_entry(mm_slot, node, bucket, link) {
--		if (mm == mm_slot->mm)
--			return mm_slot;
--	}
--	return NULL;
-+	return HASH_GET(mm_slots_hash, mm, struct mm_slot,
-+				link, mm_hash_cmp);
- }
- 
- static void insert_to_mm_slots_hash(struct mm_struct *mm,
- 				    struct mm_slot *mm_slot)
- {
--	struct hlist_head *bucket;
--
--	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
- 	mm_slot->mm = mm;
--	hlist_add_head(&mm_slot->link, bucket);
-+	HASH_ADD(mm_slots_hash, &mm_slot->link, mm);
- }
- 
- static inline int in_stable_tree(struct rmap_item *rmap_item)
-@@ -647,7 +636,7 @@ static int unmerge_and_remove_all_rmap_items(void)
- 		ksm_scan.mm_slot = list_entry(mm_slot->mm_list.next,
- 						struct mm_slot, mm_list);
- 		if (ksm_test_exit(mm)) {
--			hlist_del(&mm_slot->link);
-+			HASH_DEL(mm_slot, link);
- 			list_del(&mm_slot->mm_list);
- 			spin_unlock(&ksm_mmlist_lock);
- 
-@@ -1385,7 +1374,7 @@ next_mm:
- 		 * or when all VM_MERGEABLE areas have been unmapped (and
- 		 * mmap_sem then protects against race with MADV_MERGEABLE).
- 		 */
--		hlist_del(&slot->link);
-+		HASH_DEL(slot, link);
- 		list_del(&slot->mm_list);
- 		spin_unlock(&ksm_mmlist_lock);
- 
-@@ -1548,7 +1537,7 @@ void __ksm_exit(struct mm_struct *mm)
- 	mm_slot = get_mm_slot(mm);
- 	if (mm_slot && ksm_scan.mm_slot != mm_slot) {
- 		if (!mm_slot->rmap_list) {
--			hlist_del(&mm_slot->link);
-+			HASH_DEL(mm_slot, link);
- 			list_del(&mm_slot->mm_list);
- 			easy_to_free = 1;
- 		} else {
--- 
-1.7.8.6
+You are correct. This is only called where lockdep is called (to trace
+enabling of IRQS). Note, that its called before normal irqs are actually
+enabled (interrupts are still disabled), this is why it's called outside
+of the in_irq() sections, because it is called just before returning
+back to process context.
+
+That said, because NMIs are so difficult, lockdep doesn't record the
+disabling (and then enabling) of interrupts when an NMI triggers. Thus,
+the irqsoff tracer also does not record NMIs. Which is fine, because
+NMIs should not take long to run (we can add other mechanisms to time
+NMI length if that is needed), and NMIs should not be enabling
+interrupts nor taking any locks.
+
+>From arch/x86/kernel/entry_64.S:
+
+	/* paranoidentry do_nmi, 0; without TRACE_IRQS_OFF */
+
+-- Steve
+
 
