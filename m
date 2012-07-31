@@ -1,160 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab2GaHTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 03:19:32 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:35048 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755627Ab2GaHT3 (ORCPT
+	id S1755636Ab2GaHYi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 03:24:38 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2500 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab2GaHYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 03:19:29 -0400
+	Tue, 31 Jul 2012 03:24:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 31 Jul 2012 00:19:51 -0700
+Message-ID: <50178544.305@nvidia.com>
+Date: Tue, 31 Jul 2012 12:42:04 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1343700024-29861-1-git-send-email-kyungsik.lee@lge.com>
-References: <1343700024-29861-1-git-send-email-kyungsik.lee@lge.com>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Tue, 31 Jul 2012 12:49:08 +0530
-Message-ID: <CANfBPZ_9XOjgeeRk8zrNWHH1VgevXu74P4bYGcRBSVj7Rs6GEw@mail.gmail.com>
-Subject: Re: [PATCH RESEND v3] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-To: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Vinod Koul <vinod.koul@linux.intel.com>
+CC: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] dma: tegra: enable/disable dma clock
+References: <1342771268-5252-1-git-send-email-ldewangan@nvidia.com>	 <1343106498.1726.5974.camel@vkoul-udesk3> <500E2BE0.7060602@nvidia.com>	 <50124D54.3020405@nvidia.com> <1343717324.1726.14410.camel@vkoul-udesk3>
+In-Reply-To: <1343717324.1726.14410.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 7:30 AM, Kyungsik Lee <kyungsik.lee@lge.com> wrote:
-> It is expected that Extended CSD register(the size of this register
-> is larger than CID/CSD) will be referenced more frequently as more
-> fields have been added to Extended CSD and it seems that it is not
-> a good option to double the memory used.
->
-> This patch is intended to avoid the use of bounce buffer for reading
-> Extended CSD register in mmc_send_cxd_data().
->
-> Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
-> ---
-> Changes in v2:
-> - Handling on-stack buffer if it's used in caller.
->
-> Changes in v3:
-> - Remove unnecesary code.
-> ---
->  drivers/mmc/core/mmc_ops.c |   54 ++++++++++++++++++++++++++++++++-----------
->  1 files changed, 40 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-> index 0ed2cc5..036e6d5 100644
-> --- a/drivers/mmc/core/mmc_ops.c
-> +++ b/drivers/mmc/core/mmc_ops.c
-> @@ -239,13 +239,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
->         struct mmc_data data = {0};
->         struct scatterlist sg;
->         void *data_buf;
-> +       int is_on_stack;
->
-> -       /* dma onto stack is unsafe/nonportable, but callers to this
-> -        * routine normally provide temporary on-stack buffers ...
-> -        */
-> -       data_buf = kmalloc(len, GFP_KERNEL);
-> -       if (data_buf == NULL)
-> -               return -ENOMEM;
-> +       is_on_stack = object_is_on_stack(buf);
-> +       if (is_on_stack) {
-> +
-> +               /* dma onto stack is unsafe/nonportable, but callers to this
-> +                * routine normally provide temporary on-stack buffers ...
-> +                */
-> +               data_buf = kmalloc(len, GFP_KERNEL);
-> +               if (data_buf == NULL)
-> +                       return -ENOMEM;
-> +       } else
-> +               data_buf = buf;
->
->         mrq.cmd = &cmd;
->         mrq.data = &data;
-> @@ -280,8 +286,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
->
->         mmc_wait_for_req(host, &mrq);
->
-> -       memcpy(buf, data_buf, len);
-> -       kfree(data_buf);
-> +       if (is_on_stack) {
-> +               memcpy(buf, data_buf, len);
-> +               kfree(data_buf);
-> +       }
->
->         if (cmd.error)
->                 return cmd.error;
-> @@ -294,24 +302,34 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
->  int mmc_send_csd(struct mmc_card *card, u32 *csd)
->  {
->         int ret, i;
-> +       u32 *csd_tmp;
->
->         if (!mmc_host_is_spi(card->host))
->                 return mmc_send_cxd_native(card->host, card->rca << 16,
->                                 csd, MMC_SEND_CSD);
->
-> -       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
-> +       csd_tmp = kmalloc(16, GFP_KERNEL);
-> +       if (!csd_tmp)
-> +               return -ENOMEM;
-> +
-> +       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
->         if (ret)
-> -               return ret;
-> +               goto err;
-> +
-> +       memcpy(csd, csd_tmp, 16);
-Can this memcpy be folded into the for loop below
-as for (....) { csd[i] = be32_to_cpu(csd_tmp[i]); ?
+On Tuesday 31 July 2012 12:18 PM, Vinod Koul wrote:
+> On Fri, 2012-07-27 at 13:42 +0530, Laxman Dewangan wrote:
+>>
+>> Hi Vinod,
+>> Is there any thing remaining from my side here?
+> Nope, I will take care of it
 
->
->         for (i = 0;i < 4;i++)
->                 csd[i] = be32_to_cpu(csd[i]);
->
-> -       return 0;
-> +err:
-> +       kfree(csd_tmp);
-> +       return ret;
->  }
->
->  int mmc_send_cid(struct mmc_host *host, u32 *cid)
->  {
->         int ret, i;
-> +       u32 *cid_tmp;
->
->         if (!mmc_host_is_spi(host)) {
->                 if (!host->card)
-> @@ -320,14 +338,22 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
->                                 cid, MMC_SEND_CID);
->         }
->
-> -       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
-> +       cid_tmp = kmalloc(16, GFP_KERNEL);
-> +       if (!cid_tmp)
-> +               return -ENOMEM;
-> +
-> +       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
->         if (ret)
-> -               return ret;
-> +               goto err;
-> +
-> +       memcpy(cid, cid_tmp, 16);
->
-<Same comment as above>
+Thanks for taking care.
 
->         for (i = 0;i < 4;i++)
->                 cid[i] = be32_to_cpu(cid[i]);
+>> Is it possible to make it for K3.6?
+> Nope 3.6 is released, too late for that
 >
-> -       return 0;
-> +err:
-> +       kfree(cid_tmp);
-> +       return ret;
->  }
->
->  int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
-> --
-> 1.7.0.4
->
+No issue, I am fine with this also.
+
