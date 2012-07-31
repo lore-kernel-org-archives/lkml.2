@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab2GaPQE (ORCPT <rfc822;w@1wt.eu>);
+	id S1755092Ab2GaPQH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 11:16:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45845 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754967Ab2GaPQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 11:16:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38371 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754967Ab2GaPQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 11:16:01 -0400
-Date: Tue, 31 Jul 2012 16:15:59 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 1/5] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-Message-ID: <20120731151559.GB4468@opensource.wolfsonmicro.com>
-References: <1343745944-18418-1-git-send-email-lee.jones@linaro.org>
- <1343745944-18418-2-git-send-email-lee.jones@linaro.org>
- <20120731145614.GZ4468@opensource.wolfsonmicro.com>
- <5017F514.4030106@linaro.org>
+Date: Tue, 31 Jul 2012 11:16:00 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: awful kconfig help texts.
+Message-ID: <20120731151600.GA19412@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5017F514.4030106@linaro.org>
-X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 04:09:08PM +0100, Lee Jones wrote:
-> On 31/07/12 15:56, Mark Brown wrote:
 
-> >To reiterate, this is in *no* way urgent or even a bug fix.
+PWM Support (PWM) [N/y/?] (NEW) ?
 
-> It fixes sound in our driver.
+CONFIG_PWM:
 
-> Without this the card failes to instantiate.
+This enables PWM support through the generic PWM framework.
 
-You're kidding, right?  Fix the actual error.
 
-> Isn't the return code incorrect? There are a multitude of reasons
-> why snd_soc_dapm_new_control() would fail. No-memory is just one of
-> them, so why do we force this probable lie?
+Well that's.. enlightening. I'm picking on PWM here, but this isn't an
+isolated case.  Every merge window we see a slew of new options with useless
+help texts. They may as well be non-existent. (Actually in some cases, they are).
 
-I don't think anyone actually cares what the error code is, feel free to
-pick another random number.
+If someone has to read the code to find out what the driver is, your help text probably sucks.
+
+
+(I'll leave "why does this option even show up on x86" as a separate rant)
+
+	Dave
+
