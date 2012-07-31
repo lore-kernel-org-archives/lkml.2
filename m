@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab2GaEv0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:51:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48897 "EHLO
+	id S1755815Ab2GaEvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:51:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48875 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755747Ab2GaEvM (ORCPT
+	by vger.kernel.org with ESMTP id S1755725Ab2GaEvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:51:12 -0400
-Message-Id: <20120731044314.488505407@decadent.org.uk>
+	Tue, 31 Jul 2012 00:51:09 -0400
+Message-Id: <20120731044315.770748839@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:30 +0100
+Date: Tue, 31 Jul 2012 05:43:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, roger blofeld <blofeldus@yahoo.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 20/73] powerpc/ftrace: Fix assembly trampoline register usage
+        alan@lxorguk.ukuu.org.uk, Nishanth Menon <nm@ti.com>,
+        Steve Sakoman <steve@sakoman.com>, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>
+Subject: [ 28/73] ARM: OMAP2+: OPP: Fix to ensure check of right oppdef after bad one
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,49 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: roger blofeld <blofeldus@yahoo.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit fd5a42980e1cf327b7240adf5e7b51ea41c23437 upstream.
+commit b110547e586eb5825bc1d04aa9147bff83b57672 upstream.
 
-Just like the module loader, ftrace needs to be updated to use r12
-instead of r11 with newer gcc's.
+Commit 9fa2df6b90786301b175e264f5fa9846aba81a65
+(ARM: OMAP2+: OPP: allow OPP enumeration to continue if device is not present)
+makes the logic:
+for (i = 0; i < opp_def_size; i++) {
+	<snip>
+	if (!oh || !oh->od) {
+		<snip>
+		continue;
+	}
+<snip>
+opp_def++;
+}
 
-Signed-off-by: Roger Blofeld <blofeldus@yahoo.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+In short, the moment we hit a "Bad OPP", we end up looping the list
+comparing against the bad opp definition pointer for the rest of the
+iteration count. Instead, increment opp_def in the for loop itself
+and allow continue to be used in code without much thought so that
+we check the next set of OPP definition pointers :)
+
+Cc: Steve Sakoman <steve@sakoman.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Kevin Hilman <khilman@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/ftrace.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/arm/mach-omap2/opp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/ftrace.c b/arch/powerpc/kernel/ftrace.c
-index 6f33296..91b46b7 100644
---- a/arch/powerpc/kernel/ftrace.c
-+++ b/arch/powerpc/kernel/ftrace.c
-@@ -240,9 +240,9 @@ __ftrace_make_nop(struct module *mod,
+diff --git a/arch/arm/mach-omap2/opp.c b/arch/arm/mach-omap2/opp.c
+index de6d464..d8f6dbf 100644
+--- a/arch/arm/mach-omap2/opp.c
++++ b/arch/arm/mach-omap2/opp.c
+@@ -53,7 +53,7 @@ int __init omap_init_opp_table(struct omap_opp_def *opp_def,
+ 	omap_table_init = 1;
  
- 	/*
- 	 * On PPC32 the trampoline looks like:
--	 *  0x3d, 0x60, 0x00, 0x00  lis r11,sym@ha
--	 *  0x39, 0x6b, 0x00, 0x00  addi r11,r11,sym@l
--	 *  0x7d, 0x69, 0x03, 0xa6  mtctr r11
-+	 *  0x3d, 0x80, 0x00, 0x00  lis r12,sym@ha
-+	 *  0x39, 0x8c, 0x00, 0x00  addi r12,r12,sym@l
-+	 *  0x7d, 0x89, 0x03, 0xa6  mtctr r12
- 	 *  0x4e, 0x80, 0x04, 0x20  bctr
- 	 */
+ 	/* Lets now register with OPP library */
+-	for (i = 0; i < opp_def_size; i++) {
++	for (i = 0; i < opp_def_size; i++, opp_def++) {
+ 		struct omap_hwmod *oh;
+ 		struct device *dev;
  
-@@ -257,9 +257,9 @@ __ftrace_make_nop(struct module *mod,
- 	pr_devel(" %08x %08x ", jmp[0], jmp[1]);
+@@ -86,7 +86,6 @@ int __init omap_init_opp_table(struct omap_opp_def *opp_def,
+ 					__func__, opp_def->freq,
+ 					opp_def->hwmod_name, i, r);
+ 		}
+-		opp_def++;
+ 	}
  
- 	/* verify that this is what we expect it to be */
--	if (((jmp[0] & 0xffff0000) != 0x3d600000) ||
--	    ((jmp[1] & 0xffff0000) != 0x396b0000) ||
--	    (jmp[2] != 0x7d6903a6) ||
-+	if (((jmp[0] & 0xffff0000) != 0x3d800000) ||
-+	    ((jmp[1] & 0xffff0000) != 0x398c0000) ||
-+	    (jmp[2] != 0x7d8903a6) ||
- 	    (jmp[3] != 0x4e800420)) {
- 		printk(KERN_ERR "Not a trampoline\n");
- 		return -EINVAL;
+ 	return 0;
 
 
