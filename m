@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab2GaFCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:02:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48661 "EHLO
+	id S1755862Ab2GaFC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:02:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48651 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755498Ab2GaEu0 (ORCPT
+	by vger.kernel.org with ESMTP id S1755332Ab2GaEu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 00:50:26 -0400
-Message-Id: <20120731044319.944594761@decadent.org.uk>
+Message-Id: <20120731044320.778802797@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:44:04 +0100
+Date: Tue, 31 Jul 2012 05:44:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 54/73] block: add blk_queue_dead()
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 59/73] [SCSI] libsas: continue revalidation
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,139 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 34f6055c80285e4efb3f602a9119db75239744dc upstream.
+commit 26f2f199ff150d8876b2641c41e60d1c92d2fb81 upstream.
 
-There are a number of QUEUE_FLAG_DEAD tests.  Add blk_queue_dead()
-macro and use it.
+Continue running revalidation until no more broadcast devices are
+discovered.  Fixes cases where re-discovery completes too early in a
+domain with multiple expanders with pending re-discovery events.
+Servicing BCNs can get backed up behind error recovery.
 
-This patch doesn't introduce any functional difference.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- block/blk-core.c       |    6 +++---
- block/blk-exec.c       |    2 +-
- block/blk-sysfs.c      |    4 ++--
- block/blk-throttle.c   |    4 ++--
- block/blk.h            |    2 +-
- include/linux/blkdev.h |    1 +
- 6 files changed, 10 insertions(+), 9 deletions(-)
+ drivers/scsi/libsas/sas_expander.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 435af23..b5ed4f4 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -608,7 +608,7 @@ EXPORT_SYMBOL(blk_init_allocated_queue_node);
+diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
+index af659cc..63c5742 100644
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -2114,9 +2114,7 @@ int sas_ex_revalidate_domain(struct domain_device *port_dev)
+ 	struct domain_device *dev = NULL;
  
- int blk_get_queue(struct request_queue *q)
- {
--	if (likely(!test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
-+	if (likely(!blk_queue_dead(q))) {
- 		kobject_get(&q->kobj);
- 		return 0;
+ 	res = sas_find_bcast_dev(port_dev, &dev);
+-	if (res)
+-		goto out;
+-	if (dev) {
++	while (res == 0 && dev) {
+ 		struct expander_device *ex = &dev->ex_dev;
+ 		int i = 0, phy_id;
+ 
+@@ -2128,8 +2126,10 @@ int sas_ex_revalidate_domain(struct domain_device *port_dev)
+ 			res = sas_rediscover(dev, phy_id);
+ 			i = phy_id + 1;
+ 		} while (i < ex->num_phys);
++
++		dev = NULL;
++		res = sas_find_bcast_dev(port_dev, &dev);
  	}
-@@ -755,7 +755,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 	const bool is_sync = rw_is_sync(rw_flags) != 0;
- 	int may_queue;
+-out:
+ 	return res;
+ }
  
--	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
-+	if (unlikely(blk_queue_dead(q)))
- 		return NULL;
- 
- 	may_queue = elv_may_queue(q, rw_flags);
-@@ -875,7 +875,7 @@ static struct request *get_request_wait(struct request_queue *q, int rw_flags,
- 		struct io_context *ioc;
- 		struct request_list *rl = &q->rq;
- 
--		if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
-+		if (unlikely(blk_queue_dead(q)))
- 			return NULL;
- 
- 		prepare_to_wait_exclusive(&rl->wait[is_sync], &wait,
-diff --git a/block/blk-exec.c b/block/blk-exec.c
-index a1ebceb..6053285 100644
---- a/block/blk-exec.c
-+++ b/block/blk-exec.c
-@@ -50,7 +50,7 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
- {
- 	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
- 
--	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
-+	if (unlikely(blk_queue_dead(q))) {
- 		rq->errors = -ENXIO;
- 		if (rq->end_io)
- 			rq->end_io(rq, rq->errors);
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index e7f9f65..f0b2ca8 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -425,7 +425,7 @@ queue_attr_show(struct kobject *kobj, struct attribute *attr, char *page)
- 	if (!entry->show)
- 		return -EIO;
- 	mutex_lock(&q->sysfs_lock);
--	if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)) {
-+	if (blk_queue_dead(q)) {
- 		mutex_unlock(&q->sysfs_lock);
- 		return -ENOENT;
- 	}
-@@ -447,7 +447,7 @@ queue_attr_store(struct kobject *kobj, struct attribute *attr,
- 
- 	q = container_of(kobj, struct request_queue, kobj);
- 	mutex_lock(&q->sysfs_lock);
--	if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)) {
-+	if (blk_queue_dead(q)) {
- 		mutex_unlock(&q->sysfs_lock);
- 		return -ENOENT;
- 	}
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 4553245..5eed6a7 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -310,7 +310,7 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	struct request_queue *q = td->queue;
- 
- 	/* no throttling for dead queue */
--	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
-+	if (unlikely(blk_queue_dead(q)))
- 		return NULL;
- 
- 	rcu_read_lock();
-@@ -335,7 +335,7 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	spin_lock_irq(q->queue_lock);
- 
- 	/* Make sure @q is still alive */
--	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
-+	if (unlikely(blk_queue_dead(q))) {
- 		kfree(tg);
- 		return NULL;
- 	}
-diff --git a/block/blk.h b/block/blk.h
-index 3f6551b..e38691d 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -85,7 +85,7 @@ static inline struct request *__elv_next_request(struct request_queue *q)
- 			q->flush_queue_delayed = 1;
- 			return NULL;
- 		}
--		if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags) ||
-+		if (unlikely(blk_queue_dead(q)) ||
- 		    !q->elevator->ops->elevator_dispatch_fn(q, 0))
- 			return NULL;
- 	}
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 8a6b51b..783f97c 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -481,6 +481,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
- 
- #define blk_queue_tagged(q)	test_bit(QUEUE_FLAG_QUEUED, &(q)->queue_flags)
- #define blk_queue_stopped(q)	test_bit(QUEUE_FLAG_STOPPED, &(q)->queue_flags)
-+#define blk_queue_dead(q)	test_bit(QUEUE_FLAG_DEAD, &(q)->queue_flags)
- #define blk_queue_nomerges(q)	test_bit(QUEUE_FLAG_NOMERGES, &(q)->queue_flags)
- #define blk_queue_noxmerges(q)	\
- 	test_bit(QUEUE_FLAG_NOXMERGES, &(q)->queue_flags)
 
 
