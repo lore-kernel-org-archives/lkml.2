@@ -1,140 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab2GaJNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 05:13:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51804 "EHLO
+	id S1754331Ab2GaJQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 05:16:31 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:49494 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177Ab2GaJNk (ORCPT
+	with ESMTP id S1752827Ab2GaJQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 05:13:40 -0400
-Date: Tue, 31 Jul 2012 11:13:24 +0200
+	Tue, 31 Jul 2012 05:16:29 -0400
+Date: Tue, 31 Jul 2012 11:16:18 +0200
 From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Simon Glass <sjg@chromium.org>, Stephen Warren <swarren@nvidia.com>,
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
+        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
 Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-Message-ID: <20120731091324.GA15557@avionic-0098.adnet.avionic-design.de>
+Message-ID: <20120731091618.GB15557@avionic-0098.adnet.avionic-design.de>
 References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
  <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
- <CAPnjgZ0H2xrJcL-ytMaX11iYrrhCg7LEM00u_NgEaveM4gHMPw@mail.gmail.com>
- <50179933.9090501@nvidia.com>
+ <5016ABDD.5010809@gmail.com>
+ <20120730154706.GL4468@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+	protocol="application/pgp-signature"; boundary="lEGEL1/lMxI0MVQ2"
 Content-Disposition: inline
-In-Reply-To: <50179933.9090501@nvidia.com>
+In-Reply-To: <20120730154706.GL4468@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:Zgo2nAbDyh6dT4yEFyFK6pUAkegsqFt6pteNIRsOMcO
- XyLXtLQpwqXpQMFC0qQNbwhbiIBimJnBDqyUNtaoc4LFYc8C4W
- ZPr6dsWHw05EYF/8NgEmila8xXyp9KoBnPVspGNtipROg+Mm3Z
- IY6VlYjteNsipOL8sMu3e2fSwcYOApI++hRLgMxuio7W9ko1aO
- nfATtKTPI8wKTw+23y/Ka7AOuqPYBDTQQ7jsfdaPoQNwenivTr
- DL4eVx0J0OgUWzqRBgLoWio2EdPliJL3wOTRwVlSdX790IAEma
- XkbTdejP6HZYUZ8xKo/ZNyQdqXbdp5iJVh40IcrTh02EIKeluf
- eFbP7DZQ5hnT+jDVWcmqmM06P3fCCUGQlE4qWNtZqcMBJFAyJj
- POhnBIwPfPOKDgwTWCnWU+tABhM68w70Fa0To7TKwG9S7nLJbl
- HOnK6
+X-Provags-ID: V02:K0:FQlKsIzEG85kO281QZtK8JJBA02JvXBBdf1zk4NMjgq
+ UX36wFEwZBiyqDD+a9mJeoF/u3S0khaCecElFkitHNB6k4czB+
+ hwSMioizD64W8aYnr8gBOEEmgxYFp85Koql0Ykm2Ibisr7P7iB
+ t1ZYI3EVpT4oEAztezTanDB+6QXtxDXNgIN15UmRorG3ilqFun
+ Ood8/OHDhiR0r/GhlSgz15zIJ4y417cIMJaF6/1CioWu9UIIjs
+ at2CeoEMp+dM2++/qQFEJzjwC+friM3DGDlWM8VMEEnmsZBM1b
+ EaknrKfmZBduCnT4xR3tOXxKL8KiHNO52H53/QJdelX4PYd8Yf
+ tUXeH5Y0nOZqRY8A3SML+clNk4qkBuiJbpfWJ07RiZRpHQblbi
+ Z39iYQG+TSIz0x75CH4nFXPqM7n7bNJwC0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---vkogqOf2sHV7VnPd
+--lEGEL1/lMxI0MVQ2
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 31, 2012 at 05:37:07PM +0900, Alex Courbot wrote:
-> Hi Simon,
+On Mon, Jul 30, 2012 at 04:47:06PM +0100, Mark Brown wrote:
+> On Mon, Jul 30, 2012 at 10:44:29AM -0500, Rob Herring wrote:
+> > On 07/27/2012 07:05 AM, Alexandre Courbot wrote:
 >=20
-> On 07/30/2012 08:00 PM, Simon Glass wrote:
-> >For the delay, I think milliseconds is reasonable. I suppose there is
-> >no reasonable need for microseconds?
+> > > +		power-on-sequence {
+> > > +			regulator@0 {
+> > > +				id =3D "power";
+> > > +				enable;
 >=20
-> I don't see any need for microseconds myself - anybody sees use for
-> finer-grained delays?
+> > What do this mean? Isn't this implied for a regulator?
 >=20
-> Btw, I noticed I was using mdelay instead of msleep - caught and fixed th=
-at.
+> I assume you might have some sequences which need some things to be
+> turned off for some reason; it at least seems to be something you'd want
+> to design for.
 
-You might want to take a look at Documentation/timers/timers-howto.txt.
-msleep() isn't very accurate for periods shorter than 20 ms.
-
-> >>+Device tree
-> >>+-----------
-> >>+All the same, power sequences can be encoded as device tree nodes. The=
- following
-> >>+properties and nodes are equivalent to the platform data defined previ=
-ously:
-> >>+
-> >>+               power-supply =3D <&mydevice_reg>;
-> >>+               enable-gpio =3D <&gpio 6 0>;
-> >>+
-> >>+               power-on-sequence {
-> >>+                       regulator@0 {
-> >>+                               id =3D "power";
-> >
-> >Is there a reason not to put the phandle here, like:
-> >
-> >                                    id =3D <&mydevice_reg>;
-> >
-> >(or maybe 'device' instead of id?)
->=20
-> There is one reason, but it might be a bad one. On Tegra, PWM
-> phandle uses an extra cell to encode the duty-cycle the PWM should
-> have when we call get_pwm().
-
-This is not only the case on Tegra, but it is the default unless a
-driver specifically overrides it. The second cell specifies the index of
-the PWM device within the PWM chip. The third cell doesn't specify the
-duty cycle but the period of the PWM.
-
-> This makes it possible to address the
-> same PWM with different phandles (and different duty cycles),
-
-How so? A phandle will always refer to a PWM chip. Paired with the
-second cell, of_pwm_request() will resolve that into the correct PWM
-device.
-
-> which
-> causes an issue to know whether a PWM is already used in a sequence
-> (potentially resulting in multiple get_pwm calls on the same PWM,
-> and also opens the door to ambiguities in behavior (what is the
-> correct duty-cycle to use if several different values are passed?)
-
-You can't request a PWM multiple times. The second call well return
--EBUSY, or rather ERR_PTR(-EBUSY).
+Furthermore there is the power-off-sequence equivalent, which you use
+for instance when you turn off the panel. Typically they would do the
+inverse of the power-on-sequence, so turning off a regulator is
+definitiely required.
 
 Thierry
 
---vkogqOf2sHV7VnPd
+--lEGEL1/lMxI0MVQ2
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQF6G0AAoJEN0jrNd/PrOhMyUQAJfxn3CN8jL9eOfJvuydRKbI
-qtkNVM0Nf64njMM7HJeluKRH49Uz3hyCIQizb1yGO+M/Hw7dcWVOtod98RkVYj6V
-SdQPslaFZ8dLbkvgk096HK3W4yFQDWfBKjSxOyhkZbMpW0X0UPCH8oIJjIvnDjU6
-L+h14m32KM05G34fkWX1HEd0ZxQKFH6C26JG4NCoZAwUUyrnpzlpB3r6dW6vCcIq
-h0oLjpSKpbjW/A+4i8eHddVU1BCIF6uVz66xYxV5Bk+LyYOxo5xgC641WK9hqVUt
-HN9jjZFNVVEUHRCAKUFsXDl1xTd0MLnnCSqdtwaKWOIEY85GnN9qdmcoqAniU9os
-J4AU1MlOQH28pwqXpOqE2I3qtziRc58JTkW1byu6i+3KXHv9BtM6asAg7q368Bas
-ZVQXL1rG9RXAqnExfsIKp4/FGACNLcMRBs20U0pAmvxRWWvqBJU3Qgmhd/E6gZvo
-JTv6bS0lkCQVoXLExtLkX8fNyQQ/Qjuv5Si7FqJKXeaRTeTomc7HevLi1FCmOCL2
-LbGgY3psQtLHIpVILJ5HuYklO3qDYhN7S2wamymOBHLnvkr4+FwTjLEI6ssi31SA
-J+JgYwWDrf4uDFcJHzUfievMPHAare/iwtkkNanZQgqPtwH0t5CdAmqFxoYLeGzx
-AQggMaS+7U+NoQMl1L7m
-=rfpZ
+iQIcBAEBAgAGBQJQF6JiAAoJEN0jrNd/PrOhN58QALwBuu3RhOw7GdcEqzI7luDn
+qeYTY2gU2pl6F+NnSiws9VNUoYX387YP/3ocnbV6u7PDRdM6NuXGwLbDGRUHft3z
+ohve7zzj0kxD1bG2LTR2qq2/MQFsXPajjEch5eEeobalEyVOsiBp37UxTGFC8+tc
+BPpWwACM2ZI8HXgo3sP0YEuSwVxJuUN8UUIpCDWAoRAFkj5iRgRpC9XLf2vr7KeA
+uV0Q6P1FlrhfUMS6BXCYPeIVj6mKjg7xOy/602FjGFVJeWlEpKVF40hjcmg8HspX
+VeP5KOgtNwk/J/10mZRbHw2TO+zYN13U7bsc6GwnlSJSyrMA7Farb0jDZub5Dcs8
+H2dmBx/uTdOiy8S4aLdzfSDDwnqaN3VW854QpYT+JoKZNAEbXAFXMDL4foEkKFLw
+r/Ul6E5uxz/D302F3esgzMfbSiBzltI7/o0ZkjfqoBDVTHJH50fuvOkO55xBomW1
+t/OlMGZZrXNLkOur4T8dAQHS+X1kzE01BrMnir5lVjzNGnj30G2bS/l7ey7Th4Wn
+sfWNX+ELYM4D1qdV3IgS06q+vUlRH0uzY85sIwlA5DTcjWFdHww8IekVl+Qh6FTw
+DGm/VmQRJhdBY2mLd3X3PyFPfisfBy9SO1hYBEHZVMxsbA0z2MMV2Bqnqsm2BcYk
+gFDefs0kZM2k3Im2pOtZ
+=sKXC
 -----END PGP SIGNATURE-----
 
---vkogqOf2sHV7VnPd--
+--lEGEL1/lMxI0MVQ2--
