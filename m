@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab2GaXFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:05:49 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38212 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754970Ab2GaXFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:05:45 -0400
+	id S1755765Ab2GaXGD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:06:03 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42740 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178Ab2GaXF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 19:05:56 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <nico@linaro.org>,
         <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
         Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH 17/22] ARM: mm: clean up membank size limit checks
-Date: Tue, 31 Jul 2012 19:04:53 -0400
-Message-ID: <1343775898-28345-18-git-send-email-cyril@ti.com>
+Subject: [PATCH 19/22] ARM: recreate kernel mappings in early_paging_init()
+Date: Tue, 31 Jul 2012 19:04:55 -0400
+Message-ID: <1343775898-28345-20-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343775898-28345-1-git-send-email-cyril@ti.com>
 References: <1343775898-28345-1-git-send-email-cyril@ti.com>
@@ -23,82 +24,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleans up the highmem sanity check code by simplifying the range
-checks with a pre-calculated size_limit.  This patch should otherwise have no
-functional impact on behavior.
-
-This patch also removes a redundant (bank->start < vmalloc_limit) check, since
-this is already covered by the !highmem condition.
+This patch adds a step in the init sequence, in order to recreate the kernel
+code/data page table mappings prior to full paging initialization.  This is
+necessary on LPAE systems that run out of a physical address space outside the
+4G limit.  On these systems, this implementation provides a machine descriptor
+hook that allows the PHYS_OFFSET to be overridden in a machine specific
+fashion.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 ---
- arch/arm/mm/mmu.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ arch/arm/include/asm/mach/arch.h |    1 +
+ arch/arm/kernel/setup.c          |    3 ++
+ arch/arm/mm/mmu.c                |   57 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 61 insertions(+)
 
+diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+index 0b1c94b..2b9ecc5 100644
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -37,6 +37,7 @@ struct machine_desc {
+ 	char			restart_mode;	/* default restart mode	*/
+ 	void			(*fixup)(struct tag *, char **,
+ 					 struct meminfo *);
++	void			(*init_meminfo)(void);
+ 	void			(*reserve)(void);/* reserve mem blocks	*/
+ 	void			(*map_io)(void);/* IO mapping function	*/
+ 	void			(*init_early)(void);
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index bba3fdc..ccf052c 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -93,6 +93,7 @@ static int __init fpe_setup(char *line)
+ __setup("fpe=", fpe_setup);
+ #endif
+ 
++extern void early_paging_init(struct machine_desc *, struct proc_info_list *);
+ extern void paging_init(struct machine_desc *desc);
+ extern void sanity_check_meminfo(void);
+ extern void reboot_setup(char *str);
+@@ -1152,6 +1153,8 @@ void __init setup_arch(char **cmdline_p)
+ 	parse_early_param();
+ 
+ 	sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
++
++	early_paging_init(mdesc, lookup_processor_type(read_cpuid_id()));
+ 	sanity_check_meminfo();
+ 	arm_memblock_init(&meminfo, mdesc);
+ 
 diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 4840efa..6b0baf3 100644
+index 6b0baf3..21fb171 100644
 --- a/arch/arm/mm/mmu.c
 +++ b/arch/arm/mm/mmu.c
-@@ -905,10 +905,15 @@ void __init sanity_check_meminfo(void)
+@@ -28,6 +28,7 @@
+ #include <asm/highmem.h>
+ #include <asm/system_info.h>
+ #include <asm/traps.h>
++#include <asm/procinfo.h>
  
- 	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
- 		struct membank *bank = &meminfo.bank[j];
-+		phys_addr_t size_limit;
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -1175,6 +1176,62 @@ static void __init map_lowmem(void)
+ }
+ 
+ /*
++ * early_paging_init() recreates boot time page table setup, allowing machines
++ * to switch over to a high (>4G) address space on LPAE systems
++ */
++void __init early_paging_init(struct machine_desc *mdesc,
++			      struct proc_info_list *procinfo)
++{
++	bool lpae = IS_ENABLED(CONFIG_ARM_LPAE);
++	pmdval_t pmdprot = procinfo->__cpu_mm_mmu_flags;
++	unsigned long map_start, map_end;
++	pgd_t *pgd0, *pgdk;
++	pud_t *pud0, *pudk;
++	pmd_t *pmd0, *pmdk;
++	phys_addr_t phys;
++	int i;
 +
- 		*bank = meminfo.bank[i];
-+		size_limit = bank->size;
- 
- 		if (bank->start >= vmalloc_limit)
- 			highmem = 1;
-+		else
-+			size_limit = vmalloc_limit - bank->start;
- 
- 		bank->highmem = highmem;
- 
-@@ -917,8 +922,7 @@ void __init sanity_check_meminfo(void)
- 		 * Split those memory banks which are partially overlapping
- 		 * the vmalloc area greatly simplifying things later.
- 		 */
--		if (!highmem && bank->start < vmalloc_limit &&
--		    bank->size > vmalloc_limit - bank->start) {
-+		if (!highmem && bank->size > size_limit) {
- 			if (meminfo.nr_banks >= NR_BANKS) {
- 				printk(KERN_CRIT "NR_BANKS too low, "
- 						 "ignoring high memory\n");
-@@ -927,12 +931,12 @@ void __init sanity_check_meminfo(void)
- 					(meminfo.nr_banks - i) * sizeof(*bank));
- 				meminfo.nr_banks++;
- 				i++;
--				bank[1].size -= vmalloc_limit - bank->start;
-+				bank[1].size -= size_limit;
- 				bank[1].start = vmalloc_limit;
- 				bank[1].highmem = highmem = 1;
- 				j++;
- 			}
--			bank->size = vmalloc_limit - bank->start;
-+			bank->size = size_limit;
- 		}
- #else
- 		/*
-@@ -950,14 +954,13 @@ void __init sanity_check_meminfo(void)
- 		 * Check whether this memory bank would partially overlap
- 		 * the vmalloc area.
- 		 */
--		if (bank->start + bank->size > vmalloc_limit)
--			unsigned long newsize = vmalloc_limit - bank->start;
-+		if (bank->size > size_limit) {
- 			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
- 			       "to -%.8llx (vmalloc region overlap).\n",
- 			       (unsigned long long)bank->start,
- 			       (unsigned long long)bank->start + bank->size - 1,
--			       (unsigned long long)bank->start + newsize - 1);
--			bank->size = newsize;
-+			       (unsigned long long)bank->start + size_limit - 1);
-+			bank->size = size_limit;
- 		}
- #endif
- 		if (!bank->highmem && bank->start + bank->size > arm_lowmem_limit)
++	if (!lpae)
++		return;
++
++	/* remap kernel code and data */
++	map_start = init_mm.start_code;
++	map_end   = init_mm.brk;
++
++	/* get a handle on things... */
++	pgd0 = pgd_offset_k(0);
++	pud0 = pud_offset(pgd0, 0);
++	pmd0 = pmd_offset(pud0, 0);
++
++	pgdk = pgd_offset_k(map_start);
++	pudk = pud_offset(pgdk, map_start);
++	pmdk = pmd_offset(pudk, map_start);
++
++	phys = PHYS_OFFSET;
++
++	if (mdesc->init_meminfo)
++		mdesc->init_meminfo();
++
++	/* remap level 1 table */
++	for (i = 0; i < PTRS_PER_PGD; i++) {
++		*pud0++ = __pud(__pa(pmd0) | PMD_TYPE_TABLE | L_PGD_SWAPPER);
++		pmd0 += PTRS_PER_PMD;
++	}
++
++	/* remap pmds for kernel mapping */
++	phys = __pa(map_start) & PMD_MASK;
++	do {
++		*pmdk++ = __pmd(phys | pmdprot);
++		phys += PMD_SIZE;
++	} while (phys < map_end);
++
++	flush_cache_all();
++	cpu_set_ttbr(0, __pa(pgd0));
++	cpu_set_ttbr(1, __pa(pgd0) + TTBR1_OFFSET);
++	local_flush_tlb_all();
++}
++
++/*
+  * paging_init() sets up the page tables, initialises the zone memory
+  * maps, and sets up the zero page, bad page and bad page tables.
+  */
 -- 
 1.7.9.5
 
