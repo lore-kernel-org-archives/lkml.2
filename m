@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2GaVyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 17:54:31 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38263 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753640Ab2GaVy0 (ORCPT
+	id S1755660Ab2GaVzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 17:55:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40807 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755521Ab2GaVzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 17:54:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120731143600.GD27834@fieldses.org>
-References: <20120731142948.GC27834@fieldses.org> <20120731143600.GD27834@fieldses.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 31 Jul 2012 14:54:05 -0700
-X-Google-Sender-Auth: 13GSlt-S07HveUtyr_8TiFm3Jb0
-Message-ID: <CA+55aFzM8S0sEAAUXK9f1OhSL-OXmZ_jx_UHF81Eo0-Mi-+T_w@mail.gmail.com>
-Subject: Re: nfsd changes for 3.6
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, matthew@wil.cx
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 31 Jul 2012 17:55:36 -0400
+Date: Tue, 31 Jul 2012 14:55:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
+        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2] dynamic_debug: Restore dev_dbg functionality,
+ optimize stack
+Message-Id: <20120731145534.5606e840.akpm@linux-foundation.org>
+In-Reply-To: <333324dcdfdc891ba214d2de8f9a3d056dd7aea9.1343461712.git.joe@perches.com>
+References: <1343334310.17538.32.camel@joe2Laptop>
+	<333324dcdfdc891ba214d2de8f9a3d056dd7aea9.1343461712.git.joe@perches.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 7:36 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
->
-> By the way, for a few years now I've been semi-regularly picking up
-> locks.c changes for my tree.  I wonder if I should be.
+On Sat, 28 Jul 2012 00:55:07 -0700
+Joe Perches <joe@perches.com> wrote:
 
-I really wish you didn't. Or at least not this way.
+> commit c4e00daaa9 ("driver-core: extend dev_printk() to pass structured data")
+> changed __dev_printk and broke dynamic-debug's ability to control the
+> dynamic prefix of dev_dbg(dev,..).
+> 
+> dynamic_emit_prefix() adds "[tid] module:func:line:" to the output and
+> those additions got lost.
+> 
+> In addition, the current dynamic debug code uses up to 3 recursion
+> levels via %pV.  This can consume quite a bit of stack.  Directly
+> call printk_emit to reduce the recursion depth.
+> 
+> These changes include:
+> 
+> o Remove KERN_DEBUG from dynamic_emit_prefix
+> o Create and use function create_syslog_header to format the syslog
+>   header for printk_emit uses.
+> o Call create_syslog_header and neaten __dev_printk
+> o Call create_syslog_header and printk_emit from dynamic_dev_dbg
+> o Call create_syslog_header and printk_emit from dynamic_netdev_dbg
+> o Make __dev_printk and __netdev_printk static not global
+> o Remove include header declarations of __dev_printk and __netdev_printk
+> o Remove now unused EXPORT_SYMBOL()s of __dev_printk and __netdev_printk
+> o Whitespace neatening
+> 
+> Changes in v2:
+> 
+> o Fix dynamic_emit_prefix to always initialize output
+> o Call create_syslog_header and emit_printk from__netdev_printk and
+>   eliminate call to dev_printk to remove another recursion via %pV
 
-For example, now you removed that lm_release_private case, but you did
-that without apparently talking to any VFS maintainers.
+This one causes an oops-on-boot
+(http://ozlabs.org/~akpm/stuff/IMG_20120731_144047.jpg).  v1 didn't do
+that.
 
-And the commit seems to be pure shit.
-
-Why is it pure shit? Look at what users are left. THERE ARE NO USERS
-THAT SET THAT FIELD ANY MORE!
-
-Maybe I missed some odd user that somehow avoids the grep, but I don't
-think so. So there is nothing that ever sets it, why the hell does the
-thing still remain at all?
-
-So if this is a real bugfix, then I think it damn well should
-
- (a) at a minimum have been discussed with VFS maintainers
-
- (b) have been thought through a bit more (ie remove all remains of
-that now useless lm_release_private field)
-
- (c) likely never have gone through the NFSD tree in any case.
-
-I've pulled the changes for now, but I absolutely *detest* seeing
-things like this. I care very little about the nfsd code, but I care
-deeply when I see insanity happening in the VFS layer. And right now,
-"lm_release_private" is insane as of this pull.
-
-                Linus
+config: http://ozlabs.org/~akpm/stuff/config-akpm2
