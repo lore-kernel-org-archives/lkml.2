@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab2GaKs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:48:57 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49754 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755612Ab2GaKs4 (ORCPT
+	id S1755943Ab2GaKwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:52:09 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:40518 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755495Ab2GaKwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:48:56 -0400
-Date: Tue, 31 Jul 2012 12:48:48 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
-Message-ID: <20120731104845.GC17078@somewhere.redhat.com>
-References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
- <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
- <1343660892.20897.3.camel@twins>
- <20120730155059.GB17078@somewhere.redhat.com>
- <20120731070640.GA2950@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120731070640.GA2950@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 31 Jul 2012 06:52:06 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Ian.Campbell@citrix.com, hpa@zytor.com, x86@kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/3] x86: Let extend_brk return a NULL pointer instead of just BUG_ON.
+Date: Tue, 31 Jul 2012 06:42:56 -0400
+Message-Id: <1343731376-20658-4-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1343731376-20658-1-git-send-email-konrad.wilk@oracle.com>
+References: <1343731376-20658-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 09:06:40AM +0200, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Mon, Jul 30, 2012 at 05:08:12PM +0200, Peter Zijlstra wrote:
-> > > On Fri, 2012-07-27 at 17:40 +0200, Frederic Weisbecker wrote:
-> > > > +++ b/kernel/user_hooks.c
-> > > > @@ -0,0 +1,56 @@
-> > > > +#include <linux/user_hooks.h>
-> > > > +#include <linux/rcupdate.h>
-> > > > +#include <linux/sched.h>
-> > > > +#include <linux/percpu.h>
-> > > > +
-> > > > +struct user_hooks {
-> > > > +       bool hooking;
-> > > > +       bool in_user;
-> > > > +};
-> > > 
-> > > I really detest using bool in structures.. but that's just me. Also this
-> > > really wants a comment as to wtf 'hooking' means. in_user I can just
-> > > about guess.
-> > 
-> > I really don't mind changing that to int. I just like them as 
-> > bool because they better describe the purpose of the field.
-> > 
-> > hooking means that the hooks are set (the TIF flag is set on 
-> > the current task and we also handle the exception hooks).
-> > 
-> > I can call that is_hooking instead? And/or add a comment to 
-> > explain the purpose of this.
-> 
-> Please don't use this horrible naming - use something more 
-> technical like struct user_callback and callback::active, ok?
+The callers of this function (dmi_alloc) and the various
+Xen related ones can deal with a NULL pointer.
 
-Ok, user callback should be fine. I'll respin with that.
+Suggested-by: Ian Campbell <Ian.Campbell@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/kernel/setup.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 16be6dc..13d6c51 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -268,9 +268,10 @@ void * __init extend_brk(size_t size, size_t align)
+ 	BUG_ON(_brk_start == 0);
+ 	BUG_ON(align & mask);
+ 
+-	_brk_end = (_brk_end + mask) & ~mask;
+-	BUG_ON((char *)(_brk_end + size) > __brk_limit);
++	if ((char *)(((_brk_end + mask) & ~mask) + size) > __brk_limit)
++		return NULL;
+ 
++	_brk_end = (_brk_end + mask) & ~mask;
+ 	ret = (void *)_brk_end;
+ 	_brk_end += size;
+ 
+-- 
+1.7.7.6
+
