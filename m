@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2GaNes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:34:48 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37555 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab2GaNbr (ORCPT
+	id S1753218Ab2GaNfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:35:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33337 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752936Ab2GaNfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:31:47 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        lrg@ti.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all subsequent widgets to fail too
-Date: Tue, 31 Jul 2012 14:31:23 +0100
-Message-Id: <1343741493-17671-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
+	Tue, 31 Jul 2012 09:35:30 -0400
+Date: Tue, 31 Jul 2012 14:35:28 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [GIT PULL] GPIO changes for v3.6
+Message-ID: <20120731133527.GH4468@opensource.wolfsonmicro.com>
+References: <CACRpkdZnRiZpKuQ6krJFa8TAfmvYYLB-n79ztzaUOV32p6ZY1Q@mail.gmail.com>
+ <20120730165733.33e3ddfb@notabene.brown>
+ <20120730133614.GA4468@opensource.wolfsonmicro.com>
+ <20120731144724.5ef139fa@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731144724.5ef139fa@notabene.brown>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a list of widgets is provided and one of them fails to be added as
-a control, the present semantics fail all subsequent widgets. A better
-solution would be to only fail that widget, but pursue in attempting
-to add the rest of the list.
+On Tue, Jul 31, 2012 at 02:47:24PM +1000, NeilBrown wrote:
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- sound/soc/soc-dapm.c |    2 --
- 1 file changed, 2 deletions(-)
+> ... though it occurs to me that it is possible that the GPIO number might not
+> be allocated until something else has been probed, so a -ve gpio number could
+> mean "there is no such gpio" or it could mean "gpio has not been allocated
+> yet".  I wonder if that should be allowed and where it should be handled.
 
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index eded657..7d9c154 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -3095,8 +3095,6 @@ int snd_soc_dapm_new_controls(struct snd_soc_dapm_context *dapm,
- 			dev_err(dapm->dev,
- 				"ASoC: Failed to create DAPM control %s\n",
- 				widget->name);
--			ret = -ENOMEM;
--			break;
- 		}
- 		widget++;
- 	}
--- 
-1.7.9.5
+If there's logic to do things like that I'd 
 
+> I'd really like to see gpios be requested by name ... anyone know if there
+> are any plans along that line?
+
+I've not noticed anyone doing much substantial work on GPIO recently.
