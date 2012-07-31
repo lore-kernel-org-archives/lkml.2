@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab2GaJsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 05:48:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48427 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab2GaJsP (ORCPT
+	id S1755387Ab2GaJsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 05:48:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54684 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754Ab2GaJsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 05:48:15 -0400
-Message-ID: <5017A9D9.5020800@kernel.dk>
-Date: Tue, 31 Jul 2012 11:48:09 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	Tue, 31 Jul 2012 05:48:32 -0400
+Message-ID: <5017A9EB.1030903@canonical.com>
+Date: Tue, 31 Jul 2012 11:48:27 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [GIT] floppy
-References: <alpine.LNX.2.00.1207181542320.9914@pobox.suse.cz> <alpine.LNX.2.00.1207311145160.30412@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1207311145160.30412@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Avi Kivity <avi@redhat.com>
+CC: Cong Wang <xiyou.wangcong@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: x86/mm: Limit 2/4M size calculation to x86_32
+References: <5000259D.9020303@canonical.com> <CAM_iQpVPzB69R1_4E_J5Yw=d1TncqHe0+dWEwOufQniNcpBVtg@mail.gmail.com> <500FCDF3.7080808@redhat.com> <500FD4FA.7020904@canonical.com> <500FE74C.4040907@redhat.com> <500FF3A1.6080809@canonical.com> <500FF767.8020507@redhat.com>
+In-Reply-To: <500FF767.8020507@redhat.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig87AB3A70D235361F70991BA5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 11:46 AM, Jiri Kosina wrote:
-> On Wed, 18 Jul 2012, Jiri Kosina wrote:
-> 
->> please pull from
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/jikos/floppy.git upstream
->>
->> to receive the patch below that should go into 3.6. Thanks.
->>
->> Andi Kleen (1):
->>       floppy: Run floppy initialization asynchronous
->>
->>  drivers/block/floppy.c |   21 ++++++++++++++++++++-
->>  1 files changed, 20 insertions(+), 1 deletions(-)
-> 
-> Jens,
-> 
-> as you haven't seem to have pulled yet, I am sending an updated request 
-> with minor cleanup from Fengguang.
-> 
-> Please pull from
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/jikos/floppy.git upstream
-> 
-> to receive the floppy patches below.
-> 
-> Andi Kleen (1):
->       floppy: Run floppy initialization asynchronous
-> 
-> Fengguang Wu (1):
->       floppy: remove duplicated flag FD_RAW_NEED_DISK
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig87AB3A70D235361F70991BA5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I have pulled, it's in my for-3.6/drivers branch since I sent my reply.
-Updated now with Wu's patch too.
+On 25.07.2012 15:40, Avi Kivity wrote:
+> On 07/25/2012 04:24 PM, Stefan Bader wrote:
+>>>> ...
+>>>> ifdef CONFIG_X86_32
+>>>>         /*
+>>>>          * Don't use a large page for the first 2/4MB of memory
+>>>>          * because there are often fixed size MTRRs in there
+>>>>          * and overlapping MTRRs into large pages can cause
+>>>>          * slowdowns.
+>>>>          */
+>>>>
+>>>
+>>> That's equally true for X86_64.
+>>>
+>>> Best would be to merge the MTRRs into PAT, but that might not work fo=
+r SMM.
+>>>
+>>>
+>> Ok, true. Not sure why this was restricted to 32bit when reconsidering=
+=2E Except
+>> if in 64bit it was assumed (or asserted) that the regions are aligned =
+to 2M...
+>> But maybe this can be answered by someone knowing the details. I would=
+ not mind
+>> either way (have the first range with 4K pages in all cases or fixing =
+the
+>> additional PTE allocation). Just as it is now it is inconsistent.
+>=20
+> Sometimes CONFIG_X86_32 is used as an alias for "machines so old they
+> don't support x86_64".  As a 32-bit kernel can be run on a machine that=
 
--- 
-Jens Axboe
+> does support x86_64, it should be replaced by a runtime test for
+> X86_FEATURE_LM, until a more accurate test can be found.
+>=20
 
+So basically the first range being 4k exist because MTRRs might define ra=
+nges
+there and those are always aligned to 4k but not necessarily to the bigge=
+r pages
+used. Reading through the Intel and AMD docs indicates various levels of =
+badness
+when this is not the case. Though afaict MTRRs are not tied to long mode =
+capable
+CPUs. For example Atom is 32bit only (the earlier ones at least) and uses=
+ MTRRs.
+So testing for LM would miss those.
+Would it not be better to unconditionally have the first 2/4M as 4k pages=
+? At
+least as long as there is no check for the alignment of the MTRR ranges. =
+Or
+thinking of it, the runtime test should look for X86_FEATURE_MTRR, should=
+n't it?
+
+
+
+--------------enig87AB3A70D235361F70991BA5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBCgAGBQJQF6nrAAoJEOhnXe7L7s6jU8cP/3uB7QeI9YR6sr0U4aWzyNpS
+bZPatcB5d9p6qfp6yRyT5J4YENKUSO8sfyABbKiMYF6vpVTRVXnOuMyrK0/cDDwu
+YUB02ko9T93DsJub/hQI9ChyI0tboUzdkAHghxILc6VoXueeWl+PfZafbNaEyO3b
+dVHeFL4iPKEUKXJulNxiugJmiFPqy9fG+Rrgh0+WOcdp9mbonBZGhH1VTpm2huLv
+8WqcSlpBfuybq5RfnNtsYy9T2zGYaVLgMTSFcuD057ymIIJ99rcV2YhIeR4dNN1C
+K8+EEeuf+ncpdUPfH9/Fv8xINBPvh/cxSV1W8plVSSuMfc4fmuw787oRmUK2Bq3k
+nixwp4TuhWKYNBe0SDa4xOktCL3LmNSgVGyWPpGA/iaKzBNUq5/VlLWRgKHhH8Uk
+Khob7+esotiL0ulnisZmYKRBYtwVQLOyzk5KDUS2S/2qfdbNBscIq6wscU+Ocb+n
+fu5ixPfNZy8v9rHDK8h8LreTIKRvSG3M7kVnfWQDoYExpKY0wXT7ggDfYTJS4o6C
+hPVhwuyvtcbso3k5gNRYiRloqAi5ehIT4aLCKxSHvah/XqC1/HI53PNsgqNzO0HS
+ww7D4IR0vDaZVh7moLwiP+pKs2FzXQ34/TjZnOHBmsZ+OfkPDUMjqzt8moBorQ80
+DR73eBA5NrwXBYAa79eh
+=BTJ0
+-----END PGP SIGNATURE-----
+
+--------------enig87AB3A70D235361F70991BA5--
