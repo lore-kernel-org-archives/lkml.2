@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab2GaRuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:50:37 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44840 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab2GaRue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:50:34 -0400
-Message-ID: <50181A28.3010207@linaro.org>
-Date: Tue, 31 Jul 2012 10:47:20 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1753897Ab2GaRwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:52:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40899 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279Ab2GaRv7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 13:51:59 -0400
+Date: Tue, 31 Jul 2012 10:51:54 -0700
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        padovan@profusion.mobi, marcel@holtmann.org, peterz@infradead.org,
+        mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
+        ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com,
+        Jens Axboe <axboe@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
+        Roland Dreier <roland@kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: Re: [PATCH 15/15] workqueue: deprecate __cancel_delayed_work()
+Message-ID: <20120731175154.GB21292@google.com>
+References: <1343433308-26614-1-git-send-email-tj@kernel.org>
+ <1343433308-26614-16-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: Re: [PATCH 0/2][RFC] Better handling of insane CMOS values
-References: <1343716548-38742-1-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1343716548-38742-1-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073117-7182-0000-0000-0000021E763A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343433308-26614-16-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 11:35 PM, John Stultz wrote:
-> I've also only been able to lightly test. If you want to try this out
-> you can add the following to timekeeping_init after the
-> read_persistent_clock() call:
->
-> 	now.tv_sec = 196469280000LL;
-Prarit noted that I implemented these patches against 3.5 (what the 
-problem was reported against) and not Linus' head.
+This patch is dropped for now as cancel_delayed_work() cannot be
+called from irq context as pointed out by Tomi Valkeinen.  git branch
+accordingly updated.  I'm working on another patchset to remove the
+restriction.
 
-I'm mostly just looking for input on the approach, but just in case 
-anyone else wanted to actually play with these patches, they'll need to 
-do so against 3.5. I'll  update the patchset against Linus' tree before 
-I send them out again.
+Thanks.
 
-Sorry about that.
-
-thanks
--john
-
+-- 
+tejun
