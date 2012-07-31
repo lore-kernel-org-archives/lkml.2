@@ -1,38 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2GaNzt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:55:49 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48301 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754048Ab2GaNzq (ORCPT
+	id S1753997Ab2GaNzr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:55:47 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:26181 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753375Ab2GaNy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:55:46 -0400
-Date: Tue, 31 Jul 2012 14:55:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 18/19] Documentation: Define the MSP Driver Device Tree
- bindings
-Message-ID: <20120731135539.GO4468@opensource.wolfsonmicro.com>
-References: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
- <1343741953-17828-19-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343741953-17828-19-git-send-email-lee.jones@linaro.org>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 31 Jul 2012 09:54:27 -0400
+X-IronPort-AV: E=Sophos;i="4.77,686,1336341600"; 
+   d="scan'208";a="168682634"
+From: Damien Cassou <damien.cassou@lifl.fr>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] drivers/video/cobalt_lcdfb.c: use devm_ functions
+Date: Tue, 31 Jul 2012 15:54:18 +0200
+Message-Id: <1343742860-16213-4-git-send-email-damien.cassou@lifl.fr>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1343742860-16213-1-git-send-email-damien.cassou@lifl.fr>
+References: <1343742860-16213-1-git-send-email-damien.cassou@lifl.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 02:39:12PM +0100, Lee Jones wrote:
+From: Damien Cassou <damien.cassou@lifl.fr>
 
-> +Optional properties:
-> + - interrupts       : The interrupt outputs from the device.
+The various devm_ functions allocate memory that is released when a driver
+detaches.  This patch uses these functions for data that is allocated in
+the probe function of a platform device and is only freed in the remove
+function.
 
-If there's more than one interrupt then how are they ordered?
+Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
+
+---
+ drivers/video/cobalt_lcdfb.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/video/cobalt_lcdfb.c b/drivers/video/cobalt_lcdfb.c
+index eae46f6..01a4ee7 100644
+--- a/drivers/video/cobalt_lcdfb.c
++++ b/drivers/video/cobalt_lcdfb.c
+@@ -348,7 +348,8 @@ static int __devinit cobalt_lcdfb_probe(struct platform_device *dev)
+ 	}
+ 
+ 	info->screen_size = resource_size(res);
+-	info->screen_base = ioremap(res->start, info->screen_size);
++	info->screen_base = devm_ioremap(&dev->dev, res->start,
++					 info->screen_size);
+ 	info->fbops = &cobalt_lcd_fbops;
+ 	info->fix = cobalt_lcdfb_fix;
+ 	info->fix.smem_start = res->start;
+@@ -359,7 +360,6 @@ static int __devinit cobalt_lcdfb_probe(struct platform_device *dev)
+ 
+ 	retval = register_framebuffer(info);
+ 	if (retval < 0) {
+-		iounmap(info->screen_base);
+ 		framebuffer_release(info);
+ 		return retval;
+ 	}
+@@ -380,7 +380,6 @@ static int __devexit cobalt_lcdfb_remove(struct platform_device *dev)
+ 
+ 	info = platform_get_drvdata(dev);
+ 	if (info) {
+-		iounmap(info->screen_base);
+ 		unregister_framebuffer(info);
+ 		framebuffer_release(info);
+ 	}
+
