@@ -1,71 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab2GaPpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 11:45:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3717 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054Ab2GaPpE (ORCPT
+	id S1755244Ab2GaPqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 11:46:22 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:34449 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178Ab2GaPqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 11:45:04 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=I5RZEMmPgckA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=y2bZKhvoUKbeMOoiDqMA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343749502.27983.57.camel@gandalf.stny.rr.com>
-Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Date: Tue, 31 Jul 2012 11:45:02 -0400
-In-Reply-To: <20120731151808.GF2422@linux.vnet.ibm.com>
-References: <20120724090330.GA9830@localhost>
-	 <1343662752.3847.2.camel@fedora> <20120731120556.GB17252@localhost>
-	 <1343741625.27983.39.camel@gandalf.stny.rr.com>
-	 <20120731144453.GB2422@linux.vnet.ibm.com>
-	 <1343746311.27983.52.camel@gandalf.stny.rr.com>
-	 <1343746583.27983.55.camel@gandalf.stny.rr.com>
-	 <20120731151808.GF2422@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jul 2012 11:46:20 -0400
+Date: Tue, 31 Jul 2012 11:36:04 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH 0/4] promote zcache from staging
+Message-ID: <20120731153604.GO4789@phenom.dumpdata.com>
+References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <b95aec06-5a10-4f83-bdfd-e7f6adabd9df@default>
+ <20120727205932.GA12650@localhost.localdomain>
+ <d4656ba5-d6d1-4c36-a6c8-f6ecd193b31d@default>
+ <20120729015428.GA16643@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120729015428.GA16643@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 08:18 -0700, Paul E. McKenney wrote:
-> On Tue, Jul 31, 2012 at 10:56:23AM -0400, Steven Rostedt wrote:
-> > On Tue, 2012-07-31 at 10:51 -0400, Steven Rostedt wrote:
-> > 
-> > > > OK, I will bite.  How about using something like RCU_NONIDLE(), either
-> > > > directly or open-coded, to make it a legal call site?
+On Sun, Jul 29, 2012 at 10:54:28AM +0900, Minchan Kim wrote:
+> On Fri, Jul 27, 2012 at 02:42:14PM -0700, Dan Magenheimer wrote:
+> > > From: Konrad Rzeszutek Wilk [mailto:konrad@darnok.org]
+> > > Sent: Friday, July 27, 2012 3:00 PM
+> > > Subject: Re: [PATCH 0/4] promote zcache from staging
 > > > 
-> > > OK, then something like:
-> > > 
-> > > 	RCU_NONIDLE(max_data = task_uid(tsk));
-> > > 
-> > > would work when called normally or with idle?
-> > > 
+> > > On Fri, Jul 27, 2012 at 12:21:50PM -0700, Dan Magenheimer wrote:
+> > > > > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> > > > > Subject: [PATCH 0/4] promote zcache from staging
+> > > > >
+> > > > > zcache is the remaining piece of code required to support in-kernel
+> > > > > memory compression.  The other two features, cleancache and frontswap,
+> > > > > have been promoted to mainline in 3.0 and 3.5.  This patchset
+> > > > > promotes zcache from the staging tree to mainline.
+> > > > >
+> > > > > Based on the level of activity and contributions we're seeing from a
+> > > > > diverse set of people and interests, I think zcache has matured to the
+> > > > > point where it makes sense to promote this out of staging.
+> > > >
+> > > > Hi Seth --
+> > > >
+> > > > Per offline communication, I'd like to see this delayed for three
+> > > > reasons:
+> > > >
+> > > > 1) I've completely rewritten zcache and will post the rewrite soon.
+> > > >    The redesigned code fixes many of the weaknesses in zcache that
+> > > >    makes it (IMHO) unsuitable for an enterprise distro.  (Some of
+> > > >    these previously discussed in linux-mm [1].)
+> > > > 2) zcache is truly mm (memory management) code and the fact that
+> > > >    it is in drivers at all was purely for logistical reasons
+> > > >    (e.g. the only in-tree "staging" is in the drivers directory).
+> > > >    My rewrite promotes it to (a subdirectory of) mm where IMHO it
+> > > >    belongs.
+> > > > 3) Ramster heavily duplicates code from zcache.  My rewrite resolves
+> > > >    this.  My soon-to-be-post also places the re-factored ramster
+> > > >    in mm, though with some minor work zcache could go in mm and
+> > > >    ramster could stay in staging.
+> > > >
+> > > > Let's have this discussion, but unless the community decides
+> > > > otherwise, please consider this a NACK.
 > > 
-> > The comment above RCU_NONIDLE() says:
+> > Hi Konrad --
+> >  
+> > > Hold on, that is rather unfair. The zcache has been in staging
+> > > for quite some time - your code has not been posted. Part of
+> > > "unstaging" a driver is for folks to review the code - and you
+> > > just said "No, mine is better" without showing your goods.
 > > 
-> > 	This macro may be used from process-level code only.
+> > Sorry, I'm not trying to be unfair.  However, I don't see the point
+> > of promoting zcache out of staging unless it is intended to be used
+> > by real users in a real distro.  There's been a lot of discussion,
+> > onlist and offlist, about what needs to be fixed in zcache and not
+> > much visible progress on fixing it.  But fixing it is where I've spent
+> > most of my time over the last couple of months.
 > > 
-> > Although I'm not sure what a 'level' is. Do you mean process-context? If
-> > so, then this will not work because it can be called from non process
-> > level code (return from interrupt), or any interrupt that enables
-> > interrupts.
+> > If IBM or some other company or distro is eager to ship and support
+> > zcache in its current form, I agree that "promote now, improve later"
+> > is a fine approach.  But promoting zcache out of staging simply because
+> > there is urgency to promote zsmalloc+zram out of staging doesn't
+> > seem wise.  At a minimum, it distracts reviewers/effort from what IMHO
+> > is required to turn zcache into an enterprise-ready kernel feature.
+> > 
+> > I can post my "goods" anytime.  In its current form it is better
+> > than the zcache in staging (and, please remember, I wrote both so
+> > I think I am in a good position to compare the two).
+> > I have been waiting until I think the new zcache is feature complete
+> > before asking for review, especially since the newest features
+> > should demonstrate clearly why the rewrite is necessary and
+> > beneficial.  But I can post* my current bits if people don't
+> > believe they exist and/or don't mind reviewing non-final code.
+> > (* Or I can put them in a publicly available git tree.)
+> > 
+> > > There is a third option - which is to continue the promotion
+> > > of zcache from staging, get reviews, work on them ,etc, and
+> > > alongside of that you can work on fixing up (or ripping out)
+> > > zcache1 with zcache2 components as they make sense. Or even
+> > > having two of them - an enterprise and an embedded version
+> > > that will eventually get merged together. There is nothing
+> > > wrong with modifying a driver once it has left staging.
+> > 
+> > Minchan and Seth can correct me if I am wrong, but I believe
+> > zram+zsmalloc, not zcache, is the target solution for embedded.
 > 
-> Yep, process context.  It seems that I was naively expecting the
-> calls in interrupt context to be covered by rcu_irq_enter() and
-> rcu_irq_exit().  I take it that these calls are happening outside of
-> the rcu_irq_enter()-protected region?
+> NOT ture. Some embedded devices use zcache but it's not original
+> zcache but modificated one.
 
-Yep, it is called by the same hooks that lockdep uses. TRACE_IRQS_ON
-inside the irq handler in assembly.
+What kind of modifications? Would it make sense to post the patches
+for those modifications?
 
--- Steve
+> Anyway, although embedded people use modified zcache, I am biased to Dan.
+> I admit I don't spend lots of time to look zcache but as looking the
+> code, it wasn't good shape and even had a bug found during code review
+> and I felt strongly we should clean up it for promoting it to mm/.
 
+Do you recall what the bugs where?
 
+> So I would like to wait Dan's posting if you guys are not urgent.
+> (And I am not sure akpm allow it with current shape of zcache code.)
+> But the concern is about adding new feature. I guess there might be some
+> debate for long time and it can prevent promoting again.
+> I think It's not what Seth want.
+> I hope Dan doesn't mix clean up series and new feature series and
+> post clean up series as soon as possible so let's clean up first and
+> try to promote it and later, adding new feature or changing algorithm
+> is desirable.
+> 
+> 
+> > The limitations of zsmalloc aren't an issue for zram but they are
+> > for zcache, and this deficiency was one of the catalysts for the
+> > rewrite.  The issues are explained in more detail in [1],
+> > but if any point isn't clear, I'd be happy to explain further.
+> > 
+> > However, I have limited time for this right now and I'd prefer
+> > to spend it finishing the code. :-}
+> > 
+> > So, as I said, I am still a NACK, but if there are good reasons
+> > to duplicate effort and pursue the "third option", let's discuss
+> > them.
+> > 
+> > Thanks,
+> > Dan
+> > 
+> > [1] http://marc.info/?t=133886706700002&r=1&w=2
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
