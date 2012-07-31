@@ -1,98 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab2GaLvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 07:51:01 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41330 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab2GaLvA (ORCPT
+	id S1756103Ab2GaLwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 07:52:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42477 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756021Ab2GaLwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 07:51:00 -0400
-From: Denis Efremov <yefremov.denis@gmail.com>
-To: Kurt Garloff <garloff@suse.de>
-Cc: Denis Efremov <yefremov.denis@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] tmscsim: spin_unlock_irq in interrupt handler fix
-Date: Tue, 31 Jul 2012 15:53:33 +0400
-Message-Id: <1343735613-28392-1-git-send-email-yefremov.denis@gmail.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1342853283-32549-1-git-send-email-yefremov.denis@gmail.com>
-References: <1342853283-32549-1-git-send-email-yefremov.denis@gmail.com>
+	Tue, 31 Jul 2012 07:52:45 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: oleg@redhat.com, ananth@in.ibm.com, a.p.zijlstra@chello.nl,
+        mingo@redhat.com, srikar@linux.vnet.ibm.com, roland@hack.frob.com,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 2/2] x86/uprobes: implement x86 specific arch_uprobe_*_step
+Date: Tue, 31 Jul 2012 13:52:28 +0200
+Message-Id: <1343735548-18101-2-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1343735548-18101-1-git-send-email-bigeasy@linutronix.de>
+References: <20120730141638.GA5306@redhat.com>
+ <1343735548-18101-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The replacement of spin_lock_irq/spin_unlock_irq pairs which
-can be called from interrupt handler by irqsave/irqrestore
-versions.
+The arch specific implementation enables single stepping directly by
+setting the trap flag. "Single-Step on branches" is always disabled
+since only one opcode has to be executed.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+The disable call removes the trap flag unless it was there before. It
+does not touch the flags register if the executed instruction was
+"popf". It does not take into account various prefixes like "lock popf"
+or "repz popf".
+SIGTRAP is sent to the process in case it was traced so the debugger
+knows once we advanced by one opcode. This isn't done in case we have to
+restore the BTF flag. In case the BTF flag is set, we should look at the
+opcode and send SIGTRAP depending on the jump/flag status. For now we
+wait for the next exception/jump to be taken.
 
-Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/scsi/tmscsim.c |   12 ++++++------
- drivers/scsi/tmscsim.h |    1 +
- 2 files changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/uprobes.h |    3 ++
+ arch/x86/kernel/uprobes.c      |   60 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 63 insertions(+)
 
-diff --git a/drivers/scsi/tmscsim.c b/drivers/scsi/tmscsim.c
-index a1baccc..e9b7148 100644
---- a/drivers/scsi/tmscsim.c
-+++ b/drivers/scsi/tmscsim.c
-@@ -665,7 +665,7 @@ DC390_Interrupt(void *dev_id)
-     //dstatus = DC390_read8 (DMA_Status);
-     //DC390_write32 (DMA_ScsiBusCtrl, EN_INT_ON_PCI_ABORT);
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index f3971bb..47f4cf1 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -46,6 +46,9 @@ struct arch_uprobe_task {
+ #ifdef CONFIG_X86_64
+ 	unsigned long			saved_scratch_register;
+ #endif
++#define UPROBE_CLEAR_TF			(1 << 0)
++#define UPROBE_SET_BTF			(1 << 1)
++	unsigned int			restore_flags;
+ };
  
--    spin_lock_irq(pACB->pScsiHost->host_lock);
-+    spin_lock_irqsave(pACB->pScsiHost->host_lock, pACB->hlock_flags);
- 
-     istate = DC390_read8 (Intern_State);
-     istatus = DC390_read8 (INT_Status); /* This clears Scsi_Status, Intern_State and INT_Status ! */
-@@ -736,7 +736,7 @@ DC390_Interrupt(void *dev_id)
-     }
- 
-  unlock:
--    spin_unlock_irq(pACB->pScsiHost->host_lock);
-+    spin_unlock_irqrestore(pACB->pScsiHost->host_lock, pACB->hlock_flags);
-     return IRQ_HANDLED;
+ extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 36fd420..6eec3e4 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -673,3 +673,63 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 	}
+ 	return false;
  }
- 
-@@ -771,9 +771,9 @@ dc390_DataOut_0(struct dc390_acb* pACB, struct dc390_srb* pSRB, u8 *psstatus)
- 	    /* Function called from the ISR with the host_lock held and interrupts disabled */
- 	    if (pSRB->SGToBeXferLen)
- 		while (time_before(jiffies, timeout) && !((dstate = DC390_read8 (DMA_Status)) & DMA_XFER_DONE)) {
--		    spin_unlock_irq(pACB->pScsiHost->host_lock);
-+		    spin_unlock_irqrestore(pACB->pScsiHost->host_lock, pACB->hlock_flags);
- 		    udelay(50);
--		    spin_lock_irq(pACB->pScsiHost->host_lock);
-+		    spin_lock_irqsave(pACB->pScsiHost->host_lock, pACB->hlock_flags);
- 		}
- 	    if (!time_before(jiffies, timeout))
- 		printk (KERN_CRIT "DC390: Deadlock in DataOut_0: DMA aborted unfinished: %06x bytes remain!!\n",
-@@ -830,9 +830,9 @@ dc390_DataIn_0(struct dc390_acb* pACB, struct dc390_srb* pSRB, u8 *psstatus)
- 	    /* Function called from the ISR with the host_lock held and interrupts disabled */
- 	    if (pSRB->SGToBeXferLen)
- 		while (time_before(jiffies, timeout) && !((dstate = DC390_read8 (DMA_Status)) & DMA_XFER_DONE)) {
--		    spin_unlock_irq(pACB->pScsiHost->host_lock);
-+		    spin_unlock_irqrestore(pACB->pScsiHost->host_lock, pACB->hlock_flags);
- 		    udelay(50);
--		    spin_lock_irq(pACB->pScsiHost->host_lock);
-+		    spin_lock_irqsave(pACB->pScsiHost->host_lock, pACB->hlock_flags);
- 		}
- 	    if (!time_before(jiffies, timeout)) {
- 		printk (KERN_CRIT "DC390: Deadlock in DataIn_0: DMA aborted unfinished: %06x bytes remain!!\n",
-diff --git a/drivers/scsi/tmscsim.h b/drivers/scsi/tmscsim.h
-index 77adc54..3f9ea2b 100644
---- a/drivers/scsi/tmscsim.h
-+++ b/drivers/scsi/tmscsim.h
-@@ -107,6 +107,7 @@ u8		SyncOffset;	/*;for reg. and nego.(low nibble) */
- struct dc390_acb
- {
- struct Scsi_Host *pScsiHost;
-+unsigned long     hlock_flags;
- u16		IOPortBase;
- u8		IRQLevel;
- u8		status;
++
++static int insn_is_popf(const u8 *insn)
++{
++	/* popf */
++	if (insn[0] == 0x9d)
++		return 1;
++	return 0;
++}
++
++void arch_uprobe_enable_step(struct task_struct *child,
++		struct arch_uprobe *auprobe)
++{
++	struct uprobe_task	*utask		= child->utask;
++	struct arch_uprobe_task	*autask		= &utask->autask;
++	struct pt_regs		*regs		= task_pt_regs(child);
++	unsigned long		debugctl;
++
++	autask->restore_flags = 0;
++	if (!(regs->flags & X86_EFLAGS_TF) &&
++			!insn_is_popf(auprobe->insn)) {
++		autask->restore_flags |= UPROBE_CLEAR_TF;
++
++		debugctl = get_debugctlmsr();
++		if (debugctl & DEBUGCTLMSR_BTF) {
++			autask->restore_flags |= UPROBE_SET_BTF;
++			debugctl &= ~DEBUGCTLMSR_BTF;
++			update_debugctlmsr(debugctl);
++		}
++	}
++	regs->flags |= X86_EFLAGS_TF;
++}
++
++void arch_uprobe_disable_step(struct task_struct *child,
++		struct arch_uprobe *auprobe)
++{
++	struct uprobe_task *utask	= child->utask;
++	struct arch_uprobe_task	*autask		= &utask->autask;
++	struct pt_regs *regs		= task_pt_regs(child);
++
++	/*
++	 * Disable the single step flag if it was set by us. Notify the debugger
++	 * via SIGTRAP in case it was already there so it learns that we
++	 * advanced by an opcode unless the debugger is waiting for the next
++	 * jump to be taken. This logic gets it wrong if the uprobe was set
++	 * on jump instruction that would raise an exception.
++	 */
++	if (autask->restore_flags & UPROBE_CLEAR_TF) {
++		regs->flags &= ~X86_EFLAGS_TF;
++	} else {
++		if (autask->restore_flags & UPROBE_SET_BTF) {
++			unsigned long	debugctl;
++
++			debugctl = get_debugctlmsr();
++			debugctl |= DEBUGCTLMSR_BTF;
++			update_debugctlmsr(debugctl);
++		} else {
++			send_sig(SIGTRAP, current, 0);
++		}
++	}
++}
 -- 
-1.7.7
+1.7.10.4
 
