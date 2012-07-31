@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab2GaFD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:03:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48606 "EHLO
+	id S1755492Ab2GaFEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:04:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755167Ab2GaEuR (ORCPT
+	by vger.kernel.org with ESMTP id S1755325Ab2GaEuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 00:50:17 -0400
-Message-Id: <20120731044322.078199039@decadent.org.uk>
+Message-Id: <20120731044322.598953599@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:44:17 +0100
+Date: Tue, 31 Jul 2012 05:44:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Lan Tianyu <tianyu.lan@intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [ 67/73] ACPI/AC: prevent OOPS on some boxes due to missing check
- power_supply_register() return value check
+        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 70/73] drm/radeon: fix hotplug of DP to DVI|HDMI passive adapters (v2)
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,43 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit f197ac13f6eeb351b31250b9ab7d0da17434ea36 upstream.
+commit 266dcba541a1ef7e5d82d9e67c67fde2910636e8 upstream.
 
-In the ac.c, power_supply_register()'s return value is not checked.
+No need to retrain the link for passive adapters.
 
-As a result, the driver's add() ops may return success
-even though the device failed to initialize.
+v2: agd5f
+- no passive DP to VGA adapters, update comments
+- assign radeon_connector_atom_dig after we are sure
+  we have a digital connector as analog connectors
+  have different private data.
+- get new sink type before checking for retrain.  No
+  need to check if it's no longer a DP connection.
 
-For example, some BIOS may describe two ACADs in the same DSDT.
-The second ACAD device will fail to register,
-but ACPI driver's add() ops returns sucessfully.
-The ACPI device will receive ACPI notification and cause OOPS.
-
-https://bugzilla.redhat.com/show_bug.cgi?id=772730
-
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/ac.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   29 ++++++++++++++++++++--------
+ 1 file changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
-index 6512b20..d1fcbc0 100644
---- a/drivers/acpi/ac.c
-+++ b/drivers/acpi/ac.c
-@@ -292,7 +292,9 @@ static int acpi_ac_add(struct acpi_device *device)
- 	ac->charger.properties = ac_props;
- 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
- 	ac->charger.get_property = get_ac_property;
--	power_supply_register(&ac->device->dev, &ac->charger);
-+	result = power_supply_register(&ac->device->dev, &ac->charger);
-+	if (result)
-+		goto end;
+diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+index 2914c57..3524f17 100644
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -64,14 +64,27 @@ void radeon_connector_hotplug(struct drm_connector *connector)
  
- 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
- 	       acpi_device_name(device), acpi_device_bid(device),
+ 	/* just deal with DP (not eDP) here. */
+ 	if (connector->connector_type == DRM_MODE_CONNECTOR_DisplayPort) {
+-		int saved_dpms = connector->dpms;
+-
+-		/* Only turn off the display it it's physically disconnected */
+-		if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
+-			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
+-		else if (radeon_dp_needs_link_train(radeon_connector))
+-			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
+-		connector->dpms = saved_dpms;
++		struct radeon_connector_atom_dig *dig_connector =
++			radeon_connector->con_priv;
++
++		/* if existing sink type was not DP no need to retrain */
++		if (dig_connector->dp_sink_type != CONNECTOR_OBJECT_ID_DISPLAYPORT)
++			return;
++
++		/* first get sink type as it may be reset after (un)plug */
++		dig_connector->dp_sink_type = radeon_dp_getsinktype(radeon_connector);
++		/* don't do anything if sink is not display port, i.e.,
++		 * passive dp->(dvi|hdmi) adaptor
++		 */
++		if (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
++			int saved_dpms = connector->dpms;
++			/* Only turn off the display if it's physically disconnected */
++			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
++				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
++			else if (radeon_dp_needs_link_train(radeon_connector))
++				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
++			connector->dpms = saved_dpms;
++		}
+ 	}
+ }
+ 
 
 
