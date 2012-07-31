@@ -1,126 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282Ab2GaEKC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:10:02 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:33615 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab2GaEKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:10:00 -0400
-Date: Mon, 30 Jul 2012 21:09:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mail List <linux-kernel@vger.kernel.org>
-Subject: Re: [Regression 3.4] tick_broadcast_mask is not restored after a CPU
- has been offline/onlined
-Message-ID: <20120731040955.GD2423@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120730151559.772d4055@feng-i7>
- <20120730133913.GK2556@linux.vnet.ibm.com>
- <20120730230747.7637112a@feng-i7>
- <20120730170847.GE2391@linux.vnet.ibm.com>
- <20120730174218.GA30772@linux.vnet.ibm.com>
- <20120731111832.435b8bd9@feng-i7>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120731111832.435b8bd9@feng-i7>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073104-5518-0000-0000-00000678191A
+	id S1752572Ab2GaEVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:21:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56013 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751455Ab2GaEVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 00:21:14 -0400
+Date: Tue, 31 Jul 2012 14:20:49 +1000
+From: NeilBrown <neilb@suse.de>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: hpa@zytor.com, james.t.kukunas@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] x86, avx: don't use avx instructions with "noxsave"
+ boot param
+Message-ID: <20120731142049.7d0ab5f9@notabene.brown>
+In-Reply-To: <1343688375.3696.597.camel@sbsiddha-desk.sc.intel.com>
+References: <1343688375.3696.597.camel@sbsiddha-desk.sc.intel.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/_y4eEDpxXJykoB9uikilFv_"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 11:18:32AM +0800, Feng Tang wrote:
-> Hi Paul,
-> 
-> On Mon, 30 Jul 2012 10:42:18 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Mon, Jul 30, 2012 at 10:08:47AM -0700, Paul E. McKenney wrote:
-> > > On Mon, Jul 30, 2012 at 11:07:47PM +0800, Feng Tang wrote:
-> > > > Hi Paul,
-> > > > 
-> > > > On Mon, 30 Jul 2012 06:39:13 -0700
-> > > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > > > 
-> > > > > On Mon, Jul 30, 2012 at 03:15:59PM +0800, Feng Tang wrote:
-> > > > > > Hi All,
-> > > > > > 
-> > > > > > When I debugged a suspend/resume bug, I found that
-> > > > > > tick_broadcast_mask is not restored for a CPU after it is
-> > > > > > offline/onlined since kernel 3.4, while it's fine for 3.3.
-> > > > > 
-> > > > > Could you please try 3.5?
-> > > > 
-> > > > Yes, it's the same for 3.5
-> > > 
-> > > Thank you for checking, Feng.
-> > > 
-> > > Len, the comment above the change says:
-> > > 
-> > > 	/*
-> > > 	 * FIXME:  Design the ACPI notification to make it once per
-> > > 	 * system instead of once per-cpu.  This condition is a hack
-> > > 	 * to make the code that updates C-States be called once.
-> > > 	 */
-> > > 
-> > > Is it time for this design-level change?  Or is there something obvious
-> > > that I missed when fixing the smp_processor_id() splat?
-> > > 
-> > > I could revert back, but use raw_smp_processor_id() rather than
-> > > smp_processor_id(), but that feels like papering over a problem rather
-> > > than fixing it.
-> > 
-> > But should papering be appropriate, here is the patch.
-> > 
-> > 							Thanx, Paul
-> 
-> Just found and have a patch to fix a typo in acpi processor_driver.c, which
-> could also fix  this tick_broadcast_mask issue.
-> 	
-> Patch is in https://lkml.org/lkml/2012/7/30/483 
-> 
-> So I think we don't need this "papering over" patch :)
+--Sig_/_y4eEDpxXJykoB9uikilFv_
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Very good, I have dropped it.
+On Mon, 30 Jul 2012 15:46:15 -0700 Suresh Siddha <suresh.b.siddha@intel.com>
+wrote:
 
-							Thanx, Paul
+> Check the kernel has indeed enabled xsave before using AVX instructions.
+>=20
+> Fixes the kernel boot panic with "noxsave" boot parameter.
+>=20
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-> Thanks,
-> Feng
-> 
-> > 
-> > ------------------------------------------------------------------------
-> > 
-> > ACPI: Repair fix to unprotected smp_processor_id()
-> > 
-> > Commit 9505626d (ACPI: Fix unprotected smp_processor_id() in
-> > acpi_processor_cst_has_changed()) introduced a suspend/resume bug.
-> > This commit therefore introduces a bug-for-bug compatible fix for the
-> > original problem.
-> > 
-> > Reported-by: Feng Tang <feng.tang@intel.com>
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > 
-> > diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> > index 47a8caa..19c151a 100644
-> > --- a/drivers/acpi/processor_idle.c
-> > +++ b/drivers/acpi/processor_idle.c
-> > @@ -1218,7 +1218,8 @@ int acpi_processor_cst_has_changed(struct
-> > acpi_processor *pr)
-> >  	 * to make the code that updates C-States be called once.
-> >  	 */
-> >  
-> > -	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
-> > +	if (raw_smp_processor_id() == 0 &&
-> > +	    cpuidle_get_driver() == &acpi_idle_driver) {
-> >  
-> >  		cpuidle_pause_and_lock();
-> >  		/* Protect against cpu-hotplug */
-> > 
-> 
+Looks consistent with other usage - thanks.
+Applied.
 
+Should it go in '-stable' kernels too?
+
+NeilBrown
+
+> ---
+>  arch/x86/include/asm/xor_avx.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/arch/x86/include/asm/xor_avx.h b/arch/x86/include/asm/xor_av=
+x.h
+> index 2510d35..77987cd 100644
+> --- a/arch/x86/include/asm/xor_avx.h
+> +++ b/arch/x86/include/asm/xor_avx.h
+> @@ -197,12 +197,12 @@ static struct xor_block_template xor_block_avx =3D {
+> =20
+>  #define AVX_XOR_SPEED \
+>  do { \
+> -	if (cpu_has_avx) \
+> +	if (cpu_has_avx && cpu_has_osxsave) \
+>  		xor_speed(&xor_block_avx); \
+>  } while (0)
+> =20
+>  #define AVX_SELECT(FASTEST) \
+> -	(cpu_has_avx ? &xor_block_avx : FASTEST)
+> +	((cpu_has_avx && cpu_has_osxsave) ? &xor_block_avx : FASTEST)
+> =20
+>  #else
+> =20
+>=20
+
+
+--Sig_/_y4eEDpxXJykoB9uikilFv_
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUBddITnsnt1WYoG5AQI2oRAAoPYPQIXPFpvyDG2dRZlSrsWnig0hfoLG
+bnjkIYTqYBPJpv7SZLDYiSyX84ys882p9RtqWd+SW0H56U+oKMweKMyEHDQGfhL/
+hD58dnSicYgI/1XdyjMd1+tAdhMrYbZJHcx6rMqsgTuFIEEx2StqQorucnEVdv/s
+3PaKRu4BMLvvFBOD3No1BEyGBid2d0qHqGexyzqbm4Vky5p6JtHKqetj7t3ACn10
+TA8iGJLxEzK/AypDO8HFzwqtKq0uMkzAZEO5UkPLDYkMCm+DHq6YmN6sleYd+d0/
+eWCrOPUv0RZnrHVMI7/wLXyVbw5aEqe0wsa/0LcR3ERPPHLbmUGkbzW/KnvH2azY
+N+ARpsqPjbQwlqJZCI5PoydVVL3JU4iTp74CFGk4Z4QHLKZRWrwtlOrp8C6nGTjj
+zavqe1s5/thFrrbnA/62Q5pZvDyqobWi6iWapuALD3ykbWN2RFF17ejgwkn5AtAH
+ADQUnXRr7hy0kM1Nw6Z75uLxM4RQ/QvcCcmRX/zRsUN/XsiN/L6zGcVGxoYdpS/n
+33gbP11ixPZrAo5JLLMUdm5FXq31rIcusLTUO06kfaJRe0aaAzDkZMb9pcdp0a5N
+o7pHSKsmESIFmDQX7PgknAu1UiyjiLn/G3hVG88pWTsC7VtggH0vBDtThjcTvdqs
+VMEYHddZtfg=
+=9hq5
+-----END PGP SIGNATURE-----
+
+--Sig_/_y4eEDpxXJykoB9uikilFv_--
