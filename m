@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab2GaHGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 03:06:15 -0400
-Received: from fep13.mx.upcmail.net ([62.179.121.33]:33215 "EHLO
-	fep13.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437Ab2GaHGN (ORCPT
+	id S1755569Ab2GaHGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 03:06:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51271 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560Ab2GaHGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 03:06:13 -0400
-X-SourceIP: 178.83.228.246
-X-Authenticated-Sender: odi.ch@hispeed.ch
-References: <500D916A.60703@odi.ch> <20120724170002.GA3129@joi.lan> <500ED9EC.5040309@odi.ch> <20120724205746.GA8707@joi.lan> <500FB279.1020904@odi.ch> <20120725184205.GA3119@joi.lan> <50113E76.9090706@odi.ch> <20120729201532.GA3566@joi.lan> <50166D15.7090305@odi.ch> <20120730171629.GA3271@joi.lan>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120730171629.GA3271@joi.lan>
+	Tue, 31 Jul 2012 03:06:46 -0400
+Date: Tue, 31 Jul 2012 09:06:40 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
+Message-ID: <20120731070640.GA2950@gmail.com>
+References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
+ <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
+ <1343660892.20897.3.camel@twins>
+ <20120730155059.GB17078@somewhere.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: drm/nouveau: crash regression in 3.5
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-Date: Tue, 31 Jul 2012 09:06:09 +0200
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-CC: linux-kernel@vger.kernel.org, bskeggs@redhat.com,
-        dri-devel@lists.freedesktop.org, airlied@redhat.com
-Message-ID: <38d47fda-297e-4f8d-a275-ac61b117fc46@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120730155059.GB17078@somewhere.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, as far as I can tell. I didn't do anything different this time. The date on the kernel file looks ok. Just did a fresh make && make install again, and got the same behaviour. When is that number after the hash sign upped?
 
-Marcin Slusarz <marcin.slusarz@gmail.com> wrote:
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
+> On Mon, Jul 30, 2012 at 05:08:12PM +0200, Peter Zijlstra wrote:
+> > On Fri, 2012-07-27 at 17:40 +0200, Frederic Weisbecker wrote:
+> > > +++ b/kernel/user_hooks.c
+> > > @@ -0,0 +1,56 @@
+> > > +#include <linux/user_hooks.h>
+> > > +#include <linux/rcupdate.h>
+> > > +#include <linux/sched.h>
+> > > +#include <linux/percpu.h>
+> > > +
+> > > +struct user_hooks {
+> > > +       bool hooking;
+> > > +       bool in_user;
+> > > +};
+> > 
+> > I really detest using bool in structures.. but that's just me. Also this
+> > really wants a comment as to wtf 'hooking' means. in_user I can just
+> > about guess.
+> 
+> I really don't mind changing that to int. I just like them as 
+> bool because they better describe the purpose of the field.
+> 
+> hooking means that the hooks are set (the TIF flag is set on 
+> the current task and we also handle the exception hooks).
+> 
+> I can call that is_hooking instead? And/or add a comment to 
+> explain the purpose of this.
 
->Are you sure you boot the correct kernel? I'm asking because your panic
->says its
->version is "3.5.0 #3" - exactly the same as in previous crash log.
->
->Marcin
+Please don't use this horrible naming - use something more 
+technical like struct user_callback and callback::active, ok?
 
+Thanks,
+
+	Ingo
