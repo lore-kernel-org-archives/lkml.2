@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab2GaRap (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:30:45 -0400
-Received: from mail.profihost.ag ([85.158.179.208]:41422 "EHLO
-	mail.profihost.ag" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab2GaRan (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:30:43 -0400
-Message-ID: <50181647.5000701@profihost.ag>
-Date: Tue, 31 Jul 2012 19:30:47 +0200
-From: Stefan Priebe <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: mtosatti@redhat.com, kvm@vger.kernel.org,
+	id S1753519Ab2GaRcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:32:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8785 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752353Ab2GaRcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 13:32:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="179883329"
+Subject: Re: [patch] x86, avx: don't use avx instructions with "noxsave"
+ boot param
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: NeilBrown <neilb@suse.de>, james.t.kukunas@linux.intel.com,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
-References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com>
-In-Reply-To: <5017F19E.4070308@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Date: Tue, 31 Jul 2012 10:29:14 -0700
+In-Reply-To: <50180B2A.6070602@zytor.com>
+References: <1343688375.3696.597.camel@sbsiddha-desk.sc.intel.com>
+	  <20120731142049.7d0ab5f9@notabene.brown>
+	  <7b101443-b8d7-4474-ab54-03692d232469@email.android.com>
+	 <1343752022.3696.602.camel@sbsiddha-desk.sc.intel.com>
+	 <50180B2A.6070602@zytor.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
+Message-ID: <1343755754.2041.2.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 31.07.2012 16:54, schrieb Avi Kivity:
-> On 07/31/2012 02:59 PM, Stefan Priebe - Profihost AG wrote:
->> Hello list,
->>
->> i hope it is correct to list the maintainers of kvm. While trying to
->> install ubuntu 12.04 amd64 on a kvm based vm the KVM process segfaults
->> while ubuntu tries to detect the HW:
->> kvm[2978]: segfault at 7fb90d9035e0 ip 00007fb90d9035e0
->> sp00007fff652e4ed8 error 15
->>
->> This does not happen with a rhel6 based 2.6.32 kernel so i thought this
->> must be a bug in vanilla 3.5.0 kernel.
->>
->> Is this known? What information do you need?
->>
-> Please build qemu with debug information, generate a core, and post a
-> backtrace.
+On Tue, 2012-07-31 at 09:43 -0700, H. Peter Anvin wrote:
+> My main reason for thinking that it would be good to clear the bits is 
+> that it plays a lot nicer with alternatives and with static_cpu_has().
 
-mhm tried that but i can't get it to work:
+Fair enough. Neil, can you please drop the previous patch and Peter,
+please queue this for v3.6. Thanks.
 
-gdb /usr/bin/qemu-system-x86_64 /core
+---
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86, avx: don't use avx instructions with "noxsave" boot param
 
-GNU gdb (GDB) 7.0.1-debian
-Copyright (C) 2009 Free Software Foundation, Inc.
-License GPLv3+: GNU GPL version 3 or later 
-<http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
-and "show warranty" for details.
-This GDB was configured as "x86_64-linux-gnu".
-For bug reporting instructions, please see:
-<http://www.gnu.org/software/gdb/bugs/>...
+Clear AVX, AVX2 features along with clearing XSAVE feature bits,
+as part of the parsing "noxsave" parameter.
 
-warning: The current binary is a PIE (Position Independent Executable), 
-which
-GDB does NOT currently support.  Most debugger features will fail if used
-in this session.
+Fixes the kernel boot panic with "noxsave" boot parameter.
 
-Reading symbols from /usr/bin/qemu-system-x86_64...done.
+We could have checked cpu_has_osxsave along with cpu_has_avx etc, but Peter
+mentioned clearing the feature bits will be better for uses like
+static_cpu_has() etc.
 
-warning: core file may not match specified executable file.
-[New Thread 2222]
-[New Thread 1809]
-[New Thread 1811]
-[New Thread 1807]
-[New Thread 1812]
-[New Thread 1810]
-[New Thread 1813]
-[New Thread 1806]
-[New Thread 1808]
-Core was generated by `/usr/bin/qemu-system-x86_64 -id 103 -chardev 
-socket,id=qmp,path=/var/run/qemu-s'.
-Program terminated with signal 11, Segmentation fault.
-#0  0x00007f6ca10faed8 in ?? ()
-(gdb) where
-#0  0x00007f6ca10faed8 in ?? ()
-#1  0x00007f6ca54e0098 in ?? ()
-#2  0x00007f6ca10faf18 in ?? ()
-#3  0x00007f6ca10fae98 in ?? ()
-#4  0x00007fffc18a5330 in ?? ()
-#5  0x40620711c948c800 in ?? ()
-#6  0x00007fffc18a51f0 in ?? ()
-#7  0x00007f6ca54e0e25 in ?? ()
-#8  0x00007f6ca10faf18 in ?? ()
-#9  0x00007f6ca10fae98 in ?? ()
-#10 0x0000000000000000 in ?? ()
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: stable@kernel.org	# v3.5
+---
+ arch/x86/kernel/cpu/common.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Greets,
-Stefan
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 46d8786..a5fbc3c 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -144,6 +144,8 @@ static int __init x86_xsave_setup(char *s)
+ {
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
++	setup_clear_cpu_cap(X86_FEATURE_AVX);
++	setup_clear_cpu_cap(X86_FEATURE_AVX2);
+ 	return 1;
+ }
+ __setup("noxsave", x86_xsave_setup);
+
+
