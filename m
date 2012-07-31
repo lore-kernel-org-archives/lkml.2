@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab2GaPSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 11:18:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60691 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754874Ab2GaPSW (ORCPT
+	id S1755114Ab2GaPTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 11:19:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56379 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab2GaPTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 11:18:22 -0400
-Date: Tue, 31 Jul 2012 16:18:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-Message-ID: <20120731151819.GC4468@opensource.wolfsonmicro.com>
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
- <1343741493-17671-3-git-send-email-lee.jones@linaro.org>
- <20120731134214.GK4468@opensource.wolfsonmicro.com>
- <5017EAC3.3080504@linaro.org>
- <20120731142820.GW4468@opensource.wolfsonmicro.com>
- <5017EDCA.4020601@linaro.org>
- <20120731145443.GY4468@opensource.wolfsonmicro.com>
- <5017F68B.3060400@linaro.org>
+	Tue, 31 Jul 2012 11:19:05 -0400
+Date: Tue, 31 Jul 2012 10:18:56 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, Andreas Heider <andreas@meetr.de>,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        linux-kernel@vger.kernel.org, airlied@redhat.com
+Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
+Message-ID: <20120731151856.GA19979@thinkpad-t410>
+Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Andreas Heider <andreas@meetr.de>,
+	Arun Raghavan <arun.raghavan@collabora.co.uk>,
+	linux-kernel@vger.kernel.org, airlied@redhat.com
+References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
+ <20120710160555.GA31562@srcf.ucam.org>
+ <20120710163516.GE10194@thinkpad-t410>
+ <4FFCC7FB.1090609@meetr.de>
+ <1343522547.2488.12.camel@shinybook.infradead.org>
+ <1343524730.1962.5.camel@shinybook.infradead.org>
+ <20120729193953.GA25132@srcf.ucam.org>
+ <1343595171.2511.1.camel@shinybook.infradead.org>
+ <20120729205859.GA25819@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5017F68B.3060400@linaro.org>
-X-Cookie: Give him an evasive answer.
+In-Reply-To: <20120729205859.GA25819@srcf.ucam.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 04:15:23PM +0100, Lee Jones wrote:
-> On 31/07/12 15:54, Mark Brown wrote:
+On Sun, Jul 29, 2012 at 09:59:00PM +0100, Matthew Garrett wrote:
+> On Sun, Jul 29, 2012 at 09:52:51PM +0100, David Woodhouse wrote:
+> > On Sun, 2012-07-29 at 20:39 +0100, Matthew Garrett wrote:
+> > > And it looks like intel_lvds->edid is only set during intel_lvds_init(). 
+> > > That seems less than ideal. How about something like this entirely 
+> > > untested patch? 
+> > 
+> > Actually, it works if I write 'MIGD' first and then 'IGD'. Looks like we
+> > aren't switching the DDC over to the new gfx card soon enough in the
+> > process?
+> 
+> Yes, the call to the switcheroo code only comes after the card is 
+> powered on. Cc:ing Dave Airlie - what are the expectations here? It 
+> looks like i915 should have a reprobe function.
 
-> >You might want to look at a better mail program.
+I dove into this yesterday and ended up with something similar to what
+you had. I'm rescanning for the EDID from the reprobe callback, and I
+also made it so that intel_lvds_init() will still keep the LVDS
+connector even if the panel isn't attached at boot and
+intel_lvds_detect() returns connected/disconnected based on whether or
+not we found an EDID for the LVDS.
 
-> Willingly. Any good suggestions?
+All of this is working to the extent that I can boot with the Radeon
+card active, switch over to the Intel card, and get the EDID for the
+internal panel and an external monitor (although oddly on an HDMI
+connector, no on the DP like I expected). Both screens are remaining
+blank though. However I'm also getting blank screens if I mux over to
+the Intel GPU from grub before loading the kernel, which used to work
+for the LVDS panel at least.
 
-mutt works for me.
+I've copied the whole series of patches I'm running on top of 3.5 to
+http://people.canonical.com/~sforshee/apple-gmux-patches if anyone else
+wants to give them a try. The i915 changes are in patches 13-17. I've
+also pushed the i915 patches to my gmux-switcheroo branch.
 
-> >It's certainly totally inappropriate for an "urgent" bugfix.
+Seth
 
-> Well it just means that audio won't work for the ux500 for this
-> kernel release, but as we're waiting on clocks, this isn't a big
-> issue for us. If you do take it (with or without the return code),
-> feel free to add it to for-next instead of the -rc:s
-
-I'm not going to apply this patch.  This isn't a vendor BSP, we
-shouldn't be putting random hacks like this in core code.
