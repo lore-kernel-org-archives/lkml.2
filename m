@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab2GaBTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 21:19:42 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:33938 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab2GaBTk (ORCPT
+	id S1754185Ab2GaBWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 21:22:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24353 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab2GaBWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 21:19:40 -0400
-Subject: [GIT PULL] tcm_vhost: Initial merge of vhost level target fabric
- driver
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        kvm-devel <kvm@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>, Zhi Yong Wu <wuzhy@cn.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 Jul 2012 18:19:37 -0700
-Message-ID: <1343697577.22538.661.camel@haakon2.linux-iscsi.org>
+	Mon, 30 Jul 2012 21:22:38 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=7Npo2C4X2bcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=lbJXBy493IuyOglmQRkA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343697755.27983.17.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH RT 05/12] slab: Prevent local lock deadlock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: frank.rowand@am.sony.com
+Cc: tglx@linutronix.de, chris.pringle@miranda.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
+Date: Mon, 30 Jul 2012 21:22:35 -0400
+In-Reply-To: <5011DD9B.1030901@am.sony.com>
+References: <20120718223910.898476857@goodmis.org>
+	 <20120718223957.856443728@goodmis.org> <5011DD9B.1030901@am.sony.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2012-07-26 at 17:15 -0700, Frank Rowand wrote:
 
-Here is the PULL request for the initial merge of tcm_vhost based on
-RFC-v5 code with MST's ACK appended to the initial merge commit.
-As promised, the commit is available from two different branches for you
-to consider merging as for-3.6 code.
+> 
+> Config is from arch/arm/configs/omap2plus_defconfig
+> plus:
+> 
+>    CONFIG_USB_EHCI_HCD=y
+>    CONFIG_USB_NET_SMSC95XX=y
+>    CONFIG_PREEMPT_RT_FULL=y
+> 
 
-The 'for-next-merge' branch based on mainline commit 7409a6657ae using
-3.5-rc2 code contains two duplicates of pre-merge vhost patch
-dependencies that have already been merged into mainline via net-next.
-This commit is also in the 07302012 -next patchset, and available here:
+Interesting, I just booted my panda board against 3.0.36-rt58 with that
+config and these three set, and I didn't get this error.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next-merge
+-- Steve
 
-Or the 'for-linus' branch containing an -rc0 head @ commit bdc0077af57:
-
-   Merge tag 'scsi-misc' of git://git.kernel.org/../jejb/scsi)
-
-rebased up to the last commit in scsi-misc required for virtio-scsi
-client LLD scanning logic to function properly with tcm_vhost fabric
-ports, is available here:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-linus
-
-Both branches have gotten recent testing and have been running
-over-night small block random I/O tests connected to raw block flash
-backends.  The same diffstat below will result from pulling either
-branch.
-
-Also, the incremental patch to address MST's last round of post-merge
-comments has been sent to the lists for feedback this afternoon.  This
-will be included into the usual post -rc1 PULL via 3.6-rc-fixes, along
-with any other bits that end up changing post-merge.
-
-Please let us know if you have any concerns.
-
-Thank you!
-
---nab
-
-Nicholas Bellinger (1):
-  tcm_vhost: Initial merge for vhost level target fabric driver
-
- drivers/vhost/Kconfig     |    3 +
- drivers/vhost/Kconfig.tcm |    6 +
- drivers/vhost/Makefile    |    2 +
- drivers/vhost/tcm_vhost.c | 1628 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/vhost/tcm_vhost.h |  101 +++
- 5 files changed, 1740 insertions(+), 0 deletions(-)
- create mode 100644 drivers/vhost/Kconfig.tcm
- create mode 100644 drivers/vhost/tcm_vhost.c
- create mode 100644 drivers/vhost/tcm_vhost.h
 
