@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab2GaFGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:06:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48513 "EHLO
+	id S1755793Ab2GaFGg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:06:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48523 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753190Ab2GaEuE (ORCPT
+	by vger.kernel.org with ESMTP id S1755316Ab2GaEuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 00:50:04 -0400
-Message-Id: <20120731044312.684965795@decadent.org.uk>
+Message-Id: <20120731044313.816574497@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:19 +0100
+Date: Tue, 31 Jul 2012 05:43:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Nai Xia <nai.xia@gmail.com>, Johannes Weiner <jweiner@redhat.com>
-Subject: [ 09/73] mm: vmscan: check if reclaim should really abort even if compaction_ready() is true for one zone
+        alan@lxorguk.ukuu.org.uk,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>
+Subject: [ 16/73] mm/hugetlb: fix warning in alloc_huge_page/dequeue_huge_page_vma
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,115 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-commit 0cee34fd72c582b4f8ad8ce00645b75fb4168199 upstream.
+commit b1c12cbcd0a02527c180a862e8971e249d3b347d upstream.
 
-Stable note: Not tracked on Bugzilla. THP and compaction was found to
-	aggressively reclaim pages and stall systems under different
-	situations that was addressed piecemeal over time.
+Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
+	expensive and severely impacted page allocator performance. This
+	is part of a series of patches that reduce page allocator overhead.
 
-If compaction can proceed for a given zone, shrink_zones() does not
-reclaim any more pages from it.  After commit [e0c2327: vmscan: abort
-reclaim/compaction if compaction can proceed], do_try_to_free_pages()
-tries to finish as soon as possible once one zone can compact.
+Fix a gcc warning (and bug?) introduced in cc9a6c877 ("cpuset: mm: reduce
+large amounts of memory barrier related damage v3")
 
-This was intended to prevent slabs being shrunk unnecessarily but there
-are side-effects.  One is that a small zone that is ready for compaction
-will abort reclaim even if the chances of successfully allocating a THP
-from that zone is small.  It also means that reclaim can return too early
-even though sc->nr_to_reclaim pages were not reclaimed.
+Local variable "page" can be uninitialized if the nodemask from vma policy
+does not intersects with nodemask from cpuset.  Even if it doesn't happens
+it is better to initialize this variable explicitly than to introduce
+a kernel oops in a weird corner case.
 
-This partially reverts the commit until it is proven that slabs are really
-being shrunk unnecessarily but preserves the check to return 1 to avoid
-OOM if reclaim was aborted prematurely.
+mm/hugetlb.c: In function `alloc_huge_page':
+mm/hugetlb.c:1135:5: warning: `page' may be used uninitialized in this function
 
-[aarcange@redhat.com: This patch replaces a revert from Andrea]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andy Isaacson <adi@hexapodia.org>
-Cc: Nai Xia <nai.xia@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/vmscan.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ mm/hugetlb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2173,7 +2173,8 @@ static inline bool compaction_ready(stru
-  *
-  * This function returns true if a zone is being reclaimed for a costly
-  * high-order allocation and compaction is ready to begin. This indicates to
-- * the caller that it should retry the allocation or fail.
-+ * the caller that it should consider retrying the allocation instead of
-+ * further reclaim.
-  */
- static bool shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
-@@ -2182,7 +2183,7 @@ static bool shrink_zones(int priority, s
- 	struct zone *zone;
- 	unsigned long nr_soft_reclaimed;
- 	unsigned long nr_soft_scanned;
--	bool should_abort_reclaim = false;
-+	bool aborted_reclaim = false;
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
-@@ -2208,7 +2209,7 @@ static bool shrink_zones(int priority, s
- 				 * allocations.
- 				 */
- 				if (compaction_ready(zone, sc)) {
--					should_abort_reclaim = true;
-+					aborted_reclaim = true;
- 					continue;
- 				}
- 			}
-@@ -2230,7 +2231,7 @@ static bool shrink_zones(int priority, s
- 		shrink_zone(priority, zone, sc);
- 	}
- 
--	return should_abort_reclaim;
-+	return aborted_reclaim;
- }
- 
- static bool zone_reclaimable(struct zone *zone)
-@@ -2284,7 +2285,7 @@ static unsigned long do_try_to_free_page
- 	struct zoneref *z;
- 	struct zone *zone;
- 	unsigned long writeback_threshold;
--	bool should_abort_reclaim;
-+	bool aborted_reclaim;
- 
- 	get_mems_allowed();
- 	delayacct_freepages_start();
-@@ -2296,9 +2297,7 @@ static unsigned long do_try_to_free_page
- 		sc->nr_scanned = 0;
- 		if (!priority)
- 			disable_swap_token(sc->mem_cgroup);
--		should_abort_reclaim = shrink_zones(priority, zonelist, sc);
--		if (should_abort_reclaim)
--			break;
-+		aborted_reclaim = shrink_zones(priority, zonelist, sc);
- 
- 		/*
- 		 * Don't shrink slabs when reclaiming memory from
-@@ -2365,8 +2364,8 @@ out:
- 	if (oom_killer_disabled)
- 		return 0;
- 
--	/* Aborting reclaim to try compaction? don't OOM, then */
--	if (should_abort_reclaim)
-+	/* Aborted reclaim to try compaction? don't OOM, then */
-+	if (aborted_reclaim)
- 		return 1;
- 
- 	/* top priority shrink_zones still had more to do? don't OOM, then */
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index cd65cb1..5a16423 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -532,7 +532,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 				struct vm_area_struct *vma,
+ 				unsigned long address, int avoid_reserve)
+ {
+-	struct page *page;
++	struct page *page = NULL;
+ 	struct mempolicy *mpol;
+ 	nodemask_t *nodemask;
+ 	struct zonelist *zonelist;
 
 
