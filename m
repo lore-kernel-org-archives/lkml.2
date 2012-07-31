@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab2GaGgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:36:15 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:43510 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab2GaGgK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:36:10 -0400
+	id S1754158Ab2GaGgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:36:13 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:41711 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752827Ab2GaGgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 02:36:11 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
@@ -14,28 +13,48 @@ Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
         Prarit Bhargava <prarit@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>,
         CAI Qian <caiqian@redhat.com>
-Subject: [PATCH 2/2] [RFC] time: Limit time values that would overflow ktime_t
-Date: Tue, 31 Jul 2012 02:35:48 -0400
-Message-Id: <1343716548-38742-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 1/2] [RFC] time: Fix problem with large timespecs & ktime_get_update_offsets
+Date: Tue, 31 Jul 2012 02:35:47 -0400
+Message-Id: <1343716548-38742-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343716548-38742-1-git-send-email-john.stultz@linaro.org>
 References: <1343716548-38742-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073106-7408-0000-0000-00000739B20D
+x-cbid: 12073106-7182-0000-0000-0000021C2447
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We could observe unexpected behavior if the time is set
-to a value large enough to overflow a 64bit ktime_t
-(which is something larger then the year 2264).
+There's currently a slight difference in ktime_get_update_offsets()
+vs ktime_get() which can result in boot time crashes when booting
+with insane CMOS clock values larger then ~2264.
 
-So check timekeeping inputs to make sure we don't set
-the time to a value that overflows ktime_t.
+ktime_get() does basically the following:
+        return timespec_to_ktime(timespec_add(xtime, wall_to_monotonic))
 
-Note: This does not protect from setting the time close to
-overflowing ktime_t and then letting natural accumulation
-cause the overflow.
+Where as ktime_get_update_offsets does approximately:
+        return ktime_sub(timespec_to_ktime(xtime), realtime_offset);
+
+The problem is, at boot we set xtime = year 8200 and
+wall_to_monotonic = year -8200,  ktime_get adds both values, mostly
+nulling the difference out (leaving only how long the system has been
+up), then converts that relatively small value to a ktime_t properly
+without losing any information.
+
+ktime_get_update_offsets however, since it converts xtime (again set
+to some value greater then year 8200), to a ktime, it gets clamped at
+KTIME_MAX, then we subtract realtime_offset, which is _also_ clamped
+at KTIME_MAX, resulting in us always returning almost[1] zero. This
+causes us to stop expiring timers.
+
+Now, one of the reasons Thomas and I changed the logic was that using
+the precalculated realtime_offset was slightly more efficient then
+re-adding xtime and wall_to_monotonic's components separately. But
+how valuable this unmeasured slight efficiency is vs extra
+robustness for crazy time values is questionable.
+
+So switch back to the ktime_get implementation for
+ktime_get_update_offsets
 
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -46,86 +65,44 @@ Cc: CAI Qian <caiqian@redhat.com>
 Reported-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/timekeeping.c |   28 +++++++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
+ kernel/time/timekeeping.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 96179ab..78bccd0 100644
+index 3447cfa..96179ab 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -92,7 +92,7 @@ __cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
- /* flag for if timekeeping is suspended */
- int __read_mostly timekeeping_suspended;
- 
--
-+#define TWENTY_YEARS (20LL*365*24*60*60)
- 
- /**
-  * timekeeper_setup_internals - Set up internals to use clocksource clock.
-@@ -387,6 +387,9 @@ int do_settimeofday(const struct timespec *tv)
- 	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
- 
-+	if ((unsigned long long)tv->tv_sec >= KTIME_SEC_MAX)
-+		return -EINVAL;
-+
- 	write_seqlock_irqsave(&timekeeper.lock, flags);
- 
- 	timekeeping_forward_now();
-@@ -418,6 +421,8 @@ EXPORT_SYMBOL(do_settimeofday);
- int timekeeping_inject_offset(struct timespec *ts)
+@@ -1283,15 +1283,15 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
+  */
+ ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot)
  {
- 	unsigned long flags;
-+	struct timespec tmp;
-+	int ret = 0;
+-	ktime_t now;
+ 	unsigned int seq;
+ 	u64 secs, nsecs;
  
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
-@@ -426,10 +431,17 @@ int timekeeping_inject_offset(struct timespec *ts)
+ 	do {
+ 		seq = read_seqbegin(&timekeeper.lock);
+-
+-		secs = timekeeper.xtime.tv_sec;
+-		nsecs = timekeeper.xtime.tv_nsec;
++		secs = timekeeper.xtime.tv_sec +
++				timekeeper.wall_to_monotonic.tv_sec;
++		nsecs = timekeeper.xtime.tv_nsec +
++				timekeeper.wall_to_monotonic.tv_nsec;
+ 		nsecs += timekeeping_get_ns();
+ 		/* If arch requires, add in gettimeoffset() */
+ 		nsecs += arch_gettimeoffset();
+@@ -1300,9 +1300,7 @@ ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot)
+ 		*offs_boot = timekeeper.offs_boot;
+ 	} while (read_seqretry(&timekeeper.lock, seq));
  
- 	timekeeping_forward_now();
- 
--	timekeeper.xtime = timespec_add(timekeeper.xtime, *ts);
-+	/* Make sure the increased value won't cause ktime_t trouble */
-+	tmp = timespec_add(timekeeper.xtime, *ts);
-+	if ((unsigned long long)tmp.tv_sec >= KTIME_SEC_MAX) {
-+		ret= -EINVAL;
-+		goto error;
-+	}
-+	timekeeper.xtime = tmp;
- 	timekeeper.wall_to_monotonic =
- 				timespec_sub(timekeeper.wall_to_monotonic, *ts);
- 
-+error: /* even if we error out, we forwarded the time, so call update */
- 	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
-@@ -437,7 +449,7 @@ int timekeeping_inject_offset(struct timespec *ts)
- 	/* signal hrtimers about time change */
- 	clock_was_set();
- 
--	return 0;
-+	return ret;
+-	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
+-	now = ktime_sub(now, *offs_real);
+-	return now;
++	return ktime_add_ns(ktime_set(secs, 0), nsecs);
  }
- EXPORT_SYMBOL(timekeeping_inject_offset);
+ #endif
  
-@@ -599,6 +611,16 @@ void __init timekeeping_init(void)
- 	read_persistent_clock(&now);
- 	read_boot_clock(&boot);
- 
-+	/*
-+	 * Check to make sure the persistent clock
-+	 * didn't return something crazy.
-+	 */
-+	if (now.tv_sec > (KTIME_SEC_MAX - TWENTY_YEARS)) {
-+		printk("WARNING: Persistent clock returned a year greater then"
-+			" 2242. Capping at 2242.\n");
-+		now.tv_sec = KTIME_SEC_MAX - TWENTY_YEARS;
-+	}
-+
- 	seqlock_init(&timekeeper.lock);
- 
- 	ntp_init();
 -- 
 1.7.9.5
 
