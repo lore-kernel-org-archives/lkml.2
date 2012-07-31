@@ -1,369 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab2GaSZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 14:25:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755881Ab2GaSYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 14:24:55 -0400
-Message-ID: <50181AA1.0@redhat.com>
-Date: Tue, 31 Jul 2012 13:49:21 -0400
-From: Larry Woodman <lwoodman@redhat.com>
-Reply-To: lwoodman@redhat.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
+	id S1755957Ab2GaS1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 14:27:31 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37533 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab2GaS12 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 14:27:28 -0400
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118E7F.8000609@redhat.com> <50120FA8.20409@redhat.com> <20120727102356.GD612@suse.de> <5016DC5F.7030604@redhat.com> <20120731124650.GO612@suse.de>
-In-Reply-To: <20120731124650.GO612@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5017FD3E.7090003@linux.vnet.ibm.com>
+References: <1343251216-24106-1-git-send-email-ccross@android.com>
+	<5017FD3E.7090003@linux.vnet.ibm.com>
+Date: Tue, 31 Jul 2012 11:27:27 -0700
+X-Google-Sender-Auth: p_Gp9nHstrs8e_Klu3k-dH_ch0M
+Message-ID: <CAMbhsRT_h=dTfUVRmMUj5Bz7ZqcJ7UA2svwNP9CNa9=f=cL4+Q@mail.gmail.com>
+Subject: Re: [PATCH] cpuidle: coupled: fix sleeping while atomic in cpu notifier
+From: Colin Cross <ccross@android.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 08:46 AM, Mel Gorman wrote:
+On Tue, Jul 31, 2012 at 8:43 AM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 07/26/2012 02:50 AM, Colin Cross wrote:
+>> The cpu hotplug notifier gets called in both atomic and non-atomic
+>> contexts, it is not always safe to lock a mutex.  Filter out all events
+>> except the six necessary ones, which are all sleepable, before taking
+>> the mutex.
+>>
+>> Signed-off-by: Colin Cross <ccross@android.com>
+>> ---
+>>  drivers/cpuidle/coupled.c |   12 ++++++++++++
+>>  1 files changed, 12 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+>> index 2c9bf26..c24dda0 100644
+>> --- a/drivers/cpuidle/coupled.c
+>> +++ b/drivers/cpuidle/coupled.c
+>> @@ -678,6 +678,18 @@ static int cpuidle_coupled_cpu_notify(struct notifier_block *nb,
+>>       int cpu = (unsigned long)hcpu;
+>>       struct cpuidle_device *dev;
+>>
+>> +     switch (action & ~CPU_TASKS_FROZEN) {
+>> +     case CPU_UP_PREPARE:
+>> +     case CPU_DOWN_PREPARE:
+>> +     case CPU_ONLINE:
+>> +     case CPU_DEAD:
+>> +     case CPU_UP_CANCELED:
+>> +     case CPU_DOWN_FAILED:
+>> +             break;
+>> +     default:
+>> +             return NOTIFY_OK;
+>> +     }
+>> +
 >
-> Fundamentally I think the problem is that we are not correctly detecting
-> that page table sharing took place during huge_pte_alloc(). This patch is
-> longer and makes an API change but if I'm right, it addresses the underlying
-> problem. The first VM_MAYSHARE patch is still necessary but would you mind
-> testing this on top please?
-Hi Mel, yes this does work just fine.  It ran for hours without a panic so
-I'll Ack this one if you send it to the list.
+> Instead, wouldn't it be better to have case statements for the
+> 2 cases that imply atomic context and return immediately?
+>
+> Something like:
+>         switch (action & ~CPU_TASKS_FROZEN) {
+>         case CPU_STARTING:
+>         case CPU_DYING:
+>                 return NOTIFY_OK;
+>         }
 
-Larry
-
-
-
-> ---8<---
-> mm: hugetlbfs: Correctly detect if page tables have just been shared
->
-> Each page mapped in a processes address space must be correctly
-> accounted for in _mapcount. Normally the rules for this are
-> straight-forward but hugetlbfs page table sharing is different.
-> The page table pages at the PMD level are reference counted while
-> the mapcount remains the same. If this accounting is wrong, it causes
-> bugs like this one reported by Larry Woodman
->
-> [ 1106.156569] ------------[ cut here ]------------
-> [ 1106.161731] kernel BUG at mm/filemap.c:135!
-> [ 1106.166395] invalid opcode: 0000 [#1] SMP
-> [ 1106.170975] CPU 22
-> [ 1106.173115] Modules linked in: bridge stp llc sunrpc binfmt_misc dcdbas microcode pcspkr acpi_pad acpi]
-> [ 1106.201770]
-> [ 1106.203426] Pid: 18001, comm: mpitest Tainted: G        W    3.3.0+ #4 Dell Inc. PowerEdge R620/07NDJ2
-> [ 1106.213822] RIP: 0010:[<ffffffff8112cfed>]  [<ffffffff8112cfed>] __delete_from_page_cache+0x15d/0x170
-> [ 1106.224117] RSP: 0018:ffff880428973b88  EFLAGS: 00010002
-> [ 1106.230032] RAX: 0000000000000001 RBX: ffffea0006b80000 RCX: 00000000ffffffb0
-> [ 1106.237979] RDX: 0000000000016df1 RSI: 0000000000000009 RDI: ffff88043ffd9e00
-> [ 1106.245927] RBP: ffff880428973b98 R08: 0000000000000050 R09: 0000000000000003
-> [ 1106.253876] R10: 000000000000000d R11: 0000000000000000 R12: ffff880428708150
-> [ 1106.261826] R13: ffff880428708150 R14: 0000000000000000 R15: ffffea0006b80000
-> [ 1106.269780] FS:  0000000000000000(0000) GS:ffff88042fd60000(0000) knlGS:0000000000000000
-> [ 1106.278794] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [ 1106.285193] CR2: 0000003a1d38c4a8 CR3: 000000000187d000 CR4: 00000000000406e0
-> [ 1106.293149] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [ 1106.301097] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [ 1106.309046] Process mpitest (pid: 18001, threadinfo ffff880428972000, task ffff880428b5cc20)
-> [ 1106.318447] Stack:
-> [ 1106.320690]  ffffea0006b80000 0000000000000000 ffff880428973bc8 ffffffff8112d040
-> [ 1106.328958]  ffff880428973bc8 00000000000002ab 00000000000002a0 ffff880428973c18
-> [ 1106.337234]  ffff880428973cc8 ffffffff8125b405 ffff880400000001 0000000000000000
-> [ 1106.345513] Call Trace:
-> [ 1106.348235]  [<ffffffff8112d040>] delete_from_page_cache+0x40/0x80
-> [ 1106.355128]  [<ffffffff8125b405>] truncate_hugepages+0x115/0x1f0
-> [ 1106.361826]  [<ffffffff8125b4f8>] hugetlbfs_evict_inode+0x18/0x30
-> [ 1106.368615]  [<ffffffff811ab1af>] evict+0x9f/0x1b0
-> [ 1106.373951]  [<ffffffff811ab3a3>] iput_final+0xe3/0x1e0
-> [ 1106.379773]  [<ffffffff811ab4de>] iput+0x3e/0x50
-> [ 1106.384922]  [<ffffffff811a8e18>] d_kill+0xf8/0x110
-> [ 1106.390356]  [<ffffffff811a8f12>] dput+0xe2/0x1b0
-> [ 1106.395595]  [<ffffffff81193612>] __fput+0x162/0x240
->
-> During fork(), copy_hugetlb_page_range() detects if huge_pte_alloc()
-> shared page tables with the check dst_pte == src_pte. The logic is if
-> the PMD page is the same, they must be shared. This assumes that the
-> sharing is between the parent and child. However, if the sharing is with
-> a different process entirely then this check fails as in this diagram.
->
-> parent
->    |
->    ------------>pmd
->                 src_pte---------->  data page
->                                        ^
-> other--------->pmd--------------------|
->                  ^
-> child-----------|
->                 dst_pte
->
-> For this situation to occur, it must be possible for Parent and Other
-> to have faulted and failed to share page tables with each other. This is
-> possible due to the following style of race.
->
-> PROC A						PROC B
-> copy_hugetlb_page_range				copy_hugetlb_page_range
->    src_pte == huge_pte_offset			  src_pte == huge_pte_offset
->    !src_pte so no sharing			  !src_pte so no sharing
->
-> (time passes)
->
-> hugetlb_fault					hugetlb_fault
->    huge_pte_alloc				  huge_pte_alloc
->      huge_pmd_share				   huge_pmd_share
->        LOCK(i_mmap_mutex)
->        find nothing, no sharing
->        UNLOCK(i_mmap_mutex)
->        						    LOCK(i_mmap_mutex)
->        						    find nothing, no sharing
->        						    UNLOCK(i_mmap_mutex)
->      pmd_alloc					    pmd_alloc
->      LOCK(instantiation_mutex)
->      fault
->      UNLOCK(instantiation_mutex)
->      						LOCK(instantiation_mutex)
->      						fault
->      						UNLOCK(instantiation_mutex)
->
-> These two processes are not poing to the same data page but are not sharing
-> page tables because the opportunity was missed. When either process later
-> forks, the src_pte == dst pte is potentially insufficient.  As the check
-> falls through, the wrong PTE information is copied in (harmless but wrong)
-> and the mapcount is bumped for a page mapped by a shared page table leading
-> to the BUG_ON.
->
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
-> ---
->   arch/ia64/mm/hugetlbpage.c    |    3 ++-
->   arch/mips/mm/hugetlbpage.c    |    2 +-
->   arch/powerpc/mm/hugetlbpage.c |    3 ++-
->   arch/s390/mm/hugetlbpage.c    |    3 ++-
->   arch/sh/mm/hugetlbpage.c      |    3 ++-
->   arch/sparc/mm/hugetlbpage.c   |    3 ++-
->   arch/tile/mm/hugetlbpage.c    |    3 ++-
->   arch/x86/mm/hugetlbpage.c     |   13 ++++++++-----
->   include/linux/hugetlb.h       |    3 ++-
->   mm/hugetlb.c                  |   12 +++++++++---
->   10 files changed, 32 insertions(+), 16 deletions(-)
->
-> diff --git a/arch/ia64/mm/hugetlbpage.c b/arch/ia64/mm/hugetlbpage.c
-> index 5ca674b..a0bb307 100644
-> --- a/arch/ia64/mm/hugetlbpage.c
-> +++ b/arch/ia64/mm/hugetlbpage.c
-> @@ -25,7 +25,8 @@ unsigned int hpage_shift = HPAGE_SHIFT_DEFAULT;
->   EXPORT_SYMBOL(hpage_shift);
->
->   pte_t *
-> -huge_pte_alloc(struct mm_struct *mm, unsigned long addr, unsigned long sz)
-> +huge_pte_alloc(struct mm_struct *mm, unsigned long addr, unsigned long sz,
-> +	       bool *shared)
->   {
->   	unsigned long taddr = htlbpage_to_page(addr);
->   	pgd_t *pgd;
-> diff --git a/arch/mips/mm/hugetlbpage.c b/arch/mips/mm/hugetlbpage.c
-> index a7fee0d..06ca4a3 100644
-> --- a/arch/mips/mm/hugetlbpage.c
-> +++ b/arch/mips/mm/hugetlbpage.c
-> @@ -23,7 +23,7 @@
->   #include<asm/tlbflush.h>
->
->   pte_t *huge_pte_alloc(struct mm_struct *mm, unsigned long addr,
-> -		      unsigned long sz)
-> +		      unsigned long sz, bool *shared)
->   {
->   	pgd_t *pgd;
->   	pud_t *pud;
-> diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-> index 1a6de0a..5fc6672 100644
-> --- a/arch/powerpc/mm/hugetlbpage.c
-> +++ b/arch/powerpc/mm/hugetlbpage.c
-> @@ -175,7 +175,8 @@ static int __hugepte_alloc(struct mm_struct *mm, hugepd_t *hpdp,
->   #define HUGEPD_PUD_SHIFT PMD_SHIFT
->   #endif
->
-> -pte_t *huge_pte_alloc(struct mm_struct *mm, unsigned long addr, unsigned long sz)
-> +pte_t *huge_pte_alloc(struct mm_struct *mm, unsigned long addr, unsigned long sz,
-> +		      bool *shared)
->   {
->   	pgd_t *pg;
->   	pud_t *pu;
-> diff --git a/arch/s390/mm/hugetlbpage.c b/arch/s390/mm/hugetlbpage.c
-> index 532525e..2c3b501 100644
-> --- a/arch/s390/mm/hugetlbpage.c
-> +++ b/arch/s390/mm/hugetlbpage.c
-> @@ -65,7 +65,8 @@ void arch_release_hugepage(struct page *page)
->   }
->
->   pte_t *huge_pte_alloc(struct mm_struct *mm,
-> -			unsigned long addr, unsigned long sz)
-> +			unsigned long addr, unsigned long sz,
-> +			bool *shared)
->   {
->   	pgd_t *pgdp;
->   	pud_t *pudp;
-> diff --git a/arch/sh/mm/hugetlbpage.c b/arch/sh/mm/hugetlbpage.c
-> index d776234..bbe154d 100644
-> --- a/arch/sh/mm/hugetlbpage.c
-> +++ b/arch/sh/mm/hugetlbpage.c
-> @@ -22,7 +22,8 @@
->   #include<asm/cacheflush.h>
->
->   pte_t *huge_pte_alloc(struct mm_struct *mm,
-> -			unsigned long addr, unsigned long sz)
-> +			unsigned long addr, unsigned long sz,
-> +			bool *shared)
->   {
->   	pgd_t *pgd;
->   	pud_t *pud;
-> diff --git a/arch/sparc/mm/hugetlbpage.c b/arch/sparc/mm/hugetlbpage.c
-> index 07e1453..d3ef01b 100644
-> --- a/arch/sparc/mm/hugetlbpage.c
-> +++ b/arch/sparc/mm/hugetlbpage.c
-> @@ -194,7 +194,8 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
->   }
->
->   pte_t *huge_pte_alloc(struct mm_struct *mm,
-> -			unsigned long addr, unsigned long sz)
-> +			unsigned long addr, unsigned long sz,
-> +			bool *shared)
->   {
->   	pgd_t *pgd;
->   	pud_t *pud;
-> diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
-> index 812e2d0..db01091 100644
-> --- a/arch/tile/mm/hugetlbpage.c
-> +++ b/arch/tile/mm/hugetlbpage.c
-> @@ -84,7 +84,8 @@ static pte_t *pte_alloc_hugetlb(struct mm_struct *mm, pmd_t *pmd,
->   #endif
->
->   pte_t *huge_pte_alloc(struct mm_struct *mm,
-> -		      unsigned long addr, unsigned long sz)
-> +		      unsigned long addr, unsigned long sz,
-> +		      bool *shared)
->   {
->   	pgd_t *pgd;
->   	pud_t *pud;
-> diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-> index f6679a7..8c53064 100644
-> --- a/arch/x86/mm/hugetlbpage.c
-> +++ b/arch/x86/mm/hugetlbpage.c
-> @@ -58,7 +58,8 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
->   /*
->    * search for a shareable pmd page for hugetlb.
->    */
-> -static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
-> +static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud,
-> +			   bool *shared)
->   {
->   	struct vm_area_struct *vma = find_vma(mm, addr);
->   	struct address_space *mapping = vma->vm_file->f_mapping;
-> @@ -91,9 +92,10 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
->   		goto out;
->
->   	spin_lock(&mm->page_table_lock);
-> -	if (pud_none(*pud))
-> +	if (pud_none(*pud)) {
->   		pud_populate(mm, pud, (pmd_t *)((unsigned long)spte&  PAGE_MASK));
-> -	else
-> +		*shared = true;
-> +	} else
->   		put_page(virt_to_page(spte));
->   	spin_unlock(&mm->page_table_lock);
->   out:
-> @@ -128,7 +130,8 @@ int huge_pmd_unshare(struct mm_struct *mm, unsigned long *addr, pte_t *ptep)
->   }
->
->   pte_t *huge_pte_alloc(struct mm_struct *mm,
-> -			unsigned long addr, unsigned long sz)
-> +			unsigned long addr, unsigned long sz,
-> +			bool *shared)
->   {
->   	pgd_t *pgd;
->   	pud_t *pud;
-> @@ -142,7 +145,7 @@ pte_t *huge_pte_alloc(struct mm_struct *mm,
->   		} else {
->   			BUG_ON(sz != PMD_SIZE);
->   			if (pud_none(*pud))
-> -				huge_pmd_share(mm, addr, pud);
-> +				huge_pmd_share(mm, addr, pud, shared);
->   			pte = (pte_t *) pmd_alloc(mm, pud, addr);
->   		}
->   	}
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 73c7782..68d2597 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -75,7 +75,8 @@ extern struct list_head huge_boot_pages;
->   /* arch callbacks */
->
->   pte_t *huge_pte_alloc(struct mm_struct *mm,
-> -			unsigned long addr, unsigned long sz);
-> +			unsigned long addr, unsigned long sz,
-> +			bool *shared);
->   pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr);
->   int huge_pmd_unshare(struct mm_struct *mm, unsigned long *addr, pte_t *ptep);
->   struct page *follow_huge_addr(struct mm_struct *mm, unsigned long address,
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 71c93d7..45c2196 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2282,6 +2282,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
->   	int cow;
->   	struct hstate *h = hstate_vma(vma);
->   	unsigned long sz = huge_page_size(h);
-> +	bool shared = false;
->
->   	cow = (vma->vm_flags&  (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
->
-> @@ -2289,12 +2290,12 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
->   		src_pte = huge_pte_offset(src, addr);
->   		if (!src_pte)
->   			continue;
-> -		dst_pte = huge_pte_alloc(dst, addr, sz);
-> +		dst_pte = huge_pte_alloc(dst, addr, sz,&shared);
->   		if (!dst_pte)
->   			goto nomem;
->
->   		/* If the pagetables are shared don't copy or take references */
-> -		if (dst_pte == src_pte)
-> +		if (shared)
->   			continue;
->
->   		spin_lock(&dst->page_table_lock);
-> @@ -2817,6 +2818,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->   	struct page *pagecache_page = NULL;
->   	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
->   	struct hstate *h = hstate_vma(vma);
-> +	bool shared = false;
->
->   	address&= huge_page_mask(h);
->
-> @@ -2831,10 +2833,14 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->   				VM_FAULT_SET_HINDEX(hstate_index(h));
->   	}
->
-> -	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
-> +	ptep = huge_pte_alloc(mm, address, huge_page_size(h),&shared);
->   	if (!ptep)
->   		return VM_FAULT_OOM;
->
-> +	/* If the pagetable is shared, no other work is necessary */
-> +	if (shared)
-> +		return 0;
-> +
->   	/*
->   	 * Serialize hugepage allocation and instantiation, so that we don't
->   	 * get spurious allocation failures if two CPUs race to instantiate
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
-
+No, because then it would need updating whenever a new notification
+event was added.
