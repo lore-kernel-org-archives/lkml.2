@@ -1,230 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab2GaSfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 14:35:44 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:53939 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab2GaSfm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 14:35:42 -0400
-Date: Tue, 31 Jul 2012 11:35:41 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph changes for 3.6
-Message-ID: <alpine.DEB.2.00.1207310835220.3206@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756166Ab2GaSjS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 14:39:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61401 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752368Ab2GaSjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 14:39:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="179909683"
+Date: Tue, 31 Jul 2012 11:39:12 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Denis Turischev <denis@compulab.co.il>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 2/2] xhci: EHCI/XHCI ports switching on Intense-PC.
+Message-ID: <20120731183912.GE3276@xanatos>
+References: <5004454E.9030903@compulab.co.il>
+ <20120724194609.GA6681@xanatos>
+ <20120730223406.GA9290@xanatos>
+ <2062329.UHa94WQ5Fk@linux-lqwf.site>
+ <20120731170634.GA3276@xanatos>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731170634.GA3276@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Jul 31, 2012 at 10:06:34AM -0700, Sarah Sharp wrote:
+> On Tue, Jul 31, 2012 at 06:49:50AM +0200, Oliver Neukum wrote:
+> > On Monday 30 July 2012 15:34:06 Sarah Sharp wrote:
+> > > Hi Denis,
+> > > 
+> > > Can you send me the output of `sudo dmidecode`?  I'd like to see if I
+> > > can make a more general patch apply to the Intense-PC.
+> > 
+> > As this is for shutdown, why not all systems?
+> 
+> Because it will cause a BIOS delay on the next boot.  Approximately
+> 100 ms.  Some people trying to do extremely fast boot will care about
+> that delay.
 
-Please pull the following Ceph changes for 3.6 from
+However, looking at the Intense-PC SMBIOS info, it looks like I can't
+make the patch more generic.  I'll have to key off of PCI ID, and all
+PPT systems will have the ports switched back to EHCI.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
-
-There are several trivial conflicts to resolve; sorry!  Stephen is 
-carrying fixes for them in linux-next as well.
-
-Lots of stuff this time around:
-
- * lots of cleanup and refactoring in the libceph messenger code, and many 
-   hard to hit races and bugs closed as a result.
- * lots of cleanup and refactoring in the rbd code from Alex Elder, mostly in 
-   preparation for the layering functionality that will be coming in 3.7.
- * some misc rbd cleanups from Josh Durgin that are finally going upstream
- * support for CRUSH tunables (used by newer clusters to improve the data
-   placement)
- * some cleanup in our use of d_parent that Al brought up a while back
- * a random collection of fixes across the tree
-
-There is another patch coming that fixes up our ->atomic_open() behavior, 
-but I'm going to hammer on it a bit more before sending it.
-
-Thanks!
-sage
-
-----------------------------------------------------------------
-Alan Cox (1):
-      ceph: fix potential double free
-
-Alex Elder (76):
-      libceph: eliminate connection state "DEAD"
-      libceph: kill bad_proto ceph connection op
-      libceph: rename socket callbacks
-      libceph: rename kvec_reset and kvec_add functions
-      libceph: embed ceph messenger structure in ceph_client
-      libceph: start separating connection flags from state
-      libceph: start tracking connection socket state
-      libceph: provide osd number when creating osd
-      libceph: set CLOSED state bit in con_init
-      libceph: osd_client: don't drop reply reference too early
-      libceph: embed ceph connection structure in mon_client
-      libceph: init monitor connection when opening
-      libceph: fully initialize connection in con_init()
-      libceph: tweak ceph_alloc_msg()
-      libceph: have messages point to their connection
-      libceph: have messages take a connection reference
-      libceph: make ceph_con_revoke() a msg operation
-      libceph: make ceph_con_revoke_message() a msg op
-      libceph: encapsulate out message data setup
-      libceph: encapsulate advancing msg page
-      libceph: don't mark footer complete before it is
-      libceph: move init_bio_*() functions up
-      libceph: move init of bio_iter
-      libceph: don't use bio_iter as a flag
-      libceph: SOCK_CLOSED is a flag, not a state
-      libceph: don't change socket state on sock event
-      libceph: just set SOCK_CLOSED when state changes
-      libceph: don't touch con state in con_close_socket()
-      libceph: clear CONNECTING in ceph_con_close()
-      libceph: clear NEGOTIATING when done
-      libceph: define and use an explicit CONNECTED state
-      libceph: separate banner and connect writes
-      libceph: distinguish two phases of connect sequence
-      libceph: small changes to messenger.c
-      libceph: add some fine ASCII art
-      libceph: drop declaration of ceph_con_get()
-      libceph: fix off-by-one bug in ceph_encode_filepath()
-      rbd: drop a useless local variable
-      libceph: define ceph_extract_encoded_string()
-      rbd: define dup_token()
-      rbd: rename rbd_dev->block_name
-      rbd: create pool_id device attribute
-      rbd: dynamically allocate pool name
-      rbd: dynamically allocate object prefix
-      rbd: dynamically allocate image header name
-      rbd: dynamically allocate image name
-      rbd: dynamically allocate snapshot name
-      rbd: use rbd_dev consistently
-      rbd: rename some fields in struct rbd_dev
-      rbd: more symbol renames
-      rbd: option symbol renames
-      rbd: kill num_reply parameters
-      rbd: don't use snapc->seq that way
-      rbd: preserve snapc->seq in rbd_header_set_snap()
-      rbd: set snapc->seq only when refreshing header
-      rbd: kill rbd_image_header->snap_seq
-      rbd: drop extra header_rwsem init
-      rbd: simplify __rbd_remove_all_snaps()
-      rbd: clean up a few dout() calls
-      ceph: define snap counts as u32 everywhere
-      rbd: encapsulate header validity test
-      rbd: rename rbd_device->id
-      rbd: snapc is unused in rbd_req_sync_read()
-      rbd: drop rbd_header_from_disk() gfp_flags parameter
-      rbd: drop rbd_dev parameter in snap functions
-      rbd: drop "object_name" from rbd_req_sync_watch()
-      rbd: drop "object_name" from rbd_req_sync_notify()
-      rbd: drop "object_name" from rbd_req_sync_notify_ack()
-      rbd: drop "object_name" from rbd_req_sync_unwatch()
-      rbd: have __rbd_add_snap_dev() return a pointer
-      rbd: make rbd_create_rw_ops() return a pointer
-      rbd: pass null version pointer in add_snap()
-      rbd: always pass ops array to rbd_req_sync_op()
-      rbd: fixes in rbd_header_from_disk()
-      rbd: return obj version in __rbd_refresh_header()
-      rbd: create rbd_refresh_helper()
-
-Dan Carpenter (2):
-      rbd: endian bug in rbd_req_cb()
-      libceph: fix NULL dereference in reset_connection()
-
-Guanjun He (1):
-      libceph: prevent the race of incoming work during teardown
-
-Jiaju Zhang (1):
-      libceph: trivial fix for the incorrect debug output
-
-Josh Durgin (6):
-      rbd: return errors for mapped but deleted snapshot
-      rbd: only reset capacity when pointing to head
-      rbd: expose the correct size of the device in sysfs
-      rbd: set image size when header is updated
-      rbd: use reference counting for the snap context
-      rbd: send header version when notifying
-
-Sage Weil (40):
-      libceph: use con get/put ops from osd_client
-      libceph: drop connection refcounting for mon_client
-      libceph: transition socket state prior to actual connect
-      libceph: flush msgr queue during mon_client shutdown
-      Merge tag 'v3.5-rc1'
-      libceph: use con get/put methods
-      libceph: drop ceph_con_get/put helpers and nref member
-      libceph: set peer name on con_open, not init
-      libceph: initialize mon_client con only once
-      libceph: allow sock transition from CONNECTING to CLOSED
-      libceph: initialize msgpool message types
-      libceph: initialize rb, list nodes in ceph_osd_request
-      libceph: fix messenger retry
-      ceph: clean up useless d_parent checks
-      libceph: move feature bits to separate header
-      libceph: support crush tunables
-      libceph: report socket read/write error message
-      libceph: fix mutex coverage for ceph_con_close
-      libceph: resubmit linger ops when pg mapping changes
-      libceph: (re)initialize bio_iter on start of message receive
-      ceph: close old con before reopening on mds reconnect
-      libceph: protect ceph_con_open() with mutex
-      libceph: reset connection retry on successfully negotiation
-      libceph: fix fault locking; close socket on lossy fault
-      libceph: move msgr clear_standby under con mutex protection
-      libceph: move ceph_con_send() closed check under the con mutex
-      libceph: drop gratuitous socket close calls in con_work
-      libceph: close socket directly from ceph_con_close()
-      libceph: drop unnecessary CLOSED check in socket state change callback
-      libceph: replace connection state bits with states
-      libceph: clean up con flags
-      libceph: clear all flags on con_close
-      libceph: be less chatty about stray replies
-      ceph: update MAINTAINERS file
-      libceph: fix handling of immediate socket connect failure
-      libceph: revoke mon_client messages on session restart
-      libceph: verify state after retaking con lock after dispatch
-      libceph: avoid dropping con mutex before fault
-      libceph: change ceph_con_in_msg_alloc convention to be less weird
-      libceph: recheck con state after allocating incoming message
-
-Xi Wang (3):
-      libceph: fix overflow in __decode_pool_names()
-      libceph: fix overflow in osdmap_decode()
-      libceph: fix overflow in osdmap_apply_incremental()
-
-Yan, Zheng (3):
-      ceph: check PG_Private flag before accessing page->private
-      rbd: Fix ceph_snap_context size calculation
-      rbd: Clear ceph_msg->bio_iter for retransmitted message
-
- Documentation/ABI/testing/sysfs-bus-rbd |   10 +-
- MAINTAINERS                             |   13 +-
- drivers/block/rbd.c                     |  820 +++++++++++++++------------
- drivers/block/rbd_types.h               |    1 -
- fs/ceph/addr.c                          |   21 +-
- fs/ceph/dir.c                           |    7 +-
- fs/ceph/mds_client.c                    |   23 +-
- fs/ceph/snap.c                          |   18 +-
- fs/ceph/super.c                         |    1 +
- fs/ceph/super.h                         |    4 +-
- fs/ceph/xattr.c                         |    1 +
- include/linux/ceph/ceph_features.h      |   27 +
- include/linux/ceph/ceph_fs.h            |   14 -
- include/linux/ceph/decode.h             |   49 ++-
- include/linux/ceph/libceph.h            |   10 +-
- include/linux/ceph/messenger.h          |   72 +--
- include/linux/ceph/mon_client.h         |    2 +-
- include/linux/ceph/msgpool.h            |    3 +-
- include/linux/crush/crush.h             |    8 +
- net/ceph/ceph_common.c                  |   32 +-
- net/ceph/crush/mapper.c                 |   13 +-
- net/ceph/messenger.c                    |  937 +++++++++++++++++++------------
- net/ceph/mon_client.c                   |   84 ++--
- net/ceph/msgpool.c                      |    7 +-
- net/ceph/osd_client.c                   |   89 ++--
- net/ceph/osdmap.c                       |   59 ++-
- 26 files changed, 1387 insertions(+), 938 deletions(-)
- create mode 100644 include/linux/ceph/ceph_features.h
+Sarah Sharp
