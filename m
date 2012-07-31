@@ -1,58 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab2GaH7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 03:59:15 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:48474 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656Ab2GaH7M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 03:59:12 -0400
-Date: Tue, 31 Jul 2012 09:59:09 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, Jaya Kumar <jayalk@intworks.biz>,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 0/7] HID: picoLCD updates
-Message-ID: <20120731095909.08d60f70@pluto.restena.lu>
-In-Reply-To: <CANq1E4Tb1Er+O54rN3OteMXqeXAXDr4Z-dvY+RQxZW_NdAfifw@mail.gmail.com>
-References: <20120730213656.0a9f6d30@neptune.home>
-	<CANq1E4Tb1Er+O54rN3OteMXqeXAXDr4Z-dvY+RQxZW_NdAfifw@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755758Ab2GaICX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 04:02:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29767 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754786Ab2GaICT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 04:02:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="175173547"
+From: Feng Tang <feng.tang@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH RFC] tick: Emphasize tck_broadcast_on_off could only be called for host cpu
+Date: Tue, 31 Jul 2012 15:57:21 +0800
+Message-Id: <1343721441-28148-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+With current tick_do_broadcast_on_off() and tick_broadcast_on_off(),
+it only cares host cpu, and doesn't really support to make the on/off
+for another target CPU as it seems to be. So remove the unneeded
+online check and add a WARN to notify user who doesn't know this
+new usage model.
 
-On Tue, 31 Jul 2012 09:26:07 David Herrmann wrote:
-> This is not directly related to this patchset, but did you fix the
-> locking issue with hid-core? It is still on my todo-list but I haven't
-> gotten around fixing it, yet. However, I plan on fixing it this
-> summer, but if picolcd does not require it, it's probably not worth
-> the work.
+Next step should be to remove those cases that sends the BROADCAST
+ON/OFF/FORCE msg on one cpu for another CPU, if this patch is reviewed
+to be ok.
 
-I worked around it with patch 6/7 as in disabling the version check.
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/tick-broadcast.c |   15 +--------------
+ kernel/time/tick-common.c    |    6 +++++-
+ kernel/time/tick-internal.h  |    4 ++--
+ 3 files changed, 8 insertions(+), 17 deletions(-)
 
-The other probing steps don't expect a response from the hardware, thus
-are not affected.
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index f113755..0433274 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -204,7 +204,7 @@ static void tick_handle_periodic_broadcast(struct clock_event_device *dev)
+  * Powerstate information: The system enters/leaves a state, where
+  * affected devices might stop
+  */
+-static void tick_do_broadcast_on_off(unsigned long *reason)
++void tick_broadcast_on_off(unsigned long *reason)
+ {
+ 	struct clock_event_device *bc, *dev;
+ 	struct tick_device *td;
+@@ -266,19 +266,6 @@ out:
+ }
+ 
+ /*
+- * Powerstate information: The system enters/leaves a state, where
+- * affected devices might stop.
+- */
+-void tick_broadcast_on_off(unsigned long reason, int *oncpu)
+-{
+-	if (!cpumask_test_cpu(*oncpu, cpu_online_mask))
+-		printk(KERN_ERR "tick-broadcast: ignoring broadcast for "
+-		       "offline CPU #%d\n", *oncpu);
+-	else
+-		tick_do_broadcast_on_off(&reason);
+-}
+-
+-/*
+  * Set the periodic handler depending on broadcast on/off
+  */
+ void tick_set_periodic_handler(struct clock_event_device *dev, int broadcast)
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index da6c9ec..950c635 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -362,6 +362,8 @@ static void tick_resume(void)
+ static int tick_notify(struct notifier_block *nb, unsigned long reason,
+ 			       void *dev)
+ {
++	int *cpu = dev;
++
+ 	switch (reason) {
+ 
+ 	case CLOCK_EVT_NOTIFY_ADD:
+@@ -370,7 +372,9 @@ static int tick_notify(struct notifier_block *nb, unsigned long reason,
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_ON:
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_OFF:
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_FORCE:
+-		tick_broadcast_on_off(reason, dev);
++		WARN((*cpu != smp_processor_id()),
++			"BROADCAST ON/OFF/FORCE should only be fired for host CPU\n");
++		tick_broadcast_on_off(&reason);
+ 		break;
+ 
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_ENTER:
+diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+index 4e265b9..40e4a8b 100644
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -90,7 +90,7 @@ static inline bool tick_broadcast_oneshot_available(void) { return false; }
+ extern int tick_device_uses_broadcast(struct clock_event_device *dev, int cpu);
+ extern int tick_check_broadcast_device(struct clock_event_device *dev);
+ extern int tick_is_broadcast_device(struct clock_event_device *dev);
+-extern void tick_broadcast_on_off(unsigned long reason, int *oncpu);
++extern void tick_broadcast_on_off(unsigned long *reason);
+ extern void tick_shutdown_broadcast(unsigned int *cpup);
+ extern void tick_suspend_broadcast(void);
+ extern int tick_resume_broadcast(void);
+@@ -115,7 +115,7 @@ static inline int tick_device_uses_broadcast(struct clock_event_device *dev,
+ 	return 0;
+ }
+ static inline void tick_do_periodic_broadcast(struct clock_event_device *d) { }
+-static inline void tick_broadcast_on_off(unsigned long reason, int *oncpu) { }
++static inline void tick_broadcast_on_off(unsigned long *reason) { }
+ static inline void tick_shutdown_broadcast(unsigned int *cpup) { }
+ static inline void tick_suspend_broadcast(void) { }
+ static inline int tick_resume_broadcast(void) { return 0; }
+-- 
+1.7.1
 
-But it would definitely be helpful to be able to revert that one.
-Understanding and fixing the FB-related misbehavior on quick bind/unbind
-seems more important though.
-
-
-Not related with this, getting a return value from
-usbhid_submit_report() as in -EAGAIN or -ENODEV would help in order
-to avoid the ugly 
-  hid-picolcd 0003:04D8:C002.0003: usb_submit_urb(out) failed: -19
-lines in kernel log and stopping interaction with hardware when it's
-gone already or giving it time to consume its queue when there is lots
-of data being sent.
-
-
-Regards,
-Bruno
