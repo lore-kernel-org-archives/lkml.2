@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab2GaJKr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 05:10:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52284 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab2GaJKq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 05:10:46 -0400
-Date: Tue, 31 Jul 2012 10:09:31 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Karl Beldan <karl.beldan@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: About dma_sync_single_for_{cpu,device}
-Message-ID: <20120731090931.GP6802@n2100.arm.linux.org.uk>
-References: <20120730202401.GA4947@gobelin> <20120731064557.GA4676@gobelin>
+	id S1754126Ab2GaJNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 05:13:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40774 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752827Ab2GaJNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 05:13:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="190983582"
+Date: Tue, 31 Jul 2012 17:13:26 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [vfs:fsfreeze] umount BUG: sleeping function called from invalid
+ context
+Message-ID: <20120731091326.GA15095@localhost>
+References: <20120731083839.GC14475@localhost>
+ <20120731085815.GF6481@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120731064557.GA4676@gobelin>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120731085815.GF6481@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 08:45:57AM +0200, Karl Beldan wrote:
-> I was expecting the following to work:
-> 	addr = dma_map_single(dev, buffer, size, DMA_TO_DEVICE);
-> 	dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-> 	dev_send(buffer);
-> 	// wait for irq (don't peek in the buffer) ... got irq
-> 	dma_sync_single_for_cpu(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-> 	if (!xfer_done(buffer)) // not RAM value
-> 		dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-> 	[...]
+On Tue, Jul 31, 2012 at 09:58:15AM +0100, Al Viro wrote:
+> On Tue, Jul 31, 2012 at 04:38:39PM +0800, Fengguang Wu wrote:
+> > Hi Jan,
+> > 
+> > Here is another warning for the fs freeze series.
+> > 
+> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git fsfreeze
+> > head:   7aff72a61f45337d83ab2b7fb16d7b542db16ad8
+> > commit: bc875c078f72993e6c44925cdedef5a304ca7429 [37/51] fs: Improve filesystem freezing handling
+> > 
+> > The warning shows up reliably since commit bc875c0. The 2nd commit
+> > 51205f9 triggers the same warning as the previous email.
+> 
+> That one is fixed in the end of #fsfreeze (for testing purposes only) and then the right
+> way in #for-next (by making percpu_list_lock a  spinlock).
 
-First point is that you clearly do not understand the DMA API at all.  The
-DMA API has the idea of buffer ownership.  Only the owner may access the
-buffer:
+Ah sorry. It seems that you quickly pushed the fix
 
-*CPU OWNS THE BUFFER*
-dma_map_single()
-*DEVICE OWNS THE BUFFER*
-dma_sync_single_for_cpu()
-*CPU OWNS THE BUFFER*
-dma_sync_single_for_device()
-*DEVICE OWNS THE BUFFER*
-dma_unmap_single()
-*CPU OWNS THE BUFFER*
+        commit c91dc212879946b8e542773394cb56e6e3c6e1ae
+        CommitDate: Tue Jul 31 01:57:53 2012 +0400
 
-So, there is absolutely no noeed what so ever to follow dma_map_single()
-with dma_sync_single_for_device().
+            [ewww][testing-only] deal with b0rken use of percpu_counter_destroy() under spinlock
 
-Second point is that you should not change the 'direction' argument while
-a buffer is mapped.
+while I'm still testing the slightly old head:
 
-Thirdly, enable DMA API debugging (DMA_API_DEBUG) to make sure you're
-using the DMA API correctly.
+        commit 7aff72a61f45337d83ab2b7fb16d7b542db16ad8
+        CommitDate: Tue Jul 31 01:21:32 2012 +0400
 
-Fourthly, remember that the CPU deals with cache lines, and dirty cache
-lines may be written back in their _entirety_ - which means that data
-DMA'd from a device in the same cache line that you've modified via the
-CPU will not work (either the data in the cache line has to be invalidated
-and therefore the CPU update discarded, or the cache line has to be flushed
-back to RAM and the DMA'd data is overwritten.)  Hence why the buffer
-ownership rules are extremely important.
+            Documentation: Correct s_umount state for freeze_fs/unfreeze_fs
 
-The solution for this fourth point is to use coherent DMA memory for things
-like ring buffers and the like, which does not suffer from this.
-
-> Maybe the following comment in dma-mapping.c explains the situation :
-> /*
->  * The DMA API is built upon the notion of "buffer ownership".  A buffer
->  * is either exclusively owned by the CPU (and therefore may be accessed
->  * by it) or exclusively owned by the DMA device.  These helper functions
->  * represent the transitions between these two ownership states.
->  *
->  * Note, however, that on later ARMs, this notion does not work due to
->  * speculative prefetches.  We model our approach on the assumption that
->  * the CPU does do speculative prefetches, which means we clean caches
->  * before transfers and delay cache invalidation until transfer completion.
->  *
->  */
-
-Even with that comment, the idea of buffer ownership must be preserved by
-drivers, and they must follow that rule.  The fact that some ARM CPU
-do not respect the ownership entirely is worked around inside the DMA API
-and is of no interest to drivers.  Feroceon is not one CPU which does this
-though.
+Thanks,
+Fengguang
