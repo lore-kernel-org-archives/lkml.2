@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab2GaJyF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 05:54:05 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:43284 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab2GaJyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 05:54:03 -0400
+	id S1754739Ab2GaJy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 05:54:26 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:6921 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753246Ab2GaJyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 05:54:24 -0400
+Message-ID: <5017AB41.60700@parallels.com>
+Date: Tue, 31 Jul 2012 13:54:09 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMgav2dqvUk623u_1ZuAE82drg2tF7rMpKMCZN4_Oq12_A@mail.gmail.com>
-References: <CAK5ve-JuZcjdbw_tV8vcriHWxOq1KFHm2mZBm6z3_j7hpPw-eA@mail.gmail.com>
- <CAK5ve-+3rKjeQA-WMQWvT48roFx-3Y-jNLZ3ciyOuH42x4Nu9A@mail.gmail.com> <CAOesGMgav2dqvUk623u_1ZuAE82drg2tF7rMpKMCZN4_Oq12_A@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Tue, 31 Jul 2012 17:53:41 +0800
-X-Google-Sender-Auth: gFYkdeg3joyAe68MR3CqP4FHC0A
-Message-ID: <CAK5ve-K29fKi57hEWLh6gQ-F5KXXr7hHfyAkk_MebxcQf6Dp=A@mail.gmail.com>
-Subject: Re: [GIT PULL] LED CPU trigger driver and ARM LED code consolidation
-To: linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "lwn@lwn.net" <lwn@lwn.net>, "criu@openvz.org" <criu@openvz.org>,
+        "users@openvz.org" <users@openvz.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: [Announce] Checkpoint-restore tool v0.1
+References: <500D09C9.7060903@parallels.com> <500D1116.7070301@parallels.com> <CAFLxGvwUhEPNdQvUnue2QFu_EipmBKD3nf0MfMWkqwLTf7jd5Q@mail.gmail.com> <50179CF0.7050200@parallels.com> <CAFLxGvygCxER3gHfj-onwnm_m6xugOVkynGyJU2CDheD3A2HOQ@mail.gmail.com> <5017A053.9000206@parallels.com> <CAFLxGvy396+BfYSaSnvAwJb0GO4WZCKbPXSbU7YfrOJTo6zk6A@mail.gmail.com>
+In-Reply-To: <CAFLxGvy396+BfYSaSnvAwJb0GO4WZCKbPXSbU7YfrOJTo6zk6A@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 4:20 PM, Olof Johansson <olof@lixom.net> wrote:
-> Hi,
->
-> On Wed, Jun 6, 2012 at 11:12 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
->> Hi Arnd and Olof,
+On 07/31/2012 01:29 PM, richard -rw- weinberger wrote:
+> On Tue, Jul 31, 2012 at 11:07 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
+>> Sorry :( However, if you can help with patches on that issue that would be
+>> highly appreciated :)
 >>
->> Is there any chance to pull this LED code into ARM SoC tree?
->>
->> Thanks,
->> -Bryan
->>
->> On Mon, Jun 4, 2012 at 3:25 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
->>> Hi Arnd and Olof,
->>>
->>> Please consider to pull my branch for LED CPU trigger driver and ARM
->>> LED code consolidation, which is based on 3.5-rc1:
->>>
->>> The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
->>>
->>>  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
->>>
->>> are available in the git repository at:
->>>
->>>  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
->>> for-arm-soc
->
-> Pulled into arm-soc as devel/led-driver in next/drivers.
->
->
-> Thanks,
->
-> -Olof
+> 
+> Yeah, but I fear it's not that easy.
+> We'd have to change crtools to work without ptrace().
 
-Olof and Arnd,
-
-Will you guys send out pull request for this led-driver patches during
-this merge window?
+Well, this is hard. Using ptrace saved us from having many special-purpose
+APIs for dumping various stuff (there will be an article about it). Thus I
+don't know which way is simpler -- stop using ptrace or teach ptrece to allow
+several tracers to attach to one task %)
 
 Thanks,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Pavel
+
