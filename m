@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab2GaQsZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:48:25 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49156 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab2GaQsY (ORCPT
+	id S1752395Ab2GaQus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:50:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47405 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751232Ab2GaQur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:48:24 -0400
-Message-ID: <50180BF6.6080908@mvista.com>
-Date: Tue, 31 Jul 2012 20:46:46 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Tue, 31 Jul 2012 12:50:47 -0400
+Date: Tue, 31 Jul 2012 17:50:44 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Alex Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+Message-ID: <20120731165044.GH11892@opensource.wolfsonmicro.com>
+References: <5017B434.2010706@nvidia.com>
+ <20120731105640.GD16155@avionic-0098.adnet.avionic-design.de>
+ <20120731141328.GS4468@opensource.wolfsonmicro.com>
+ <20120731142216.GA19591@avionic-0098.adnet.avionic-design.de>
+ <20120731142607.GV4468@opensource.wolfsonmicro.com>
+ <20120731143235.GA21126@avionic-0098.adnet.avionic-design.de>
+ <20120731153941.GF4468@opensource.wolfsonmicro.com>
+ <20120731161954.GB4941@kroah.com>
+ <20120731162230.GE11892@opensource.wolfsonmicro.com>
+ <20120731164245.GA5762@kroah.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, olalilja@yahoo.se,
-        STEricsson_nomadik_linux@list.st.com, lrg@ti.com
-Subject: Re: [PATCH 3/6] ARM: ux500: Fix merge error, so such struct 'snd_soc_u8500'
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-6-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1343741493-17671-6-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731164245.GA5762@kroah.com>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Jul 31, 2012 at 09:42:45AM -0700, Greg Kroah-Hartman wrote:
+> On Tue, Jul 31, 2012 at 05:22:30PM +0100, Mark Brown wrote:
 
-On 07/31/2012 05:31 PM, Lee Jones wrote:
+> > Hrm?  I'm not sure I understand the direct relevance here - we're
+> > talking about platform data.
 
-  Subject doesn't parse for me...
+> The platform data was marked __devdata, and you said it could be thrown
+> away after init so you should keep it around somehow.
 
-> The platform attempts to register platform device 'snd_soc_u8500'
-> which doesn't actually exist. Here we change the reference to the
-> correct one 'snd_soc_mop500'.
-
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-
-WBR, Sergei
-
-
+Ah, sorry - I was thinking __devinitdata.
