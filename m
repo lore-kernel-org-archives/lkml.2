@@ -1,207 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab2GaQIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:08:53 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:50822 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426Ab2GaQIu (ORCPT
+	id S1755493Ab2GaQLJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:11:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56689 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab2GaQLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:08:50 -0400
-Date: Tue, 31 Jul 2012 11:58:43 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH 0/4] promote zcache from staging
-Message-ID: <20120731155843.GP4789@phenom.dumpdata.com>
-References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <b95aec06-5a10-4f83-bdfd-e7f6adabd9df@default>
- <20120727205932.GA12650@localhost.localdomain>
- <d4656ba5-d6d1-4c36-a6c8-f6ecd193b31d@default>
- <5016DE4E.5050300@linux.vnet.ibm.com>
- <f47a6d86-785f-498c-8ee5-0d2df1b2616c@default>
+	Tue, 31 Jul 2012 12:11:07 -0400
+Date: Tue, 31 Jul 2012 13:11:01 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Liam Girdwood <lrg@ti.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [ 35/73] ASoC: dapm: Fix locking during codec shutdown
+Message-ID: <20120731161100.GB3111@herton-Z68MA-D2H-B3>
+References: <20120731044310.013763753@decadent.org.uk>
+ <20120731044316.865191013@decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <f47a6d86-785f-498c-8ee5-0d2df1b2616c@default>
+In-Reply-To: <20120731044316.865191013@decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 01:48:29PM -0700, Dan Magenheimer wrote:
-> > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> > Subject: Re: [PATCH 0/4] promote zcache from staging
-> > 
-> > Dan,
-> > 
-> > I started writing inline responses to each concern but that
-> > was adding more confusion than clarity.  I would like to
-> > focus the discussion.
-> >   :
-> > Let's have this discussion.  If there are specific issues
-> > that need to be addressed to get this ready for mainline
-> > let's take them one-by-one and line-by-line with patches.
+On Tue, Jul 31, 2012 at 05:43:45AM +0100, Ben Hutchings wrote:
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
 > 
-> Hi Seth --
+> ------------------
 > 
-> Thanks for your response and for your passion.
+> From: Liam Girdwood <lrg@ti.com>
 > 
-> The first discussion I think is about whether zsmalloc is
-> a suitable allocator for zcache.  In its current state
-> in staging, zcache uses zbud for ephemeral (cleancache)
-> zpages and zsmalloc for persistent (frontswap) zpages.
-
-OK, but - unstaging 'zsmalloc' is a different patchset.
-
-> I have proposed concerns on-list that the capabilities
-> provided by zsmalloc are not suitable for supporting zcache
-> in an enterprise distro.  The author of zsmalloc concurred
-
-The goal is to support _both_ enterprise and embedded.
-
-But what you are saying sounds like it does not work in enterprise
-environment - which is not my experience? If you are saying that
-the code should not be integrated before it works in both classes
-perfectly - well, then a lot of other code in the Linux should not
-have been accepted - and I would call those insufficienies "bugs".
-And bugs are .. natural, albeit pesky.
-
-I think what you are saing by "enterprise" is that you want
-it to be enabled by default (or at least be confident that it
-can be done so) for everybody and that it work quite well under
-99% workload. While right now it covers only 98% (or some
-other number) of workload.
-
-> and has (at least so far) not been available to enhance
-> zsmalloc, and you have taken a strong position that zsmalloc
-> needed to be "generic" (i.e. will never deliver the functionality
-> IMHO is necessary for zcache).  So I have rewritten zbud to
-> handle both kinds of zpages and, at the same time, to
-> resolve my stated issues.  This is the bulk of my
-
-Ok, so zbud rewrite is to remove the need for zsmalloc
-and use zbud2 for both persistent and ephemeral pages.
-
-> major rewrite... I don't think constructing and reviewing
-> a long series of one-by-one and line-by-line patches is
-> of much value here, especially since the current code is
-> in staging.  We either (1) use the now rewritten zbud (2) wait
-> until someone rewrites zsmalloc (3) accept the deficiencies
-> of zcache in its current form.
-
-This sounds like a Catch-22 :-) Greg would like to have the
-TODO list finished - and it seems that one of the todo's
-is to have one instead of two engines for dealing with pages.
-But at the same time not adding in new features.
-
+> commit 01005a729a17ab419f61a366e22f3419e7a2c3fe upstream.
 > 
-> The second discussion is whether ramster, as a "user" of
-> zcache, is relevant.  As you know, ramster is built on
-> top of zcache but requires a fair number of significant
-> changes that, due to gregkh's restriction, could not be
-> made directly to zcache while in staging.  In my rewrite,
-> I've taken a great deal of care that the "new" zcache
-> cleanly supports both.  While some couldn't care less about
-> ramster, the next step of ramster may be of more interest
-> to a broader part of the community.  So I am eager to
-> ensure that the core zcache code in zcache and ramster
-> doesn't need to "fork" again.  The zcache-main.c in staging/ramster
-> is farther along than the zcache-main.c in staging/zcache, but
-> IMHO my rewrite is better and cleaner than either.
-
-So in short you made zcache more modular?
-
+> Codec shutdown performs a DAPM power sequence that might cause conflicts
+> and/or race conditions if another stream power event is running simultaneously.
+> Use card's dapm mutex to protect any potential race condition between them.
 > 
-> Most of the rest of the cleanup, such as converting to debugfs
-> instead of sysfs, could be done as a sequence of one-by-one
-> and line-by-line patches.  I think we agree that zcache will
-
-Sure. Thought you could do it more wholesale: sysfs->debugfs patch.
-
-> not be promoted unless this change is made, but IMHO constructing
-> and reviewing patches individually is not of much value since
-> the above zbud and ramster changes already result in a major
-> rewrite.  I think the community would benefit most from a new
-> solid code foundation for zcache and reviewers time (and your
-> time and mine) would best be spent grokking the new code than
-> from reviewing a very long sequence of cleanup patches.
-
-You are ignoring the goodness of the testing and performance
-numbers that zcache has gotten so far. With a new code those
-numbers are invalidated. That is throwing away some good data.
-Reviewing code based on the old code (and knowing how the
-old code works) I think is easier than trying to understand new
-code from scratch - at least one has a baseline to undertand it.
-But that might be just my opinion - either way I am OK
-looking at brand new code or old code - but I would end up
-looking at the old code to answer those : "Huh. I wonder how
-we did that previously." - at which point it might make sense
-just to have the patches broken up in small segments.
-
+> Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
+> Signed-off-by: Liam Girdwood <lrg@ti.com>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  sound/soc/soc-dapm.c |    5 +++++
+>  1 file changed, 5 insertions(+)
 > 
-> > The purpose of this patchset is to discuss the inclusion of
-> > zcache into mainline during the 3.7 merge window.  zcache
-> > has been a staging since v2.6.39 and has been maturing with
-> > contributions from 15 developers (5 with multiple commits)
-> > working on improvements and bug fixes.
-> >
-> > I want good code in the kernel, so if there are particular
-> > areas that need attention before it's of acceptable quality
-> > for mainline we need that discussion.  I am eager to have
-> > customers using memory compression with zcache but before
-> > that I want to see zcache in mainline.
+> diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+> index 5be4f9a..114f2af 100644
+> --- a/sound/soc/soc-dapm.c
+> +++ b/sound/soc/soc-dapm.c
+> @@ -3537,10 +3537,13 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_free);
+>  
+>  static void soc_dapm_shutdown_codec(struct snd_soc_dapm_context *dapm)
+>  {
+> +	struct snd_soc_card *card = dapm->card;
+>  	struct snd_soc_dapm_widget *w;
+>  	LIST_HEAD(down_list);
+>  	int powerdown = 0;
+>  
+> +	mutex_lock(&card->dapm_mutex);
+> +
+
+Hi, this doesn't build on 3.2:
+
+linux-stable/sound/soc/soc-dapm.c: In function 'soc_dapm_shutdown_codec':
+linux-stable/sound/soc/soc-dapm.c:2982:18: error: 'struct snd_soc_card' has no member named 'dapm_mutex'
+linux-stable/sound/soc/soc-dapm.c:3007:20: error: 'struct snd_soc_card' has no member named 'dapm_mutex'
+
+Looking at it, I'm not sure the fix is needed on 3.2, and introducing
+dapm_mutex would be several changes.
+
+>  	list_for_each_entry(w, &dapm->card->widgets, list) {
+>  		if (w->dapm != dapm)
+>  			continue;
+> @@ -3563,6 +3566,8 @@ static void soc_dapm_shutdown_codec(struct snd_soc_dapm_context *dapm)
+>  			snd_soc_dapm_set_bias_level(dapm,
+>  						    SND_SOC_BIAS_STANDBY);
+>  	}
+> +
+> +	mutex_unlock(&card->dapm_mutex);
+>  }
+>  
+>  /*
 > 
-> I think we are all eager to achieve the end result: real users
-> using zcache in real production systems.  IMHO your suggested
-> path will not achieve that, certainly not in the 3.7 timeframe.
-> The current code (IMHO) is neither suitable for promotion, nor
-> functionally capable of taking the beating of an enterprise distro.
-
-So we agree that it must be fixed, but disagree on how to fix it :-)
-
-However there are real folks in the embedded env that use it (with
-some modifications) - please don't call them "unreal users".
-
 > 
-> > We agree with Konrad that zcache should be promoted before
-> > additional features are included.  Greg has also expressed
-> > that he would like promotion before attempting to add
-> > additional features [1].  Including new features now, while
-> > in the staging tree, adds to the complexity and difficultly
-> > of reverifying zcache and getting it accepted into mainline.
-> > 
-> > [1] https://lkml.org/lkml/2012/3/16/472still in staging.
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> Zcache as submitted to staging in 2.6.39 was (and is) a working
-> proof-of-concept.  As you know, Greg's position created a
-> "catch 22"... zcache in its current state isn't good enough
-> to be promoted, but we can't change it substantially to resolve
-> its deficiencies while it is still in staging.  (Minchan
-> recently stated that he doesn't think it is in good enough
-> shape to be approved by Andrew, and I agree.)  That's why I
-> embarked on the rewrite.
-> 
-> Lastly, I'm not so much "adding new features" as ensuring the
-> new zcache foundation will be sufficient to support enterprise
-> users.  But I do now agree with Minchan (and I think with you)
-> that I need to post where I'm at, even if I am not 100% ready or
-> satisfied.  I'll try to do that by the end of the week.
 
-So in my head I feel that it is Ok to:
-1) address the concerns that zcache has before it is unstaged
-2) rip out the two-engine system with a one-engine system
-   (and see how well it behaves)
-3) sysfs->debugfs as needed
-4) other things as needed
-
-I think we are getting hung-up what Greg said about adding features
-and the two-engine->one engine could be understood as that.
-While I think that is part of a staging effort to clean up the
-existing issues. Lets see what Greg thinks.
+-- 
+[]'s
+Herton
