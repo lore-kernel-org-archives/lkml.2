@@ -1,77 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab2GaFPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:15:05 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56156 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916Ab2GaFPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 01:15:03 -0400
-Date: Tue, 31 Jul 2012 15:14:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20120731151452.472bb6b1775fad7998df59bb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__31_Jul_2012_15_14_52_+1000_k_Umz5TJjwYZnBkc"
+	id S1754916Ab2GaFXX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:23:23 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33915 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282Ab2GaFXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 01:23:22 -0400
+Date: Tue, 31 Jul 2012 10:52:27 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, Roland McGrath <roland@hack.frob.com>
+Subject: Re: [PATCH] uprobes: don't enable/disable signle step if the user
+ did it
+Message-ID: <20120731052226.GA5087@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1343316043-13475-1-git-send-email-bigeasy@linutronix.de>
+ <20120730110658.GC11147@in.ibm.com>
+ <20120730141638.GA5306@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120730141638.GA5306@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12073105-9360-0000-0000-000008EECCCA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__31_Jul_2012_15_14_52_+1000_k_Umz5TJjwYZnBkc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Oleg Nesterov <oleg@redhat.com> [2012-07-30 16:16:38]:
 
-Hi all,
+> On 07/30, Ananth N Mavinakayanahalli wrote:
+> >
+> > On Thu, Jul 26, 2012 at 05:20:43PM +0200, Sebastian Andrzej Siewior wrote:
+> > > If someone is using single stepping over uprobe brackpoint then after
+> > > we pass the uprobe single step, single stepping is disabled and the user
+> > > who enebaled them in the first place does not know anything about this.
+> > >
+> > > This patch avoids enabling / disabling the single step mode if it is
+> > > already enabled.
+> >
+> > This could happen any time 2 different entities call the
+> > user_(en/dis)able_single_step() helpers on the same thread.
+> 
+> Yes. But nobody except ptrace should do use these helpers, I think.
+> 
+> > Wouldn't the right way to fix it be to teach these helpers
+> > to honor what the TIF_SINGLESTEP
+> 
+> Well, I think uprobes should not use TIF_SINGLESTEP at all. This
+> bit is (mostly) needed to handle the stepping over syscall. But
+> I guess you didn't actually mean TIF_SINGLESTEP...
+> 
+> > flag setting was in the first place?
+> 
+> Perhaps, but I don't think so. If nothing else, we do not want
+> to add the new counter/whatever in task_struct, while uprobes
+> already has uprobe_task which can "remember" the state of _TF
+> bit and more.
+> 
+> And this can't solve other problems. Suppose that gdb does
+> PTRACE_SINGLESTEP but the original "popf" insn was already replaced
+> by "int3", this will obviously confuse is_setting_trap_flag().
+> 
+> And we need the additional SIGTRAP from handle_singlestep().
+> And we have more problems with DEBUGCTLMSR_BTF. And we do
+> not want access_process_vm() from uprobes code.
+> 
+> So I think we need arch_uprobe_*able_step(struct uprobe_task *utask).
+> Ignoring all problems except the one this patch tries to fix, x86
+> can simply do:
+> 
+> 	arch_uprobe_enble_step(utask, struct arch_uprobe *auprobe)
+> 	{
+> 		utask->clear_tf =
+> 			!(regs->flags & X86_EFLAGS_TF) &&
+> 			(auprobe->insn != "popf");
+> 		regs->flags |= X86_EFLAGS_TF;
+> 	}
+> 
+> 	arch_uprobe_disable_step(utask)
+> 	{
+> 		if (utask->clear_tf)
+> 			regs->flags &= ~X86_EFLAGS_TF;
+> 	}
+> 
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+We were using something similar to this approach. [though we were still
+using TIF_SINGLESTEP flag]. However this was all changed based on
+feedback from Roland and Peter.
 
-drivers/regulator/s5m8767.c: In function 's5m8767_pmic_probe':
-drivers/regulator/s5m8767.c:575:2: error: implicit declaration of function =
-'s5m_reg_write' [-Werror=3Dimplicit-function-declaration]
+Here is the pointer to the discussion.
 
-Caused by a mismerge in Linus' tree between commits c848bc8538cd
-("regulator: s5m8767a: Support AP watchdog reset operation") and
-63063bfbffe9 ("mfd: Modify samsung mfd driver for common api").
+https://lkml.org/lkml/2011/1/27/283
 
-Fixed by commit 938e05bf1313 ("regulator: Fix an s5m8767 build failure")
-from Linus' tree which I have cherry picked for today.
+> Fortunately, we can never race with gdb/enable_step(), and we do
+> not care why X86_EFLAGS_TF was set, and we do not care about
+> TIF_SINGLESTEP/TIF_FORCED_TF.
+> 
+> However. This all needs more discussion (and help from Roland I guess).
+> 
+> Sebastian, I think your patch is simple and certainly makes the things
+> better, just it is not correct (you already realized you can't use
+> uprobe->flags) and it is not arch-friendly.
+> 
+> I'd suggest you to make 2 patches:
+> 
+> 	- 1/2 creates arch_uprobe_*_step(...) __weak helpers in
+> 	      kernel/events/uprobes.c which simply call
+> 	      user_*_single_step() and updates the callers
+> 
+> 	      Not strictly necessary, but imho makes sense...
+> 
+> 	- 2/2 adds the x86 implementation in arch/x86/kernel/uprobes.c
+> 	      which still uses user_*_single_step() but checks
+> 	      TIF_SINGLESTEP. As your patch does, but you should use
+> 	      utask, not uprobe.
+> 
+> IOW, I simply suggest to make your patch x86-specific. Then we
+> will try to do more fixes/improvements.
+> 
+> Sebastian, Ananth, what do you think?
+> 
+> Oleg.
+> 
 
-This was reported a couple of weeks ago when it caused a merge conflict
-in linux-next.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__31_Jul_2012_15_14_52_+1000_k_Umz5TJjwYZnBkc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQF2nMAAoJEECxmPOUX5FEdtQQAKosKvzYttGUBody9pE5wNsF
-X3YILOFmpIR3/QjCY4us4jA1qBvcFs67nlgr88oprVvAjJWfpH18xnRsZHeIezO2
-EYv6pTcTo9S+Kq7dMM0AOGL7tEojgzSJ10Bf/DsDJ6CMnx9XKJyn4Cz4V76vuoG6
-MwihvbafOaY5k0ZTyvOnribeqeHN+MqPYQTVzYxX4mTT2qYzjxK9OBc/BiisqoL2
-Hm3V3eFBlNGbBmpNtbXT0K88jAscNpuG58Azhfe68L/+4lGlmMgrlrm3uXITeiqi
-TOrmkMVeUAr4QHPRmo8Ss2/17a78FIoL8hJdSFhr7ocC9NNhK9PXLvi6hApAosan
-K6J2mgEs5iEPzcMFwVtNzSMFd0EadeuMAVKrgvJdLJRVQWvJfBbAjOB7Kh0rYNRO
-EeZUiG27IoINY7PUV675/IG97NDgXsv30b6wnh24pEC3Om1RfUYEmG3FNlhqfk0i
-f4ANsIsWPc0/FqE2xgk9odZjFr8eLcoNO9IPoGIYMHjaY7gredlUDIYG9jLuYwMt
-0tiaaLOpijRbN5OUkJ2T/Iv4+XWXxfPvM7ImnfBuKI0N/WBCBbrmMlxD5seVF9O7
-B2U3T3yi2fRweSYpFlQewqg5Wm3RzpgY8BewK45FKP/MCMDGzDVIw9qXUzu0LOsW
-XGoK0VNeKNCbcjRej/KG
-=RtcP
------END PGP SIGNATURE-----
-
---Signature=_Tue__31_Jul_2012_15_14_52_+1000_k_Umz5TJjwYZnBkc--
