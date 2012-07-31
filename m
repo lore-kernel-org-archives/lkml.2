@@ -1,205 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab2GaGTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:19:12 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59111 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab2GaGTK (ORCPT
+	id S1755499Ab2GaGXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:23:10 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51612 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab2GaGXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:19:10 -0400
-Message-ID: <501778DA.5020107@gmail.com>
-Date: Tue, 31 Jul 2012 08:19:06 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 31 Jul 2012 02:23:08 -0400
+Date: Tue, 31 Jul 2012 09:22:57 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Michael Ellerman <michael@ellerman.id.au>
+cc: Matt Evans <matt@ozlabs.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        prerna@linux.vnet.ibm.com, David Gibson <david@gibson.dropbear.id.au>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC/PATCH] Use kernel supplied MMU info for kvm tool
+In-Reply-To: <1342577283.25827.8.camel@concordia>
+Message-ID: <alpine.LFD.2.02.1207310922290.2405@tux.localdomain>
+References: <1342501220-10209-1-git-send-email-michael@ellerman.id.au>  <3e2231e9bf466549d1f9b12359f2f8f6@ozlabs.org>  <CAOJsxLGf6K0G90i==-TJ8WmGvuwtp9mpxsCMSJYw7Wn-JAvpcA@mail.gmail.com> <1342577283.25827.8.camel@concordia>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <syrjala@sci.fi>,
-        Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
-        GregKH <greg@kroah.com>
-Subject: Re: [PATCH 1/2] onewire: w1-gpio: add ext_pullup_enable pin in platform
- data
-References: <1343249670-14985-1-git-send-email-zonque@gmail.com> <20120730181238.GA23443@ioremap.net> <20120731005929.GP27847@sci.fi>
-In-Reply-To: <20120731005929.GP27847@sci.fi>
-X-Enigmail-Version: 1.4.3
-Content-Type: multipart/mixed;
- boundary="------------060706080404000502030709"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060706080404000502030709
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-
-On 31.07.2012 02:59, Ville Syrjälä wrote:
-> On Mon, Jul 30, 2012 at 10:12:39PM +0400, Evgeniy Polyakov wrote:
->> Hi
->>
->> Sorry for long delay
->> [resend with fixed Greg's address :)]
->>
->> On Wed, Jul 25, 2012 at 10:54:29PM +0200, Daniel Mack (zonque@gmail.com) wrote:
->>> In the process of porting boards to devicetree implemenation, we should
->>> keep information about external circuitry where they belong - the
->>> individual drivers.
->>>
->>> This patch adds a way to specify a GPIO to drive the (optional) external
->>> pull-up logic, rather than using a function pointer for that.
->>
->> I do not object against this patch, but I have rather limited knowledge
->> about gpio driver. Patch looks good, feel free to add my
->> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
->>
->> Greg, please pull it into your tree, if Ville does not object.
+On Wed, 18 Jul 2012, Michael Ellerman wrote:
+> It occurred to me overnight that I forgot to mention that in order to
+> build the new code you need the headers from a 3.5-rc1 era kernel (for
+> the ioctl & KVM_CAP definitions).
 > 
-> No objections from me.
+> The easiest way to do that is to merge linus' tree into kvmtool.
+> 
+> Are you planning on doing that in the master kvmtool tree anytime soon?
+> It's still based on 3.4-rc1 it seems.
 
-I take this as an Acked-by:?
-
-> The only cosmetic issue I spotted was 'pdata' being assigned twice in
-> w1_gpio_probe().
-
-Right. Amended patch below.
-
-
-Thanks a lot,
-Daniel
-
-
-
-
---------------060706080404000502030709
-Content-Type: text/x-patch;
- name="0001-onewire-w1-gpio-add-DT-bindings.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-onewire-w1-gpio-add-DT-bindings.patch"
-
->From 37385d15bbd9dbc637f1e46d962c90be5eeb1409 Mon Sep 17 00:00:00 2001
-From: Daniel Mack <zonque@gmail.com>
-Date: Mon, 23 Jul 2012 16:36:35 +0200
-Subject: [PATCH v2] onewire: w1-gpio: add DT bindings
-
-This patch add DT bindings to the w1-gpio driver, along with some
-documentation on how to use them.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-Acked-by: Ville Syrjala <syrjala@sci.fi>
----
- Documentation/devicetree/bindings/w1/w1-gpio.txt | 22 +++++++++++
- drivers/w1/masters/w1-gpio.c                     | 48 +++++++++++++++++++++++-
- 2 files changed, 69 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/w1/w1-gpio.txt
-
-diff --git a/Documentation/devicetree/bindings/w1/w1-gpio.txt b/Documentation/devicetree/bindings/w1/w1-gpio.txt
-new file mode 100644
-index 0000000..6e09c35
---- /dev/null
-+++ b/Documentation/devicetree/bindings/w1/w1-gpio.txt
-@@ -0,0 +1,22 @@
-+w1-gpio devicetree bindings
-+
-+Required properties:
-+
-+ - compatible: "w1-gpio"
-+ - gpios: one or two GPIO specs:
-+		- the first one is used as data I/O pin
-+		- the second one is optional. If specified, it is used as
-+		  enable pin for an external pin pullup.
-+
-+Optional properties:
-+
-+ - linux,open-drain: if specified, the data pin is considered in
-+		     open-drain mode.
-+
-+Examples:
-+
-+	onewire@0 {
-+		compatible = "w1-gpio";
-+		gpios = <&gpio 126 0>, <&gpio 105 0>;
-+	};
-+
-diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-index dac88ff..6012c4e 100644
---- a/drivers/w1/masters/w1-gpio.c
-+++ b/drivers/w1/masters/w1-gpio.c
-@@ -14,6 +14,8 @@
- #include <linux/slab.h>
- #include <linux/w1-gpio.h>
- #include <linux/gpio.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_gpio.h>
- 
- #include "../w1.h"
- #include "../w1_int.h"
-@@ -42,12 +44,55 @@ static u8 w1_gpio_read_bit(void *data)
- 	return gpio_get_value(pdata->pin) ? 1 : 0;
- }
- 
-+#ifdef CONFIG_OF
-+static struct of_device_id w1_gpio_dt_ids[] = {
-+	{ .compatible = "w1-gpio" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, w1_gpio_dt_ids);
-+
-+static int w1_gpio_probe_dt(struct platform_device *pdev)
-+{
-+	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
-+	struct device_node *np = pdev->dev.of_node;
-+	const struct of_device_id *of_id =
-+			of_match_device(w1_gpio_dt_ids, &pdev->dev);
-+
-+	if (!of_id)
-+		return 0;
-+
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return -ENOMEM;
-+
-+	if (of_get_property(np, "linux,open-drain", NULL))
-+		pdata->is_open_drain = 1;
-+
-+	pdata->pin = of_get_gpio(np, 0);
-+	pdata->ext_pullup_enable_pin = of_get_gpio(np, 1);
-+	pdev->dev.platform_data = pdata;
-+
-+	return 0;
-+}
-+#else
-+static int w1_gpio_probe_dt(struct platform_device *pdev)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int __init w1_gpio_probe(struct platform_device *pdev)
- {
- 	struct w1_bus_master *master;
--	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
-+	struct w1_gpio_platform_data *pdata;
- 	int err;
- 
-+	err = w1_gpio_probe_dt(pdev);
-+	if (err < 0)
-+		return err;
-+
-+	pdata = pdev->dev.platform_data;
-+
- 	if (!pdata)
- 		return -ENXIO;
- 
-@@ -151,6 +196,7 @@ static struct platform_driver w1_gpio_driver = {
- 	.driver = {
- 		.name	= "w1-gpio",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
- 	},
- 	.remove	= __exit_p(w1_gpio_remove),
- 	.suspend = w1_gpio_suspend,
--- 
-1.7.11.2
-
-
---------------060706080404000502030709--
+Done. Sorry for the delay!
