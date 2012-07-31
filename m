@@ -1,125 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835Ab2GaEDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:03:45 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:50307 "EHLO
+	id S1751282Ab2GaEKC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:10:02 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:33615 "EHLO
 	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab2GaEDo (ORCPT
+	with ESMTP id S1751455Ab2GaEKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:03:44 -0400
-Date: Tue, 31 Jul 2012 09:31:41 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: [PATCH] uprobes: don't enable/disable signle step if the user
-	did it
-Message-ID: <20120731040140.GA30007@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <1343316043-13475-1-git-send-email-bigeasy@linutronix.de> <20120730110658.GC11147@in.ibm.com> <20120730141638.GA5306@redhat.com>
+	Tue, 31 Jul 2012 00:10:00 -0400
+Date: Mon, 30 Jul 2012 21:09:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mail List <linux-kernel@vger.kernel.org>
+Subject: Re: [Regression 3.4] tick_broadcast_mask is not restored after a CPU
+ has been offline/onlined
+Message-ID: <20120731040955.GD2423@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120730151559.772d4055@feng-i7>
+ <20120730133913.GK2556@linux.vnet.ibm.com>
+ <20120730230747.7637112a@feng-i7>
+ <20120730170847.GE2391@linux.vnet.ibm.com>
+ <20120730174218.GA30772@linux.vnet.ibm.com>
+ <20120731111832.435b8bd9@feng-i7>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120730141638.GA5306@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20120731111832.435b8bd9@feng-i7>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073104-5518-0000-0000-000006781405
+x-cbid: 12073104-5518-0000-0000-00000678191A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 04:16:38PM +0200, Oleg Nesterov wrote:
-> On 07/30, Ananth N Mavinakayanahalli wrote:
-> >
-> > On Thu, Jul 26, 2012 at 05:20:43PM +0200, Sebastian Andrzej Siewior wrote:
-> > > If someone is using single stepping over uprobe brackpoint then after
-> > > we pass the uprobe single step, single stepping is disabled and the user
-> > > who enebaled them in the first place does not know anything about this.
-> > >
-> > > This patch avoids enabling / disabling the single step mode if it is
-> > > already enabled.
-> >
-> > This could happen any time 2 different entities call the
-> > user_(en/dis)able_single_step() helpers on the same thread.
+On Tue, Jul 31, 2012 at 11:18:32AM +0800, Feng Tang wrote:
+> Hi Paul,
 > 
-> Yes. But nobody except ptrace should do use these helpers, I think.
+> On Mon, 30 Jul 2012 10:42:18 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > On Mon, Jul 30, 2012 at 10:08:47AM -0700, Paul E. McKenney wrote:
+> > > On Mon, Jul 30, 2012 at 11:07:47PM +0800, Feng Tang wrote:
+> > > > Hi Paul,
+> > > > 
+> > > > On Mon, 30 Jul 2012 06:39:13 -0700
+> > > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > > > 
+> > > > > On Mon, Jul 30, 2012 at 03:15:59PM +0800, Feng Tang wrote:
+> > > > > > Hi All,
+> > > > > > 
+> > > > > > When I debugged a suspend/resume bug, I found that
+> > > > > > tick_broadcast_mask is not restored for a CPU after it is
+> > > > > > offline/onlined since kernel 3.4, while it's fine for 3.3.
+> > > > > 
+> > > > > Could you please try 3.5?
+> > > > 
+> > > > Yes, it's the same for 3.5
+> > > 
+> > > Thank you for checking, Feng.
+> > > 
+> > > Len, the comment above the change says:
+> > > 
+> > > 	/*
+> > > 	 * FIXME:  Design the ACPI notification to make it once per
+> > > 	 * system instead of once per-cpu.  This condition is a hack
+> > > 	 * to make the code that updates C-States be called once.
+> > > 	 */
+> > > 
+> > > Is it time for this design-level change?  Or is there something obvious
+> > > that I missed when fixing the smp_processor_id() splat?
+> > > 
+> > > I could revert back, but use raw_smp_processor_id() rather than
+> > > smp_processor_id(), but that feels like papering over a problem rather
+> > > than fixing it.
+> > 
+> > But should papering be appropriate, here is the patch.
+> > 
+> > 							Thanx, Paul
+> 
+> Just found and have a patch to fix a typo in acpi processor_driver.c, which
+> could also fix  this tick_broadcast_mask issue.
+> 	
+> Patch is in https://lkml.org/lkml/2012/7/30/483 
+> 
+> So I think we don't need this "papering over" patch :)
 
-Right now, yes.
+Very good, I have dropped it.
 
-> > Wouldn't the right way to fix it be to teach these helpers
-> > to honor what the TIF_SINGLESTEP
-> 
-> Well, I think uprobes should not use TIF_SINGLESTEP at all. This
-> bit is (mostly) needed to handle the stepping over syscall. But
-> I guess you didn't actually mean TIF_SINGLESTEP...
-> 
-> > flag setting was in the first place?
-> 
-> Perhaps, but I don't think so. If nothing else, we do not want
-> to add the new counter/whatever in task_struct, while uprobes
-> already has uprobe_task which can "remember" the state of _TF
-> bit and more.
-> 
-> And this can't solve other problems. Suppose that gdb does
-> PTRACE_SINGLESTEP but the original "popf" insn was already replaced
-> by "int3", this will obviously confuse is_setting_trap_flag().
-> 
-> And we need the additional SIGTRAP from handle_singlestep().
-> And we have more problems with DEBUGCTLMSR_BTF. And we do
-> not want access_process_vm() from uprobes code.
+							Thanx, Paul
 
-IIUC you'd want uprobes to do similar to what kprobes does today (see
-prepare_singlestep() in arch/xxx/kernel/kprobes.c).
-
-> So I think we need arch_uprobe_*able_step(struct uprobe_task *utask).
-> Ignoring all problems except the one this patch tries to fix, x86
-> can simply do:
+> Thanks,
+> Feng
 > 
-> 	arch_uprobe_enble_step(utask, struct arch_uprobe *auprobe)
-> 	{
-> 		utask->clear_tf =
-> 			!(regs->flags & X86_EFLAGS_TF) &&
-> 			(auprobe->insn != "popf");
-> 		regs->flags |= X86_EFLAGS_TF;
-> 	}
+> > 
+> > ------------------------------------------------------------------------
+> > 
+> > ACPI: Repair fix to unprotected smp_processor_id()
+> > 
+> > Commit 9505626d (ACPI: Fix unprotected smp_processor_id() in
+> > acpi_processor_cst_has_changed()) introduced a suspend/resume bug.
+> > This commit therefore introduces a bug-for-bug compatible fix for the
+> > original problem.
+> > 
+> > Reported-by: Feng Tang <feng.tang@intel.com>
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > 
+> > diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+> > index 47a8caa..19c151a 100644
+> > --- a/drivers/acpi/processor_idle.c
+> > +++ b/drivers/acpi/processor_idle.c
+> > @@ -1218,7 +1218,8 @@ int acpi_processor_cst_has_changed(struct
+> > acpi_processor *pr)
+> >  	 * to make the code that updates C-States be called once.
+> >  	 */
+> >  
+> > -	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
+> > +	if (raw_smp_processor_id() == 0 &&
+> > +	    cpuidle_get_driver() == &acpi_idle_driver) {
+> >  
+> >  		cpuidle_pause_and_lock();
+> >  		/* Protect against cpu-hotplug */
+> > 
 > 
-> 	arch_uprobe_disable_step(utask)
-> 	{
-> 		if (utask->clear_tf)
-> 			regs->flags &= ~X86_EFLAGS_TF;
-> 	}
-
-Right.
-
-> However. This all needs more discussion (and help from Roland I guess).
-> 
-> Sebastian, I think your patch is simple and certainly makes the things
-> better, just it is not correct (you already realized you can't use
-> uprobe->flags) and it is not arch-friendly.
-> 
-> I'd suggest you to make 2 patches:
-> 
-> 	- 1/2 creates arch_uprobe_*_step(...) __weak helpers in
-> 	      kernel/events/uprobes.c which simply call
-> 	      user_*_single_step() and updates the callers
-> 
-> 	      Not strictly necessary, but imho makes sense...
-> 
-> 	- 2/2 adds the x86 implementation in arch/x86/kernel/uprobes.c
-> 	      which still uses user_*_single_step() but checks
-> 	      TIF_SINGLESTEP. As your patch does, but you should use
-> 	      utask, not uprobe.
-> 
-> IOW, I simply suggest to make your patch x86-specific. Then we
-> will try to do more fixes/improvements.
-> 
-> 
-> Sebastian, Ananth, what do you think?
-
-Agreed.
-
-Ananth
 
