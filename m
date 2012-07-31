@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab2GaJya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 05:54:30 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58435 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749Ab2GaJy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 05:54:27 -0400
+	id S1752444Ab2GaKH5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:07:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751789Ab2GaKHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 06:07:24 -0400
+Message-ID: <5017AE48.5090108@redhat.com>
+Date: Tue, 31 Jul 2012 13:07:04 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1343716548-38742-1-git-send-email-john.stultz@linaro.org>
-References: <1343716548-38742-1-git-send-email-john.stultz@linaro.org>
-Date: Tue, 31 Jul 2012 10:54:26 +0100
-Message-ID: <CAAMvbhGnNAChs+6mzdRduzgYmWRXQexsbS=w0wgrRhAKrdL6QA@mail.gmail.com>
-Subject: Re: [PATCH 0/2][RFC] Better handling of insane CMOS values
-From: James Courtier-Dutton <james.dutton@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>,
-        CAI Qian <caiqian@redhat.com>
+To: Stefan Bader <stefan.bader@canonical.com>
+CC: Cong Wang <xiyou.wangcong@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>,
+        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: x86/mm: Limit 2/4M size calculation to x86_32
+References: <5000259D.9020303@canonical.com> <CAM_iQpVPzB69R1_4E_J5Yw=d1TncqHe0+dWEwOufQniNcpBVtg@mail.gmail.com> <500FCDF3.7080808@redhat.com> <500FD4FA.7020904@canonical.com> <500FE74C.4040907@redhat.com> <500FF3A1.6080809@canonical.com> <500FF767.8020507@redhat.com> <5017A9EB.1030903@canonical.com>
+In-Reply-To: <5017A9EB.1030903@canonical.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 July 2012 07:35, John Stultz <john.stultz@linaro.org> wrote:
-> So CAI Qian noticed recent boot trouble on a machine that had its CMOS
-> clock configured for the year 8200.
-> See: http://lkml.org/lkml/2012/7/29/188
->
-> While running with a crazy CMOS clock isn't advised, and a simple
-> "don't do that" might be reasonable, the behavior has in effect
-> regressed recently due to changes in the hrtimer/timekeeping
-> interactions.
->
-Would it not be easier to work out which CMOS clock values we can
-handle correctly, and then do input value validation on the CMOS
-values, and if a value is outside the acceptable range, assume a value
-equal to the minimum acceptable value.
+On 07/31/2012 12:48 PM, Stefan Bader wrote:
+> On 25.07.2012 15:40, Avi Kivity wrote:
+>> On 07/25/2012 04:24 PM, Stefan Bader wrote:
+>>>>> ...
+>>>>> ifdef CONFIG_X86_32
+>>>>>         /*
+>>>>>          * Don't use a large page for the first 2/4MB of memory
+>>>>>          * because there are often fixed size MTRRs in there
+>>>>>          * and overlapping MTRRs into large pages can cause
+>>>>>          * slowdowns.
+>>>>>          */
+>>>>>
+>>>>
+>>>> That's equally true for X86_64.
+>>>>
+>>>> Best would be to merge the MTRRs into PAT, but that might not work for SMM.
+>>>>
+>>>>
+>>> Ok, true. Not sure why this was restricted to 32bit when reconsidering. Except
+>>> if in 64bit it was assumed (or asserted) that the regions are aligned to 2M...
+>>> But maybe this can be answered by someone knowing the details. I would not mind
+>>> either way (have the first range with 4K pages in all cases or fixing the
+>>> additional PTE allocation). Just as it is now it is inconsistent.
+>> 
+>> Sometimes CONFIG_X86_32 is used as an alias for "machines so old they
+>> don't support x86_64".  As a 32-bit kernel can be run on a machine that
+>> does support x86_64, it should be replaced by a runtime test for
+>> X86_FEATURE_LM, until a more accurate test can be found.
+>> 
+> 
+> So basically the first range being 4k exist because MTRRs might define ranges
+> there and those are always aligned to 4k but not necessarily to the bigger pages
+> used. Reading through the Intel and AMD docs indicates various levels of badness
+> when this is not the case. Though afaict MTRRs are not tied to long mode capable
+> CPUs. For example Atom is 32bit only (the earlier ones at least) and uses MTRRs.
+> So testing for LM would miss those.
+> Would it not be better to unconditionally have the first 2/4M as 4k pages? At
+> least as long as there is no check for the alignment of the MTRR ranges. Or
+> thinking of it, the runtime test should look for X86_FEATURE_MTRR, shouldn't it?
 
-Also, surely all timer use within the kernel should use the monotonic
-time source for timer expiry, and not depend on CMOS time.
-I.e. If we want a thread to wake up once every 30 seconds, use the
-monotonic time source for that.
-conversion to local time should only be needed for timestamps.
-We might need a compile/boot time option to assign useable ranges to
-local time values.
-E.g. For this boot, local time is between year 2000 and 2100
-For next boot, local time is between year 2050 and 2150.
-Obviously, make the range as wide as we can sensibly handle, so the
-setting does not need to be changed very often.
-The range will be determined by the amount of bits in the time values.
-User space can work on much wider ranges for historical date storage,
-but for accessing the current time, smaller ranges are workable.
+MTRRs are indeed far older than x86_64; it's almost pointless to test
+for them, since practically all processors have them.
 
-Kind Regards
+The fact that the check is only done on i386 and not on x86_64 may come
+from one of
 
-James
+ - an oversight
+ - by the time x86_64 processors came along, the problem with
+conflicting sizes was resolved
+ - the whole thing is bogus
+
+Copying hpa who may be in a position to find out which.
+
+-- 
+error compiling committee.c: too many arguments to function
 
 
-
-
-
-
-
-
-> This patchset tries to resolve this issue in two ways:
-> 1) Change ktime_get_update_offsets to match ktime_get and avoid
-> possible precision loss with extremely large timespecs.
->
-> 2) Catch any stop attempt to set the time to a value (circa the
-> year 2264) large enough to overflow ktime_t.
->
-> The end fix here might be an either/or/both combination of these
-> two changes, so I wanted to send them out for comment. I'm also
-> looking at further ways to test and improve robustness around
-> these more extreme time values.
->
-> I've also only been able to lightly test. If you want to try this out
-> you can add the following to timekeeping_init after the
-> read_persistent_clock() call:
->
->         now.tv_sec = 196469280000LL;
->
-> thanks
-> -john
->
->
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Prarit Bhargava <prarit@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Zhouping Liu <zliu@redhat.com>
-> Cc: CAI Qian <caiqian@redhat.com>
->
->
-> John Stultz (2):
->   [RFC] time: Fix problem with large timespecs &
->     ktime_get_update_offsets
->   [RFC] time: Limit time values that would overflow ktime_t
->
->  kernel/time/timekeeping.c |   40 ++++++++++++++++++++++++++++++----------
->  1 file changed, 30 insertions(+), 10 deletions(-)
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
