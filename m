@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2GaMQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:16:21 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:42175 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab2GaMQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:16:18 -0400
+	id S1756158Ab2GaMSI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:18:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26496 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756026Ab2GaMSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 08:18:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="191093612"
+Date: Tue, 31 Jul 2012 20:17:59 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Steven Rostedt <srostedt@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: Testing tracer wakeup_rt: .. no entries found ..FAILED!
+Message-ID: <20120731121759.GA17822@localhost>
+References: <20120724090330.GA9830@localhost>
+ <20120724090720.GA10434@localhost>
+ <1343663105.3847.7.camel@fedora>
 MIME-Version: 1.0
-In-Reply-To: <5016DC5F.7030604@redhat.com>
-References: <20120720134937.GG9222@suse.de>
-	<20120720141108.GH9222@suse.de>
-	<20120720143635.GE12434@tiehlicka.suse.cz>
-	<20120720145121.GJ9222@suse.de>
-	<alpine.LSU.2.00.1207222033030.6810@eggly.anvils>
-	<50118E7F.8000609@redhat.com>
-	<50120FA8.20409@redhat.com>
-	<20120727102356.GD612@suse.de>
-	<5016DC5F.7030604@redhat.com>
-Date: Tue, 31 Jul 2012 20:16:17 +0800
-Message-ID: <CAJd=RBDBXWGKJRFuZA5Jr_u_QO+MnWe=vbp0L5ngorgDjhKtvw@mail.gmail.com>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown of
- hugetlbfs shared page tables V2 (resend)
-From: Hillf Danton <dhillf@gmail.com>
-To: lwoodman@redhat.com
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343663105.3847.7.camel@fedora>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 3:11 AM, Larry Woodman <lwoodman@redhat.com> wrote:
-> [ 1106.156569] ------------[ cut here ]------------
-> [ 1106.161731] kernel BUG at mm/filemap.c:135!
-> [ 1106.166395] invalid opcode: 0000 [#1] SMP
-> [ 1106.170975] CPU 22
-> [ 1106.173115] Modules linked in: bridge stp llc sunrpc binfmt_misc dcdbas
-> microcode pcspkr acpi_pad acpi]
-> [ 1106.201770]
-> [ 1106.203426] Pid: 18001, comm: mpitest Tainted: G        W    3.3.0+ #4
-> Dell Inc. PowerEdge R620/07NDJ2
-> [ 1106.213822] RIP: 0010:[<ffffffff8112cfed>]  [<ffffffff8112cfed>]
-> __delete_from_page_cache+0x15d/0x170
-> [ 1106.224117] RSP: 0018:ffff880428973b88  EFLAGS: 00010002
-> [ 1106.230032] RAX: 0000000000000001 RBX: ffffea0006b80000 RCX:
-> 00000000ffffffb0
-> [ 1106.237979] RDX: 0000000000016df1 RSI: 0000000000000009 RDI:
-> ffff88043ffd9e00
-> [ 1106.245927] RBP: ffff880428973b98 R08: 0000000000000050 R09:
-> 0000000000000003
-> [ 1106.253876] R10: 000000000000000d R11: 0000000000000000 R12:
-> ffff880428708150
-> [ 1106.261826] R13: ffff880428708150 R14: 0000000000000000 R15:
-> ffffea0006b80000
-> [ 1106.269780] FS:  0000000000000000(0000) GS:ffff88042fd60000(0000)
-> knlGS:0000000000000000
-> [ 1106.278794] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [ 1106.285193] CR2: 0000003a1d38c4a8 CR3: 000000000187d000 CR4:
-> 00000000000406e0
-> [ 1106.293149] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> 0000000000000000
-> [ 1106.301097] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> 0000000000000400
-> [ 1106.309046] Process mpitest (pid: 18001, threadinfo ffff880428972000,
-> task ffff880428b5cc20)
-> [ 1106.318447] Stack:
-> [ 1106.320690]  ffffea0006b80000 0000000000000000 ffff880428973bc8
-> ffffffff8112d040
-> [ 1106.328958]  ffff880428973bc8 00000000000002ab 00000000000002a0
-> ffff880428973c18
-> [ 1106.337234]  ffff880428973cc8 ffffffff8125b405 ffff880400000001
-> 0000000000000000
-> [ 1106.345513] Call Trace:
-> [ 1106.348235]  [<ffffffff8112d040>] delete_from_page_cache+0x40/0x80
-> [ 1106.355128]  [<ffffffff8125b405>] truncate_hugepages+0x115/0x1f0
-> [ 1106.361826]  [<ffffffff8125b4f8>] hugetlbfs_evict_inode+0x18/0x30
-> [ 1106.368615]  [<ffffffff811ab1af>] evict+0x9f/0x1b0
-> [ 1106.373951]  [<ffffffff811ab3a3>] iput_final+0xe3/0x1e0
-> [ 1106.379773]  [<ffffffff811ab4de>] iput+0x3e/0x50
-> [ 1106.384922]  [<ffffffff811a8e18>] d_kill+0xf8/0x110
-> [ 1106.390356]  [<ffffffff811a8f12>] dput+0xe2/0x1b0
-> [ 1106.395595]  [<ffffffff81193612>] __fput+0x162/0x240
-> [ 1106.401124]  [<ffffffff81193715>] fput+0x25/0x30
-> [ 1106.406265]  [<ffffffff8118f6c3>] filp_close+0x63/0x90
-> [ 1106.411997]  [<ffffffff8106058f>] put_files_struct+0x7f/0xf0
-> [ 1106.418302]  [<ffffffff8106064c>] exit_files+0x4c/0x60
-> [ 1106.424025]  [<ffffffff810629d7>] do_exit+0x1a7/0x470
-> [ 1106.429652]  [<ffffffff81062cf5>] do_group_exit+0x55/0xd0
-> [ 1106.435665]  [<ffffffff81062d87>] sys_exit_group+0x17/0x20
-> [ 1106.441777]  [<ffffffff815d0229>] system_call_fastpath+0x16/0x1b
+[CC kvm developers]
 
+On Mon, Jul 30, 2012 at 11:45:05AM -0400, Steven Rostedt wrote:
+> On Tue, 2012-07-24 at 17:07 +0800, Fengguang Wu wrote:
+> > On Tue, Jul 24, 2012 at 05:03:30PM +0800, Fengguang Wu wrote:
+> 
+> > And this warning shows up in one of the dozens of boots, for the same
+> > kconfig.
+> > 
+> > [    2.320434] Testing tracer wakeup: PASSED
+> > [    2.840288] Testing tracer wakeup_rt: .. no entries found ..FAILED!
+> > [    3.280861] ------------[ cut here ]------------
+> > [    3.281967] WARNING: at /c/kernel-tests/src/linux/kernel/trace/trace.c:834 register_tracer+0x1b0/0x270()
+> > [    3.284162] Hardware name: Bochs
+> > [    3.284933] Modules linked in:
+> > [    3.285695] Pid: 1, comm: swapper/0 Not tainted 3.5.0+ #1371
+> > [    3.287032] Call Trace:
+> > [    3.287626]  [<41035c32>] warn_slowpath_common+0x72/0xa0
+> > [    3.288938]  [<410e7dd0>] ? register_tracer+0x1b0/0x270
+> > [    3.290280]  [<410e7dd0>] ? register_tracer+0x1b0/0x270
+> > [    3.291516]  [<41035c82>] warn_slowpath_null+0x22/0x30
+> > [    3.292723]  [<410e7dd0>] register_tracer+0x1b0/0x270
+> > [    3.293921]  [<41434c7a>] ? init_irqsoff_tracer+0x11/0x11
+> > [    3.295269]  [<41434c95>] init_wakeup_tracer+0x1b/0x1d
+> > [    3.296464]  [<41001112>] do_one_initcall+0x112/0x160
+> > [    3.297639]  [<4141fadd>] kernel_init+0xf7/0x18e
+> > [    3.298724]  [<4141f455>] ? do_early_param+0x7a/0x7a
+> > [    3.299879]  [<4141f9e6>] ? start_kernel+0x375/0x375
+> > [    3.301093]  [<412b15c2>] kernel_thread_helper+0x6/0x10
+> > [    3.302352] ---[ end trace 57f7151f6a5def05 ]---
+> > 
+> 
+> The comment above this test shows:
+> 
+> 	 * Yes this is slightly racy. It is possible that for some
+> 	 * strange reason that the RT thread we created, did not
+> 	 * call schedule for 100ms after doing the completion,
+> 	 * and we do a wakeup on a task that already is awake.
+> 	 * But that is extremely unlikely, and the worst thing that
+> 	 * happens in such a case, is that we disable tracing.
+> 	 * Honestly, if this race does happen something is horrible
+> 	 * wrong with the system.
+> 
+> I guess the question now is, why didn't the RT test wake up?
+> 
+> Oh wait! You did this on a virt machine. This test isn't designed for
+> virt machines because the thread could have woken on another vcpu, but
+> due to scheduling of the host system, it didn't get to run for 100ms,
+> thus the test will fail because it never recorded the wakeup of the RT
+> task.
+> 
+> In other-words, the test is bogus on virt boxes :-/
 
-Perhaps we have to remove rmap when evicting inode.
+It's good to quickly get to the root cause :) Can we possibly detect
+whether we are in a virtual machine and hence skip this particular
+test case?
 
---- a/fs/hugetlbfs/inode.c	Tue Jul 31 19:59:32 2012
-+++ b/fs/hugetlbfs/inode.c	Tue Jul 31 20:04:14 2012
-@@ -390,9 +390,11 @@ static void truncate_hugepages(struct in
- 	hugetlb_unreserve_pages(inode, start, freed);
- }
-
-+static int hugetlb_vmtruncate(struct inode *, loff_t);
-+
- static void hugetlbfs_evict_inode(struct inode *inode)
- {
--	truncate_hugepages(inode, 0);
-+	hugetlb_vmtruncate(inode, 0);
- 	clear_inode(inode);
- }
-
---
+Thanks,
+Fengguang
