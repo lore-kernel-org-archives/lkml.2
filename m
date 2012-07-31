@@ -1,70 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab2GaCs5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 22:48:57 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41342 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab2GaCs4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 22:48:56 -0400
-Date: Tue, 31 Jul 2012 12:48:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benoit Cousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: linux-next: manual merge of the bjdooks-i2c tree with Linus' tree
-Message-Id: <20120731124845.81837e64e22f78795a9e7dab@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1755210Ab2GaCvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 22:51:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53754 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751847Ab2GaCvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 22:51:24 -0400
+Date: Tue, 31 Jul 2012 12:51:04 +1000
+From: NeilBrown <neilb@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Fox <pgf@laptop.org>
+Subject: Re: [PATCH] RTC: Avoid races between RTC alarm wakeup and suspend.
+Message-ID: <20120731125104.7a07f251@notabene.brown>
+In-Reply-To: <201207302301.49972.rjw@sisk.pl>
+References: <20120730113547.2c425ea9@notabene.brown>
+	<201207302301.49972.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__31_Jul_2012_12_48_45_+1000_u/++0bT.czUIqkkf"
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/+BGD+PxSJteLXtK/SYV.9Fv"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__31_Jul_2012_12_48_45_+1000_u/++0bT.czUIqkkf
+--Sig_/+BGD+PxSJteLXtK/SYV.9Fv
 Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Ben,
+On Mon, 30 Jul 2012 23:01:49 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-Today's linux-next merge of the bjdooks-i2c tree got a conflict in
-drivers/i2c/busses/i2c-omap.c between various commits from Linus' tree
-and commit d06333b7a618 ("i2c: OMAP: Add DT support for i2c controller")
-from the bjdooks-i2c tree.
+> On Monday, July 30, 2012, NeilBrown wrote:
+> >=20
+> > If an RTC alarm fires just as suspend is happening, it is possible for
+> > suspend to complete and the alarm to be missed.
+> >=20
+> > To avoid the race, we must register the event with the PM core.
+> >=20
+> > As the event is made visible to userspace through a thread which is
+> > only scheduled by the interrupt, we need a pm_stay_awake/pm_relax
+> > pair preventing suspend from the interrupt until the thread completes
+> > its work.
+> >=20
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+> >=20
+> > --
+> > This makes the pm_wakeup_event() call in cmos_interrupt unnecessary as =
+it
+> > provides suspend protection for all RTCs that use rtc_update_irq.
+>=20
+> Care to remove the call in cmos_interrupt(), then?
+>=20
+> > I think the pm_stay_awake//pm_relax is needed - just pm_wakup_event() i=
+s=20
+> > theoretically not sufficient.
+> >=20
+> > This is because there is no guarantee (that I know of) that the workque=
+ue
+> > thread will actually get scheduled before 'suspend' takes over.
+>=20
+> I think you are right.
 
-This was a complex conflict and since the bjdooks-i2c tree has not been
-updated since May 3 and I have been unable to access it for some time, I
-just dropped it for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks.
+Here is the revised patch.
 
---Signature=_Tue__31_Jul_2012_12_48_45_+1000_u/++0bT.czUIqkkf
-Content-Type: application/pgp-signature
+NeilBrown
+
+
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+Subject: [PATCH] RTC: Avoid races between RTC alarm wakeup and suspend.
+
+If an RTC alarm fires just as suspend is happening, it is possible for
+suspend to complete and the alarm to be missed.
+
+To avoid the race, we must register the event with the PM core.
+
+As the event is made visible to userspace through a thread which is
+only scheduled by the interrupt, we need a pm_stay_awake/pm_relax
+pair preventing suspend from the interrupt until the thread completes
+its work.
+
+This makes the pm_wakeup_event() call in cmos_interrupt unnecessary as
+it provides suspend protection for all RTCs that use rtc_update_irq.
+
+Cc: Paul Fox <pgf@laptop.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index eb415bd..9592b93 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -582,6 +582,7 @@ enum hrtimer_restart rtc_pie_update_irq(struct hrtimer =
+*timer)
+ void rtc_update_irq(struct rtc_device *rtc,
+ 		unsigned long num, unsigned long events)
+ {
++	pm_stay_awake(rtc->dev.parent);
+ 	schedule_work(&rtc->irqwork);
+ }
+ EXPORT_SYMBOL_GPL(rtc_update_irq);
+@@ -844,6 +845,7 @@ void rtc_timer_do_work(struct work_struct *work)
+=20
+ 	mutex_lock(&rtc->ops_lock);
+ again:
++	pm_relax(rtc->dev.parent);
+ 	__rtc_read_time(rtc, &tm);
+ 	now =3D rtc_tm_to_ktime(tm);
+ 	while ((next =3D timerqueue_getnext(&rtc->timerqueue))) {
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index 132333d..4267789 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -568,7 +568,6 @@ static irqreturn_t cmos_interrupt(int irq, void *p)
+ 		hpet_mask_rtc_irq_bit(RTC_AIE);
+=20
+ 		CMOS_READ(RTC_INTR_FLAGS);
+-		pm_wakeup_event(cmos_rtc.dev, 0);
+ 	}
+ 	spin_unlock(&rtc_lock);
+=20
+
+--Sig_/+BGD+PxSJteLXtK/SYV.9Fv
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQF0eNAAoJEECxmPOUX5FEggoP/RQrxj2Pl8dBBjVBKkHJEMos
-OVRyk2lcO5BR7iHPJS+ArB/K6QfkosPAa+QgrBn+JIL04hbnGCAQzkqtNXidLgVG
-TMrupy/8msMv4jYAJG6wkGiOaFNeAJgkLlCaGARe3dA0QAYNGJkFfNOQoNP1uVtH
-vHAkp1ROAOl7sh6MJ+IQ2ibi0Q6UCsltxRHtbOU/WGJTLPQbYOuO2oAWKPl4sIUz
-vD8vKKF8SrXFcMZzeNx9/ty8AgJCMBEdxOqu7Z+iv9rrUSqKwsVJTOWpmdBm73OA
-llsUhrbQ+fx/jml9j84oMwT/k0kaPY7DQfgiTZ9Tc7rbR8IsJDfy30gl203SnyhQ
-OEZYJqj8CFyWzcdL3lZtQMrp51FQHM8DuPl41BKgqcmhZ7XTa9/jNzJgatuJ9DDG
-NWehV6C+dk0tY4K0w06o5zfaPVXLyDrRVhfBiKSfY0nbqGh9SEH4KJK5ZsBkrsVF
-oRNTt/Jz9ePwwLD+kGOw3Cf8NI7zqXe/uz1bpyV3Sf+ni03h+2mgJ+D2UdbldWXX
-fD7eumDhsumdcTBioXcVSYhvESbPYBNq3W9yEc0UKYtE9nTuo7Dvp6g/BidEUyd8
-zPDv93isC6Mwg1ixkj3bg8cpdJWwEcqZaW7TIPUFKCpQpMhplzZGiUMl9V4MP88N
-JxXsz8l4eeiMe2PBFLaA
-=yzRo
+iQIVAwUBUBdIGDnsnt1WYoG5AQK0gQ//RyW4OqFwAov0yuOgVBC6hpKt2yJK+8tH
+DRQxhXxr8c0wpjgky2w7Uw136GmuK4RuMCt+k1rJOnxQKm+BN0p8gH0KgLAopyCR
+4EhkH6xPNszvr/uqwrxDbE3tO7V1atacVtvxW518SbIshynnS/pWqY0RFs8Nv6W9
+/UucB9fksr4C9DpXPxLGNsrgUBVrc0/5GT34GsjMM6gyFOfvby1XZYRh/n5Xsjhq
+GmHg/jjld32iyVuiG20iOTmhpti1/NaGSSU4ssopRK91e0zU36dk97KEgARgW209
+8sLOPulC1gWVps7P8Pg89z2QEPcqg8VnfLSOGi7L6pe4ksbWZoyOL2sBQZtJZG01
+qytibsUrmA1rp/VKinyJVbROWu6V3OQmqJsWkNte/m7lpyxzIS9VbX9NmRMP5P3U
+bTnQyIqH5WLIXwiPTRnvcokxuFP/+lZXWcfq9z07QDgGAO3DHi8Y5mPgQ5uI2LxY
+FL7j3PkqCU+gWKQjBpsmv/5AjoydDvFO4D0a4lEHwNexAja4/t3Yj71njffOlsIp
+O1hvVLEUip+A+ywqN+9HYP5oK1K/jjIZr3OU+/DCiEPFQYoqW602NPZPR5lzMEQt
+R9I+/AfZuAc6qS5N+Dc7b8WBgrNeqt/dKc3AzT5qzdpU/PsXTTWu9YLVDgI+TAQS
+pzrrJ8/ID3g=
+=Ozxo
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__31_Jul_2012_12_48_45_+1000_u/++0bT.czUIqkkf--
+--Sig_/+BGD+PxSJteLXtK/SYV.9Fv--
