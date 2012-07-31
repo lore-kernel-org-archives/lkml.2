@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab2GaLoM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 07:44:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8084 "EHLO mx1.redhat.com"
+	id S1756086Ab2GaLou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 07:44:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31189 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756065Ab2GaLoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 07:44:08 -0400
-Date: Tue, 31 Jul 2012 13:43:56 +0200
+	id S1756041Ab2GaLot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 07:44:49 -0400
+Date: Tue, 31 Jul 2012 13:44:34 +0200
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -14,8 +14,8 @@ Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH 2/3] x86, MSI: Allocate as many multiple IRQs as requested
-Message-ID: <864757eaf884e27c08f01f54ff6fa81d4af2ac57.1343732015.git.agordeev@redhat.com>
+Subject: [PATCH 3/3] x86, MSI: Minor readability fixes
+Message-ID: <b8b8f73e30bfb77ff0837820492773ce13469ba3.1343732015.git.agordeev@redhat.com>
 References: <cover.1343732015.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,126 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When multiple MSIs are enabled with pci_enable_msi_block() the number of
-allocated IRQs 'nvec' is rounded up to the nearest value of power of two.
-That could lead to a condition when number of requested and used IRQs is
-less than number of actually allocated IRQs.
-
-This fix introduces 'msi_desc::nvec' field to address the above issue -
-when non-zero, it holds the number of allocated IRQs. Otherwise, the old
-method is used.
-
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   16 +++++++---------
- drivers/pci/msi.c              |   10 ++++++++--
- include/linux/msi.h            |    1 +
- 3 files changed, 16 insertions(+), 11 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index f083049..5a5c92b 100644
+index 5a5c92b..888f3b9 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3107,16 +3107,12 @@ static inline void destroy_irqs(unsigned int irq, unsigned int count)
+@@ -3142,7 +3142,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+ 
+ 	if (irq_remapped(cfg)) {
+ 		compose_remapped_msi_msg(pdev, irq, dest, msg, hpet_id);
+-		return err;
++		return 0;
+ 	}
+ 
+ 	if (x2apic_enabled())
+@@ -3169,7 +3169,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+ 			MSI_DATA_DELIVERY_LOWPRI) |
+ 		MSI_DATA_VECTOR(cfg->vector);
+ 
+-	return err;
++	return 0;
  }
  
- static inline int
--can_create_pow_of_two_irqs(unsigned int from, unsigned int count)
-+can_create_irqs(unsigned int from, unsigned int count)
- {
--	if ((count > 1) && (count % 2))
--		return -EINVAL;
--
--	for (; count; count = count / 2) {
-+	for (; count; count = count - 1) {
- 		if (!irq_can_alloc_irqs(from, count))
- 			return count;
- 	}
--
- 	return -ENOSPC;
- }
- 
-@@ -3298,8 +3294,7 @@ int setup_msi_irqs(struct pci_dev *dev, int nvec)
- 	if (nvec > 1 && !irq_remapping_enabled)
- 		return 1;
- 
--	nvec = __roundup_pow_of_two(nvec);
--	ret = can_create_pow_of_two_irqs(nr_irqs_gsi, nvec);
-+	ret = can_create_irqs(nr_irqs_gsi, nvec);
- 	if (ret != nvec)
- 		return ret;
- 
-@@ -3307,11 +3302,13 @@ int setup_msi_irqs(struct pci_dev *dev, int nvec)
- 	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
- 	WARN_ON(msidesc->irq);
- 	WARN_ON(msidesc->msi_attrib.multiple);
-+	WARN_ON(msidesc->nvec);
- 
- 	node = dev_to_node(&dev->dev);
- 	irq = create_irqs(nr_irqs_gsi, nvec, node);
- 	if (irq == 0)
- 		return -ENOSPC;
-+	msidesc->nvec = nvec;
- 
- 	if (!irq_remapping_enabled) {
- 		ret = setup_msi_irq(dev, msidesc, irq, 0);
-@@ -3320,7 +3317,7 @@ int setup_msi_irqs(struct pci_dev *dev, int nvec)
- 		return 0;
- 	}
- 
--	msidesc->msi_attrib.multiple = ilog2(nvec);
-+	msidesc->msi_attrib.multiple = ilog2(__roundup_pow_of_two(nvec));
- 	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
- 		if (!sub_handle) {
- 			index = msi_alloc_remapped_irq(dev, irq, nvec);
-@@ -3348,6 +3345,7 @@ error:
- 	 */
- 	msidesc->irq = 0;
- 	msidesc->msi_attrib.multiple = 0;
-+	msidesc->nvec = 0;
- 
- 	return ret;
- }
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index a825d78..f0752d1 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -79,7 +79,10 @@ void default_teardown_msi_irqs(struct pci_dev *dev)
- 		int i, nvec;
- 		if (entry->irq == 0)
- 			continue;
--		nvec = 1 << entry->msi_attrib.multiple;
-+		if (entry->nvec)
-+			nvec = entry->nvec;
-+		else
-+			nvec = 1 << entry->msi_attrib.multiple;
- 		for (i = 0; i < nvec; i++)
- 			arch_teardown_msi_irq(entry->irq + i);
- 	}
-@@ -336,7 +339,10 @@ static void free_msi_irqs(struct pci_dev *dev)
- 		int i, nvec;
- 		if (!entry->irq)
- 			continue;
--		nvec = 1 << entry->msi_attrib.multiple;
-+		if (entry->nvec)
-+			nvec = entry->nvec;
-+		else
-+			nvec = 1 << entry->msi_attrib.multiple;
- 		for (i = 0; i < nvec; i++)
- 			BUG_ON(irq_has_action(entry->irq + i));
- 	}
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index ce93a34..6f4dfba 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -35,6 +35,7 @@ struct msi_desc {
- 
- 	u32 masked;			/* mask bits */
- 	unsigned int irq;
-+	unsigned int nvec;
- 	struct list_head list;
- 
- 	union {
+ static int
+@@ -3251,7 +3251,7 @@ int setup_msix_irqs(struct pci_dev *dev, int nvec)
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		irq = create_irq_nr(irq_want, node);
+ 		if (irq == 0)
+-			return -1;
++			return -ENOSPC;
+ 		irq_want = irq + 1;
+ 		if (!irq_remapping_enabled)
+ 			goto no_ir;
 -- 
 1.7.7.6
 
