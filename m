@@ -1,171 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab2GaXVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:21:54 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:38370 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab2GaXVu (ORCPT
+	id S1756219Ab2GaXWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:22:44 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57428 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab2GaXWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:21:50 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-e5-5018688c9cf6
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Damien Cassou'" <damien.cassou@lifl.fr>
-Cc: kernel-janitors@vger.kernel.org,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1343752762-16861-1-git-send-email-damien.cassou@lifl.fr>
- <1343752762-16861-6-git-send-email-damien.cassou@lifl.fr>
-In-reply-to: <1343752762-16861-6-git-send-email-damien.cassou@lifl.fr>
-Subject: Re: [PATCH 5/5] drivers/video/exynos/exynos_dp_core.c: use devm_
- functions
-Date: Wed, 01 Aug 2012 08:21:48 +0900
-Message-id: <002c01cd6f73$4252b090$c6f811b0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1vOw8Oecq/0EDuSGa/YjFArJSW8QANo8xg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jAd3eDIkAg/dLmSy23pK2ONH3gdXi
-	8q45bA7MHp83yQUwRnHZpKTmZJalFunbJXBlnJv1l63gkExF98OrrA2Me8S6GDk4JARMJGac
-	tupi5AQyxSQu3FvP1sXIxSEksIhRYsXJjawgCSGBX4wSMw/Ig9hsAmoSX74cZgexRQS0JR78
-	PsUM0sAscIBR4sWFViaI7kZGiYVnt7GBVHEKuEmcW7+PGcQWFgiV6D36BqybRUBV4tqTvUwg
-	Nq+ArcSb1i42CFtQ4sfkeywgNrOAlsT6nceZIGx5ic1r3jJDXK0u8eivLsQRRhKfXu9lgygR
-	kdj34h3jBEahWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERza
-	z6R3MK5qsDjEKMDBqMTD+8JMIkCINbGsuDL3EKMEB7OSCK9aBFCINyWxsiq1KD++qDQntfgQ
-	ozQHi5I4r4n3V38hgfTEktTs1NSC1CKYLBMHp1QDI/eG73znBU32GKZs2+bukvp5d1RhjsDz
-	4+eMLli5rDe6Y/7Qdabw1dwpaiq6wpu2VDtKVQVy/t6r4CvncmTiiSmtXm/eKjC06xhmT098
-	oX6tNs29+czevwmrnVfN/siz1rjj3txLl9obCr7u4eJhO1V8Q8VKXi33Vdf+8hN31zLq1Uto
-	cKnoKbEUZyQaajEXFScCAMm7WchpAgAA
-X-TM-AS-MML: No
+	Tue, 31 Jul 2012 19:22:43 -0400
+Message-ID: <501868C0.3090806@wwwdotorg.org>
+Date: Tue, 31 Jul 2012 17:22:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        devicetree-discuss@lists.ozlabs.org,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
+References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de> <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com> <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de> <50185619.5090706@gmail.com>
+In-Reply-To: <50185619.5090706@gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 01, 2012 1:39 AM Damien Cassou wrote:
-> 
-> From: Damien Cassou <damien.cassou@lifl.fr>
-> 
-> The various devm_ functions allocate memory that is released when a driver
-> detaches.  This patch uses these functions for data that is allocated in
-> the probe function of a platform device and is only freed in the remove
-> function.
-> 
-> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
-> 
-> ---
->  drivers/video/exynos/exynos_dp_core.c |   27 +++++++--------------------
->  1 file changed, 7 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
-> index c6c016a..00fe4f0 100644
-> --- a/drivers/video/exynos/exynos_dp_core.c
-> +++ b/drivers/video/exynos/exynos_dp_core.c
-> @@ -872,7 +872,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
-> 
->  	dp->dev = &pdev->dev;
-> 
-> -	dp->clock = clk_get(&pdev->dev, "dp");
-> +	dp->clock = devm_clk_get(&pdev->dev, "dp");
->  	if (IS_ERR(dp->clock)) {
->  		dev_err(&pdev->dev, "failed to get clock\n");
->  		return PTR_ERR(dp->clock);
-> @@ -881,31 +881,24 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  	clk_enable(dp->clock);
-> 
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res) {
-> -		dev_err(&pdev->dev, "failed to get registers\n");
-> -		ret = -EINVAL;
-> -		goto err_clock;
-> -	}
+On 07/31/2012 04:03 PM, Rob Herring wrote:
+> On 07/30/2012 02:47 AM, Thierry Reding wrote:
+>> On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
+>>> On Mon, Jul 23, 2012 at 1:59 PM, Thierry Reding
+>>> <thierry.reding@avionic-design.de> wrote:
+>>>
+>>>> This commit adds a driver for the Avionic Design N-bit GPIO expander.
+>>>> The expander provides a variable number of GPIO pins with interrupt
+>>>> support.
 
-Why do you remove this return check?
-If there is no reason, please, do it as follows:
+>>>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-adnp.txt b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
 
-  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!res) {
-		dev_err(&pdev->dev, "failed to get registers\n");
--		ret = -EINVAL;
--		goto err_clock;
-+		return -EINVAL;
-	}
+>>>> +Required properties:
 
+>>>> +- nr-gpios: The number of pins supported by the controller.
 
-Best regards,
-Jingoo Han
+> For nr-gpios, I think it is typically not needed. Generally, you will
+> know how many gpio lines the h/w has based on the compatible string. If
+> this part really is the same part but different packages with different
+> numbers of gpio, then this property makes sense. Otherwise, I would say
+> drop it.
+> 
+> If your goal is how many gpios are you using, you really need a bitmap
+> instead if you want it to be generic.
+> 
+> IIRC, Tegra also needed this in that they N instances of some number of
+> bits and the registers are interleaved so they can't have separate nodes.
 
-
-> 
->  	dp->reg_base = devm_request_and_ioremap(&pdev->dev, res);
->  	if (!dp->reg_base) {
->  		dev_err(&pdev->dev, "failed to ioremap\n");
-> -		ret = -ENOMEM;
-> -		goto err_clock;
-> +		return -ENOMEM;
->  	}
-> 
->  	dp->irq = platform_get_irq(pdev, 0);
->  	if (!dp->irq) {
->  		dev_err(&pdev->dev, "failed to get irq\n");
-> -		ret = -ENODEV;
-> -		goto err_clock;
-> +		return -ENODEV;
->  	}
-> 
->  	ret = devm_request_irq(&pdev->dev, dp->irq, exynos_dp_irq_handler, 0,
->  				"exynos-dp", dp);
->  	if (ret) {
->  		dev_err(&pdev->dev, "failed to request irq\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
-> 
->  	dp->video_info = pdata->video_info;
-> @@ -917,7 +910,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  	ret = exynos_dp_detect_hpd(dp);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to detect hpd\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
-> 
->  	exynos_dp_handle_edid(dp);
-> @@ -926,7 +919,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  				dp->video_info->link_rate);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to do link train\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
-> 
->  	exynos_dp_enable_scramble(dp, 1);
-> @@ -940,17 +933,12 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  	ret = exynos_dp_config_video(dp, dp->video_info);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to config video\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
-> 
->  	platform_set_drvdata(pdev, dp);
-> 
->  	return 0;
-> -
-> -err_clock:
-> -	clk_put(dp->clock);
-> -
-> -	return ret;
->  }
-> 
->  static int __devexit exynos_dp_remove(struct platform_device *pdev)
-> @@ -962,7 +950,6 @@ static int __devexit exynos_dp_remove(struct platform_device *pdev)
->  		pdata->phy_exit();
-> 
->  	clk_disable(dp->clock);
-> -	clk_put(dp->clock);
-> 
->  	return 0;
->  }
-
+In the end, I got away without having a separate property to represent
+this. Instead, the code keys off the number of interrupts listed in the
+interrupts property, there being one interrupt per GPIO bank, and hence
+dynamically instantiates the number of banks based on that.
