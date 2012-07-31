@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab2GaWLT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 18:11:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57612 "EHLO mail.skyhub.de"
+	id S1754710Ab2GaWQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 18:16:18 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56658 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795Ab2GaWLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 18:11:18 -0400
-Date: Wed, 1 Aug 2012 00:11:13 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: awful kconfig help texts.
-Message-ID: <20120731221113.GA10201@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Thierry Reding <thierry.reding@avionic-design.de>
-References: <20120731151600.GA19412@redhat.com>
- <20120731170741.GA4735@x1.osrc.amd.com>
- <20120731184313.GA30493@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120731184313.GA30493@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754457Ab2GaWQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 18:16:17 -0400
+Message-ID: <1343772951.16975.18.camel@pasglop>
+Subject: Re: CRYPTO_DEV_NX merge problem (Re: linux-next: Tree for July 31)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kent Yoder <key@linux.vnet.ibm.com>, anton@samba.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Date: Wed, 01 Aug 2012 08:15:51 +1000
+In-Reply-To: <19970.1343772018@neuling.org>
+References: <20120731152614.de6ebe9e0d4b8fc6645b793a@canb.auug.org.au>
+	 <31974.1343714338@neuling.org> <5017DE06.3000103@linux.vnet.ibm.com>
+	 <19970.1343772018@neuling.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 02:43:13PM -0400, Dave Jones wrote:
-> On Tue, Jul 31, 2012 at 07:07:41PM +0200, Borislav Petkov wrote:
->  > Oh, there's one more enlightening sentence in the help:
->  > 
->  > "You only need to enable this, if you also want to enable one or more of
->  > the PWM drivers below."
->  > 
->  > Got it? :-)
+On Wed, 2012-08-01 at 08:00 +1000, Michael Neuling wrote:
 > 
-> No, it doesn't add anything useful at all.
+> OK.  Please post the fix as a patch.  Anton's patch is already in the
+> powerpc next tree so it won't be changed/rebased directly.  
+> 
+> I'm not sure who can carry this, since the crypto tree doesn't have
+> Anton's change and the powerpc tree doesn't have Seth's change.
+> 
+> sfr: who normally carries it when we have a merge issue like this?
+> You?
 
-Sorry, I think you misunderstood me and I didn't express my irony
-adequately - I was trying to be ironic, maybe even sarcastic here. But
-that's hard to convey in written form.
+There is no powerpc -next tree at this point, Anton patch is either
+upstream or in no tree.
 
-> I know PWM is probably pulse width modulation, but why would my kernel
-> need to care about this ? Why would I need drivers for it ?
->
-> Also, think about what happens with 'oldconfig'. You don't get to even
-> see 'the drivers below' until you've answered this question.
->
-> It couldn't be more opaque if it tried.
+Cheers,
+Ben.
 
-I agree with all you've said and you're preaching to the choir. Sorry
-that I didn't make my sarcasm more explicit.
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
