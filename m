@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab2GaOq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:46:59 -0400
+	id S1754759Ab2GaOrW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:47:22 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:34763 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754664Ab2GaOqJ (ORCPT
+	with ESMTP id S1754352Ab2GaOqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:46:09 -0400
+	Tue, 31 Jul 2012 10:46:05 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
         alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 5/5] ARM: ux500: Ensure probing of Audio devices when Device Tree is enabled
-Date: Tue, 31 Jul 2012 15:45:44 +0100
-Message-Id: <1343745944-18418-6-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 2/5] ASoC: ab8500: Inform SoC Core that we have our own I/O arrangements
+Date: Tue, 31 Jul 2012 15:45:41 +0100
+Message-Id: <1343745944-18418-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343745944-18418-1-git-send-email-lee.jones@linaro.org>
 References: <1343745944-18418-1-git-send-email-lee.jones@linaro.org>
@@ -23,44 +23,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous attempts to add platform probing of the Audio related devices
-only call from non-DT initialisation functions. This patch extends that
-functionality to the Device Tree related ones too.
+If codec->control_data is not populated SoC Core assumes we want to
+use regmap, which fails catastrophically, as we don't have one:
+
+Unable to handle kernel NULL pointer dereference at virtual address 00000080
+pgd = c0004000
+[00000080] *pgd=00000000
+Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+Modules linked in:
+CPU: 1    Not tainted  (3.5.0-rc6-00884-g0b2419e-dirty #130)
+PC is at regmap_read+0x10/0x5c
+LR is at hw_read+0x80/0x90
+pc : [<c01a91b8>]    lr : [<c0216804>]    psr: 60000013
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500.c |    4 ++++
+ sound/soc/codecs/ab8500-codec.c |    4 ++++
  1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index e641003..87a5cd7 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -794,6 +794,7 @@ static void __init u8500_init_machine(void)
- 				ARRAY_SIZE(mop500_platform_devs));
+diff --git a/sound/soc/codecs/ab8500-codec.c b/sound/soc/codecs/ab8500-codec.c
+index 3c79592..23b4018 100644
+--- a/sound/soc/codecs/ab8500-codec.c
++++ b/sound/soc/codecs/ab8500-codec.c
+@@ -2406,6 +2406,10 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
  
- 		mop500_sdi_init(parent);
-+		mop500_msp_init(parent);
- 		i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
- 		i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
- 		i2c_register_board_info(2, mop500_i2c2_devices,
-@@ -801,6 +802,8 @@ static void __init u8500_init_machine(void)
- 
- 		mop500_uib_init();
- 
-+	} else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
-+		mop500_of_msp_init(parent);
- 	} else if (of_machine_is_compatible("st-ericsson,hrefv60+")) {
- 		/*
- 		 * The HREFv60 board removed a GPIO expander and routed
-@@ -812,6 +815,7 @@ static void __init u8500_init_machine(void)
- 				ARRAY_SIZE(mop500_platform_devs));
- 
- 		hrefv60_sdi_init(parent);
-+		mop500_msp_init(parent);
- 
- 		i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
- 		i2c0_devs -= NUM_PRE_V60_I2C0_DEVICES;
+ 	/* Setup AB8500 according to board-settings */
+ 	pdata = (struct ab8500_platform_data *)dev_get_platdata(dev->parent);
++
++	/* Inform SoC Core that we have our own I/O arrangements. */
++	codec->control_data = (void *)true;
++
+ 	status = ab8500_audio_setup_mics(codec, &pdata->codec->amics);
+ 	if (status < 0) {
+ 		pr_err("%s: Failed to setup mics (%d)!\n", __func__, status);
 -- 
 1.7.9.5
 
