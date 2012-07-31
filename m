@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab2GaR1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:27:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41464 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752958Ab2GaR1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:27:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="175362431"
-Date: Tue, 31 Jul 2012 10:27:09 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: chetan loke <loke.chetan@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
-Message-ID: <20120731172709.GB14080@jonmason-lab>
-References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
- <1343607994-32415-2-git-send-email-jon.mason@intel.com>
- <CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
- <20120730181542.GA987@jonmason-lab>
- <CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
- <CAAsGZS5kOyQ5FQ7Jg3HxOmmPNYS+F6XcB-_3tm=rcgDV7wAvRQ@mail.gmail.com>
+	id S1753506Ab2GaRap (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:30:45 -0400
+Received: from mail.profihost.ag ([85.158.179.208]:41422 "EHLO
+	mail.profihost.ag" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab2GaRan (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 13:30:43 -0400
+Message-ID: <50181647.5000701@profihost.ag>
+Date: Tue, 31 Jul 2012 19:30:47 +0200
+From: Stefan Priebe <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAsGZS5kOyQ5FQ7Jg3HxOmmPNYS+F6XcB-_3tm=rcgDV7wAvRQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
+References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com>
+In-Reply-To: <5017F19E.4070308@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 12:02:20PM -0400, chetan loke wrote:
-> On Tue, Jul 31, 2012 at 9:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Mon, Jul 30, 2012 at 12:15 PM, Jon Mason <jon.mason@intel.com> wrote:
-> >>
-> >> I've tried to make it all generic enough that non-Intel NTBs should plug in with
-> >> minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
-> >> redesign of ntb_hw.c might be necessary.  But from what I've seen of other
-> >> designs on the internet, they appear to be extremely similar.  The transport and
-> >> client drivers were written with the hardware abstracted away as much as
-> >> possible to prevent the need to modify it for different hardware.  If there is
-> >> anything which is Intel hardware specific, I'd be happy to change it to make it
-> >> more generic.
-> >
-> > That makes sense from a technical point of view, but I think it's
-> > going to cause maintenance issues.  For example, assume PLX NTB
-> > support is added.  Will PLX be happy about having to convince you to
-> > accept changes?  Will Intel be happy about having to release a new
-> 
-> Do you mean convince Intel? Well, if we think of ntb as the class
-> driver then the onus is on the community to vet the changes and NOT
-> intel.
-> And since this is the first NTB part for which the support is
-> introduced the class driver design could be a moving target. As
-> someone else mentioned, the async/sync tx-dma is another hook that
-> could change the class driver's design.
-> 
-> 
-> > driver for their hardware just to incorporate a PLX bug fix?  Will
-> > users of PLX hardware accept a new driver release that only benefits
-> > Intel users?
-> 
-> May be till the class driver is stable, the client(intel/PLX) drivers
-> might have to be modified.  This is a cue for other vendors to
-> chime-in and review this design?
-> Just thinking if this could sit in staging for some time(so that
-> others get a chance to review/suggest changes as well) and then get
-> promoted out of staging.
+Am 31.07.2012 16:54, schrieb Avi Kivity:
+> On 07/31/2012 02:59 PM, Stefan Priebe - Profihost AG wrote:
+>> Hello list,
+>>
+>> i hope it is correct to list the maintainers of kvm. While trying to
+>> install ubuntu 12.04 amd64 on a kvm based vm the KVM process segfaults
+>> while ubuntu tries to detect the HW:
+>> kvm[2978]: segfault at 7fb90d9035e0 ip 00007fb90d9035e0
+>> sp00007fff652e4ed8 error 15
+>>
+>> This does not happen with a rhel6 based 2.6.32 kernel so i thought this
+>> must be a bug in vanilla 3.5.0 kernel.
+>>
+>> Is this known? What information do you need?
+>>
+> Please build qemu with debug information, generate a core, and post a
+> backtrace.
 
-I don't see the benefit of having the driver in staging.  Any vendors
-who would notice the ntb driver in staging would be sitting on these
-mailing lists and hopefully have planety of comments on the design.
-Stashing the driver in staging while waiting for these comments (which
-may never come) doesn't seem the best course of action.
+mhm tried that but i can't get it to work:
 
-Thanks,
-Jon
+gdb /usr/bin/qemu-system-x86_64 /core
 
-> 
-> Chetan Loke
+GNU gdb (GDB) 7.0.1-debian
+Copyright (C) 2009 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later 
+<http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+
+warning: The current binary is a PIE (Position Independent Executable), 
+which
+GDB does NOT currently support.  Most debugger features will fail if used
+in this session.
+
+Reading symbols from /usr/bin/qemu-system-x86_64...done.
+
+warning: core file may not match specified executable file.
+[New Thread 2222]
+[New Thread 1809]
+[New Thread 1811]
+[New Thread 1807]
+[New Thread 1812]
+[New Thread 1810]
+[New Thread 1813]
+[New Thread 1806]
+[New Thread 1808]
+Core was generated by `/usr/bin/qemu-system-x86_64 -id 103 -chardev 
+socket,id=qmp,path=/var/run/qemu-s'.
+Program terminated with signal 11, Segmentation fault.
+#0  0x00007f6ca10faed8 in ?? ()
+(gdb) where
+#0  0x00007f6ca10faed8 in ?? ()
+#1  0x00007f6ca54e0098 in ?? ()
+#2  0x00007f6ca10faf18 in ?? ()
+#3  0x00007f6ca10fae98 in ?? ()
+#4  0x00007fffc18a5330 in ?? ()
+#5  0x40620711c948c800 in ?? ()
+#6  0x00007fffc18a51f0 in ?? ()
+#7  0x00007f6ca54e0e25 in ?? ()
+#8  0x00007f6ca10faf18 in ?? ()
+#9  0x00007f6ca10fae98 in ?? ()
+#10 0x0000000000000000 in ?? ()
+
+Greets,
+Stefan
