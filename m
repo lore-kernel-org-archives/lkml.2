@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab2GaGrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:47:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62633 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753452Ab2GaGrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:47:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="173465675"
-Subject: Re: [PATCH V2] dma: tegra: enable/disable dma clock
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <50124D54.3020405@nvidia.com>
-References: <1342771268-5252-1-git-send-email-ldewangan@nvidia.com>
-	 <1343106498.1726.5974.camel@vkoul-udesk3> <500E2BE0.7060602@nvidia.com>
-	 <50124D54.3020405@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Jul 2012 12:18:44 +0530
-Message-ID: <1343717324.1726.14410.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755555Ab2GaGsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:48:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33936 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749Ab2GaGsF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 02:48:05 -0400
+Message-ID: <50177F96.4040007@kernel.dk>
+Date: Tue, 31 Jul 2012 08:47:50 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: chetan loke <loke.chetan@gmail.com>
+CC: paul.clements@us.sios.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] block/nbd: micro-optimization in nbd request completion
+References: <1338992116-28094-1-git-send-email-loke.chetan@gmail.com> <CAECXXi5OjRwQ3Ma2k+XGwGWf8E-CMhYsFERxtoSkEjmTktnsfQ@mail.gmail.com> <CAAsGZS4M1ZgWyFAmVm26JO7VRrfc0ociY3Z_PDPvHrdbdFT7-w@mail.gmail.com>
+In-Reply-To: <CAAsGZS4M1ZgWyFAmVm26JO7VRrfc0ociY3Z_PDPvHrdbdFT7-w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-27 at 13:42 +0530, Laxman Dewangan wrote:
-> On Tuesday 24 July 2012 10:30 AM, Laxman Dewangan wrote:
-> > On Tuesday 24 July 2012 10:38 AM, Vinod Koul wrote:
-> >> On Fri, 2012-07-20 at 13:31 +0530, Laxman Dewangan wrote:
-> >>> Enable the DMA clock when allocating channel and
-> >>> disable clock when freeing channels.
-> >>>
-> >>> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
-> >>> ---
-> >>> +	clk_disable_unprepare(tdma->dma_clk);
-> >> What if another channel is active, disabling clock can cause bad
-> >> behavior. You should check here if all channels are idle and then
-> >> disable, or is this handled by clock API?
-> > Yes, clock driver keeps the reference count and so client driver need
-> > not to take care.
-> >
-> Hi Vinod,
-> Is there any thing remaining from my side here?
-Nope, I will take care of it
-> Is it possible to make it for K3.6?
-Nope 3.6 is released, too late for that
+On 07/30/2012 05:02 PM, chetan loke wrote:
+> On Wed, Jun 6, 2012 at 1:20 PM, Paul Clements
+> <paul.clements@steeleye.com> wrote:
+>> Makes sense. Looks good to me.
+>>
+>> Acked-by: Paul.Clements@steeleye.com
+>>
+>> On Wed, Jun 6, 2012 at 10:15 AM, Chetan Loke <loke.chetan@gmail.com> wrote:
+>>>
+>>> Add in-flight cmds to the tail. That way while searching(during request completion),we will always get a hit on the first element.
+>>>
+> 
+> Paul/Jens,
+> 
+> Looks like this one isn't merged yet.
+
+I've merged it now.
 
 -- 
-~Vinod
+Jens Axboe
 
