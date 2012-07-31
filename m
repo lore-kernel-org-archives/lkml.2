@@ -1,129 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab2GaRZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:25:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4786 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab2GaRY7 (ORCPT
+	id S1753246Ab2GaR0O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:26:14 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:55925 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752353Ab2GaR0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:24:59 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=I5RZEMmPgckA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=KKAkSRfTAAAA:8 a=VnNF1IyMAAAA:8 a=lQznST3YeLCgdUvaGU0A:9 a=PUjeQqilurYA:10 a=WwgC8nHKvroA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343755497.27983.59.camel@gandalf.stny.rr.com>
-Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Date: Tue, 31 Jul 2012 13:24:57 -0400
-In-Reply-To: <20120731171733.GK2422@linux.vnet.ibm.com>
-References: <20120724090330.GA9830@localhost>
-	 <1343662752.3847.2.camel@fedora> <20120731120556.GB17252@localhost>
-	 <1343741625.27983.39.camel@gandalf.stny.rr.com>
-	 <20120731144453.GB2422@linux.vnet.ibm.com>
-	 <1343746311.27983.52.camel@gandalf.stny.rr.com>
-	 <1343746583.27983.55.camel@gandalf.stny.rr.com>
-	 <20120731151808.GF2422@linux.vnet.ibm.com>
-	 <1343749502.27983.57.camel@gandalf.stny.rr.com>
-	 <20120731171733.GK2422@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Tue, 31 Jul 2012 13:26:13 -0400
+Message-ID: <501814F0.5050008@xenotime.net>
+Date: Tue, 31 Jul 2012 10:25:04 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Pekka Enberg <penberg@kernel.org>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org
+Subject: Re: [PATCH] sched: Document schedule() entry points
+References: <1343715300-6315-1-git-send-email-penberg@kernel.org>
+In-Reply-To: <1343715300-6315-1-git-send-email-penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 10:17 -0700, Paul E. McKenney wrote:
+On 07/30/2012 11:15 PM, Pekka Enberg wrote:
 
-> rcu: Permit RCU_NONIDLE() to be used from interrupt context
+> This patch adds a comment on top of the schedule() function to explain
+> to scheduler newbies how the main scheduler function is entered.
 > 
-> There is a need to use RCU from interrupt context, but either before
-> rcu_irq_enter() is called or after rcu_irq_exit() is called.  If the
-> interrupt occurs from idle, then lockdep-RCU will complain about such
-> uses, as they appear to be illegal uses of RCU from the idle loop.
-> In other environments, RCU_NONIDLE() could be used to properly protect
-> the use of RCU, but RCU_NONIDLE() currently cannot be invoked except
-> from process context.
+> Explained-by: Ingo Molnar <mingo@kernel.org>
+> Explained-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+> ---
+>  kernel/sched/core.c |   34 ++++++++++++++++++++++++++++++++++
+>  1 files changed, 34 insertions(+), 0 deletions(-)
 > 
-> This commit therefore modifies RCU_NONIDLE() to permit its use more
-> globally.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 115ead2..4eab81a 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -210,14 +210,12 @@ extern void exit_rcu(void);
->   * to nest RCU_NONIDLE() wrappers, but the nesting level is currently
->   * quite limited.  If deeper nesting is required, it will be necessary
->   * to adjust DYNTICK_TASK_NESTING_VALUE accordingly.
-> - *
-> - * This macro may be used from process-level code only.
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 468bdd4..9f31bbd 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3361,6 +3361,40 @@ pick_next_task(struct rq *rq)
+>  
+>  /*
+>   * __schedule() is the main scheduler function.
+> + *
+> + * The main means of driving the scheduler and thus entering this function are:
+> + *
+> + *   1. Explicit blocking: mutex, semaphore, waitqueue, etc.
+> + *
+> + *   2. TIF_NEED_RESCHED flag is checked on interrupt and userspace return
+> + *      paths. For example, see arch/x86/entry_64.S.
+> + *
+> + *      To drive preemption between tasks, the scheduler sets the flag is set
+
+
+eh?
+
+> + *      in timer interrupt handler scheduler_tick().
+> + *
+> + *   3. Wakeups don't really cause entry into schedule(). They add a
+> + *      task to the run-queue and that's it.
+> + *
+> + *      Now, if the new task added to the run-queue preempts the current
+> + *      task, then the wakeup sets TIF_NEED_RESCHED and schedule() gets
+> + *      called on the nearest possible occasion:
+> + *
+> + *       - If the kernel is preemptible (CONFIG_PREEMPT=y):
+> + *
+> + *         - in syscall or exception context, at the next outmost
+> + *           preempt_enable(). (this might be as soon as the wake_up()'s
+> + *           spin_unlock()!)
+> + *
+> + *         - in IRQ context, return from interrupt-handler to
+> + *           preemptible context
+> + *
+> + *       - If the kernel is not preemptible (CONFIG_PREEMPT is not set)
+> + *         then at the next:
+> + *
+> + *          - cond_resched() call
+> + *          - explicit schedule() call
+> + *          - return from syscall or exception to user-space
+> + *          - return from interrupt-handler to user-space
 >   */
->  #define RCU_NONIDLE(a) \
->  	do { \
-> -		rcu_idle_exit(); \
-> +		rcu_irq_exit(); \
-
-Don't you want that to be rcu_irq_enter? And is this safe to happen
-everywhere in the kernel?
-
-The code that is calling rcu is called by the irqsoff tracer. Which can
-happen at all points where interrupts are enabled.
-
--- Steve
-
->  		do { a; } while (0); \
-> -		rcu_idle_enter(); \
-> +		rcu_irq_enter(); \
->  	} while (0)
->  
->  /*
-> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> index 31a10f9..aee6df8 100644
-> --- a/kernel/rcutiny.c
-> +++ b/kernel/rcutiny.c
-> @@ -115,6 +115,7 @@ void rcu_irq_exit(void)
->  	rcu_idle_enter_common(newval);
->  	local_irq_restore(flags);
->  }
-> +EXPORT_SYMBOL_GPL(rcu_irq_exit);
->  
->  /* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcutree.c. */
->  static void rcu_idle_exit_common(long long oldval)
-> @@ -172,6 +173,7 @@ void rcu_irq_enter(void)
->  	rcu_idle_exit_common(oldval);
->  	local_irq_restore(flags);
->  }
-> +EXPORT_SYMBOL_GPL(rcu_irq_enter);
->  
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
->  
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 44609c3..2175b13 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -455,6 +455,7 @@ void rcu_irq_exit(void)
->  		rcu_idle_enter_common(rdtp, oldval);
->  	local_irq_restore(flags);
->  }
-> +EXPORT_SYMBOL_GPL(rcu_irq_exit);
->  
->  /*
->   * rcu_idle_exit_common - inform RCU that current CPU is moving away from idle
-> @@ -550,6 +551,7 @@ void rcu_irq_enter(void)
->  		rcu_idle_exit_common(rdtp, oldval);
->  	local_irq_restore(flags);
->  }
-> +EXPORT_SYMBOL_GPL(rcu_irq_enter);
->  
->  /**
->   * rcu_nmi_enter - inform RCU of entry to NMI context
+>  static void __sched __schedule(void)
+>  {
 
 
+
+-- 
+~Randy
