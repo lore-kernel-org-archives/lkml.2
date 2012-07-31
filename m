@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab2GaQdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:33:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29341 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754963Ab2GaQdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:33:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="128893240"
-Date: Tue, 31 Jul 2012 09:33:08 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Jianbin Kang <kjbmail@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
-Message-ID: <20120731163308.GA13610@jonmason-lab>
-References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
- <1343607994-32415-2-git-send-email-jon.mason@intel.com>
- <CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
- <20120730181542.GA987@jonmason-lab>
- <CAF8raN6M0_TWyCCzjyXZcFYP=vgFaqQg4hNmNpBxSM+D0C_Bpg@mail.gmail.com>
+	id S1755680Ab2GaQek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:34:40 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60708 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896Ab2GaQej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 12:34:39 -0400
+Message-ID: <5018091A.2020606@wwwdotorg.org>
+Date: Tue, 31 Jul 2012 10:34:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF8raN6M0_TWyCCzjyXZcFYP=vgFaqQg4hNmNpBxSM+D0C_Bpg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Courbot <acourbot@nvidia.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <50170EA0.1010408@wwwdotorg.org> <5017B434.2010706@nvidia.com>
+In-Reply-To: <5017B434.2010706@nvidia.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 11:35:33AM +0800, Jianbin Kang wrote:
-> > I've tried to make it all generic enough that non-Intel NTBs should plug in with
-> > minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
-> > redesign of ntb_hw.c might be necessary.  But from what I've seen of other
-> > designs on the internet, they appear to be extremely similar.  The transport and
-> > client drivers were written with the hardware abstracted away as much as
-> > possible to prevent the need to modify it for different hardware.  If there is
-> > anything which is Intel hardware specific, I'd be happy to change it to make it
-> > more generic.
->   In ntb_process_tx(), ntb uses hard-coding 'memcpy_toio' to copy data
-> to remote.
->   Is it better to provide a function pointer like 'tx()' and call qp->tx().
->   memcpy_toio is a slow operation. Some hardware can setup a dma
-> transfer and wait.
+On 07/31/2012 04:32 AM, Alex Courbot wrote:
+> On 07/31/2012 07:45 AM, Stephen Warren wrote:
+...
+>> If the nodes have a unit address (i.e. end in "@n"), which they will
+>> have to if all named "step" and there's more than one of them, then they
+>> will need a matching reg property. Equally, the parent node will need
+>> #address-cells and #size-cells too. So, the last couple lines would be:
+>>
+>>         power-on-sequence {
+>>             #address-cells = <1>;
+>>             #size-cells = <0>;
+>>             step@0 {
+>>                 reg = <0>;
 > 
->   IMHO, the best way is to handle tx in async mode. But it requires
-> lots of modification.
+> That's precisely what I would like to avoid - I don't need the steps to
+> be numbered and I certainly have no use for a reg property. Isn't there
+> a way to make it simpler?
 
-Actually this is what I'm working on now, using async_tx to replace the
-memcpy.  I believe the changes shouldn't be that significant.
+You may be able to get away without using the reg values in the code.
+However, to have a semantically correct device tree, you really do need
+all of those properties.
 
-Is the "hardware that can setup dma" you refer to something that does
-not use this interface?
+That said, I think you might need to use the reg values in code. I
+believe there's no guarantee of the order in which nodes enumerate in
+device tree, so you need to look at the reg property in order to find
+the order in which to execute the nodes/steps.
 
-Thanks,
-Jon
+... although perhaps the desire to avoid a dependency on DT ordering
+applies more to the order in which devices instantiated from DT get
+probed, rather than the order of low-level node enumeration, so I may be
+wrong here. I've definitely seen Grant caution people not to rely on
+device probe order, but perhaps he didn't make the same comment about
+node order.
