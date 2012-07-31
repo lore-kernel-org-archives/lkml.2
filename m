@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab2GaE4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:56:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48800 "EHLO
+	id S1755671Ab2GaE4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:56:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48802 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755654Ab2GaEu5 (ORCPT
+	by vger.kernel.org with ESMTP id S1755657Ab2GaEu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 00:50:57 -0400
-Message-Id: <20120731044318.981360048@decadent.org.uk>
+Message-Id: <20120731044317.522878491@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:58 +0100
+Date: Tue, 31 Jul 2012 05:43:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Forest Bond <forest.bond@rapidrollout.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
+        alan@lxorguk.ukuu.org.uk, Amitkumar Karwar <akarwar@marvell.com>,
+        Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 48/73] rtlwifi: rtl8192de: Fix phy-based version calculation
+Subject: [ 39/73] mwifiex: correction in mcs index check
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,60 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Forest Bond <forest.bond@rapidrollout.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit f1b00f4dab29b57bdf1bc03ef12020b280fd2a72 upstream.
+commit fe020120cb863ba918c6d603345342a880272c4d upstream.
 
-Commit d83579e2a50ac68389e6b4c58b845c702cf37516 incorporated some
-changes from the vendor driver that made it newly important that the
-calculated hardware version correctly include the CHIP_92D bit, as all
-of the IS_92D_* macros were changed to depend on it.  However, this bit
-was being unset for dual-mac, dual-phy devices.  The vendor driver
-behavior was modified to not do this, but unfortunately this change was
-not picked up along with the others.  This caused scanning in the 2.4GHz
-band to be broken, and possibly other bugs as well.
+mwifiex driver supports 2x2 chips as well. Hence valid mcs values
+are 0 to 15. The check for mcs index is corrected in this patch.
 
-This patch brings the version calculation logic in parity with the
-vendor driver in this regard, and in doing so fixes the regression.
-However, the version calculation code in general continues to be largely
-incoherent and messy, and needs to be cleaned up.
+For example: if 40MHz is enabled and mcs index is 11, "iw link"
+command would show "tx bitrate: 108.0 MBit/s" without this patch.
+Now it shows "tx bitrate: 108.0 MBit/s MCS 11 40Mhz" with the patch.
 
-Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rtlwifi/rtl8192de/phy.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/mwifiex/cfg80211.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-index 18380a7..4420312 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-@@ -3345,21 +3345,21 @@ void rtl92d_phy_config_macphymode_info(struct ieee80211_hw *hw)
- 	switch (rtlhal->macphymode) {
- 	case DUALMAC_SINGLEPHY:
- 		rtlphy->rf_type = RF_2T2R;
--		rtlhal->version |= CHIP_92D_SINGLEPHY;
-+		rtlhal->version |= RF_TYPE_2T2R;
- 		rtlhal->bandset = BAND_ON_BOTH;
- 		rtlhal->current_bandtype = BAND_ON_2_4G;
- 		break;
+diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
+index 5c7fd18..76b5c0f 100644
+--- a/drivers/net/wireless/mwifiex/cfg80211.c
++++ b/drivers/net/wireless/mwifiex/cfg80211.c
+@@ -634,9 +634,9 @@ mwifiex_dump_station_info(struct mwifiex_private *priv,
  
- 	case SINGLEMAC_SINGLEPHY:
- 		rtlphy->rf_type = RF_2T2R;
--		rtlhal->version |= CHIP_92D_SINGLEPHY;
-+		rtlhal->version |= RF_TYPE_2T2R;
- 		rtlhal->bandset = BAND_ON_BOTH;
- 		rtlhal->current_bandtype = BAND_ON_2_4G;
- 		break;
- 
- 	case DUALMAC_DUALPHY:
- 		rtlphy->rf_type = RF_1T1R;
--		rtlhal->version &= (~CHIP_92D_SINGLEPHY);
-+		rtlhal->version &= RF_TYPE_1T1R;
- 		/* Now we let MAC0 run on 5G band. */
- 		if (rtlhal->interfaceindex == 0) {
- 			rtlhal->bandset = BAND_ON_5G;
+ 	/*
+ 	 * Bit 0 in tx_htinfo indicates that current Tx rate is 11n rate. Valid
+-	 * MCS index values for us are 0 to 7.
++	 * MCS index values for us are 0 to 15.
+ 	 */
+-	if ((priv->tx_htinfo & BIT(0)) && (priv->tx_rate < 8)) {
++	if ((priv->tx_htinfo & BIT(0)) && (priv->tx_rate < 16)) {
+ 		sinfo->txrate.mcs = priv->tx_rate;
+ 		sinfo->txrate.flags |= RATE_INFO_FLAGS_MCS;
+ 		/* 40MHz rate */
 
 
