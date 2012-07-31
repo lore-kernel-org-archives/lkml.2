@@ -1,107 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab2GaWDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 18:03:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59335 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305Ab2GaWDJ (ORCPT
+	id S1754618Ab2GaWEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 18:04:13 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40096 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324Ab2GaWEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 18:03:09 -0400
-Message-ID: <50185619.5090706@gmail.com>
-Date: Tue, 31 Jul 2012 17:03:05 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
-References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de> <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com> <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jul 2012 18:04:11 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: linux-can@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH can-next v4] can: add tx/rx LED trigger support
+Date: Wed,  1 Aug 2012 00:05:38 +0200
+Message-Id: <1343772338-1526-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <5017C8E4.4020003@pengutronix.de>
+References: <5017C8E4.4020003@pengutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 02:47 AM, Thierry Reding wrote:
-> On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
->> On Mon, Jul 23, 2012 at 1:59 PM, Thierry Reding
->> <thierry.reding@avionic-design.de> wrote:
->>
->>> This commit adds a driver for the Avionic Design N-bit GPIO expander.
->>> The expander provides a variable number of GPIO pins with interrupt
->>> support.
->> (...)
->>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-adnp.txt b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
->>> new file mode 100644
->>> index 0000000..513a18e
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
->>> @@ -0,0 +1,38 @@
->>> +Avionic Design N-bit GPIO expander bindings
->>> +
->>> +Required properties:
->>> +- compatible: should be "ad,gpio-adnp"
->>> +- reg: The I2C slave address for this device.
->>> +- interrupt-parent: phandle of the parent interrupt controller.
->>> +- interrupts: Interrupt specifier for the controllers interrupt.
->>> +- #gpio-cells: Should be 2. The first cell is the GPIO number and the
->>> +  second cell is used to specify optional parameters:
->>> +  - bit 0: polarity (0: normal, 1: inverted)
->>> +- gpio-controller: Marks the device as a GPIO controller
->>> +- #interrupt-cells: Should be 2. The first cell contains the GPIO number,
->>> +  whereas the second cell is used to specify flags:
->>> +    bits[3:0] trigger type and level flags
->>> +      1 = low-to-high edge triggered
->>> +      2 = high-to-low edge triggered
->>> +      4 = active high level-sensitive
->>> +      8 = active low level-sensitive
->>
->> Why on earth would a bunch of flags be an "interrupt cell"?
->>
->> Maybe there is something about DT bindings I don't get so
->> please educate me.
->>
->> I can see that OMAP is doing this, but is it a good idea?
->> I really need Rob/Grant to comment on this.
->>
->>> +- interrupt-controller: Marks the device as an interrupt controller.
->>> +- nr-gpios: The number of pins supported by the controller.
->>
->> These two last things look very generic, like something every GPIO
->> driver could want to expose.
-> 
-> As Arnd mentioned, interrupt-controller is a generic property required
-> by all interrupt controller nodes. Perhaps it shouldn't be listed in the
-> DT binding for this driver.
-> 
-> As to the nr-gpios property, this is actually not only for informational
-> purposes, but it also allows the driver to be configured to handle any
-> number of bits (powers of two). However since this is also a description
-> of the hardware it may be useful to make this into a generic property
-> for GPIO controllers.
-> 
->> I'd really like to have Grant's word on GPIO DT bindings and how these
->> should look, I had some discussion with Wolfram (the I2C maintainer)
->> about bindings turning out less generic than they ought to be, so we
->> need some discussion on this.
->>
->> Arnd recently consolidated some MMC props, maybe we need to do
->> the same for GPIO drivers.
+This patch implements the functions to add two LED triggers, named
+<ifname>-tx and <ifname>-rx, to a canbus device driver.
 
-For nr-gpios, I think it is typically not needed. Generally, you will
-know how many gpio lines the h/w has based on the compatible string. If
-this part really is the same part but different packages with different
-numbers of gpio, then this property makes sense. Otherwise, I would say
-drop it.
+Triggers are called from specific handlers by each CAN device driver and
+can be disabled altogether with a Kconfig option.
 
-If your goal is how many gpios are you using, you really need a bitmap
-instead if you want it to be generic.
+The implementation keeps the LED on when the interface is UP and blinks
+the LED on network activity at a configurable rate.
 
-IIRC, Tegra also needed this in that they N instances of some number of
-bits and the registers are interleaved so they can't have separate nodes.
+This only supports can-dev based drivers, as it uses some support field
+in the can_priv structure.
 
-Rob
+Supported drivers should call can_led_init() and can_led_event() as
+needed.
+
+Cleanup is handled automatically by devres, so no *_exit function is
+needed.
+
+Supported events are:
+- CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
+- CAN_LED_EVENT_STOP: turn off tx/rx LEDs
+- CAN_LED_EVENT_TX: trigger tx LED blink
+- CAN_LED_EVENT_RX: trigger tx LED blink
+
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+---
+
+Hi!
+
+So, here is the v4.
+
+Changes against v3:
+- add a netdev_err message in kasprintf error path
+- implement a devres_alloc release function to de-allocate strings and trigger
+- can_led_exit is now unneeded and gone
+
+Is that what you had in mind Marc?
+
+I like the devres implementation, as callers don't have to care about exit
+function anymore... still it looks like a bit of an hack to me.
+
+Also, I made an initial version with the four pointers in a separate can_led
+struct to be allocated as a payload of devres_alloc - but I think this one
+looks cleaner and is more cache-friendly.
+
+What you think about this?
+
+Fabio
+
+ drivers/net/can/Kconfig  |  12 ++++++
+ drivers/net/can/Makefile |   2 +
+ drivers/net/can/led.c    | 102 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/can/dev.h  |   8 ++++
+ include/linux/can/led.h  |  34 ++++++++++++++++
+ 5 files changed, 158 insertions(+)
+ create mode 100644 drivers/net/can/led.c
+ create mode 100644 include/linux/can/led.h
+
+diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+index bb709fd..19dec19 100644
+--- a/drivers/net/can/Kconfig
++++ b/drivers/net/can/Kconfig
+@@ -54,6 +54,18 @@ config CAN_CALC_BITTIMING
+ 	  arguments "tq", "prop_seg", "phase_seg1", "phase_seg2" and "sjw".
+ 	  If unsure, say Y.
+ 
++config CAN_LEDS
++	bool "Enable LED triggers for Netlink based drivers"
++	depends on CAN_DEV
++	depends on LEDS_CLASS
++	select LEDS_TRIGGERS
++	---help---
++	  This option adds two LED triggers for packet receive and transmit
++	  events on each supported CAN device.
++
++	  Say Y here if you are working on a system with led-class supported
++	  LEDs and you want to use them as canbus activity indicators.
++
+ config CAN_AT91
+ 	tristate "Atmel AT91 onchip CAN controller"
+ 	depends on CAN_DEV && (ARCH_AT91SAM9263 || ARCH_AT91SAM9X5)
+diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
+index 938be37..24ee98b 100644
+--- a/drivers/net/can/Makefile
++++ b/drivers/net/can/Makefile
+@@ -8,6 +8,8 @@ obj-$(CONFIG_CAN_SLCAN)		+= slcan.o
+ obj-$(CONFIG_CAN_DEV)		+= can-dev.o
+ can-dev-y			:= dev.o
+ 
++can-dev-$(CONFIG_CAN_LEDS)	+= led.o
++
+ obj-y				+= usb/
+ obj-y				+= softing/
+ 
+diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
+new file mode 100644
+index 0000000..4fa8a47
+--- /dev/null
++++ b/drivers/net/can/led.c
+@@ -0,0 +1,102 @@
++/*
++ * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/netdevice.h>
++#include <linux/can/dev.h>
++
++#include <linux/can/led.h>
++
++static unsigned long led_delay = 50;
++module_param(led_delay, ulong, 0644);
++MODULE_PARM_DESC(led_delay,
++		"blink delay time for activity leds (msecs, default: 50).");
++
++/*
++ * Trigger a LED event in response to a CAN device event
++ */
++void can_led_event(struct net_device *netdev, enum can_led_event event)
++{
++	struct can_priv *priv = netdev_priv(netdev);
++
++	switch (event) {
++	case CAN_LED_EVENT_OPEN:
++		led_trigger_event(priv->tx_led_trig, LED_FULL);
++		led_trigger_event(priv->rx_led_trig, LED_FULL);
++		break;
++	case CAN_LED_EVENT_STOP:
++		led_trigger_event(priv->tx_led_trig, LED_OFF);
++		led_trigger_event(priv->rx_led_trig, LED_OFF);
++		break;
++	case CAN_LED_EVENT_TX:
++		if (led_delay)
++			led_trigger_blink_oneshot(priv->tx_led_trig,
++						  &led_delay, &led_delay, 1);
++		break;
++	case CAN_LED_EVENT_RX:
++		if (led_delay)
++			led_trigger_blink_oneshot(priv->rx_led_trig,
++						  &led_delay, &led_delay, 1);
++		break;
++	}
++}
++EXPORT_SYMBOL_GPL(can_led_event);
++
++static void can_led_release(struct device *gendev, void *res)
++{
++	struct can_priv *priv = netdev_priv(to_net_dev(gendev));
++
++	led_trigger_unregister_simple(priv->tx_led_trig);
++	led_trigger_unregister_simple(priv->rx_led_trig);
++
++	kfree(priv->tx_led_trig_name);
++	kfree(priv->rx_led_trig_name);
++}
++
++/*
++ * Register CAN LED triggers for a CAN device
++ *
++ * This is normally called from a driver's probe function
++ */
++void can_led_init(struct net_device *netdev)
++{
++	struct can_priv *priv = netdev_priv(netdev);
++	void *res;
++
++	res = devres_alloc(can_led_release, 0, GFP_KERNEL);
++	if (!res)
++		goto err_out;
++
++	priv->tx_led_trig_name = kasprintf(GFP_KERNEL, "%s-tx", netdev->name);
++	if (!priv->tx_led_trig_name)
++		goto err_out;
++
++	priv->rx_led_trig_name = kasprintf(GFP_KERNEL, "%s-rx", netdev->name);
++	if (!priv->rx_led_trig_name)
++		goto err_out_rx;
++
++	led_trigger_register_simple(priv->tx_led_trig_name,
++				    &priv->tx_led_trig);
++	led_trigger_register_simple(priv->rx_led_trig_name,
++				    &priv->rx_led_trig);
++
++	devres_add(&netdev->dev, res);
++
++	return;
++
++err_out_rx:
++	kfree(priv->tx_led_trig_name);
++	priv->tx_led_trig_name = NULL;
++err_out:
++	netdev_err(netdev, "cannot register LED triggers\n");
++	devres_free(res);
++}
++EXPORT_SYMBOL_GPL(can_led_init);
+diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+index 2b2fc34..167b04a 100644
+--- a/include/linux/can/dev.h
++++ b/include/linux/can/dev.h
+@@ -16,6 +16,7 @@
+ #include <linux/can.h>
+ #include <linux/can/netlink.h>
+ #include <linux/can/error.h>
++#include <linux/can/led.h>
+ 
+ /*
+  * CAN mode
+@@ -52,6 +53,13 @@ struct can_priv {
+ 
+ 	unsigned int echo_skb_max;
+ 	struct sk_buff **echo_skb;
++
++#ifdef CONFIG_CAN_LEDS
++	struct led_trigger *tx_led_trig;
++	char *tx_led_trig_name;
++	struct led_trigger *rx_led_trig;
++	char *rx_led_trig_name;
++#endif
+ };
+ 
+ /*
+diff --git a/include/linux/can/led.h b/include/linux/can/led.h
+new file mode 100644
+index 0000000..b91982c
+--- /dev/null
++++ b/include/linux/can/led.h
+@@ -0,0 +1,34 @@
++/*
++ * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef CAN_LED_H
++#define CAN_LED_H
++
++#include <linux/leds.h>
++
++enum can_led_event {
++	CAN_LED_EVENT_OPEN,
++	CAN_LED_EVENT_STOP,
++	CAN_LED_EVENT_TX,
++	CAN_LED_EVENT_RX,
++};
++
++#ifdef CONFIG_CAN_LEDS
++void can_led_event(struct net_device *netdev, enum can_led_event event);
++void can_led_init(struct net_device *netdev);
++#else
++static inline void can_led_event(struct net_device *netdev,
++				 enum can_led_event event)
++{
++}
++static inline void can_led_init(struct net_device *netdev)
++{
++}
++#endif
++
++#endif
+-- 
+1.7.11.rc1.9.gf623ca1.dirty
+
