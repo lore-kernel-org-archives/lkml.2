@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab2GaSVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 14:21:00 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:34075 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721Ab2GaSU7 (ORCPT
+	id S1755950Ab2GaSWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 14:22:34 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:45214 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489Ab2GaSWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 14:20:59 -0400
-Message-ID: <501821A1.3010208@linux.vnet.ibm.com>
-Date: Tue, 31 Jul 2012 13:19:13 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 31 Jul 2012 14:22:32 -0400
+Date: Tue, 31 Jul 2012 11:21:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
+Message-ID: <20120731182114.GN2422@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1343741625.27983.39.camel@gandalf.stny.rr.com>
+ <20120731144453.GB2422@linux.vnet.ibm.com>
+ <1343746311.27983.52.camel@gandalf.stny.rr.com>
+ <1343746583.27983.55.camel@gandalf.stny.rr.com>
+ <20120731151808.GF2422@linux.vnet.ibm.com>
+ <1343749502.27983.57.camel@gandalf.stny.rr.com>
+ <20120731171733.GK2422@linux.vnet.ibm.com>
+ <1343755497.27983.59.camel@gandalf.stny.rr.com>
+ <20120731174440.GM2422@linux.vnet.ibm.com>
+ <1343758001.27983.66.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        devel@driverdev.osuosl.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 0/4] promote zcache from staging
-References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com> <b95aec06-5a10-4f83-bdfd-e7f6adabd9df@default> <20120727205932.GA12650@localhost.localdomain> <d4656ba5-d6d1-4c36-a6c8-f6ecd193b31d@default> <5016DE4E.5050300@linux.vnet.ibm.com> <f47a6d86-785f-498c-8ee5-0d2df1b2616c@default> <20120731155843.GP4789@phenom.dumpdata.com> <20120731161916.GA4941@kroah.com> <20120731175142.GE29533@phenom.dumpdata.com>
-In-Reply-To: <20120731175142.GE29533@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343758001.27983.66.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073118-7606-0000-0000-00000271E554
+x-cbid: 12073118-5518-0000-0000-0000067BE221
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 12:51 PM, Konrad Rzeszutek Wilk wrote:
-> Would Monday Aug 6th at 1pm EST on irc.freenode.net channel #zcache work
-> for people?
+On Tue, Jul 31, 2012 at 02:06:41PM -0400, Steven Rostedt wrote:
+> On Tue, 2012-07-31 at 10:44 -0700, Paul E. McKenney wrote:
+> 
+> > OK, I interpret this as excluding NMI handlers, but please let me
+> > know if I am still being naive.  ;-)
+> > 
+> 
+> You are correct. This is only called where lockdep is called (to trace
+> enabling of IRQS). Note, that its called before normal irqs are actually
+> enabled (interrupts are still disabled), this is why it's called outside
+> of the in_irq() sections, because it is called just before returning
+> back to process context.
+> 
+> That said, because NMIs are so difficult, lockdep doesn't record the
+> disabling (and then enabling) of interrupts when an NMI triggers. Thus,
+> the irqsoff tracer also does not record NMIs. Which is fine, because
+> NMIs should not take long to run (we can add other mechanisms to time
+> NMI length if that is needed), and NMIs should not be enabling
+> interrupts nor taking any locks.
+> 
+> >From arch/x86/kernel/entry_64.S:
+> 
+> 	/* paranoidentry do_nmi, 0; without TRACE_IRQS_OFF */
 
-I think this is a great idea!
+Then the patch on my earlier email should do it for you.
 
-Dan, can you post code as an RFC by tomorrow or Thursday?
-We (Rob and I) have the Texas Linux Fest starting Friday.
-We need time to review the code prior to chat so that we can
-talk about specifics rather than generalities.
-
-If that can be done, then we are available for the chat on
-Monday.
-
-Seth
+							Thanx, Paul
 
