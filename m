@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab2GaRWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:22:32 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51760 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751876Ab2GaRWb (ORCPT
+	id S1752274Ab2GaRXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:23:38 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:36908 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752135Ab2GaRXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:22:31 -0400
-Date: Tue, 31 Jul 2012 18:22:29 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] mfd: arizona: convert to regmap_add_irq_chips
-Message-ID: <20120731172228.GK11892@opensource.wolfsonmicro.com>
-References: <1343415776-27176-1-git-send-email-swarren@wwwdotorg.org>
- <20120729203854.GF4384@opensource.wolfsonmicro.com>
- <5016BEC4.5000600@wwwdotorg.org>
- <20120730180352.GR4468@opensource.wolfsonmicro.com>
- <501813F5.6020607@wwwdotorg.org>
+	Tue, 31 Jul 2012 13:23:35 -0400
+Message-ID: <50181451.5040202@xenotime.net>
+Date: Tue, 31 Jul 2012 10:22:25 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501813F5.6020607@wwwdotorg.org>
-X-Cookie: Caution: Keep out of reach of children.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-media <linux-media@vger.kernel.org>
+Subject: Re: linux-next: Tree for July 31 (media/radio-tea5777)
+References: <20120731152614.de6ebe9e0d4b8fc6645b793a@canb.auug.org.au>
+In-Reply-To: <20120731152614.de6ebe9e0d4b8fc6645b793a@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 11:20:53AM -0600, Stephen Warren wrote:
+On 07/30/2012 10:26 PM, Stephen Rothwell wrote:
 
-> I agree in general, but I don't see how this is a regression in this
-> change - the arizona pdata doesn't specify an IRQ base anywhere, and
-> hence the IRQ base is already dynamically allocated...
+> Hi all,
+> 
+> Changes since 20120730:
+> 
 
-> The (regmap-irq) API (in the patch I sent) does support optionally
-> specifying a base if you want, it's just that the arizona-irq.c patch I
-> sent didn't specify a base, since the original code didn't.
 
-I see.  It sounded like the regmap patch had the regression, not the
-device specific patch.
+on i386:
+
+drivers/built-in.o: In function `radio_tea5777_set_freq':
+radio-tea5777.c:(.text+0x4d8704): undefined reference to `__udivdi3'
+
+
+
+-- 
+~Randy
