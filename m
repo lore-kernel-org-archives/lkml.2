@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2GaOhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:37:51 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52452 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab2GaOhu (ORCPT
+	id S1754661Ab2GaOh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:37:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9554 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754393Ab2GaOhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:37:50 -0400
-Date: Tue, 31 Jul 2012 15:37:32 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, olalilja@yahoo.se,
-        STEricsson_nomadik_linux@list.st.com, lrg@ti.com
-Subject: Re: [PATCH 5/6] ARM: ux500: Enable HIGHMEM on all mop500 platforms
-Message-ID: <20120731143732.GS6802@n2100.arm.linux.org.uk>
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-10-git-send-email-lee.jones@linaro.org> <20120731135614.GR6802@n2100.arm.linux.org.uk> <5017EBDC.6010005@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5017EBDC.6010005@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 31 Jul 2012 10:37:55 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=goZ1qfjQ0_kA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=T_9CT6wo05-J89-kAzQA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343745474.27983.50.camel@gandalf.stny.rr.com>
+Subject: [GIT PULL][v3.7] (was: Re: [PATCH 00/19] [GIT PULL][v3.6]) ftrace:
+ Allow kprobes to work with ftace
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 31 Jul 2012 10:37:54 -0400
+In-Reply-To: <1343663487.27983.7.camel@gandalf.stny.rr.com>
+References: <20120721021943.274162381@goodmis.org>
+	 <1343663487.27983.7.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 03:29:48PM +0100, Lee Jones wrote:
-> On 31/07/12 14:56, Russell King - ARM Linux wrote:
->> On Tue, Jul 31, 2012 at 02:31:30PM +0100, Lee Jones wrote:
->>> The current kernel commandline for ux500 based devices includes
->>> hard-coded allocations for things like mali and hwmem, which
->>> actually run over lowmem. Here we enable highmem in order to
->>> avoid memory corruption errors.
->>
->> Err what?  highmem should make no difference if things are being done
->> correctly.
->>
->> In other words, your patch description is too vague to understand what
->> the problem is and why you have to force highmem on - and nothing should
->> _require_ highmem.
->
-> I think I must have misunderstood some advice which was recently given  
-> to me. I'll drop the patch.
->
-> Thanks for reviewing.
+On Mon, 2012-07-30 at 11:51 -0400, Steven Rostedt wrote:
 
-There are two reasons for not doing this:
+> As the merge window opened the day after I sent this (which was also the
+> same day I left for vacation :-p ), I recommend that this goes in v3.7.
+> 
+> Can you pull this in for 3.7, or do you want me to post another pull
+> request after the merge window closes?
 
-1. it is wrong to force core optional features on by using 'select'
-2. it is wrong to use 'select' on user visible symbols because it creates
-   confusion, and prevents the user from disabling the option.
+Hi Ingo,
 
-Note that highmem is just a hack to make larger memory systems work before
-64-bit systems happen - it is _known_ to make systems unstable with large
-amounts of highmem (even on x86) due to the requirement to have a certain
-amount of metadata stored in lowmem.
+I just rebased the branch to include Masami's reviewed by tag that he
+posted for Uros Bizjak's patch. No code has changed.
 
-Nothing should ever force anyone to have highmem enabled.
 
-I still fail to see how not having highmem enabled would ever cause memory
-corruption errors (unless something dealing with memory in a very very
-wrong way - iow, not using one of the reservation or memory allocation
-methods provided by the kernel.)
+Please pull the latest tip/perf/core tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/core
+
+Head SHA1: e52538965119319447c0800c534da73142c27be2
+
+
+Masami Hiramatsu (5):
+      ftrace: add ftrace_set_filter_ip() for address based filter
+      kprobes: cleanup to separate probe-able check
+      kprobes: Move locks into appropriate functions
+      kprobes: introduce ftrace based optimization
+      kprobes/x86: ftrace based optimization for x86
+
+Steven Rostedt (13):
+      ftrace: Pass ftrace_ops as third parameter to function trace callback
+      ftrace: Consolidate arch dependent functions with 'list' function
+      ftrace: Return pt_regs to function trace callback
+      ftrace/x86_32: Push ftrace_ops in as 3rd parameter to function tracer
+      ftrace/x86: Add separate function to save regs
+      ftrace/x86: Add save_regs for i386 function calls
+      ftrace/x86: Remove function_trace_stop check from graph caller
+      ftrace: Add default recursion protection for function tracing
+      ftrace: Only compile ftrace selftest if selftests are enabled
+      ftrace: Add selftest to test function trace recursion protection
+      ftrace: Add selftest to test function save-regs support
+      kprobes: Inverse taking of module_mutex with kprobe_mutex
+      ftrace: Make ftrace_location() a nop on !DYNAMIC_FTRACE
+
+Uros Bizjak (1):
+      ftrace/x86_32: Simplify parameter setup for ftrace_regs_caller
+
+----
+ arch/x86/include/asm/ftrace.h     |   49 +++---
+ arch/x86/include/asm/kprobes.h    |    1 +
+ arch/x86/kernel/entry_32.S        |   75 ++++++++-
+ arch/x86/kernel/entry_64.S        |   96 +++++++++--
+ arch/x86/kernel/ftrace.c          |   73 ++++++++-
+ arch/x86/kernel/kprobes.c         |   48 ++++++
+ include/linux/ftrace.h            |  158 ++++++++++++++++--
+ include/linux/kprobes.h           |   27 ++++
+ kernel/kprobes.c                  |  250 ++++++++++++++++++++--------
+ kernel/trace/Makefile             |    2 +
+ kernel/trace/ftrace.c             |  322 ++++++++++++++++++++++++++++---------
+ kernel/trace/trace.h              |    2 +-
+ kernel/trace/trace_event_perf.c   |    3 +-
+ kernel/trace/trace_events.c       |    4 +-
+ kernel/trace/trace_functions.c    |   14 +-
+ kernel/trace/trace_irqsoff.c      |    5 +-
+ kernel/trace/trace_sched_wakeup.c |    5 +-
+ kernel/trace/trace_selftest.c     |  277 ++++++++++++++++++++++++++++++-
+ kernel/trace/trace_stack.c        |    4 +-
+ 19 files changed, 1199 insertions(+), 216 deletions(-)
+
+
