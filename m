@@ -1,90 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab2GaRPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:15:14 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49169 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751660Ab2GaRPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:15:12 -0400
-Message-ID: <50180E6E.20704@linaro.org>
-Date: Tue, 31 Jul 2012 09:57:18 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752669Ab2GaRS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:18:27 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40804 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab2GaRSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 13:18:25 -0400
+Date: Tue, 31 Jul 2012 10:17:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
+Message-ID: <20120731171733.GK2422@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120724090330.GA9830@localhost>
+ <1343662752.3847.2.camel@fedora>
+ <20120731120556.GB17252@localhost>
+ <1343741625.27983.39.camel@gandalf.stny.rr.com>
+ <20120731144453.GB2422@linux.vnet.ibm.com>
+ <1343746311.27983.52.camel@gandalf.stny.rr.com>
+ <1343746583.27983.55.camel@gandalf.stny.rr.com>
+ <20120731151808.GF2422@linux.vnet.ibm.com>
+ <1343749502.27983.57.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: James Courtier-Dutton <james.dutton@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: Re: [PATCH 0/2][RFC] Better handling of insane CMOS values
-References: <1343716548-38742-1-git-send-email-john.stultz@linaro.org> <CAAMvbhGnNAChs+6mzdRduzgYmWRXQexsbS=w0wgrRhAKrdL6QA@mail.gmail.com>
-In-Reply-To: <CAAMvbhGnNAChs+6mzdRduzgYmWRXQexsbS=w0wgrRhAKrdL6QA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343749502.27983.57.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073117-7182-0000-0000-0000021E2E86
+x-cbid: 12073117-1780-0000-0000-000007EAF51E
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000288; HX=3.00000193; KW=3.00000007;
+ PH=3.00000001; SC=3.00000006; SDB=6.00161324; UDB=6.00036461; UTC=2012-07-31
+ 17:18:23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 02:54 AM, James Courtier-Dutton wrote:
-> On 31 July 2012 07:35, John Stultz <john.stultz@linaro.org> wrote:
->> So CAI Qian noticed recent boot trouble on a machine that had its CMOS
->> clock configured for the year 8200.
->> See: http://lkml.org/lkml/2012/7/29/188
->>
->> While running with a crazy CMOS clock isn't advised, and a simple
->> "don't do that" might be reasonable, the behavior has in effect
->> regressed recently due to changes in the hrtimer/timekeeping
->> interactions.
->>
-> Would it not be easier to work out which CMOS clock values we can
-> handle correctly, and then do input value validation on the CMOS
-> values, and if a value is outside the acceptable range, assume a value
-> equal to the minimum acceptable value.
+On Tue, Jul 31, 2012 at 11:45:02AM -0400, Steven Rostedt wrote:
+> On Tue, 2012-07-31 at 08:18 -0700, Paul E. McKenney wrote:
+> > On Tue, Jul 31, 2012 at 10:56:23AM -0400, Steven Rostedt wrote:
+> > > On Tue, 2012-07-31 at 10:51 -0400, Steven Rostedt wrote:
+> > > 
+> > > > > OK, I will bite.  How about using something like RCU_NONIDLE(), either
+> > > > > directly or open-coded, to make it a legal call site?
+> > > > 
+> > > > OK, then something like:
+> > > > 
+> > > > 	RCU_NONIDLE(max_data = task_uid(tsk));
+> > > > 
+> > > > would work when called normally or with idle?
+> > > > 
+> > > 
+> > > The comment above RCU_NONIDLE() says:
+> > > 
+> > > 	This macro may be used from process-level code only.
+> > > 
+> > > Although I'm not sure what a 'level' is. Do you mean process-context? If
+> > > so, then this will not work because it can be called from non process
+> > > level code (return from interrupt), or any interrupt that enables
+> > > interrupts.
+> > 
+> > Yep, process context.  It seems that I was naively expecting the
+> > calls in interrupt context to be covered by rcu_irq_enter() and
+> > rcu_irq_exit().  I take it that these calls are happening outside of
+> > the rcu_irq_enter()-protected region?
+> 
+> Yep, it is called by the same hooks that lockdep uses. TRACE_IRQS_ON
+> inside the irq handler in assembly.
 
-I believe patch 2/2 does exactly this.
+Does the following patch help?
 
-> Also, surely all timer use within the kernel should use the monotonic
-> time source for timer expiry, and not depend on CMOS time.
-> I.e. If we want a thread to wake up once every 30 seconds, use the
-> monotonic time source for that.
-> conversion to local time should only be needed for timestamps.
-Timers can also be specified against various clockids like 
-CLOCK_REALTIME (and absolute time values, like expire this timer at 
-11:55 GMT, Oct 5 2012).  So while the kernel does manage most things 
-internally with CLOCK_MONOTONIC, it still has to manage some timers 
-against other clockids.
+							Thanx, Paul
 
-> We might need a compile/boot time option to assign useable ranges to
-> local time values.
-> E.g. For this boot, local time is between year 2000 and 2100
-> For next boot, local time is between year 2050 and 2150.
-> Obviously, make the range as wide as we can sensibly handle, so the
-> setting does not need to be changed very often.
-> The range will be determined by the amount of bits in the time values.
-> User space can work on much wider ranges for historical date storage,
-> but for accessing the current time, smaller ranges are workable.
-Right. So one way to handle the range difference between the ktime_t and 
-timespec values would be to have kernel internal ktime_t epochs that we 
-remove and readd as needed.  So instead of using 1970, we pick some 
-close value to the boot time like 2010, and then subtract 40 years off 
-all the inputs, and it back on to the outputs. Aside from the extra 
-computation, the problem is that if a system booted up like the one in 
-this case w/ a year of 8200, and we selected that as this kernel epoch, 
-we then would have problems setting the time back to 2012, as there may 
-be CLOCK_REALTIME timers set for 8200 that we could not store within the 
-292 year epoch.  We probably could decide that timers larger then the 
-ktime_t epoch will expire "never" and then re-calculate if needed when 
-the time is set.
+------------------------------------------------------------------------
 
-Even so, I suspect the extra complication, along with the extra overhead 
-required will make such a plan unpopular until its actually needed 
-(around the year 2264). So I suspect the input sanitation is really the 
-most likely approach for now.
+rcu: Permit RCU_NONIDLE() to be used from interrupt context
 
-thanks
--john
+There is a need to use RCU from interrupt context, but either before
+rcu_irq_enter() is called or after rcu_irq_exit() is called.  If the
+interrupt occurs from idle, then lockdep-RCU will complain about such
+uses, as they appear to be illegal uses of RCU from the idle loop.
+In other environments, RCU_NONIDLE() could be used to properly protect
+the use of RCU, but RCU_NONIDLE() currently cannot be invoked except
+from process context.
+
+This commit therefore modifies RCU_NONIDLE() to permit its use more
+globally.
+
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 115ead2..4eab81a 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -210,14 +210,12 @@ extern void exit_rcu(void);
+  * to nest RCU_NONIDLE() wrappers, but the nesting level is currently
+  * quite limited.  If deeper nesting is required, it will be necessary
+  * to adjust DYNTICK_TASK_NESTING_VALUE accordingly.
+- *
+- * This macro may be used from process-level code only.
+  */
+ #define RCU_NONIDLE(a) \
+ 	do { \
+-		rcu_idle_exit(); \
++		rcu_irq_exit(); \
+ 		do { a; } while (0); \
+-		rcu_idle_enter(); \
++		rcu_irq_enter(); \
+ 	} while (0)
+ 
+ /*
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 31a10f9..aee6df8 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -115,6 +115,7 @@ void rcu_irq_exit(void)
+ 	rcu_idle_enter_common(newval);
+ 	local_irq_restore(flags);
+ }
++EXPORT_SYMBOL_GPL(rcu_irq_exit);
+ 
+ /* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcutree.c. */
+ static void rcu_idle_exit_common(long long oldval)
+@@ -172,6 +173,7 @@ void rcu_irq_enter(void)
+ 	rcu_idle_exit_common(oldval);
+ 	local_irq_restore(flags);
+ }
++EXPORT_SYMBOL_GPL(rcu_irq_enter);
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 44609c3..2175b13 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -455,6 +455,7 @@ void rcu_irq_exit(void)
+ 		rcu_idle_enter_common(rdtp, oldval);
+ 	local_irq_restore(flags);
+ }
++EXPORT_SYMBOL_GPL(rcu_irq_exit);
+ 
+ /*
+  * rcu_idle_exit_common - inform RCU that current CPU is moving away from idle
+@@ -550,6 +551,7 @@ void rcu_irq_enter(void)
+ 		rcu_idle_exit_common(rdtp, oldval);
+ 	local_irq_restore(flags);
+ }
++EXPORT_SYMBOL_GPL(rcu_irq_enter);
+ 
+ /**
+  * rcu_nmi_enter - inform RCU of entry to NMI context
 
