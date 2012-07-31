@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab2GaOKu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:10:50 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33056 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab2GaOKr (ORCPT
+	id S1754161Ab2GaOKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:10:51 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47354 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab2GaOKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 10:10:47 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -12,197 +12,57 @@ To: fujita.tomonori@lab.ntt.co.jp, xen-devel@lists.xensource.com,
         linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com,
         JBeulich@suse.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 4/5] xen/swiotlb: Use the swiotlb_late_init_with_tbl to init Xen-SWIOTLB late when PV PCI is used.
-Date: Tue, 31 Jul 2012 10:00:22 -0400
-Message-Id: <1343743223-30092-5-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/5] xen/swiotlb: With more than 4GB on 64-bit, disable the native SWIOTLB.
+Date: Tue, 31 Jul 2012 10:00:20 -0400
+Message-Id: <1343743223-30092-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com>
 References: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this patch we provide the functionality to initialize the
-Xen-SWIOTLB late in the bootup cycle - specifically for
-Xen PCI-frontend. We still will work if the user had
-supplied 'iommu=soft' on the Linux command line.
+If a PV guest is booted the native SWIOTLB should not be
+turned on. It does not help us (we don't have any PCI devices)
+and it eats 64MB of good memory. In the case of PV guests
+with PCI devices we need the Xen-SWIOTLB one.
 
-CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/xen/swiotlb-xen.h |    2 +
- arch/x86/xen/pci-swiotlb-xen.c         |   17 ++++++++++-
- drivers/xen/swiotlb-xen.c              |   50 +++++++++++++++++++++++++++----
- include/xen/swiotlb-xen.h              |    1 +
- 4 files changed, 62 insertions(+), 8 deletions(-)
+ arch/x86/xen/pci-swiotlb-xen.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/swiotlb-xen.h b/arch/x86/include/asm/xen/swiotlb-xen.h
-index 1be1ab7..ee52fca 100644
---- a/arch/x86/include/asm/xen/swiotlb-xen.h
-+++ b/arch/x86/include/asm/xen/swiotlb-xen.h
-@@ -5,10 +5,12 @@
- extern int xen_swiotlb;
- extern int __init pci_xen_swiotlb_detect(void);
- extern void __init pci_xen_swiotlb_init(void);
-+extern int pci_xen_swiotlb_init_late(void);
- #else
- #define xen_swiotlb (0)
- static inline int __init pci_xen_swiotlb_detect(void) { return 0; }
- static inline void __init pci_xen_swiotlb_init(void) { }
-+static inline int pci_xen_swiotlb_init_late(void) { return -ENXIO; }
- #endif
- 
- #endif /* _ASM_X86_SWIOTLB_XEN_H */
 diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
-index 0d5a214..bc2daf6 100644
+index b6a5340..0d5a214 100644
 --- a/arch/x86/xen/pci-swiotlb-xen.c
 +++ b/arch/x86/xen/pci-swiotlb-xen.c
-@@ -12,7 +12,7 @@
- #include <asm/iommu.h>
- #include <asm/dma.h>
- #endif
--
-+#include <linux/export.h>
+@@ -8,6 +8,11 @@
+ #include <xen/xen.h>
+ #include <asm/iommu_table.h>
+ 
++#ifdef CONFIG_X86_64
++#include <asm/iommu.h>
++#include <asm/dma.h>
++#endif
++
  int xen_swiotlb __read_mostly;
  
  static struct dma_map_ops xen_swiotlb_dma_ops = {
-@@ -74,6 +74,21 @@ void __init pci_xen_swiotlb_init(void)
- 		pci_request_acs();
- 	}
- }
-+
-+int pci_xen_swiotlb_init_late(void)
-+{
-+	int rc = xen_swiotlb_late_init(1);
-+	if (rc)
-+		return rc;
-+
-+	dma_ops = &xen_swiotlb_dma_ops;
-+	/* Make sure ACS will be enabled */
-+	pci_request_acs();
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pci_xen_swiotlb_init_late);
-+
- IOMMU_INIT_FINISH(pci_xen_swiotlb_detect,
- 		  0,
- 		  pci_xen_swiotlb_init,
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 1afb4fb..8805e94 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -145,13 +145,14 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- 	return 0;
+@@ -49,6 +54,13 @@ int __init pci_xen_swiotlb_detect(void)
+ 	 * the 'swiotlb' flag is the only one turning it on. */
+ 	swiotlb = 0;
+ 
++#ifdef CONFIG_X86_64
++	/* pci_swiotlb_detect_4gb turns native SWIOTLB if no_iommu == 0
++	 * (so no iommu=X command line over-writes). So disable the native
++	 * SWIOTLB. */
++	if (max_pfn > MAX_DMA32_PFN)
++		no_iommu = 1;
++#endif
+ 	return xen_swiotlb;
  }
  
--void __init xen_swiotlb_init(int verbose)
-+int __xen_swiotlb_init(int verbose, bool early)
- {
- 	unsigned long bytes;
- 	int rc = -ENOMEM;
- 	unsigned long nr_tbl;
- 	char *m = NULL;
- 	unsigned int repeat = 3;
-+	unsigned long order;
- 
- 	nr_tbl = swiotlb_nr_tbl();
- 	if (nr_tbl)
-@@ -161,12 +162,31 @@ void __init xen_swiotlb_init(int verbose)
- 		xen_io_tlb_nslabs = ALIGN(xen_io_tlb_nslabs, IO_TLB_SEGSIZE);
- 	}
- retry:
-+	order = get_order(xen_io_tlb_nslabs << IO_TLB_SHIFT);
- 	bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
- 
- 	/*
- 	 * Get IO TLB memory from any location.
- 	 */
--	xen_io_tlb_start = alloc_bootmem_pages(PAGE_ALIGN(bytes));
-+	if (early)
-+		xen_io_tlb_start = alloc_bootmem_pages(PAGE_ALIGN(bytes));
-+	else {
-+#define SLABS_PER_PAGE (1 << (PAGE_SHIFT - IO_TLB_SHIFT))
-+#define IO_TLB_MIN_SLABS ((1<<20) >> IO_TLB_SHIFT)
-+
-+		while ((SLABS_PER_PAGE << order) > IO_TLB_MIN_SLABS) {
-+			xen_io_tlb_start = (void *)__get_free_pages(__GFP_NOWARN, order);
-+			if (xen_io_tlb_start)
-+				break;
-+			order--;
-+		}
-+		if (order != get_order(bytes)) {
-+			pr_warn("Warning: only able to allocate %ld MB "
-+				"for software IO TLB\n", (PAGE_SIZE << order) >> 20);
-+			xen_io_tlb_nslabs = SLABS_PER_PAGE << order;
-+			bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
-+		}
-+	}
- 	if (!xen_io_tlb_start) {
- 		m = "Cannot allocate Xen-SWIOTLB buffer!\n";
- 		goto error;
-@@ -179,7 +199,8 @@ retry:
- 			       bytes,
- 			       xen_io_tlb_nslabs);
- 	if (rc) {
--		free_bootmem(__pa(xen_io_tlb_start), PAGE_ALIGN(bytes));
-+		if (early)
-+			free_bootmem(__pa(xen_io_tlb_start), PAGE_ALIGN(bytes));
- 		m = "Failed to get contiguous memory for DMA from Xen!\n"\
- 		    "You either: don't have the permissions, do not have"\
- 		    " enough free memory under 4GB, or the hypervisor memory"\
-@@ -187,9 +208,13 @@ retry:
- 		goto error;
- 	}
- 	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
--	swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
- 
--	return;
-+	rc = 0;
-+	if (early)
-+		swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
-+	else
-+		rc = swiotlb_late_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs);
-+	return rc;
- error:
- 	if (repeat--) {
- 		xen_io_tlb_nslabs = max(1024UL, /* Min is 2MB */
-@@ -199,9 +224,20 @@ error:
- 		goto retry;
- 	}
- 	xen_raw_printk("%s (rc:%d)", m, rc);
--	panic("%s (rc:%d)", m, rc);
-+	if (early)
-+		panic("%s (rc:%d)", m, rc);
-+	else
-+		free_pages((unsigned long)xen_io_tlb_start, order);
-+	return rc;
-+}
-+void __init xen_swiotlb_init(int verbose)
-+{
-+	__xen_swiotlb_init(verbose, true /* early */);
-+}
-+int xen_swiotlb_late_init(int verbose)
-+{
-+	return __xen_swiotlb_init(verbose, false /* late */);
- }
--
- void *
- xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 			   dma_addr_t *dma_handle, gfp_t flags,
-diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
-index 4f4d449..d38d984 100644
---- a/include/xen/swiotlb-xen.h
-+++ b/include/xen/swiotlb-xen.h
-@@ -4,6 +4,7 @@
- #include <linux/swiotlb.h>
- 
- extern void xen_swiotlb_init(int verbose);
-+extern int  xen_swiotlb_late_init(int verbose);
- 
- extern void
- *xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
 -- 
 1.7.7.6
 
