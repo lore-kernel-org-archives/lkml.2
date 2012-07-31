@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab2GaFD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:03:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48609 "EHLO
+	id S1755520Ab2GaFD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:03:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48606 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755436Ab2GaEuR (ORCPT
+	by vger.kernel.org with ESMTP id S1755167Ab2GaEuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 00:50:17 -0400
-Message-Id: <20120731044321.935043336@decadent.org.uk>
+Message-Id: <20120731044322.078199039@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:44:16 +0100
+Date: Tue, 31 Jul 2012 05:44:17 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@fieldses.org>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 66/73] locks: fix checking of fcntl_setlease argument
+        alan@lxorguk.ukuu.org.uk, Lan Tianyu <tianyu.lan@intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [ 67/73] ACPI/AC: prevent OOPS on some boxes due to missing check
+ power_supply_register() return value check
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,56 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@fieldses.org>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 0ec4f431eb56d633da3a55da67d5c4b88886ccc7 upstream.
+commit f197ac13f6eeb351b31250b9ab7d0da17434ea36 upstream.
 
-The only checks of the long argument passed to fcntl(fd,F_SETLEASE,.)
-are done after converting the long to an int.  Thus some illegal values
-may be let through and cause problems in later code.
+In the ac.c, power_supply_register()'s return value is not checked.
 
-[ They actually *don't* cause problems in mainline, as of Dave Jones's
-  commit 8d657eb3b438 "Remove easily user-triggerable BUG from
-  generic_setlease", but we should fix this anyway.  And this patch will
-  be necessary to fix real bugs on earlier kernels. ]
+As a result, the driver's add() ops may return success
+even though the device failed to initialize.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+For example, some BIOS may describe two ACADs in the same DSDT.
+The second ACAD device will fail to register,
+but ACPI driver's add() ops returns sucessfully.
+The ACPI device will receive ACPI notification and cause OOPS.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=772730
+
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/locks.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/acpi/ac.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/locks.c b/fs/locks.c
-index fce6238..82c3533 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -308,7 +308,7 @@ static int flock_make_lock(struct file *filp, struct file_lock **lock,
- 	return 0;
- }
+diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
+index 6512b20..d1fcbc0 100644
+--- a/drivers/acpi/ac.c
++++ b/drivers/acpi/ac.c
+@@ -292,7 +292,9 @@ static int acpi_ac_add(struct acpi_device *device)
+ 	ac->charger.properties = ac_props;
+ 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
+ 	ac->charger.get_property = get_ac_property;
+-	power_supply_register(&ac->device->dev, &ac->charger);
++	result = power_supply_register(&ac->device->dev, &ac->charger);
++	if (result)
++		goto end;
  
--static int assign_type(struct file_lock *fl, int type)
-+static int assign_type(struct file_lock *fl, long type)
- {
- 	switch (type) {
- 	case F_RDLCK:
-@@ -445,7 +445,7 @@ static const struct lock_manager_operations lease_manager_ops = {
- /*
-  * Initialize a lease, use the default lock manager operations
-  */
--static int lease_init(struct file *filp, int type, struct file_lock *fl)
-+static int lease_init(struct file *filp, long type, struct file_lock *fl)
-  {
- 	if (assign_type(fl, type) != 0)
- 		return -EINVAL;
-@@ -463,7 +463,7 @@ static int lease_init(struct file *filp, int type, struct file_lock *fl)
- }
- 
- /* Allocate a file_lock initialised to this type of lease */
--static struct file_lock *lease_alloc(struct file *filp, int type)
-+static struct file_lock *lease_alloc(struct file *filp, long type)
- {
- 	struct file_lock *fl = locks_alloc_lock();
- 	int error = -ENOMEM;
+ 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
+ 	       acpi_device_name(device), acpi_device_bid(device),
 
 
