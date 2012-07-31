@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab2GaMlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:41:46 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:52583 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753636Ab2GaMlo (ORCPT
+	id S1756147Ab2GaMnw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:43:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21204 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab2GaMnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:41:44 -0400
-X-IronPort-AV: E=Sophos;i="4.77,686,1336341600"; 
-   d="scan'208";a="168673952"
-Date: Tue, 31 Jul 2012 14:41:42 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Lars-Peter Clausen <lars@metafoo.de>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>, Jonathan Cameron <jic23@cam.ac.uk>,
-        kernel-janitors@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/iio/adc/at91_adc.c: use devm_ functions
-In-Reply-To: <5017D148.6030006@metafoo.de>
-Message-ID: <alpine.DEB.2.02.1207311435040.1894@hadrien>
-References: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr> <5017D148.6030006@metafoo.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 31 Jul 2012 08:43:50 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=3Odpp9koIGIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=U_kkepbrXWwOoSmH2SUA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343738627.27983.30.camel@gandalf.stny.rr.com>
+Subject: Re: Testing tracer wakeup_rt: .. no entries found ..FAILED!
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Date: Tue, 31 Jul 2012 08:43:47 -0400
+In-Reply-To: <5017D19B.5080806@redhat.com>
+References: <20120724090330.GA9830@localhost>
+	 <20120724090720.GA10434@localhost> <1343663105.3847.7.camel@fedora>
+	 <20120731121759.GA17822@localhost> <5017D19B.5080806@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jul 2012, Lars-Peter Clausen wrote:
+On Tue, 2012-07-31 at 15:37 +0300, Avi Kivity wrote:
+> On 07/31/2012 03:17 PM, Fengguang Wu wrote:
+> > 
+> > It's good to quickly get to the root cause :) Can we possibly detect
+> > whether we are in a virtual machine and hence skip this particular
+> > test case?
+> 
+> cpu_has(&boot_cpu, X86_FEATURE_HYPERVISOR)
+> 
 
-> Hi,
->
-> On 07/31/2012 12:09 PM, Julia Lawall wrote:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> > @@ -720,20 +698,14 @@ error_ret:
-> >  static int __devexit at91_adc_remove(struct platform_device *pdev)
-> >  {
-> >  	struct iio_dev *idev = platform_get_drvdata(pdev);
-> > -	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >  	struct at91_adc_state *st = iio_priv(idev);
-> >
-> >  	iio_device_unregister(idev);
-> > [...]
-> > -	free_irq(st->irq, idev);
-> > [...]
-> >  	iio_device_free(idev);
->
-> I think we have to be careful here. The interrupted is now freed after the
-> device has been freed, which means that it could trigger after the device
-> has been freed. And since we use the device in the interrupt handler we'll
-> get a use after free.
+Yeah, but then it is still broken on non-x86 code (the test lives in
+core kernel).
 
-OK, thanks for the feedback.  I'll try again, and un-devm_ this function.
+As it is just testing the events for wakeup, I could probably just add a
+completion and force the other thread to just wait for it. I'll write up
+a patch. But it wont make it in till 3.7.
 
-julia
+-- Steve
+
+
