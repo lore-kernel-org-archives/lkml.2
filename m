@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab2GaE4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:56:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48802 "EHLO
+	id S1755892Ab2GaE5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:57:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48786 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755657Ab2GaEu5 (ORCPT
+	by vger.kernel.org with ESMTP id S1755639Ab2GaEu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:57 -0400
-Message-Id: <20120731044317.522878491@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:56 -0400
+Message-Id: <20120731044317.184294372@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:49 +0100
+Date: Tue, 31 Jul 2012 05:43:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Amitkumar Karwar <akarwar@marvell.com>,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 39/73] mwifiex: correction in mcs index check
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>
+Subject: [ 37/73] udf: Improve table length check to avoid possible overflow
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,40 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Jan Kara <jack@suse.cz>
 
-commit fe020120cb863ba918c6d603345342a880272c4d upstream.
+commit 57b9655d01ef057a523e810d29c37ac09b80eead upstream.
 
-mwifiex driver supports 2x2 chips as well. Hence valid mcs values
-are 0 to 15. The check for mcs index is corrected in this patch.
+When a partition table length is corrupted to be close to 1 << 32, the
+check for its length may overflow on 32-bit systems and we will think
+the length is valid. Later on the kernel can crash trying to read beyond
+end of buffer. Fix the check to avoid possible overflow.
 
-For example: if 40MHz is enabled and mcs index is 11, "iw link"
-command would show "tx bitrate: 108.0 MBit/s" without this patch.
-Now it shows "tx bitrate: 108.0 MBit/s MCS 11 40Mhz" with the patch.
-
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/mwifiex/cfg80211.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/udf/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
-index 5c7fd18..76b5c0f 100644
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -634,9 +634,9 @@ mwifiex_dump_station_info(struct mwifiex_private *priv,
- 
- 	/*
- 	 * Bit 0 in tx_htinfo indicates that current Tx rate is 11n rate. Valid
--	 * MCS index values for us are 0 to 7.
-+	 * MCS index values for us are 0 to 15.
- 	 */
--	if ((priv->tx_htinfo & BIT(0)) && (priv->tx_rate < 8)) {
-+	if ((priv->tx_htinfo & BIT(0)) && (priv->tx_rate < 16)) {
- 		sinfo->txrate.mcs = priv->tx_rate;
- 		sinfo->txrate.flags |= RATE_INFO_FLAGS_MCS;
- 		/* 40MHz rate */
+diff --git a/fs/udf/super.c b/fs/udf/super.c
+index 8a75838..dcbf987 100644
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -1340,7 +1340,7 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
+ 	BUG_ON(ident != TAG_IDENT_LVD);
+ 	lvd = (struct logicalVolDesc *)bh->b_data;
+ 	table_len = le32_to_cpu(lvd->mapTableLength);
+-	if (sizeof(*lvd) + table_len > sb->s_blocksize) {
++	if (table_len > sb->s_blocksize - sizeof(*lvd)) {
+ 		udf_err(sb, "error loading logical volume descriptor: "
+ 			"Partition table too long (%u > %lu)\n", table_len,
+ 			sb->s_blocksize - sizeof(*lvd));
 
 
