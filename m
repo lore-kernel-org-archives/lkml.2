@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab2GaQCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:02:13 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:47860 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab2GaQCK (ORCPT
+	id S1755437Ab2GaQCp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:02:45 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49539 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755366Ab2GaQCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:02:10 -0400
+	Tue, 31 Jul 2012 12:02:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAK9yfHxy4DGCwZjDCdc3A-a3oKoMGQruDMhfq0uR+2+7nfFHoA@mail.gmail.com>
-References: <1343742860-16213-1-git-send-email-damien.cassou@lifl.fr>
- <1343742860-16213-3-git-send-email-damien.cassou@lifl.fr> <CAK9yfHxy4DGCwZjDCdc3A-a3oKoMGQruDMhfq0uR+2+7nfFHoA@mail.gmail.com>
-From: Damien Cassou <damien.cassou@gmail.com>
-Date: Tue, 31 Jul 2012 18:01:49 +0200
-Message-ID: <CA+y5ggjqq+u-kkQLApEAWs9vf29LuEXq_kA51T6HxsJcMM=HCQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] drivers/video/da8xx-fb.c: use devm_ functions
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
+References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
+	<1343607994-32415-2-git-send-email-jon.mason@intel.com>
+	<CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
+	<20120730181542.GA987@jonmason-lab>
+	<CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
+Date: Tue, 31 Jul 2012 12:02:20 -0400
+Message-ID: <CAAsGZS5kOyQ5FQ7Jg3HxOmmPNYS+F6XcB-_3tm=rcgDV7wAvRQ@mail.gmail.com>
+Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
+From: chetan loke <loke.chetan@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jon Mason <jon.mason@intel.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The whole patch is incorrect because of:
+On Tue, Jul 31, 2012 at 9:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Mon, Jul 30, 2012 at 12:15 PM, Jon Mason <jon.mason@intel.com> wrote:
+>>
+>> I've tried to make it all generic enough that non-Intel NTBs should plug in with
+>> minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
+>> redesign of ntb_hw.c might be necessary.  But from what I've seen of other
+>> designs on the internet, they appear to be extremely similar.  The transport and
+>> client drivers were written with the hardware abstracted away as much as
+>> possible to prevent the need to modify it for different hardware.  If there is
+>> anything which is Intel hardware specific, I'd be happy to change it to make it
+>> more generic.
+>
+> That makes sense from a technical point of view, but I think it's
+> going to cause maintenance issues.  For example, assume PLX NTB
+> support is added.  Will PLX be happy about having to convince you to
+> accept changes?  Will Intel be happy about having to release a new
 
-On Tue, Jul 31, 2012 at 5:47 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
->> -       ret = request_irq(par->irq, lcdc_irq_handler, 0,
->> -                       DRIVER_NAME, par);
->> +       ret = devm_request_irq(&device->dev, par->irq, lcdc_irq_handler, 0,
->> +                              DRIVER_NAME, par);
+Do you mean convince Intel? Well, if we think of ntb as the class
+driver then the onus is on the community to vet the changes and NOT
+intel.
+And since this is the first NTB part for which the support is
+introduced the class driver design could be a moving target. As
+someone else mentioned, the async/sync tx-dma is another hook that
+could change the class driver's design.
 
-The following message explains why this is problematic:
-http://marc.info/?l=kernel-janitors&m=134374464625591&w=2
 
-Please ignore this whole patch altogether.
+> driver for their hardware just to incorporate a PLX bug fix?  Will
+> users of PLX hardware accept a new driver release that only benefits
+> Intel users?
 
-Sorry about that.
+May be till the class driver is stable, the client(intel/PLX) drivers
+might have to be modified.  This is a cue for other vendors to
+chime-in and review this design?
+Just thinking if this could sit in staging for some time(so that
+others get a chance to review/suggest changes as well) and then get
+promoted out of staging.
 
--- 
-Damien Cassou
-http://damiencassou.seasidehosting.st
-
-"Lambdas are relegated to relative obscurity until Java makes them
-popular by not having them." James Iry
+Chetan Loke
