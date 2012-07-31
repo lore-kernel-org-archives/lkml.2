@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab2GaOJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:09:45 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32352 "EHLO
+	id S1754128Ab2GaOJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:09:59 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32416 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131Ab2GaOJo (ORCPT
+	with ESMTP id S1754049Ab2GaOJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:09:44 -0400
+	Tue, 31 Jul 2012 10:09:52 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: fujita.tomonori@lab.ntt.co.jp, xen-devel@lists.xensource.com,
         linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com,
         JBeulich@suse.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 5/5] xen/pcifront: Use Xen-SWIOTLB when initting if required.
-Date: Tue, 31 Jul 2012 10:00:23 -0400
-Message-Id: <1343743223-30092-6-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 3/5] swiotlb: add the late swiotlb initialization function with iotlb memory
+Date: Tue, 31 Jul 2012 10:00:21 -0400
+Message-Id: <1343743223-30092-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com>
 References: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com>
@@ -23,104 +23,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We piggyback on "xen/swiotlb: Use the swiotlb_late_init_with_tbl to init
-Xen-SWIOTLB late when PV PCI is used." functionality to start up
-the Xen-SWIOTLB if we are hot-plugged. This allows us to bypass
-the need to supply 'iommu=soft' on the Linux command line (mostly).
-With this patch, if a user forgot 'iommu=soft' on the command line,
-and hotplug a PCI device they will get:
+This enables the caller to initialize swiotlb with its own iotlb
+memory late in the bootup.
 
-pcifront pci-0: Installing PCI frontend
-Warning: only able to allocate 4 MB for software IO TLB
-software IO TLB [mem 0x2a000000-0x2a3fffff] (4MB) mapped at [ffff88002a000000-ffff88002a3fffff]
-pcifront pci-0: Creating PCI Frontend Bus 0000:00
-pcifront pci-0: PCI host bridge to bus 0000:00
-pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
-pci_bus 0000:00: root bus resource [mem 0x00000000-0xfffffffff]
-pci 0000:00:00.0: [8086:10d3] type 00 class 0x020000
-pci 0000:00:00.0: reg 10: [mem 0xfe5c0000-0xfe5dffff]
-pci 0000:00:00.0: reg 14: [mem 0xfe500000-0xfe57ffff]
-pci 0000:00:00.0: reg 18: [io  0xe000-0xe01f]
-pci 0000:00:00.0: reg 1c: [mem 0xfe5e0000-0xfe5e3fff]
-pcifront pci-0: claiming resource 0000:00:00.0/0
-pcifront pci-0: claiming resource 0000:00:00.0/1
-pcifront pci-0: claiming resource 0000:00:00.0/2
-pcifront pci-0: claiming resource 0000:00:00.0/3
-e1000e: Intel(R) PRO/1000 Network Driver - 2.0.0-k
-e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
-e1000e 0000:00:00.0: Disabling ASPM L0s L1
-e1000e 0000:00:00.0: enabling device (0000 -> 0002)
-e1000e 0000:00:00.0: Xen PCI mapped GSI16 to IRQ34
-e1000e 0000:00:00.0: (unregistered net_device): Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
-e1000e 0000:00:00.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:1b:21:ab:c6:13
-e1000e 0000:00:00.0: eth0: Intel(R) PRO/1000 Network Connection
-e1000e 0000:00:00.0: eth0: MAC: 3, PHY: 8, PBA No: E46981-005
+See git commit eb605a5754d050a25a9f00d718fb173f24c486ef
+"swiotlb: add swiotlb_tbl_map_single library function" which will
+explain the full details of what it can be used for.
 
-The "Warning only" will go away if one supplies 'iommu=soft' instead
-as we have a higher chance of being able to allocate large swaths of
-memory.
-
+CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/pci/xen-pcifront.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+ include/linux/swiotlb.h |    1 +
+ lib/swiotlb.c           |   31 +++++++++++++++++++++++--------
+ 2 files changed, 24 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index d6cc62c..ca92801 100644
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -21,6 +21,7 @@
- #include <linux/bitops.h>
- #include <linux/time.h>
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index e872526..8d08b3e 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -25,6 +25,7 @@ extern int swiotlb_force;
+ extern void swiotlb_init(int verbose);
+ extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+ extern unsigned long swiotlb_nr_tbl(void);
++extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
  
-+#include <asm/xen/swiotlb-xen.h>
- #define INVALID_GRANT_REF (0)
- #define INVALID_EVTCHN    (-1)
- 
-@@ -668,7 +669,7 @@ static irqreturn_t pcifront_handler_aer(int irq, void *dev)
- 	schedule_pcifront_aer_op(pdev);
- 	return IRQ_HANDLED;
- }
--static int pcifront_connect(struct pcifront_device *pdev)
-+static int pcifront_connect_and_init_dma(struct pcifront_device *pdev)
+ /*
+  * Enumeration for sync targets
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 45bc1f8..5d33651 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -206,8 +206,9 @@ swiotlb_init(int verbose)
+ int
+ swiotlb_late_init_with_default_size(size_t default_size)
  {
- 	int err = 0;
+-	unsigned long i, bytes, req_nslabs = io_tlb_nslabs;
++	unsigned long bytes, req_nslabs = io_tlb_nslabs;
+ 	unsigned int order;
++	int rc = 0;
  
-@@ -681,9 +682,13 @@ static int pcifront_connect(struct pcifront_device *pdev)
- 		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
- 		err = -EEXIST;
+ 	if (!io_tlb_nslabs) {
+ 		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
+@@ -229,16 +230,32 @@ swiotlb_late_init_with_default_size(size_t default_size)
+ 		order--;
  	}
+ 
+-	if (!io_tlb_start)
+-		goto cleanup1;
 -
- 	spin_unlock(&pcifront_dev_lock);
- 
-+	if (!err && !swiotlb_nr_tbl()) {
-+		err = pci_xen_swiotlb_init_late();
-+		if (err)
-+			dev_err(&pdev->xdev->dev, "Could not setup SWIOTLB!\n");
++	if (!io_tlb_start) {
++		io_tlb_nslabs = req_nslabs;
++		return -ENOMEM;
 +	}
- 	return err;
- }
- 
-@@ -699,6 +704,7 @@ static void pcifront_disconnect(struct pcifront_device *pdev)
- 
- 	spin_unlock(&pcifront_dev_lock);
- }
-+
- static struct pcifront_device *alloc_pdev(struct xenbus_device *xdev)
- {
- 	struct pcifront_device *pdev;
-@@ -842,10 +848,10 @@ static int __devinit pcifront_try_connect(struct pcifront_device *pdev)
- 	    XenbusStateInitialised)
- 		goto out;
- 
--	err = pcifront_connect(pdev);
-+	err = pcifront_connect_and_init_dma(pdev);
- 	if (err) {
- 		xenbus_dev_fatal(pdev->xdev, err,
--				 "Error connecting PCI Frontend");
-+				 "Error setting up PCI Frontend");
- 		goto out;
+ 	if (order != get_order(bytes)) {
+ 		printk(KERN_WARNING "Warning: only able to allocate %ld MB "
+ 		       "for software IO TLB\n", (PAGE_SIZE << order) >> 20);
+ 		io_tlb_nslabs = SLABS_PER_PAGE << order;
+-		bytes = io_tlb_nslabs << IO_TLB_SHIFT;
  	}
++	rc = swiotlb_late_init_with_tbl(io_tlb_start, io_tlb_nslabs);
++	if (rc)
++		free_pages((unsigned long)io_tlb_start, order);
++	return rc;
++}
++
++int
++swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs)
++{
++	unsigned long i, bytes;
++
++	bytes = nslabs << IO_TLB_SHIFT;
++
++	io_tlb_nslabs = nslabs;
++	io_tlb_start = tlb;
+ 	io_tlb_end = io_tlb_start + bytes;
++
+ 	memset(io_tlb_start, 0, bytes);
+ 
+ 	/*
+@@ -288,10 +305,8 @@ cleanup3:
+ 	io_tlb_list = NULL;
+ cleanup2:
+ 	io_tlb_end = NULL;
+-	free_pages((unsigned long)io_tlb_start, order);
+ 	io_tlb_start = NULL;
+-cleanup1:
+-	io_tlb_nslabs = req_nslabs;
++	io_tlb_nslabs = 0;
+ 	return -ENOMEM;
+ }
  
 -- 
 1.7.7.6
