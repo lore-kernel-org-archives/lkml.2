@@ -1,91 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab2GaTbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:31:24 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40266 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755031Ab2GaTbP (ORCPT
+	id S1753796Ab2GaTfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:35:32 -0400
+Received: from mail.dees.ufmg.br ([150.164.42.10]:58674 "EHLO
+	mail.dees.ufmg.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300Ab2GaTf3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 15:31:15 -0400
+	Tue, 31 Jul 2012 15:35:29 -0400
+Date: Tue, 31 Jul 2012 16:27:55 -0300 (BRT)
+From: "Zimbra Warning Team." <juniastief@dees.ufmg.br>
+Message-ID: <873769863.198026.1343762875734.JavaMail.root@dees.ufmg.br>
+Subject: Newsletter.
 MIME-Version: 1.0
-In-Reply-To: <20120731090931.GP6802@n2100.arm.linux.org.uk>
-References: <20120730202401.GA4947@gobelin>
-	<20120731064557.GA4676@gobelin>
-	<20120731090931.GP6802@n2100.arm.linux.org.uk>
-Date: Tue, 31 Jul 2012 21:31:13 +0200
-Message-ID: <CACYmx9MnEn_XOosBn2-YJ=ny9FiLPADMNa6okwG08xrSpCUSpA@mail.gmail.com>
-Subject: Re: About dma_sync_single_for_{cpu,device}
-From: Karl Beldan <karl.beldan@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [101.221.27.46]
+X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/31/12, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> On Tue, Jul 31, 2012 at 08:45:57AM +0200, Karl Beldan wrote:
->> I was expecting the following to work:
->> 	addr = dma_map_single(dev, buffer, size, DMA_TO_DEVICE);
->> 	dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
->> 	dev_send(buffer);
->> 	// wait for irq (don't peek in the buffer) ... got irq
->> 	dma_sync_single_for_cpu(dev, buffer, pattern_size, DMA_FROM_DEVICE);
->> 	if (!xfer_done(buffer)) // not RAM value
->> 		dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
->> 	[...]
->
-
-Hi Russell,
 
 
-> First point is that you clearly do not understand the DMA API at all.  The
-> DMA API has the idea of buffer ownership.  Only the owner may access the
-> buffer:
->
-Are you saying that this scenario does not work ?
-We are taking some liberties with the DMA API, we're more using some
-of its funcs rather than _using_ it ;).
-The question was not whether this was a proper usage of the API, but
-why that scenario would not lead to the expected results .. and now
-I've found the culprit peek I am happy.
+Zimbra Account Warning
 
+This mail is from Zimbra Administrator; we wish to bring to your notice the Condition of your email account.
+ 
+We have just noticed that you have exceeded your email Database limit of 500 MB quota and your email IP is causing conflict because it is been accessed in different server location. You need to Upgrade and expand your Zimbra zimbra quota limit before you can continue to use your email.
+ 
+Update your email quota limit to 2.6 GB, use the below web link: 
 
-[...]
-> So, there is absolutely no noeed what so ever to follow dma_map_single()
-> with dma_sync_single_for_device().
->
-Cleaning a wide address range while invalidating a small one ?
+https://docs.google.com/spreadsheet/viewform?formkey=dGcwUDc0aWczTnNtMnFaQU9NQVdFTEE6MQ
 
-[...]
-> Fourthly, remember that the CPU deals with cache lines, and dirty cache
-> lines may be written back in their _entirety_ - which means that data
-> DMA'd from a device in the same cache line that you've modified via the
-> CPU will not work (either the data in the cache line has to be invalidated
-> and therefore the CPU update discarded, or the cache line has to be flushed
-> back to RAM and the DMA'd data is overwritten.)  Hence why the buffer
-> ownership rules are extremely important.
->
-Of course.
-
-> The solution for this fourth point is to use coherent DMA memory for things
-> like ring buffers and the like, which does not suffer from this.
->
-I might use something different in a not so distant future, yet, for
-the time being, this way of doing as its advantages.
-
-[...]
-> Even with that comment, the idea of buffer ownership must be preserved by
-> drivers, and they must follow that rule.  The fact that some ARM CPU
-> do not respect the ownership entirely is worked around inside the DMA API
-> and is of no interest to drivers.  Feroceon is not one CPU which does this
-> though.
->
-It was kind of a last resort explanation for a cache line filled out
-of the blue .. before I spotted the culprit peek this morning.
-
-Thanks for your input,
-
-
-
-Karl
+and login your full email address. Example joe@yourdomain.com and password
+ 
+Failure to do this will result to email deactivation within 24hours
+ 
+Thank you for your understanding.
+Copyright ©2012 Zimbra Help Desk Technical Support Centre.
