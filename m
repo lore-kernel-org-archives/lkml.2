@@ -1,115 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab2GaRK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:10:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24536 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753574Ab2GaRKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:10:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="191267780"
-Date: Tue, 31 Jul 2012 10:10:23 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
-Message-ID: <20120731171023.GA14080@jonmason-lab>
-References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
- <1343607994-32415-2-git-send-email-jon.mason@intel.com>
- <CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
- <20120730181542.GA987@jonmason-lab>
- <CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
+	id S1754558Ab2GaRLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:11:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63847 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab2GaRLv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 13:11:51 -0400
+Date: Tue, 31 Jul 2012 10:11:46 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, padovan@profusion.mobi, marcel@holtmann.org,
+        peterz@infradead.org, mingo@redhat.com, davem@davemloft.net,
+        dougthompson@xmission.com, ibm-acpi@hmh.eng.br, cbou@mail.ru,
+        rui.zhang@intel.com, Jens Axboe <axboe@kernel.dk>,
+        Jiri Kosina <jkosina@suse.cz>, Roland Dreier <roland@kernel.org>
+Subject: Re: [PATCH 15/15] workqueue: deprecate __cancel_delayed_work()
+Message-ID: <20120731171146.GA21292@google.com>
+References: <1343433308-26614-1-git-send-email-tj@kernel.org>
+ <1343433308-26614-16-git-send-email-tj@kernel.org>
+ <1343739939.2633.34.camel@deskari>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1343739939.2633.34.camel@deskari>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 07:45:29AM -0600, Bjorn Helgaas wrote:
-> On Mon, Jul 30, 2012 at 12:15 PM, Jon Mason <jon.mason@intel.com> wrote:
-> > On Mon, Jul 30, 2012 at 10:50:13AM -0600, Bjorn Helgaas wrote:
-> >> On Sun, Jul 29, 2012 at 6:26 PM, Jon Mason <jon.mason@intel.com> wrote:
-> >> > A PCI-Express non-transparent bridge (NTB) is a point-to-point PCIe bus
-> >> > connecting 2 systems, providing electrical isolation between the two subsystems.
-> >> > A non-transparent bridge is functionally similar to a transparent bridge except
-> >> > that both sides of the bridge have their own independent address domains.  The
-> >> > host on one side of the bridge will not have the visibility of the complete
-> >> > memory or I/O space on the other side of the bridge.  To communicate across the
-> >> > non-transparent bridge, each NTB endpoint has one (or more) apertures exposed to
-> >> > the local system.  Writes to these apertures are mirrored to memory on the
-> >> > remote system.  Communications can also occur through the use of doorbell
-> >> > registers that initiate interrupts to the alternate domain, and scratch-pad
-> >> > registers accessible from both sides.
-> >> >
-> >> > The NTB device driver is needed to configure these memory windows, doorbell, and
-> >> > scratch-pad registers as well as use them in such a way as they can be turned
-> >> > into a viable communication channel to the remote system.  ntb_hw.[ch]
-> >> > determines the usage model (NTB to NTB or NTB to Root Port) and abstracts away
-> >> > the underlying hardware to provide access and a common interface to the doorbell
-> >> > registers, scratch pads, and memory windows.  These hardware interfaces are
-> >> > exported so that other, non-mainlined kernel drivers can access these.
-> >> > ntb_transport.[ch] also uses the exported interfaces in ntb_hw.[ch] to setup a
-> >> > communication channel(s) and provide a reliable way of transferring data from
-> >> > one side to the other, which it then exports so that "client" drivers can access
-> >> > them.  These client drivers are used to provide a standard kernel interface
-> >> > (i.e., Ethernet device) to NTB, such that Linux can transfer data from one
-> >> > system to the other in a standard way.
-> >> >
-> >> > Signed-off-by: Jon Mason <jon.mason@intel.com>
-> >> > ---
-> >> >  MAINTAINERS                 |    6 +
-> >> >  drivers/Kconfig             |    2 +
-> >> >  drivers/Makefile            |    1 +
-> >> >  drivers/ntb/Kconfig         |   13 +
-> >> >  drivers/ntb/Makefile        |    3 +
-> >> >  drivers/ntb/ntb_hw.c        | 1178 ++++++++++++++++++++++++++++++++++++
-> >> >  drivers/ntb/ntb_hw.h        |  206 +++++++
-> >> >  drivers/ntb/ntb_regs.h      |  150 +++++
-> >> >  drivers/ntb/ntb_transport.c | 1387 +++++++++++++++++++++++++++++++++++++++++++
-> >> >  include/linux/ntb.h         |   92 +++
-> >>
-> >> Where will drivers for non-Intel NTBs fit in this hierarchy?  It seems
-> >> a bit presumptuous to claim the generic "ntb" names just for Intel
-> >> devices.
-> >
-> > I've tried to make it all generic enough that non-Intel NTBs should plug in with
-> > minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
-> > redesign of ntb_hw.c might be necessary.  But from what I've seen of other
-> > designs on the internet, they appear to be extremely similar.  The transport and
-> > client drivers were written with the hardware abstracted away as much as
-> > possible to prevent the need to modify it for different hardware.  If there is
-> > anything which is Intel hardware specific, I'd be happy to change it to make it
-> > more generic.
+On Tue, Jul 31, 2012 at 04:05:39PM +0300, Tomi Valkeinen wrote:
+> > Use cancel_delayed_work() instead of __cancel_delayed_work() and mark
+> > the latter deprecated.
 > 
-> That makes sense from a technical point of view, but I think it's
-> going to cause maintenance issues.  For example, assume PLX NTB
-> support is added.  Will PLX be happy about having to convince you to
-> accept changes?  Will Intel be happy about having to release a new
-> driver for their hardware just to incorporate a PLX bug fix?  Will
-> users of PLX hardware accept a new driver release that only benefits
-> Intel users?
+> I used __cancel_delayed_work() in drivers/video/omap2/dss/dsi.c as the
+> cancel is done in an interrupt handler. Is it safe to use
+> cancel_delayed_work() in atomic context? I presume not, as it uses
+> del_timer_sync().
 
-Firstly, I don't believe this is an issue.  The amount of hardware
-specific code is small (<150 loc), and the design of the PLX hardware
-appears to be the same as Intel (from what I've read on the internet).
+Ah, you're right.  __cancel_delayed_work() invoked from irq context
+can't be converted to cancel_delayed_work() or mod_delayed_work().
+I'll skip those from the previous patch and drop this patch.  I really
+hope this could be solved somehow tho.  :(
 
-Assuming Intel is me, I am always happy to do whatever I can to help
-PLX or any other NTB vendor.  I am willing to make internal releases
-(which I am assuming is the issue you are referring to) for any change
-to the driver.
+Thank you.
 
-If necessary, refactoring the driver shouldn't be a significant issue.
-However, I would prefer to do it if/when another NTB driver wants to
-be added.  PLX (and those who are using their NTB hardware) hasn't
-pushed an NTB driver yet, and may never (as their design docs on the
-web are from '05).  Why complicate the driver for them if they never
-come?
-
-Thanks,
-Jon
-
+-- 
+tejun
