@@ -1,118 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab2GaGlX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:41:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42019 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab2GaGlC (ORCPT
+	id S1754771Ab2GaGlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:41:21 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:39672 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754171Ab2GaGlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:41:02 -0400
-Date: Tue, 31 Jul 2012 08:40:53 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] hw_random: mxc-rnga: Adapt clocks to new i.mx
- clock framework
-Message-ID: <20120731064053.GW30009@pengutronix.de>
-References: <1343407672-27185-1-git-send-email-fabio.estevam@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343407672-27185-1-git-send-email-fabio.estevam@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:40:12 up 37 days, 21:51, 43 users,  load average: 0.20, 0.12,
- 0.11
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 31 Jul 2012 02:41:18 -0400
+From: Chao Xie <xiechao.mail@gmail.com>
+To: haojian.zhuang@gmail.com, mturquette@linaro.org, arnd@arndb.de,
+        viresh.linux@gmail.com, s.hauer@pengutronix.de, chao.xie@marvell.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Chao Xie <xiechao.mail@gmail.com>
+Subject: [PATCH 4/5] clk: mmp: add clock definition for mmp2
+Date: Tue, 31 Jul 2012 14:39:52 +0800
+Message-Id: <1343716792-10399-4-git-send-email-xiechao.mail@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com>
+References: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com>
+X-OriginalArrivalTime: 31 Jul 2012 06:39:48.0592 (UTC) FILETIME=[47DF2700:01CD6EE7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 01:47:51PM -0300, Fabio Estevam wrote:
-> Adapt clocks to the new i.mx clock framework and fix the following warning:
-> 
-> Cc: Theodore Ts'o <tytso@mit.edu>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au> 
-> Cc: <linux-kernel@vger.kernel.org>
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+From: Chao Xie <chao.xie@marvell.com>
 
-Both:
+Initialize the clocks for mmp2
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Chao Xie <xiechao.mail@gmail.com>
+---
+ drivers/clk/mmp/Makefile   |    1 +
+ drivers/clk/mmp/clk-mmp2.c |  337 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 338 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clk/mmp/clk-mmp2.c
 
-Sascha
-
-> ---
-> Changes since v1:
-> - Converted a missing 'clk_disable' to 'clk_disable_unprepare'
-> 
->  drivers/char/hw_random/mxc-rnga.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
-> index 85074de..62c7efe 100644
-> --- a/drivers/char/hw_random/mxc-rnga.c
-> +++ b/drivers/char/hw_random/mxc-rnga.c
-> @@ -152,14 +152,14 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
->  	if (rng_dev)
->  		return -EBUSY;
->  
-> -	clk = clk_get(&pdev->dev, "rng");
-> +	clk = clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(clk)) {
->  		dev_err(&pdev->dev, "Could not get rng_clk!\n");
->  		err = PTR_ERR(clk);
->  		goto out;
->  	}
->  
-> -	clk_enable(clk);
-> +	clk_prepare_enable(clk);
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!res) {
-> @@ -201,7 +201,7 @@ err_ioremap:
->  	release_mem_region(res->start, resource_size(res));
->  
->  err_region:
-> -	clk_disable(clk);
-> +	clk_disable_unprepare(clk);
->  	clk_put(clk);
->  
->  out:
-> @@ -212,7 +212,7 @@ static int __exit mxc_rnga_remove(struct platform_device *pdev)
->  {
->  	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	void __iomem *rng_base = (void __iomem *)mxc_rnga.priv;
-> -	struct clk *clk = clk_get(&pdev->dev, "rng");
-> +	struct clk *clk = clk_get(&pdev->dev, NULL);
->  
->  	hwrng_unregister(&mxc_rnga);
->  
-> @@ -220,7 +220,7 @@ static int __exit mxc_rnga_remove(struct platform_device *pdev)
->  
->  	release_mem_region(res->start, resource_size(res));
->  
-> -	clk_disable(clk);
-> +	clk_disable_unprepare(clk);
->  	clk_put(clk);
->  
->  	return 0;
-> -- 
-> 1.7.1
-> 
-> 
-> 
-
+diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
+index 4fe1d15..12845e0 100644
+--- a/drivers/clk/mmp/Makefile
++++ b/drivers/clk/mmp/Makefile
+@@ -6,3 +6,4 @@ obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-pll2.o
+ 
+ obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
+ obj-$(CONFIG_CPU_PXA910) += clk-pxa910.o
++obj-$(CONFIG_CPU_MMP2) += clk-mmp2.o
+diff --git a/drivers/clk/mmp/clk-mmp2.c b/drivers/clk/mmp/clk-mmp2.c
+new file mode 100644
+index 0000000..6196e13
+--- /dev/null
++++ b/drivers/clk/mmp/clk-mmp2.c
+@@ -0,0 +1,337 @@
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/spinlock.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++
++#include <mach/addr-map.h>
++
++#include "clk.h"
++
++#define APBC_RTC	APBC_REG(0x00)
++#define APBC_TWSI0	APBC_REG(0x04)
++#define APBC_TWSI1	APBC_REG(0x08)
++#define APBC_TWSI2	APBC_REG(0x0c)
++#define APBC_TWSI3	APBC_REG(0x10)
++#define APBC_TWSI4	APBC_REG(0x7c)
++#define APBC_TWSI5	APBC_REG(0x80)
++#define APBC_KPC	APBC_REG(0x18)
++#define APBC_UART0	APBC_REG(0x2c)
++#define APBC_UART1	APBC_REG(0x30)
++#define APBC_UART2	APBC_REG(0x34)
++#define APBC_UART3	APBC_REG(0x88)
++#define APBC_GPIO	APBC_REG(0x38)
++#define APBC_PWM0	APBC_REG(0x3c)
++#define APBC_PWM1	APBC_REG(0x40)
++#define APBC_PWM2	APBC_REG(0x44)
++#define APBC_PWM3	APBC_REG(0x48)
++#define APBC_SSP0	APBC_REG(0x50)
++#define APBC_SSP1	APBC_REG(0x54)
++#define APBC_SSP2	APBC_REG(0x58)
++#define APBC_SSP3	APBC_REG(0x5c)
++
++#define APMU_SDH0	APMU_REG(0x54)
++#define APMU_SDH1	APMU_REG(0x58)
++#define APMU_SDH2	APMU_REG(0xe8)
++#define APMU_SDH3	APMU_REG(0xec)
++#define APMU_USB	APMU_REG(0x5c)
++#define APMU_DISP0	APMU_REG(0x4c)
++#define APMU_DISP1	APMU_REG(0x110)
++#define APMU_CCIC0	APMU_REG(0x50)
++#define APMU_CCIC1	APMU_REG(0xf4)
++
++static DEFINE_SPINLOCK(mmp_clk_lock);
++
++enum pll_clk {
++	clk32,
++	pll1, pll1_2, pll1_4, pll1_8, pll1_16,
++	pll1_20, pll1_3, pll1_6, pll1_12,
++	pll2, pll2_2, pll2_4, pll2_8, pll2_16,
++	pll2_3, pll2_6, pll2_12,
++	vctcxo, vctcxo_2, vctcxo_4,
++	usb_pll, uart_pll,
++	pll_max,
++};
++
++enum apbc_clk {
++	uart0_clk, uart1_clk, uart2_clk, uart3_clk,
++	pwm0_clk, pwm1_clk, pwm2_clk, pwm3_clk,
++	twsi0_clk, twsi1_clk, twsi2_clk, twsi3_clk, twsi4_clk, twsi5_clk,
++	ssp0_clk, ssp1_clk, ssp2_clk, ssp3_clk,
++	gpio_clk, kpc_clk, rtc_clk,
++	uart0_mux_clk, uart1_mux_clk, uart2_mux_clk, uart3_mux_clk,
++	ssp0_mux_clk, ssp1_mux_clk, ssp2_mux_clk, ssp3_mux_clk,
++	apbc_max,
++};
++
++enum apmu_clk {
++	sdh_mux_clk, sdh_div_clk,
++	sdh0_clk, sdh1_clk, sdh2_clk, sdh3_clk,
++	usb_clk,
++	disp0_mux_clk, disp1_mux_clk,
++	disp0_div_clk, disp1_div_clk, disp0_sphy_div_clk,
++	disp0_clk, disp1_clk, disp0_sphy_clk,
++	ccic_arbiter_clk,
++	ccic0_mux_clk, ccic1_mux_clk,
++	ccic0_div_clk, ccic1_div_clk, ccic0_sphy_div_clk, ccic1_sphy_div_clk,
++	ccic0_phy_clk, ccic1_phy_clk, ccic0_sphy_clk, ccic1_sphy_clk,
++	ccic0_clk, ccic1_clk,
++	apmu_max,
++};
++
++static struct clk_factor_masks factor_masks = {
++	.num_mask = 0x1fff,
++	.den_mask = 0x1fff,
++	.num_shift = 16,
++	.den_shift = 0,
++};
++
++static struct clk_factor_tbl factor_tbl[] = {
++	{.num = 14634,	.den = 2165},	/* 14.745MHZ */
++	{.num = 3521,	.den = 689},	/* 19.23MHZ */
++	{.num = 9679,	.den = 5728},	/* 58.9824MHZ */
++	{.num = 15850,	.den = 9451},	/* 59.429 */
++};
++
++static const char *uart_parent[] = {"uart_pll", "vctcxo"};
++static const char *ssp_parent[] = {"vctcxo_4", "vctcxo_2", "vctcxo",
++					"pll1_16"};
++static const char *sdh_parent[] = {"pll1_4", "pll2", "usb_pll", "pll1"};
++static const char *disp_parent[] = {"pll1", "pll1_16", "pll2", "vctcxo"};
++static const char *ccic_parent[] = {"pll1_2", "pll1_16", "vctcxo"};
++
++void __init mmp2_clk_init(void)
++{
++	struct clk *pll_clks[pll_max];
++	struct clk *apbc_clks[apbc_max];
++	struct clk *apmu_clks[apmu_max];
++	/* all root clocks */
++	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, clk32, 32000);
++	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, vctcxo, 26000000);
++	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, pll1, 800000000);
++	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, usb_pll, 480000000);
++	pll_clks[pll2] = mmp_clk_register_pll2("pll2", "vctcxo", 0);
++	clk_register_clkdev(pll_clks[pll2], NULL, "pll2");
++
++	/* PLL1 */
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_2, pll1,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_4, pll1_2,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_8, pll1_4,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_16, pll1_8,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_20, pll1_4,
++					CLK_SET_RATE_PARENT, 1, 5);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_3, pll1,
++					CLK_SET_RATE_PARENT, 1, 3);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_6, pll1_3,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_12, pll1_6,
++					CLK_SET_RATE_PARENT, 1, 2);
++	pll_clks[uart_pll] = mmp_clk_register_factor("uart_pll", "pll_4", 0,
++				MPMU_REG(0x14), &factor_masks, factor_tbl,
++				ARRAY_SIZE(factor_tbl));
++	/* PLL2 */
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll2_2, pll2,
++				CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll2_4, pll2_2,
++				CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll2_8, pll2_4,
++				CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll2_16, pll2_8,
++				CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll2_3, pll2,
++				CLK_SET_RATE_PARENT, 1, 3);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll2_6, pll2_3,
++				CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll2_12, pll2_6,
++				CLK_SET_RATE_PARENT, 1, 2);
++
++	/* vctcxo */
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, vctcxo_2, vctcxo,
++				CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, vctcxo_4, vctcxo_2,
++				CLK_SET_RATE_PARENT, 1, 2);
++
++	/* APBC devices without mux parent */
++	MMP_CLK_REGISTER_APBC(apbc_clks, twsi0_clk, vctcxo, 10,
++			APBC_TWSI0, 0, "pxa2xx-i2c.0", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, twsi1_clk, vctcxo, 10,
++			APBC_TWSI1, 0, "pxa2xx-i2c.1", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, twsi2_clk, vctcxo, 10,
++			APBC_TWSI2, 0, "pxa2xx-i2c.2", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, twsi3_clk, vctcxo, 10,
++			APBC_TWSI3, 0, "pxa2xx-i2c.3", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, twsi4_clk, vctcxo, 10,
++			APBC_TWSI4, 0, "pxa2xx-i2c.4", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, twsi5_clk, vctcxo, 10,
++			APBC_TWSI5, 0, "pxa2xx-i2c.5", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, gpio_clk, vctcxo, 10,
++			APBC_GPIO, 0, "pxa-gpio", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, kpc_clk, clk32k, 10,
++			APBC_KPC, 0, "pxa27x-keypad", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, rtc_clk, clk32k, 10,
++			APBC_RTC, 0, "mmp-rtc", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, pwm0_clk, vctcxo, 10,
++			APBC_PWM0, 0, "mmp2-pwm.0", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, pwm1_clk, vctcxo, 10,
++			APBC_PWM1, 0, "mmp2-pwm.1", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, pwm2_clk, vctcxo, 10,
++			APBC_PWM2, 0, "mmp2-pwm.2", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, pwm3_clk, vctcxo, 10,
++			APBC_PWM3, 0, "mmp2-pwm.3", NULL, &mmp_clk_lock);
++
++	/* APBC devices with mux parent */
++	MMP_CLK_REGISTER_MUX(apbc_clks, uart0_mux_clk, uart_parent,
++			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
++			APBC_UART0, 4, 3, 0, NULL, "uart_mux.0",
++			&mmp_clk_lock);
++	clk_set_parent(apbc_clks[uart0_mux_clk], pll_clks[vctcxo]);
++	MMP_CLK_REGISTER_APBC(apbc_clks, uart0_clk, uart0_mux_clk, 10,
++			APBC_UART0, 0, "pxa2xx-uart.0", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, uart1_mux_clk, uart_parent,
++			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
++			APBC_UART1, 4, 3, 0, NULL, "uart_mux.1",
++			&mmp_clk_lock);
++	clk_set_parent(apbc_clks[uart1_mux_clk], pll_clks[vctcxo]);
++	MMP_CLK_REGISTER_APBC(apbc_clks, uart1_clk, uart1_mux_clk, 10,
++			APBC_UART1, 0, "pxa2xx-uart.1", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, uart2_mux_clk, uart_parent,
++			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
++			APBC_UART2, 4, 3, 0, NULL, "uart_mux.2",
++			&mmp_clk_lock);
++	clk_set_parent(apbc_clks[uart2_mux_clk], pll_clks[vctcxo]);
++	MMP_CLK_REGISTER_APBC(apbc_clks, uart2_clk, uart2_mux_clk, 10,
++			APBC_UART2, 0, "pxa2xx-uart.2", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, uart3_mux_clk, uart_parent,
++			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
++			APBC_UART3, 4, 3, 0, NULL, "uart_mux.3",
++			&mmp_clk_lock);
++	clk_set_parent(apbc_clks[uart3_mux_clk], pll_clks[vctcxo]);
++	MMP_CLK_REGISTER_APBC(apbc_clks, uart3_clk, uart3_mux_clk, 10,
++			APBC_UART3, 0, "pxa2xx-uart.3", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, ssp0_mux_clk, ssp_parent,
++			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
++			APBC_SSP0, 4, 3, 0, NULL, "ssp_mux.0", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, ssp0_clk, ssp0_mux_clk, 10,
++			APBC_SSP0, 0, "mmp-ssp.0", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, ssp1_mux_clk, ssp_parent,
++			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
++			APBC_SSP1, 4, 3, 0, NULL, "ssp_mux.1", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, ssp1_clk, ssp1_mux_clk, 10,
++			APBC_SSP1, 0, "mmp-ssp.1", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, ssp2_mux_clk, ssp_parent,
++			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
++			APBC_SSP2, 4, 3, 0, NULL, "ssp_mux.2", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, ssp2_clk, ssp2_mux_clk, 10,
++			APBC_SSP2, 0, "mmp-ssp.2", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, ssp3_mux_clk, ssp_parent,
++			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
++			APBC_SSP3, 4, 3, 0, NULL, "ssp_mux.3", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, ssp3_clk, ssp3_mux_clk, 10,
++			APBC_SSP3, 0, "mmp-ssp.3", NULL, &mmp_clk_lock);
++
++	/* APMU devices */
++	/* sdh */
++	MMP_CLK_REGISTER_MUX(apmu_clks, sdh_mux_clk, sdh_parent,
++			ARRAY_SIZE(sdh_parent), CLK_SET_RATE_PARENT,
++			APMU_SDH0, 8, 2, 0, NULL, "sdh_mux", &mmp_clk_lock);
++	MMP_CLK_REGISTER_DIV(apmu_clks, sdh_div_clk, sdh_mux_clk,
++			CLK_SET_RATE_PARENT, APMU_SDH0, 10, 4,
++			CLK_DIVIDER_ONE_BASED, NULL, "sdh_div", &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_APMU(apmu_clks, sdh0_clk, sdh_div_clk, APMU_SDH0,
++			0x1b, "sdhci-pxav3.0", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, sdh1_clk, sdh_div_clk, APMU_SDH1,
++			0x1b, "sdhci-pxav3.1", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, sdh2_clk, sdh_div_clk, APMU_SDH2,
++			0x1b, "sdhci-pxav3.2", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, sdh3_clk, sdh_div_clk, APMU_SDH3,
++			0x1b, "sdhci-pxav3.3", NULL, &mmp_clk_lock);
++
++	/* usb */
++	MMP_CLK_REGISTER_APMU(apmu_clks, usb_clk, usb_pll, APMU_USB,
++			0x9, NULL, "usb-clk", &mmp_clk_lock);
++
++	/* display */
++	MMP_CLK_REGISTER_MUX(apmu_clks, disp0_mux_clk, disp_parent,
++			ARRAY_SIZE(disp_parent), CLK_SET_RATE_PARENT,
++			APMU_DISP0, 6, 2, 0, NULL, "disp_mux.0",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_DIV(apmu_clks, disp0_div_clk, disp0_mux_clk,
++			CLK_SET_RATE_PARENT, APMU_DISP0, 8, 4,
++			CLK_DIVIDER_ONE_BASED, NULL, "disp_div.0",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, disp0_clk, disp0_div_clk, APMU_DISP0,
++			0x1b, "mmp-disp.0", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_DIV(apmu_clks, disp0_sphy_div_clk, disp0_mux_clk,
++			0, APMU_DISP0, 15, 5,
++			0, NULL, "disp0_sphy_div", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, disp0_sphy_clk, disp0_sphy_div_clk,
++			APMU_DISP0, 0x1024, NULL, "disp0_sphy", &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apmu_clks, disp1_mux_clk, disp_parent,
++			ARRAY_SIZE(disp_parent), CLK_SET_RATE_PARENT,
++			APMU_DISP1, 6, 2, 0, NULL, "disp_mux.0",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_DIV(apmu_clks, disp1_div_clk, disp1_mux_clk,
++			CLK_SET_RATE_PARENT, APMU_DISP1, 8, 4,
++			CLK_DIVIDER_ONE_BASED, NULL, "disp_div.0",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, disp1_clk, disp1_div_clk, APMU_DISP1,
++			0x1b, "mmp-disp.1", NULL, &mmp_clk_lock);
++
++	/* ccic */
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic_arbiter_clk, vctcxo,
++			APMU_CCIC0, 0x1800, NULL, "ccic_arbiter",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_MUX(apmu_clks, ccic0_mux_clk, ccic_parent,
++			ARRAY_SIZE(ccic_parent), CLK_SET_RATE_PARENT,
++			APMU_CCIC0, 6, 2, 0, NULL, "ccic_mux.0",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_DIV(apmu_clks, ccic0_div_clk, ccic0_mux_clk,
++			CLK_SET_RATE_PARENT, APMU_CCIC0, 17, 4,
++			CLK_DIVIDER_ONE_BASED, NULL, "ccic_div.0",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic0_clk, ccic0_div_clk, APMU_CCIC0,
++			0x1b, "mmp-ccic.0", "fnclk", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic0_phy_clk, ccic0_div_clk,
++			APMU_CCIC0, 0x24, "mmp-ccic.0", "phyclk",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_DIV(apmu_clks, ccic0_sphy_div_clk, ccic0_div_clk,
++			0, APMU_CCIC0, 10, 5, 0,
++			"mmp-ccic.0", "sphyclk_div", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic0_sphy_clk, ccic0_sphy_div_clk,
++			APMU_CCIC0, 0x300, "mmp-ccic.0", "sphyclk",
++			&mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apmu_clks, ccic1_mux_clk, ccic_parent,
++			ARRAY_SIZE(ccic_parent), CLK_SET_RATE_PARENT,
++			APMU_CCIC1, 6, 2, 0, NULL, "ccic_mux.1",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_DIV(apmu_clks, ccic1_div_clk, ccic1_mux_clk,
++			CLK_SET_RATE_PARENT, APMU_CCIC1, 16, 4,
++			CLK_DIVIDER_ONE_BASED, NULL, "ccic_div.1",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic1_clk, ccic1_div_clk, APMU_CCIC1,
++			0x1b, "mmp-ccic.1", "fnclk", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic1_phy_clk, ccic1_div_clk,
++			APMU_CCIC0, 0x24, "mmp-ccic.1", "phyclk",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_DIV(apmu_clks, ccic1_sphy_div_clk, ccic1_div_clk,
++			0, APMU_CCIC1, 10, 5, 0,
++			"mmp-ccic.1", "sphyclk_div", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic1_sphy_clk, ccic1_sphy_div_clk,
++			APMU_CCIC1, 0x300, "mmp-ccic.1", "sphyclk",
++			&mmp_clk_lock);
++}
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.0.4
+
