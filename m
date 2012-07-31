@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab2GaBWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 21:22:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24353 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab2GaBWi (ORCPT
+	id S1754728Ab2GaB7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 21:59:04 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48046 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab2GaB7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 21:22:38 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=7Npo2C4X2bcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=lbJXBy493IuyOglmQRkA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343697755.27983.17.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RT 05/12] slab: Prevent local lock deadlock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: frank.rowand@am.sony.com
-Cc: tglx@linutronix.de, chris.pringle@miranda.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
-Date: Mon, 30 Jul 2012 21:22:35 -0400
-In-Reply-To: <5011DD9B.1030901@am.sony.com>
-References: <20120718223910.898476857@goodmis.org>
-	 <20120718223957.856443728@goodmis.org> <5011DD9B.1030901@am.sony.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	Mon, 30 Jul 2012 21:59:03 -0400
+Date: Tue, 31 Jul 2012 11:58:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Sage Weil <sage@newdream.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Elder <elder@inktank.com>
+Subject: linux-next: manual merge of the ceph tree with Linus' tree
+Message-Id: <20120731115853.a642cbd22bddb96f667520d1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__31_Jul_2012_11_58_53_+1000_wYdTEsOSu=D1+LUR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-26 at 17:15 -0700, Frank Rowand wrote:
+--Signature=_Tue__31_Jul_2012_11_58_53_+1000_wYdTEsOSu=D1+LUR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Config is from arch/arm/configs/omap2plus_defconfig
-> plus:
-> 
->    CONFIG_USB_EHCI_HCD=y
->    CONFIG_USB_NET_SMSC95XX=y
->    CONFIG_PREEMPT_RT_FULL=y
-> 
+Hi Sage,
 
-Interesting, I just booted my panda board against 3.0.36-rt58 with that
-config and these three set, and I didn't get this error.
+Today's linux-next merge of the ceph tree got a conflict in
+net/ceph/messenger.c between commit 5bdca4e0768d ("libceph: fix messenger
+retry") from Linus' tree and commit ab166d5aa3bc ("libceph: separate
+banner and connect writes") from the ceph tree.
 
--- Steve
+I fixed it up (removed the calls to ceph_con_out_kvec_reset()) and can
+carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__31_Jul_2012_11_58_53_+1000_wYdTEsOSu=D1+LUR
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQFzvdAAoJEECxmPOUX5FEeUQP/Az9+hMxPhQVnETe1SB7KAFi
+jNu+5vm7aF/m2p4qUmu6Qqy9ozHMKK3lmOWN9CAOA5ghc5uM3unS7npaY4CGLp0h
+Erxw5+lGdyrtDudYEbHbfa+WuV1TTthe+srRchxw5tw877xQDSh4D4oXji8AbstJ
+4n+WN0QrzyHLcVeWamD49cSJjMcZ4iCg0rM/mn+4VN1z+DD7S5yR2CiTdu+Rt0Jl
+bTaAVJ16PAua32lfMhe8+kKInV3Z77juAJ6/gk4+wsOaE8BfyHSgr3X9mrMfrtz2
+Q8YRhlAYVrjNRpmry1bA1s9vGzQzKko46KfWaeCVtkOIgjeshZ3+yu2OVPOhu6a4
+3PJ3C39VGnZBD2UpeDncjZD9io38vLduHtxEbDo/wy+CJZVfP/vuQu0GDh2bTbfo
+BWG/gQEjMSBphtctpo0aQV6UKERTbw6QvAkGLG9qpiOmqFD5c5NdF45IegP5B9OG
+uFG9StQVCTJCSH9PN8ZApxb9o/FJaxwzL341wSwgCcvic2vwQw1Y56Ek7WKj1ccy
+ntTbNuyiTZ242rV75hQqzLxrNd/CKgpCSJowv1F09s910IaPwyhFldJ8wGI0WRL3
+w4WKdqTI/16BER6hfibK0ZFSUTNteao1iOAlQ81p5Gn1fs3GBZU8hBJbqcEj3EYZ
+B9a+f9ZWH0bPS6zu70bu
+=9rxo
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__31_Jul_2012_11_58_53_+1000_wYdTEsOSu=D1+LUR--
