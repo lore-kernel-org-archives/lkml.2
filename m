@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab2GaJvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 05:51:36 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:55055 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab2GaJvf (ORCPT
+	id S1754920Ab2GaJyF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 05:54:05 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:43284 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab2GaJyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 05:51:35 -0400
+	Tue, 31 Jul 2012 05:54:03 -0400
 MIME-Version: 1.0
-From: Jeroen Ooms <jeroen.ooms@stat.ucla.edu>
-Date: Tue, 31 Jul 2012 11:51:14 +0200
-X-Google-Sender-Auth: 5Thkd7Eu6h-MvD5LmTmLYl6W9TA
-Message-ID: <CABFfbXu_SB7K+jdmp7w3=5KGvQGOnvVGXK1XK7K-ubOJg+k3SQ@mail.gmail.com>
-Subject: What is the use of RLIMIT_NICE ?
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <CAOesGMgav2dqvUk623u_1ZuAE82drg2tF7rMpKMCZN4_Oq12_A@mail.gmail.com>
+References: <CAK5ve-JuZcjdbw_tV8vcriHWxOq1KFHm2mZBm6z3_j7hpPw-eA@mail.gmail.com>
+ <CAK5ve-+3rKjeQA-WMQWvT48roFx-3Y-jNLZ3ciyOuH42x4Nu9A@mail.gmail.com> <CAOesGMgav2dqvUk623u_1ZuAE82drg2tF7rMpKMCZN4_Oq12_A@mail.gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Tue, 31 Jul 2012 17:53:41 +0800
+X-Google-Sender-Auth: gFYkdeg3joyAe68MR3CqP4FHC0A
+Message-ID: <CAK5ve-K29fKi57hEWLh6gQ-F5KXXr7hHfyAkk_MebxcQf6Dp=A@mail.gmail.com>
+Subject: Re: [GIT PULL] LED CPU trigger driver and ARM LED code consolidation
+To: linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am using prlimit in Ubuntu to do some resource restrictions in my
-sandbox which has been very helpful. However, I am not quite sure what
-to do with RLIMIT_NICE. The docs say:
+On Fri, Jun 8, 2012 at 4:20 PM, Olof Johansson <olof@lixom.net> wrote:
+> Hi,
+>
+> On Wed, Jun 6, 2012 at 11:12 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
+>> Hi Arnd and Olof,
+>>
+>> Is there any chance to pull this LED code into ARM SoC tree?
+>>
+>> Thanks,
+>> -Bryan
+>>
+>> On Mon, Jun 4, 2012 at 3:25 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
+>>> Hi Arnd and Olof,
+>>>
+>>> Please consider to pull my branch for LED CPU trigger driver and ARM
+>>> LED code consolidation, which is based on 3.5-rc1:
+>>>
+>>> The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
+>>>
+>>>  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
+>>>
+>>> are available in the git repository at:
+>>>
+>>>  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
+>>> for-arm-soc
+>
+> Pulled into arm-soc as devel/led-driver in next/drivers.
+>
+>
+> Thanks,
+>
+> -Olof
 
-RLIMIT_NICE: Specifies a ceiling to which the process's nice value can
-be raised using setpriority(2) or nice(2).
+Olof and Arnd,
 
-However, according to getpriority(2), a process can raise it's nice
-value only if owned by a superuser in the first place. But if this is
-the case, the RLIMIT_NICE value is not going to add too any
-functionality because a privileged user can arbitrarily lower or
-higher RLIMIT values anyway.
+Will you guys send out pull request for this led-driver patches during
+this merge window?
 
-So I don't understand how to use or interpret RLIMIT_NICE. For
-non-privileged users the entire thing seems useless because they
-cannot raise priority in the first place, and it makes no sense to set
-it below the current priority. However for superusers it doesn't
-really add anything either because thenice, and RLIMIT_NICE soft- and
-hard limits can arbitrarily be raised.
-
-So what is the idea behind RLIMIT_NICE ?
-
-Thank you very much,
-
-Jeroen
-
-
-ps: please cc in reply.
+Thanks,
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
