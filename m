@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab2GaR7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:59:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59287 "EHLO
+	id S1754182Ab2GaR7y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:59:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59300 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab2GaR7R (ORCPT
+	with ESMTP id S1753191Ab2GaR7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:59:17 -0400
-Date: Tue, 31 Jul 2012 10:58:25 -0700
-From: tip-bot for Andrew Vagin <avagin@openvz.org>
-Message-ID: <tip-e6dab5ffab59e910ec0e3355f4a6f29f7a7be474@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        peterz@infradead.org, avagin@openvz.org, rostedt@goodmis.org,
-        tglx@linutronix.de, asharma@fb.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, acme@ghostprotocols.net, avagin@openvz.org,
-        rostedt@goodmis.org, tglx@linutronix.de, asharma@fb.com
-In-Reply-To: <1342016098-213063-1-git-send-email-avagin@openvz.org>
-References: <1342016098-213063-1-git-send-email-avagin@openvz.org>
+	Tue, 31 Jul 2012 13:59:50 -0400
+Date: Tue, 31 Jul 2012 10:59:22 -0700
+From: tip-bot for Catalin Marinas <catalin.marinas@arm.com>
+Message-ID: <tip-a7ea3bbf5d58f4df2265d312f91d5769eabc8144@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        catalin.marinas@arm.com, richardcochran@gmail.com,
+        john.stultz@linaro.org, arnd@arndb.de, akpm@linux-foundation.org,
+        tglx@linutronix.de, prarit@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        catalin.marinas@arm.com, richardcochran@gmail.com,
+        john.stultz@linaro.org, arnd@arndb.de, akpm@linux-foundation.org,
+        tglx@linutronix.de, prarit@redhat.com
+In-Reply-To: <1343414893-45779-2-git-send-email-john.stultz@linaro.org>
+References: <1343414893-45779-2-git-send-email-john.stultz@linaro.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/trace:
-  Add ability to set a target task for events
-Git-Commit-ID: e6dab5ffab59e910ec0e3355f4a6f29f7a7be474
+Subject: [tip:timers/urgent] time/jiffies:
+  Allow CLOCK_TICK_RATE to be undefined
+Git-Commit-ID: a7ea3bbf5d58f4df2265d312f91d5769eabc8144
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,307 +32,75 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jul 2012 10:58:31 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jul 2012 10:59:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e6dab5ffab59e910ec0e3355f4a6f29f7a7be474
-Gitweb:     http://git.kernel.org/tip/e6dab5ffab59e910ec0e3355f4a6f29f7a7be474
-Author:     Andrew Vagin <avagin@openvz.org>
-AuthorDate: Wed, 11 Jul 2012 18:14:58 +0400
+Commit-ID:  a7ea3bbf5d58f4df2265d312f91d5769eabc8144
+Gitweb:     http://git.kernel.org/tip/a7ea3bbf5d58f4df2265d312f91d5769eabc8144
+Author:     Catalin Marinas <catalin.marinas@arm.com>
+AuthorDate: Fri, 27 Jul 2012 14:48:09 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 31 Jul 2012 17:02:05 +0200
+CommitDate: Tue, 31 Jul 2012 17:09:12 +0200
 
-perf/trace: Add ability to set a target task for events
+time/jiffies: Allow CLOCK_TICK_RATE to be undefined
 
-A few events are interesting not only for a current task.
-For example, sched_stat_* events are interesting for a task
-which wakes up. For this reason, it will be good if such
-events will be delivered to a target task too.
+CLOCK_TICK_RATE is a legacy constant that defines the timer
+device's granularity. On hardware with particularly coarse
+granularity, this constant is used to reduce accumulated
+time error when using jiffies as a clocksource, by calculating
+the hardware's actual tick length rather then just assuming
+it is 1sec/HZ.
 
-Now a target task can be set by using __perf_task().
+However, for the most part this is unnecessary, as most modern
+systems don't use jiffies for their clocksource, and their
+tick device is sufficiently fine grained to avoid major error.
 
-The original idea and a draft patch belongs to Peter Zijlstra.
+Thus, this patch allows an architecture to not define
+CLOCK_TICK_RATE, in which case ACTHZ defaults to (HZ << 8).
 
-I need these events for profiling sleep times. sched_switch is used for
-getting callchains and sched_stat_* is used for getting time periods.
-These events are combined in user space, then it can be analyzed by
-perf tools.
-
-Inspired-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arun Sharma <asharma@fb.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1342016098-213063-1-git-send-email-avagin@openvz.org
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+[ Commit log & intention tweaks ]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Link: http://lkml.kernel.org/r/1343414893-45779-2-git-send-email-john.stultz@linaro.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/ftrace_event.h    |    5 +++--
- include/linux/perf_event.h      |    3 ++-
- include/trace/events/sched.h    |    4 ++++
- include/trace/ftrace.h          |    6 +++++-
- kernel/events/callchain.c       |    9 ++++++++-
- kernel/events/core.c            |   30 ++++++++++++++++++++++++++++--
- kernel/events/internal.h        |    3 ++-
- kernel/trace/trace_event_perf.c |    2 +-
- kernel/trace/trace_kprobe.c     |    6 ++++--
- kernel/trace/trace_syscalls.c   |    4 ++--
- kernel/trace/trace_uprobe.c     |    2 +-
- 11 files changed, 60 insertions(+), 14 deletions(-)
+ include/linux/jiffies.h |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index af961d6..642928c 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -306,9 +306,10 @@ extern void *perf_trace_buf_prepare(int size, unsigned short type,
- 
- static inline void
- perf_trace_buf_submit(void *raw_data, int size, int rctx, u64 addr,
--		       u64 count, struct pt_regs *regs, void *head)
-+		       u64 count, struct pt_regs *regs, void *head,
-+		       struct task_struct *task)
- {
--	perf_tp_event(addr, count, raw_data, size, regs, head, rctx);
-+	perf_tp_event(addr, count, raw_data, size, regs, head, rctx, task);
- }
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 265e2c3..7d24466 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -39,9 +39,6 @@
+ # error Invalid value of HZ.
  #endif
  
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 76c5c8b..7602ccb 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1272,7 +1272,8 @@ static inline bool perf_paranoid_kernel(void)
- extern void perf_event_init(void);
- extern void perf_tp_event(u64 addr, u64 count, void *record,
- 			  int entry_size, struct pt_regs *regs,
--			  struct hlist_head *head, int rctx);
-+			  struct hlist_head *head, int rctx,
-+			  struct task_struct *task);
- extern void perf_bp_event(struct perf_event *event, void *data);
+-/* LATCH is used in the interval timer and ftape setup. */
+-#define LATCH  ((CLOCK_TICK_RATE + HZ/2) / HZ)	/* For divider */
+-
+ /* Suppose we want to divide two numbers NOM and DEN: NOM/DEN, then we can
+  * improve accuracy by shifting LSH bits, hence calculating:
+  *     (NOM << LSH) / DEN
+@@ -54,8 +51,15 @@
+ #define SH_DIV(NOM,DEN,LSH) (   (((NOM) / (DEN)) << (LSH))              \
+                              + ((((NOM) % (DEN)) << (LSH)) + (DEN) / 2) / (DEN))
  
- #ifndef perf_misc_flags
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index ea7a203..5a8671e 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -73,6 +73,9 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- 		__entry->prio		= p->prio;
- 		__entry->success	= success;
- 		__entry->target_cpu	= task_cpu(p);
-+	)
-+	TP_perf_assign(
-+		__perf_task(p);
- 	),
- 
- 	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
-@@ -325,6 +328,7 @@ DECLARE_EVENT_CLASS(sched_stat_template,
- 	)
- 	TP_perf_assign(
- 		__perf_count(delay);
-+		__perf_task(tsk);
- 	),
- 
- 	TP_printk("comm=%s pid=%d delay=%Lu [ns]",
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index c6bc2fa..a763888 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -712,6 +712,9 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- #undef __perf_count
- #define __perf_count(c) __count = (c)
- 
-+#undef __perf_task
-+#define __perf_task(t) __task = (t)
++#ifdef CLOCK_TICK_RATE
++/* LATCH is used in the interval timer and ftape setup. */
++# define LATCH ((CLOCK_TICK_RATE + HZ/2) / HZ)	/* For divider */
 +
- #undef TP_perf_assign
- #define TP_perf_assign(args...) args
+ /* HZ is the requested value. ACTHZ is actual HZ ("<< 8" is for accuracy) */
+-#define ACTHZ (SH_DIV (CLOCK_TICK_RATE, LATCH, 8))
++# define ACTHZ (SH_DIV(CLOCK_TICK_RATE, LATCH, 8))
++#else
++# define ACTHZ (HZ << 8)
++#endif
  
-@@ -725,6 +728,7 @@ perf_trace_##call(void *__data, proto)					\
- 	struct ftrace_raw_##call *entry;				\
- 	struct pt_regs __regs;						\
- 	u64 __addr = 0, __count = 1;					\
-+	struct task_struct *__task = NULL;				\
- 	struct hlist_head *head;					\
- 	int __entry_size;						\
- 	int __data_size;						\
-@@ -752,7 +756,7 @@ perf_trace_##call(void *__data, proto)					\
- 									\
- 	head = this_cpu_ptr(event_call->perf_events);			\
- 	perf_trace_buf_submit(entry, __entry_size, rctx, __addr,	\
--		__count, &__regs, head);				\
-+		__count, &__regs, head, __task);			\
- }
- 
- /*
-diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-index 6581a04..98d4597 100644
---- a/kernel/events/callchain.c
-+++ b/kernel/events/callchain.c
-@@ -153,7 +153,8 @@ put_callchain_entry(int rctx)
- 	put_recursion_context(__get_cpu_var(callchain_recursion), rctx);
- }
- 
--struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
-+struct perf_callchain_entry *
-+perf_callchain(struct perf_event *event, struct pt_regs *regs)
- {
- 	int rctx;
- 	struct perf_callchain_entry *entry;
-@@ -178,6 +179,12 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
- 	}
- 
- 	if (regs) {
-+		/*
-+		 * Disallow cross-task user callchains.
-+		 */
-+		if (event->ctx->task && event->ctx->task != current)
-+			goto exit_put;
-+
- 		perf_callchain_store(entry, PERF_CONTEXT_USER);
- 		perf_callchain_user(entry, regs);
- 	}
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f1cf0ed..b7935fc 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4039,7 +4039,7 @@ void perf_prepare_sample(struct perf_event_header *header,
- 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
- 		int size = 1;
- 
--		data->callchain = perf_callchain(regs);
-+		data->callchain = perf_callchain(event, regs);
- 
- 		if (data->callchain)
- 			size += data->callchain->nr;
-@@ -5209,7 +5209,8 @@ static int perf_tp_event_match(struct perf_event *event,
- }
- 
- void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
--		   struct pt_regs *regs, struct hlist_head *head, int rctx)
-+		   struct pt_regs *regs, struct hlist_head *head, int rctx,
-+		   struct task_struct *task)
- {
- 	struct perf_sample_data data;
- 	struct perf_event *event;
-@@ -5228,6 +5229,31 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
- 			perf_swevent_event(event, count, &data, regs);
- 	}
- 
-+	/*
-+	 * If we got specified a target task, also iterate its context and
-+	 * deliver this event there too.
-+	 */
-+	if (task && task != current) {
-+		struct perf_event_context *ctx;
-+		struct trace_entry *entry = record;
-+
-+		rcu_read_lock();
-+		ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
-+		if (!ctx)
-+			goto unlock;
-+
-+		list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
-+			if (event->attr.type != PERF_TYPE_TRACEPOINT)
-+				continue;
-+			if (event->attr.config != entry->type)
-+				continue;
-+			if (perf_tp_event_match(event, &data, regs))
-+				perf_swevent_event(event, count, &data, regs);
-+		}
-+unlock:
-+		rcu_read_unlock();
-+	}
-+
- 	perf_swevent_put_recursion_context(rctx);
- }
- EXPORT_SYMBOL_GPL(perf_tp_event);
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index b0b107f..a096c19 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -101,7 +101,8 @@ __output_copy(struct perf_output_handle *handle,
- }
- 
- /* Callchain handling */
--extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
-+extern struct perf_callchain_entry *
-+perf_callchain(struct perf_event *event, struct pt_regs *regs);
- extern int get_callchain_buffers(void);
- extern void put_callchain_buffers(void);
- 
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index fee3752..8a6d2ee 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -281,7 +281,7 @@ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
- 
- 	head = this_cpu_ptr(event_function.perf_events);
- 	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
--			      1, &regs, head);
-+			      1, &regs, head, NULL);
- 
- #undef ENTRY_SIZE
- }
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index b31d3d5..1a21170 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1002,7 +1002,8 @@ static __kprobes void kprobe_perf_func(struct kprobe *kp,
- 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
- 
- 	head = this_cpu_ptr(call->perf_events);
--	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head);
-+	perf_trace_buf_submit(entry, size, rctx,
-+					entry->ip, 1, regs, head, NULL);
- }
- 
- /* Kretprobe profile handler */
-@@ -1033,7 +1034,8 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
- 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
- 
- 	head = this_cpu_ptr(call->perf_events);
--	perf_trace_buf_submit(entry, size, rctx, entry->ret_ip, 1, regs, head);
-+	perf_trace_buf_submit(entry, size, rctx,
-+					entry->ret_ip, 1, regs, head, NULL);
- }
- #endif	/* CONFIG_PERF_EVENTS */
- 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 96fc733..60e4d78 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -532,7 +532,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 			       (unsigned long *)&rec->args);
- 
- 	head = this_cpu_ptr(sys_data->enter_event->perf_events);
--	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head);
-+	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
- }
- 
- int perf_sysenter_enable(struct ftrace_event_call *call)
-@@ -608,7 +608,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	rec->ret = syscall_get_return_value(current, regs);
- 
- 	head = this_cpu_ptr(sys_data->exit_event->perf_events);
--	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head);
-+	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
- }
- 
- int perf_sysexit_enable(struct ftrace_event_call *call)
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 2b36ac6..03003cd 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -670,7 +670,7 @@ static void uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
- 
- 	head = this_cpu_ptr(call->perf_events);
--	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head);
-+	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head, NULL);
- 
-  out:
- 	preempt_enable();
+ /* TICK_NSEC is the time between ticks in nsec assuming real ACTHZ */
+ #define TICK_NSEC (SH_DIV (1000000UL * 1000, ACTHZ, 8))
