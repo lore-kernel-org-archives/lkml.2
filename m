@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab2GaUOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 16:14:12 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53847 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756221Ab2GaUOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 16:14:09 -0400
-Date: Tue, 31 Jul 2012 14:49:34 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org
-Subject: [PATCH] crypto: Add a MAINTAINERS entry for P7+ in-Nest crypto driver
-Message-ID: <20120731194931.GA23426@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073120-9360-0000-0000-000008F4FC8B
+	id S1756437Ab2GaUPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 16:15:10 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:40588 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756088Ab2GaUPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 16:15:07 -0400
+Message-ID: <1343765698.4474.10.camel@jlt3.sipsolutions.net>
+Subject: Re: wlcore: might_sleep operation in interrupt handler
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Denis Yefremov <yefremov.denis@gmail.com>
+Cc: Luciano Coelho <coelho@ti.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Eliad Peller <eliad@wizery.com>, Arik Nemtsov <arik@wizery.com>,
+        Eyal Shapira <eyal@wizery.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Date: Tue, 31 Jul 2012 22:14:58 +0200
+In-Reply-To: <CADKZ3FKDw78ac9JPXJuw0s7Mqg1RrVfonbjXZ6zHmtwF2i5HoQ@mail.gmail.com> (sfid-20120731_202836_974056_A601A727)
+References: <CADKZ3FKDw78ac9JPXJuw0s7Mqg1RrVfonbjXZ6zHmtwF2i5HoQ@mail.gmail.com>
+	 (sfid-20120731_202836_974056_A601A727)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a MAINTAINERS entry for the IBM Power in-Nest Crypto Acceleators
-driver.
+On Tue, 2012-07-31 at 22:28 +0400, Denis Yefremov wrote:
+> Interrupt handler wlcore_irq in wlcore/main.c file
+> invokes mutex_lock that is might sleep operation.
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- MAINTAINERS |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> int __devinit wlcore_probe(struct wl1271 *wl, struct platform_device *pdev)
+> {
+> ...
+>         ret = request_threaded_irq(wl->irq, wl12xx_hardirq, wlcore_irq,
+>                                    irqflags,
+>                                    pdev->name, wl);
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index fb036a0..757fe60 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3414,6 +3414,12 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux.git
- S:	Maintained
- F:	arch/ia64/
- 
-+IBM Power in-Nest Crypto Acceleration
-+M:	Kent Yoder <key@linux.vnet.ibm.com>
-+L:	linux-crypto@vger.kernel.org
-+S:	Supported
-+F:	drivers/crypto/nx/
-+
- IBM Power Linux RAID adapter
- M:	Brian King <brking@us.ibm.com>
- S:	Supported
--- 
-1.7.5.4
+Yes, umm, why do you think they're using a *threaded* IRQ? :-)
+
+johannes
 
