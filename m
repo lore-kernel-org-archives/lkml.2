@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab2GaQjb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:39:31 -0400
+	id S1755855Ab2GaQk2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:40:28 -0400
 Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:44887 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755727Ab2GaQj2 (ORCPT
+	by vger.kernel.org with ESMTP id S1755682Ab2GaQj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:39:28 -0400
+	Tue, 31 Jul 2012 12:39:27 -0400
 X-IronPort-AV: E=Sophos;i="4.77,688,1336341600"; 
-   d="scan'208";a="168700822"
+   d="scan'208";a="168700820"
 From: Damien Cassou <damien.cassou@lifl.fr>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: kernel-janitors@vger.kernel.org, Donghwa Lee <dh09.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] drivers/video/exynos/exynos_mipi_dsi.c: use devm_ functions
-Date: Tue, 31 Jul 2012 18:39:21 +0200
-Message-Id: <1343752762-16861-5-git-send-email-damien.cassou@lifl.fr>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] drivers/video/gbefb.c: use devm_ functions
+Date: Tue, 31 Jul 2012 18:39:19 +0200
+Message-Id: <1343752762-16861-3-git-send-email-damien.cassou@lifl.fr>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1343752762-16861-1-git-send-email-damien.cassou@lifl.fr>
 References: <1343752762-16861-1-git-send-email-damien.cassou@lifl.fr>
@@ -35,136 +33,64 @@ function.
 Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
 
 ---
- drivers/video/exynos/exynos_mipi_dsi.c |   41 ++++++++++++---------------------
- 1 file changed, 15 insertions(+), 26 deletions(-)
+ drivers/video/gbefb.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/video/exynos/exynos_mipi_dsi.c b/drivers/video/exynos/exynos_mipi_dsi.c
-index 4bc2b8a..c277a07 100644
---- a/drivers/video/exynos/exynos_mipi_dsi.c
-+++ b/drivers/video/exynos/exynos_mipi_dsi.c
-@@ -336,7 +336,8 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
- 	struct mipi_dsim_ddi *dsim_ddi;
- 	int ret = -EINVAL;
- 
--	dsim = kzalloc(sizeof(struct mipi_dsim_device), GFP_KERNEL);
-+	dsim = devm_kzalloc(&pdev->dev, sizeof(struct mipi_dsim_device),
-+			    GFP_KERNEL);
- 	if (!dsim) {
- 		dev_err(&pdev->dev, "failed to allocate dsim object.\n");
- 		return -ENOMEM;
-@@ -350,13 +351,13 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
- 	dsim_pd = (struct mipi_dsim_platform_data *)dsim->pd;
- 	if (dsim_pd == NULL) {
- 		dev_err(&pdev->dev, "failed to get platform data for dsim.\n");
--		goto err_clock_get;
-+		goto err_platform_get_irq;
- 	}
- 	/* get mipi_dsim_config. */
- 	dsim_config = dsim_pd->dsim_config;
- 	if (dsim_config == NULL) {
- 		dev_err(&pdev->dev, "failed to get dsim config data.\n");
--		goto err_clock_get;
-+		goto err_platform_get_irq;
+diff --git a/drivers/video/gbefb.c b/drivers/video/gbefb.c
+index 7e7b7a9..9b79d38 100644
+--- a/drivers/video/gbefb.c
++++ b/drivers/video/gbefb.c
+@@ -1156,7 +1156,8 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
+ 		goto out_release_framebuffer;
  	}
  
- 	dsim->dsim_config = dsim_config;
-@@ -367,13 +368,13 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
- 	ret = regulator_bulk_get(&pdev->dev, ARRAY_SIZE(supplies), supplies);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to get regulators: %d\n", ret);
--		goto err_clock_get;
-+		goto err_platform_get_irq;
- 	}
- 
--	dsim->clock = clk_get(&pdev->dev, "dsim0");
-+	dsim->clock = devm_clk_get(&pdev->dev, "dsim0");
- 	if (IS_ERR(dsim->clock)) {
- 		dev_err(&pdev->dev, "failed to get dsim clock source\n");
--		goto err_clock_get;
-+		goto err_platform_get_irq;
- 	}
- 
- 	clk_enable(dsim->clock);
-@@ -384,15 +385,17 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
- 		goto err_platform_get;
- 	}
- 
--	dsim->res = request_mem_region(res->start, resource_size(res),
--					dev_name(&pdev->dev));
-+	dsim->res = devm_request_mem_region(&pdev->dev, res->start,
-+					    resource_size(res),
-+					    dev_name(&pdev->dev));
- 	if (!dsim->res) {
- 		dev_err(&pdev->dev, "failed to request io memory region\n");
+-	gbe = (struct sgi_gbe *) ioremap(GBE_BASE, sizeof(struct sgi_gbe));
++	gbe = (struct sgi_gbe *) devm_ioremap(&p_dev->dev, GBE_BASE,
++					      sizeof(struct sgi_gbe));
+ 	if (!gbe) {
+ 		printk(KERN_ERR "gbefb: couldn't map mmio region\n");
+ 		ret = -ENXIO;
+@@ -1170,12 +1171,13 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
+ 	if (!gbe_tiles.cpu) {
+ 		printk(KERN_ERR "gbefb: couldn't allocate tiles table\n");
  		ret = -ENOMEM;
--		goto err_mem_region;
-+		goto err_platform_get;
+-		goto out_unmap;
++		goto out_release_mem_region;
  	}
  
--	dsim->reg_base = ioremap(res->start, resource_size(res));
-+	dsim->reg_base = devm_ioremap(&pdev->dev, res->start,
-+				      resource_size(res));
- 	if (!dsim->reg_base) {
- 		dev_err(&pdev->dev, "failed to remap io region\n");
- 		ret = -ENOMEM;
-@@ -405,7 +408,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
- 	dsim_ddi = exynos_mipi_dsi_bind_lcd_ddi(dsim, dsim_pd->lcd_panel_name);
- 	if (!dsim_ddi) {
- 		dev_err(&pdev->dev, "mipi_dsim_ddi object not found.\n");
--		goto err_bind;
-+		goto err_ioremap;
- 	}
+ 	if (gbe_mem_phys) {
+ 		/* memory was allocated at boot time */
+-		gbe_mem = ioremap_nocache(gbe_mem_phys, gbe_mem_size);
++		gbe_mem = devm_ioremap_nocache(&p_dev->dev, gbe_mem_phys,
++					       gbe_mem_size);
+ 		if (!gbe_mem) {
+ 			printk(KERN_ERR "gbefb: couldn't map framebuffer\n");
+ 			ret = -ENOMEM;
+@@ -1241,13 +1243,9 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
+ out_gbe_unmap:
+ 	if (gbe_dma_addr)
+ 		dma_free_coherent(NULL, gbe_mem_size, gbe_mem, gbe_mem_phys);
+-	else
+-		iounmap(gbe_mem);
+ out_tiles_free:
+ 	dma_free_coherent(NULL, GBE_TLB_SIZE * sizeof(uint16_t),
+ 			  (void *)gbe_tiles.cpu, gbe_tiles.dma);
+-out_unmap:
+-	iounmap(gbe);
+ out_release_mem_region:
+ 	release_mem_region(GBE_BASE, sizeof(struct sgi_gbe));
+ out_release_framebuffer:
+@@ -1264,12 +1262,9 @@ static int __devexit gbefb_remove(struct platform_device* p_dev)
+ 	gbe_turn_off();
+ 	if (gbe_dma_addr)
+ 		dma_free_coherent(NULL, gbe_mem_size, gbe_mem, gbe_mem_phys);
+-	else
+-		iounmap(gbe_mem);
+ 	dma_free_coherent(NULL, GBE_TLB_SIZE * sizeof(uint16_t),
+ 			  (void *)gbe_tiles.cpu, gbe_tiles.dma);
+ 	release_mem_region(GBE_BASE, sizeof(struct sgi_gbe));
+-	iounmap(gbe);
+ 	gbefb_remove_sysfs(&p_dev->dev);
+ 	framebuffer_release(info);
  
- 	dsim->irq = platform_get_irq(pdev, 0);
-@@ -424,7 +427,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "failed to request dsim irq\n");
- 		ret = -EINVAL;
--		goto err_bind;
-+		goto err_ioremap;
- 	}
- 
- 	/* enable interrupts */
-@@ -466,20 +469,11 @@ done:
- 
- 	return 0;
- 
--err_bind:
--	iounmap(dsim->reg_base);
--
- err_ioremap:
- 	release_mem_region(dsim->res->start, resource_size(dsim->res));
- 
--err_mem_region:
--	release_resource(dsim->res);
--
- err_platform_get:
- 	clk_disable(dsim->clock);
--	clk_put(dsim->clock);
--err_clock_get:
--	kfree(dsim);
- 
- err_platform_get_irq:
- 	return ret;
-@@ -491,12 +485,8 @@ static int __devexit exynos_mipi_dsi_remove(struct platform_device *pdev)
- 	struct mipi_dsim_ddi *dsim_ddi, *next;
- 	struct mipi_dsim_lcd_driver *dsim_lcd_drv;
- 
--	iounmap(dsim->reg_base);
--
- 	clk_disable(dsim->clock);
--	clk_put(dsim->clock);
- 
--	release_resource(dsim->res);
- 	release_mem_region(dsim->res->start, resource_size(dsim->res));
- 
- 	list_for_each_entry_safe(dsim_ddi, next, &dsim_ddi_list, list) {
-@@ -514,7 +504,6 @@ static int __devexit exynos_mipi_dsi_remove(struct platform_device *pdev)
- 	}
- 
- 	regulator_bulk_free(ARRAY_SIZE(supplies), supplies);
--	kfree(dsim);
- 
- 	return 0;
- }
 
