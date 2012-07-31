@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab2GaTLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:11:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22785 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab2GaTLo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 15:11:44 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=7Npo2C4X2bcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=HtK6XFx8SY3d_bXckHcA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343761902.27983.67.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RT 05/12] slab: Prevent local lock deadlock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: frank.rowand@am.sony.com
-Cc: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "chris.pringle@miranda.com" <chris.pringle@miranda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
-Date: Tue, 31 Jul 2012 15:11:42 -0400
-In-Reply-To: <50182B44.8090100@am.sony.com>
-References: <20120718223910.898476857@goodmis.org>
-			 <20120718223957.856443728@goodmis.org> <5011DD9B.1030901@am.sony.com>
-		 <1343697755.27983.17.camel@gandalf.stny.rr.com>
-		 <50174158.4000408@am.sony.com>
-	 <1343701935.27983.18.camel@gandalf.stny.rr.com>
-	 <50182B44.8090100@am.sony.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753981Ab2GaTMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:12:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752286Ab2GaTMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 15:12:42 -0400
+Date: Tue, 31 Jul 2012 14:43:13 -0400
+From: Dave Jones <davej@redhat.com>
+To: Borislav Petkov <bp@alien8.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: awful kconfig help texts.
+Message-ID: <20120731184313.GA30493@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Borislav Petkov <bp@alien8.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Thierry Reding <thierry.reding@avionic-design.de>
+References: <20120731151600.GA19412@redhat.com>
+ <20120731170741.GA4735@x1.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731170741.GA4735@x1.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 12:00 -0700, Frank Rowand wrote:
+On Tue, Jul 31, 2012 at 07:07:41PM +0200, Borislav Petkov wrote:
+ > On Tue, Jul 31, 2012 at 11:16:00AM -0400, Dave Jones wrote:
+ > > 
+ > > PWM Support (PWM) [N/y/?] (NEW) ?
+ > > 
+ > > CONFIG_PWM:
+ > > 
+ > > This enables PWM support through the generic PWM framework.
+ > > 
+ > > 
+ > > Well that's.. enlightening.
+ > 
+ > Oh, there's one more enlightening sentence in the help:
+ > 
+ > "You only need to enable this, if you also want to enable one or more of
+ > the PWM drivers below."
+ > 
+ > Got it? :-)
 
-> > Yeah, my root fs is on the sdcard. Did you get this bug every time or
-> > was it sporadic?
-> 
-> I get it every boot.
+No, it doesn't add anything useful at all.
 
-Can you try it with an SD card? I can set it up for nfs as well, but
-that would take a bit of time.
+I know PWM is probably pulse width modulation, but why would my kernel
+need to care about this ? Why would I need drivers for it ?
 
--- Steve
+Also, think about what happens with 'oldconfig'. You don't get to even
+see 'the drivers below' until you've answered this question.
 
+It couldn't be more opaque if it tried.
 
+	Dave
+ 
