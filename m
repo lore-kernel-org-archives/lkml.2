@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab2GaXIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:08:43 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38215 "EHLO arroyo.ext.ti.com"
+	id S1756143Ab2GaXIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:08:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38217 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754970Ab2GaXFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754978Ab2GaXFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 19:05:50 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <nico@linaro.org>,
         <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH 02/22] ARM: use late patch framework for phys-virt patching
-Date: Tue, 31 Jul 2012 19:04:38 -0400
-Message-ID: <1343775898-28345-3-git-send-email-cyril@ti.com>
+        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
+Subject: [RFC 22/22] ARM: keystone: add switch over to high physical address range
+Date: Tue, 31 Jul 2012 19:04:58 -0400
+Message-ID: <1343775898-28345-23-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343775898-28345-1-git-send-email-cyril@ti.com>
 References: <1343775898-28345-1-git-send-email-cyril@ti.com>
@@ -23,239 +23,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the original physical offset patching implementation
-with one that uses the newly added patching framework.  In the process, we now
-unconditionally initialize the __pv_phys_offset and __pv_offset globals in the
-head.S code.
+Keystone platforms have their physical memory mapped at an address outside the
+32-bit physical range.  A Keystone machine with 16G of RAM would find its
+memory at 0x0800000000 - 0x0bffffffff.
 
+For boot purposes, the interconnect supports a limited alias of some of this
+memory within the 32-bit addressable space (0x80000000 - 0xffffffff).  This
+aliasing is implemented in hardware, and is not intended to be used much
+beyond boot.  For instance, DMA coherence does not work when running out of
+this aliased address space.
+
+Therefore, we've taken the approach of booting out of the low physical address
+range, and subsequently we switch over to the high range once we're safely
+inside machine specific territory.  This patch implements this switch over
+mechanism, which involves rewiring the TTBRs and page tables to point to the
+new physical address space.
+
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/include/asm/memory.h |   20 ++-------
- arch/arm/kernel/head.S        |   96 +++++------------------------------------
- arch/arm/kernel/module.c      |    5 ---
- arch/arm/kernel/vmlinux.lds.S |    5 ---
- 4 files changed, 15 insertions(+), 111 deletions(-)
+ arch/arm/Kconfig                             |    1 +
+ arch/arm/boot/dts/keystone-sim.dts           |    8 +++---
+ arch/arm/configs/keystone_defconfig          |    1 +
+ arch/arm/mach-keystone/include/mach/memory.h |   25 +++++++++++++++++
+ arch/arm/mach-keystone/keystone.c            |   37 ++++++++++++++++++++++++++
+ arch/arm/mach-keystone/platsmp.c             |   18 +++++++++++--
+ 6 files changed, 84 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index fcb5757..01c710d 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -17,6 +17,7 @@
- #include <linux/const.h>
- #include <linux/types.h>
- #include <asm/sizes.h>
-+#include <asm/patch.h>
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 7a76924..33a17c7 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -373,6 +373,7 @@ config ARCH_KEYSTONE
+ 	select NEED_MACH_MEMORY_H
+ 	select HAVE_SCHED_CLOCK
+ 	select HAVE_SMP
++	select ZONE_DMA if ARM_LPAE
+ 	help
+ 	  Support for boards based on the Texas Instruments Keystone family of
+ 	  SoCs.
+diff --git a/arch/arm/boot/dts/keystone-sim.dts b/arch/arm/boot/dts/keystone-sim.dts
+index 118d631..5912fa1 100644
+--- a/arch/arm/boot/dts/keystone-sim.dts
++++ b/arch/arm/boot/dts/keystone-sim.dts
+@@ -4,8 +4,8 @@
+ / {
+ 	model = "Texas Instruments Keystone 2 SoC";
+ 	compatible = "ti,keystone-evm";
+-	#address-cells = <1>;
+-	#size-cells = <1>;
++	#address-cells = <2>;
++	#size-cells = <2>;
+ 	interrupt-parent = <&gic>;
  
- #ifdef CONFIG_NEED_MACH_MEMORY_H
- #include <mach/memory.h>
-@@ -151,35 +152,22 @@
- #ifndef __virt_to_phys
- #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+ 	aliases {
+@@ -13,11 +13,11 @@
+ 	};
  
--/*
-- * Constants used to force the right instruction encodings and shifts
-- * so that all we need to do is modify the 8-bit constant field.
-- */
--#define __PV_BITS_31_24	0x81000000
--
- extern unsigned long __pv_phys_offset;
- #define PHYS_OFFSET __pv_phys_offset
+ 	chosen {
+-		bootargs = "console=ttyS0,115200n8 debug earlyprintk lpj=50000 rdinit=/bin/ash rw root=/dev/ram0 initrd=0x85000000,9M";
++		bootargs = "console=ttyS0,115200n8 debug earlyprintk lpj=50000 rdinit=/bin/ash rw root=/dev/ram0 initrd=0x805000000,9M";
+ 	};
  
--#define __pv_stub(from,to,instr,type)			\
--	__asm__("@ __pv_stub\n"				\
--	"1:	" instr "	%0, %1, %2\n"		\
--	"	.pushsection .pv_table,\"a\"\n"		\
--	"	.long	1b\n"				\
--	"	.popsection\n"				\
--	: "=r" (to)					\
--	: "r" (from), "I" (type))
-+extern unsigned long __pv_offset;
+ 	memory {
+-		reg = <0x80000000 0x8000000>;
++		reg = <0x00000008 0x00000000 0x00000000 0x8000000>;
+ 	};
  
- static inline unsigned long __virt_to_phys(unsigned long x)
- {
- 	unsigned long t;
--	__pv_stub(x, t, "add", __PV_BITS_31_24);
-+	early_patch_imm8(x, t, "add", __pv_offset);
- 	return t;
- }
+ 	cpus {
+diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
+index 5f71e66..8ea3b96 100644
+--- a/arch/arm/configs/keystone_defconfig
++++ b/arch/arm/configs/keystone_defconfig
+@@ -1,6 +1,7 @@
+ CONFIG_EXPERIMENTAL=y
+ CONFIG_BLK_DEV_INITRD=y
+ CONFIG_ARCH_KEYSTONE=y
++CONFIG_ARM_LPAE=y
+ CONFIG_SMP=y
+ CONFIG_ARM_ARCH_TIMER=y
+ CONFIG_NR_CPUS=4
+diff --git a/arch/arm/mach-keystone/include/mach/memory.h b/arch/arm/mach-keystone/include/mach/memory.h
+index 7c78b1e..a5f7a1a 100644
+--- a/arch/arm/mach-keystone/include/mach/memory.h
++++ b/arch/arm/mach-keystone/include/mach/memory.h
+@@ -19,4 +19,29 @@
+ #define MAX_PHYSMEM_BITS	36
+ #define SECTION_SIZE_BITS	34
  
- static inline unsigned long __phys_to_virt(unsigned long x)
- {
- 	unsigned long t;
--	__pv_stub(x, t, "sub", __PV_BITS_31_24);
-+	early_patch_imm8(x, t, "sub", __pv_offset);
- 	return t;
- }
- #else
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index 835898e..d165896 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -109,9 +109,13 @@ ENTRY(stext)
- 
- #ifndef CONFIG_XIP_KERNEL
- 	adr	r3, 2f
--	ldmia	r3, {r4, r8}
-+	ldmia	r3, {r4, r5, r6, r8}
- 	sub	r4, r3, r4			@ (PHYS_OFFSET - PAGE_OFFSET)
- 	add	r8, r8, r4			@ PHYS_OFFSET
-+	add	r5, r5, r4
-+	str	r8, [r5]			@ set __pv_phys_offset
-+	add	r6, r6, r4
-+	str	r4, [r6]			@ set __pv_offset
- #else
- 	ldr	r8, =PHYS_OFFSET		@ always constant in this case
- #endif
-@@ -124,9 +128,6 @@ ENTRY(stext)
- #ifdef CONFIG_SMP_ON_UP
- 	bl	__fixup_smp
- #endif
--#ifdef CONFIG_ARM_PATCH_PHYS_VIRT
--	bl	__fixup_pv_table
--#endif
- 	bl	__create_page_tables
- 
- 	/*
-@@ -148,6 +149,8 @@ ENDPROC(stext)
- 	.ltorg
- #ifndef CONFIG_XIP_KERNEL
- 2:	.long	.
-+	.long	__pv_phys_offset
-+	.long	__pv_offset
- 	.long	PAGE_OFFSET
- #endif
- 
-@@ -522,94 +525,17 @@ ENTRY(fixup_smp)
- 	ldmfd	sp!, {r4 - r6, pc}
- ENDPROC(fixup_smp)
- 
--#ifdef CONFIG_ARM_PATCH_PHYS_VIRT
--
--/* __fixup_pv_table - patch the stub instructions with the delta between
-- * PHYS_OFFSET and PAGE_OFFSET, which is assumed to be 16MiB aligned and
-- * can be expressed by an immediate shifter operand. The stub instruction
-- * has a form of '(add|sub) rd, rn, #imm'.
-- */
--	__HEAD
--__fixup_pv_table:
--	adr	r0, 1f
--	ldmia	r0, {r3-r5, r7}
--	sub	r3, r0, r3	@ PHYS_OFFSET - PAGE_OFFSET
--	add	r4, r4, r3	@ adjust table start address
--	add	r5, r5, r3	@ adjust table end address
--	add	r7, r7, r3	@ adjust __pv_phys_offset address
--	str	r8, [r7]	@ save computed PHYS_OFFSET to __pv_phys_offset
--	mov	r6, r3, lsr #24	@ constant for add/sub instructions
--	teq	r3, r6, lsl #24 @ must be 16MiB aligned
--THUMB(	it	ne		@ cross section branch )
--	bne	__error
--	str	r6, [r7, #4]	@ save to __pv_offset
--	b	__fixup_a_pv_table
--ENDPROC(__fixup_pv_table)
--
--	.align
--1:	.long	.
--	.long	__pv_table_begin
--	.long	__pv_table_end
--2:	.long	__pv_phys_offset
--
--	.text
--__fixup_a_pv_table:
--#ifdef CONFIG_THUMB2_KERNEL
--	lsls	r6, #24
--	beq	2f
--	clz	r7, r6
--	lsr	r6, #24
--	lsl	r6, r7
--	bic	r6, #0x0080
--	lsrs	r7, #1
--	orrcs	r6, #0x0080
--	orr	r6, r6, r7, lsl #12
--	orr	r6, #0x4000
--	b	2f
--1:	add     r7, r3
--	ldrh	ip, [r7, #2]
--	and	ip, 0x8f00
--	orr	ip, r6	@ mask in offset bits 31-24
--	strh	ip, [r7, #2]
--2:	cmp	r4, r5
--	ldrcc	r7, [r4], #4	@ use branch for delay slot
--	bcc	1b
--	bx	lr
--#else
--	b	2f
--1:	ldr	ip, [r7, r3]
--	bic	ip, ip, #0x000000ff
--	orr	ip, ip, r6	@ mask in offset bits 31-24
--	str	ip, [r7, r3]
--2:	cmp	r4, r5
--	ldrcc	r7, [r4], #4	@ use branch for delay slot
--	bcc	1b
--	mov	pc, lr
--#endif
--ENDPROC(__fixup_a_pv_table)
--
--ENTRY(fixup_pv_table)
--	stmfd	sp!, {r4 - r7, lr}
--	ldr	r2, 2f			@ get address of __pv_phys_offset
--	mov	r3, #0			@ no offset
--	mov	r4, r0			@ r0 = table start
--	add	r5, r0, r1		@ r1 = table size
--	ldr	r6, [r2, #4]		@ get __pv_offset
--	bl	__fixup_a_pv_table
--	ldmfd	sp!, {r4 - r7, pc}
--ENDPROC(fixup_pv_table)
--
--	.align
--2:	.long	__pv_phys_offset
--
- 	.data
- 	.globl	__pv_phys_offset
- 	.type	__pv_phys_offset, %object
- __pv_phys_offset:
- 	.long	0
- 	.size	__pv_phys_offset, . - __pv_phys_offset
++#define KEYSTONE_LOW_PHYS_START		0x80000000ULL
++#define KEYSTONE_LOW_PHYS_SIZE		0x80000000ULL /* 2G */
++#define KEYSTONE_LOW_PHYS_END		(KEYSTONE_LOW_PHYS_START + \
++					 KEYSTONE_LOW_PHYS_SIZE - 1)
 +
-+	.globl	__pv_offset
-+	.type	__pv_offset, %object
- __pv_offset:
- 	.long	0
--#endif
-+	.size	__pv_offset, . - __pv_offset
++#define KEYSTONE_HIGH_PHYS_START	0x800000000ULL
++#define KEYSTONE_HIGH_PHYS_SIZE		0x400000000ULL	/* 16G */
++#define KEYSTONE_HIGH_PHYS_END		(KEYSTONE_HIGH_PHYS_START + \
++					 KEYSTONE_HIGH_PHYS_SIZE - 1)
++#ifdef CONFIG_ARM_LPAE
++
++#ifndef __ASSEMBLY__
++
++static inline phys_addr_t __virt_to_idmap(unsigned long x)
++{
++	return (phys_addr_t)(x) - CONFIG_PAGE_OFFSET +
++		KEYSTONE_LOW_PHYS_START;
++}
++
++#define virt_to_idmap(x)	__virt_to_idmap((unsigned long)(x))
++
++#endif /* __ASSEMBLY__ */
++
++#endif /* CONFIG_ARM_LPAE */
++
+ #endif /* __ASM_MACH_MEMORY_H */
+diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
+index a4eed57..e8aee85 100644
+--- a/arch/arm/mach-keystone/keystone.c
++++ b/arch/arm/mach-keystone/keystone.c
+@@ -74,6 +74,39 @@ static const char *keystone_match[] __initconst = {
+ 	NULL,
+ };
  
- #include "head-common.S"
-diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
-index df5e897..39f8fce 100644
---- a/arch/arm/kernel/module.c
-+++ b/arch/arm/kernel/module.c
-@@ -317,11 +317,6 @@ int module_finalize(const Elf32_Ehdr *hdr, const Elf_Shdr *sechdrs,
- 					         maps[i].txt_sec->sh_addr,
- 					         maps[i].txt_sec->sh_size);
- #endif
--#ifdef CONFIG_ARM_PATCH_PHYS_VIRT
--	s = find_mod_section(hdr, sechdrs, ".pv_table");
--	if (s)
--		fixup_pv_table((void *)s->sh_addr, s->sh_size);
--#endif
- 	s = find_mod_section(hdr, sechdrs, ".patch.table");
- 	if (s)
- 		patch_kernel((void *)s->sh_addr, s->sh_size);
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index bacb275..13731e3 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -162,11 +162,6 @@ SECTIONS
- 		__smpalt_end = .;
- 	}
- #endif
--	.init.pv_table : {
--		__pv_table_begin = .;
--		*(.pv_table)
--		__pv_table_end = .;
--	}
- 	.init.patch_table : {
- 		__patch_table_begin = .;
- 		*(.patch.table)
++static void __init keystone_init_meminfo(void)
++{
++	bool lpae = IS_ENABLED(CONFIG_ARM_LPAE);
++	bool pvpatch = IS_ENABLED(CONFIG_ARM_PATCH_PHYS_VIRT);
++	phys_addr_t mem_start, mem_end;
++
++	BUG_ON(meminfo.nr_banks < 1);
++
++	mem_start = meminfo.bank[0].start;
++	mem_end   = mem_start + meminfo.bank[0].size - 1;
++
++	/* nothing to do if we are running out of the <32-bit space */
++	if (mem_start >= KEYSTONE_LOW_PHYS_START &&
++	    mem_end   <= KEYSTONE_LOW_PHYS_END)
++		return;
++
++	if (!lpae || !pvpatch) {
++		panic("Enable %s%s%s to run outside 32-bit space\n",
++		      !lpae ? __stringify(CONFIG_ARM_LPAE) : "",
++		      (!lpae && !pvpatch) ? " and " : "",
++		      !pvpatch ? __stringify(CONFIG_ARM_PATCH_PHYS_VIRT) : "");
++	}
++
++	if (mem_start < KEYSTONE_HIGH_PHYS_START ||
++	    mem_end   > KEYSTONE_HIGH_PHYS_END) {
++		panic("Invalid address space for memory (%08llx-%08llx)\n",
++		      (u64)KEYSTONE_HIGH_PHYS_START,
++		      (u64)KEYSTONE_HIGH_PHYS_END);
++	}
++
++	set_phys_offset(KEYSTONE_HIGH_PHYS_START);
++}
++
+ DT_MACHINE_START(KEYSTONE, "Keystone")
+ 	smp_ops(keystone_smp_ops)
+ 	.map_io		= keystone_map_io,
+@@ -82,4 +115,8 @@ DT_MACHINE_START(KEYSTONE, "Keystone")
+ 	.handle_irq	= gic_handle_irq,
+ 	.init_machine	= keystone_init,
+ 	.dt_compat	= keystone_match,
++	.init_meminfo	= keystone_init_meminfo,
++#ifdef CONFIG_ZONE_DMA
++	.dma_zone_size	= SZ_2G,
++#endif
+ MACHINE_END
+diff --git a/arch/arm/mach-keystone/platsmp.c b/arch/arm/mach-keystone/platsmp.c
+index dbe7601..b7f0724 100644
+--- a/arch/arm/mach-keystone/platsmp.c
++++ b/arch/arm/mach-keystone/platsmp.c
+@@ -24,6 +24,7 @@
+ #include <asm/smp_ops.h>
+ #include <asm/hardware/gic.h>
+ #include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
+ #include <asm/memory.h>
+ 
+ #include "keystone.h"
+@@ -51,17 +52,30 @@ static void __init keystone_smp_prepare_cpus(unsigned int max_cpus)
+ 	/* nothing for now */
+ }
+ 
++static void __cpuinit keystone_secondary_initmem(void)
++{
++#ifdef CONFIG_ARM_LPAE
++	pgd_t *pgd0 = pgd_offset_k(0);
++	cpu_set_ttbr(1, __pa(pgd0) + TTBR1_OFFSET);
++	local_flush_tlb_all();
++#endif
++}
++
+ static void __cpuinit keystone_secondary_init(unsigned int cpu)
+ {
+ 	gic_secondary_init(0);
++	keystone_secondary_initmem();
+ }
+ 
+ static int __cpuinit
+ keystone_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ {
+ 	unsigned long *ptr;
+-	
+-	ptr = phys_to_virt(0x800001f0);
++
++	ptr = IS_ENABLED(CONFIG_ARM_LPAE) ?
++		phys_to_virt(KEYSTONE_HIGH_PHYS_START + 0x1f0) :
++		phys_to_virt(KEYSTONE_LOW_PHYS_START + 0x1f0);
++
+ 	ptr[cpu] = virt_to_idmap(&secondary_startup);
+ 	__cpuc_flush_dcache_area(ptr, sizeof(ptr) * 4);
+ 
 -- 
 1.7.9.5
 
