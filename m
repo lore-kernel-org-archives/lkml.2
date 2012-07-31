@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab2GaR5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:57:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59262 "EHLO
+	id S1754122Ab2GaR7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:59:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59287 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab2GaR5q (ORCPT
+	with ESMTP id S1753191Ab2GaR7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:57:46 -0400
-Date: Tue, 31 Jul 2012 10:57:32 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-d07bdfd322d307789f15b427dbcc39257665356f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-In-Reply-To: <1341910954.3462.102.camel@twins>
-References: <1341910954.3462.102.camel@twins>
+	Tue, 31 Jul 2012 13:59:17 -0400
+Date: Tue, 31 Jul 2012 10:58:25 -0700
+From: tip-bot for Andrew Vagin <avagin@openvz.org>
+Message-ID: <tip-e6dab5ffab59e910ec0e3355f4a6f29f7a7be474@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        peterz@infradead.org, avagin@openvz.org, rostedt@goodmis.org,
+        tglx@linutronix.de, asharma@fb.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        peterz@infradead.org, acme@ghostprotocols.net, avagin@openvz.org,
+        rostedt@goodmis.org, tglx@linutronix.de, asharma@fb.com
+In-Reply-To: <1342016098-213063-1-git-send-email-avagin@openvz.org>
+References: <1342016098-213063-1-git-send-email-avagin@openvz.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86: Fix USER/
- KERNEL tagging of samples properly
-Git-Commit-ID: d07bdfd322d307789f15b427dbcc39257665356f
+Subject: [tip:perf/urgent] perf/trace:
+  Add ability to set a target task for events
+Git-Commit-ID: e6dab5ffab59e910ec0e3355f4a6f29f7a7be474
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,313 +32,307 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jul 2012 10:57:38 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jul 2012 10:58:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d07bdfd322d307789f15b427dbcc39257665356f
-Gitweb:     http://git.kernel.org/tip/d07bdfd322d307789f15b427dbcc39257665356f
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 10 Jul 2012 09:42:15 +0200
+Commit-ID:  e6dab5ffab59e910ec0e3355f4a6f29f7a7be474
+Gitweb:     http://git.kernel.org/tip/e6dab5ffab59e910ec0e3355f4a6f29f7a7be474
+Author:     Andrew Vagin <avagin@openvz.org>
+AuthorDate: Wed, 11 Jul 2012 18:14:58 +0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 31 Jul 2012 17:02:04 +0200
+CommitDate: Tue, 31 Jul 2012 17:02:05 +0200
 
-perf/x86: Fix USER/KERNEL tagging of samples properly
+perf/trace: Add ability to set a target task for events
 
-Some PMUs don't provide a full register set for their sample,
-specifically 'advanced' PMUs like AMD IBS and Intel PEBS which provide
-'better' than regular interrupt accuracy.
+A few events are interesting not only for a current task.
+For example, sched_stat_* events are interesting for a task
+which wakes up. For this reason, it will be good if such
+events will be delivered to a target task too.
 
-In this case we use the interrupt regs as basis and over-write some
-fields (typically IP) with different information.
+Now a target task can be set by using __perf_task().
 
-The perf core however uses user_mode() to distinguish user/kernel
-samples, user_mode() relies on regs->cs. If the interrupt skid pushed
-us over a boundary the new IP might not be in the same domain as the
-interrupt.
+The original idea and a draft patch belongs to Peter Zijlstra.
 
-Commit ce5c1fe9a9e ("perf/x86: Fix USER/KERNEL tagging of samples")
-tried to fix this by making the perf core use kernel_ip(). This
-however is wrong (TM), as pointed out by Linus, since it doesn't allow
-for VM86 and non-zero based segments in IA32 mode.
+I need these events for profiling sleep times. sched_switch is used for
+getting callchains and sched_stat_* is used for getting time periods.
+These events are combined in user space, then it can be analyzed by
+perf tools.
 
-Therefore, provide a new helper to set the regs->ip field,
-set_linear_ip(), which massages the regs into a suitable state
-assuming the provided IP is in fact a linear address.
-
-Also modify perf_instruction_pointer() and perf_callchain_user() to
-deal with segments base offsets.
-
+Inspired-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arun Sharma <asharma@fb.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1341910954.3462.102.camel@twins
+Link: http://lkml.kernel.org/r/1342016098-213063-1-git-send-email-avagin@openvz.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/perf_event.h         |   11 +++-
- arch/x86/kernel/cpu/perf_event.c          |   89 +++++++++++++++++++++++++---
- arch/x86/kernel/cpu/perf_event.h          |   20 +++++++
- arch/x86/kernel/cpu/perf_event_amd_ibs.c  |    4 +-
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    7 +-
- 5 files changed, 114 insertions(+), 17 deletions(-)
+ include/linux/ftrace_event.h    |    5 +++--
+ include/linux/perf_event.h      |    3 ++-
+ include/trace/events/sched.h    |    4 ++++
+ include/trace/ftrace.h          |    6 +++++-
+ kernel/events/callchain.c       |    9 ++++++++-
+ kernel/events/core.c            |   30 ++++++++++++++++++++++++++++--
+ kernel/events/internal.h        |    3 ++-
+ kernel/trace/trace_event_perf.c |    2 +-
+ kernel/trace/trace_kprobe.c     |    6 ++++--
+ kernel/trace/trace_syscalls.c   |    4 ++--
+ kernel/trace/trace_uprobe.c     |    2 +-
+ 11 files changed, 60 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index dab3935..cb4e43b 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -196,11 +196,16 @@ static inline u32 get_ibs_caps(void) { return 0; }
- extern void perf_events_lapic_init(void);
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index af961d6..642928c 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -306,9 +306,10 @@ extern void *perf_trace_buf_prepare(int size, unsigned short type,
+ 
+ static inline void
+ perf_trace_buf_submit(void *raw_data, int size, int rctx, u64 addr,
+-		       u64 count, struct pt_regs *regs, void *head)
++		       u64 count, struct pt_regs *regs, void *head,
++		       struct task_struct *task)
+ {
+-	perf_tp_event(addr, count, raw_data, size, regs, head, rctx);
++	perf_tp_event(addr, count, raw_data, size, regs, head, rctx, task);
+ }
+ #endif
+ 
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 76c5c8b..7602ccb 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1272,7 +1272,8 @@ static inline bool perf_paranoid_kernel(void)
+ extern void perf_event_init(void);
+ extern void perf_tp_event(u64 addr, u64 count, void *record,
+ 			  int entry_size, struct pt_regs *regs,
+-			  struct hlist_head *head, int rctx);
++			  struct hlist_head *head, int rctx,
++			  struct task_struct *task);
+ extern void perf_bp_event(struct perf_event *event, void *data);
+ 
+ #ifndef perf_misc_flags
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index ea7a203..5a8671e 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -73,6 +73,9 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
+ 		__entry->prio		= p->prio;
+ 		__entry->success	= success;
+ 		__entry->target_cpu	= task_cpu(p);
++	)
++	TP_perf_assign(
++		__perf_task(p);
+ 	),
+ 
+ 	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
+@@ -325,6 +328,7 @@ DECLARE_EVENT_CLASS(sched_stat_template,
+ 	)
+ 	TP_perf_assign(
+ 		__perf_count(delay);
++		__perf_task(tsk);
+ 	),
+ 
+ 	TP_printk("comm=%s pid=%d delay=%Lu [ns]",
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index c6bc2fa..a763888 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -712,6 +712,9 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+ #undef __perf_count
+ #define __perf_count(c) __count = (c)
+ 
++#undef __perf_task
++#define __perf_task(t) __task = (t)
++
+ #undef TP_perf_assign
+ #define TP_perf_assign(args...) args
+ 
+@@ -725,6 +728,7 @@ perf_trace_##call(void *__data, proto)					\
+ 	struct ftrace_raw_##call *entry;				\
+ 	struct pt_regs __regs;						\
+ 	u64 __addr = 0, __count = 1;					\
++	struct task_struct *__task = NULL;				\
+ 	struct hlist_head *head;					\
+ 	int __entry_size;						\
+ 	int __data_size;						\
+@@ -752,7 +756,7 @@ perf_trace_##call(void *__data, proto)					\
+ 									\
+ 	head = this_cpu_ptr(event_call->perf_events);			\
+ 	perf_trace_buf_submit(entry, __entry_size, rctx, __addr,	\
+-		__count, &__regs, head);				\
++		__count, &__regs, head, __task);			\
+ }
  
  /*
-- * Abuse bit 3 of the cpu eflags register to indicate proper PEBS IP fixups.
-- * This flag is otherwise unused and ABI specified to be 0, so nobody should
-- * care what we do with it.
-+ * Abuse bits {3,5} of the cpu eflags register. These flags are otherwise
-+ * unused and ABI specified to be 0, so nobody should care what we do with
-+ * them.
-+ *
-+ * EXACT - the IP points to the exact instruction that triggered the
-+ *         event (HW bugs exempt).
-+ * VM    - original X86_VM_MASK; see set_linear_ip().
-  */
- #define PERF_EFLAGS_EXACT	(1UL << 3)
-+#define PERF_EFLAGS_VM		(1UL << 5)
- 
- struct pt_regs;
- extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 29557aa..915b876 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -32,6 +32,8 @@
- #include <asm/smp.h>
- #include <asm/alternative.h>
- #include <asm/timer.h>
-+#include <asm/desc.h>
-+#include <asm/ldt.h>
- 
- #include "perf_event.h"
- 
-@@ -1738,6 +1740,29 @@ valid_user_frame(const void __user *fp, unsigned long size)
- 	return (__range_not_ok(fp, size, TASK_SIZE) == 0);
+diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+index 6581a04..98d4597 100644
+--- a/kernel/events/callchain.c
++++ b/kernel/events/callchain.c
+@@ -153,7 +153,8 @@ put_callchain_entry(int rctx)
+ 	put_recursion_context(__get_cpu_var(callchain_recursion), rctx);
  }
  
-+static unsigned long get_segment_base(unsigned int segment)
-+{
-+	struct desc_struct *desc;
-+	int idx = segment >> 3;
+-struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
++struct perf_callchain_entry *
++perf_callchain(struct perf_event *event, struct pt_regs *regs)
+ {
+ 	int rctx;
+ 	struct perf_callchain_entry *entry;
+@@ -178,6 +179,12 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
+ 	}
+ 
+ 	if (regs) {
++		/*
++		 * Disallow cross-task user callchains.
++		 */
++		if (event->ctx->task && event->ctx->task != current)
++			goto exit_put;
 +
-+	if ((segment & SEGMENT_TI_MASK) == SEGMENT_LDT) {
-+		if (idx > LDT_ENTRIES)
-+			return 0;
+ 		perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 		perf_callchain_user(entry, regs);
+ 	}
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f1cf0ed..b7935fc 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4039,7 +4039,7 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		int size = 1;
+ 
+-		data->callchain = perf_callchain(regs);
++		data->callchain = perf_callchain(event, regs);
+ 
+ 		if (data->callchain)
+ 			size += data->callchain->nr;
+@@ -5209,7 +5209,8 @@ static int perf_tp_event_match(struct perf_event *event,
+ }
+ 
+ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
+-		   struct pt_regs *regs, struct hlist_head *head, int rctx)
++		   struct pt_regs *regs, struct hlist_head *head, int rctx,
++		   struct task_struct *task)
+ {
+ 	struct perf_sample_data data;
+ 	struct perf_event *event;
+@@ -5228,6 +5229,31 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
+ 			perf_swevent_event(event, count, &data, regs);
+ 	}
+ 
++	/*
++	 * If we got specified a target task, also iterate its context and
++	 * deliver this event there too.
++	 */
++	if (task && task != current) {
++		struct perf_event_context *ctx;
++		struct trace_entry *entry = record;
 +
-+		if (idx > current->active_mm->context.size)
-+			return 0;
++		rcu_read_lock();
++		ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
++		if (!ctx)
++			goto unlock;
 +
-+		desc = current->active_mm->context.ldt;
-+	} else {
-+		if (idx > GDT_ENTRIES)
-+			return 0;
-+
-+		desc = __this_cpu_ptr(&gdt_page.gdt[0]);
++		list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
++			if (event->attr.type != PERF_TYPE_TRACEPOINT)
++				continue;
++			if (event->attr.config != entry->type)
++				continue;
++			if (perf_tp_event_match(event, &data, regs))
++				perf_swevent_event(event, count, &data, regs);
++		}
++unlock:
++		rcu_read_unlock();
 +	}
 +
-+	return get_desc_base(desc + idx);
-+}
-+
- #ifdef CONFIG_COMPAT
- 
- #include <asm/compat.h>
-@@ -1746,13 +1771,17 @@ static inline int
- perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- {
- 	/* 32-bit process in 64-bit kernel. */
-+	unsigned long ss_base, cs_base;
- 	struct stack_frame_ia32 frame;
- 	const void __user *fp;
- 
- 	if (!test_thread_flag(TIF_IA32))
- 		return 0;
- 
--	fp = compat_ptr(regs->bp);
-+	cs_base = get_segment_base(regs->cs);
-+	ss_base = get_segment_base(regs->ss);
-+
-+	fp = compat_ptr(ss_base + regs->bp);
- 	while (entry->nr < PERF_MAX_STACK_DEPTH) {
- 		unsigned long bytes;
- 		frame.next_frame     = 0;
-@@ -1765,8 +1794,8 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- 		if (!valid_user_frame(fp, sizeof(frame)))
- 			break;
- 
--		perf_callchain_store(entry, frame.return_address);
--		fp = compat_ptr(frame.next_frame);
-+		perf_callchain_store(entry, cs_base + frame.return_address);
-+		fp = compat_ptr(ss_base + frame.next_frame);
- 	}
- 	return 1;
+ 	perf_swevent_put_recursion_context(rctx);
  }
-@@ -1789,6 +1818,12 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 		return;
- 	}
- 
-+	/*
-+	 * We don't know what to do with VM86 stacks.. ignore them for now.
-+	 */
-+	if (regs->flags & (X86_VM_MASK | PERF_EFLAGS_VM))
-+		return;
-+
- 	fp = (void __user *)regs->bp;
- 
- 	perf_callchain_store(entry, regs->ip);
-@@ -1816,16 +1851,50 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 	}
+ EXPORT_SYMBOL_GPL(perf_tp_event);
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index b0b107f..a096c19 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -101,7 +101,8 @@ __output_copy(struct perf_output_handle *handle,
  }
  
--unsigned long perf_instruction_pointer(struct pt_regs *regs)
-+/*
-+ * Deal with code segment offsets for the various execution modes:
-+ *
-+ *   VM86 - the good olde 16 bit days, where the linear address is
-+ *          20 bits and we use regs->ip + 0x10 * regs->cs.
-+ *
-+ *   IA32 - Where we need to look at GDT/LDT segment descriptor tables
-+ *          to figure out what the 32bit base address is.
-+ *
-+ *    X32 - has TIF_X32 set, but is running in x86_64
-+ *
-+ * X86_64 - CS,DS,SS,ES are all zero based.
-+ */
-+static unsigned long code_segment_base(struct pt_regs *regs)
- {
--	unsigned long ip;
-+	/*
-+	 * If we are in VM86 mode, add the segment offset to convert to a
-+	 * linear address.
-+	 */
-+	if (regs->flags & X86_VM_MASK)
-+		return 0x10 * regs->cs;
-+
-+	/*
-+	 * For IA32 we look at the GDT/LDT segment base to convert the
-+	 * effective IP to a linear address.
-+	 */
-+#ifdef CONFIG_X86_32
-+	if (user_mode(regs) && regs->cs != __USER_CS)
-+		return get_segment_base(regs->cs);
-+#else
-+	if (test_thread_flag(TIF_IA32)) {
-+		if (user_mode(regs) && regs->cs != __USER32_CS)
-+			return get_segment_base(regs->cs);
-+	}
-+#endif
-+	return 0;
-+}
+ /* Callchain handling */
+-extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
++extern struct perf_callchain_entry *
++perf_callchain(struct perf_event *event, struct pt_regs *regs);
+ extern int get_callchain_buffers(void);
+ extern void put_callchain_buffers(void);
  
-+unsigned long perf_instruction_pointer(struct pt_regs *regs)
-+{
- 	if (perf_guest_cbs && perf_guest_cbs->is_in_guest())
--		ip = perf_guest_cbs->get_guest_ip();
--	else
--		ip = instruction_pointer(regs);
-+		return perf_guest_cbs->get_guest_ip();
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index fee3752..8a6d2ee 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -281,7 +281,7 @@ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
  
--	return ip;
-+	return regs->ip + code_segment_base(regs);
+ 	head = this_cpu_ptr(event_function.perf_events);
+ 	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
+-			      1, &regs, head);
++			      1, &regs, head, NULL);
+ 
+ #undef ENTRY_SIZE
+ }
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index b31d3d5..1a21170 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1002,7 +1002,8 @@ static __kprobes void kprobe_perf_func(struct kprobe *kp,
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+ 
+ 	head = this_cpu_ptr(call->perf_events);
+-	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head);
++	perf_trace_buf_submit(entry, size, rctx,
++					entry->ip, 1, regs, head, NULL);
  }
  
- unsigned long perf_misc_flags(struct pt_regs *regs)
-@@ -1838,7 +1907,7 @@ unsigned long perf_misc_flags(struct pt_regs *regs)
- 		else
- 			misc |= PERF_RECORD_MISC_GUEST_KERNEL;
- 	} else {
--		if (!kernel_ip(regs->ip))
-+		if (user_mode(regs))
- 			misc |= PERF_RECORD_MISC_USER;
- 		else
- 			misc |= PERF_RECORD_MISC_KERNEL;
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 821d53b..6605a81 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -516,6 +516,26 @@ static inline bool kernel_ip(unsigned long ip)
- #endif
+ /* Kretprobe profile handler */
+@@ -1033,7 +1034,8 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+ 
+ 	head = this_cpu_ptr(call->perf_events);
+-	perf_trace_buf_submit(entry, size, rctx, entry->ret_ip, 1, regs, head);
++	perf_trace_buf_submit(entry, size, rctx,
++					entry->ret_ip, 1, regs, head, NULL);
+ }
+ #endif	/* CONFIG_PERF_EVENTS */
+ 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 96fc733..60e4d78 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -532,7 +532,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 			       (unsigned long *)&rec->args);
+ 
+ 	head = this_cpu_ptr(sys_data->enter_event->perf_events);
+-	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head);
++	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
  }
  
-+/*
-+ * Not all PMUs provide the right context information to place the reported IP
-+ * into full context. Specifically segment registers are typically not
-+ * supplied.
-+ *
-+ * Assuming the address is a linear address (it is for IBS), we fake the CS and
-+ * vm86 mode using the known zero-based code segment and 'fix up' the registers
-+ * to reflect this.
-+ *
-+ * Intel PEBS/LBR appear to typically provide the effective address, nothing
-+ * much we can do about that but pray and treat it like a linear address.
-+ */
-+static inline void set_linear_ip(struct pt_regs *regs, unsigned long ip)
-+{
-+	regs->cs = kernel_ip(ip) ? __KERNEL_CS : __USER_CS;
-+	if (regs->flags & X86_VM_MASK)
-+		regs->flags ^= (PERF_EFLAGS_VM | X86_VM_MASK);
-+	regs->ip = ip;
-+}
-+
- #ifdef CONFIG_CPU_SUP_AMD
+ int perf_sysenter_enable(struct ftrace_event_call *call)
+@@ -608,7 +608,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 	rec->ret = syscall_get_return_value(current, regs);
  
- int amd_pmu_init(void);
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index da9bcdc..7bfb5be 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -13,6 +13,8 @@
+ 	head = this_cpu_ptr(sys_data->exit_event->perf_events);
+-	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head);
++	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
+ }
  
- #include <asm/apic.h>
+ int perf_sysexit_enable(struct ftrace_event_call *call)
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 2b36ac6..03003cd 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -670,7 +670,7 @@ static void uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
+ 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
  
-+#include "perf_event.h"
-+
- static u32 ibs_caps;
+ 	head = this_cpu_ptr(call->perf_events);
+-	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head);
++	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head, NULL);
  
- #if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_AMD)
-@@ -536,7 +538,7 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
- 	if (check_rip && (ibs_data.regs[2] & IBS_RIP_INVALID)) {
- 		regs.flags &= ~PERF_EFLAGS_EXACT;
- 	} else {
--		instruction_pointer_set(&regs, ibs_data.regs[1]);
-+		set_linear_ip(&regs, ibs_data.regs[1]);
- 		regs.flags |= PERF_EFLAGS_EXACT;
- 	}
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 629ae0b..e38d97b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -499,7 +499,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- 	 * We sampled a branch insn, rewind using the LBR stack
- 	 */
- 	if (ip == to) {
--		regs->ip = from;
-+		set_linear_ip(regs, from);
- 		return 1;
- 	}
- 
-@@ -529,7 +529,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- 	} while (to < ip);
- 
- 	if (to == ip) {
--		regs->ip = old_to;
-+		set_linear_ip(regs, old_to);
- 		return 1;
- 	}
- 
-@@ -569,7 +569,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	 * A possible PERF_SAMPLE_REGS will have to transfer all regs.
- 	 */
- 	regs = *iregs;
--	regs.ip = pebs->ip;
-+	regs.flags = pebs->flags;
-+	set_linear_ip(&regs, pebs->ip);
- 	regs.bp = pebs->bp;
- 	regs.sp = pebs->sp;
- 
+  out:
+ 	preempt_enable();
