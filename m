@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab2GaTAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:00:40 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:38359 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab2GaTAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756416Ab2GaTAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:00:53 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:36583
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753628Ab2GaTAi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 15:00:38 -0400
-X-IronPort-AV: E=Sophos;i="4.77,688,1336374000"; 
-   d="scan'208";a="670560888"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the nfs tree
-Thread-Topic: linux-next: manual merge of the akpm tree with the nfs tree
-Thread-Index: AQHNbtR4a/OwVO3zl0Gi+NGAKMKYSZdDp5EAgABEHACAAAvMAIAABFUAgAAlywCAAA8bAIAABIGA
-Date: Tue, 31 Jul 2012 19:00:35 +0000
-Message-ID: <1343761233.5528.27.camel@lade.trondhjem.org>
-References: <20120731142441.0d01100f9d050ec6e479c923@canb.auug.org.au>
-	 <20120731103336.GN612@suse.de> <1343745442.519.20.camel@lade.trondhjem.org>
-	 <20120731151936.GR612@suse.de>
-	 <1343748906.5528.17.camel@lade.trondhjem.org>
-	 <20120731175022.GU612@suse.de>
-	 <20120731114426.029644e0.akpm@linux-foundation.org>
-In-Reply-To: <20120731114426.029644e0.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D19DA7C956281D4096902162AA82FE3B@tahoe.netapp.com>
+X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI936eI1432Izz1202hzzz2fh2a8h668h839hd25hf0ah107ah10d2h)
+Message-ID: <50182B44.8090100@am.sony.com>
+Date: Tue, 31 Jul 2012 12:00:20 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "chris.pringle@miranda.com" <chris.pringle@miranda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH RT 05/12] slab: Prevent local lock deadlock
+References: <20120718223910.898476857@goodmis.org>		 <20120718223957.856443728@goodmis.org> <5011DD9B.1030901@am.sony.com>	 <1343697755.27983.17.camel@gandalf.stny.rr.com>	 <50174158.4000408@am.sony.com> <1343701935.27983.18.camel@gandalf.stny.rr.com>
+In-Reply-To: <1343701935.27983.18.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6VJ0j5m012898
 
-On Tue, 2012-07-31 at 11:44 -0700, Andrew Morton wrote:
-> On Tue, 31 Jul 2012 18:50:22 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
+On 07/30/12 19:32, Steven Rostedt wrote:
+> On Mon, 2012-07-30 at 19:22 -0700, Frank Rowand wrote:
+>> On 07/30/12 18:22, Steven Rostedt wrote:
+>>> On Thu, 2012-07-26 at 17:15 -0700, Frank Rowand wrote:
+>>>
+>>>>
+>>>> Config is from arch/arm/configs/omap2plus_defconfig
+>>>> plus:
+>>>>
+>>>>    CONFIG_USB_EHCI_HCD=y
+>>>>    CONFIG_USB_NET_SMSC95XX=y
+>>>>    CONFIG_PREEMPT_RT_FULL=y
+>>>>
+>>>
+>>> Interesting, I just booted my panda board against 3.0.36-rt58 with that
+>>> config and these three set, and I didn't get this error.
+>>
+>> I don't know if it makes any difference, but my root fs is nfs mounted.
+>>
+>> I'll try to look at this some more tomorrow.
+>>
 > 
-> > Stephen Rothwell reported a merge conflict between a MM patch "nfs:
-> > enable swap on NFS" and an NFS patch "nfs: skip commit in
-> > releasepage if we're freeing memory for fs-related reasons".
-> 
-> grumble.  This happened becase new stuff was added to -next right in
-> the middle of the merge window.  Please don't dothat.
-> 
-Normally, I would have added it when Jeff asked me to, but I've been on
-vacation for 2 weeks, and this is a bugfix that needs to go into
-stable...
+> Yeah, my root fs is on the sdcard. Did you get this bug every time or
+> was it sporadic?
 
-Trond
--- 
-Trond Myklebust
-Linux NFS client maintainer
+I get it every boot.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+-Frank
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
