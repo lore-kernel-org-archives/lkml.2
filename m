@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab2GaVeQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 17:34:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27583 "EHLO mx1.redhat.com"
+	id S1754281Ab2GaVeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 17:34:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40304 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751789Ab2GaVeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 17:34:15 -0400
-Message-ID: <50184F4A.8080707@redhat.com>
-Date: Tue, 31 Jul 2012 17:34:02 -0400
+	id S1752182Ab2GaVet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 17:34:49 -0400
+Message-ID: <50184F6D.3020301@redhat.com>
+Date: Tue, 31 Jul 2012 17:34:37 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -16,9 +16,9 @@ CC: mingo@kernel.org, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com,
         linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 13/19] sched: Introduce sched_feat_numa()
-References: <20120731191204.540691987@chello.nl> <20120731192809.127390865@chello.nl>
-In-Reply-To: <20120731192809.127390865@chello.nl>
+Subject: Re: [PATCH 14/19] sched: Make find_busiest_queue() a method
+References: <20120731191204.540691987@chello.nl> <20120731192809.186113955@chello.nl>
+In-Reply-To: <20120731192809.186113955@chello.nl>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
