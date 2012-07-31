@@ -1,96 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab2GaElF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:41:05 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50837 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab2GaElD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:41:03 -0400
-Date: Tue, 31 Jul 2012 14:40:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Michel Lespinasse <walken@google.com>
-Subject: linux-next: build failure after merge of the akpm tree
-Message-Id: <20120731144054.59b0a6da6d071ea1bc061db0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1753356Ab2GaErl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:47:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56389 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282Ab2GaErj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 00:47:39 -0400
+Date: Tue, 31 Jul 2012 14:47:24 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [GIT PULL] GPIO changes for v3.6
+Message-ID: <20120731144724.5ef139fa@notabene.brown>
+In-Reply-To: <20120730133614.GA4468@opensource.wolfsonmicro.com>
+References: <CACRpkdZnRiZpKuQ6krJFa8TAfmvYYLB-n79ztzaUOV32p6ZY1Q@mail.gmail.com>
+	<20120730165733.33e3ddfb@notabene.brown>
+	<20120730133614.GA4468@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__31_Jul_2012_14_40_54_+1000_gNgMG/1b=a7IM6rX"
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/F0hf2vuR22ZOHG8=H_Q3EXE"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__31_Jul_2012_14_40_54_+1000_gNgMG/1b=a7IM6rX
+--Sig_/F0hf2vuR22ZOHG8=H_Q3EXE
 Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+On Mon, 30 Jul 2012 14:36:15 +0100 Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-After merging the akpm tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> On Mon, Jul 30, 2012 at 04:57:33PM +1000, NeilBrown wrote:
+>=20
+> > it means that if !gpio_is_valid(gpio), the error returned is EPROBE_DEF=
+ER=20
+> > which isn't right (an invalid gpio number will never become valid).
+> > If a driver happened to use gpio_request to check the validity of the g=
+pio
+> > rather than doing it itself, it would defer the probe, rather than assu=
+me
+> > that the GPIO doesn't exist.
+>=20
+> Is anything actually doing this?  For positive numbers that just seems
+> like it's asking for things to explode, for negative numbers I guess you
+> can get away with it at the minute though it's obviously not awesome
+> error handling.
 
-net/ceph/osd_client.c: In function 'ceph_osdc_alloc_request':
-net/ceph/osd_client.c:216:2: error: implicit declaration of function 'rb_in=
-it_node' [-Werror=3Dimplicit-function-declaration]
+I suspect not, but stranger things have happened.
 
-Caused by commit 753b960e52b7 ("rbtree: empty nodes have no color") from
-the akpm tree interacting with commit cd43045c2de6 ("libceph: initialize
-rb, list nodes in ceph_osd_request") from the ceph tree.
+... though it occurs to me that it is possible that the GPIO number might n=
+ot
+be allocated until something else has been probed, so a -ve gpio number cou=
+ld
+mean "there is no such gpio" or it could mean "gpio has not been allocated
+yet".  I wonder if that should be allowed and where it should be handled.
 
-I added the following merge fix patch for today:
+>=20
+> > I would suggest the following.  Reasonable?
+>=20
+> TBH I'd actually expect that gpio_is_valid() were checking that there's
+> a gpio_chip behind the GPIO number, now I look at the implementation
+> it's very surprising to me that it's just checking the GPIO array bounds
+> (and also that we remove the need for the fixed size GPIO array which is
+> just an endless source of annoyance).
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 31 Jul 2012 14:37:35 +1000
-Subject: [PATCH] libceph: remove rb_node initialisation
+Yes, gpio_is_valid is really just a check that the gpio_desc array derefere=
+nce
+won't over-flow.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/ceph/osd_client.c |    1 -
- 1 file changed, 1 deletion(-)
+I'd really like to see gpios be requested by name ... anyone know if there
+are any plans along that line?
 
-diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-index ad427e6..06fb7a9 100644
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -213,7 +213,6 @@ struct ceph_osd_request *ceph_osdc_alloc_request(struct=
- ceph_osd_client *osdc,
- 	kref_init(&req->r_kref);
- 	init_completion(&req->r_completion);
- 	init_completion(&req->r_safe_completion);
--	rb_init_node(&req->r_node);
- 	INIT_LIST_HEAD(&req->r_unsafe_item);
- 	INIT_LIST_HEAD(&req->r_linger_item);
- 	INIT_LIST_HEAD(&req->r_linger_osd);
---=20
-1.7.10.280.gaa39
+NeilBrown
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__31_Jul_2012_14_40_54_+1000_gNgMG/1b=a7IM6rX
-Content-Type: application/pgp-signature
+--Sig_/F0hf2vuR22ZOHG8=H_Q3EXE
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQF2HWAAoJEECxmPOUX5FE1V4P/3Xf1GU5E55ET0ijKSRoEobx
-2v4HrvYfGFBgRdXiNp41tgiLRLcscfFrsSM7bfsSYp7CT3Yoe3WvAnk8SZwKmZck
-/szbY5eLJARTBS84LnzATVz+BJvGbxBgS5U74+knm+HXdMZd2Baf48SVwR97mF3F
-W6y/IkzNdV/fqvUU8S/HiJf+6YX+CttACF/u5xIFcmt7LYD5g+eFE0oyqL11IWX0
-/JWZCitAULXmyvpXSu4UfYwhGC3I9kvjYM4KyTirA4rYfO81ZSM8FmL8S0EHa5qR
-oLF2trEmHiDK5DTWoMfN6txelQ28s0tFMFIWM4ou0yKCarh6oK8+R+PPg/xmsAev
-XyHaCkVHF2x1iGqAQiI9gpvXbPS30Ju3CvdaARyRYauAmcx5gP2eSkxtCcFOHmql
-KmkehyDcruaSx5upI7zN0EItiTTiTT+2nVjg21lCUs7miuvlF629ns+9EwQynKpO
-fQ3IPliBzOHeCm5c3at3KDGzD3RDrskCjlqJN54yeTtIiOYfc6mJEG57eioFa2Pa
-p0PzaVaZL9pUQxL670PV7ffy1fx1BjsmxzUjWS5LzJWEyVoGFEn1pwdrqbDga09Y
-TSS63b4+v0bCwq9d7DgLO0THJ6RPhjWbLzkc80IV8ZlmVgrD6REewAIktTCRK9Pz
-B6Ur7aaxPzJ1BcKYmGM1
-=XruD
+iQIVAwUBUBdjXDnsnt1WYoG5AQKlMRAAqjpd4G6zX88B8DUGdJBBcb9pQFSu/RKA
+X67qv4AK4tAvoNQyQM/ulkyGEOMczssriHrIC9XK4fv7LjKGFaZL1mO6QOX5kf3N
+E9tOnSJQL1vMcNBHcW5SNN0VDRXaYlC7ZJ1xLBOeL3TyynURnP2gAMI6EmI0C/bg
+VSRScf1m90wm9+85wVawIIIZKdsL+48eEWMBvFl6Ju6/NjRWMGl3dVHmAGJla4/a
+86SMr/jd2XPDpW8x5Kt3Eqj+ez1x/aMbAeN+p1GC/xeicjLCSMgX3riuM1/sVwQE
+9ewqEKLvpO6R9P2eERr1tfnb4TDVnSyziaqRSl8lxcleVFYcFusOWn1bY9cJn7C1
+3cvHNfAP4k6x7bZ0HDjytATqu0Aasskd/g0zsz0/SL6DeGdB2siGE/MFbTWXA9AW
+/y1OQfB64CcNpWJ3WgsyCYcDYZSGyPQB0Id09R1Btz7xONT9HNyNLJR9fdDkWsWc
+6gCYsZs7L7H5VAteJME2KfYmMXUYb3b0ShVzOJ/xOW6HMDBeV+6ZiKg8f+DolYns
+orPXzw4D83U7u23r1YkyyXRWUsotbDAZIRW2shda2nTLagWop21dQGEqogtI2pkc
+rxFyqf4qBtHLWJISdavjaxyhRLkp8t7LDlpcscru6dMec5h2eHTHm0QLNtr6CcxQ
+n8i9wjSo6+Q=
+=B0/E
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__31_Jul_2012_14_40_54_+1000_gNgMG/1b=a7IM6rX--
+--Sig_/F0hf2vuR22ZOHG8=H_Q3EXE--
