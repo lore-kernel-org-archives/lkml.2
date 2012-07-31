@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab2GaXGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:06:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41487 "EHLO bear.ext.ti.com"
+	id S1756158Ab2GaXGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:06:19 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38227 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755810Ab2GaXGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:06:05 -0400
+	id S1755764Ab2GaXGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 19:06:02 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <nico@linaro.org>,
         <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH 04/22] ARM: LPAE: support 64-bit virt/phys patching
-Date: Tue, 31 Jul 2012 19:04:40 -0400
-Message-ID: <1343775898-28345-5-git-send-email-cyril@ti.com>
+        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
+Subject: [RFC 20/22] ARM: keystone: introducing TI Keystone platform
+Date: Tue, 31 Jul 2012 19:04:56 -0400
+Message-ID: <1343775898-28345-21-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343775898-28345-1-git-send-email-cyril@ti.com>
 References: <1343775898-28345-1-git-send-email-cyril@ti.com>
@@ -23,106 +23,425 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for 64-bit physical addresses in virt_to_phys
-patching.  This does not do real 64-bit add/sub, but instead patches in the
-upper 32-bits of the phys_offset directly into the output of virt_to_phys.
+Texas Instruments Keystone family of multicore devices now includes an
+upcoming slew of Cortex A15 based devices.  This patch adds basic definitions
+for a new Keystone sub-architecture in ARM.
 
-In addition to adding 64-bit support, this patch also adds a set_phys_offset()
-helper that is needed on architectures that need to modify PHYS_OFFSET during
-initialization.
+Subsequent patches in this series will extend support to include SMP and take
+advantage of the large physical memory addressing capabilities via LPAE.
 
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/include/asm/memory.h |   22 +++++++++++++++-------
- arch/arm/kernel/head.S        |    6 ++++++
- arch/arm/kernel/setup.c       |   14 ++++++++++++++
- 3 files changed, 35 insertions(+), 7 deletions(-)
+ arch/arm/Kconfig                                  |   18 +++++
+ arch/arm/Makefile                                 |    1 +
+ arch/arm/boot/dts/keystone-sim.dts                |   77 +++++++++++++++++++
+ arch/arm/configs/keystone_defconfig               |   20 +++++
+ arch/arm/mach-keystone/Makefile                   |    1 +
+ arch/arm/mach-keystone/Makefile.boot              |    1 +
+ arch/arm/mach-keystone/include/mach/debug-macro.S |   44 +++++++++++
+ arch/arm/mach-keystone/include/mach/memory.h      |   22 ++++++
+ arch/arm/mach-keystone/include/mach/timex.h       |   21 ++++++
+ arch/arm/mach-keystone/include/mach/uncompress.h  |   24 ++++++
+ arch/arm/mach-keystone/keystone.c                 |   82 +++++++++++++++++++++
+ 11 files changed, 311 insertions(+)
+ create mode 100644 arch/arm/boot/dts/keystone-sim.dts
+ create mode 100644 arch/arm/configs/keystone_defconfig
+ create mode 100644 arch/arm/mach-keystone/Makefile
+ create mode 100644 arch/arm/mach-keystone/Makefile.boot
+ create mode 100644 arch/arm/mach-keystone/include/mach/debug-macro.S
+ create mode 100644 arch/arm/mach-keystone/include/mach/memory.h
+ create mode 100644 arch/arm/mach-keystone/include/mach/timex.h
+ create mode 100644 arch/arm/mach-keystone/include/mach/uncompress.h
+ create mode 100644 arch/arm/mach-keystone/keystone.c
 
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 4a0108f..110495c 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -153,23 +153,31 @@
- #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a91009c..e0588e3 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -358,6 +358,24 @@ config ARCH_HIGHBANK
+ 	help
+ 	  Support for the Calxeda Highbank SoC based boards.
  
- extern unsigned long __pv_phys_offset;
--#define PHYS_OFFSET __pv_phys_offset
--
-+extern unsigned long __pv_phys_offset_high;
- extern unsigned long __pv_offset;
- 
-+extern void set_phys_offset(phys_addr_t po);
++config ARCH_KEYSTONE
++	bool "Texas Instruments Keystone Devices"
++	select ARCH_WANT_OPTIONAL_GPIOLIB
++	select ARM_GIC
++	select MULTI_IRQ_HANDLER
++	select CLKDEV_LOOKUP
++	select COMMON_CLK
++	select CLKSRC_MMIO
++	select CPU_V7
++	select GENERIC_CLOCKEVENTS
++	select USE_OF
++	select SPARSE_IRQ
++	select NEED_MACH_MEMORY_H
++	select HAVE_SCHED_CLOCK
++	help
++	  Support for boards based on the Texas Instruments Keystone family of
++	  SoCs.
 +
-+#define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
+ config ARCH_CLPS711X
+ 	bool "Cirrus Logic CLPS711x/EP721x/EP731x-based"
+ 	select CPU_ARM720T
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 0298b00..13d6ef5 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -143,6 +143,7 @@ machine-$(CONFIG_ARCH_EP93XX)		:= ep93xx
+ machine-$(CONFIG_ARCH_GEMINI)		:= gemini
+ machine-$(CONFIG_ARCH_H720X)		:= h720x
+ machine-$(CONFIG_ARCH_HIGHBANK)		:= highbank
++machine-$(CONFIG_ARCH_KEYSTONE)		:= keystone
+ machine-$(CONFIG_ARCH_INTEGRATOR)	:= integrator
+ machine-$(CONFIG_ARCH_IOP13XX)		:= iop13xx
+ machine-$(CONFIG_ARCH_IOP32X)		:= iop32x
+diff --git a/arch/arm/boot/dts/keystone-sim.dts b/arch/arm/boot/dts/keystone-sim.dts
+new file mode 100644
+index 0000000..118d631
+--- /dev/null
++++ b/arch/arm/boot/dts/keystone-sim.dts
+@@ -0,0 +1,77 @@
++/dts-v1/;
++/include/ "skeleton.dtsi"
 +
- static inline phys_addr_t __virt_to_phys(unsigned long x)
- {
--	unsigned long t;
--	early_patch_imm8(x, t, "add", __pv_offset);
--	return t;
-+	unsigned long tlo, thi = 0;
++/ {
++	model = "Texas Instruments Keystone 2 SoC";
++	compatible = "ti,keystone-evm";
++	#address-cells = <1>;
++	#size-cells = <1>;
++	interrupt-parent = <&gic>;
 +
-+	early_patch_imm8(x, tlo, "add", __pv_offset);
-+	if (sizeof(phys_addr_t) > 4)
-+		early_patch_imm8(0, thi, "add", __pv_phys_offset_high);
++	aliases {
++		serial0	= &uart0;
++	};
 +
-+	return (u64)tlo | (u64)thi << 32;
- }
- 
- static inline unsigned long __phys_to_virt(phys_addr_t x)
- {
--	unsigned long t;
--	early_patch_imm8(x, t, "sub", __pv_offset);
-+	unsigned long t, xlo = x;
-+	early_patch_imm8(xlo, t, "sub", __pv_offset);
- 	return t;
- }
++	chosen {
++		bootargs = "console=ttyS0,115200n8 debug earlyprintk lpj=50000 rdinit=/bin/ash rw root=/dev/ram0 initrd=0x85000000,9M";
++	};
 +
- #else
- 
- #define __virt_to_phys(x)		\
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index d165896..fa820b3 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -532,6 +532,12 @@ __pv_phys_offset:
- 	.long	0
- 	.size	__pv_phys_offset, . - __pv_phys_offset
- 
-+	.globl	__pv_phys_offset_high
-+	.type	__pv_phys_offset_high, %object
-+__pv_phys_offset_high:
-+	.long	0
-+	.size	__pv_phys_offset_high, . - __pv_phys_offset_high
++	memory {
++		reg = <0x80000000 0x8000000>;
++	};
 +
- 	.globl	__pv_offset
- 	.type	__pv_offset, %object
- __pv_offset:
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 15a7699..bba3fdc 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -67,6 +67,20 @@
- #define MEM_SIZE	(16*1024*1024)
- #endif
- 
-+#ifdef CONFIG_ARM_PATCH_PHYS_VIRT
++	cpus {
++		interrupt-parent = <&gic>;
++
++		cpu@0 {
++			compatible = "arm,cortex-a15";
++		};
++
++		cpu@1 {
++			compatible = "arm,cortex-a15";
++		};
++
++		cpu@2 {
++			compatible = "arm,cortex-a15";
++		};
++
++		cpu@3 {
++			compatible = "arm,cortex-a15";
++		};
++
++	};
++
++	soc {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		compatible = "ti,keystone","simple-bus";
++		interrupt-parent = <&gic>;
++
++		gic:	interrupt-controller@02560000 {
++			compatible = "arm,cortex-a15-gic";
++			#interrupt-cells = <3>;
++			#size-cells = <0>;
++			#address-cells = <1>;
++			interrupt-controller;
++			reg = <0x02561000 0x1000>,
++			      <0x02562000 0x2000>;
++		};
++
++		timer {
++			compatible = "arm,armv7-timer";
++			interrupts = <1 13 0xf08 1 14 0xf08>;
++			clock-frequency = <10000000>; /* Freq in Hz - optional */
++		};
++
++		uart0:	serial@02530c00 {
++			compatible	= "ns16550a";
++			current-speed	= <115200>;
++			reg-shift	= <2>;
++			reg-io-width	= <4>;
++			reg		= <0x02530c00 0x100>;
++			clock-frequency = <48000000>;
++			interrupts	= <0 277 0xf01>;
++		};
++	};
++};
+diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
+new file mode 100644
+index 0000000..7f2a04b
+--- /dev/null
++++ b/arch/arm/configs/keystone_defconfig
+@@ -0,0 +1,20 @@
++CONFIG_EXPERIMENTAL=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_ARCH_KEYSTONE=y
++CONFIG_ARM_ARCH_TIMER=y
++CONFIG_AEABI=y
++CONFIG_HIGHMEM=y
++CONFIG_VFP=y
++CONFIG_NEON=y
++# CONFIG_SUSPEND is not set
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_BLK_DEV_RAM=y
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_SERIAL_OF_PLATFORM=y
++CONFIG_PRINTK_TIME=y
++CONFIG_DEBUG_KERNEL=y
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_USER=y
++CONFIG_DEBUG_LL=y
++CONFIG_EARLY_PRINTK=y
+diff --git a/arch/arm/mach-keystone/Makefile b/arch/arm/mach-keystone/Makefile
+new file mode 100644
+index 0000000..d4671d5
+--- /dev/null
++++ b/arch/arm/mach-keystone/Makefile
+@@ -0,0 +1 @@
++obj-y					:= keystone.o
+diff --git a/arch/arm/mach-keystone/Makefile.boot b/arch/arm/mach-keystone/Makefile.boot
+new file mode 100644
+index 0000000..dae9661
+--- /dev/null
++++ b/arch/arm/mach-keystone/Makefile.boot
+@@ -0,0 +1 @@
++zreladdr-y	:= 0x00008000
+diff --git a/arch/arm/mach-keystone/include/mach/debug-macro.S b/arch/arm/mach-keystone/include/mach/debug-macro.S
+new file mode 100644
+index 0000000..1108210
+--- /dev/null
++++ b/arch/arm/mach-keystone/include/mach/debug-macro.S
+@@ -0,0 +1,44 @@
 +/*
-+ * set_phys_offset() sets PHYS_OFFSET and pv_offset.
-+ * Note: this is unsafe to use beyond setup_arch().
++ * Debugging macro include header
++ *
++ * Copyright 2010-2012 Texas Instruments, Inc.
++ * Copyright (C) 1994-1999 Russell King
++ * Moved from linux/arch/arm/kernel/debug.S by Ben Dooks
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+void __init set_phys_offset(phys_addr_t po)
-+{
-+	__pv_phys_offset	= po;
-+	__pv_phys_offset_high	= (u64)po >> 32;
-+	__pv_offset		= po - PAGE_OFFSET;
-+}
++#include <linux/serial_reg.h>
++
++#define UART_SHIFT	2
++
++	.macro	addruart,rp,rv,tmp
++	movw	\rv, #0x0c00
++	movt	\rv, #0xfed3
++	movw	\rp, #0x0c00
++	movt	\rp, #0x0253
++	.endm
++
++
++	.macro	senduart,rd,rx
++	str	\rd, [\rx, #UART_TX << UART_SHIFT]
++	.endm
++
++	.macro	busyuart,rd,rx
++1002:	ldr	\rd, [\rx, #UART_LSR << UART_SHIFT]
++	and	\rd, \rd, #UART_LSR_TEMT | UART_LSR_THRE
++	teq	\rd, #UART_LSR_TEMT | UART_LSR_THRE
++	bne	1002b
++	.endm
++
++	.macro	waituart,rd,rx
++	.endm
+diff --git a/arch/arm/mach-keystone/include/mach/memory.h b/arch/arm/mach-keystone/include/mach/memory.h
+new file mode 100644
+index 0000000..7c78b1e
+--- /dev/null
++++ b/arch/arm/mach-keystone/include/mach/memory.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright 2010-2012 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_MACH_MEMORY_H
++#define __ASM_MACH_MEMORY_H
++
++#define MAX_PHYSMEM_BITS	36
++#define SECTION_SIZE_BITS	34
++
++#endif /* __ASM_MACH_MEMORY_H */
+diff --git a/arch/arm/mach-keystone/include/mach/timex.h b/arch/arm/mach-keystone/include/mach/timex.h
+new file mode 100644
+index 0000000..f355ecb
+--- /dev/null
++++ b/arch/arm/mach-keystone/include/mach/timex.h
+@@ -0,0 +1,21 @@
++/*
++ * Copyright 2010-2012 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __MACH_TIMEX_H
++#define __MACH_TIMEX_H
++
++#define CLOCK_TICK_RATE		1000000
 +
 +#endif
+diff --git a/arch/arm/mach-keystone/include/mach/uncompress.h b/arch/arm/mach-keystone/include/mach/uncompress.h
+new file mode 100644
+index 0000000..1071761
+--- /dev/null
++++ b/arch/arm/mach-keystone/include/mach/uncompress.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright 2010-2012 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __MACH_UNCOMPRESS_H
++#define __MACH_UNCOMPRESS_H
 +
- #if defined(CONFIG_FPE_NWFPE) || defined(CONFIG_FPE_FASTFPE)
- char fpe_type[8];
- 
++#define putc(c)
++#define flush()
++#define arch_decomp_setup()
++#define arch_decomp_wdog()
++
++#endif
+diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
+new file mode 100644
+index 0000000..4bc60ec
+--- /dev/null
++++ b/arch/arm/mach-keystone/keystone.c
+@@ -0,0 +1,82 @@
++/*
++ * Copyright 2010-2012 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/init.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++
++#include <asm/setup.h>
++#include <asm/mach/map.h>
++#include <asm/mach/arch.h>
++#include <asm/mach/time.h>
++#include <asm/arch_timer.h>
++#include <asm/hardware/gic.h>
++
++static struct map_desc io_desc[] = {
++	{
++		.virtual        = 0xfe800000UL,
++		.pfn            = __phys_to_pfn(0x02000000UL),
++		.length         = 0x800000UL,
++		.type           = MT_DEVICE
++	},
++};
++
++static void __init keystone_map_io(void)
++{
++	iotable_init(io_desc, sizeof(io_desc)/sizeof(struct map_desc));
++}
++
++static const struct of_device_id irq_match[] = {
++	{ .compatible = "arm,cortex-a15-gic", .data = gic_of_init, },
++	{}
++};
++
++static void __init keystone_init_irq(void)
++{
++	of_irq_init(irq_match);
++}
++
++
++static void __init keystone_timer_init(void)
++{
++	arch_timer_of_register();
++	arch_timer_sched_clock_init();
++}
++
++static struct sys_timer keystone_timer = {
++	.init = keystone_timer_init,
++};
++
++
++static void __init keystone_init(void)
++{
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++}
++
++static const char *keystone_match[] __initconst = {
++	"ti,keystone-evm",
++	NULL,
++};
++
++DT_MACHINE_START(KEYSTONE, "Keystone")
++	.map_io		= keystone_map_io,
++	.init_irq	= keystone_init_irq,
++	.timer		= &keystone_timer,
++	.handle_irq	= gic_handle_irq,
++	.init_machine	= keystone_init,
++	.dt_compat	= keystone_match,
++MACHINE_END
 -- 
 1.7.9.5
 
