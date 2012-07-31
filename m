@@ -1,526 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab2GaRzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:55:10 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55003 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab2GaRzH (ORCPT
+	id S1753654Ab2GaR4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:56:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59231 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414Ab2GaR4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:55:07 -0400
-Date: Tue, 31 Jul 2012 10:55:01 -0700
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        padovan@profusion.mobi, marcel@holtmann.org, peterz@infradead.org,
-        mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
-        ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com,
-        Jens Axboe <axboe@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
-        David Airlie <airlied@linux.ie>, Roland Dreier <roland@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Len Brown <len.brown@intel.com>, David Howells <dhowells@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: [PATCH v2 14/15] workqueue: use mod_delayed_work() instead of
- cancel + queue
-Message-ID: <20120731175501.GC21292@google.com>
-References: <1343433308-26614-1-git-send-email-tj@kernel.org>
- <1343433308-26614-15-git-send-email-tj@kernel.org>
+	Tue, 31 Jul 2012 13:56:06 -0400
+Date: Tue, 31 Jul 2012 10:55:46 -0700
+From: tip-bot for Michael Wang <wangyun@linux.vnet.ibm.com>
+Message-ID: <tip-b9403130a5350fca59a50ed11c198cb8c7e54119@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, wangyun@linux.vnet.ibm.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, wangyun@linux.vnet.ibm.com, tglx@linutronix.de
+In-Reply-To: <4FFE8665.3080705@linux.vnet.ibm.com>
+References: <4FFE8665.3080705@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched/cleanups:
+  Add load balance cpumask pointer to 'struct lb_env'
+Git-Commit-ID: b9403130a5350fca59a50ed11c198cb8c7e54119
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1343433308-26614-15-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jul 2012 10:55:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 18fe17017c7de052f116ef771dc8c4088f0d1ebb Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Tue, 31 Jul 2012 10:53:21 -0700
+Commit-ID:  b9403130a5350fca59a50ed11c198cb8c7e54119
+Gitweb:     http://git.kernel.org/tip/b9403130a5350fca59a50ed11c198cb8c7e54119
+Author:     Michael Wang <wangyun@linux.vnet.ibm.com>
+AuthorDate: Thu, 12 Jul 2012 16:10:13 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 31 Jul 2012 17:00:16 +0200
 
-Convert delayed_work users doing cancel_delayed_work() followed by
-queue_delayed_work() to mod_delayed_work().
+sched/cleanups: Add load balance cpumask pointer to 'struct lb_env'
 
-Most conversions are straight-forward.  Ones worth mentioning are,
+With this patch struct ld_env will have a pointer of the load balancing
+cpumask and we don't need to pass a cpumask around anymore.
 
-* drivers/edac/edac_mc.c: edac_mc_workq_setup() converted to always
-  use mod_delayed_work() and cancel loop in
-  edac_mc_reset_delay_period() is dropped.
-
-* drivers/platform/x86/thinkpad_acpi.c: No need to remember whether
-  watchdog is active or not.  @fan_watchdog_active and related code
-  dropped.
-
-* drivers/power/charger-manager.c: Seemingly a lot of
-  delayed_work_pending() abuse going on here.
-  [delayed_]work_pending() are unsynchronized and racy when used like
-  this.  I converted one instance in fullbatt_handler().  Please
-  conver the rest so that it invokes workqueue APIs for the intended
-  target state rather than trying to game work item pending state
-  transitions.  e.g. if timer should be modified - call
-  mod_delayed_work(), canceled - call cancel_delayed_work[_sync]().
-
-* drivers/thermal/thermal_sys.c: thermal_zone_device_set_polling()
-  simplified.  Note that round_jiffies() calls in this function are
-  meaningless.  round_jiffies() work on absolute jiffies not delta
-  delay used by delayed_work.
-
-v2: Tomi pointed out that __cancel_delayed_work() users can't be
-    safely converted to mod_delayed_work().  They could be calling it
-    from irq context and if that happens while delayed_work_timer_fn()
-    is running, it could deadlock.  __cancel_delayed_work() users are
-    dropped.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: Roland Dreier <roland@kernel.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/4FFE8665.3080705@linux.vnet.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- block/genhd.c                          |    6 ++----
- drivers/edac/edac_mc.c                 |   17 +----------------
- drivers/infiniband/core/addr.c         |    4 +---
- drivers/infiniband/hw/nes/nes_hw.c     |    6 ++----
- drivers/infiniband/hw/nes/nes_nic.c    |    5 ++---
- drivers/net/wireless/ipw2x00/ipw2100.c |    8 +++-----
- drivers/net/wireless/zd1211rw/zd_usb.c |    3 +--
- drivers/platform/x86/thinkpad_acpi.c   |   20 +++++---------------
- drivers/power/charger-manager.c        |    9 +++------
- drivers/power/ds2760_battery.c         |    9 +++------
- drivers/power/jz4740-battery.c         |    6 ++----
- drivers/thermal/thermal_sys.c          |   15 ++++++---------
- fs/afs/callback.c                      |    4 +---
- fs/afs/server.c                        |   10 ++--------
- fs/afs/vlocation.c                     |   14 +++-----------
- fs/nfs/nfs4renewd.c                    |    3 +--
- net/core/dst.c                         |    4 ++--
- net/rfkill/input.c                     |    3 +--
- 18 files changed, 41 insertions(+), 105 deletions(-)
+ kernel/sched/fair.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 9cf5583..ba16f2f 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1524,10 +1524,8 @@ void disk_flush_events(struct gendisk *disk, unsigned int mask)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 22321db..d0cc03b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3069,6 +3069,9 @@ struct lb_env {
+ 	int			new_dst_cpu;
+ 	enum cpu_idle_type	idle;
+ 	long			imbalance;
++	/* The set of CPUs under consideration for load-balancing */
++	struct cpumask		*cpus;
++
+ 	unsigned int		flags;
  
- 	spin_lock_irq(&ev->lock);
- 	ev->clearing |= mask;
--	if (!ev->block) {
--		cancel_delayed_work(&ev->dwork);
--		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
--	}
-+	if (!ev->block)
-+		mod_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
- 	spin_unlock_irq(&ev->lock);
- }
- 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index de5ba86e..9dbde5f 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -492,7 +492,7 @@ static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
- 		return;
- 
- 	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
--	queue_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
-+	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
- }
- 
- /*
-@@ -533,21 +533,6 @@ void edac_mc_reset_delay_period(int value)
- 
- 	mutex_lock(&mem_ctls_mutex);
- 
--	/* scan the list and turn off all workq timers, doing so under lock
--	 */
--	list_for_each(item, &mc_devices) {
--		mci = list_entry(item, struct mem_ctl_info, link);
--
--		if (mci->op_state == OP_RUNNING_POLL)
--			cancel_delayed_work(&mci->work);
--	}
--
--	mutex_unlock(&mem_ctls_mutex);
--
--
--	/* re-walk the list, and reset the poll delay */
--	mutex_lock(&mem_ctls_mutex);
--
- 	list_for_each(item, &mc_devices) {
- 		mci = list_entry(item, struct mem_ctl_info, link);
- 
-diff --git a/drivers/infiniband/core/addr.c b/drivers/infiniband/core/addr.c
-index 28058ae..eaec8d7 100644
---- a/drivers/infiniband/core/addr.c
-+++ b/drivers/infiniband/core/addr.c
-@@ -152,13 +152,11 @@ static void set_timeout(unsigned long time)
- {
- 	unsigned long delay;
- 
--	cancel_delayed_work(&work);
--
- 	delay = time - jiffies;
- 	if ((long)delay <= 0)
- 		delay = 1;
- 
--	queue_delayed_work(addr_wq, &work, delay);
-+	mod_delayed_work(addr_wq, &work, delay);
- }
- 
- static void queue_req(struct addr_req *req)
-diff --git a/drivers/infiniband/hw/nes/nes_hw.c b/drivers/infiniband/hw/nes/nes_hw.c
-index d42c9f4..9e0895b 100644
---- a/drivers/infiniband/hw/nes/nes_hw.c
-+++ b/drivers/infiniband/hw/nes/nes_hw.c
-@@ -2679,11 +2679,9 @@ static void nes_process_mac_intr(struct nes_device *nesdev, u32 mac_number)
- 			}
- 		}
- 		if (nesadapter->phy_type[mac_index] == NES_PHY_TYPE_SFP_D) {
--			if (nesdev->link_recheck)
--				cancel_delayed_work(&nesdev->work);
- 			nesdev->link_recheck = 1;
--			schedule_delayed_work(&nesdev->work,
--					      NES_LINK_RECHECK_DELAY);
-+			mod_delayed_work(system_wq, &nesdev->work,
-+					 NES_LINK_RECHECK_DELAY);
- 		}
- 	}
- 
-diff --git a/drivers/infiniband/hw/nes/nes_nic.c b/drivers/infiniband/hw/nes/nes_nic.c
-index f3a3ecf..e43f6e4 100644
---- a/drivers/infiniband/hw/nes/nes_nic.c
-+++ b/drivers/infiniband/hw/nes/nes_nic.c
-@@ -243,10 +243,9 @@ static int nes_netdev_open(struct net_device *netdev)
- 
- 	spin_lock_irqsave(&nesdev->nesadapter->phy_lock, flags);
- 	if (nesdev->nesadapter->phy_type[nesdev->mac_index] == NES_PHY_TYPE_SFP_D) {
--		if (nesdev->link_recheck)
--			cancel_delayed_work(&nesdev->work);
- 		nesdev->link_recheck = 1;
--		schedule_delayed_work(&nesdev->work, NES_LINK_RECHECK_DELAY);
-+		mod_delayed_work(system_wq, &nesdev->work,
-+				 NES_LINK_RECHECK_DELAY);
- 	}
- 	spin_unlock_irqrestore(&nesdev->nesadapter->phy_lock, flags);
- 
-diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
-index 95aa8e1..8a34202 100644
---- a/drivers/net/wireless/ipw2x00/ipw2100.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2100.c
-@@ -2180,8 +2180,7 @@ static void isr_indicate_rf_kill(struct ipw2100_priv *priv, u32 status)
- 
- 	/* Make sure the RF Kill check timer is running */
- 	priv->stop_rf_kill = 0;
--	cancel_delayed_work(&priv->rf_kill);
--	schedule_delayed_work(&priv->rf_kill, round_jiffies_relative(HZ));
-+	mod_delayed_work(system_wq, &priv->rf_kill, round_jiffies_relative(HZ));
- }
- 
- static void send_scan_event(void *data)
-@@ -4321,9 +4320,8 @@ static int ipw_radio_kill_sw(struct ipw2100_priv *priv, int disable_radio)
- 					  "disabled by HW switch\n");
- 			/* Make sure the RF_KILL check timer is running */
- 			priv->stop_rf_kill = 0;
--			cancel_delayed_work(&priv->rf_kill);
--			schedule_delayed_work(&priv->rf_kill,
--					      round_jiffies_relative(HZ));
-+			mod_delayed_work(system_wq, &priv->rf_kill,
-+					 round_jiffies_relative(HZ));
- 		} else
- 			schedule_reset(priv);
- 	}
-diff --git a/drivers/net/wireless/zd1211rw/zd_usb.c b/drivers/net/wireless/zd1211rw/zd_usb.c
-index af83c43..ef2b171 100644
---- a/drivers/net/wireless/zd1211rw/zd_usb.c
-+++ b/drivers/net/wireless/zd1211rw/zd_usb.c
-@@ -1164,8 +1164,7 @@ void zd_usb_reset_rx_idle_timer(struct zd_usb *usb)
- {
- 	struct zd_usb_rx *rx = &usb->rx;
- 
--	cancel_delayed_work(&rx->idle_work);
--	queue_delayed_work(zd_workqueue, &rx->idle_work, ZD_RX_IDLE_INTERVAL);
-+	mod_delayed_work(zd_workqueue, &rx->idle_work, ZD_RX_IDLE_INTERVAL);
- }
- 
- static inline void init_usb_interrupt(struct zd_usb *usb)
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index d5fd4a1..00d32a7 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -7683,25 +7683,15 @@ static int fan_set_speed(int speed)
- 
- static void fan_watchdog_reset(void)
- {
--	static int fan_watchdog_active;
--
- 	if (fan_control_access_mode == TPACPI_FAN_WR_NONE)
- 		return;
- 
--	if (fan_watchdog_active)
--		cancel_delayed_work(&fan_watchdog_task);
--
- 	if (fan_watchdog_maxinterval > 0 &&
--	    tpacpi_lifecycle != TPACPI_LIFE_EXITING) {
--		fan_watchdog_active = 1;
--		if (!queue_delayed_work(tpacpi_wq, &fan_watchdog_task,
--				msecs_to_jiffies(fan_watchdog_maxinterval
--						 * 1000))) {
--			pr_err("failed to queue the fan watchdog, "
--			       "watchdog will not trigger\n");
--		}
--	} else
--		fan_watchdog_active = 0;
-+	    tpacpi_lifecycle != TPACPI_LIFE_EXITING)
-+		mod_delayed_work(tpacpi_wq, &fan_watchdog_task,
-+			msecs_to_jiffies(fan_watchdog_maxinterval * 1000));
-+	else
-+		cancel_delayed_work(&fan_watchdog_task);
- }
- 
- static void fan_watchdog_fire(struct work_struct *ignored)
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 86935ec..0db0444 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -512,9 +512,8 @@ static void _setup_polling(struct work_struct *work)
- 	if (!delayed_work_pending(&cm_monitor_work) ||
- 	    (delayed_work_pending(&cm_monitor_work) &&
- 	     time_after(next_polling, _next_polling))) {
--		cancel_delayed_work_sync(&cm_monitor_work);
- 		next_polling = jiffies + polling_jiffy;
--		queue_delayed_work(cm_wq, &cm_monitor_work, polling_jiffy);
-+		mod_delayed_work(cm_wq, &cm_monitor_work, polling_jiffy);
- 	}
- 
- out:
-@@ -549,10 +548,8 @@ static void fullbatt_handler(struct charger_manager *cm)
- 	if (cm_suspended)
- 		device_set_wakeup_capable(cm->dev, true);
- 
--	if (delayed_work_pending(&cm->fullbatt_vchk_work))
--		cancel_delayed_work(&cm->fullbatt_vchk_work);
--	queue_delayed_work(cm_wq, &cm->fullbatt_vchk_work,
--			   msecs_to_jiffies(desc->fullbatt_vchkdrop_ms));
-+	mod_delayed_work(cm_wq, &cm->fullbatt_vchk_work,
-+			 msecs_to_jiffies(desc->fullbatt_vchkdrop_ms));
- 	cm->fullbatt_vchk_jiffies_at = jiffies + msecs_to_jiffies(
- 				       desc->fullbatt_vchkdrop_ms);
- 
-diff --git a/drivers/power/ds2760_battery.c b/drivers/power/ds2760_battery.c
-index 076e211..704e652 100644
---- a/drivers/power/ds2760_battery.c
-+++ b/drivers/power/ds2760_battery.c
-@@ -355,8 +355,7 @@ static void ds2760_battery_external_power_changed(struct power_supply *psy)
- 
- 	dev_dbg(di->dev, "%s\n", __func__);
- 
--	cancel_delayed_work(&di->monitor_work);
--	queue_delayed_work(di->monitor_wqueue, &di->monitor_work, HZ/10);
-+	mod_delayed_work(di->monitor_wqueue, &di->monitor_work, HZ/10);
- }
- 
- 
-@@ -401,8 +400,7 @@ static void ds2760_battery_set_charged(struct power_supply *psy)
- 
- 	/* postpone the actual work by 20 secs. This is for debouncing GPIO
- 	 * signals and to let the current value settle. See AN4188. */
--	cancel_delayed_work(&di->set_charged_work);
--	queue_delayed_work(di->monitor_wqueue, &di->set_charged_work, HZ * 20);
-+	mod_delayed_work(di->monitor_wqueue, &di->set_charged_work, HZ * 20);
- }
- 
- static int ds2760_battery_get_property(struct power_supply *psy,
-@@ -616,8 +614,7 @@ static int ds2760_battery_resume(struct platform_device *pdev)
- 	di->charge_status = POWER_SUPPLY_STATUS_UNKNOWN;
- 	power_supply_changed(&di->bat);
- 
--	cancel_delayed_work(&di->monitor_work);
--	queue_delayed_work(di->monitor_wqueue, &di->monitor_work, HZ);
-+	mod_delayed_work(di->monitor_wqueue, &di->monitor_work, HZ);
- 
- 	return 0;
- }
-diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
-index 8dbc7bf..ffbed5e 100644
---- a/drivers/power/jz4740-battery.c
-+++ b/drivers/power/jz4740-battery.c
-@@ -173,16 +173,14 @@ static void jz_battery_external_power_changed(struct power_supply *psy)
- {
- 	struct jz_battery *jz_battery = psy_to_jz_battery(psy);
- 
--	cancel_delayed_work(&jz_battery->work);
--	schedule_delayed_work(&jz_battery->work, 0);
-+	mod_delayed_work(system_wq, &jz_battery->work, 0);
- }
- 
- static irqreturn_t jz_battery_charge_irq(int irq, void *data)
- {
- 	struct jz_battery *jz_battery = data;
- 
--	cancel_delayed_work(&jz_battery->work);
--	schedule_delayed_work(&jz_battery->work, 0);
-+	mod_delayed_work(system_wq, &jz_battery->work, 0);
- 
- 	return IRQ_HANDLED;
- }
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 2d7a9fe..a937838 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -694,17 +694,14 @@ thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
- static void thermal_zone_device_set_polling(struct thermal_zone_device *tz,
- 					    int delay)
- {
--	cancel_delayed_work(&(tz->poll_queue));
--
--	if (!delay)
--		return;
--
- 	if (delay > 1000)
--		queue_delayed_work(system_freezable_wq, &(tz->poll_queue),
--				      round_jiffies(msecs_to_jiffies(delay)));
-+		mod_delayed_work(system_freezable_wq, &tz->poll_queue,
-+				 round_jiffies(msecs_to_jiffies(delay)));
-+	else if (delay)
-+		mod_delayed_work(system_freezable_wq, &tz->poll_queue,
-+				 msecs_to_jiffies(delay));
- 	else
--		queue_delayed_work(system_freezable_wq, &(tz->poll_queue),
--				      msecs_to_jiffies(delay));
-+		cancel_delayed_work(&tz->poll_queue);
- }
- 
- static void thermal_zone_device_passive(struct thermal_zone_device *tz,
-diff --git a/fs/afs/callback.c b/fs/afs/callback.c
-index 587ef51..7ef637d 100644
---- a/fs/afs/callback.c
-+++ b/fs/afs/callback.c
-@@ -351,9 +351,7 @@ void afs_dispatch_give_up_callbacks(struct work_struct *work)
+ 	unsigned int		loop;
+@@ -3653,8 +3656,7 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
   */
- void afs_flush_callback_breaks(struct afs_server *server)
+ static inline void update_sg_lb_stats(struct lb_env *env,
+ 			struct sched_group *group, int load_idx,
+-			int local_group, const struct cpumask *cpus,
+-			int *balance, struct sg_lb_stats *sgs)
++			int local_group, int *balance, struct sg_lb_stats *sgs)
  {
--	cancel_delayed_work(&server->cb_break_work);
--	queue_delayed_work(afs_callback_update_worker,
--			   &server->cb_break_work, 0);
-+	mod_delayed_work(afs_callback_update_worker, &server->cb_break_work, 0);
- }
+ 	unsigned long nr_running, max_nr_running, min_nr_running;
+ 	unsigned long load, max_cpu_load, min_cpu_load;
+@@ -3671,7 +3673,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 	max_nr_running = 0;
+ 	min_nr_running = ~0UL;
  
- #if 0
-diff --git a/fs/afs/server.c b/fs/afs/server.c
-index d59b751..f342acf 100644
---- a/fs/afs/server.c
-+++ b/fs/afs/server.c
-@@ -285,12 +285,7 @@ static void afs_reap_server(struct work_struct *work)
- 		expiry = server->time_of_death + afs_server_timeout;
- 		if (expiry > now) {
- 			delay = (expiry - now) * HZ;
--			if (!queue_delayed_work(afs_wq, &afs_server_reaper,
--						delay)) {
--				cancel_delayed_work(&afs_server_reaper);
--				queue_delayed_work(afs_wq, &afs_server_reaper,
--						   delay);
--			}
-+			mod_delayed_work(afs_wq, &afs_server_reaper, delay);
- 			break;
- 		}
+-	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
++	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+ 		struct rq *rq = cpu_rq(i);
  
-@@ -323,6 +318,5 @@ static void afs_reap_server(struct work_struct *work)
- void __exit afs_purge_servers(void)
+ 		nr_running = rq->nr_running;
+@@ -3800,8 +3802,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+  * @sds: variable to hold the statistics for this sched_domain.
+  */
+ static inline void update_sd_lb_stats(struct lb_env *env,
+-				      const struct cpumask *cpus,
+-				      int *balance, struct sd_lb_stats *sds)
++					int *balance, struct sd_lb_stats *sds)
  {
- 	afs_server_timeout = 0;
--	cancel_delayed_work(&afs_server_reaper);
--	queue_delayed_work(afs_wq, &afs_server_reaper, 0);
-+	mod_delayed_work(afs_wq, &afs_server_reaper, 0);
- }
-diff --git a/fs/afs/vlocation.c b/fs/afs/vlocation.c
-index 431984d..57bcb15 100644
---- a/fs/afs/vlocation.c
-+++ b/fs/afs/vlocation.c
-@@ -561,12 +561,7 @@ static void afs_vlocation_reaper(struct work_struct *work)
- 		if (expiry > now) {
- 			delay = (expiry - now) * HZ;
- 			_debug("delay %lu", delay);
--			if (!queue_delayed_work(afs_wq, &afs_vlocation_reap,
--						delay)) {
--				cancel_delayed_work(&afs_vlocation_reap);
--				queue_delayed_work(afs_wq, &afs_vlocation_reap,
--						   delay);
--			}
-+			mod_delayed_work(afs_wq, &afs_vlocation_reap, delay);
- 			break;
- 		}
+ 	struct sched_domain *child = env->sd->child;
+ 	struct sched_group *sg = env->sd->groups;
+@@ -3818,8 +3819,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
  
-@@ -614,13 +609,10 @@ void afs_vlocation_purge(void)
- 	spin_lock(&afs_vlocation_updates_lock);
- 	list_del_init(&afs_vlocation_updates);
- 	spin_unlock(&afs_vlocation_updates_lock);
--	cancel_delayed_work(&afs_vlocation_update);
--	queue_delayed_work(afs_vlocation_update_worker,
--			   &afs_vlocation_update, 0);
-+	mod_delayed_work(afs_vlocation_update_worker, &afs_vlocation_update, 0);
- 	destroy_workqueue(afs_vlocation_update_worker);
+ 		local_group = cpumask_test_cpu(env->dst_cpu, sched_group_cpus(sg));
+ 		memset(&sgs, 0, sizeof(sgs));
+-		update_sg_lb_stats(env, sg, load_idx, local_group,
+-				   cpus, balance, &sgs);
++		update_sg_lb_stats(env, sg, load_idx, local_group, balance, &sgs);
  
--	cancel_delayed_work(&afs_vlocation_reap);
--	queue_delayed_work(afs_wq, &afs_vlocation_reap, 0);
-+	mod_delayed_work(afs_wq, &afs_vlocation_reap, 0);
- }
+ 		if (local_group && !(*balance))
+ 			return;
+@@ -4055,7 +4055,6 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+  * to restore balance.
+  *
+  * @env: The load balancing environment.
+- * @cpus: The set of CPUs under consideration for load-balancing.
+  * @balance: Pointer to a variable indicating if this_cpu
+  *	is the appropriate cpu to perform load balancing at this_level.
+  *
+@@ -4065,7 +4064,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+  *		   put to idle by rebalancing its tasks onto our group.
+  */
+ static struct sched_group *
+-find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
++find_busiest_group(struct lb_env *env, int *balance)
+ {
+ 	struct sd_lb_stats sds;
  
- /*
-diff --git a/fs/nfs/nfs4renewd.c b/fs/nfs/nfs4renewd.c
-index 6930bec..1720d32 100644
---- a/fs/nfs/nfs4renewd.c
-+++ b/fs/nfs/nfs4renewd.c
-@@ -117,8 +117,7 @@ nfs4_schedule_state_renewal(struct nfs_client *clp)
- 		timeout = 5 * HZ;
- 	dprintk("%s: requeueing work. Lease period = %ld\n",
- 			__func__, (timeout + HZ - 1) / HZ);
--	cancel_delayed_work(&clp->cl_renewd);
--	schedule_delayed_work(&clp->cl_renewd, timeout);
-+	mod_delayed_work(system_wq, &clp->cl_renewd, timeout);
- 	set_bit(NFS_CS_RENEWD, &clp->cl_res_state);
- 	spin_unlock(&clp->cl_lock);
- }
-diff --git a/net/core/dst.c b/net/core/dst.c
-index 069d51d..ed5a0b4 100644
---- a/net/core/dst.c
-+++ b/net/core/dst.c
-@@ -214,8 +214,8 @@ void __dst_free(struct dst_entry *dst)
- 	if (dst_garbage.timer_inc > DST_GC_INC) {
- 		dst_garbage.timer_inc = DST_GC_INC;
- 		dst_garbage.timer_expires = DST_GC_MIN;
--		cancel_delayed_work(&dst_gc_work);
--		schedule_delayed_work(&dst_gc_work, dst_garbage.timer_expires);
-+		mod_delayed_work(system_wq, &dst_gc_work,
-+				 dst_garbage.timer_expires);
+@@ -4075,7 +4074,7 @@ find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
+ 	 * Compute the various statistics relavent for load balancing at
+ 	 * this level.
+ 	 */
+-	update_sd_lb_stats(env, cpus, balance, &sds);
++	update_sd_lb_stats(env, balance, &sds);
+ 
+ 	/*
+ 	 * this_cpu is not the appropriate cpu to perform load balancing at
+@@ -4155,8 +4154,7 @@ ret:
+  * find_busiest_queue - find the busiest runqueue among the cpus in group.
+  */
+ static struct rq *find_busiest_queue(struct lb_env *env,
+-				     struct sched_group *group,
+-				     const struct cpumask *cpus)
++				     struct sched_group *group)
+ {
+ 	struct rq *busiest = NULL, *rq;
+ 	unsigned long max_load = 0;
+@@ -4171,7 +4169,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
+ 		if (!capacity)
+ 			capacity = fix_small_capacity(env->sd, group);
+ 
+-		if (!cpumask_test_cpu(i, cpus))
++		if (!cpumask_test_cpu(i, env->cpus))
+ 			continue;
+ 
+ 		rq = cpu_rq(i);
+@@ -4252,6 +4250,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		.dst_grpmask    = sched_group_cpus(sd->groups),
+ 		.idle		= idle,
+ 		.loop_break	= sched_nr_migrate_break,
++		.cpus		= cpus,
+ 	};
+ 
+ 	cpumask_copy(cpus, cpu_active_mask);
+@@ -4260,7 +4259,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 	schedstat_inc(sd, lb_count[idle]);
+ 
+ redo:
+-	group = find_busiest_group(&env, cpus, balance);
++	group = find_busiest_group(&env, balance);
+ 
+ 	if (*balance == 0)
+ 		goto out_balanced;
+@@ -4270,7 +4269,7 @@ redo:
+ 		goto out_balanced;
  	}
- 	spin_unlock_bh(&dst_garbage.lock);
- }
-diff --git a/net/rfkill/input.c b/net/rfkill/input.c
-index 24c55c5..c9d931e 100644
---- a/net/rfkill/input.c
-+++ b/net/rfkill/input.c
-@@ -164,8 +164,7 @@ static void rfkill_schedule_global_op(enum rfkill_sched_op op)
- 	rfkill_op_pending = true;
- 	if (op == RFKILL_GLOBAL_OP_EPO && !rfkill_is_epo_lock_active()) {
- 		/* bypass the limiter for EPO */
--		cancel_delayed_work(&rfkill_op_work);
--		schedule_delayed_work(&rfkill_op_work, 0);
-+		mod_delayed_work(system_wq, &rfkill_op_work, 0);
- 		rfkill_last_scheduled = jiffies;
- 	} else
- 		rfkill_schedule_ratelimited();
--- 
-1.7.7.3
-
+ 
+-	busiest = find_busiest_queue(&env, group, cpus);
++	busiest = find_busiest_queue(&env, group);
+ 	if (!busiest) {
+ 		schedstat_inc(sd, lb_nobusyq[idle]);
+ 		goto out_balanced;
