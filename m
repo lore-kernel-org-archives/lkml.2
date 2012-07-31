@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2GaEuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:50:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48521 "EHLO
+	id S1755644Ab2GaFFA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:05:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48576 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755310Ab2GaEuF (ORCPT
+	by vger.kernel.org with ESMTP id S1755370Ab2GaEuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:05 -0400
-Message-Id: <20120731044311.750294771@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:13 -0400
+Message-Id: <20120731044322.812127633@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:15 +0100
+Date: Tue, 31 Jul 2012 05:44:21 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan@kernel.org>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Nai Xia <nai.xia@gmail.com>, Johannes Weiner <jweiner@redhat.com>
-Subject: [ 05/73] mm: compaction: make isolate_lru_page() filter-aware again
+        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 71/73] drm/radeon: on hotplug force link training to happen (v2)
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,115 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit c82449352854ff09e43062246af86bdeb628f0c3 upstream.
+commit ca2ccde5e2f24a792caa4cca919fc5c6f65d1887 upstream.
 
-Stable note: Not tracked in Bugzilla. A fix aimed at preserving page aging
-	information by reducing LRU list churning had the side-effect of
-	reducing THP allocation success rates. This was part of a series
-	to restore the success rates while preserving the reclaim fix.
+To have DP behave like VGA/DVI we need to retrain the link
+on hotplug. For this to happen we need to force link
+training to happen by setting connector dpms to off
+before asking it turning it on again.
 
-Commit 39deaf85 ("mm: compaction: make isolate_lru_page() filter-aware")
-noted that compaction does not migrate dirty or writeback pages and that
-is was meaningless to pick the page and re-add it to the LRU list.  This
-had to be partially reverted because some dirty pages can be migrated by
-compaction without blocking.
+v2: agd5f
+- drop the dp_get_link_status() change in atombios_dp.c
+  for now.  We still need the dpms OFF change.
 
-This patch updates "mm: compaction: make isolate_lru_page" by skipping
-over pages that migration has no possibility of migrating to minimise LRU
-disruption.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel<riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andy Isaacson <adi@hexapodia.org>
-Cc: Nai Xia <nai.xia@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/mmzone.h |    2 ++
- mm/compaction.c        |    3 +++
- mm/vmscan.c            |   35 +++++++++++++++++++++++++++++++++--
- 3 files changed, 38 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 42e544c..2038b90 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -177,6 +177,8 @@ struct lruvec {
- #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
- /* Isolate unmapped file */
- #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
-+/* Isolate for asynchronous migration */
-+#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
- 
- /* LRU Isolation modes. */
- typedef unsigned __bitwise__ isolate_mode_t;
-diff --git a/mm/compaction.c b/mm/compaction.c
-index d31e64b..fb29158 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -349,6 +349,9 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 			continue;
+diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+index 3524f17..895e628 100644
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -79,10 +79,16 @@ void radeon_connector_hotplug(struct drm_connector *connector)
+ 		if (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
+ 			int saved_dpms = connector->dpms;
+ 			/* Only turn off the display if it's physically disconnected */
+-			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
++			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd)) {
+ 				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
+-			else if (radeon_dp_needs_link_train(radeon_connector))
++			} else if (radeon_dp_needs_link_train(radeon_connector)) {
++				/* set it to OFF so that drm_helper_connector_dpms()
++				 * won't return immediately since the current state
++				 * is ON at this point.
++				 */
++				connector->dpms = DRM_MODE_DPMS_OFF;
+ 				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
++			}
+ 			connector->dpms = saved_dpms;
  		}
- 
-+		if (!cc->sync)
-+			mode |= ISOLATE_ASYNC_MIGRATE;
-+
- 		/* Try isolate the page */
- 		if (__isolate_lru_page(page, mode, 0) != 0)
- 			continue;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index cb68c53..efbcab1 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1075,8 +1075,39 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
- 
- 	ret = -EBUSY;
- 
--	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
--		return ret;
-+	/*
-+	 * To minimise LRU disruption, the caller can indicate that it only
-+	 * wants to isolate pages it will be able to operate on without
-+	 * blocking - clean pages for the most part.
-+	 *
-+	 * ISOLATE_CLEAN means that only clean pages should be isolated. This
-+	 * is used by reclaim when it is cannot write to backing storage
-+	 *
-+	 * ISOLATE_ASYNC_MIGRATE is used to indicate that it only wants to pages
-+	 * that it is possible to migrate without blocking
-+	 */
-+	if (mode & (ISOLATE_CLEAN|ISOLATE_ASYNC_MIGRATE)) {
-+		/* All the caller can do on PageWriteback is block */
-+		if (PageWriteback(page))
-+			return ret;
-+
-+		if (PageDirty(page)) {
-+			struct address_space *mapping;
-+
-+			/* ISOLATE_CLEAN means only clean pages */
-+			if (mode & ISOLATE_CLEAN)
-+				return ret;
-+
-+			/*
-+			 * Only pages without mappings or that have a
-+			 * ->migratepage callback are possible to migrate
-+			 * without blocking
-+			 */
-+			mapping = page_mapping(page);
-+			if (mapping && !mapping->a_ops->migratepage)
-+				return ret;
-+		}
-+	}
- 
- 	if ((mode & ISOLATE_UNMAPPED) && page_mapped(page))
- 		return ret;
+ 	}
 
 
