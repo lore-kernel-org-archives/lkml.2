@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab2GaFAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:00:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48676 "EHLO
+	id S1755689Ab2GaFA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:00:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48665 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755503Ab2GaEu2 (ORCPT
+	by vger.kernel.org with ESMTP id S1755500Ab2GaEu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:28 -0400
-Message-Id: <20120731044320.945218789@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:29 -0400
+Message-Id: <20120731044320.435459483@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:44:10 +0100
+Date: Tue, 31 Jul 2012 05:44:07 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Dan Williams <dan.j.williams@intel.com>,
-        Dan Melnic <dan.melnic@amd.com>, Jack Wang <jack_wang@usish.com>,
+        Dariusz Majchrzak <dariusz.majchrzak@intel.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 60/73] [SCSI] libsas: fix sas_discover_devices return code handling
+Subject: [ 57/73] [SCSI] fix hot unplug vs async scan race
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,125 +31,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Williams <dan.j.williams@intel.com>
 
-commit b17caa174a7e1fd2e17b26e210d4ee91c4c28b37 upstream.
+commit 3b661a92e869ebe2358de8f4b3230ad84f7fce51 upstream.
 
-commit 198439e4 [SCSI] libsas: do not set res = 0 in sas_ex_discover_dev()
-commit 19252de6 [SCSI] libsas: fix wide port hotplug issues
+The following crash results from cases where the end_device has been
+removed before scsi_sysfs_add_sdev has had a chance to run.
 
-The above commits seem to have confused the return value of
-sas_ex_discover_dev which is non-zero on failure and
-sas_ex_join_wide_port which just indicates short circuiting discovery on
-already established ports.  The result is random discovery failures
-depending on configuration.
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000098
+ IP: [<ffffffff8115e100>] sysfs_create_dir+0x32/0xb6
+ ...
+ Call Trace:
+  [<ffffffff8125e4a8>] kobject_add_internal+0x120/0x1e3
+  [<ffffffff81075149>] ? trace_hardirqs_on+0xd/0xf
+  [<ffffffff8125e641>] kobject_add_varg+0x41/0x50
+  [<ffffffff8125e70b>] kobject_add+0x64/0x66
+  [<ffffffff8131122b>] device_add+0x12d/0x63a
+  [<ffffffff814b65ea>] ? _raw_spin_unlock_irqrestore+0x47/0x56
+  [<ffffffff8107de15>] ? module_refcount+0x89/0xa0
+  [<ffffffff8132f348>] scsi_sysfs_add_sdev+0x4e/0x28a
+  [<ffffffff8132dcbb>] do_scan_async+0x9c/0x145
 
-Calls to sas_ex_join_wide_port are the source of the trouble as its
-return value is errantly assigned to 'res'.  Convert it to bool and stop
-returning its result up the stack.
+...teach scsi_sysfs_add_devices() to check for deleted devices() before
+trying to add them, and teach scsi_remove_target() how to remove targets
+that have not been added via device_add().
 
-Tested-by: Dan Melnic <dan.melnic@amd.com>
-Reported-by: Dan Melnic <dan.melnic@amd.com>
+Reported-by: Dariusz Majchrzak <dariusz.majchrzak@intel.com>
 Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Reviewed-by: Jack Wang <jack_wang@usish.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/libsas/sas_expander.c |   39 +++++++++++-------------------------
- 1 file changed, 12 insertions(+), 27 deletions(-)
+ drivers/scsi/scsi_scan.c  |    3 +++
+ drivers/scsi/scsi_sysfs.c |   41 ++++++++++++++++++++++++++---------------
+ 2 files changed, 29 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index 63c5742..879dbbe 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -868,7 +868,7 @@ static struct domain_device *sas_ex_discover_end_dev(
- }
- 
- /* See if this phy is part of a wide port */
--static int sas_ex_join_wide_port(struct domain_device *parent, int phy_id)
-+static bool sas_ex_join_wide_port(struct domain_device *parent, int phy_id)
+diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+index 2e5fe58..f55e5f1 100644
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -1717,6 +1717,9 @@ static void scsi_sysfs_add_devices(struct Scsi_Host *shost)
  {
- 	struct ex_phy *phy = &parent->ex_dev.ex_phy[phy_id];
- 	int i;
-@@ -884,11 +884,11 @@ static int sas_ex_join_wide_port(struct domain_device *parent, int phy_id)
- 			sas_port_add_phy(ephy->port, phy->phy);
- 			phy->port = ephy->port;
- 			phy->phy_state = PHY_DEVICE_DISCOVERED;
--			return 0;
-+			return true;
- 		}
- 	}
+ 	struct scsi_device *sdev;
+ 	shost_for_each_device(sdev, shost) {
++		/* target removed before the device could be added */
++		if (sdev->sdev_state == SDEV_DEL)
++			continue;
+ 		if (!scsi_host_scan_allowed(shost) ||
+ 		    scsi_sysfs_add_sdev(sdev) != 0)
+ 			__scsi_remove_device(sdev);
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index d19d7e9..093d4f6 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -1005,7 +1005,6 @@ static void __scsi_remove_target(struct scsi_target *starget)
+ 	struct scsi_device *sdev;
  
--	return -ENODEV;
-+	return false;
+ 	spin_lock_irqsave(shost->host_lock, flags);
+-	starget->reap_ref++;
+  restart:
+ 	list_for_each_entry(sdev, &shost->__devices, siblings) {
+ 		if (sdev->channel != starget->channel ||
+@@ -1019,14 +1018,6 @@ static void __scsi_remove_target(struct scsi_target *starget)
+ 		goto restart;
+ 	}
+ 	spin_unlock_irqrestore(shost->host_lock, flags);
+-	scsi_target_reap(starget);
+-}
+-
+-static int __remove_child (struct device * dev, void * data)
+-{
+-	if (scsi_is_target_device(dev))
+-		__scsi_remove_target(to_scsi_target(dev));
+-	return 0;
  }
  
- static struct domain_device *sas_ex_discover_expander(
-@@ -1030,8 +1030,7 @@ static int sas_ex_discover_dev(struct domain_device *dev, int phy_id)
- 		return res;
- 	}
- 
--	res = sas_ex_join_wide_port(dev, phy_id);
--	if (!res) {
-+	if (sas_ex_join_wide_port(dev, phy_id)) {
- 		SAS_DPRINTK("Attaching ex phy%d to wide port %016llx\n",
- 			    phy_id, SAS_ADDR(ex_phy->attached_sas_addr));
- 		return res;
-@@ -1077,8 +1076,7 @@ static int sas_ex_discover_dev(struct domain_device *dev, int phy_id)
- 			if (SAS_ADDR(ex->ex_phy[i].attached_sas_addr) ==
- 			    SAS_ADDR(child->sas_addr)) {
- 				ex->ex_phy[i].phy_state= PHY_DEVICE_DISCOVERED;
--				res = sas_ex_join_wide_port(dev, i);
--				if (!res)
-+				if (sas_ex_join_wide_port(dev, i))
- 					SAS_DPRINTK("Attaching ex phy%d to wide port %016llx\n",
- 						    i, SAS_ADDR(ex->ex_phy[i].attached_sas_addr));
- 
-@@ -1943,32 +1941,20 @@ static int sas_discover_new(struct domain_device *dev, int phy_id)
+ /**
+@@ -1039,14 +1030,34 @@ static int __remove_child (struct device * dev, void * data)
+  */
+ void scsi_remove_target(struct device *dev)
  {
- 	struct ex_phy *ex_phy = &dev->ex_dev.ex_phy[phy_id];
- 	struct domain_device *child;
--	bool found = false;
--	int res, i;
-+	int res;
- 
- 	SAS_DPRINTK("ex %016llx phy%d new device attached\n",
- 		    SAS_ADDR(dev->sas_addr), phy_id);
- 	res = sas_ex_phy_discover(dev, phy_id);
- 	if (res)
--		goto out;
--	/* to support the wide port inserted */
--	for (i = 0; i < dev->ex_dev.num_phys; i++) {
--		struct ex_phy *ex_phy_temp = &dev->ex_dev.ex_phy[i];
--		if (i == phy_id)
--			continue;
--		if (SAS_ADDR(ex_phy_temp->attached_sas_addr) ==
--		    SAS_ADDR(ex_phy->attached_sas_addr)) {
--			found = true;
--			break;
--		}
--	}
--	if (found) {
--		sas_ex_join_wide_port(dev, phy_id);
-+		return res;
+-	if (scsi_is_target_device(dev)) {
+-		__scsi_remove_target(to_scsi_target(dev));
+-		return;
++	struct Scsi_Host *shost = dev_to_shost(dev->parent);
++	struct scsi_target *starget, *found;
++	unsigned long flags;
 +
-+	if (sas_ex_join_wide_port(dev, phy_id))
- 		return 0;
--	}
-+
- 	res = sas_ex_discover_devices(dev, phy_id);
--	if (!res)
--		goto out;
-+	if (res)
-+		return res;
- 	list_for_each_entry(child, &dev->ex_dev.children, siblings) {
- 		if (SAS_ADDR(child->sas_addr) ==
- 		    SAS_ADDR(ex_phy->attached_sas_addr)) {
-@@ -1978,7 +1964,6 @@ static int sas_discover_new(struct domain_device *dev, int phy_id)
- 			break;
- 		}
++ restart:
++	found = NULL;
++	spin_lock_irqsave(shost->host_lock, flags);
++	list_for_each_entry(starget, &shost->__targets, siblings) {
++		if (starget->state == STARGET_DEL)
++			continue;
++		if (starget->dev.parent == dev || &starget->dev == dev) {
++			found = starget;
++			found->reap_ref++;
++			break;
++		}
  	}
--out:
- 	return res;
++	spin_unlock_irqrestore(shost->host_lock, flags);
+ 
+-	get_device(dev);
+-	device_for_each_child(dev, NULL, __remove_child);
+-	put_device(dev);
++	if (found) {
++		__scsi_remove_target(found);
++		scsi_target_reap(found);
++		/* in the case where @dev has multiple starget children,
++		 * continue removing.
++		 *
++		 * FIXME: does such a case exist?
++		 */
++		goto restart;
++	}
  }
+ EXPORT_SYMBOL(scsi_remove_target);
  
 
 
