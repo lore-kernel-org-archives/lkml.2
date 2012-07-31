@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab2GaVYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 17:24:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18619 "EHLO mx1.redhat.com"
+	id S1753700Ab2GaVaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 17:30:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44105 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631Ab2GaVYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 17:24:20 -0400
-Message-ID: <50184CF3.8040505@redhat.com>
-Date: Tue, 31 Jul 2012 17:24:03 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: mingo@kernel.org, oleg@redhat.com, pjt@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/19] mm, mpol: Use special PROT_NONE to migrate pages
-References: <20120731191204.540691987@chello.nl> <20120731192808.950441936@chello.nl>
-In-Reply-To: <20120731192808.950441936@chello.nl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752631Ab2GaVaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 17:30:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="173805669"
+Message-ID: <1343770221.2230.30.camel@jtkirshe-mobl>
+Subject: Re: [PATCH] igb: don't break user visible strings over multiple
+ lines in igb_ethtool.c
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Rick Jones <rick.jones2@hp.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Tue, 31 Jul 2012 14:30:21 -0700
+In-Reply-To: <alpine.LNX.2.00.1207252115321.11754@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1207252115321.11754@swampdragon.chaosbits.net>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-vbswknYt06yyL5YW2Pth"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 03:12 PM, Peter Zijlstra wrote:
 
-> +	if (unlikely(pmd_trans_splitting(entry))) {
-> +		spin_unlock(&mm->page_table_lock);
-> +		wait_split_huge_page(vma->anon_vma, pmd);
-> +		return;
-> +	}
-> +
-> +#ifdef CONFIG_NUMA
-> +	page = pmd_page(entry);
-> +	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
-> +
-> +	get_page(page);
-> +	spin_unlock(&mm->page_table_lock);
-> +
-> +	/*
-> +	 * XXX should we serialize against split_huge_page ?
-> +	 */
+--=-vbswknYt06yyL5YW2Pth
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I believe we are already serialized here, because we check
-for pmd_trans_splitting while holding the page table lock.
+On Wed, 2012-07-25 at 21:19 +0200, Jesper Juhl wrote:
+> Even when they go beyond 80 characters, user visible strings should be
+> on one line to make them easy to grep for.
+>=20
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  drivers/net/ethernet/intel/igb/igb_ethtool.c | 23
+> +++++++++++------------
+>  1 file changed, 11 insertions(+), 12 deletions(-)=20
 
-The THP code grabs the page table lock when modifying this
-status, so we should be good.
+Applied to my queue of patches, thanks Jesper.
 
-> +	/*
-> +	 * Due to lacking code to migrate thp pages, we'll split
-> +	 * (which preserves the special PROT_NONE) and re-take the
-> +	 * fault on the normal pages.
-> +	 */
-> +	split_huge_page(page);
-> +	put_page(page);
-> +	return;
+--=-vbswknYt06yyL5YW2Pth
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Likewise, the THP code serializes split_huge_page, and has
-protection against multiple simultaneous invocations of
-split_huge_page.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-A second invocation of split_huge_page will see that the
-page was already split, and it will bail out.
+iQIcBAABCgAGBQJQGE5tAAoJEOVv75VaS+3OXZkP/An0eflsVIQnNk67j56SVG9R
+4A6nBjwAwcIYQqUMJYYiHZcUiQtQDqyrKUwuu/T3sSMT9OPO8fBdChiJiKhQbWTu
+g36yvm3kkIEAMD4orxdz3gwomdh1PfOpbLBqB8k0AsihzdpjazD7r364Fl3Wd8R/
++7rg64W/neAHumcv9v3f7lH0pQYfPzGyob2PF3zbzZt2wTM9BvH5iN8Mb1pJjAKK
+U867lvq5rrLlF+baaOH0q1ft90qPRMxWeyZCSl4Z4r28vWG7WnNzwhG3ZFC9vKwG
+GQo1yLn3WnoaP1Vjj0BonTrAUl8CxhQ0Jp2Y1CZNsJS1qAGYo+TZFkjn1Nv0pERI
+mq/G7yfRL25nJhDTagWO1jPKamgBfuMNIuolh5GkfxqE5zznCqaup6+qnFQHO3mP
+V25EKnlimcwMmgvrILayxeJK5xvUZT54+eJmPCKHyGcPIU8MNkizsOXnwGzqZ2qo
+DwOuqRieN7IR9kt+WJ8+9uxZAzYYdmO3anQBb9Lo/dQOlvRXuQ22R2+PkhdIf53m
+UMMjwyGckUQhvvURXDq8mL+i3Rvty7bYdpD4SxJ6qD/lXDUEZbuBDZZ9svXzjuCr
+G3l8IygDCNHKFo3liQU1UYerZY29OLuH2eo8N5/C2LjeFIkFFe1/O4TbSA8p298/
+JK++R839GTkxms/294N0
+=1PcR
+-----END PGP SIGNATURE-----
 
-> +do_fixup:
-> +	spin_lock(&mm->page_table_lock);
-> +	if (unlikely(!pmd_same(*pmd, entry)))
-> +		goto out_unlock;
+--=-vbswknYt06yyL5YW2Pth--
 
-If the THP was split for another reason than a NUMA
-fault, the !pmd_same check here should result in us
-doing the right thing automatically.
-
-I believe this code is correct.
-
-Acked-by: Rik van Riel <riel@redhat.com>
-
--- 
-All rights reversed
