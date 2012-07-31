@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2GaTRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:17:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34033 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab2GaTRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 15:17:36 -0400
-Date: Tue, 31 Jul 2012 15:17:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, oleg@redhat.com
-Subject: post 3.5, phantom signals.
-Message-ID: <20120731191731.GB30493@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>, oleg@redhat.com
+	id S1753630Ab2GaTZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:25:24 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45021 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab2GaTZS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 15:25:18 -0400
+Message-ID: <5018311B.8070202@wwwdotorg.org>
+Date: Tue, 31 Jul 2012 13:25:15 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 2/3] regmap: implement irq chip suspend/resume operations
+References: <1343415716-27134-1-git-send-email-swarren@wwwdotorg.org> <1343415716-27134-2-git-send-email-swarren@wwwdotorg.org> <20120729210410.GM4384@opensource.wolfsonmicro.com> <5016C006.80008@wwwdotorg.org> <20120730173822.GN4468@opensource.wolfsonmicro.com>
+In-Reply-To: <20120730173822.GN4468@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 3.5, I've started noticing weird things happening with signal delivery.
-Things I've seen so far..
+On 07/30/2012 11:38 AM, Mark Brown wrote:
+> On Mon, Jul 30, 2012 at 11:10:30AM -0600, Stephen Warren wrote:
+> 
+>> hence exit sleep. If we are to port that code into the regmap-irq core,
+>> it seems to make sense to have enable_base==wake_base, since the same
+>> register truly is being used for both enable/wakeup-enable, just
+>> time-multiplexed.
+> 
+> This would mean that we have to go round every single driver that
+> doesn't have physical wake support and add a setting for the wake
+> registers (which seems pointless given that the core can just as well
+> figure this out from the fact that it's not had any wake registers
+> specified) and we then have to add special cases for this in the core
+> code.  This doesn't seem like great API design, it's not conveneint for
+> either side of the interface and it's error prone.
+> 
+>> Or, perhaps the IRQ core already disables all non-wake interrupts for
+>> us, so the driver doesn't have to do this, and we can just drop that
+>> code completely?
+> 
+> IIRC it does actually do this, I'd need to check though.
 
-- long running tasks SIGINT, even though I wasn't even anywhere near the keyboard.
-- processes running inside screen/tmux disappearing (and taking the whole session with them).
+It looks like the answer here is to set irq_chip flags
+IRQCHIP_MASK_ON_SUSPEND and IRQCHIP_SKIP_SET_WAKE. Perhaps regmap-irq
+should do this automatically if (!regmap_irq_chip.wake_base)?
 
-And now, while waiting for a kernel to build I just saw..
-
-/bin/sh: line 1:  3274 Hangup                  gcc
--Wp,-MD,net/netfilter/.xt_HL.o.d -nostdinc -isystem
-/usr/lib/gcc/x86_64-redhat-linux/4.7.0/include
--I/home/davej/src/linux-dj/arch/x86/include -Iarch/x86/include/generated
--Iinclude -include /home/davej/src/linux-dj/include/linux/kconfig.h
--D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs
--fno-strict-aliasing -fno-common -Werror-implicit-function-declaration
--Wno-format-security -fno-delete-null-pointer-checks -O2 -m64
--mtune=generic -mno-red-zone -mcmodel=kernel -funit-at-a-time
--maccumulate-outgoing-args -fstack-protector -DCONFIG_X86_X32_ABI
--DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1
--DCONFIG_AS_CFI_SECTIONS=1 -DCONFIG_AS_FXSAVEQ=1 -DCONFIG_AS_AVX=1 -pipe
--Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx
--mno-sse2 -mno-3dnow -mno-avx -Wframe-larger-than=2048
--Wno-unused-but-set-variable -fno-omit-frame-pointer
--fno-optimize-sibling-calls -g -pg -Wdeclaration-after-statement
--Wno-pointer-sign -fno-strict-overflow -fconserve-stack
--DCC_HAVE_ASM_GOTO -DMODULE -D"KBUILD_STR(s)=#s"
--D"KBUILD_BASENAME=KBUILD_STR(xt_HL)"
--D"KBUILD_MODNAME=KBUILD_STR(xt_HL)" -c -o net/netfilter/xt_HL.o
-net/netfilter/xt_HL.c
-
-Any thoughts on specific commits that might be guilty ?
-
-	Dave
-
+For reference, these flags are implemented in
+kernel/irq/pm.c:check_wakeup_irqs() and
+kernel/irq/manage.c:set_irq_wake_real().
