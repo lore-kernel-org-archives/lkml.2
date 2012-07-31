@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab2GaGng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:43:36 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56303 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437Ab2GaGne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:43:34 -0400
-Date: Tue, 31 Jul 2012 08:45:57 +0200
-From: Karl Beldan <karl.beldan@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: About dma_sync_single_for_{cpu,device}
-Message-ID: <20120731064557.GA4676@gobelin>
-References: <20120730202401.GA4947@gobelin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120730202401.GA4947@gobelin>
-X-Location: France
-User-Agent: Mutt (Linux 3.5.0-07078-gf7da9cd-dirty x86_64 GNU/Linux)
+	id S1755266Ab2GaGnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:43:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59273 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754207Ab2GaGns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 02:43:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="179643515"
+Subject: Re: [PATCH 0/2] serial: sh-sci: fix compilation breakage (3.6)
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-sh@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20120731060754.GB15380@linux-sh.org>
+References: <Pine.LNX.4.64.1207302114440.28003@axis700.grange>
+	 <20120731060754.GB15380@linux-sh.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Jul 2012 12:14:42 +0530
+Message-ID: <1343717082.1726.14402.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2012-07-31 at 15:07 +0900, Paul Mundt wrote:
+> On Mon, Jul 30, 2012 at 09:28:18PM +0200, Guennadi Liakhovetski wrote:
+> > Hi all
+> > 
+> > as has been reported in this
+> > 
+> > http://thread.gmane.org/gmane.linux.kernel/1294256/focus=16001
+> > 
+> > thread, currently sh-sci doesn't comiple in the mainline and in -next if 
+> > CONFIG_SERIAL_SH_SCI_DMA is enabled. This patch series fixes this 
+> > breakage.
+> > 
+> Looks alright to me. Vinod, how do you want to handle this? I can roll
+> both of these patches in to my tree with your Acked-by, or I can provide
+> you with mine for the sh-sci bits if you want to take it via yours. I'm
+> planning on sending my next round of updates to Linus in the next couple
+> of days.
+Looks fine to me as well
+
+Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
 
 
-(This is an email originally addressed to the linux-kernel
-mailing-list.)
+-- 
+~Vinod
 
-
-On our board we've got an MV78200 and a network device between which we
-xfer memory chunks via the ddram with an external dma controller.
-To handle these xfers we're using the dma API.
-
-To tx a chunk of data from the SoC => network device, we :
-- prepare a buffer with a leading header embedding a pattern, 
-- trigger the xfer and wait for an irq
-// The device updates the pattern and then triggers an irq
-- upon irq we check the pattern for the xfer completion
-
-
-I was expecting the following to work:
-	addr = dma_map_single(dev, buffer, size, DMA_TO_DEVICE);
-	dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-	dev_send(buffer);
-	// wait for irq (don't peek in the buffer) ... got irq
-	dma_sync_single_for_cpu(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-	if (!xfer_done(buffer)) // not RAM value
-		dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-	[...]
-
-But this does not work (the buffer pattern does not reflect the ddram
-value).
-On the other hand, the following works:
-	[...]
-	// wait for irq (don't peek in the buffer) ... got irq
-	dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-	if (!xfer_done(buffer)) // RAM value
-	[...]
-
-
-Looking at 
-	dma-mapping.c:__dma_page_cpu_to_{dev,cpu}() and
-	proc-feroceon.S: feroceon_dma_{,un}map_area
-this behavior is not surprising.
-The sync_for_cpu calls the unmap which just invalidates the outer cache
-while the sync_for_device invalidates both inner and outer.
-
-It seems that:
-- we need to invalidate after the RAM has been updated
-- we need to invalidate with sync_single_for_device rather than
-  sync_single_for_cpu to check the value
-
-Is it correct ?
-
-
-
-
-
-
-Maybe the following comment in dma-mapping.c explains the situation :
-/*
- * The DMA API is built upon the notion of "buffer ownership".  A buffer
- * is either exclusively owned by the CPU (and therefore may be accessed
- * by it) or exclusively owned by the DMA device.  These helper functions
- * represent the transitions between these two ownership states.
- *
- * Note, however, that on later ARMs, this notion does not work due to
- * speculative prefetches.  We model our approach on the assumption that
- * the CPU does do speculative prefetches, which means we clean caches
- * before transfers and delay cache invalidation until transfer completion.
- *
- */
-
-Thanks for your input,
- 
-Regards,
- 
-Karl
