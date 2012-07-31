@@ -1,148 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2GaSN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 14:13:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58135 "EHLO
+	id S1755665Ab2GaSOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 14:14:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52445 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755085Ab2GaSN4 (ORCPT
+	with ESMTP id S1755566Ab2GaSOG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 14:13:56 -0400
+	Tue, 31 Jul 2012 14:14:06 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Chao Xie <xiechao.mail@gmail.com>
-Subject: Re: [PATCH 1/5] clk: mmp: add mmp specific clocks
-Date: Tue, 31 Jul 2012 11:47:25 +0000
+To: wei_wang@realsil.com.cn
+Subject: Re: [PATCH 1/3] drivers/misc: Add realtek card reader core driver
+Date: Tue, 31 Jul 2012 11:23:25 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
-        s.hauer@pengutronix.de, chao.xie@marvell.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com>
-In-Reply-To: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        cjb@laptop.org, bp@alien8.de, aaron.lu@amd.come
+References: <1343720536-22077-1-git-send-email-wei_wang@realsil.com.cn>
+In-Reply-To: <1343720536-22077-1-git-send-email-wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207311147.25862.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZqZPqKKKkmYaCnRk5J5ETUA4WHPArjIhsBohv+LxKaj
- HbtWOFoCTVaSP2v7ZtOllwp5tHibCKsPBjuYK7iQZrsu+cwm/n
- GVptmKwjxC/vPZz5V1b8BwxZzSt2JLISEtotXoXaJMH5RO5lOP
- eQLP7EspCL6DF9xOboZZpJKjY9CEpfmxUM8PlusEz45Gd0X1BI
- rE+bX9eZrCJFabd53ZIivnixYrAj56WtW+IqaE+BbxWZCySkKp
- q9mCPxJr/4wPW7KVMZTneX9pEc4RAoBB985g5meJWwyrZ0Reqv
- qlgqsr8NpyQ/8reYxz0/FcEQtXUuvP1WyVKV7UJdx6i0DOtBtz
- ms9RXmJDtVajA0wyXnOs=
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201207311123.25862.arnd@arndb.de>
+X-Provags-ID: V02:K0:d8ZsSCdtEFpk7rpR32QGNUPvw0xx1l88jZm33RL2amv
+ /7O8MebSgNWvoPCRmJ6/0asdfasKxYz44w3iZsLgdSCHPcVSgL
+ s3F2CTzUWMdYY9SLYsCoO6PgMzhS6ie/Nc4ZxBvc3LsIW2Q87x
+ dAjD2pExlgdoCm9TzHqJil7r00sSpzQap3pKmVsioGm2SyOYrJ
+ ENu1vpWHHwYkN1Xf16AA3drH0ywwbZ18kOKuF2SVmI1WqhGNYN
+ PkcjbPiOj3XK2mN1wkxA9KrXft/+/FKUp3mbaOvj7Pa2UEfr8t
+ /31BF1zGX5CZnGFVXfvh0pynRb2L8ui5KWcTQ5KGUQQrWfmMWA
+ uxxWXf6hoUn7u/IAGLzs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 July 2012, Chao Xie wrote:
-> +static int clk_apbc_prepare(struct clk_hw *hw)
+On Tuesday 31 July 2012, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
+> 
+> Realtek card reader core driver is the bus driver for Realtek
+> driver-based card reader, which supplies adapter layer to
+> be used by lower-level pci/usb card reader and upper-level
+> sdmmc/memstick host driver.
+> 
+> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+
+You posted the sdmmc host driver and the pci card reader driver.
+I assume that the USB card reader and the memstick host
+will also get posted at some point. Do you have a timeframe
+for those?
+
+The hardware seems to also support xd/smartmedia. Do you have
+plans to add those? I think we have some code in drivers/mfd
+that acts as an abstraction layer for these, given that the
+host has to do the wear leveling there too.
+
+>  Documentation/misc-devices/realtek_cr.txt |   27 ++
+>  drivers/misc/Kconfig                      |    1 +
+>  drivers/misc/Makefile                     |    1 +
+>  drivers/misc/realtek_cr/Kconfig           |   26 ++
+>  drivers/misc/realtek_cr/Makefile          |    7 +
+>  drivers/misc/realtek_cr/core/Kconfig      |    5 +
+>  drivers/misc/realtek_cr/core/Makefile     |    1 +
+>  drivers/misc/realtek_cr/core/rtsx_core.c  |  462 +++++++++++++++++++++++++++++
+>  include/linux/rtsx_core.h                 |  188 ++++++++++++
+>  9 files changed, 718 insertions(+)
+>  create mode 100644 Documentation/misc-devices/realtek_cr.txt
+>  create mode 100644 drivers/misc/realtek_cr/Kconfig
+>  create mode 100644 drivers/misc/realtek_cr/Makefile
+>  create mode 100644 drivers/misc/realtek_cr/core/Kconfig
+>  create mode 100644 drivers/misc/realtek_cr/core/Makefile
+>  create mode 100644 drivers/misc/realtek_cr/core/rtsx_core.c
+>  create mode 100644 include/linux/rtsx_core.h
+
+As usual for most things getting added to drivers/misc, I'm skeptical
+about it actually fitting in here. Normally I'd put such a multiplexer
+into drivers/mfd. Given that you actually need your own bus, rather
+than just a single host with multiple endpoints, drivers/bus/realtek/cr
+might be best.
+
+> +udev rules
+> +----------
+> +
+> +In order to modprobe Realtek SD/MMC interface driver automatically, the following rule
+> +should be added to the udev rules file:
+> +
+> +SUBSYSTEM=="rtsx_cr", ENV{RTSX_CARD_TYPE}=="SD", RUN+="/sbin/modprobe -bv rtsx_sdmmc"
+
+This should not be necessary if you put the right module alias into the driver itself.
+
+> +struct rtsx_adapter *rtsx_alloc_adapter(unsigned int num_sockets,
+> +					struct device *dev)
 > +{
-> +	struct clk_apbc *apbc = to_clk_apbc(hw);
-> +	unsigned int data;
-> +	unsigned long flags = 0;
+> +	struct rtsx_adapter *adapter;
 > +
-> +	/*
-> +	 * It may share same register as MUX clock,
-> +	 * and it will impact FNCLK enable. Spinlock is needed
-> +	 */
-> +	if (apbc->lock)
-> +		spin_lock_irqsave(apbc->lock, flags);
-> +
-> +	data = __raw_readl(apbc->base);
-> +	if (apbc->flags & APBC_POWER_CTRL)
-> +		data |= APBC_POWER;
-> +	data |= APBC_FNCLK;
-> +	__raw_writel(data, apbc->base);
-
-Better use readl_relaxed() in device drivers rather than __raw_readl().
-
-> +#define MPMU_PLL2CR		MPMU_REG(0x0034)
-> +#define MPMU_PLL2_CTRL1		MPMU_REG(0x0414)
-
-In a device driver like this, don't hardcode the MMIO register addresses. Instead,
-use ioremap or of_iomap to get a virtual address from a resource or a DT
-property that gets passed.
-
-> +static int clk_pll2_prepare(struct clk_hw *hw)
-> +{
-> +	unsigned long data;
-> +
-> +	data = __raw_readl(MPMU_PLL2CR);
-> +	if (data & (1 << 8))
-> +		return 0;
-> +	data |= (1 << 8);
-> +	__raw_writel(data, MPMU_PLL2CR);
-> +
-> +	udelay(500);
-> +
-> +	if (cpu_is_mmp2()) {
-> +		/* out of reset */
-> +		data = __raw_readl(MPMU_PLL2_CTRL1);
-> +		data |= (1 << 29);
-> +		__raw_writel(data, MPMU_PLL2CR);
-> +
-> +		udelay(500);
+> +	adapter = kzalloc(sizeof(*adapter)
+> +		     + sizeof(struct rtsx_dev *) * num_sockets, GFP_KERNEL);
+> +	if (adapter) {
+> +		adapter->dev.class = &rtsx_adapter_class;
+> +		adapter->dev.parent = dev;
+> +		device_initialize(&adapter->dev);
+> +		spin_lock_init(&adapter->lock);
+> +		adapter->num_sockets = num_sockets;
 > +	}
-> +
-> +	return 0;
+> +	return adapter;
 > +}
+> +EXPORT_SYMBOL(rtsx_alloc_adapter);
 
-500 microsends is a long time to waste. Can you do an msleep(1)
-instead so the CPU is allowed to sleep here?
-
-The cpu_is_mmp2() check here looks a bit clumsy. I think you're
-better off making this two separate functions like
-
-static int pxa_clk_pll2_prepare(struct clk_hw *hw)
-{
-	unsigned long data;
-
-	data = __raw_readl(MPMU_PLL2CR);
-	if (data & (1 << 8))
-		return 0;
-	data |= (1 << 8);
-	__raw_writel(data, MPMU_PLL2CR);
-
-	udelay(500);
-	return 0;
-}
-
-static int mmp2_clk_pll2_prepare(struct clk_hw *hw)
-{
-	unsigned long data;
-
-	pxa_clk_pll2_prepare(hw);
-
-	/* out of reset */
-	data = __raw_readl(MPMU_PLL2_CTRL1);
-	data |= (1 << 29);
-	__raw_writel(data, MPMU_PLL2CR);
-	udelay(500);
-	return 0;
-}
-
-and then using two separate clk_ops structures but picking the one
-you need based on the chip.
-
-> +#define MMP_CLK_REGISTER_FIXED_RATE(_clk, _name, _rate)			\
-> +	do {								\
-> +		_clk[_name] = clk_register_fixed_rate(NULL, #_name,	\
-> +					NULL, CLK_IS_ROOT, _rate);	\
-> +		clk_register_clkdev(_clk[_name], #_name, NULL);		\
-> +	} while (0)
+You should generally use EXPORT_SYMBOL_GPL for new symbols unless there is
+a strong reason not to (and then you should explain that reason).
 > +
-> +#define MMP_CLK_REGISTER_FIXED_FACTOR(_clk, _name, _parent, _flags,	\
-> +				_mul, _div)				\
-> +	do {								\
-> +		_clk[_name] = clk_register_fixed_factor(NULL, #_name,	\
-> +				 #_parent, _flags, _mul, _div);		\
-> +		clk_register_clkdev(_clk[_name], #_name, NULL);		\
-> +	} while (0)
+> +void rtsx_queue_work(struct work_struct *work)
+> +{
+> +	queue_work(workqueue, work);
+> +}
+> +EXPORT_SYMBOL(rtsx_queue_work);
+> +
+> +void rtsx_queue_delayed_work(struct delayed_work *dwork, unsigned long delay)
+> +{
+> +	queue_delayed_work(workqueue, dwork, delay);
+> +}
+> +EXPORT_SYMBOL(rtsx_queue_delayed_work);
 
-I very much dislike macros like these that don't add much value in terms of
-shortening the code, but at the same time make the code much harder to read
-by someone who is looking over all clock drivers. Better just open-code
-all of the call sites of this.
+I would not bother with this, just move the workqueue into the client driver
+itself, which may result in a few duplicate lines but less code overall.
+
+> +int rtsx_register_driver(struct rtsx_driver *drv)
+> +{
+> +	drv->driver.bus = &rtsx_bus_type;
+> +
+> +	return driver_register(&drv->driver);
+> +}
+> +EXPORT_SYMBOL(rtsx_register_driver);
+> +
+> +void rtsx_unregister_driver(struct rtsx_driver *drv)
+> +{
+> +	driver_unregister(&drv->driver);
+> +}
+> +EXPORT_SYMBOL(rtsx_unregister_driver);
+
+Same thing here: There will only be very few drivers for this bus, so it's
+easier to call the driver_register function from the drivers. You need to export
+the rtsx_bus_type in that case though, but that is done for most buses.
+
+> +void rtsx_complete_unfinished_transfer(struct rtsx_dev *sock)
+> +{
+> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
+> +
+> +	adapter->common_ops->complete_unfinished_transfer(adapter);
+> +}
+> +EXPORT_SYMBOL(rtsx_complete_unfinished_transfer);
+> +
+> +void rtsx_sdmmc_set_bus_width(struct rtsx_dev *sock, unsigned char bus_width)
+> +{
+> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
+> +
+> +	adapter->sdmmc_ops->sdmmc_set_bus_width(adapter, bus_width);
+> +}
+> +EXPORT_SYMBOL(rtsx_sdmmc_set_bus_width);
+> +
+> +void rtsx_sdmmc_set_power_mode(struct rtsx_dev *sock, unsigned char power_mode)
+> +{
+> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
+> +
+> +	adapter->sdmmc_ops->sdmmc_set_power_mode(adapter, power_mode);
+> +}
+> +EXPORT_SYMBOL(rtsx_sdmmc_set_power_mode);
+> +
+> +void rtsx_sdmmc_set_timing(struct rtsx_dev *sock, unsigned char timing)
+> +{
+> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
+> +
+> +	adapter->sdmmc_ops->sdmmc_set_timing(adapter, timing);
+> +}
+> +EXPORT_SYMBOL(rtsx_sdmmc_set_timing);
+> +
+> +int rtsx_sdmmc_switch_voltage(struct rtsx_dev *sock, unsigned char voltage)
+> +{
+> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
+> +
+> +	return adapter->sdmmc_ops->sdmmc_switch_voltage(adapter, voltage);
+> +}
+> +EXPORT_SYMBOL(rtsx_sdmmc_switch_voltage);
+
+With this level of abstraction in your own driver, I wonder if it wouldn't be
+easier to have completely separate mmc drivers for each of the two host options
+(pci and usb). Apparently you have almost no shared code in the MMC driver
+/or/ in the bus driver.
+
+>From this, I think it would be easier to kill off your own bus driver entirely
+and move the rtsx_pci.c driver into drivers/mfd, and then merge your
+pci/sdmmc.c file with rtsx_sdmmc.c.
+
+> +#define wait_timeout_x(task_state, msecs)			\
+> +do {								\
+> +	set_current_state((task_state));			\
+> +	schedule_timeout(msecs_to_jiffies(msecs));		\
+> +} while (0)
+> +
+> +#define wait_timeout(msecs)	wait_timeout_x(TASK_INTERRUPTIBLE, (msecs))
+
+This is the same as msleep_interruptible, right? Note that with interuptible
+sleep, you should always check if you got interrupted and return -ERESTARTSYS
+to user space.
 
 	Arnd
 
