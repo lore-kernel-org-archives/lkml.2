@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab2GaUKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 16:10:12 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52605 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab2GaUKH (ORCPT
+	id S1756318Ab2GaUK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 16:10:26 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33956 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756277Ab2GaUKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 16:10:07 -0400
-Date: Tue, 31 Jul 2012 21:08:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Karl Beldan <karl.beldan@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: About dma_sync_single_for_{cpu,device}
-Message-ID: <20120731200855.GC10335@n2100.arm.linux.org.uk>
-References: <20120730202401.GA4947@gobelin> <20120731064557.GA4676@gobelin> <20120731090931.GP6802@n2100.arm.linux.org.uk> <CACYmx9MnEn_XOosBn2-YJ=ny9FiLPADMNa6okwG08xrSpCUSpA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACYmx9MnEn_XOosBn2-YJ=ny9FiLPADMNa6okwG08xrSpCUSpA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 31 Jul 2012 16:10:21 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>
+Subject: Update STA2X11 to videobuf2 and control framework
+Date: Tue, 31 Jul 2012 22:13:30 +0200
+Message-Id: <1343765616-5780-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 09:31:13PM +0200, Karl Beldan wrote:
-> On 7/31/12, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > On Tue, Jul 31, 2012 at 08:45:57AM +0200, Karl Beldan wrote:
-> >> I was expecting the following to work:
-> >> 	addr = dma_map_single(dev, buffer, size, DMA_TO_DEVICE);
-> >> 	dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-> >> 	dev_send(buffer);
-> >> 	// wait for irq (don't peek in the buffer) ... got irq
-> >> 	dma_sync_single_for_cpu(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-> >> 	if (!xfer_done(buffer)) // not RAM value
-> >> 		dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-> >> 	[...]
-> >
-> 
-> Hi Russell,
-> 
-> 
-> > First point is that you clearly do not understand the DMA API at all.  The
-> > DMA API has the idea of buffer ownership.  Only the owner may access the
-> > buffer:
-> >
-> Are you saying that this scenario does not work ?
-> We are taking some liberties with the DMA API, we're more using some
-> of its funcs rather than _using_ it ;).
-> The question was not whether this was a proper usage of the API, but
-> why that scenario would not lead to the expected results .. and now
-> I've found the culprit peek I am happy.
 
-If you abuse the API don't expect your stuff to work in future kernel
-versions.
+As suggested I moved the Video Buffer Input (VIP) of the STA2X11 board to the
+videobuf2. This patch series is an RFC.
 
-It seems that the overall tone of your reply is "what we have now works,
-we don't care if it's correct, sod you."
+The first patch is just an update to the adv7180 because the VIP (the only
+user) now use the control framework so query{g_|s_|ctrl} are not necessery.
 
-Fine, I won't spend any more time on this.  Just don't ever think about
-merging it into mainline, thanks.
+The second patch adds a new memory allocator for the videobuf2. I name it
+videobuf2-dma-streaming but I think "streaming" is not the best choice, so
+suggestions are welcome. My inspiration for this buffer come from
+videobuf-dma-contig (cached) version. After I made this buffer I found the
+videobuf2-dma-nc made by Jonathan Corbet and I improve the allocator with
+some suggestions (http://patchwork.linuxtv.org/patch/7441/). The VIP doesn't
+work with videobu2-dma-contig and I think this solution is easier the sg.
+
+The third patch updates the VIP to videobuf2 and control framework. I made also
+some restyling to the driver and change some mechanism so I take the ownership
+of the driver and I add the copyright of ST Microelectronics. Some trivial
+code is unchanged. The patch probably needs some extra update and probably,
+you will give me many suggestions. 
+I add the control framework to the VIP but without any control. I add it to 
+inherit controls from adv7180.
+
+--
+Federico Vaga
