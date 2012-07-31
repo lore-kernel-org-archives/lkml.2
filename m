@@ -1,85 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab2GaNzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:55:05 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:42507 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753933Ab2GaNy2 (ORCPT
+	id S1754081Ab2GaNzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:55:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48301 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754048Ab2GaNzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:54:28 -0400
-X-IronPort-AV: E=Sophos;i="4.77,686,1336341600"; 
-   d="scan'208";a="168682636"
-From: Damien Cassou <damien.cassou@lifl.fr>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] drivers/video/bf537-lq035.c: use devm_ functions
-Date: Tue, 31 Jul 2012 15:54:20 +0200
-Message-Id: <1343742860-16213-6-git-send-email-damien.cassou@lifl.fr>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1343742860-16213-1-git-send-email-damien.cassou@lifl.fr>
-References: <1343742860-16213-1-git-send-email-damien.cassou@lifl.fr>
+	Tue, 31 Jul 2012 09:55:46 -0400
+Date: Tue, 31 Jul 2012 14:55:39 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 18/19] Documentation: Define the MSP Driver Device Tree
+ bindings
+Message-ID: <20120731135539.GO4468@opensource.wolfsonmicro.com>
+References: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
+ <1343741953-17828-19-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343741953-17828-19-git-send-email-lee.jones@linaro.org>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Damien Cassou <damien.cassou@lifl.fr>
+On Tue, Jul 31, 2012 at 02:39:12PM +0100, Lee Jones wrote:
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+> +Optional properties:
+> + - interrupts       : The interrupt outputs from the device.
 
-Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
-
----
- drivers/video/bf537-lq035.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/video/bf537-lq035.c b/drivers/video/bf537-lq035.c
-index befbc80..7347aa1 100644
---- a/drivers/video/bf537-lq035.c
-+++ b/drivers/video/bf537-lq035.c
-@@ -760,18 +760,20 @@ static int __devinit bfin_lq035_probe(struct platform_device *pdev)
- 	bfin_lq035_fb.flags = FBINFO_DEFAULT;
- 
- 
--	bfin_lq035_fb.pseudo_palette = kzalloc(sizeof(u32) * 16, GFP_KERNEL);
-+	bfin_lq035_fb.pseudo_palette = devm_kzalloc(&pdev->dev,
-+						    sizeof(u32) * 16,
-+						    GFP_KERNEL);
- 	if (bfin_lq035_fb.pseudo_palette == NULL) {
- 		pr_err("failed to allocate pseudo_palette\n");
- 		ret = -ENOMEM;
--		goto out_palette;
-+		goto out_table;
- 	}
- 
- 	if (fb_alloc_cmap(&bfin_lq035_fb.cmap, NBR_PALETTE, 0) < 0) {
- 		pr_err("failed to allocate colormap (%d entries)\n",
- 			NBR_PALETTE);
- 		ret = -EFAULT;
--		goto out_cmap;
-+		goto out_table;
- 	}
- 
- 	if (register_framebuffer(&bfin_lq035_fb) < 0) {
-@@ -804,9 +806,6 @@ out_lcd:
- 	unregister_framebuffer(&bfin_lq035_fb);
- out_reg:
- 	fb_dealloc_cmap(&bfin_lq035_fb.cmap);
--out_cmap:
--	kfree(bfin_lq035_fb.pseudo_palette);
--out_palette:
- out_table:
- 	dma_free_coherent(NULL, TOTAL_VIDEO_MEM_SIZE, fb_buffer, 0);
- 	fb_buffer = NULL;
-@@ -834,7 +833,6 @@ static int __devexit bfin_lq035_remove(struct platform_device *pdev)
- 	free_dma(CH_PPI);
- 
- 
--	kfree(bfin_lq035_fb.pseudo_palette);
- 	fb_dealloc_cmap(&bfin_lq035_fb.cmap);
- 
- 
-
+If there's more than one interrupt then how are they ordered?
