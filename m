@@ -1,85 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab2GaAy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 20:54:29 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:62078 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab2GaAy1 (ORCPT
+	id S1753026Ab2GaBAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 21:00:08 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63650 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab2GaBAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 20:54:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6788"; a="216142492"
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: davidb@codeaurora.org
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH 2/2] msm: io: Change the default static iomappings to be shared
-Date: Mon, 30 Jul 2012 17:54:21 -0700
-Message-Id: <1343696061-11445-1-git-send-email-rvaswani@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	Mon, 30 Jul 2012 21:00:06 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-df-50172e137cf7
+Message-ID: <50172E12.5010002@lge.com>
+Date: Tue, 31 Jul 2012 10:00:02 +0900
+From: "kyungsik.lee" <kyungsik.lee@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: "S, Venkatraman" <svenkatr@ti.com>
+CC: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
+References: <1343613881-6803-1-git-send-email-kyungsik.lee@lge.com> <CANfBPZ-pa++A=OSmhaEfVs-TDVtTbsBi4FacaPxuvfNJRe-Jxw@mail.gmail.com>
+In-Reply-To: <CANfBPZ-pa++A=OSmhaEfVs-TDVtTbsBi4FacaPxuvfNJRe-Jxw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With 3.4 kernel the static iomappings can be shared with the ioremap
-mappings. If ioremap is called with an address for which a static
-mapping already exists, then that mapping should be used instead
-of creating a new one.
-However, the MT_DEVICE_NONSHARED flag prevents this. Hence, get rid
-of this flag. Some targets (7X00) that require the static iomappings
-to be NONSHARED use the MSM_DEVICE_TYPE and MSM_CHIP_DEVICE_TYPE macros.
-
-Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
----
- arch/arm/mach-msm/io.c |   25 +++++++++++++++++--------
- 1 files changed, 17 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index 61d61cb..9f4b4ba 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -33,23 +33,32 @@
- 		.virtual = (unsigned long) MSM_##name##_BASE, \
- 		.pfn = __phys_to_pfn(chip##_##name##_PHYS), \
- 		.length = chip##_##name##_SIZE, \
--		.type = MT_DEVICE_NONSHARED, \
-+		.type = MT_DEVICE, \
-+	 }
-+
-+#define MSM_CHIP_DEVICE_TYPE(name, chip, mem_type) {			      \
-+		.virtual = (unsigned long) MSM_##name##_BASE, \
-+		.pfn = __phys_to_pfn(chip##_##name##_PHYS), \
-+		.length = chip##_##name##_SIZE, \
-+		.type = mem_type, \
- 	 }
- 
- #define MSM_DEVICE(name) MSM_CHIP_DEVICE(name, MSM)
-+#define MSM_DEVICE_TYPE(name, mem_type) \
-+		MSM_CHIP_DEVICE_TYPE(name, MSM, mem_type)
- 
- #if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27) \
- 	|| defined(CONFIG_ARCH_MSM7X25)
- static struct map_desc msm_io_desc[] __initdata = {
--	MSM_DEVICE(VIC),
--	MSM_CHIP_DEVICE(CSR, MSM7X00),
--	MSM_DEVICE(DMOV),
--	MSM_CHIP_DEVICE(GPIO1, MSM7X00),
--	MSM_CHIP_DEVICE(GPIO2, MSM7X00),
--	MSM_CHIP_DEVICE(CLK_CTL, MSM7X00),
-+	MSM_DEVICE_TYPE(VIC, MT_DEVICE_NONSHARED),
-+	MSM_CHIP_DEVICE_TYPE(CSR, MSM7X00, MT_DEVICE_NONSHARED),
-+	MSM_DEVICE_TYPE(DMOV, MT_DEVICE_NONSHARED),
-+	MSM_CHIP_DEVICE_TYPE(GPIO1, MSM7X00, MT_DEVICE_NONSHARED),
-+	MSM_CHIP_DEVICE_TYPE(GPIO2, MSM7X00, MT_DEVICE_NONSHARED),
-+	MSM_CHIP_DEVICE_TYPE(CLK_CTL, MSM7X00, MT_DEVICE_NONSHARED),
- #if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
- 	defined(CONFIG_DEBUG_MSM_UART3)
--	MSM_DEVICE(DEBUG_UART),
-+	MSM_DEVICE_TYPE(DEBUG_UART, MT_DEVICE_NONSHARED),
- #endif
- 	{
- 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
--- 
-Sent by an employee of the Qualcomm Innovation Center,Inc
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+On 2012-07-30 오후 10:16, S, Venkatraman wrote:
+> On Mon, Jul 30, 2012 at 7:34 AM, Kyungsik Lee <kyungsik.lee@lge.com> wrote:
+>> It is expected that Extended CSD register(the size of this register
+>> is larger than CID/CSD) will be referenced more frequently as more
+>> fields have been added to Extended CSD and it seems that it is not
+>> a good option to double the memory used.
+>>
+>> This patch is intended to avoid the use of bounce buffer for reading
+>> Extended CSD register in mmc_send_cxd_data().
+> Maybe I am reading this wrong, but mmc_send_cid and mmc_send_csd are always
+> called with card->raw_cid and card->raw_csd, which are allocated from the heap,
+> (from mmc_alloc_card).
+> So the second half of your changes are not required, or a WARN_ON
+> might suffice ?
+In case of non cache-coherent architecture, the address of raw_cid and 
+raw_csd should
+be aligned on a cache line boundary for DMA. It's not guaranteed all the 
+time.
+So using kmalloc() is a way to make it work.
+>
+>> Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+>> ---
+>> Changes in v2:
+>> - Handling on-stack buffer if it's used in caller.
+>> ---
+>>   drivers/mmc/core/mmc_ops.c |   56 ++++++++++++++++++++++++++++++++++---------
+>>   1 files changed, 44 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+>> index 0ed2cc5..dae5492 100644
+>> --- a/drivers/mmc/core/mmc_ops.c
+>> +++ b/drivers/mmc/core/mmc_ops.c
+>> @@ -239,13 +239,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+>>          struct mmc_data data = {0};
+>>          struct scatterlist sg;
+>>          void *data_buf;
+>> +       int is_on_stack;
+>>
+>> -       /* dma onto stack is unsafe/nonportable, but callers to this
+>> -        * routine normally provide temporary on-stack buffers ...
+>> -        */
+>> -       data_buf = kmalloc(len, GFP_KERNEL);
+>> -       if (data_buf == NULL)
+>> -               return -ENOMEM;
+>> +       is_on_stack = object_is_on_stack(buf);
+>> +       if (is_on_stack) {
+>> +
+>> +               /* dma onto stack is unsafe/nonportable, but callers to this
+>> +                * routine normally provide temporary on-stack buffers ...
+>> +                */
+>> +               data_buf = kmalloc(len, GFP_KERNEL);
+>> +               if (data_buf == NULL)
+>> +                       return -ENOMEM;
+>> +       } else
+>> +               data_buf = buf;
+>>
+>>          mrq.cmd = &cmd;
+>>          mrq.data = &data;
+>> @@ -280,8 +286,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+>>
+>>          mmc_wait_for_req(host, &mrq);
+>>
+>> -       memcpy(buf, data_buf, len);
+>> -       kfree(data_buf);
+>> +       if (is_on_stack) {
+>> +               memcpy(buf, data_buf, len);
+>> +               kfree(data_buf);
+>> +       }
+>>
+>>          if (cmd.error)
+>>                  return cmd.error;
+>> @@ -294,24 +302,37 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+>>   int mmc_send_csd(struct mmc_card *card, u32 *csd)
+>>   {
+>>          int ret, i;
+>> +       u32 *csd_tmp;
+>>
+>>          if (!mmc_host_is_spi(card->host))
+>>                  return mmc_send_cxd_native(card->host, card->rca << 16,
+>>                                  csd, MMC_SEND_CSD);
+>>
+>> -       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
+>> +       csd_tmp = kmalloc(16, GFP_KERNEL);
+>> +       if (!csd_tmp)
+>> +               return -ENOMEM;
+>> +
+>> +       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
+>>          if (ret)
+>> -               return ret;
+>> +               goto err;
+>> +
+>> +       memcpy(csd, csd_tmp, 16);
+>>
+>>          for (i = 0;i < 4;i++)
+>>                  csd[i] = be32_to_cpu(csd[i]);
+>>
+>> +       kfree(csd_tmp);
+>>          return 0;
+>> +
+>> +err:
+>> +       kfree(csd_tmp);
+>> +       return ret;
+>>   }
+>>
+>>   int mmc_send_cid(struct mmc_host *host, u32 *cid)
+>>   {
+>>          int ret, i;
+>> +       u32 *cid_tmp;
+>>
+>>          if (!mmc_host_is_spi(host)) {
+>>                  if (!host->card)
+>> @@ -320,14 +341,25 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
+>>                                  cid, MMC_SEND_CID);
+>>          }
+>>
+>> -       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
+>> +       cid_tmp = kmalloc(16, GFP_KERNEL);
+>> +       if (!cid_tmp)
+>> +               return -ENOMEM;
+>> +
+>> +       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
+>>          if (ret)
+>> -               return ret;
+>> +               goto err;
+>> +
+>> +       memcpy(cid, cid_tmp, 16);
+>>
+>>          for (i = 0;i < 4;i++)
+>>                  cid[i] = be32_to_cpu(cid[i]);
+>>
+>> +       kfree(cid_tmp);
+>>          return 0;
+>> +
+>> +err:
+>> +       kfree(cid_tmp);
+>> +       return ret;
+>>   }
+>>
+>>   int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>> --
+>> 1.7.0.4
+>>
 
