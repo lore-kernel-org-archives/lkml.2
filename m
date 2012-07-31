@@ -1,172 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab2GaTqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:46:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58938 "EHLO
+	id S1756274Ab2GaTqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:46:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58936 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab2GaToo (ORCPT
+	with ESMTP id S1754002Ab2GaTon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 15:44:44 -0400
-Message-Id: <20120731192808.707407024@chello.nl>
+	Tue, 31 Jul 2012 15:44:43 -0400
+Message-Id: <20120731192809.009023106@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 31 Jul 2012 21:12:10 +0200
+Date: Tue, 31 Jul 2012 21:12:15 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com
-Cc: linux-kernel@vger.kernel.org, Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 06/19] mm/mpol: Add MPOL_MF_LAZY ...
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 11/19] sched, mm: Introduce tsk_home_node()
 References: <20120731191204.540691987@chello.nl>
-Content-Disposition: inline; filename=mm_mpol-Add_MPOL_MF_LAZY____.patch
+Content-Disposition: inline; filename=sched_mm-Introduce_tsk_home_node.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Introduce the home-node concept for tasks. In order to keep memory
+locality we need to have a something to stay local to, we define the
+home-node of a task as the node we prefer to allocate memory from and
+prefer to execute on.
 
-This patch adds another mbind() flag to request "lazy migration".
-The flag, MPOL_MF_LAZY, modifies MPOL_MF_MOVE* such that the selected
-pages are simply unmapped from the calling task's page table ['_MOVE]
-or from all referencing page tables [_MOVE_ALL].  Anon pages will first
-be added to the swap [or migration?] cache, if necessary.  The pages
-will be migrated in the fault path on "first touch", if the policy
-dictates at that time.
+These are no hard guarantees, merely preferences. This allows for
+optimal resource usage, we can run a task away from the home-node, the
+remote memory hit -- while expensive -- is less expensive than not
+running at all, or very little, due to severe cpu overload.
 
-"Lazy Migration" will allow testing of migrate-on-fault via mbind().
-Also allows applications to specify that only subsequently touched
-pages be migrated to obey new policy, instead of all pages in range.
-This can be useful for multi-threaded applications working on a
-large shared data area that is initialized by an initial thread
-resulting in all pages on one [or a few, if overflowed] nodes.
-After unmap, the pages in regions assigned to the worker threads
-will be automatically migrated local to the threads on 1st touch.
+Similarly, we can allocate memory from another node if our home-node
+is depleted, again, some memory is better than no memory.
 
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+This patch merely introduces the basic infrastructure, all policy
+comes later.
+
 Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-[ nearly complete rewrite.. ]
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/mempolicy.h |   13 ++++++++++---
- include/linux/migrate.h   |    1 +
- mm/mempolicy.c            |   46 +++++++++++++++++++++++++++++-----------------
- 3 files changed, 40 insertions(+), 20 deletions(-)
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -48,9 +48,16 @@ enum mpol_rebind_step {
+ include/linux/init_task.h |    8 ++++++++
+ include/linux/sched.h     |   10 ++++++++++
+ kernel/sched/core.c       |   32 ++++++++++++++++++++++++++++++++
+ 3 files changed, 50 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index b806b82..53be033 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -143,6 +143,13 @@ extern struct task_group root_task_group;
  
- /* Flags for mbind */
- #define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
--#define MPOL_MF_MOVE	(1<<1)	/* Move pages owned by this process to conform to mapping */
--#define MPOL_MF_MOVE_ALL (1<<2)	/* Move every page to conform to mapping */
--#define MPOL_MF_INTERNAL (1<<3)	/* Internal flags start here */
-+#define MPOL_MF_MOVE	 (1<<1)	/* Move pages owned by this process to conform
-+				   to policy */
-+#define MPOL_MF_MOVE_ALL (1<<2)	/* Move every page to conform to policy */
-+#define MPOL_MF_LAZY	 (1<<3)	/* Modifies '_MOVE:  lazy migrate on fault */
-+#define MPOL_MF_INTERNAL (1<<4)	/* Internal flags start here */
+ #define INIT_TASK_COMM "swapper"
+ 
++#ifdef CONFIG_NUMA
++# define INIT_TASK_NUMA(tsk)						\
++	.node = -1,
++#else
++# define INIT_TASK_NUMA(tsk)
++#endif
 +
-+#define MPOL_MF_VALID	(MPOL_MF_STRICT   | 	\
-+			 MPOL_MF_MOVE     | 	\
-+			 MPOL_MF_MOVE_ALL |	\
-+			 MPOL_MF_LAZY)
- 
  /*
-  * Internal flags that share the struct mempolicy flags word with
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -589,22 +589,32 @@ check_range(struct mm_struct *mm, unsign
- 		return ERR_PTR(-EFAULT);
- 	prev = NULL;
- 	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
-+		unsigned long endvma = vma->vm_end;
-+
-+		if (endvma > end)
-+			endvma = end;
-+		if (vma->vm_start > start)
-+			start = vma->vm_start;
-+
- 		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
- 			if (!vma->vm_next && vma->vm_end < end)
- 				return ERR_PTR(-EFAULT);
- 			if (prev && prev->vm_end < vma->vm_start)
- 				return ERR_PTR(-EFAULT);
- 		}
--		if (!is_vm_hugetlb_page(vma) &&
--		    ((flags & MPOL_MF_STRICT) ||
-+
-+		if (is_vm_hugetlb_page(vma))
-+			goto next;
-+
-+		if (flags & MPOL_MF_LAZY) {
-+			change_prot_none(vma, start, endvma);
-+			goto next;
-+		}
-+
-+		if ((flags & MPOL_MF_STRICT) ||
- 		     ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
--				vma_migratable(vma)))) {
--			unsigned long endvma = vma->vm_end;
-+		      vma_migratable(vma))) {
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+@@ -210,6 +217,7 @@ extern struct task_group root_task_group;
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
+ 	INIT_CPUSET_SEQ							\
++	INIT_TASK_NUMA(tsk)						\
+ }
  
--			if (endvma > end)
--				endvma = end;
--			if (vma->vm_start > start)
--				start = vma->vm_start;
- 			err = check_pgd_range(vma, start, endvma, nodes,
- 						flags, private);
- 			if (err) {
-@@ -612,6 +622,7 @@ check_range(struct mm_struct *mm, unsign
- 				break;
- 			}
- 		}
-+next:
- 		prev = vma;
- 	}
- 	return first;
-@@ -1118,8 +1129,7 @@ static long do_mbind(unsigned long start
- 	int err;
- 	LIST_HEAD(pagelist);
  
--	if (flags & ~(unsigned long)(MPOL_MF_STRICT |
--				     MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
-+  	if (flags & ~(unsigned long)MPOL_MF_VALID)
- 		return -EINVAL;
- 	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
- 		return -EPERM;
-@@ -1178,21 +1188,23 @@ static long do_mbind(unsigned long start
- 	vma = check_range(mm, start, end, nmask,
- 			  flags | MPOL_MF_INVERT, &pagelist);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index fd9436a..3384ae8 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1518,6 +1518,7 @@ struct task_struct {
+ 	struct mempolicy *mempolicy;	/* Protected by alloc_lock */
+ 	short il_next;
+ 	short pref_node_fork;
++	int node;
+ #endif
+ 	struct rcu_head rcu;
  
--	err = PTR_ERR(vma);
--	if (!IS_ERR(vma)) {
--		int nr_failed = 0;
--
-+	err = PTR_ERR(vma);	/* maybe ... */
-+	if (!IS_ERR(vma))
- 		err = mbind_range(mm, start, end, new);
+@@ -1592,6 +1593,15 @@ struct task_struct {
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+ #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
  
-+	if (!err) {
-+		int nr_failed = 0;
++static inline int tsk_home_node(struct task_struct *p)
++{
++#ifdef CONFIG_NUMA
++	return p->node;
++#else
++	return -1;
++#endif
++}
 +
- 		if (!list_empty(&pagelist)) {
-+			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
- 			nr_failed = migrate_pages(&pagelist, new_vma_page,
--						(unsigned long)vma,
--						false, MIGRATE_SYNC);
-+						  (unsigned long)vma,
-+						  false, MIGRATE_SYNC);
- 			if (nr_failed)
- 				putback_lru_pages(&pagelist);
- 		}
+ /*
+  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
+  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5d011ef..fddb68f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6545,6 +6545,38 @@ static struct sched_domain_topology_level *sched_domain_topology = default_topol
  
--		if (!err && nr_failed && (flags & MPOL_MF_STRICT))
-+		if (nr_failed && (flags & MPOL_MF_STRICT))
- 			err = -EIO;
- 	} else
- 		putback_lru_pages(&pagelist);
+ #ifdef CONFIG_NUMA
+ 
++/*
++ * Requeues a task ensuring its on the right load-balance list so
++ * that it might get migrated to its new home.
++ *
++ * Note that we cannot actively migrate ourselves since our callers
++ * can be from atomic context. We rely on the regular load-balance
++ * mechanisms to move us around -- its all preference anyway.
++ */
++void sched_setnode(struct task_struct *p, int node)
++{
++	unsigned long flags;
++	int on_rq, running;
++	struct rq *rq;
++
++	rq = task_rq_lock(p, &flags);
++	on_rq = p->on_rq;
++	running = task_current(rq, p);
++
++	if (on_rq)
++		dequeue_task(rq, p, 0);
++	if (running)
++		p->sched_class->put_prev_task(rq, p);
++
++	p->node = node;
++
++	if (running)
++		p->sched_class->set_curr_task(rq);
++	if (on_rq)
++		enqueue_task(rq, p, 0);
++	task_rq_unlock(rq, p, &flags);
++}
++
+ static int sched_domains_numa_levels;
+ static int *sched_domains_numa_distance;
+ static struct cpumask ***sched_domains_numa_masks;
+-- 
+1.7.2.3
+
 
 
