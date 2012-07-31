@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab2GaO0N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:26:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53584 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754434Ab2GaO0J (ORCPT
+	id S1754480Ab2GaO00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:26:26 -0400
+Received: from relay.parallels.com ([195.214.232.42]:53203 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089Ab2GaO0Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:26:09 -0400
-Date: Tue, 31 Jul 2012 15:26:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Alex Courbot <acourbot@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-Message-ID: <20120731142607.GV4468@opensource.wolfsonmicro.com>
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
- <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
- <50170EA0.1010408@wwwdotorg.org>
- <5017B434.2010706@nvidia.com>
- <20120731105640.GD16155@avionic-0098.adnet.avionic-design.de>
- <20120731141328.GS4468@opensource.wolfsonmicro.com>
- <20120731142216.GA19591@avionic-0098.adnet.avionic-design.de>
+	Tue, 31 Jul 2012 10:26:24 -0400
+Message-ID: <5017EB0C.6050908@parallels.com>
+Date: Tue, 31 Jul 2012 18:26:20 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120731142216.GA19591@avionic-0098.adnet.avionic-design.de>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v2 00/15] Lockd: grace period containerization
+References: <20120725125258.24376.82525.stgit@localhost.localdomain> <20120727215431.GE6388@fieldses.org> <50165C0D.1070200@parallels.com> <20120731141909.GB27834@fieldses.org>
+In-Reply-To: <20120731141909.GB27834@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 04:22:17PM +0200, Thierry Reding wrote:
-> On Tue, Jul 31, 2012 at 03:13:29PM +0100, Mark Brown wrote:
+31.07.2012 18:19, J. Bruce Fields пишет:
+> On Mon, Jul 30, 2012 at 02:03:57PM +0400, Stanislav Kinsbursky wrote:
+>> 28.07.2012 01:54, J. Bruce Fields пишет:
+>>> On Wed, Jul 25, 2012 at 04:55:45PM +0400, Stanislav Kinsbursky wrote:
+>>>> Bruce, I feel this patch set is ready for inclusion.
+>>>>
+>>>> v2:
+>>>> 1) Rebase on Bruce's "for-3.6" branch.
+>>>>
+>>>> This patch set makes grace period and hosts reclaiming network namespace
+>>>> aware.
+>>>
+>>> On a quick skim--yes, that looks reasonable to me.
+>>>
+>>> It doesn't help with active/active cluster exports, because in that case
+>>> we need some additional coordination between nfsd's.
+>>>
+>>> But it looks good enough to handle the case where each filesystem is
+>>> exported from at most one server at a time, which is more than we
+>>> currently handle.
+>>>
+>>> It's a little late for 3.6.  Also I get the impression Al Viro has some
+>>> lockd rework in progress, which we may want to wait for.
+>>>
+>>> So I'll likely look again into queueing this up for 3.7 once 3.6-rc1 is
+>>> out.
+>>
+>>
+>> Ok.
+>> Will Al Viro's lockd rework be a part of 3.6 kernel?
+>
+> Actually I think it mostly won't be.
+>
+> And this looks pretty safe, really.  I've gone ahead and merged it.
+>
 
-> > __devinit can be discarded if you disable enough kernel features,
-> > HOTPLUG is the main one IIRC, modules might also need to go - drivers
-> > really ought to take a copy of platform data they plan to use at
-> > runtime, though practically speaking you have to try to trigger any
-> > problems.
+Nice to hear. Thanks, Bruce.
 
-> HOTPLUG is marked EXPERT and explicitly states that it should only be
-> disabled if you're not using modules or dynamic device discovery. I
-> think if you've ignored all of that you're no longer entitled to
-> complain.
-
-This is framework code - it doesn't have much option.  Disabling HOTPLUG
-is totally reasonable on space constrained systems, there's no reason
-for the code to break things for people.
+-- 
+Best regards,
+Stanislav Kinsbursky
