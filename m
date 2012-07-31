@@ -1,198 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2GaKk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:40:27 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:57935 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753172Ab2GaKkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:40:25 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: lkml <linux-kernel@vger.kernel.org>
-CC: Jan Kara <jack@suze.cz>, Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH v2] UDF: Add support for O_DIRECT
-Date: Tue, 31 Jul 2012 11:40:12 +0100
-Message-ID: <1343731212-4381-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1343132226-3806-1-git-send-email-abbotti@mev.co.uk>
-References: <1343132226-3806-1-git-send-email-abbotti@mev.co.uk>
+	id S1755421Ab2GaKmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:42:00 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60646 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257Ab2GaKl7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 06:41:59 -0400
+Subject: [PATCH RESEND v3 00/10] mm: vma->vm_flags diet
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 31 Jul 2012 14:41:53 +0400
+Message-ID: <20120731103724.20515.60334.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the O_DIRECT flag.  There are two cases to deal with:
+RESEND: Sorry, I forgot to add some important people into CC.
 
-1. Small files stored in the ICB (inode control block?): just return 0
-from the new udf_adinicb_direct_IO() handler to fall back to buffered
-I/O.  For direct writes, there is a "gotcha" to deal with when
-generic_file_direct_write() in mm/filemap.c invalidates the pages.  In
-the udf_adinicb_writepage() handler, only part of the page data will be
-valid and the rest will be zeroed out, so only copy the valid part into
-the ICB.  (This is actually a bit inefficient as udf_adinicb_write_end()
-will have already copied the data into the ICB once, but it's pretty
-likely that the file will grow to the point where its data can no longer
-be stored in the ICB and will be moved to a different area of the file
-system.  At that point, a different direct_IO handler will be used - see
-below.)
+This patchset kills some VM_* flags in vma->vm_flags,
+as result there appears five free bits.
 
-2. Larger files, not stored in the ICB: nothing special here.  Just call
-blockdev_direct_IO() from our new udf_direct_IO() handler and tidy up
-any blocks instantiated outside i_size on error.  This is pretty
-standard.  Factor error handling code out of udf_write_begin() into new
-function udf_write_failed() so it can also be called by udf_direct_IO().
+Changes since v2 [ https://lkml.org/lkml/2012/4/7/67 ]
 
-Also change the whitespace in udf_aops and udf_adinicb_aops to make them
-a bit neater.
+* killing VM_EXECUTABLE combined back into single patch
+* new (the biggest one) patch which kills VM_RESERVED
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
-v2: Rework error handling in udf_direct_IO to avoid calling deprecated
-    vmtruncate().
----
- fs/udf/file.c  |   29 +++++++++++++++++++++++++----
- fs/udf/inode.c |   52 ++++++++++++++++++++++++++++++++++++----------------
- 2 files changed, 61 insertions(+), 20 deletions(-)
 
-diff --git a/fs/udf/file.c b/fs/udf/file.c
-index 7f3f7ba..f5f9ddd 100644
---- a/fs/udf/file.c
-+++ b/fs/udf/file.c
-@@ -34,6 +34,7 @@
- #include <linux/errno.h>
- #include <linux/pagemap.h>
- #include <linux/buffer_head.h>
-+#include <linux/writeback.h>
- #include <linux/aio.h>
- 
- #include "udf_i.h"
-@@ -64,12 +65,23 @@ static int udf_adinicb_writepage(struct page *page,
- 	struct inode *inode = page->mapping->host;
- 	char *kaddr;
- 	struct udf_inode_info *iinfo = UDF_I(inode);
-+	loff_t start, end, page_start, page_offset;
- 
- 	BUG_ON(!PageLocked(page));
- 
- 	kaddr = kmap(page);
--	memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr, kaddr, inode->i_size);
--	mark_inode_dirty(inode);
-+	/* The beginning and/or end of the page data is likely to be invalid
-+	 * for O_DIRECT, so only copy the valid part. */
-+	page_start = (loff_t)page->index << PAGE_CACHE_SHIFT;
-+	start = max(page_start, wbc->range_start);
-+	end = min3(page_start + (loff_t)PAGE_CACHE_SIZE - 1,
-+		   wbc->range_end, inode->i_size - 1);
-+	if (likely(start <= end)) {
-+		page_offset = start - page_start;
-+		memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr + start,
-+		       kaddr + page_offset, (end + 1 - start));
-+		mark_inode_dirty(inode);
-+	}
- 	SetPageUptodate(page);
- 	kunmap(page);
- 	unlock_page(page);
-@@ -95,11 +107,20 @@ static int udf_adinicb_write_end(struct file *file,
- 	return simple_write_end(file, mapping, pos, len, copied, page, fsdata);
- }
- 
-+static ssize_t udf_adinicb_direct_IO(int rw, struct kiocb *iocb,
-+				     const struct iovec *iov,
-+				     loff_t offset, unsigned long nr_segs)
-+{
-+	/* Fallback to buffered I/O. */
-+	return 0;
-+}
-+
- const struct address_space_operations udf_adinicb_aops = {
- 	.readpage	= udf_adinicb_readpage,
- 	.writepage	= udf_adinicb_writepage,
--	.write_begin = simple_write_begin,
--	.write_end = udf_adinicb_write_end,
-+	.write_begin	= simple_write_begin,
-+	.write_end	= udf_adinicb_write_end,
-+	.direct_IO	= udf_adinicb_direct_IO,
- };
- 
- static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
-diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-index fafaad7..165e48e 100644
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -95,6 +95,22 @@ void udf_evict_inode(struct inode *inode)
- 	}
- }
- 
-+static void udf_write_failed(struct address_space *mapping, loff_t to)
-+{
-+	struct inode *inode = mapping->host;
-+	struct udf_inode_info *iinfo = UDF_I(inode);
-+	loff_t isize = inode->i_size;
-+
-+	if (to > isize) {
-+		truncate_pagecache(inode, to, isize);
-+		if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB) {
-+			down_write(&iinfo->i_data_sem);
-+			udf_truncate_extents(inode);
-+			up_write(&iinfo->i_data_sem);
-+		}
-+	}
-+}
-+
- static int udf_writepage(struct page *page, struct writeback_control *wbc)
- {
- 	return block_write_full_page(page, udf_get_block, wbc);
-@@ -118,21 +134,24 @@ static int udf_write_begin(struct file *file, struct address_space *mapping,
- 	int ret;
- 
- 	ret = block_write_begin(mapping, pos, len, flags, pagep, udf_get_block);
--	if (unlikely(ret)) {
--		struct inode *inode = mapping->host;
--		struct udf_inode_info *iinfo = UDF_I(inode);
--		loff_t isize = inode->i_size;
--
--		if (pos + len > isize) {
--			truncate_pagecache(inode, pos + len, isize);
--			if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB) {
--				down_write(&iinfo->i_data_sem);
--				udf_truncate_extents(inode);
--				up_write(&iinfo->i_data_sem);
--			}
--		}
--	}
-+	if (unlikely(ret))
-+		udf_write_failed(mapping, pos + len);
-+	return ret;
-+}
- 
-+static ssize_t udf_direct_IO(int rw, struct kiocb *iocb,
-+			     const struct iovec *iov,
-+			     loff_t offset, unsigned long nr_segs)
-+{
-+	struct file *file = iocb->ki_filp;
-+	struct address_space *mapping = file->f_mapping;
-+	struct inode *inode = mapping->host;
-+	ssize_t ret;
-+
-+	ret = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
-+				  udf_get_block);
-+	if (unlikely(ret < 0 && (rw && WRITE)))
-+		udf_write_failed(mapping, offset + iov_length(iov, nr_segs));
- 	return ret;
- }
- 
-@@ -145,8 +164,9 @@ const struct address_space_operations udf_aops = {
- 	.readpage	= udf_readpage,
- 	.readpages	= udf_readpages,
- 	.writepage	= udf_writepage,
--	.write_begin		= udf_write_begin,
--	.write_end		= generic_write_end,
-+	.write_begin	= udf_write_begin,
-+	.write_end	= generic_write_end,
-+	.direct_IO	= udf_direct_IO,
- 	.bmap		= udf_bmap,
- };
- 
+Konstantin Khlebnikov (8):
+      mm, x86, pat: rework linear pfn-mmap tracking
+      mm: introduce arch-specific vma flag VM_ARCH_1
+      mm: kill vma flag VM_INSERTPAGE
+      mm: kill vma flag VM_CAN_NONLINEAR
+      mm: use mm->exe_file instead of first VM_EXECUTABLE vma->vm_file
+      mm: kill vma flag VM_EXECUTABLE and mm->num_exe_file_vmas
+      mm: prepare VM_DONTDUMP for using in drivers
+      mm: kill vma flag VM_RESERVED and mm->reserved_vm counter
+
+Suresh Siddha (2):
+      x86, pat: remove the dependency on 'vm_pgoff' in track/untrack pfn vma routines
+      x86, pat: separate the pfn attribute tracking for remap_pfn_range and vm_insert_pfn
+
+
+ Documentation/vm/unevictable-lru.txt             |    4 -
+ arch/alpha/kernel/pci-sysfs.c                    |    2 
+ arch/ia64/kernel/perfmon.c                       |    2 
+ arch/ia64/mm/init.c                              |    3 -
+ arch/powerpc/kvm/book3s_hv.c                     |    2 
+ arch/powerpc/oprofile/cell/spu_task_sync.c       |   15 +---
+ arch/sparc/kernel/pci.c                          |    2 
+ arch/tile/mm/elf.c                               |   19 ++---
+ arch/unicore32/kernel/process.c                  |    2 
+ arch/x86/mm/pat.c                                |   89 ++++++++++++++++------
+ arch/x86/xen/mmu.c                               |    3 -
+ drivers/char/mbcs.c                              |    2 
+ drivers/char/mem.c                               |    2 
+ drivers/char/mspec.c                             |    2 
+ drivers/gpu/drm/drm_gem.c                        |    2 
+ drivers/gpu/drm/drm_vm.c                         |   10 --
+ drivers/gpu/drm/exynos/exynos_drm_gem.c          |    2 
+ drivers/gpu/drm/gma500/framebuffer.c             |    3 -
+ drivers/gpu/drm/ttm/ttm_bo_vm.c                  |    4 -
+ drivers/gpu/drm/udl/udl_fb.c                     |    2 
+ drivers/infiniband/hw/ehca/ehca_uverbs.c         |    4 -
+ drivers/infiniband/hw/ipath/ipath_file_ops.c     |    2 
+ drivers/infiniband/hw/qib/qib_file_ops.c         |    2 
+ drivers/media/video/meye.c                       |    2 
+ drivers/media/video/omap/omap_vout.c             |    2 
+ drivers/media/video/sn9c102/sn9c102_core.c       |    3 -
+ drivers/media/video/usbvision/usbvision-video.c  |    3 -
+ drivers/media/video/videobuf-dma-sg.c            |    2 
+ drivers/media/video/videobuf-vmalloc.c           |    2 
+ drivers/media/video/videobuf2-memops.c           |    2 
+ drivers/media/video/vino.c                       |    2 
+ drivers/misc/carma/carma-fpga.c                  |    2 
+ drivers/misc/sgi-gru/grufile.c                   |    5 -
+ drivers/mtd/mtdchar.c                            |    2 
+ drivers/oprofile/buffer_sync.c                   |   17 +---
+ drivers/scsi/sg.c                                |    2 
+ drivers/staging/android/ashmem.c                 |    1 
+ drivers/staging/media/easycap/easycap_main.c     |    2 
+ drivers/staging/omapdrm/omap_gem_dmabuf.c        |    2 
+ drivers/staging/tidspbridge/rmgr/drv_interface.c |    2 
+ drivers/uio/uio.c                                |    4 -
+ drivers/usb/mon/mon_bin.c                        |    2 
+ drivers/video/68328fb.c                          |    2 
+ drivers/video/aty/atyfb_base.c                   |    3 -
+ drivers/video/fb-puv3.c                          |    3 -
+ drivers/video/fb_defio.c                         |    2 
+ drivers/video/fbmem.c                            |    3 -
+ drivers/video/gbefb.c                            |    2 
+ drivers/video/omap2/omapfb/omapfb-main.c         |    2 
+ drivers/video/sbuslib.c                          |    5 -
+ drivers/video/smscufx.c                          |    1 
+ drivers/video/udlfb.c                            |    1 
+ drivers/video/vermilion/vermilion.c              |    1 
+ drivers/video/vfb.c                              |    1 
+ drivers/xen/gntalloc.c                           |    2 
+ drivers/xen/gntdev.c                             |    2 
+ drivers/xen/privcmd.c                            |    3 -
+ fs/9p/vfs_file.c                                 |    1 
+ fs/binfmt_elf.c                                  |    4 -
+ fs/binfmt_elf_fdpic.c                            |    2 
+ fs/btrfs/file.c                                  |    2 
+ fs/ceph/addr.c                                   |    2 
+ fs/cifs/file.c                                   |    1 
+ fs/ext4/file.c                                   |    2 
+ fs/fuse/file.c                                   |    1 
+ fs/gfs2/file.c                                   |    2 
+ fs/hugetlbfs/inode.c                             |    2 
+ fs/nfs/file.c                                    |    1 
+ fs/nilfs2/file.c                                 |    2 
+ fs/ocfs2/mmap.c                                  |    2 
+ fs/proc/task_mmu.c                               |    2 
+ fs/ubifs/file.c                                  |    1 
+ fs/xfs/xfs_file.c                                |    2 
+ include/asm-generic/pgtable.h                    |   57 ++++++++------
+ include/linux/fs.h                               |    2 
+ include/linux/mempolicy.h                        |    2 
+ include/linux/mm.h                               |   69 +++++++----------
+ include/linux/mm_types.h                         |    2 
+ include/linux/mman.h                             |    1 
+ kernel/auditsc.c                                 |   13 ---
+ kernel/events/core.c                             |    2 
+ kernel/fork.c                                    |   24 ------
+ mm/filemap.c                                     |    2 
+ mm/filemap_xip.c                                 |    3 -
+ mm/fremap.c                                      |   14 ++-
+ mm/huge_memory.c                                 |   22 +----
+ mm/ksm.c                                         |    8 +-
+ mm/madvise.c                                     |    8 +-
+ mm/memory.c                                      |   62 ++++++++-------
+ mm/mlock.c                                       |    2 
+ mm/mmap.c                                        |   29 +------
+ mm/nommu.c                                       |   21 ++---
+ mm/shmem.c                                       |    3 -
+ mm/vmalloc.c                                     |    3 -
+ security/selinux/selinuxfs.c                     |    2 
+ security/tomoyo/util.c                           |    9 --
+ sound/core/pcm_native.c                          |    6 +
+ sound/usb/usx2y/us122l.c                         |    2 
+ sound/usb/usx2y/usX2Yhwdep.c                     |    2 
+ sound/usb/usx2y/usx2yhwdeppcm.c                  |    2 
+ 100 files changed, 303 insertions(+), 370 deletions(-)
+
 -- 
-1.7.8.6
-
+Signature
