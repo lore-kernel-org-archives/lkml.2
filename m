@@ -1,190 +1,471 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab2GaTrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:47:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37344 "EHLO
+	id S1756306Ab2GaTq5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:46:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37347 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753570Ab2GaTon (ORCPT
+	with ESMTP id S1754001Ab2GaTon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 15:44:43 -0400
-Message-Id: <20120731192808.829334736@chello.nl>
+Message-Id: <20120731192809.308468547@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 31 Jul 2012 21:12:12 +0200
+Date: Tue, 31 Jul 2012 21:12:20 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com
-Cc: linux-kernel@vger.kernel.org, Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 08/19] mm/mpol: Check for misplaced page
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 16/19] sched, numa: NUMA home-node selection code
 References: <20120731191204.540691987@chello.nl>
-Content-Disposition: inline; filename=mm_mpol-Check_for_misplaced_page.patch
+Content-Disposition: inline; filename=numa-1.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Now that we have infrastructure in place to migrate pages back to
+their home-node, and migrate memory towards the home-node, we need to
+set the home-node.
 
-This patch provides a new function to test whether a page resides
-on a node that is appropriate for the mempolicy for the vma and
-address where the page is supposed to be mapped.  This involves
-looking up the node where the page belongs.  So, the function
-returns that node so that it may be used to allocated the page
-without consulting the policy again.  Because interleaved and
-non-interleaved allocations are accounted differently, the function
-also returns whether or not the new node came from an interleaved
-policy, if the page is misplaced.
+Instead of creating a seconday control loop, fully rely on the
+existing load-balancer to do the right thing. The home-node selection
+logic will simply pick the node the task has been found to run on
+for two consequtive samples (see task_tick_numa).
 
-A subsequent patch will call this function from the fault path for
-stable pages with zero page_mapcount().  Because of this, I don't
-want to go ahead and allocate the page, e.g., via alloc_page_vma()
-only to have to free it if it has the correct policy.  So, I just
-mimic the alloc_page_vma() node computation logic--sort of.
+This means NUMA placement is directly related to regular placement.
+The home-node logic in the load-balancer tries to keep a task on the
+home-node wheras the fairness and work-conserving constraints will try
+and move it away.
 
-Note:  we could use this function to implement a MPOL_MF_STRICT
-behavior when migrating pages to match mbind() mempolicy--e.g.,
-to ensure that pages in an interleaved range are reinterleaved
-rather than left where they are when they reside on any page in
-the interleave nodemask.
+The balance between these two 'forces' is what will result in the NUMA
+placement.
 
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-[ Added MPOL_F_LAZY to trigger migrate-on-fault;
-  simplified code now that we don't have to bother
-  with special crap for interleaved ]
+Cc: Paul Turner <pjt@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/mempolicy.h |    9 +++++
- mm/mempolicy.c            |   79 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 88 insertions(+)
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -68,6 +68,7 @@ enum mpol_rebind_step {
- #define MPOL_F_SHARED  (1 << 0)	/* identify shared policies */
- #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
- #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
-+#define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
+ include/linux/init_task.h |    3 
+ include/linux/mm_types.h  |    3 
+ include/linux/sched.h     |   19 +++--
+ kernel/sched/core.c       |   18 ++++-
+ kernel/sched/fair.c       |  163 ++++++++++++++++++++++++++++++++++++++++++++--
+ kernel/sched/features.h   |    1 
+ kernel/sched/sched.h      |   33 ++++++---
+ kernel/sysctl.c           |   13 +++
+ 8 files changed, 227 insertions(+), 26 deletions(-)
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -145,7 +145,8 @@ extern struct task_group root_task_group
  
- #ifdef __KERNEL__
+ #ifdef CONFIG_NUMA
+ # define INIT_TASK_NUMA(tsk)						\
+-	.node = -1,
++	.node = -1,							\
++	.node_last = -1,
+ #else
+ # define INIT_TASK_NUMA(tsk)
+ #endif
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -388,6 +388,9 @@ struct mm_struct {
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+ 	struct cpumask cpumask_allocation;
+ #endif
++#ifdef CONFIG_NUMA
++	unsigned long numa_next_scan;
++#endif
+ 	struct uprobes_state uprobes_state;
+ };
  
-@@ -262,6 +263,8 @@ static inline int vma_migratable(struct 
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -62,6 +62,7 @@ struct sched_param {
+ #include <linux/errno.h>
+ #include <linux/nodemask.h>
+ #include <linux/mm_types.h>
++#include <linux/task_work.h>
+ 
+ #include <asm/page.h>
+ #include <asm/ptrace.h>
+@@ -1519,8 +1520,14 @@ struct task_struct {
+ 	struct mempolicy *mempolicy;	/* Protected by alloc_lock */
+ 	short il_next;
+ 	short pref_node_fork;
+-	int node;
+-#endif
++
++	int node;			/* task home node   */
++	int node_last;			/* home node filter */
++#ifdef CONFIG_SMP
++	u64 node_stamp;			/* migration stamp  */
++	unsigned long numa_contrib;
++#endif /* CONFIG_SMP  */
++#endif /* CONFIG_NUMA */
+ 	struct rcu_head rcu;
+ 
+ 	/*
+@@ -2029,22 +2036,22 @@ extern unsigned int sysctl_sched_nr_migr
+ extern unsigned int sysctl_sched_time_avg;
+ extern unsigned int sysctl_timer_migration;
+ extern unsigned int sysctl_sched_shares_window;
++extern unsigned int sysctl_sched_numa_task_period;
+ 
+ int sched_proc_update_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *length,
+ 		loff_t *ppos);
+-#endif
+-#ifdef CONFIG_SCHED_DEBUG
++
+ static inline unsigned int get_sysctl_timer_migration(void)
+ {
+ 	return sysctl_timer_migration;
+ }
+-#else
++#else /* CONFIG_SCHED_DEBUG */
+ static inline unsigned int get_sysctl_timer_migration(void)
+ {
  	return 1;
  }
+-#endif
++#endif /* CONFIG_SCHED_DEBUG */
+ extern unsigned int sysctl_sched_rt_period;
+ extern int sysctl_sched_rt_runtime;
  
-+extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1722,6 +1722,17 @@ static void __sched_fork(struct task_str
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 	INIT_HLIST_HEAD(&p->preempt_notifiers);
+ #endif
 +
- extern void lazy_migrate_process(struct mm_struct *mm);
++#ifdef CONFIG_NUMA
++	if (p->mm && atomic_read(&p->mm->mm_users) == 1)
++		p->mm->numa_next_scan = jiffies;
++
++	p->node = -1;
++	p->node_last = -1;
++#ifdef CONFIG_SMP
++	p->node_stamp = 0ULL;
++#endif /* CONFIG_SMP */
++#endif /* CONFIG_NUMA */
+ }
  
- #else /* CONFIG_NUMA */
-@@ -389,6 +392,12 @@ static inline int mpol_to_str(char *buff
+ /*
+@@ -6558,9 +6569,9 @@ static struct sched_domain_topology_leve
+  * Requeues a task ensuring its on the right load-balance list so
+  * that it might get migrated to its new home.
+  *
+- * Note that we cannot actively migrate ourselves since our callers
+- * can be from atomic context. We rely on the regular load-balance
+- * mechanisms to move us around -- its all preference anyway.
++ * Since home-node is pure preference there's no hard migrate to force
++ * us anywhere, this also allows us to call this from atomic context if
++ * required.
+  */
+ void sched_setnode(struct task_struct *p, int node)
+ {
+@@ -6578,6 +6589,7 @@ void sched_setnode(struct task_struct *p
+ 		p->sched_class->put_prev_task(rq, p);
+ 
+ 	p->node = node;
++	p->node_last = node;
+ 
+ 	if (running)
+ 		p->sched_class->set_curr_task(rq);
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -27,6 +27,7 @@
+ #include <linux/profile.h>
+ #include <linux/interrupt.h>
+ #include <linux/random.h>
++#include <linux/mempolicy.h>
+ 
+ #include <trace/events/sched.h>
+ 
+@@ -774,6 +775,139 @@ update_stats_curr_start(struct cfs_rq *c
+ }
+ 
+ /**************************************************
++ * Scheduling class numa methods.
++ *
++ * The purpose of the NUMA bits are to maintain compute (task) and data
++ * (memory) locality. We try and achieve this by making tasks stick to
++ * a particular node (their home node) but if fairness mandates they run
++ * elsewhere for long enough, we let the memory follow them.
++ *
++ * Tasks start out with their home-node unset (-1) this effectively means
++ * they act !NUMA until we've established the task is busy enough to bother
++ * with placement.
++ */
++
++static unsigned long task_h_load(struct task_struct *p);
++
++#if defined(CONFIG_SMP) && defined(CONFIG_NUMA)
++static void account_offnode_enqueue(struct rq *rq, struct task_struct *p)
++{
++	p->numa_contrib = task_h_load(p);
++	rq->offnode_weight += p->numa_contrib;
++	rq->offnode_running++;
++}
++static void account_offnode_dequeue(struct rq *rq, struct task_struct *p)
++{
++	rq->offnode_weight -= p->numa_contrib;
++	rq->offnode_running--;
++}
++
++/*
++ * numa task sample period in ms
++ */
++unsigned int sysctl_sched_numa_task_period = 2500;
++
++/*
++ * The expensive part of numa migration is done from task_work context.
++ */
++void task_numa_work(struct callback_head *work)
++{
++	unsigned long migrate, next_scan, now = jiffies;
++	struct task_struct *t, *p = current;
++	int node = p->node_last;
++
++	WARN_ON_ONCE(p != container_of(work, struct task_struct, rcu));
++
++	/*
++	 * Who cares about NUMA placement when they're dying.
++	 */
++	if (p->flags & PF_EXITING)
++		return;
++
++	/*
++	 * Enforce maximal migration frequency..
++	 */
++	migrate = p->mm->numa_next_scan;
++	if (time_before(now, migrate))
++		return;
++
++	next_scan = now + 2*msecs_to_jiffies(sysctl_sched_numa_task_period);
++	if (cmpxchg(&p->mm->numa_next_scan, migrate, next_scan) != migrate)
++		return;
++
++	rcu_read_lock();
++	t = p;
++	do {
++		sched_setnode(t, node);
++	} while ((t = next_thread(p)) != p);
++	rcu_read_unlock();
++
++	lazy_migrate_process(p->mm);
++}
++
++/*
++ * Sample task location from hardirq context (tick), this has minimal bias with
++ * obvious exceptions of frequency interference and tick avoidance techniques.
++ * If this were to become a problem we could move this sampling into the
++ * sleep/wakeup path -- but we'd prefer to avoid that for obvious reasons.
++ */
++void task_tick_numa(struct rq *rq, struct task_struct *curr)
++{
++	u64 period, now;
++	int node;
++
++	/*
++	 * We don't care about NUMA placement if we don't have memory.
++	 */
++	if (!curr->mm)
++		return;
++
++	/*
++	 * Sample our node location every @sysctl_sched_numa_task_period
++	 * runtime ms. We use a two stage selection in order to filter
++	 * unlikely locations.
++	 *
++	 * If P(n) is the probability we're on node 'n', then the probability
++	 * we sample the same node twice is P(n)^2. This quadric squishes small
++	 * values and makes it more likely we end up on nodes where we have
++	 * significant presence.
++	 *
++	 * Using runtime rather than walltime has the dual advantage that
++	 * we (mostly) drive the selection from busy threads and that the
++	 * task needs to have done some actual work before we bother with
++	 * NUMA placement.
++	 */
++	now = curr->se.sum_exec_runtime;
++	period = (u64)sysctl_sched_numa_task_period * NSEC_PER_MSEC;
++
++	if (now - curr->node_stamp > period) {
++		curr->node_stamp = now;
++		node = numa_node_id();
++
++		if (curr->node_last == node && curr->node != node) {
++			/*
++			 * We can re-use curr->rcu because we checked curr->mm
++			 * != NULL so release_task()->call_rcu() was not called
++			 * yet and exit_task_work() is called before
++			 * exit_notify().
++			 */
++			init_task_work(&curr->rcu, task_numa_work);
++			task_work_add(curr, &curr->rcu, true);
++		}
++		curr->node_last = node;
++	}
++}
++#else
++static void account_offnode_enqueue(struct rq *rq, struct task_struct *p)
++{
++}
++
++static void account_offnode_dequeue(struct rq *rq, struct task_struct *p)
++{
++}
++#endif /* SMP && NUMA */
++
++/**************************************************
+  * Scheduling class queueing methods:
+  */
+ 
+@@ -784,9 +918,19 @@ account_entity_enqueue(struct cfs_rq *cf
+ 	if (!parent_entity(se))
+ 		update_load_add(&rq_of(cfs_rq)->load, se->load.weight);
+ #ifdef CONFIG_SMP
+-	if (entity_is_task(se))
+-		list_add(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
+-#endif
++	if (entity_is_task(se)) {
++		struct rq *rq = rq_of(cfs_rq);
++		struct task_struct *p = task_of(se);
++		struct list_head *tasks = &rq->cfs_tasks;
++
++		if (offnode_task(p)) {
++			account_offnode_enqueue(rq, p);
++			tasks = offnode_tasks(rq);
++		}
++
++		list_add(&se->group_node, tasks);
++	}
++#endif /* CONFIG_SMP */
+ 	cfs_rq->nr_running++;
+ }
+ 
+@@ -796,8 +940,14 @@ account_entity_dequeue(struct cfs_rq *cf
+ 	update_load_sub(&cfs_rq->load, se->load.weight);
+ 	if (!parent_entity(se))
+ 		update_load_sub(&rq_of(cfs_rq)->load, se->load.weight);
+-	if (entity_is_task(se))
++	if (entity_is_task(se)) {
++		struct task_struct *p = task_of(se);
++
+ 		list_del_init(&se->group_node);
++
++		if (offnode_task(p))
++			account_offnode_dequeue(rq_of(cfs_rq), p);
++	}
+ 	cfs_rq->nr_running--;
+ }
+ 
+@@ -3286,8 +3436,6 @@ static int move_one_task(struct lb_env *
  	return 0;
  }
  
-+static inline int mpol_misplaced(struct page *page, struct vm_area_struct *vma,
-+				 unsigned long address)
-+{
-+	return -1; /* no node preference */
-+}
-+
- #endif /* CONFIG_NUMA */
- #endif /* __KERNEL__ */
+-static unsigned long task_h_load(struct task_struct *p);
+-
+ static const unsigned int sched_nr_migrate_break = 32;
  
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1152,6 +1152,9 @@ static long do_mbind(unsigned long start
- 	if (IS_ERR(new))
- 		return PTR_ERR(new);
- 
-+	if (flags & MPOL_MF_LAZY)
-+		new->flags |= MPOL_F_MOF;
+ /*
+@@ -5173,6 +5321,9 @@ static void task_tick_fair(struct rq *rq
+ 		cfs_rq = cfs_rq_of(se);
+ 		entity_tick(cfs_rq, se, queued);
+ 	}
 +
- 	/*
- 	 * If we are using the default policy then operation
- 	 * on discontinuous address spaces is okay after all
-@@ -2143,6 +2146,82 @@ mpol_shared_policy_lookup(struct shared_
- 	return pol;
++	if (sched_feat_numa(NUMA))
++		task_tick_numa(rq, curr);
  }
  
-+/**
-+ * mpol_misplaced - check whether current page node is valid in policy
-+ *
-+ * @page   - page to be checked
-+ * @vma    - vm area where page mapped
-+ * @addr   - virtual address where page mapped
-+ *
-+ * Lookup current policy node id for vma,addr and "compare to" page's
-+ * node id.
-+ *
-+ * Returns:
-+ *	-1	- not misplaced, page is in the right node
-+ *	node	- node id where the page should be
-+ *
-+ * Policy determination "mimics" alloc_page_vma().
-+ * Called from fault path where we know the vma and faulting address.
-+ */
-+int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr)
+ /*
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -71,6 +71,7 @@ SCHED_FEAT(RT_RUNTIME_SHARE, true)
+ SCHED_FEAT(LB_MIN, false)
+ 
+ #ifdef CONFIG_NUMA
++SCHED_FEAT(NUMA,           true)
+ SCHED_FEAT(NUMA_HOT,       true)
+ SCHED_FEAT(NUMA_BIAS,      true)
+ SCHED_FEAT(NUMA_PULL,      true)
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -471,15 +471,6 @@ struct rq {
+ #endif
+ };
+ 
+-static inline struct list_head *offnode_tasks(struct rq *rq)
+-{
+-#ifdef CONFIG_NUMA
+-	return &rq->offnode_tasks;
+-#else
+-	return NULL;
+-#endif
+-}
+-
+ static inline int cpu_of(struct rq *rq)
+ {
+ #ifdef CONFIG_SMP
+@@ -497,6 +488,30 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+ 
++#if defined(CONFIG_SMP) && defined(CONFIG_NUMA)
++static inline bool offnode_task(struct task_struct *t)
 +{
-+	struct mempolicy *pol;
-+	struct zone *zone;
-+	int curnid = page_to_nid(page);
-+	unsigned long pgoff;
-+	int polnid = -1;
-+	int ret = -1;
-+
-+	BUG_ON(!vma);
-+
-+	pol = get_vma_policy(current, vma, addr);
-+	if (!(pol->flags & MPOL_F_MOF))
-+		goto out;
-+
-+	switch (pol->mode) {
-+	case MPOL_INTERLEAVE:
-+		BUG_ON(addr >= vma->vm_end);
-+		BUG_ON(addr < vma->vm_start);
-+
-+		pgoff = vma->vm_pgoff;
-+		pgoff += (addr - vma->vm_start) >> PAGE_SHIFT;
-+		polnid = offset_il_node(pol, vma, pgoff);
-+		break;
-+
-+	case MPOL_PREFERRED:
-+		if (pol->flags & MPOL_F_LOCAL)
-+			polnid = numa_node_id();
-+		else
-+			polnid = pol->v.preferred_node;
-+		break;
-+
-+	case MPOL_BIND:
-+		/*
-+		 * allows binding to multiple nodes.
-+		 * use current page if in policy nodemask,
-+		 * else select nearest allowed node, if any.
-+		 * If no allowed nodes, use current [!misplaced].
-+		 */
-+		if (node_isset(curnid, pol->v.nodes))
-+			goto out;
-+		(void)first_zones_zonelist(
-+				node_zonelist(numa_node_id(), GFP_HIGHUSER),
-+				gfp_zone(GFP_HIGHUSER),
-+				&pol->v.nodes, &zone);
-+		polnid = zone->node;
-+		break;
-+
-+	default:
-+		BUG();
-+	}
-+	if (curnid != polnid)
-+		ret = polnid;
-+out:
-+	mpol_cond_put(pol);
-+
-+	return ret;
++	return t->node != -1 && t->node != cpu_to_node(task_cpu(t));
 +}
 +
- static void sp_delete(struct shared_policy *sp, struct sp_node *n)
- {
- 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
++static inline struct list_head *offnode_tasks(struct rq *rq)
++{
++	return &rq->offnode_tasks;
++}
++
++void sched_setnode(struct task_struct *p, int node);
++#else /* SMP && NUMA */
++static inline bool offnode_task(struct task_struct *t)
++{
++	return false;
++}
++
++static inline struct list_head *offnode_tasks(struct rq *rq)
++{
++	return NULL;
++}
++#endif /* SMP && NUMA */
++
+ #ifdef CONFIG_SMP
+ 
+ #define rcu_dereference_check_sched_domain(p) \
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -291,6 +291,7 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &min_wakeup_granularity_ns,
+ 		.extra2		= &max_wakeup_granularity_ns,
+ 	},
++#ifdef CONFIG_SMP
+ 	{
+ 		.procname	= "sched_tunable_scaling",
+ 		.data		= &sysctl_sched_tunable_scaling,
+@@ -337,7 +338,17 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
+-#endif
++#ifdef CONFIG_NUMA
++	{
++		.procname	= "sched_numa_task_period_ms",
++		.data		= &sysctl_sched_numa_task_period,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++#endif /* CONFIG_NUMA */
++#endif /* CONFIG_SMP */
++#endif /* CONFIG_SCHED_DEBUG */
+ 	{
+ 		.procname	= "sched_rt_period_us",
+ 		.data		= &sysctl_sched_rt_period,
 
 
