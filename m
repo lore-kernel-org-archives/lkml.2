@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab2GaHnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 03:43:45 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:43879 "EHLO
+	id S1755773Ab2GaHnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 03:43:55 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:43888 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755609Ab2GaHno (ORCPT
+	with ESMTP id S1755748Ab2GaHnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 03:43:44 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6V7gfjd007479, This message is released by code: ctaloc0852
+	Tue, 31 Jul 2012 03:43:51 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6V7gvwc007549, This message is released by code: ctaloc0852
 From: <wei_wang@realsil.com.cn>
 To: <gregkh@linuxfoundation.org>, <devel@linuxdriverproject.org>,
         <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
         <cjb@laptop.org>, <arnd@arndb.de>
 CC: <bp@alien8.de>, <aaron.lu@amd.come>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH 1/3] drivers/misc: Add realtek card reader core driver
-Date: Tue, 31 Jul 2012 15:42:16 +0800
-Message-ID: <1343720536-22077-1-git-send-email-wei_wang@realsil.com.cn>
+Subject: [PATCH 3/3] drivers/mmc/host: Add realtek sdmmc interface driver
+Date: Tue, 31 Jul 2012 15:42:56 +0800
+Message-ID: <1343720576-22181-1-git-send-email-wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -25,153 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-Realtek card reader core driver is the bus driver for Realtek
-driver-based card reader, which supplies adapter layer to
-be used by lower-level pci/usb card reader and upper-level
-sdmmc/memstick host driver.
+Realtek SD/MMC card interface driver is used to access
+SD/MMC card, with the help of Realtek card reader adapter driver.
 
 Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 ---
- Documentation/misc-devices/realtek_cr.txt |   27 ++
- drivers/misc/Kconfig                      |    1 +
- drivers/misc/Makefile                     |    1 +
- drivers/misc/realtek_cr/Kconfig           |   26 ++
- drivers/misc/realtek_cr/Makefile          |    7 +
- drivers/misc/realtek_cr/core/Kconfig      |    5 +
- drivers/misc/realtek_cr/core/Makefile     |    1 +
- drivers/misc/realtek_cr/core/rtsx_core.c  |  462 +++++++++++++++++++++++++++++
- include/linux/rtsx_core.h                 |  188 ++++++++++++
- 9 files changed, 718 insertions(+)
- create mode 100644 Documentation/misc-devices/realtek_cr.txt
- create mode 100644 drivers/misc/realtek_cr/Kconfig
- create mode 100644 drivers/misc/realtek_cr/Makefile
- create mode 100644 drivers/misc/realtek_cr/core/Kconfig
- create mode 100644 drivers/misc/realtek_cr/core/Makefile
- create mode 100644 drivers/misc/realtek_cr/core/rtsx_core.c
- create mode 100644 include/linux/rtsx_core.h
+ drivers/mmc/host/Kconfig      |    7 +
+ drivers/mmc/host/Makefile     |    2 +
+ drivers/mmc/host/rtsx_sdmmc.c |  350 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 359 insertions(+)
+ create mode 100644 drivers/mmc/host/rtsx_sdmmc.c
 
-diff --git a/Documentation/misc-devices/realtek_cr.txt b/Documentation/misc-devices/realtek_cr.txt
-new file mode 100644
-index 0000000..b4e6fbe
---- /dev/null
-+++ b/Documentation/misc-devices/realtek_cr.txt
-@@ -0,0 +1,27 @@
-+Realtek Driver-based Card Reader
-+================================
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index aa131b3..d9942e6 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -612,3 +612,10 @@ config MMC_USHC
+ 
+ 	  Note: These controllers only support SDIO cards and do not
+ 	  support MMC or SD memory cards.
 +
-+Supported chips:
-+RTS5209
-+RTS5229
-+
-+Contact Email:
-+pc_sw_linux@realsil.com.cn
-+
-+
-+Description
-+-----------
-+
-+Realtek driver-based card reader supports access to many types of memory cards,
-+such as Memory Stick, Memory Stick Pro, Secure Digital and MultiMediaCard.
-+
-+
-+udev rules
-+----------
-+
-+In order to modprobe Realtek SD/MMC interface driver automatically, the following rule
-+should be added to the udev rules file:
-+
-+SUBSYSTEM=="rtsx_cr", ENV{RTSX_CARD_TYPE}=="SD", RUN+="/sbin/modprobe -bv rtsx_sdmmc"
-+
-+Typically, we may edit /lib/udev/rules.d/80-drivers.rules and copy the rule into it in Ubuntu.
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 154f3ef..d32076e 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -516,4 +516,5 @@ source "drivers/misc/lis3lv02d/Kconfig"
- source "drivers/misc/carma/Kconfig"
- source "drivers/misc/altera-stapl/Kconfig"
- source "drivers/misc/mei/Kconfig"
-+source "drivers/misc/realtek_cr/Kconfig"
- endmenu
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index b88df7a..0bb17ce 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -50,3 +50,4 @@ obj-y				+= carma/
- obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
- obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
- obj-$(CONFIG_INTEL_MEI)		+= mei/
-+obj-$(CONFIG_REALTEK_CR_SUPPORT) += realtek_cr/
-diff --git a/drivers/misc/realtek_cr/Kconfig b/drivers/misc/realtek_cr/Kconfig
-new file mode 100644
-index 0000000..303d98a
---- /dev/null
-+++ b/drivers/misc/realtek_cr/Kconfig
-@@ -0,0 +1,26 @@
-+#
-+# Realtek driver-based card reader
-+#
-+
-+menuconfig REALTEK_CR_SUPPORT
-+	tristate "Realtek driver-based card reader"
-+	help
-+	  Realtek driver-based card reader supports access to many types of
-+	  memory cards, such as Memory Stick, Memory Stick Pro, Secure Digital
-+	  and MultiMediaCard.
-+
-+	  If you want to use Realtek driver-based card reader, enable this
-+	  option and other options below.
-+
-+config REALTEK_CR_DEBUG
-+	bool "Realtek driver-based card reader debugging"
-+	depends on REALTEK_CR_SUPPORT != n
-+	help
-+	  This is an option for use by developers; most people should
-+	  say N here.  This enables Realtek card reader driver debugging.
-+
-+if REALTEK_CR_SUPPORT
-+
-+source "drivers/misc/realtek_cr/core/Kconfig"
-+
-+endif
-diff --git a/drivers/misc/realtek_cr/Makefile b/drivers/misc/realtek_cr/Makefile
-new file mode 100644
-index 0000000..f4e16ba
---- /dev/null
-+++ b/drivers/misc/realtek_cr/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for Realtek driver-based card reader.
-+#
-+
-+subdir-ccflags-$(CONFIG_REALTEK_CR_DEBUG) := -DDEBUG
-+
-+obj-$(CONFIG_REALTEK_CR_SUPPORT)	+= core/
-diff --git a/drivers/misc/realtek_cr/core/Kconfig b/drivers/misc/realtek_cr/core/Kconfig
-new file mode 100644
-index 0000000..38fff8a
---- /dev/null
-+++ b/drivers/misc/realtek_cr/core/Kconfig
-@@ -0,0 +1,5 @@
-+config REALTEK_CR_CORE
-+	tristate "RealTek Card Reader Core Driver"
++config MMC_REALTEK
++	tristate "Realtek SD/MMC Card Interface Driver"
++	depends on REALTEK_CR_CORE
 +	help
 +	  Say Y here to include driver code to support the Realtek
-+	  driver-based card reader.
-diff --git a/drivers/misc/realtek_cr/core/Makefile b/drivers/misc/realtek_cr/core/Makefile
++	  SD/MMC card interface.
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index 8922b06..a4cd15a 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -45,6 +45,8 @@ obj-$(CONFIG_MMC_JZ4740)	+= jz4740_mmc.o
+ obj-$(CONFIG_MMC_VUB300)	+= vub300.o
+ obj-$(CONFIG_MMC_USHC)		+= ushc.o
+ 
++obj-$(CONFIG_MMC_REALTEK)	+= rtsx_sdmmc.o
++
+ obj-$(CONFIG_MMC_SDHCI_PLTFM)		+= sdhci-pltfm.o
+ obj-$(CONFIG_MMC_SDHCI_CNS3XXX)		+= sdhci-cns3xxx.o
+ obj-$(CONFIG_MMC_SDHCI_ESDHC_IMX)	+= sdhci-esdhc-imx.o
+diff --git a/drivers/mmc/host/rtsx_sdmmc.c b/drivers/mmc/host/rtsx_sdmmc.c
 new file mode 100644
-index 0000000..010055e
+index 0000000..a90dd79a
 --- /dev/null
-+++ b/drivers/misc/realtek_cr/core/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_REALTEK_CR_CORE)		+= rtsx_core.o
-diff --git a/drivers/misc/realtek_cr/core/rtsx_core.c b/drivers/misc/realtek_cr/core/rtsx_core.c
-new file mode 100644
-index 0000000..9868980
---- /dev/null
-+++ b/drivers/misc/realtek_cr/core/rtsx_core.c
-@@ -0,0 +1,462 @@
-+/* Realtek card reader core driver
++++ b/drivers/mmc/host/rtsx_sdmmc.c
+@@ -0,0 +1,350 @@
++/* Realtek SD/MMC Card Interface driver
 + *
 + * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
 + *
@@ -194,639 +93,333 @@ index 0000000..9868980
 + */
 +
 +#include <linux/module.h>
-+#include <linux/idr.h>
++#include <linux/highmem.h>
++#include <linux/delay.h>
++#include <linux/mmc/host.h>
++#include <linux/mmc/mmc.h>
++#include <linux/mmc/sd.h>
++#include <linux/mmc/card.h>
 +#include <linux/rtsx_core.h>
 +
-+static struct workqueue_struct *workqueue;
-+static DEFINE_IDR(rtsx_adapter_idr);
-+static DEFINE_SPINLOCK(rtsx_adapter_lock);
++#include <asm/unaligned.h>
 +
-+#define DRIVER_NAME	"rtsx_core"
++#define DRV_NAME	"rtsx_sdmmc"
 +
-+#ifdef CONFIG_PM
++#define MAX_RW_REG_CNT			1024
 +
-+static const char *rtsx_media_type_name(unsigned char type, unsigned char nt)
++#define RTSX_MAX_BLOCK_COUNT		65536
++#define RTSX_MAX_BLOCK_LENGTH		2048
++
++struct realtek_sdmmc {
++	struct rtsx_dev		*dev;
++	struct mmc_host		*mmc;
++	struct mmc_request	*mrq;
++
++	struct mutex		host_mutex;
++
++	int			eject;
++};
++
++static struct rtsx_device_id realtek_sdmmc_ids[] = {
++	{RTSX_TYPE_SD},
++	{}
++};
++
++MODULE_DEVICE_TABLE(rtsx, realtek_sdmmc_ids);
++
++static void sd_send_cmd_get_rsp(struct realtek_sdmmc *host,
++		struct mmc_command *cmd)
 +{
-+	const char *card_type_name[3][3] = {
-+		{ "SmartMedia/xD", "MemoryStick", "MMC/SD" },
-+		{ "XD", "MS", "SD"},
-+		{ "xd", "ms", "sd"}
-+	};
-+
-+	if (nt > 2 || type < 1 || type > 3)
-+		return NULL;
-+	return card_type_name[nt][type - 1];
++	cmd->error = rtsx_sdmmc_send_cmd_get_rsp(host->dev, (u8)cmd->opcode,
++			cmd->arg, mmc_resp_type(cmd), cmd->resp);
 +}
 +
-+static int rtsx_dev_match(struct rtsx_dev *sock, struct rtsx_device_id *id)
++static int sd_rw_multi(struct realtek_sdmmc *host, struct mmc_request *mrq)
 +{
-+	if (sock->type == id->type)
-+		return 1;
-+	return 0;
++	struct mmc_host *mmc = host->mmc;
++	struct mmc_card *card = mmc->card;
++	struct mmc_data *data = mrq->data;
++	int uhs = mmc_sd_card_uhs(card);
++	int read = (data->flags & MMC_DATA_READ) ? 1 : 0;
++
++	return rtsx_sdmmc_rw_multi(host->dev, data->sg, data->blksz,
++			data->blocks, data->sg_len, read, uhs);
 +}
 +
-+static int rtsx_bus_match(struct device *dev, struct device_driver *drv)
++static void sd_normal_rw(struct realtek_sdmmc *host, struct mmc_request *mrq)
 +{
-+	struct rtsx_dev *sock = container_of(dev, struct rtsx_dev, dev);
-+	struct rtsx_driver *rtsx_drv = container_of(drv, struct rtsx_driver,
-+						  driver);
-+	struct rtsx_device_id *ids = rtsx_drv->id_table;
++	struct mmc_command *cmd = mrq->cmd;
++	struct mmc_data *data = mrq->data;
++	u8 _cmd[5], *buf;
 +
-+	if (ids) {
-+		while (ids->type) {
-+			if (rtsx_dev_match(sock, ids))
-+				return 1;
-+			++ids;
++	_cmd[0] = 0x40 | (u8)cmd->opcode;
++	put_unaligned_be32(cmd->arg, (u32 *)(&_cmd[1]));
++
++	buf = kzalloc(data->blksz, GFP_NOIO);
++	if (!buf) {
++		cmd->error = -ENOMEM;
++		return;
++	}
++
++	if (data->flags & MMC_DATA_READ) {
++		cmd->error = rtsx_sdmmc_read_data(host->dev, _cmd,
++				(u16)data->blksz, buf, data->blksz, 200);
++		sg_copy_from_buffer(data->sg, data->sg_len, buf, data->blksz);
++	} else {
++		sg_copy_to_buffer(data->sg, data->sg_len, buf, data->blksz);
++		cmd->error = rtsx_sdmmc_write_data(host->dev, _cmd,
++				(u16)data->blksz, buf, data->blksz, 200);
++	}
++
++	kfree(buf);
++}
++
++static void sdmmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
++{
++	struct realtek_sdmmc *host = mmc_priv(mmc);
++	struct mmc_command *cmd = mrq->cmd;
++	struct mmc_data *data = mrq->data;
++	unsigned int data_size = 0;
++
++	if (host->eject) {
++		cmd->error = -ENOMEDIUM;
++		goto finish;
++	}
++
++	mutex_lock(&host->host_mutex);
++	host->mrq = mrq;
++	mutex_unlock(&host->host_mutex);
++
++	if (mrq->data)
++		data_size = data->blocks * data->blksz;
++
++	if (!data_size || mmc_op_multi(cmd->opcode) ||
++			(cmd->opcode == MMC_READ_SINGLE_BLOCK) ||
++			(cmd->opcode == MMC_WRITE_BLOCK)) {
++		sd_send_cmd_get_rsp(host, cmd);
++
++		if (!cmd->error && data_size) {
++			sd_rw_multi(host, mrq);
++
++			if (mmc_op_multi(cmd->opcode) && mrq->stop)
++				sd_send_cmd_get_rsp(host, mrq->stop);
 +		}
-+	}
-+	return 0;
-+}
-+
-+static int rtsx_uevent(struct device *dev, struct kobj_uevent_env *env)
-+{
-+	struct rtsx_dev *sock = container_of(dev, struct rtsx_dev, dev);
-+
-+	if (add_uevent_var(env, "RTSX_CARD_TYPE=%s",
-+				rtsx_media_type_name(sock->type, 1)))
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static int rtsx_device_probe(struct device *dev)
-+{
-+	struct rtsx_dev *sock = container_of(dev, struct rtsx_dev, dev);
-+	struct rtsx_driver *drv = container_of(dev->driver, struct rtsx_driver,
-+					       driver);
-+	int rc = -ENODEV;
-+
-+	get_device(dev);
-+	if (dev->driver && drv->probe) {
-+		rc = drv->probe(sock);
-+		if (!rc)
-+			return 0;
-+	}
-+	put_device(dev);
-+	return rc;
-+}
-+
-+static void rtsx_dummy_event(struct rtsx_dev *sock)
-+{
-+	return;
-+}
-+
-+static int rtsx_device_remove(struct device *dev)
-+{
-+	struct rtsx_dev *sock = container_of(dev, struct rtsx_dev, dev);
-+	struct rtsx_driver *drv = container_of(dev->driver, struct rtsx_driver,
-+					       driver);
-+
-+	if (dev->driver && drv->remove) {
-+		sock->card_event = rtsx_dummy_event;
-+		sock->data_event = rtsx_dummy_event;
-+		drv->remove(sock);
-+		sock->dev.driver = NULL;
++	} else {
++		sd_normal_rw(host, mrq);
 +	}
 +
-+	put_device(dev);
-+	return 0;
++	if (mrq->data) {
++		if (cmd->error || data->error)
++			data->bytes_xfered = 0;
++		else
++			data->bytes_xfered = data->blocks * data->blksz;
++	}
++
++finish:
++	if (cmd->error)
++		dev_dbg(&(host->dev->dev), "cmd->error = %d\n", cmd->error);
++
++	mutex_lock(&host->host_mutex);
++	host->mrq = NULL;
++	mutex_unlock(&host->host_mutex);
++
++	mmc_request_done(mmc, mrq);
 +}
 +
-+static int rtsx_device_suspend(struct device *dev, pm_message_t state)
++static void sdmmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 +{
-+	struct rtsx_dev *sock = container_of(dev, struct rtsx_dev, dev);
-+	struct rtsx_driver *drv = container_of(dev->driver, struct rtsx_driver,
-+					       driver);
++	struct realtek_sdmmc *host = mmc_priv(mmc);
++	int vpclk = 0, double_clk = 1;
++	u8 ssc_depth;
 +
-+	if (dev->driver && drv->suspend)
-+		return drv->suspend(sock, state);
-+	return 0;
++	rtsx_sdmmc_set_bus_width(host->dev, ios->bus_width);
++	rtsx_sdmmc_set_power_mode(host->dev, ios->power_mode);
++	rtsx_sdmmc_set_timing(host->dev, ios->timing);
++
++	switch (ios->timing) {
++	case MMC_TIMING_UHS_SDR104:
++	case MMC_TIMING_UHS_SDR50:
++		ssc_depth = RTSX_SSC_DEPTH_2M;
++		vpclk = 1;
++		double_clk = 0;
++		break;
++
++	case MMC_TIMING_UHS_DDR50:
++	case MMC_TIMING_UHS_SDR25:
++		ssc_depth = RTSX_SSC_DEPTH_1M;
++		break;
++
++	default:
++		ssc_depth = RTSX_SSC_DEPTH_500K;
++		break;
++	}
++
++	rtsx_switch_clock(host->dev,
++			ios->clock, ssc_depth, double_clk, vpclk);
 +}
 +
-+static int rtsx_device_resume(struct device *dev)
++static int sdmmc_get_ro(struct mmc_host *mmc)
 +{
-+	struct rtsx_dev *sock = container_of(dev, struct rtsx_dev, dev);
-+	struct rtsx_driver *drv = container_of(dev->driver, struct rtsx_driver,
-+					       driver);
++	struct realtek_sdmmc *host = mmc_priv(mmc);
 +
-+	if (dev->driver && drv->resume)
-+		return drv->resume(sock);
-+	return 0;
++	return rtsx_sdmmc_get_ro(host->dev);
 +}
 +
-+#else
-+
-+#define rtsx_device_suspend NULL
-+#define rtsx_device_resume NULL
-+
-+#endif /* CONFIG_PM */
-+
-+static ssize_t type_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
++static int sdmmc_get_cd(struct mmc_host *mmc)
 +{
-+	struct rtsx_dev *sock = container_of(dev, struct rtsx_dev, dev);
-+	return sprintf(buf, "%x", sock->type);
++	struct realtek_sdmmc *host = mmc_priv(mmc);
++
++	return rtsx_sdmmc_get_cd(host->dev);
 +}
 +
-+static struct device_attribute rtsx_dev_attrs[] = {
-+	__ATTR(type, S_IRUGO, type_show, NULL),
-+	__ATTR_NULL
++static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
++{
++	struct realtek_sdmmc *host = mmc_priv(mmc);
++
++	return rtsx_sdmmc_switch_voltage(host->dev, ios->signal_voltage);
++}
++
++static int sdmmc_execute_tuning(struct mmc_host *mmc, u32 opcode)
++{
++	struct realtek_sdmmc *host = mmc_priv(mmc);
++
++	return rtsx_sdmmc_execute_tuning(host->dev);
++}
++
++static const struct mmc_host_ops realtek_sdmmc_ops = {
++	.request = sdmmc_request,
++	.set_ios = sdmmc_set_ios,
++	.get_ro = sdmmc_get_ro,
++	.get_cd = sdmmc_get_cd,
++	.start_signal_voltage_switch = sdmmc_switch_voltage,
++	.execute_tuning = sdmmc_execute_tuning,
 +};
 +
-+static struct bus_type rtsx_bus_type = {
-+	.name      = "rtsx_cr",
-+	.dev_attrs = rtsx_dev_attrs,
-+	.match     = rtsx_bus_match,
-+	.uevent    = rtsx_uevent,
-+	.probe     = rtsx_device_probe,
-+	.remove    = rtsx_device_remove,
-+	.suspend   = rtsx_device_suspend,
-+	.resume    = rtsx_device_resume
-+};
-+
-+static void rtsx_free(struct device *dev)
++static void init_extra_caps(struct realtek_sdmmc *host)
 +{
-+	struct rtsx_adapter *adapter;
++	struct mmc_host *mmc = host->mmc;
++	struct rtsx_dev *sock = host->dev;
++	struct rtsx_adapter *adapter = sock_to_adapter(sock);
 +
-+	adapter = container_of(dev, struct rtsx_adapter, dev);
-+	kfree(adapter);
++	dev_dbg(&(sock->dev), "adapter->extra_caps = 0x%x\n",
++			adapter->extra_caps);
++
++	if (adapter->extra_caps & EXTRA_CAPS_SD_SDR50)
++		mmc->caps |= MMC_CAP_UHS_SDR50;
++	if (adapter->extra_caps & EXTRA_CAPS_SD_SDR104)
++		mmc->caps |= MMC_CAP_UHS_SDR104;
++	if (adapter->extra_caps & EXTRA_CAPS_SD_DDR50)
++		mmc->caps |= MMC_CAP_UHS_DDR50;
++	if (adapter->extra_caps & EXTRA_CAPS_MMC_HSDDR)
++		mmc->caps |= MMC_CAP_1_8V_DDR;
++	if (adapter->extra_caps & EXTRA_CAPS_MMC_8BIT)
++		mmc->caps |= MMC_CAP_8_BIT_DATA;
 +}
 +
-+static struct class rtsx_adapter_class = {
-+	.name    = "rtsx_adapter",
-+	.dev_release = rtsx_free
-+};
-+
-+struct rtsx_adapter *rtsx_alloc_adapter(unsigned int num_sockets,
-+					struct device *dev)
++static void realtek_init_host(struct realtek_sdmmc *host)
 +{
-+	struct rtsx_adapter *adapter;
++	struct mmc_host *mmc = host->mmc;
 +
-+	adapter = kzalloc(sizeof(*adapter)
-+		     + sizeof(struct rtsx_dev *) * num_sockets, GFP_KERNEL);
-+	if (adapter) {
-+		adapter->dev.class = &rtsx_adapter_class;
-+		adapter->dev.parent = dev;
-+		device_initialize(&adapter->dev);
-+		spin_lock_init(&adapter->lock);
-+		adapter->num_sockets = num_sockets;
-+	}
-+	return adapter;
++	mmc->f_min = 250000;
++	mmc->f_max = 208000000;
++	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34 | MMC_VDD_165_195;
++	mmc->caps = MMC_CAP_4_BIT_DATA | MMC_CAP_SD_HIGHSPEED |
++		MMC_CAP_MMC_HIGHSPEED | MMC_CAP_BUS_WIDTH_TEST |
++		MMC_CAP_UHS_SDR12 | MMC_CAP_UHS_SDR25;
++	mmc->max_current_330 = 400;
++	mmc->max_current_180 = 800;
++	mmc->ops = &realtek_sdmmc_ops;
++
++	init_extra_caps(host);
++
++	mmc->max_segs = 256;
++	mmc->max_blk_size = RTSX_MAX_BLOCK_LENGTH;
++	mmc->max_blk_count = RTSX_MAX_BLOCK_COUNT;
++	mmc->max_seg_size = mmc->max_blk_size * mmc->max_blk_count;
++	mmc->max_req_size = mmc->max_seg_size;
 +}
-+EXPORT_SYMBOL(rtsx_alloc_adapter);
 +
-+int rtsx_add_adapter(struct rtsx_adapter *adapter)
++static int realtek_sdmmc_probe(struct rtsx_dev *sock)
 +{
-+	int rc;
++	struct mmc_host *mmc;
++	struct realtek_sdmmc *host;
 +
-+	if (!idr_pre_get(&rtsx_adapter_idr, GFP_KERNEL))
++	pr_info(DRV_NAME ": Realtek SDMMC controller found\n");
++
++	mmc = mmc_alloc_host(sizeof(struct realtek_sdmmc), &sock->dev);
++	if (!mmc)
 +		return -ENOMEM;
 +
-+	spin_lock(&rtsx_adapter_lock);
-+	rc = idr_get_new(&rtsx_adapter_idr, adapter, &adapter->id);
-+	spin_unlock(&rtsx_adapter_lock);
-+	if (rc)
-+		return rc;
++	host = mmc_priv(mmc);
++	rtsx_set_drvdata(sock, mmc);
++	host->dev = sock;
++	host->mmc = mmc;
 +
-+	dev_set_name(&adapter->dev, "rtsx%u", adapter->id);
-+	rc = device_add(&adapter->dev);
-+	if (rc) {
-+		spin_lock(&rtsx_adapter_lock);
-+		idr_remove(&rtsx_adapter_idr, adapter->id);
-+		spin_unlock(&rtsx_adapter_lock);
++	mutex_init(&host->host_mutex);
++
++	realtek_init_host(host);
++
++	mmc_add_host(mmc);
++
++	return 0;
++}
++
++static void __devexit realtek_sdmmc_remove(struct rtsx_dev *sock)
++{
++	struct mmc_host *mmc = rtsx_get_drvdata(sock);
++	struct realtek_sdmmc *host;
++
++	host = mmc_priv(mmc);
++	host->eject = 1;
++
++	mutex_lock(&host->host_mutex);
++	if (host->mrq) {
++		dev_dbg(&(sock->dev),
++			"%s: Controller removed during transfer\n",
++			mmc_hostname(mmc));
++
++		rtsx_complete_unfinished_transfer(sock);
++
++		host->mrq->cmd->error = -ENOMEDIUM;
++		if (host->mrq->stop)
++			host->mrq->stop->error = -ENOMEDIUM;
++		mmc_request_done(mmc, host->mrq);
 +	}
++	mutex_unlock(&host->host_mutex);
 +
-+	return rc;
++	mmc_remove_host(mmc);
++	mmc_free_host(mmc);
++
++	pr_info(DRV_NAME
++		": Realtek SDMMC controller has been removed\n");
 +}
-+EXPORT_SYMBOL(rtsx_add_adapter);
 +
-+void rtsx_remove_adapter(struct rtsx_adapter *adapter)
++static struct rtsx_driver realtek_sdmmc_driver = {
++	.driver = {
++		.name = DRV_NAME,
++		.owner = THIS_MODULE,
++	},
++	.id_table = realtek_sdmmc_ids,
++	.probe = realtek_sdmmc_probe,
++	.remove = realtek_sdmmc_remove,
++};
++
++static int __init realtek_sdmmc_drv_init(void)
 +{
-+	unsigned int cnt;
-+
-+	flush_workqueue(workqueue);
-+	for (cnt = 0; cnt < adapter->num_sockets; ++cnt) {
-+		if (adapter->sockets[cnt])
-+			device_unregister(&adapter->sockets[cnt]->dev);
-+	}
-+
-+	spin_lock(&rtsx_adapter_lock);
-+	idr_remove(&rtsx_adapter_idr, adapter->id);
-+	spin_unlock(&rtsx_adapter_lock);
-+	device_del(&adapter->dev);
++	return rtsx_register_driver(&realtek_sdmmc_driver);
 +}
-+EXPORT_SYMBOL(rtsx_remove_adapter);
 +
-+void rtsx_free_adapter(struct rtsx_adapter *adapter)
++static void __exit realtek_sdmmc_drv_exit(void)
 +{
-+	put_device(&adapter->dev);
-+}
-+EXPORT_SYMBOL(rtsx_free_adapter);
-+
-+void rtsx_free_device(struct device *dev)
-+{
-+	struct rtsx_dev *sock = container_of(dev, struct rtsx_dev, dev);
-+	kfree(sock);
-+}
-+EXPORT_SYMBOL(rtsx_free_device);
-+
-+struct rtsx_dev *rtsx_alloc_device(struct rtsx_adapter *adapter,
-+		unsigned int id, unsigned char type)
-+{
-+	struct rtsx_dev *sock = NULL;
-+
-+	if (!rtsx_media_type_name(type, 0))
-+		return sock;
-+
-+	sock = kzalloc(sizeof(*sock), GFP_KERNEL);
-+	if (sock) {
-+		spin_lock_init(&sock->lock);
-+		sock->type = type;
-+		sock->socket_id = id;
-+		sock->card_event = rtsx_dummy_event;
-+		sock->data_event = rtsx_dummy_event;
-+
-+		sock->dev.parent = &(adapter->dev);
-+		sock->dev.bus = &rtsx_bus_type;
-+		sock->dev.dma_mask = adapter->dev.parent->dma_mask;
-+		sock->dev.release = rtsx_free_device;
-+
-+		dev_set_name(&sock->dev, "rtsx_%s%u:%u",
-+			     rtsx_media_type_name(type, 2), adapter->id, id);
-+		pr_info(DRIVER_NAME
-+		       ": %s card detected in socket %u:%u\n",
-+		       rtsx_media_type_name(type, 0), adapter->id, id);
-+	}
-+	return sock;
-+}
-+EXPORT_SYMBOL(rtsx_alloc_device);
-+
-+void rtsx_queue_work(struct work_struct *work)
-+{
-+	queue_work(workqueue, work);
-+}
-+EXPORT_SYMBOL(rtsx_queue_work);
-+
-+void rtsx_queue_delayed_work(struct delayed_work *dwork, unsigned long delay)
-+{
-+	queue_delayed_work(workqueue, dwork, delay);
-+}
-+EXPORT_SYMBOL(rtsx_queue_delayed_work);
-+
-+int rtsx_register_driver(struct rtsx_driver *drv)
-+{
-+	drv->driver.bus = &rtsx_bus_type;
-+
-+	return driver_register(&drv->driver);
-+}
-+EXPORT_SYMBOL(rtsx_register_driver);
-+
-+void rtsx_unregister_driver(struct rtsx_driver *drv)
-+{
-+	driver_unregister(&drv->driver);
-+}
-+EXPORT_SYMBOL(rtsx_unregister_driver);
-+
-+void rtsx_switch_clock(struct rtsx_dev *sock, unsigned int card_clock,
-+		u8 ssc_depth, int double_clk, int vpclk)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	adapter->common_ops->switch_clock(adapter,
-+				card_clock, ssc_depth, double_clk, vpclk);
-+}
-+EXPORT_SYMBOL(rtsx_switch_clock);
-+
-+void rtsx_complete_unfinished_transfer(struct rtsx_dev *sock)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	adapter->common_ops->complete_unfinished_transfer(adapter);
-+}
-+EXPORT_SYMBOL(rtsx_complete_unfinished_transfer);
-+
-+void rtsx_sdmmc_set_bus_width(struct rtsx_dev *sock, unsigned char bus_width)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	adapter->sdmmc_ops->sdmmc_set_bus_width(adapter, bus_width);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_set_bus_width);
-+
-+void rtsx_sdmmc_set_power_mode(struct rtsx_dev *sock, unsigned char power_mode)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	adapter->sdmmc_ops->sdmmc_set_power_mode(adapter, power_mode);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_set_power_mode);
-+
-+void rtsx_sdmmc_set_timing(struct rtsx_dev *sock, unsigned char timing)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	adapter->sdmmc_ops->sdmmc_set_timing(adapter, timing);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_set_timing);
-+
-+int rtsx_sdmmc_switch_voltage(struct rtsx_dev *sock, unsigned char voltage)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	return adapter->sdmmc_ops->sdmmc_switch_voltage(adapter, voltage);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_switch_voltage);
-+
-+int rtsx_sdmmc_get_ro(struct rtsx_dev *sock)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	return adapter->sdmmc_ops->sdmmc_get_ro(adapter);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_get_ro);
-+
-+int rtsx_sdmmc_get_cd(struct rtsx_dev *sock)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	return adapter->sdmmc_ops->sdmmc_get_cd(adapter);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_get_cd);
-+
-+int rtsx_sdmmc_execute_tuning(struct rtsx_dev *sock)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	return adapter->sdmmc_ops->sdmmc_execute_tuning(adapter);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_execute_tuning);
-+
-+int rtsx_sdmmc_send_cmd_get_rsp(struct rtsx_dev *sock, u8 cmd_idx,
-+		u32 arg, unsigned int resp_type, u32 *resp)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	return adapter->sdmmc_ops->sdmmc_send_cmd_get_rsp(adapter,
-+				cmd_idx, arg, resp_type, resp);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_send_cmd_get_rsp);
-+
-+int rtsx_sdmmc_read_data(struct rtsx_dev *sock, u8 *cmd,
-+		u16 byte_cnt, u8 *buf, int buf_len, int timeout)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	return adapter->sdmmc_ops->sdmmc_read_data(adapter, cmd,
-+				byte_cnt, buf, buf_len, timeout);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_read_data);
-+
-+int rtsx_sdmmc_write_data(struct rtsx_dev *sock, u8 *cmd,
-+		u16 byte_cnt, u8 *buf, int buf_len, int timeout)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	return adapter->sdmmc_ops->sdmmc_write_data(adapter, cmd,
-+				byte_cnt, buf, buf_len, timeout);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_write_data);
-+
-+int rtsx_sdmmc_rw_multi(struct rtsx_dev *sock, void *buf, unsigned int blksz,
-+		unsigned int blocks, unsigned int use_sg, int read, int uhs)
-+{
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	return adapter->sdmmc_ops->sdmmc_rw_multi(adapter, buf, blksz,
-+				blocks, use_sg, read, uhs);
-+}
-+EXPORT_SYMBOL(rtsx_sdmmc_rw_multi);
-+
-+static int __init rtsx_core_init(void)
-+{
-+	int rc;
-+
-+	workqueue = create_freezable_workqueue("rtsx_wq");
-+	if (!workqueue)
-+		return -ENOMEM;
-+
-+	rc = bus_register(&rtsx_bus_type);
-+	if (rc)
-+		return rc;
-+
-+	rc = class_register(&rtsx_adapter_class);
-+	if (rc)
-+		return rc;
-+
-+	return rc;
++	rtsx_unregister_driver(&realtek_sdmmc_driver);
 +}
 +
-+static void __exit rtsx_core_exit(void)
-+{
-+	class_unregister(&rtsx_adapter_class);
-+	bus_unregister(&rtsx_bus_type);
-+	destroy_workqueue(workqueue);
-+}
-+
-+module_init(rtsx_core_init);
-+module_exit(rtsx_core_exit);
++module_init(realtek_sdmmc_drv_init);
++module_exit(realtek_sdmmc_drv_exit);
 +
 +MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Realtek Corp.");
-+MODULE_DESCRIPTION("Realtek Card Reader Core Driver");
-diff --git a/include/linux/rtsx_core.h b/include/linux/rtsx_core.h
-new file mode 100644
-index 0000000..564e7b0
---- /dev/null
-+++ b/include/linux/rtsx_core.h
-@@ -0,0 +1,188 @@
-+/* Realtek card reader core driver
-+ *
-+ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author:
-+ *   Wei WANG <wei_wang@realsil.com.cn>
-+ *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
-+ */
-+
-+#ifndef __RTSX_CORE_H
-+#define __RTSX_CORE_H
-+
-+#include <linux/pci.h>
-+
-+#define RTSX_TYPE_XD			1
-+#define RTSX_TYPE_MS			2
-+#define RTSX_TYPE_SD			3
-+
-+#define RTSX_SSC_DEPTH_4M		0x01
-+#define RTSX_SSC_DEPTH_2M		0x02
-+#define RTSX_SSC_DEPTH_1M		0x03
-+#define RTSX_SSC_DEPTH_500K		0x04
-+#define RTSX_SSC_DEPTH_250K		0x05
-+
-+#define wait_timeout_x(task_state, msecs)			\
-+do {								\
-+	set_current_state((task_state));			\
-+	schedule_timeout(msecs_to_jiffies(msecs));		\
-+} while (0)
-+
-+#define wait_timeout(msecs)	wait_timeout_x(TASK_INTERRUPTIBLE, (msecs))
-+
-+struct rtsx_device_id {
-+	unsigned char type;
-+};
-+
-+struct rtsx_dev {
-+	char __iomem  *addr;
-+	spinlock_t    lock;
-+	unsigned char type;
-+	unsigned int  socket_id;
-+
-+	void          (*card_event)(struct rtsx_dev *sock);
-+	void          (*data_event)(struct rtsx_dev *sock);
-+
-+	struct device dev;
-+};
-+
-+struct rtsx_driver {
-+	struct rtsx_device_id *id_table;
-+	int                   (*probe)(struct rtsx_dev *dev);
-+	void                  (*remove)(struct rtsx_dev *dev);
-+	int                   (*suspend)(struct rtsx_dev *dev,
-+					 pm_message_t state);
-+	int                   (*resume)(struct rtsx_dev *dev);
-+
-+	struct device_driver  driver;
-+};
-+
-+struct rtsx_adapter;
-+
-+struct rtsx_common_ops {
-+	int		(*switch_clock)(struct rtsx_adapter *adapter,
-+				unsigned int card_clock, u8 ssc_depth,
-+				int double_clk, int vpclk);
-+	void		(*complete_unfinished_transfer)(
-+				struct rtsx_adapter *adapter);
-+};
-+
-+struct rtsx_sdmmc_ops {
-+	int		(*sdmmc_set_bus_width)(
-+				struct rtsx_adapter *adapter,
-+				unsigned char bus_width);
-+	int		(*sdmmc_set_power_mode)(
-+				struct rtsx_adapter *adapter,
-+				unsigned char power_mode);
-+	int		(*sdmmc_set_timing)(struct rtsx_adapter *adapter,
-+				unsigned char timing);
-+	int		(*sdmmc_switch_voltage)(
-+				struct rtsx_adapter *adapter,
-+				unsigned char signal_voltage);
-+	int		(*sdmmc_get_ro)(struct rtsx_adapter *adapter);
-+	int		(*sdmmc_get_cd)(struct rtsx_adapter *adapter);
-+	int		(*sdmmc_execute_tuning)(
-+				struct rtsx_adapter *adapter);
-+	int		(*sdmmc_send_cmd_get_rsp)(
-+				struct rtsx_adapter *adapter, u8 cmd_idx,
-+				u32 arg, unsigned int resp_type, u32 *resp);
-+	int		(*sdmmc_read_data)(struct rtsx_adapter *adapter,
-+				u8 *cmd, u16 byte_cnt, u8 *buf,
-+				int buf_len, int timeout);
-+	int		(*sdmmc_write_data)(struct rtsx_adapter *adapter,
-+				u8 *cmd, u16 byte_cnt, u8 *buf,
-+				int buf_len, int timeout);
-+	int		(*sdmmc_rw_multi)(struct rtsx_adapter *adapter,
-+				void *buf, unsigned int blksz,
-+				unsigned int blocks, unsigned int use_sg,
-+				int read, int uhs);
-+};
-+
-+#define EXTRA_CAPS_SD_SDR50		(1 << 0)
-+#define EXTRA_CAPS_SD_SDR104		(1 << 1)
-+#define EXTRA_CAPS_SD_DDR50		(1 << 2)
-+#define EXTRA_CAPS_MMC_HSDDR		(1 << 3)
-+#define EXTRA_CAPS_MMC_HS200		(1 << 4)
-+#define EXTRA_CAPS_MMC_8BIT		(1 << 5)
-+
-+struct rtsx_adapter {
-+	spinlock_t			lock;
-+	unsigned int			id;
-+	unsigned int			num_sockets;
-+	u32				extra_caps;
-+
-+	struct device			dev;
-+
-+	const struct rtsx_common_ops	*common_ops;
-+	const struct rtsx_sdmmc_ops	*sdmmc_ops;
-+
-+	struct rtsx_dev			*sockets[0];
-+};
-+
-+struct rtsx_reg_pair {
-+	u16		addr;
-+	u8		val;
-+};
-+
-+static inline struct rtsx_adapter *sock_to_adapter(struct rtsx_dev *sock)
-+{
-+	return container_of(sock->dev.parent, struct rtsx_adapter, dev);
-+}
-+
-+struct rtsx_adapter *rtsx_alloc_adapter(unsigned int num_sockets,
-+					struct device *dev);
-+int rtsx_add_adapter(struct rtsx_adapter *adapter);
-+void rtsx_remove_adapter(struct rtsx_adapter *adapter);
-+void rtsx_free_adapter(struct rtsx_adapter *adapter);
-+void rtsx_free_device(struct device *dev);
-+struct rtsx_dev *rtsx_alloc_device(struct rtsx_adapter *adapter,
-+		unsigned int id, unsigned char type);
-+void rtsx_queue_work(struct work_struct *work);
-+void rtsx_queue_delayed_work(struct delayed_work *dwork, unsigned long delay);
-+int rtsx_register_driver(struct rtsx_driver *drv);
-+void rtsx_unregister_driver(struct rtsx_driver *drv);
-+
-+void rtsx_switch_clock(struct rtsx_dev *sock, unsigned int card_clock,
-+		u8 ssc_depth, int double_clk, int vpclk);
-+void rtsx_complete_unfinished_transfer(struct rtsx_dev *sock);
-+
-+void rtsx_sdmmc_set_bus_width(struct rtsx_dev *sock, unsigned char bus_width);
-+void rtsx_sdmmc_set_power_mode(struct rtsx_dev *sock, unsigned char power_mode);
-+void rtsx_sdmmc_set_timing(struct rtsx_dev *sock, unsigned char timing);
-+int rtsx_sdmmc_switch_voltage(struct rtsx_dev *sock, unsigned char voltage);
-+int rtsx_sdmmc_get_ro(struct rtsx_dev *sock);
-+int rtsx_sdmmc_get_cd(struct rtsx_dev *sock);
-+int rtsx_sdmmc_execute_tuning(struct rtsx_dev *sock);
-+int rtsx_sdmmc_send_cmd_get_rsp(struct rtsx_dev *sock, u8 cmd_idx,
-+		u32 arg, unsigned int resp_type, u32 *resp);
-+int rtsx_sdmmc_read_data(struct rtsx_dev *sock, u8 *cmd,
-+		u16 byte_cnt, u8 *buf, int buf_len, int timeout);
-+int rtsx_sdmmc_write_data(struct rtsx_dev *sock, u8 *cmd,
-+		u16 byte_cnt, u8 *buf, int buf_len, int timeout);
-+int rtsx_sdmmc_rw_multi(struct rtsx_dev *sock, void *buf, unsigned int blksz,
-+		unsigned int blocks, unsigned int use_sg, int read, int uhs);
-+
-+static inline void *rtsx_get_drvdata(struct rtsx_dev *dev)
-+{
-+	return dev_get_drvdata(&dev->dev);
-+}
-+
-+static inline void rtsx_set_drvdata(struct rtsx_dev *dev, void *data)
-+{
-+	dev_set_drvdata(&dev->dev, data);
-+}
-+
-+#endif
++MODULE_DESCRIPTION("Realtek SD/MMC Card Interface Driver");
 -- 
 1.7.9.5
 
