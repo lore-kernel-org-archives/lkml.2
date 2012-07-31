@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab2GaOh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:37:29 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:45012 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754393Ab2GaOh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:37:27 -0400
-X-IronPort-AV: E=Sophos;i="4.77,686,1336374000"; 
-   d="scan'208";a="670459597"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Mel Gorman <mgorman@suse.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the nfs tree
-Thread-Topic: linux-next: manual merge of the akpm tree with the nfs tree
-Thread-Index: AQHNbtR4a/OwVO3zl0Gi+NGAKMKYSZdDp5EAgABEHAA=
-Date: Tue, 31 Jul 2012 14:37:24 +0000
-Message-ID: <1343745442.519.20.camel@lade.trondhjem.org>
-References: <20120731142441.0d01100f9d050ec6e479c923@canb.auug.org.au>
-	 <20120731103336.GN612@suse.de>
-In-Reply-To: <20120731103336.GN612@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <A6BB553D7D0ECB4DB001B8242D701D2E@tahoe.netapp.com>
+	id S1754637Ab2GaOhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:37:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52452 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754316Ab2GaOhu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 10:37:50 -0400
+Date: Tue, 31 Jul 2012 15:37:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org,
+        linus.walleij@stericsson.com, arnd@arndb.de,
+        broonie@opensource.wolfsonmicro.com, olalilja@yahoo.se,
+        STEricsson_nomadik_linux@list.st.com, lrg@ti.com
+Subject: Re: [PATCH 5/6] ARM: ux500: Enable HIGHMEM on all mop500 platforms
+Message-ID: <20120731143732.GS6802@n2100.arm.linux.org.uk>
+References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-10-git-send-email-lee.jones@linaro.org> <20120731135614.GR6802@n2100.arm.linux.org.uk> <5017EBDC.6010005@linaro.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5017EBDC.6010005@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6VEbaNl011296
 
-On Tue, 2012-07-31 at 11:33 +0100, Mel Gorman wrote:
-> On Tue, Jul 31, 2012 at 02:24:41PM +1000, Stephen Rothwell wrote:
-> > Hi Andrew,
-> > 
-> > Today's linux-next merge of the akpm tree got a conflict in
-> > net/sunrpc/xprtsock.c between commit 5cf02d09b50b ("nfs: skip commit in
-> > releasepage if we're freeing memory for fs-related reasons") from the nfs
-> > tree and commit "nfs: enable swap on NFS" from the akpm tree.
-> > 
-> > Just context changes?  I fixed it up (I think - see below) and can carry
-> > the fix as necessary.
-> 
-> Functionally it looks fine. As you say, it all looks like context
-> changes. Arguably code like this
-> 
-> current->flags &= ~PF_FSTRANS
-> 
-> could use tsk_restore_flags instead() even though it should never be
-> necessary as PF_FSTRANS would not be set on function entry. However,
-> it would set up a depedency between the patch sets that is undesirable.
-> If both sets get merged then it might make sense as a cleanup to use
-> tsk_restore_flags() but not until then.
-> 
-> Thanks Stephen.
-> 
+On Tue, Jul 31, 2012 at 03:29:48PM +0100, Lee Jones wrote:
+> On 31/07/12 14:56, Russell King - ARM Linux wrote:
+>> On Tue, Jul 31, 2012 at 02:31:30PM +0100, Lee Jones wrote:
+>>> The current kernel commandline for ux500 based devices includes
+>>> hard-coded allocations for things like mali and hwmem, which
+>>> actually run over lowmem. Here we enable highmem in order to
+>>> avoid memory corruption errors.
+>>
+>> Err what?  highmem should make no difference if things are being done
+>> correctly.
+>>
+>> In other words, your patch description is too vague to understand what
+>> the problem is and why you have to force highmem on - and nothing should
+>> _require_ highmem.
+>
+> I think I must have misunderstood some advice which was recently given  
+> to me. I'll drop the patch.
+>
+> Thanks for reviewing.
 
-Do we really need to set both PF_FSTRANS and PF_MEMALLOC here? The
-reason why I merged the PF_FSTRANS patch is that we have the deadlock
-problem when allocating a new socket even before we add swap-over-nfs.
-Adding PF_FSTRANS to disallow entry into the NFS layer by the memory
-allocator fixes that issue.
-What value does PF_MEMALLOC add? Is that in order to prevent recursion
-into other areas of the swap code (say, if you mix swap-over-nfs with
-ordinary swap-to-disk)?
+There are two reasons for not doing this:
 
-Cheers
-  Trond
--- 
-Trond Myklebust
-Linux NFS client maintainer
+1. it is wrong to force core optional features on by using 'select'
+2. it is wrong to use 'select' on user visible symbols because it creates
+   confusion, and prevents the user from disabling the option.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Note that highmem is just a hack to make larger memory systems work before
+64-bit systems happen - it is _known_ to make systems unstable with large
+amounts of highmem (even on x86) due to the requirement to have a certain
+amount of metadata stored in lowmem.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Nothing should ever force anyone to have highmem enabled.
+
+I still fail to see how not having highmem enabled would ever cause memory
+corruption errors (unless something dealing with memory in a very very
+wrong way - iow, not using one of the reservation or memory allocation
+methods provided by the kernel.)
