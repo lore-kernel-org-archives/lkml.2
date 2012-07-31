@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2GaUNs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 16:13:48 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47220 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870Ab2GaUNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 16:13:47 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>
-Subject: Update VIP to videobuf2 and control framework
-Date: Tue, 31 Jul 2012 22:17:06 +0200
-Message-Id: <1343765829-6006-1-git-send-email-federico.vaga@gmail.com>
-X-Mailer: git-send-email 1.7.11.2
+	id S1756411Ab2GaUOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 16:14:12 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:53847 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756221Ab2GaUOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 16:14:09 -0400
+Date: Tue, 31 Jul 2012 14:49:34 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org
+Subject: [PATCH] crypto: Add a MAINTAINERS entry for P7+ in-Nest crypto driver
+Message-ID: <20120731194931.GA23426@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12073120-9360-0000-0000-000008F4FC8B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested I moved the Video Buffer Input (VIP) of the STA2X11 board to the
-videobuf2. This patch series is an RFC.
+Add a MAINTAINERS entry for the IBM Power in-Nest Crypto Acceleators
+driver.
 
-The first patch is just an update to the adv7180 because the VIP (the only
-user) now use the control framework so query{g_|s_|ctrl} are not necessery.
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+---
+ MAINTAINERS |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-The second patch adds a new memory allocator for the videobuf2. I name it
-videobuf2-dma-streaming but I think "streaming" is not the best choice, so
-suggestions are welcome. My inspiration for this buffer come from
-videobuf-dma-contig (cached) version. After I made this buffer I found the
-videobuf2-dma-nc made by Jonathan Corbet and I improve the allocator with
-some suggestions (http://patchwork.linuxtv.org/patch/7441/). The VIP doesn't
-work with videobu2-dma-contig and I think this solution is easier the sg.
-
-The third patch updates the VIP to videobuf2 and control framework. I made also
-some restyling to the driver and change some mechanism so I take the ownership
-of the driver and I add the copyright of ST Microelectronics. Some trivial
-code is unchanged. The patch probably needs some extra update.
-I add the control framework to the VIP but without any control. I add it to 
-inherit controls from adv7180.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fb036a0..757fe60 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3414,6 +3414,12 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux.git
+ S:	Maintained
+ F:	arch/ia64/
+ 
++IBM Power in-Nest Crypto Acceleration
++M:	Kent Yoder <key@linux.vnet.ibm.com>
++L:	linux-crypto@vger.kernel.org
++S:	Supported
++F:	drivers/crypto/nx/
++
+ IBM Power Linux RAID adapter
+ M:	Brian King <brking@us.ibm.com>
+ S:	Supported
+-- 
+1.7.5.4
 
