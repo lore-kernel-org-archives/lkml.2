@@ -1,172 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab2GaBAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 21:00:08 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63650 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab2GaBAG (ORCPT
+	id S1753113Ab2GaBH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 21:07:28 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:42225 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab2GaBH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 21:00:06 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-df-50172e137cf7
-Message-ID: <50172E12.5010002@lge.com>
-Date: Tue, 31 Jul 2012 10:00:02 +0900
-From: "kyungsik.lee" <kyungsik.lee@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 30 Jul 2012 21:07:27 -0400
+X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 21:07:27 EDT
+Date: Tue, 31 Jul 2012 03:59:29 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
+        GregKH <greg@kroah.com>
+Subject: Re: [PATCH 1/2] onewire: w1-gpio: add ext_pullup_enable pin in
+ platform data
+Message-ID: <20120731005929.GP27847@sci.fi>
+Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>,
+	Evgeniy Polyakov <zbr@ioremap.net>, Daniel Mack <zonque@gmail.com>,
+	linux-kernel@vger.kernel.org, GregKH <greg@kroah.com>
+References: <1343249670-14985-1-git-send-email-zonque@gmail.com>
+ <20120730181238.GA23443@ioremap.net>
 MIME-Version: 1.0
-To: "S, Venkatraman" <svenkatr@ti.com>
-CC: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-References: <1343613881-6803-1-git-send-email-kyungsik.lee@lge.com> <CANfBPZ-pa++A=OSmhaEfVs-TDVtTbsBi4FacaPxuvfNJRe-Jxw@mail.gmail.com>
-In-Reply-To: <CANfBPZ-pa++A=OSmhaEfVs-TDVtTbsBi4FacaPxuvfNJRe-Jxw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20120730181238.GA23443@ioremap.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-30 ì˜¤í›„ 10:16, S, Venkatraman wrote:
-> On Mon, Jul 30, 2012 at 7:34 AM, Kyungsik Lee <kyungsik.lee@lge.com> wrote:
->> It is expected that Extended CSD register(the size of this register
->> is larger than CID/CSD) will be referenced more frequently as more
->> fields have been added to Extended CSD and it seems that it is not
->> a good option to double the memory used.
->>
->> This patch is intended to avoid the use of bounce buffer for reading
->> Extended CSD register in mmc_send_cxd_data().
-> Maybe I am reading this wrong, but mmc_send_cid and mmc_send_csd are always
-> called with card->raw_cid and card->raw_csd, which are allocated from the heap,
-> (from mmc_alloc_card).
-> So the second half of your changes are not required, or a WARN_ON
-> might suffice ?
-In case of non cache-coherent architecture, the address of raw_cid and 
-raw_csd should
-be aligned on a cache line boundary for DMA. It's not guaranteed all the 
-time.
-So using kmalloc() is a way to make it work.
->
->> Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
->> ---
->> Changes in v2:
->> - Handling on-stack buffer if it's used in caller.
->> ---
->>   drivers/mmc/core/mmc_ops.c |   56 ++++++++++++++++++++++++++++++++++---------
->>   1 files changed, 44 insertions(+), 12 deletions(-)
->>
->> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
->> index 0ed2cc5..dae5492 100644
->> --- a/drivers/mmc/core/mmc_ops.c
->> +++ b/drivers/mmc/core/mmc_ops.c
->> @@ -239,13 +239,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
->>          struct mmc_data data = {0};
->>          struct scatterlist sg;
->>          void *data_buf;
->> +       int is_on_stack;
->>
->> -       /* dma onto stack is unsafe/nonportable, but callers to this
->> -        * routine normally provide temporary on-stack buffers ...
->> -        */
->> -       data_buf = kmalloc(len, GFP_KERNEL);
->> -       if (data_buf == NULL)
->> -               return -ENOMEM;
->> +       is_on_stack = object_is_on_stack(buf);
->> +       if (is_on_stack) {
->> +
->> +               /* dma onto stack is unsafe/nonportable, but callers to this
->> +                * routine normally provide temporary on-stack buffers ...
->> +                */
->> +               data_buf = kmalloc(len, GFP_KERNEL);
->> +               if (data_buf == NULL)
->> +                       return -ENOMEM;
->> +       } else
->> +               data_buf = buf;
->>
->>          mrq.cmd = &cmd;
->>          mrq.data = &data;
->> @@ -280,8 +286,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
->>
->>          mmc_wait_for_req(host, &mrq);
->>
->> -       memcpy(buf, data_buf, len);
->> -       kfree(data_buf);
->> +       if (is_on_stack) {
->> +               memcpy(buf, data_buf, len);
->> +               kfree(data_buf);
->> +       }
->>
->>          if (cmd.error)
->>                  return cmd.error;
->> @@ -294,24 +302,37 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
->>   int mmc_send_csd(struct mmc_card *card, u32 *csd)
->>   {
->>          int ret, i;
->> +       u32 *csd_tmp;
->>
->>          if (!mmc_host_is_spi(card->host))
->>                  return mmc_send_cxd_native(card->host, card->rca << 16,
->>                                  csd, MMC_SEND_CSD);
->>
->> -       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
->> +       csd_tmp = kmalloc(16, GFP_KERNEL);
->> +       if (!csd_tmp)
->> +               return -ENOMEM;
->> +
->> +       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
->>          if (ret)
->> -               return ret;
->> +               goto err;
->> +
->> +       memcpy(csd, csd_tmp, 16);
->>
->>          for (i = 0;i < 4;i++)
->>                  csd[i] = be32_to_cpu(csd[i]);
->>
->> +       kfree(csd_tmp);
->>          return 0;
->> +
->> +err:
->> +       kfree(csd_tmp);
->> +       return ret;
->>   }
->>
->>   int mmc_send_cid(struct mmc_host *host, u32 *cid)
->>   {
->>          int ret, i;
->> +       u32 *cid_tmp;
->>
->>          if (!mmc_host_is_spi(host)) {
->>                  if (!host->card)
->> @@ -320,14 +341,25 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
->>                                  cid, MMC_SEND_CID);
->>          }
->>
->> -       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
->> +       cid_tmp = kmalloc(16, GFP_KERNEL);
->> +       if (!cid_tmp)
->> +               return -ENOMEM;
->> +
->> +       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
->>          if (ret)
->> -               return ret;
->> +               goto err;
->> +
->> +       memcpy(cid, cid_tmp, 16);
->>
->>          for (i = 0;i < 4;i++)
->>                  cid[i] = be32_to_cpu(cid[i]);
->>
->> +       kfree(cid_tmp);
->>          return 0;
->> +
->> +err:
->> +       kfree(cid_tmp);
->> +       return ret;
->>   }
->>
->>   int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
->> --
->> 1.7.0.4
->>
+On Mon, Jul 30, 2012 at 10:12:39PM +0400, Evgeniy Polyakov wrote:
+> Hi
+> 
+> Sorry for long delay
+> [resend with fixed Greg's address :)]
+> 
+> On Wed, Jul 25, 2012 at 10:54:29PM +0200, Daniel Mack (zonque@gmail.com) wrote:
+> > In the process of porting boards to devicetree implemenation, we should
+> > keep information about external circuitry where they belong - the
+> > individual drivers.
+> > 
+> > This patch adds a way to specify a GPIO to drive the (optional) external
+> > pull-up logic, rather than using a function pointer for that.
+> 
+> I do not object against this patch, but I have rather limited knowledge
+> about gpio driver. Patch looks good, feel free to add my
+> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+> 
+> Greg, please pull it into your tree, if Ville does not object.
 
+No objections from me.
+
+The only cosmetic issue I spotted was 'pdata' being assigned twice in
+w1_gpio_probe().
+
+-- 
+Ville Syrjälä
+syrjala@sci.fi
+http://www.sci.fi/~syrjala/
