@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab2GaEuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:50:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48548 "EHLO
+	id S1755669Ab2GaFD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:03:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48609 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755367Ab2GaEuJ (ORCPT
+	by vger.kernel.org with ESMTP id S1755436Ab2GaEuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:09 -0400
-Message-Id: <20120731044313.021299907@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:17 -0400
+Message-Id: <20120731044321.935043336@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:21 +0100
+Date: Tue, 31 Jul 2012 05:44:16 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Shaohua Li <shaohua.li@intel.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [ 11/73] vmscan: activate executable pages after first usage
+        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@fieldses.org>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 66/73] locks: fix checking of fcntl_setlease argument
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,55 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: "J. Bruce Fields" <bfields@fieldses.org>
 
-commit c909e99364c8b6ca07864d752950b6b4ecf6bef4 upstream.
+commit 0ec4f431eb56d633da3a55da67d5c4b88886ccc7 upstream.
 
-Stable note: Not tracked in Bugzilla. There were reports of shared
-	mapped pages being unfairly reclaimed in comparison to older kernels.
-	This is being addressed over time.
+The only checks of the long argument passed to fcntl(fd,F_SETLEASE,.)
+are done after converting the long to an int.  Thus some illegal values
+may be let through and cause problems in later code.
 
-Logic added in commit 8cab4754d24a0 ("vmscan: make mapped executable pages
-the first class citizen") was noticeably weakened in commit
-645747462435d84 ("vmscan: detect mapped file pages used only once").
+[ They actually *don't* cause problems in mainline, as of Dave Jones's
+  commit 8d657eb3b438 "Remove easily user-triggerable BUG from
+  generic_setlease", but we should fix this anyway.  And this patch will
+  be necessary to fix real bugs on earlier kernels. ]
 
-Currently these pages can become "first class citizens" only after second
-usage.  After this patch page_check_references() will activate they after
-first usage, and executable code gets yet better chance to stay in memory.
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Shaohua Li <shaohua.li@intel.com>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/vmscan.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/locks.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 753c1e6..753a2dc 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -718,6 +718,12 @@ static enum page_references page_check_references(struct page *page,
- 		if (referenced_page || referenced_ptes > 1)
- 			return PAGEREF_ACTIVATE;
+diff --git a/fs/locks.c b/fs/locks.c
+index fce6238..82c3533 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -308,7 +308,7 @@ static int flock_make_lock(struct file *filp, struct file_lock **lock,
+ 	return 0;
+ }
  
-+		/*
-+		 * Activate file-backed executable pages after first usage.
-+		 */
-+		if (vm_flags & VM_EXEC)
-+			return PAGEREF_ACTIVATE;
-+
- 		return PAGEREF_KEEP;
- 	}
+-static int assign_type(struct file_lock *fl, int type)
++static int assign_type(struct file_lock *fl, long type)
+ {
+ 	switch (type) {
+ 	case F_RDLCK:
+@@ -445,7 +445,7 @@ static const struct lock_manager_operations lease_manager_ops = {
+ /*
+  * Initialize a lease, use the default lock manager operations
+  */
+-static int lease_init(struct file *filp, int type, struct file_lock *fl)
++static int lease_init(struct file *filp, long type, struct file_lock *fl)
+  {
+ 	if (assign_type(fl, type) != 0)
+ 		return -EINVAL;
+@@ -463,7 +463,7 @@ static int lease_init(struct file *filp, int type, struct file_lock *fl)
+ }
  
+ /* Allocate a file_lock initialised to this type of lease */
+-static struct file_lock *lease_alloc(struct file *filp, int type)
++static struct file_lock *lease_alloc(struct file *filp, long type)
+ {
+ 	struct file_lock *fl = locks_alloc_lock();
+ 	int error = -ENOMEM;
 
 
