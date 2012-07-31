@@ -1,171 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab2GaMiW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:38:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55061 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755945Ab2GaMiT (ORCPT
+	id S1756185Ab2GaMia (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:38:30 -0400
+Received: from smtp-out-178.synserver.de ([212.40.185.178]:1175 "EHLO
+	smtp-out-178.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756212Ab2GaMiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:38:19 -0400
-Date: Tue, 31 Jul 2012 14:38:11 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Mitch Bradley <wmb@firmworks.com>
-Cc: Alex Courbot <acourbot@nvidia.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-Message-ID: <20120731123811.GA25855@avionic-0098.adnet.avionic-design.de>
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
- <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
- <50170EA0.1010408@wwwdotorg.org>
- <5017B434.2010706@nvidia.com>
- <20120731105640.GD16155@avionic-0098.adnet.avionic-design.de>
- <5017CDF9.2060304@firmworks.com>
+	Tue, 31 Jul 2012 08:38:22 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 22363
+Message-ID: <5017D2BD.1070109@metafoo.de>
+Date: Tue, 31 Jul 2012 14:42:37 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
-Content-Disposition: inline
-In-Reply-To: <5017CDF9.2060304@firmworks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:qSm25h60AR2vh0GrCWdmbx6MHFu9m67FztaXA5srS+M
- ak/lGwpPRT2bzZ9KECqgO3zyQBUVDl7H5eNQiFRTcrYZPlMRcT
- YstCcGvGdUmgHnVdEt2uGrJMFBW5ykThNY9lKa54ZaOFd8imRn
- RoajoNIZV3bBu36j2nwJ69tMMMI0Lavp1F2Zm5fgDnCpjvvsd2
- 1k/rKbEECHANpvTyQ6QSaxeHtH5vvFf02tYztvjiHnTp4WzP3K
- ikKkn299cqd+kzDAjbNedXrRs0ykAhnmWfIG1zFLWM4CstVKlZ
- gyON6Eg85TMRpjSJWFs2AA0yW+BdSw0kuZBOzKlrDL9SDvv5fB
- SRgaWmPokTQrbFn8B6YSAMIIEodZo7k6oaDuVv+GDpVnCYm4ry
- wl1GNiYW7wNcjyB/ehfMbUHbKSvcVOHvjg=
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Jonathan Cameron <jic23@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: NULL pointer dereference in iio_buffer_register()
+References: <20120708115331.GA16281@localhost> <20120731103155.GA16388@localhost>
+In-Reply-To: <20120731103155.GA16388@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/31/2012 12:31 PM, Fengguang Wu wrote:
+>> [    7.623739] BUG: unable to handle kernel NULL pointer dereference at 00000000000000b0
+> 
+> I managed to root cause it:
+> 
+>         [    2.108085] BUG: unable to handle kernel NULL pointer dereference at 00000060
+>         [    2.112015] EIP: [<c19b4f4f>] iio_buffer_register+0x1f/0x360 SS:ESP 0068:ce837f34
+> 
+>         $ addr2line -e vmlinux -i c19b4f4f
+>         /c/wfg/linux/drivers/iio/industrialio-buffer.c:275
+> 
+>         (gdb) p &((struct iio_buffer *) 0)->attrs
+>         $1 = (const struct attribute_group **) 0x60
+> 
+> The panic happens while trying to dereference the NULL indio_dev->buffer:
+> 
+>         266 int iio_buffer_register(struct iio_dev *indio_dev,
+>         267                         const struct iio_chan_spec *channels,
+>         268                         int num_channels)
+>         269 {  
+>         270         struct iio_dev_attr *p;
+>         271         struct attribute **attr;
+>         272         struct iio_buffer *buffer = indio_dev->buffer;
+>         273         int ret, i, attrn, attrcount, attrcount_orig = 0;
+>         274 
+> ==>     275         if (buffer->attrs)
+>         276                 indio_dev->groups[indio_dev->groupcounter++] = buffer->attrs;
+> 
+> iio_dummy_probe() has the code to configure that buffer, however
+> iio_simple_dummy_configure_buffer() is defined to do nothing on
+> !CONFIG_IIO_SIMPLE_DUMMY_BUFFER..
+> 
+>         448         /* Configure buffered capture support. */
+> ==>     449         ret = iio_simple_dummy_configure_buffer(indio_dev);
+>         450         if (ret < 0)
+>         451                 goto error_unregister_events;
+>         452 
+>         453         /*
+>         454          * Register the channels with the buffer, but avoid the output
+>         455          * channel being registered by reducing the number of channels by 1.
+>         456          */
+>         457         ret = iio_buffer_register(indio_dev, iio_dummy_channels, 5);
+>         458         if (ret < 0)
+>         459                 goto error_unconfigure_buffer;
+> 
+> Any ideas to fix it?
+> 
 
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Tue, Jul 31, 2012 at 08:22:17PM +0800, Mitch Bradley wrote:
-> On 7/31/2012 6:56 PM, Thierry Reding wrote:
-> > On Tue, Jul 31, 2012 at 07:32:20PM +0900, Alex Courbot wrote:
-> >> On 07/31/2012 07:45 AM, Stephen Warren wrote:
-> >>> I wonder if using the same structure/array as input and output would
-> >>> simplify the API; the platform data would fill in the fields mentioned
-> >>> above, and power_seq_build() would parse those, then set other fields=
- in
-> >>> the same structs to the looked-up handle values?
-> >>
-> >> The thing is that I am not sure what happens to the platform data
-> >> once probe() is done. Isn't it customary to mark it with __devinit
-> >> and have it freed after probing is successful?
-> >=20
-> > No, platform data should stay around forever. Otherwise, consider what
-> > would happen if your driver is built as a module and you unload and load
-> > it again.
-> >=20
-> >> More generally, I think it is a good practice to have data
-> >> structures tailored right for what they need to do - code with
-> >> members that are meaningful only at given points of an instance's
-> >> life tends to be more confusing.
-> >=20
-> > I agree. Furthermore the driver unload/reload would be another reason
-> > not to reuse platform data as the output of the build() function.
-> >=20
-> > But maybe what Stephen meant was more like filling a structure with data
-> > taken from the platform data and pass that to a resolve() function which
-> > would fill in the missing pieces like pointers to actual resources. I
-> > imagine a managed interface would become a little trickier to do using
-> > such an approach.
-> >=20
-> >>> If the nodes have a unit address (i.e. end in "@n"), which they will
-> >>> have to if all named "step" and there's more than one of them, then t=
-hey
-> >>> will need a matching reg property. Equally, the parent node will need
-> >>> #address-cells and #size-cells too. So, the last couple lines would b=
-e:
-> >>>
-> >>> 		power-on-sequence {
-> >>> 			#address-cells =3D <1>;
-> >>> 			#size-cells =3D <0>;
-> >>> 			step@0 {
-> >>> 				reg =3D <0>;
-> >>
-> >> That's precisely what I would like to avoid - I don't need the steps
-> >> to be numbered and I certainly have no use for a reg property. Isn't
-> >> there a way to make it simpler?
-> >=20
-> > It's not technically valid to not have the reg property. Or
-> > #address-cells and #size-cells properties for that matter.
->=20
-> I'm not keen on this representation where individual steps are nodes.
-> That seems like it could end up being too "heavyweight" for a long sequen=
-ce.
+I think the best would be to move the iio_buffer_register to
+iio_simple_dummy_configure_buffer.
 
-The other alternative would involve using a single property to encode
-one sequence. I think that was the initial proposal, though using proper
-phandle encoding it could probably be enhanced a bit. However anything
-that involves a single property has the problem that we need to encode
-the type of resource as an integer, and that makes things very hard to
-read.
-
-So it would look something like this:
-
-	power-on =3D <1  &gpio 6 0            1
-		    0                   10000
-		    2  &reg                 1
-		    3  &pwm  0 5000000      1>;
-
-	power-off =3D <3  &pwm  0 5000000      0
-		     2  &reg                 0
-		     0                   10000
-		     1  &gpio 6 0            0>;
-
-So the first cell would encode the type:
-  0: delay
-  1: gpio
-  2: regulator
-  3: PWM
-
-The next n cells would be the phandle and the specifier, while the last
-cell would encode a resource-specific parameter:
-  delay: time in microseconds
-  gpio: set level (0: low, 1: high)
-  regulator: 0: disable, 1: enable
-  pwm: 0: disable, 1: enable
-
-I guess this would be more compact, but it is also very hard to read. Is
-that something you would be happier with? Perhaps you were thinking of
-something completely different?
-
-Thierry
-
---tThc/1wpZn/ma/RB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQF9GzAAoJEN0jrNd/PrOh124P/iTHY6PDKSAJpAwz72SKyqeU
-/UA9uu8Dz3rVW5NaruM4xEcZtVsKAkgOfj9w2Bvc28eUX4Xns8KIkkYvXbU/Zt2L
-ESAUq1huI4fNWTYSaEX7+G4iYiEc7BrIhBCHh0Zo/rlVVuhk9FAC9ZfJm1iH+JMR
-5ferj3cIz4BbxvozChPix95YvehoBxHZ/05IZGZSXLIYcFB1lkBs/HEvo2F/Bapk
-by8dUy94xjSECCMXcbBOmDEJex313Z24r1Wo26fTVpkYQy2t/SahvFfU5179ueiT
-kOFnYw++yfwvttM9PwxUt2YfLSO3XpXi/1ZKZpmRYeEdBrJajN9EwnmAQ8nhb2io
-jq9r9jWvGjcZoyRSRYECVsWIXyuvtuf8aFpP/+zJKIrjC4MstudVbc+q/W5utLry
-xX03Jyup78baKegOkRzED1IxIbAW4ZZce7oymsQAOOpev5Sw4VrlS6CbfcZXWJwT
-CUcKz480lm3YEhRRu79eW4sn5Gge5CFcd+wH5W1hL7HqAoSpAvN/a8ZHIz84iqOW
-KtVYqQnO5vGAmAx2+legyizYEVC8djVSQlfU7VKzCOM+rWq5f224WKkKrysrR1dw
-je4l9lmOsYygY0ywxUcUkmT/DVPqr26UaUtKt8EhKW7o0Sd2h1t6jwCZaR5Id0QW
-re1hYOr/x66yPMN3dzAH
-=tkdt
------END PGP SIGNATURE-----
-
---tThc/1wpZn/ma/RB--
+- Lars
