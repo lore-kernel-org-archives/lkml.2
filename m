@@ -1,394 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab2GaJtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 05:49:14 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1084 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366Ab2GaJtL (ORCPT
+	id S1755304Ab2GaJvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 05:51:36 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:55055 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab2GaJvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 05:49:11 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 31 Jul 2012 02:49:10 -0700
-Message-ID: <5017AA87.2040503@nvidia.com>
-Date: Tue, 31 Jul 2012 18:51:03 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 31 Jul 2012 05:51:35 -0400
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <20120730113323.GA7303@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20120730113323.GA7303@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Jeroen Ooms <jeroen.ooms@stat.ucla.edu>
+Date: Tue, 31 Jul 2012 11:51:14 +0200
+X-Google-Sender-Auth: 5Thkd7Eu6h-MvD5LmTmLYl6W9TA
+Message-ID: <CABFfbXu_SB7K+jdmp7w3=5KGvQGOnvVGXK1XK7K-ubOJg+k3SQ@mail.gmail.com>
+Subject: What is the use of RLIMIT_NICE ?
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 08:33 PM, Thierry Reding wrote:
->> +You will need an instance of power_seq_resources to keep track of the resources
->> +that are already allocated. On success, the function returns a devm allocated
->> +resolved sequence that is ready to be passed to power_seq_run(). In case of
->> +failure, and error code is returned.
->
-> I don't quite understand why the struct power_seq_resources is needed.
-> Can this not be stored within power_seq?
+I am using prlimit in Ubuntu to do some resource restrictions in my
+sandbox which has been very helpful. However, I am not quite sure what
+to do with RLIMIT_NICE. The docs say:
 
-power_seq_resources serves two purposes:
-1) When parsing sequences, it keeps track of the resources we have 
-already allocated to avoid getting the same resource twice
-2) On cleanup, it cleans the resources that needs to be freed (i.e. 
-those that are not devm-handled).
+RLIMIT_NICE: Specifies a ceiling to which the process's nice value can
+be raised using setpriority(2) or nice(2).
 
-2) can certainly be removed either by enforcing use of devm, or by doing 
-reference counting. 1) seems more difficult to avoid - we need to keep 
-track of the resources we already own between calls to 
-power_seq_build(). I'd certainly be glad to remove that structure from 
-public view and simplify the code if that is possible though.
+However, according to getpriority(2), a process can raise it's nice
+value only if owned by a superuser in the first place. But if this is
+the case, the RLIMIT_NICE value is not going to add too any
+functionality because a privileged user can arbitrarily lower or
+higher RLIMIT values anyway.
 
->> +
->> +A resolved power sequence returned by power_seq_build can be run by
->> +power_run_run():
->> +
->> +int power_seq_run(struct device *dev, power_seq *seq);
->
-> Why is the struct device required here? It already is passed during the
-> call to pwm_seq_build(), so perhaps you should keep a reference to it
-> within struct power_seq?
+So I don't understand how to use or interpret RLIMIT_NICE. For
+non-privileged users the entire thing seems useless because they
+cannot raise priority in the first place, and it makes no sense to set
+it below the current priority. However for superusers it doesn't
+really add anything either because thenice, and RLIMIT_NICE soft- and
+hard limits can arbitrarily be raised.
 
-The device is only needed for printing error messages. But as you point 
-later, maybe messages should not be printed there at all. I will try to 
-remove that parameter.
+So what is the idea behind RLIMIT_NICE ?
 
->> +It returns 0 if the sequence has successfully been run, or an error code if a
->> +problem occured.
->> +
->> +Finally, some resources that cannot be allocated through devm need to be freed
->> +manually. Therefore, be sure to call power_seq_free_resources() in your device
->> +remove function:
->> +
->> +void power_seq_free_resources(power_seq_resources *ress);
->
-> Could this not also be handled by a managed version? If a power_seq is
-> always managed, then I would assume that it also takes care of freeing
-> the resources, even if the resources have no managed equivalents.
+Thank you very much,
 
-Right.
-
-> Perhaps it would also make sense to provide non-managed version of these
-> functions. I think that would make the managed versions easier and more
-> canonical to implement.
-
-A power_seq is a single block of memory, so that should be reasonnably 
-doable indeed. Let me think a little bit more about that.
-
->> +Device tree
->> +-----------
->> +All the same, power sequences can be encoded as device tree nodes. The following
->> +properties and nodes are equivalent to the platform data defined previously:
->> +
->> +             power-supply = <&mydevice_reg>;
->> +             enable-gpio = <&gpio 6 0>;
->> +
->> +             power-on-sequence {
->> +                     regulator@0 {
->> +                             id = "power";
->> +                             enable;
->> +                             post-delay = <10>;
->> +                     };
->> +                     gpio@1 {
->> +                             id = "enable-gpio";
->> +                             enable;
->> +                     };
->> +             };
->> +
->> +Note that first, the phandles of the regulator and gpio used in the sequences
->> +are defined as properties. Then the sequence references them through the id
->> +property of every step. The name of sub-properties defines the type of the step.
->> +Valid names are "regulator", "gpio" and "pwm". Steps must be numbered
->> +sequentially.
->
-> I think there has been quite some discussion regarding the naming of
-> subnodes and the conclusion seems to have been to name them uniformly
-> after what they represent. As such the power-on-sequence subnodes should
-> be called step@0, step@1, etc. However, that will require the addition
-> of a property to define the type of resource.
-
-That's fine I guess - just adds some footprint to the DT, but nothing crazy.
-
-> Also, is there some way we can make the id property for GPIOs not
-> require the -gpio suffix? If the resource type is already GPIO, then it
-> seems redundant to add -gpio to the ID.
-
-There is unfortunately an inconsistency between the way regulators and 
-GPIOs are gotten by name. regulator_get(id) will expect to find a 
-property named "id-supply", while gpio_request_one(id) expects a 
-property named exactly "id". To workaround this we could sprintf the 
-correct property name from a non-suffixed property name within the 
-driver, but I think this actually speaks more in favor of having 
-phandles directly into the sequences.
-
->> +config POWER_SEQ
->> +     bool
->> +     default n
->> +
->
-> "default n" is already the default, so you can drop that line.
-
-Did that, thanks.
-
->> +#ifdef CONFIG_OF
->> +#include <linux/of.h>
->> +#include <linux/of_gpio.h>
->> +#endif
->
-> I think you don't need the CONFIG_OF guard around these. Both of.h and
-> of_gpio.h can be included unconditionally and actually contain dummy
-> definitions for the public functions in the !OF case.
-
-Fixed, thanks.
-
->> +static int power_seq_step_run(struct power_seq_step *step)
->> +{
->> +     int err = 0;
->> +
->> +     if (step->params.pre_delay)
->> +             mdelay(step->params.pre_delay);
->> +
->> +     switch (step->resource->type) {
->> +#ifdef CONFIG_REGULATOR
->> +     case POWER_SEQ_REGULATOR:
->> +             if (step->params.enable)
->> +                     err = regulator_enable(step->resource->regulator);
->> +             else
->> +                     err = regulator_disable(step->resource->regulator);
->> +             break;
->> +#endif
->> +#ifdef CONFIG_PWM
->> +     case POWER_SEQ_PWM:
->> +             if (step->params.enable)
->> +                     err = pwm_enable(step->resource->pwm);
->> +             else
->> +                     pwm_disable(step->resource->pwm);
->> +             break;
->> +#endif
->> +#ifdef CONFIG_GPIOLIB
->> +     case POWER_SEQ_GPIO:
->> +             gpio_set_value_cansleep(step->resource->gpio,
->> +                                     step->params.enable);
->> +             break;
->> +#endif
->
-> This kind of #ifdef'ery is quite ugly. I don't know if adding separate
-> *_run() functions for each type of resource would be any better, though.
-> Alternatively, maybe POWER_SEQ should depend on the REGULATOR, PWM and
-> GPIOLIB symbols to side-step the issue completely?
-
-If it is not realistic to consider a kernel built without regulator, pwm 
-or gpiolib support, then we might as well do that. But isn't that a 
-possibility?
-
->> +     if (!seq) return 0;
->
-> I don't think this is acceptable according to the coding style. Also,
-> perhaps returning -EINVAL would be more meaningful?
-
-I neglected running checkpatch before submitting, apologies for that. 
-The return value seems correct to me, a NULL sequence has no effect.
-
->> +
->> +     while (seq->resource) {
->
-> Perhaps this should check for POWER_SEQ_STOP instead?
-
-There is no resource for POWER_SEQ_STOP - therefore, a NULL resource is 
-used instead.
-
->> +             if ((err = power_seq_step_run(seq++))) {
->> +                     dev_err(dev, "error %d while running power sequence!\n",
->> +                             err);
->
-> For this kind of diagnostics it could be useful to have a name
-> associated with the power sequence. But I'm not sure that making the
-> power sequence code output an error here is the best solution. I find it
-> to be annoying when core code starts outputting too many error codes. In
-> this case it's particularily easy to catch the errors in the caller.
-
-Giving names to power sequences sounds like a good idea. Let me see how 
-this can be done. It might require some more data structuring.
-
->> +
->> +     while ((child = of_get_next_child(node, child)))
->> +             cpt++;
->
-> for_each_child_of_node()?
->
->> +
->> +     /* allocate one more step to signal end of sequence */
->> +     ret = devm_kzalloc(dev, sizeof(*ret) * (cpt + 1), GFP_KERNEL);
->> +     if (!ret)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     cpt = 0;
->> +     while ((child = of_get_next_child(node, child))) {
->
-> Here as well.
-
-Ah, didn't know that. Thanks.
-
->> +     /* first pass to count the number of steps to allocate */
->> +     for (cpt = 0; pseq[cpt].type != POWER_SEQ_STOP; cpt++);
->
-> Wouldn't it be easier to pass around the number of steps in the sequence
-> instead of having to count in various places? This would be more along
-> the lines of how struct platform_device defines associated resources.
-
-My goal was to limit the number of data structures, but if we add a name 
-to power sequences, we can add a steps count as well.
-
->> +
->> +     if (!cpt)
->> +             return seq;
->
-> Perhaps this should return an error-code as well? I find it nice to not
-> have to handle NULL specially when using ERR_PTR et al.
-
-Agreed.
+Jeroen
 
 
->> +typedef enum {
->> +     POWER_SEQ_STOP = 0,
->> +     POWER_SEQ_REGULATOR,
->> +     POWER_SEQ_PWM,
->> +     POWER_SEQ_GPIO,
->> +     POWER_SEQ_MAX,
->> +} power_res_type;
->
-> Maybe the prefix power_seq should be used here as well, so:
-> power_seq_res_type.
-
-Definitely.
-
->> +typedef struct list_head power_seq_resources;
->
-> No type definitions like this, please. Also, why define this particular
-> type globally?
-
-I will move that into a proper structure with a name and number of steps.
-
->> +
->> +struct power_step_params {
->> +     /* enable the resource if 1, disable if 0 */
->> +     bool enable;
->> +     /* delay (in ms) to wait before executing the step */
->> +     int  pre_delay;
->> +     /* delay (in ms) to wait after executing the step */
->> +     int post_delay;
->
-> unsigned int for the delays?
-
-Yup.
-
->> +typedef struct platform_power_seq_step platform_power_seq;
->
-> Why are the parameters kept in a separate structure? What are the
-> disadvantages of keeping the in the sequence step structure directly?
-
-This ensures the same parameters are used for the platform data and 
-resolved sequences, and also ensures they are all copied correctly using 
-memcpy. But maybe I am just making something complex out of something 
-that ought to be simpler.
-
->> +struct power_seq_step {
->> +     struct power_seq_resource *resource;
->> +     struct power_step_params params;
->> +};
->> +typedef struct power_seq_step power_seq;
->
-> Would it make sense to make the struct power_seq opaque? I don't see why
-> anyone but the power_seq code should access the internals.
-
-I would like to do that actually. The issue is that it did not work go 
-well with the legacy pwm_backlight behavior: a power sequence needs to 
-be constructed out of a PWM obtained through pwm_request(int pwm_id, 
-char *label) and this behavior cannot be emulated using the new platform 
-data interface (which only works with pwm_get()). But if I remove this 
-old behavior, then I could make power_seq opaque. I don't think many 
-drivers are using it. What do you think?
-
-> For resource
-> managing it might also be easier to separate struct power_seq_step and
-> struct power_seq, making the power_seq basically something like:
->
->          struct power_seq {
->                  struct power_seq_step *steps;
->                  unsigned int num_steps;
->          };
->
-> Perhaps a name field can be included for diagnostic purposes.
-
-Yes, looks like we are going in that direction. If this can be made 
-private then the number of public data structures will not be too 
-confusing (platform data only, basically).
-
->> +power_seq *power_seq_build(struct device *dev, power_seq_resources *ress,
->> +                        platform_power_seq *pseq);
->
-> I already mentioned this above: I fail to see why the ress parameter is
-> needed here. It is an internal implementation detail of the power
-> sequence code. Maybe a better place would be to include it within the
-> struct power_seq.
-
-Problem is that I need to track which resources are already allocated 
-between calls to power_seq_build(). Even if I attach the resources into 
-struct power_seq, they won't be attainable by the next call. So I'm 
-afraid we are bound to pass a tracking structure at least to 
-power_seq_build.
-
->> +/**
->> + * Free all the resources previously allocated by power_seq_allocate_resources.
->> + */
->> +void power_seq_free_resources(power_seq_resources *ress);
->> +
->> +/**
->> + * Run the given power sequence. Returns 0 on success, error code in case of
->> + * failure.
->> + */
->> +int power_seq_run(struct device *dev, power_seq *seq);
->
-> I think the API is too fine grained here. From a user's point of view,
-> I'd expect a sequence like this:
->
->          seq = power_seq_build(dev, sequence);
->          ...
->          power_seq_run(seq);
->          ...
->          power_seq_free(seq);
->
-> Perhaps with managed variants where the power_seq_free() is executed
-> automatically:
->
->          seq = devm_power_seq_build(dev, sequence);
->          ...
->          power_seq_run(seq);
-
-I agree. On top of that, of_parse_power_seq() should directly return a 
-resolved power sequence, not the platform data.
-
-> Generally I really like where this is going.
-
-Thanks - I really appreciate your review.
-
-Alex.
-
+ps: please cc in reply.
