@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab2GaJHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 05:07:45 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:29165 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838Ab2GaJHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 05:07:44 -0400
-Message-ID: <5017A053.9000206@parallels.com>
-Date: Tue, 31 Jul 2012 13:07:31 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1753740Ab2GaJKr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 05:10:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52284 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab2GaJKq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 05:10:46 -0400
+Date: Tue, 31 Jul 2012 10:09:31 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Karl Beldan <karl.beldan@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: About dma_sync_single_for_{cpu,device}
+Message-ID: <20120731090931.GP6802@n2100.arm.linux.org.uk>
+References: <20120730202401.GA4947@gobelin> <20120731064557.GA4676@gobelin>
 MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "lwn@lwn.net" <lwn@lwn.net>, "criu@openvz.org" <criu@openvz.org>,
-        "users@openvz.org" <users@openvz.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: [Announce] Checkpoint-restore tool v0.1
-References: <500D09C9.7060903@parallels.com> <500D1116.7070301@parallels.com> <CAFLxGvwUhEPNdQvUnue2QFu_EipmBKD3nf0MfMWkqwLTf7jd5Q@mail.gmail.com> <50179CF0.7050200@parallels.com> <CAFLxGvygCxER3gHfj-onwnm_m6xugOVkynGyJU2CDheD3A2HOQ@mail.gmail.com>
-In-Reply-To: <CAFLxGvygCxER3gHfj-onwnm_m6xugOVkynGyJU2CDheD3A2HOQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731064557.GA4676@gobelin>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 12:57 PM, richard -rw- weinberger wrote:
-> On Tue, Jul 31, 2012 at 10:53 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
->> On 07/30/2012 02:42 PM, richard -rw- weinberger wrote:
->>> On Mon, Jul 23, 2012 at 10:53 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
->>>> This project is an attempt to implement the checkpoint-restore functionality
->>>> for processes and containers without driving too much code into the kernel tree,
->>>> but putting there "various oddball helper code" instead.
->>>
->>> Is CRIU able to checkpoint a process tree where one or more processes
->>> are traced using ptrace()?
->>
->> No it's not (currently).
->>
->>> crtools seem to use ptrace() to execute parasite system calls.
->>> AFAIK this will only work if the target process is currently not
->>> ptraced() by another process.
->>>
->>
->> Yup, exactly.
-> 
-> Dammit, I hoped we can get suspend/resume for UserModeLinux for free
-> with CRIU. 8-)
+On Tue, Jul 31, 2012 at 08:45:57AM +0200, Karl Beldan wrote:
+> I was expecting the following to work:
+> 	addr = dma_map_single(dev, buffer, size, DMA_TO_DEVICE);
+> 	dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
+> 	dev_send(buffer);
+> 	// wait for irq (don't peek in the buffer) ... got irq
+> 	dma_sync_single_for_cpu(dev, buffer, pattern_size, DMA_FROM_DEVICE);
+> 	if (!xfer_done(buffer)) // not RAM value
+> 		dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
+> 	[...]
 
-Sorry :( However, if you can help with patches on that issue that would be
-highly appreciated :)
+First point is that you clearly do not understand the DMA API at all.  The
+DMA API has the idea of buffer ownership.  Only the owner may access the
+buffer:
 
-Thanks,
-Pavel
+*CPU OWNS THE BUFFER*
+dma_map_single()
+*DEVICE OWNS THE BUFFER*
+dma_sync_single_for_cpu()
+*CPU OWNS THE BUFFER*
+dma_sync_single_for_device()
+*DEVICE OWNS THE BUFFER*
+dma_unmap_single()
+*CPU OWNS THE BUFFER*
 
+So, there is absolutely no noeed what so ever to follow dma_map_single()
+with dma_sync_single_for_device().
 
+Second point is that you should not change the 'direction' argument while
+a buffer is mapped.
+
+Thirdly, enable DMA API debugging (DMA_API_DEBUG) to make sure you're
+using the DMA API correctly.
+
+Fourthly, remember that the CPU deals with cache lines, and dirty cache
+lines may be written back in their _entirety_ - which means that data
+DMA'd from a device in the same cache line that you've modified via the
+CPU will not work (either the data in the cache line has to be invalidated
+and therefore the CPU update discarded, or the cache line has to be flushed
+back to RAM and the DMA'd data is overwritten.)  Hence why the buffer
+ownership rules are extremely important.
+
+The solution for this fourth point is to use coherent DMA memory for things
+like ring buffers and the like, which does not suffer from this.
+
+> Maybe the following comment in dma-mapping.c explains the situation :
+> /*
+>  * The DMA API is built upon the notion of "buffer ownership".  A buffer
+>  * is either exclusively owned by the CPU (and therefore may be accessed
+>  * by it) or exclusively owned by the DMA device.  These helper functions
+>  * represent the transitions between these two ownership states.
+>  *
+>  * Note, however, that on later ARMs, this notion does not work due to
+>  * speculative prefetches.  We model our approach on the assumption that
+>  * the CPU does do speculative prefetches, which means we clean caches
+>  * before transfers and delay cache invalidation until transfer completion.
+>  *
+>  */
+
+Even with that comment, the idea of buffer ownership must be preserved by
+drivers, and they must follow that rule.  The fact that some ARM CPU
+do not respect the ownership entirely is worked around inside the DMA API
+and is of no interest to drivers.  Feroceon is not one CPU which does this
+though.
