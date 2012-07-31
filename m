@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab2GaMvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:51:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14704 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755198Ab2GaMvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:51:20 -0400
-Date: Tue, 31 Jul 2012 14:48:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: mmap_region() corrupts mm->mm_rb if
-	uprobe_mmap() fails
-Message-ID: <20120731124805.GA485@redhat.com>
-References: <20120728163157.GA22719@redhat.com> <20120731064730.GB5087@linux.vnet.ibm.com>
+	id S1756258Ab2GaMyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:54:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54132 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756237Ab2GaMyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 08:54:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120731064730.GB5087@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120729193948.GA26497@merkur.ravnborg.org>
+References: <1343570792-10604-1-git-send-email-chenbdchenbd@gmail.com>
+	<20120729193948.GA26497@merkur.ravnborg.org>
+Date: Tue, 31 Jul 2012 20:54:51 +0800
+Message-ID: <CAEAuANOHFYsDX-brey=83GvGWCwFJ9Lu_=8vsUu2a47bxaPN4g@mail.gmail.com>
+Subject: Re: [PATCH] staging:net:fixed to fit tty_driver's kref field
+From: Baodong Chen <chenbdchenbd@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, davem@davemloft.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31, Srikar Dronamraju wrote:
+On Mon, Jul 30, 2012 at 3:39 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> On Sun, Jul 29, 2012 at 10:06:32PM +0800, Baodong Chen wrote:
+>> Fixed code to fix tty_driver's kref field
+>> Coding style issues
+>>
+>> Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
 >
-> > --- a/kernel/fork.c
-> > +++ b/kernel/fork.c
-> > @@ -454,8 +454,8 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
-> >  		if (retval)
-> >  			goto out;
-> >
-> > -		if (file && uprobe_mmap(tmp))
-> > -			goto out;
-> > +		if (file)
-> > +			uprobe_mmap(tmp);
+> Hi Baodong.
 >
-> I am not comfortable with this fix.
+> As already pointed out by Jiri please split this
+> up in several patches.
+>
+> [PATCH 1/x] staging:net:pc300: fix white space usage
+> [PATCH 2/x] staging:net:pc300: add proper kref support
+> [PATCH 3/x] staging:net:pc300: use pr_dev
+> [PATCH 4/x] staging:net:pc300: drop use of CPC_TTY_LOCK/CPC_TTY_UNLOCK macros
+> etc...
+>
+> The latter two is not impleted yet but proposals for further cleanups.
+>
+>         Sam
+ok, i will follow that rule and resubmit it.
+thanks!
 
-OK, so what you suggest for now?
-
-Please note that it is very trivial to crash the kernel. Just
-do something like
-
-	echo "p /bin/true:OFFSET_OF_SYSCALL_INSN" > /sys/kernel/debug/tracing/uprobe_events
-	/bin/true
-
-(or any other unsupported insn)
-
-Yes sure, I agree that in the long term this change should be
-reconsidered.
-
-> I think the long term solution is as you mentioned, move the
-> instruction analysis to register.
-
-Exactly. And we already discusssed this, we have a lot of other
-reasons to do this.
-
-> Lets say there were 10 probes that were to be installed in that vma.
-> we were able to install five probes and the 6th one happened to fail
-> because of invalid instruction; we dont continue with the registering
-> probes for the remaining 4 probes.
-
-Yes. And I already have the patch. I didn't send it because, unlike
-this fix, it depends on other changes (already in -tip).
-
-Until we move analysis to register, until we teach the callers of
-uprobe_mmap() to bailout (and please note that vma_adjust() ignores
-the result too), uprobe_mmap() should not give up if install fails,
-it should continue.
-
-> The intention behind failing mmap()/fork() if uprobe_mmap failed,
-> was to make sure that we always report the correct number of events.
-
-Sure, I understand and agree.
-
-But what we can do right now?
-
-Oleg.
-
+>
+>> ---
+>>  drivers/staging/net/pc300_tty.c |  123 ++++++++++++++++++++------------------
+>>  1 files changed, 65 insertions(+), 58 deletions(-)
+>>
+>> diff --git a/drivers/staging/net/pc300_tty.c b/drivers/staging/net/pc300_tty.c
+>> index 4709f42..8a7277c 100644
+>> --- a/drivers/staging/net/pc300_tty.c
+>> +++ b/drivers/staging/net/pc300_tty.c
+>
+>>
+>> -     cpc_tty = (st_cpc_tty_area *) tty->driver_data;
+>> +     cpc_tty = (st_cpc_tty_area *) tty->driver_data;
+>                                      ^drop space
+>
