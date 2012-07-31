@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab2GaErl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:47:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56389 "EHLO mx2.suse.de"
+	id S1754455Ab2GaEtm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:49:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51338 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab2GaErj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:47:39 -0400
-Date: Tue, 31 Jul 2012 14:47:24 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [GIT PULL] GPIO changes for v3.6
-Message-ID: <20120731144724.5ef139fa@notabene.brown>
-In-Reply-To: <20120730133614.GA4468@opensource.wolfsonmicro.com>
-References: <CACRpkdZnRiZpKuQ6krJFa8TAfmvYYLB-n79ztzaUOV32p6ZY1Q@mail.gmail.com>
-	<20120730165733.33e3ddfb@notabene.brown>
-	<20120730133614.GA4468@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/F0hf2vuR22ZOHG8=H_Q3EXE"; protocol="application/pgp-signature"
+	id S1751282Ab2GaEtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 00:49:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="173432441"
+From: Feng Tang <feng.tang@intel.com>
+To: len.brown@intel.com, linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+        Feng Tang <feng.tang@intel.com>, Thomas Renninger <trenn@suse.de>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Subject: [PATCH v2] ACPI processor: Fix a typo error in commit 99b725084
+Date: Tue, 31 Jul 2012 12:44:43 +0800
+Message-Id: <1343709883-16801-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/F0hf2vuR22ZOHG8=H_Q3EXE
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+In commit 99b725084 "ACPI processor hotplug: Delay acpi_processor_start()
+call for hotplugged cores", acpi_processor_hotplug(pr) was wrongly replaced
+by acpi_processor_cst_has_changed() inside the acpi_cpu_soft_notify(). This
+patch will restore it back, which also fixes a tick_broadcast_mask regression:
+	https://lkml.org/lkml/2012/7/30/169
 
-On Mon, 30 Jul 2012 14:36:15 +0100 Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+[Resend to ACPI mail list and Cc stable kernel]
 
-> On Mon, Jul 30, 2012 at 04:57:33PM +1000, NeilBrown wrote:
->=20
-> > it means that if !gpio_is_valid(gpio), the error returned is EPROBE_DEF=
-ER=20
-> > which isn't right (an invalid gpio number will never become valid).
-> > If a driver happened to use gpio_request to check the validity of the g=
-pio
-> > rather than doing it itself, it would defer the probe, rather than assu=
-me
-> > that the GPIO doesn't exist.
->=20
-> Is anything actually doing this?  For positive numbers that just seems
-> like it's asking for things to explode, for negative numbers I guess you
-> can get away with it at the minute though it's obviously not awesome
-> error handling.
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: <stable@vger.kernel.org> # 3.3+
+---
+ drivers/acpi/processor_driver.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I suspect not, but stranger things have happened.
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index ff8e04f..bfc31cb 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -437,7 +437,7 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+ 		/* Normal CPU soft online event */
+ 		} else {
+ 			acpi_processor_ppc_has_changed(pr, 0);
+-			acpi_processor_cst_has_changed(pr);
++			acpi_processor_hotplug(pr);
+ 			acpi_processor_reevaluate_tstate(pr, action);
+ 			acpi_processor_tstate_has_changed(pr);
+ 		}
+-- 
+1.7.1
 
-... though it occurs to me that it is possible that the GPIO number might n=
-ot
-be allocated until something else has been probed, so a -ve gpio number cou=
-ld
-mean "there is no such gpio" or it could mean "gpio has not been allocated
-yet".  I wonder if that should be allowed and where it should be handled.
-
->=20
-> > I would suggest the following.  Reasonable?
->=20
-> TBH I'd actually expect that gpio_is_valid() were checking that there's
-> a gpio_chip behind the GPIO number, now I look at the implementation
-> it's very surprising to me that it's just checking the GPIO array bounds
-> (and also that we remove the need for the fixed size GPIO array which is
-> just an endless source of annoyance).
-
-Yes, gpio_is_valid is really just a check that the gpio_desc array derefere=
-nce
-won't over-flow.
-
-I'd really like to see gpios be requested by name ... anyone know if there
-are any plans along that line?
-
-NeilBrown
-
---Sig_/F0hf2vuR22ZOHG8=H_Q3EXE
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUBdjXDnsnt1WYoG5AQKlMRAAqjpd4G6zX88B8DUGdJBBcb9pQFSu/RKA
-X67qv4AK4tAvoNQyQM/ulkyGEOMczssriHrIC9XK4fv7LjKGFaZL1mO6QOX5kf3N
-E9tOnSJQL1vMcNBHcW5SNN0VDRXaYlC7ZJ1xLBOeL3TyynURnP2gAMI6EmI0C/bg
-VSRScf1m90wm9+85wVawIIIZKdsL+48eEWMBvFl6Ju6/NjRWMGl3dVHmAGJla4/a
-86SMr/jd2XPDpW8x5Kt3Eqj+ez1x/aMbAeN+p1GC/xeicjLCSMgX3riuM1/sVwQE
-9ewqEKLvpO6R9P2eERr1tfnb4TDVnSyziaqRSl8lxcleVFYcFusOWn1bY9cJn7C1
-3cvHNfAP4k6x7bZ0HDjytATqu0Aasskd/g0zsz0/SL6DeGdB2siGE/MFbTWXA9AW
-/y1OQfB64CcNpWJ3WgsyCYcDYZSGyPQB0Id09R1Btz7xONT9HNyNLJR9fdDkWsWc
-6gCYsZs7L7H5VAteJME2KfYmMXUYb3b0ShVzOJ/xOW6HMDBeV+6ZiKg8f+DolYns
-orPXzw4D83U7u23r1YkyyXRWUsotbDAZIRW2shda2nTLagWop21dQGEqogtI2pkc
-rxFyqf4qBtHLWJISdavjaxyhRLkp8t7LDlpcscru6dMec5h2eHTHm0QLNtr6CcxQ
-n8i9wjSo6+Q=
-=B0/E
------END PGP SIGNATURE-----
-
---Sig_/F0hf2vuR22ZOHG8=H_Q3EXE--
