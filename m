@@ -1,136 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab2GaMdI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:33:08 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:57682 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755945Ab2GaMdG (ORCPT
+	id S1756198Ab2GaMdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:33:54 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:51851 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755945Ab2GaMdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:33:06 -0400
+	Tue, 31 Jul 2012 08:33:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120731065224.GE6004@arwen.pp.htv.fi>
-References: <CAKdam54gXixs4F-a07ajj9GNMth46d4NTdoUL3GokzvjuWaGyg@mail.gmail.com>
- <CAC83ZvKnOw+UBOWYtt294k-5Xk8S6Gy1pChSF7aXGmGjLGSeCA@mail.gmail.com>
- <CAKdam56QEXY55SYC7YND4BP=tQmiyAa=avVCADTj3Ym6X9cCvg@mail.gmail.com>
- <87fw89gf4w.fsf@ti.com> <CAKdam57xtXnKAgvneqATSTr0ng978T5HbkTB0T3sYp96N=Qfww@mail.gmail.com>
- <20120731065224.GE6004@arwen.pp.htv.fi>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Tue, 31 Jul 2012 14:32:43 +0200
-Message-ID: <CAMQu2gxXX+4gtKVnAMMK4qr9ihJuP-OwjOYgr=6VrGZ2DWSf2A@mail.gmail.com>
-Subject: Re: [GPIO] Crashed when not using
-To: balbi@ti.com
-Cc: "Poddar, Sourav" <sourav.poddar@ti.com>, Kevin Hilman <khilman@ti.com>,
-        "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>,
-        lo <linux-omap@vger.kernel.org>, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
+References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
+Date: Tue, 31 Jul 2012 08:33:52 -0400
+Message-ID: <CA+5PVA4CE0kwD1FmV=081wfCObVYe5GFYBQFO9_kVL4JWJBqpA@mail.gmail.com>
+Subject: Re: [PATCH 0/6][resend] mempolicy memory corruption fixlet
+From: Josh Boyer <jwboyer@gmail.com>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
+        stable@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 8:52 AM, Felipe Balbi <balbi@ti.com> wrote:
+On Mon, Jun 11, 2012 at 5:17 AM,  <kosaki.motohiro@gmail.com> wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 >
-> Hi,
+> Hi
 >
-> On Tue, Jul 31, 2012 at 10:23:16AM +0530, Poddar, Sourav wrote:
-> > >>>> The device tree data for acquiring the above GPIO interrupt line
-> > >>>> looks
-> > >>>> like this.
-> > >>>>
-> > >>>> +++ linux-omap-storage/arch/arm/boot/dts/omap5-evm.dts  2012-07-30
-> > >>>> 14:11:08.931694001 +0530
-> > >>>> @@ -42,7 +42,8 @@
-> > >>>>         tsl2771@39 {
-> > >>>>                 compatible = "taos,tsl2771";
-> > >>>>                 reg = <0x39>;
-> > >>>> +                interrupt-parent = <&gpio5>;
-> > >>>> +                interrupts = <21>; /* gpio line 149 */
-> > >>>>         };
-> > >>>>  };
-> > >>>>
-> > >>>> Note: using "gpio_request_one" in the driver solves the issue.
-> > >>>> Is using this api in the driver required?
-> > >>>> Any pointer on the above crash?
-> > >>>
-> > >> Hi Tarun,
-> > >>> Any user/client driver of GPIO is supposed to go through
-> > >>> gpio_request() API so that module clock
-> > >>> is enabled correctly. Overriding of APIs would put the power
-> > >>> management state machine in jeopardy.
-> > >>> --
-> > >> I tried putting "pm_runtime_get_sync" in gpio_irq_type api where the
-> > >> kernel
-> > >> is crashing and the crash is no longer observed. So indeed, its about
-> > >> enabling clocks.
-> > >>
-> > >> One doubt: Can't we put runtime apis in "gpio_irq_type" and eliminate
-> > >> the use of
-> > >> "gpio_request_one"??
-> > >
-> > > No.
-> > >
-> > > You must use the GPIO requiest/free APIs to tell the GPIO core that
-> > > the GPIO line is in use.
-> > >
-> > Thanks for this confirmation.
-> > > Why do you want to avoid using gpio_request/gpio_free?
-> > >
-> > I was assuming that DT based gpio IRQ registration will automatically
-> > take care of
-> > the above APIs. But since that is not the case(as mentioned by
-> > santosh),  we need to use the
-> > gpio_request/free apis.
+> This is trivial fixes of mempolicy meory corruption issues. There
+> are independent patches each ather. and, they don't change userland
+> ABIs.
 >
-> Hang on for a while, let's try to get to the bottom of this debate first
-> ;-)
+> Thanks.
 >
-> We have a canonical way of passing IRQ numbers to drivers through DT and
-> that is the "interrupts" attribute. It shouldn't matter if that IRQ pin
-> is connected to a real IRQ line or through a GPIO controller. In both
-> cases we should use the "interrupts" attribute.
+> changes from v1: fix some typo of changelogs.
 >
-> If DT core doesn't allocate the GPIO for us then how does this work:
+> -----------------------------------------------
+> KOSAKI Motohiro (6):
+>   Revert "mm: mempolicy: Let vma_merge and vma_split handle
+>     vma->vm_policy linkages"
+>   mempolicy: Kill all mempolicy sharing
+>   mempolicy: fix a race in shared_policy_replace()
+>   mempolicy: fix refcount leak in mpol_set_shared_policy()
+>   mempolicy: fix a memory corruption by refcount imbalance in
+>     alloc_pages_vma()
+>   MAINTAINERS: Added MEMPOLICY entry
 >
-> (omap4-sdp.dts)
->
-> 127 &mcspi1 {
-> 128         eth@0 {
-> 129                 compatible = "ks8851";
-> 130                 spi-max-frequency = <24000000>;
-> 131                 reg = <0>;
-> 132                 interrupt-parent = <&gpio2>;
-> 133                 interrupts = <2>; /* gpio line 34 */
-> 134                 vdd-supply = <&vdd_eth>;
-> 135         };
-> 136 };
->
->
-> There's no gpio request on the driver:
->
-> $ git grep -e gpio_request drivers/net/ethernet/micrel/ks8851.c
-> $
->
-> Since Benoit was the one who added that to the dts file (commit
-> e7c64db9), I assume he tested his patch before posting, so again I ask -
-> How does that work and why doesn't this work for Sourav's tsl2771
-> controller ?
->
-> This is either a regression on drivers/of, or commit e7c64db9 is also
-> broken...
->
-> Benoit, do you know how should this work ?
->
-I had a discussion with Benoit on this. In fact there is a way to actually
-trigger the GPIO request.
+>  MAINTAINERS    |    7 +++
+>  mm/mempolicy.c |  151 ++++++++++++++++++++++++++++++++++++++++----------------
+>  mm/shmem.c     |    9 ++--
+>  3 files changed, 120 insertions(+), 47 deletions(-)
 
-> 132                 interrupt-parent = <&gpio2>;
-> 133                 interrupts = <2>; /* gpio line 34 */
+I don't see these patches queued anywhere.  They aren't in linux-next,
+mmotm, or Linus' tree.  Did these get dropped?  Is the revert still
+needed?
 
-As above you can see, GPIO2 bank and 2nd line.
-And then it will make use of gpio_irq chip properties
-to probe the GPIO line.
-
-Saurabh can try this out for his use case.
-
-Regards
-Santosh
+josh
