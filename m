@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab2GaIa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 04:30:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35788 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809Ab2GaIa3 (ORCPT
+	id S1755892Ab2GaIfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 04:35:19 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15140 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755809Ab2GaIfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 04:30:29 -0400
-Date: Tue, 31 Jul 2012 10:30:22 +0200
-From: Karl Beldan <karl.beldan@gmail.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: About dma_sync_single_for_{cpu,device}
-Message-ID: <20120731083022.GA5026@ed-laptop>
-References: <20120730202401.GA4947@gobelin>
- <20120731064557.GA4676@gobelin>
- <50178249.7090306@ladisch.de>
- <CACYmx9O_TJoSmhiai_Mv09JE3HZ+-V=w8KobTn3zPXtkWbojkw@mail.gmail.com>
- <50178A69.8050906@ladisch.de>
+	Tue, 31 Jul 2012 04:35:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 31 Jul 2012 01:35:14 -0700
+Message-ID: <50179933.9090501@nvidia.com>
+Date: Tue, 31 Jul 2012 17:37:07 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50178A69.8050906@ladisch.de>
-X-Location: France
-User-Agent: Mutt (Linux 3.5.0-rc4+ i686 GNU/Linux)
+To: Simon Glass <sjg@chromium.org>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <CAPnjgZ0H2xrJcL-ytMaX11iYrrhCg7LEM00u_NgEaveM4gHMPw@mail.gmail.com>
+In-Reply-To: <CAPnjgZ0H2xrJcL-ytMaX11iYrrhCg7LEM00u_NgEaveM4gHMPw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 09:34:01AM +0200, Clemens Ladisch wrote:
-> Karl Beldan wrote:
-> > On 7/31/12, Clemens Ladisch <clemens@ladisch.de> wrote:
-> >> Karl Beldan wrote:
-> >>> To tx a chunk of data from the SoC => network device, we :
-> >>> - prepare a buffer with a leading header embedding a pattern,
-> >>> - trigger the xfer and wait for an irq
-> >>> // The device updates the pattern and then triggers an irq
-> >>> - upon irq we check the pattern for the xfer completion
-> >>>
-> >>> I was expecting the following to work:
-> >>> 	addr = dma_map_single(dev, buffer, size, DMA_TO_DEVICE);
-> >>
-> >> Of both the CPU and the device write to the buffer, you must use
-> >> DMA_BIDIRECTIONAL.
-> >
-> > This does not work (tested) :  seems to me BIDIRECTIONAL would just
-> > add invalidate, and invalidate before the ram has been updated, as
-> > stated, does not work.
-> 
-> Please show the exact sequence of dma_* calls, and also show when and
-> how the CPU and the device access the buffer.
-> 
-Hmm, so I just spotted a line where we peek in the buffer after
-invalidating .. cannot believe I missed it .. so sorry for the noise ..
-now it's working.
-I felt I would find the culprit right after posting ;)
-Thanks Clemens !
+Hi Simon,
+
+On 07/30/2012 08:00 PM, Simon Glass wrote:
+> For the delay, I think milliseconds is reasonable. I suppose there is
+> no reasonable need for microseconds?
+
+I don't see any need for microseconds myself - anybody sees use for 
+finer-grained delays?
+
+Btw, I noticed I was using mdelay instead of msleep - caught and fixed that.
+
+>> +Device tree
+>> +-----------
+>> +All the same, power sequences can be encoded as device tree nodes. The following
+>> +properties and nodes are equivalent to the platform data defined previously:
+>> +
+>> +               power-supply = <&mydevice_reg>;
+>> +               enable-gpio = <&gpio 6 0>;
+>> +
+>> +               power-on-sequence {
+>> +                       regulator@0 {
+>> +                               id = "power";
+>
+> Is there a reason not to put the phandle here, like:
+>
+>                                     id = <&mydevice_reg>;
+>
+> (or maybe 'device' instead of id?)
+
+There is one reason, but it might be a bad one. On Tegra, PWM phandle 
+uses an extra cell to encode the duty-cycle the PWM should have when we 
+call get_pwm(). This makes it possible to address the same PWM with 
+different phandles (and different duty cycles), which causes an issue to 
+know whether a PWM is already used in a sequence (potentially resulting 
+in multiple get_pwm calls on the same PWM, and also opens the door to 
+ambiguities in behavior (what is the correct duty-cycle to use if 
+several different values are passed?)
+
+Maybe the problem lies in how PWM phandles are handled - if duty-cycle 
+was not part of the information, we would not have this problem.
+
+>> +Note that first, the phandles of the regulator and gpio used in the sequences
+>> +are defined as properties. Then the sequence references them through the id
+>> +property of every step. The name of sub-properties defines the type of the step.
+>> +Valid names are "regulator", "gpio" and "pwm". Steps must be numbered
+>> +sequentially.
+>
+> For the regulator and gpio types I think you only have an enable. For
+> the pwm, what is the intended binding? Is that documented elsewhere?
+
+Same thing, enable/disable which would call pwm_enable and pwm_disable. 
+One could also image an additional property to set the duty cycle if it 
+can be taken off the phandle.
+
+> Also it might be worth mentioning how you get a struct power_seq from
+> an fdt node, and perhaps given an example of a device which has an
+> attached node, so we can see how it is referenced from the device
+> (of_parse_power_seq I think). Do put the sequence inside the device
+> node or reference it with a phandle?
+
+Yes, this definitely needs more documentation - especially the DT part.
+
+Thanks,
+Alex.
+
