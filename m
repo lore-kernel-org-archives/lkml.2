@@ -1,53 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab2GaNdr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:33:47 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:40006 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab2GaNbx (ORCPT
+	id S1753477Ab2GaNdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:33:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10189 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253Ab2GaNdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:31:53 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        lrg@ti.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3/6] ARM: ux500: Remove unused snowball_of_platform_devs struct
-Date: Tue, 31 Jul 2012 14:31:27 +0100
-Message-Id: <1343741493-17671-7-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
+	Tue, 31 Jul 2012 09:33:46 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=I5RZEMmPgckA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=Ph9qn7st5gjYPPg1d64A:9 a=PUjeQqilurYA:10 a=DHQQ7jDAcw4A:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343741625.27983.39.camel@gandalf.stny.rr.com>
+Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Steven Rostedt <srostedt@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Date: Tue, 31 Jul 2012 09:33:45 -0400
+In-Reply-To: <20120731120556.GB17252@localhost>
+References: <20120724090330.GA9830@localhost>
+	 <1343662752.3847.2.camel@fedora> <20120731120556.GB17252@localhost>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was left over during a recent clean-up which removed Device Tree
-helper structs. There is no longer a requirement for it, so we can just
-remove it.
+On Tue, 2012-07-31 at 20:05 +0800, Fengguang Wu wrote:
+> On Mon, Jul 30, 2012 at 11:39:12AM -0400, Steven Rostedt wrote:
+> > On Tue, 2012-07-24 at 17:03 +0800, Fengguang Wu wrote:
+> > > Hi Steven,
+> > 
+> > Hi Fengguang,
+> > 
+> > Just an FYI, It's best to send email to my rostedt@goodmis.org account.
+> > I don't check my redhat account every day.
+> 
+> OK, sorry for forgetting about that!
+> 
+> > > 
+> > > This looks like some old bug, so I directly report to you w/o trying
+> > > to bisect it. It only happens on the attached i386 randconfig and
+> > > happens in about half of the kvm boots.
+> > > 
+> > > [    1.380369] Testing tracer irqsoff: [    1.524917] 
+> > > [    1.525217] ===============================
+> > > [    1.525868] [ INFO: suspicious RCU usage. ]
+> > > [    1.526556] 3.5.0+ #1289 Not tainted
+> > > [    1.527124] -------------------------------
+> > > [    1.527799] /c/kernel-tests/src/linux/include/linux/rcupdate.h:730 rcu_read_lock() used illegally while idle!
+> > > [    1.529375] 
+> > > [    1.529375] other info that might help us debug this:
+> > > [    1.529375] 
+> > > [    1.530667] 
+> > > [    1.530667] RCU used illegally from idle CPU!
+> > > [    1.530667] rcu_scheduler_active = 1, debug_locks = 1
+> > > [    1.532383] RCU used illegally from extended quiescent state!
+> > > [    1.533297] 2 locks held by swapper/0/0:
+> > > 
+> > > [    1.533924]  #0: [    1.534271]  (max_trace_lock){......}, at: [<410e9d67>] check_critical_timing+0x67/0x1b0
+> > > [    1.534883]  #1:  (rcu_read_lock){.+.+..}, at: [<410e1ea0>] __update_max_tr+0x0/0x200
+> > > 
+> > > [    1.534883] stack backtrace:
+> > > [    1.534883] Pid: 0, comm: swapper/0 Not tainted 3.5.0+ #1289
+> > > [    1.534883] Call Trace:
+> > > [    1.534883]  [<41093a76>] lockdep_rcu_suspicious+0xc6/0x100
+> > > [    1.534883]  [<410e2071>] __update_max_tr+0x1d1/0x200
+> > 
+> > This is very weird because __update_max_tr does not use rcu_read lock().
+> > If you still have the kernel around (or can reproduce it), can you show
+> > the objdump of the __update_max_tr function. I wonder if some debug
+> > option requires RCU usage somewhere there.
+> 
+> Here is part of trace.s, where lockdep_rcu_suspicious shows up in 3
+> places:
+> 
+> .LFE2107:
+> 	.size	tracing_record_cmdline, .-tracing_record_cmdline
+> 	.section	.rodata.str1.1
+> .LC50:
+> 	.string	"rcu_read_lock() used illegally while idle"
+> .LC51:
+> 	.string	"/c/wfg/linux/include/linux/rcupdate.h"
+> .LC52:
+> 	.string	"suspicious rcu_dereference_check() usage"
+> .LC53:
+> 	.string	"rcu_read_unlock() used illegally while idle"
+> 	.text
+> 	.type	__update_max_tr, @function
+> __update_max_tr:
+> .LFB2091:
+> 	.loc 4 661 0
+> 	.cfi_startproc
+> .LVL1255:
+> .L796:
+> 	pushl	%ebp	#
+> .LCFI356:
+> 	.cfi_def_cfa_offset 8
+> 	.cfi_offset 5, -8
+> 	movl	%esp, %ebp	#,
+> .LCFI357:
+> 	.cfi_def_cfa_register 5
+> 	pushl	%edi	#
+> 	pushl	%esi	#
+> 	pushl	%ebx	#
+> 	.cfi_offset 7, -12
+> 	.cfi_offset 6, -16
+> 	.cfi_offset 3, -20
+> 	.loc 4 662 0
+> 	leal	4(%ecx), %edi	#, tmp91
+> 	.loc 4 661 0
+> 	pushl	%ebx	#
+> 	.loc 4 662 0
+> 	movl	8(%eax,%edi,4), %esi	# tr_1(D)->data, data
+> .LVL1256:
+> 	.loc 4 661 0
+> 	movl	%edx, %ebx	# tsk, tsk
+> 	.loc 4 665 0
+> 	movl	%ecx, max_tr+4	# cpu, max_tr.cpu
+> 	.loc 4 673 0
+> 	movl	$4, %ecx	#, tmp102
+> .LVL1257:
+> 	.loc 4 666 0
+> 	movl	44(%esi), %eax	# data_3->preempt_timestamp, data_3->preempt_timestamp
+> .LVL1258:
+> 	movl	48(%esi), %edx	# data_3->preempt_timestamp, data_3->preempt_timestamp
+> .LVL1259:
+> 	movl	%eax, max_tr+12	# data_3->preempt_timestamp, max_tr.time_start
+> 	.loc 4 669 0
+> 	movl	tracing_max_latency, %eax	# tracing_max_latency, tracing_max_latency
+> 	.loc 4 666 0
+> 	movl	%edx, max_tr+16	# data_3->preempt_timestamp, max_tr.time_start
+> 	.loc 4 668 0
+> 	movl	max_tr+8(,%edi,4), %edi	# max_tr.data,
+> 	.loc 4 669 0
+> 	movl	%eax, 12(%edi)	# tracing_max_latency, max_data_5->saved_latency
+> 	.loc 4 670 0
+> 	movl	16(%esi), %eax	# data_3->critical_start, D.35758
+> 	movl	%edi, %edx	#,
+> 	.loc 4 668 0
+> 	movl	%edi, -16(%ebp)	#, %sfp
+> .LVL1260:
+> 	.loc 4 670 0
+> 	movl	%eax, 16(%edi)	# D.35758, max_data_5->critical_start
+> 	.loc 4 671 0
+> 	movl	20(%esi), %eax	# data_3->critical_end, D.35759
+> 	.loc 4 673 0
+> 	leal	468(%ebx), %esi	#, tmp99
+> .LVL1261:
+> 	.loc 4 671 0
+> 	movl	%eax, 20(%edi)	# D.35759, max_data_5->critical_end
+> 	.loc 4 673 0
+> 	movl	%edi, %eax	# tmp1, tmp98
+> 	addl	$60, %eax	#, tmp98
+> 	movl	%eax, %edi	# tmp98, tmp100
+> 	rep movsl
+> 	.loc 4 674 0
+> 	movl	248(%ebx), %eax	# tsk_9(D)->pid, D.35762
+> 	movl	%eax, 52(%edx)	# D.35762, max_data_5->pid
+> .LBB1126:
+> .LBB1127:
+> .LBB1128:
+> 	.file 20 "/c/wfg/linux/include/linux/rcupdate.h"
+> 	.loc 20 721 0
+> 	call	__rcu_read_lock	#
+> .LVL1262:
+> .LBB1129:
+> .LBB1130:
+> 	.loc 20 276 0
+> 	xorl	%ecx, %ecx	#
+> 	xorl	%edx, %edx	#
+> 	movl	$rcu_lock_map, %eax	#,
+> 	pushl	$.L796	#
+> 	pushl	$0	#
+> 	pushl	$1	#
+> 	pushl	$2	#
+> 	call	lock_acquire	#
+> .LVL1263:
+> .LBE1130:
+> .LBE1129:
+> .LBB1131:
+> 	.loc 20 724 0
+> 	call	debug_lockdep_rcu_enabled	#
+> .LVL1264:
+> 	addl	$16, %esp	#,
+> 	testl	%eax, %eax	# D.38819
+> 	je	.L798	#,
+> 	cmpb	$0, __warned.7078	#, __warned
+> 	jne	.L798	#,
+> 	call	rcu_is_cpu_idle	#
+> .LVL1265:
+> 	testl	%eax, %eax	# D.38816
+> 	je	.L798	#,
+> 	movl	$.LC50, %ecx	#,
+> 	movl	$725, %edx	#,
+> 	movl	$.LC51, %eax	#,
+> 	movb	$1, __warned.7078	#, __warned
+> 	call	lockdep_rcu_suspicious	#
+> .LVL1266:
+> .L798:
+> .LBE1131:
+> .LBE1128:
+> .LBE1127:
+> .LBB1132:
+> 	.loc 4 675 0
+> 	movl	460(%ebx), %esi	# tsk_9(D)->real_cred, _________p1
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/board-mop500.c |    5 -----
- 1 file changed, 5 deletions(-)
+Found it (and Cc'd David).
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 80b4f0e..e641003 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -726,11 +726,6 @@ MACHINE_END
- 
- #ifdef CONFIG_MACH_UX500_DT
- 
--static struct platform_device *snowball_of_platform_devs[] __initdata = {
--	&snowball_led_dev,
--	&snowball_key_dev,
--};
--
- struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
- 	/* Requires call-back bindings. */
- 	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
--- 
-1.7.9.5
+In __update_max_tr() we have:
+
+	max_data = task_uid(tsk);
+
+where task_uid() is:
+
+#define task_uid(task)		(task_cred_xxx((task), uid))
+
+#define task_cred_xxx(task, xxx)			\
+({							\
+	__typeof__(((struct cred *)NULL)->xxx) ___val;	\
+	rcu_read_lock();				\
+	___val = __task_cred((task))->xxx;		\
+	rcu_read_unlock();				\
+	___val;						\
+})
+
+The __update_max_tr() is called at every location interrupts are enabled
+(and a max time is discovered). But now this can include places that
+rcu_read_lock can not be called, I'm not sure how to handle this. Is
+there a non rcu way to get a tasks uid?
+
+-- Steve
+
+
+> .LVL1267:
+> .LBB1133:
+> 	call	debug_lockdep_rcu_enabled	#
+> .LVL1268:
+> 	testl	%eax, %eax	# D.35763
+> 	je	.L801	#,
+> 	.loc 4 675 0 is_stmt 0 discriminator 1
+> 	cmpb	$0, __warned.29430	#, __warned
+> 	jne	.L801	#,
+> .LBB1134:
+> .LBB1135:
+> 	.loc 20 311 0 is_stmt 1
+> 	call	debug_lockdep_rcu_enabled	#
+> .LVL1269:
+> 	testl	%eax, %eax	# D.38826
+> 	je	.L801	#,
+> 	.loc 20 313 0
+> 	call	rcu_is_cpu_idle	#
+> .LVL1270:
+> 	testl	%eax, %eax	# D.38824
+> 	je	.L803	#,
+> .L804:
+> .LBE1135:
+> .LBE1134:
+> 	.loc 4 675 0
+> 	movl	$.LC52, %ecx	#,
+> 	movl	$675, %edx	#,
+> 	movl	$.LC25, %eax	#,
+> 	movb	$1, __warned.29430	#, __warned
+> 	call	lockdep_rcu_suspicious	#
+> .LVL1271:
+> 	jmp	.L801	#
+> .L803:
+> .LBB1137:
+> .LBB1136:
+> 	.loc 20 317 0
+> 	movl	$rcu_lock_map, %eax	#,
+> 	call	lock_is_held	#
+> .LVL1272:
+> .LBE1136:
+> .LBE1137:
+> 	.loc 4 675 0
+> 	testl	%eax, %eax	# D.38823
+> 	je	.L804	#,
+> .L801:
+> .LBE1133:
+> .LBE1132:
+> 	.loc 4 675 0 is_stmt 0 discriminator 2
+> 	movl	4(%esi), %esi	# _________p1_13->uid, ___val
+> .LVL1273:
+> .LBB1138:
+> .LBB1139:
+> .LBB1140:
+> 	.loc 20 745 0 is_stmt 1 discriminator 2
+> 	call	debug_lockdep_rcu_enabled	#
+> .LVL1274:
+> 	testl	%eax, %eax	# D.38830
+> 	je	.L806	#,
+> 	.loc 20 745 0 is_stmt 0
+> 	cmpb	$0, __warned.7082	#, __warned
+> 	jne	.L806	#,
+> 	call	rcu_is_cpu_idle	#
+> .LVL1275:
+> 	testl	%eax, %eax	# D.38827
+> 	je	.L806	#,
+> 	movl	$.LC53, %ecx	#,
+> 	movl	$746, %edx	#,
+> 	movl	$.LC51, %eax	#,
+> 	movb	$1, __warned.7082	#, __warned
+> 	call	lockdep_rcu_suspicious	#
+> .LVL1276:
+> .L806:
+> .LBE1140:
+> .LBB1141:
+> .LBB1142:
+> 	.loc 20 281 0 is_stmt 1
+> 	movl	$.L806, %ecx	#,
+> 	movl	$1, %edx	#,
+> 	movl	$rcu_lock_map, %eax	#,
+> 	call	lock_release	#
+> .LVL1277:
+> .LBE1142:
+> .LBE1141:
+> 	.loc 20 749 0
+> 	call	__rcu_read_unlock	#
+> .LVL1278:
+> .LBE1139:
+> .LBE1138:
+> .LBE1126:
+> 	.loc 4 675 0
+> 	movl	-16(%ebp), %eax	# %sfp,
+> 	.loc 4 676 0
+> 	movl	-16(%ebp), %edx	# %sfp,
+> 	.loc 4 675 0
+> 	movl	%esi, 56(%eax)	# ___val, max_data_5->uid
+> 	.loc 4 676 0
+> 	movl	36(%ebx), %eax	# tsk_9(D)->static_prio, tmp103
+> 	subl	$120, %eax	#, tmp103
+> 	movl	%eax, 28(%edx)	# tmp103, max_data_5->nice
+> 	.loc 4 677 0
+> 	movl	148(%ebx), %eax	# tsk_9(D)->policy, D.35776
+> 	movl	%eax, 32(%edx)	# D.35776, max_data_5->policy
+> 	.loc 4 678 0
+> 	movl	44(%ebx), %eax	# tsk_9(D)->rt_priority, D.35777
+> 	movl	%eax, 36(%edx)	# D.35777, max_data_5->rt_priority
+> 	.loc 4 681 0
+> 	movl	%ebx, %eax	# tsk,
+> 	call	tracing_record_cmdline	#
+> .LVL1279:
+> 	.loc 4 682 0
+> 	leal	-12(%ebp), %esp	#,
+> 	popl	%ebx	#
+> 	.cfi_restore 3
+> .LVL1280:
+> 	popl	%esi	#
+> 	.cfi_restore 6
+> .LVL1281:
+> 	popl	%edi	#
+> 	.cfi_restore 7
+> 	popl	%ebp	#
+> .LCFI358:
+> 	.cfi_restore 5
+> 	.cfi_def_cfa 4, 4
+> 	ret
+> 	.cfi_endproc
+> .LFE2091:
+
 
