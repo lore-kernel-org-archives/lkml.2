@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab2GaXFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:05:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41471 "EHLO bear.ext.ti.com"
+	id S1755903Ab2GaXGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:06:10 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41487 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755461Ab2GaXFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:05:49 -0400
+	id S1755810Ab2GaXGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 19:06:05 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <nico@linaro.org>,
         <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH 13/22] ARM: LPAE: allow proc override of TTB setup
-Date: Tue, 31 Jul 2012 19:04:49 -0400
-Message-ID: <1343775898-28345-14-git-send-email-cyril@ti.com>
+        Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH 04/22] ARM: LPAE: support 64-bit virt/phys patching
+Date: Tue, 31 Jul 2012 19:04:40 -0400
+Message-ID: <1343775898-28345-5-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343775898-28345-1-git-send-email-cyril@ti.com>
 References: <1343775898-28345-1-git-send-email-cyril@ti.com>
@@ -23,154 +23,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows ARM processor setup functions (*_setup in proc-*.S) to
-indicate that the page table has already been programmed.  This is
-done by setting r4 (page table pointer) to -1 before returning from the
-processor setup handler.
+This patch adds support for 64-bit physical addresses in virt_to_phys
+patching.  This does not do real 64-bit add/sub, but instead patches in the
+upper 32-bits of the phys_offset directly into the output of virt_to_phys.
 
-This capability is particularly needed on LPAE systems, where the translation
-table base needs to be programmed differently with 64-bit control
-register operations.
-
-Further, a few of the processors (arm1026, mohawk, xsc3) were programming the
-TTB twice.  This patch prevents the main head.S code from programming TTB the
-second time on these machines.
+In addition to adding 64-bit support, this patch also adds a set_phys_offset()
+helper that is needed on architectures that need to modify PHYS_OFFSET during
+initialization.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 ---
- arch/arm/kernel/head.S       |   10 +++++-----
- arch/arm/mm/proc-arm1026.S   |    1 +
- arch/arm/mm/proc-mohawk.S    |    1 +
- arch/arm/mm/proc-v6.S        |    2 ++
- arch/arm/mm/proc-v7-2level.S |    3 ++-
- arch/arm/mm/proc-v7-3level.S |    1 +
- arch/arm/mm/proc-v7.S        |    1 +
- arch/arm/mm/proc-xsc3.S      |    1 +
- 8 files changed, 14 insertions(+), 6 deletions(-)
+ arch/arm/include/asm/memory.h |   22 +++++++++++++++-------
+ arch/arm/kernel/head.S        |    6 ++++++
+ arch/arm/kernel/setup.c       |   14 ++++++++++++++
+ 3 files changed, 35 insertions(+), 7 deletions(-)
 
+diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+index 4a0108f..110495c 100644
+--- a/arch/arm/include/asm/memory.h
++++ b/arch/arm/include/asm/memory.h
+@@ -153,23 +153,31 @@
+ #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+ 
+ extern unsigned long __pv_phys_offset;
+-#define PHYS_OFFSET __pv_phys_offset
+-
++extern unsigned long __pv_phys_offset_high;
+ extern unsigned long __pv_offset;
+ 
++extern void set_phys_offset(phys_addr_t po);
++
++#define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
++
+ static inline phys_addr_t __virt_to_phys(unsigned long x)
+ {
+-	unsigned long t;
+-	early_patch_imm8(x, t, "add", __pv_offset);
+-	return t;
++	unsigned long tlo, thi = 0;
++
++	early_patch_imm8(x, tlo, "add", __pv_offset);
++	if (sizeof(phys_addr_t) > 4)
++		early_patch_imm8(0, thi, "add", __pv_phys_offset_high);
++
++	return (u64)tlo | (u64)thi << 32;
+ }
+ 
+ static inline unsigned long __phys_to_virt(phys_addr_t x)
+ {
+-	unsigned long t;
+-	early_patch_imm8(x, t, "sub", __pv_offset);
++	unsigned long t, xlo = x;
++	early_patch_imm8(xlo, t, "sub", __pv_offset);
+ 	return t;
+ }
++
+ #else
+ 
+ #define __virt_to_phys(x)		\
 diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index fa820b3..7b1a3be 100644
+index d165896..fa820b3 100644
 --- a/arch/arm/kernel/head.S
 +++ b/arch/arm/kernel/head.S
-@@ -414,17 +414,17 @@ __enable_mmu:
- #ifdef CONFIG_CPU_ICACHE_DISABLE
- 	bic	r0, r0, #CR_I
- #endif
--#ifdef CONFIG_ARM_LPAE
--	mov	r5, #0
--	mcrr	p15, 0, r4, r5, c2		@ load TTBR0
--#else
-+#ifndef CONFIG_ARM_LPAE
- 	mov	r5, #(domain_val(DOMAIN_USER, DOMAIN_MANAGER) | \
- 		      domain_val(DOMAIN_KERNEL, DOMAIN_MANAGER) | \
- 		      domain_val(DOMAIN_TABLE, DOMAIN_MANAGER) | \
- 		      domain_val(DOMAIN_IO, DOMAIN_CLIENT))
- 	mcr	p15, 0, r5, c3, c0, 0		@ load domain access register
--	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
- #endif
+@@ -532,6 +532,12 @@ __pv_phys_offset:
+ 	.long	0
+ 	.size	__pv_phys_offset, . - __pv_phys_offset
+ 
++	.globl	__pv_phys_offset_high
++	.type	__pv_phys_offset_high, %object
++__pv_phys_offset_high:
++	.long	0
++	.size	__pv_phys_offset_high, . - __pv_phys_offset_high
 +
-+	@ has the processor setup already programmed the page table pointer?
-+	adds	r5, r4, #1
-+	mcrne	p15, 0, r4, c2, c0, 0		@ load page table pointer
- 	b	__turn_mmu_on
- ENDPROC(__enable_mmu)
- 
-diff --git a/arch/arm/mm/proc-arm1026.S b/arch/arm/mm/proc-arm1026.S
-index fbc1d5f..c28070e 100644
---- a/arch/arm/mm/proc-arm1026.S
-+++ b/arch/arm/mm/proc-arm1026.S
-@@ -404,6 +404,7 @@ __arm1026_setup:
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r0, c8, c7		@ invalidate I,D TLBs on v4
- 	mcr	p15, 0, r4, c2, c0		@ load page table pointer
-+	mvn	r4, #0				@ do not set page table pointer
+ 	.globl	__pv_offset
+ 	.type	__pv_offset, %object
+ __pv_offset:
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 15a7699..bba3fdc 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -67,6 +67,20 @@
+ #define MEM_SIZE	(16*1024*1024)
  #endif
- #ifdef CONFIG_CPU_DCACHE_WRITETHROUGH
- 	mov	r0, #4				@ explicitly disable writeback
-diff --git a/arch/arm/mm/proc-mohawk.S b/arch/arm/mm/proc-mohawk.S
-index fbb2124..a26303c 100644
---- a/arch/arm/mm/proc-mohawk.S
-+++ b/arch/arm/mm/proc-mohawk.S
-@@ -390,6 +390,7 @@ __mohawk_setup:
- 	mcr	p15, 0, r0, c8, c7		@ invalidate I,D TLBs
- 	orr	r4, r4, #0x18			@ cache the page table in L2
- 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
-+	mvn	r4, #0				@ do not set page table pointer
  
- 	mov	r0, #0				@ don't allow CP access
- 	mcr	p15, 0, r0, c15, c1, 0		@ write CP access register
-diff --git a/arch/arm/mm/proc-v6.S b/arch/arm/mm/proc-v6.S
-index 566c658..872156e 100644
---- a/arch/arm/mm/proc-v6.S
-+++ b/arch/arm/mm/proc-v6.S
-@@ -210,7 +210,9 @@ __v6_setup:
- 	ALT_UP(orr	r4, r4, #TTB_FLAGS_UP)
- 	ALT_SMP(orr	r8, r8, #TTB_FLAGS_SMP)
- 	ALT_UP(orr	r8, r8, #TTB_FLAGS_UP)
-+	mcr	p15, 0, r4, c2, c0, 0		@ load TTB0
- 	mcr	p15, 0, r8, c2, c0, 1		@ load TTB1
-+	mvn	r4, #0				@ do not set page table pointer
- #endif /* CONFIG_MMU */
- 	adr	r5, v6_crval
- 	ldmia	r5, {r5, r6}
-diff --git a/arch/arm/mm/proc-v7-2level.S b/arch/arm/mm/proc-v7-2level.S
-index 3397803..cc78c0c 100644
---- a/arch/arm/mm/proc-v7-2level.S
-+++ b/arch/arm/mm/proc-v7-2level.S
-@@ -139,7 +139,7 @@ ENDPROC(cpu_v7_set_pte_ext)
++#ifdef CONFIG_ARM_PATCH_PHYS_VIRT
++/*
++ * set_phys_offset() sets PHYS_OFFSET and pv_offset.
++ * Note: this is unsafe to use beyond setup_arch().
++ */
++void __init set_phys_offset(phys_addr_t po)
++{
++	__pv_phys_offset	= po;
++	__pv_phys_offset_high	= (u64)po >> 32;
++	__pv_offset		= po - PAGE_OFFSET;
++}
++
++#endif
++
+ #if defined(CONFIG_FPE_NWFPE) || defined(CONFIG_FPE_FASTFPE)
+ char fpe_type[8];
  
- 	/*
- 	 * Macro for setting up the TTBRx and TTBCR registers.
--	 * - \ttb0 and \ttb1 updated with the corresponding flags.
-+	 * - \ttbr0 and \ttbr1 updated with the corresponding flags.
- 	 */
- 	.macro	v7_ttb_setup, zero, ttbr0, ttbr1, tmp
- 	mcr	p15, 0, \zero, c2, c0, 2	@ TTB control register
-@@ -147,6 +147,7 @@ ENDPROC(cpu_v7_set_pte_ext)
- 	ALT_UP(orr	\ttbr0, \ttbr0, #TTB_FLAGS_UP)
- 	ALT_SMP(orr	\ttbr1, \ttbr1, #TTB_FLAGS_SMP)
- 	ALT_UP(orr	\ttbr1, \ttbr1, #TTB_FLAGS_UP)
-+	mcr	p15, 0, \ttbr0, c2, c0, 0	@ load TTB0
- 	mcr	p15, 0, \ttbr1, c2, c0, 1	@ load TTB1
- 	.endm
- 
-diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-index 3b1a745..5e3bed1 100644
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -124,6 +124,7 @@ ENDPROC(cpu_v7_set_pte_ext)
- 	mcr	p15, 0, \tmp, c2, c0, 2				@ TTBCR
- 	addls	\ttbr1, \ttbr1, #TTBR1_OFFSET
- 	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
-+	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
- 	.endm
- 
- 	__CPUINIT
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index c2e2b66..8850194 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -250,6 +250,7 @@ __v7_setup:
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
- 	v7_ttb_setup r10, r4, r8, r5		@ TTBCR, TTBRx setup
-+	mvn	r4, #0				@ do not set page table pointer
- 	ldr	r5, =PRRR			@ PRRR
- 	ldr	r6, =NMRR			@ NMRR
- 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
-diff --git a/arch/arm/mm/proc-xsc3.S b/arch/arm/mm/proc-xsc3.S
-index b0d5786..db3836b 100644
---- a/arch/arm/mm/proc-xsc3.S
-+++ b/arch/arm/mm/proc-xsc3.S
-@@ -455,6 +455,7 @@ __xsc3_setup:
- 	mcr	p15, 0, ip, c8, c7, 0		@ invalidate I and D TLBs
- 	orr	r4, r4, #0x18			@ cache the page table in L2
- 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
-+	mvn	r4, #0				@ do not set page table pointer
- 
- 	mov	r0, #1 << 6			@ cp6 access for early sched_clock
- 	mcr	p15, 0, r0, c15, c1, 0		@ write CP access register
 -- 
 1.7.9.5
 
