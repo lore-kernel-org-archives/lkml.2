@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab2GaNFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:05:46 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:34028 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755090Ab2GaNFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:05:44 -0400
-Message-ID: <1343739939.2633.34.camel@deskari>
-Subject: Re: [PATCH 15/15] workqueue: deprecate __cancel_delayed_work()
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, padovan@profusion.mobi, marcel@holtmann.org,
-        peterz@infradead.org, mingo@redhat.com, davem@davemloft.net,
-        dougthompson@xmission.com, ibm-acpi@hmh.eng.br, cbou@mail.ru,
-        rui.zhang@intel.com, Jens Axboe <axboe@kernel.dk>,
-        Jiri Kosina <jkosina@suse.cz>, Roland Dreier <roland@kernel.org>
-Date: Tue, 31 Jul 2012 16:05:39 +0300
-In-Reply-To: <1343433308-26614-16-git-send-email-tj@kernel.org>
-References: <1343433308-26614-1-git-send-email-tj@kernel.org>
-	 <1343433308-26614-16-git-send-email-tj@kernel.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-95Y2iAoWa8AxpC+iOUg8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Mime-Version: 1.0
+	id S1753241Ab2GaNH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:07:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382Ab2GaNHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 09:07:24 -0400
+Message-ID: <5017D882.6040007@redhat.com>
+Date: Tue, 31 Jul 2012 09:07:14 -0400
+From: Larry Woodman <lwoodman@redhat.com>
+Reply-To: lwoodman@redhat.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118E7F.8000609@redhat.com> <50120FA8.20409@redhat.com> <20120727102356.GD612@suse.de> <5016DC5F.7030604@redhat.com> <20120731124650.GO612@suse.de>
+In-Reply-To: <20120731124650.GO612@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/31/2012 08:46 AM, Mel Gorman wrote:
+> On Mon, Jul 30, 2012 at 03:11:27PM -0400, Larry Woodman wrote:
+>>> <SNIP>
+>>> That is a surprise. Can you try your test case on 3.4 and tell us if the
+>>> patch fixes the problem there? I would like to rule out the possibility
+>>> that the locking rules are slightly different in RHEL. If it hits on 3.4
+>>> then it's also possible you are seeing a different bug, more on this later.
+>>>
+>> Sorry for the delay Mel, here is the BUG() traceback from the 3.4
+>> kernel with your
+>> patches:
+>>
+>> --------------------------------------------------------------------------------------------------------------------------------------------
+>> [ 1106.156569] ------------[ cut here ]------------
+>> [ 1106.161731] kernel BUG at mm/filemap.c:135!
+>> [ 1106.166395] invalid opcode: 0000 [#1] SMP
+>> [ 1106.170975] CPU 22
+>> [ 1106.173115] Modules linked in: bridge stp llc sunrpc binfmt_misc
+>> dcdbas microcode pcspkr acpi_pad acpi]
+>> [ 1106.201770]
+> Thanks, looks very similar.
+>
+>> [ 1106.203426] Pid: 18001, comm: mpitest Tainted: G        W
+>> 3.3.0+ #4 Dell Inc. PowerEdge R620/07NDJ2
+> You say this was a 3.4 kernel but the message says 3.3. Probably not
+> relevant, just interesting.
+>
+Oh, sorry I posted the wrong traceback.  I tested both 3.3 & 3.4 and had 
+the same results.
+I'll do it again and post the 3.4 traceback for you,
 
---=-95Y2iAoWa8AxpC+iOUg8
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Fri, 2012-07-27 at 16:55 -0700, Tejun Heo wrote:
-> __cancel_delayed_work() is different from cancel_delayed_work() in
-> that it uses del_timer() instead of del_timer_sync().  This adds
-> confusion to already complicated flush / cancel API and given that the
-> only thing delayed_work->timer does is queueing the work, the
-> difference between cancel_delayed_work() and __cancel_delayed_work()
-> isn't anything material.
->=20
-> Furthermore, none of the remaining users are on hot path racing
-> against high-frequency work item making the chance of actually waiting
-> for delayed_work_timer_fn() very slim.
->=20
-> Use cancel_delayed_work() instead of __cancel_delayed_work() and mark
-> the latter deprecated.
-
-I used __cancel_delayed_work() in drivers/video/omap2/dss/dsi.c as the
-cancel is done in an interrupt handler. Is it safe to use
-cancel_delayed_work() in atomic context? I presume not, as it uses
-del_timer_sync().
-
- Tomi
-
-
---=-95Y2iAoWa8AxpC+iOUg8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJQF9gjAAoJEPo9qoy8lh719aQP/2SfIZXPyIpfgJ1nT3pnRAKx
-hox2zoQetPIJ1WP5gZNNOkqpfDB07RpV7UpYUHQeB0do+o30WHF/CVtObnZnbexQ
-t+gS8PuqBDj1m7SOmOO+Phz1wdYRon6pJW1PZ8mj3ORkpWxjJefT081ypKJ7MqbU
-NrWnOOTfIw0veTcUdsuzy36VdPsW41OcPEBBKgNkWDyqVZ28nOnfndZhzGWWG/I2
-1EIO2WjMDwH58MmlIwTJrMg592AdI9Rqd6IGEWkiMgDospyNLvwfZW1uwlFrggSv
-P+1Hb1QvUsyj91Xd9NP/r9C0/dprHLKWe0qZUzlsK18VCPBSB8M6rwNauZOKpAI8
-yJ9KtVMyfakSQ0PQCuqlFE3b6gPuAlIKNVJr0vc9UmhKfbtAfe0dWFS4378nzWqL
-NKAPzDKUfymwv81XIlUd0crooDlAmH+08qyNoaPemNKvU8nriebFSYFz0lgpaVjz
-3FLy82keazpxFMmgTKXWbxzG+MF/7Fue6qBiYl5hTtYI9XlrEieqxaRebz/w9ySu
-T7siNpxL7OazTJ3jhe5B9vnHpCLIgv0LZLmXniGHlGNiqZNGIBrwYUzTJqv6gTAW
-hrrFUsVXcFxfELSQp97IdJLqDcRABDMQ1VPoWt4NR9JquCpTnb+c3TU/6UiHqEWq
-TMtN7HGOV16WuUMrBIt5
-=GYhW
------END PGP SIGNATURE-----
-
---=-95Y2iAoWa8AxpC+iOUg8--
+Larry
 
