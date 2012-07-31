@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab2GaXFo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:05:44 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42728 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab2GaXFk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:05:40 -0400
+	id S1755553Ab2GaXFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:05:53 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41471 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755461Ab2GaXFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 19:05:49 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <nico@linaro.org>,
         <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
         Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH 10/22] ARM: LPAE: use 64-bit accessors for TTBR registers
-Date: Tue, 31 Jul 2012 19:04:46 -0400
-Message-ID: <1343775898-28345-11-git-send-email-cyril@ti.com>
+Subject: [PATCH 13/22] ARM: LPAE: allow proc override of TTB setup
+Date: Tue, 31 Jul 2012 19:04:49 -0400
+Message-ID: <1343775898-28345-14-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343775898-28345-1-git-send-email-cyril@ti.com>
 References: <1343775898-28345-1-git-send-email-cyril@ti.com>
@@ -24,87 +23,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds TTBR accessor macros, and modifies cpu_get_pgd() and
-the LPAE version of cpu_set_reserved_ttbr0() to use these instead.
+This patch allows ARM processor setup functions (*_setup in proc-*.S) to
+indicate that the page table has already been programmed.  This is
+done by setting r4 (page table pointer) to -1 before returning from the
+processor setup handler.
 
-In the process, we also fix these functions to correctly handle cases
-where the physical address lies beyond the 4G limit of 32-bit addressing.
+This capability is particularly needed on LPAE systems, where the translation
+table base needs to be programmed differently with 64-bit control
+register operations.
+
+Further, a few of the processors (arm1026, mohawk, xsc3) were programming the
+TTB twice.  This patch prevents the main head.S code from programming TTB the
+second time on these machines.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 ---
- arch/arm/include/asm/proc-fns.h |   24 +++++++++++++++++++-----
- arch/arm/mm/context.c           |   13 ++-----------
- 2 files changed, 21 insertions(+), 16 deletions(-)
+ arch/arm/kernel/head.S       |   10 +++++-----
+ arch/arm/mm/proc-arm1026.S   |    1 +
+ arch/arm/mm/proc-mohawk.S    |    1 +
+ arch/arm/mm/proc-v6.S        |    2 ++
+ arch/arm/mm/proc-v7-2level.S |    3 ++-
+ arch/arm/mm/proc-v7-3level.S |    1 +
+ arch/arm/mm/proc-v7.S        |    1 +
+ arch/arm/mm/proc-xsc3.S      |    1 +
+ 8 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/include/asm/proc-fns.h b/arch/arm/include/asm/proc-fns.h
-index fa6554e..918b4f9 100644
---- a/arch/arm/include/asm/proc-fns.h
-+++ b/arch/arm/include/asm/proc-fns.h
-@@ -116,13 +116,27 @@ extern void cpu_resume(void);
- #define cpu_switch_mm(pgd,mm) cpu_do_switch_mm(virt_to_phys(pgd),mm)
- 
- #ifdef CONFIG_ARM_LPAE
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index fa820b3..7b1a3be 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -414,17 +414,17 @@ __enable_mmu:
+ #ifdef CONFIG_CPU_ICACHE_DISABLE
+ 	bic	r0, r0, #CR_I
+ #endif
+-#ifdef CONFIG_ARM_LPAE
+-	mov	r5, #0
+-	mcrr	p15, 0, r4, r5, c2		@ load TTBR0
+-#else
++#ifndef CONFIG_ARM_LPAE
+ 	mov	r5, #(domain_val(DOMAIN_USER, DOMAIN_MANAGER) | \
+ 		      domain_val(DOMAIN_KERNEL, DOMAIN_MANAGER) | \
+ 		      domain_val(DOMAIN_TABLE, DOMAIN_MANAGER) | \
+ 		      domain_val(DOMAIN_IO, DOMAIN_CLIENT))
+ 	mcr	p15, 0, r5, c3, c0, 0		@ load domain access register
+-	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
+ #endif
 +
-+#define cpu_get_ttbr(nr)					\
-+	({							\
-+		u64 ttbr;					\
-+		__asm__("mrrc	p15, " #nr ", %Q0, %R0, c2"	\
-+			: "=r" (ttbr)				\
-+			: : "cc");				\
-+		ttbr;						\
-+	})
-+
-+#define cpu_set_ttbr(nr, val)					\
-+	do {							\
-+		u64 ttbr = val;					\
-+		__asm__("mcrr	p15, " #nr ", %Q0, %R0, c2"	\
-+			: : "r" (ttbr)				\
-+			: "cc");				\
-+	} while (0)
-+
- #define cpu_get_pgd()	\
- 	({						\
--		unsigned long pg, pg2;			\
--		__asm__("mrrc	p15, 0, %0, %1, c2"	\
--			: "=r" (pg), "=r" (pg2)		\
--			:				\
--			: "cc");			\
-+		u64 pg = cpu_get_ttbr(0);		\
- 		pg &= ~(PTRS_PER_PGD*sizeof(pgd_t)-1);	\
- 		(pgd_t *)phys_to_virt(pg);		\
- 	})
-diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
-index 806cc4f..ad70bd8 100644
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -15,6 +15,7 @@
++	@ has the processor setup already programmed the page table pointer?
++	adds	r5, r4, #1
++	mcrne	p15, 0, r4, c2, c0, 0		@ load page table pointer
+ 	b	__turn_mmu_on
+ ENDPROC(__enable_mmu)
  
- #include <asm/mmu_context.h>
- #include <asm/tlbflush.h>
-+#include <asm/proc-fns.h>
+diff --git a/arch/arm/mm/proc-arm1026.S b/arch/arm/mm/proc-arm1026.S
+index fbc1d5f..c28070e 100644
+--- a/arch/arm/mm/proc-arm1026.S
++++ b/arch/arm/mm/proc-arm1026.S
+@@ -404,6 +404,7 @@ __arm1026_setup:
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r0, c8, c7		@ invalidate I,D TLBs on v4
+ 	mcr	p15, 0, r4, c2, c0		@ load page table pointer
++	mvn	r4, #0				@ do not set page table pointer
+ #endif
+ #ifdef CONFIG_CPU_DCACHE_WRITETHROUGH
+ 	mov	r0, #4				@ explicitly disable writeback
+diff --git a/arch/arm/mm/proc-mohawk.S b/arch/arm/mm/proc-mohawk.S
+index fbb2124..a26303c 100644
+--- a/arch/arm/mm/proc-mohawk.S
++++ b/arch/arm/mm/proc-mohawk.S
+@@ -390,6 +390,7 @@ __mohawk_setup:
+ 	mcr	p15, 0, r0, c8, c7		@ invalidate I,D TLBs
+ 	orr	r4, r4, #0x18			@ cache the page table in L2
+ 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
++	mvn	r4, #0				@ do not set page table pointer
  
- static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
- unsigned int cpu_last_asid = ASID_FIRST_VERSION;
-@@ -22,17 +23,7 @@ unsigned int cpu_last_asid = ASID_FIRST_VERSION;
- #ifdef CONFIG_ARM_LPAE
- void cpu_set_reserved_ttbr0(void)
- {
--	unsigned long ttbl = __pa(swapper_pg_dir);
--	unsigned long ttbh = 0;
--
--	/*
--	 * Set TTBR0 to swapper_pg_dir which contains only global entries. The
--	 * ASID is set to 0.
--	 */
--	asm volatile(
--	"	mcrr	p15, 0, %0, %1, c2		@ set TTBR0\n"
--	:
--	: "r" (ttbl), "r" (ttbh));
-+	cpu_set_ttbr(0, __pa(swapper_pg_dir));
- 	isb();
- }
- #else
+ 	mov	r0, #0				@ don't allow CP access
+ 	mcr	p15, 0, r0, c15, c1, 0		@ write CP access register
+diff --git a/arch/arm/mm/proc-v6.S b/arch/arm/mm/proc-v6.S
+index 566c658..872156e 100644
+--- a/arch/arm/mm/proc-v6.S
++++ b/arch/arm/mm/proc-v6.S
+@@ -210,7 +210,9 @@ __v6_setup:
+ 	ALT_UP(orr	r4, r4, #TTB_FLAGS_UP)
+ 	ALT_SMP(orr	r8, r8, #TTB_FLAGS_SMP)
+ 	ALT_UP(orr	r8, r8, #TTB_FLAGS_UP)
++	mcr	p15, 0, r4, c2, c0, 0		@ load TTB0
+ 	mcr	p15, 0, r8, c2, c0, 1		@ load TTB1
++	mvn	r4, #0				@ do not set page table pointer
+ #endif /* CONFIG_MMU */
+ 	adr	r5, v6_crval
+ 	ldmia	r5, {r5, r6}
+diff --git a/arch/arm/mm/proc-v7-2level.S b/arch/arm/mm/proc-v7-2level.S
+index 3397803..cc78c0c 100644
+--- a/arch/arm/mm/proc-v7-2level.S
++++ b/arch/arm/mm/proc-v7-2level.S
+@@ -139,7 +139,7 @@ ENDPROC(cpu_v7_set_pte_ext)
+ 
+ 	/*
+ 	 * Macro for setting up the TTBRx and TTBCR registers.
+-	 * - \ttb0 and \ttb1 updated with the corresponding flags.
++	 * - \ttbr0 and \ttbr1 updated with the corresponding flags.
+ 	 */
+ 	.macro	v7_ttb_setup, zero, ttbr0, ttbr1, tmp
+ 	mcr	p15, 0, \zero, c2, c0, 2	@ TTB control register
+@@ -147,6 +147,7 @@ ENDPROC(cpu_v7_set_pte_ext)
+ 	ALT_UP(orr	\ttbr0, \ttbr0, #TTB_FLAGS_UP)
+ 	ALT_SMP(orr	\ttbr1, \ttbr1, #TTB_FLAGS_SMP)
+ 	ALT_UP(orr	\ttbr1, \ttbr1, #TTB_FLAGS_UP)
++	mcr	p15, 0, \ttbr0, c2, c0, 0	@ load TTB0
+ 	mcr	p15, 0, \ttbr1, c2, c0, 1	@ load TTB1
+ 	.endm
+ 
+diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
+index 3b1a745..5e3bed1 100644
+--- a/arch/arm/mm/proc-v7-3level.S
++++ b/arch/arm/mm/proc-v7-3level.S
+@@ -124,6 +124,7 @@ ENDPROC(cpu_v7_set_pte_ext)
+ 	mcr	p15, 0, \tmp, c2, c0, 2				@ TTBCR
+ 	addls	\ttbr1, \ttbr1, #TTBR1_OFFSET
+ 	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
++	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
+ 	.endm
+ 
+ 	__CPUINIT
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index c2e2b66..8850194 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -250,6 +250,7 @@ __v7_setup:
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
+ 	v7_ttb_setup r10, r4, r8, r5		@ TTBCR, TTBRx setup
++	mvn	r4, #0				@ do not set page table pointer
+ 	ldr	r5, =PRRR			@ PRRR
+ 	ldr	r6, =NMRR			@ NMRR
+ 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
+diff --git a/arch/arm/mm/proc-xsc3.S b/arch/arm/mm/proc-xsc3.S
+index b0d5786..db3836b 100644
+--- a/arch/arm/mm/proc-xsc3.S
++++ b/arch/arm/mm/proc-xsc3.S
+@@ -455,6 +455,7 @@ __xsc3_setup:
+ 	mcr	p15, 0, ip, c8, c7, 0		@ invalidate I and D TLBs
+ 	orr	r4, r4, #0x18			@ cache the page table in L2
+ 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
++	mvn	r4, #0				@ do not set page table pointer
+ 
+ 	mov	r0, #1 << 6			@ cp6 access for early sched_clock
+ 	mcr	p15, 0, r0, c15, c1, 0		@ write CP access register
 -- 
 1.7.9.5
 
