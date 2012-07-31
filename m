@@ -1,206 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab2GaSOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 14:14:10 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:52445 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab2GaSOG convert rfc822-to-8bit (ORCPT
+	id S1755687Ab2GaSUV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 14:20:21 -0400
+Received: from 50.97.138.99-static.reverse.softlayer.com ([50.97.138.99]:41254
+	"EHLO wren.arvixe.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037Ab2GaSUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 14:14:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: wei_wang@realsil.com.cn
-Subject: Re: [PATCH 1/3] drivers/misc: Add realtek card reader core driver
-Date: Tue, 31 Jul 2012 11:23:25 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, bp@alien8.de, aaron.lu@amd.come
-References: <1343720536-22077-1-git-send-email-wei_wang@realsil.com.cn>
-In-Reply-To: <1343720536-22077-1-git-send-email-wei_wang@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201207311123.25862.arnd@arndb.de>
-X-Provags-ID: V02:K0:d8ZsSCdtEFpk7rpR32QGNUPvw0xx1l88jZm33RL2amv
- /7O8MebSgNWvoPCRmJ6/0asdfasKxYz44w3iZsLgdSCHPcVSgL
- s3F2CTzUWMdYY9SLYsCoO6PgMzhS6ie/Nc4ZxBvc3LsIW2Q87x
- dAjD2pExlgdoCm9TzHqJil7r00sSpzQap3pKmVsioGm2SyOYrJ
- ENu1vpWHHwYkN1Xf16AA3drH0ywwbZ18kOKuF2SVmI1WqhGNYN
- PkcjbPiOj3XK2mN1wkxA9KrXft/+/FKUp3mbaOvj7Pa2UEfr8t
- /31BF1zGX5CZnGFVXfvh0pynRb2L8ui5KWcTQ5KGUQQrWfmMWA
- uxxWXf6hoUn7u/IAGLzs=
+	Tue, 31 Jul 2012 14:20:18 -0400
+X-Greylist: delayed 3063 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Jul 2012 14:20:17 EDT
+From: Przemo Firszt <przemo@firszt.eu>
+To: pinglinux@gmail.com, jkosina@suse.cz, linux-doc@vger.kernel.org,
+        linuxwacom-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Przemo Firszt <przemo@firszt.eu>
+Subject: [PATCH 2/2] HID: wacom: OLEDs control over sysfs for Intuos4
+Date: Tue, 31 Jul 2012 18:27:56 +0100
+Message-Id: <1343755676-2999-2-git-send-email-przemo@firszt.eu>
+X-Mailer: git-send-email 1.7.11.1
+In-Reply-To: <1343755676-2999-1-git-send-email-przemo@firszt.eu>
+References: <1343755676-2999-1-git-send-email-przemo@firszt.eu>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - wren.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 July 2012, wei_wang@realsil.com.cn wrote:
-> From: Wei WANG <wei_wang@realsil.com.cn>
-> 
-> Realtek card reader core driver is the bus driver for Realtek
-> driver-based card reader, which supplies adapter layer to
-> be used by lower-level pci/usb card reader and upper-level
-> sdmmc/memstick host driver.
-> 
-> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+Thsi patch adds ability to control OLED micro displays on Wacom Intuos4
+Wireless. The OLEDS are exposed as
+/sys/class/hidraw/hidraw*/device/oled{No]_img
+where No. is 0 to 7
 
-You posted the sdmmc host driver and the pci card reader driver.
-I assume that the USB card reader and the memstick host
-will also get posted at some point. Do you have a timeframe
-for those?
+Setting an image:
 
-The hardware seems to also support xd/smartmedia. Do you have
-plans to add those? I think we have some code in drivers/mfd
-that acts as an abstraction layer for these, given that the
-host has to do the wear leveling there too.
+dd bs=256 if=img_file of=/sys/class/hidraw/hidraw{No}/device/oled0_img
 
->  Documentation/misc-devices/realtek_cr.txt |   27 ++
->  drivers/misc/Kconfig                      |    1 +
->  drivers/misc/Makefile                     |    1 +
->  drivers/misc/realtek_cr/Kconfig           |   26 ++
->  drivers/misc/realtek_cr/Makefile          |    7 +
->  drivers/misc/realtek_cr/core/Kconfig      |    5 +
->  drivers/misc/realtek_cr/core/Makefile     |    1 +
->  drivers/misc/realtek_cr/core/rtsx_core.c  |  462 +++++++++++++++++++++++++++++
->  include/linux/rtsx_core.h                 |  188 ++++++++++++
->  9 files changed, 718 insertions(+)
->  create mode 100644 Documentation/misc-devices/realtek_cr.txt
->  create mode 100644 drivers/misc/realtek_cr/Kconfig
->  create mode 100644 drivers/misc/realtek_cr/Makefile
->  create mode 100644 drivers/misc/realtek_cr/core/Kconfig
->  create mode 100644 drivers/misc/realtek_cr/core/Makefile
->  create mode 100644 drivers/misc/realtek_cr/core/rtsx_core.c
->  create mode 100644 include/linux/rtsx_core.h
+The image has to contain 256 bytes (64x32px 1 bit). More detailed
+description in Documentation/ABI/testing/sysfs-driver-wacom
 
-As usual for most things getting added to drivers/misc, I'm skeptical
-about it actually fitting in here. Normally I'd put such a multiplexer
-into drivers/mfd. Given that you actually need your own bus, rather
-than just a single host with multiple endpoints, drivers/bus/realtek/cr
-might be best.
+Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+---
+ Documentation/ABI/testing/sysfs-driver-wacom |   13 +++
+ drivers/hid/hid-wacom.c                      |  143 ++++++++++++++++++++++++++
+ 2 files changed, 156 insertions(+)
 
-> +udev rules
-> +----------
-> +
-> +In order to modprobe Realtek SD/MMC interface driver automatically, the following rule
-> +should be added to the udev rules file:
-> +
-> +SUBSYSTEM=="rtsx_cr", ENV{RTSX_CARD_TYPE}=="SD", RUN+="/sbin/modprobe -bv rtsx_sdmmc"
-
-This should not be necessary if you put the right module alias into the driver itself.
-
-> +struct rtsx_adapter *rtsx_alloc_adapter(unsigned int num_sockets,
-> +					struct device *dev)
-> +{
-> +	struct rtsx_adapter *adapter;
-> +
-> +	adapter = kzalloc(sizeof(*adapter)
-> +		     + sizeof(struct rtsx_dev *) * num_sockets, GFP_KERNEL);
-> +	if (adapter) {
-> +		adapter->dev.class = &rtsx_adapter_class;
-> +		adapter->dev.parent = dev;
-> +		device_initialize(&adapter->dev);
-> +		spin_lock_init(&adapter->lock);
-> +		adapter->num_sockets = num_sockets;
-> +	}
-> +	return adapter;
-> +}
-> +EXPORT_SYMBOL(rtsx_alloc_adapter);
-
-You should generally use EXPORT_SYMBOL_GPL for new symbols unless there is
-a strong reason not to (and then you should explain that reason).
-> +
-> +void rtsx_queue_work(struct work_struct *work)
-> +{
-> +	queue_work(workqueue, work);
-> +}
-> +EXPORT_SYMBOL(rtsx_queue_work);
-> +
-> +void rtsx_queue_delayed_work(struct delayed_work *dwork, unsigned long delay)
-> +{
-> +	queue_delayed_work(workqueue, dwork, delay);
-> +}
-> +EXPORT_SYMBOL(rtsx_queue_delayed_work);
-
-I would not bother with this, just move the workqueue into the client driver
-itself, which may result in a few duplicate lines but less code overall.
-
-> +int rtsx_register_driver(struct rtsx_driver *drv)
-> +{
-> +	drv->driver.bus = &rtsx_bus_type;
-> +
-> +	return driver_register(&drv->driver);
-> +}
-> +EXPORT_SYMBOL(rtsx_register_driver);
-> +
-> +void rtsx_unregister_driver(struct rtsx_driver *drv)
-> +{
-> +	driver_unregister(&drv->driver);
-> +}
-> +EXPORT_SYMBOL(rtsx_unregister_driver);
-
-Same thing here: There will only be very few drivers for this bus, so it's
-easier to call the driver_register function from the drivers. You need to export
-the rtsx_bus_type in that case though, but that is done for most buses.
-
-> +void rtsx_complete_unfinished_transfer(struct rtsx_dev *sock)
-> +{
-> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-> +
-> +	adapter->common_ops->complete_unfinished_transfer(adapter);
-> +}
-> +EXPORT_SYMBOL(rtsx_complete_unfinished_transfer);
-> +
-> +void rtsx_sdmmc_set_bus_width(struct rtsx_dev *sock, unsigned char bus_width)
-> +{
-> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-> +
-> +	adapter->sdmmc_ops->sdmmc_set_bus_width(adapter, bus_width);
-> +}
-> +EXPORT_SYMBOL(rtsx_sdmmc_set_bus_width);
-> +
-> +void rtsx_sdmmc_set_power_mode(struct rtsx_dev *sock, unsigned char power_mode)
-> +{
-> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-> +
-> +	adapter->sdmmc_ops->sdmmc_set_power_mode(adapter, power_mode);
-> +}
-> +EXPORT_SYMBOL(rtsx_sdmmc_set_power_mode);
-> +
-> +void rtsx_sdmmc_set_timing(struct rtsx_dev *sock, unsigned char timing)
-> +{
-> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-> +
-> +	adapter->sdmmc_ops->sdmmc_set_timing(adapter, timing);
-> +}
-> +EXPORT_SYMBOL(rtsx_sdmmc_set_timing);
-> +
-> +int rtsx_sdmmc_switch_voltage(struct rtsx_dev *sock, unsigned char voltage)
-> +{
-> +	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-> +
-> +	return adapter->sdmmc_ops->sdmmc_switch_voltage(adapter, voltage);
-> +}
-> +EXPORT_SYMBOL(rtsx_sdmmc_switch_voltage);
-
-With this level of abstraction in your own driver, I wonder if it wouldn't be
-easier to have completely separate mmc drivers for each of the two host options
-(pci and usb). Apparently you have almost no shared code in the MMC driver
-/or/ in the bus driver.
-
->From this, I think it would be easier to kill off your own bus driver entirely
-and move the rtsx_pci.c driver into drivers/mfd, and then merge your
-pci/sdmmc.c file with rtsx_sdmmc.c.
-
-> +#define wait_timeout_x(task_state, msecs)			\
-> +do {								\
-> +	set_current_state((task_state));			\
-> +	schedule_timeout(msecs_to_jiffies(msecs));		\
-> +} while (0)
-> +
-> +#define wait_timeout(msecs)	wait_timeout_x(TASK_INTERRUPTIBLE, (msecs))
-
-This is the same as msleep_interruptible, right? Note that with interuptible
-sleep, you should always check if you got interrupted and return -ERESTARTSYS
-to user space.
-
-	Arnd
+diff --git a/Documentation/ABI/testing/sysfs-driver-wacom b/Documentation/ABI/testing/sysfs-driver-wacom
+index 8d55a83..7fc7810 100644
+--- a/Documentation/ABI/testing/sysfs-driver-wacom
++++ b/Documentation/ABI/testing/sysfs-driver-wacom
+@@ -1,3 +1,16 @@
++WWhat:		/sys/class/hidraw/hidraw*/device/oled*_img
++Date:		June 2012
++Contact:	linux-bluetooth@vger.kernel.org
++Description:
++		The /sys/class/hidraw/hidraw*/device/oled*_img files control
++		OLED mocro displays on Intuos4 Wireless tablet. Accepted image
++		has to contain 256 bytes (64x32 px 1 bit colour). The format
++		is the same as PBM image 62x32px without header (64 bits per
++		horizontal line, 32 lines). An example of setting OLED No. 0:
++		dd bs=256 count=1 if=img_file of=[path to oled0_img]/oled0_img
++		The attribute is read only and no local copy of the image is
++		stored.
++
+ What:		/sys/class/hidraw/hidraw*/device/speed
+ Date:		April 2010
+ Kernel Version:	2.6.35
+diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+index 848842e..8effb8b 100644
+--- a/drivers/hid/hid-wacom.c
++++ b/drivers/hid/hid-wacom.c
+@@ -33,6 +33,8 @@
+ #define PAD_DEVICE_ID	0x0F
+ 
+ #define WAC_CMD_LED_CONTROL     0x20
++#define WAC_CMD_ICON_START_STOP     0x21
++#define WAC_CMD_ICON_TRANSFER       0x26
+ 
+ struct wacom_data {
+ 	__u16 tool;
+@@ -69,6 +71,91 @@ static enum power_supply_property wacom_ac_props[] = {
+ 	POWER_SUPPLY_PROP_SCOPE,
+ };
+ 
++static void wacom_scramble(__u8 *image)
++{
++	__u16 mask;
++	__u16 s1;
++	__u16 s2;
++	__u16 r1 ;
++	__u16 r2 ;
++	__u16 r;
++	__u8 buf[256];
++	int i, w, x, y, z;
++
++	for (x = 0; x < 32; x++) {
++		for (y = 0; y < 8; y++)
++			buf[(8 * x) + (7 - y)] = image[(8 * x) + y];
++	}
++
++	/* Change 76543210 into GECA6420 as required by Intuos4 WL
++	 *        HGFEDCBA      HFDB7531
++	 */
++	for (x = 0; x < 4; x++) {
++		for (y = 0; y < 4; y++) {
++			for (z = 0; z < 8; z++) {
++				mask = 0x0001;
++				r1 = 0;
++				r2 = 0;
++				i = (x << 6) + (y << 4) + z;
++				s1 = buf[i];
++				s2 = buf[i+8];
++				for (w = 0; w < 8; w++) {
++					r1 |= (s1 & mask);
++					r2 |= (s2 & mask);
++					s1 <<= 1;
++					s2 <<= 1;
++					mask <<= 2;
++				}
++				r = r1 | (r2 << 1);
++				i = (x << 6) + (y << 4) + (z << 1);
++				image[i] = 0xFF & r;
++				image[i+1] = (0xFF00 & r) >> 8;
++			}
++		}
++	}
++}
++
++static void wacom_set_image(struct hid_device *hdev, const char *image,
++						__u8 icon_no)
++{
++	__u8 rep_data[68];
++	__u8 p[256];
++	int ret, i, j;
++
++	for (i = 0; i < 256; i++)
++		p[i] = image[i];
++
++	rep_data[0] = WAC_CMD_ICON_START_STOP;
++	rep_data[1] = 0;
++	ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
++				HID_FEATURE_REPORT);
++	if (ret < 0)
++		goto err;
++
++	rep_data[0] = WAC_CMD_ICON_TRANSFER;
++	rep_data[1] = icon_no & 0x07;
++
++	wacom_scramble(p);
++
++	for (i = 0; i < 4; i++) {
++		for (j = 0; j < 64; j++)
++			rep_data[j + 3] = p[(i << 6) + j];
++
++		rep_data[2] = i;
++		ret = hdev->hid_output_raw_report(hdev, rep_data, 67,
++					HID_FEATURE_REPORT);
++	}
++
++	rep_data[0] = WAC_CMD_ICON_START_STOP;
++	rep_data[1] = 0;
++
++	ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
++				HID_FEATURE_REPORT);
++
++err:
++	return;
++}
++
+ static void wacom_leds_set_brightness(struct led_classdev *led_dev,
+ 						enum led_brightness value)
+ {
+@@ -93,6 +180,8 @@ static void wacom_leds_set_brightness(struct led_classdev *led_dev,
+ 		buf[1] = led;
+ 		buf[2] = value >> 2;
+ 		buf[3] = value;
++		/* use fixed brightness for OLEDs */
++		buf[4] = 0x08;
+ 		hdev->hid_output_raw_report(hdev, buf, 9, HID_FEATURE_REPORT);
+ 		kfree(buf);
+ 	}
+@@ -318,6 +407,34 @@ static ssize_t wacom_store_speed(struct device *dev,
+ static DEVICE_ATTR(speed, S_IRUGO | S_IWUSR | S_IWGRP,
+ 		wacom_show_speed, wacom_store_speed);
+ 
++#define WACOM_STORE(OLED_ID)						\
++static ssize_t wacom_oled##OLED_ID##_store(struct device *dev,		\
++				struct device_attribute *attr,		\
++				const char *buf, size_t count)		\
++{									\
++	struct hid_device *hdev = container_of(dev, struct hid_device,	\
++				dev);					\
++									\
++	if (count != 256)						\
++		return -EINVAL;						\
++									\
++	wacom_set_image(hdev, buf, OLED_ID);				\
++									\
++	return count;							\
++}									\
++									\
++static DEVICE_ATTR(oled##OLED_ID##_img, S_IWUSR | S_IWGRP, NULL,	\
++				wacom_oled##OLED_ID##_store)
++
++WACOM_STORE(0);
++WACOM_STORE(1);
++WACOM_STORE(2);
++WACOM_STORE(3);
++WACOM_STORE(4);
++WACOM_STORE(5);
++WACOM_STORE(6);
++WACOM_STORE(7);
++
+ static int wacom_gr_parse_report(struct hid_device *hdev,
+ 			struct wacom_data *wdata,
+ 			struct input_dev *input, unsigned char *data)
+@@ -718,6 +835,24 @@ static int wacom_probe(struct hid_device *hdev,
+ 		hid_warn(hdev,
+ 			 "can't create sysfs speed attribute err: %d\n", ret);
+ 
++#define OLED_INIT(OLED_ID)						\
++	do {								\
++		ret = device_create_file(&hdev->dev,			\
++				&dev_attr_oled##OLED_ID##_img);		\
++		if (ret)						\
++			hid_warn(hdev,					\
++			 "can't create sysfs oled attribute, err: %d\n", ret);\
++	} while (0)
++
++OLED_INIT(0);
++OLED_INIT(1);
++OLED_INIT(2);
++OLED_INIT(3);
++OLED_INIT(4);
++OLED_INIT(5);
++OLED_INIT(6);
++OLED_INIT(7);
++
+ 	wdata->features = 0;
+ 	wacom_set_features(hdev, 1);
+ 
+@@ -782,6 +917,14 @@ static void wacom_remove(struct hid_device *hdev)
+ 	struct wacom_data *wdata = hid_get_drvdata(hdev);
+ 
+ 	wacom_destroy_leds(hdev);
++	device_remove_file(&hdev->dev, &dev_attr_oled0_img);
++	device_remove_file(&hdev->dev, &dev_attr_oled1_img);
++	device_remove_file(&hdev->dev, &dev_attr_oled2_img);
++	device_remove_file(&hdev->dev, &dev_attr_oled3_img);
++	device_remove_file(&hdev->dev, &dev_attr_oled4_img);
++	device_remove_file(&hdev->dev, &dev_attr_oled5_img);
++	device_remove_file(&hdev->dev, &dev_attr_oled6_img);
++	device_remove_file(&hdev->dev, &dev_attr_oled7_img);
+ 	device_remove_file(&hdev->dev, &dev_attr_speed);
+ 	hid_hw_stop(hdev);
+ 
+-- 
+1.7.10.2
 
