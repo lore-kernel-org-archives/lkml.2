@@ -1,140 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab2GaFxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:53:55 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:60933 "EHLO serv04.lahn.de"
+	id S1755414Ab2GaF7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:59:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:49078 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710Ab2GaFxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 01:53:54 -0400
-Date: Tue, 31 Jul 2012 07:52:27 +0200
-From: Michael Leun <lkml20120218@newton.leun.net>
-To: linux@rainbow-software.org
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [3.5 regression / mcs7830 / bisected] bridge constantly
- toggeling between disabled and forwarding
-Message-ID: <20120731075227.1064ced9@xenia.leun.net>
-In-Reply-To: <20120724013634.11bf1360@xenia.leun.net>
-References: <20120723091504.2d035d28@xenia.leun.net>
-	<20120724013634.11bf1360@xenia.leun.net>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752239Ab2GaF7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 01:59:00 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Kent Yoder <key@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, anton@samba.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: CRYPTO_DEV_NX merge problem (Re: linux-next: Tree for July 31)
+In-reply-to: <20120731152614.de6ebe9e0d4b8fc6645b793a@canb.auug.org.au>
+References: <20120731152614.de6ebe9e0d4b8fc6645b793a@canb.auug.org.au>
+Comments: In-reply-to Stephen Rothwell <sfr@canb.auug.org.au>
+   message dated "Tue, 31 Jul 2012 15:26:14 +1000."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Tue, 31 Jul 2012 15:58:58 +1000
+Message-ID: <31974.1343714338@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jul 2012 01:36:34 +0200
-Michael Leun <lkml20120218@newton.leun.net> wrote:
+> Please do not add anything to linux-next included branches/series that is
+> destined for v3.7 until after v3.6-rc1 is released.
 
-My report might sound like I'm complaining that link state detection
-works because link state detection was implemented - sorry, but thats
-not true.
+Looks like there is a merge conflict between:
+  commit 1b074ac867a2bd08a6f12f0feed7d91e06941723
+  Author: Seth Jennings <sjenning@linux.vnet.ibm.com>
+  Subject: powerpc/crypto: rework Kconfig
 
-I do NOT see this link state changes if there is no traffic on the
-interface, but I start seeing them once I start pinging. I think this
-is not the idea of link state detection?
+and 
+  commit fd297b3a7302ab866306f53c1fd1e97b083fe83e
+  Author: Anton Blanchard <anton@samba.org>
+  powerpc: Enable pseries hardware RNG and crypto modules
 
-I would very much appreciate if you could have a look into that,
-because it is rather annoying.
+Seth made CRYPTO_DEV_NX a bool and Anton set it as a module.
 
-> On Mon, 23 Jul 2012 09:15:04 +0200
-> Michael Leun <lkml20120218@newton.leun.net> wrote:
-> 
-> [see issue description below]
-> 
-> Bisecting yielded
-> 
-> b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113 is the first bad commit
-> commit b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113
-> Author: Ondrej Zary <linux@rainbow-software.org>
-> Date:   Fri Jun 1 10:29:08 2012 +0000
-> 
->     mcs7830: Implement link state detection
-> 
->     Add .status callback that detects link state changes.
->     Tested with MCS7832CV-AA chip (9710:7830, identified as rev.C by the driver).
->     Fixes https://bugzilla.kernel.org/show_bug.cgi?id=28532
-> 
->     Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> :040000 040000 5480780cb5e75c57122a621fc3bab0108c16be27 d97efd9cc0a465dff76bcd3a3c547f718f2a5345 M    drivers
-> 
-> 
-> Reverting that from 3.5 makes the issue go away.
-> 
-> > Hi,
-> > 
-> > when I use my usb ethernet adapter
-> > 
-> > # > lsusb
-> > [...]
-> > Bus 002 Device 009: ID 9710:7830 MosChip Semiconductor MCS7830 10/100 Mbps Ethernet adapter
-> > [...]
-> > 
-> > as port of an bridge
-> > 
-> > > # brctl addbr br0
-> > > # brctl addif br0 eth0
-> > > # brctl addif br0 ue5
-> > > # ifconfig ue5 up
-> > > # ifconfig br0 up
-> > 
-> > (Also does happen when eth0 is not part of the bridge, but the logs I
-> > had available were from that situation...)
-> > 
-> > I constantly get messages showing the interface toggeling between
-> > disabled and forwarding state:
-> > 
-> > Jul 23 07:40:50 elektra kernel: [ 1539.497337] br0: port 2(ue5) entered disabled state
-> > Jul 23 07:40:50 elektra kernel: [ 1539.554992] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:40:50 elektra kernel: [ 1539.555005] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:40:51 elektra kernel: [ 1540.496242] br0: port 2(ue5) entered disabled state
-> > Jul 23 07:40:51 elektra kernel: [ 1540.552534] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:40:51 elektra kernel: [ 1540.552548] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:40:52 elektra kernel: [ 1541.550413] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:40:53 elektra kernel: [ 1542.529672] br0: port 2(ue5) entered disabled state
-> > Jul 23 07:40:53 elektra kernel: [ 1542.587162] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:40:53 elektra kernel: [ 1542.587175] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:40:54 elektra kernel: [ 1543.585309] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:41:00 elektra kernel: [ 1549.360600] br0: port 2(ue5) entered disabled state
-> > Jul 23 07:41:00 elektra kernel: [ 1549.442998] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:41:00 elektra kernel: [ 1549.443011] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:41:01 elektra kernel: [ 1550.357686] br0: port 2(ue5) entered disabled state
-> > Jul 23 07:41:01 elektra kernel: [ 1550.408208] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:41:01 elektra kernel: [ 1550.408222] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:41:02 elektra kernel: [ 1551.407656] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:41:03 elektra kernel: [ 1552.401578] br0: port 2(ue5) entered disabled state
-> > Jul 23 07:41:03 elektra kernel: [ 1552.474773] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:41:03 elektra kernel: [ 1552.474786] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:41:04 elektra kernel: [ 1553.472487] br0: port 2(ue5) entered forwarding state
-> > Jul 23 07:41:05 elektra kernel: [ 1554.356138] br0: port 2(ue5) entered disabled state
-> > [...]
-> > 
-> > This does (in the same situation, nothing else than the kernel changed)
-> > not happen with 3.4.5.
-> > 
-> > Does anybody have an idea what the issue might be or do I need to bisect?
-> 
-> 
-> -- 
-> MfG,
-> 
-> Michael Leun
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Hence I get this with a pseries_defconfig
+  arch/powerpc/configs/pseries_defconfig:372:warning: symbol value 'm' invalid for CRYPTO_DEV_NX
 
+Seth: any reason this can stay as a tristate?
 
--- 
-MfG,
-
-Michael Leun
-
+Mikey
