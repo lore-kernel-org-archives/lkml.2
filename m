@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab2GaEvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:51:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48774 "EHLO
+	id S1755767Ab2GaEzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:55:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48821 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755633Ab2GaEux (ORCPT
+	by vger.kernel.org with ESMTP id S1755673Ab2GaEu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:53 -0400
-Message-Id: <20120731044318.401414025@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:59 -0400
+Message-Id: <20120731044317.351797099@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:54 +0100
+Date: Tue, 31 Jul 2012 05:43:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 44/73] target: Fix reading of data length fields for UNMAP commands
+        alan@lxorguk.ukuu.org.uk, Tiejun Chen <tiejun.chen@windriver.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 38/73] powerpc: Add "memory" attribute for mfmsr()
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,47 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Tiejun Chen <tiejun.chen@windriver.com>
 
-commit 1a5fa4576ec8a462313c7516b31d7453481ddbe8 upstream.
+commit b416c9a10baae6a177b4f9ee858b8d309542fbef upstream.
 
-The UNMAP DATA LENGTH and UNMAP BLOCK DESCRIPTOR DATA LENGTH fields
-are in the unmap descriptor (the payload transferred to our data out
-buffer), not in the CDB itself.  Read them from the correct place in
-target_emulated_unmap.
+Add "memory" attribute in inline assembly language as a compiler
+barrier to make sure 4.6.x GCC don't reorder mfmsr().
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[bwh: Backported to 3.2: adjust filename, context]
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_cdb.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/powerpc/include/asm/reg.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -1114,7 +1114,6 @@ int target_emulate_unmap(struct se_task
- 	struct se_cmd *cmd = task->task_se_cmd;
- 	struct se_device *dev = cmd->se_dev;
- 	unsigned char *buf, *ptr = NULL;
--	unsigned char *cdb = &cmd->t_task_cdb[0];
- 	sector_t lba;
- 	unsigned int size = cmd->data_length, range;
- 	int ret = 0, offset;
-@@ -1130,11 +1129,12 @@ int target_emulate_unmap(struct se_task
- 	/* First UNMAP block descriptor starts at 8 byte offset */
- 	offset = 8;
- 	size -= 8;
--	dl = get_unaligned_be16(&cdb[0]);
--	bd_dl = get_unaligned_be16(&cdb[2]);
- 
- 	buf = transport_kmap_data_sg(cmd);
- 
-+	dl = get_unaligned_be16(&buf[0]);
-+	bd_dl = get_unaligned_be16(&buf[2]);
-+
- 	ptr = &buf[offset];
- 	pr_debug("UNMAP: Sub: %s Using dl: %hu bd_dl: %hu size: %hu"
- 		" ptr: %p\n", dev->transport->name, dl, bd_dl, size, ptr);
+diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
+index 2baeb7c..6386086 100644
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -1025,7 +1025,8 @@
+ /* Macros for setting and retrieving special purpose registers */
+ #ifndef __ASSEMBLY__
+ #define mfmsr()		({unsigned long rval; \
+-			asm volatile("mfmsr %0" : "=r" (rval)); rval;})
++			asm volatile("mfmsr %0" : "=r" (rval) : \
++						: "memory"); rval;})
+ #ifdef CONFIG_PPC_BOOK3S_64
+ #define __mtmsrd(v, l)	asm volatile("mtmsrd %0," __stringify(l) \
+ 				     : : "r" (v) : "memory")
 
 
