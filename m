@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab2GaR0m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:26:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11434 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab2GaR0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:26:40 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=wom5GMh1gUkA:10 a=aqDLzf-sAsEA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=MOAlSWJXwOALvgJcYAAA:9 a=CjuIK1q_8ugA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Date: Tue, 31 Jul 2012 13:26:38 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: awful kconfig help texts.
-Message-ID: <20120731172638.GE16873@home.goodmis.org>
-References: <20120731151600.GA19412@redhat.com>
- <20120731170741.GA4735@x1.osrc.amd.com>
+	id S1753455Ab2GaR1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:27:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:41464 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752958Ab2GaR1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 13:27:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="175362431"
+Date: Tue, 31 Jul 2012 10:27:09 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: chetan loke <loke.chetan@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
+Message-ID: <20120731172709.GB14080@jonmason-lab>
+References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
+ <1343607994-32415-2-git-send-email-jon.mason@intel.com>
+ <CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
+ <20120730181542.GA987@jonmason-lab>
+ <CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
+ <CAAsGZS5kOyQ5FQ7Jg3HxOmmPNYS+F6XcB-_3tm=rcgDV7wAvRQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120731170741.GA4735@x1.osrc.amd.com>
+In-Reply-To: <CAAsGZS5kOyQ5FQ7Jg3HxOmmPNYS+F6XcB-_3tm=rcgDV7wAvRQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 07:07:41PM +0200, Borislav Petkov wrote:
-> On Tue, Jul 31, 2012 at 11:16:00AM -0400, Dave Jones wrote:
-> > 
-> > PWM Support (PWM) [N/y/?] (NEW) ?
-> > 
-> > CONFIG_PWM:
-> > 
-> > This enables PWM support through the generic PWM framework.
-> > 
-> > 
-> > Well that's.. enlightening.
+On Tue, Jul 31, 2012 at 12:02:20PM -0400, chetan loke wrote:
+> On Tue, Jul 31, 2012 at 9:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > On Mon, Jul 30, 2012 at 12:15 PM, Jon Mason <jon.mason@intel.com> wrote:
+> >>
+> >> I've tried to make it all generic enough that non-Intel NTBs should plug in with
+> >> minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
+> >> redesign of ntb_hw.c might be necessary.  But from what I've seen of other
+> >> designs on the internet, they appear to be extremely similar.  The transport and
+> >> client drivers were written with the hardware abstracted away as much as
+> >> possible to prevent the need to modify it for different hardware.  If there is
+> >> anything which is Intel hardware specific, I'd be happy to change it to make it
+> >> more generic.
+> >
+> > That makes sense from a technical point of view, but I think it's
+> > going to cause maintenance issues.  For example, assume PLX NTB
+> > support is added.  Will PLX be happy about having to convince you to
+> > accept changes?  Will Intel be happy about having to release a new
 > 
-> Oh, there's one more enlightening sentence in the help:
+> Do you mean convince Intel? Well, if we think of ntb as the class
+> driver then the onus is on the community to vet the changes and NOT
+> intel.
+> And since this is the first NTB part for which the support is
+> introduced the class driver design could be a moving target. As
+> someone else mentioned, the async/sync tx-dma is another hook that
+> could change the class driver's design.
 > 
-> "You only need to enable this, if you also want to enable one or more of
-> the PWM drivers below."
+> 
+> > driver for their hardware just to incorporate a PLX bug fix?  Will
+> > users of PLX hardware accept a new driver release that only benefits
+> > Intel users?
+> 
+> May be till the class driver is stable, the client(intel/PLX) drivers
+> might have to be modified.  This is a cue for other vendors to
+> chime-in and review this design?
+> Just thinking if this could sit in staging for some time(so that
+> others get a chance to review/suggest changes as well) and then get
+> promoted out of staging.
 
-Then shouldn't this not have a prompt and just be selected by those
-PWM drivers below?
+I don't see the benefit of having the driver in staging.  Any vendors
+who would notice the ntb driver in staging would be sitting on these
+mailing lists and hopefully have planety of comments on the design.
+Stashing the driver in staging while waiting for these comments (which
+may never come) doesn't seem the best course of action.
 
+Thanks,
+Jon
 
 > 
-> Got it? :-)
-> 
-> > I'm picking on PWM here, but this isn't an
-> > isolated case.  Every merge window we see a slew of new options with useless
-> > help texts. They may as well be non-existent. (Actually in some cases, they are).
-> > 
-> > If someone has to read the code to find out what the driver is, your help text probably sucks.
-> > 
-> > 
-> > (I'll leave "why does this option even show up on x86" as a separate rant)
-
-/me is looking forward to this rant ;-)
-
--- Steve
-
+> Chetan Loke
