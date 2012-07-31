@@ -1,96 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab2GaMAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:00:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51223 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab2GaMAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:00:41 -0400
-Message-ID: <5017C8E4.4020003@pengutronix.de>
-Date: Tue, 31 Jul 2012 14:00:36 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1756116Ab2GaMGE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:06:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16222 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751724Ab2GaMGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 08:06:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="191084991"
+Date: Tue, 31 Jul 2012 20:05:56 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Steven Rostedt <srostedt@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, rostedt@goodmis.org
+Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
+Message-ID: <20120731120556.GB17252@localhost>
+References: <20120724090330.GA9830@localhost>
+ <1343662752.3847.2.camel@fedora>
 MIME-Version: 1.0
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-CC: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH can-next v3 1/2] can: add tx/rx LED trigger support
-References: <1343676041-29572-1-git-send-email-fabio.baltieri@gmail.com> <5016FA01.5000109@pengutronix.de> <20120731065733.GA30267@gmail.com> <501784C8.9050803@pengutronix.de> <20120731115733.GB30417@gmail.com>
-In-Reply-To: <20120731115733.GB30417@gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig05D7B327D6C64F42C5EED01A"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343662752.3847.2.camel@fedora>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig05D7B327D6C64F42C5EED01A
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jul 30, 2012 at 11:39:12AM -0400, Steven Rostedt wrote:
+> On Tue, 2012-07-24 at 17:03 +0800, Fengguang Wu wrote:
+> > Hi Steven,
+> 
+> Hi Fengguang,
+> 
+> Just an FYI, It's best to send email to my rostedt@goodmis.org account.
+> I don't check my redhat account every day.
 
-On 07/31/2012 01:57 PM, Fabio Baltieri wrote:
-[...]
+OK, sorry for forgetting about that!
 
->>>> Can you provide a devm implementation for can_led?
->>>
->>> Sounds reasonable, you mean like a devm_kasprintf implementation to
->>> remove kfree and unwinding code?
->>
->> IMHO it would be sufficient if you implement the devm cleanup function=
-s
->> here.
->=20
-> Uh - can you be more specific?  I mean, are you suggesting to just
-> convert the code to something like:
->=20
-> unsigned int len;
-> char *p;
->=20
-> len =3D snprintf(NULL, 0, "%s-tx", netdev->name);
-> p =3D devm_kzalloc(&netdev->dev, len + 1, GFP_KERNEL);
-> if (!p)
-> return -ENOMEM;
-> sprintf(p, len + 1, "%s-tx", netdev->name);
+> > 
+> > This looks like some old bug, so I directly report to you w/o trying
+> > to bisect it. It only happens on the attached i386 randconfig and
+> > happens in about half of the kvm boots.
+> > 
+> > [    1.380369] Testing tracer irqsoff: [    1.524917] 
+> > [    1.525217] ===============================
+> > [    1.525868] [ INFO: suspicious RCU usage. ]
+> > [    1.526556] 3.5.0+ #1289 Not tainted
+> > [    1.527124] -------------------------------
+> > [    1.527799] /c/kernel-tests/src/linux/include/linux/rcupdate.h:730 rcu_read_lock() used illegally while idle!
+> > [    1.529375] 
+> > [    1.529375] other info that might help us debug this:
+> > [    1.529375] 
+> > [    1.530667] 
+> > [    1.530667] RCU used illegally from idle CPU!
+> > [    1.530667] rcu_scheduler_active = 1, debug_locks = 1
+> > [    1.532383] RCU used illegally from extended quiescent state!
+> > [    1.533297] 2 locks held by swapper/0/0:
+> > 
+> > [    1.533924]  #0: [    1.534271]  (max_trace_lock){......}, at: [<410e9d67>] check_critical_timing+0x67/0x1b0
+> > [    1.534883]  #1:  (rcu_read_lock){.+.+..}, at: [<410e1ea0>] __update_max_tr+0x0/0x200
+> > 
+> > [    1.534883] stack backtrace:
+> > [    1.534883] Pid: 0, comm: swapper/0 Not tainted 3.5.0+ #1289
+> > [    1.534883] Call Trace:
+> > [    1.534883]  [<41093a76>] lockdep_rcu_suspicious+0xc6/0x100
+> > [    1.534883]  [<410e2071>] __update_max_tr+0x1d1/0x200
+> 
+> This is very weird because __update_max_tr does not use rcu_read lock().
+> If you still have the kernel around (or can reproduce it), can you show
+> the objdump of the __update_max_tr function. I wonder if some debug
+> option requires RCU usage somewhere there.
 
-This would work, if you just have to free both names, but...
+Here is part of trace.s, where lockdep_rcu_suspicious shows up in 3
+places:
 
-> or to implement something with devres_alloc() and a specific
-> release function?
-
-=2E..you have to call led_trigger_unregister_simple(), so we need a custo=
-m
-release function.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig05D7B327D6C64F42C5EED01A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAlAXyOQACgkQjTAFq1RaXHOrqgCfR1xP0itAC6UcfCW9B2FuNvQ+
-0OQAn3lhSjV4AoKtOv8jB+q0AsHV+uSF
-=WBxJ
------END PGP SIGNATURE-----
-
---------------enig05D7B327D6C64F42C5EED01A--
+.LFE2107:
+	.size	tracing_record_cmdline, .-tracing_record_cmdline
+	.section	.rodata.str1.1
+.LC50:
+	.string	"rcu_read_lock() used illegally while idle"
+.LC51:
+	.string	"/c/wfg/linux/include/linux/rcupdate.h"
+.LC52:
+	.string	"suspicious rcu_dereference_check() usage"
+.LC53:
+	.string	"rcu_read_unlock() used illegally while idle"
+	.text
+	.type	__update_max_tr, @function
+__update_max_tr:
+.LFB2091:
+	.loc 4 661 0
+	.cfi_startproc
+.LVL1255:
+.L796:
+	pushl	%ebp	#
+.LCFI356:
+	.cfi_def_cfa_offset 8
+	.cfi_offset 5, -8
+	movl	%esp, %ebp	#,
+.LCFI357:
+	.cfi_def_cfa_register 5
+	pushl	%edi	#
+	pushl	%esi	#
+	pushl	%ebx	#
+	.cfi_offset 7, -12
+	.cfi_offset 6, -16
+	.cfi_offset 3, -20
+	.loc 4 662 0
+	leal	4(%ecx), %edi	#, tmp91
+	.loc 4 661 0
+	pushl	%ebx	#
+	.loc 4 662 0
+	movl	8(%eax,%edi,4), %esi	# tr_1(D)->data, data
+.LVL1256:
+	.loc 4 661 0
+	movl	%edx, %ebx	# tsk, tsk
+	.loc 4 665 0
+	movl	%ecx, max_tr+4	# cpu, max_tr.cpu
+	.loc 4 673 0
+	movl	$4, %ecx	#, tmp102
+.LVL1257:
+	.loc 4 666 0
+	movl	44(%esi), %eax	# data_3->preempt_timestamp, data_3->preempt_timestamp
+.LVL1258:
+	movl	48(%esi), %edx	# data_3->preempt_timestamp, data_3->preempt_timestamp
+.LVL1259:
+	movl	%eax, max_tr+12	# data_3->preempt_timestamp, max_tr.time_start
+	.loc 4 669 0
+	movl	tracing_max_latency, %eax	# tracing_max_latency, tracing_max_latency
+	.loc 4 666 0
+	movl	%edx, max_tr+16	# data_3->preempt_timestamp, max_tr.time_start
+	.loc 4 668 0
+	movl	max_tr+8(,%edi,4), %edi	# max_tr.data,
+	.loc 4 669 0
+	movl	%eax, 12(%edi)	# tracing_max_latency, max_data_5->saved_latency
+	.loc 4 670 0
+	movl	16(%esi), %eax	# data_3->critical_start, D.35758
+	movl	%edi, %edx	#,
+	.loc 4 668 0
+	movl	%edi, -16(%ebp)	#, %sfp
+.LVL1260:
+	.loc 4 670 0
+	movl	%eax, 16(%edi)	# D.35758, max_data_5->critical_start
+	.loc 4 671 0
+	movl	20(%esi), %eax	# data_3->critical_end, D.35759
+	.loc 4 673 0
+	leal	468(%ebx), %esi	#, tmp99
+.LVL1261:
+	.loc 4 671 0
+	movl	%eax, 20(%edi)	# D.35759, max_data_5->critical_end
+	.loc 4 673 0
+	movl	%edi, %eax	# tmp1, tmp98
+	addl	$60, %eax	#, tmp98
+	movl	%eax, %edi	# tmp98, tmp100
+	rep movsl
+	.loc 4 674 0
+	movl	248(%ebx), %eax	# tsk_9(D)->pid, D.35762
+	movl	%eax, 52(%edx)	# D.35762, max_data_5->pid
+.LBB1126:
+.LBB1127:
+.LBB1128:
+	.file 20 "/c/wfg/linux/include/linux/rcupdate.h"
+	.loc 20 721 0
+	call	__rcu_read_lock	#
+.LVL1262:
+.LBB1129:
+.LBB1130:
+	.loc 20 276 0
+	xorl	%ecx, %ecx	#
+	xorl	%edx, %edx	#
+	movl	$rcu_lock_map, %eax	#,
+	pushl	$.L796	#
+	pushl	$0	#
+	pushl	$1	#
+	pushl	$2	#
+	call	lock_acquire	#
+.LVL1263:
+.LBE1130:
+.LBE1129:
+.LBB1131:
+	.loc 20 724 0
+	call	debug_lockdep_rcu_enabled	#
+.LVL1264:
+	addl	$16, %esp	#,
+	testl	%eax, %eax	# D.38819
+	je	.L798	#,
+	cmpb	$0, __warned.7078	#, __warned
+	jne	.L798	#,
+	call	rcu_is_cpu_idle	#
+.LVL1265:
+	testl	%eax, %eax	# D.38816
+	je	.L798	#,
+	movl	$.LC50, %ecx	#,
+	movl	$725, %edx	#,
+	movl	$.LC51, %eax	#,
+	movb	$1, __warned.7078	#, __warned
+	call	lockdep_rcu_suspicious	#
+.LVL1266:
+.L798:
+.LBE1131:
+.LBE1128:
+.LBE1127:
+.LBB1132:
+	.loc 4 675 0
+	movl	460(%ebx), %esi	# tsk_9(D)->real_cred, _________p1
+.LVL1267:
+.LBB1133:
+	call	debug_lockdep_rcu_enabled	#
+.LVL1268:
+	testl	%eax, %eax	# D.35763
+	je	.L801	#,
+	.loc 4 675 0 is_stmt 0 discriminator 1
+	cmpb	$0, __warned.29430	#, __warned
+	jne	.L801	#,
+.LBB1134:
+.LBB1135:
+	.loc 20 311 0 is_stmt 1
+	call	debug_lockdep_rcu_enabled	#
+.LVL1269:
+	testl	%eax, %eax	# D.38826
+	je	.L801	#,
+	.loc 20 313 0
+	call	rcu_is_cpu_idle	#
+.LVL1270:
+	testl	%eax, %eax	# D.38824
+	je	.L803	#,
+.L804:
+.LBE1135:
+.LBE1134:
+	.loc 4 675 0
+	movl	$.LC52, %ecx	#,
+	movl	$675, %edx	#,
+	movl	$.LC25, %eax	#,
+	movb	$1, __warned.29430	#, __warned
+	call	lockdep_rcu_suspicious	#
+.LVL1271:
+	jmp	.L801	#
+.L803:
+.LBB1137:
+.LBB1136:
+	.loc 20 317 0
+	movl	$rcu_lock_map, %eax	#,
+	call	lock_is_held	#
+.LVL1272:
+.LBE1136:
+.LBE1137:
+	.loc 4 675 0
+	testl	%eax, %eax	# D.38823
+	je	.L804	#,
+.L801:
+.LBE1133:
+.LBE1132:
+	.loc 4 675 0 is_stmt 0 discriminator 2
+	movl	4(%esi), %esi	# _________p1_13->uid, ___val
+.LVL1273:
+.LBB1138:
+.LBB1139:
+.LBB1140:
+	.loc 20 745 0 is_stmt 1 discriminator 2
+	call	debug_lockdep_rcu_enabled	#
+.LVL1274:
+	testl	%eax, %eax	# D.38830
+	je	.L806	#,
+	.loc 20 745 0 is_stmt 0
+	cmpb	$0, __warned.7082	#, __warned
+	jne	.L806	#,
+	call	rcu_is_cpu_idle	#
+.LVL1275:
+	testl	%eax, %eax	# D.38827
+	je	.L806	#,
+	movl	$.LC53, %ecx	#,
+	movl	$746, %edx	#,
+	movl	$.LC51, %eax	#,
+	movb	$1, __warned.7082	#, __warned
+	call	lockdep_rcu_suspicious	#
+.LVL1276:
+.L806:
+.LBE1140:
+.LBB1141:
+.LBB1142:
+	.loc 20 281 0 is_stmt 1
+	movl	$.L806, %ecx	#,
+	movl	$1, %edx	#,
+	movl	$rcu_lock_map, %eax	#,
+	call	lock_release	#
+.LVL1277:
+.LBE1142:
+.LBE1141:
+	.loc 20 749 0
+	call	__rcu_read_unlock	#
+.LVL1278:
+.LBE1139:
+.LBE1138:
+.LBE1126:
+	.loc 4 675 0
+	movl	-16(%ebp), %eax	# %sfp,
+	.loc 4 676 0
+	movl	-16(%ebp), %edx	# %sfp,
+	.loc 4 675 0
+	movl	%esi, 56(%eax)	# ___val, max_data_5->uid
+	.loc 4 676 0
+	movl	36(%ebx), %eax	# tsk_9(D)->static_prio, tmp103
+	subl	$120, %eax	#, tmp103
+	movl	%eax, 28(%edx)	# tmp103, max_data_5->nice
+	.loc 4 677 0
+	movl	148(%ebx), %eax	# tsk_9(D)->policy, D.35776
+	movl	%eax, 32(%edx)	# D.35776, max_data_5->policy
+	.loc 4 678 0
+	movl	44(%ebx), %eax	# tsk_9(D)->rt_priority, D.35777
+	movl	%eax, 36(%edx)	# D.35777, max_data_5->rt_priority
+	.loc 4 681 0
+	movl	%ebx, %eax	# tsk,
+	call	tracing_record_cmdline	#
+.LVL1279:
+	.loc 4 682 0
+	leal	-12(%ebp), %esp	#,
+	popl	%ebx	#
+	.cfi_restore 3
+.LVL1280:
+	popl	%esi	#
+	.cfi_restore 6
+.LVL1281:
+	popl	%edi	#
+	.cfi_restore 7
+	popl	%ebp	#
+.LCFI358:
+	.cfi_restore 5
+	.cfi_def_cfa 4, 4
+	ret
+	.cfi_endproc
+.LFE2091:
