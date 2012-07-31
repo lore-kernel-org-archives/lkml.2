@@ -1,141 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab2GaXCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:02:52 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43656 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab2GaXCv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:02:51 -0400
+	id S1755022Ab2GaXFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:05:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:32834 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754946Ab2GaXFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 19:05:31 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <nico@linaro.org>,
+        <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
+        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
+Subject: [PATCH 05/22] ARM: LPAE: use signed arithmetic for mask definitions
+Date: Tue, 31 Jul 2012 19:04:41 -0400
+Message-ID: <1343775898-28345-6-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343775898-28345-1-git-send-email-cyril@ti.com>
+References: <1343775898-28345-1-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
-From: Peter Moody <pmoody@google.com>
-Date: Tue, 31 Jul 2012 16:02:19 -0700
-Message-ID: <CALnj_=4r0qdrNUbXmS=q=sk11PZ-Q0z=wPO5wR_DzR4HjnMdqw@mail.gmail.com>
-Subject: Oops in audit_copy_inode
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@google.com>, mszeredi@suse.cz, viro@zeniv.linux.org.uk,
-        Eric Paris <eparis@redhat.com>
-Content-Type: multipart/mixed; boundary=047d7b3a7fc86d7acb04c6282d44
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b3a7fc86d7acb04c6282d44
-Content-Type: text/plain; charset=ISO-8859-1
+This patch applies to PAGE_MASK, PMD_MASK, and PGDIR_MASK, where forcing
+unsigned long math truncates the mask at the 32-bits.  This clearly does bad
+things on PAE systems.
 
-I seem to have a reliable oops from 3.5.0-rc6 from Linus's tree. I've
-bisected it down to, I think, the following commit:
+This patch fixes this problem by defining these masks as signed quantities.
+We then rely on sign extension to do the right thing.
 
-7157486541bffc0dfec912e21ae639b029dae3d3
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+---
+ arch/arm/include/asm/page.h           |    2 +-
+ arch/arm/include/asm/pgtable-3level.h |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-The Oops:
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.471368] Pid: 2643, comm:
-cc1 Not tainted 3.5.0-rc6-at17+ #33 LENOVO 4291AK7/4291AK7
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.472342] RIP:
-0010:[<ffffffff810cec30>]  [<ffffffff810cec30>]
-audit_copy_inode+0x10/0x90
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.473300] RSP:
-0018:ffff8801f88dfc58  EFLAGS: 00010282
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.474253] RAX:
-ffff8801fb320000 RBX: ffff8801f887c508 RCX: 000000000000c7e8
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.475210] RDX:
-0000000000000000 RSI: ffff8801f3f1d970 RDI: ffff8801f887c508
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.476172] RBP:
-ffff8801f88dfc88 R08: 0000000000000000 R09: 0000000000000000
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.477138] R10:
-0000000000000001 R11: 0000000000000000 R12: ffff8801f3f1d970
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.478236] R13:
-ffff8801f887c4a8 R14: 0000000000000000 R15: 0000000000000000
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.479218] FS:
-00007fd6b9473700(0000) GS:ffff880215200000(0000)
-knlGS:0000000000000000
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.480182] CS:  0010 DS: 0000
-ES: 0000 CR0: 0000000080050033
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.481143] CR2:
-0000000000000040 CR3: 000000020f6a3000 CR4: 00000000000407e0
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.482142] DR0:
-0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.483121] DR3:
-0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.484094] Process cc1 (pid:
-2643, threadinfo ffff8801f88de000, task ffff8801fb320000)
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.485070] Stack:
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.486030]  ffffffff8161c6fe
-ffff8801f887c508 ffff8801f3f1d970 ffff8801f887c4a8
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.487011]  ffff8801f887c508
-ffff8801f3f1d970 ffff8801f88dfcf8 ffffffff810d237c
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.487995]  ffffffff810d22bb
-0000000000000000 ffff8801f3f1d970 ffff8801f4575e40
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.488981] Call Trace:
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.489957]
-[<ffffffff8161c6fe>] ? mutex_unlock+0xe/0x10
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.490934]
-[<ffffffff810d237c>] __audit_inode+0x13c/0x2a0
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.491927]
-[<ffffffff810d22bb>] ? __audit_inode+0x7b/0x2a0
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.492916]
-[<ffffffff8117b44c>] do_last+0x7ac/0xa90
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.493883]
-[<ffffffff8117cad9>] path_openat+0xd9/0x410
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.494852]
-[<ffffffff81087f2d>] ? sched_clock_cpu+0xbd/0x110
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.495817]
-[<ffffffff8101a7a3>] ? native_sched_clock+0x13/0x80
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.496774]
-[<ffffffff8101a819>] ? sched_clock+0x9/0x10
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.497721]
-[<ffffffff8117cf32>] do_filp_open+0x42/0xa0
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.498663]
-[<ffffffff8161ed9b>] ? _raw_spin_unlock+0x2b/0x40
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.499609]
-[<ffffffff8118a2c2>] ? alloc_fd+0xd2/0x120
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.500579]
-[<ffffffff8116c2f8>] do_sys_open+0xf8/0x1d0
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.501514]
-[<ffffffff810d1a8c>] ? __audit_syscall_entry+0xcc/0x310
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.502471]
-[<ffffffff8116c3f1>] sys_open+0x21/0x30
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.503384]
-[<ffffffff81627529>] system_call_fastpath+0x16/0x1b
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.504275] Code: 00 00 c7 45
-cc 1f 00 00 00 e9 2c ff ff ff 66 66 66 66 2e 0f 1f 84 00 00 00 00 00
-55 48 89 e5 41 54 53 48 83 ec 20 66 66 66 66 90 <48> 8b 42 40 49 89 f4
-48 8d 77 34 48 89 fb 48 89 47 18 48 8b 42
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.506188] RIP
-[<ffffffff810cec30>] audit_copy_inode+0x10/0x90
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.507108]  RSP <ffff8801f88dfc58>
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.508021] CR2: 0000000000000040
-Jul 31 15:32:11 pmoody-x220 kernel: [  108.516307] ---[ end trace
-bcccee9a00e71a3b ]---
-
-I can generate this oops by doing the following:
-
-sudo /etc/init.d/auditd start ; sudo auditctl -D ; sudo auditctl -a
-exit,always -F arch=b64 -S chmod -k oops ; gcc hello.c
-
-The macro expansion in hello.c seems to be important.
-
-Other bits of likely pertinent information: Running Ubuntu.
-auditd/auditctl version 1.7.13-1ubuntu2 (ancient..), gcc version
-4.4.3.
-
-Please let me know if there's anything else I can provide (but please
-cc me, I'm not subscribed to lkml).
-
-Cheers,
-peter
-
+diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
+index ecf9019..1e0fe08 100644
+--- a/arch/arm/include/asm/page.h
++++ b/arch/arm/include/asm/page.h
+@@ -13,7 +13,7 @@
+ /* PAGE_SHIFT determines the page size */
+ #define PAGE_SHIFT		12
+ #define PAGE_SIZE		(_AC(1,UL) << PAGE_SHIFT)
+-#define PAGE_MASK		(~(PAGE_SIZE-1))
++#define PAGE_MASK		(~((1 << PAGE_SHIFT) - 1))
+ 
+ #ifndef __ASSEMBLY__
+ 
+diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
+index b249035..ae39d11 100644
+--- a/arch/arm/include/asm/pgtable-3level.h
++++ b/arch/arm/include/asm/pgtable-3level.h
+@@ -48,16 +48,16 @@
+ #define PMD_SHIFT		21
+ 
+ #define PMD_SIZE		(1UL << PMD_SHIFT)
+-#define PMD_MASK		(~(PMD_SIZE-1))
++#define PMD_MASK		(~((1 << PMD_SHIFT) - 1))
+ #define PGDIR_SIZE		(1UL << PGDIR_SHIFT)
+-#define PGDIR_MASK		(~(PGDIR_SIZE-1))
++#define PGDIR_MASK		(~((1 << PGDIR_SHIFT) - 1))
+ 
+ /*
+  * section address mask and size definitions.
+  */
+ #define SECTION_SHIFT		21
+ #define SECTION_SIZE		(1UL << SECTION_SHIFT)
+-#define SECTION_MASK		(~(SECTION_SIZE-1))
++#define SECTION_MASK		(~((1 << SECTION_SHIFT) - 1))
+ 
+ #define USER_PTRS_PER_PGD	(PAGE_OFFSET / PGDIR_SIZE)
+ 
 -- 
-Peter Moody      Google
-Security Engineer  pgp:0xC3410038
+1.7.9.5
 
---047d7b3a7fc86d7acb04c6282d44
-Content-Type: text/x-csrc; charset=US-ASCII; name="hello.c"
-Content-Disposition: attachment; filename="hello.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h5bkvokc1
-
-I2luY2x1ZGUgPHN0ZGlvLmg+CiNkZWZpbmUgTUUgIiEiCmludCBtYWluKHZvaWQpIHsKICBwcmlu
-dGYoImhlbGxvLCB3b3JsZCVzXG4iLCBNRSk7CiAgcmV0dXJuIDA7Cn0K
---047d7b3a7fc86d7acb04c6282d44--
