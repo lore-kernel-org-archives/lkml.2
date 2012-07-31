@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab2GaFC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:02:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48656 "EHLO
+	id S1755481Ab2GaEuV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:50:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48528 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755497Ab2GaEu0 (ORCPT
+	by vger.kernel.org with ESMTP id S1755323Ab2GaEuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:26 -0400
-Message-Id: <20120731044321.292378788@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:05 -0400
+Message-Id: <20120731044314.326949038@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:44:12 +0100
+Date: Tue, 31 Jul 2012 05:43:29 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Drake <dsd@laptop.org>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 62/73] mmc: sdhci-pci: CaFe has broken card detection
+        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 19/73] sched/nohz: Fix rq->cpu_load calculations some more
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,41 +28,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 55fc05b7414274f17795cd0e8a3b1546f3649d5e upstream.
+commit 5aaa0b7a2ed5b12692c9ffb5222182bd558d3146 upstream.
 
-At http://dev.laptop.org/ticket/11980 we have determined that the
-Marvell CaFe SDHCI controller reports bad card presence during
-resume. It reports that no card is present even when it is.
-This is a regression -- resume worked back around 2.6.37.
+Follow up on commit 556061b00 ("sched/nohz: Fix rq->cpu_load[]
+calculations") since while that fixed the busy case it regressed the
+mostly idle case.
 
-Around 400ms after resuming, a "card inserted" interrupt is
-generated, at which point it starts reporting presence.
+Add a callback from the nohz exit to also age the rq->cpu_load[]
+array. This closes the hole where either there was no nohz load
+balance pass during the nohz, or there was a 'significant' amount of
+idle time between the last nohz balance and the nohz exit.
 
-Work around this hardware oddity by setting the
-SDHCI_QUIRK_BROKEN_CARD_DETECTION flag.
-Thanks to Chris Ball for helping with diagnosis.
+So we'll update unconditionally from the tick to not insert any
+accidental 0 load periods while busy, and we try and catch up from
+nohz idle balance and nohz exit. Both these are still prone to missing
+a jiffy, but that has always been the case.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-[stable@: please apply to 3.0+]
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: pjt@google.com
+Cc: Venkatesh Pallipadi <venki@google.com>
+Link: http://lkml.kernel.org/n/tip-kt0trz0apodbf84ucjfdbr1a@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2: adjust filenames and context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/host/sdhci-pci.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 69ef0be..504da71 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -157,6 +157,7 @@ static const struct sdhci_pci_fixes sdhci_ene_714 = {
- static const struct sdhci_pci_fixes sdhci_cafe = {
- 	.quirks		= SDHCI_QUIRK_NO_SIMULT_VDD_AND_POWER |
- 			  SDHCI_QUIRK_NO_BUSY_IRQ |
-+			  SDHCI_QUIRK_BROKEN_CARD_DETECTION |
- 			  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
- };
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -145,6 +145,7 @@ extern unsigned long this_cpu_load(void)
  
+ 
+ extern void calc_global_load(unsigned long ticks);
++extern void update_cpu_load_nohz(void);
+ 
+ extern unsigned long get_parent_ip(unsigned long addr);
+ 
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3886,25 +3886,32 @@ static void __update_cpu_load(struct rq
+ 	sched_avg_update(this_rq);
+ }
+ 
++#ifdef CONFIG_NO_HZ
++/*
++ * There is no sane way to deal with nohz on smp when using jiffies because the
++ * cpu doing the jiffies update might drift wrt the cpu doing the jiffy reading
++ * causing off-by-one errors in observed deltas; {0,2} instead of {1,1}.
++ *
++ * Therefore we cannot use the delta approach from the regular tick since that
++ * would seriously skew the load calculation. However we'll make do for those
++ * updates happening while idle (nohz_idle_balance) or coming out of idle
++ * (tick_nohz_idle_exit).
++ *
++ * This means we might still be one tick off for nohz periods.
++ */
++
+ /*
+  * Called from nohz_idle_balance() to update the load ratings before doing the
+  * idle balance.
+  */
+ static void update_idle_cpu_load(struct rq *this_rq)
+ {
+-	unsigned long curr_jiffies = jiffies;
++	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+ 	unsigned long load = this_rq->load.weight;
+ 	unsigned long pending_updates;
+ 
+ 	/*
+-	 * Bloody broken means of dealing with nohz, but better than nothing..
+-	 * jiffies is updated by one cpu, another cpu can drift wrt the jiffy
+-	 * update and see 0 difference the one time and 2 the next, even though
+-	 * we ticked at roughtly the same rate.
+-	 *
+-	 * Hence we only use this from nohz_idle_balance() and skip this
+-	 * nonsense when called from the scheduler_tick() since that's
+-	 * guaranteed a stable rate.
++	 * bail if there's load or we're actually up-to-date.
+ 	 */
+ 	if (load || curr_jiffies == this_rq->last_load_update_tick)
+ 		return;
+@@ -3916,12 +3923,38 @@ static void update_idle_cpu_load(struct
+ }
+ 
+ /*
++ * Called from tick_nohz_idle_exit() -- try and fix up the ticks we missed.
++ */
++void update_cpu_load_nohz(void)
++{
++	struct rq *this_rq = this_rq();
++	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
++	unsigned long pending_updates;
++
++	if (curr_jiffies == this_rq->last_load_update_tick)
++		return;
++
++	raw_spin_lock(&this_rq->lock);
++	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
++	if (pending_updates) {
++		this_rq->last_load_update_tick = curr_jiffies;
++		/*
++		 * We were idle, this means load 0, the current load might be
++		 * !0 due to remote wakeups and the sort.
++		 */
++		__update_cpu_load(this_rq, 0, pending_updates);
++	}
++	raw_spin_unlock(&this_rq->lock);
++}
++#endif /* CONFIG_NO_HZ */
++
++/*
+  * Called from scheduler_tick()
+  */
+ static void update_cpu_load_active(struct rq *this_rq)
+ {
+ 	/*
+-	 * See the mess in update_idle_cpu_load().
++	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+ 	 */
+ 	this_rq->last_load_update_tick = jiffies;
+ 	__update_cpu_load(this_rq, this_rq->load.weight, 1);
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -549,6 +549,7 @@ void tick_nohz_restart_sched_tick(void)
+ 	/* Update jiffies first */
+ 	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
++	update_cpu_load_nohz();
+ 
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	/*
 
 
