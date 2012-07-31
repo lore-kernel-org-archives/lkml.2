@@ -1,65 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2GaTor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:44:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37338 "EHLO
+	id S1755137Ab2GaTov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:44:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37336 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab2GaTom (ORCPT
+	with ESMTP id S1752123Ab2GaTom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 15:44:42 -0400
-Message-Id: <20120731191204.540691987@chello.nl>
+Message-Id: <20120731192808.459705289@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 31 Jul 2012 21:12:04 +0200
+Date: Tue, 31 Jul 2012 21:12:06 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 00/19] sched-numa rewrite
+Subject: [PATCH 02/19] mm/mpol: Remove NUMA_INTERLEAVE_HIT
+References: <20120731191204.540691987@chello.nl>
+Content-Disposition: inline; filename=mm_mpol-Remove_NUMA_INTERLEAVE_HIT.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Since the NUMA_INTERLEAVE_HIT statistic is useless on its own; it wants
+to be compared to either a total of interleave allocations or to a miss
+count, remove it.
 
-After having had a talk with Rik about all this NUMA nonsense where he proposed
-the scheme implemented in the next to last patch, I came up with a related
-means of doing the home-node selection.
+Fixing it would be possible, but since we've gone years without these
+statistics I figure we can continue that way.
 
-I've also switched to (ab)using PROT_NONE for driving the migration faults.
+Also NUMA_HIT fully includes NUMA_INTERLEAVE_HIT so users might
+switch to using that.
 
-These patches go on top of tip/master with origin/master (Linus' tree) merged in.
+This cleans up some of the weird MPOL_INTERLEAVE allocation exceptions.
 
-Since the posting of last week (which was private due to operator error and not
-intention) Ingo dropped all the previous patches from tip and I did a complete
-rebase of the series, making all the back and forth of old and new stuff go away.
-
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/x86/include/asm/pgtable.h |    1 +
- drivers/base/node.c            |    2 +-
- include/linux/huge_mm.h        |    3 +
- include/linux/init_task.h      |    9 +
- include/linux/mempolicy.h      |   30 ++-
- include/linux/migrate.h        |    7 +
- include/linux/migrate_mode.h   |    3 +
- include/linux/mm.h             |   12 +
- include/linux/mm_types.h       |   12 +
- include/linux/mmzone.h         |    1 -
- include/linux/sched.h          |   30 ++-
- include/linux/task_work.h      |    7 -
- kernel/exit.c                  |    5 +-
- kernel/sched/core.c            |   71 ++++++-
- kernel/sched/debug.c           |    3 +
- kernel/sched/fair.c            |  501 ++++++++++++++++++++++++++++++++++++++--
- kernel/sched/features.h        |   10 +
- kernel/sched/sched.h           |   37 +++
- kernel/sysctl.c                |   13 +-
- mm/huge_memory.c               |  165 +++++++++-----
- mm/memory.c                    |  125 ++++++++++-
- mm/mempolicy.c                 |  296 ++++++++++++++++++------
- mm/migrate.c                   |   85 ++++++-
- mm/mprotect.c                  |   24 ++-
- mm/vmstat.c                    |    1 -
- 25 files changed, 1257 insertions(+), 196 deletions(-)
+ drivers/base/node.c    |    2 -
+ include/linux/mmzone.h |    1 
+ mm/mempolicy.c         |   68 +++++++++++++++----------------------------------
+ mm/vmstat.c            |    1 
+ 4 files changed, 22 insertions(+), 50 deletions(-)
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -169,7 +169,7 @@ static ssize_t node_read_numastat(struct
+ 		       node_page_state(dev->id, NUMA_HIT),
+ 		       node_page_state(dev->id, NUMA_MISS),
+ 		       node_page_state(dev->id, NUMA_FOREIGN),
+-		       node_page_state(dev->id, NUMA_INTERLEAVE_HIT),
++		       0UL,
+ 		       node_page_state(dev->id, NUMA_LOCAL),
+ 		       node_page_state(dev->id, NUMA_OTHER));
+ }
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -137,7 +137,6 @@ enum zone_stat_item {
+ 	NUMA_HIT,		/* allocated in intended node */
+ 	NUMA_MISS,		/* allocated in non intended node */
+ 	NUMA_FOREIGN,		/* was intended here, hit elsewhere */
+-	NUMA_INTERLEAVE_HIT,	/* interleaver preferred this zone */
+ 	NUMA_LOCAL,		/* allocation from local node */
+ 	NUMA_OTHER,		/* allocation from other node */
+ #endif
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1553,11 +1553,29 @@ static nodemask_t *policy_nodemask(gfp_t
+ 	return NULL;
+ }
+ 
++/* Do dynamic interleaving for a process */
++static unsigned interleave_nodes(struct mempolicy *policy)
++{
++	unsigned nid, next;
++	struct task_struct *me = current;
++
++	nid = me->il_next;
++	next = next_node(nid, policy->v.nodes);
++	if (next >= MAX_NUMNODES)
++		next = first_node(policy->v.nodes);
++	if (next < MAX_NUMNODES)
++		me->il_next = next;
++	return nid;
++}
++
+ /* Return a zonelist indicated by gfp for node representing a mempolicy */
+ static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
+ 	int nd)
+ {
+ 	switch (policy->mode) {
++	case MPOL_INTERLEAVE:
++		nd = interleave_nodes(policy);
++		break;
+ 	case MPOL_PREFERRED:
+ 		if (!(policy->flags & MPOL_F_LOCAL))
+ 			nd = policy->v.preferred_node;
+@@ -1579,21 +1597,6 @@ static struct zonelist *policy_zonelist(
+ 	return node_zonelist(nd, gfp);
+ }
+ 
+-/* Do dynamic interleaving for a process */
+-static unsigned interleave_nodes(struct mempolicy *policy)
+-{
+-	unsigned nid, next;
+-	struct task_struct *me = current;
+-
+-	nid = me->il_next;
+-	next = next_node(nid, policy->v.nodes);
+-	if (next >= MAX_NUMNODES)
+-		next = first_node(policy->v.nodes);
+-	if (next < MAX_NUMNODES)
+-		me->il_next = next;
+-	return nid;
+-}
+-
+ /*
+  * Depending on the memory policy provide a node from which to allocate the
+  * next slab entry.
+@@ -1824,21 +1827,6 @@ bool mempolicy_nodemask_intersects(struc
+ 	return ret;
+ }
+ 
+-/* Allocate a page in interleaved policy.
+-   Own path because it needs to do special accounting. */
+-static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
+-					unsigned nid)
+-{
+-	struct zonelist *zl;
+-	struct page *page;
+-
+-	zl = node_zonelist(nid, gfp);
+-	page = __alloc_pages(gfp, order, zl);
+-	if (page && page_zone(page) == zonelist_zone(&zl->_zonerefs[0]))
+-		inc_zone_page_state(page, NUMA_INTERLEAVE_HIT);
+-	return page;
+-}
+-
+ /**
+  * 	alloc_pages_vma	- Allocate a page for a VMA.
+  *
+@@ -1875,17 +1863,6 @@ alloc_pages_vma(gfp_t gfp, int order, st
+ 	pol = get_vma_policy(current, vma, addr);
+ 	cpuset_mems_cookie = get_mems_allowed();
+ 
+-	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
+-		unsigned nid;
+-
+-		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
+-		mpol_cond_put(pol);
+-		page = alloc_page_interleave(gfp, order, nid);
+-		if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
+-			goto retry_cpuset;
+-
+-		return page;
+-	}
+ 	zl = policy_zonelist(gfp, pol, node);
+ 	if (unlikely(mpol_needs_cond_ref(pol))) {
+ 		/*
+@@ -1943,12 +1920,9 @@ struct page *alloc_pages_current(gfp_t g
+ 	 * No reference counting needed for current->mempolicy
+ 	 * nor system default_policy
+ 	 */
+-	if (pol->mode == MPOL_INTERLEAVE)
+-		page = alloc_page_interleave(gfp, order, interleave_nodes(pol));
+-	else
+-		page = __alloc_pages_nodemask(gfp, order,
+-				policy_zonelist(gfp, pol, numa_node_id()),
+-				policy_nodemask(gfp, pol));
++	page = __alloc_pages_nodemask(gfp, order,
++			policy_zonelist(gfp, pol, numa_node_id()),
++			policy_nodemask(gfp, pol));
+ 
+ 	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
+ 		goto retry_cpuset;
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -717,7 +717,6 @@ const char * const vmstat_text[] = {
+ 	"numa_hit",
+ 	"numa_miss",
+ 	"numa_foreign",
+-	"numa_interleave",
+ 	"numa_local",
+ 	"numa_other",
+ #endif
 
 
