@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab2GaXWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:22:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57428 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab2GaXWn (ORCPT
+	id S1756245Ab2GaX1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:27:52 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:41281 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754994Ab2GaX1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:22:43 -0400
-Message-ID: <501868C0.3090806@wwwdotorg.org>
-Date: Tue, 31 Jul 2012 17:22:40 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        devicetree-discuss@lists.ozlabs.org,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
-References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de> <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com> <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de> <50185619.5090706@gmail.com>
-In-Reply-To: <50185619.5090706@gmail.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jul 2012 19:27:50 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-25-501869f517a3
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Sean Paul'" <seanpaul@chromium.org>,
+        "'Sangsu Park'" <sangsu4u.park@samsung.com>
+Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org, olofj@chromium.org,
+        dianders@chromium.org
+References: <1342817939-7118-1-git-send-email-seanpaul@chromium.org>
+ <CACRpkdZupvxyadxi8GppP6W2Pe5-eOcdjYYAcS28euUk8vx9iQ@mail.gmail.com>
+In-reply-to: <CACRpkdZupvxyadxi8GppP6W2Pe5-eOcdjYYAcS28euUk8vx9iQ@mail.gmail.com>
+Subject: RE: [PATCH] gpio: samsung: Fix off-by-one bug in gpio addresses
+Date: Wed, 01 Aug 2012 08:27:45 +0900
+Message-id: <02cd01cd6f74$1924e430$4b6eac90$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1sTOF9F1tC+4UJTACa+0uiA0vifwDJwYog
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t9jAd2vmRIBBleXy1hc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MyzOmMBesYqtY2L+HrYHxH0sXIyeHhICJRM/ma1C2mMSFe+vZ
+	uhi5OIQEFjFKXPx7kBXCmcckcXPWDnaQKjYBDYnD75+xgyREBBoYJeZseQhWxSzQxihx/m4j
+	I0RLN6PE97mHwAZzCgRLHP+9FcwWFvCQOHX5NCuIzSKgKjH7ykawOK+ArcTELUvZIGxBiR+T
+	74HFmQW0JNbvPM4EYctLbF7zlrmLkQPoWHWJR391QcIiAkYSu480QZWISOx78Y5xAqPQLCST
+	ZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECA7nZ9I7GFc1WBxiFOBg
+	VOLhfWEmESDEmlhWXJl7iFGCg1lJhFctAijEm5JYWZValB9fVJqTWnyIUZqDRUmc18T7q7+Q
+	QHpiSWp2ampBahFMlomDU6qB0SPi+9LrGjuNLfRF/jvzzpzmfvR7oOtRMY8YrqDfvZdmdmjw
+	m5T39O/26NVwEWDK49K7p6t/+Fl249TkHzIJjeqTspZyWnicX/wg76/9FvdLC1QMGReffjpz
+	6/y9Md3aU85uuTRZY5pEY71UcNJmoy/3i/IdYx8dva/K5ML78q/jg1faRm0TlFiKMxINtZiL
+	ihMB3XXB22MCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 04:03 PM, Rob Herring wrote:
-> On 07/30/2012 02:47 AM, Thierry Reding wrote:
->> On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
->>> On Mon, Jul 23, 2012 at 1:59 PM, Thierry Reding
->>> <thierry.reding@avionic-design.de> wrote:
->>>
->>>> This commit adds a driver for the Avionic Design N-bit GPIO expander.
->>>> The expander provides a variable number of GPIO pins with interrupt
->>>> support.
-
->>>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-adnp.txt b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
-
->>>> +Required properties:
-
->>>> +- nr-gpios: The number of pins supported by the controller.
-
-> For nr-gpios, I think it is typically not needed. Generally, you will
-> know how many gpio lines the h/w has based on the compatible string. If
-> this part really is the same part but different packages with different
-> numbers of gpio, then this property makes sense. Otherwise, I would say
-> drop it.
+Linus Walleij wrote:
 > 
-> If your goal is how many gpios are you using, you really need a bitmap
-> instead if you want it to be generic.
+> On Fri, Jul 20, 2012 at 10:58 PM, Sean Paul <seanpaul@chromium.org> wrote:
 > 
-> IIRC, Tegra also needed this in that they N instances of some number of
-> bits and the registers are interleaved so they can't have separate nodes.
+> > Move gpc4 to the end of the automatically processed gpio controllers so
+> > we don't taint the automatic offset calculation.
+> >
+> > This bug caused all controllers coming after gpc4 to map to the
+> > incorrect address. The result is <&gpd1 0 0 0 0> would actually map to
+> > GPIO 0 in gpd0.
+> >
+> > Signed-off-by: Sean Paul <seanpaul@chromium.org>
+> 
+> Samsung people, please comment on this patch.
+> 
+Looks good to me, please keep going on.
+And feel free to add my ack on this.
 
-In the end, I got away without having a separate property to represent
-this. Instead, the code keys off the number of interrupts listed in the
-interrupts property, there being one interrupt per GPIO bank, and hence
-dynamically instantiates the number of banks based on that.
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
