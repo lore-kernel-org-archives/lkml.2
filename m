@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab2GaE5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:57:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48786 "EHLO
+	id S1755881Ab2GaE5O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:57:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48790 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755639Ab2GaEu4 (ORCPT
+	by vger.kernel.org with ESMTP id S1755641Ab2GaEu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 00:50:56 -0400
-Message-Id: <20120731044317.184294372@decadent.org.uk>
+Message-Id: <20120731044318.235449624@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:47 +0100
+Date: Tue, 31 Jul 2012 05:43:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>
-Subject: [ 37/73] udf: Improve table length check to avoid possible overflow
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 43/73] target: Add range checking to UNMAP emulation
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,34 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 57b9655d01ef057a523e810d29c37ac09b80eead upstream.
+commit 2594e29865c291db162313187612cd9f14538f33 upstream.
 
-When a partition table length is corrupted to be close to 1 << 32, the
-check for its length may overflow on 32-bit systems and we will think
-the length is valid. Later on the kernel can crash trying to read beyond
-end of buffer. Fix the check to avoid possible overflow.
+When processing an UNMAP command, we need to make sure that the number
+of blocks we're asked to UNMAP does not exceed our reported maximum
+number of blocks per UNMAP, and that the range of blocks we're
+unmapping doesn't go past the end of the device.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[bwh: Backported to 3.2: adjust filename, context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/udf/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_cdb.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index 8a75838..dcbf987 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1340,7 +1340,7 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 	BUG_ON(ident != TAG_IDENT_LVD);
- 	lvd = (struct logicalVolDesc *)bh->b_data;
- 	table_len = le32_to_cpu(lvd->mapTableLength);
--	if (sizeof(*lvd) + table_len > sb->s_blocksize) {
-+	if (table_len > sb->s_blocksize - sizeof(*lvd)) {
- 		udf_err(sb, "error loading logical volume descriptor: "
- 			"Partition table too long (%u > %lu)\n", table_len,
- 			sb->s_blocksize - sizeof(*lvd));
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -1145,6 +1145,18 @@ int target_emulate_unmap(struct se_task
+ 		pr_debug("UNMAP: Using lba: %llu and range: %u\n",
+ 				 (unsigned long long)lba, range);
+ 
++		if (range > dev->se_sub_dev->se_dev_attrib.max_unmap_lba_count) {
++			cmd->scsi_sense_reason = TCM_INVALID_PARAMETER_LIST;
++			ret = -EINVAL;
++			goto err;
++		}
++
++		if (lba + range > dev->transport->get_blocks(dev) + 1) {
++			cmd->scsi_sense_reason = TCM_ADDRESS_OUT_OF_RANGE;
++			ret = -EINVAL;
++			goto err;
++		}
++
+ 		ret = dev->transport->do_discard(dev, lba, range);
+ 		if (ret < 0) {
+ 			pr_err("blkdev_issue_discard() failed: %d\n",
 
 
