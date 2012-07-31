@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab2GaGgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:36:13 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:41711 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752827Ab2GaGgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:36:11 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [PATCH 1/2] [RFC] time: Fix problem with large timespecs & ktime_get_update_offsets
-Date: Tue, 31 Jul 2012 02:35:47 -0400
-Message-Id: <1343716548-38742-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343716548-38742-1-git-send-email-john.stultz@linaro.org>
-References: <1343716548-38742-1-git-send-email-john.stultz@linaro.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073106-7182-0000-0000-0000021C2447
+	id S1753984Ab2GaGki (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:40:38 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:51652
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751870Ab2GaGkh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 02:40:37 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zz9371I1102I542Mzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
+From: Singh Sandeep-B37400 <B37400@freescale.com>
+To: John Stoffel <john@stoffel.org>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: RE: [2/3][PATCH][v2] TDM Framework
+Thread-Topic: [2/3][PATCH][v2] TDM Framework
+Thread-Index: AQHNbADsHRsnZfKnik2om4CTBsszqJc9f0OAgAQPaJCAAKc3gIAAwCUg
+Date: Tue, 31 Jul 2012 06:40:31 +0000
+Message-ID: <3F1D9DCAAB49B94D88DBE05911FA4E6E511B76@039-SN1MPN1-006.039d.mgd.msft.net>
+References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+	<20498.41365.853741.261834@quad.stoffel.home>
+	<3F1D9DCAAB49B94D88DBE05911FA4E6E511095@039-SN1MPN1-006.039d.mgd.msft.net>
+ <20502.38341.619003.356462@quad.stoffel.home>
+In-Reply-To: <20502.38341.619003.356462@quad.stoffel.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.134.45]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's currently a slight difference in ktime_get_update_offsets()
-vs ktime_get() which can result in boot time crashes when booting
-with insane CMOS clock values larger then ~2264.
 
-ktime_get() does basically the following:
-        return timespec_to_ktime(timespec_add(xtime, wall_to_monotonic))
+-----Original Message-----
+From: John Stoffel [mailto:john@stoffel.org] 
+Sent: Monday, July 30, 2012 7:40 PM
+To: Singh Sandeep-B37400
+Cc: John Stoffel; linuxppc-dev@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; galak@kernel.crashing.org; linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
+Subject: RE: [2/3][PATCH][v2] TDM Framework
 
-Where as ktime_get_update_offsets does approximately:
-        return ktime_sub(timespec_to_ktime(xtime), realtime_offset);
+>>>>> "Singh" == Singh Sandeep-B37400 <B37400@freescale.com> writes:
 
-The problem is, at boot we set xtime = year 8200 and
-wall_to_monotonic = year -8200,  ktime_get adds both values, mostly
-nulling the difference out (leaving only how long the system has been
-up), then converts that relatively small value to a ktime_t properly
-without losing any information.
+Singh> -----Original Message-----
+Singh> From: John Stoffel [mailto:john@stoffel.org]
+Singh> Sent: 27 July 2012 19:42
+Singh> To: Singh Sandeep-B37400
+Singh> Cc: linuxppc-dev@lists.ozlabs.org; 
+Singh> linux-arm-kernel@lists.infradead.org; galak@kernel.crashing.org; 
+Singh> linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
+Singh> Subject: Re: [2/3][PATCH][v2] TDM Framework
 
-ktime_get_update_offsets however, since it converts xtime (again set
-to some value greater then year 8200), to a ktime, it gets clamped at
-KTIME_MAX, then we subtract realtime_offset, which is _also_ clamped
-at KTIME_MAX, resulting in us always returning almost[1] zero. This
-causes us to stop expiring timers.
 
-Now, one of the reasons Thomas and I changed the logic was that using
-the precalculated realtime_offset was slightly more efficient then
-re-adding xtime and wall_to_monotonic's components separately. But
-how valuable this unmeasured slight efficiency is vs extra
-robustness for crazy time values is questionable.
+>> From: Sandeep Singh <Sandeep@freescale.com> TDM Framework is an 
+>> attempt to provide a platform independent layer which can offer a 
+>> standard interface  for TDM access to different client modules.
 
-So switch back to the ktime_get implementation for
-ktime_get_update_offsets
+Singh> Please don't use TLAs (Three Letter Acronyms) like TDM without explaining the clearly and up front.  It makes it hard for anyone else who doens't know your code to look it over without having to spend lots of time poking around to figure it out from either context or somewhere else.
 
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Zhouping Liu <zliu@redhat.com>
-Cc: CAI Qian <caiqian@redhat.com>
-Reported-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- kernel/time/timekeeping.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+Singh> [Sandeep] Patch for documentation for TDM is present in this 
+Singh> patch set, which explains TDM in detail. Should we do this in 
+Singh> commit message too??  Link too documentation patch:
+Singh> http://patchwork.ozlabs.org/patch/173680/
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 3447cfa..96179ab 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1283,15 +1283,15 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
-  */
- ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot)
- {
--	ktime_t now;
- 	unsigned int seq;
- 	u64 secs, nsecs;
- 
- 	do {
- 		seq = read_seqbegin(&timekeeper.lock);
--
--		secs = timekeeper.xtime.tv_sec;
--		nsecs = timekeeper.xtime.tv_nsec;
-+		secs = timekeeper.xtime.tv_sec +
-+				timekeeper.wall_to_monotonic.tv_sec;
-+		nsecs = timekeeper.xtime.tv_nsec +
-+				timekeeper.wall_to_monotonic.tv_nsec;
- 		nsecs += timekeeping_get_ns();
- 		/* If arch requires, add in gettimeoffset() */
- 		nsecs += arch_gettimeoffset();
-@@ -1300,9 +1300,7 @@ ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot)
- 		*offs_boot = timekeeper.offs_boot;
- 	} while (read_seqretry(&timekeeper.lock, seq));
- 
--	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
--	now = ktime_sub(now, *offs_real);
--	return now;
-+	return ktime_add_ns(ktime_set(secs, 0), nsecs);
- }
- #endif
- 
--- 
-1.7.9.5
+You should put the expansion of TDM into the initial commit message, and also into the Kconfig text, so that someone configuring the kernel has a clue what you're talking about.  
+[Sandeep] Thanks for suggestion. Will take care.
+
+Try to approach this as a brandnew user who doesn't have your knowledge of the software.  Write for the un-initiated if at all possible.
+
+
+John
+
+
+
 
