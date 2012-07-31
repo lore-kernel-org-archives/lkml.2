@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab2GaPTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 11:19:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56379 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754986Ab2GaPTF (ORCPT
+	id S1755076Ab2GaPTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 11:19:07 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:45706 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961Ab2GaPTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 11:19:05 -0400
-Date: Tue, 31 Jul 2012 10:18:56 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, Andreas Heider <andreas@meetr.de>,
-        Arun Raghavan <arun.raghavan@collabora.co.uk>,
-        linux-kernel@vger.kernel.org, airlied@redhat.com
-Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
-Message-ID: <20120731151856.GA19979@thinkpad-t410>
-Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-	David Woodhouse <dwmw2@infradead.org>,
-	Andreas Heider <andreas@meetr.de>,
-	Arun Raghavan <arun.raghavan@collabora.co.uk>,
-	linux-kernel@vger.kernel.org, airlied@redhat.com
-References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
- <20120710160555.GA31562@srcf.ucam.org>
- <20120710163516.GE10194@thinkpad-t410>
- <4FFCC7FB.1090609@meetr.de>
- <1343522547.2488.12.camel@shinybook.infradead.org>
- <1343524730.1962.5.camel@shinybook.infradead.org>
- <20120729193953.GA25132@srcf.ucam.org>
- <1343595171.2511.1.camel@shinybook.infradead.org>
- <20120729205859.GA25819@srcf.ucam.org>
+Date: Tue, 31 Jul 2012 08:18:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
+Message-ID: <20120731151808.GF2422@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120724090330.GA9830@localhost>
+ <1343662752.3847.2.camel@fedora>
+ <20120731120556.GB17252@localhost>
+ <1343741625.27983.39.camel@gandalf.stny.rr.com>
+ <20120731144453.GB2422@linux.vnet.ibm.com>
+ <1343746311.27983.52.camel@gandalf.stny.rr.com>
+ <1343746583.27983.55.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120729205859.GA25819@srcf.ucam.org>
+In-Reply-To: <1343746583.27983.55.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12073115-2356-0000-0000-000000DCA1DB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 29, 2012 at 09:59:00PM +0100, Matthew Garrett wrote:
-> On Sun, Jul 29, 2012 at 09:52:51PM +0100, David Woodhouse wrote:
-> > On Sun, 2012-07-29 at 20:39 +0100, Matthew Garrett wrote:
-> > > And it looks like intel_lvds->edid is only set during intel_lvds_init(). 
-> > > That seems less than ideal. How about something like this entirely 
-> > > untested patch? 
-> > 
-> > Actually, it works if I write 'MIGD' first and then 'IGD'. Looks like we
-> > aren't switching the DDC over to the new gfx card soon enough in the
-> > process?
+On Tue, Jul 31, 2012 at 10:56:23AM -0400, Steven Rostedt wrote:
+> On Tue, 2012-07-31 at 10:51 -0400, Steven Rostedt wrote:
 > 
-> Yes, the call to the switcheroo code only comes after the card is 
-> powered on. Cc:ing Dave Airlie - what are the expectations here? It 
-> looks like i915 should have a reprobe function.
+> > > OK, I will bite.  How about using something like RCU_NONIDLE(), either
+> > > directly or open-coded, to make it a legal call site?
+> > 
+> > OK, then something like:
+> > 
+> > 	RCU_NONIDLE(max_data = task_uid(tsk));
+> > 
+> > would work when called normally or with idle?
+> > 
+> 
+> The comment above RCU_NONIDLE() says:
+> 
+> 	This macro may be used from process-level code only.
+> 
+> Although I'm not sure what a 'level' is. Do you mean process-context? If
+> so, then this will not work because it can be called from non process
+> level code (return from interrupt), or any interrupt that enables
+> interrupts.
 
-I dove into this yesterday and ended up with something similar to what
-you had. I'm rescanning for the EDID from the reprobe callback, and I
-also made it so that intel_lvds_init() will still keep the LVDS
-connector even if the panel isn't attached at boot and
-intel_lvds_detect() returns connected/disconnected based on whether or
-not we found an EDID for the LVDS.
+Yep, process context.  It seems that I was naively expecting the
+calls in interrupt context to be covered by rcu_irq_enter() and
+rcu_irq_exit().  I take it that these calls are happening outside of
+the rcu_irq_enter()-protected region?
 
-All of this is working to the extent that I can boot with the Radeon
-card active, switch over to the Intel card, and get the EDID for the
-internal panel and an external monitor (although oddly on an HDMI
-connector, no on the DP like I expected). Both screens are remaining
-blank though. However I'm also getting blank screens if I mux over to
-the Intel GPU from grub before loading the kernel, which used to work
-for the LVDS panel at least.
-
-I've copied the whole series of patches I'm running on top of 3.5 to
-http://people.canonical.com/~sforshee/apple-gmux-patches if anyone else
-wants to give them a try. The i915 changes are in patches 13-17. I've
-also pushed the i915 patches to my gmux-switcheroo branch.
-
-Seth
+							Thanx, Paul
 
