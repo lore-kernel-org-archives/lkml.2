@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2GaREI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 13:04:08 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49658 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753408Ab2GaRED (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 13:04:03 -0400
+	id S1753758Ab2GaRGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 13:06:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63170 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab2GaRGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 13:06:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="173716250"
+Date: Tue, 31 Jul 2012 10:06:34 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Denis Turischev <denis@compulab.co.il>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 2/2] xhci: EHCI/XHCI ports switching on Intense-PC.
+Message-ID: <20120731170634.GA3276@xanatos>
+References: <5004454E.9030903@compulab.co.il>
+ <20120724194609.GA6681@xanatos>
+ <20120730223406.GA9290@xanatos>
+ <2062329.UHa94WQ5Fk@linux-lqwf.site>
 MIME-Version: 1.0
-In-Reply-To: <CAAsGZS5kOyQ5FQ7Jg3HxOmmPNYS+F6XcB-_3tm=rcgDV7wAvRQ@mail.gmail.com>
-References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
- <1343607994-32415-2-git-send-email-jon.mason@intel.com> <CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
- <20120730181542.GA987@jonmason-lab> <CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
- <CAAsGZS5kOyQ5FQ7Jg3HxOmmPNYS+F6XcB-_3tm=rcgDV7wAvRQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 31 Jul 2012 11:03:40 -0600
-Message-ID: <CAErSpo5VdOtBfkfLg+e9dL=ZMd2tpWfEninuEcuURuet8jRc8Q@mail.gmail.com>
-Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
-To: chetan loke <loke.chetan@gmail.com>
-Cc: Jon Mason <jon.mason@intel.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2062329.UHa94WQ5Fk@linux-lqwf.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 10:02 AM, chetan loke <loke.chetan@gmail.com> wrote:
-> On Tue, Jul 31, 2012 at 9:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Mon, Jul 30, 2012 at 12:15 PM, Jon Mason <jon.mason@intel.com> wrote:
->>>
->>> I've tried to make it all generic enough that non-Intel NTBs should plug in with
->>> minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
->>> redesign of ntb_hw.c might be necessary.  But from what I've seen of other
->>> designs on the internet, they appear to be extremely similar.  The transport and
->>> client drivers were written with the hardware abstracted away as much as
->>> possible to prevent the need to modify it for different hardware.  If there is
->>> anything which is Intel hardware specific, I'd be happy to change it to make it
->>> more generic.
->>
->> That makes sense from a technical point of view, but I think it's
->> going to cause maintenance issues.  For example, assume PLX NTB
->> support is added.  Will PLX be happy about having to convince you to
->> accept changes?  Will Intel be happy about having to release a new
->
-> Do you mean convince Intel? Well, if we think of ntb as the class
-> driver then the onus is on the community to vet the changes and NOT
-> intel.
+On Tue, Jul 31, 2012 at 06:49:50AM +0200, Oliver Neukum wrote:
+> On Monday 30 July 2012 15:34:06 Sarah Sharp wrote:
+> > Hi Denis,
+> > 
+> > Can you send me the output of `sudo dmidecode`?  I'd like to see if I
+> > can make a more general patch apply to the Intense-PC.
+> 
+> As this is for shutdown, why not all systems?
 
-No, I said convince "you," meaning *Jon*.  Intel doesn't apply
-patches.  "The community" doesn't apply patches.  Jon applies patches.
- This has nothing to do with the fact that Jon is employed by Intel.
-The point is that when you have multiple organizations involved, they
-have different goals, markets, customers, and schedules.  If one
-module contains both Intel-specific and PLX-specific things, that's a
-place where these organizational differences may cause issues,
-regardless of who is applying the patches.
+Because it will cause a BIOS delay on the next boot.  Approximately
+100 ms.  Some people trying to do extremely fast boot will care about
+that delay.
 
-Obviously it's not a problem now, and maybe it will never be.  But I
-think there's a possibility.  Since I have no direct interest in any
-of these devices, I'm only raising that possibility, not trying to
-force any particular direction.
+Sarah Sharp
