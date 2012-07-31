@@ -1,97 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab2GaLwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 07:52:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42479 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab2GaLwp (ORCPT
+	id S1756095Ab2GaLxy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 07:53:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56411 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756030Ab2GaLxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 07:52:45 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: oleg@redhat.com, ananth@in.ibm.com, a.p.zijlstra@chello.nl,
-        mingo@redhat.com, srikar@linux.vnet.ibm.com, roland@hack.frob.com,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 1/2] uprobes: Use a helper instead of ptrace's single step enable
-Date: Tue, 31 Jul 2012 13:52:27 +0200
-Message-Id: <1343735548-18101-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20120730141638.GA5306@redhat.com>
-References: <20120730141638.GA5306@redhat.com>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 31 Jul 2012 07:53:52 -0400
+Date: Tue, 31 Jul 2012 13:55:39 +0200
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Oliver Hartkopp <socketcan@hartkopp.net>
+Subject: Re: [PATCH can-next v3 1/2] can: add tx/rx LED trigger support
+Message-ID: <20120731115539.GA30417@gmail.com>
+References: <1343676041-29572-1-git-send-email-fabio.baltieri@gmail.com>
+ <50179B81.3040907@grandegger.com>
+ <5017AFAB.1040609@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5017AFAB.1040609@pengutronix.de>
+X-Operating-System: Linux balto-eee 3.5.0-balto-eee-07086-g6f8d3bf GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Oleg pointed out in [0] utrace should not use the ptrace interface
-for enabling/disabling single stepping.
+On Tue, Jul 31, 2012 at 12:12:59PM +0200, Marc Kleine-Budde wrote:
+> >> +/*
+> >> + * Register CAN LED triggers for a CAN device
+> >> + *
+> >> + * This is normally called from a driver's probe function
+> >> + */
+> >> +void can_led_init(struct net_device *netdev)
+> >> +{
+> >> +	struct can_priv *priv = netdev_priv(netdev);
+> >> +
+> >> +	priv->tx_led_trig_name = kasprintf(GFP_KERNEL, "%s-tx", netdev->name);
+> >> +	if (!priv->tx_led_trig_name)
+> >> +		goto tx_led_failed;
+> > 
+> > Just return here?
 
-[0] http://lkml.kernel.org/20120730141638.GA5306@redhat.com
+Right.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- include/linux/uprobes.h |    4 ++++
- kernel/events/uprobes.c |   16 ++++++++++++++--
- 2 files changed, 18 insertions(+), 2 deletions(-)
+> >> +	priv->rx_led_trig_name = kasprintf(GFP_KERNEL, "%s-rx", netdev->name);
+> >> +	if (!priv->rx_led_trig_name)
+> >> +		goto rx_led_failed;
+> >> +
+> >> +	led_trigger_register_simple(priv->tx_led_trig_name,
+> >> +				    &priv->tx_led_trig);
+> >> +	led_trigger_register_simple(priv->rx_led_trig_name,
+> >> +				    &priv->rx_led_trig);
+> >> +
+> >> +	return;
+> >> +
+> >> +rx_led_failed:
+> >> +	kfree(priv->tx_led_trig_name);
+> >> +	priv->tx_led_trig_name = NULL;
+> >> +tx_led_failed:
+> >> +	return;
+> > 
+> > In case of error the function returns silently. Is this by purpose? What
+> > happens if CAN_LEDS is enabled but no LEDs are assigned?
+> 
+> It's a bit strange, but led_trigger_register_simple() can fail silently,
+> too. Or better it has no return value, but does a warning printk in case
+> of an error.
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index efe4b33..ea6603b 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -111,6 +111,10 @@ extern void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsig
- extern void uprobe_free_utask(struct task_struct *t);
- extern void uprobe_copy_process(struct task_struct *t);
- extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
-+extern void __weak arch_uprobe_enable_step(struct task_struct *child,
-+		struct arch_uprobe *arch);
-+extern void __weak arch_uprobe_disable_step(struct task_struct *child,
-+		struct arch_uprobe *arch);
- extern int uprobe_post_sstep_notifier(struct pt_regs *regs);
- extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
- extern void uprobe_notify_resume(struct pt_regs *regs);
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index f935327..3a61f16 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1482,6 +1482,18 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 	return uprobe;
- }
- 
-+void __weak arch_uprobe_enable_step(struct task_struct *child,
-+		struct arch_uprobe *arch)
-+{
-+	user_enable_single_step(current);
-+}
-+
-+void __weak arch_uprobe_disable_step(struct task_struct *child,
-+		struct arch_uprobe *arch)
-+{
-+	user_disable_single_step(child);
-+}
-+
- /*
-  * Run handler and ask thread to singlestep.
-  * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
-@@ -1528,7 +1540,7 @@ static void handle_swbp(struct pt_regs *regs)
- 
- 	utask->state = UTASK_SSTEP;
- 	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
--		user_enable_single_step(current);
-+		arch_uprobe_enable_step(current, &uprobe->arch);
- 		return;
- 	}
- 
-@@ -1569,7 +1581,7 @@ static void handle_singlestep(struct uprobe_task *utask, struct pt_regs *regs)
- 	put_uprobe(uprobe);
- 	utask->active_uprobe = NULL;
- 	utask->state = UTASK_RUNNING;
--	user_disable_single_step(current);
-+	arch_uprobe_disable_step(current, &uprobe->arch);
- 	xol_free_insn_slot(current);
- 
- 	spin_lock_irq(&current->sighand->siglock);
--- 
-1.7.10.4
+Well, that's in line with the behviour of leds trigger registration in
+other subsystems out there (mac80211 and power_supply for instance) but
+now that you pointed it out, I agree that this is not really nice to the
+user.  led_trigger_register_simple already has a printk to KERN_ERR, I
+may add another one in the error path (if we keep the kasprintf).
 
+> 
+> > 
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(can_led_init);
+> >> +
+> >> +/*
+> >> + * Unregister CAN LED triggers for a CAN device
+> >> + *
+> >> + * This is normally called from a driver's remove function
+> >> + */
+> >> +void can_led_exit(struct net_device *netdev)
+> >> +{
+> >> +	struct can_priv *priv = netdev_priv(netdev);
+> >> +
+> >> +	led_trigger_unregister_simple(priv->tx_led_trig);
+> >> +	led_trigger_unregister_simple(priv->rx_led_trig);
+> >> +
+> >> +	kfree(priv->tx_led_trig_name);
+> >> +	kfree(priv->rx_led_trig_name);
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(can_led_exit);
+> >> diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+> >> index 2b2fc34..167b04a 100644
+> >> --- a/include/linux/can/dev.h
+> >> +++ b/include/linux/can/dev.h
+> >> @@ -16,6 +16,7 @@
+> >>  #include <linux/can.h>
+> >>  #include <linux/can/netlink.h>
+> >>  #include <linux/can/error.h>
+> >> +#include <linux/can/led.h>
+> >>  
+> >>  /*
+> >>   * CAN mode
+> >> @@ -52,6 +53,13 @@ struct can_priv {
+> >>  
+> >>  	unsigned int echo_skb_max;
+> >>  	struct sk_buff **echo_skb;
+> >> +
+> >> +#ifdef CONFIG_CAN_LEDS
+> >> +	struct led_trigger *tx_led_trig;
+> >> +	char *tx_led_trig_name;
+> >> +	struct led_trigger *rx_led_trig;
+> >> +	char *rx_led_trig_name;
+> >> +#endif
+> > 
+> > Do we need to store the names?
+> 
+> Yes, Seems, so the name is not copied:
+> 
+> http://lxr.free-electrons.com/source/drivers/leds/led-triggers.c#L253
+> 
+> Marc
+
+Actually we may try to exploit struct led_trigger to get back the
+pointers, but then we have to free the names before calling
+led_trigger_unregister, and that's going to be race against
+led_trigger_show().  Anyway, those pointers would go away using a
+devm-based allocation, so I'll keep that in mind.
+
+Thanks,
+Fabio
