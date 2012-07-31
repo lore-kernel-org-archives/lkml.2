@@ -1,52 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab2GaMca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:32:30 -0400
-Received: from smtp-out-178.synserver.de ([212.40.185.178]:1092 "EHLO
-	smtp-out-178.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756175Ab2GaMc1 (ORCPT
+	id S1756188Ab2GaMdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:33:08 -0400
+Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:57682 "EHLO
+	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755945Ab2GaMdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:32:27 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 23246
-Message-ID: <5017D148.6030006@metafoo.de>
-Date: Tue, 31 Jul 2012 14:36:24 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Tue, 31 Jul 2012 08:33:06 -0400
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/iio/adc/at91_adc.c: use devm_ functions
-References: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <20120731065224.GE6004@arwen.pp.htv.fi>
+References: <CAKdam54gXixs4F-a07ajj9GNMth46d4NTdoUL3GokzvjuWaGyg@mail.gmail.com>
+ <CAC83ZvKnOw+UBOWYtt294k-5Xk8S6Gy1pChSF7aXGmGjLGSeCA@mail.gmail.com>
+ <CAKdam56QEXY55SYC7YND4BP=tQmiyAa=avVCADTj3Ym6X9cCvg@mail.gmail.com>
+ <87fw89gf4w.fsf@ti.com> <CAKdam57xtXnKAgvneqATSTr0ng978T5HbkTB0T3sYp96N=Qfww@mail.gmail.com>
+ <20120731065224.GE6004@arwen.pp.htv.fi>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Tue, 31 Jul 2012 14:32:43 +0200
+Message-ID: <CAMQu2gxXX+4gtKVnAMMK4qr9ihJuP-OwjOYgr=6VrGZ2DWSf2A@mail.gmail.com>
+Subject: Re: [GPIO] Crashed when not using
+To: balbi@ti.com
+Cc: "Poddar, Sourav" <sourav.poddar@ti.com>, Kevin Hilman <khilman@ti.com>,
+        "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>,
+        lo <linux-omap@vger.kernel.org>, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jul 31, 2012 at 8:52 AM, Felipe Balbi <balbi@ti.com> wrote:
+>
+> Hi,
+>
+> On Tue, Jul 31, 2012 at 10:23:16AM +0530, Poddar, Sourav wrote:
+> > >>>> The device tree data for acquiring the above GPIO interrupt line
+> > >>>> looks
+> > >>>> like this.
+> > >>>>
+> > >>>> +++ linux-omap-storage/arch/arm/boot/dts/omap5-evm.dts  2012-07-30
+> > >>>> 14:11:08.931694001 +0530
+> > >>>> @@ -42,7 +42,8 @@
+> > >>>>         tsl2771@39 {
+> > >>>>                 compatible = "taos,tsl2771";
+> > >>>>                 reg = <0x39>;
+> > >>>> +                interrupt-parent = <&gpio5>;
+> > >>>> +                interrupts = <21>; /* gpio line 149 */
+> > >>>>         };
+> > >>>>  };
+> > >>>>
+> > >>>> Note: using "gpio_request_one" in the driver solves the issue.
+> > >>>> Is using this api in the driver required?
+> > >>>> Any pointer on the above crash?
+> > >>>
+> > >> Hi Tarun,
+> > >>> Any user/client driver of GPIO is supposed to go through
+> > >>> gpio_request() API so that module clock
+> > >>> is enabled correctly. Overriding of APIs would put the power
+> > >>> management state machine in jeopardy.
+> > >>> --
+> > >> I tried putting "pm_runtime_get_sync" in gpio_irq_type api where the
+> > >> kernel
+> > >> is crashing and the crash is no longer observed. So indeed, its about
+> > >> enabling clocks.
+> > >>
+> > >> One doubt: Can't we put runtime apis in "gpio_irq_type" and eliminate
+> > >> the use of
+> > >> "gpio_request_one"??
+> > >
+> > > No.
+> > >
+> > > You must use the GPIO requiest/free APIs to tell the GPIO core that
+> > > the GPIO line is in use.
+> > >
+> > Thanks for this confirmation.
+> > > Why do you want to avoid using gpio_request/gpio_free?
+> > >
+> > I was assuming that DT based gpio IRQ registration will automatically
+> > take care of
+> > the above APIs. But since that is not the case(as mentioned by
+> > santosh),  we need to use the
+> > gpio_request/free apis.
+>
+> Hang on for a while, let's try to get to the bottom of this debate first
+> ;-)
+>
+> We have a canonical way of passing IRQ numbers to drivers through DT and
+> that is the "interrupts" attribute. It shouldn't matter if that IRQ pin
+> is connected to a real IRQ line or through a GPIO controller. In both
+> cases we should use the "interrupts" attribute.
+>
+> If DT core doesn't allocate the GPIO for us then how does this work:
+>
+> (omap4-sdp.dts)
+>
+> 127 &mcspi1 {
+> 128         eth@0 {
+> 129                 compatible = "ks8851";
+> 130                 spi-max-frequency = <24000000>;
+> 131                 reg = <0>;
+> 132                 interrupt-parent = <&gpio2>;
+> 133                 interrupts = <2>; /* gpio line 34 */
+> 134                 vdd-supply = <&vdd_eth>;
+> 135         };
+> 136 };
+>
+>
+> There's no gpio request on the driver:
+>
+> $ git grep -e gpio_request drivers/net/ethernet/micrel/ks8851.c
+> $
+>
+> Since Benoit was the one who added that to the dts file (commit
+> e7c64db9), I assume he tested his patch before posting, so again I ask -
+> How does that work and why doesn't this work for Sourav's tsl2771
+> controller ?
+>
+> This is either a regression on drivers/of, or commit e7c64db9 is also
+> broken...
+>
+> Benoit, do you know how should this work ?
+>
+I had a discussion with Benoit on this. In fact there is a way to actually
+trigger the GPIO request.
 
-On 07/31/2012 12:09 PM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> @@ -720,20 +698,14 @@ error_ret:
->  static int __devexit at91_adc_remove(struct platform_device *pdev)
->  {
->  	struct iio_dev *idev = platform_get_drvdata(pdev);
-> -	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	struct at91_adc_state *st = iio_priv(idev);
->  
->  	iio_device_unregister(idev);
-> [...]
-> -	free_irq(st->irq, idev);
-> [...]
->  	iio_device_free(idev);
+> 132                 interrupt-parent = <&gpio2>;
+> 133                 interrupts = <2>; /* gpio line 34 */
 
-I think we have to be careful here. The interrupted is now freed after the
-device has been freed, which means that it could trigger after the device
-has been freed. And since we use the device in the interrupt handler we'll
-get a use after free.
+As above you can see, GPIO2 bank and 2nd line.
+And then it will make use of gpio_irq chip properties
+to probe the GPIO line.
 
-- Lars
+Saurabh can try this out for his use case.
+
+Regards
+Santosh
