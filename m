@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab2GaFFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 01:05:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48547 "EHLO
+	id S1755484Ab2GaFFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 01:05:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48568 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754891Ab2GaEuJ (ORCPT
+	by vger.kernel.org with ESMTP id S1751923Ab2GaEuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 00:50:09 -0400
-Message-Id: <20120731044312.845173456@decadent.org.uk>
+Message-Id: <20120731044322.255149125@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:20 +0100
+Date: Tue, 31 Jul 2012 05:44:18 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Shaohua Li <shaohua.li@intel.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [ 10/73] vmscan: promote shared file mapped pages
+        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
+        =?ISO-8859-15?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        =?ISO-8859-15?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 68/73] drm/radeon: fix bo creation retry path
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,81 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 34dbc67a644f11ab3475d822d72e25409911e760 upstream.
+commit d1c7871ddb1f588b8eb35affd9ee1a3d5e11cd0c upstream.
 
-Stable note: Not tracked in Bugzilla. There were reports of shared
-	mapped pages being unfairly reclaimed in comparison to older kernels.
-	This is being addressed over time. The specific workload being
-	addressed here in described in paragraph four and while paragraph
-	five says it did not help performance as such, it made a difference
-	to major page faults. I'm aware of at least one bug for a large
-	vendor that was due to increased major faults.
+Retry label was at wrong place in function leading to memory
+leak.
 
-Commit 645747462435 ("vmscan: detect mapped file pages used only once")
-greatly decreases lifetime of single-used mapped file pages.
-Unfortunately it also decreases life time of all shared mapped file
-pages.  Because after commit bf3f3bc5e7347 ("mm: don't mark_page_accessed
-in fault path") page-fault handler does not mark page active or even
-referenced.
-
-Thus page_check_references() activates file page only if it was used twice
-while it stays in inactive list, meanwhile it activates anon pages after
-first access.  Inactive list can be small enough, this way reclaimer can
-accidentally throw away any widely used page if it wasn't used twice in
-short period.
-
-After this patch page_check_references() also activate file mapped page at
-first inactive list scan if this page is already used multiple times via
-several ptes.
-
-I found this while trying to fix degragation in rhel6 (~2.6.32) from rhel5
-(~2.6.18).  There a complete mess with >100 web/mail/spam/ftp containers,
-they share all their files but there a lot of anonymous pages: ~500mb
-shared file mapped memory and 15-20Gb non-shared anonymous memory.  In
-this situation major-pagefaults are very costly, because all containers
-share the same page.  In my load kernel created a disproportionate
-pressure on the file memory, compared with the anonymous, they equaled
-only if I raise swappiness up to 150 =)
-
-These patches actually wasn't helped a lot in my problem, but I saw
-noticable (10-20 times) reduce in count and average time of
-major-pagefault in file-mapped areas.
-
-Actually both patches are fixes for commit v2.6.33-5448-g6457474, because
-it was aimed at one scenario (singly used pages), but it breaks the logic
-in other scenarios (shared and/or executable pages)
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Acked-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Shaohua Li <shaohua.li@intel.com>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_object.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 11adc89..753c1e6 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -715,7 +715,7 @@ static enum page_references page_check_references(struct page *page,
- 		 */
- 		SetPageReferenced(page);
+--- a/drivers/gpu/drm/radeon/radeon_object.c
++++ b/drivers/gpu/drm/radeon/radeon_object.c
+@@ -117,7 +117,6 @@ int radeon_bo_create(struct radeon_devic
+ 		return -ENOMEM;
+ 	}
  
--		if (referenced_page)
-+		if (referenced_page || referenced_ptes > 1)
- 			return PAGEREF_ACTIVATE;
- 
- 		return PAGEREF_KEEP;
+-retry:
+ 	bo = kzalloc(sizeof(struct radeon_bo), GFP_KERNEL);
+ 	if (bo == NULL)
+ 		return -ENOMEM;
+@@ -130,6 +129,8 @@ retry:
+ 	bo->gem_base.driver_private = NULL;
+ 	bo->surface_reg = -1;
+ 	INIT_LIST_HEAD(&bo->list);
++
++retry:
+ 	radeon_ttm_placement_from_domain(bo, domain);
+ 	/* Kernel allocation are uninterruptible */
+ 	mutex_lock(&rdev->vram_mutex);
 
 
