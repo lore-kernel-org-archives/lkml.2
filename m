@@ -1,146 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab2GaCvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 22:51:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53754 "EHLO mx2.suse.de"
+	id S1754968Ab2GaDMZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 23:12:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23704 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab2GaCvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 22:51:24 -0400
-Date: Tue, 31 Jul 2012 12:51:04 +1000
-From: NeilBrown <neilb@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Fox <pgf@laptop.org>
-Subject: Re: [PATCH] RTC: Avoid races between RTC alarm wakeup and suspend.
-Message-ID: <20120731125104.7a07f251@notabene.brown>
-In-Reply-To: <201207302301.49972.rjw@sisk.pl>
-References: <20120730113547.2c425ea9@notabene.brown>
-	<201207302301.49972.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1752029Ab2GaDMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 23:12:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="200238198"
+Message-ID: <1343704341.2591.8.camel@yhuang-dev>
+Subject: Re: [RFC] PCI/PM: Add ABI document for sysfs file d3cold_allowed
+From: Huang Ying <ying.huang@intel.com>
+To: Don Dutile <ddutile@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Mork <bjorn@mork.no>
+Date: Tue, 31 Jul 2012 11:12:21 +0800
+In-Reply-To: <5016CC75.3050806@redhat.com>
+References: <1343376454-28520-1-git-send-email-ying.huang@intel.com>
+	 <5016CC75.3050806@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/+BGD+PxSJteLXtK/SYV.9Fv"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/+BGD+PxSJteLXtK/SYV.9Fv
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi, Don,
 
-On Mon, 30 Jul 2012 23:01:49 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+Thanks for your comments.
 
-> On Monday, July 30, 2012, NeilBrown wrote:
-> >=20
-> > If an RTC alarm fires just as suspend is happening, it is possible for
-> > suspend to complete and the alarm to be missed.
-> >=20
-> > To avoid the race, we must register the event with the PM core.
-> >=20
-> > As the event is made visible to userspace through a thread which is
-> > only scheduled by the interrupt, we need a pm_stay_awake/pm_relax
-> > pair preventing suspend from the interrupt until the thread completes
-> > its work.
-> >=20
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> >=20
-> > --
-> > This makes the pm_wakeup_event() call in cmos_interrupt unnecessary as =
-it
-> > provides suspend protection for all RTCs that use rtc_update_irq.
->=20
-> Care to remove the call in cmos_interrupt(), then?
->=20
-> > I think the pm_stay_awake//pm_relax is needed - just pm_wakup_event() i=
-s=20
-> > theoretically not sufficient.
-> >=20
-> > This is because there is no guarantee (that I know of) that the workque=
-ue
-> > thread will actually get scheduled before 'suspend' takes over.
->=20
-> I think you are right.
+On Mon, 2012-07-30 at 14:03 -0400, Don Dutile wrote:
+> On 07/27/2012 04:07 AM, Huang Ying wrote:
+> > This patch adds ABI document for the following sysfs file:
+> >
+> > /sys/bus/pci/devices/.../d3cold_allowed
+> >
+> > Signed-off-by: Huang Ying<ying.huang@intel.com>
+> > ---
+> >   Documentation/ABI/testing/sysfs-bus-pci |   12 ++++++++++++
+> >   1 file changed, 12 insertions(+)
+> >
+> > --- a/Documentation/ABI/testing/sysfs-bus-pci
+> > +++ b/Documentation/ABI/testing/sysfs-bus-pci
+> > @@ -210,3 +210,15 @@ Users:
+> >   		firmware assigned instance number of the PCI
+> >   		device that can help in understanding the firmware
+> >   		intended order of the PCI device.
+> > +
+> > +What:		/sys/bus/pci/devices/.../d3cold_allowed
+> > +Date:		July 2012
+> > +Contact:	Huang Ying<ying.huang@intel.com>
+> > +Description:
+> > +		d3cold_allowed is bit to control whether the corresponding PCI
+> > +		device can be put into D3Cold state.  If it is cleared, the
+> > +		device will never be put into D3Cold state.  If it is set, the
+> > +		device may be put into D3Cold state if other requirement are
+> did you mean 'requirements' here? -------------------------------^
+> or is there only 1 other requirement?
 
-Thanks.
-Here is the revised patch.
+I mean requirements here.
 
-NeilBrown
+> 
+> > +		satisfied too.  Reading this attribute will show the current
+> > +		value of d3cold_allowed bit.  Writting this attribute will set
+> spell checker says 'Writing' --------------------^
+
+Sorry about my poor English and I should have spell checked it before
+sending out.
+
+Best Regards,
+Huang Ying
 
 
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-Subject: [PATCH] RTC: Avoid races between RTC alarm wakeup and suspend.
-
-If an RTC alarm fires just as suspend is happening, it is possible for
-suspend to complete and the alarm to be missed.
-
-To avoid the race, we must register the event with the PM core.
-
-As the event is made visible to userspace through a thread which is
-only scheduled by the interrupt, we need a pm_stay_awake/pm_relax
-pair preventing suspend from the interrupt until the thread completes
-its work.
-
-This makes the pm_wakeup_event() call in cmos_interrupt unnecessary as
-it provides suspend protection for all RTCs that use rtc_update_irq.
-
-Cc: Paul Fox <pgf@laptop.org>
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-index eb415bd..9592b93 100644
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -582,6 +582,7 @@ enum hrtimer_restart rtc_pie_update_irq(struct hrtimer =
-*timer)
- void rtc_update_irq(struct rtc_device *rtc,
- 		unsigned long num, unsigned long events)
- {
-+	pm_stay_awake(rtc->dev.parent);
- 	schedule_work(&rtc->irqwork);
- }
- EXPORT_SYMBOL_GPL(rtc_update_irq);
-@@ -844,6 +845,7 @@ void rtc_timer_do_work(struct work_struct *work)
-=20
- 	mutex_lock(&rtc->ops_lock);
- again:
-+	pm_relax(rtc->dev.parent);
- 	__rtc_read_time(rtc, &tm);
- 	now =3D rtc_tm_to_ktime(tm);
- 	while ((next =3D timerqueue_getnext(&rtc->timerqueue))) {
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index 132333d..4267789 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -568,7 +568,6 @@ static irqreturn_t cmos_interrupt(int irq, void *p)
- 		hpet_mask_rtc_irq_bit(RTC_AIE);
-=20
- 		CMOS_READ(RTC_INTR_FLAGS);
--		pm_wakeup_event(cmos_rtc.dev, 0);
- 	}
- 	spin_unlock(&rtc_lock);
-=20
-
---Sig_/+BGD+PxSJteLXtK/SYV.9Fv
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUBdIGDnsnt1WYoG5AQK0gQ//RyW4OqFwAov0yuOgVBC6hpKt2yJK+8tH
-DRQxhXxr8c0wpjgky2w7Uw136GmuK4RuMCt+k1rJOnxQKm+BN0p8gH0KgLAopyCR
-4EhkH6xPNszvr/uqwrxDbE3tO7V1atacVtvxW518SbIshynnS/pWqY0RFs8Nv6W9
-/UucB9fksr4C9DpXPxLGNsrgUBVrc0/5GT34GsjMM6gyFOfvby1XZYRh/n5Xsjhq
-GmHg/jjld32iyVuiG20iOTmhpti1/NaGSSU4ssopRK91e0zU36dk97KEgARgW209
-8sLOPulC1gWVps7P8Pg89z2QEPcqg8VnfLSOGi7L6pe4ksbWZoyOL2sBQZtJZG01
-qytibsUrmA1rp/VKinyJVbROWu6V3OQmqJsWkNte/m7lpyxzIS9VbX9NmRMP5P3U
-bTnQyIqH5WLIXwiPTRnvcokxuFP/+lZXWcfq9z07QDgGAO3DHi8Y5mPgQ5uI2LxY
-FL7j3PkqCU+gWKQjBpsmv/5AjoydDvFO4D0a4lEHwNexAja4/t3Yj71njffOlsIp
-O1hvVLEUip+A+ywqN+9HYP5oK1K/jjIZr3OU+/DCiEPFQYoqW602NPZPR5lzMEQt
-R9I+/AfZuAc6qS5N+Dc7b8WBgrNeqt/dKc3AzT5qzdpU/PsXTTWu9YLVDgI+TAQS
-pzrrJ8/ID3g=
-=Ozxo
------END PGP SIGNATURE-----
-
---Sig_/+BGD+PxSJteLXtK/SYV.9Fv--
