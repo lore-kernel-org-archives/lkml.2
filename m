@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab2GaKQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:16:11 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60505 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab2GaKQJ (ORCPT
+	id S1754068Ab2GaKQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:16:26 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52325 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab2GaKQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:16:09 -0400
-Date: Tue, 31 Jul 2012 14:16:03 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "lwn@lwn.net" <lwn@lwn.net>, "criu@openvz.org" <criu@openvz.org>,
-        "users@openvz.org" <users@openvz.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: [Announce] Checkpoint-restore tool v0.1
-Message-ID: <20120731101603.GD2007@moon>
-References: <500D09C9.7060903@parallels.com>
- <500D1116.7070301@parallels.com>
- <CAFLxGvwUhEPNdQvUnue2QFu_EipmBKD3nf0MfMWkqwLTf7jd5Q@mail.gmail.com>
- <50179CF0.7050200@parallels.com>
- <CAFLxGvygCxER3gHfj-onwnm_m6xugOVkynGyJU2CDheD3A2HOQ@mail.gmail.com>
- <5017A053.9000206@parallels.com>
- <CAFLxGvy396+BfYSaSnvAwJb0GO4WZCKbPXSbU7YfrOJTo6zk6A@mail.gmail.com>
- <5017AB41.60700@parallels.com>
- <CAFLxGvwu8-ii7hDbDfco3JrgKgOK+hsdTN_Q--AHbom0Ni8WYA@mail.gmail.com>
+	Tue, 31 Jul 2012 06:16:24 -0400
+Date: Tue, 31 Jul 2012 11:15:02 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Subject: Re: [GIT PULL] LED CPU trigger driver and ARM LED code
+	consolidation
+Message-ID: <20120731101502.GQ6802@n2100.arm.linux.org.uk>
+References: <CAK5ve-JuZcjdbw_tV8vcriHWxOq1KFHm2mZBm6z3_j7hpPw-eA@mail.gmail.com> <CAK5ve-+3rKjeQA-WMQWvT48roFx-3Y-jNLZ3ciyOuH42x4Nu9A@mail.gmail.com> <CAOesGMgav2dqvUk623u_1ZuAE82drg2tF7rMpKMCZN4_Oq12_A@mail.gmail.com> <CAK5ve-K29fKi57hEWLh6gQ-F5KXXr7hHfyAkk_MebxcQf6Dp=A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFLxGvwu8-ii7hDbDfco3JrgKgOK+hsdTN_Q--AHbom0Ni8WYA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK5ve-K29fKi57hEWLh6gQ-F5KXXr7hHfyAkk_MebxcQf6Dp=A@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 12:08:22PM +0200, richard -rw- weinberger wrote:
-> On Tue, Jul 31, 2012 at 11:54 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
-> >> Yeah, but I fear it's not that easy.
-> >> We'd have to change crtools to work without ptrace().
+On Tue, Jul 31, 2012 at 05:53:41PM +0800, Bryan Wu wrote:
+> On Fri, Jun 8, 2012 at 4:20 PM, Olof Johansson <olof@lixom.net> wrote:
+> > Hi,
 > >
-> > Well, this is hard. Using ptrace saved us from having many special-purpose
-> > APIs for dumping various stuff (there will be an article about it). Thus I
-> > don't know which way is simpler -- stop using ptrace or teach ptrece to allow
-> > several tracers to attach to one task %)
+> > On Wed, Jun 6, 2012 at 11:12 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
+> >> Hi Arnd and Olof,
+> >>
+> >> Is there any chance to pull this LED code into ARM SoC tree?
+> >>
+> >> Thanks,
+> >> -Bryan
+> >>
+> >> On Mon, Jun 4, 2012 at 3:25 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
+> >>> Hi Arnd and Olof,
+> >>>
+> >>> Please consider to pull my branch for LED CPU trigger driver and ARM
+> >>> LED code consolidation, which is based on 3.5-rc1:
+> >>>
+> >>> The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
+> >>>
+> >>>  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
+> >>>
+> >>> are available in the git repository at:
+> >>>
+> >>>  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
+> >>> for-arm-soc
+> >
+> > Pulled into arm-soc as devel/led-driver in next/drivers.
+> >
+> >
+> > Thanks,
+> >
+> > -Olof
 > 
-> Allowing multiple tracers in a safe way is IMHO even more harder.
+> Olof and Arnd,
 > 
-> BTW:  While reading prctl_set_mm() I noticed two things.
-> 1.  Why isn't the return value of find_vma() verified?
+> Will you guys send out pull request for this led-driver patches during
+> this merge window?
 
-prctl_set_mm
-	vma = find_vma(mm, addr);
-	...
-	if (!vma) {
-		error = -EFAULT;
-		goto out;
-	}
-
-these values are used in procfs statistics only. So I don't get
-which verify you mean here.
-
-> It looks like one can set an addr which does not belong to any vma.
-> 2. What will happen if addr is not page aligned?
-
-you'll have a bit weird output in procfs stat (probably I should add
-page alignment check here).
-
-	Cyrill
+They're not, because you're ignoring bug reports against the patches.
+They got dropped from arm-soc when I pointed out that they cause the
+same old regression on Versatile platforms that I reported to you about
+a year before.
