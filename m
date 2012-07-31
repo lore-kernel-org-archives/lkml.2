@@ -1,173 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab2GaTpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 15:45:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58942 "EHLO
+	id S1755732Ab2GaTps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 15:45:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58940 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab2GaTot (ORCPT
+	with ESMTP id S1754064Ab2GaToq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 15:44:49 -0400
-Message-Id: <20120731192809.369386517@chello.nl>
+	Tue, 31 Jul 2012 15:44:46 -0400
+Message-Id: <20120731192809.067696189@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 31 Jul 2012 21:12:21 +0200
+Date: Tue, 31 Jul 2012 21:12:16 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tglx@linutronix.de, Lee.Schermerhorn@hp.com
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 17/19] sched, numa: Detect big processes
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 12/19] mm/mpol: Make mempolicy home-node aware
 References: <20120731191204.540691987@chello.nl>
-Content-Disposition: inline; filename=numa-2.patch
+Content-Disposition: inline; filename=mm_mpol-Make_mempolicy_home-node_aware.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Detect 'big' processes for which the one home-node per process isn't
-going to work as desired.
+Add another layer of fallback policy to make the home node concept
+useful from a memory allocation PoV.
 
-The current policy for such tasks is to ignore them entirely and put
-the home-node back to -1 (no preference) so they'll behave as if none
-of this NUMA nonsense is there.
+This changes the mpol order to:
 
-The current heuristic for determining if a task is 'big' is if its
-consuming more than 1/2 a node's worth of cputime. We might want to
-add a term here looking at the RSS of the process and compare this
-against the available memory per node.
+ - vma->vm_ops->get_policy	[if applicable]
+ - vma->vm_policy		[if applicable]
+ - task->mempolicy
+ - tsk_home_node() preferred	[NEW]
+ - default_policy
 
-Cc: Rik van Riel <riel@redhat.com>
+Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
+facilitate efficient on-demand memory migration.
+
 Cc: Paul Turner <pjt@google.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/mm_types.h |    1 
- include/linux/sched.h    |    2 +
- kernel/sched/core.c      |    6 ++++-
- kernel/sched/fair.c      |   49 +++++++++++++++++++++++++++++++++++++++++++++--
- 4 files changed, 55 insertions(+), 3 deletions(-)
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -389,6 +389,7 @@ struct mm_struct {
- 	struct cpumask cpumask_allocation;
- #endif
- #ifdef CONFIG_NUMA
-+	unsigned int  numa_big;
- 	unsigned long numa_next_scan;
- #endif
- 	struct uprobes_state uprobes_state;
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1525,6 +1525,8 @@ struct task_struct {
- 	int node_last;			/* home node filter */
- #ifdef CONFIG_SMP
- 	u64 node_stamp;			/* migration stamp  */
-+	u64 numa_runtime_stamp;
-+	u64 numa_walltime_stamp;
- 	unsigned long numa_contrib;
- #endif /* CONFIG_SMP  */
- #endif /* CONFIG_NUMA */
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1724,13 +1724,17 @@ static void __sched_fork(struct task_str
- #endif
+ mm/mempolicy.c |   29 +++++++++++++++++++++++++++--
+ 1 files changed, 27 insertions(+), 2 deletions(-)
+
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index e0dde20..3e109ae 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -117,6 +117,22 @@ static struct mempolicy default_policy = {
+ 	.flags = MPOL_F_LOCAL,
+ };
  
- #ifdef CONFIG_NUMA
--	if (p->mm && atomic_read(&p->mm->mm_users) == 1)
-+	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
-+		p->mm->numa_big = 0;
- 		p->mm->numa_next_scan = jiffies;
-+	}
- 
- 	p->node = -1;
- 	p->node_last = -1;
- #ifdef CONFIG_SMP
- 	p->node_stamp = 0ULL;
-+	p->numa_runtime_stamp = 0;
-+	p->numa_walltime_stamp = local_clock();
- #endif /* CONFIG_SMP */
- #endif /* CONFIG_NUMA */
- }
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -803,11 +803,47 @@ static void account_offnode_dequeue(stru
- }
- 
- /*
-- * numa task sample period in ms
-+ * numa task sample period in ms: 2.5s
-  */
- unsigned int sysctl_sched_numa_task_period = 2500;
- 
- /*
-+ * Determine if a process is 'big'.
-+ */
-+static bool task_numa_big(struct task_struct *p)
++static struct mempolicy preferred_node_policy[MAX_NUMNODES];
++
++static struct mempolicy *get_task_policy(struct task_struct *p)
 +{
-+	struct sched_domain *sd;
-+	struct task_struct *t;
-+	u64 walltime = local_clock();
-+	u64 runtime = 0;
-+	int weight = 0;
++	struct mempolicy *pol = p->mempolicy;
++	int node;
 +
-+	rcu_read_lock();
-+	t = p;
-+	do {
-+		if (t->sched_class == &fair_sched_class)
-+			runtime += t->se.sum_exec_runtime;
-+	} while ((t = next_thread(t)) != p);
++	if (!pol) {
++		node = tsk_home_node(p);
++		if (node != -1)
++			pol = &preferred_node_policy[node];
++	}
 +
-+	sd = rcu_dereference(__get_cpu_var(sd_node));
-+	if (sd)
-+		weight = sd->span_weight;
-+	rcu_read_unlock();
-+
-+	runtime -= p->numa_runtime_stamp;
-+	walltime -= p->numa_walltime_stamp;
-+
-+	p->numa_runtime_stamp += runtime;
-+	p->numa_walltime_stamp += walltime;
-+
-+	/*
-+	 * We're 'big' when we burn more than half a node's worth
-+	 * of cputime.
-+	 */
-+	return runtime > walltime * max(1, weight / 2);
++	return pol;
 +}
 +
-+/*
-  * The expensive part of numa migration is done from task_work context.
+ static const struct mempolicy_operations {
+ 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
+ 	/*
+@@ -1519,7 +1535,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
+ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		struct vm_area_struct *vma, unsigned long addr)
+ {
+-	struct mempolicy *pol = task->mempolicy;
++	struct mempolicy *pol = get_task_policy(task);
+ 
+ 	if (vma) {
+ 		if (vma->vm_ops && vma->vm_ops->get_policy) {
+@@ -1903,7 +1919,7 @@ retry_cpuset:
   */
- void task_numa_work(struct callback_head *work)
-@@ -815,6 +851,7 @@ void task_numa_work(struct callback_head
- 	unsigned long migrate, next_scan, now = jiffies;
- 	struct task_struct *t, *p = current;
- 	int node = p->node_last;
-+	int big;
+ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ {
+-	struct mempolicy *pol = current->mempolicy;
++	struct mempolicy *pol = get_task_policy(current);
+ 	struct page *page;
+ 	unsigned int cpuset_mems_cookie;
  
- 	WARN_ON_ONCE(p != container_of(work, struct task_struct, rcu));
+@@ -2371,6 +2387,15 @@ void __init numa_policy_init(void)
+ 				     sizeof(struct sp_node),
+ 				     0, SLAB_PANIC, NULL);
  
-@@ -835,6 +872,13 @@ void task_numa_work(struct callback_head
- 	if (cmpxchg(&p->mm->numa_next_scan, migrate, next_scan) != migrate)
- 		return;
- 
-+	/*
-+	 * If this task is too big, we bail on NUMA placement of the process.
-+	 */
-+	big = p->mm->numa_big = task_numa_big(p);
-+	if (big)
-+		node = -1;
++	for_each_node(nid) {
++		preferred_node_policy[nid] = (struct mempolicy) {
++			.refcnt = ATOMIC_INIT(1),
++			.mode = MPOL_PREFERRED,
++			.flags = MPOL_F_MOF,
++			.v = { .preferred_node = nid, },
++		};
++	}
 +
- 	rcu_read_lock();
- 	t = p;
- 	do {
-@@ -858,8 +902,9 @@ void task_tick_numa(struct rq *rq, struc
- 
  	/*
- 	 * We don't care about NUMA placement if we don't have memory.
-+	 * We also bail on placement if we're too big.
- 	 */
--	if (!curr->mm)
-+	if (!curr->mm || curr->mm->numa_big)
- 		return;
- 
- 	/*
+ 	 * Set interleaving policy for system init. Interleaving is only
+ 	 * enabled across suitably sized nodes (default is >= 16MB), or
+-- 
+1.7.2.3
+
 
 
