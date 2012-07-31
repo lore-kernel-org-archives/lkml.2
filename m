@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab2GaNNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:13:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10254 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab2GaNNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:13:42 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=3Odpp9koIGIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=_klPS0fu4QH-n4FdAu0A:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343740419.27983.33.camel@gandalf.stny.rr.com>
-Subject: Re: Testing tracer wakeup_rt: .. no entries found ..FAILED!
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Date: Tue, 31 Jul 2012 09:13:39 -0400
-In-Reply-To: <5017D4AB.3090107@redhat.com>
-References: <20120724090330.GA9830@localhost>
-	  <20120724090720.GA10434@localhost> <1343663105.3847.7.camel@fedora>
-	  <20120731121759.GA17822@localhost> <5017D19B.5080806@redhat.com>
-	 <1343738627.27983.30.camel@gandalf.stny.rr.com>
-	 <5017D4AB.3090107@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752411Ab2GaNSD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:18:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54223 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750868Ab2GaNSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 09:18:01 -0400
+Date: Tue, 31 Jul 2012 09:17:51 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Borislav Petkov <borislav.petkov@amd.com>, Michal Marek <mmarek@suse.cz>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 0/6] menuconfig: jump to search results
+Message-ID: <20120731131751.GA10910@d2.synalogic.ca>
+References: <1343676130-29770-1-git-send-email-bpoirier@suse.de>
+ <20120730195826.GA8242@liondog.tnic>
+ <20120730202212.GA31790@d2.synalogic.ca>
+ <20120731075751.GB23595@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120731075751.GB23595@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 15:50 +0300, Avi Kivity wrote:
-> On 07/31/2012 03:43 PM, Steven Rostedt wrote:
+On 2012/07/31 09:57, Borislav Petkov wrote:
+> On Mon, Jul 30, 2012 at 04:22:12PM -0400, Benjamin Poirier wrote:
+> > It's against linux-next, which already contains some patches for
+> > menuconfig.
+> 
+> Ok, applying against the linux-next from today succeeds. And they seem
+> to work, I can search for CONFIG_* stuff and then go straight to the
+> results.
+> 
+> A couple more observations:
+> 
+> * The numbering in the search results looks kinda strange and
+> non-intuitive IMHO. Would it be possible to use the ncurses cursor to
+> iterate over the search results like one does in the normal menus? I.e.,
+> the horizontal bar which highlights the item with the background color
+> or whatever - can it be moved up and down with the arrow keys through
+> the search results too?
 
-> That would be better.  A hypervisor might be real-time capable (with
-> some effort kvm can do this), so we don't want to turn off real time
-> features just based on that.
+Further patches are welcome ;) It's not a trivial difference though.
+The "horizontal bar" is not a curses concept, it's implemented via the
+menubox lxdialog whereas search results are currently presented via a
+textbox lxdialog.
 
-It would only turn off if you enable selftests and the timing falied. If
-the kvm had real time features, this most likely would fail anyway. But
-that said, here's a patch that should solve this:
+> 
+> * when searching for "DELAY" for example, I get results without numbers
+> to which I can't jump to:
+> 
+> ...
+>   │ Symbol: DEFAULT_IO_DELAY_TYPE [=0]
+>   │ Type  : integer
+>   │
+>   │
+>   │ Symbol: IO_DELAY_TYPE_0X80 [=0]
+>   │ Type  : integer
+> ...
+> 
+> maybe because they don't have "---help---" section?
 
--- Steve
+Because they don't have a prompt - they don't appear in any menu at all.
+In that case there's nowhere to jump to. That's why those symbols don't
+get a number.
 
-
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 1003a4d..2c00a69 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -1041,6 +1041,8 @@ static int trace_wakeup_test_thread(void *data)
- 	set_current_state(TASK_INTERRUPTIBLE);
- 	schedule();
- 
-+	complete(x);
-+
- 	/* we are awake, now wait to disappear */
- 	while (!kthread_should_stop()) {
- 		/*
-@@ -1084,24 +1086,21 @@ trace_selftest_startup_wakeup(struct tracer *trace, struct trace_array *tr)
- 	/* reset the max latency */
- 	tracing_max_latency = 0;
- 
--	/* sleep to let the RT thread sleep too */
--	msleep(100);
-+	while (p->on_rq) {
-+		/*
-+		 * Sleep to make sure the RT thread is asleep too.
-+		 * On virtual machines we can't rely on timings,
-+		 * but we want to make sure this test still works.
-+		 */
-+		msleep(100);
-+	}
- 
--	/*
--	 * Yes this is slightly racy. It is possible that for some
--	 * strange reason that the RT thread we created, did not
--	 * call schedule for 100ms after doing the completion,
--	 * and we do a wakeup on a task that already is awake.
--	 * But that is extremely unlikely, and the worst thing that
--	 * happens in such a case, is that we disable tracing.
--	 * Honestly, if this race does happen something is horrible
--	 * wrong with the system.
--	 */
-+	init_completion(&isrt);
- 
- 	wake_up_process(p);
- 
--	/* give a little time to let the thread wake up */
--	msleep(100);
-+	/* Wait for the task to wake up */
-+	wait_for_completion(&isrt);
- 
- 	/* stop the tracing. */
- 	tracing_stop();
-
-
-
+> 
+> In those cases, you probably want to hide those from the search results?
+> 
+> Other than that it looks good and I'd say we need more menuconfig
+> functionality like that which eases/speeds up working with that thing :).
+> 
+> Thanks.
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
