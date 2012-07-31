@@ -1,42 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab2GaNJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:09:46 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:63325 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab2GaNJm (ORCPT
+	id S1752415Ab2GaNNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:13:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10254 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab2GaNNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:09:42 -0400
-Message-ID: <5017D911.3010101@windriver.com>
-Date: Tue, 31 Jul 2012 08:09:37 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Colin Ian King <colin.king@canonical.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: echi-dbgp: increase the controller wait time to
- come out of halt.
-References: <1343660802-10391-1-git-send-email-colin.king@canonical.com>
-In-Reply-To: <1343660802-10391-1-git-send-email-colin.king@canonical.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 31 Jul 2012 09:13:42 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=3Odpp9koIGIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=_klPS0fu4QH-n4FdAu0A:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343740419.27983.33.camel@gandalf.stny.rr.com>
+Subject: Re: Testing tracer wakeup_rt: .. no entries found ..FAILED!
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Date: Tue, 31 Jul 2012 09:13:39 -0400
+In-Reply-To: <5017D4AB.3090107@redhat.com>
+References: <20120724090330.GA9830@localhost>
+	  <20120724090720.GA10434@localhost> <1343663105.3847.7.camel@fedora>
+	  <20120731121759.GA17822@localhost> <5017D19B.5080806@redhat.com>
+	 <1343738627.27983.30.camel@gandalf.stny.rr.com>
+	 <5017D4AB.3090107@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 10:06 AM, Colin Ian King wrote:
-> The default 10 microsecond delay for the controller to come out of
-> halt in dbgp_ehci_startup is too short, so increase it to 1 millisecond.
->
-> This is based on emperical testing on various USB debug ports on
-> modern machines such as a Lenovo X220i and an Ivybridge development
-> platform that needed to wait ~450-950 microseconds.
+On Tue, 2012-07-31 at 15:50 +0300, Avi Kivity wrote:
+> On 07/31/2012 03:43 PM, Steven Rostedt wrote:
 
-This seems fine to me.
+> That would be better.  A hypervisor might be real-time capable (with
+> some effort kvm can do this), so we don't want to turn off real time
+> features just based on that.
 
-I'll test it, merge it, and add a CC for -stable.
+It would only turn off if you enable selftests and the timing falied. If
+the kvm had real time features, this most likely would fail anyway. But
+that said, here's a patch that should solve this:
 
-Thanks,
-Jason.
+-- Steve
+
+
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 1003a4d..2c00a69 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -1041,6 +1041,8 @@ static int trace_wakeup_test_thread(void *data)
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	schedule();
+ 
++	complete(x);
++
+ 	/* we are awake, now wait to disappear */
+ 	while (!kthread_should_stop()) {
+ 		/*
+@@ -1084,24 +1086,21 @@ trace_selftest_startup_wakeup(struct tracer *trace, struct trace_array *tr)
+ 	/* reset the max latency */
+ 	tracing_max_latency = 0;
+ 
+-	/* sleep to let the RT thread sleep too */
+-	msleep(100);
++	while (p->on_rq) {
++		/*
++		 * Sleep to make sure the RT thread is asleep too.
++		 * On virtual machines we can't rely on timings,
++		 * but we want to make sure this test still works.
++		 */
++		msleep(100);
++	}
+ 
+-	/*
+-	 * Yes this is slightly racy. It is possible that for some
+-	 * strange reason that the RT thread we created, did not
+-	 * call schedule for 100ms after doing the completion,
+-	 * and we do a wakeup on a task that already is awake.
+-	 * But that is extremely unlikely, and the worst thing that
+-	 * happens in such a case, is that we disable tracing.
+-	 * Honestly, if this race does happen something is horrible
+-	 * wrong with the system.
+-	 */
++	init_completion(&isrt);
+ 
+ 	wake_up_process(p);
+ 
+-	/* give a little time to let the thread wake up */
+-	msleep(100);
++	/* Wait for the task to wake up */
++	wait_for_completion(&isrt);
+ 
+ 	/* stop the tracing. */
+ 	tracing_stop();
+
+
+
