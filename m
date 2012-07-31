@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab2GaOZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:25:32 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54793 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab2GaOZL (ORCPT
+	id S1754362Ab2GaOZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:25:42 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58322 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754332Ab2GaOZk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:25:11 -0400
-Message-ID: <5017EAC3.3080504@linaro.org>
-Date: Tue, 31 Jul 2012 15:25:07 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-3-git-send-email-lee.jones@linaro.org> <20120731134214.GK4468@opensource.wolfsonmicro.com>
-In-Reply-To: <20120731134214.GK4468@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 31 Jul 2012 10:25:40 -0400
+Subject: Re: [PATCH v8 3/7] powerpc/85xx: implement hardware timebase sync
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1342788159-27529-4-git-send-email-chenhui.zhao@freescale.com>
+Date: Tue, 31 Jul 2012 09:24:37 -0500
+Cc: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A3F1406E-C3A0-4393-BA50-1299A5EC8545@kernel.crashing.org>
+References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com> <1342788159-27529-4-git-send-email-chenhui.zhao@freescale.com>
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/07/12 14:42, Mark Brown wrote:
-> On Tue, Jul 31, 2012 at 02:31:23PM +0100, Lee Jones wrote:
->> If a list of widgets is provided and one of them fails to be added as
->> a control, the present semantics fail all subsequent widgets. A better
->> solution would be to only fail that widget, but pursue in attempting
->> to add the rest of the list.
->
-> You're posting this *again* without bothering to respond to my review
-> comments.
 
+On Jul 20, 2012, at 7:42 AM, Zhao Chenhui wrote:
 
-I didn't see any comments on this.
+> Do hardware timebase sync. Firstly, stop all timebases, and transfer
+> the timebase value of the boot core to the other core. Finally,
+> start all timebases.
+> 
+> Only apply to dual-core chips, such as MPC8572, P2020, etc.
+> 
+> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> Signed-off-by: Li Yang <leoli@freescale.com>
+> ---
+> arch/powerpc/include/asm/fsl_guts.h |    2 +
+> arch/powerpc/platforms/85xx/smp.c   |   82 +++++++++++++++++++++++++++++++++++
+> 2 files changed, 84 insertions(+), 0 deletions(-)
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+applied to next
+
+- k
