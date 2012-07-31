@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab2GaOqG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:46:06 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:39195 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533Ab2GaOqD (ORCPT
+	id S1754727Ab2GaOqM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:46:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34763 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab2GaOqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:46:03 -0400
+	Tue, 31 Jul 2012 10:46:07 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
         alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/5] ASoC: dapm: If one widget fails, do not force all subsequent widgets to fail too
-Date: Tue, 31 Jul 2012 15:45:40 +0100
-Message-Id: <1343745944-18418-2-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 4/5] ARM: ux500: Fix merge error, so such struct 'snd_soc_u8500'
+Date: Tue, 31 Jul 2012 15:45:43 +0100
+Message-Id: <1343745944-18418-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343745944-18418-1-git-send-email-lee.jones@linaro.org>
 References: <1343745944-18418-1-git-send-email-lee.jones@linaro.org>
@@ -23,29 +23,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a list of widgets is provided and one of them fails to be added as
-a control, the present semantics fail all subsequent widgets. A better
-solution would be to only fail that widget, but pursue in attempting
-to add the rest of the list.
+The platform attempts to register platform device 'snd_soc_u8500'
+which doesn't actually exist. Here we change the reference to the
+correct one 'snd_soc_mop500'.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- sound/soc/soc-dapm.c |    2 --
- 1 file changed, 2 deletions(-)
+ arch/arm/mach-ux500/board-mop500-msp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index eded657..7d9c154 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -3095,8 +3095,6 @@ int snd_soc_dapm_new_controls(struct snd_soc_dapm_context *dapm,
- 			dev_err(dapm->dev,
- 				"ASoC: Failed to create DAPM control %s\n",
- 				widget->name);
--			ret = -ENOMEM;
--			break;
- 		}
- 		widget++;
- 	}
+diff --git a/arch/arm/mach-ux500/board-mop500-msp.c b/arch/arm/mach-ux500/board-mop500-msp.c
+index 9960480..1b6a193 100644
+--- a/arch/arm/mach-ux500/board-mop500-msp.c
++++ b/arch/arm/mach-ux500/board-mop500-msp.c
+@@ -228,7 +228,7 @@ int mop500_msp_init(struct device *parent)
+ 	struct platform_device *msp1;
+ 
+ 	pr_info("%s: Register platform-device 'snd-soc-u8500'.\n", __func__);
+-	platform_device_register(&snd_soc_u8500);
++	platform_device_register(&snd_soc_mop500);
+ 
+ 	pr_info("Initialize MSP I2S-devices.\n");
+ 	db8500_add_msp_i2s(parent, 0, U8500_MSP0_BASE, IRQ_DB8500_MSP0,
 -- 
 1.7.9.5
 
