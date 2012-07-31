@@ -1,50 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab2GaQnw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:43:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58645 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755757Ab2GaQnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:43:49 -0400
-Message-ID: <50180B2A.6070602@zytor.com>
-Date: Tue, 31 Jul 2012 09:43:22 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1755888Ab2GaQpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:45:38 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:42304 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755052Ab2GaQpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 12:45:36 -0400
+Date: Tue, 31 Jul 2012 12:45:34 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] random subsystem for 3.6
+Message-ID: <20120731164534.GA26140@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: NeilBrown <neilb@suse.de>, james.t.kukunas@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] x86, avx: don't use avx instructions with "noxsave" boot
- param
-References: <1343688375.3696.597.camel@sbsiddha-desk.sc.intel.com>  <20120731142049.7d0ab5f9@notabene.brown>  <7b101443-b8d7-4474-ab54-03692d232469@email.android.com> <1343752022.3696.602.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1343752022.3696.602.camel@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 09:27 AM, Suresh Siddha wrote:
-> On Mon, 2012-07-30 at 21:33 -0700, H. Peter Anvin wrote:
->> I'm wondering if we shouldn't just kill the affected CPUID bits if osxsave is off...
->
-> Yes, I considered clearing AVX bit (and any future xsave feature bits)
-> as part of the parsing "noxsave" parameter in x86_xsave_setup().
->
-> But thought checking for osxsave was more explicit and there are not
-> many places using avx code. Also, this follows the SDM guidelines and
-> sets a nice precedent for someone (app's) to follow in future.
->
-> I am ok either way!
->
+Sorry for the delay, but Peter felt very strongly about the last
+patch, and I wanted to give it at least a day's baking time in
+linux-next before I submitted a pull request to you.
 
-My main reason for thinking that it would be good to clear the bits is 
-that it plays a lot nicer with alternatives and with static_cpu_has().
+Also note that that are some minor merge conflicts.  See my proposed resolution here:
 
-	-hpa
+http://git.kernel.org/?p=linux/kernel/git/tytso/random.git;a=commitdiff;h=refs/heads/trial_merge
 
+						- Ted
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
+  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/random.git tags/random_for_linus
+
+for you to fetch changes up to d2e7c96af1e54b507ae2a6a7dd2baf588417a7e5:
+
+  random: mix in architectural randomness in extract_buf() (2012-07-27 22:37:20 -0400)
+
+----------------------------------------------------------------
+This patch series contains a major revamp of how we collect entropy
+from interrupts for /dev/random and /dev/urandom.  The goal is to
+addresses weaknesses discussed in the paper "Mining your Ps and Qs:
+Detection of Widespread Weak Keys in Network Devices", by Nadia
+Heninger, Zakir Durumeric, Eric Wustrow, J. Alex Halderman, which will
+be published in the Proceedings of the 21st Usenix Security Symposium,
+August 2012.  (See https://factorable.net for more information and an
+extended version of the paper.)
+
+----------------------------------------------------------------
+H. Peter Anvin (1):
+      random: mix in architectural randomness in extract_buf()
+
+Linus Torvalds (1):
+      random: create add_device_randomness() interface
+
+Mark Brown (2):
+      rtc: wm831x: Feed the write counter into device_add_randomness()
+      mfd: wm831x: Feed the device UUID into device_add_randomness()
+
+Theodore Ts'o (27):
+      random: fix up sparse warnings
+      random: make 'add_interrupt_randomness()' do something sane
+      random: use lockless techniques in the interrupt path
+      usb: feed USB device information to the /dev/random driver
+      net: feed /dev/random with the MAC address when registering a device
+      random: use the arch-specific rng in xfer_secondary_pool
+      random: add new get_random_bytes_arch() function
+      random: add tracepoints for easier debugging and verification
+      MAINTAINERS: Theodore Ts'o is taking over the random driver
+      random: remove rand_initialize_irq()
+      mfd: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      input/serio/hp_sdc.c: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      i2c-pmcmsp: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      pda_power: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      n2_crypto: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      xen-blkfront: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      drivers: hv: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      uartlite: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      goku_udc: remove IRQF_SAMPLE_RANDOM which was commented out
+      omap_udc: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      pxa25x_udc: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      isp1301_omap: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      board-palmz71: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      [ARM] pxa: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      sparc/ldc: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      um: remove IRQF_SAMPLE_RANDOM which is now a no-op
+      random: final removal of IRQF_SAMPLE_RANDOM
+
+Tony Luck (2):
+      random: Add comment to random_initialize()
+      dmi: Feed DMI table to /dev/random driver
+
+ Documentation/feature-removal-schedule.txt |  14 ----
+ MAINTAINERS                                |   2 +-
+ arch/arm/mach-omap1/board-palmz71.c        |   3 +-
+ arch/arm/mach-pxa/lubbock.c                |   2 +-
+ arch/arm/mach-pxa/magician.c               |   5 +-
+ arch/arm/mach-pxa/trizeps4.c               |   4 +-
+ arch/ia64/kernel/irq_ia64.c                |   1 -
+ arch/sparc/kernel/ldc.c                    |   6 +-
+ arch/um/drivers/line.c                     |  13 ++--
+ arch/um/drivers/mconsole_kern.c            |   3 +-
+ arch/um/drivers/port_kern.c                |   6 +-
+ arch/um/drivers/random.c                   |   3 +-
+ arch/um/drivers/xterm_kern.c               |   3 +-
+ arch/um/kernel/sigio.c                     |   3 +-
+ drivers/block/xen-blkfront.c               |   5 +-
+ drivers/char/random.c                      | 355 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------------------
+ drivers/crypto/n2_core.c                   |   3 +-
+ drivers/firmware/dmi_scan.c                |   3 +
+ drivers/hv/vmbus_drv.c                     |   3 +-
+ drivers/i2c/busses/i2c-pmcmsp.c            |   3 +-
+ drivers/input/serio/hp_sdc.c               |   2 +-
+ drivers/mfd/ab3100-core.c                  |   5 --
+ drivers/mfd/tps65010.c                     |   3 +-
+ drivers/mfd/wm831x-otp.c                   |   8 ++
+ drivers/power/pda_power.c                  |   6 +-
+ drivers/rtc/rtc-wm831x.c                   |  24 +++++-
+ drivers/tty/serial/uartlite.c              |   3 +-
+ drivers/usb/core/hub.c                     |   9 +++
+ drivers/usb/gadget/goku_udc.c              |   2 +-
+ drivers/usb/gadget/omap_udc.c              |   4 +-
+ drivers/usb/gadget/pxa25x_udc.c            |  12 +--
+ drivers/usb/otg/isp1301_omap.c             |   1 -
+ include/linux/interrupt.h                  |   2 -
+ include/linux/irqdesc.h                    |   1 -
+ include/linux/random.h                     |   6 +-
+ include/trace/events/random.h              | 134 ++++++++++++++++++++++++++++++++++
+ kernel/irq/handle.c                        |   7 +-
+ kernel/irq/manage.c                        |  17 -----
+ net/core/dev.c                             |   3 +
+ net/core/rtnetlink.c                       |   1 +
+ 40 files changed, 454 insertions(+), 236 deletions(-)
+ create mode 100644 include/trace/events/random.h
