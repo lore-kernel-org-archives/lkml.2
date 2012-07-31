@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab2GaQN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:13:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56092 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753202Ab2GaQN1 (ORCPT
+	id S1755519Ab2GaQOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:14:39 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35973 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab2GaQOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:13:27 -0400
-Date: Tue, 31 Jul 2012 17:13:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Liam Girdwood <lrg@ti.com>, Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: Re: [ 35/73] ASoC: dapm: Fix locking during codec shutdown
-Message-ID: <20120731161325.GD11892@opensource.wolfsonmicro.com>
-References: <20120731044310.013763753@decadent.org.uk>
- <20120731044316.865191013@decadent.org.uk>
- <20120731161100.GB3111@herton-Z68MA-D2H-B3>
+	Tue, 31 Jul 2012 12:14:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120731161100.GB3111@herton-Z68MA-D2H-B3>
-X-Cookie: Caution: Keep out of reach of children.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1343607994-32415-2-git-send-email-jon.mason@intel.com>
+References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
+	<1343607994-32415-2-git-send-email-jon.mason@intel.com>
+Date: Tue, 31 Jul 2012 12:14:36 -0400
+Message-ID: <CAAsGZS4NBM0_o1-RHEZGbYDmJkwTx_RrkYFm7a7-AZRpx0dYAQ@mail.gmail.com>
+Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
+From: chetan loke <loke.chetan@gmail.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 01:11:01PM -0300, Herton Ronaldo Krzesinski wrote:
+On Sun, Jul 29, 2012 at 8:26 PM, Jon Mason <jon.mason@intel.com> wrote:
 
-> Hi, this doesn't build on 3.2:
+<snip>
 
-> linux-stable/sound/soc/soc-dapm.c: In function 'soc_dapm_shutdown_codec':
-> linux-stable/sound/soc/soc-dapm.c:2982:18: error: 'struct snd_soc_card' has no member named 'dapm_mutex'
-> linux-stable/sound/soc/soc-dapm.c:3007:20: error: 'struct snd_soc_card' has no member named 'dapm_mutex'
+> +static void ntb_tx_copy_task(struct ntb_transport_qp *qp,
+> +                            struct ntb_queue_entry *entry,
+> +                            void *offset)
+> +{
+> +       struct ntb_payload_header *hdr = offset;
+> +
+> +       offset += sizeof(struct ntb_payload_header);
+> +       memcpy_toio(offset, entry->buf, entry->len);
+> +
+> +       hdr->len = entry->len;
+> +       hdr->ver = qp->tx_pkts;
+> +
+> +       /* Ensure that the data is fully copied out before setting the flag */
+> +       wmb();
+> +       hdr->flags = entry->flags | DESC_DONE_FLAG;
+> +
+> +       ntb_ring_sdb(qp->ndev, qp->qp_num);
+> +
+> +       /* The entry length can only be zero if the packet is intended to be a
+> +        * "link down" or similar.  Since no payload is being sent in these
+> +        * cases, there is nothing to add to the completion queue.
+> +        */
+> +       if (entry->len > 0) {
+> +               qp->tx_bytes += entry->len;
+> +
+> +               /* Add fully transmitted data to completion queue */
+> +               ntb_list_add_tail(&qp->ntb_tx_comp_q_lock, &entry->entry,
+> +                                 &qp->tx_comp_q);
+> +
+> +               if (qp->tx_handler)
+> +                       qp->tx_handler(qp->cb_data, qp);
+> +       } else
+> +               ntb_list_add_tail(&qp->ntb_tx_free_q_lock, &entry->entry,
+> +                                 &qp->tx_free_q);
+> +}
 
-> Looking at it, I'm not sure the fix is needed on 3.2, and introducing
-> dapm_mutex would be several changes.
+I know you talked about a fixed array. But it's not here yet. So at
+all the call-sites, for [r/t]x_free_q , add the 'entry' to the head -
+change to ntb_list_add_head here and else where.
 
-Yes, this is irrelevant on v3.2.
+Chetan Loke
