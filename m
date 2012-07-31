@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab2GaNoS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:44:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12600 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486Ab2GaNoP (ORCPT
+	id S1753816Ab2GaNop (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:44:45 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:33375 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab2GaNj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:44:15 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=I5RZEMmPgckA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=GMf3nbrKfh60RD8fxcMA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343742253.27983.47.camel@gandalf.stny.rr.com>
-Subject: Re: __update_max_tr: rcu_read_lock() used illegally while idle!
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Steven Rostedt <srostedt@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 31 Jul 2012 09:44:13 -0400
-In-Reply-To: <20120731121030.GA17617@localhost>
-References: <20120724090330.GA9830@localhost>
-	 <1343662752.3847.2.camel@fedora> <20120731120556.GB17252@localhost>
-	 <20120731121030.GA17617@localhost>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jul 2012 09:39:26 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 02/19] ASoC: Ux500: Enable MOP500 driver for Device Tree
+Date: Tue, 31 Jul 2012 14:38:56 +0100
+Message-Id: <1343741953-17828-3-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
+References: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 20:10 +0800, Fengguang Wu wrote:
+Here we ensure that the MOP500 audio driver will be probed during a
+Device Tree boot. We also parse the sound node to link together the
+codec, dma and the CPU-side Digital Audio Interface.
 
-> Another note: the above __update_max_tr back trace only appear accasionally.
-> The more typical error messages look like this:
-> 
-> [   16.195315] Running tests on trace events:
-> [   16.196586] Testing event kfree_skb: [   16.200404] ------------[ cut here ]------------
-> [   16.201428] WARNING: at /c/wfg/linux/kernel/lockdep.c:3506 check_flags+0x125/0x154()
-> [   16.203036] Hardware name: Bochs
-> [   16.203763] Pid: 44, comm: rcu_torture_wri Not tainted 3.5.0+ #82
-> [   16.205067] Call Trace:
-> 
-> [   16.205640]  [<c102a9f8>] warn_slowpath_common+0x63/0x78
-> [   16.206842]  [<c10644ed>] ? check_flags+0x125/0x154
-> [   16.207865]  [<c102aaa7>] warn_slowpath_null+0x14/0x18
-> [   16.208939]  [<c10644ed>] check_flags+0x125/0x154
-> [   16.210009]  [<c106522b>] lock_is_held+0x28/0x82
-> [   16.210023]  [<c1031849>] ? _local_bh_enable_ip+0x9e/0x166
-> [   16.210023]  [<c107d0ac>] rcu_read_lock_held+0x26/0x2c
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ sound/soc/ux500/mop500.c |   38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
 
-This is caused by the function tracer. Every function can call this
-(even rcu_read_lock itself).
-
-We use a schedule rcu to reference a structure, and call
-rcu_dereference_raw() to get it.
-
-Perhaps we should just bypass the check?
-
-Hmm, looking at this again, perhaps it needs the
-rcu_dereference_sched()? When this was first added (3f379b03)
-rcu_dereference_raw was:
-
-#define rcu_dereference_raw(p)  ({ \
-                                typeof(p) _________p1 = ACCESS_ONCE(p); \
-                                smp_read_barrier_depends(); \
-                                (_________p1); \
-                                })
-
-With no check. In fact, the check called the raw. Now it's reversed. I'm
-thinking that we need a way to not have a check. Function tracing is
-*extremely* invasive. As I said, this gets called *by* rcu_read_lock()!
-I'm not sure we want checks involved here.
-
--- Steve
-
-> [   16.210023]  [<c107d59d>] ftrace_ops_list_func+0x82/0xca
-> [   16.210023]  [<c1050ce8>] ? sub_preempt_count+0x5/0xf1
-> [   16.210023]  [<c13e5699>] trace+0x13/0x1b
-> [   16.210023]  [<c10318ec>] ? _local_bh_enable_ip+0x141/0x166
-> [   16.210023]  [<c1050ced>] ? sub_preempt_count+0xa/0xf1
-> [   16.210023]  [<c1031849>] _local_bh_enable_ip+0x9e/0x166
-> [   16.210023]  [<c1077fea>] ? rcu_torture_writer+0xa1/0x1c5
-> [   16.220592]  [<c1031bc4>] local_bh_enable_ip+0xd/0xf
-> [   16.220592]  [<c13e3ff9>] _raw_spin_unlock_bh+0x34/0x37
-> [   16.220592]  [<c1077fea>] rcu_torture_writer+0xa1/0x1c5
-> [   16.220592]  [<c104544f>] kthread+0x6c/0x71
-> [   16.220592]  [<c1077f49>] ? rcu_torture_barrier_cbs+0x199/0x199
-> [   16.220592]  [<c10453e3>] ? insert_kthread_work+0xa8/0xa8
-> [   16.220592]  [<c13e5662>] kernel_thread_helper+0x6/0x10
-> 
-> Thanks,
-> Fengguang
-
+diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
+index 31c4d26..821f2a9 100644
+--- a/sound/soc/ux500/mop500.c
++++ b/sound/soc/ux500/mop500.c
+@@ -16,6 +16,7 @@
+ #include <linux/module.h>
+ #include <linux/io.h>
+ #include <linux/spi/spi.h>
++#include <linux/of.h>
+ 
+ #include <sound/soc.h>
+ #include <sound/initval.h>
+@@ -56,14 +57,45 @@ static struct snd_soc_card mop500_card = {
+ 	.num_links = ARRAY_SIZE(mop500_dai_links),
+ };
+ 
++static int __devinit mop500_of_probe(struct platform_device *pdev,
++				struct device_node *np)
++{
++	struct device_node *codec_np, *msp_np[2];
++	int i;
++
++	msp_np[0] = of_parse_phandle(np, "stericsson,cpu-dai", 0);
++	msp_np[1] = of_parse_phandle(np, "stericsson,cpu-dai", 1);
++	codec_np  = of_parse_phandle(np, "stericsson,audio-codec", 0);
++
++	if (!(msp_np[0] && msp_np[1] && codec_np)) {
++		dev_err(&pdev->dev, "Phandle missing or invalid\n");
++		return -EINVAL;
++	}
++
++	for (i = 0; i < 2; i++) {
++		mop500_dai_links[i].cpu_of_node = msp_np[i];
++		mop500_dai_links[i].cpu_dai_name = NULL;
++		mop500_dai_links[i].codec_of_node = codec_np;
++		mop500_dai_links[i].codec_name = NULL;
++	}
++
++	return 0;
++}
+ static int __devinit mop500_probe(struct platform_device *pdev)
+ {
++	struct device_node *np = pdev->dev.of_node;
+ 	int ret;
+ 
+ 	pr_debug("%s: Enter.\n", __func__);
+ 
+ 	dev_dbg(&pdev->dev, "%s: Enter.\n", __func__);
+ 
++	if (np) {
++		ret = mop500_of_probe(pdev, np);
++		if (ret)
++			return ret;
++	}
++
+ 	mop500_card.dev = &pdev->dev;
+ 
+ 	dev_dbg(&pdev->dev, "%s: Card %s: Set platform drvdata.\n",
+@@ -101,10 +133,16 @@ static int __devexit mop500_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id snd_soc_mop500_match[] = {
++	{ .compatible = "stericsson,snd-soc-mop500", },
++	{},
++};
++
+ static struct platform_driver snd_soc_mop500_driver = {
+ 	.driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = "snd-soc-mop500",
++		.of_match_table = snd_soc_mop500_match,
+ 	},
+ 	.probe = mop500_probe,
+ 	.remove = __devexit_p(mop500_remove),
+-- 
+1.7.9.5
 
