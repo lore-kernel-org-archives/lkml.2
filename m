@@ -1,138 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab2GaSBX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 14:01:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59336 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab2GaSBV (ORCPT
+	id S1754725Ab2GaSBp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 14:01:45 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:44652 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab2GaSBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 14:01:21 -0400
-Date: Tue, 31 Jul 2012 11:01:08 -0700
-From: tip-bot for John Stultz <john.stultz@linaro.org>
-Message-ID: <tip-d4e3ab384b2343c7074f713ac330f839c38c52ee@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, prarit@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, prarit@redhat.com
-In-Reply-To: <1343414893-45779-4-git-send-email-john.stultz@linaro.org>
-References: <1343414893-45779-4-git-send-email-john.stultz@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] time: Clean up stray newlines
-Git-Commit-ID: d4e3ab384b2343c7074f713ac330f839c38c52ee
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 31 Jul 2012 14:01:43 -0400
+Date: Tue, 31 Jul 2012 13:51:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, devel@driverdev.osuosl.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 0/4] promote zcache from staging
+Message-ID: <20120731175142.GE29533@phenom.dumpdata.com>
+References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <b95aec06-5a10-4f83-bdfd-e7f6adabd9df@default>
+ <20120727205932.GA12650@localhost.localdomain>
+ <d4656ba5-d6d1-4c36-a6c8-f6ecd193b31d@default>
+ <5016DE4E.5050300@linux.vnet.ibm.com>
+ <f47a6d86-785f-498c-8ee5-0d2df1b2616c@default>
+ <20120731155843.GP4789@phenom.dumpdata.com>
+ <20120731161916.GA4941@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jul 2012 11:01:14 -0700 (PDT)
+In-Reply-To: <20120731161916.GA4941@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d4e3ab384b2343c7074f713ac330f839c38c52ee
-Gitweb:     http://git.kernel.org/tip/d4e3ab384b2343c7074f713ac330f839c38c52ee
-Author:     John Stultz <john.stultz@linaro.org>
-AuthorDate: Fri, 27 Jul 2012 14:48:11 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 31 Jul 2012 17:09:13 +0200
+On Tue, Jul 31, 2012 at 09:19:16AM -0700, Greg Kroah-Hartman wrote:
+> On Tue, Jul 31, 2012 at 11:58:43AM -0400, Konrad Rzeszutek Wilk wrote:
+> > So in my head I feel that it is Ok to:
+> > 1) address the concerns that zcache has before it is unstaged
+> > 2) rip out the two-engine system with a one-engine system
+> >    (and see how well it behaves)
+> > 3) sysfs->debugfs as needed
+> > 4) other things as needed
+> > 
+> > I think we are getting hung-up what Greg said about adding features
+> > and the two-engine->one engine could be understood as that.
+> > While I think that is part of a staging effort to clean up the
+> > existing issues. Lets see what Greg thinks.
+> 
+> Greg has no idea, except I want to see the needed fixups happen before
+> new features get added.  Add the new features _after_ it is out of
+> staging.
 
-time: Clean up stray newlines
+I think we (that is me, Seth, Minchan, Dan) need to talk to have a good
+understanding of what each of us thinks are fixups.
 
-Ingo noted inconsistent newline usage between functions.
-This patch cleans those up.
+Would Monday Aug 6th at 1pm EST on irc.freenode.net channel #zcache work
+for people?
 
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1343414893-45779-4-git-send-email-john.stultz@linaro.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/time/timekeeping.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index cf364db..05b37a5 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -239,7 +239,6 @@ static void timekeeping_update(struct timekeeper *tk, bool clearntp)
- 	update_vsyscall(&xt, &tk->wall_to_monotonic, tk->clock, tk->mult);
- }
- 
--
- /**
-  * timekeeping_forward_now - update clock to the current time
-  *
-@@ -436,7 +435,6 @@ int do_settimeofday(const struct timespec *tv)
- }
- EXPORT_SYMBOL(do_settimeofday);
- 
--
- /**
-  * timekeeping_inject_offset - Adds or subtracts from the current time.
-  * @tv:		pointer to the timespec variable containing the offset
-@@ -550,7 +548,6 @@ void getrawmonotonic(struct timespec *ts)
- }
- EXPORT_SYMBOL(getrawmonotonic);
- 
--
- /**
-  * timekeeping_valid_for_hres - Check if timekeeping is suitable for hres
-  */
-@@ -683,7 +680,6 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
- 	update_sleep_time(timespec_add(tk->total_sleep_time, *delta));
- }
- 
--
- /**
-  * timekeeping_inject_sleeptime - Adds suspend interval to timeekeeping values
-  * @delta: pointer to a timespec delta value
-@@ -718,7 +714,6 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- 	clock_was_set();
- }
- 
--
- /**
-  * timekeeping_resume - Resumes the generic timekeeping subsystem.
-  *
-@@ -1003,7 +998,6 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
- 
- }
- 
--
- /**
-  * accumulate_nsecs_to_secs - Accumulates nsecs into secs
-  *
-@@ -1032,7 +1026,6 @@ static inline void accumulate_nsecs_to_secs(struct timekeeper *tk)
- 	}
- }
- 
--
- /**
-  * logarithmic_accumulation - shifted accumulation of cycles
-  *
-@@ -1076,7 +1069,6 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
- 	return offset;
- }
- 
--
- /**
-  * update_wall_time - Uses the current clocksource to increment the wall time
-  *
-@@ -1177,7 +1169,6 @@ void getboottime(struct timespec *ts)
- }
- EXPORT_SYMBOL_GPL(getboottime);
- 
--
- /**
-  * get_monotonic_boottime - Returns monotonic time since boot
-  * @ts:		pointer to the timespec to be set
-@@ -1358,7 +1349,6 @@ ktime_t ktime_get_monotonic_offset(void)
- }
- EXPORT_SYMBOL_GPL(ktime_get_monotonic_offset);
- 
--
- /**
-  * xtime_update() - advances the timekeeping infrastructure
-  * @ticks:	number of ticks, that have elapsed since the last call.
+> 
+> greg k-h
