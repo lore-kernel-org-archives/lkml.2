@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab2GaEyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:54:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48858 "EHLO
+	id S1755704Ab2GaEvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:51:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48772 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755626Ab2GaEvG (ORCPT
+	by vger.kernel.org with ESMTP id S1755626Ab2GaEuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:51:06 -0400
-Message-Id: <20120731044315.424748696@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:52 -0400
+Message-Id: <20120731044319.155857450@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:43:36 +0100
+Date: Tue, 31 Jul 2012 05:43:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xose Vazquez Perez <xose.vazquez@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 26/73] wireless: rt2x00: rt2800usb more devices were identified
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 49/73] workqueue: perform cpu down operations from low priority
+ cpu_notifier()
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,77 +29,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xose Vazquez Perez <xose.vazquez@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit e828b9fb4f6c3513950759d5fb902db5bd054048 upstream.
+commit 6575820221f7a4dd6eadecf7bf83cdd154335eda upstream.
 
-found in 2012_03_22_RT5572_Linux_STA_v2.6.0.0_DPO
+Currently, all workqueue cpu hotplug operations run off
+CPU_PRI_WORKQUEUE which is higher than normal notifiers.  This is to
+ensure that workqueue is up and running while bringing up a CPU before
+other notifiers try to use workqueue on the CPU.
 
-RT3070:
-(0x2019,0x5201)  Planex Communications, Inc. RT8070
-(0x7392,0x4085)  2L Central Europe BV 8070
-7392 is Edimax
+Per-cpu workqueues are supposed to remain working and bound to the CPU
+for normal CPU_DOWN_PREPARE notifiers.  This holds mostly true even
+with workqueue offlining running with higher priority because
+workqueue CPU_DOWN_PREPARE only creates a bound trustee thread which
+runs the per-cpu workqueue without concurrency management without
+explicitly detaching the existing workers.
 
-RT35xx:
-(0x1690,0x0761) Askey
-was Fujitsu Stylistic 550, but 1690 is Askey
+However, if the trustee needs to create new workers, it creates
+unbound workers which may wander off to other CPUs while
+CPU_DOWN_PREPARE notifiers are in progress.  Furthermore, if the CPU
+down is cancelled, the per-CPU workqueue may end up with workers which
+aren't bound to the CPU.
 
-Signed-off-by: Xose Vazquez Perez <xose.vazquez@gmail.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+While reliably reproducible with a convoluted artificial test-case
+involving scheduling and flushing CPU burning work items from CPU down
+notifiers, this isn't very likely to happen in the wild, and, even
+when it happens, the effects are likely to be hidden by the following
+successful CPU down.
+
+Fix it by using different priorities for up and down notifiers - high
+priority for up operations and low priority for down operations.
+
+Workqueue cpu hotplug operations will soon go through further cleanup.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: "Rafael J. Wysocki" <rjw@sisk.pl>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ include/linux/cpu.h |    5 +++--
+ kernel/workqueue.c  |   38 +++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 40 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index 5851be7..5601302 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -992,6 +992,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	/* DVICO */
- 	{ USB_DEVICE(0x0fe9, 0xb307) },
- 	/* Edimax */
-+	{ USB_DEVICE(0x7392, 0x4085) },
- 	{ USB_DEVICE(0x7392, 0x7711) },
- 	{ USB_DEVICE(0x7392, 0x7717) },
- 	{ USB_DEVICE(0x7392, 0x7718) },
-@@ -1067,6 +1068,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	/* Philips */
- 	{ USB_DEVICE(0x0471, 0x200f) },
- 	/* Planex */
-+	{ USB_DEVICE(0x2019, 0x5201) },
- 	{ USB_DEVICE(0x2019, 0xab25) },
- 	{ USB_DEVICE(0x2019, 0xed06) },
- 	/* Quanta */
-@@ -1150,6 +1152,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	{ USB_DEVICE(0x8516, 0x3572) },
- 	/* Askey */
- 	{ USB_DEVICE(0x1690, 0x0744) },
-+	{ USB_DEVICE(0x1690, 0x0761) },
- 	{ USB_DEVICE(0x1690, 0x0764) },
- 	/* Cisco */
- 	{ USB_DEVICE(0x167b, 0x4001) },
-@@ -1235,12 +1238,8 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	{ USB_DEVICE(0x07d1, 0x3c0b) },
- 	{ USB_DEVICE(0x07d1, 0x3c17) },
- 	{ USB_DEVICE(0x2001, 0x3c17) },
--	/* Edimax */
--	{ USB_DEVICE(0x7392, 0x4085) },
- 	/* Encore */
- 	{ USB_DEVICE(0x203d, 0x14a1) },
--	/* Fujitsu Stylistic 550 */
--	{ USB_DEVICE(0x1690, 0x0761) },
- 	/* Gemtek */
- 	{ USB_DEVICE(0x15a9, 0x0010) },
- 	/* Gigabyte */
-@@ -1261,7 +1260,6 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	{ USB_DEVICE(0x05a6, 0x0101) },
- 	{ USB_DEVICE(0x1d4d, 0x0010) },
- 	/* Planex */
--	{ USB_DEVICE(0x2019, 0x5201) },
- 	{ USB_DEVICE(0x2019, 0xab24) },
- 	/* Qcom */
- 	{ USB_DEVICE(0x18e8, 0x6259) },
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -66,8 +66,9 @@ enum {
+ 	/* migration should happen before other stuff but after perf */
+ 	CPU_PRI_PERF		= 20,
+ 	CPU_PRI_MIGRATION	= 10,
+-	/* prepare workqueues for other notifiers */
+-	CPU_PRI_WORKQUEUE	= 5,
++	/* bring up workqueues before normal notifiers and down after */
++	CPU_PRI_WORKQUEUE_UP	= 5,
++	CPU_PRI_WORKQUEUE_DOWN	= -5,
+ };
+ 
+ #define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3586,6 +3586,41 @@ static int __devinit workqueue_cpu_callb
+ 	return notifier_from_errno(0);
+ }
+ 
++/*
++ * Workqueues should be brought up before normal priority CPU notifiers.
++ * This will be registered high priority CPU notifier.
++ */
++static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
++					       unsigned long action,
++					       void *hcpu)
++{
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_UP_PREPARE:
++	case CPU_UP_CANCELED:
++	case CPU_DOWN_FAILED:
++	case CPU_ONLINE:
++		return workqueue_cpu_callback(nfb, action, hcpu);
++	}
++	return NOTIFY_OK;
++}
++
++/*
++ * Workqueues should be brought down after normal priority CPU notifiers.
++ * This will be registered as low priority CPU notifier.
++ */
++static int __devinit workqueue_cpu_down_callback(struct notifier_block *nfb,
++						 unsigned long action,
++						 void *hcpu)
++{
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_DOWN_PREPARE:
++	case CPU_DYING:
++	case CPU_POST_DEAD:
++		return workqueue_cpu_callback(nfb, action, hcpu);
++	}
++	return NOTIFY_OK;
++}
++
+ #ifdef CONFIG_SMP
+ 
+ struct work_for_cpu {
+@@ -3779,7 +3814,8 @@ static int __init init_workqueues(void)
+ 	unsigned int cpu;
+ 	int i;
+ 
+-	cpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
++	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
++	cpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
+ 
+ 	/* initialize gcwqs */
+ 	for_each_gcwq_cpu(cpu) {
 
 
