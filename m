@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab2GaNkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:40:25 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58080 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab2GaNjw (ORCPT
+	id S1753777Ab2GaNky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:40:54 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:55500 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753633Ab2GaNjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:39:52 -0400
+	Tue, 31 Jul 2012 09:39:49 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         olalilja@yahoo.se, ola.o.lilja@stericsson.com,
@@ -14,9 +14,9 @@ To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         broonie@opensource.wolfsonmicro.com
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 18/19] Documentation: Define the MSP Driver Device Tree bindings
-Date: Tue, 31 Jul 2012 14:39:12 +0100
-Message-Id: <1343741953-17828-19-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 16/19] ARM: ux500: Add all encompassing sound node to the Snowball Device Tree
+Date: Tue, 31 Jul 2012 14:39:10 +0100
+Message-Id: <1343741953-17828-17-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
 References: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
@@ -24,64 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we add the required documentation for the new Device Tree
-bindings pertaining to the MSP CPU-side DAI Driver.
+This is where we link together all of the SoC sound components for
+a given platform. This all encompassing sound node is only found
+in the very lowest hierarchical DTS file, since the component mix may
+well change from board variant to board variant.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- .../devicetree/bindings/sound/ux500-msp.txt        |   43 ++++++++++++++++++++
- 1 file changed, 43 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/ux500-msp.txt
+ arch/arm/boot/dts/snowball.dts |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/sound/ux500-msp.txt b/Documentation/devicetree/bindings/sound/ux500-msp.txt
-new file mode 100644
-index 0000000..5b883cc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/ux500-msp.txt
-@@ -0,0 +1,43 @@
-+* ux500 MSP (CPU-side Digital Audio Interface)
+diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
+index fce4a00..2969997 100644
+--- a/arch/arm/boot/dts/snowball.dts
++++ b/arch/arm/boot/dts/snowball.dts
+@@ -83,6 +83,14 @@
+ 	};
+ 
+ 	soc-u9500 {
 +
-+Required properties:
-+ - compatible       :"stericsson,ux500-msp-i2s"
-+ - reg              : Physical base address and length of the device's registers.
++		sound {
++			compatible = "stericsson,snd-soc-mop500";
 +
-+Optional properties:
-+ - interrupts       : The interrupt outputs from the device.
-+ - interrupt-parent : The parent interrupt controller.
-+ - <name>-supply    : Phandle to the regulator <name> supply
++			stericsson,cpu-dai = <&msp1 &msp3>;
++			stericsson,audio-codec = <&codec>;
++		};
 +
-+Example:
-+
-+	sound {
-+		compatible = "stericsson,snd-soc-mop500";
-+
-+		stericsson,platform-pcm-dma = <&pcm>;
-+		stericsson,cpu-dai = <&msp1 &msp3>;
-+		stericsson,audio-codec = <&codec>;
-+	};
-+
-+	pcm: ux500-pcm {
-+		compatible = "stericsson,ux500-pcm";
-+	};
-+
-+	msp1: msp@80124000 {
-+		compatible = "stericsson,ux500-msp-i2s";
-+		reg = <0x80124000 0x1000>;
-+		interrupts = <0 62 0x4>;
-+		v-ape-supply = <&db8500_vape_reg>;
-+	};
-+
-+	msp3: msp@80125000 {
-+		compatible = "stericsson,ux500-msp-i2s";
-+		reg = <0x80125000 0x1000>;
-+		interrupts = <0 62 0x4>;
-+		v-ape-supply = <&db8500_vape_reg>;
-+	};
-+
-+	codec: ab8500-codec {
-+		compatible = "stericsson,ab8500-codec";
-+		stericsson,earpeice-cmv = <950>; /* Units in mV. */
-+	};
+ 		msp1: msp@80124000 {
+ 			status = "okay";
+ 		};
 -- 
 1.7.9.5
 
