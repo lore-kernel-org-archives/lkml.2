@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab2GaXgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 19:36:45 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:40849 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756292Ab2GaXgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 19:36:41 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	id S1756312Ab2GaXnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 19:43:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8883 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148Ab2GaXnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 19:43:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="191507619"
+Date: Wed, 1 Aug 2012 07:43:36 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Avi Kivity <avi@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, anton@samba.org
-Subject: [PATCH] powerpc/crypto: fix pseries_defconfig break
-Date: Tue, 31 Jul 2012 18:34:51 -0500
-Message-Id: <1343777691-25601-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073123-1780-0000-0000-000007ED7A9F
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000288; HX=3.00000193; KW=3.00000007;
- PH=3.00000001; SC=3.00000006; SDB=6.00161399; UDB=6.00036478; UTC=2012-07-31
- 23:36:39
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: Testing tracer wakeup_rt: .. no entries found ..FAILED!
+Message-ID: <20120731234336.GA5526@localhost>
+References: <20120724090330.GA9830@localhost>
+ <20120724090720.GA10434@localhost>
+ <1343663105.3847.7.camel@fedora>
+ <20120731121759.GA17822@localhost>
+ <5017D19B.5080806@redhat.com>
+ <1343738627.27983.30.camel@gandalf.stny.rr.com>
+ <5017D4AB.3090107@redhat.com>
+ <1343740419.27983.33.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343740419.27983.33.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the Kconfig rework for drivers/crypto/nx, the meaning of
-CONFIG_CRYPTO_DEV_NX was changed.  At the same time this commit was
-heading upstream
+On Tue, Jul 31, 2012 at 09:13:39AM -0400, Steven Rostedt wrote:
+> On Tue, 2012-07-31 at 15:50 +0300, Avi Kivity wrote:
+> > On 07/31/2012 03:43 PM, Steven Rostedt wrote:
+> 
+> > That would be better.  A hypervisor might be real-time capable (with
+> > some effort kvm can do this), so we don't want to turn off real time
+> > features just based on that.
+> 
+> It would only turn off if you enable selftests and the timing falied. If
+> the kvm had real time features, this most likely would fail anyway. But
+> that said, here's a patch that should solve this:
 
-fd297b3a7302ab866306f53c1fd1e97b083fe83e
-powerpc: Enable pseries hardware RNG and crypto module
+No luck.. it still fails:
 
-still used the old meaning, set CONFIG_CRYPTO_DEV_NX=m when it
-is now a bool in the Kconfig.  This patch repairs the break.
+[    2.360068] Testing tracer irqsoff: [    2.854529] 
+[    2.854828] ===============================
+[    2.855560] [ INFO: suspicious RCU usage. ]
+[    2.856266] 3.5.0-00024-g01ff5db-dirty #3 Not tainted
+[    2.857182] -------------------------------
+[    2.857933] /c/wfg/linux/include/linux/rcupdate.h:730 rcu_read_lock() used illegally while idle!
+[    2.859450] 
+[    2.859450] other info that might help us debug this:
+[    2.859450] 
+[    2.860874] 
+[    2.860874] RCU used illegally from idle CPU!
+[    2.860874] rcu_scheduler_active = 1, debug_locks = 0
+[    2.862754] RCU used illegally from extended quiescent state!
+[    2.863741] 2 locks held by swapper/0/0:
 
-Reported-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
-This patch is based on Linus master which already contains
-the commit above.  Please apply this patch before my patchset
-(powerpc/crypto: IBM Power7+ in-Nest compression support) to
-avoid the pseries_defconfig break.
+[    2.864377]  #0: [    2.864423]  (max_trace_lock){......}, at: [<814f6bfe>] check_critical_timing+0xd7/0x286
+[    2.864423]  #1:  (rcu_read_lock){.+.+..}, at: [<8116f930>] __update_max_tr+0x0/0x430
 
- arch/powerpc/configs/pseries_defconfig |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+[    2.864423] stack backtrace:
+[    2.864423] Pid: 0, comm: swapper/0 Not tainted 3.5.0-00024-g01ff5db-dirty #3
+[    2.864423] Call Trace:
+[    2.864423]  [<81103a06>] lockdep_rcu_suspicious+0x1c6/0x210
+[    2.864423]  [<8116fc9a>] __update_max_tr+0x36a/0x430
+[    2.864423]  [<8116f930>] ? tracing_record_cmdline+0x200/0x200
+[    2.864423]  [<8117186e>] update_max_tr_single+0x14e/0x2c0
+[    2.864423]  [<81170baa>] ? __trace_stack+0x2a/0x40
+[    2.864423]  [<814f6d22>] check_critical_timing+0x1fb/0x286
+[    2.864423]  [<81013313>] ? default_idle+0x593/0xc30
+[    2.864423]  [<81013313>] ? default_idle+0x593/0xc30
+[    2.864423]  [<8110a0e7>] ? trace_hardirqs_on+0x27/0x40
+[    2.864423]  [<8117ea5e>] time_hardirqs_on+0x1de/0x220
+[    2.864423]  [<81013313>] ? default_idle+0x593/0xc30
+[    2.864423]  [<81109d6d>] trace_hardirqs_on_caller+0x2d/0x380
+[    2.864423]  [<8110a0e7>] trace_hardirqs_on+0x27/0x40
+[    2.864423]  [<81013313>] default_idle+0x593/0xc30
+[    2.864423]  [<8101692d>] cpu_idle+0x2dd/0x390
+[    2.864423]  [<814eb841>] rest_init+0x2f5/0x314
+[    2.864423]  [<814eb54c>] ? __read_lock_failed+0x14/0x14
+[    2.864423]  [<817a43b4>] start_kernel+0x866/0x87a
 
-diff --git a/arch/powerpc/configs/pseries_defconfig b/arch/powerpc/configs/pseries_defconfig
-index 1f65b3c..9f4a936 100644
---- a/arch/powerpc/configs/pseries_defconfig
-+++ b/arch/powerpc/configs/pseries_defconfig
-@@ -369,7 +369,8 @@ CONFIG_CRYPTO_TWOFISH=m
- CONFIG_CRYPTO_LZO=m
- # CONFIG_CRYPTO_ANSI_CPRNG is not set
- CONFIG_CRYPTO_HW=y
--CONFIG_CRYPTO_DEV_NX=m
-+CONFIG_CRYPTO_DEV_NX=y
-+CONFIG_CRYPTO_DEV_NX_ENCRYPT=m
- CONFIG_VIRTUALIZATION=y
- CONFIG_KVM_BOOK3S_64=m
- CONFIG_KVM_BOOK3S_64_HV=y
--- 
-1.7.9.5
-
+Thanks,
+Fengguang
