@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab2GaD0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 23:26:55 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52390 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179Ab2GaD0y (ORCPT
+	id S1755243Ab2GaDe6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 23:34:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60424 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194Ab2GaDe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 23:26:54 -0400
-Date: Mon, 30 Jul 2012 20:26:10 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Meelis Roos <mroos@linux.ee>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH] mm: change nr_ptes BUG_ON to WARN_ON
-Message-ID: <alpine.LSU.2.00.1207302017040.6310@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 30 Jul 2012 23:34:57 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.DEB.2.00.1207301425410.28838@router.home>
+References: <1343411703-2720-1-git-send-email-js1304@gmail.com>
+	<1343411703-2720-4-git-send-email-js1304@gmail.com>
+	<alpine.DEB.2.00.1207271550190.25434@router.home>
+	<CAAmzW4MdiJOaZW_b+fz1uYyj0asTCveN=24st4xKymKEvkzdgQ@mail.gmail.com>
+	<alpine.DEB.2.00.1207301425410.28838@router.home>
+Date: Tue, 31 Jul 2012 12:34:57 +0900
+Message-ID: <CAAmzW4P6rqywK89q71DXzumREsJNGq0O4RrfdiHP2thrRSy9Gg@mail.gmail.com>
+Subject: Re: [RESEND PATCH 4/4 v3] mm: fix possible incorrect return value of
+ move_pages() syscall
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Brice Goglin <brice@myri.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From time to time an isolated BUG_ON(mm->nr_ptes) gets reported,
-indicating that not all the page tables allocated could be found
-and freed when exit_mmap() tore down the user address space.
+2012/7/31 Christoph Lameter <cl@linux.com>:
+> On Sat, 28 Jul 2012, JoonSoo Kim wrote:
+>
+>> 2012/7/28 Christoph Lameter <cl@linux.com>:
+>> > On Sat, 28 Jul 2012, Joonsoo Kim wrote:
+>> >
+>> >> move_pages() syscall may return success in case that
+>> >> do_move_page_to_node_array return positive value which means migration failed.
+>> >
+>> > Nope. It only means that the migration for some pages has failed. This may
+>> > still be considered successful for the app if it moves 10000 pages and one
+>> > failed.
+>> >
+>> > This patch would break the move_pages() syscall because an error code
+>> > return from do_move_pages_to_node_array() will cause the status byte for
+>> > each page move to not be updated anymore. Application will not be able to
+>> > tell anymore which pages were successfully moved and which are not.
+>>
+>> In case of returning non-zero, valid status is not required according
+>> to man page.
+>
+> Cannot find a statement like that in the man page. The return code
+> description is incorrect. It should that that is returns the number of
+> pages not moved otherwise an error code (Michael please fix the manpage).
 
-There's usually nothing we can say about it, beyond that it's
-probably a sign of some bad memory or memory corruption; though
-it might still indicate a bug in vma or page table management
-(and did recently reveal a race in THP, fixed a few months ago).
+In man page, there is following statement.
+"status is an array of integers that return the status of each page.  The array
+only contains valid values if move_pages() did not return an error."
 
-But one overdue change we can make is from BUG_ON to WARN_ON.
-
-It's fairly likely that the system will crash shortly afterwards
-in some other way (for example, the BUG_ON(page_mapped(page)) in
-__delete_from_page_cache(), once an inode mapped into the lost
-page tables gets evicted); but might tell us more before that.
-
-Change the BUG_ON(page_mapped) to WARN_ON too?  Later perhaps:
-I'm less eager, since that one has several times led to fixes.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-
- mm/mmap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- v3.5/mm/mmap.c	2012-07-21 13:58:29.000000000 -0700
-+++ linux/mm/mmap.c	2012-07-30 19:38:41.977203670 -0700
-@@ -2310,7 +2310,7 @@ void exit_mmap(struct mm_struct *mm)
- 	}
- 	vm_unacct_memory(nr_accounted);
- 
--	BUG_ON(mm->nr_ptes > (FIRST_USER_ADDRESS+PMD_SIZE-1)>>PMD_SHIFT);
-+	WARN_ON(mm->nr_ptes > (FIRST_USER_ADDRESS+PMD_SIZE-1)>>PMD_SHIFT);
- }
- 
- /* Insert vm structure into process list sorted by address
+And current implementation of move_pages() syscall doesn't return the number
+of pages not moved, just return 0 when it encounter some failed pages.
+So, if u want to fix the man page, u should fix do_pages_move() first.
