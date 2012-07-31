@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab2GaCWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 22:22:08 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44983 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476Ab2GaCWG (ORCPT
+	id S1755179Ab2GaCWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 22:22:37 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:22453
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751476Ab2GaCWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 22:22:06 -0400
-Message-ID: <1343701316.7557.1.camel@phoenix>
-Subject: Re: [PATCH] regulator: core: Add intermediate cast to uintptr_t
- before casting to pointer
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Date: Tue, 31 Jul 2012 10:21:56 +0800
-In-Reply-To: <20120730153309.GK4468@opensource.wolfsonmicro.com>
-References: <1343605633.11323.1.camel@phoenix>
-	 <20120730153309.GK4468@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Mon, 30 Jul 2012 22:22:35 -0400
+X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI936eI1432Izz1202hzzz2fh2a8h668h839hf0ah107ah10d2h)
+Message-ID: <50174158.4000408@am.sony.com>
+Date: Mon, 30 Jul 2012 19:22:16 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "chris.pringle@miranda.com" <chris.pringle@miranda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH RT 05/12] slab: Prevent local lock deadlock
+References: <20120718223910.898476857@goodmis.org>	 <20120718223957.856443728@goodmis.org> <5011DD9B.1030901@am.sony.com> <1343697755.27983.17.camel@gandalf.stny.rr.com>
+In-Reply-To: <1343697755.27983.17.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2012-07-30 於 16:33 +0100，Mark Brown 提到：
-> On Mon, Jul 30, 2012 at 07:47:13AM +0800, Axel Lin wrote:
+On 07/30/12 18:22, Steven Rostedt wrote:
+> On Thu, 2012-07-26 at 17:15 -0700, Frank Rowand wrote:
 > 
-> >  		_notifier_call_chain(rdev, REGULATOR_EVENT_VOLTAGE_CHANGE,
-> > -				     (void *)best_val);
-> > +				     (void *)(uintptr_t)best_val);
+>>
+>> Config is from arch/arm/configs/omap2plus_defconfig
+>> plus:
+>>
+>>    CONFIG_USB_EHCI_HCD=y
+>>    CONFIG_USB_NET_SMSC95XX=y
+>>    CONFIG_PREEMPT_RT_FULL=y
+>>
 > 
-> This also looks problematic, you should never need to cast a pointer to
-> or from void.
+> Interesting, I just booted my panda board against 3.0.36-rt58 with that
+> config and these three set, and I didn't get this error.
 
-If I remove the cast to (void *), I got below build warning:
+I don't know if it makes any difference, but my root fs is nfs mounted.
 
-  CC      drivers/regulator/core.o
-drivers/regulator/core.c: In function '_regulator_do_set_voltage':
-drivers/regulator/core.c:2183:10: warning: passing argument 3 of
-'_notifier_call_chain' makes pointer from integer without a cast
-[enabled by default]
-drivers/regulator/core.c:94:13: note: expected 'void *' but argument is
-of type 'long unsigned int'
+I'll try to look at this some more tomorrow.
 
-( Sorry, I forgot to reply-all so I send the mail again )
-Axel
+-Frank
 
