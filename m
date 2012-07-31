@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab2GaQWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 12:22:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38552 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755460Ab2GaQWd (ORCPT
+	id S1755617Ab2GaQYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 12:24:25 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:49634 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab2GaQYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 12:22:33 -0400
-Date: Tue, 31 Jul 2012 17:22:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-Message-ID: <20120731162230.GE11892@opensource.wolfsonmicro.com>
-References: <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
- <50170EA0.1010408@wwwdotorg.org>
- <5017B434.2010706@nvidia.com>
- <20120731105640.GD16155@avionic-0098.adnet.avionic-design.de>
- <20120731141328.GS4468@opensource.wolfsonmicro.com>
- <20120731142216.GA19591@avionic-0098.adnet.avionic-design.de>
- <20120731142607.GV4468@opensource.wolfsonmicro.com>
- <20120731143235.GA21126@avionic-0098.adnet.avionic-design.de>
- <20120731153941.GF4468@opensource.wolfsonmicro.com>
- <20120731161954.GB4941@kroah.com>
+	Tue, 31 Jul 2012 12:24:24 -0400
+Date: Tue, 31 Jul 2012 12:15:15 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Ian.Campbell@citrix.com, x86@kernel.org
+Subject: Re: [PATCH] extend_brk and fixes to users of extend_brk (v1).
+Message-ID: <20120731161515.GQ4789@phenom.dumpdata.com>
+References: <1343731376-20658-1-git-send-email-konrad.wilk@oracle.com>
+ <5017FE81.3080903@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120731161954.GB4941@kroah.com>
-X-Cookie: Caution: Keep out of reach of children.
+In-Reply-To: <5017FE81.3080903@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 09:19:54AM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Jul 31, 2012 at 04:39:41PM +0100, Mark Brown wrote:
-> > On Tue, Jul 31, 2012 at 04:32:35PM +0200, Thierry Reding wrote:
+On Tue, Jul 31, 2012 at 08:49:21AM -0700, H. Peter Anvin wrote:
+> On 07/31/2012 03:42 AM, Konrad Rzeszutek Wilk wrote:
+> >
+> >  [PATCH 3/3] x86: Let extend_brk return a NULL pointer instead of
+> >
+> >makes extend_brk not do BUG_ON and instead just return NULL. This allows
+> >us to handle the bootup issues more gracefully.
+> >
+> 
+> NAK.  The whole point of the brk allocator is that users specify the
+> upper limit on what they may need and stick to it.  Hence it is a
+> fatal code bug if that is ever exceeded.  We want to catch those
+> errors, not "handle" them.
 
-> > > can gracefully handle its platform data being discarded.
+OK, thanks for pointing that out.
+> 
+> This means you're either abusing the brk allocator to do something
+> it is not meant to do... which may mean you can a failure in *other*
+> code, or you have a bug in your code that you haven't fixed.
 
-> > Sure there is - take a copy of the platform data in probe().
+Its the latter - and of one of the patches in this patchset fixes that.
 
-> Ick ick ick, devdata needs to die as it's pretty much pointless these
-> days.
-
-Hrm?  I'm not sure I understand the direct relevance here - we're
-talking about platform data.
+Will drop the one that alter extend_brk.
+Thanks!
