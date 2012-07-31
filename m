@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab2GaMcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 08:32:20 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:51157 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755945Ab2GaMcS (ORCPT
+	id S1756192Ab2GaMca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 08:32:30 -0400
+Received: from smtp-out-178.synserver.de ([212.40.185.178]:1092 "EHLO
+	smtp-out-178.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756175Ab2GaMc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 08:32:18 -0400
+	Tue, 31 Jul 2012 08:32:27 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 23246
+Message-ID: <5017D148.6030006@metafoo.de>
+Date: Tue, 31 Jul 2012 14:36:24 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1207301907010.3953@eggly.anvils>
-References: <CAJd=RBDQ1J9UTWOK1x6XNYunFz36RsMnr1Om9HsQQ_Kp8P7RKQ@mail.gmail.com>
-	<alpine.LSU.2.00.1207301907010.3953@eggly.anvils>
-Date: Tue, 31 Jul 2012 20:32:18 +0800
-Message-ID: <CAJd=RBBe2XHwe7T+EKoomFq1t2Me+VbJkz92Ow15FjEsPLJUow@mail.gmail.com>
-Subject: Re: [RFC patch] vm: clear swap entry before copying pte
-From: Hillf Danton <dhillf@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/iio/adc/at91_adc.c: use devm_ functions
+References: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+Hi,
 
-On Tue, Jul 31, 2012 at 10:34 AM, Hugh Dickins <hughd@google.com> wrote:
-> But I can see that the lack of reinitialization of entry.val here
-> does raise doubt and confusion.  A better tidyup would be to remove
-> the initialization of swp_entry_t entry from its onstack declaration,
-> and do it at the again label instead.
+On 07/31/2012 12:09 PM, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> @@ -720,20 +698,14 @@ error_ret:
+>  static int __devexit at91_adc_remove(struct platform_device *pdev)
+>  {
+>  	struct iio_dev *idev = platform_get_drvdata(pdev);
+> -	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	struct at91_adc_state *st = iio_priv(idev);
+>  
+>  	iio_device_unregister(idev);
+> [...]
+> -	free_irq(st->irq, idev);
+> [...]
+>  	iio_device_free(idev);
 
+I think we have to be careful here. The interrupted is now freed after the
+device has been freed, which means that it could trigger after the device
+has been freed. And since we use the device in the interrupt handler we'll
+get a use after free.
 
-I just want to avoid allocating page in add_swap_count_continuation()
-for non clear reason, as you see, which is not a bug fix.
-
-Thanks,
-		Hillf
+- Lars
