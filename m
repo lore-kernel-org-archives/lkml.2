@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab2GaPTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 11:19:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59658 "EHLO mx2.suse.de"
+	id S1755121Ab2GaPWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 11:22:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40144 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754955Ab2GaPTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 11:19:41 -0400
-Date: Tue, 31 Jul 2012 16:19:36 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the nfs tree
-Message-ID: <20120731151936.GR612@suse.de>
-References: <20120731142441.0d01100f9d050ec6e479c923@canb.auug.org.au>
- <20120731103336.GN612@suse.de>
- <1343745442.519.20.camel@lade.trondhjem.org>
+	id S1755040Ab2GaPWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 11:22:04 -0400
+Date: Tue, 31 Jul 2012 17:22:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: wei_wang@realsil.com.cn
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        cjb@laptop.org, arnd@arndb.de, aaron.lu@amd.come
+Subject: Re: [PATCH 3/3] drivers/mmc/host: Add realtek sdmmc interface driver
+Message-ID: <20120731152204.GA4563@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, wei_wang@realsil.com.cn,
+	gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+	linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+	cjb@laptop.org, arnd@arndb.de, aaron.lu@amd.come
+References: <1343720576-22181-1-git-send-email-wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1343745442.519.20.camel@lade.trondhjem.org>
+In-Reply-To: <1343720576-22181-1-git-send-email-wei_wang@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 02:37:24PM +0000, Myklebust, Trond wrote:
-> On Tue, 2012-07-31 at 11:33 +0100, Mel Gorman wrote:
-> > On Tue, Jul 31, 2012 at 02:24:41PM +1000, Stephen Rothwell wrote:
-> > > Hi Andrew,
-> > > 
-> > > Today's linux-next merge of the akpm tree got a conflict in
-> > > net/sunrpc/xprtsock.c between commit 5cf02d09b50b ("nfs: skip commit in
-> > > releasepage if we're freeing memory for fs-related reasons") from the nfs
-> > > tree and commit "nfs: enable swap on NFS" from the akpm tree.
-> > > 
-> > > Just context changes?  I fixed it up (I think - see below) and can carry
-> > > the fix as necessary.
-> > 
-> > Functionally it looks fine. As you say, it all looks like context
-> > changes. Arguably code like this
-> > 
-> > current->flags &= ~PF_FSTRANS
-> > 
-> > could use tsk_restore_flags instead() even though it should never be
-> > necessary as PF_FSTRANS would not be set on function entry. However,
-> > it would set up a depedency between the patch sets that is undesirable.
-> > If both sets get merged then it might make sense as a cleanup to use
-> > tsk_restore_flags() but not until then.
-> > 
-> > Thanks Stephen.
-> > 
+On Tue, Jul 31, 2012 at 03:42:56PM +0800, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
 > 
-> Do we really need to set both PF_FSTRANS and PF_MEMALLOC here? The
-> reason why I merged the PF_FSTRANS patch is that we have the deadlock
-> problem when allocating a new socket even before we add swap-over-nfs.
-> Adding PF_FSTRANS to disallow entry into the NFS layer by the memory
-> allocator fixes that issue.
+> Realtek SD/MMC card interface driver is used to access
+> SD/MMC card, with the help of Realtek card reader adapter driver.
 
-PF_FSTRANS is to prevent recursion into NFS and is set whether swap-over-NFS
-is used or not and for all requests.
+Yep,
 
-> What value does PF_MEMALLOC add? Is that in order to prevent recursion
-> into other areas of the swap code (say, if you mix swap-over-nfs with
-> ordinary swap-to-disk)?
-> 
+it builds and boots fine with latest Linus tree.
 
-PF_MEMALLOC is normally to prevent the page reclaim recursing into
-itself. Page reclaim can call the page allocator and that cannot re-enter
-page reclaim.
+When I put the card in, the kernel says:
 
-In the case of swap-over-NFS, PF_MEMALLOC is set only if the socket is
-being used for swapping. In softirq context, the allocation request is
-allowed to use PFMEMALLOC reserves to avoid deadlock.
+[ 1162.197980] rtsx_core: MMC/SD card detected in socket 0:0
+[ 1162.302571] rtsx_sdmmc: Realtek SDMMC controller found
+[ 1163.202172] mmc0: new ultra high speed SDR50 SDHC card at address e624
+[ 1163.237151] mmcblk0: mmc0:e624 SU16G 14.8 GiB
+[ 1163.263627]  mmcblk0: p1
 
-I do not see an obvious way to collapse the two flags together.
-PF_FSTRANS should not mean the PFMEMALLOC reserves can be used and
-PFMEMALLOC is not set for all requests.
+Then when I format the card it says:
+
+[ 1284.457681] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
+[ 1284.475972] DMA: Out of SW-IOMMU space for 368640 bytes at device 0000:03:00.0
+
+which doesn't look too kosher to me. It comes from
+swiotlb.c:swiotlb_full() and it says that in both cases map_single fails
+mapping those 524Kb and 368K buffers.
+
+It looks from here as if the driver is trying to map too big buffers
+which the swiotlb can't handle? But I'm just stabbing in the dark here.
+
+Accessing the card seems ok, I'll play with it for a while and keep you
+posted.
+
+Thanks.
 
 -- 
-Mel Gorman
-SUSE Labs
+Regards/Gruss,
+Boris.
