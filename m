@@ -1,83 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab2GaKaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 06:30:14 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43648 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753579Ab2GaKaM (ORCPT
+	id S1754786Ab2GaKau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 06:30:50 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3500 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab2GaKa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 06:30:12 -0400
-Date: Tue, 31 Jul 2012 14:30:07 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "lwn@lwn.net" <lwn@lwn.net>, "criu@openvz.org" <criu@openvz.org>,
-        "users@openvz.org" <users@openvz.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: [Announce] Checkpoint-restore tool v0.1
-Message-ID: <20120731103007.GE2007@moon>
-References: <500D1116.7070301@parallels.com>
- <CAFLxGvwUhEPNdQvUnue2QFu_EipmBKD3nf0MfMWkqwLTf7jd5Q@mail.gmail.com>
- <50179CF0.7050200@parallels.com>
- <CAFLxGvygCxER3gHfj-onwnm_m6xugOVkynGyJU2CDheD3A2HOQ@mail.gmail.com>
- <5017A053.9000206@parallels.com>
- <CAFLxGvy396+BfYSaSnvAwJb0GO4WZCKbPXSbU7YfrOJTo6zk6A@mail.gmail.com>
- <5017AB41.60700@parallels.com>
- <CAFLxGvwu8-ii7hDbDfco3JrgKgOK+hsdTN_Q--AHbom0Ni8WYA@mail.gmail.com>
- <20120731101603.GD2007@moon>
- <CAFLxGvxgq9HJJvRgz=z48D7V_j=dTv4jSCLqEZcE=oCBAXnSug@mail.gmail.com>
+	Tue, 31 Jul 2012 06:30:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 31 Jul 2012 03:30:27 -0700
+Message-ID: <5017B434.2010706@nvidia.com>
+Date: Tue, 31 Jul 2012 19:32:20 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvxgq9HJJvRgz=z48D7V_j=dTv4jSCLqEZcE=oCBAXnSug@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <50170EA0.1010408@wwwdotorg.org>
+In-Reply-To: <50170EA0.1010408@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 12:21:58PM +0200, richard -rw- weinberger wrote:
-> On Tue, Jul 31, 2012 at 12:16 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > On Tue, Jul 31, 2012 at 12:08:22PM +0200, richard -rw- weinberger wrote:
-> >> On Tue, Jul 31, 2012 at 11:54 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
-> >> >> Yeah, but I fear it's not that easy.
-> >> >> We'd have to change crtools to work without ptrace().
-> >> >
-> >> > Well, this is hard. Using ptrace saved us from having many special-purpose
-> >> > APIs for dumping various stuff (there will be an article about it). Thus I
-> >> > don't know which way is simpler -- stop using ptrace or teach ptrece to allow
-> >> > several tracers to attach to one task %)
-> >>
-> >> Allowing multiple tracers in a safe way is IMHO even more harder.
-> >>
-> >> BTW:  While reading prctl_set_mm() I noticed two things.
-> >> 1.  Why isn't the return value of find_vma() verified?
-> >
-> > prctl_set_mm
-> >         vma = find_vma(mm, addr);
-> >         ...
-> >         if (!vma) {
-> >                 error = -EFAULT;
-> >                 goto out;
-> >         }
-> >
-> > these values are used in procfs statistics only. So I don't get
-> > which verify you mean here.
-> 
-> If I do PR_SET_MM_START_BRK the if(!vma) will never be executed because
-> there a break in case PR_SET_MM_START_BRK.
+On 07/31/2012 07:45 AM, Stephen Warren wrote:
+>> +- Delay to wait before performing the action,
+>> +- Delay to wait after performing the action.
+>
+> I don't see a need to have a delay both before and after an action;
+> except at the start of the sequence, step n's post-delay is at the same
+> point in the sequence as step n+1's pre-delay. Perhaps make a "delay"
+> step type?
 
-Yes, and this is done by purpose, since we need to setup _completely_
-new memory map on restore procedure.
+My first version used this actually - and you're right, having a "delay" 
+step type would be more flexible and less redundant.
 
-There is a minimal check for value being sane
+>> +Both new resources and parameters can be introduced, but the goal is of course
+>> +to keep things as simple and compact as possible.
+>
+>> +The platform data is a simple array of platform_power_seq_step instances, each
+>
+> Rather than jumping straight into platform data here, I'd expect an
+> enumeration of legal resource types, and what actions can be performed
+> on each, followed by a description of a sequence (very simply, just a
+> list of actions and their parameters). This could be followed by a
+> section describing the mapping of the abstract concepts to concrete
+> platform data representation (and concrete device tree representation).
 
-	if (addr >= TASK_SIZE || addr < mmap_min_addr)
-		return -EINVAL;
+Keeping that in mind for the next revision.
 
-and the address belongs to mm::start_data|end_data area. But sure,
-better to add checks that at least code/data areas do exist, otherwise
-the proc output will not reflect the real state of memory maps.
+>> +instance describing a step. The type as well as one of id or gpio members
+>> +(depending on the type) must be specified. The last step must be of type
+>> +POWER_SEQ_STOP.
+>
+> I'd certainly suggest having a step count rather than a sentinel value
+> in the list.
 
-	Cyrill
+As Thierry did - I think I will go that way.
+
+>> Regulator and PWM resources are identified by name. GPIO are
+>> +identified by number.
+>
+> That's a little implementation-specific. I guess it's entirely true for
+> a platform data representation, but not when mapping this into device tree.
+
+If we can come with a way to properly use phandles within DT sequences 
+(and we should), then this will only apply to platform data.
+
+>> +You will need an instance of power_seq_resources to keep track of the resources
+>> +that are already allocated. On success, the function returns a devm allocated
+>> +resolved sequence that is ready to be passed to power_seq_run(). In case of
+>> +failure, and error code is returned.
+>
+> If the result is devm-allocated, the function probably should be named
+> devm_power_seq_build().
+
+Right - more generally this needs to have both devm and non-devm variants.
+
+> I wonder if using the same structure/array as input and output would
+> simplify the API; the platform data would fill in the fields mentioned
+> above, and power_seq_build() would parse those, then set other fields in
+> the same structs to the looked-up handle values?
+
+The thing is that I am not sure what happens to the platform data once 
+probe() is done. Isn't it customary to mark it with __devinit and have 
+it freed after probing is successful?
+
+More generally, I think it is a good practice to have data structures 
+tailored right for what they need to do - code with members that are 
+meaningful only at given points of an instance's life tends to be more 
+confusing.
+
+> You can make a custom devm free routine for the power_seq_resources
+> itself, so the overall free'ing of the content can be triggered by devm,
+> but the free'ing function can then call whatever non-devm APIs it wants
+> for the non-devm-allocated members.
+
+That sounds good.
+
+>> +Device tree
+>> +-----------
+>> +All the same, power sequences can be encoded as device tree nodes. The following
+>> +properties and nodes are equivalent to the platform data defined previously:
+>> +
+>> +		power-supply = <&mydevice_reg>;
+>> +		enable-gpio = <&gpio 6 0>;
+>> +
+>> +		power-on-sequence {
+>> +			regulator@0 {
+>
+> As Thierry mentioned, the step nodes should be named for the type of
+> object they are (a "step") not the type or name of resource they act
+> upon ("regulator" or "gpio").
+
+Will fix that.
+
+> If the nodes have a unit address (i.e. end in "@n"), which they will
+> have to if all named "step" and there's more than one of them, then they
+> will need a matching reg property. Equally, the parent node will need
+> #address-cells and #size-cells too. So, the last couple lines would be:
+>
+> 		power-on-sequence {
+> 			#address-cells = <1>;
+> 			#size-cells = <0>;
+> 			step@0 {
+> 				reg = <0>;
+
+That's precisely what I would like to avoid - I don't need the steps to 
+be numbered and I certainly have no use for a reg property. Isn't there 
+a way to make it simpler?
+
+>> +				id = "power";
+>
+> "id" is usually a name or identifier. I think you mean "type" or perhaps
+> "action" here:
+>
+> 				type = "regulator";
+> 				action = "enable";
+>
+> or:
+>
+> 				action = "enable-regulator";
+
+Right, that was a clear misuse.
+
+> Oh I see. That's a little confusing. Why not just reference the relevant
+> resources directly in each step; something more like:
+>
+> 		gpio@1 {
+> 			action = "enable-gpio";
+> 			gpio = <&gpio 1 0>;
+> 		};
+>
+> I guess that might make parsing/building a little harder, since you'd
+> have to detect when you'd already done gpio_request() on a given GPIO
+> and not repeat it or something like that, but to me this makes the DT a
+> lot easier to comprehend.
+
+You can see my reply to Thierry for the reason - the only issue with 
+that is caused by PWM phandles. If we overcome this, then I agree we 
+should use phandles. The code should not even get more complex as I have 
+to check whether a resource is already allocated with strings as well.
+
+Thanks,
+Alex.
+
