@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab2GaWDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 18:03:12 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52635 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754333Ab2GaWDJ (ORCPT
+	id S1754602Ab2GaWDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 18:03:11 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59335 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305Ab2GaWDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jul 2012 18:03:09 -0400
-Date: Tue, 31 Jul 2012 23:01:45 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
-        broonie@opensource.wolfsonmicro.com, olalilja@yahoo.se,
-        STEricsson_nomadik_linux@list.st.com, lrg@ti.com
-Subject: Re: [PATCH 5/6] ARM: ux500: Enable HIGHMEM on all mop500 platforms
-Message-ID: <20120731220145.GD10335@n2100.arm.linux.org.uk>
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <5017EBDC.6010005@linaro.org> <20120731143732.GS6802@n2100.arm.linux.org.uk> <201207312050.03113.arnd@arndb.de>
+Message-ID: <50185619.5090706@gmail.com>
+Date: Tue, 31 Jul 2012 17:03:05 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201207312050.03113.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
+References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de> <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com> <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 08:50:02PM +0000, Arnd Bergmann wrote:
-> On Tuesday 31 July 2012, Russell King - ARM Linux wrote:
-> > I still fail to see how not having highmem enabled would ever cause memory
-> > corruption errors (unless something dealing with memory in a very very
-> > wrong way - iow, not using one of the reservation or memory allocation
-> > methods provided by the kernel.)
+On 07/30/2012 02:47 AM, Thierry Reding wrote:
+> On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
+>> On Mon, Jul 23, 2012 at 1:59 PM, Thierry Reding
+>> <thierry.reding@avionic-design.de> wrote:
+>>
+>>> This commit adds a driver for the Avionic Design N-bit GPIO expander.
+>>> The expander provides a variable number of GPIO pins with interrupt
+>>> support.
+>> (...)
+>>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-adnp.txt b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
+>>> new file mode 100644
+>>> index 0000000..513a18e
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
+>>> @@ -0,0 +1,38 @@
+>>> +Avionic Design N-bit GPIO expander bindings
+>>> +
+>>> +Required properties:
+>>> +- compatible: should be "ad,gpio-adnp"
+>>> +- reg: The I2C slave address for this device.
+>>> +- interrupt-parent: phandle of the parent interrupt controller.
+>>> +- interrupts: Interrupt specifier for the controllers interrupt.
+>>> +- #gpio-cells: Should be 2. The first cell is the GPIO number and the
+>>> +  second cell is used to specify optional parameters:
+>>> +  - bit 0: polarity (0: normal, 1: inverted)
+>>> +- gpio-controller: Marks the device as a GPIO controller
+>>> +- #interrupt-cells: Should be 2. The first cell contains the GPIO number,
+>>> +  whereas the second cell is used to specify flags:
+>>> +    bits[3:0] trigger type and level flags
+>>> +      1 = low-to-high edge triggered
+>>> +      2 = high-to-low edge triggered
+>>> +      4 = active high level-sensitive
+>>> +      8 = active low level-sensitive
+>>
+>> Why on earth would a bunch of flags be an "interrupt cell"?
+>>
+>> Maybe there is something about DT bindings I don't get so
+>> please educate me.
+>>
+>> I can see that OMAP is doing this, but is it a good idea?
+>> I really need Rob/Grant to comment on this.
+>>
+>>> +- interrupt-controller: Marks the device as an interrupt controller.
+>>> +- nr-gpios: The number of pins supported by the controller.
+>>
+>> These two last things look very generic, like something every GPIO
+>> driver could want to expose.
 > 
-> The problem is that all users of ux500 systems pass a command line like
+> As Arnd mentioned, interrupt-controller is a generic property required
+> by all interrupt controller nodes. Perhaps it shouldn't be listed in the
+> DT binding for this driver.
 > 
-> vmalloc=256M mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M mem=48M@328M mem_issw=1M@383M mem=640M@384M
+> As to the nr-gpios property, this is actually not only for informational
+> purposes, but it also allows the driver to be configured to handle any
+> number of bits (powers of two). However since this is also a description
+> of the hardware it may be useful to make this into a generic property
+> for GPIO controllers.
 > 
-> This is of course totally bogus and should not be done. If I understand
-> Lee correctly, one of the issues resulting from passing a command
-> line like this without enabling highmem is memory corruption.
+>> I'd really like to have Grant's word on GPIO DT bindings and how these
+>> should look, I had some discussion with Wolfram (the I2C maintainer)
+>> about bindings turning out less generic than they ought to be, so we
+>> need some discussion on this.
+>>
+>> Arnd recently consolidated some MMC props, maybe we need to do
+>> the same for GPIO drivers.
 
-But the question is _why_ does that corruption happen.
+For nr-gpios, I think it is typically not needed. Generally, you will
+know how many gpio lines the h/w has based on the compatible string. If
+this part really is the same part but different packages with different
+numbers of gpio, then this property makes sense. Otherwise, I would say
+drop it.
 
->From the above, we will end up with the kernel getting:
+If your goal is how many gpios are you using, you really need a bitmap
+instead if you want it to be generic.
 
-0x00000000 - 0x07ffffff (128M @ 0)
-0x14800000 - 0x177fffff (48M  @ 328M)
-0x18000000 - 0x3fffffff (640M @ 384M)
+IIRC, Tegra also needed this in that they N instances of some number of
+bits and the registers are interleaved so they can't have separate nodes.
 
-with:
-
-0x08000000 - 0x081fffff used for mali
-0x0a000000 - 0x147fffff used for hwmem
-0x17f00000 - 0x17ffffff used for mem_issw
-
-Now, with highmem disabled, the kernel should still map exactly the
-regions: 0x00000000 - 0x07ffffff, 0x14800000 - 0x177fffff, into the
-direct mapped region, and truncate the 0x18000000 - 0x3fffffff
-region appropriately, reducing the amount of memory available such
-that it won't overlap the vmalloc area (which you've specified to be
-a minimum of 256M.)
-
-This should _NOT_ cause any memory corruption.
-
-So, come on guys.  Debugging is *mandatory* for this kind of problem.
-Papering over it is obscene.
+Rob
