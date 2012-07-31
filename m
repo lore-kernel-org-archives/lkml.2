@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab2GaEug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 00:50:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48673 "EHLO
+	id S1755612Ab2GaEur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 00:50:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48730 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755502Ab2GaEu3 (ORCPT
+	by vger.kernel.org with ESMTP id S1755392Ab2GaEui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 00:50:29 -0400
-Message-Id: <20120731044321.590062175@decadent.org.uk>
+	Tue, 31 Jul 2012 00:50:38 -0400
+Message-Id: <20120731044319.822042931@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 31 Jul 2012 05:44:14 +0100
+Date: Tue, 31 Jul 2012 05:44:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Theodore Tso <tytso@mit.edu>,
-        Brian Foster <bfoster@redhat.com>
-Subject: [ 64/73] ext4: undo ext4_calc_metadata_amount if we fail to claim space
+        alan@lxorguk.ukuu.org.uk, Dylan Reid <dgreid@chromium.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 53/73] ALSA: hda - Turn on PIN_OUT from hdmi playback prepare.
 In-Reply-To: <20120731044310.013763753@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,91 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Dylan Reid <dgreid@chromium.org>
 
-commit 03179fe92318e7934c180d96f12eff2cb36ef7b6 upstream.
+commit 9e76e6d031482194a5b24d8e9ab88063fbd6b4b5 upstream.
 
-The function ext4_calc_metadata_amount() has side effects, although
-it's not obvious from its function name.  So if we fail to claim
-space, regardless of whether we retry to claim the space again, or
-return an error, we need to undo these side effects.
+Turn on the pin widget's PIN_OUT bit from playback prepare. The pin is
+enabled in open, but is disabled in hdmi_init_pin which is called during
+system resume.  This causes a system suspend/resume during playback to
+mute HDMI/DP. Enabling the pin in prepare instead of open allows calling
+snd_pcm_prepare after a system resume to restore audio.
 
-Otherwise we can end up incorrectly calculating the number of metadata
-blocks needed for the operation, which was responsible for an xfstests
-failure for test #271 when using an ext2 file system with delalloc
-enabled.
-
-Reported-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/inode.c |   32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+ sound/pci/hda/patch_hdmi.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 25f809d..89b59cb 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1182,6 +1182,17 @@ static int ext4_da_reserve_space(struct inode *inode, ext4_lblk_t lblock)
- 	struct ext4_inode_info *ei = EXT4_I(inode);
- 	unsigned int md_needed;
- 	int ret;
-+	ext4_lblk_t save_last_lblock;
-+	int save_len;
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 0b4a1ea..641408d 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -876,7 +876,6 @@ static int hdmi_pcm_open(struct hda_pcm_stream *hinfo,
+ 	struct hdmi_spec_per_pin *per_pin;
+ 	struct hdmi_eld *eld;
+ 	struct hdmi_spec_per_cvt *per_cvt = NULL;
+-	int pinctl;
+ 
+ 	/* Validate hinfo */
+ 	pin_idx = hinfo_to_pin_index(spec, hinfo);
+@@ -912,11 +911,6 @@ static int hdmi_pcm_open(struct hda_pcm_stream *hinfo,
+ 	snd_hda_codec_write(codec, per_pin->pin_nid, 0,
+ 			    AC_VERB_SET_CONNECT_SEL,
+ 			    mux_idx);
+-	pinctl = snd_hda_codec_read(codec, per_pin->pin_nid, 0,
+-				    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
+-	snd_hda_codec_write(codec, per_pin->pin_nid, 0,
+-			    AC_VERB_SET_PIN_WIDGET_CONTROL,
+-			    pinctl | PIN_OUT);
+ 	snd_hda_spdif_ctls_assign(codec, pin_idx, per_cvt->cvt_nid);
+ 
+ 	/* Initially set the converter's capabilities */
+@@ -1153,11 +1147,17 @@ static int generic_hdmi_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
+ 	struct hdmi_spec *spec = codec->spec;
+ 	int pin_idx = hinfo_to_pin_index(spec, hinfo);
+ 	hda_nid_t pin_nid = spec->pins[pin_idx].pin_nid;
++	int pinctl;
+ 
+ 	hdmi_set_channel_count(codec, cvt_nid, substream->runtime->channels);
+ 
+ 	hdmi_setup_audio_infoframe(codec, pin_idx, substream);
+ 
++	pinctl = snd_hda_codec_read(codec, pin_nid, 0,
++				    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
++	snd_hda_codec_write(codec, pin_nid, 0,
++			    AC_VERB_SET_PIN_WIDGET_CONTROL, pinctl | PIN_OUT);
 +
-+	/*
-+	 * We will charge metadata quota at writeout time; this saves
-+	 * us from metadata over-estimation, though we may go over by
-+	 * a small amount in the end.  Here we just reserve for data.
-+	 */
-+	ret = dquot_reserve_block(inode, EXT4_C2B(sbi, 1));
-+	if (ret)
-+		return ret;
+ 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
+ }
  
- 	/*
- 	 * recalculate the amount of metadata blocks to reserve
-@@ -1190,32 +1201,31 @@ static int ext4_da_reserve_space(struct inode *inode, ext4_lblk_t lblock)
- 	 */
- repeat:
- 	spin_lock(&ei->i_block_reservation_lock);
-+	/*
-+	 * ext4_calc_metadata_amount() has side effects, which we have
-+	 * to be prepared undo if we fail to claim space.
-+	 */
-+	save_len = ei->i_da_metadata_calc_len;
-+	save_last_lblock = ei->i_da_metadata_calc_last_lblock;
- 	md_needed = EXT4_NUM_B2C(sbi,
- 				 ext4_calc_metadata_amount(inode, lblock));
- 	trace_ext4_da_reserve_space(inode, md_needed);
--	spin_unlock(&ei->i_block_reservation_lock);
- 
- 	/*
--	 * We will charge metadata quota at writeout time; this saves
--	 * us from metadata over-estimation, though we may go over by
--	 * a small amount in the end.  Here we just reserve for data.
--	 */
--	ret = dquot_reserve_block(inode, EXT4_C2B(sbi, 1));
--	if (ret)
--		return ret;
--	/*
- 	 * We do still charge estimated metadata to the sb though;
- 	 * we cannot afford to run out of free blocks.
- 	 */
- 	if (ext4_claim_free_clusters(sbi, md_needed + 1, 0)) {
--		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
-+		ei->i_da_metadata_calc_len = save_len;
-+		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
-+		spin_unlock(&ei->i_block_reservation_lock);
- 		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
- 			yield();
- 			goto repeat;
- 		}
-+		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
- 		return -ENOSPC;
- 	}
--	spin_lock(&ei->i_block_reservation_lock);
- 	ei->i_reserved_data_blocks++;
- 	ei->i_reserved_meta_blocks += md_needed;
- 	spin_unlock(&ei->i_block_reservation_lock);
 
 
