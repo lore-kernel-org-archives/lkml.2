@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2GaOh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:37:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9554 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab2GaOhz (ORCPT
+	id S1754684Ab2GaOiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:38:08 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50179 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754393Ab2GaOiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:37:55 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=goZ1qfjQ0_kA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=T_9CT6wo05-J89-kAzQA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343745474.27983.50.camel@gandalf.stny.rr.com>
-Subject: [GIT PULL][v3.7] (was: Re: [PATCH 00/19] [GIT PULL][v3.6]) ftrace:
- Allow kprobes to work with ftace
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 31 Jul 2012 10:37:54 -0400
-In-Reply-To: <1343663487.27983.7.camel@gandalf.stny.rr.com>
-References: <20120721021943.274162381@goodmis.org>
-	 <1343663487.27983.7.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jul 2012 10:38:05 -0400
+Message-ID: <5017EDCA.4020601@linaro.org>
+Date: Tue, 31 Jul 2012 15:38:02 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
+ subsequent widgets to fail too
+References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-3-git-send-email-lee.jones@linaro.org> <20120731134214.GK4468@opensource.wolfsonmicro.com> <5017EAC3.3080504@linaro.org> <20120731142820.GW4468@opensource.wolfsonmicro.com>
+In-Reply-To: <20120731142820.GW4468@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-30 at 11:51 -0400, Steven Rostedt wrote:
+On 31/07/12 15:28, Mark Brown wrote:
+> On Tue, Jul 31, 2012 at 03:25:07PM +0100, Lee Jones wrote:
+>> On 31/07/12 14:42, Mark Brown wrote:
+>
+>>> You're posting this *again* without bothering to respond to my review
+>>> comments.
+>
+>> I didn't see any comments on this.
+>
+> Read your email.  <20120726115450.GE3099@opensource.wolfsonmicro.com>
+> and <20120729202510.GB4384@opensource.wolfsonmicro.com>, the second one
+> even includes a complaint about you ignoring the first mail.
 
-> As the merge window opened the day after I sent this (which was also the
-> same day I left for vacation :-p ), I recommend that this goes in v3.7.
-> 
-> Can you pull this in for 3.7, or do you want me to post another pull
-> request after the merge window closes?
+Neither of those are in my Inbox. Blame Mozilla. :)
 
-Hi Ingo,
+It's better because the whole audio system doesn't fail in the case of 
+minor failure. It'd be like calling off a football game (or whatever 
+you're into) because one of the substitutes ruptured an eyelash.
 
-I just rebased the branch to include Masami's reviewed by tag that he
-posted for Uros Bizjak's patch. No code has changed.
+During start-up the ux500 has a couple of very unimportant widgets fail. 
+It's the wrong behavior to force failure on the everything audio just 
+because of that.
 
-
-Please pull the latest tip/perf/core tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/core
-
-Head SHA1: e52538965119319447c0800c534da73142c27be2
-
-
-Masami Hiramatsu (5):
-      ftrace: add ftrace_set_filter_ip() for address based filter
-      kprobes: cleanup to separate probe-able check
-      kprobes: Move locks into appropriate functions
-      kprobes: introduce ftrace based optimization
-      kprobes/x86: ftrace based optimization for x86
-
-Steven Rostedt (13):
-      ftrace: Pass ftrace_ops as third parameter to function trace callback
-      ftrace: Consolidate arch dependent functions with 'list' function
-      ftrace: Return pt_regs to function trace callback
-      ftrace/x86_32: Push ftrace_ops in as 3rd parameter to function tracer
-      ftrace/x86: Add separate function to save regs
-      ftrace/x86: Add save_regs for i386 function calls
-      ftrace/x86: Remove function_trace_stop check from graph caller
-      ftrace: Add default recursion protection for function tracing
-      ftrace: Only compile ftrace selftest if selftests are enabled
-      ftrace: Add selftest to test function trace recursion protection
-      ftrace: Add selftest to test function save-regs support
-      kprobes: Inverse taking of module_mutex with kprobe_mutex
-      ftrace: Make ftrace_location() a nop on !DYNAMIC_FTRACE
-
-Uros Bizjak (1):
-      ftrace/x86_32: Simplify parameter setup for ftrace_regs_caller
-
-----
- arch/x86/include/asm/ftrace.h     |   49 +++---
- arch/x86/include/asm/kprobes.h    |    1 +
- arch/x86/kernel/entry_32.S        |   75 ++++++++-
- arch/x86/kernel/entry_64.S        |   96 +++++++++--
- arch/x86/kernel/ftrace.c          |   73 ++++++++-
- arch/x86/kernel/kprobes.c         |   48 ++++++
- include/linux/ftrace.h            |  158 ++++++++++++++++--
- include/linux/kprobes.h           |   27 ++++
- kernel/kprobes.c                  |  250 ++++++++++++++++++++--------
- kernel/trace/Makefile             |    2 +
- kernel/trace/ftrace.c             |  322 ++++++++++++++++++++++++++++---------
- kernel/trace/trace.h              |    2 +-
- kernel/trace/trace_event_perf.c   |    3 +-
- kernel/trace/trace_events.c       |    4 +-
- kernel/trace/trace_functions.c    |   14 +-
- kernel/trace/trace_irqsoff.c      |    5 +-
- kernel/trace/trace_sched_wakeup.c |    5 +-
- kernel/trace/trace_selftest.c     |  277 ++++++++++++++++++++++++++++++-
- kernel/trace/trace_stack.c        |    4 +-
- 19 files changed, 1199 insertions(+), 216 deletions(-)
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
