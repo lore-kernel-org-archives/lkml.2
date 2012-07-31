@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab2GaWIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 18:08:49 -0400
-Received: from ozlabs.org ([203.10.76.45]:37955 "EHLO ozlabs.org"
+	id S1754653Ab2GaWLT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 18:11:19 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57612 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754457Ab2GaWIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 18:08:47 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, anton@samba.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: CRYPTO_DEV_NX merge problem (Re: linux-next: Tree for July 31)
-In-reply-to: <19970.1343772018@neuling.org>
-References: <20120731152614.de6ebe9e0d4b8fc6645b793a@canb.auug.org.au> <31974.1343714338@neuling.org> <5017DE06.3000103@linux.vnet.ibm.com> <19970.1343772018@neuling.org>
-Comments: In-reply-to Michael Neuling <mikey@neuling.org>
-   message dated "Wed, 01 Aug 2012 08:00:18 +1000."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
-Date: Wed, 01 Aug 2012 08:08:46 +1000
-Message-ID: <20653.1343772526@neuling.org>
+	id S1752795Ab2GaWLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 18:11:18 -0400
+Date: Wed, 1 Aug 2012 00:11:13 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: awful kconfig help texts.
+Message-ID: <20120731221113.GA10201@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Thierry Reding <thierry.reding@avionic-design.de>
+References: <20120731151600.GA19412@redhat.com>
+ <20120731170741.GA4735@x1.osrc.amd.com>
+ <20120731184313.GA30493@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120731184313.GA30493@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> wrote:
-> Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+On Tue, Jul 31, 2012 at 02:43:13PM -0400, Dave Jones wrote:
+> On Tue, Jul 31, 2012 at 07:07:41PM +0200, Borislav Petkov wrote:
+>  > Oh, there's one more enlightening sentence in the help:
+>  > 
+>  > "You only need to enable this, if you also want to enable one or more of
+>  > the PWM drivers below."
+>  > 
+>  > Got it? :-)
 > 
-> > On 07/31/2012 12:58 AM, Michael Neuling wrote:
-> > >> Please do not add anything to linux-next included branches/series that is
-> > >> destined for v3.7 until after v3.6-rc1 is released.
-> > > 
-> > > Looks like there is a merge conflict between:
-> > >   commit 1b074ac867a2bd08a6f12f0feed7d91e06941723
-> > >   Author: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > >   Subject: powerpc/crypto: rework Kconfig
-> > > 
-> > > and 
-> > >   commit fd297b3a7302ab866306f53c1fd1e97b083fe83e
-> > >   Author: Anton Blanchard <anton@samba.org>
-> > >   powerpc: Enable pseries hardware RNG and crypto modules
-> > > 
-> > > Seth made CRYPTO_DEV_NX a bool and Anton set it as a module.
-> > > 
-> > > Hence I get this with a pseries_defconfig
-> > >   arch/powerpc/configs/pseries_defconfig:372:warning: symbol value 'm' invalid for CRYPTO_DEV_NX
-> > > 
-> > > Seth: any reason this can stay as a tristate?
-> > 
-> > My patch converted CRYPTO_DEV_NX to a submenu access config
-> > and the functionality that used to be enabled by it is now
-> > enabled by CRYPTO_DEV_NX_ENCRYPT.
-> > 
-> > The resolution is to change Anton's patch from
-> > 
-> > +CONFIG_CRYPTO_DEV_NX=m
-> > 
-> > to
-> > 
-> > +CONFIG_CRYPTO_DEV_NX=y
-> > +CONFIG_CRYPTO_DEV_NX_ENCRYPT=m
-> 
-> Seth,  
-> 
-> OK.  Please post the fix as a patch.  Anton's patch is already in the
-> powerpc next tree so it won't be changed/rebased directly.  
-> 
-> I'm not sure who can carry this, since the crypto tree doesn't have
-> Anton's change and the powerpc tree doesn't have Seth's change.
+> No, it doesn't add anything useful at all.
 
-Actually Anton's patch is upstream (not just powerpc tree) so this fix
-need to go on top of Seth's original patch.  
+Sorry, I think you misunderstood me and I didn't express my irony
+adequately - I was trying to be ironic, maybe even sarcastic here. But
+that's hard to convey in written form.
 
-Seth, your patch breaks mainline pseries/ppc64_defconfig.  You need to
-fix this and send to the crypto tree after you get an ack from
-Anton/Benh.
+> I know PWM is probably pulse width modulation, but why would my kernel
+> need to care about this ? Why would I need drivers for it ?
+>
+> Also, think about what happens with 'oldconfig'. You don't get to even
+> see 'the drivers below' until you've answered this question.
+>
+> It couldn't be more opaque if it tried.
 
-Mikey
+I agree with all you've said and you're preaching to the choir. Sorry
+that I didn't make my sarcasm more explicit.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
