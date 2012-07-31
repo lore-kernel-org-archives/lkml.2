@@ -1,119 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab2GaH0M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 03:26:12 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59421 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755602Ab2GaH0J convert rfc822-to-8bit (ORCPT
+	id S1755677Ab2GaH1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 03:27:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58486 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628Ab2GaH1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 03:26:09 -0400
+	Tue, 31 Jul 2012 03:27:23 -0400
+Date: Tue, 31 Jul 2012 00:27:17 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Baodong Chen <chenbdchenbd@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fixed a macro coding style issue
+Message-ID: <20120731072717.GC32327@core.coreip.homeip.net>
+References: <no>
+ <1343193656-2643-1-git-send-email-chenbdchenbd@gmail.com>
+ <20120725053755.GA2100@core.coreip.homeip.net>
+ <20120725061512.GB6481@ZenIV.linux.org.uk>
+ <20120725063624.GA6546@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <20120730213656.0a9f6d30@neptune.home>
-References: <20120730213656.0a9f6d30@neptune.home>
-Date: Tue, 31 Jul 2012 09:26:07 +0200
-Message-ID: <CANq1E4Tb1Er+O54rN3OteMXqeXAXDr4Z-dvY+RQxZW_NdAfifw@mail.gmail.com>
-Subject: Re: [PATCH 0/7] HID: picoLCD updates
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, Jaya Kumar <jayalk@intworks.biz>,
-        linux-fbdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120725063624.GA6546@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bruno
+On Tue, Jul 24, 2012 at 11:36:24PM -0700, Dmitry Torokhov wrote:
+> On Wed, Jul 25, 2012 at 07:15:12AM +0100, Al Viro wrote:
+> > On Tue, Jul 24, 2012 at 10:37:55PM -0700, Dmitry Torokhov wrote:
+> > > On Wed, Jul 25, 2012 at 01:20:56PM +0800, Baodong Chen wrote:
+> > > > Fixed a coding style issue in driver/input/input.c
+> > > > 
+> > > > Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
+> > > > ---
+> > > >  drivers/input/input.c |    6 ++++--
+> > > >  1 files changed, 4 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/input/input.c b/drivers/input/input.c
+> > > > index 8921c61..c96e983 100644
+> > > > --- a/drivers/input/input.c
+> > > > +++ b/drivers/input/input.c
+> > > > @@ -845,11 +845,13 @@ int input_set_keycode(struct input_dev *dev,
+> > > >  EXPORT_SYMBOL(input_set_keycode);
+> > > >  
+> > > >  #define MATCH_BIT(bit, max) \
+> > > > +	do { \
+> > > >  		for (i = 0; i < BITS_TO_LONGS(max); i++) \
+> > > >  			if ((id->bit[i] & dev->bit[i]) != id->bit[i]) \
+> > > >  				break; \
+> > > > -		if (i != BITS_TO_LONGS(max)) \
+> > > > -			continue;
+> > > > +			if (i != BITS_TO_LONGS(max)) \
+> > > > +				continue; \
+> > > > +	} while (0)
+> > > 
+> > > This changes semantics. While current implementation of MATCH_BIT might
+> > > not be great style, it is not supposed to be used outside of
+> > > input_match_device(), and the replacement is completely broken.
+> > 
+> > Replacement is certainly completely broken, but "might not be great style"
+> > is quite an understatement.  Everything else aside, it's too obfuscated
+> > and ugly for anything outside of IOCCC and too verbose for IOCCC.
+> > 
+> > Damnit, at least turn that into
+> > static inline int is_subset(unsigned long *bitmap1, unsigned long *bitmap2, size_t bits)
+> > {
+> > 	int i;
+> > 	for (i = BITS_TO_LONGS(bits); i; bitmap1++, bitmap2++, i--)
+> > 		if ((*bitmap1 & *bitmap2) != *bitmap1)
+> > 			return 0;
+> > 	return 1;
+> > }
+> > and just before your loop
+> > /* ignore ones that don't have bits required by id */
+> > #define MATCH_BIT(array, bits) if (!is_subset(id->array, dev->array, bits)) continue;
+> 
+> Hmm, we already have bitmap_subset(), I think we can simply use it.
+> 
+> > with #undef MATCH_BIT right after the loop, to make it damn clean that it's local.
+> > And frankly, I'd consider expanding that variant and killing the macro off.
+> > Macros that affect control flow are vile and actively confusing for reader.
+> 
+> I agree. In my defense it is quite old code...
 
-On Mon, Jul 30, 2012 at 9:36 PM, Bruno Prémont
-<bonbons@linux-vserver.org> wrote:
-> Hi,
->
-> This series updates picoLCD driver:
-> - split the driver functions into separate files which get included
->   depending on Kconfig selection
->   (implementation for CIR using RC_CORE will follow later)
-> - drop private framebuffer refcounting in favor of refcounting added
->   to fb_info some time ago
-> - fix various bugs issues
-> - disabled firmware version checking in probe() as it does not work
->   anymore since commit 4ea5454203d991ec85264f64f89ca8855fce69b0
->   [HID: Fix race condition between driver core and ll-driver]
->
-> Note: I still get weird behavior on quick unbind/bind sequences
-> issued via sysfs (CONFIG_SMP=n system) that are triggered by framebuffer
-> support and apparently more specifically fb_defio part of it.
->
-> Unfortunately I'm out of ideas as to how to track down the problem which
-> shows either as SLAB corruption (detected with SLUB debugging, e.g.
->
-> [ 6383.521833] =============================================================================
-> [ 6383.530020] BUG kmalloc-64 (Not tainted): Object already free
-> [ 6383.530020] -----------------------------------------------------------------------------
-> [ 6383.530020]
-> [ 6383.530020] INFO: Slab 0xdde0ea20 objects=51 used=40 fp=0xcef516e0 flags=0x40000080
-> [ 6383.530020] INFO: Object 0xcef51190 @offset=400 fp=0xcef51f50
-> [ 6383.530020]
-> [ 6383.530020] Bytes b4 cef51180: cc cc cc cc d0 12 f5 ce 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
-> [ 6383.530020] Object cef51190: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 6383.530020] Object cef511a0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 6383.530020] Object cef511b0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 6383.530020] Object cef511c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
-> [ 6383.530020] Redzone cef511d0: bb bb bb bb                                      ....
-> [ 6383.530020] Padding cef511d8: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
-> [ 6383.530020] Pid: 1922, comm: bash Not tainted 3.5.0-jupiter-00003-g8d858b1-dirty #2
-> [ 6383.530020] Call Trace:
-> [ 6383.530020]  [<c10bd3cc>] print_trailer+0x11c/0x130
-> [ 6383.530020]  [<c10bd415>] object_err+0x35/0x40
-> [ 6383.530020]  [<c10be809>] free_debug_processing+0x99/0x200
-> [ 6383.530020]  [<c10bf77e>] __slab_free+0x2e/0x280
-> [ 6383.530020]  [<c1322284>] ? hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322870>] ? __usbhid_submit_report+0xc0/0x3c0
-> [ 6383.530020]  [<c10bfbda>] ? kfree+0xfa/0x110
-> [ 6383.530020]  [<de932aa4>] ? picolcd_debug_out_report+0x8c4/0x8e0 [hid_picolcd]
-> [ 6383.530020]  [<c10bfbda>] kfree+0xfa/0x110
-> [ 6383.530020]  [<c1322284>] ? hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322284>] ? hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322284>] ? hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322284>] hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322908>] __usbhid_submit_report+0x158/0x3c0
-> [ 6383.530020]  [<c1322c2b>] usbhid_submit_report+0x1b/0x30
-> [ 6383.530020]  [<de930789>] picolcd_fb_reset+0xb9/0x180 [hid_picolcd]
-> [ 6383.530020]  [<de930f1d>] picolcd_init_framebuffer+0x20d/0x2e0 [hid_picolcd]
-> [ 6383.530020]  [<de92fb9c>] picolcd_probe+0x3cc/0x580 [hid_picolcd]
-> [ 6383.530020]  [<c1319147>] hid_device_probe+0x67/0xf0
-> [ 6383.530020]  [<c1282f97>] ? driver_sysfs_add+0x57/0x80
-> [ 6383.530020]  [<c128329d>] driver_probe_device+0xbd/0x1c0
-> [ 6383.530020]  [<c1318a1b>] ? hid_match_device+0x7b/0x90
-> [ 6383.530020]  [<c12821e5>] driver_bind+0x75/0xd0
-> [ 6383.530020]  [<c1282170>] ? driver_unbind+0x90/0x90
-> [ 6383.530020]  [<c12818b7>] drv_attr_store+0x27/0x30
-> [ 6383.530020]  [<c1114aec>] sysfs_write_file+0xac/0xf0
-> [ 6383.530020]  [<c10c794c>] vfs_write+0x9c/0x130
-> [ 6383.530020]  [<c10d4a1f>] ? sys_dup3+0x11f/0x160
-> [ 6383.530020]  [<c1114a40>] ? sysfs_poll+0x90/0x90
-> [ 6383.530020]  [<c10c7bbd>] sys_write+0x3d/0x70
-> [ 6383.530020]  [<c13f2557>] sysenter_do_call+0x12/0x26
-> [ 6383.530020] FIX kmalloc-64: Object at 0xcef51190 not freed
->
-> or worse spontaneous reboot of the system without any trace on netconsole or
-> serial console.
->
-> echo $devid > bind; echo $devid > unbind
-> or
-> echo $devid > bind; echo $devid > unbind; sleep 0.2; echo $devid > bind; echo $devid > unbind
->
-> is sufficient to trigger the above issue while waiting a few seconds between bind and unbind
-> shows no sign of trouble.
->
-> Suggestions as to how to debug this and fix it are welcome!
+So how about the patch below?
 
-This is not directly related to this patchset, but did you fix the
-locking issue with hid-core? It is still on my todo-list but I haven't
-gotten around fixing it, yet. However, I plan on fixing it this
-summer, but if picolcd does not require it, it's probably not worth
-the work.
+-- 
+Dmitry
 
-Regards
-David
+Input: get rid of MATCH_BIT() macro
+
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+MATCH_BIT() is ugly and stupid, we have much nicer bitmap_subset() which
+does the same and does not hide control flow.
+
+Reported-by: Baodong Chen <chenbdchenbd@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+
+ drivers/input/input.c |   43 ++++++++++++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 17 deletions(-)
+
+
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index 8921c61..768e46b 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -844,18 +844,10 @@ int input_set_keycode(struct input_dev *dev,
+ }
+ EXPORT_SYMBOL(input_set_keycode);
+ 
+-#define MATCH_BIT(bit, max) \
+-		for (i = 0; i < BITS_TO_LONGS(max); i++) \
+-			if ((id->bit[i] & dev->bit[i]) != id->bit[i]) \
+-				break; \
+-		if (i != BITS_TO_LONGS(max)) \
+-			continue;
+-
+ static const struct input_device_id *input_match_device(struct input_handler *handler,
+ 							struct input_dev *dev)
+ {
+ 	const struct input_device_id *id;
+-	int i;
+ 
+ 	for (id = handler->id_table; id->flags || id->driver_info; id++) {
+ 
+@@ -875,15 +867,32 @@ static const struct input_device_id *input_match_device(struct input_handler *ha
+ 			if (id->version != dev->id.version)
+ 				continue;
+ 
+-		MATCH_BIT(evbit,  EV_MAX);
+-		MATCH_BIT(keybit, KEY_MAX);
+-		MATCH_BIT(relbit, REL_MAX);
+-		MATCH_BIT(absbit, ABS_MAX);
+-		MATCH_BIT(mscbit, MSC_MAX);
+-		MATCH_BIT(ledbit, LED_MAX);
+-		MATCH_BIT(sndbit, SND_MAX);
+-		MATCH_BIT(ffbit,  FF_MAX);
+-		MATCH_BIT(swbit,  SW_MAX);
++		if (!bitmap_subset(id->evbit, dev->evbit, EV_MAX))
++			continue;
++
++		if (!bitmap_subset(id->keybit, dev->keybit, KEY_MAX))
++			continue;
++
++		if (!bitmap_subset(id->relbit, dev->relbit, REL_MAX))
++			continue;
++
++		if (!bitmap_subset(id->absbit, dev->absbit, ABS_MAX))
++			continue;
++
++		if (!bitmap_subset(id->mscbit, dev->mscbit, MSC_MAX))
++			continue;
++
++		if (!bitmap_subset(id->ledbit, dev->ledbit, LED_MAX))
++			continue;
++
++		if (!bitmap_subset(id->sndbit, dev->sndbit, SND_MAX))
++			continue;
++
++		if (!bitmap_subset(id->ffbit, dev->ffbit, FF_MAX))
++			continue;
++
++		if (!bitmap_subset(id->swbit, dev->swbit, SW_MAX))
++			continue;
+ 
+ 		if (!handler->match || handler->match(handler, dev))
+ 			return id;
