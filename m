@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2GaI6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 04:58:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62612 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab2GaI57 (ORCPT
+	id S1755960Ab2GaI6V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 04:58:21 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56479 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755939Ab2GaI6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 04:57:59 -0400
+	Tue, 31 Jul 2012 04:58:20 -0400
+Date: Tue, 31 Jul 2012 09:58:15 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [vfs:fsfreeze] umount BUG: sleeping function called from invalid
+ context
+Message-ID: <20120731085815.GF6481@ZenIV.linux.org.uk>
+References: <20120731083839.GC14475@localhost>
 MIME-Version: 1.0
-In-Reply-To: <50179CF0.7050200@parallels.com>
-References: <500D09C9.7060903@parallels.com>
-	<500D1116.7070301@parallels.com>
-	<CAFLxGvwUhEPNdQvUnue2QFu_EipmBKD3nf0MfMWkqwLTf7jd5Q@mail.gmail.com>
-	<50179CF0.7050200@parallels.com>
-Date: Tue, 31 Jul 2012 10:57:58 +0200
-Message-ID: <CAFLxGvygCxER3gHfj-onwnm_m6xugOVkynGyJU2CDheD3A2HOQ@mail.gmail.com>
-Subject: Re: [Announce] Checkpoint-restore tool v0.1
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "lwn@lwn.net" <lwn@lwn.net>, "criu@openvz.org" <criu@openvz.org>,
-        "users@openvz.org" <users@openvz.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731083839.GC14475@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 10:53 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
-> On 07/30/2012 02:42 PM, richard -rw- weinberger wrote:
->> On Mon, Jul 23, 2012 at 10:53 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
->>> This project is an attempt to implement the checkpoint-restore functionality
->>> for processes and containers without driving too much code into the kernel tree,
->>> but putting there "various oddball helper code" instead.
->>
->> Is CRIU able to checkpoint a process tree where one or more processes
->> are traced using ptrace()?
->
-> No it's not (currently).
->
->> crtools seem to use ptrace() to execute parasite system calls.
->> AFAIK this will only work if the target process is currently not
->> ptraced() by another process.
->>
->
-> Yup, exactly.
+On Tue, Jul 31, 2012 at 04:38:39PM +0800, Fengguang Wu wrote:
+> Hi Jan,
+> 
+> Here is another warning for the fs freeze series.
+> 
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git fsfreeze
+> head:   7aff72a61f45337d83ab2b7fb16d7b542db16ad8
+> commit: bc875c078f72993e6c44925cdedef5a304ca7429 [37/51] fs: Improve filesystem freezing handling
+> 
+> The warning shows up reliably since commit bc875c0. The 2nd commit
+> 51205f9 triggers the same warning as the previous email.
 
-Dammit, I hoped we can get suspend/resume for UserModeLinux for free
-with CRIU. 8-)
-
--- 
-Thanks,
-//richard
+That one is fixed in the end of #fsfreeze (for testing purposes only) and then the right
+way in #for-next (by making percpu_list_lock a  spinlock).
