@@ -1,59 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab2GaGlu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:41:50 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:24435
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754249Ab2GaGlr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:41:47 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dI9371I542Mzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
-From: Singh Sandeep-B37400 <B37400@freescale.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Francois Romieu <romieu@fr.zoreil.com>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [2/3][PATCH][v2] TDM Framework
-Thread-Topic: [2/3][PATCH][v2] TDM Framework
-Thread-Index: AQHNbADsHRsnZfKnik2om4CTBsszqJc9k/oAgAS8jgCAAKZH8A==
-Date: Tue, 31 Jul 2012 06:41:41 +0000
-Message-ID: <3F1D9DCAAB49B94D88DBE05911FA4E6E511B93@039-SN1MPN1-006.039d.mgd.msft.net>
-References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
- <20120727152542.GB1613@electric-eye.fr.zoreil.com>
- <20120730154536.GA3218@sirena.org.uk>
-In-Reply-To: <20120730154536.GA3218@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.134.45]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1754739Ab2GaGlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:41:20 -0400
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:58932 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754501Ab2GaGlR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 02:41:17 -0400
+From: Chao Xie <xiechao.mail@gmail.com>
+To: haojian.zhuang@gmail.com, mturquette@linaro.org, arnd@arndb.de,
+        viresh.linux@gmail.com, s.hauer@pengutronix.de, chao.xie@marvell.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Chao Xie <xiechao.mail@gmail.com>
+Subject: [PATCH 3/5] clk: mmp: add clock definition for pxa910
+Date: Tue, 31 Jul 2012 14:39:51 +0800
+Message-Id: <1343716792-10399-3-git-send-email-xiechao.mail@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com>
+References: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com>
+X-OriginalArrivalTime: 31 Jul 2012 06:39:46.0952 (UTC) FILETIME=[46E4E880:01CD6EE7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com] 
-Sent: Monday, July 30, 2012 9:16 PM
-To: Francois Romieu
-Cc: Singh Sandeep-B37400; devel@driverdev.osuosl.org; linuxppc-dev@lists.ozlabs.org; galak@kernel.crashing.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org
-Subject: Re: [2/3][PATCH][v2] TDM Framework
+From: Chao Xie <chao.xie@marvell.com>
 
-On Fri, Jul 27, 2012 at 05:25:42PM +0200, Francois Romieu wrote:
+Initialize the clocks for pxa910
 
-> 2. It would probably make sense to Cc: netdev and serial. There may be
->    some kernel client network integration from the start.
+Signed-off-by: Chao Xie <xiechao.mail@gmail.com>
+---
+ drivers/clk/mmp/Makefile     |    1 +
+ drivers/clk/mmp/clk-pxa910.c |  249 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 250 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clk/mmp/clk-pxa910.c
 
-Plus audio, quite a few of the buses mentioned as examples of use cases for the hardware are audio ones.
-[Sandeep] Ok
-
+diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
+index 8bbf882..4fe1d15 100644
+--- a/drivers/clk/mmp/Makefile
++++ b/drivers/clk/mmp/Makefile
+@@ -5,3 +5,4 @@
+ obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-pll2.o
+ 
+ obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
++obj-$(CONFIG_CPU_PXA910) += clk-pxa910.o
+diff --git a/drivers/clk/mmp/clk-pxa910.c b/drivers/clk/mmp/clk-pxa910.c
+new file mode 100644
+index 0000000..7522883
+--- /dev/null
++++ b/drivers/clk/mmp/clk-pxa910.c
+@@ -0,0 +1,249 @@
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/spinlock.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++
++#include <mach/addr-map.h>
++
++#include "clk.h"
++
++#define APBC_RTC	APBC_REG(0x28)
++#define APBC_TWSI0	APBC_REG(0x2c)
++#define APBC_KPC	APBC_REG(0x30)
++#define APBC_UART0	APBC_REG(0x00)
++#define APBC_UART1	APBC_REG(0x04)
++#define APBC_GPIO	APBC_REG(0x08)
++#define APBC_PWM0	APBC_REG(0x0c)
++#define APBC_PWM1	APBC_REG(0x10)
++#define APBC_PWM2	APBC_REG(0x14)
++#define APBC_PWM3	APBC_REG(0x18)
++#define APBC_SSP0	APBC_REG(0x1c)
++#define APBC_SSP1	APBC_REG(0x20)
++#define APBC_SSP2	APBC_REG(0x4c)
++#define APBC_TWSI1	APBCP_REG(0x28)
++#define APBC_UART2	APBCP_REG(0x1c)
++
++#define APMU_SDH0	APMU_REG(0x54)
++#define APMU_SDH1	APMU_REG(0x58)
++#define APMU_USB	APMU_REG(0x5c)
++#define APMU_DISP0	APMU_REG(0x4c)
++#define APMU_CCIC0	APMU_REG(0x50)
++#define APMU_DFC	APMU_REG(0x60)
++
++static DEFINE_SPINLOCK(mmp_clk_lock);
++
++enum pll_clk {
++	clk32,
++	pll1, pll1_2, pll1_4, pll1_8, pll1_16,
++	pll1_6, pll1_12, pll1_24, pll1_48, pll1_96,
++	pll1_13, pll1_13_1_5, pll1_2_1_5, pll1_3_16,
++	pll2,
++	vctcxo,
++	uart_pll,
++	pll_max,
++};
++
++enum apbc_clk {
++	uart0_clk, uart1_clk, uart2_clk,
++	pwm0_clk, pwm1_clk, pwm2_clk, pwm3_clk,
++	twsi0_clk, twsi1_clk,
++	ssp0_clk, ssp1_clk, ssp2_clk,
++	gpio_clk, kpc_clk, rtc_clk,
++	uart0_mux_clk, uart1_mux_clk, uart2_mux_clk,
++	ssp0_mux_clk, ssp1_mux_clk, ssp2_mux_clk,
++	apbc_max,
++};
++
++enum apmu_clk {
++	sdh0_mux_clk, sdh1_mux_clk,
++	sdh0_clk, sdh1_clk,
++	dfc_clk,
++	usb_clk, sph_clk,
++	disp0_mux_clk, disp0_clk,
++	ccic0_mux_clk, ccic0_clk,
++	ccic0_phy_mux_clk, ccic0_phy_clk, ccic0_sphy_div_clk, ccic0_sphy_clk,
++	apmu_max,
++};
++
++static struct clk_factor_masks factor_masks = {
++	.num_mask = 0x1fff,
++	.den_mask = 0x1fff,
++	.num_shift = 16,
++	.den_shift = 0,
++};
++
++static struct clk_factor_tbl factor_tbl[] = {
++	{.num = 8125,	.den = 1536},	/* 14.745MHZ */
++};
++
++static const char *uart_parent[] = {"pll1_3_16", "uart_pll"};
++static const char *ssp_parent[] = {"pll1_96", "pll1_48", "pll1_24", "pll1_12"};
++static const char *sdh_parent[] = {"pll1_12", "pll1_13"};
++static const char *disp_parent[] = {"pll1_2", "pll1_12"};
++static const char *ccic_parent[] = {"pll1_2", "pll1_12"};
++static const char *ccic_phy_parent[] = {"pll1_6", "pll1_12"};
++
++void __init pxa910_clk_init(void)
++{
++	struct clk *pll_clks[pll_max];
++	struct clk *apbc_clks[apbc_max];
++	struct clk *apmu_clks[apmu_max];
++	/* all root clocks */
++	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, clk32, 32000);
++	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, vctcxo, 26000000);
++	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, pll1, 624000000);
++	pll_clks[pll2] = mmp_clk_register_pll2("pll2", "vctcxo", 0);
++	clk_register_clkdev(pll_clks[pll2], NULL, "pll2");
++
++	/* PLL1 */
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_2, pll1,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_4, pll1_2,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_8, pll1_4,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_16, pll1_8,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_6, pll1_2,
++					CLK_SET_RATE_PARENT, 1, 3);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_12, pll1_6,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_24, pll1_12,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_48, pll1_24,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_96, pll1_48,
++					CLK_SET_RATE_PARENT, 1, 2);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_13, pll1,
++					CLK_SET_RATE_PARENT, 1, 13);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_13_1_5, pll1_13,
++					CLK_SET_RATE_PARENT, 2, 3);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_2_1_5, pll1_2,
++					CLK_SET_RATE_PARENT, 2, 3);
++	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_3_16, pll1,
++					CLK_SET_RATE_PARENT, 3, 16);
++	pll_clks[uart_pll] = mmp_clk_register_factor("uart_pll", "pll1_4", 0,
++				MPMU_REG(0x14), &factor_masks, factor_tbl,
++				ARRAY_SIZE(factor_tbl));
++	clk_set_rate(pll_clks[uart_pll], 14745600);
++	/* PLL2 */
++
++	/* APBC devices without mux parent */
++	MMP_CLK_REGISTER_APBC(apbc_clks, twsi0_clk, pll1_13_1_5, 10,
++			APBC_TWSI0, 0, "pxa2xx-i2c.0", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, twsi1_clk, pll1_13_1_5, 10,
++			APBC_TWSI1, 0, "pxa2xx-i2c.1", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, gpio_clk, vctcxo, 10,
++			APBC_GPIO, 0, "pxa-gpio", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, kpc_clk, clk32k, 10,
++			APBC_KPC, 0, "pxa27x-keypad", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, rtc_clk, clk32k, 10,
++			APBC_RTC, APBC_POWER_CTRL, "sa1100-rtc", NULL,
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, pwm0_clk, pll1_48, 10,
++			APBC_PWM0, 0, "pxa168-pwm.0", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, pwm1_clk, pll1_48, 10,
++			APBC_PWM1, 0, "pxa168-pwm.1", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, pwm2_clk, pll1_48, 10,
++			APBC_PWM2, 0, "pxa168-pwm.2", NULL, &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, pwm3_clk, pll1_48, 10,
++			APBC_PWM3, 0, "pxa168-pwm.3", NULL, &mmp_clk_lock);
++
++	/* APBC devices with mux parent */
++	MMP_CLK_REGISTER_MUX(apbc_clks, uart0_mux_clk, uart_parent,
++			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
++			APBC_UART0, 4, 3, 0, NULL, "uart_mux.0",
++			&mmp_clk_lock);
++	clk_set_parent(apbc_clks[uart0_mux_clk], pll_clks[uart_pll]);
++	MMP_CLK_REGISTER_APBC(apbc_clks, uart0_clk, uart0_mux_clk, 10,
++			APBC_UART0, 0, "pxa2xx-uart.0", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, uart1_mux_clk, uart_parent,
++			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
++			APBC_UART1, 4, 3, 0, NULL, "uart_mux.1",
++			&mmp_clk_lock);
++	clk_set_parent(apbc_clks[uart1_mux_clk], pll_clks[uart_pll]);
++	MMP_CLK_REGISTER_APBC(apbc_clks, uart1_clk, uart1_mux_clk, 10,
++			APBC_UART1, 0, "pxa2xx-uart.1", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, uart2_mux_clk, uart_parent,
++			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
++			APBC_UART2, 4, 3, 0, NULL, "uart_mux.2",
++			&mmp_clk_lock);
++	clk_set_parent(apbc_clks[uart2_mux_clk], pll_clks[uart_pll]);
++	MMP_CLK_REGISTER_APBC(apbc_clks, uart2_clk, uart2_mux_clk, 10,
++			APBC_UART2, 0, "pxa2xx-uart.2", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, ssp0_mux_clk, ssp_parent,
++			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
++			APBC_SSP0, 4, 3, 0, NULL, "ssp_mux.0", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, ssp0_clk, ssp0_mux_clk, 10,
++			APBC_SSP0, 0, "pxa168-ssp.0", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, ssp1_mux_clk, ssp_parent,
++			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
++			APBC_SSP1, 4, 3, 0, NULL, "ssp_mux.1", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, ssp1_clk, ssp1_mux_clk, 10,
++			APBC_SSP1, 0, "pxa168-ssp.1", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apbc_clks, ssp2_mux_clk, ssp_parent,
++			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
++			APBC_SSP2, 4, 3, 0, NULL, "ssp_mux.2", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APBC(apbc_clks, ssp2_clk, ssp2_mux_clk, 10,
++			APBC_SSP2, 0, "pxa168-ssp.2", NULL, &mmp_clk_lock);
++
++	/* APMU devices */
++	/* nand */
++	MMP_CLK_REGISTER_APMU(apmu_clks, dfc_clk, pll1_4, APMU_DFC,
++			0x19b, "pxa3xx-nand.0", NULL, &mmp_clk_lock);
++	/* sdh */
++	MMP_CLK_REGISTER_MUX(apmu_clks, sdh0_mux_clk, sdh_parent,
++			ARRAY_SIZE(sdh_parent), CLK_SET_RATE_PARENT,
++			APMU_SDH0, 6, 1, 0, NULL, "sdh_mux.0", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, sdh0_clk, sdh_mux_clk, APMU_SDH0,
++			0x1b, "sdhci-pxa.0", NULL, &mmp_clk_lock);
++
++	MMP_CLK_REGISTER_MUX(apmu_clks, sdh1_mux_clk, sdh_parent,
++			ARRAY_SIZE(sdh_parent), CLK_SET_RATE_PARENT,
++			APMU_SDH1, 6, 1, 0, NULL, "sdh_mux.1", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, sdh1_clk, sdh1_mux_clk, APMU_SDH1,
++			0x1b, "sdhci-pxa.1", NULL, &mmp_clk_lock);
++
++	/* usb */
++	MMP_CLK_REGISTER_APMU(apmu_clks, usb_clk, usb_pll, APMU_USB,
++			0x9, NULL, "usb-clk", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, sph_clk, usb_pll, APMU_USB,
++			0x12, NULL, "sph-clk", &mmp_clk_lock);
++
++	/* display */
++	MMP_CLK_REGISTER_MUX(apmu_clks, disp0_mux_clk, disp_parent,
++			ARRAY_SIZE(disp_parent), CLK_SET_RATE_PARENT,
++			APMU_DISP0, 6, 1, 0, NULL, "disp_mux.0",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, disp0_clk, disp0_mux_clk, APMU_DISP0,
++			0x1b, "mmp-disp.0", "fnclk", &mmp_clk_lock);
++
++	/* ccic */
++	MMP_CLK_REGISTER_MUX(apmu_clks, ccic0_mux_clk, ccic_parent,
++			ARRAY_SIZE(ccic_parent), CLK_SET_RATE_PARENT,
++			APMU_CCIC0, 6, 1, 0, NULL, "ccic_mux.0",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic0_clk, ccic0_mux_clk, APMU_CCIC0,
++			0x1b, "mmp-ccic.0", "fnclk", &mmp_clk_lock);
++	MMP_CLK_REGISTER_MUX(apmu_clks, ccic0_phy_mux_clk, ccic_phy_parent,
++			ARRAY_SIZE(ccic_phy_parent), CLK_SET_RATE_PARENT,
++			APMU_CCIC0, 7, 1, 0, NULL, "ccic_phy_mux.0",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic0_phy_clk, ccic0_phy_mux_clk,
++			APMU_CCIC0, 0x24, "mmp-ccic.0", "phyclk",
++			&mmp_clk_lock);
++	MMP_CLK_REGISTER_DIV(apmu_clks, ccic0_sphy_div_clk, ccic0_mux_clk,
++			0, APMU_CCIC0, 10, 5, 0,
++			"mmp-ccic.0", "sphyclk_div", &mmp_clk_lock);
++	MMP_CLK_REGISTER_APMU(apmu_clks, ccic0_sphy_clk, ccic0_sphy_div_clk,
++			APMU_CCIC0, 0x300, "mmp-ccic.0", "sphyclk",
++			&mmp_clk_lock);
++
++}
+-- 
+1.7.0.4
 
