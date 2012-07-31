@@ -1,113 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab2GaNop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 09:44:45 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33375 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050Ab2GaNj0 (ORCPT
+	id S1753495Ab2GaNpy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 09:45:54 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63558 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752929Ab2GaNpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 09:39:26 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 02/19] ASoC: Ux500: Enable MOP500 driver for Device Tree
-Date: Tue, 31 Jul 2012 14:38:56 +0100
-Message-Id: <1343741953-17828-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
-References: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
+	Tue, 31 Jul 2012 09:45:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120730181542.GA987@jonmason-lab>
+References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
+ <1343607994-32415-2-git-send-email-jon.mason@intel.com> <CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
+ <20120730181542.GA987@jonmason-lab>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 31 Jul 2012 07:45:29 -0600
+Message-ID: <CAErSpo6gjMf4C3RMn5YLNg5JtJ8CjHvTw1iqsKPa6YuRqPe90g@mail.gmail.com>
+Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we ensure that the MOP500 audio driver will be probed during a
-Device Tree boot. We also parse the sound node to link together the
-codec, dma and the CPU-side Digital Audio Interface.
+On Mon, Jul 30, 2012 at 12:15 PM, Jon Mason <jon.mason@intel.com> wrote:
+> On Mon, Jul 30, 2012 at 10:50:13AM -0600, Bjorn Helgaas wrote:
+>> On Sun, Jul 29, 2012 at 6:26 PM, Jon Mason <jon.mason@intel.com> wrote:
+>> > A PCI-Express non-transparent bridge (NTB) is a point-to-point PCIe bus
+>> > connecting 2 systems, providing electrical isolation between the two subsystems.
+>> > A non-transparent bridge is functionally similar to a transparent bridge except
+>> > that both sides of the bridge have their own independent address domains.  The
+>> > host on one side of the bridge will not have the visibility of the complete
+>> > memory or I/O space on the other side of the bridge.  To communicate across the
+>> > non-transparent bridge, each NTB endpoint has one (or more) apertures exposed to
+>> > the local system.  Writes to these apertures are mirrored to memory on the
+>> > remote system.  Communications can also occur through the use of doorbell
+>> > registers that initiate interrupts to the alternate domain, and scratch-pad
+>> > registers accessible from both sides.
+>> >
+>> > The NTB device driver is needed to configure these memory windows, doorbell, and
+>> > scratch-pad registers as well as use them in such a way as they can be turned
+>> > into a viable communication channel to the remote system.  ntb_hw.[ch]
+>> > determines the usage model (NTB to NTB or NTB to Root Port) and abstracts away
+>> > the underlying hardware to provide access and a common interface to the doorbell
+>> > registers, scratch pads, and memory windows.  These hardware interfaces are
+>> > exported so that other, non-mainlined kernel drivers can access these.
+>> > ntb_transport.[ch] also uses the exported interfaces in ntb_hw.[ch] to setup a
+>> > communication channel(s) and provide a reliable way of transferring data from
+>> > one side to the other, which it then exports so that "client" drivers can access
+>> > them.  These client drivers are used to provide a standard kernel interface
+>> > (i.e., Ethernet device) to NTB, such that Linux can transfer data from one
+>> > system to the other in a standard way.
+>> >
+>> > Signed-off-by: Jon Mason <jon.mason@intel.com>
+>> > ---
+>> >  MAINTAINERS                 |    6 +
+>> >  drivers/Kconfig             |    2 +
+>> >  drivers/Makefile            |    1 +
+>> >  drivers/ntb/Kconfig         |   13 +
+>> >  drivers/ntb/Makefile        |    3 +
+>> >  drivers/ntb/ntb_hw.c        | 1178 ++++++++++++++++++++++++++++++++++++
+>> >  drivers/ntb/ntb_hw.h        |  206 +++++++
+>> >  drivers/ntb/ntb_regs.h      |  150 +++++
+>> >  drivers/ntb/ntb_transport.c | 1387 +++++++++++++++++++++++++++++++++++++++++++
+>> >  include/linux/ntb.h         |   92 +++
+>>
+>> Where will drivers for non-Intel NTBs fit in this hierarchy?  It seems
+>> a bit presumptuous to claim the generic "ntb" names just for Intel
+>> devices.
+>
+> I've tried to make it all generic enough that non-Intel NTBs should plug in with
+> minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
+> redesign of ntb_hw.c might be necessary.  But from what I've seen of other
+> designs on the internet, they appear to be extremely similar.  The transport and
+> client drivers were written with the hardware abstracted away as much as
+> possible to prevent the need to modify it for different hardware.  If there is
+> anything which is Intel hardware specific, I'd be happy to change it to make it
+> more generic.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- sound/soc/ux500/mop500.c |   38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
-
-diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
-index 31c4d26..821f2a9 100644
---- a/sound/soc/ux500/mop500.c
-+++ b/sound/soc/ux500/mop500.c
-@@ -16,6 +16,7 @@
- #include <linux/module.h>
- #include <linux/io.h>
- #include <linux/spi/spi.h>
-+#include <linux/of.h>
- 
- #include <sound/soc.h>
- #include <sound/initval.h>
-@@ -56,14 +57,45 @@ static struct snd_soc_card mop500_card = {
- 	.num_links = ARRAY_SIZE(mop500_dai_links),
- };
- 
-+static int __devinit mop500_of_probe(struct platform_device *pdev,
-+				struct device_node *np)
-+{
-+	struct device_node *codec_np, *msp_np[2];
-+	int i;
-+
-+	msp_np[0] = of_parse_phandle(np, "stericsson,cpu-dai", 0);
-+	msp_np[1] = of_parse_phandle(np, "stericsson,cpu-dai", 1);
-+	codec_np  = of_parse_phandle(np, "stericsson,audio-codec", 0);
-+
-+	if (!(msp_np[0] && msp_np[1] && codec_np)) {
-+		dev_err(&pdev->dev, "Phandle missing or invalid\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < 2; i++) {
-+		mop500_dai_links[i].cpu_of_node = msp_np[i];
-+		mop500_dai_links[i].cpu_dai_name = NULL;
-+		mop500_dai_links[i].codec_of_node = codec_np;
-+		mop500_dai_links[i].codec_name = NULL;
-+	}
-+
-+	return 0;
-+}
- static int __devinit mop500_probe(struct platform_device *pdev)
- {
-+	struct device_node *np = pdev->dev.of_node;
- 	int ret;
- 
- 	pr_debug("%s: Enter.\n", __func__);
- 
- 	dev_dbg(&pdev->dev, "%s: Enter.\n", __func__);
- 
-+	if (np) {
-+		ret = mop500_of_probe(pdev, np);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	mop500_card.dev = &pdev->dev;
- 
- 	dev_dbg(&pdev->dev, "%s: Card %s: Set platform drvdata.\n",
-@@ -101,10 +133,16 @@ static int __devexit mop500_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id snd_soc_mop500_match[] = {
-+	{ .compatible = "stericsson,snd-soc-mop500", },
-+	{},
-+};
-+
- static struct platform_driver snd_soc_mop500_driver = {
- 	.driver = {
- 		.owner = THIS_MODULE,
- 		.name = "snd-soc-mop500",
-+		.of_match_table = snd_soc_mop500_match,
- 	},
- 	.probe = mop500_probe,
- 	.remove = __devexit_p(mop500_remove),
--- 
-1.7.9.5
-
+That makes sense from a technical point of view, but I think it's
+going to cause maintenance issues.  For example, assume PLX NTB
+support is added.  Will PLX be happy about having to convince you to
+accept changes?  Will Intel be happy about having to release a new
+driver for their hardware just to incorporate a PLX bug fix?  Will
+users of PLX hardware accept a new driver release that only benefits
+Intel users?
