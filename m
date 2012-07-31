@@ -1,303 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab2GaGlU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:41:20 -0400
-Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:58932 "EHLO
-	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754501Ab2GaGlR (ORCPT
+	id S1754659Ab2GaGnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:43:12 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:56492 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab2GaGnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:41:17 -0400
-From: Chao Xie <xiechao.mail@gmail.com>
-To: haojian.zhuang@gmail.com, mturquette@linaro.org, arnd@arndb.de,
-        viresh.linux@gmail.com, s.hauer@pengutronix.de, chao.xie@marvell.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Chao Xie <xiechao.mail@gmail.com>
-Subject: [PATCH 3/5] clk: mmp: add clock definition for pxa910
-Date: Tue, 31 Jul 2012 14:39:51 +0800
-Message-Id: <1343716792-10399-3-git-send-email-xiechao.mail@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com>
-References: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com>
-X-OriginalArrivalTime: 31 Jul 2012 06:39:46.0952 (UTC) FILETIME=[46E4E880:01CD6EE7]
+	Tue, 31 Jul 2012 02:43:10 -0400
+Message-ID: <50178061.4010709@windriver.com>
+Date: Tue, 31 Jul 2012 14:51:13 +0800
+From: xufeng zhang <xufeng.zhang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
+MIME-Version: 1.0
+To: Vlad Yasevich <vyasevich@gmail.com>
+CC: Xufeng Zhang <xufengzhang.main@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>, <sri@us.ibm.com>,
+        <davem@davemloft.net>, <linux-sctp@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
+ SACK when bundling
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>	<500E1057.3020509@windriver.com>	<75bdd73e-1c47-4fd6-bc29-5b86ee6da69a@email.android.com>	<CA+=dFzg=Bpsv5bMzECoAXYVcbD95eYy6xDAzL6fwiHrunfq-tg@mail.gmail.com>	<e7f8a685-9635-4aa9-bd67-1044e0720b29@email.android.com>	<CA+=dFzifKwbiXmw=pu0+rWmz72+4jsbv6bXOBHyL0LmxaL9byg@mail.gmail.com>	<CA+=dFzgXq3Sx-Ny+6oDZ3BEdsMQCgswNEVPVnhmhedHFvazzWw@mail.gmail.com>	<50100A29.8010705@gmail.com>	<CA+=dFzj11c9K0TS0T7D1aBVz+ppdFK91ZzBbevLV23FrWJNzmw@mail.gmail.com>	<CA+=dFziK09TVcK29x1SLg+JanOj6o__bJKf8yohw6dTYCUCF5A@mail.gmail.com>	<8ea83e51-81d1-407a-be06-98d2c99c876d@email.android.com>	<CA+=dFzguqjjnnqHO53Mx859VB6NU=4MaPWAUzGQB2qtZGfdAUg@mail.gmail.com>	<5013069F.3080306@gmail.com>	<CA+=dFzh4dFatOy42FydbVvoXB8=5CvLu5AwPvUA16h+kymq0Lw@mail.gmail.com>	<CA+=dFzh1wQx2rBs_2RAwrXsz79WS3njnO8=2ntQZUbB5So69gg@mail.gmail.com> <CA+=dFzhXY9aJ6_Yu-4a3g+6RyN5_mxXY=U3HnzKdi8TH-rqWcA@mail.gmail.com>
+In-Reply-To: <CA+=dFzhXY9aJ6_Yu-4a3g+6RyN5_mxXY=U3HnzKdi8TH-rqWcA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chao Xie <chao.xie@marvell.com>
+Sorry, please ignore the above patch, there was an paste error.
+Please check the following patch.
+============================================
+I'm wondering if the below solution is fine to you which is based on
+your changes.
+BTW, I have verified this patch and it works ok for all the situation,
+but only one problem persists:
+there is a potential that commands will exceeds SCTP_MAX_NUM_COMMANDS
+which happens during sending lots of small error DATA chunks.
 
-Initialize the clocks for pxa910
+Thanks,
+Xufeng Zhang
 
-Signed-off-by: Chao Xie <xiechao.mail@gmail.com>
 ---
- drivers/clk/mmp/Makefile     |    1 +
- drivers/clk/mmp/clk-pxa910.c |  249 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 250 insertions(+), 0 deletions(-)
- create mode 100644 drivers/clk/mmp/clk-pxa910.c
+  include/net/sctp/command.h |    1 +
+  include/net/sctp/structs.h |    3 +++
+  net/sctp/outqueue.c        |    7 +++++++
+  net/sctp/sm_sideeffect.c   |   16 ++++++++++++++++
+  net/sctp/sm_statefuns.c    |   17 ++++++++++++++---
+  5 files changed, 41 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
-index 8bbf882..4fe1d15 100644
---- a/drivers/clk/mmp/Makefile
-+++ b/drivers/clk/mmp/Makefile
-@@ -5,3 +5,4 @@
- obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-pll2.o
- 
- obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
-+obj-$(CONFIG_CPU_PXA910) += clk-pxa910.o
-diff --git a/drivers/clk/mmp/clk-pxa910.c b/drivers/clk/mmp/clk-pxa910.c
-new file mode 100644
-index 0000000..7522883
---- /dev/null
-+++ b/drivers/clk/mmp/clk-pxa910.c
-@@ -0,0 +1,249 @@
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/spinlock.h>
-+#include <linux/io.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
+diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
+index 712b3be..62c34f5 100644
+--- a/include/net/sctp/command.h
++++ b/include/net/sctp/command.h
+@@ -110,6 +110,7 @@ typedef enum {
+         SCTP_CMD_SEND_NEXT_ASCONF, /* Send the next ASCONF after ACK */
+         SCTP_CMD_PURGE_ASCONF_QUEUE, /* Purge all asconf queues.*/
+         SCTP_CMD_SET_ASOC,       /* Restore association context */
++       SCTP_CMD_GEN_BAD_STREAM, /* Invalid Stream errors happened command */
+         SCTP_CMD_LAST
+  } sctp_verb_t;
+
+diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+index fc5e600..3d218e0 100644
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -1183,6 +1183,9 @@ struct sctp_outq {
+          */
+         struct list_head abandoned;
+
++       /* Put Invalid Stream error chunks on this list */
++       struct list_head bad_stream_err;
 +
-+#include <mach/addr-map.h>
+         /* How many unackd bytes do we have in-flight?  */
+         __u32 outstanding_bytes;
+
+diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+index e7aa177..1e87b0b 100644
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -211,6 +211,7 @@ void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
+         INIT_LIST_HEAD(&q->retransmit);
+         INIT_LIST_HEAD(&q->sacked);
+         INIT_LIST_HEAD(&q->abandoned);
++       INIT_LIST_HEAD(&q->bad_stream_err);
+
+         q->fast_rtx = 0;
+         q->outstanding_bytes = 0;
+@@ -283,6 +284,12 @@ void sctp_outq_teardown(struct sctp_outq *q)
+                 list_del_init(&chunk->list);
+                 sctp_chunk_free(chunk);
+         }
 +
-+#include "clk.h"
-+
-+#define APBC_RTC	APBC_REG(0x28)
-+#define APBC_TWSI0	APBC_REG(0x2c)
-+#define APBC_KPC	APBC_REG(0x30)
-+#define APBC_UART0	APBC_REG(0x00)
-+#define APBC_UART1	APBC_REG(0x04)
-+#define APBC_GPIO	APBC_REG(0x08)
-+#define APBC_PWM0	APBC_REG(0x0c)
-+#define APBC_PWM1	APBC_REG(0x10)
-+#define APBC_PWM2	APBC_REG(0x14)
-+#define APBC_PWM3	APBC_REG(0x18)
-+#define APBC_SSP0	APBC_REG(0x1c)
-+#define APBC_SSP1	APBC_REG(0x20)
-+#define APBC_SSP2	APBC_REG(0x4c)
-+#define APBC_TWSI1	APBCP_REG(0x28)
-+#define APBC_UART2	APBCP_REG(0x1c)
-+
-+#define APMU_SDH0	APMU_REG(0x54)
-+#define APMU_SDH1	APMU_REG(0x58)
-+#define APMU_USB	APMU_REG(0x5c)
-+#define APMU_DISP0	APMU_REG(0x4c)
-+#define APMU_CCIC0	APMU_REG(0x50)
-+#define APMU_DFC	APMU_REG(0x60)
-+
-+static DEFINE_SPINLOCK(mmp_clk_lock);
-+
-+enum pll_clk {
-+	clk32,
-+	pll1, pll1_2, pll1_4, pll1_8, pll1_16,
-+	pll1_6, pll1_12, pll1_24, pll1_48, pll1_96,
-+	pll1_13, pll1_13_1_5, pll1_2_1_5, pll1_3_16,
-+	pll2,
-+	vctcxo,
-+	uart_pll,
-+	pll_max,
-+};
-+
-+enum apbc_clk {
-+	uart0_clk, uart1_clk, uart2_clk,
-+	pwm0_clk, pwm1_clk, pwm2_clk, pwm3_clk,
-+	twsi0_clk, twsi1_clk,
-+	ssp0_clk, ssp1_clk, ssp2_clk,
-+	gpio_clk, kpc_clk, rtc_clk,
-+	uart0_mux_clk, uart1_mux_clk, uart2_mux_clk,
-+	ssp0_mux_clk, ssp1_mux_clk, ssp2_mux_clk,
-+	apbc_max,
-+};
-+
-+enum apmu_clk {
-+	sdh0_mux_clk, sdh1_mux_clk,
-+	sdh0_clk, sdh1_clk,
-+	dfc_clk,
-+	usb_clk, sph_clk,
-+	disp0_mux_clk, disp0_clk,
-+	ccic0_mux_clk, ccic0_clk,
-+	ccic0_phy_mux_clk, ccic0_phy_clk, ccic0_sphy_div_clk, ccic0_sphy_clk,
-+	apmu_max,
-+};
-+
-+static struct clk_factor_masks factor_masks = {
-+	.num_mask = 0x1fff,
-+	.den_mask = 0x1fff,
-+	.num_shift = 16,
-+	.den_shift = 0,
-+};
-+
-+static struct clk_factor_tbl factor_tbl[] = {
-+	{.num = 8125,	.den = 1536},	/* 14.745MHZ */
-+};
-+
-+static const char *uart_parent[] = {"pll1_3_16", "uart_pll"};
-+static const char *ssp_parent[] = {"pll1_96", "pll1_48", "pll1_24", "pll1_12"};
-+static const char *sdh_parent[] = {"pll1_12", "pll1_13"};
-+static const char *disp_parent[] = {"pll1_2", "pll1_12"};
-+static const char *ccic_parent[] = {"pll1_2", "pll1_12"};
-+static const char *ccic_phy_parent[] = {"pll1_6", "pll1_12"};
-+
-+void __init pxa910_clk_init(void)
++       /* Throw away any pending Invalid Stream error chunks */
++       list_for_each_entry_safe(chunk, tmp,&q->bad_stream_err, list) {
++               list_del_init(&chunk->list);
++               sctp_chunk_free(chunk);
++       }
+  }
+
+  /* Free the outqueue structure and any related pending chunks.  */
+diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
+index fe99628..4698593 100644
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -1060,6 +1060,18 @@ static void sctp_cmd_send_asconf(struct sctp_association *asoc)
+         }
+  }
+
++static void sctp_cmd_make_inv_stream_err(sctp_cmd_seq_t *commands,
++               struct sctp_association *asoc)
 +{
-+	struct clk *pll_clks[pll_max];
-+	struct clk *apbc_clks[apbc_max];
-+	struct clk *apmu_clks[apmu_max];
-+	/* all root clocks */
-+	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, clk32, 32000);
-+	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, vctcxo, 26000000);
-+	MMP_CLK_REGISTER_FIXED_RATE(pll_clks, pll1, 624000000);
-+	pll_clks[pll2] = mmp_clk_register_pll2("pll2", "vctcxo", 0);
-+	clk_register_clkdev(pll_clks[pll2], NULL, "pll2");
++       struct sctp_chunk *err, *tmp;
++       struct sctp_outq *q =&asoc->outqueue;
 +
-+	/* PLL1 */
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_2, pll1,
-+					CLK_SET_RATE_PARENT, 1, 2);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_4, pll1_2,
-+					CLK_SET_RATE_PARENT, 1, 2);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_8, pll1_4,
-+					CLK_SET_RATE_PARENT, 1, 2);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_16, pll1_8,
-+					CLK_SET_RATE_PARENT, 1, 2);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_6, pll1_2,
-+					CLK_SET_RATE_PARENT, 1, 3);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_12, pll1_6,
-+					CLK_SET_RATE_PARENT, 1, 2);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_24, pll1_12,
-+					CLK_SET_RATE_PARENT, 1, 2);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_48, pll1_24,
-+					CLK_SET_RATE_PARENT, 1, 2);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_96, pll1_48,
-+					CLK_SET_RATE_PARENT, 1, 2);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_13, pll1,
-+					CLK_SET_RATE_PARENT, 1, 13);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_13_1_5, pll1_13,
-+					CLK_SET_RATE_PARENT, 2, 3);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_2_1_5, pll1_2,
-+					CLK_SET_RATE_PARENT, 2, 3);
-+	MMP_CLK_REGISTER_FIXED_FACTOR(pll_clks, pll1_3_16, pll1,
-+					CLK_SET_RATE_PARENT, 3, 16);
-+	pll_clks[uart_pll] = mmp_clk_register_factor("uart_pll", "pll1_4", 0,
-+				MPMU_REG(0x14), &factor_masks, factor_tbl,
-+				ARRAY_SIZE(factor_tbl));
-+	clk_set_rate(pll_clks[uart_pll], 14745600);
-+	/* PLL2 */
-+
-+	/* APBC devices without mux parent */
-+	MMP_CLK_REGISTER_APBC(apbc_clks, twsi0_clk, pll1_13_1_5, 10,
-+			APBC_TWSI0, 0, "pxa2xx-i2c.0", NULL, &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, twsi1_clk, pll1_13_1_5, 10,
-+			APBC_TWSI1, 0, "pxa2xx-i2c.1", NULL, &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, gpio_clk, vctcxo, 10,
-+			APBC_GPIO, 0, "pxa-gpio", NULL, &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, kpc_clk, clk32k, 10,
-+			APBC_KPC, 0, "pxa27x-keypad", NULL, &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, rtc_clk, clk32k, 10,
-+			APBC_RTC, APBC_POWER_CTRL, "sa1100-rtc", NULL,
-+			&mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, pwm0_clk, pll1_48, 10,
-+			APBC_PWM0, 0, "pxa168-pwm.0", NULL, &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, pwm1_clk, pll1_48, 10,
-+			APBC_PWM1, 0, "pxa168-pwm.1", NULL, &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, pwm2_clk, pll1_48, 10,
-+			APBC_PWM2, 0, "pxa168-pwm.2", NULL, &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, pwm3_clk, pll1_48, 10,
-+			APBC_PWM3, 0, "pxa168-pwm.3", NULL, &mmp_clk_lock);
-+
-+	/* APBC devices with mux parent */
-+	MMP_CLK_REGISTER_MUX(apbc_clks, uart0_mux_clk, uart_parent,
-+			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
-+			APBC_UART0, 4, 3, 0, NULL, "uart_mux.0",
-+			&mmp_clk_lock);
-+	clk_set_parent(apbc_clks[uart0_mux_clk], pll_clks[uart_pll]);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, uart0_clk, uart0_mux_clk, 10,
-+			APBC_UART0, 0, "pxa2xx-uart.0", NULL, &mmp_clk_lock);
-+
-+	MMP_CLK_REGISTER_MUX(apbc_clks, uart1_mux_clk, uart_parent,
-+			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
-+			APBC_UART1, 4, 3, 0, NULL, "uart_mux.1",
-+			&mmp_clk_lock);
-+	clk_set_parent(apbc_clks[uart1_mux_clk], pll_clks[uart_pll]);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, uart1_clk, uart1_mux_clk, 10,
-+			APBC_UART1, 0, "pxa2xx-uart.1", NULL, &mmp_clk_lock);
-+
-+	MMP_CLK_REGISTER_MUX(apbc_clks, uart2_mux_clk, uart_parent,
-+			ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
-+			APBC_UART2, 4, 3, 0, NULL, "uart_mux.2",
-+			&mmp_clk_lock);
-+	clk_set_parent(apbc_clks[uart2_mux_clk], pll_clks[uart_pll]);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, uart2_clk, uart2_mux_clk, 10,
-+			APBC_UART2, 0, "pxa2xx-uart.2", NULL, &mmp_clk_lock);
-+
-+	MMP_CLK_REGISTER_MUX(apbc_clks, ssp0_mux_clk, ssp_parent,
-+			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
-+			APBC_SSP0, 4, 3, 0, NULL, "ssp_mux.0", &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, ssp0_clk, ssp0_mux_clk, 10,
-+			APBC_SSP0, 0, "pxa168-ssp.0", NULL, &mmp_clk_lock);
-+
-+	MMP_CLK_REGISTER_MUX(apbc_clks, ssp1_mux_clk, ssp_parent,
-+			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
-+			APBC_SSP1, 4, 3, 0, NULL, "ssp_mux.1", &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, ssp1_clk, ssp1_mux_clk, 10,
-+			APBC_SSP1, 0, "pxa168-ssp.1", NULL, &mmp_clk_lock);
-+
-+	MMP_CLK_REGISTER_MUX(apbc_clks, ssp2_mux_clk, ssp_parent,
-+			ARRAY_SIZE(ssp_parent), CLK_SET_RATE_PARENT,
-+			APBC_SSP2, 4, 3, 0, NULL, "ssp_mux.2", &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APBC(apbc_clks, ssp2_clk, ssp2_mux_clk, 10,
-+			APBC_SSP2, 0, "pxa168-ssp.2", NULL, &mmp_clk_lock);
-+
-+	/* APMU devices */
-+	/* nand */
-+	MMP_CLK_REGISTER_APMU(apmu_clks, dfc_clk, pll1_4, APMU_DFC,
-+			0x19b, "pxa3xx-nand.0", NULL, &mmp_clk_lock);
-+	/* sdh */
-+	MMP_CLK_REGISTER_MUX(apmu_clks, sdh0_mux_clk, sdh_parent,
-+			ARRAY_SIZE(sdh_parent), CLK_SET_RATE_PARENT,
-+			APMU_SDH0, 6, 1, 0, NULL, "sdh_mux.0", &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APMU(apmu_clks, sdh0_clk, sdh_mux_clk, APMU_SDH0,
-+			0x1b, "sdhci-pxa.0", NULL, &mmp_clk_lock);
-+
-+	MMP_CLK_REGISTER_MUX(apmu_clks, sdh1_mux_clk, sdh_parent,
-+			ARRAY_SIZE(sdh_parent), CLK_SET_RATE_PARENT,
-+			APMU_SDH1, 6, 1, 0, NULL, "sdh_mux.1", &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APMU(apmu_clks, sdh1_clk, sdh1_mux_clk, APMU_SDH1,
-+			0x1b, "sdhci-pxa.1", NULL, &mmp_clk_lock);
-+
-+	/* usb */
-+	MMP_CLK_REGISTER_APMU(apmu_clks, usb_clk, usb_pll, APMU_USB,
-+			0x9, NULL, "usb-clk", &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APMU(apmu_clks, sph_clk, usb_pll, APMU_USB,
-+			0x12, NULL, "sph-clk", &mmp_clk_lock);
-+
-+	/* display */
-+	MMP_CLK_REGISTER_MUX(apmu_clks, disp0_mux_clk, disp_parent,
-+			ARRAY_SIZE(disp_parent), CLK_SET_RATE_PARENT,
-+			APMU_DISP0, 6, 1, 0, NULL, "disp_mux.0",
-+			&mmp_clk_lock);
-+	MMP_CLK_REGISTER_APMU(apmu_clks, disp0_clk, disp0_mux_clk, APMU_DISP0,
-+			0x1b, "mmp-disp.0", "fnclk", &mmp_clk_lock);
-+
-+	/* ccic */
-+	MMP_CLK_REGISTER_MUX(apmu_clks, ccic0_mux_clk, ccic_parent,
-+			ARRAY_SIZE(ccic_parent), CLK_SET_RATE_PARENT,
-+			APMU_CCIC0, 6, 1, 0, NULL, "ccic_mux.0",
-+			&mmp_clk_lock);
-+	MMP_CLK_REGISTER_APMU(apmu_clks, ccic0_clk, ccic0_mux_clk, APMU_CCIC0,
-+			0x1b, "mmp-ccic.0", "fnclk", &mmp_clk_lock);
-+	MMP_CLK_REGISTER_MUX(apmu_clks, ccic0_phy_mux_clk, ccic_phy_parent,
-+			ARRAY_SIZE(ccic_phy_parent), CLK_SET_RATE_PARENT,
-+			APMU_CCIC0, 7, 1, 0, NULL, "ccic_phy_mux.0",
-+			&mmp_clk_lock);
-+	MMP_CLK_REGISTER_APMU(apmu_clks, ccic0_phy_clk, ccic0_phy_mux_clk,
-+			APMU_CCIC0, 0x24, "mmp-ccic.0", "phyclk",
-+			&mmp_clk_lock);
-+	MMP_CLK_REGISTER_DIV(apmu_clks, ccic0_sphy_div_clk, ccic0_mux_clk,
-+			0, APMU_CCIC0, 10, 5, 0,
-+			"mmp-ccic.0", "sphyclk_div", &mmp_clk_lock);
-+	MMP_CLK_REGISTER_APMU(apmu_clks, ccic0_sphy_clk, ccic0_sphy_div_clk,
-+			APMU_CCIC0, 0x300, "mmp-ccic.0", "sphyclk",
-+			&mmp_clk_lock);
-+
++       list_for_each_entry_safe(err, tmp,&q->bad_stream_err, list) {
++               list_del_init(&err->list);
++               sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
++                               SCTP_CHUNK(err));
++       }
 +}
+
+  /* These three macros allow us to pull the debugging code out of the
+   * main flow of sctp_do_sm() to keep attention focused on the real
+@@ -1724,6 +1736,10 @@ static int sctp_cmd_interpreter(sctp_event_t event_type,
+                         asoc = cmd->obj.asoc;
+                         break;
+
++               case SCTP_CMD_GEN_BAD_STREAM:
++                       sctp_cmd_make_inv_stream_err(commands, asoc);
++                       break;
++
+                 default:
+                         pr_warn("Impossible command: %u, %p\n",
+                                 cmd->verb, cmd->obj.ptr);
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index 9fca103..1c1bcd9 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -2967,8 +2967,14 @@ discard_force:
+         return SCTP_DISPOSITION_DISCARD;
+
+  discard_noforce:
+-       if (chunk->end_of_packet)
++       if (chunk->end_of_packet) {
++               struct sctp_outq *q =&asoc->outqueue;
+                 sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, force);
++               /* Queue the INVALID STREAM error after the SACK if one is needed. */
++               if (!list_empty(&q->bad_stream_err))
++                       sctp_add_cmd_sf(commands, SCTP_CMD_GEN_BAD_STREAM,
++                                       SCTP_NULL());
++       }
+
+         return SCTP_DISPOSITION_DISCARD;
+  consume:
+@@ -3037,11 +3043,16 @@ sctp_disposition_t sctp_sf_eat_data_fast_4_4(const struct sctp_endpoint *ep,
+          * with a SACK, a SHUTDOWN chunk, and restart the T2-shutdown timer
+          */
+         if (chunk->end_of_packet) {
++               struct sctp_outq *q =&asoc->outqueue;
+                 /* We must delay the chunk creation since the cumulative
+                  * TSN has not been updated yet.
+                  */
+                 sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SHUTDOWN, SCTP_NULL());
+                 sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, SCTP_FORCE());
++               /* Queue the INVALID STREAM error after the SACK if one is needed. */
++               if (!list_empty(&q->bad_stream_err))
++                       sctp_add_cmd_sf(commands, SCTP_CMD_GEN_BAD_STREAM,
++                                       SCTP_NULL());
+                 sctp_add_cmd_sf(commands, SCTP_CMD_TIMER_RESTART,
+                                 SCTP_TO(SCTP_EVENT_TIMEOUT_T2_SHUTDOWN));
+         }
+@@ -6136,6 +6147,7 @@ static int sctp_eat_data(const struct sctp_association *asoc,
+          */
+         sid = ntohs(data_hdr->stream);
+         if (sid>= asoc->c.sinit_max_instreams) {
++               struct sctp_outq *q =&asoc->outqueue;
+                 /* Mark tsn as received even though we drop it */
+                 sctp_add_cmd_sf(commands, SCTP_CMD_REPORT_TSN, SCTP_U32(tsn));
+
+@@ -6144,8 +6156,7 @@ static int sctp_eat_data(const struct sctp_association *asoc,
+                                          sizeof(data_hdr->stream),
+                                          sizeof(u16));
+                 if (err)
+-                       sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
+-                                       SCTP_CHUNK(err));
++                       list_add_tail(&err->list,&q->bad_stream_err);
+                 return SCTP_IERROR_BAD_STREAM;
+         }
+
 -- 
-1.7.0.4
+1.7.0.2
+
+
 
