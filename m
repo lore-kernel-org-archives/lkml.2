@@ -1,104 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab2GaIfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 04:35:19 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15140 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809Ab2GaIfP (ORCPT
+	id S1755903Ab2GaIh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 04:37:57 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65222 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755809Ab2GaIhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 04:35:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 31 Jul 2012 01:35:14 -0700
-Message-ID: <50179933.9090501@nvidia.com>
-Date: Tue, 31 Jul 2012 17:37:07 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 31 Jul 2012 04:37:55 -0400
+X-AuditID: 9c930197-b7b66ae000006a2c-95-501799603d74
+Message-ID: <50179960.2030007@lge.com>
+Date: Tue, 31 Jul 2012 17:37:52 +0900
+From: "kyungsik.lee" <kyungsik.lee@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Simon Glass <sjg@chromium.org>
-CC: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <CAPnjgZ0H2xrJcL-ytMaX11iYrrhCg7LEM00u_NgEaveM4gHMPw@mail.gmail.com>
-In-Reply-To: <CAPnjgZ0H2xrJcL-ytMaX11iYrrhCg7LEM00u_NgEaveM4gHMPw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "S, Venkatraman" <svenkatr@ti.com>
+CC: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v3] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
+References: <1343700024-29861-1-git-send-email-kyungsik.lee@lge.com> <CANfBPZ_9XOjgeeRk8zrNWHH1VgevXu74P4bYGcRBSVj7Rs6GEw@mail.gmail.com>
+In-Reply-To: <CANfBPZ_9XOjgeeRk8zrNWHH1VgevXu74P4bYGcRBSVj7Rs6GEw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
-
-On 07/30/2012 08:00 PM, Simon Glass wrote:
-> For the delay, I think milliseconds is reasonable. I suppose there is
-> no reasonable need for microseconds?
-
-I don't see any need for microseconds myself - anybody sees use for 
-finer-grained delays?
-
-Btw, I noticed I was using mdelay instead of msleep - caught and fixed that.
-
->> +Device tree
->> +-----------
->> +All the same, power sequences can be encoded as device tree nodes. The following
->> +properties and nodes are equivalent to the platform data defined previously:
+On 2012-07-31 오후 4:19, S, Venkatraman wrote:
+> On Tue, Jul 31, 2012 at 7:30 AM, Kyungsik Lee <kyungsik.lee@lge.com> wrote:
+>> It is expected that Extended CSD register(the size of this register
+>> is larger than CID/CSD) will be referenced more frequently as more
+>> fields have been added to Extended CSD and it seems that it is not
+>> a good option to double the memory used.
+>>
+>> This patch is intended to avoid the use of bounce buffer for reading
+>> Extended CSD register in mmc_send_cxd_data().
+>>
+>> Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+>> ---
+>> Changes in v2:
+>> - Handling on-stack buffer if it's used in caller.
+>>
+>> Changes in v3:
+>> - Remove unnecesary code.
+>> ---
+>>   drivers/mmc/core/mmc_ops.c |   54 ++++++++++++++++++++++++++++++++-----------
+>>   1 files changed, 40 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+>> index 0ed2cc5..036e6d5 100644
+>> --- a/drivers/mmc/core/mmc_ops.c
+>> +++ b/drivers/mmc/core/mmc_ops.c
+>> @@ -239,13 +239,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+>>          struct mmc_data data = {0};
+>>          struct scatterlist sg;
+>>          void *data_buf;
+>> +       int is_on_stack;
+>>
+>> -       /* dma onto stack is unsafe/nonportable, but callers to this
+>> -        * routine normally provide temporary on-stack buffers ...
+>> -        */
+>> -       data_buf = kmalloc(len, GFP_KERNEL);
+>> -       if (data_buf == NULL)
+>> -               return -ENOMEM;
+>> +       is_on_stack = object_is_on_stack(buf);
+>> +       if (is_on_stack) {
 >> +
->> +               power-supply = <&mydevice_reg>;
->> +               enable-gpio = <&gpio 6 0>;
+>> +               /* dma onto stack is unsafe/nonportable, but callers to this
+>> +                * routine normally provide temporary on-stack buffers ...
+>> +                */
+>> +               data_buf = kmalloc(len, GFP_KERNEL);
+>> +               if (data_buf == NULL)
+>> +                       return -ENOMEM;
+>> +       } else
+>> +               data_buf = buf;
+>>
+>>          mrq.cmd = &cmd;
+>>          mrq.data = &data;
+>> @@ -280,8 +286,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+>>
+>>          mmc_wait_for_req(host, &mrq);
+>>
+>> -       memcpy(buf, data_buf, len);
+>> -       kfree(data_buf);
+>> +       if (is_on_stack) {
+>> +               memcpy(buf, data_buf, len);
+>> +               kfree(data_buf);
+>> +       }
+>>
+>>          if (cmd.error)
+>>                  return cmd.error;
+>> @@ -294,24 +302,34 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+>>   int mmc_send_csd(struct mmc_card *card, u32 *csd)
+>>   {
+>>          int ret, i;
+>> +       u32 *csd_tmp;
+>>
+>>          if (!mmc_host_is_spi(card->host))
+>>                  return mmc_send_cxd_native(card->host, card->rca << 16,
+>>                                  csd, MMC_SEND_CSD);
+>>
+>> -       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
+>> +       csd_tmp = kmalloc(16, GFP_KERNEL);
+>> +       if (!csd_tmp)
+>> +               return -ENOMEM;
 >> +
->> +               power-on-sequence {
->> +                       regulator@0 {
->> +                               id = "power";
->
-> Is there a reason not to put the phandle here, like:
->
->                                     id = <&mydevice_reg>;
->
-> (or maybe 'device' instead of id?)
-
-There is one reason, but it might be a bad one. On Tegra, PWM phandle 
-uses an extra cell to encode the duty-cycle the PWM should have when we 
-call get_pwm(). This makes it possible to address the same PWM with 
-different phandles (and different duty cycles), which causes an issue to 
-know whether a PWM is already used in a sequence (potentially resulting 
-in multiple get_pwm calls on the same PWM, and also opens the door to 
-ambiguities in behavior (what is the correct duty-cycle to use if 
-several different values are passed?)
-
-Maybe the problem lies in how PWM phandles are handled - if duty-cycle 
-was not part of the information, we would not have this problem.
-
->> +Note that first, the phandles of the regulator and gpio used in the sequences
->> +are defined as properties. Then the sequence references them through the id
->> +property of every step. The name of sub-properties defines the type of the step.
->> +Valid names are "regulator", "gpio" and "pwm". Steps must be numbered
->> +sequentially.
->
-> For the regulator and gpio types I think you only have an enable. For
-> the pwm, what is the intended binding? Is that documented elsewhere?
-
-Same thing, enable/disable which would call pwm_enable and pwm_disable. 
-One could also image an additional property to set the duty cycle if it 
-can be taken off the phandle.
-
-> Also it might be worth mentioning how you get a struct power_seq from
-> an fdt node, and perhaps given an example of a device which has an
-> attached node, so we can see how it is referenced from the device
-> (of_parse_power_seq I think). Do put the sequence inside the device
-> node or reference it with a phandle?
-
-Yes, this definitely needs more documentation - especially the DT part.
+>> +       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
+>>          if (ret)
+>> -               return ret;
+>> +               goto err;
+>> +
+>> +       memcpy(csd, csd_tmp, 16);
+> Can this memcpy be folded into the for loop below
+> as for (....) { csd[i] = be32_to_cpu(csd_tmp[i]); ?
+Yes, you're right. I will fix it as you suggested.
 
 Thanks,
-Alex.
+Kyungsik Lee
+>>          for (i = 0;i < 4;i++)
+>>                  csd[i] = be32_to_cpu(csd[i]);
+>>
+>> -       return 0;
+>> +err:
+>> +       kfree(csd_tmp);
+>> +       return ret;
+>>   }
+>>
+>>   int mmc_send_cid(struct mmc_host *host, u32 *cid)
+>>   {
+>>          int ret, i;
+>> +       u32 *cid_tmp;
+>>
+>>          if (!mmc_host_is_spi(host)) {
+>>                  if (!host->card)
+>> @@ -320,14 +338,22 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
+>>                                  cid, MMC_SEND_CID);
+>>          }
+>>
+>> -       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
+>> +       cid_tmp = kmalloc(16, GFP_KERNEL);
+>> +       if (!cid_tmp)
+>> +               return -ENOMEM;
+>> +
+>> +       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
+>>          if (ret)
+>> -               return ret;
+>> +               goto err;
+>> +
+>> +       memcpy(cid, cid_tmp, 16);
+>>
+> <Same comment as above>
+>
+>>          for (i = 0;i < 4;i++)
+>>                  cid[i] = be32_to_cpu(cid[i]);
+>>
+>> -       return 0;
+>> +err:
+>> +       kfree(cid_tmp);
+>> +       return ret;
+>>   }
+>>
+>>   int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>> --
+>> 1.7.0.4
+>>
 
