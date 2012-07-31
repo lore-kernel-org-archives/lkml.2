@@ -1,85 +1,720 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab2GaGki (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 02:40:38 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:51652
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751870Ab2GaGkh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 02:40:37 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz9371I1102I542Mzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
-From: Singh Sandeep-B37400 <B37400@freescale.com>
-To: John Stoffel <john@stoffel.org>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: RE: [2/3][PATCH][v2] TDM Framework
-Thread-Topic: [2/3][PATCH][v2] TDM Framework
-Thread-Index: AQHNbADsHRsnZfKnik2om4CTBsszqJc9f0OAgAQPaJCAAKc3gIAAwCUg
-Date: Tue, 31 Jul 2012 06:40:31 +0000
-Message-ID: <3F1D9DCAAB49B94D88DBE05911FA4E6E511B76@039-SN1MPN1-006.039d.mgd.msft.net>
-References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
-	<20498.41365.853741.261834@quad.stoffel.home>
-	<3F1D9DCAAB49B94D88DBE05911FA4E6E511095@039-SN1MPN1-006.039d.mgd.msft.net>
- <20502.38341.619003.356462@quad.stoffel.home>
-In-Reply-To: <20502.38341.619003.356462@quad.stoffel.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.134.45]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1754375Ab2GaGk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 02:40:56 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:41297 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754026Ab2GaGky (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 02:40:54 -0400
+From: Chao Xie <xiechao.mail@gmail.com>
+To: haojian.zhuang@gmail.com, mturquette@linaro.org, arnd@arndb.de,
+        viresh.linux@gmail.com, s.hauer@pengutronix.de, chao.xie@marvell.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Chao Xie <xiechao.mail@gmail.com>
+Subject: [PATCH 1/5] clk: mmp: add mmp specific clocks
+Date: Tue, 31 Jul 2012 14:39:49 +0800
+Message-Id: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 31 Jul 2012 06:39:43.0827 (UTC) FILETIME=[45081230:01CD6EE7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Chao Xie <chao.xie@marvell.com>
 
------Original Message-----
-From: John Stoffel [mailto:john@stoffel.org] 
-Sent: Monday, July 30, 2012 7:40 PM
-To: Singh Sandeep-B37400
-Cc: John Stoffel; linuxppc-dev@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; galak@kernel.crashing.org; linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
-Subject: RE: [2/3][PATCH][v2] TDM Framework
+add mmp specific clocks including apbc cloks, apmu clocks,
+and pll2, fraction clocks
 
->>>>> "Singh" == Singh Sandeep-B37400 <B37400@freescale.com> writes:
+Signed-off-by: Chao Xie <xiechao.mail@gmail.com>
+---
+ drivers/clk/Makefile       |    3 +
+ drivers/clk/mmp/Makefile   |    5 ++
+ drivers/clk/mmp/clk-apbc.c |  141 +++++++++++++++++++++++++++++++++++++++
+ drivers/clk/mmp/clk-apmu.c |   86 ++++++++++++++++++++++++
+ drivers/clk/mmp/clk-frac.c |  142 ++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/mmp/clk-pll2.c |  156 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/mmp/clk.h      |   95 +++++++++++++++++++++++++++
+ 7 files changed, 628 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clk/mmp/Makefile
+ create mode 100644 drivers/clk/mmp/clk-apbc.c
+ create mode 100644 drivers/clk/mmp/clk-apmu.c
+ create mode 100644 drivers/clk/mmp/clk-frac.c
+ create mode 100644 drivers/clk/mmp/clk-pll2.c
+ create mode 100644 drivers/clk/mmp/clk.h
 
-Singh> -----Original Message-----
-Singh> From: John Stoffel [mailto:john@stoffel.org]
-Singh> Sent: 27 July 2012 19:42
-Singh> To: Singh Sandeep-B37400
-Singh> Cc: linuxppc-dev@lists.ozlabs.org; 
-Singh> linux-arm-kernel@lists.infradead.org; galak@kernel.crashing.org; 
-Singh> linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
-Singh> Subject: Re: [2/3][PATCH][v2] TDM Framework
-
-
->> From: Sandeep Singh <Sandeep@freescale.com> TDM Framework is an 
->> attempt to provide a platform independent layer which can offer a 
->> standard interface  for TDM access to different client modules.
-
-Singh> Please don't use TLAs (Three Letter Acronyms) like TDM without explaining the clearly and up front.  It makes it hard for anyone else who doens't know your code to look it over without having to spend lots of time poking around to figure it out from either context or somewhere else.
-
-Singh> [Sandeep] Patch for documentation for TDM is present in this 
-Singh> patch set, which explains TDM in detail. Should we do this in 
-Singh> commit message too??  Link too documentation patch:
-Singh> http://patchwork.ozlabs.org/patch/173680/
-
-You should put the expansion of TDM into the initial commit message, and also into the Kconfig text, so that someone configuring the kernel has a clue what you're talking about.  
-[Sandeep] Thanks for suggestion. Will take care.
-
-Try to approach this as a brandnew user who doesn't have your knowledge of the software.  Write for the un-initiated if at all possible.
-
-
-John
-
-
-
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index b9a5158..9fdb1d7 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -5,3 +5,6 @@ obj-$(CONFIG_COMMON_CLK)	+= clk.o clk-fixed-rate.o clk-gate.o \
+ # SoCs specific
+ obj-$(CONFIG_ARCH_MXS)		+= mxs/
+ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
++ifeq ($(CONFIG_COMMON_CLK), y)
++obj-$(CONFIG_ARCH_MMP)		+= mmp/
++endif
+diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
+new file mode 100644
+index 0000000..a263cb7
+--- /dev/null
++++ b/drivers/clk/mmp/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile for mmp specific clk
++#
++
++obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-pll2.o
+diff --git a/drivers/clk/mmp/clk-apbc.c b/drivers/clk/mmp/clk-apbc.c
+new file mode 100644
+index 0000000..94d71ad
+--- /dev/null
++++ b/drivers/clk/mmp/clk-apbc.c
+@@ -0,0 +1,141 @@
++#include <linux/kernel.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++
++#include "clk.h"
++
++/* Common APB clock register bit definitions */
++#define APBC_APBCLK	(1 << 0)  /* APB Bus Clock Enable */
++#define APBC_FNCLK	(1 << 1)  /* Functional Clock Enable */
++#define APBC_RST	(1 << 2)  /* Reset Generation */
++#define APBC_POWER	(1 << 7)  /* Reset Generation */
++
++#define to_clk_apbc(hw) container_of(hw, struct clk_apbc, hw)
++struct clk_apbc {
++	struct clk_hw		hw;
++	void __iomem		*base;
++	unsigned int		delay;
++	unsigned int		flags;
++	spinlock_t		*lock;
++};
++
++static int clk_apbc_prepare(struct clk_hw *hw)
++{
++	struct clk_apbc *apbc = to_clk_apbc(hw);
++	unsigned int data;
++	unsigned long flags = 0;
++
++	/*
++	 * It may share same register as MUX clock,
++	 * and it will impact FNCLK enable. Spinlock is needed
++	 */
++	if (apbc->lock)
++		spin_lock_irqsave(apbc->lock, flags);
++
++	data = __raw_readl(apbc->base);
++	if (apbc->flags & APBC_POWER_CTRL)
++		data |= APBC_POWER;
++	data |= APBC_FNCLK;
++	__raw_writel(data, apbc->base);
++
++	if (apbc->lock)
++		spin_unlock_irqrestore(apbc->lock, flags);
++
++	udelay(apbc->delay);
++
++	if (apbc->lock)
++		spin_lock_irqsave(apbc->lock, flags);
++
++	data = __raw_readl(apbc->base);
++	data |= APBC_APBCLK;
++	__raw_writel(data, apbc->base);
++
++	if (apbc->lock)
++		spin_unlock_irqrestore(apbc->lock, flags);
++
++	udelay(apbc->delay);
++
++	if (!(apbc->flags & APBC_NO_BUS_CTRL)) {
++		if (apbc->lock)
++			spin_lock_irqsave(apbc->lock, flags);
++
++		data = __raw_readl(apbc->base);
++		data &= ~APBC_RST;
++		__raw_writel(data, apbc->base);
++
++		if (apbc->lock)
++			spin_unlock_irqrestore(apbc->lock, flags);
++	}
++
++	return 0;
++}
++
++static void clk_apbc_unprepare(struct clk_hw *hw)
++{
++	struct clk_apbc *apbc = to_clk_apbc(hw);
++	unsigned long data;
++	unsigned long flags = 0;
++
++	if (apbc->lock)
++		spin_lock_irqsave(apbc->lock, flags);
++
++	data = __raw_readl(apbc->base);
++	if (apbc->flags & APBC_POWER_CTRL)
++		data &= ~APBC_POWER;
++	data &= ~APBC_FNCLK;
++	__raw_writel(data, apbc->base);
++
++	if (apbc->lock)
++		spin_unlock_irqrestore(apbc->lock, flags);
++
++	udelay(10);
++
++	if (apbc->lock)
++		spin_lock_irqsave(apbc->lock, flags);
++
++	data = __raw_readl(apbc->base);
++	data &= ~APBC_APBCLK;
++	__raw_writel(data, apbc->base);
++
++	if (apbc->lock)
++		spin_unlock_irqrestore(apbc->lock, flags);
++}
++
++struct clk_ops clk_apbc_ops = {
++	.prepare = clk_apbc_prepare,
++	.unprepare = clk_apbc_unprepare,
++};
++
++struct clk *mmp_clk_register_apbc(const char *name, const char *parent_name,
++		void __iomem *base, unsigned int delay,
++		unsigned int apbc_flags, spinlock_t *lock)
++{
++	struct clk_apbc *apbc;
++	struct clk *clk;
++	struct clk_init_data init;
++
++	apbc = kzalloc(sizeof(*apbc), GFP_KERNEL);
++	if (!apbc)
++		return NULL;
++
++	init.name = name;
++	init.ops = &clk_apbc_ops;
++	init.flags = CLK_SET_RATE_PARENT;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++
++	apbc->base = base;
++	apbc->delay = delay;
++	apbc->flags = apbc_flags;
++	apbc->lock = lock;
++	apbc->hw.init = &init;
++
++	clk = clk_register(NULL, &apbc->hw);
++	if (IS_ERR(clk))
++		kfree(apbc);
++
++	return clk;
++}
+diff --git a/drivers/clk/mmp/clk-apmu.c b/drivers/clk/mmp/clk-apmu.c
+new file mode 100644
+index 0000000..4bfda4f
+--- /dev/null
++++ b/drivers/clk/mmp/clk-apmu.c
+@@ -0,0 +1,86 @@
++#include <linux/kernel.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++
++#include "clk.h"
++
++#define to_clk_apmu(clk) (container_of(clk, struct clk_apmu, clk))
++struct clk_apmu {
++	struct clk_hw   hw;
++	void __iomem    *base;
++	u32		rst_mask;
++	u32		enable_mask;
++	spinlock_t	*lock;
++};
++
++static int clk_apmu_enable(struct clk_hw *hw)
++{
++	struct clk_apmu *apmu = to_clk_apmu(hw);
++	unsigned long data;
++	unsigned long flags = 0;
++
++	if (apmu->lock)
++		spin_lock_irqsave(apmu->lock, flags);
++
++	data = __raw_readl(apmu->base) | apmu->enable_mask;
++	__raw_writel(data, apmu->base);
++
++	if (apmu->lock)
++		spin_unlock_irqrestore(apmu->lock, flags);
++
++	return 0;
++}
++
++static void clk_apmu_disable(struct clk_hw *hw)
++{
++	struct clk_apmu *apmu = to_clk_apmu(hw);
++	unsigned long data;
++	unsigned long flags = 0;
++
++	if (apmu->lock)
++		spin_lock_irqsave(apmu->lock, flags);
++
++	data = __raw_readl(apmu->base) & ~apmu->enable_mask;
++	__raw_writel(data, apmu->base);
++
++	if (apmu->lock)
++		spin_unlock_irqrestore(apmu->lock, flags);
++}
++
++struct clk_ops clk_apmu_ops = {
++	.enable = clk_apmu_enable,
++	.disable = clk_apmu_disable,
++};
++
++struct clk *mmp_clk_register_apmu(const char *name, const char *parent_name,
++		void __iomem *base, u32 enable_mask, spinlock_t *lock)
++{
++	struct clk_apmu *apmu;
++	struct clk *clk;
++	struct clk_init_data init;
++
++	apmu = kzalloc(sizeof(*apmu), GFP_KERNEL);
++	if (!apmu)
++		return NULL;
++
++	init.name = name;
++	init.ops = &clk_apmu_ops;
++	init.flags = CLK_SET_RATE_PARENT;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++
++	apmu->base = base;
++	apmu->enable_mask = enable_mask;
++	apmu->lock = lock;
++	apmu->hw.init = &init;
++
++	clk = clk_register(NULL, &apmu->hw);
++
++	if (IS_ERR(clk))
++		kfree(apmu);
++
++	return clk;
++}
+diff --git a/drivers/clk/mmp/clk-frac.c b/drivers/clk/mmp/clk-frac.c
+new file mode 100644
+index 0000000..5c14a16
+--- /dev/null
++++ b/drivers/clk/mmp/clk-frac.c
+@@ -0,0 +1,142 @@
++#include <linux/clk-provider.h>
++#include <linux/slab.h>
++#include <linux/io.h>
++#include <linux/err.h>
++
++#include "clk.h"
++/*
++ * It is M/N clock
++ *
++ * Fout from synthesizer can be given from two equations:
++ * numerator/denominator = Fin / (Fout * factor)
++ */
++
++#define to_clk_factor(hw) container_of(hw, struct clk_factor, hw)
++struct clk_factor {
++	struct clk_hw		hw;
++	void __iomem		*base;
++	struct clk_factor_masks	*masks;
++	struct clk_factor_tbl	*ftbl;
++	unsigned int		ftbl_cnt;
++};
++
++static long clk_factor_round_rate(struct clk_hw *hw, unsigned long drate,
++		unsigned long *prate)
++{
++	struct clk_factor *factor = to_clk_factor(hw);
++	unsigned long rate = 0, prev_rate;
++	int i;
++
++	for (i = 0; i < factor->ftbl_cnt; i++) {
++		prev_rate = rate;
++		rate = (((*prate / 10000) * factor->ftbl[i].num) /
++			(factor->ftbl[i].den * factor->masks->factor)) * 10000;
++		if (rate > drate)
++			break;
++	}
++	if (i == 0)
++		return rate;
++	else
++		return prev_rate;
++}
++
++static unsigned long clk_factor_recalc_rate(struct clk_hw *hw,
++		unsigned long parent_rate)
++{
++	struct clk_factor *factor = to_clk_factor(hw);
++	struct clk_factor_masks *masks = factor->masks;
++	unsigned int val, num, den;
++
++	val = readl_relaxed(factor->base);
++
++	/* calculate numerator */
++	num = (val >> masks->num_shift) & masks->num_mask;
++
++	/* calculate denominator */
++	den = (val >> masks->den_shift) & masks->num_mask;
++
++	if (!den)
++		return 0;
++
++	return (((parent_rate / 10000)  * den) /
++			(num * factor->masks->factor)) * 10000;
++}
++
++/* Configures new clock rate*/
++static int clk_factor_set_rate(struct clk_hw *hw, unsigned long drate,
++				unsigned long prate)
++{
++	struct clk_factor *factor = to_clk_factor(hw);
++	struct clk_factor_masks *masks = factor->masks;
++	int i;
++	unsigned long val;
++	unsigned long prev_rate, rate = 0;
++
++	for (i = 0; i < factor->ftbl_cnt; i++) {
++		prev_rate = rate;
++		rate = (((prate / 10000) * factor->ftbl[i].num) /
++			(factor->ftbl[i].den * factor->masks->factor)) * 10000;
++		if (rate > drate)
++			break;
++	}
++	if (i > 0)
++		i--;
++
++	val = __raw_readl(factor->base);
++
++	val &= ~(masks->num_mask << masks->num_shift);
++	val |= (factor->ftbl[i].num & masks->num_mask) << masks->num_shift;
++
++	val &= ~(masks->den_mask << masks->den_shift);
++	val |= (factor->ftbl[i].den & masks->den_mask) << masks->den_shift;
++
++	__raw_writel(val, factor->base);
++
++	return 0;
++}
++
++static struct clk_ops clk_factor_ops = {
++	.recalc_rate = clk_factor_recalc_rate,
++	.round_rate = clk_factor_round_rate,
++	.set_rate = clk_factor_set_rate,
++};
++
++struct clk *mmp_clk_register_factor(const char *name, const char *parent_name,
++		unsigned long flags, void __iomem *base,
++		struct clk_factor_masks *masks, struct clk_factor_tbl *ftbl,
++		unsigned int ftbl_cnt)
++{
++	struct clk_factor *factor;
++	struct clk_init_data init;
++	struct clk *clk;
++
++	if (!masks) {
++		pr_err("%s: must pass a clk_factor_mask\n", __func__);
++		return ERR_PTR(-EINVAL);
++	}
++
++	factor = kzalloc(sizeof(*factor), GFP_KERNEL);
++	if (!factor) {
++		pr_err("%s: could not allocate factor  clk\n", __func__);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	/* struct clk_aux assignments */
++	factor->base = base;
++	factor->masks = masks;
++	factor->ftbl = ftbl;
++	factor->ftbl_cnt = ftbl_cnt;
++	factor->hw.init = &init;
++
++	init.name = name;
++	init.ops = &clk_factor_ops;
++	init.flags = flags;
++	init.parent_names = &parent_name;
++	init.num_parents = 1;
++
++	clk = clk_register(NULL, &factor->hw);
++	if (IS_ERR_OR_NULL(clk))
++		kfree(factor);
++
++	return clk;
++}
+diff --git a/drivers/clk/mmp/clk-pll2.c b/drivers/clk/mmp/clk-pll2.c
+new file mode 100644
+index 0000000..457ac5c
+--- /dev/null
++++ b/drivers/clk/mmp/clk-pll2.c
+@@ -0,0 +1,156 @@
++#include <linux/kernel.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++
++#include <mach/addr-map.h>
++#include <mach/cputype.h>
++
++#include "clk.h"
++
++#define MPMU_PLL2CR		MPMU_REG(0x0034)
++#define MPMU_PLL2_CTRL1		MPMU_REG(0x0414)
++
++static int clk_pll2_prepare(struct clk_hw *hw)
++{
++	unsigned long data;
++
++	data = __raw_readl(MPMU_PLL2CR);
++	if (data & (1 << 8))
++		return 0;
++	data |= (1 << 8);
++	__raw_writel(data, MPMU_PLL2CR);
++
++	udelay(500);
++
++	if (cpu_is_mmp2()) {
++		/* out of reset */
++		data = __raw_readl(MPMU_PLL2_CTRL1);
++		data |= (1 << 29);
++		__raw_writel(data, MPMU_PLL2CR);
++
++		udelay(500);
++	}
++
++	return 0;
++}
++
++static void clk_pll2_unprepare(struct clk_hw *hw)
++{
++	unsigned long data;
++
++	/* PLL2 Control register, disable SW PLL2 */
++	data = __raw_readl(MPMU_PLL2CR);
++	data &= ~(1 << 8);
++	__raw_writel(data, MPMU_PLL2CR);
++
++	/* wait for PLLs to lock */
++	udelay(500);
++
++	if (cpu_is_mmp2()) {
++		/* MPMU_PLL2_CTRL1: put PLL2 into reset */
++		data = __raw_readl(MPMU_PLL2_CTRL1);
++		data = ~(1 << 29);
++		__raw_writel(data, MPMU_PLL2_CTRL1);
++
++		udelay(500);
++	}
++}
++
++static unsigned long clk_pll2_recalc_rate(struct clk_hw *hw,
++		unsigned long parent_rate)
++{
++	unsigned long tmp = parent_rate;
++	unsigned long data;
++	unsigned int refdiv, fbdiv;
++
++	data = __raw_readl(MPMU_PLL2CR);
++	refdiv = data & (0x1f << 19);
++	fbdiv = data & (0x1ff << 10);
++
++	tmp = parent_rate * (refdiv + 2) / (fbdiv + 2);
++
++	return tmp;
++}
++
++static long clk_pll2_round_rate(struct clk_hw *hw, unsigned long rate,
++				unsigned long *prate)
++{
++	long tmp;
++	unsigned int refdiv, fbdiv;
++
++	/* usally refdiv is fixed for better performance */
++	refdiv = __raw_readl(MPMU_PLL2CR) & (0x1f << 19);
++
++	fbdiv = ((rate / *prate * (refdiv + 2)) - 2)
++		+ ((rate * (refdiv + 2)) % *prate > (*prate / 2));
++
++	tmp = *prate * (fbdiv + 2) / (refdiv + 2);
++
++	return tmp;
++}
++
++static int clk_pll2_set_rate(struct clk_hw *hw, unsigned long rate,
++				unsigned long parent_rate)
++{
++	unsigned int refdiv, fbdiv;
++	unsigned long data;
++
++	/* fix it for better performance */
++	refdiv = 4;
++
++	fbdiv = ((rate / parent_rate * (refdiv + 2)) - 2)
++		+ (((rate * (refdiv + 2)) % parent_rate) > (parent_rate / 2));
++
++	data = __raw_readl(MPMU_PLL2CR);
++	if (data & (1 << 8))
++		return -EIO;
++
++	data &= ~((0x1f << 19) | (0x1ff << 10));
++	data |= refdiv << 19;
++	data |= fbdiv << 10;
++	data |= 1 << 9;
++	__raw_writel(data, MPMU_PLL2CR);
++
++	return 0;
++}
++
++struct clk_ops clk_pll2_ops = {
++	.prepare = clk_pll2_prepare,
++	.unprepare = clk_pll2_unprepare,
++	.recalc_rate = clk_pll2_recalc_rate,
++	.round_rate = clk_pll2_round_rate,
++	.set_rate = clk_pll2_set_rate,
++};
++
++struct clk *mmp_clk_register_pll2(const char *name, const char *parent_name,
++		unsigned long flags)
++{
++	struct clk_hw *hw;
++	struct clk *clk;
++	struct clk_init_data init;
++
++	hw = kzalloc(sizeof(struct clk_hw), GFP_KERNEL);
++	if (!hw) {
++		pr_err("%s: could not allocate pll2 clk\n", __func__);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	init.name = name;
++	init.ops = &clk_pll2_ops;
++	init.flags = CLK_SET_RATE_GATE | flags;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++
++	hw->init = &init;
++	/* register the clock */
++	clk = clk_register(NULL, hw);
++
++	if (IS_ERR(clk))
++		kfree(hw);
++
++	return clk;
++}
+diff --git a/drivers/clk/mmp/clk.h b/drivers/clk/mmp/clk.h
+new file mode 100644
+index 0000000..292a4d2
+--- /dev/null
++++ b/drivers/clk/mmp/clk.h
+@@ -0,0 +1,95 @@
++#ifndef __MACH_MMP_CLK_H
++#define __MACH_MMP_CLK_H
++
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++
++#define MMP_CLK_REGISTER_FIXED_RATE(_clk, _name, _rate)			\
++	do {								\
++		_clk[_name] = clk_register_fixed_rate(NULL, #_name,	\
++					NULL, CLK_IS_ROOT, _rate);	\
++		clk_register_clkdev(_clk[_name], #_name, NULL);		\
++	} while (0)
++
++#define MMP_CLK_REGISTER_FIXED_FACTOR(_clk, _name, _parent, _flags,	\
++				_mul, _div)				\
++	do {								\
++		_clk[_name] = clk_register_fixed_factor(NULL, #_name,	\
++				 #_parent, _flags, _mul, _div);		\
++		clk_register_clkdev(_clk[_name], #_name, NULL);		\
++	} while (0)
++
++#define MMP_CLK_REGISTER_GATE(_clk, _name, _parent, _flags, _reg, _bit,	\
++				_gate_flags, _dev_id, con_id, _lock)	\
++	do {								\
++		_clk[_name] = clk_register_gate(NULL, #_name,		\
++				 #_parent, _flags, _reg, _bit,		\
++				_gate_flags, _lock);			\
++		clk_register_clkdev(_clk[_name], _con_id, dev_id);	\
++	} while (0)
++
++#define MMP_CLK_REGISTER_APBC(_clk, _name, _parent, _delay, _reg,	\
++				_apbc_flags, _dev_id, _con_id, _lock)	\
++	do {								\
++		_clk[_name] = mmp_clk_register_apbc(#_name, #_parent,	\
++				_reg, _delay, _apbc_flags, _lock);	\
++		clk_register_clkdev(_clk[_name], _con_id, _dev_id);	\
++	} while (0)
++
++#define MMP_CLK_REGISTER_APMU(_clk, _name, _parent, _reg, _enable_mask,	\
++				 _dev_id, _con_id, _lock)		\
++	do {								\
++		_clk[_name] = mmp_clk_register_apmu(#_name, #_parent,	\
++				_reg, _enable_mask, _lock);		\
++		clk_register_clkdev(_clk[_name], _con_id, _dev_id);	\
++	} while (0)
++
++#define MMP_CLK_REGISTER_MUX(_clk, _name, _parent_name, _parent_num,	\
++				_flags, _reg, _shift, _width,		\
++				_mux_flags, _dev_id, _con_id, _lock)	\
++	do {								\
++		_clk[_name] = clk_register_mux(NULL, #_name,		\
++				_parent_name, _parent_num, _flags, _reg,\
++				_shift, _width, _mux_flags, _lock);	\
++		clk_register_clkdev(_clk[_name], _con_id, _dev_id);	\
++	} while (0)
++
++#define MMP_CLK_REGISTER_DIV(_clk, _name, _parent, _flags, _reg,	\
++				_shift, _width, _div_flags, _dev_id,	\
++				_con_id, _lock)				\
++	do {								\
++		_clk[_name] = clk_register_divider(NULL, #_name,	\
++			#_parent, _flags, _reg, _shift, _width,		\
++			_div_flags, _lock);				\
++		clk_register_clkdev(_clk[_name], _con_id, _dev_id);	\
++	} while (0)
++
++#define APBC_NO_BUS_CTRL	BIT(0)
++#define APBC_POWER_CTRL		BIT(1)
++
++struct clk_factor_masks {
++	unsigned int	factor;
++	unsigned int	num_mask;
++	unsigned int	den_mask;
++	unsigned int	num_shift;
++	unsigned int	den_shift;
++};
++
++struct clk_factor_tbl {
++	unsigned int num;
++	unsigned int den;
++};
++
++extern struct clk *mmp_clk_register_pll2(const char *name,
++		const char *parent_name, unsigned long flags);
++extern struct clk *mmp_clk_register_apbc(const char *name,
++		const char *parent_name, void __iomem *base,
++		unsigned int delay, unsigned int apbc_flags, spinlock_t *lock);
++extern struct clk *mmp_clk_register_apmu(const char *name,
++		const char *parent_name, void __iomem *base, u32 enable_mask,
++		spinlock_t *lock);
++extern struct clk *mmp_clk_register_factor(const char *name,
++		const char *parent_name, unsigned long flags,
++		void __iomem *base, struct clk_factor_masks *masks,
++		struct clk_factor_tbl *ftbl, unsigned int ftbl_cnt);
++#endif
+-- 
+1.7.0.4
 
