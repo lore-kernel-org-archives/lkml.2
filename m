@@ -1,91 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab2GaIUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 04:20:23 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:54972 "EHLO
+	id S1755875Ab2GaIVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 04:21:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64331 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab2GaITt (ORCPT
+	with ESMTP id S1755809Ab2GaIVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 04:19:49 -0400
-Date: Tue, 31 Jul 2012 10:19:45 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] PWM subsystem for v3.6
-Message-ID: <20120731081945.GB14593@avionic-0098.adnet.avionic-design.de>
-References: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
- <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
+	Tue, 31 Jul 2012 04:21:46 -0400
+Date: Tue, 31 Jul 2012 10:21:44 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Denis Efremov <yefremov.denis@gmail.com>
+cc: Kurt Garloff <garloff@suse.de>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tmscsim: spin_unlock_irq in interrupt handler fix
+In-Reply-To: <1342853283-32549-1-git-send-email-yefremov.denis@gmail.com>
+Message-ID: <Pine.LNX.4.64.1207311006171.27888@axis700.grange>
+References: <1342853283-32549-1-git-send-email-yefremov.denis@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3uo+9/B/ebqu+fSQ"
-Content-Disposition: inline
-In-Reply-To: <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:l62zFbSsauip8SWsUcUCkUtHv3zaqdEBE9UjGEebtA+
- 669hhW0Qgsd9nQdHhnfBq78uyChrJl+A5EiDYeJMQlVP69a9Ga
- A1H9HrG4t+SP+jMHWPhtqnGRFDYk9UoiI4dVbXKzShEgvMy2c4
- eBpoD180XQhIgnpV7Q9L0RJxRfdH3TJWXm4YlVYUsqBNiLNGzA
- IGmwpHayisckVgJR0J9JTCOIIVB1EuY+i/TL2IUKW65g63je1S
- z7QkDR31He1KBXKAcztEUYdOLuGSvXFhZaNsObly3KYUDmdSuy
- hsc84ms41xOTCHHVec7Dev4eFVHsMsbIrIbT3OifT4JV5CSfRC
- c9QzHMtq+EfxX4I/7J7TZZJ99ihwI5n+ebdQJUmInj4XJaF6DB
- YHYyzA3NETDV4XOAHp+7Of5R95qU6T+VF8=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:1hdcHCipdw/HjZ/hriQ+E6J7Yez1Kvh7JKBkdYRzV1R
+ WVCf0IS2AI8mZNytsj6wTiS0r44h5wQnEWA1SNsyWd32CYlWt/
+ 4qlGi8sV5oEowPe9NfF75NVxu98vLzyvtIA9eAVkJlD408SgbO
+ e+gh5D+ZoZ09K77mMRxlGmjU5DWFxGjnBUF+SXVmTs2Wk3U39r
+ /2/Bf+Aoth+RouwfORYwVAPg+kFZ6QlMpX8zuLpA/iPj8r05kS
+ CL1ygOoNp3gNztdhpW2TIBfq6E7f35kUmI1lF+Z4HF+1JvjBTD
+ FZ3uc5J83eygE68Te5punMvW7w+2/V7pC3L5CinAjxr1Sm+vX1
+ yXkV3vbpqzTsHHsze9qvSwYfxPflrP5/F0WJN1YemMJtirydR0
+ szYgJDaQVjocg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Wow, been ages since the last patch to this driver has hit my mail:-)
 
---3uo+9/B/ebqu+fSQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 21 Jul 2012, Denis Efremov wrote:
 
-On Thu, Jul 26, 2012 at 02:11:58PM -0700, Linus Torvalds wrote:
-> On Thu, Jul 26, 2012 at 12:16 AM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> >
-> > The new PWM subsystem aims at collecting all implementations of the
-> > legacy PWM API and to eventually replace it completely. The subsystem
-> > has been in development for over half a year now and many drivers have
-> > already been converted. It has been in linux-next for a couple of weeks
-> > and there have been no major issues so I think it is ready for inclusion
-> > in your tree.
->=20
-> For new subsystems like this, I really want ack's from the people who
-> are expected to use it.
->=20
-> For a gitorious pull like this, I also want signed tags with the gpg
-> key having signatures from people I recognize. I don't think I have
-> such a key from you.
+> The replacement of spin_lock_irq/spin_unlock_irq pair in interrupt
+> handler by spin_lock_irqsave/spin_lock_irqrestore pair.
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
 
-I just sent a new pull request with a signed tag. I've also included a
-more detailed description of why this is useful, along the lines of what
-Arnd already mentioned.
+Right, unconditionally enabling local IRQs in an ISR seems rude. BUT: 
+unfortunately, it's not as easy as this. From DC390_Interrupt() 
+dc390_DataOut_0() and dc390_DataIn_0() can be called, which also use 
+spin_lock_irq() / spin_unlock_irq()... So, maybe adding a flags field to 
+struct dc390_acb and using it on all 3 occasions would be the easiest and 
+safest fix...
 
-My key was signed by Sebastian Andrzej Siewior today and I uploaded the
-signature only now, so it may take some time to propagate.
+Thanks
+Guennadi
 
-Thierry
+> ---
+>  drivers/scsi/tmscsim.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/tmscsim.c b/drivers/scsi/tmscsim.c
+> index a1baccc..0b9d68a 100644
+> --- a/drivers/scsi/tmscsim.c
+> +++ b/drivers/scsi/tmscsim.c
+> @@ -654,6 +654,7 @@ DC390_Interrupt(void *dev_id)
+>      u8  phase;
+>      void   (*stateV)( struct dc390_acb*, struct dc390_srb*, u8 *);
+>      u8  istate, istatus;
+> +    unsigned long flags;
+>  
+>      sstatus = DC390_read8 (Scsi_Status);
+>      if( !(sstatus & INTERRUPT) )
+> @@ -665,7 +666,7 @@ DC390_Interrupt(void *dev_id)
+>      //dstatus = DC390_read8 (DMA_Status);
+>      //DC390_write32 (DMA_ScsiBusCtrl, EN_INT_ON_PCI_ABORT);
+>  
+> -    spin_lock_irq(pACB->pScsiHost->host_lock);
+> +    spin_lock_irqsave(pACB->pScsiHost->host_lock, flags);
+>  
+>      istate = DC390_read8 (Intern_State);
+>      istatus = DC390_read8 (INT_Status); /* This clears Scsi_Status, Intern_State and INT_Status ! */
+> @@ -736,7 +737,7 @@ DC390_Interrupt(void *dev_id)
+>      }
+>  
+>   unlock:
+> -    spin_unlock_irq(pACB->pScsiHost->host_lock);
+> +    spin_unlock_irqrestore(pACB->pScsiHost->host_lock, flags);
+>      return IRQ_HANDLED;
+>  }
+>  
+> -- 
+> 1.7.7
+> 
 
---3uo+9/B/ebqu+fSQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQF5UhAAoJEN0jrNd/PrOhjwcP/Akr5A78aR8MRfFUYBWNQG8U
-NcM4esFUZlDdsB6kxikj9ZQtcVbfUjNRibx3DqT6agZ0gjTudxgxOAZkVP8gKC+R
-GuwNZwY/lQzSPC7hsJ2eb+y1qAChcxC/vSdX+WQQCcLot5GA/401sFfyYpN3VdEG
-bKffm2N2q/SsrP63rw84Csh31MbG7SP5lu01oVoNUMFVxF8P4KOzBLk+93G8nF6d
-sU530UsFbnQodWAN4HzVaFhlGJP9QBtDc0Jm0cM8ZauG5oV4ixCvgRWrXI6dHCMp
-zFkQ6rzwU7V/qj1cJ0gRo5O1K/hqQ9uQz8a6eY1+7LC7GcUj2PH/3+e6ECXDZiJG
-tldTJsg2OVzDouK88RUvlhpKYUqe51wcZ+MSpy1Zt9Z9y0PHMKggmOsJ+aDyAU6x
-LuHaExjowDVq4nDgEeHEjnQRTW/OhFdTmPebUrxPb3M+mDPnQXl6owJZWJBb6JQa
-eqEqc4REAw9f4X/ivin28VYEIBz7/oLZIJ1nkYZlb0GE6y8ZQvYlUwGmz+TKp5NK
-wJm0XWjOFi+b4aQu+4a8xt/vGa2/2WeYXBLWB3fvh9kalczi6z+rhwnQiWJlRtKJ
-9GSVASytslPDTbpdcGqlNgffWnJG1A+UI+WSn8B6YV0eNT56L4SNf5kq5LPLYoQG
-Q2wJOoFTznYxPpZ15EYc
-=c2kK
------END PGP SIGNATURE-----
-
---3uo+9/B/ebqu+fSQ--
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
