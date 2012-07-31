@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab2GaUaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 16:30:35 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:43630 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445Ab2GaUae (ORCPT
+	id S1753866Ab2GaUbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 16:31:18 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:12537 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab2GaUbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 16:30:34 -0400
-Message-ID: <50184085.5000806@gmail.com>
-Date: Tue, 31 Jul 2012 22:31:01 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+	Tue, 31 Jul 2012 16:31:17 -0400
+Date: Tue, 31 Jul 2012 22:31:15 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: David Airlie <airlied@linux.ie>
+cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jesse Barnes <jesse.barnes@intel.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drm/i915: Fix mem leak in intel_sdvo_write_cmd()
+Message-ID: <alpine.LNX.2.00.1207312228270.7100@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-References: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com> <1343757920-19713-2-git-send-email-levinsasha928@gmail.com> <20120731182330.GD21292@google.com>
-In-Reply-To: <20120731182330.GD21292@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 08:23 PM, Tejun Heo wrote:
-> Hello, Sasha.
-> 
-> On Tue, Jul 31, 2012 at 08:05:17PM +0200, Sasha Levin wrote:
->> +#define HASH_INIT(name)							\
->> +({									\
->> +	int __i;							\
->> +	for (__i = 0 ; __i < HASH_SIZE(name) ; __i++)			\
->> +		INIT_HLIST_HEAD(&name[__i]);				\
->> +})
-> 
-> Why use macro?
-> 
->> +#define HASH_ADD(name, obj, key)					\
->> +	hlist_add_head(obj, &name[					\
->> +		hash_long((unsigned long)key, HASH_BITS(name))]);
-> 
-> Ditto.
+If the allocation of 'buf' succeeds but the allocation of 'msgs' fails
+we'll return false and leak 'buf' when it goes out of scope.
 
-No special reason, I'll modify both to be functions.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/gpu/drm/i915/intel_sdvo.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
->> +#define HASH_GET(name, key, type, member, cmp_fn)			\
->> +({									\
->> +	struct hlist_node *__node;					\
->> +	typeof(key) __key = key;					\
->> +	type *__obj = NULL;						\
->> +	hlist_for_each_entry(__obj, __node, &name[			\
->> +			hash_long((unsigned long) __key,		\
->> +			HASH_BITS(name))], member)			\
->> +		if (cmp_fn(__obj, __key))				\
->> +			break;						\
->> +	__obj;								\
->> +})
-> 
-> Wouldn't it be simpler to have something like the following
-> 
-> 	hash_for_each_possible_match(pos, hash, key)
-> 
-> and let the caller handle the actual comparison?  Callbacks often are
-> painful to use and I don't think the above dancing buys much.
+ note: compile tested only due to lack of hardware.
 
-I thought about that, but if you look at the 3 modules I've converted to use this hashtable, I think that the option to provide a callback worked pretty well for all of them, and in my opinion in those cases it looks better than iterating over entries in the code.
+diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
+index 26a6a4d..1f73e24 100644
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -444,13 +444,12 @@ static bool intel_sdvo_write_cmd(struct intel_sdvo *intel_sdvo, u8 cmd,
+ 	struct i2c_msg *msgs;
+ 	int i, ret = true;
+ 
+-	buf = (u8 *)kzalloc(args_len * 2 + 2, GFP_KERNEL);
+-	if (!buf)
+-		return false;
+-
++	buf = kzalloc(args_len * 2 + 2, GFP_KERNEL);
+ 	msgs = kcalloc(args_len + 3, sizeof(*msgs), GFP_KERNEL);
+-	if (!msgs)
+-		return false;
++	if (!msgs || !buf) {
++		ret = false;
++		goto out;
++	}
+ 
+ 	intel_sdvo_debug_write(intel_sdvo, cmd, args, args_len);
+ 
+-- 
+1.7.11.3
 
-Would it make sense to have both methods?
 
->> +#define HASH_DEL(obj, member)						\
->> +	hlist_del(&obj->member)
-> 
-> @obj is struct hlist_node in HASH_ADD and the containing type here?
-> Most in-kernel generic data containers implement just the container
-> itself and let the caller handle the conversions between container
-> node and the containing object.  I think it would better not to
-> deviate from that.
-
-Agreed, will fix.
-
->> +#define HASH_FOR_EACH(bkt, node, name, obj, member)			\
->> +	for (bkt = 0; bkt < HASH_SIZE(name); bkt++)			\
->> +		hlist_for_each_entry(obj, node, &name[i], member)
-> 
-> Why in caps?  Most for_each macros are in lower case.
-
-No special reason, will fix that as well.
-
-Thanks for the review Tejun!
-
-> Thanks.
-> 
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
