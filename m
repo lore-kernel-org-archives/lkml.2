@@ -1,163 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab2HAXAB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 19:00:01 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:8925 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697Ab2HAW7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 18:59:49 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-57-5019b4e3dd78
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Damien Cassou'" <damien.cassou@gmail.com>
-Cc: "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <877gti1t48.fsf@gmail.com>
-In-reply-to: <877gti1t48.fsf@gmail.com>
-Subject: Re: [PATCH v2] video: exynos_dp: use devm_clk_get function
-Date: Thu, 02 Aug 2012 07:59:46 +0900
-Message-id: <000e01cd7039$58e08b90$0aa1a2b0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1wAZrrzyIOF4KjTSaXFU5q6sqr6QAN3Lcw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd3HWyQDDHZ18lqc6PvAanF51xw2
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDIufv/EVLBWpmJi707mBsb9Yl2MnBwSAiYSy3bfZ4Ww
-	xSQu3FvP1sXIxSEksIhR4kTzGlYI5xejxLYTaxlBqtgE1CS+fDnMDmKLCOhKnFx9mxGkiFng
-	OKPEjRvbwBJCQEXN3a/AxnIKqEusungQLC4s4Cxxd8JpsDiLgKpEx4GDzCA2r4CtxI4Fd9kh
-	bEGJH5PvsYDYzAJaEut3HmeCsOUlNq95C1TPAXSqusSjv7oQNxhJdB+bzQxRIiKx78U7xgmM
-	QrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4qJ9J72Bc1WBx
-	iFGAg1GJh3dlqWSAEGtiWXFl7iFGCQ5mJRFexy6gEG9KYmVValF+fFFpTmrxIUZpDhYlcV4T
-	76/+QgLpiSWp2ampBalFMFkmDk6pBkapTd8l9R79lNqQF60V718u8jHhwOsKRXeDi1ul1C+d
-	dLnTtWd3QWvBFO/ixQa217meyDyxlXpdZThfSjJPLSPZiE1j+dNZMwUf7uhi/SHoLJs9yWB+
-	lCS/x48PpyxSg1QjAm4Kx0toO9ye5vprUlMyn2DagulWXy0k/kk6vam18nv+42fZTyWW4oxE
-	Qy3mouJEAH38YjVmAgAA
-X-TM-AS-MML: No
+	id S1753397Ab2HAXF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 19:05:56 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:37935 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753014Ab2HAXFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 19:05:53 -0400
+Date: Wed, 1 Aug 2012 16:05:50 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] iproute2 3.5.0
+Message-ID: <20120801160550.344a66b1@nehalam.linuxnetplumber.net>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 02, 2012 1:21 AM Damien Cassou wrote:
-> 
-> From: Damien Cassou <damien.cassou@lifl.fr>
-> 
-> The devm_clk_get function allocates memory that is released when a driver
-> detaches. This patch uses this function for data that is allocated in the probe
-> function of a platform device and is only freed in the remove function.
-> 
-> Additionally, this patch removes a null check after platform_get_resource that
-> is redundant with the one done by devm_request_and_ioremap.
-> 
-> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
+Following the trend of releasing before going on vacation, here is the
+iproute2 release to go with last weeks 3.5.0 kernel release. The changes
+were mainly adding support for the new queuing disciplines (codel etc)
+and cleaning up the manual pages.
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-Thank you for sending the patch.
+Source:
+  http://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-3.5.0.tar.gz
 
-Best regards,
-Jingoo Han
+Repository:
+  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
-> 
-> ---
-> Changed subject line and description
->  drivers/video/exynos/exynos_dp_core.c |   27 +++++++--------------------
->  1 file changed, 7 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
-> index c6c016a..00fe4f0 100644
-> --- a/drivers/video/exynos/exynos_dp_core.c
-> +++ b/drivers/video/exynos/exynos_dp_core.c
-> @@ -872,7 +872,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
-> 
->  	dp->dev = &pdev->dev;
-> 
-> -	dp->clock = clk_get(&pdev->dev, "dp");
-> +	dp->clock = devm_clk_get(&pdev->dev, "dp");
->  	if (IS_ERR(dp->clock)) {
->  		dev_err(&pdev->dev, "failed to get clock\n");
->  		return PTR_ERR(dp->clock);
-> @@ -881,31 +881,24 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  	clk_enable(dp->clock);
-> 
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res) {
-> -		dev_err(&pdev->dev, "failed to get registers\n");
-> -		ret = -EINVAL;
-> -		goto err_clock;
-> -	}
-> 
->  	dp->reg_base = devm_request_and_ioremap(&pdev->dev, res);
->  	if (!dp->reg_base) {
->  		dev_err(&pdev->dev, "failed to ioremap\n");
-> -		ret = -ENOMEM;
-> -		goto err_clock;
-> +		return -ENOMEM;
->  	}
-> 
->  	dp->irq = platform_get_irq(pdev, 0);
->  	if (!dp->irq) {
->  		dev_err(&pdev->dev, "failed to get irq\n");
-> -		ret = -ENODEV;
-> -		goto err_clock;
-> +		return -ENODEV;
->  	}
-> 
->  	ret = devm_request_irq(&pdev->dev, dp->irq, exynos_dp_irq_handler, 0,
->  				"exynos-dp", dp);
->  	if (ret) {
->  		dev_err(&pdev->dev, "failed to request irq\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
-> 
->  	dp->video_info = pdata->video_info;
-> @@ -917,7 +910,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  	ret = exynos_dp_detect_hpd(dp);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to detect hpd\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
-> 
->  	exynos_dp_handle_edid(dp);
-> @@ -926,7 +919,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  				dp->video_info->link_rate);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to do link train\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
-> 
->  	exynos_dp_enable_scramble(dp, 1);
-> @@ -940,17 +933,12 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  	ret = exynos_dp_config_video(dp, dp->video_info);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to config video\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
-> 
->  	platform_set_drvdata(pdev, dp);
-> 
->  	return 0;
-> -
-> -err_clock:
-> -	clk_put(dp->clock);
-> -
-> -	return ret;
->  }
-> 
->  static int __devexit exynos_dp_remove(struct platform_device *pdev)
-> @@ -962,7 +950,6 @@ static int __devexit exynos_dp_remove(struct platform_device *pdev)
->  		pdata->phy_exit();
-> 
->  	clk_disable(dp->clock);
-> -	clk_put(dp->clock);
-> 
->  	return 0;
->  }
+Andreas Henriksson (1):
+      iproute2: man page and /bin/ip disagree on del vs delete
+
+Ben Hutchings (1):
+      ss: Report MSS from internal TCP information
+
+Bjarni Ingi Gislason (2):
+      tc(8): Negative indent and missing "-" after an escape
+      tc-drr(8): tab unquoted in a argument to a macro
+
+Chris Elston (1):
+      iproute2: allow IPv6 addresses for l2tp local and remote parameters
+
+Eric Dumazet (3):
+      tc_codel: Controlled Delay AQM
+      fq_codel: Fair Queue Codel AQM
+      ip: speedup ip link
+
+Hiroaki SHIMODA (2):
+      tc: u32: Fix icmp_code off.
+      tc: u32: Fix firstfrag filter.
+
+Jan Ceuleers (2):
+      tc-codel: Fix typos in manpage
+      Add reference to tc-codel(8) to the SEE ALSO section
+
+Li Wei (6):
+      tc: man: Fix incorrect parameter format in prio.
+      tc: prio: Perform more strict check on priomap.
+      tc: filter: validate filter priority in userspace.
+      tc: man: add 'delete' command.
+      tc: man: change man page and comment to confirm to code's behavior.
+      tc-bfifo: man: Add parameter value range.
+
+Stephen Hemminger (7):
+      Update headers to 3.5 merge window
+      Remove derived man pages
+      Refactor ipaddr_list_or_flush
+      Remove reference to multipath algorithms in usage
+      man8: build cleanup
+      Add bridge command
+      v3.5.0
+
+Vijay Subramanian (6):
+      Update tc-netem manpage to add ecn capability
+      tc-netem: Add support for ECN packet marking
+      tc-codel: Add manpage
+      tc-codel: Update usage text
+      tc-fq_codel: Add manpage
+      tc: Update manpage
 
