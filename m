@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab2HAMcx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 08:32:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8210 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752250Ab2HAMcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 08:32:51 -0400
-Date: Wed, 1 Aug 2012 14:32:31 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf: commit 44f24cb3156a1e (Factor DSO symtab types) causes
- segfaults
-Message-ID: <20120801123231.GE2528@krava.brq.redhat.com>
-References: <20120731141455.GA5570@gmail.com>
- <20120801115740.GA16297@x4>
- <20120801122145.GD2528@krava.brq.redhat.com>
- <20120801122522.GB16297@x4>
+	id S1753204Ab2HAMhm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 08:37:42 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40384 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751361Ab2HAMhl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 08:37:41 -0400
+X-Sasl-enc: zA8dV2sF9EPiTIYV1rIzzBx7JxPiDHVUSeT1sFmyt1Ju 1343824660
+Date: Wed, 1 Aug 2012 05:37:38 -0700
+From: Greg KH <greg@kroah.com>
+To: Singh Sandeep-B37400 <B37400@freescale.com>
+Cc: Francois Romieu <romieu@fr.zoreil.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [2/3][PATCH][v2] TDM Framework
+Message-ID: <20120801123738.GA28291@kroah.com>
+References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+ <20120727152542.GB1613@electric-eye.fr.zoreil.com>
+ <3F1D9DCAAB49B94D88DBE05911FA4E6E511121@039-SN1MPN1-006.039d.mgd.msft.net>
+ <20120730160146.GB28703@kroah.com>
+ <3F1D9DCAAB49B94D88DBE05911FA4E6E515F98@039-SN1MPN1-001.039d.mgd.msft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120801122522.GB16297@x4>
+In-Reply-To: <3F1D9DCAAB49B94D88DBE05911FA4E6E515F98@039-SN1MPN1-001.039d.mgd.msft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 02:25:22PM +0200, Markus Trippelsdorf wrote:
-> On 2012.08.01 at 14:21 +0200, Jiri Olsa wrote:
-> > On Wed, Aug 01, 2012 at 01:57:40PM +0200, Markus Trippelsdorf wrote:
-> > > On 2012.07.31 at 16:14 +0200, Ingo Molnar wrote:
-> > > > Jiri Olsa (4):
-> > > >       perf symbols: Factor DSO symtab types to generic binary types
-> > > 
-> > > The commit above causes perf segfaults on my machine (running glibc trunk):
-> > > 
-> > > (gdb) run top --stdio
-> > > Starting program: /usr/src/linux/tools/perf/perf top --stdio
-> > > warning: no loadable sections found in added symbol-file system-supplied DSO at 0x7ffff7ffa000
-> > > [Thread debugging using libthread_db enabled]
-> > > Using host libthread_db library "/lib/libthread_db.so.1".
-> > > 
-> > > Program received signal SIGSEGV, Segmentation fault.
-> > > dso__load (dso=0x6661d0, map=map@entry=0x666170, filter=filter@entry=0x426840 <symbol_filter>) at util/symbol.c:1833
-> > > 1833                    dso->symtab_type = binary_type_symtab[i];
-> > > (gdb) bt
-> > > #0  dso__load (dso=0x6661d0, map=map@entry=0x666170, filter=filter@entry=0x426840 <symbol_filter>) at util/symbol.c:1833
-> > > #1  0x000000000045fe87 in map__load (self=self@entry=0x666170, filter=filter@entry=0x426840 <symbol_filter>) at util/map.c:124
-> > > #2  0x000000000045ffbd in map__find_symbol (self=0x666170, addr=11008, filter=filter@entry=0x426840 <symbol_filter>) at util/map.c:168
-> > > #3  0x000000000043b5df in perf_event__preprocess_sample (event=event@entry=0x7ffff44c8720, machine=machine@entry=0x647730, 
-> > >     al=al@entry=0x7fffffffb030, sample=sample@entry=0x7fffffffb060, filter=filter@entry=0x426840 <symbol_filter>) at util/event.c:886
-> > > #4  0x0000000000426d8e in perf_event__process_sample (machine=0x647730, sample=0x7fffffffb060, evsel=<optimized out>, event=0x7ffff44c8720, 
-> > >     tool=0x7fffffffb2c0) at builtin-top.c:723
-> > > #5  perf_top__mmap_read_idx (top=top@entry=0x7fffffffb2c0, idx=idx@entry=3) at builtin-top.c:858
-> > > #6  0x00000000004291c3 in perf_top__mmap_read (top=<optimized out>) at builtin-top.c:873
-> > > #7  __cmd_top (top=0x7fffffffb2c0) at builtin-top.c:1040
-> > > #8  cmd_top (argc=<optimized out>, argv=<optimized out>, prefix=<optimized out>) at builtin-top.c:1348
-> > > #9  0x0000000000414d03 in run_builtin (p=p@entry=0x4dc888, argc=argc@entry=2, argv=argv@entry=0x7fffffffe0b0) at perf.c:273
-> > > #10 0x0000000000415487 in handle_internal_command (argv=0x7fffffffe0b0, argc=2) at perf.c:345
-> > > #11 run_argv (argv=0x7fffffffdeb0, argcp=0x7fffffffdebc) at perf.c:389
-> > > #12 main (argc=2, argv=0x7fffffffe0b0) at perf.c:487
-> > > (gdb)
-> 
-> > I cannot reproduce, but found one obvious bug,
-> > could you please test?
-> 
-> Your patch fixes the issue.
-> Thank you.
+On Wed, Aug 01, 2012 at 12:13:19PM +0000, Singh Sandeep-B37400 wrote:
+> > On Mon, Jul 30, 2012 at 09:50:57AM +0000, Singh Sandeep-B37400 wrote:
+> > > 1. You should send some kernel mode TDM clients. Without those the
+> > framework
+> > >    is pretty useless.
+> > > [Sandeep] We do have a test client but not good enough to be pushed in
+> > > open source, should we add it to documentation??
+> > 
+> > Then how do you know if the framework is "correct" and good enough for
+> > real clients?  We don't add frameworks, or apis, to the kernel without
+> > users, so you will have to come up with some users before we can accept
+> > it.
+> We can only say that this framework is available in FSL BSPs and being used by VoIP companies.
+> But running a complete voice stack itself is beyond the scope of Freescale.
+> So vendors integrate their solutions with FSL solution.
+> To test the framework we have a small application in our BSP (this is a very basic test client) which tests the TDM driver and the SLIC interface from voice  transfer perspective.
+> We can get this added in the Linux codebase in some test directory. What could be a good place for this?
 
-thanks, I'll send official patch ASAP
+tools/ is a good place for that.
 
-jirka
+And sorry, I was thinking you had kernel drivers that attached to this
+framework, not userspace programs.  Actually, what is the user/kernel
+interface for this framework, I seem to have missed that entirely.  You
+will have to document that quite well, and run it by the linux-api
+mailing list.
+
+thanks,
+
+greg k-h
