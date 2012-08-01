@@ -1,247 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab2HAWgu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 18:36:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34115 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171Ab2HAWgr (ORCPT
+	id S1756113Ab2HAWl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 18:41:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39313 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756170Ab2HAWl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 18:36:47 -0400
-Message-ID: <5019AF84.7020404@ti.com>
-Date: Wed, 1 Aug 2012 17:36:52 -0500
-From: "Alexis R. Cortes" <alexis.cortes@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Wed, 1 Aug 2012 18:41:27 -0400
+Message-ID: <5019B0B4.1090102@gmail.com>
+Date: Thu, 02 Aug 2012 00:41:56 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-To: <sarah.a.sharp@linux.intel.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <brian.quach@ti.com>, <jorge.llamas@ti.com>
-Subject: [PATCH] usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP Hardware
-Content-Type: text/plain; charset="UTF-8"
+To: Tejun Heo <tj@kernel.org>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+References: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com> <1343757920-19713-2-git-send-email-levinsasha928@gmail.com> <20120731182330.GD21292@google.com> <50197348.9010101@gmail.com> <20120801182112.GC15477@google.com> <50197460.8010906@gmail.com> <20120801182749.GD15477@google.com> <50197E4A.7020408@gmail.com> <20120801202432.GE15477@google.com>
+In-Reply-To: <20120801202432.GE15477@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is intended to work around a known issue on the
-SN65LVPE502CP USB3.0 re-driver that can delay the negotiation
-between a device and the host past the usual handshake timeout,
-and if that happens on the first insertion, the host controller
-port will enter in Compliance Mode as per xHCI Spec, thus causing
-the port to become Unusable. This patch creates a timer which polls
-every 2 seconds the link state of each host controller's port (this
-by reading the PORTSC register) and recovers the port by issuing a
-Warm reset every time Compliance mode is detected. Since the issue
-is being caused by a pice of hardware, the timer will be enabled
-ONLY on those systems that have the SN65LVPE502CP installed (this
-patch uses DMI strings for detecting those systems), therefore
-making this patch to act as a quirk (XHCI_COMP_MODE_QUIRK has been
-added to the xhci stack).
+On 08/01/2012 10:24 PM, Tejun Heo wrote:
+> On Wed, Aug 01, 2012 at 09:06:50PM +0200, Sasha Levin wrote:
+>> Using a struct makes the dynamic case much easier, but it complicates the static case.
+>>
+>> Previously we could create the buckets statically.
+>>
+>> Consider this struct:
+>>
+>> struct hash_table {
+>> 	u32 bits;
+>> 	struct hlist_head buckets[];
+>> };
+>>
+>> We can't make any code that wraps this to make it work properly
+>> statically allocated nice enough to be acceptable.
+> 
+> I don't know.  Maybe you can create an anonymous outer struct / union
+> and play symbol trick to alias hash_table to its member.  If it is
+> gimped either way, I'm not sure whether it's really worthwhile to
+> create the abstraction.  It's not like we're saving a lot of
+> complexity.
 
-Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
----
- drivers/usb/host/xhci-hub.c |   28 +++++++++++++++
- drivers/usb/host/xhci.c     |   81 +++++++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/xhci.h     |    6 +++
- 3 files changed, 115 insertions(+), 0 deletions(-)
+I must be missing something here, but how would you avoid it?
 
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index 7b01094..ce4b181 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -493,7 +493,19 @@ static void xhci_hub_report_link_state(u32 *status, u32 status_reg)
- 		 * when this bit is set.
- 		 */
- 		pls |= USB_PORT_STAT_CONNECTION;
-+	} else {
-+		/*
-+		 * If CAS bit isn't set but the Port is already at
-+		 * Compliance Mode, fake a connection so the USB core
-+		 * notices the Compliance state and resets the port.
-+		 * This resolves an issue generated by the SN65LVPE502CP
-+		 * in which sometimes the port enters compliance mode
-+		 * caused by a delay on the host-device negotiation.
-+		 */
-+		if (pls == USB_SS_PORT_LS_COMP_MOD)
-+			pls |= USB_PORT_STAT_CONNECTION;
- 	}
-+
- 	/* update status field */
- 	*status |= pls;
- }
-@@ -645,6 +657,22 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
- 		/* Update Port Link State for super speed ports*/
- 		if (hcd->speed == HCD_USB3) {
- 			xhci_hub_report_link_state(&status, temp);
-+			/*
-+			 * Verify if all USB3 Ports Have entered U0. Delete compliance
-+			 * mode timer if so.
-+			 */
-+			if (xhci->quirks & XHCI_COMP_MODE_QUIRK) {
-+				if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1)) {
-+					if ((temp & PORT_PLS_MASK) == XDEV_U0) {
-+						xhci->port_status_u0 |= 1 << wIndex;
-+						if (xhci->port_status_u0 == ((1 << xhci->num_usb3_ports)-1)) {
-+							del_timer_sync(&xhci->comp_mode_recovery_timer);
-+							xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted. "
-+									"All USB3 ports have entered U0 at least once.\n");
-+						}
-+					}
-+				}
-+			}
- 		}
- 		if (bus_state->port_c_suspend & (1 << wIndex))
- 			status |= 1 << USB_PORT_FEAT_C_SUSPEND;
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index a979cd0..fea738b 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -26,6 +26,7 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/slab.h>
-+#include <linux/dmi.h>
- 
- #include "xhci.h"
- 
-@@ -397,6 +398,62 @@ static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
- 
- #endif
- 
-+static void compliance_mode_recovery(unsigned long arg)
-+{
-+	struct xhci_hcd *xhci;
-+	struct usb_hcd *hcd;
-+	u32 temp;
-+	int i;
-+
-+	xhci = (struct xhci_hcd *)arg;
-+
-+	for (i = 0; i < xhci->num_usb3_ports; i++) {
-+		temp = xhci_readl(xhci, xhci->usb3_ports[i]);
-+		if ((temp & PORT_PLS_MASK) == USB_SS_PORT_LS_COMP_MOD) {
-+			/* Compliance Mode Detected. Letting USB Core handle the Warm Reset */
-+			xhci_dbg(xhci, "Compliance Mode Detected on port %d! Attempting recovery routine.\n", i + 1);
-+			hcd = xhci->shared_hcd;
-+
-+			if (hcd->state == HC_STATE_SUSPENDED)
-+				usb_hcd_resume_root_hub(hcd);
-+
-+			usb_hcd_poll_rh_status(hcd);
-+		}
-+	}
-+
-+	if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1))
-+		mod_timer(&xhci->comp_mode_recovery_timer, jiffies + msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
-+}
-+
-+static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
-+{
-+	xhci->port_status_u0 = 0;
-+	init_timer(&xhci->comp_mode_recovery_timer);
-+	xhci->comp_mode_recovery_timer.data = (unsigned long) xhci;
-+	xhci->comp_mode_recovery_timer.function = compliance_mode_recovery;
-+	xhci->comp_mode_recovery_timer.expires = jiffies + msecs_to_jiffies(COMP_MODE_RCVRY_MSECS);
-+	set_timer_slack(&xhci->comp_mode_recovery_timer, msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
-+	add_timer(&xhci->comp_mode_recovery_timer);
-+	xhci_dbg(xhci, "Compliance Mode Recovery Timer Initialized.\n");
-+}
-+
-+static bool compliance_mode_recovery_timer_quirk_check(void)
-+{
-+	const char *dmi_product_name, *dmi_sys_vendor;
-+
-+	dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
-+	dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
-+
-+	if (strstr(dmi_sys_vendor, "Hewlett-Packard")) {
-+		if (strstr(dmi_product_name, "Z420") || strstr(dmi_product_name, "Z620") ||
-+				strstr(dmi_product_name, "Z820")) {
-+			return true;
-+		}
-+	}
-+
-+	return false;
-+}
-+
- /*
-  * Initialize memory for HCD and xHC (one-time init).
-  *
-@@ -420,6 +477,12 @@ int xhci_init(struct usb_hcd *hcd)
- 	retval = xhci_mem_init(xhci, GFP_KERNEL);
- 	xhci_dbg(xhci, "Finished xhci_init\n");
- 
-+	/* Initializing Compliance Mode Recovery Data If Needed */
-+	if (compliance_mode_recovery_timer_quirk_check()) {
-+		xhci->quirks |= XHCI_COMP_MODE_QUIRK;
-+		compliance_mode_recovery_timer_init(xhci);
-+	}
-+
- 	return retval;
- }
- 
-@@ -628,6 +691,10 @@ void xhci_stop(struct usb_hcd *hcd)
- 	del_timer_sync(&xhci->event_ring_timer);
- #endif
- 
-+	/* Deleting Compliance Mode Recovery Timer */
-+	if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) && (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1)))
-+		del_timer_sync(&xhci->comp_mode_recovery_timer);
-+
- 	if (xhci->quirks & XHCI_AMD_PLL_FIX)
- 		usb_amd_dev_put();
- 
-@@ -802,6 +869,15 @@ int xhci_suspend(struct xhci_hcd *xhci)
- 	}
- 	spin_unlock_irq(&xhci->lock);
- 
-+	/*
-+	 * Deleting Compliance Mode Recovery Timer because the xHCI Host
-+	 * is about to be suspended.
-+	 */
-+	if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) && (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1))) {
-+		del_timer_sync(&xhci->comp_mode_recovery_timer);
-+		xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted - xHC suspended\n");
-+	}
-+
- 	/* step 5: remove core well power */
- 	/* synchronize irq when using MSI-X */
- 	xhci_msix_sync_irqs(xhci);
-@@ -934,6 +1010,11 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
- 		usb_hcd_resume_root_hub(hcd);
- 		usb_hcd_resume_root_hub(xhci->shared_hcd);
- 	}
-+
-+	/* Initializing Compliance Mode Recovery Timer */
-+	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
-+		compliance_mode_recovery_timer_init(xhci);
-+
- 	return retval;
- }
- #endif	/* CONFIG_PM */
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 55c0785..f1e7874 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1494,6 +1494,7 @@ struct xhci_hcd {
- #define XHCI_TRUST_TX_LENGTH	(1 << 10)
- #define XHCI_LPM_SUPPORT	(1 << 11)
- #define XHCI_INTEL_HOST		(1 << 12)
-+#define XHCI_COMP_MODE_QUIRK	(1 << 13)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
-@@ -1510,6 +1511,11 @@ struct xhci_hcd {
- 	unsigned		sw_lpm_support:1;
- 	/* support xHCI 1.0 spec USB2 hardware LPM */
- 	unsigned		hw_lpm_support:1;
-+	/* Compliance Mode Recovery Data */
-+	struct timer_list	comp_mode_recovery_timer;
-+	u32			port_status_u0;
-+/* Compliance Mode Timer Triggered every 2 seconds */
-+#define COMP_MODE_RCVRY_MSECS 2000
- };
- 
- /* convert between an HCD pointer and the corresponding EHCI_HCD */
--- 
-1.7.1
+How would your DEFINE_HASHTABLE look like if we got for the simple 'struct hash_table' approach?
+
+> Thanks.
+> 
 
