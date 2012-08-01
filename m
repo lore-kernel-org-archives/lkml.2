@@ -1,171 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab2HAToJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 15:44:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48250 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab2HAToH (ORCPT
+	id S1753620Ab2HATsn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 15:48:43 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36485 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab2HATsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 15:44:07 -0400
-Message-ID: <1343850238.26866.171.camel@shinybook.infradead.org>
-Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
-From: David Woodhouse <dwmw2@infradead.org>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Andreas Heider <andreas@meetr.de>,
-        Arun Raghavan <arun.raghavan@collabora.co.uk>,
-        linux-kernel@vger.kernel.org, airlied@redhat.com
-Date: Wed, 01 Aug 2012 20:43:58 +0100
-In-Reply-To: <20120801155914.GB22963@thinkpad-t410>
-References: <20120710160555.GA31562@srcf.ucam.org>
-	 <20120710163516.GE10194@thinkpad-t410> <4FFCC7FB.1090609@meetr.de>
-	 <1343522547.2488.12.camel@shinybook.infradead.org>
-	 <1343524730.1962.5.camel@shinybook.infradead.org>
-	 <20120729193953.GA25132@srcf.ucam.org>
-	 <1343595171.2511.1.camel@shinybook.infradead.org>
-	 <20120729205859.GA25819@srcf.ucam.org>
-	 <20120731151856.GA19979@thinkpad-t410>
-	 <1343835344.26866.150.camel@shinybook.infradead.org>
-	 <20120801155914.GB22963@thinkpad-t410>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-L1Hp+A25JyCwIbWVVf2C"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 1 Aug 2012 15:48:41 -0400
+Date: Wed, 1 Aug 2012 12:48:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Mel Gorman <mgorman@suse.de>
+Subject: Linux 3.0.39
+Message-ID: <20120801194836.GA9370@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-L1Hp+A25JyCwIbWVVf2C
-Content-Type: text/plain; charset="UTF-8"
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2012-08-01 at 10:59 -0500, Seth Forshee wrote:
-> since there still doesn't seem to be any way
-> to get the vbios for the Intel graphics.
+I'm announcing the release of the 3.0.39 kernel.
 
-Hm, wait. With Matthew's patches to get the Radeon BIOS from EFI, there
-*is* also a ROM image for the Intel device. Have we tried that?
+All users of the 3.0 kernel series must upgrade.
 
---=20
-dwmw2
+Many thanks to Mel Gorman for all of the backported performance patches
+that he took the time to send in and get merged properly.  That was an
+incredible job, everyone using the 3.0-stable tree now owes you a
+beverage of your choice when they see you.
 
---=-L1Hp+A25JyCwIbWVVf2C
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
+The updated 3.0.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwODAxMTk0MzU4WjAjBgkqhkiG9w0BCQQx
-FgQUMD38JBRao7RwODI4dOm69egUNdowgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCtTvJ0+xv0dqEEY3RC3hQlmUHS
-4OGtLrB4uze+nMlkc2lk9qBtKmer6oFMVEsVz932A2+Yoj6rUWkHfkwZsBYpK+6whHJjiT5xLq3q
-qkmZGnZn6sUw3mfdOmwqexkfCd6Jw7pVDyvFM0mHC9WFMUVmMkdmEOvYOP46NiXA4Hj6gZm0rEwC
-jm+NXCH9FtZQYPLEu4ZF6qMJkhHQtAtPMiQGNOf+wwVAabIylf1tXwVKRqU/jEG0GjASuAcfvZo/
-HhsC1QWGT5Pl2WemINX4fp8YisAuDEyRgje61G5GVlJqjv7JtpGazjqj+FHp1irGuV1syBOWjBYk
-N+5tOWY3N7wLAAAAAAAA
+thanks,
+
+greg k-h
+
+------------
+
+ Documentation/trace/postprocess/trace-vmscan-postprocess.pl |    8=20
+ Makefile                                                    |    2=20
+ arch/mips/include/asm/thread_info.h                         |    4=20
+ arch/mips/kernel/vmlinux.lds.S                              |    3=20
+ drivers/base/memory.c                                       |   58 +-
+ drivers/md/dm-raid1.c                                       |    2=20
+ drivers/md/dm-region-hash.c                                 |    5=20
+ fs/btrfs/disk-io.c                                          |    5=20
+ fs/cifs/readdir.c                                           |    7=20
+ fs/hugetlbfs/inode.c                                        |    3=20
+ fs/nfs/internal.h                                           |    2=20
+ fs/nfs/write.c                                              |    4=20
+ fs/ubifs/sb.c                                               |    8=20
+ include/linux/cpuset.h                                      |   47 -
+ include/linux/fs.h                                          |   11=20
+ include/linux/init_task.h                                   |    8=20
+ include/linux/memcontrol.h                                  |    3=20
+ include/linux/migrate.h                                     |   23=20
+ include/linux/mmzone.h                                      |   14=20
+ include/linux/sched.h                                       |    2=20
+ include/linux/swap.h                                        |    7=20
+ include/trace/events/vmscan.h                               |   85 +++
+ kernel/cpuset.c                                             |   63 +-
+ kernel/fork.c                                               |    3=20
+ kernel/time/ntp.c                                           |    8=20
+ mm/compaction.c                                             |   26 -
+ mm/filemap.c                                                |   11=20
+ mm/hugetlb.c                                                |   13=20
+ mm/memcontrol.c                                             |    3=20
+ mm/memory-failure.c                                         |    2=20
+ mm/memory_hotplug.c                                         |    2=20
+ mm/mempolicy.c                                              |   30 -
+ mm/migrate.c                                                |  240 ++++++-=
+--
+ mm/page_alloc.c                                             |  118 +++-
+ mm/slab.c                                                   |   13=20
+ mm/slub.c                                                   |   40 +
+ mm/vmscan.c                                                 |  296 +++++++=
+++---
+ mm/vmstat.c                                                 |    2=20
+ 38 files changed, 826 insertions(+), 355 deletions(-)
+
+Aaditya Kumar (1):
+      mm: fix lost kswapd wakeup in kswapd_stop()
+
+Alex Shi (2):
+      kswapd: avoid unnecessary rebalance after an unsuccessful balancing
+      kswapd: assign new_order and new_classzone_idx after wakeup in sleepi=
+ng
+
+Artem Bityutskiy (1):
+      UBIFS: fix a bug in empty space fix-up
+
+Dave Chinner (3):
+      vmscan: add shrink_slab tracepoints
+      vmscan: shrinker->nr updates race and go wrong
+      vmscan: reduce wind up shrinker->nr when shrinker can't do work
+
+David Daney (1):
+      MIPS: Properly align the .data..init_task section.
+
+David Rientjes (2):
+      cpusets: avoid looping when storing to mems_allowed if one node remai=
+ns set
+      cpusets: stall when updating mems_allowed for mempolicy or disjoint n=
+odemask
+
+Dimitri Sivanich (1):
+      mm/vmstat.c: cache align vm_stat
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.39
+
+Hugh Dickins (1):
+      mm: test PageSwapBacked in lumpy reclaim
+
+Jeff Layton (1):
+      cifs: always update the inode cache with the results from a FIND_*
+
+Johannes Weiner (2):
+      mm: vmscan: fix force-scanning small targets without swap
+      mm: vmscan: convert global reclaim to per-memcg LRU lists
+
+John Stultz (1):
+      ntp: Fix STA_INS/DEL clearing bug
+
+Konstantin Khlebnikov (4):
+      vmscan: promote shared file mapped pages
+      vmscan: activate executable pages after first usage
+      mm/hugetlb: fix warning in alloc_huge_page/dequeue_huge_page_vma
+      vmscan: fix initial shrinker size handling
+
+Mel Gorman (12):
+      mm: memory hotplug: Check if pages are correctly reserved on a per-se=
+ction basis
+      mm: reduce the amount of work done when updating min_free_kbytes
+      vmscan: abort reclaim/compaction if compaction can proceed
+      mm: compaction: allow compaction to isolate dirty pages
+      mm: compaction: determine if dirty pages can be migrated without bloc=
+king within ->migratepage
+      mm: page allocator: do not call direct reclaim for THP allocations wh=
+ile compaction is deferred
+      mm: compaction: make isolate_lru_page() filter-aware again
+      mm: compaction: introduce sync-light migration for use by compaction
+      mm: vmscan: when reclaiming for compaction, ensure there are sufficie=
+nt free pages available
+      mm: vmscan: do not OOM if aborting reclaim to start compaction
+      mm: vmscan: check if reclaim should really abort even if compaction_r=
+eady() is true for one zone
+      cpuset: mm: reduce large amounts of memory barrier related damage v3
+
+Mikulas Patocka (1):
+      dm raid1: fix crash with mirror recovery and discard
+
+Minchan Kim (6):
+      mm: compaction: trivial clean up in acct_isolated()
+      mm: change isolate mode from #define to bitwise type
+      mm: compaction: make isolate_lru_page() filter-aware
+      mm: zone_reclaim: make isolate_lru_page() filter-aware
+      mm: migration: clean up unmap_and_move()
+      mm/vmscan.c: consider swap space when deciding whether to continue re=
+claim
+
+Rik van Riel (1):
+      vmscan: limit direct reclaim for higher order allocations
+
+Shaohua Li (1):
+      vmscan: clear ZONE_CONGESTED for zone with good watermark
 
 
---=-L1Hp+A25JyCwIbWVVf2C--
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQGYgUAAoJEDjbvchgkmk+v4cQALsu0JTf/lKu3tcjmpy2ZDNR
+vhaEMFZ4J8nC+PgirYV6jjgNm+T0ptSNXnV61M9DJNxRDhDgyP1wITDb4r6WonAs
+ScFr6Z4HVXhusF9dVKu0FYCiX5L+JqOKZsi7aeCotk5ESLFyblEDWZXMx9afVjE/
+55ogq25BW0UdT+zh64OGO7U0p7X0yxK/3bDpURrPyNAdvD1q0Olq+hjxumaMgn5v
+IMXa1iMJi393dr3yPRK/G5kOseT0PwuWARdK9RgU8Uw3vm6jHxlDObxRKvpUrPVP
+wQtzSu2OvMWMKzCfS95LvNsidMgXnQTlAMiCtKgbNfb0+CjWJFT8Pjz8QrgX+tun
+ha8W2h4z9vCRTr885IUMezcnVQYk4x+T324/8+FJn9Ak1XguDXVucrmTpjAYBzP2
+f15GcgLnyGZdBApN5jQe58ha+bhf9xfMGUe8fgAFNzdpOrzV7CBjqt0Kn6uMcvuP
+DAwrj7EB6Vh0OAwCllazCEYgxwjjoenXsqbzfS6rf4cc5pCNTtr3LfsgMrmgyxR0
+7LxLvje+CxyJ9GSWzX2RHwlyE9NIrCrcyh3wMgQ9hdRihBWpt2Vu9ppPATSw8tQi
+CXoFUSLJS3ShwiVg1COb8p2qj7/jqavkrR/3xfSvUyx4C/KUzdHQKcDI/C+PUR8g
+6g7ZpapuRwDnzm5BdlmS
+=hbjU
+-----END PGP SIGNATURE-----
+
+--G4iJoqBmSsgzjUCe--
