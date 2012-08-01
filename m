@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab2HADPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 23:15:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47966 "EHLO mx1.redhat.com"
+	id S1754396Ab2HADQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 23:16:37 -0400
+Received: from mail.tmr.com ([64.65.253.246]:51640 "EHLO partygirl.tmr.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753048Ab2HADPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 23:15:30 -0400
-Date: Wed, 1 Aug 2012 00:07:36 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Alexander Graf <agraf@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>, KVM <kvm@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
-Message-ID: <20120801030736.GA31711@amt.cnet>
-References: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com>
+	id S1753230Ab2HADQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 23:16:36 -0400
+Message-ID: <50189F88.9020805@tmr.com>
+Date: Tue, 31 Jul 2012 23:16:24 -0400
+From: Bill Davidsen <davidsen@tmr.com>
+Organization: TMR Associates Inc, Schenectady NY
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Firefox/13.0.1 SeaMonkey/2.10.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kevin Ross <kevin@familyross.net>
+CC: Grant Coady <gcoady.lk@gmail.com>, Linux RAID <linux-raid@vger.kernel.org>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: RAID extremely slow
+References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org> <5010A386.4080209@familyross.net> <5010CEFF.5030606@familyross.net> <5012E717.9070808@tmr.com> <50130BEE.8080402@familyross.net> <8oq618ldps0ijt76cr3k6vovkksm4b9vsb@4ax.com> <5013A41E.5070500@familyross.net>
+In-Reply-To: <5013A41E.5070500@familyross.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 02:23:59PM +0530, Raghavendra K T wrote:
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> 
-> Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ,
-> and Peter (HPA) for suggesting hypercall ABI addition.
-> 
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
-> Please have a closer look at Hypercall ABI newly added
-> 
-> Changes since last post:
->  - Added hypercall ABI (Peter)
->  - made KVM_HC_VAPIC_POLL_IRQ active explicitly (Randy)
-> 
-> TODO: We need to add history details of each hypercall as suggested by HPA,
-> which I could not trace easily. Hope it is easy for hypercall authors
-> 
->  Documentation/virtual/hypercalls.txt |   71 ++++++++++++++++++++++++++++++++++
->  1 files changed, 71 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/virtual/hypercalls.txt
-> 
-> diff --git a/Documentation/virtual/hypercalls.txt b/Documentation/virtual/hypercalls.txt
-> new file mode 100644
-> index 0000000..caffc08
-> --- /dev/null
-> +++ b/Documentation/virtual/hypercalls.txt
-> @@ -0,0 +1,71 @@
-> +Hypercall ABI:
-> +=============
-> +A brief look at calling conventions of X86, S390 and PPC
-> +X86:
-> + KVM Hypercalls have a three-byte sequence of either the vmrun or the vmmrun
-> + instruction. The hypervisor can replace it with instructions that are
-> + guaranteed to be supported.
+Kevin Ross wrote:
+> On 07/27/2012 09:45 PM, Grant Coady wrote:
+>> On Fri, 27 Jul 2012 14:45:18 -0700, you wrote:
+>>
+>>> On 07/27/2012 12:08 PM, Bill Davidsen wrote:
+>>>> Have you set the io scheduler to deadline on all members of the array?
+>>>> That's kind of "job one" on older kernels.
+>>>>
+>>> I have not, thanks for the tip, I'll look into that now.
+>> Plus I disable the on-drive queuing (NCQ) during startup, right now
+>> I don't have benchmarks to show the difference.  This on a six by 1TB
+>> drive RAID6 array I built over a year ago on Slackware64-13.37:
+>>
+>> # cat /etc/rc.d/rc.local
+>> ...
+>> # turn off NCQ on the RAID drives by adjusting queue depth to 1
+>> n=1
+>> echo "rc.local: Disable RAID drives' NCQ"
+>> for d in a b c d e f
+>> do
+>>          echo "  set NCQ depth to $n on sd${d}"
+>>          echo $n>  /sys/block/sd${d}/device/queue_depth
+>> done
+>> ...
+>>
+>> Maybe you could try that?  See if it makes a difference.  My drives
+>> are Seagate.
+>>
+>> Grant.
+>>
+>
+> Does disabling NCQ improve performance?
 
-vmcall.
+Does for me!
+>
+> The suggestion to use kernel 3.4.6 has been working quite well so far, 
+> hopefully that fixes the problem.  I'll know for sure in a few more days...
+>
+> Thanks!
+> -- Kevin
+>
 
-> +
-> + Up to four arguments may be passed in rbx, rcx, rdx, and rsi respectively.
-> + The hypercall number should be placed in rax and the return value will be
-> + placed in rax.  No other registers will be clobbered unless explicitly stated
-> + by the particular hypercall.
 
-It depends on the hypercall. It happens that current hypercalls use
-the four registers, but its not an ABI (hyper-v hypercalls uses r8, for example).
+-- 
+Bill Davidsen <davidsen@tmr.com>
+   We are not out of the woods yet, but we know the direction and have
+taken the first step. The steps are many, but finite in number, and if
+we persevere we will reach our destination.  -me, 2010
+
 
