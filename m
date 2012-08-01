@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab2HANcS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 09:32:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:49235 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab2HANcR (ORCPT
+	id S1753729Ab2HANcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 09:32:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51015 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab2HANcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 09:32:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 5/6] ARM: ux500: Ensure probing of Audio devices when Device Tree is enabled
-Date: Wed, 1 Aug 2012 13:32:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        lrg@ti.com
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <201207312054.13818.arnd@arndb.de> <5018DBEE.9090203@linaro.org>
-In-Reply-To: <5018DBEE.9090203@linaro.org>
+	Wed, 1 Aug 2012 09:32:46 -0400
+Message-ID: <50192FF5.1060208@linutronix.de>
+Date: Wed, 01 Aug 2012 15:32:37 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Roland McGrath <roland@hack.frob.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, ananth@in.ibm.com,
+        a.p.zijlstra@chello.nl, mingo@redhat.com, srikar@linux.vnet.ibm.com
+Subject: Re: Q: user_enable_single_step() && update_debugctlmsr()
+References: <20120730141638.GA5306@redhat.com> <1343735548-18101-1-git-send-email-bigeasy@linutronix.de> <1343735548-18101-2-git-send-email-bigeasy@linutronix.de> <20120731175108.GC14576@redhat.com> <50183273.9070304@linutronix.de> <20120801122616.GA32705@redhat.com> <20120801130118.GA2386@redhat.com>
+In-Reply-To: <20120801130118.GA2386@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208011332.02500.arnd@arndb.de>
-X-Provags-ID: V02:K0:OF7jWUCPHAU5pyhrgmWc0ALy1yVJgfYcDcC3hJ0tqyF
- vW+y0mtweR8QWkZ5mhrW2JDvVihhKkM5fcidt4w839yeGCH8Lh
- M7QXPRFnlFOfdnV0Vg7K80k3f/XGsR/YJIj6VPpI8Tw0V+GE7t
- alAK68YaCAbYlALYxicj0ToKUHmq6KWfdSf8LI5YUGJORLdDjJ
- 6HTRjvVnSt746Lu3WLlVamtKCT739HM75KmCbtgtrW+e2hoCrX
- ZPHOYd1nJhAX/gw/P37RKDZit4W+aY8SNbTtwfvUlttfw+QvZy
- cYnT3Qf7MWjDfH+63bg3lQzW49jFpGqIn/k5D2Uu2EBA7p02Vq
- fozbYI1WFqs+IiTbbOtY=
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 August 2012, Lee Jones wrote:
-> > Looks like you're adding the same call to each of the three cases:
-> > mop500, snowball and hrefv60+. How about moving it before or after
-> > the if/elseif block?
-> 
-> The Snowball one is different 'mop500_msp_init' -> 'mop500_of_msp_init'.
+On 08/01/2012 03:01 PM, Oleg Nesterov wrote:
+> Lets ignore uprobes which needs the changes anyway. This is
+> only used by ptrace and the task is stopped. So, unless I missed
+> something obvious, this update_debugctlmsr() is simply unneeded,
+> __switch_to/__switch_to_xtra should notice _TIF_BLOCKSTEP and do
+> update_debugctlmsr(DEBUGCTLMSR_BTF).
 
-Ah, I see. Is there a problem in always using mop500_of_msp_init then?
-I would guess that this just means you'd have to put the msp into the
-device tree files, which don't yet exist for mop500 and hrefv60.
+It looks like it unless a processes ptraces itself (which does not make
+much sense anyway).
 
-	Arnd
+> But, worse, isn't it wrong? Suppose that debugger switches to
+> another TIF_SINGLESTEP&&  !TIF_BLOCKSTEP task, in this case
+> we "leak" DEBUGCTLMSR_BTF, no?
+
+__switch_to_xtra() should notice the difference in the TIF_BLOCKSTEP
+flag and disable it.
+
+> IOW, it seems to me we could safely remove update_debugctlmsr()
+> arch/x86/kernel/step.c. However, if we want to re-use this code
+> in uprobes, then we probably need to add "if (child == current)".
+It looks that way.
+
+>
+> Or I am totally confused. Help!
+>
+> Oleg.
+
+Sebastian
