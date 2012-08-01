@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab2HAMJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 08:09:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33222 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2HAMJe (ORCPT
+	id S1754178Ab2HAMKE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 08:10:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63932 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337Ab2HAMKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 08:09:34 -0400
-Message-ID: <50191C46.4090902@mvista.com>
-Date: Wed, 01 Aug 2012 16:08:38 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Cyril Chemparathy <cyril@ti.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, arnd@arndb.de, nico@linaro.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        Vitaly Andrianov <vitalya@ti.com>
-Subject: Re: [PATCH 06/22] ARM: LPAE: use phys_addr_t in alloc_init_pud()
-References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-7-git-send-email-cyril@ti.com>
-In-Reply-To: <1343775898-28345-7-git-send-email-cyril@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Aug 2012 08:10:02 -0400
+From: "G.Shark Jeong" <gshark.jeong@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>
+Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
+        "G.Shark Jeong" <gshark.jeong@gmail.com>
+Subject: [PATCH 0/1]  leds: Add LED driver for lm355x chips
+Date: Wed,  1 Aug 2012 21:05:55 +0900
+Message-Id: <1343822756-3373-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: "G.Shark Jeong" <gshark.jeong@gmail.com>
 
-On 01-08-2012 3:04, Cyril Chemparathy wrote:
+LM3554 and LM3556 have similar functions but very different register map.
+This driver is a general version for LM355x,lm3554 and lm3556,led chips of TI.
+lm3556 driver can be replaced by this driver.
 
-> From: Vitaly Andrianov <vitalya@ti.com>
+LM3554 :
+The LM3554 is a 2 MHz fixed-frequency synchronous boost
+converter with 1.2A dual high side led drivers.
+Datasheet: www.ti.com/lit/ds/symlink/lm3554.pdf
 
-> This patch fixes the alloc_init_pud() function to use phys_addr_t instead of
-> unsigned long when passing in the phys argument.
+LM3556 :
+The LM3556 is a 4 MHz fixed-frequency synchronous boost
+converter plus 1.5A constant current driver for a high-current white LED.
+Datasheet: www.national.com/ds/LM/LM3556.pdf
 
-> This is an extension to commit 97092e0c56830457af0639f6bd904537a150ea4a, which
+G.Shark Jeong (1):
+  leds: Add LED driver for lm355x chips
 
-    Please also specify that commit's summary in parens.
+ drivers/leds/Kconfig                      |    8 +-
+ drivers/leds/Makefile                     |    2 +-
+ drivers/leds/leds-lm355x.c                |  529 +++++++++++++++++++++++++++++
+ include/linux/platform_data/leds-lm355x.h |   66 ++++
+ 4 files changed, 600 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/leds/leds-lm355x.c
+ create mode 100644 include/linux/platform_data/leds-lm355x.h
 
-> applied similar changes elsewhere in the ARM memory management code.
-
-> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-
-WBR, Sergei
+-- 
+1.7.5.4
 
