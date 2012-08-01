@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470Ab2HAOFy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 10:05:54 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:56420 "EHLO mail.atlantis.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753907Ab2HAOFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 10:05:53 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: alsa-devel@alsa-project.org
-Subject: Move snd_legacy_find_free_ioport to initval.h
-Date: Wed, 1 Aug 2012 16:05:39 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
+	id S1754522Ab2HAOGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 10:06:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43866 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153Ab2HAOGw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 10:06:52 -0400
+Message-ID: <501937F7.2070600@landley.net>
+Date: Wed, 01 Aug 2012 09:06:47 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+To: Milton Miller <miltonm@bga.com>
+CC: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Borislav Petkov <bp@alien8.de>, Cong Wang <xiyou.wangcong@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening
+ port
+References: <gilii4nnxb.fsf@mx10.gouders.net> <kernel-nc-hints@mdm.bga.com>
+In-Reply-To: <kernel-nc-hints@mdm.bga.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201208011605.39519.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move snd_legacy_find_free_ioport() function back to initval.h as it is used
-by two drivers.
+On 07/29/2012 03:40 AM, Milton Miller wrote:
+> [adding Rob as Doc maintanier]
+> 
+> On Sat, 28 Jul 2012 about 11:08:16 -0000, Dirk Gouders wrote:
+>> Borislav Petkov <bp@alien8.de> writes:
+>>
+>>> On Fri, Jul 27, 2012 at 11:24:53AM +0200, Dirk Gouders wrote:
+>>>> Cong Wang <xiyou.wangcong@gmail.com> writes:
+>>>>
+>>>>> On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
+>>>>> <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
+>>>>>> Hi Jesse,
+>>>>>>
+>>>>>> I would like to ask you to check if the documentation of "nc" in
+>>>>>> netconsole.txt is still correct.  I tried two different netcat packages
+>>>>>> and both require "-p" to specify the listening port.  I am wondering if
+>>>>>> that changed after the use of "nc" has been documented.
+>>>>>
+>>>>> On Fedora 16, `nc -u -l <port number>` works fine.
+>>>>
+>>>> Thanks for checking that.
+>>>>
+>>>> If the information I found is correct, Fedora uses OpenBSD's nc
+>>>> codebase.  The two netcat packages I tested on a Gentoo system differ in
+>>>> requiring the -p switch for the port specification.
+>>>
+>>> So say exactly that in the doc: that the *BSD's version of nc doesn't
+>>> need the port number specified with '-p' and you're covered.
+>> OK, I tried that in the attached patch.
+>> I'm not sure if every exeption needs to/should be documented, though.
+>>
+>> >From 3cdeac3e814471053129145c5fa8391acb365fd8 Mon Sep 17 00:00:00 2001
+>> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+>> Date: Sat, 28 Jul 2012 12:32:49 +0200
+>> Subject: [PATCH] netconsole.txt: non-BSD versions of nc(1) require '-p'
+>>  switch
+>>
+>> Gentoo for example uses non-BSD versions of nc(1) which require
+>> the '-p' switch to specify the listening port.
+>>
+>> ---
+>> Documentation/networking/netconsole.txt |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Did this ever resolve to a specific recommended patch? The one at the
+start of the thread:
 
-diff --git a/include/sound/initval.h b/include/sound/initval.h
-index f99a0d2..ac62c67 100644
---- a/include/sound/initval.h
-+++ b/include/sound/initval.h
-@@ -50,6 +50,20 @@
- #define SNDRV_DEFAULT_DMA_SIZE	{ [0 ... (SNDRV_CARDS-1)] = SNDRV_AUTO_DMA_SIZE }
- #define SNDRV_DEFAULT_PTR	SNDRV_DEFAULT_STR
- 
-+#ifdef SNDRV_LEGACY_FIND_FREE_IOPORT
-+static long snd_legacy_find_free_ioport(long *port_table, long size)
-+{
-+	while (*port_table != -1) {
-+		if (request_region(*port_table, size, "ALSA test")) {
-+			release_region(*port_table, size);
-+			return *port_table;
-+		}
-+		port_table++;
-+	}
-+	return -1;
-+}
-+#endif
-+
- #ifdef SNDRV_LEGACY_FIND_FREE_IRQ
- #include <linux/interrupt.h>
- 
-diff --git a/sound/isa/opti9xx/miro.c b/sound/isa/opti9xx/miro.c
-index c24594c..3d1afb6 100644
---- a/sound/isa/opti9xx/miro.c
-+++ b/sound/isa/opti9xx/miro.c
-@@ -37,6 +37,7 @@
- #include <sound/opl4.h>
- #include <sound/control.h>
- #include <sound/info.h>
-+#define SNDRV_LEGACY_FIND_FREE_IOPORT
- #define SNDRV_LEGACY_FIND_FREE_IRQ
- #define SNDRV_LEGACY_FIND_FREE_DMA
- #include <sound/initval.h>
-@@ -770,20 +771,6 @@ static int __devinit snd_miro_mixer(struct snd_card *card,
- 	return 0;
- }
- 
--static long snd_legacy_find_free_ioport(long *port_table, long size)
--{
--	while (*port_table != -1) {
--		struct resource *res;
--		if ((res = request_region(*port_table, size, 
--					  "ALSA test")) != NULL) {
--			release_and_free_resource(res);
--			return *port_table;
--		}
--		port_table++;
--	}
--	return -1;
--}
--
- static int __devinit snd_miro_init(struct snd_miro *chip,
- 				   unsigned short hardware)
- {
-diff --git a/sound/isa/opti9xx/opti92x-ad1848.c b/sound/isa/opti9xx/opti92x-ad1848.c
-index f8fbe22..2899c9f 100644
---- a/sound/isa/opti9xx/opti92x-ad1848.c
-+++ b/sound/isa/opti9xx/opti92x-ad1848.c
-@@ -39,6 +39,7 @@
- #ifndef OPTi93X
- #include <sound/opl4.h>
- #endif
-+#define SNDRV_LEGACY_FIND_FREE_IOPORT
- #define SNDRV_LEGACY_FIND_FREE_IRQ
- #define SNDRV_LEGACY_FIND_FREE_DMA
- #include <sound/initval.h>
-@@ -185,19 +186,6 @@ static char * snd_opti9xx_names[] = {
- 	"82C930",	"82C931",	"82C933"
- };
- 
--
--static long __devinit snd_legacy_find_free_ioport(long *port_table, long size)
--{
--	while (*port_table != -1) {
--		if (request_region(*port_table, size, "ALSA test")) {
--			release_region(*port_table, size);
--			return *port_table;
--		}
--		port_table++;
--	}
--	return -1;
--}
--
- static int __devinit snd_opti9xx_init(struct snd_opti9xx *chip,
- 				      unsigned short hardware)
- {
+ http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/01995.html
 
+Apparently isn't it...?
 
+Rob
 -- 
-Ondrej Zary
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
