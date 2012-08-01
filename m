@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab2HAWl3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 18:41:29 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39313 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756170Ab2HAWl1 (ORCPT
+	id S1756363Ab2HAWmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 18:42:06 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43921 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756204Ab2HAWmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 18:41:27 -0400
-Message-ID: <5019B0B4.1090102@gmail.com>
-Date: Thu, 02 Aug 2012 00:41:56 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-References: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com> <1343757920-19713-2-git-send-email-levinsasha928@gmail.com> <20120731182330.GD21292@google.com> <50197348.9010101@gmail.com> <20120801182112.GC15477@google.com> <50197460.8010906@gmail.com> <20120801182749.GD15477@google.com> <50197E4A.7020408@gmail.com> <20120801202432.GE15477@google.com>
-In-Reply-To: <20120801202432.GE15477@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Aug 2012 18:42:04 -0400
+Date: Thu, 2 Aug 2012 08:41:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Subject: linux-next: removal of some trees
+Message-Id: <20120802084154.875a13db0ec1ebd3f5a4dab3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__2_Aug_2012_08_41_54_+1000_S6wVwb8Ag.PY_P/G"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2012 10:24 PM, Tejun Heo wrote:
-> On Wed, Aug 01, 2012 at 09:06:50PM +0200, Sasha Levin wrote:
->> Using a struct makes the dynamic case much easier, but it complicates the static case.
->>
->> Previously we could create the buckets statically.
->>
->> Consider this struct:
->>
->> struct hash_table {
->> 	u32 bits;
->> 	struct hlist_head buckets[];
->> };
->>
->> We can't make any code that wraps this to make it work properly
->> statically allocated nice enough to be acceptable.
-> 
-> I don't know.  Maybe you can create an anonymous outer struct / union
-> and play symbol trick to alias hash_table to its member.  If it is
-> gimped either way, I'm not sure whether it's really worthwhile to
-> create the abstraction.  It's not like we're saving a lot of
-> complexity.
+--Signature=_Thu__2_Aug_2012_08_41_54_+1000_S6wVwb8Ag.PY_P/G
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I must be missing something here, but how would you avoid it?
+Hi Ben,
 
-How would your DEFINE_HASHTABLE look like if we got for the simple 'struct hash_table' approach?
+Since I haven't been able to fetch these trees for quite some time and I
+haven't heard from you about them, I am removing the following trees from
+linux-next.  If/When you have time to maintain these trees again, we can
+add them back without problems.
 
-> Thanks.
-> 
+samsung	 	git://git.fluff.org/bjdooks/linux.git#next-samsung
+bjdooks-i2c	git://git.fluff.org/bjdooks/linux.git#next-i2c
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__2_Aug_2012_08_41_54_+1000_S6wVwb8Ag.PY_P/G
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQGbCyAAoJEECxmPOUX5FEh6EP/j/Axli6VGXC63GA1YVd0wBU
+FJ1WPqEefn9ceC9bq6Ypadh0avG8k2pYdJxinwfufH97BTOOV/htKIvwarhHH4c5
+13MV0xG+PmS+7FFU/TXAibDw993uIFIIOliKxzoyGtj8NtYCAizlt/8+NsQZ1isL
+eaj2WAB942O0NuK2EmF3RXxoXJm+Pd80IkJWMuy/Y8VvmrEbEJDyYbxE6Rmt7wkY
+DQj6+YEw5Gj3rq66lTQG53dVjWKM54ahlLH3LxVuFLp0soluUICqkr7P2CXDbwU6
+37ghkvkQ7u0+tS4FMMmV7SRtzwT5V99bZrN+MSPjSJtjQCKke5Ogag3qmM9oH9bU
+RNcZUQ54QOxNshXHTqSfssjhz1z8/3N1cHUn+T/9RCF7vz/TWDkNisRM4YdYW8mY
+JjZfNEC6iMyufIXqxVMdOA21Re6kRXhCKOJwdpRWslaP1qzWXaKd2IzEb3muf+8I
+FOLhuFKpGp4WAzON5pYT8CQpHSEuce2lyhB9sA0aLpmo/H1oBSdZF5V1d9jT0MI9
+AZwVeV+6IpzVbbkgCvqQA99Pb7vUoTRMo/j+RQdXfcpIY8GXYgNqeD6qMrjVP9or
+Y1awY3xEmvZGqS5qdDu3q9IQ49WJwrZiWZZ/Szh+lOh8to58wOD0u33DZu3yrPBW
+5NZBqIhR75XQeGjdh/AI
+=WbNY
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__2_Aug_2012_08_41_54_+1000_S6wVwb8Ag.PY_P/G--
