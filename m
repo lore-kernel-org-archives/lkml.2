@@ -1,77 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2HAGwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 02:52:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48297 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab2HAGwo (ORCPT
+	id S1754300Ab2HAGwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 02:52:53 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56334 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753826Ab2HAGwu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 02:52:44 -0400
-Date: Wed, 1 Aug 2012 08:52:42 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Stultz <john.stultz@linaro.org>
-cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: Re: [PATCH 1/2] [RFC] time: Fix problem with large timespecs &
- ktime_get_update_offsets
-In-Reply-To: <1343716548-38742-2-git-send-email-john.stultz@linaro.org>
-Message-ID: <alpine.LFD.2.02.1208010850510.32033@ionos>
-References: <1343716548-38742-1-git-send-email-john.stultz@linaro.org> <1343716548-38742-2-git-send-email-john.stultz@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 1 Aug 2012 02:52:50 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: RE: [PATCH] pwm_backlight: Add device tree support for Low
+ Threshold Brightness
+Thread-Topic: [PATCH] pwm_backlight: Add device tree support for Low
+ Threshold Brightness
+Thread-Index: AQHNamJlzd+YdPIDHUOkbO/Lje1a5JdBEF2AgACOp9A=
+Date: Wed, 1 Aug 2012 06:51:21 +0000
+Deferred-Delivery: Wed, 1 Aug 2012 06:51:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E97C4C9@DBDE01.ent.ti.com>
+References: <1343219042-4371-1-git-send-email-avinashphilip@ti.com>
+ <20120730065805.GB15245@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20120730065805.GB15245@avionic-0098.mockup.avionic-design.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jul 2012, John Stultz wrote:
-> There's currently a slight difference in ktime_get_update_offsets()
-> vs ktime_get() which can result in boot time crashes when booting
-> with insane CMOS clock values larger then ~2264.
+On Mon, Jul 30, 2012 at 12:28:05, Thierry Reding wrote:
+> On Wed, Jul 25, 2012 at 05:54:02PM +0530, Philip, Avinash wrote:
+> > Low Threshold Brightness should be configured to have a linear relation
+> > in brightness scale. This patch adds device tree support for low
+> > threshold brightness as optional one for pwm_backlight.
 > 
-> ktime_get() does basically the following:
->         return timespec_to_ktime(timespec_add(xtime, wall_to_monotonic))
+> I think this should be more explicit as to why this is required, perhaps
+> something like this:
 > 
-> Where as ktime_get_update_offsets does approximately:
->         return ktime_sub(timespec_to_ktime(xtime), realtime_offset);
+> 	Some backlights perform poorly when driven by a PWM with a short
+> 	duty-cycle. For such devices, the low threshold can be used to
+> 	specify a lower bound for the duty-cycle and should be chosen to
+> 	exclude the problematic range.
 > 
-> The problem is, at boot we set xtime = year 8200 and
-> wall_to_monotonic = year -8200,  ktime_get adds both values, mostly
-> nulling the difference out (leaving only how long the system has been
-> up), then converts that relatively small value to a ktime_t properly
-> without losing any information.
+> 	This patch adds support for an optional low-threshold-brightness
+> 	property.
+
+Ok I will correct it.
+
 > 
-> ktime_get_update_offsets however, since it converts xtime (again set
-> to some value greater then year 8200), to a ktime, it gets clamped at
-> KTIME_MAX, then we subtract realtime_offset, which is _also_ clamped
-> at KTIME_MAX, resulting in us always returning almost[1] zero. This
-> causes us to stop expiring timers.
+> Perhaps a similar explanation should be given somewhere else instead of
+> just the changelog. It took me some time to understand what exactly this
+> low threshold means and I think it'd make sense to write this kind of
+> information down somewhere. I'll see if I can make time to add a bit of
+> documentation somewhere below Documentation/backlight perhaps.
 > 
-> Now, one of the reasons Thomas and I changed the logic was that using
-> the precalculated realtime_offset was slightly more efficient then
-> re-adding xtime and wall_to_monotonic's components separately. But
-> how valuable this unmeasured slight efficiency is vs extra
-> robustness for crazy time values is questionable.
+> > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+> > ---
+> > :100644 100644 1e4fc72... 5c54380... M	Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> > :100644 100644 995f016... 4965408... M	drivers/video/backlight/pwm_bl.c
+> >  .../bindings/video/backlight/pwm-backlight.txt     |   21 ++++++++++++++++++++
+> >  drivers/video/backlight/pwm_bl.c                   |    5 ++++
+> >  2 files changed, 26 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> > index 1e4fc72..5c54380 100644
+> > --- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> > +++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> > @@ -14,6 +14,8 @@ Required properties:
+> >  Optional properties:
+> >    - pwm-names: a list of names for the PWM devices specified in the
+> >                 "pwms" property (see PWM binding[0])
+> > +  - low_threshold_brightness: brightness threshold low level. (get linear
+> > +		 scales in brightness in low end of brightness levels)
 > 
-> So switch back to the ktime_get implementation for
-> ktime_get_update_offsets
+> The convention is to use dashes, not underscores, in device tree
+> property names, so this should be "low-threshold-brightness". I'd also
+> omit the comment in parentheses because the DT binding document
+> shouldn't specify any particular use-case. However I think it'd make
+> sense to add some information about the number space of the low
+> threshold value.
 
-NAK.
+Ok, I will correct it.
 
-You're papering over the real problem: Using crap values without
-sanity checking them in the first place.
+> 
+> Maybe we should also rethink how the low threshold is handled in cases
+> where the brightness levels are used. I'm not sure it makes sense to
+> specify the low threshold as a value relative to the range given by the
+> levels. Perhaps it is more meaningful to specify it as relative to the
+> period/duty-cycle.
+> 
+> >  
+> >  [0]: Documentation/devicetree/bindings/pwm/pwm.txt
+> >  
+> > @@ -26,3 +28,22 @@ Example:
+> >  		brightness-levels = <0 4 8 16 32 64 128 255>;
+> >  		default-brightness-level = <6>;
+> >  	};
+> > +
+> > +Example for brightness_threshold_level:
+> > +
+> > +	backlight {
+> > +		compatible	= "pwm-backlight";
+> > +		pwms = <&pwm 0 50000>;
+> > +
+> > +		brightness-levels = <0 4 8 16 32 64 128 255>;
+> > +		default-brightness-level = <6>;
+> > +		low_threshold_brightness = <50>;
+> > +	};
+> > +};
+> 
+> I think you can just merge the low-threshold-brightness with the
+> previous example.
 
-All your patch does is papering over the problem. Heck, year 8200 is
-obvious bullshit, so we can detect and reject it.
+Ok I will check and correct it.
 
-Thanks,
+> 
+> > +Note:
+> > +Low threshold support is required to have linear brightness scale from
+> > +0 to max. For some panels, backlight absent on low end of brightness
+> > +scale. So support for Low Threshold been required. So that the scale of
+> > +brightness changed from Low Threshold to Max in scales defined in
+> > +brightness-levels. In this example 20% maximum brightness scale should
+> > +be required to turn on panel backlight.
+> 
+> I think this kind of documentation doesn't belong in the device tree
+> binding. I'll work something like that into the proper documentation.
+> 
+> > diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+> > index 995f016..4965408 100644
+> > --- a/drivers/video/backlight/pwm_bl.c
+> > +++ b/drivers/video/backlight/pwm_bl.c
+> > @@ -143,6 +143,11 @@ static int pwm_backlight_parse_dt(struct device *dev,
+> >  
+> >  		data->dft_brightness = value;
+> >  		data->max_brightness--;
+> > +
+> > +		ret = of_property_read_u32(node, "low_threshold_brightness",
+> > +					   &value);
+> > +		if (!ret)
+> > +			data->lth_brightness = value;
+> >  	}
+> 
+> This obviously should also be low-threshold-brightness.
 
-	tglx
+I will change to
 
- 
+ret = of_property_read_u32(node, " low-threshold-brightness ",
+
+Thanks
+Avinash
+
+> 
+> Thierry
+> 
+
