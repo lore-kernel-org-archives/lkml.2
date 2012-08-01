@@ -1,141 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab2HAPgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:36:53 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58423 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751692Ab2HAPgw (ORCPT
+	id S1755520Ab2HAPkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:40:06 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:52572 "EHLO
+	homiemail-a43.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752729Ab2HAPkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:36:52 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz,
-        containers@lists.linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        serge@hallyn.com
-Subject: Re: ***SPAM*** Re: [PATCH] userns: Convert quota to user kuid/kgid where appropriate
-In-Reply-To: <87d33abw7u.fsf@xmission.com>
-References: <1343817532-12021-1-git-send-email-dmonakhov@openvz.org> <87d33abw7u.fsf@xmission.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 01 Aug 2012 19:36:46 +0400
-Message-ID: <87d33azks1.fsf@dmbot.sw.ru>
+	Wed, 1 Aug 2012 11:40:04 -0400
+X-Greylist: delayed 49223 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Aug 2012 11:40:04 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=aIpt6BoKuKQ0mgDkub/EgTr2tVH6l7L3Pac2kMCjRuy9qLr49hYcBSA5GRRyu
+	vLmXwa4rC6SgkOpIezXEuJIYMelWXrFFfyefMKYpMjz+evaP9ugpgLgzzGqy68rU
+	ZOs2tTtXocz9byDJlBR0If5h8+7aamUw5tn7T3eQQpZba8=
+Message-ID: <50194DD1.9030806@shealevy.com>
+Date: Wed, 01 Aug 2012 11:40:01 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120703 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+CC: netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Build failure when installing atm ambassador firmware
+References: <50188D89.3040404@shealevy.com> <20120801072247.589c7162@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <20120801072247.589c7162@thirdoffive.cmf.nrl.navy.mil>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Aug 2012 06:03:33 -0700, ebiederm@xmission.com (Eric W. Biederman) wrote:
-> Dmitry Monakhov <dmonakhov@openvz.org> writes:
-> 
-> > Map uid/gid to global kuid/kgid before pass it down to quota
-> > infrastructure.
-> 
-> Have you looked at my development branch of my userns tree?
-> 
-> I already have a patch queued to do something like this. 
-Oh. Yes you right. I've missed it.
-BTW when do you plan to submit new set?
+Hi Chas,
 
-> 
-> Eric
-> 
-> > Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-> > ---
-> >  fs/quota/quota.c |   45 ++++++++++++++++++++++++++++++++++++---------
-> >  1 files changed, 36 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/fs/quota/quota.c b/fs/quota/quota.c
-> > index 6f15578..a59efd4 100644
-> > --- a/fs/quota/quota.c
-> > +++ b/fs/quota/quota.c
-> > @@ -19,8 +19,13 @@
-> >  #include <linux/writeback.h>
-> >  
-> >  static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
-> > -				     qid_t id)
-> > +				     qid_t id, qid_t* global_id)
-> >  {
-> > +	kuid_t kuid;
-> > +	kgid_t kgid;
-> > +	struct user_namespace *ns = current_user_ns();
-> > +	int is_get_query = 0;
-> > +
-> >  	switch (cmd) {
-> >  	/* these commands do not require any special privilegues */
-> >  	case Q_GETFMT:
-> > @@ -29,11 +34,32 @@ static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
-> >  	case Q_XGETQSTAT:
-> >  	case Q_XQUOTASYNC:
-> >  		break;
-> > -	/* allow to query information for dquots we "own" */
-> >  	case Q_GETQUOTA:
-> >  	case Q_XGETQUOTA:
-> > -		if ((type == USRQUOTA && current_euid() == id) ||
-> > -		    (type == GRPQUOTA && in_egroup_p(id)))
-> > +		is_get_query = 1;
-> > +	case Q_SETQUOTA:
-> > +	case Q_XSETQLIM:
-> > +		/* Map to global user namespace */
-> > +		switch (type) {
-> > +		case USRQUOTA:
-> > +			kuid = make_kuid(ns, id);
-> > +			if (!uid_valid(kuid))
-> > +				return -EINVAL;
-> > +			*global_id = from_kuid_munged(&init_user_ns, kuid);
-> > +			break;
-> > +		case GRPQUOTA:
-> > +			kgid = make_kgid(ns, id);
-> > +			if (!gid_valid(kgid))
-> > +				return -EINVAL;
-> > +			*global_id = from_kgid_munged(&init_user_ns, kgid);
-> > +			break;
-> > +		default:
-> > +			return -EINVAL;
-> > +		}
-> > +		/* allow to query information for dquots we "own" */
-> > +		if (is_get_query &&
-> > +		    ((type == USRQUOTA && uid_eq(current_euid(), kuid)) ||
-> > +		     (type == GRPQUOTA && in_egroup_p(kgid))))
-> >  			break;
-> >  		/*FALLTHROUGH*/
-> >  	default:
-> > @@ -240,13 +266,14 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
-> >  		       void __user *addr, struct path *path)
-> >  {
-> >  	int ret;
-> > +	qid_t qid = -1;
-> >  
-> >  	if (type >= (XQM_COMMAND(cmd) ? XQM_MAXQUOTAS : MAXQUOTAS))
-> >  		return -EINVAL;
-> >  	if (!sb->s_qcop)
-> >  		return -ENOSYS;
-> >  
-> > -	ret = check_quotactl_permission(sb, type, cmd, id);
-> > +	ret = check_quotactl_permission(sb, type, cmd, id, &qid);
-> >  	if (ret < 0)
-> >  		return ret;
-> >  
-> > @@ -264,9 +291,9 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
-> >  	case Q_SETINFO:
-> >  		return quota_setinfo(sb, type, addr);
-> >  	case Q_GETQUOTA:
-> > -		return quota_getquota(sb, type, id, addr);
-> > +		return quota_getquota(sb, type, qid, addr);
-> >  	case Q_SETQUOTA:
-> > -		return quota_setquota(sb, type, id, addr);
-> > +		return quota_setquota(sb, type, qid, addr);
-> >  	case Q_SYNC:
-> >  		if (!sb->s_qcop->quota_sync)
-> >  			return -ENOSYS;
-> > @@ -278,9 +305,9 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
-> >  	case Q_XGETQSTAT:
-> >  		return quota_getxstate(sb, addr);
-> >  	case Q_XSETQLIM:
-> > -		return quota_setxquota(sb, type, id, addr);
-> > +		return quota_setxquota(sb, type, qid, addr);
-> >  	case Q_XGETQUOTA:
-> > -		return quota_getxquota(sb, type, id, addr);
-> > +		return quota_getxquota(sb, type, qid, addr);
-> >  	case Q_XQUOTASYNC:
-> >  		if (sb->s_flags & MS_RDONLY)
-> >  			return -EROFS;
+On 08/01/2012 07:22 AM, chas williams - CONTRACTOR wrote:
+> On Tue, 31 Jul 2012 21:59:37 -0400
+> Shea Levy<shea@shealevy.com>  wrote:
+>
+>> Hello,
+>>
+>> When building with
+>> MODLIB=/nix/store/ghx6s9hnk9irim7c7f63zrxqiv6xjh3w-linux-3.5/lib/modules/3.5.0
+>> and
+>> ="/nix/store/ghx6s9hnk9irim7c7f63zrxqiv6xjh3w-linux-3.5/lib/firmware",
+>> building Linux 3.5 with CONFIG_ATM_AMBASSADOR=m fails with:
+>>
+>> "make[2]: *** No rule to make target
+>> `"/nix/store/ghx6s9hnk9irim7c7f63zrxqiv6xjh3w-linux-3.5/lib/firmware"/./',
+>> needed by
+>> `"/nix/store/ghx6s9hnk9irim7c7f63zrxqiv6xjh3w-linux-3.5/lib/firmware"/atmsar11.fw'.
+>> Stop."
+>
+> i think it might be trying to tell you that the target directory
+> $INSTALL_FW_PATH doesn't exist and is a prerequisite to actually
+> perform the action.
+>
+
+Indeed, creating the directory first fixes the issue. Is this expected 
+behaviour, or a bug in the build system?
+
+ >
+> it complains about atmsar11.fw first because it just happens to be the
+> first firmware that needs to be installed.
+>
+> /scratch/chas/net-next relax.53% ls -ld /tmp/funk
+> ls: cannot access /tmp/funk: No such file or directory
+> /scratch/chas/net-next relax.54% make INSTALL_FW_PATH="/tmp/funk" firmware_install
+> make[1]: *** No rule to make target `/tmp/funk/./', needed by `/tmp/funk/atmsar11.fw'.  Stop.
+> make: *** [firmware_install] Error 2
+> /scratch/chas/net-next relax.55% mkdir /tmp/funk
+> /scratch/chas/net-next relax.56% make INSTALL_FW_PATH="/tmp/funk" firmware_install
+>    INSTALL /tmp/funk/atmsar11.fw
+>    MKDIR   /tmp/funk/e100/
+>    INSTALL /tmp/funk/e100/d101m_ucode.bin
+>    INSTALL /tmp/funk/e100/d101s_ucode.bin
+>    INSTALL /tmp/funk/e100/d102e_ucode.bin
+> ...
+>
+> i am somewhat concerned that it appears to have an extra set of "'s in
+> the path as well.  how are you passing in INSTALL_FW_PATH?  i can get
+> the same result with:
+>
+> /scratch/chas/net-next relax.57% make 'INSTALL_FW_PATH="/tmp/funk"' firmware_install
+> make[1]: *** No rule to make target `"/tmp/funk"/./', needed by `"/tmp/funk"/atmsar11.fw'.  Stop.
+> make: *** [firmware_install] Error 2
+>
+> but it would be wrong to do it this way.
+
+Yeah, I had an extra bit of quotation that I've now removed. Thanks!
+
+Cheers,
+Shea Levy
