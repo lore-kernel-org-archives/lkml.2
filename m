@@ -1,465 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab2HAG2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 02:28:48 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12251 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab2HAG2r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 02:28:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 31 Jul 2012 23:23:16 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <a.zummo@towertech.it>, <sameo@linux.intel.com>,
-        <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
-        <kyle.manna@fuel7.com>, <sboyd@codeaurora.org>
-CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-Date: Wed, 1 Aug 2012 11:52:37 +0530
-Message-ID: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754009Ab2HAGmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 02:42:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44321 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753536Ab2HAGmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 02:42:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="173953283"
+From: Feng Tang <feng.tang@intel.com>
+To: len.brown@intel.com, linux-acpi@vger.kernel.org, yinghai@kernel.org
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, ddutile@redhat.com,
+        robert.moore@intel.com, agordeev@redhat.com, suresh.b.siddha@intel.com,
+        Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v2 1/2] ACPI: Replace acpi_get_table_with_size() with acpi_get_table()
+Date: Wed,  1 Aug 2012 14:37:44 +0800
+Message-Id: <1343803064-5389-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TPS65910 PMIC is a MFD with RTC as one of the device.
-Adding RTC driver for supporting RTC device present
-inside TPS65910 PMIC.
+This is a preparation for removing the acpi_get_table_with_size(), as this
+function could be well covered by acpi_get_table(), and there is no need
+to have both of them to exist.
 
-Only support for RTC alarm is implemented as part of this patch.
+v2: As reminded by Yinghai, apply the replacment to drivers/iommu/amd_iommu_init.c
+which is a new user of the acpi_get_table_with_size().
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
 ---
-delta from patch v1:
+ arch/x86/kernel/apic/es7000_32.c |    7 +++----
+ drivers/acpi/tables.c            |   21 +++++++++------------
+ drivers/iommu/amd_iommu_init.c   |   10 ++++------
+ drivers/iommu/dmar.c             |   14 +++++++-------
+ 4 files changed, 23 insertions(+), 29 deletions(-)
 
-1. Added const qualifier to rtc_class_ops
-2. Removed some of the local variables initialization
-3. Passing string "rtc-tps65910" to devm_request_threaded_irq.
-4. Changed driver name from "tps65910-rtc" to "rtc-tps65910"
-
- drivers/rtc/Kconfig          |   10 ++
- drivers/rtc/Makefile         |    1 +
- drivers/rtc/rtc-tps65910.c   |  353 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/tps65910.h |   10 ++
- 4 files changed, 374 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-tps65910.c
-
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index fabc99a..b4f1234 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -333,6 +333,16 @@ config RTC_DRV_TWL4030
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-twl.
+diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
+index 0874799..ae30b39 100644
+--- a/arch/x86/kernel/apic/es7000_32.c
++++ b/arch/x86/kernel/apic/es7000_32.c
+@@ -242,19 +242,18 @@ static int __init find_unisys_acpi_oem_table(unsigned long *oem_addr)
+ {
+ 	struct acpi_table_header *header = NULL;
+ 	struct es7000_oem_table *table;
+-	acpi_size tbl_size;
+ 	acpi_status ret;
+ 	int i = 0;
  
-+config RTC_DRV_TPS65910
-+	tristate "TI TPS65910 RTC driver"
-+	depends on RTC_CLASS && MFD_TPS65910
-+	help
-+	  If you say yes here you get support for the RTC on the
-+	  TPS65910 chips.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-tps65910.
-+
- config RTC_DRV_S35390A
- 	tristate "Seiko Instruments S-35390A"
- 	select BITREVERSE
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 0d5b2b6..3b596af 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -105,6 +105,7 @@ obj-$(CONFIG_RTC_DRV_TEGRA)	+= rtc-tegra.o
- obj-$(CONFIG_RTC_DRV_TEST)	+= rtc-test.o
- obj-$(CONFIG_RTC_DRV_TILE)	+= rtc-tile.o
- obj-$(CONFIG_RTC_DRV_TWL4030)	+= rtc-twl.o
-+obj-$(CONFIG_RTC_DRV_TPS65910)	+= rtc-tps65910.o
- obj-$(CONFIG_RTC_DRV_TX4939)	+= rtc-tx4939.o
- obj-$(CONFIG_RTC_DRV_V3020)	+= rtc-v3020.o
- obj-$(CONFIG_RTC_DRV_VR41XX)	+= rtc-vr41xx.o
-diff --git a/drivers/rtc/rtc-tps65910.c b/drivers/rtc/rtc-tps65910.c
-new file mode 100644
-index 0000000..1b8991c
---- /dev/null
-+++ b/drivers/rtc/rtc-tps65910.c
-@@ -0,0 +1,353 @@
-+/*
-+ * rtc-tps65910.c -- TPS65910 Real Time Clock interface
-+ *
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ * Author: Venu Byravarasu <vbyravarasu@nvidia.com>
-+ *
-+ * Based on original TI driver rtc-twl.c
-+ *   Copyright (C) 2007 MontaVista Software, Inc
-+ *   Author: Alexandre Rusev <source@mvista.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/rtc.h>
-+#include <linux/bcd.h>
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
-+#include <linux/mfd/tps65910.h>
-+
-+struct tps65910_rtc {
-+	struct rtc_device	*rtc;
-+	/* To store the list of enabled interrupts */
-+	u32 irqstat;
-+};
-+
-+/* Total number of RTC registers needed to set time*/
-+#define NUM_TIME_REGS	(TPS65910_YEARS - TPS65910_SECONDS + 1)
-+
-+static int tps65910_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
-+{
-+	struct tps65910 *tps = dev_get_drvdata(dev->parent);
-+	u8 val = 0;
-+
-+	if (enabled)
-+		val = TPS65910_RTC_INTERRUPTS_IT_ALARM;
-+
-+	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS, val);
-+}
-+
-+/*
-+ * Gets current tps65910 RTC time and date parameters.
-+ *
-+ * The RTC's time/alarm representation is not what gmtime(3) requires
-+ * Linux to use:
-+ *
-+ *  - Months are 1..12 vs Linux 0-11
-+ *  - Years are 0..99 vs Linux 1900..N (we assume 21st century)
-+ */
-+static int tps65910_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	unsigned char rtc_data[NUM_TIME_REGS];
-+	struct tps65910 *tps = dev_get_drvdata(dev->parent);
-+	int ret;
-+
-+	/* Copy RTC counting registers to static registers or latches */
-+	ret = regmap_update_bits(tps->regmap, TPS65910_RTC_CTRL,
-+		TPS65910_RTC_CTRL_GET_TIME, TPS65910_RTC_CTRL_GET_TIME);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC CTRL reg update failed with err:%d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = regmap_bulk_read(tps->regmap, TPS65910_SECONDS, rtc_data,
-+		NUM_TIME_REGS);
-+	if (ret < 0) {
-+		dev_err(dev, "reading from RTC failed with err:%d\n", ret);
-+		return ret;
-+	}
-+
-+	tm->tm_sec = bcd2bin(rtc_data[0]);
-+	tm->tm_min = bcd2bin(rtc_data[1]);
-+	tm->tm_hour = bcd2bin(rtc_data[2]);
-+	tm->tm_mday = bcd2bin(rtc_data[3]);
-+	tm->tm_mon = bcd2bin(rtc_data[4]) - 1;
-+	tm->tm_year = bcd2bin(rtc_data[5]) + 100;
-+
-+	return ret;
-+}
-+
-+static int tps65910_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	unsigned char rtc_data[NUM_TIME_REGS];
-+	struct tps65910 *tps = dev_get_drvdata(dev->parent);
-+	int ret;
-+
-+	rtc_data[0] = bin2bcd(tm->tm_sec);
-+	rtc_data[1] = bin2bcd(tm->tm_min);
-+	rtc_data[2] = bin2bcd(tm->tm_hour);
-+	rtc_data[3] = bin2bcd(tm->tm_mday);
-+	rtc_data[4] = bin2bcd(tm->tm_mon + 1);
-+	rtc_data[5] = bin2bcd(tm->tm_year - 100);
-+
-+	/* Stop RTC while updating the RTC time registers */
-+	ret = regmap_update_bits(tps->regmap, TPS65910_RTC_CTRL,
-+		TPS65910_RTC_CTRL_STOP_RTC, 0);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC stop failed with err:%d\n", ret);
-+		return ret;
-+	}
-+
-+	/* update all the time registers in one shot */
-+	ret = regmap_bulk_write(tps->regmap, TPS65910_SECONDS, rtc_data,
-+		NUM_TIME_REGS);
-+	if (ret < 0) {
-+		dev_err(dev, "rtc_set_time error %d\n", ret);
-+		return ret;
-+	}
-+
-+	/* Start back RTC */
-+	ret = regmap_update_bits(tps->regmap, TPS65910_RTC_CTRL,
-+		TPS65910_RTC_CTRL_STOP_RTC, 1);
-+	if (ret < 0)
-+		dev_err(dev, "RTC start failed with err:%d\n", ret);
-+
-+	return ret;
-+}
-+
-+/*
-+ * Gets current tps65910 RTC alarm time.
-+ */
-+static int tps65910_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
-+{
-+	unsigned char alarm_data[NUM_TIME_REGS];
-+	u32 int_val;
-+	struct tps65910 *tps = dev_get_drvdata(dev->parent);
-+	int ret;
-+
-+	ret = regmap_bulk_read(tps->regmap, TPS65910_SECONDS, alarm_data,
-+		NUM_TIME_REGS);
-+	if (ret < 0) {
-+		dev_err(dev, "rtc_read_alarm error %d\n", ret);
-+		return ret;
-+	}
-+
-+	alm->time.tm_sec = bcd2bin(alarm_data[0]);
-+	alm->time.tm_min = bcd2bin(alarm_data[1]);
-+	alm->time.tm_hour = bcd2bin(alarm_data[2]);
-+	alm->time.tm_mday = bcd2bin(alarm_data[3]);
-+	alm->time.tm_mon = bcd2bin(alarm_data[4]) - 1;
-+	alm->time.tm_year = bcd2bin(alarm_data[5]) + 100;
-+
-+	ret = regmap_read(tps->regmap, TPS65910_RTC_INTERRUPTS, &int_val);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (int_val & TPS65910_RTC_INTERRUPTS_IT_ALARM)
-+		alm->enabled = 1;
-+
-+	return ret;
-+}
-+
-+static int tps65910_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
-+{
-+	unsigned char alarm_data[NUM_TIME_REGS];
-+	struct tps65910 *tps = dev_get_drvdata(dev->parent);
-+	int ret;
-+
-+	ret = tps65910_rtc_alarm_irq_enable(dev, 0);
-+	if (ret)
-+		return ret;
-+
-+	alarm_data[0] = bin2bcd(alm->time.tm_sec);
-+	alarm_data[1] = bin2bcd(alm->time.tm_min);
-+	alarm_data[2] = bin2bcd(alm->time.tm_hour);
-+	alarm_data[3] = bin2bcd(alm->time.tm_mday);
-+	alarm_data[4] = bin2bcd(alm->time.tm_mon + 1);
-+	alarm_data[5] = bin2bcd(alm->time.tm_year - 100);
-+
-+	/* update all the alarm registers in one shot */
-+	ret = regmap_bulk_write(tps->regmap, TPS65910_ALARM_SECONDS,
-+		alarm_data, NUM_TIME_REGS);
-+	if (ret) {
-+		dev_err(dev, "rtc_set_alarm error %d\n", ret);
-+		return ret;
-+	}
-+
-+	if (alm->enabled)
-+		ret = tps65910_rtc_alarm_irq_enable(dev, 1);
-+
-+	return ret;
-+}
-+
-+static irqreturn_t tps65910_rtc_interrupt(int irq, void *rtc)
-+{
-+	struct device *dev = rtc;
-+	unsigned long events = 0;
-+	struct tps65910 *tps = dev_get_drvdata(dev->parent);
-+	struct tps65910_rtc *tps_rtc = dev_get_drvdata(dev);
-+	int ret;
-+	u32 rtc_reg;
-+
-+	ret = regmap_read(tps->regmap, TPS65910_RTC_STATUS, &rtc_reg);
-+	if (ret)
-+		return IRQ_NONE;
-+
-+	if (rtc_reg & TPS65910_RTC_STATUS_ALARM)
-+		events = RTC_IRQF | RTC_AF;
-+
-+	ret = regmap_write(tps->regmap, TPS65910_RTC_STATUS, rtc_reg);
-+	if (ret)
-+		return IRQ_NONE;
-+
-+	/* Notify RTC core on event */
-+	rtc_update_irq(tps_rtc->rtc, 1, events);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static const struct rtc_class_ops tps65910_rtc_ops = {
-+	.read_time	= tps65910_rtc_read_time,
-+	.set_time	= tps65910_rtc_set_time,
-+	.read_alarm	= tps65910_rtc_read_alarm,
-+	.set_alarm	= tps65910_rtc_set_alarm,
-+	.alarm_irq_enable = tps65910_rtc_alarm_irq_enable,
-+};
-+
-+static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
-+{
-+	struct tps65910 *tps65910 = NULL;
-+	struct tps65910_rtc *tps_rtc = NULL;
-+	struct tps65910_board *pmic_plat_data;
-+	int ret;
-+	int irq;
-+	u32 rtc_reg;
-+
-+	tps65910 = dev_get_drvdata(pdev->dev.parent);
-+
-+	tps_rtc = devm_kzalloc(&pdev->dev, sizeof(struct tps65910_rtc),
-+			GFP_KERNEL);
-+	if (!tps_rtc)
-+		return -ENOMEM;
-+
-+	/* Clear pending interrupts */
-+	ret = regmap_read(tps65910->regmap, TPS65910_RTC_STATUS, &rtc_reg);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = regmap_write(tps65910->regmap, TPS65910_RTC_STATUS, rtc_reg);
-+	if (ret < 0)
-+		return ret;
-+
-+	dev_dbg(&pdev->dev, "Enabling rtc-tps65910.\n");
-+	rtc_reg = TPS65910_RTC_CTRL_STOP_RTC;
-+	ret = regmap_write(tps65910->regmap, TPS65910_RTC_CTRL, rtc_reg);
-+	if (ret < 0)
-+		return ret;
-+
-+	pmic_plat_data = dev_get_platdata(tps65910->dev);
-+	irq = pmic_plat_data->irq_base;
-+	if (irq <= 0) {
-+		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n",
-+			irq);
-+		return ret;
-+	}
-+
-+	irq += TPS65910_IRQ_RTC_ALARM;
-+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-+		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
-+		"rtc-tps65910", &pdev->dev);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "IRQ is not free.\n");
-+		return ret;
-+	}
-+	device_init_wakeup(&pdev->dev, 1);
-+
-+	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
-+		&tps65910_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(tps_rtc->rtc)) {
-+		ret = PTR_ERR(tps_rtc->rtc);
-+		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, tps_rtc);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Disable tps65910 RTC interrupts.
-+ * Sets status flag to free.
-+ */
-+static int __devexit tps65910_rtc_remove(struct platform_device *pdev)
-+{
-+	/* leave rtc running, but disable irqs */
-+	struct rtc_device *rtc = platform_get_drvdata(pdev);
-+
-+	tps65910_rtc_alarm_irq_enable(&rtc->dev, 0);
-+
-+	rtc_device_unregister(rtc);
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+
-+static int tps65910_rtc_suspend(struct platform_device *pdev,
-+		pm_message_t state)
-+{
-+	struct tps65910 *tps = dev_get_drvdata(pdev->dev.parent);
-+	u8 alarm = TPS65910_RTC_INTERRUPTS_IT_ALARM;
-+	int ret;
-+
-+	/* Store current list of enabled interrupts*/
-+	ret = regmap_read(tps->regmap, TPS65910_RTC_INTERRUPTS,
-+		&tps->rtc.irqstat);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Enable RTC ALARM interrupt only */
-+	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS, alarm);
-+}
-+
-+static int tps65910_rtc_resume(struct platform_device *pdev)
-+{
-+	struct tps65910 *tps = dev_get_drvdata(pdev->dev.parent);
-+
-+	/* Restore list of enabled interrupts before suspend */
-+	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS,
-+		tps->rtc.irqstat);
-+}
-+
-+static const struct dev_pm_ops tps65910_rtc_pm_ops = {
-+	.suspend	= tps65910_rtc_suspend,
-+	.resume		= tps65910_rtc_resume,
-+};
-+
-+#define DEV_PM_OPS     (&tps65910_rtc_pm_ops)
-+#else
-+#define DEV_PM_OPS     NULL
-+#endif
-+
-+static struct platform_driver tps65910_rtc_driver = {
-+	.probe		= tps65910_rtc_probe,
-+	.remove		= __devexit_p(tps65910_rtc_remove),
-+	.driver		= {
-+		.owner	= THIS_MODULE,
-+		.name	= "rtc-tps65910",
-+		.pm	= DEV_PM_OPS,
-+	},
-+};
-+
-+module_platform_driver(tps65910_rtc_driver);
-+MODULE_ALIAS("platform:rtc-tps65910");
-+MODULE_AUTHOR("Venu Byravarasu <vbyravarasu@nvidia.com>");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 9bf8767..ba2eb25 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -132,6 +132,16 @@
-  *
-  */
+ 	for (;;) {
+-		ret = acpi_get_table_with_size("OEM1", i++, &header, &tbl_size);
++		ret = acpi_get_table("OEM1", i++, &header);
+ 		if (!ACPI_SUCCESS(ret))
+ 			return -1;
  
-+/* RTC_CTRL_REG bitfields */
-+#define TPS65910_RTC_CTRL_STOP_RTC			0x01 /*0=stop, 1=run */
-+#define TPS65910_RTC_CTRL_GET_TIME			0x40
-+
-+/* RTC_STATUS_REG bitfields */
-+#define TPS65910_RTC_STATUS_ALARM               0x40
-+
-+/* RTC_INTERRUPTS_REG bitfields */
-+#define TPS65910_RTC_INTERRUPTS_EVERY           0x03
-+#define TPS65910_RTC_INTERRUPTS_IT_ALARM        0x08
+ 		if (!memcmp((char *) &header->oem_id, "UNISYS", 6))
+ 			break;
  
- /*Register BCK1  (0x80) register.RegisterDescription */
- #define BCK1_BCKUP_MASK					0xFF
+-		early_acpi_os_unmap_memory(header, tbl_size);
++		early_acpi_os_unmap_memory(header, header->length);
+ 	}
+ 
+ 	table = (void *)header;
+@@ -262,7 +261,7 @@ static int __init find_unisys_acpi_oem_table(unsigned long *oem_addr)
+ 	oem_addrX	= table->OEMTableAddr;
+ 	oem_size	= table->OEMTableSize;
+ 
+-	early_acpi_os_unmap_memory(header, tbl_size);
++	early_acpi_os_unmap_memory(header, header->length);
+ 
+ 	*oem_addr	= (unsigned long)__acpi_map_table(oem_addrX, oem_size);
+ 
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index f336bca..5b8b7e0 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -211,7 +211,6 @@ acpi_table_parse_entries(char *id,
+ 	struct acpi_subtable_header *entry;
+ 	unsigned int count = 0;
+ 	unsigned long table_end;
+-	acpi_size tbl_size;
+ 
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+@@ -220,9 +219,9 @@ acpi_table_parse_entries(char *id,
+ 		return -EINVAL;
+ 
+ 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
+-		acpi_get_table_with_size(id, acpi_apic_instance, &table_header, &tbl_size);
++		acpi_get_table(id, acpi_apic_instance, &table_header);
+ 	else
+-		acpi_get_table_with_size(id, 0, &table_header, &tbl_size);
++		acpi_get_table(id, 0, &table_header);
+ 
+ 	if (!table_header) {
+ 		printk(KERN_WARNING PREFIX "%4.4s not present\n", id);
+@@ -241,7 +240,7 @@ acpi_table_parse_entries(char *id,
+ 		if (entry->type == entry_id
+ 		    && (!max_entries || count++ < max_entries))
+ 			if (handler(entry, table_end)) {
+-				early_acpi_os_unmap_memory((char *)table_header, tbl_size);
++				early_acpi_os_unmap_memory((char *)table_header, table_header->length);
+ 				return -EINVAL;
+ 			}
+ 
+@@ -253,7 +252,7 @@ acpi_table_parse_entries(char *id,
+ 		       "%i found\n", id, entry_id, count - max_entries, count);
+ 	}
+ 
+-	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
++	early_acpi_os_unmap_memory((char *)table_header, table_header->length);
+ 	return count;
+ }
+ 
+@@ -278,7 +277,6 @@ acpi_table_parse_madt(enum acpi_madt_type id,
+ int __init acpi_table_parse(char *id, acpi_table_handler handler)
+ {
+ 	struct acpi_table_header *table = NULL;
+-	acpi_size tbl_size;
+ 
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+@@ -287,13 +285,13 @@ int __init acpi_table_parse(char *id, acpi_table_handler handler)
+ 		return -EINVAL;
+ 
+ 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
+-		acpi_get_table_with_size(id, acpi_apic_instance, &table, &tbl_size);
++		acpi_get_table(id, acpi_apic_instance, &table);
+ 	else
+-		acpi_get_table_with_size(id, 0, &table, &tbl_size);
++		acpi_get_table(id, 0, &table);
+ 
+ 	if (table) {
+ 		handler(table);
+-		early_acpi_os_unmap_memory(table, tbl_size);
++		early_acpi_os_unmap_memory(table, table->length);
+ 		return 0;
+ 	} else
+ 		return 1;
+@@ -307,9 +305,8 @@ int __init acpi_table_parse(char *id, acpi_table_handler handler)
+ static void __init check_multiple_madt(void)
+ {
+ 	struct acpi_table_header *table = NULL;
+-	acpi_size tbl_size;
+ 
+-	acpi_get_table_with_size(ACPI_SIG_MADT, 2, &table, &tbl_size);
++	acpi_get_table(ACPI_SIG_MADT, 2, &table);
+ 	if (table) {
+ 		printk(KERN_WARNING PREFIX
+ 		       "BIOS bug: multiple APIC/MADT found,"
+@@ -318,7 +315,7 @@ static void __init check_multiple_madt(void)
+ 		       "If \"acpi_apic_instance=%d\" works better, "
+ 		       "notify linux-acpi@vger.kernel.org\n",
+ 		       acpi_apic_instance ? 0 : 2);
+-		early_acpi_os_unmap_memory(table, tbl_size);
++		early_acpi_os_unmap_memory(table, table->length);
+ 
+ 	} else
+ 		acpi_apic_instance = 0;
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 500e7f1..6b19f42 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1525,14 +1525,13 @@ static void __init free_on_init_error(void)
+ static int __init early_amd_iommu_init(void)
+ {
+ 	struct acpi_table_header *ivrs_base;
+-	acpi_size ivrs_size;
+ 	acpi_status status;
+ 	int i, ret = 0;
+ 
+ 	if (!amd_iommu_detected)
+ 		return -ENODEV;
+ 
+-	status = acpi_get_table_with_size("IVRS", 0, &ivrs_base, &ivrs_size);
++	status = acpi_get_table("IVRS", 0, &ivrs_base);
+ 	if (status == AE_NOT_FOUND)
+ 		return -ENODEV;
+ 	else if (ACPI_FAILURE(status)) {
+@@ -1614,7 +1613,7 @@ static int __init early_amd_iommu_init(void)
+ 
+ out:
+ 	/* Don't leak any ACPI memory */
+-	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
++	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_base->length);
+ 	ivrs_base = NULL;
+ 
+ 	return ret;
+@@ -1638,10 +1637,9 @@ out:
+ static bool detect_ivrs(void)
+ {
+ 	struct acpi_table_header *ivrs_base;
+-	acpi_size ivrs_size;
+ 	acpi_status status;
+ 
+-	status = acpi_get_table_with_size("IVRS", 0, &ivrs_base, &ivrs_size);
++	status = acpi_get_table("IVRS", 0, &ivrs_base);
+ 	if (status == AE_NOT_FOUND)
+ 		return false;
+ 	else if (ACPI_FAILURE(status)) {
+@@ -1650,7 +1648,7 @@ static bool detect_ivrs(void)
+ 		return false;
+ 	}
+ 
+-	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
++	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_base->length);
+ 
+ 	return true;
+ }
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 86e2f4a..aa65b6f 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -48,7 +48,6 @@
+ LIST_HEAD(dmar_drhd_units);
+ 
+ struct acpi_table_header * __initdata dmar_tbl;
+-static acpi_size dmar_tbl_size;
+ 
+ static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
+ {
+@@ -285,10 +284,8 @@ static int __init dmar_table_detect(void)
+ 	acpi_status status = AE_OK;
+ 
+ 	/* if we could find DMAR table, then there are DMAR devices */
+-	status = acpi_get_table_with_size(ACPI_SIG_DMAR, 0,
+-				(struct acpi_table_header **)&dmar_tbl,
+-				&dmar_tbl_size);
+-
++	status = acpi_get_table(ACPI_SIG_DMAR, 0,
++				(struct acpi_table_header **)&dmar_tbl);
+ 	if (ACPI_SUCCESS(status) && !dmar_tbl) {
+ 		pr_warn("Unable to map DMAR\n");
+ 		status = AE_NOT_FOUND;
+@@ -558,8 +555,11 @@ int __init detect_intel_iommu(void)
+ 			x86_init.iommu.iommu_init = intel_iommu_init;
+ #endif
+ 	}
+-	early_acpi_os_unmap_memory(dmar_tbl, dmar_tbl_size);
+-	dmar_tbl = NULL;
++
++	if (dmar_tbl) {
++		early_acpi_os_unmap_memory(dmar_tbl, dmar_tbl->length);
++		dmar_tbl = NULL;
++	}
+ 
+ 	return ret ? 1 : -ENODEV;
+ }
 -- 
-1.7.1.1
+1.7.1
 
