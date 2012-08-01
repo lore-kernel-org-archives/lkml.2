@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab2HATlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 15:41:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48203 "EHLO
+	id S1753395Ab2HAToJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 15:44:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48250 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818Ab2HATlq (ORCPT
+	with ESMTP id S1751993Ab2HAToH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 15:41:46 -0400
-Message-ID: <1343850102.26866.169.camel@shinybook.infradead.org>
+	Wed, 1 Aug 2012 15:44:07 -0400
+Message-ID: <1343850238.26866.171.camel@shinybook.infradead.org>
 Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
 From: David Woodhouse <dwmw2@infradead.org>
 To: Seth Forshee <seth.forshee@canonical.com>
 Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Andreas Heider <andreas@meetr.de>,
         Arun Raghavan <arun.raghavan@collabora.co.uk>,
         linux-kernel@vger.kernel.org, airlied@redhat.com
-Date: Wed, 01 Aug 2012 20:41:42 +0100
+Date: Wed, 01 Aug 2012 20:43:58 +0100
 In-Reply-To: <20120801155914.GB22963@thinkpad-t410>
 References: <20120710160555.GA31562@srcf.ucam.org>
 	 <20120710163516.GE10194@thinkpad-t410> <4FFCC7FB.1090609@meetr.de>
@@ -27,7 +27,7 @@ References: <20120710160555.GA31562@srcf.ucam.org>
 	 <1343835344.26866.150.camel@shinybook.infradead.org>
 	 <20120801155914.GB22963@thinkpad-t410>
 Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-rFUU5syq/phBn8/tNM2i"
+	boundary="=-L1Hp+A25JyCwIbWVVf2C"
 X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
 Mime-Version: 1.0
 X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
@@ -37,47 +37,21 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-rFUU5syq/phBn8/tNM2i
+--=-L1Hp+A25JyCwIbWVVf2C
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
 On Wed, 2012-08-01 at 10:59 -0500, Seth Forshee wrote:
-> I don't think the mini-DP port works at all with the integrated
-> graphics, at least not on a Macbook Pro 8,2. I played around with it
-> yesterday under OS X. When using the DGPU with an external monitor it
-> works fine, but any attempts to switch to the IGPU were rejected by the
-> drivers. If I forced it to the IGPU prior to connecting the external
-> monitor the screen just remained blank when I plugged it in, until I
-> switched back to the DGPU. It's odd though that the DDC can be switched
-> over to the IGPU.
-
-I get a blank screen when I use the VGA adapter, and with the dual-link
-DVI adapter I get a barely responsive machine continually printing=20
-[ 1076.439623] [drm:intel_dp_complete_link_train] *ERROR* failed to train D=
-P, aborting
-as described at https://bugzilla.redhat.com/show_bug.cgi?id=3D843779#c8
-And a blank screen.
-
-I thought someone had said they'd got it working with a native DP
-monitor, rather than the converters.
-
-> Iirc you've got the 8,3, and I'd expect it to be identical to the 8,2 in
-> this respect. Also, the only reason my LVDS didn't work was because I
-> wasn't telling i915 to disable SSC. I've got a patch to add a quirk for
-> this that I'll send soon, since there still doesn't seem to be any way
+> since there still doesn't seem to be any way
 > to get the vbios for the Intel graphics.
 
-I think your patch won't cover the 8,3.
-
-00:02.0 VGA compatible controller [0300]: Intel Corporation 2nd Generation =
-Core Processor Family Integrated Graphics Controller [8086:0126] (rev 09) (=
-prog-if 00 [VGA controller])
-	Subsystem: Apple Computer Inc. Device [106b:00de]
+Hm, wait. With Matthew's patches to get the Radeon BIOS from EFI, there
+*is* also a ROM image for the Intel device. Have we tried that?
 
 --=20
 dwmw2
 
---=-rFUU5syq/phBn8/tNM2i
+--=-L1Hp+A25JyCwIbWVVf2C
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -178,20 +152,20 @@ kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
 MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
 dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
 eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwODAxMTk0MTQyWjAjBgkqhkiG9w0BCQQx
-FgQUliebTvFDWE4QKxNL8egTLU9CMAIwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwODAxMTk0MzU4WjAjBgkqhkiG9w0BCQQx
+FgQUMD38JBRao7RwODI4dOm69egUNdowgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
 SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
 ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
 ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
 TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
 aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQAY1iksvkBpKuoPxle7pQAz6pA6
-vfhw7BLBgTU1UiRlZXWa6wOsigRJVIR/4eWXhkcOoQTnioyjE5SxGrtIvJoIWQu9yxX5bvNb7ifC
-LgItOPa0jxCxquNTOn1llhUSUud9fQ3ZGDqp1MQ7g9m6qIjSZUjrh2wc/g8Qotu/gDmhFZMe523A
-bjXNmCXuc6J9et7qp+TfK+443j4Jpd/LKDPQ79hAOjK2T6A4CN0Cpyg0chNVmtf/gwlvsLOskyZN
-g5Rhsi6E3JSx/8MEMEBSGXsO5WbIs0G9ILU3yot2jYUJqqylTYuDRzSpQr8LrHxNHsQovYXOGM72
-KOrVS80YJ2U1AAAAAAAA
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCtTvJ0+xv0dqEEY3RC3hQlmUHS
+4OGtLrB4uze+nMlkc2lk9qBtKmer6oFMVEsVz932A2+Yoj6rUWkHfkwZsBYpK+6whHJjiT5xLq3q
+qkmZGnZn6sUw3mfdOmwqexkfCd6Jw7pVDyvFM0mHC9WFMUVmMkdmEOvYOP46NiXA4Hj6gZm0rEwC
+jm+NXCH9FtZQYPLEu4ZF6qMJkhHQtAtPMiQGNOf+wwVAabIylf1tXwVKRqU/jEG0GjASuAcfvZo/
+HhsC1QWGT5Pl2WemINX4fp8YisAuDEyRgje61G5GVlJqjv7JtpGazjqj+FHp1irGuV1syBOWjBYk
+N+5tOWY3N7wLAAAAAAAA
 
 
---=-rFUU5syq/phBn8/tNM2i--
+--=-L1Hp+A25JyCwIbWVVf2C--
 
