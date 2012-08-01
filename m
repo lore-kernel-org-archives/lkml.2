@@ -1,144 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab2HABps (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 21:45:48 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2587 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028Ab2HABpr (ORCPT
+	id S1753523Ab2HABw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 21:52:28 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63884 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753315Ab2HABw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 21:45:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 31 Jul 2012 18:45:46 -0700
-Message-ID: <50188ABB.2060304@nvidia.com>
-Date: Wed, 1 Aug 2012 10:47:39 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 31 Jul 2012 21:52:26 -0400
 MIME-Version: 1.0
-To: Mitch Bradley <wmb@firmworks.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <50170EA0.1010408@wwwdotorg.org> <5017B434.2010706@nvidia.com> <20120731105640.GD16155@avionic-0098.adnet.avionic-design.de> <5017CDF9.2060304@firmworks.com> <20120731123811.GA25855@avionic-0098.adnet.avionic-design.de> <5017D5C9.3070905@firmworks.com>
-In-Reply-To: <5017D5C9.3070905@firmworks.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120727065630.0a3c5870@tlielax.poochiereds.net>
+References: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
+	<CAKYAXd99VMYSX=k9eadB6MZvjQjQrOngOjUicjo+c9LtHvpz9w@mail.gmail.com>
+	<20120727065630.0a3c5870@tlielax.poochiereds.net>
+Date: Wed, 1 Aug 2012 10:52:25 +0900
+Message-ID: <CAKYAXd8Kbnp0paFt-FmaFiEu6KWX8jCyE7NZ-SHfEj4Ad5-ANA@mail.gmail.com>
+Subject: Re: [PATCH v4 00/17] vfs: add the ability to retry on ESTALE to
+ several syscalls
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
+        pstaubach@exagrid.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 09:55 PM, Mitch Bradley wrote:
-> On 7/31/2012 8:38 PM, Thierry Reding wrote:
->> On Tue, Jul 31, 2012 at 08:22:17PM +0800, Mitch Bradley wrote:
->>> On 7/31/2012 6:56 PM, Thierry Reding wrote:
->>>> On Tue, Jul 31, 2012 at 07:32:20PM +0900, Alex Courbot wrote:
->>>>> On 07/31/2012 07:45 AM, Stephen Warren wrote:
->>>>>> I wonder if using the same structure/array as input and output would
->>>>>> simplify the API; the platform data would fill in the fields mentioned
->>>>>> above, and power_seq_build() would parse those, then set other fields in
->>>>>> the same structs to the looked-up handle values?
->>>>>
->>>>> The thing is that I am not sure what happens to the platform data
->>>>> once probe() is done. Isn't it customary to mark it with __devinit
->>>>> and have it freed after probing is successful?
->>>>
->>>> No, platform data should stay around forever. Otherwise, consider what
->>>> would happen if your driver is built as a module and you unload and load
->>>> it again.
->>>>
->>>>> More generally, I think it is a good practice to have data
->>>>> structures tailored right for what they need to do - code with
->>>>> members that are meaningful only at given points of an instance's
->>>>> life tends to be more confusing.
->>>>
->>>> I agree. Furthermore the driver unload/reload would be another reason
->>>> not to reuse platform data as the output of the build() function.
->>>>
->>>> But maybe what Stephen meant was more like filling a structure with data
->>>> taken from the platform data and pass that to a resolve() function which
->>>> would fill in the missing pieces like pointers to actual resources. I
->>>> imagine a managed interface would become a little trickier to do using
->>>> such an approach.
->>>>
->>>>>> If the nodes have a unit address (i.e. end in "@n"), which they will
->>>>>> have to if all named "step" and there's more than one of them, then they
->>>>>> will need a matching reg property. Equally, the parent node will need
->>>>>> #address-cells and #size-cells too. So, the last couple lines would be:
->>>>>>
->>>>>> 		power-on-sequence {
->>>>>> 			#address-cells = <1>;
->>>>>> 			#size-cells = <0>;
->>>>>> 			step@0 {
->>>>>> 				reg = <0>;
->>>>>
->>>>> That's precisely what I would like to avoid - I don't need the steps
->>>>> to be numbered and I certainly have no use for a reg property. Isn't
->>>>> there a way to make it simpler?
->>>>
->>>> It's not technically valid to not have the reg property. Or
->>>> #address-cells and #size-cells properties for that matter.
->>>
->>> I'm not keen on this representation where individual steps are nodes.
->>> That seems like it could end up being too "heavyweight" for a long sequence.
->>
->> The other alternative would involve using a single property to encode
->> one sequence. I think that was the initial proposal, though using proper
->> phandle encoding it could probably be enhanced a bit. However anything
->> that involves a single property has the problem that we need to encode
->> the type of resource as an integer, and that makes things very hard to
->> read.
->>
->> So it would look something like this:
->>
->> 	power-on = <1  &gpio 6 0            1
->> 		    0                   10000
->> 		    2  &reg                 1
->> 		    3  &pwm  0 5000000      1>;
->>
->> 	power-off = <3  &pwm  0 5000000      0
->> 		     2  &reg                 0
->> 		     0                   10000
->> 		     1  &gpio 6 0            0>;
->>
->> So the first cell would encode the type:
->>    0: delay
->>    1: gpio
->>    2: regulator
->>    3: PWM
->>
->> The next n cells would be the phandle and the specifier, while the last
->> cell would encode a resource-specific parameter:
->>    delay: time in microseconds
->>    gpio: set level (0: low, 1: high)
->>    regulator: 0: disable, 1: enable
->>    pwm: 0: disable, 1: enable
->>
->> I guess this would be more compact, but it is also very hard to read. Is
->> that something you would be happier with? Perhaps you were thinking of
->> something completely different?
+2012/7/27, Jeff Layton <jlayton@redhat.com>:
+> On Fri, 27 Jul 2012 11:15:23 +0900
+> Namjae Jeon <linkinjeon@gmail.com> wrote:
 >
+>> Hi Jeff.
+>>
+>> Which testcase(or test method) do I use to know improved point from
+>> ESTALE error ?
+>> I want to know before & after using testcase with this patch-set.
+>>
 >
-> Perhaps a compact/flexible encoding could be designed, with a textual
-> encoding that is easy to read.  A separate tool could convert the text
-> encoding to the integer format, annotated with comments containing
-> the "source text".  A file containing that output could be #included
-> into the dts file.
+> It's a bit labor intensive, I'm afraid...
+>
+> Attached is a cleaned-up copy of the test program that Peter wrote to
+> test his original patchset. The basic idea is to run this on both the
+> client and server at the same time so they race against each other. He
+> was able to run it overnight when testing with his patchset.
+>
+> With this patchset, that doesn't work since we're only retrying the
+> lookup and call once. So, what I've been doing is modifying the program
+> so that it just runs one test at a time, and sniffing traffic to see
+> whether the lookups and calls are retried after an ESTALE return from
+> the server.
+Sorry for late response.
+I will check this patch with testcase you shared.
+Thanks Jeff.
 
-Do you mean having a external compiler that would run before dtc just 
-for producing the power sequences? That sounds a little bit overkill for 
-something that ough to remain simple.
-
-Also, although I admit I don't have the whole picture of where they 
-could be used, I don't expect the power sequences to grow to sizes that 
-would make us bother about their footprint.
-
-Alex.
-
+>
+> --
+> Jeff Layton <jlayton@redhat.com>
+>
