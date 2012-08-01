@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab2HAQpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 12:45:42 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:35827 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185Ab2HAQpl (ORCPT
+	id S1753024Ab2HAQuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 12:50:11 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:47823 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab2HAQuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 12:45:41 -0400
-Date: Wed, 1 Aug 2012 09:35:53 -0700
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: qiang.liu@freescale.com
-Cc: linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, dan.j.williams@gmail.com,
-        Vinod Koul <vinod.koul@intel.com>, herbert@gondor.hengli.com.au,
-        Dan Williams <dan.j.williams@intel.com>, davem@davemloft.net
-Subject: Re: [PATCH v5 2/6] fsl-dma: remove attribute DMA_INTERRUPT of
- dmaengine
-Message-ID: <20120801163553.GC11359@ovro.caltech.edu>
-References: <1343810948-25343-1-git-send-email-qiang.liu@freescale.com>
+	Wed, 1 Aug 2012 12:50:09 -0400
+Message-ID: <50195E20.90704@linaro.org>
+Date: Wed, 01 Aug 2012 09:49:36 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343810948-25343-1-git-send-email-qiang.liu@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (ovro.ovro.caltech.edu); Wed, 01 Aug 2012 09:35:54 -0700 (PDT)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: Re: [PATCH 1/2] [RFC] time: Fix problem with large timespecs & ktime_get_update_offsets
+References: <1343716548-38742-1-git-send-email-john.stultz@linaro.org> <1343716548-38742-2-git-send-email-john.stultz@linaro.org> <alpine.LFD.2.02.1208010850510.32033@ionos>
+In-Reply-To: <alpine.LFD.2.02.1208010850510.32033@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080116-2356-0000-0000-000000E588CD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 04:49:08PM +0800, qiang.liu@freescale.com wrote:
-> From: Qiang Liu <qiang.liu@freescale.com>
-> 
-> Delete attribute DMA_INTERRUPT because fsl-dma doesn't support this function,
-> exception will be thrown if talitos is used to offload xor at the same time.
-> 
+On 07/31/2012 11:52 PM, Thomas Gleixner wrote:
+> On Tue, 31 Jul 2012, John Stultz wrote:
+>> There's currently a slight difference in ktime_get_update_offsets()
+>> vs ktime_get() which can result in boot time crashes when booting
+>> with insane CMOS clock values larger then ~2264.
+>>
+>> ktime_get() does basically the following:
+>>          return timespec_to_ktime(timespec_add(xtime, wall_to_monotonic))
+>>
+>> Where as ktime_get_update_offsets does approximately:
+>>          return ktime_sub(timespec_to_ktime(xtime), realtime_offset);
+>>
+>> The problem is, at boot we set xtime = year 8200 and
+>> wall_to_monotonic = year -8200,  ktime_get adds both values, mostly
+>> nulling the difference out (leaving only how long the system has been
+>> up), then converts that relatively small value to a ktime_t properly
+>> without losing any information.
+>>
+>> ktime_get_update_offsets however, since it converts xtime (again set
+>> to some value greater then year 8200), to a ktime, it gets clamped at
+>> KTIME_MAX, then we subtract realtime_offset, which is _also_ clamped
+>> at KTIME_MAX, resulting in us always returning almost[1] zero. This
+>> causes us to stop expiring timers.
+>>
+>> Now, one of the reasons Thomas and I changed the logic was that using
+>> the precalculated realtime_offset was slightly more efficient then
+>> re-adding xtime and wall_to_monotonic's components separately. But
+>> how valuable this unmeasured slight efficiency is vs extra
+>> robustness for crazy time values is questionable.
+>>
+>> So switch back to the ktime_get implementation for
+>> ktime_get_update_offsets
+> NAK.
+>
+> You're papering over the real problem: Using crap values without
+> sanity checking them in the first place.
+>
+> All your patch does is papering over the problem. Heck, year 8200 is
+> obvious bullshit, so we can detect and reject it.
 
-I have no problem with this patch.
+Ok, sounds good. I'll drop this one and just keep the sanity checking patch.
 
-However, it ***WILL BREAK*** both drivers in drivers/misc/carma. Please
-add my patch 7/7 titled "[PATCH 7/7] carma: remove unnecessary
-DMA_INTERRUPT capability" to your series. I suggest placing it
-immediately after this patch in your series.
+thanks
+-john
 
-The carma drivers use the fsldma driver exclusively.
-
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Li Yang <leoli@freescale.com>
-> Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
-> Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> ---
->  drivers/dma/fsldma.c |   31 -------------------------------
->  1 files changed, 0 insertions(+), 31 deletions(-)
-> 
-> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-> index 8f84761..4f2f212 100644
-> --- a/drivers/dma/fsldma.c
-> +++ b/drivers/dma/fsldma.c
-> @@ -543,35 +543,6 @@ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
->  }
-> 
->  static struct dma_async_tx_descriptor *
-> -fsl_dma_prep_interrupt(struct dma_chan *dchan, unsigned long flags)
-> -{
-> -	struct fsldma_chan *chan;
-> -	struct fsl_desc_sw *new;
-> -
-> -	if (!dchan)
-> -		return NULL;
-> -
-> -	chan = to_fsl_chan(dchan);
-> -
-> -	new = fsl_dma_alloc_descriptor(chan);
-> -	if (!new) {
-> -		chan_err(chan, "%s\n", msg_ld_oom);
-> -		return NULL;
-> -	}
-> -
-> -	new->async_tx.cookie = -EBUSY;
-> -	new->async_tx.flags = flags;
-> -
-> -	/* Insert the link descriptor to the LD ring */
-> -	list_add_tail(&new->node, &new->tx_list);
-> -
-> -	/* Set End-of-link to the last link descriptor of new list */
-> -	set_ld_eol(chan, new);
-> -
-> -	return &new->async_tx;
-> -}
-> -
-> -static struct dma_async_tx_descriptor *
->  fsl_dma_prep_memcpy(struct dma_chan *dchan,
->  	dma_addr_t dma_dst, dma_addr_t dma_src,
->  	size_t len, unsigned long flags)
-> @@ -1352,12 +1323,10 @@ static int __devinit fsldma_of_probe(struct platform_device *op)
->  	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
-> 
->  	dma_cap_set(DMA_MEMCPY, fdev->common.cap_mask);
-> -	dma_cap_set(DMA_INTERRUPT, fdev->common.cap_mask);
->  	dma_cap_set(DMA_SG, fdev->common.cap_mask);
->  	dma_cap_set(DMA_SLAVE, fdev->common.cap_mask);
->  	fdev->common.device_alloc_chan_resources = fsl_dma_alloc_chan_resources;
->  	fdev->common.device_free_chan_resources = fsl_dma_free_chan_resources;
-> -	fdev->common.device_prep_dma_interrupt = fsl_dma_prep_interrupt;
->  	fdev->common.device_prep_dma_memcpy = fsl_dma_prep_memcpy;
->  	fdev->common.device_prep_dma_sg = fsl_dma_prep_sg;
->  	fdev->common.device_tx_status = fsl_tx_status;
-> --
-> 1.7.5.1
-> 
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
