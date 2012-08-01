@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab2HAJ4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 05:56:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62437 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210Ab2HAJ4d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 05:56:33 -0400
-Date: Wed, 1 Aug 2012 11:56:28 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pwm: add devm_pwm_get() and devm_pwm_put()
-Message-ID: <20120801095628.GA30253@avionic-0098.adnet.avionic-design.de>
-References: <1343806629-14397-1-git-send-email-acourbot@nvidia.com>
- <20120801080453.GJ29673@avionic-0098.adnet.avionic-design.de>
- <5018E62C.7010908@nvidia.com>
+	id S1754264Ab2HAKE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 06:04:59 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57436 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752643Ab2HAKE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 06:04:58 -0400
+Date: Wed, 1 Aug 2012 12:04:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: awful kconfig help texts.
+Message-ID: <20120801100455.GD21303@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Lars-Peter Clausen <lars@metafoo.de>,
+	Thierry Reding <thierry.reding@avionic-design.de>,
+	Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120731151600.GA19412@redhat.com>
+ <20120731170741.GA4735@x1.osrc.amd.com>
+ <20120731172638.GE16873@home.goodmis.org>
+ <20120731174249.GB4735@x1.osrc.amd.com>
+ <20120801074742.GH29673@avionic-0098.adnet.avionic-design.de>
+ <20120801085644.GA21303@liondog.tnic>
+ <5018F537.209@metafoo.de>
+ <20120801092625.GB21303@liondog.tnic>
+ <5018F908.9090607@metafoo.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5018E62C.7010908@nvidia.com>
+In-Reply-To: <5018F908.9090607@metafoo.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:iOomSU9ukHxdQhymBqgcJDNIANHoZLyyszmp5JE16NK
- XSyXTYif/lgib6u9hrQCOHJSWCZS1NHdf/kjfOxgA0TB64lMFq
- AyLRCuxb+cu4z/jdCZDOJMjXDJkTUKdHrQyHZnj0hY1YMjdnAr
- YNYtBPhDxMUdQzILf63Erl8o0y4NM40F4qzob0uG5jMk+WOJqE
- ZCP9dq0+OHVA5QdYBBCB46+BlUOD3+kMXfevFuZwGqvYitskzI
- 1C/Bye1UM1+POG4caHXkqG/SJeJ57k77SAanx5cAFbKhZWcdll
- kysQ8c1dYRg66JfBCYsVkijg5iQtu6om1aBC0mVRx9dtV93RZK
- /ZJEQjBfq6vN54AuuAvsM0+ZaD+DgosAtkaSP0WR6FvPrM8f/Q
- 7lMrFUBjkerApsN5uJGlgYiHcwBpvO7S0xuuKwl/gBgewAwE3B
- FIYOP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 01, 2012 at 11:38:16AM +0200, Lars-Peter Clausen wrote:
+> You don't see any drivers, because the subsystem is still young and no
+> such arch independent drivers have been added yet, but they will get
+> added in the future. The arch independent companion or PWM expander
+> chips usually interface via I2S or SPI and I would consider it quite
+> likely that you'll also find them on some embedded X86 boards. If we
+> add a arch restriction to the config item now we'd quite likely have
+> to remove it again in the next release.
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes please.
 
-On Wed, Aug 01, 2012 at 05:17:48PM +0900, Alex Courbot wrote:
-> On Wed 01 Aug 2012 05:04:53 PM JST, Thierry Reding wrote:
-> >* PGP Signed by an unknown key
-> >
-> >On Wed, Aug 01, 2012 at 04:37:09PM +0900, Alexandre Courbot wrote:
-> >>+/**
-> >>+ * devm_pwm_get() - Resource managed pwm_get()
-> >
-> >This is missing parameter descriptions here.
->=20
-> This is because the documentation for this function just refers to
-> pwm_get(), and the parameters are the same. I think it's better to
-> avoid duplicating documentation as much as possible as this makes
-> two maintenance points instead of one.
+Kconfig is overcrowded as it is now and adding yet another option which
+is irrelevant for some arches (for now, as you say) simply causes
+confusion to people with absolutely no gain.
 
-devm_pwm_get() and devm_pwm_put() aren't very likely to change. The
-problem is that they are public APIs and people could be running
-kerneldoc over the files to have documentation generated and the
-parameters would be missing in this case. We really don't have a lot of
-these public functions, but those that are should be properly
-documented.
+Simply take a look at all arch/<archname>/Kconfig files and look at all
+the "select ..." statements right at the beginning of the respective
+Kconfig file.
 
-Thierry
+Each arch which has PWM drivers would select the synthetic
+CONFIG_ARCH_PWM option and CONFIG_PWM would depend on it.
 
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQGP1MAAoJEN0jrNd/PrOhHFAP+wVkFF0QGZUWZZJ44uMukICl
-/8gzCIY8LDl7BuGLTYGJ/rjkhwlM+vbpAMXm4Vb0+0vBAfoCa4nALDRgDp4iPlLx
-iRltyQRYGN5ZM+HsWnKT5tkelGQWUvTv1tIDFPAwnWOw7ZbptmeIPpA8+ScXTrZy
-PQdoO/zkgGg54fx89QaK5zAyzoGCSdH4X7Ohzz+DXEby8Dc7A49kVXtsu5Nzkg3X
-XjS6T396DRmK4XEeaId6tDtliLboY++2DZFukfQjTZ9eLXY9G+6QaNAXRdfIb3MI
-BP7ddOw44bQMUPVB60dFnF3Dpw7FG5sjJpImv/d73QJXffcMREPG7V4BIuzc4W1f
-PTWF1G6j/4QoUS2OrdLzswf2bnOrtMTBKZ63Qr6wHbWtpT8Wj5zOs0FgZpjJc+Ft
-CQUJJKOdsoJY4iYqfG6kuY00H5rEB61HzDhV9FJBP5491/F5bS+iii3cl3DziAMf
-KUBdzGQw6t4dnnBHFrfdoyLLu4biAPUgsHpitAYe4qcBgH/uTtDa34TbiuOvs/Ih
-2RIiu9b4ptvk9+obedJllPhUTXT/+KIPj3BlzavVlTm4I2ldgxor8qpgqtCgpxKj
-/mgpafRBghVgQ0HvvqURm3mp/YngAf68vekFTJ3dUACfVdS8NdkNZnDo1MYCnK1r
-bgKbijdOnxAh281TWeHa
-=qTU1
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
+-- 
+Regards/Gruss,
+    Boris.
