@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab2HAOGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 10:06:53 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43866 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153Ab2HAOGw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 10:06:52 -0400
-Message-ID: <501937F7.2070600@landley.net>
-Date: Wed, 01 Aug 2012 09:06:47 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754590Ab2HAOHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 10:07:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56946 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754210Ab2HAOHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 10:07:18 -0400
+Date: Wed, 1 Aug 2012 10:07:08 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com, kzak@redhat.com,
+        psusi@ubuntu.com, vgoyal@redhat.com, maxim.patlasov@gmail.com
+Subject: Re: [patch 0/2] [V4] block: Support online resize of disk partitions
+Message-ID: <20120801140708.GF31946@redhat.com>
+References: <20120709213418.799759100@redhat.com>
 MIME-Version: 1.0
-To: Milton Miller <miltonm@bga.com>
-CC: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
-        Borislav Petkov <bp@alien8.de>, Cong Wang <xiyou.wangcong@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening
- port
-References: <gilii4nnxb.fsf@mx10.gouders.net> <kernel-nc-hints@mdm.bga.com>
-In-Reply-To: <kernel-nc-hints@mdm.bga.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709213418.799759100@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2012 03:40 AM, Milton Miller wrote:
-> [adding Rob as Doc maintanier]
+On Mon, Jul 09, 2012 at 05:34:18PM -0400, vivek.goyal2008@gmail.com wrote:
+> Hi,
 > 
-> On Sat, 28 Jul 2012 about 11:08:16 -0000, Dirk Gouders wrote:
->> Borislav Petkov <bp@alien8.de> writes:
->>
->>> On Fri, Jul 27, 2012 at 11:24:53AM +0200, Dirk Gouders wrote:
->>>> Cong Wang <xiyou.wangcong@gmail.com> writes:
->>>>
->>>>> On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
->>>>> <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
->>>>>> Hi Jesse,
->>>>>>
->>>>>> I would like to ask you to check if the documentation of "nc" in
->>>>>> netconsole.txt is still correct.  I tried two different netcat packages
->>>>>> and both require "-p" to specify the listening port.  I am wondering if
->>>>>> that changed after the use of "nc" has been documented.
->>>>>
->>>>> On Fedora 16, `nc -u -l <port number>` works fine.
->>>>
->>>> Thanks for checking that.
->>>>
->>>> If the information I found is correct, Fedora uses OpenBSD's nc
->>>> codebase.  The two netcat packages I tested on a Gentoo system differ in
->>>> requiring the -p switch for the port specification.
->>>
->>> So say exactly that in the doc: that the *BSD's version of nc doesn't
->>> need the port number specified with '-p' and you're covered.
->> OK, I tried that in the attached patch.
->> I'm not sure if every exeption needs to/should be documented, though.
->>
->> >From 3cdeac3e814471053129145c5fa8391acb365fd8 Mon Sep 17 00:00:00 2001
->> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
->> Date: Sat, 28 Jul 2012 12:32:49 +0200
->> Subject: [PATCH] netconsole.txt: non-BSD versions of nc(1) require '-p'
->>  switch
->>
->> Gentoo for example uses non-BSD versions of nc(1) which require
->> the '-p' switch to specify the listening port.
->>
->> ---
->> Documentation/networking/netconsole.txt |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
+> Few people have pinged me in rencent past about status of this patch, hence,
+> this is V4 of patch which adds support for online resizing of a partition.
+> This patch is based on previously posted patches by Phillip Susi. 
+> 
 
-Did this ever resolve to a specific recommended patch? The one at the
-start of the thread:
+Hi Jens,
 
- http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/01995.html
+Can you please consider partition resize patches for inclusion.
 
-Apparently isn't it...?
+Thanks
+Vivek
 
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+> There are two patches. Out of which one is kernel patch and other one is
+> util-linux patch to add support of a user space utility "resizepart" to
+> allow resizing the partition.
+> 
+> This ioctl only resizes the partition size in kenrel and does not change
+> the size on disk. A user needs to make sure that corresponding changes
+> are made to disk data structures also using fdisk(or partx), if changes
+> are to be retained across reboot.
+> 
+> Changes since V3
+> ----------------
+> - Do bdput() in error path as per the Maxim's review comments.
+> 
+> Changes since V2
+> ----------------
+> - Do not ignore the "start" parameter in RESIZE ioctl.
+> - Change resizepart utility to parse sysfs to get to partition start.
+> 
+> Changes since V1
+> ----------------
+> Following are changes since the version Phillip posted.
+> - RESIZE ioctl ignores the partition "start" and does not expect user to
+>   specify one. Caller needs to just specify "device", "partition number" and
+>   "size" of new partition.
+> 
+> - Got rid of part_nr_sects_write_begin/part_nr_sects_write_end functions
+>   and replaced these with single part_nr_sects_write().
+> 
+> - Some sequence counter related changes are simply lifted from i_size_write().
+> 
+> - Initialized part->nr_sects_seq using seqcount_init().
+> 
+> Phillip, do let me know if I should put your signed-off-by also in the
+> patch.
+> 
+> Any review feedback is welcome.
+> 
+> I did following test.
+> 
+> - Create a partition of 10MB on a disk using fdisk.
+> - Add this partition to a volume group
+> - Use fdisk to increase the partition size to 20MB. (First delete the
+>   partition and then create a new one of 20MB size).
+> - Use resizepart to extend partition size in kernel.
+>         resizepart /dev/sdc 1 40960
+> - Do pvresize on partition so that physical volume can be incrased in
+>   size online.
+>         pvresize /dev/sda1
+> 
+> pvresize does recognize the new size. Also lsblk and /proc/partitions
+> report the new size of partition.
+> 
+> Thanks
+> Vivek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
