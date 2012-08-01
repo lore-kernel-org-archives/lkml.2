@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab2HAImu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 04:42:50 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52882 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab2HAImp (ORCPT
+	id S1753045Ab2HAInB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 04:43:01 -0400
+Received: from mail.lippert-at.com ([62.80.22.186]:27331 "EHLO
+	domex.lippertembedded.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752815Ab2HAIm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 04:42:45 -0400
-Date: Wed, 1 Aug 2012 09:41:27 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
-        broonie@opensource.wolfsonmicro.com, olalilja@yahoo.se,
-        STEricsson_nomadik_linux@list.st.com, lrg@ti.com
-Subject: Re: [PATCH 5/6] ARM: ux500: Enable HIGHMEM on all mop500 platforms
-Message-ID: <20120801084127.GT6802@n2100.arm.linux.org.uk>
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <5017EBDC.6010005@linaro.org> <20120731143732.GS6802@n2100.arm.linux.org.uk> <201207312050.03113.arnd@arndb.de> <20120731220145.GD10335@n2100.arm.linux.org.uk> <5018E11E.7080907@linaro.org>
+	Wed, 1 Aug 2012 04:42:56 -0400
+Message-ID: <5018E919.7010303@LiPPERTEmbedded.de>
+Date: Wed, 01 Aug 2012 10:30:17 +0200
+From: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+User-Agent: Thunderbird 1.5.0.14 (Windows/20071210)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5018E11E.7080907@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2nd resend] cs5535-clockevt: typo, it's MFGPT, not MFPGT
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Aug 2012 08:42:53.0419 (UTC) FILETIME=[A3FC13B0:01CD6FC1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 08:56:14AM +0100, Lee Jones wrote:
-> On 31/07/12 23:01, Russell King - ARM Linux wrote:
->> On Tue, Jul 31, 2012 at 08:50:02PM +0000, Arnd Bergmann wrote:
->>> On Tuesday 31 July 2012, Russell King - ARM Linux wrote:
->>>> I still fail to see how not having highmem enabled would ever cause memory
->>>> corruption errors (unless something dealing with memory in a very very
->>>> wrong way - iow, not using one of the reservation or memory allocation
->>>> methods provided by the kernel.)
->>>
->>> The problem is that all users of ux500 systems pass a command line like
->>>
->>> vmalloc=256M mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M mem=48M@328M mem_issw=1M@383M mem=640M@384M
->>>
->>> This is of course totally bogus and should not be done. If I understand
->>> Lee correctly, one of the issues resulting from passing a command
->>> line like this without enabling highmem is memory corruption.
->>
->> But the question is _why_ does that corruption happen.
->>
->>  From the above, we will end up with the kernel getting:
->>
->> 0x00000000 - 0x07ffffff (128M @ 0)
->> 0x14800000 - 0x177fffff (48M  @ 328M)
->> 0x18000000 - 0x3fffffff (640M @ 384M)
->>
->> with:
->>
->> 0x08000000 - 0x081fffff used for mali
->> 0x0a000000 - 0x147fffff used for hwmem
->> 0x17f00000 - 0x17ffffff used for mem_issw
->>
->> Now, with highmem disabled, the kernel should still map exactly the
->> regions: 0x00000000 - 0x07ffffff, 0x14800000 - 0x177fffff, into the
->> direct mapped region, and truncate the 0x18000000 - 0x3fffffff
->> region appropriately, reducing the amount of memory available such
->> that it won't overlap the vmalloc area (which you've specified to be
->> a minimum of 256M.)
->>
->> This should _NOT_ cause any memory corruption.
->>
->> So, come on guys.  Debugging is *mandatory* for this kind of problem.
->> Papering over it is obscene.
->
-> Actually I didn't go any further with it, as I changed to another  
-> identical piece of hardware and couldn't reproduce the issue.
->
-> FYI, here's the boot log from the broken board:
->
-> http://paste.ubuntu.com/1102017/
+cs5535-clockevt: typo, it's MFGPT, not MFPGT
 
-Well, the good thing is this:
+Had me fooled for a while, "dmesg|grep -i mfgpt" wouldn't show anything.
 
-   8 Truncating RAM at 18000000-3fffffff to -2c3fffff (vmalloc region overlap).
+Signed-off-by: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+---
 
-which means the RAM was properly truncated before it is passed to
-memblock, etc.
+Hi Thomas,
 
-That oops dump looks very much like an ASoC problem, where
-dapm_widget_power_check() recurses into dapm_supply_check_power()
-which then recurses back into dapm_widget_power_check(), and it
-eventually overflows the kernel stack, corrupting the thread_info
-and the pages below.
+I know this is not the most important fix in the world, but the nice
+thing about open source is that you can scatch your itches ...
 
-Given the address of the stack pointer (ebc480a8) I don't think
-we can be too sure where it was supposed to be, and where the top
-of stack should have been, so we don't know how many pages have
-been stomped on and corrupted.
+Got no response, therefore rescratching.  :-)
 
-Stopping that recursion is the first thing that needs to be done
-so that the cause of it can then be properly debugged without the
-kernel itself corrupting memory below the kernel stack.
+Thanks,
+Jens
+
+--- linux-3.4/drivers/clocksource/cs5535-clockevt.c
++++ mfgpt_typo/drivers/clocksource/cs5535-clockevt.c
+@@ -53,7 +53,7 @@
+ #define MFGPT_PERIODIC (MFGPT_HZ / HZ)
+ 
+ /*
+- * The MFPGT timers on the CS5536 provide us with suitable timers to use
++ * The MFGPT timers on the CS5536 provide us with suitable timers to use
+  * as clock event sources - not as good as a HPET or APIC, but certainly
+  * better than the PIT.  This isn't a general purpose MFGPT driver, but
+  * a simplified one designed specifically to act as a clock event source.
+@@ -144,7 +144,7 @@
+ 
+ 	timer = cs5535_mfgpt_alloc_timer(MFGPT_TIMER_ANY, MFGPT_DOMAIN_WORKING);
+ 	if (!timer) {
+-		printk(KERN_ERR DRV_NAME ": Could not allocate MFPGT timer\n");
++		printk(KERN_ERR DRV_NAME ": Could not allocate MFGPT timer\n");
+ 		return -ENODEV;
+ 	}
+ 	cs5535_event_clock = timer;
+_
+
+
