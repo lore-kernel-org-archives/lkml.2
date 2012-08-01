@@ -1,51 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab2HASAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 14:00:42 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:40822 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754704Ab2HASAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 14:00:41 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: WxT_8XQVM1nbwe5410xgqsXmAoA76aTLoiLz52ohTQuAZ4Z
- VV8479CCAlx5KiMtu6oMSX9SYcaljPcKPerag.L5xcIbbTVMxbQbxFUvQEKS
- Nb0KLz3OGAcGk1BgMt69IJACq7bPhFbf1vSpdbfAILEZ48tyThqosEyPyGGD
- Yec6UVp8l0WIZUIA6yv0ZX2Y3qjvmTNJOJ3TZNRnITgR3nN9FtnDMqbw_W0B
- JWpneNmrREsiXp7lw1fUh7lfJbBPEKycW1fXY7EkzVo4PyLuwjBAIxwXfjkT
- QyflFtVJZjQlO5INgl6KNDbvZRZbXcBo0_8JN2aBoYSYWTKZCWCoyjtW.44g
- bLWCjGTTJagm44fzAP3F2zCNce1pdFAoB1LF.io9hm8XIGM6qHhKRXKgFB2k
- YCkAWP0INaqwMPtK8TVytU60y5O.tk9z2CK7Sz1TauK134jAuDw--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 1 Aug 2012 13:00:37 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-cc: JoonSoo Kim <js1304@gmail.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Brice Goglin <brice@myri.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [RESEND PATCH 4/4 v3] mm: fix possible incorrect return value
- of move_pages() syscall
-In-Reply-To: <CAHO5Pa0wwSi3VH1ytLZsEJs99i_=5qN5ax=8y=uz1jbG+P03sw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1208011259550.4606@router.home>
-References: <1343411703-2720-1-git-send-email-js1304@gmail.com> <1343411703-2720-4-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1207271550190.25434@router.home> <CAAmzW4MdiJOaZW_b+fz1uYyj0asTCveN=24st4xKymKEvkzdgQ@mail.gmail.com>
- <alpine.DEB.2.00.1207301425410.28838@router.home> <CAHO5Pa0wwSi3VH1ytLZsEJs99i_=5qN5ax=8y=uz1jbG+P03sw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754883Ab2HASE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 14:04:57 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:38796 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754748Ab2HASE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 14:04:56 -0400
+Date: Wed, 1 Aug 2012 20:04:46 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: ACPI: Invalid Power Resource to register!
+Message-ID: <20120801180446.GJ8082@aftab.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
-Content-ID: <alpine.DEB.2.00.1208011259552.4606@router.home>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Aug 2012, Michael Kerrisk wrote:
+Hi,
 
-> Is the patch below acceptable? (I've attached the complete page as well.)
+I'm getting the message in $Subject with latest linus:v3.5-8833-g2d534926205d
 
-Yes looks good.
+The dmesg printk is delayed for 5 seconds probably due to async scanning
+(see trace below):
 
-> See you in San Diego (?),
+[   10.746148] [drm] vram apper at 0xD0000000
+[   10.750680] [drm] size 786432
+[   10.754050] [drm] fb depth is 8
+[   10.757593] [drm]    pitch is 1024
+[   10.761862] fbcon: radeondrmfb (fb0) is primary device
 
-Yup. I will be there too.
+[    5.163363] ACPI: Invalid Power Resource to register			<----
+
+[   10.949414] Console: switching to colour frame buffer device 128x48
+[   10.977810] fb0: radeondrmfb frame buffer device
+[   10.982601] drm: registered panic notifier
+[   10.986892] [drm] Initialized radeon 2.17.0 20080528 for 0000:02:06.0 on minor 0
+
+So I added some debugging code to see where exactly this happens:
+
+diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+index 215ecd097408..d79e0f8c1f4e 100644
+--- a/drivers/acpi/power.c
++++ b/drivers/acpi/power.c
+@@ -432,11 +432,17 @@ int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
+                return -ENODEV;
+ 
+        ret = acpi_bus_get_device(handle, &acpi_dev);
+-       if (ret)
++       if (ret) {
++               pr_warn(PREFIX "error getting device %s\n", dev_name(&acpi_dev->dev));
++               dump_stack();
+                goto no_power_resource;
++       }
+ 
+-       if (!acpi_dev->power.flags.power_resources)
++       if (!acpi_dev->power.flags.power_resources) {
++               pr_warn(PREFIX "no power resources %s\n", dev_name(&acpi_dev->dev));
++               dump_stack();
+                goto no_power_resource;
++       }
+ 
+        powered_device = kzalloc(sizeof(*powered_device), GFP_KERNEL);
+        if (!powered_device)
+---
+
+and I got the following trace:
+
+---
+[    5.163287] ACPI: no power resources device:1a
+[    5.163292] Pid: 1023, comm: kworker/u:4 Tainted: G        W    3.5.0+ #9
+[    5.163293] Call Trace:
+[    5.163300]  [<ffffffff81227866>] acpi_power_resource_register_device+0x8f/0x1bf
+[    5.163305]  [<ffffffff81221a5f>] ? acpi_get_child+0x48/0x4e
+[    5.163310]  [<ffffffff812e34db>] ata_acpi_bind+0x80/0x87
+[    5.163313]  [<ffffffff812d891e>] ata_scsi_scan_host+0x91/0x184
+[    5.163317]  [<ffffffff812d4f4f>] async_port_probe+0x4a/0x4f
+[    5.163321]  [<ffffffff810568cc>] async_run_entry_fn+0x9a/0x152
+[    5.163325]  [<ffffffff8104a103>] process_one_work+0x265/0x438
+[    5.163328]  [<ffffffff8104a080>] ? process_one_work+0x1e2/0x438
+[    5.163331]  [<ffffffff81475a01>] ? _raw_spin_lock_irq+0x17/0x46
+[    5.163335]  [<ffffffff81056832>] ? async_schedule+0x17/0x17
+[    5.163339]  [<ffffffff8104c47f>] worker_thread+0x260/0x329
+[    5.163342]  [<ffffffff8107ac72>] ? trace_hardirqs_on+0xd/0xf
+[    5.163346]  [<ffffffff8104c21f>] ? manage_workers.clone.15+0x1f6/0x1f6
+[    5.163349]  [<ffffffff810502ee>] kthread+0x89/0x91
+[    5.163353]  [<ffffffff8147dd64>] kernel_thread_helper+0x4/0x10
+[    5.163356]  [<ffffffff814762d9>] ? retint_restore_args+0xe/0xe
+[    5.163359]  [<ffffffff81050265>] ? __init_kthread_worker+0x5b/0x5b
+[    5.163362]  [<ffffffff8147dd60>] ? gs_change+0xb/0xb
 
 
+And as it looks like, acpi_dev->power.flags.power_resources is 0.
+
+This thing is set in acpi_bus_get_power_flags() so I'd guess some of
+those _PR* objects are probably not completely correct and they should
+be fixed in the BIOS?
+
+Any comments are appreciated.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
