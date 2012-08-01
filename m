@@ -1,257 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab2HAU7p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 16:59:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5295 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab2HAU7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 16:59:43 -0400
-Message-ID: <501998BB.8060507@redhat.com>
-Date: Wed, 01 Aug 2012 16:59:39 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	id S1755040Ab2HAVAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 17:00:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35875 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab2HAVAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 17:00:17 -0400
+Message-ID: <501998D4.2040206@pengutronix.de>
+Date: Wed, 01 Aug 2012 23:00:04 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Feng Tang <feng.tang@intel.com>
-CC: len.brown@intel.com, linux-acpi@vger.kernel.org, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, robert.moore@intel.com,
-        agordeev@redhat.com, suresh.b.siddha@intel.com
-Subject: Re: [PATCH v2 1/2] ACPI: Replace acpi_get_table_with_size() with
- acpi_get_table()
-References: <1343803064-5389-1-git-send-email-feng.tang@intel.com>
-In-Reply-To: <1343803064-5389-1-git-send-email-feng.tang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+CC: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
+References: <50191EA5.1040303@pengutronix.de> <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com>
+In-Reply-To: <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig8C91159FBEC08D7432EAD8F9"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2012 02:37 AM, Feng Tang wrote:
-> This is a preparation for removing the acpi_get_table_with_size(), as this
-> function could be well covered by acpi_get_table(), and there is no need
-> to have both of them to exist.
->
-> v2: As reminded by Yinghai, apply the replacment to drivers/iommu/amd_iommu_init.c
-> which is a new user of the acpi_get_table_with_size().
->
-> Signed-off-by: Feng Tang<feng.tang@intel.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig8C91159FBEC08D7432EAD8F9
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 08/01/2012 08:21 PM, Fabio Baltieri wrote:
+> This patch implements the functions to add two LED triggers, named
+> <ifname>-tx and <ifname>-rx, to a canbus device driver.
+>=20
+> Triggers are called from specific handlers by each CAN device driver an=
+d
+> can be disabled altogether with a Kconfig option.
+>=20
+> The implementation keeps the LED on when the interface is UP and blinks=
+
+> the LED on network activity at a configurable rate.
+>=20
+> This only supports can-dev based drivers, as it uses some support field=
+
+> in the can_priv structure.
+>=20
+> Supported drivers should call devm_can_led_init() and can_led_event() a=
+s
+> needed.
+>=20
+> Cleanup is handled automatically by devres, so no *_exit function is
+> needed.
+>=20
+> Supported events are:
+> - CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
+> - CAN_LED_EVENT_STOP: turn off tx/rx LEDs
+> - CAN_LED_EVENT_TX: trigger tx LED blink
+> - CAN_LED_EVENT_RX: trigger tx LED blink
+>=20
+> Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+> Cc: Wolfgang Grandegger <wg@grandegger.com>
+> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
 > ---
->   arch/x86/kernel/apic/es7000_32.c |    7 +++----
->   drivers/acpi/tables.c            |   21 +++++++++------------
->   drivers/iommu/amd_iommu_init.c   |   10 ++++------
->   drivers/iommu/dmar.c             |   14 +++++++-------
->   4 files changed, 23 insertions(+), 29 deletions(-)
->
-> diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
-> index 0874799..ae30b39 100644
-> --- a/arch/x86/kernel/apic/es7000_32.c
-> +++ b/arch/x86/kernel/apic/es7000_32.c
-> @@ -242,19 +242,18 @@ static int __init find_unisys_acpi_oem_table(unsigned long *oem_addr)
->   {
->   	struct acpi_table_header *header = NULL;
->   	struct es7000_oem_table *table;
-> -	acpi_size tbl_size;
->   	acpi_status ret;
->   	int i = 0;
->
->   	for (;;) {
-> -		ret = acpi_get_table_with_size("OEM1", i++,&header,&tbl_size);
-> +		ret = acpi_get_table("OEM1", i++,&header);
->   		if (!ACPI_SUCCESS(ret))
->   			return -1;
->
->   		if (!memcmp((char *)&header->oem_id, "UNISYS", 6))
->   			break;
->
-> -		early_acpi_os_unmap_memory(header, tbl_size);
-> +		early_acpi_os_unmap_memory(header, header->length);
->   	}
->
->   	table = (void *)header;
-> @@ -262,7 +261,7 @@ static int __init find_unisys_acpi_oem_table(unsigned long *oem_addr)
->   	oem_addrX	= table->OEMTableAddr;
->   	oem_size	= table->OEMTableSize;
->
-> -	early_acpi_os_unmap_memory(header, tbl_size);
-> +	early_acpi_os_unmap_memory(header, header->length);
->
->   	*oem_addr	= (unsigned long)__acpi_map_table(oem_addrX, oem_size);
->
-> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-> index f336bca..5b8b7e0 100644
-> --- a/drivers/acpi/tables.c
-> +++ b/drivers/acpi/tables.c
-> @@ -211,7 +211,6 @@ acpi_table_parse_entries(char *id,
->   	struct acpi_subtable_header *entry;
->   	unsigned int count = 0;
->   	unsigned long table_end;
-> -	acpi_size tbl_size;
->
->   	if (acpi_disabled)
->   		return -ENODEV;
-> @@ -220,9 +219,9 @@ acpi_table_parse_entries(char *id,
->   		return -EINVAL;
->
->   	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
-> -		acpi_get_table_with_size(id, acpi_apic_instance,&table_header,&tbl_size);
-> +		acpi_get_table(id, acpi_apic_instance,&table_header);
->   	else
-> -		acpi_get_table_with_size(id, 0,&table_header,&tbl_size);
-> +		acpi_get_table(id, 0,&table_header);
->
->   	if (!table_header) {
->   		printk(KERN_WARNING PREFIX "%4.4s not present\n", id);
-> @@ -241,7 +240,7 @@ acpi_table_parse_entries(char *id,
->   		if (entry->type == entry_id
->   		&&  (!max_entries || count++<  max_entries))
->   			if (handler(entry, table_end)) {
-> -				early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-> +				early_acpi_os_unmap_memory((char *)table_header, table_header->length);
->   				return -EINVAL;
->   			}
->
-> @@ -253,7 +252,7 @@ acpi_table_parse_entries(char *id,
->   		       "%i found\n", id, entry_id, count - max_entries, count);
->   	}
->
-> -	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-> +	early_acpi_os_unmap_memory((char *)table_header, table_header->length);
->   	return count;
->   }
->
-> @@ -278,7 +277,6 @@ acpi_table_parse_madt(enum acpi_madt_type id,
->   int __init acpi_table_parse(char *id, acpi_table_handler handler)
->   {
->   	struct acpi_table_header *table = NULL;
-> -	acpi_size tbl_size;
->
->   	if (acpi_disabled)
->   		return -ENODEV;
-> @@ -287,13 +285,13 @@ int __init acpi_table_parse(char *id, acpi_table_handler handler)
->   		return -EINVAL;
->
->   	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
-> -		acpi_get_table_with_size(id, acpi_apic_instance,&table,&tbl_size);
-> +		acpi_get_table(id, acpi_apic_instance,&table);
->   	else
-> -		acpi_get_table_with_size(id, 0,&table,&tbl_size);
-> +		acpi_get_table(id, 0,&table);
->
->   	if (table) {
->   		handler(table);
-> -		early_acpi_os_unmap_memory(table, tbl_size);
-> +		early_acpi_os_unmap_memory(table, table->length);
->   		return 0;
->   	} else
->   		return 1;
-> @@ -307,9 +305,8 @@ int __init acpi_table_parse(char *id, acpi_table_handler handler)
->   static void __init check_multiple_madt(void)
->   {
->   	struct acpi_table_header *table = NULL;
-> -	acpi_size tbl_size;
->
-> -	acpi_get_table_with_size(ACPI_SIG_MADT, 2,&table,&tbl_size);
-> +	acpi_get_table(ACPI_SIG_MADT, 2,&table);
->   	if (table) {
->   		printk(KERN_WARNING PREFIX
->   		       "BIOS bug: multiple APIC/MADT found,"
-> @@ -318,7 +315,7 @@ static void __init check_multiple_madt(void)
->   		       "If \"acpi_apic_instance=%d\" works better, "
->   		       "notify linux-acpi@vger.kernel.org\n",
->   		       acpi_apic_instance ? 0 : 2);
-> -		early_acpi_os_unmap_memory(table, tbl_size);
-> +		early_acpi_os_unmap_memory(table, table->length);
->
->   	} else
->   		acpi_apic_instance = 0;
-> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-> index 500e7f1..6b19f42 100644
-> --- a/drivers/iommu/amd_iommu_init.c
-> +++ b/drivers/iommu/amd_iommu_init.c
-> @@ -1525,14 +1525,13 @@ static void __init free_on_init_error(void)
->   static int __init early_amd_iommu_init(void)
->   {
->   	struct acpi_table_header *ivrs_base;
-> -	acpi_size ivrs_size;
->   	acpi_status status;
->   	int i, ret = 0;
->
->   	if (!amd_iommu_detected)
->   		return -ENODEV;
->
-> -	status = acpi_get_table_with_size("IVRS", 0,&ivrs_base,&ivrs_size);
-> +	status = acpi_get_table("IVRS", 0,&ivrs_base);
->   	if (status == AE_NOT_FOUND)
->   		return -ENODEV;
->   	else if (ACPI_FAILURE(status)) {
-> @@ -1614,7 +1613,7 @@ static int __init early_amd_iommu_init(void)
->
->   out:
->   	/* Don't leak any ACPI memory */
-> -	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
-> +	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_base->length);
->   	ivrs_base = NULL;
->
->   	return ret;
-> @@ -1638,10 +1637,9 @@ out:
->   static bool detect_ivrs(void)
->   {
->   	struct acpi_table_header *ivrs_base;
-> -	acpi_size ivrs_size;
->   	acpi_status status;
->
-> -	status = acpi_get_table_with_size("IVRS", 0,&ivrs_base,&ivrs_size);
-> +	status = acpi_get_table("IVRS", 0,&ivrs_base);
->   	if (status == AE_NOT_FOUND)
->   		return false;
->   	else if (ACPI_FAILURE(status)) {
-> @@ -1650,7 +1648,7 @@ static bool detect_ivrs(void)
->   		return false;
->   	}
->
-> -	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
-> +	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_base->length);
->
->   	return true;
->   }
-> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-> index 86e2f4a..aa65b6f 100644
-> --- a/drivers/iommu/dmar.c
-> +++ b/drivers/iommu/dmar.c
-> @@ -48,7 +48,6 @@
->   LIST_HEAD(dmar_drhd_units);
->
->   struct acpi_table_header * __initdata dmar_tbl;
-> -static acpi_size dmar_tbl_size;
->
->   static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
->   {
-> @@ -285,10 +284,8 @@ static int __init dmar_table_detect(void)
->   	acpi_status status = AE_OK;
->
->   	/* if we could find DMAR table, then there are DMAR devices */
-> -	status = acpi_get_table_with_size(ACPI_SIG_DMAR, 0,
-> -				(struct acpi_table_header **)&dmar_tbl,
-> -				&dmar_tbl_size);
-> -
-> +	status = acpi_get_table(ACPI_SIG_DMAR, 0,
-> +				(struct acpi_table_header **)&dmar_tbl);
-why is this cast needed if dmar_tbl is defined as struct acpi_table_header * ?
+>=20
+> Hi all,
+>=20
+> so, v6, change trigger names for fixed size allocation capped to (IFNAM=
+SIZ + 4)
+> and removed kasprintf as suggested by Oliver (thanks!).
+>=20
+> This also has the side effect of reducing the error path to just one ch=
+eck to
+> devres_alloc return value... nice!
+>=20
+> I've put CAN_LED_NAME_SZ definition with the active function declaratio=
+n,
+> but used sizeof(priv->tx_led_trig_name) as snprintf length argument in =
+the
+> code, as it looks cleaner to me.
+>=20
+> I'm not reposting the flexcan patch as it's not affected by the change.=
 
->   	if (ACPI_SUCCESS(status)&&  !dmar_tbl) {
->   		pr_warn("Unable to map DMAR\n");
->   		status = AE_NOT_FOUND;
-> @@ -558,8 +555,11 @@ int __init detect_intel_iommu(void)
->   			x86_init.iommu.iommu_init = intel_iommu_init;
->   #endif
->   	}
-> -	early_acpi_os_unmap_memory(dmar_tbl, dmar_tbl_size);
-> -	dmar_tbl = NULL;
-> +
-> +	if (dmar_tbl) {
-> +		early_acpi_os_unmap_memory(dmar_tbl, dmar_tbl->length);
-> +		dmar_tbl = NULL;
-> +	}
->
->   	return ret ? 1 : -ENODEV;
->   }
 
+Pushed to can-next/master, it even compiles now, as David has included
+some upstream branches.
+
+I'm still taking Tested- and Acked-by for these patches.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enig8C91159FBEC08D7432EAD8F9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAlAZmNsACgkQjTAFq1RaXHNvZgCghH5WeCl97InJlQge9vrL6UOb
+C0oAnRb3F0kYna7RP32+yRpaAUEOGwkU
+=Kvty
+-----END PGP SIGNATURE-----
+
+--------------enig8C91159FBEC08D7432EAD8F9--
