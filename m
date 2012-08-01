@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab2HAQGV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 12:06:21 -0400
-Received: from ks35366.kimsufi.com ([213.251.186.122]:32970 "EHLO meetr.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241Ab2HAQGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 12:06:20 -0400
-Message-ID: <501953F2.9040807@meetr.de>
-Date: Wed, 01 Aug 2012 18:06:10 +0200
-From: Andreas Heider <andreas@meetr.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1753329Ab2HAQHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 12:07:13 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:27036 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab2HAQHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 12:07:11 -0400
+X-IronPort-AV: E=Sophos;i="4.77,694,1336348800"; 
+   d="scan'208";a="13807760"
+Date: Wed, 1 Aug 2012 17:06:42 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH 21/24] arm/v2m: initialize arch_timers even if v2m_timer
+ is not present
+In-Reply-To: <20120801145257.GQ7227@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1208011705100.4645@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-21-git-send-email-stefano.stabellini@eu.citrix.com> <20120801145257.GQ7227@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arun Raghavan <arun.raghavan@collabora.co.uk>,
-        linux-kernel@vger.kernel.org, airlied@redhat.com
-Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
-References: <20120710160555.GA31562@srcf.ucam.org> <20120710163516.GE10194@thinkpad-t410> <4FFCC7FB.1090609@meetr.de> <1343522547.2488.12.camel@shinybook.infradead.org> <1343524730.1962.5.camel@shinybook.infradead.org> <20120729193953.GA25132@srcf.ucam.org> <1343595171.2511.1.camel@shinybook.infradead.org> <20120729205859.GA25819@srcf.ucam.org> <20120731151856.GA19979@thinkpad-t410> <1343835344.26866.150.camel@shinybook.infradead.org> <20120801155914.GB22963@thinkpad-t410>
-In-Reply-To: <20120801155914.GB22963@thinkpad-t410>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 01.08.12 17:59, schrieb Seth Forshee:
-> On Wed, Aug 01, 2012 at 04:35:44PM +0100, David Woodhouse wrote:
->> On Tue, 2012-07-31 at 10:18 -0500, Seth Forshee wrote:
->>>
->>> All of this is working to the extent that I can boot with the Radeon
->>> card active, switch over to the Intel card, and get the EDID for the
->>> internal panel and an external monitor (although oddly on an HDMI
->>> connector, no on the DP like I expected). Both screens are remaining
->>> blank though. However I'm also getting blank screens if I mux over to
->>> the Intel GPU from grub before loading the kernel, which used to work
->>> for the LVDS panel at least.
->>
->> Hm, when I was changing over to the external screen before boot, I could
->> get the LVDS working but *not* an external VGA or DVI monitor (via the
->> standard Apple adaptors). Should I expect that to work if I change the
->> mux 'properly' at runtime?
->
-> I don't think the mini-DP port works at all with the integrated
-> graphics, at least not on a Macbook Pro 8,2. I played around with it
-> yesterday under OS X. When using the DGPU with an external monitor it
-> works fine, but any attempts to switch to the IGPU were rejected by the
-> drivers. If I forced it to the IGPU prior to connecting the external
-> monitor the screen just remained blank when I plugged it in, until I
-> switched back to the DGPU. It's odd though that the DDC can be switched
-> over to the IGPU.
+On Wed, 1 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jul 26, 2012 at 04:34:03PM +0100, Stefano Stabellini wrote:
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> Should the maintainer of the v2m be CC-ed here?
+> This looks like a bug-fix of itself?
 
-The situation is a bit different on the Macbook Pro 6,2. OS X also 
-automatically switches to the DGPU when an external monitor is 
-connected, but unlike the 8,2, the IGPU works fine under Linux with 
-external monitors if port 0x740 is set accordingly. I'm pretty sure that 
-this is also the case with for the older macbooks without dynamic switching.
+I think so. I'll CC Russell King next time.
 
-> Iirc you've got the 8,3, and I'd expect it to be identical to the 8,2 in
-> this respect. Also, the only reason my LVDS didn't work was because I
-> wasn't telling i915 to disable SSC. I've got a patch to add a quirk for
-> this that I'll send soon, since there still doesn't seem to be any way
-> to get the vbios for the Intel graphics.
->
-> Seth
->
-
+> > ---
+> >  arch/arm/mach-vexpress/v2m.c |   11 ++++++-----
+> >  1 files changed, 6 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+> > index fde26ad..dee1451 100644
+> > --- a/arch/arm/mach-vexpress/v2m.c
+> > +++ b/arch/arm/mach-vexpress/v2m.c
+> > @@ -637,16 +637,17 @@ static void __init v2m_dt_timer_init(void)
+> >  	node = of_find_compatible_node(NULL, NULL, "arm,sp810");
+> >  	v2m_sysctl_init(of_iomap(node, 0));
+> >  
+> > -	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> > -	if (WARN_ON(err))
+> > -		return;
+> > -	node = of_find_node_by_path(path);
+> > -	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+> >  	if (arch_timer_of_register() != 0)
+> >  		twd_local_timer_of_register();
+> >  
+> >  	if (arch_timer_sched_clock_init() != 0)
+> >  		versatile_sched_clock_init(v2m_sysreg_base + V2M_SYS_24MHZ, 24000000);
+> > +
+> > +	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> > +	if (WARN_ON(err))
+> > +		return;
+> > +	node = of_find_node_by_path(path);
+> > +	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+> >  }
+> >  
+> >  static struct sys_timer v2m_dt_timer = {
+> > -- 
+> > 1.7.2.5
+> 
