@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab2HAP4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:56:41 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:57673 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880Ab2HAP4h (ORCPT
+	id S1755910Ab2HAP4t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:56:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36922 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab2HAP4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:56:37 -0400
+	Wed, 1 Aug 2012 11:56:46 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v3 09/32] PCI/PME: use PCIe capabilities access functions to simplify implementation
-Date: Wed,  1 Aug 2012 23:54:14 +0800
-Message-Id: <1343836477-7287-10-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v3 10/32] PCI/AER: use PCIe capabilities access functions to simplify implementation
+Date: Wed,  1 Aug 2012 23:54:15 +0800
+Message-Id: <1343836477-7287-11-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
 References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
@@ -27,79 +27,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCIe capabilities access functions to simplify PCIe PME implementation.
+Use PCIe capabilities access functions to simplify PCIe AER implementation.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/pcie/pme.c |   22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
+ drivers/pci/pcie/aer/aerdrv.c      |   17 ++++++--------
+ drivers/pci/pcie/aer/aerdrv_core.c |   45 ++++++++----------------------------
+ 2 files changed, 16 insertions(+), 46 deletions(-)
 
-diff --git a/drivers/pci/pcie/pme.c b/drivers/pci/pcie/pme.c
-index 30897bf..74a3d4d 100644
---- a/drivers/pci/pcie/pme.c
-+++ b/drivers/pci/pcie/pme.c
-@@ -57,17 +57,13 @@ struct pcie_pme_service_data {
-  */
- void pcie_pme_interrupt_enable(struct pci_dev *dev, bool enable)
+diff --git a/drivers/pci/pcie/aer/aerdrv.c b/drivers/pci/pcie/aer/aerdrv.c
+index f7c6245..b85750d 100644
+--- a/drivers/pci/pcie/aer/aerdrv.c
++++ b/drivers/pci/pcie/aer/aerdrv.c
+@@ -122,19 +122,17 @@ static void set_downstream_devices_error_reporting(struct pci_dev *dev,
+ static void aer_enable_rootport(struct aer_rpc *rpc)
  {
--	int rtctl_pos;
--	u16 rtctl;
-+	u16 set = 0, clr = 0;
+ 	struct pci_dev *pdev = rpc->rpd->port;
+-	int pos, aer_pos;
++	int aer_pos;
+ 	u16 reg16;
+ 	u32 reg32;
  
--	rtctl_pos = pci_pcie_cap(dev) + PCI_EXP_RTCTL;
+-	pos = pci_pcie_cap(pdev);
+ 	/* Clear PCIe Capability's Device Status */
+-	pci_read_config_word(pdev, pos+PCI_EXP_DEVSTA, &reg16);
+-	pci_write_config_word(pdev, pos+PCI_EXP_DEVSTA, reg16);
++	pci_pcie_capability_read_word(pdev, PCI_EXP_DEVSTA, &reg16);
++	pci_pcie_capability_write_word(pdev, PCI_EXP_DEVSTA, reg16);
+ 
+ 	/* Disable system error generation in response to error messages */
+-	pci_read_config_word(pdev, pos + PCI_EXP_RTCTL, &reg16);
+-	reg16 &= ~(SYSTEM_ERROR_INTR_ON_MESG_MASK);
+-	pci_write_config_word(pdev, pos + PCI_EXP_RTCTL, reg16);
++	pci_pcie_capability_change_word(pdev, PCI_EXP_RTCTL,
++					0, SYSTEM_ERROR_INTR_ON_MESG_MASK);
+ 
+ 	aer_pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ERR);
+ 	/* Clear error status */
+@@ -396,9 +394,8 @@ static void aer_error_resume(struct pci_dev *dev)
+ 	u16 reg16;
+ 
+ 	/* Clean up Root device status */
+-	pos = pci_pcie_cap(dev);
+-	pci_read_config_word(dev, pos + PCI_EXP_DEVSTA, &reg16);
+-	pci_write_config_word(dev, pos + PCI_EXP_DEVSTA, reg16);
++	pci_pcie_capability_read_word(dev, PCI_EXP_DEVSTA, &reg16);
++	pci_pcie_capability_write_word(dev, PCI_EXP_DEVSTA, reg16);
+ 
+ 	/* Clean AER Root Error Status */
+ 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
+diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+index f551534..2af79f7 100644
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -34,51 +34,26 @@ module_param(nosourceid, bool, 0);
+ 
+ int pci_enable_pcie_error_reporting(struct pci_dev *dev)
+ {
+-	u16 reg16 = 0;
+-	int pos;
 -
--	pci_read_config_word(dev, rtctl_pos, &rtctl);
- 	if (enable)
--		rtctl |= PCI_EXP_RTCTL_PMEIE;
-+		set = PCI_EXP_RTCTL_PMEIE;
- 	else
--		rtctl &= ~PCI_EXP_RTCTL_PMEIE;
--	pci_write_config_word(dev, rtctl_pos, rtctl);
-+		clr = PCI_EXP_RTCTL_PMEIE;
-+	pci_pcie_capability_change_word(dev, PCI_EXP_RTCTL, set, clr);
+ 	if (pcie_aer_get_firmware_first(dev))
+ 		return -EIO;
+ 
+-	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
+-	if (!pos)
+-		return -EIO;
+-
+-	pos = pci_pcie_cap(dev);
+-	if (!pos)
++	if (!pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR))
+ 		return -EIO;
+ 
+-	pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &reg16);
+-	reg16 |= (PCI_EXP_DEVCTL_CERE |
+-		PCI_EXP_DEVCTL_NFERE |
+-		PCI_EXP_DEVCTL_FERE |
+-		PCI_EXP_DEVCTL_URRE);
+-	pci_write_config_word(dev, pos + PCI_EXP_DEVCTL, reg16);
+-
+-	return 0;
++	return pci_pcie_capability_change_word(dev, PCI_EXP_DEVCTL,
++			PCI_EXP_DEVCTL_CERE | PCI_EXP_DEVCTL_NFERE |
++			PCI_EXP_DEVCTL_FERE | PCI_EXP_DEVCTL_URRE, 0);
  }
+ EXPORT_SYMBOL_GPL(pci_enable_pcie_error_reporting);
  
- /**
-@@ -226,18 +222,15 @@ static void pcie_pme_work_fn(struct work_struct *work)
- 	struct pcie_pme_service_data *data =
- 			container_of(work, struct pcie_pme_service_data, work);
- 	struct pci_dev *port = data->srv->port;
--	int rtsta_pos;
- 	u32 rtsta;
- 
--	rtsta_pos = pci_pcie_cap(port) + PCI_EXP_RTSTA;
--
- 	spin_lock_irq(&data->lock);
- 
- 	for (;;) {
- 		if (data->noirq)
- 			break;
- 
--		pci_read_config_dword(port, rtsta_pos, &rtsta);
-+		pci_pcie_capability_read_dword(port, PCI_EXP_RTSTA, &rtsta);
- 		if (rtsta & PCI_EXP_RTSTA_PME) {
- 			/*
- 			 * Clear PME status of the port.  If there are other
-@@ -276,17 +269,14 @@ static irqreturn_t pcie_pme_irq(int irq, void *context)
+ int pci_disable_pcie_error_reporting(struct pci_dev *dev)
  {
- 	struct pci_dev *port;
- 	struct pcie_pme_service_data *data;
--	int rtsta_pos;
- 	u32 rtsta;
- 	unsigned long flags;
- 
- 	port = ((struct pcie_device *)context)->port;
- 	data = get_service_data((struct pcie_device *)context);
- 
--	rtsta_pos = pci_pcie_cap(port) + PCI_EXP_RTSTA;
+-	u16 reg16 = 0;
+-	int pos;
 -
- 	spin_lock_irqsave(&data->lock, flags);
--	pci_read_config_dword(port, rtsta_pos, &rtsta);
-+	pci_pcie_capability_read_dword(port, PCI_EXP_RTSTA, &rtsta);
+ 	if (pcie_aer_get_firmware_first(dev))
+ 		return -EIO;
  
- 	if (!(rtsta & PCI_EXP_RTSTA_PME)) {
- 		spin_unlock_irqrestore(&data->lock, flags);
+-	pos = pci_pcie_cap(dev);
+-	if (!pos)
+-		return -EIO;
+-
+-	pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &reg16);
+-	reg16 &= ~(PCI_EXP_DEVCTL_CERE |
+-		PCI_EXP_DEVCTL_NFERE |
+-		PCI_EXP_DEVCTL_FERE |
+-		PCI_EXP_DEVCTL_URRE);
+-	pci_write_config_word(dev, pos + PCI_EXP_DEVCTL, reg16);
+-
+-	return 0;
++	return pci_pcie_capability_change_word(dev, PCI_EXP_DEVCTL, 0,
++			PCI_EXP_DEVCTL_CERE | PCI_EXP_DEVCTL_NFERE |
++			PCI_EXP_DEVCTL_FERE | PCI_EXP_DEVCTL_URRE);
+ }
+ EXPORT_SYMBOL_GPL(pci_disable_pcie_error_reporting);
+ 
+@@ -151,18 +126,16 @@ static bool is_error_source(struct pci_dev *dev, struct aer_err_info *e_info)
+ 	 */
+ 	if (atomic_read(&dev->enable_cnt) == 0)
+ 		return false;
+-	pos = pci_pcie_cap(dev);
+-	if (!pos)
+-		return false;
+ 
+ 	/* Check if AER is enabled */
+-	pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &reg16);
++	pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL, &reg16);
+ 	if (!(reg16 & (
+ 		PCI_EXP_DEVCTL_CERE |
+ 		PCI_EXP_DEVCTL_NFERE |
+ 		PCI_EXP_DEVCTL_FERE |
+ 		PCI_EXP_DEVCTL_URRE)))
+ 		return false;
++
+ 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
+ 	if (!pos)
+ 		return false;
 -- 
 1.7.9.5
 
