@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab2HAJtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 05:49:46 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:55070 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753601Ab2HAJto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 05:49:44 -0400
-Date: Wed, 1 Aug 2012 17:49:31 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Michael Neuling <mikey@neuling.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, anton@samba.org
-Subject: Re: [PATCH v2] powerpc/crypto: fix defconfig break
-Message-ID: <20120801094931.GA15975@gondor.apana.org.au>
-References: <1343794529-28329-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	id S1754418Ab2HAJxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 05:53:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8208 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754177Ab2HAJxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 05:53:40 -0400
+Message-ID: <5018FC9B.8040808@redhat.com>
+Date: Wed, 01 Aug 2012 12:53:31 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343794529-28329-1-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
+References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com> <501817C9.6090405@profihost.ag> <5018EC7D.9090702@redhat.com> <5018F5BB.9070500@profihost.ag> <5018F7E6.4020909@redhat.com> <5018F9F6.70307@profihost.ag>
+In-Reply-To: <5018F9F6.70307@profihost.ag>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 11:15:29PM -0500, Seth Jennings wrote:
-> As part of the Kconfig rework for drivers/crypto/nx, the meaning of
-> CONFIG_CRYPTO_DEV_NX was changed.  At the same time this commit was
-> heading upstream
+On 08/01/2012 12:42 PM, Stefan Priebe - Profihost AG wrote:
+> Am 01.08.2012 11:33, schrieb Avi Kivity:
+>>> So here are 3 backtraces from booting the rescue system:
+>>> http://pastebin.com/raw.php?i=xCy2pEcP
+>>>
+>>> To me they all look the same.
+>>
+>> They are.  What version of qemu are you using?
 > 
-> fd297b3a7302ab866306f53c1fd1e97b083fe83e
-> powerpc: Enable pseries hardware RNG and crypto module
-> 
-> still used the old meaning, set CONFIG_CRYPTO_DEV_NX=m when it
-> is now a bool in the Kconfig.  This patch repairs the break.
-> 
-> Reported-by: Michael Neuling <mikey@neuling.org>
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> ---
-> This patch is based on Linus master which already contains
-> the commit above.  Please apply this patch before my patchset
-> (powerpc/crypto: IBM Power7+ in-Nest compression support) to
-> avoid the defconfig break.
+> latest stable-1.1 branch (1.1.1) - which works fine with latest RHEL6
+> kernel.
 
-OK, I've rebased my tree and folded this into
+This could be due to a kernel bug, or due to a different code path taken
+in qemu because of differing features exposed to kvm.
 
-commit 322cacce0a3c36d3ad89d8836b9ed6fcb06e1a61
-Author: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Date:   Thu Jul 19 09:42:38 2012 -0500
+Please try qemu-kvm.git master and report.
 
-    powerpc/crypto: rework Kconfig
 
-Thanks,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+error compiling committee.c: too many arguments to function
