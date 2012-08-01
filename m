@@ -1,73 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab2HAVSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 17:18:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45397 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754187Ab2HAVSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 17:18:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="180443750"
-Date: Wed, 1 Aug 2012 14:18:40 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Peter Stuge <peter@stuge.se>, "Alexis R. Cortes" <alexis.cortes@ti.com>
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, brian.quach@ti.com, jorge.llamas@ti.com
-Subject: Re: [PATCH] usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP
- Hardware
-Message-ID: <20120801211840.GC7564@xanatos>
-References: <50197DC2.5060905@ti.com>
- <20120801200131.15606.qmail@stuge.se>
+	id S1755848Ab2HAVYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 17:24:36 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:8263 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755421Ab2HAVYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 17:24:35 -0400
+X-Authority-Analysis: v=2.0 cv=QrvcLCOd c=1 sm=0 a=YPDeGStqRoQnMAluW+pq4Q==:17 a=65KWcu232dMA:10 a=Q37AcrJXvGoA:10 a=05ChyHeVI94A:10 a=8nJEP1OIZ-IA:10 a=ayC55rCoAAAA:8 a=L6c_SFzkAAAA:8 a=Fc5sQxEOCwUbM_QaLeUA:9 a=wPNLvfGTeEIA:10 a=_sQgkpRUf9EA:10 a=YPDeGStqRoQnMAluW+pq4Q==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 50.89.247.146
+Message-ID: <50199E91.5040308@cfl.rr.com>
+Date: Wed, 01 Aug 2012 17:24:33 -0400
+From: Mark Hounschell <dmarkh@cfl.rr.com>
+Reply-To: dmarkh@cfl.rr.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120801200131.15606.qmail@stuge.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: MODULE_LICENSE("GPL")??
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 10:01:31PM +0200, Peter Stuge wrote:
-> Hi Alexis,
-> 
-> Did you run the patch through checkpatch.pl before submitting it?
-> 
-> I think you will get a bunch of important and completely automatic
-> feedback when you do that. Please fix everything that the script
-> mentions.
-> 
-> 
-> Alexis R. Cortes wrote:
-> > This patch is intended to work around a known issue on the
-> > SN65LVPE502CP USB3.0 re-driver that can delay the negotiation
-> > between a device and the host past the usual handshake timeout,
-> > and if that happens on the first insertion, the host controller
-> > port will enter in Compliance Mode as per xHCI Spec. The patch
-> > creates a timer which polls every 2 seconds the link state of each
-> > host controller's port (this by reading the PORTSC register) and
-> > recovers the port by issuing a Warm reset every time Compliance mode
-> > is detected.
-> 
-> This is a pretty awful workaround for a teeny tiny hardware error.
-> You're making systems wake up every two seconds. I don't want that on
-> my system. I think making the timer settable would be nice.
+What would happen if NVIDIA used this define in their proprietary driver? I 
+ask because I am currently in a situation where I believe I may be about to 
+use a product that may be doing this very thing. We had to sign a license 
+agreement to get the kernel driver source for this product. What we 
+received contained the kernel driver source and user land library stuff. 
+The source code for the kernel driver has MODULE_LICENSE("GPL") defined. 
+The only license info in the package received was NOT the GPL license.
 
-Yep, it's not fun, but the timer should only run on particular HP
-systems.  The alternative is "dead" ports.  Alex, can you update your
-description to include that fact?
+On this particular vendors web site they offer unrestricted downloads of 
+binary packages for their product/s that are for specific DIST kernels. But 
+to get the source requires signing a license agreement that is NOT GPL.
 
-Greg and I already argued about making the timer settable via a module
-parameter, and I think the basic answer was that he doesn't want a new
-modparam for this.
-
-> Also, the patch does more things than what you describe. It adds a
-> new quirk, and it adds checks to set said quirk for various different
-> laptop models. Each of those changes (add timer+quirk, and add checks
-> to set quirk for laptops) should rather be a separate commit.
-
-I would really rather the quirk addition and application to some machine
-be in the same patch.  That's how the other quirk patches have been
-applied in the past.
-
-Sarah Sharp
+Thanks
