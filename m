@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab2HATGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 15:06:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18048 "EHLO mx1.redhat.com"
+	id S1756302Ab2HATRr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 15:17:47 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3677 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756243Ab2HATGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 15:06:45 -0400
-Message-ID: <1343848002.6698.38.camel@bling.home>
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Wed, 01 Aug 2012 13:06:42 -0600
-In-Reply-To: <1343697135.8073.245.camel@ul30vt>
-References: <20120724203628.21081.56884.stgit@bling.home>
-	 <20120724204320.21081.32333.stgit@bling.home>
-	 <20120729145452.GD14278@redhat.com> <1343665330.8073.108.camel@ul30vt>
-	 <20120731000100.GA17612@redhat.com> <1343694391.8073.227.camel@ul30vt>
-	 <20120731003636.GC17922@redhat.com> <1343697135.8073.245.camel@ul30vt>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752154Ab2HATRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 15:17:45 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Divy Le Ray <divy@chelsio.com>, netdev@vger.kernel.org
+Subject: [PATCH] firmware: Remove obsolete Chelsio cxgb3 firmware
+Date: Wed,  1 Aug 2012 13:17:50 -0600
+Message-Id: <1343848670-31504-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-30 at 19:12 -0600, Alex Williamson wrote:
-> On Tue, 2012-07-31 at 03:36 +0300, Michael S. Tsirkin wrote:
-> > On Mon, Jul 30, 2012 at 06:26:31PM -0600, Alex Williamson wrote:
-> > > On Tue, 2012-07-31 at 03:01 +0300, Michael S. Tsirkin wrote:
-> > > > You keep saying this but it is still true: once irqfd
-> > > > is closed eoifd does not get any more interrupts.
-> > > 
-> > > How does that matter?
-> > 
-> > Well if it does not get events it is disabled.
-> > so you have one ifc disabling another, anyway.
-> 
-> And a level irqfd without an eoifd can never be de-asserted.  Either we
-> make modular components, assemble them to do useful work, and
-> disassemble them independently so they can be used by future interfaces
-> or we bundle eoifd as just an option of irqfd.  Which is it gonna be?
+The current firmware version used by the device driver
+is 7.12.0
 
-I don't think I've been successful at explaining my reasoning for making
-EOI notification a separate interface, so let me try again...
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: James Bottomley <JBottomley@Parallels.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Divy Le Ray <divy@chelsio.com>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ firmware/Makefile                   |    1 -
+ firmware/cxgb3/t3fw-7.10.0.bin.ihex | 1935 -----------------------------------
+ 2 files changed, 1936 deletions(-)
+ delete mode 100644 firmware/cxgb3/t3fw-7.10.0.bin.ihex
 
-When kvm is not enabled, the qemu vfio driver still needs to know about
-EOIs to re-enable the physical interrupt.  Since the ioapic is emulated
-in qemu, we can setup a notifier for this and create abstraction to make
-it non-x86 specific, etc.  We just need to come up with a design and
-implement it.  But what happens when kvm is then enabled?  ioapic
-emulation moves to the kernel (assume kvm includes irqchip for this
-argument even though it doesn't for POWER), qemu no longer knows about
-EOIs, and the interface we just created to handle the non-kvm case stops
-working.  Is anyone going to accept adding a qemu EOI notification
-interface that only works when kvm is not enabled?
-
-I suspect we therefore need a notification mechanism between kvm and
-qemu to make it possible for that interface to continue working.  An
-eventfd also seems like the right mechanism there.  A simple
-modification to the proposed KVM_EOIFD here would allow it to trigger an
-eventfd when an EOI is written to a specific gsi on
-KVM_USERSPACE_IRQ_SOURCE_ID (define a flag and pass gsi in place of
-key).
-
-The split proposed here does require some assembly, but KVM_EOIFD is
-re-usable as either a de-assert and notify mechanism tied to an irqfd or
-a notify-only mechanism allowing users of a qemu EOI notification
-infrastructure to continue working.  vfio doesn't necessarily need this
-middle ground, but can easily be used to test it.
-
-The alternative is that we pull eoifd into KVM_IRQFD and invent some
-other new EOI interface for qemu.  That means we get EOIs tied to an
-irqfd via one path and other EOIs via another ioctl.  Personally that
-seems less desirable, but I'm willing to explore that route if
-necessary.  Thanks,
-
-Alex
+diff --git a/firmware/Makefile b/firmware/Makefile
+index 344713b..76628e3 100644
+--- a/firmware/Makefile
++++ b/firmware/Makefile
+@@ -43,7 +43,6 @@ fw-shipped-$(CONFIG_CASSINI) += sun/cassini.bin
+ fw-shipped-$(CONFIG_COMPUTONE) += intelliport2.bin
+ fw-shipped-$(CONFIG_CHELSIO_T3) += cxgb3/t3b_psram-1.1.0.bin \
+ 				   cxgb3/t3c_psram-1.1.0.bin \
+-				   cxgb3/t3fw-7.10.0.bin \
+ 				   cxgb3/ael2005_opt_edc.bin \
+ 				   cxgb3/ael2005_twx_edc.bin \
+ 				   cxgb3/ael2020_twx_edc.bin
+diff --git a/firmware/cxgb3/t3fw-7.10.0.bin.ihex b/firmware/cxgb3/t3fw-7.10.0.bin.ihex
+deleted file mode 100644
+index 96399d8..0000000
+-- 
+1.7.9.5
 
