@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab2HAXQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 19:16:40 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:35292 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445Ab2HAXQi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 19:16:38 -0400
-Message-ID: <5019B8B1.7090902@linux.vnet.ibm.com>
-Date: Wed, 01 Aug 2012 16:16:01 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754721Ab2HAXS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 19:18:27 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753498Ab2HAXS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 19:18:26 -0400
+Message-ID: <5019B93E.4080006@nod.at>
+Date: Thu, 02 Aug 2012 01:18:22 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Marian Beermann <public@enkore.de>
-CC: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] NTFS code doesn't sanitize folder names sufficiently
-References: <501189DA.4030709@enkore.de>
-In-Reply-To: <501189DA.4030709@enkore.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080123-2398-0000-0000-0000090DE5C2
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        toralf.foerster@gmx.de
+Subject: [GIT PULL] UML fixes for 3.6-rc1
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
-> The solution to this would be to disallow creation of files and
-> folders on NTFS drives containing illegal characters.
+The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
 
-Illegal characters with respect to Windows & the like are different 
-from Illegal characters with respect to the NTFS filesystem structure.
+   Linux 3.5 (2012-07-21 13:58:29 -0700)
 
-Looking at ntfs-3g(8) [yes, I'm aware that is a different driver that 
-this bug is about], the section on Windows Filename Compatability says 
-this:
+are available in the git repository at:
+   git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git for-linus-3.6-rc1
 
-       [...] all characters are
-       allowed except '/' and '\0'. This is perfectly legal on Windows, 
-though some application may get
-       confused. The option windows_names may be used to apply Windows 
-restrictions to new file names.
+---
+This patch set contains mostly fixes and cleanups.
+The UML tty driver uses now tty_port and is no longer broken
+like hell. :-)
+---
 
-To recap: no data will be lost due to using '\' in filenames. Some 
-operating systems just may not be capable off accessing it.
+Al Viro (3):
+       um: switch UPT_SET_RETURN_VALUE and regs_return_value to pt_regs
+       um: split syscall_trace(), pass pt_regs to it
+       um: pull interrupt_end() into userspace()
 
---
-Cody
+Jiri Slaby (2):
+       TTY: um/line, add tty_port
+       TTY: um/line, use tty from tty_port
 
+Martin Pärtel (2):
+       um: fix ubd_file_size for read-only files
+       um: pass siginfo to guest process
+
+Richard Weinberger (6):
+       um: remove line_ioctl()
+       um: Remove dead code
+       um: fully use tty_port
+       um: remove count_lock
+       um: set BLK_CGROUP=y in defconfig
+       um: Add arch/x86/um to MAINTAINERS
+
+  MAINTAINERS                          |    1 +
+  arch/um/defconfig                    |    2 +-
+  arch/um/drivers/chan_kern.c          |    4 +-
+  arch/um/drivers/line.c               |  218 ++++++++++------------------------
+  arch/um/drivers/line.h               |   12 +-
+  arch/um/drivers/ssl.c                |   42 +------
+  arch/um/drivers/stdio_console.c      |   21 ++--
+  arch/um/drivers/ubd_kern.c           |    2 +-
+  arch/um/include/asm/ptrace-generic.h |    2 +
+  arch/um/include/shared/as-layout.h   |    3 +-
+  arch/um/include/shared/irq_user.h    |    3 +-
+  arch/um/include/shared/kern_util.h   |   13 +-
+  arch/um/kernel/irq.c                 |    2 +-
+  arch/um/kernel/process.c             |   13 +--
+  arch/um/kernel/ptrace.c              |   71 +++++-------
+  arch/um/kernel/skas/syscall.c        |    6 +-
+  arch/um/kernel/time.c                |    2 +-
+  arch/um/kernel/trap.c                |   39 +++++-
+  arch/um/os-Linux/internal.h          |    2 +-
+  arch/um/os-Linux/signal.c            |   26 +++--
+  arch/um/os-Linux/skas/process.c      |   16 ++-
+  arch/um/os-Linux/time.c              |    2 +-
+  arch/x86/um/asm/ptrace.h             |    6 +-
+  23 files changed, 206 insertions(+), 302 deletions(-)
+
+Thanks,
+//richard
