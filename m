@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab2HAOpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 10:45:14 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:30256 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab2HAOpL (ORCPT
+	id S1755270Ab2HAOpt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 10:45:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51443 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab2HAOpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 10:45:11 -0400
-Date: Wed, 1 Aug 2012 10:35:51 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 04/24] xen/arm: sync_bitops
-Message-ID: <20120801143551.GI7227@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-4-git-send-email-stefano.stabellini@eu.citrix.com>
- <20120726163759.GE9222@phenom.dumpdata.com>
- <1343381305.6812.116.camel@zakaz.uk.xensource.com>
+	Wed, 1 Aug 2012 10:45:47 -0400
+Message-ID: <50194115.2030307@linutronix.de>
+Date: Wed, 01 Aug 2012 16:45:41 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343381305.6812.116.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: x86 and I/O APIC IRQ domains
+References: <20120801135839.GA19957@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20120801135839.GA19957@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 10:28:25AM +0100, Ian Campbell wrote:
-> On Thu, 2012-07-26 at 17:37 +0100, Konrad Rzeszutek Wilk wrote:
-> > On Thu, Jul 26, 2012 at 04:33:46PM +0100, Stefano Stabellini wrote:
-> > > sync_bitops functions are equivalent to the SMP implementation of the
-> > > original functions, independently from CONFIG_SMP being defined.
-> > 
-> > So why can't the code be changed to use that? Is it that
-> > the _set_bit, _clear_bit, etc are not available with !CONFIG_SMP?
-> 
-> _set_bit etc are not SMP safe if !CONFIG_SMP. But under Xen you might be
-> communicating with a completely external entity who might be on another
-> CPU (e.g. two uniprocessor guests communicating via event channels and
-> grant tables). So we need a variant of the bit ops which are SMP safe
-> even on a UP kernel.
-> 
-> The users are common code and the sync_foo vs foo distinction matters on
-> some platforms (e.g. x86 where a UP kernel would omit the LOCK prefix
-> for the normal ones).
+On 08/01/2012 03:58 PM, Thierry Reding wrote:
+> I've been working on an x86 platform and want to use DT. However I've
+> hit a snag when trying to instantiate the I/O APIC. I've been trying to
+> follow what the CE4100 does and most things seem to work fine but when
+> I add the DT node for the I/O APIC things start to fail. I've been able
+> to trace the issue to x86_add_irq_domains(), which in turn calls
+> ioapic_add_ofnode() from which irq_domain_add_legacy() is called.
+>
+> The platform that I use hits the WARN_ON(!irq_data || irq_data->domain).
+> Looking further this seems to be caused by all irq_get_irq_data(irq)
+> returning NULL for irq>= 16. That in turn I think is due to
+> init_ISA_irqs() setting up only the first NR_IRQS_LEGACY interrupts.
+> However the call to irq_domain_add_legacy() wants 32 interrupts.
 
-OK, that makes sense. Stefano can you include that comment in the git
-commit description and in the sync_bitops.h file please?
-> 
-> > 
-> > > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > ---
-> > >  arch/arm/include/asm/sync_bitops.h |   17 +++++++++++++++++
-> > >  1 files changed, 17 insertions(+), 0 deletions(-)
-> > >  create mode 100644 arch/arm/include/asm/sync_bitops.h
-> > > 
-> > > diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
-> > > new file mode 100644
-> > > index 0000000..d975092903
-> > > --- /dev/null
-> > > +++ b/arch/arm/include/asm/sync_bitops.h
-> > > @@ -0,0 +1,17 @@
-> > > +#ifndef __ASM_SYNC_BITOPS_H__
-> > > +#define __ASM_SYNC_BITOPS_H__
-> > > +
-> > > +#include <asm/bitops.h>
-> > > +#include <asm/system.h>
-> > > +
-> > > +#define sync_set_bit(nr, p)		_set_bit(nr, p)
-> > > +#define sync_clear_bit(nr, p)		_clear_bit(nr, p)
-> > > +#define sync_change_bit(nr, p)		_change_bit(nr, p)
-> > > +#define sync_test_and_set_bit(nr, p)	_test_and_set_bit(nr, p)
-> > > +#define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
-> > > +#define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
-> > > +#define sync_test_bit(nr, addr)		test_bit(nr, addr)
-> > > +#define sync_cmpxchg			cmpxchg
-> > > +
-> > > +
-> > > +#endif
-> > > -- 
-> > > 1.7.2.5
-> > > 
-> > > 
-> > > _______________________________________________
-> > > Xen-devel mailing list
-> > > Xen-devel@lists.xen.org
-> > > http://lists.xen.org/xen-devel
-> 
+The IOAPIC knows how many sources are available and this number should
+be used instead of 32.
+This won't solve the problem with get_irq_data() for the second ioapic
+which might be available in the system.
+
+The reason why there is no irq_data() available is that this is
+allocated by io_apic_setup_irq_pin_once() which is now called too late. 
+Usually a PCI device does a pci_enable() call and then we do all this.
+So to keep the function happy you should preallocate all interrupts
+which are offered. Ah, and you may need a map function which does
+nothing because the programming is done at io_apic_setup_irq_pin_once()
+time.
+Maybe you could live with irq_domain_add_linear() instead. Not sure how
+important it is to keep rtc at a fixed irq. I think as far as the
+IOAPIC is concerned, it could be programmed to another number but I
+kept it in sync. However parts of the ioapic code rely on gsi_number ==
+irq number so maybe we should preallocate the irq_data and use a dummy
+map() function for the start.
+
+> This was introduced by commit b4e5185 "irq_domain/x86: Convert x86
+> (embedded) to use common irq_domain)". I wonder what I'm doing wrong. I
+> don't get how this is made to work on CE4100.
+Currently it does not
+
+> Later the code crashes, but I can't exactly pinpoint the location
+> because the oops doesn't fit on the screen. I don't have a serial port
+> that I can use instead, so is there anything else I can do to obtain a
+> complete backtrace?
+
+There is an option which delays each printk by a few msecs. Maybe this
+could help.
+
+>
+> Thierry
+
+Sebastian
