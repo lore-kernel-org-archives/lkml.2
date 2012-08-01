@@ -1,173 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab2HAMzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 08:55:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20509 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab2HAMzS (ORCPT
+	id S1753435Ab2HANAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 09:00:14 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:18300 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab2HANAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 08:55:18 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=RmaQ9WyBXnAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=20KFwNOVAAAA:8 a=iox4zFpeAAAA:8 a=VwQbUJbxAAAA:8 a=n8JlVaIRwISlDlM4lQcA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=n9GBPR9yFnkA:10 a=LI9Vle30uBYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343825716.27983.84.camel@gandalf.stny.rr.com>
-Subject: Re: [ 00/73] 3.2.25-stable review
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ben Hutchings <ben@decadent.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>
-Date: Wed, 01 Aug 2012 08:55:16 -0400
-In-Reply-To: <20120731044310.013763753@decadent.org.uk>
-References: <20120731044310.013763753@decadent.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Aug 2012 09:00:12 -0400
+X-IronPort-AV: E=Sophos;i="4.77,694,1336348800"; 
+   d="scan'208";a="13802856"
+Date: Wed, 1 Aug 2012 13:59:53 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "raghukt@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
+In-Reply-To: <87txwmlskp.fsf@abhimanyu.in.ibm.com>
+Message-ID: <alpine.DEB.2.02.1208011358100.4645@kaball.uk.xensource.com>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com> <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com> <87ehpuqam8.fsf@linux.vnet.ibm.com> <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com>
+ <878vg1rjts.fsf@linux.vnet.ibm.com> <1338901688.28282.168.camel@twins> <alpine.DEB.2.02.1206051422500.6030@kaball.uk.xensource.com> <alpine.DEB.2.02.1208011221140.4645@kaball.uk.xensource.com> <87txwmlskp.fsf@abhimanyu.in.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 05:43 +0100, Ben Hutchings wrote:
-> This is the start of the stable review cycle for the 3.2.25 release.
-> There are 73 patches in this series, which will be posted as responses
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Wed, 1 Aug 2012, Nikunj A Dadhania wrote:
+> Hi Stefano,
 > 
-> Responses should be made by Thu Aug  2 10:00:00 UTC 2012.
-> Anything received after that time might be too late.
+> On Wed, 1 Aug 2012 12:23:37 +0100, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> > On Tue, 5 Jun 2012, Stefano Stabellini wrote:
+> > > On Tue, 5 Jun 2012, Peter Zijlstra wrote:
+> > > > On Tue, 2012-06-05 at 18:34 +0530, Nikunj A Dadhania wrote:
+> > > > > PeterZ, is 7/7 alright to be picked?
+> > > > 
+> > > > Yeah, I guess it is.. I haven't had time to rework my tlb series yet
+> > > > though. But these two patches together should make it work for x86.
+> > > > 
+> > > 
+> > > Good. Do you think they are OK for 3.5-rc2? Or is it better to wait for
+> > > 3.6?
+> > > 
+> > 
+> > Hello Nikunj,
+> > what happened to this patch series?
+> > In particular I am interested in the following two patches:
+> > 
+> > kvm,x86: RCU based table free
+> > Flush page-table pages before freeing them
+> > 
+> > do you still intend to carry on with the development? Is there anything
+> > missing that is preventing them from going upstream?
+> >
+> I have posted a v3 on the kvm-list:
+> http://www.spinics.net/lists/kvm/msg76955.html
 > 
-> A combined patch relative to 3.2.24 will be posted as an additional
-> response to this, and the diffstat can be found below.
+> I am carrying the above two patches(with one fix) in my series as well
+> for completeness. 
+> 
+> I have picked up the patches from PeterZ's "Unify TLB gather
+> implementations -v3"
+> http://article.gmane.org/gmane.linux.kernel.mm/81278
 
-I tested this against configs I normally test against my own code, and I
-hit this bug:
+It is good to see that you are following up on this; since I didn't see
+any updates I got worried :)
+Cheers,
 
-[   37.030215] =============================================================================
-[   37.031170] BUG blkdev_queue: Poison overwritten
-[   37.031170] -----------------------------------------------------------------------------
-[   37.031170] 
-[   37.031170] INFO: 0xffff8800757287b0-0xffff8800757287b0. First byte 0x6a instead of 0x6b
-[   37.031170] INFO: Allocated in blk_alloc_queue_node+0x25/0x1fb age=3399 cpu=1 pid=1
-[   37.031170]  __slab_alloc+0x2e4/0x365
-[   37.031170]  kmem_cache_alloc_node+0x92/0x18d
-[   37.031170]  blk_alloc_queue_node+0x25/0x1fb
-[   37.031170]  blk_init_queue_node+0x24/0x5c
-[   37.031170]  blk_init_queue+0x11/0x13
-[   37.031170]  floppy_init+0x78/0x5d9^M
-[   37.031170]  do_one_initcall+0x7f/0x140
-[   37.092043]  kernel_init+0xc9/0x143
-[   37.092043]  kernel_thread_helper+0x4/0x10
-[   37.092043] INFO: Freed in blk_release_queue+0x86/0x8b age=78 cpu=0 pid=1
-[   37.092043]  __slab_free+0x38/0x377
-[   37.092043]  kmem_cache_free+0xf7/0x155
-[   37.092043]  blk_release_queue+0x86/0x8b
-[   37.092043]  kobject_cleanup+0xc4/0xeb
-[   37.092043]  kobject_release+0xd/0xf
-[   37.092043]  kobject_put+0x4a/0x4f
-[   37.092043]  blk_cleanup_queue+0x159/0x162
-[   37.092043]  floppy_init+0x5b6/0x5d9
-[   37.092043]  do_one_initcall+0x7f/0x140
-[   37.092043]  kernel_init+0xc9/0x143
-[   37.092043]  kernel_thread_helper+0x4/0x10
-[   37.092043] INFO: Slab 0xffffea0001d5ca00 objects=9 used=9 fp=0x          (null) flags=0x100000000004080
-[   37.092043] INFO: Object 0xffff880075728000 @offset=0 fp=0xffff88007572e700
-[...]
-[   37.092043] Object ffff880075728b80: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-[   37.092043] Object ffff880075728b90: 6b 6b 6b 6b 6b 6b 6b a5                          kkkkkkk.
-[   37.092043] Redzone ffff880075728b98: bb bb bb bb bb bb bb bb                          ........
-[   37.092043] Padding ffff880075728cd8: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
-[   37.092043] Pid: 1, comm: swapper/0 Not tainted 3.2.0-test+ #1
-[   37.092043] Call Trace:
-[   37.092043]  [<ffffffff8114d18b>] ? print_section+0x3d/0x3f
-[   37.092043]  [<ffffffff8114db29>] print_trailer+0x10a/0x113
-[   37.092043]  [<ffffffff8114df53>] check_bytes_and_report+0xb1/0xea
-[   37.092043]  [<ffffffff8114e050>] check_object+0xc4/0x1fc
-[   37.092043]  [<ffffffff813f7c63>] ? blk_alloc_queue_node+0x25/0x1fb
-[   37.092043]  [<ffffffff813f7c63>] ? blk_alloc_queue_node+0x25/0x1fb
-[   37.092043]  [<ffffffff819e465e>] alloc_debug_processing+0xa7/0x14a
-[   37.092043]  [<ffffffff819e4fb1>] __slab_alloc+0x2e4/0x365
-[   37.092043]  [<ffffffff813f7c63>] ? blk_alloc_queue_node+0x25/0x1fb
-[   37.092043]  [<ffffffff810b113d>] ? trace_hardirqs_on+0xd/0xf
-[   37.092043]  [<ffffffff8114fd71>] kmem_cache_alloc_node+0x92/0x18d
-[   37.092043]  [<ffffffff810b10f9>] ? trace_hardirqs_on_caller+0x12f/0x166
-[   37.092043]  [<ffffffff813f7c63>] ? blk_alloc_queue_node+0x25/0x1fb
-[   37.092043]  [<ffffffff813f7c63>] blk_alloc_queue_node+0x25/0x1fb
-[   37.092043]  [<ffffffff813f7e4a>] blk_alloc_queue+0x11/0x13
-[   37.092043]  [<ffffffff81550489>] brd_alloc+0x79/0x185
-[   37.092043]  [<ffffffff82264a24>] brd_init+0xc6/0x19c
-[   37.092043]  [<ffffffff8226495e>] ? floppy_init+0x5d9/0x5d9
-[   37.092043]  [<ffffffff8100020f>] do_one_initcall+0x7f/0x140
-[   37.092043]  [<ffffffff82234c44>] kernel_init+0xc9/0x143
-[   37.092043]  [<ffffffff81a14874>] kernel_thread_helper+0x4/0x10
-[   37.092043]  [<ffffffff81a0c5f4>] ? retint_restore_args+0x13/0x13
-[   37.092043]  [<ffffffff82234b7b>] ? start_kernel+0x3af/0x3af
-[   37.092043]  [<ffffffff81a14870>] ? gs_change+0x13/0x13
-[   37.092043] FIX blkdev_queue: Restoring 0xffff8800757287b0-0xffff8800757287b0=0x6b
-
-I then checked against 3.2.24 and it bugged too, as well as vanilla 3.2.
-I then checked against 3.3 and it did not bug. I kicked off a 'reverse'
-bisect with ktest (bad is good and good is bad) and found the fix:
-
-commit 3f9a5aabd0a9fe0e0cd308506f48963d79169aa7
-Author: Vivek Goyal <vgoyal@redhat.com>
-floppy: Cleanup disk->queue before caling put_disk() if add_disk() was never called
-
-I applied it against v3.2.24 and it solved the bug. I did not apply it
-against 25-rc1, but I'm pretty sure it should work for that too.
-
-I haven't checked 3.0 if that has an issue with my config.
-
-Anyway, please apply this patch to stable 3.2. Either for 25 or for 26.
-
-Thanks!
-
--- Steve
-
-commit 3f9a5aabd0a9fe0e0cd308506f48963d79169aa7
-Author: Vivek Goyal <vgoyal@redhat.com>
-Date:   Wed Feb 8 20:03:38 2012 +0100
-
-    floppy: Cleanup disk->queue before caling put_disk() if add_disk() was never called
-    
-    add_disk() takes gendisk reference on request queue. If driver failed during
-    initialization and never called add_disk() then that extra reference is not
-    taken. That reference is put in put_disk(). floppy driver allocates the
-    disk, allocates queue, sets disk->queue and then relizes that floppy
-    controller is not present. It tries to tear down everything and tries to
-    put a reference down in put_disk() which was never taken.
-    
-    In such error cases cleanup disk->queue before calling put_disk() so that
-    we never try to put down a reference which was never taken in first place.
-    
-    Reported-and-tested-by: Suresh Jayaraman <sjayaraman@suse.com>
-    Tested-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-    Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-    Acked-by: Tejun Heo <tj@kernel.org>
-    Signed-off-by: Jens Axboe <axboe@kernel.dk>
-
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index 510fb10..401ba78 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -4368,8 +4368,14 @@ out_unreg_blkdev:
- out_put_disk:
- 	while (dr--) {
- 		del_timer_sync(&motor_off_timer[dr]);
--		if (disks[dr]->queue)
-+		if (disks[dr]->queue) {
- 			blk_cleanup_queue(disks[dr]->queue);
-+			/*
-+			 * put_disk() is not paired with add_disk() and
-+			 * will put queue reference one extra time. fix it.
-+			 */
-+			disks[dr]->queue = NULL;
-+		}
- 		put_disk(disks[dr]);
- 	}
- 	return err;
-
-
-
+Stefano
