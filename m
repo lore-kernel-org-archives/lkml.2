@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab2HAMp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 08:45:28 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:65230 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab2HAMp1 (ORCPT
+	id S1752654Ab2HAMqW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 08:46:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24771 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab2HAMqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 08:45:27 -0400
-Date: Wed, 1 Aug 2012 14:45:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
-Message-ID: <20120801124513.GB28650@somewhere.redhat.com>
-References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
- <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
- <1343660892.20897.3.camel@twins>
- <20120730155059.GB17078@somewhere.redhat.com>
- <20120731070640.GA2950@gmail.com>
- <20120731104845.GC17078@somewhere.redhat.com>
- <20120731145742.GA6934@gmail.com>
- <1343751262.20897.29.camel@twins>
- <20120801122821.GA28650@somewhere.redhat.com>
- <1343824983.27983.74.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343824983.27983.74.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 1 Aug 2012 08:46:21 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=aqDLzf-sAsEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=SuqbO_6EAAAA:8 a=YogYXIzVkstchHFBgFUA:9 a=PUjeQqilurYA:10 a=l1dcLZD439IA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343825179.27983.76.camel@gandalf.stny.rr.com>
+Subject: Re: awful kconfig help texts.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 01 Aug 2012 08:46:19 -0400
+In-Reply-To: <50190B67.5050108@metafoo.de>
+References: <20120731151600.GA19412@redhat.com>
+	 <20120731170741.GA4735@x1.osrc.amd.com>
+	 <20120731172638.GE16873@home.goodmis.org>
+	 <20120731174249.GB4735@x1.osrc.amd.com>
+	 <20120801074742.GH29673@avionic-0098.adnet.avionic-design.de>
+	 <20120801085644.GA21303@liondog.tnic> <5018F537.209@metafoo.de>
+	 <20120801092625.GB21303@liondog.tnic> <5018F908.9090607@metafoo.de>
+	 <20120801100455.GD21303@liondog.tnic> <50190B67.5050108@metafoo.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 08:43:03AM -0400, Steven Rostedt wrote:
-> On Wed, 2012-08-01 at 14:28 +0200, Frederic Weisbecker wrote:
-> > On Tue, Jul 31, 2012 at 06:14:22PM +0200, Peter Zijlstra wrote:
-> 
-> > So we probably need to generalize a bit more. Some naming based on
-> > "code domain"?
-> > 
-> > struct code_domain {
-> > 	int is_tracking;
-> > 	enum {
-> > 		in_kernel,
-> > 		in_user,
-> > 		in_guest
-> > 	} state;
-> > }
-> 
-> Is there a fundamental difference between 'in_user' and 'in_guest'
-> though?
+On Wed, 2012-08-01 at 12:56 +0200, Lars-Peter Clausen wrote:
 
-Probably not from RCU POV. But the cputime is not accounted the same.
+> You could do that by using a construct like below, but well...
+> 
+> config HAS_PWM
+>     bool
+> 
+> config PWM
+>     bool "PWM
+>     depends on HAS_PWM
+> 
+> config PWM_CAN_BUILD_DRIVER_X
+>     defbool I2C
+>     select HAS_PWM
+> 
+> config PWM_DRIVER_X
+>     tristate "PWM chip X support"
+>     depends on PWM && PWM_CAN_BUILD_DRIVER_X
+> 
+> config PWM_CAN_BUILD_DRIVER_Y
+>     defbool ARCH_Y
+>     select HAS_PWM
+> 
+> config PWM_DRIVER_Y
+>     tristate "PWM chip Y support"
+>     depends on PWM && PWM_CAN_BUILD_DRIVER_Y
+
+What selects the 'PWM_CAN_BUILD_DRIVER_FOO'?
+
+-- Steve
+
+
