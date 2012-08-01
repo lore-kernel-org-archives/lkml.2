@@ -1,111 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2HAIsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 04:48:33 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55049 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab2HAIs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 04:48:29 -0400
-Message-ID: <5018ED59.2020205@linaro.org>
-Date: Wed, 01 Aug 2012 09:48:25 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1753443Ab2HAI4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 04:56:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39795 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753220Ab2HAI4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 04:56:48 -0400
+Date: Wed, 1 Aug 2012 10:56:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: awful kconfig help texts.
+Message-ID: <20120801085644.GA21303@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Thierry Reding <thierry.reding@avionic-design.de>,
+	Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120731151600.GA19412@redhat.com>
+ <20120731170741.GA4735@x1.osrc.amd.com>
+ <20120731172638.GE16873@home.goodmis.org>
+ <20120731174249.GB4735@x1.osrc.amd.com>
+ <20120801074742.GH29673@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
-        broonie@opensource.wolfsonmicro.com, olalilja@yahoo.se,
-        STEricsson_nomadik_linux@list.st.com, lrg@ti.com
-Subject: Re: [PATCH 5/6] ARM: ux500: Enable HIGHMEM on all mop500 platforms
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <5017EBDC.6010005@linaro.org> <20120731143732.GS6802@n2100.arm.linux.org.uk> <201207312050.03113.arnd@arndb.de> <20120731220145.GD10335@n2100.arm.linux.org.uk> <5018E11E.7080907@linaro.org> <20120801084127.GT6802@n2100.arm.linux.org.uk>
-In-Reply-To: <20120801084127.GT6802@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120801074742.GH29673@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/12 09:41, Russell King - ARM Linux wrote:
-> On Wed, Aug 01, 2012 at 08:56:14AM +0100, Lee Jones wrote:
->> On 31/07/12 23:01, Russell King - ARM Linux wrote:
->>> On Tue, Jul 31, 2012 at 08:50:02PM +0000, Arnd Bergmann wrote:
->>>> On Tuesday 31 July 2012, Russell King - ARM Linux wrote:
->>>>> I still fail to see how not having highmem enabled would ever cause memory
->>>>> corruption errors (unless something dealing with memory in a very very
->>>>> wrong way - iow, not using one of the reservation or memory allocation
->>>>> methods provided by the kernel.)
->>>>
->>>> The problem is that all users of ux500 systems pass a command line like
->>>>
->>>> vmalloc=256M mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M mem=48M@328M mem_issw=1M@383M mem=640M@384M
->>>>
->>>> This is of course totally bogus and should not be done. If I understand
->>>> Lee correctly, one of the issues resulting from passing a command
->>>> line like this without enabling highmem is memory corruption.
->>>
->>> But the question is _why_ does that corruption happen.
->>>
->>>   From the above, we will end up with the kernel getting:
->>>
->>> 0x00000000 - 0x07ffffff (128M @ 0)
->>> 0x14800000 - 0x177fffff (48M  @ 328M)
->>> 0x18000000 - 0x3fffffff (640M @ 384M)
->>>
->>> with:
->>>
->>> 0x08000000 - 0x081fffff used for mali
->>> 0x0a000000 - 0x147fffff used for hwmem
->>> 0x17f00000 - 0x17ffffff used for mem_issw
->>>
->>> Now, with highmem disabled, the kernel should still map exactly the
->>> regions: 0x00000000 - 0x07ffffff, 0x14800000 - 0x177fffff, into the
->>> direct mapped region, and truncate the 0x18000000 - 0x3fffffff
->>> region appropriately, reducing the amount of memory available such
->>> that it won't overlap the vmalloc area (which you've specified to be
->>> a minimum of 256M.)
->>>
->>> This should _NOT_ cause any memory corruption.
->>>
->>> So, come on guys.  Debugging is *mandatory* for this kind of problem.
->>> Papering over it is obscene.
->>
->> Actually I didn't go any further with it, as I changed to another
->> identical piece of hardware and couldn't reproduce the issue.
->>
->> FYI, here's the boot log from the broken board:
->>
->> http://paste.ubuntu.com/1102017/
->
-> Well, the good thing is this:
->
->     8 Truncating RAM at 18000000-3fffffff to -2c3fffff (vmalloc region overlap).
->
-> which means the RAM was properly truncated before it is passed to
-> memblock, etc.
->
-> That oops dump looks very much like an ASoC problem, where
-> dapm_widget_power_check() recurses into dapm_supply_check_power()
-> which then recurses back into dapm_widget_power_check(), and it
-> eventually overflows the kernel stack, corrupting the thread_info
-> and the pages below.
->
-> Given the address of the stack pointer (ebc480a8) I don't think
-> we can be too sure where it was supposed to be, and where the top
-> of stack should have been, so we don't know how many pages have
-> been stomped on and corrupted.
->
-> Stopping that recursion is the first thing that needs to be done
-> so that the cause of it can then be properly debugged without the
-> kernel itself corrupting memory below the kernel stack.
+On Wed, Aug 01, 2012 at 09:47:42AM +0200, Thierry Reding wrote:
+> On Tue, Jul 31, 2012 at 07:42:49PM +0200, Borislav Petkov wrote:
+> > On Tue, Jul 31, 2012 at 01:26:38PM -0400, Steven Rostedt wrote:
+> > > Then shouldn't this not have a prompt and just be selected by those
+> > > PWM drivers below?
+> > 
+> > It gives an empty menu due to the deps of the single PWM drivers.
+> > 
+> > But the whole CONFIG_PWM thing should simply depend on !X86 so that it
+> > doesn't appear in drivers/.
+> 
+> I don't think that's a good idea. That would mean I would have to add
+> !SPARC and !S390 and many other to that list as well. Also there are a
+> couple of drivers that are in the process of being ported which are not
+> restricted to ARM or embedded in general. So even if we make this !X86
+> now, eventually it will pop up again.
 
-Those were my thoughts.
-
-Here was my cry for help: https://lkml.org/lkml/2012/7/23/181
+Hmm, how about having a synthetic define CONFIG_ARCH_PWM and each arch
+which has such a driver can select it and then CONFIG_PWM would depend
+on that. Would that even work?
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards/Gruss,
+    Boris.
