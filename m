@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab2HAC4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 22:56:30 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:35943 "EHLO
-	homiemail-a52.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752871Ab2HAC43 (ORCPT
+	id S1754202Ab2HAC7Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 22:59:25 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:43766 "EHLO
+	homiemail-a83.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752916Ab2HAC7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 22:56:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:subject:content-type; q=dns; s=
-	shealevy.com; b=JDMZdrRyWUL58c+UuzVHKxa3jwMSZiHgSFKQqtKJnqsqvL6w
-	sKlLEN74x+dm5t2ox45UlOga4a3cBcPfTMrjfVvSo54VM0/f0vP9uilDqK3g3pOv
-	6wZvWnTq3j75FfTDwZE7yUT1y/OYAl/mB13bVHzTy0U3wXOyLTeAOCEMntk=
-Message-ID: <50189ADA.4050009@shealevy.com>
-Date: Tue, 31 Jul 2012 22:56:26 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120703 Thunderbird/11.0.1
+	Tue, 31 Jul 2012 22:59:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=mime-version
+	:content-type:date:from:to:subject:message-id; q=dns; s=
+	shealevy.com; b=BVNjmiVFCcaTLTHmRmlQAv+0B+CPO4+z3ge6KdHiMqLdenyZ
+	GSSeCs3o6BtIp21AyHNbqlROJ7FuOs2V1XO6cnBPgD6a+fdcTlYxwJIlvCYRSXHj
+	D+7J2/4OLKoJ+ek7Mxri85czuZcx3qm/qvEsTCcizc2dZ692s4JuxsKtGO4=
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: [PATCH] Fix firmware installation for images w/o subdirs
 Content-Type: multipart/mixed;
- boundary="------------090903070902080200010400"
+ boundary="=_a3960237f9a31700eeb288d6a5364769"
+Date: Tue, 31 Jul 2012 22:59:24 -0400
+From: shea@shealevy.com
+To: <linux-kbuild@vger.kernel.org>, <mmarek@suse.cz>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Fix firmware installation for images w/o subdirs
+Message-ID: <663f65e29cc718b63ef0e2a769d03606@shealevy.com>
+User-Agent: RoundCube Webmail/0.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090903070902080200010400
-Content-Type: text/plain; charset=UTF-8; format=flowed
+--=_a3960237f9a31700eeb288d6a5364769
 Content-Transfer-Encoding: 7bit
-
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 
 On some setups (probably due to too new a GNU Make), firmware
 installation fails with
@@ -47,27 +46,23 @@ Signed-off-by: Shea Levy <shea@shealevy.com>
   1 file changed, 1 insertion(+), 1 deletion(-)
 
 
-
---------------090903070902080200010400
+--=_a3960237f9a31700eeb288d6a5364769
+Content-Transfer-Encoding: base64
 Content-Type: text/x-patch;
- name="0001-Fix-firmware-installation-for-images-w-o-subdirs.patch"
-Content-Transfer-Encoding: 7bit
+ name=0001-Fix-firmware-installation-for-images-w-o-subdirs.patch
 Content-Disposition: attachment;
- filename*0="0001-Fix-firmware-installation-for-images-w-o-subdirs.patch"
+ filename=0001-Fix-firmware-installation-for-images-w-o-subdirs.patch
 
-diff --git a/scripts/Makefile.fwinst b/scripts/Makefile.fwinst
-index 6bf8e87..4d908d1 100644
---- a/scripts/Makefile.fwinst
-+++ b/scripts/Makefile.fwinst
-@@ -27,7 +27,7 @@ endif
- installed-mod-fw := $(addprefix $(INSTALL_FW_PATH)/,$(mod-fw))
- 
- installed-fw := $(addprefix $(INSTALL_FW_PATH)/,$(fw-shipped-all))
--installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/.
-+installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/./
- 
- # Workaround for make < 3.81, where .SECONDEXPANSION doesn't work.
- PHONY += $(INSTALL_FW_PATH)/$$(%) install-all-dirs
+ZGlmZiAtLWdpdCBhL3NjcmlwdHMvTWFrZWZpbGUuZndpbnN0IGIvc2NyaXB0cy9NYWtlZmlsZS5m
+d2luc3QKaW5kZXggNmJmOGU4Ny4uNGQ5MDhkMSAxMDA2NDQKLS0tIGEvc2NyaXB0cy9NYWtlZmls
+ZS5md2luc3QKKysrIGIvc2NyaXB0cy9NYWtlZmlsZS5md2luc3QKQEAgLTI3LDcgKzI3LDcgQEAg
+ZW5kaWYKIGluc3RhbGxlZC1tb2QtZncgOj0gJChhZGRwcmVmaXggJChJTlNUQUxMX0ZXX1BBVEgp
+LywkKG1vZC1mdykpCiAKIGluc3RhbGxlZC1mdyA6PSAkKGFkZHByZWZpeCAkKElOU1RBTExfRldf
+UEFUSCkvLCQoZnctc2hpcHBlZC1hbGwpKQotaW5zdGFsbGVkLWZ3LWRpcnMgOj0gJChzb3J0ICQo
+ZGlyICQoaW5zdGFsbGVkLWZ3KSkpICQoSU5TVEFMTF9GV19QQVRIKS8uCitpbnN0YWxsZWQtZnct
+ZGlycyA6PSAkKHNvcnQgJChkaXIgJChpbnN0YWxsZWQtZncpKSkgJChJTlNUQUxMX0ZXX1BBVEgp
+Ly4vCiAKICMgV29ya2Fyb3VuZCBmb3IgbWFrZSA8IDMuODEsIHdoZXJlIC5TRUNPTkRFWFBBTlNJ
+T04gZG9lc24ndCB3b3JrLgogUEhPTlkgKz0gJChJTlNUQUxMX0ZXX1BBVEgpLyQkKCUpIGluc3Rh
+bGwtYWxsLWRpcnMK
+--=_a3960237f9a31700eeb288d6a5364769--
 
-
---------------090903070902080200010400--
