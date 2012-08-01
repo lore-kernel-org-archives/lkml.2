@@ -1,153 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab2HAC10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 22:27:26 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36095 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299Ab2HAC1U (ORCPT
+	id S1753846Ab2HACgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 22:36:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57837 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752676Ab2HACgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 22:27:20 -0400
-From: Alex Kelly <alex.page.kelly@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Alex Kelly <alex.page.kelly@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Alex <eshink@gmail.com>
-Subject: [PATCH 2/2] Made core dump functionality optional
-Date: Tue, 31 Jul 2012 19:24:00 -0700
-Message-Id: <1343787840-2013-2-git-send-email-alex.page.kelly@gmail.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1343787840-2013-1-git-send-email-alex.page.kelly@gmail.com>
-References: <1343787840-2013-1-git-send-email-alex.page.kelly@gmail.com>
+	Tue, 31 Jul 2012 22:36:37 -0400
+Message-ID: <1343788586.4642.81.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 28/73] ARM: OMAP2+: OPP: Fix to ensure check of right oppdef
+ after bad one
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Nishanth Menon <nm@ti.com>,
+        Steve Sakoman <steve@sakoman.com>, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>
+Date: Wed, 01 Aug 2012 03:36:26 +0100
+In-Reply-To: <20120801015621.GF3111@herton-Z68MA-D2H-B3>
+References: <20120731044310.013763753@decadent.org.uk>
+	 <20120731044315.770748839@decadent.org.uk>
+	 <20120801015621.GF3111@herton-Z68MA-D2H-B3>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-/CExXzNnjjp/cz5oCg5R"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex <eshink@gmail.com>
 
-Adds an expert Kconfig option, CONFIG_COREDUMP, which allows disabling of core dump.
-This saves approximately 2.6k in the compiled kernel, and complements CONFIG_ELF_CORE,
-which now depends on it.
+--=-/CExXzNnjjp/cz5oCg5R
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-CONFIG_COREDUMP also disables coredump-related sysctls, except for suid_dumpable and
-related functions, which are necessary for ptrace.
+On Tue, 2012-07-31 at 22:56 -0300, Herton Ronaldo Krzesinski wrote:
+> On Tue, Jul 31, 2012 at 05:43:38AM +0100, Ben Hutchings wrote:
+> > 3.2-stable review patch.  If anyone has any objections, please let me k=
+now.
+> >=20
+> > ------------------
+> >=20
+> > From: Nishanth Menon <nm@ti.com>
+> >=20
+> > commit b110547e586eb5825bc1d04aa9147bff83b57672 upstream.
+>=20
+> This change is uneeded in 3.2, but doesn't do any harm either... it just
+> seems to fix the code because of the continue added in 9fa2df6b (ARM:
+> OMAP2+: OPP: allow OPP enumeration to continue if device is not present),
+> change which 3.2 doesn't have. A noop for 3.2 anyway, so either way it's
+> fine, applying or not, just commenting on it.
+[...]
 
-Signed-off-by: Alex Kelly <alex.page.kelly@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- fs/Kconfig.binfmt       | 8 ++++++++
- fs/Makefile             | 3 ++-
- include/linux/binfmts.h | 4 ++++
- init/Kconfig            | 1 +
- kernel/sysctl.c         | 6 +++++-
- 5 files changed, 20 insertions(+), 2 deletions(-)
+I'll drop it.
 
-diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
-index 0225742..0efd152 100644
---- a/fs/Kconfig.binfmt
-+++ b/fs/Kconfig.binfmt
-@@ -164,3 +164,11 @@ config BINFMT_MISC
- 	  You may say M here for module support and later load the module when
- 	  you have use for it; the module is called binfmt_misc. If you
- 	  don't know what to answer at this point, say Y.
-+
-+config COREDUMP
-+	bool "Enable core dump support" if EXPERT
-+	default y
-+	help
-+	  This option enables support for performing core dumps. You almost
-+	  certainly want to say Y here. Not necessary on systems that never
-+	  need debugging or only ever run flawless code.
-diff --git a/fs/Makefile b/fs/Makefile
-index 8938f82..1d7af79 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -11,7 +11,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
- 		attr.o bad_inode.o file.o filesystems.o namespace.o \
- 		seq_file.o xattr.o libfs.o fs-writeback.o \
- 		pnode.o drop_caches.o splice.o sync.o utimes.o \
--		stack.o fs_struct.o statfs.o coredump.o
-+		stack.o fs_struct.o statfs.o
- 
- ifeq ($(CONFIG_BLOCK),y)
- obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
-@@ -48,6 +48,7 @@ obj-$(CONFIG_FS_MBCACHE)	+= mbcache.o
- obj-$(CONFIG_FS_POSIX_ACL)	+= posix_acl.o xattr_acl.o
- obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
- obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
-+obj-$(CONFIG_COREDUMP)		+= coredump.o
- 
- obj-$(CONFIG_FHANDLE)		+= fhandle.o
- 
-diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index 366422b..00e2e89 100644
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -132,7 +132,11 @@ extern int copy_strings_kernel(int argc, const char *const *argv,
- 			       struct linux_binprm *bprm);
- extern int prepare_bprm_creds(struct linux_binprm *bprm);
- extern void install_exec_creds(struct linux_binprm *bprm);
-+#ifdef CONFIG_COREDUMP
- extern void do_coredump(long signr, int exit_code, struct pt_regs *regs);
-+#else
-+static inline void do_coredump(long signr, int exit_code, struct pt_regs *regs) {}
-+#endif
- extern void set_binfmt(struct linux_binfmt *new);
- extern void free_bprm(struct linux_binprm *);
- 
-diff --git a/init/Kconfig b/init/Kconfig
-index d07dcf9..1bd0b52 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1215,6 +1215,7 @@ config BUG
-           Just say Y.
- 
- config ELF_CORE
-+	depends on COREDUMP
- 	default y
- 	bool "Enable ELF core dumps" if EXPERT
- 	help
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4ab1187..dc0745f 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -96,10 +96,12 @@
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
- extern int max_threads;
--extern int core_uses_pid;
- extern int suid_dumpable;
-+#ifdef CONFIG_COREDUMP
-+extern int core_uses_pid;
- extern char core_pattern[];
- extern unsigned int core_pipe_limit;
-+#endif
- extern int pid_max;
- extern int min_free_kbytes;
- extern int pid_max_min, pid_max_max;
-@@ -398,6 +400,7 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+#ifdef CONFIG_COREDUMP
- 	{
- 		.procname	= "core_uses_pid",
- 		.data		= &core_uses_pid,
-@@ -419,6 +422,7 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+#endif
- #ifdef CONFIG_PROC_SYSCTL
- 	{
- 		.procname	= "tainted",
--- 
-1.7.11.2
+Ben.
 
+--=20
+Ben Hutchings
+Experience is directly proportional to the value of equipment destroyed.
+                                                         - Carolyn Scheppne=
+r
+
+--=-/CExXzNnjjp/cz5oCg5R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUBiWKue/yOyVhhEJAQrb2g//WtjiSwKfZYS3kk0PYkiFUQgvE/K3iBod
+OmxZh1HyKRX94/P7KM8koPKQZ9ay+NVQ1rDiYee0PhOWJNLvB9t+CkdIyHExaMon
+8WF5/f9tLhkyU2F7OSPPaBZ9QPU+7xpVCOyIGzb8vY6qYKQbda2W2r4C2cZYSlZz
+vVupIE1yDK8IIJYewHXV6rNUKHqAZIUbjhcQSPjj9w537X+DHY72oVV5mbnc831C
+A3b0LkTpduroTy2ZolGNVd1knjwYEq4dsovgRPAPZEobSZ7pCXeOuQoxHtJyjePX
+AO9h5DIDmJe1m0tUagJBwRQ3MpWg1U9RrV1HIz3Gp6S+vayEvbeleYt77ag7fe2S
+hoP3kz45wl3InV4G5yhIkN8ypQ1cV//wxCMfd2Il0Z9zJfpXLQ/Kcitp4vyuRPsU
+HEd02bQe+pDofvkgp0Es+wl0ZDu7YMJsVlIsKz5siHVcogXUGLGX1mJ62LPNqhDo
+gv0iVW4Ewj/WuJMxFgo0/fUf62azo5DZ2caifKi7f1EKkq3i8bHCp9luwhqlvRsv
+R7WC9jEOVHGPscflmcTQ7fJ2N93EmAdjpOVCjwHa2NUaWLr8g7PAfpHJfiYnSQP7
+qDE/BWETf74EanT2F7kBBoWlU6z8Pi5kooFfTfPz2+UgBj5coGKHA40wq5BMoZoA
+cZB1Q1XxIjY=
+=/QYu
+-----END PGP SIGNATURE-----
+
+--=-/CExXzNnjjp/cz5oCg5R--
