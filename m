@@ -1,116 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab2HAPq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:46:28 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:2575 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648Ab2HAPqY (ORCPT
+	id S1755636Ab2HAPrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:47:04 -0400
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:46545
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755226Ab2HAPrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:46:24 -0400
-X-IronPort-AV: E=Sophos;i="4.77,694,1336348800"; 
-   d="scan'208";a="13807333"
-Date: Wed, 1 Aug 2012 16:46:02 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH 05/24] xen/arm: empty implementation of grant_table arch
- specific functions
-In-Reply-To: <20120801141624.GD7227@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1208011641110.4645@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-5-git-send-email-stefano.stabellini@eu.citrix.com> <20120801141624.GD7227@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 1 Aug 2012 11:47:01 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q71FkesX031280
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: Rob Landley <rob@landley.net>
+Cc: Milton Miller <miltonm@bga.com>, Borislav Petkov <bp@alien8.de>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening port
+In-Reply-To: <501937F7.2070600@landley.net> (Rob Landley's message of "Wed, 01
+	Aug 2012 09:06:47 -0500")
+References: <gilii4nnxb.fsf@mx10.gouders.net> <kernel-nc-hints@mdm.bga.com>
+	<501937F7.2070600@landley.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+Date: Wed, 01 Aug 2012 17:46:38 +0200
+Message-ID: <gi3946lin5.fsf@mx10.gouders.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Wed, 01 Aug 2012 17:46:41 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jul 26, 2012 at 04:33:47PM +0100, Stefano Stabellini wrote:
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/arm/xen/Makefile      |    2 +-
-> >  arch/arm/xen/grant-table.c |   53 ++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 54 insertions(+), 1 deletions(-)
-> >  create mode 100644 arch/arm/xen/grant-table.c
-> > 
-> > diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
-> > index b9d6acc..4384103 100644
-> > --- a/arch/arm/xen/Makefile
-> > +++ b/arch/arm/xen/Makefile
-> > @@ -1 +1 @@
-> > -obj-y		:= enlighten.o hypercall.o
-> > +obj-y		:= enlighten.o hypercall.o grant-table.o
-> > diff --git a/arch/arm/xen/grant-table.c b/arch/arm/xen/grant-table.c
-> > new file mode 100644
-> > index 0000000..0a4ee80
-> > --- /dev/null
-> > +++ b/arch/arm/xen/grant-table.c
-> > @@ -0,0 +1,53 @@
-> > +/******************************************************************************
-> > + * grant_table.c
-> > + * ARM specific part
-> > + *
-> > + * Granting foreign access to our memory reservation.
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License version 2
-> > + * as published by the Free Software Foundation; or, when distributed
-> > + * separately from the Linux kernel or incorporated into other
-> > + * software packages, subject to the following license:
-> > + *
-> > + * Permission is hereby granted, free of charge, to any person obtaining a copy
-> > + * of this source file (the "Software"), to deal in the Software without
-> > + * restriction, including without limitation the rights to use, copy, modify,
-> > + * merge, publish, distribute, sublicense, and/or sell copies of the Software,
-> > + * and to permit persons to whom the Software is furnished to do so, subject to
-> > + * the following conditions:
-> > + *
-> > + * The above copyright notice and this permission notice shall be included in
-> > + * all copies or substantial portions of the Software.
-> > + *
-> > + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> > + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> > + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-> > + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-> > + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-> > + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-> > + * IN THE SOFTWARE.
-> > + */
-> > +
-> > +#include <xen/interface/xen.h>
-> > +#include <xen/page.h>
-> > +#include <xen/grant_table.h>
-> > +
-> > +int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
-> > +			   unsigned long max_nr_gframes,
-> > +			   void **__shared)
-> > +{
-> > +	return -1;
-> 
-> -ENOSYS
-> > +}
-> > +
-> > +void arch_gnttab_unmap(void *shared, unsigned long nr_gframes)
-> > +{
-> > +	return;
-> > +}
-> > +
-> > +int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
-> > +			   unsigned long max_nr_gframes,
-> > +			   grant_status_t **__shared)
-> > +{
-> > +	return -1;
-> 
-> Same here -ENOSYS
+Rob Landley <rob@landley.net> writes:
 
-OK, I'll do that
+> On 07/29/2012 03:40 AM, Milton Miller wrote:
+>> [adding Rob as Doc maintanier]
+>> 
+>> On Sat, 28 Jul 2012 about 11:08:16 -0000, Dirk Gouders wrote:
+>>> Borislav Petkov <bp@alien8.de> writes:
+>>>
+>>>> On Fri, Jul 27, 2012 at 11:24:53AM +0200, Dirk Gouders wrote:
+>>>>> Cong Wang <xiyou.wangcong@gmail.com> writes:
+>>>>>
+>>>>>> On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
+>>>>>> <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
+>>>>>>> Hi Jesse,
+>>>>>>>
+>>>>>>> I would like to ask you to check if the documentation of "nc" in
+>>>>>>> netconsole.txt is still correct.  I tried two different netcat packages
+>>>>>>> and both require "-p" to specify the listening port.  I am wondering if
+>>>>>>> that changed after the use of "nc" has been documented.
+>>>>>>
+>>>>>> On Fedora 16, `nc -u -l <port number>` works fine.
+>>>>>
+>>>>> Thanks for checking that.
+>>>>>
+>>>>> If the information I found is correct, Fedora uses OpenBSD's nc
+>>>>> codebase.  The two netcat packages I tested on a Gentoo system differ in
+>>>>> requiring the -p switch for the port specification.
+>>>>
+>>>> So say exactly that in the doc: that the *BSD's version of nc doesn't
+>>>> need the port number specified with '-p' and you're covered.
+>>> OK, I tried that in the attached patch.
+>>> I'm not sure if every exeption needs to/should be documented, though.
+>>>
+>>> >From 3cdeac3e814471053129145c5fa8391acb365fd8 Mon Sep 17 00:00:00 2001
+>>> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+>>> Date: Sat, 28 Jul 2012 12:32:49 +0200
+>>> Subject: [PATCH] netconsole.txt: non-BSD versions of nc(1) require '-p'
+>>>  switch
+>>>
+>>> Gentoo for example uses non-BSD versions of nc(1) which require
+>>> the '-p' switch to specify the listening port.
+>>>
+>>> ---
+>>> Documentation/networking/netconsole.txt |    3 ++-
+>>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> Did this ever resolve to a specific recommended patch? The one at the
+> start of the thread:
+>
+>  http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/01995.html
+>
+> Apparently isn't it...?
+
+Sorry for the delay.
+I tested the situation on a few distributions and am still thinking
+about a proper way to write it in a way without netconsole.txt becoming
+a kind of "netcat.txt".
+
+I would be glad about comments to what I currently have -- also, because
+I am not a native English speaker:
+
+------------------------------------------------------------------------
+The remote host can run syslogd or netcat to receive the kernel
+messages.  On distributions using a BSD-based netcat version
+(e.g. Fedora, openSUSE and Ubuntu) the listening port must be
+specified without the -p switch:
+
+'nc -u -l -p <port>' / 'nc -u -l <port>' or
+'netcat -u -l -p <port>' / 'netcat -u -l <port>'
+------------------------------------------------------------------------
+
+At the end, I also attach what I have noted during the tests with the
+different distributions.
+
+Dirk
+
+------------------------------------------------------------------------
+Problem on systems where the gnu-netcat package provides a symbolic
+link /usr/bin/nc -> /usr/bin/netcat:
+
+gnu-netcat requires -p to specify the local port but does not complain
+if invoked as `nc -l -u <port>'; you need to use -v to see that it
+does not do what you might expect:
+
+# nc -l -u 4444 -v
+Warning: Inverse name lookup failed for `0.0.17.92'
+------------------------------------------------------------------------
+
+Distro		Package						needs -p
+		Command invocation
+========================================================================
+Arch		gnu-netcat					yes
+(Website	nc | netcat
+ documentation)
+		openbsd-netcat					no
+		nc.openbsd
+------------------------------------------------------------------------
+Debian-6.0.5	netcat-openbsd					no 
+		nc | netcat | nc.openbsd		   
+		                                   
+		netcat / netcat-traditional (preinstalled)	yes
+		nc | netcat
+		                                   
+		netcat6						yes
+		nc | netcat | nc6
+------------------------------------------------------------------------
+Fedora-17	nc (preinstalled)				no
+		nc
+
+		nc6
+		nc6						yes
+------------------------------------------------------------------------
+Gentoo		gnu-netcat					yes
+		netcat
+
+		netcat						yes
+		nc
+
+		netcat6						yes
+		nc | nc6
+------------------------------------------------------------------------
+OpenSUSE-12.1	netcat-openbsd					no
+		nc | netcat
+------------------------------------------------------------------------
+Ubuntu-12.04	netcat-openbsd (preinstalled)			no 
+Desktop		nc | netcat | nc.openbsd
+		                                   
+		netcat / netcat-traditional			yes
+		nc | netcat		   
+		                                   
+		netcat6						yes
+		nc | netcat | nc6
+------------------------------------------------------------------------
+
