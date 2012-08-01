@@ -1,173 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab2HAGwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 02:52:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56334 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753826Ab2HAGwu convert rfc822-to-8bit (ORCPT
+	id S1754125Ab2HAG7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 02:59:11 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:2322 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab2HAG7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 02:52:50 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Subject: RE: [PATCH] pwm_backlight: Add device tree support for Low
- Threshold Brightness
-Thread-Topic: [PATCH] pwm_backlight: Add device tree support for Low
- Threshold Brightness
-Thread-Index: AQHNamJlzd+YdPIDHUOkbO/Lje1a5JdBEF2AgACOp9A=
-Date: Wed, 1 Aug 2012 06:51:21 +0000
-Deferred-Delivery: Wed, 1 Aug 2012 06:51:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E97C4C9@DBDE01.ent.ti.com>
-References: <1343219042-4371-1-git-send-email-avinashphilip@ti.com>
- <20120730065805.GB15245@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120730065805.GB15245@avionic-0098.mockup.avionic-design.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 1 Aug 2012 02:59:09 -0400
+Date: Wed, 1 Aug 2012 08:58:57 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] platform: Add support for automatic device IDs
+Message-ID: <20120801085857.0304cf0a@endymion.delvare>
+In-Reply-To: <20120731235059.GA5702@kroah.com>
+References: <20120727221459.144855ba@endymion.delvare>
+	<20120731235059.GA5702@kroah.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 12:28:05, Thierry Reding wrote:
-> On Wed, Jul 25, 2012 at 05:54:02PM +0530, Philip, Avinash wrote:
-> > Low Threshold Brightness should be configured to have a linear relation
-> > in brightness scale. This patch adds device tree support for low
-> > threshold brightness as optional one for pwm_backlight.
-> 
-> I think this should be more explicit as to why this is required, perhaps
-> something like this:
-> 
-> 	Some backlights perform poorly when driven by a PWM with a short
-> 	duty-cycle. For such devices, the low threshold can be used to
-> 	specify a lower bound for the duty-cycle and should be chosen to
-> 	exclude the problematic range.
-> 
-> 	This patch adds support for an optional low-threshold-brightness
-> 	property.
-
-Ok I will correct it.
-
-> 
-> Perhaps a similar explanation should be given somewhere else instead of
-> just the changelog. It took me some time to understand what exactly this
-> low threshold means and I think it'd make sense to write this kind of
-> information down somewhere. I'll see if I can make time to add a bit of
-> documentation somewhere below Documentation/backlight perhaps.
-> 
-> > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
-> > ---
-> > :100644 100644 1e4fc72... 5c54380... M	Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-> > :100644 100644 995f016... 4965408... M	drivers/video/backlight/pwm_bl.c
-> >  .../bindings/video/backlight/pwm-backlight.txt     |   21 ++++++++++++++++++++
-> >  drivers/video/backlight/pwm_bl.c                   |    5 ++++
-> >  2 files changed, 26 insertions(+), 0 deletions(-)
+On Tue, 31 Jul 2012 16:50:59 -0700, Greg KH wrote:
+> On Fri, Jul 27, 2012 at 10:14:59PM +0200, Jean Delvare wrote:
+> > Right now we have support for explicit platform device IDs, as well as
+> > ID-less platform devices when a given device type can only have one
+> > instance. However there are cases where multiple instances of a device
+> > type can exist, and their IDs aren't (and can't be) known in advance
+> > and do not matter. In that case we need automatic device IDs to avoid
+> > device name collisions.
 > > 
-> > diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-> > index 1e4fc72..5c54380 100644
-> > --- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-> > +++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-> > @@ -14,6 +14,8 @@ Required properties:
-> >  Optional properties:
-> >    - pwm-names: a list of names for the PWM devices specified in the
-> >                 "pwms" property (see PWM binding[0])
-> > +  - low_threshold_brightness: brightness threshold low level. (get linear
-> > +		 scales in brightness in low end of brightness levels)
+> > I am using magic ID value -2 (PLATFORM_DEVID_AUTO) for this, similar
+> > to -1 for ID-less devices. The automatically allocated device IDs are
+> > global (to avoid an additional per-driver cost.) We keep note that the
+> > ID was automatically allocated so that it can be freed later.
+> > 
+> > Note that we also restore the ID to PLATFORM_DEVID_AUTO on error and
+> > device deletion, to avoid avoid unexpected behavior on retry. I don't
+> > really expect retries on platform device addition, but better safe
+> > than sorry.
+> > 
+> > Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> The convention is to use dashes, not underscores, in device tree
-> property names, so this should be "low-threshold-brightness". I'd also
-> omit the comment in parentheses because the DT binding document
-> shouldn't specify any particular use-case. However I think it'd make
-> sense to add some information about the number space of the low
-> threshold value.
+> Looks sane to me, want me to queue it up for 3.7?
 
-Ok, I will correct it.
+Yes, please!
 
-> 
-> Maybe we should also rethink how the low threshold is handled in cases
-> where the brightness levels are used. I'm not sure it makes sense to
-> specify the low threshold as a value relative to the range given by the
-> levels. Perhaps it is more meaningful to specify it as relative to the
-> period/duty-cycle.
-> 
-> >  
-> >  [0]: Documentation/devicetree/bindings/pwm/pwm.txt
-> >  
-> > @@ -26,3 +28,22 @@ Example:
-> >  		brightness-levels = <0 4 8 16 32 64 128 255>;
-> >  		default-brightness-level = <6>;
-> >  	};
-> > +
-> > +Example for brightness_threshold_level:
-> > +
-> > +	backlight {
-> > +		compatible	= "pwm-backlight";
-> > +		pwms = <&pwm 0 50000>;
-> > +
-> > +		brightness-levels = <0 4 8 16 32 64 128 255>;
-> > +		default-brightness-level = <6>;
-> > +		low_threshold_brightness = <50>;
-> > +	};
-> > +};
-> 
-> I think you can just merge the low-threshold-brightness with the
-> previous example.
-
-Ok I will check and correct it.
-
-> 
-> > +Note:
-> > +Low threshold support is required to have linear brightness scale from
-> > +0 to max. For some panels, backlight absent on low end of brightness
-> > +scale. So support for Low Threshold been required. So that the scale of
-> > +brightness changed from Low Threshold to Max in scales defined in
-> > +brightness-levels. In this example 20% maximum brightness scale should
-> > +be required to turn on panel backlight.
-> 
-> I think this kind of documentation doesn't belong in the device tree
-> binding. I'll work something like that into the proper documentation.
-> 
-> > diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-> > index 995f016..4965408 100644
-> > --- a/drivers/video/backlight/pwm_bl.c
-> > +++ b/drivers/video/backlight/pwm_bl.c
-> > @@ -143,6 +143,11 @@ static int pwm_backlight_parse_dt(struct device *dev,
-> >  
-> >  		data->dft_brightness = value;
-> >  		data->max_brightness--;
-> > +
-> > +		ret = of_property_read_u32(node, "low_threshold_brightness",
-> > +					   &value);
-> > +		if (!ret)
-> > +			data->lth_brightness = value;
-> >  	}
-> 
-> This obviously should also be low-threshold-brightness.
-
-I will change to
-
-ret = of_property_read_u32(node, " low-threshold-brightness ",
-
-Thanks
-Avinash
-
-> 
-> Thierry
-> 
-
+Thanks,
+-- 
+Jean Delvare
