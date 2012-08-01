@@ -1,240 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab2HAS16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 14:27:58 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:50529 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab2HAS14 (ORCPT
+	id S1755573Ab2HAS3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 14:29:07 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:60194 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab2HAS3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 14:27:56 -0400
-Message-ID: <50197527.3070007@gmail.com>
-Date: Wed, 01 Aug 2012 13:27:51 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 1 Aug 2012 14:29:03 -0400
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        linaro-dev@lists.linaro.org, Ian.Campbell@citrix.com, arnd@arndb.de,
-        konrad.wilk@oracle.com, catalin.marinas@arm.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 01/24] arm: initial Xen support
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-1-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1343316846-25860-1-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <CAG4TOxONLJnBaY7N5x7Kfi+dwCb507QPqX9s_Wuef10+RzM=AQ@mail.gmail.com>
+References: <20120801133835.GH5470@ics.muni.cz>
+	<CAG4TOxONLJnBaY7N5x7Kfi+dwCb507QPqX9s_Wuef10+RzM=AQ@mail.gmail.com>
+Date: Wed, 1 Aug 2012 11:29:02 -0700
+X-Google-Sender-Auth: mJt3zBY8i-Dqepg-vxjgMeQTwVo
+Message-ID: <CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
+Subject: Re: mellanox mlx4_core and SR-IOV
+From: Yinghai Lu <yinghai@kernel.org>
+To: Roland Dreier <roland@kernel.org>
+Cc: Lukas Hejtmanek <xhejtman@ics.muni.cz>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 10:33 AM, Stefano Stabellini wrote:
-> - Basic hypervisor.h and interface.h definitions.
-> - Skelethon enlighten.c, set xen_start_info to an empty struct.
-> - Do not limit xen_initial_domain to PV guests.
-> 
-> The new code only compiles when CONFIG_XEN is set, that is going to be
-> added to arch/arm/Kconfig in a later patch.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/arm/Makefile                     |    1 +
->  arch/arm/include/asm/hypervisor.h     |    6 +++
->  arch/arm/include/asm/xen/hypervisor.h |   19 ++++++++++
->  arch/arm/include/asm/xen/interface.h  |   64 +++++++++++++++++++++++++++++++++
+On Wed, Aug 1, 2012 at 10:37 AM, Roland Dreier <roland@kernel.org> wrote:
+> On Wed, Aug 1, 2012 at 6:38 AM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
+>> [    3.558296] mlx4_core 0000:02:00.0: not enough MMIO resources for SR-IOV (nres: 0, iov->nres: 1)
+>
+> This comes from the core sriov_enable() function, not anything in mlx4.
+> (although my kernel doesn't have the print of nres in that message)
+>
+> Not sure what it means.
 
-These headers don't seem particularly ARM specific. Could they be moved
-to asm-generic or include/linux?
 
-Rob
 
->  arch/arm/xen/Makefile                 |    1 +
->  arch/arm/xen/enlighten.c              |   35 ++++++++++++++++++
->  include/xen/xen.h                     |    2 +-
->  7 files changed, 127 insertions(+), 1 deletions(-)
->  create mode 100644 arch/arm/include/asm/hypervisor.h
->  create mode 100644 arch/arm/include/asm/xen/hypervisor.h
->  create mode 100644 arch/arm/include/asm/xen/interface.h
->  create mode 100644 arch/arm/xen/Makefile
->  create mode 100644 arch/arm/xen/enlighten.c
-> 
-> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-> index 0298b00..70aaa82 100644
-> --- a/arch/arm/Makefile
-> +++ b/arch/arm/Makefile
-> @@ -246,6 +246,7 @@ endif
->  core-$(CONFIG_FPE_NWFPE)	+= arch/arm/nwfpe/
->  core-$(CONFIG_FPE_FASTFPE)	+= $(FASTFPE_OBJ)
->  core-$(CONFIG_VFP)		+= arch/arm/vfp/
-> +core-$(CONFIG_XEN)		+= arch/arm/xen/
->  
->  # If we have a machine-specific directory, then include it in the build.
->  core-y				+= arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
-> diff --git a/arch/arm/include/asm/hypervisor.h b/arch/arm/include/asm/hypervisor.h
-> new file mode 100644
-> index 0000000..b90d9e5
-> --- /dev/null
-> +++ b/arch/arm/include/asm/hypervisor.h
-> @@ -0,0 +1,6 @@
-> +#ifndef _ASM_ARM_HYPERVISOR_H
-> +#define _ASM_ARM_HYPERVISOR_H
-> +
-> +#include <asm/xen/hypervisor.h>
-> +
-> +#endif
-> diff --git a/arch/arm/include/asm/xen/hypervisor.h b/arch/arm/include/asm/xen/hypervisor.h
-> new file mode 100644
-> index 0000000..d7ab99a
-> --- /dev/null
-> +++ b/arch/arm/include/asm/xen/hypervisor.h
-> @@ -0,0 +1,19 @@
-> +#ifndef _ASM_ARM_XEN_HYPERVISOR_H
-> +#define _ASM_ARM_XEN_HYPERVISOR_H
-> +
-> +extern struct shared_info *HYPERVISOR_shared_info;
-> +extern struct start_info *xen_start_info;
-> +
-> +/* Lazy mode for batching updates / context switch */
-> +enum paravirt_lazy_mode {
-> +	PARAVIRT_LAZY_NONE,
-> +	PARAVIRT_LAZY_MMU,
-> +	PARAVIRT_LAZY_CPU,
-> +};
-> +
-> +static inline enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
-> +{
-> +	return PARAVIRT_LAZY_NONE;
-> +}
-> +
-> +#endif /* _ASM_ARM_XEN_HYPERVISOR_H */
-> diff --git a/arch/arm/include/asm/xen/interface.h b/arch/arm/include/asm/xen/interface.h
-> new file mode 100644
-> index 0000000..6c3ab59
-> --- /dev/null
-> +++ b/arch/arm/include/asm/xen/interface.h
-> @@ -0,0 +1,64 @@
-> +/******************************************************************************
-> + * Guest OS interface to ARM Xen.
-> + *
-> + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2011
-> + */
-> +
-> +#ifndef _ASM_ARM_XEN_INTERFACE_H
-> +#define _ASM_ARM_XEN_INTERFACE_H
-> +
-> +#include <linux/types.h>
-> +
-> +#define __DEFINE_GUEST_HANDLE(name, type) \
-> +	typedef type * __guest_handle_ ## name
-> +
-> +#define DEFINE_GUEST_HANDLE_STRUCT(name) \
-> +	__DEFINE_GUEST_HANDLE(name, struct name)
-> +#define DEFINE_GUEST_HANDLE(name) __DEFINE_GUEST_HANDLE(name, name)
-> +#define GUEST_HANDLE(name)        __guest_handle_ ## name
-> +
-> +#define set_xen_guest_handle(hnd, val)			\
-> +	do {						\
-> +		if (sizeof(hnd) == 8)			\
-> +			*(uint64_t *)&(hnd) = 0;	\
-> +		(hnd) = val;				\
-> +	} while (0)
-> +
-> +#ifndef __ASSEMBLY__
-> +/* Guest handles for primitive C types. */
-> +__DEFINE_GUEST_HANDLE(uchar, unsigned char);
-> +__DEFINE_GUEST_HANDLE(uint,  unsigned int);
-> +__DEFINE_GUEST_HANDLE(ulong, unsigned long);
-> +DEFINE_GUEST_HANDLE(char);
-> +DEFINE_GUEST_HANDLE(int);
-> +DEFINE_GUEST_HANDLE(long);
-> +DEFINE_GUEST_HANDLE(void);
-> +DEFINE_GUEST_HANDLE(uint64_t);
-> +DEFINE_GUEST_HANDLE(uint32_t);
-> +
-> +/* Maximum number of virtual CPUs in multi-processor guests. */
-> +#define MAX_VIRT_CPUS 1
-> +
-> +struct arch_vcpu_info { };
-> +struct arch_shared_info { };
-> +
-> +/* XXX: Move pvclock definitions some place arch independent */
-> +struct pvclock_vcpu_time_info {
-> +	u32   version;
-> +	u32   pad0;
-> +	u64   tsc_timestamp;
-> +	u64   system_time;
-> +	u32   tsc_to_system_mul;
-> +	s8    tsc_shift;
-> +	u8    flags;
-> +	u8    pad[2];
-> +} __attribute__((__packed__)); /* 32 bytes */
-> +
-> +struct pvclock_wall_clock {
-> +	u32   version;
-> +	u32   sec;
-> +	u32   nsec;
-> +} __attribute__((__packed__));
-> +#endif
-> +
-> +#endif /* _ASM_ARM_XEN_INTERFACE_H */
-> diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
-> new file mode 100644
-> index 0000000..0bad594
-> --- /dev/null
-> +++ b/arch/arm/xen/Makefile
-> @@ -0,0 +1 @@
-> +obj-y		:= enlighten.o
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> new file mode 100644
-> index 0000000..d27c2a6
-> --- /dev/null
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -0,0 +1,35 @@
-> +#include <xen/xen.h>
-> +#include <xen/interface/xen.h>
-> +#include <xen/interface/memory.h>
-> +#include <xen/platform_pci.h>
-> +#include <asm/xen/hypervisor.h>
-> +#include <asm/xen/hypercall.h>
-> +#include <linux/module.h>
-> +
-> +struct start_info _xen_start_info;
-> +struct start_info *xen_start_info = &_xen_start_info;
-> +EXPORT_SYMBOL_GPL(xen_start_info);
-> +
-> +enum xen_domain_type xen_domain_type = XEN_NATIVE;
-> +EXPORT_SYMBOL_GPL(xen_domain_type);
-> +
-> +struct shared_info xen_dummy_shared_info;
-> +struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
-> +
-> +DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
-> +
-> +/* XXX: to be removed */
-> +__read_mostly int xen_have_vector_callback;
-> +EXPORT_SYMBOL_GPL(xen_have_vector_callback);
-> +
-> +int xen_platform_pci_unplug = XEN_UNPLUG_ALL;
-> +EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
-> +
-> +int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
-> +			       unsigned long addr,
-> +			       unsigned long mfn, int nr,
-> +			       pgprot_t prot, unsigned domid)
-> +{
-> +	return -ENOSYS;
-> +}
-> +EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
-> diff --git a/include/xen/xen.h b/include/xen/xen.h
-> index a164024..2c0d3a5 100644
-> --- a/include/xen/xen.h
-> +++ b/include/xen/xen.h
-> @@ -23,7 +23,7 @@ extern enum xen_domain_type xen_domain_type;
->  #include <xen/interface/xen.h>
->  #include <asm/xen/hypervisor.h>
->  
-> -#define xen_initial_domain()	(xen_pv_domain() && \
-> +#define xen_initial_domain()	(xen_domain() && \
->  				 xen_start_info->flags & SIF_INITDOMAIN)
->  #else  /* !CONFIG_XEN_DOM0 */
->  #define xen_initial_domain()	(0)
-> 
+On Wed, Aug 1, 2012 at 10:37 AM, Roland Dreier <roland@kernel.org> wrote:
+> On Wed, Aug 1, 2012 at 6:38 AM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
+>> [    3.558296] mlx4_core 0000:02:00.0: not enough MMIO resources for SR-IOV (nres: 0, iov->nres: 1)
+>
+> This comes from the core sriov_enable() function, not anything in mlx4.
+> (although my kernel doesn't have the print of nres in that message)
+>
+> Not sure what it means.
 
+iov bar is not assigned by BIOS, and kernel can not find range for it too.
+
+Lukas, can you post whole boot log with PCI_DEBUG enabled? That will
+tell exact why kernel does not assign them.
+
+Recent kernel from 3.4... should enable realloc when SRIOV bar is not assigned.
+
+Thanks
+
+Yinghai
