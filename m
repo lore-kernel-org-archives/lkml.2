@@ -1,254 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab2HAP47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:56:59 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59166 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab2HAP45 (ORCPT
+	id S1755943Ab2HAP5G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:57:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60093 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab2HAP5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:56:57 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v3 11/32] PCI/ASPM: use PCIe capabilities access functions to simplify implementation
-Date: Wed,  1 Aug 2012 23:54:16 +0800
-Message-Id: <1343836477-7287-12-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+	Wed, 1 Aug 2012 11:57:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALnj_=4r0qdrNUbXmS=q=sk11PZ-Q0z=wPO5wR_DzR4HjnMdqw@mail.gmail.com>
+References: <CALnj_=4r0qdrNUbXmS=q=sk11PZ-Q0z=wPO5wR_DzR4HjnMdqw@mail.gmail.com>
+From: Peter Moody <pmoody@google.com>
+Date: Wed, 1 Aug 2012 08:56:28 -0700
+Message-ID: <CALnj_=5qfAxtKN_T+eoAPCswZPrWmKmOK5HSTwCNZV0s08f_qw@mail.gmail.com>
+Subject: Re: Oops in audit_copy_inode
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@google.com>, mszeredi@suse.cz, viro@zeniv.linux.org.uk,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+This time with a cleaner Oops:
 
-Use PCIe capabilities access functions to simplify PCIe ASPM implementation.
+Pid: 2643, comm: cc1 Not tainted 3.5.0-rc6-at17+ #33 LENOVO 4291AK7/4291AK7
+RIP: 0010:[<ffffffff810cec30>]  [<ffffffff810cec30>] audit_copy_inode+0x10/0x90
+RSP: 0018:ffff8801f88dfc58  EFLAGS: 00010282
+RAX: ffff8801fb320000 RBX: ffff8801f887c508 RCX: 000000000000c7e8
+RDX: 0000000000000000 RSI: ffff8801f3f1d970 RDI: ffff8801f887c508
+RBP: ffff8801f88dfc88 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000000 R12: ffff8801f3f1d970
+R13: ffff8801f887c4a8 R14: 0000000000000000 R15: 0000000000000000
+FS: 00007fd6b9473700(0000) GS:ffff880215200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000040 CR3: 000000020f6a3000 CR4: 00000000000407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process cc1 (pid: 2643, threadinfo ffff8801f88de000, task ffff8801fb320000)
+Stack:
+ ffffffff8161c6fe ffff8801f887c508 ffff8801f3f1d970 ffff8801f887c4a8
+ ffff8801f887c508 ffff8801f3f1d970 ffff8801f88dfcf8 ffffffff810d237c
+ ffffffff810d22bb 0000000000000000 ffff8801f3f1d970 ffff8801f4575e40
+Call Trace:
+[<ffffffff8161c6fe>] ? mutex_unlock+0xe/0x10
+[<ffffffff810d237c>] __audit_inode+0x13c/0x2a0
+[<ffffffff810d22bb>] ? __audit_inode+0x7b/0x2a0
+[<ffffffff8117b44c>] do_last+0x7ac/0xa90
+[<ffffffff8117cad9>] path_openat+0xd9/0x410
+[<ffffffff81087f2d>] ? sched_clock_cpu+0xbd/0x110
+[<ffffffff8101a7a3>] ? native_sched_clock+0x13/0x80
+[<ffffffff8101a819>] ? sched_clock+0x9/0x10
+[<ffffffff8117cf32>] do_filp_open+0x42/0xa0
+[<ffffffff8161ed9b>] ? _raw_spin_unlock+0x2b/0x40
+[<ffffffff8118a2c2>] ? alloc_fd+0xd2/0x120
+[<ffffffff8116c2f8>] do_sys_open+0xf8/0x1d0
+[<ffffffff810d1a8c>] ? __audit_syscall_entry+0xcc/0x310
+[<ffffffff8116c3f1>] sys_open+0x21/0x30
+[<ffffffff81627529>] system_call_fastpath+0x16/0x1b
+Code: 00 00 c7 45
+cc 1f 00 00 00 e9 2c ff ff ff 66 66 66 66 2e 0f 1f 84 00 00 00 00 00
+55 48 89 e5 41 54 53 48 83 ec 20 66 66 66 66 90 <48> 8b 42 40 49 89 f4
+48 8d 77 34 48 89 fb 48 89 47 18 48 8b 42
+RIP [<ffffffff810cec30>] audit_copy_inode+0x10/0x90
+ RSP <ffff8801f88dfc58>
+CR2: 0000000000000040
+---[ end trace bcccee9a00e71a3b ]---
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/pci/pcie/aspm.c |   69 ++++++++++++++++-------------------------------
- 1 file changed, 23 insertions(+), 46 deletions(-)
 
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index 2591603..a66860f 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -125,21 +125,17 @@ static int policy_to_clkpm_state(struct pcie_link_state *link)
- 
- static void pcie_set_clkpm_nocheck(struct pcie_link_state *link, int enable)
- {
--	int pos;
- 	u16 reg16;
- 	struct pci_dev *child;
- 	struct pci_bus *linkbus = link->pdev->subordinate;
- 
- 	list_for_each_entry(child, &linkbus->devices, bus_list) {
--		pos = pci_pcie_cap(child);
--		if (!pos)
--			return;
--		pci_read_config_word(child, pos + PCI_EXP_LNKCTL, &reg16);
-+		pci_pcie_capability_read_word(child, PCI_EXP_LNKCTL, &reg16);
- 		if (enable)
- 			reg16 |= PCI_EXP_LNKCTL_CLKREQ_EN;
- 		else
- 			reg16 &= ~PCI_EXP_LNKCTL_CLKREQ_EN;
--		pci_write_config_word(child, pos + PCI_EXP_LNKCTL, reg16);
-+		pci_pcie_capability_write_word(child, PCI_EXP_LNKCTL, reg16);
- 	}
- 	link->clkpm_enabled = !!enable;
- }
-@@ -157,7 +153,7 @@ static void pcie_set_clkpm(struct pcie_link_state *link, int enable)
- 
- static void pcie_clkpm_cap_init(struct pcie_link_state *link, int blacklist)
- {
--	int pos, capable = 1, enabled = 1;
-+	int capable = 1, enabled = 1;
- 	u32 reg32;
- 	u16 reg16;
- 	struct pci_dev *child;
-@@ -165,16 +161,13 @@ static void pcie_clkpm_cap_init(struct pcie_link_state *link, int blacklist)
- 
- 	/* All functions should have the same cap and state, take the worst */
- 	list_for_each_entry(child, &linkbus->devices, bus_list) {
--		pos = pci_pcie_cap(child);
--		if (!pos)
--			return;
--		pci_read_config_dword(child, pos + PCI_EXP_LNKCAP, &reg32);
-+		pci_pcie_capability_read_dword(child, PCI_EXP_LNKCAP, &reg32);
- 		if (!(reg32 & PCI_EXP_LNKCAP_CLKPM)) {
- 			capable = 0;
- 			enabled = 0;
- 			break;
- 		}
--		pci_read_config_word(child, pos + PCI_EXP_LNKCTL, &reg16);
-+		pci_pcie_capability_read_word(child, PCI_EXP_LNKCTL, &reg16);
- 		if (!(reg16 & PCI_EXP_LNKCTL_CLKREQ_EN))
- 			enabled = 0;
- 	}
-@@ -190,7 +183,7 @@ static void pcie_clkpm_cap_init(struct pcie_link_state *link, int blacklist)
-  */
- static void pcie_aspm_configure_common_clock(struct pcie_link_state *link)
- {
--	int ppos, cpos, same_clock = 1;
-+	int same_clock = 1;
- 	u16 reg16, parent_reg, child_reg[8];
- 	unsigned long start_jiffies;
- 	struct pci_dev *child, *parent = link->pdev;
-@@ -203,46 +196,43 @@ static void pcie_aspm_configure_common_clock(struct pcie_link_state *link)
- 	BUG_ON(!pci_is_pcie(child));
- 
- 	/* Check downstream component if bit Slot Clock Configuration is 1 */
--	cpos = pci_pcie_cap(child);
--	pci_read_config_word(child, cpos + PCI_EXP_LNKSTA, &reg16);
-+	pci_pcie_capability_read_word(child, PCI_EXP_LNKSTA, &reg16);
- 	if (!(reg16 & PCI_EXP_LNKSTA_SLC))
- 		same_clock = 0;
- 
- 	/* Check upstream component if bit Slot Clock Configuration is 1 */
--	ppos = pci_pcie_cap(parent);
--	pci_read_config_word(parent, ppos + PCI_EXP_LNKSTA, &reg16);
-+	pci_pcie_capability_read_word(parent, PCI_EXP_LNKSTA, &reg16);
- 	if (!(reg16 & PCI_EXP_LNKSTA_SLC))
- 		same_clock = 0;
- 
- 	/* Configure downstream component, all functions */
- 	list_for_each_entry(child, &linkbus->devices, bus_list) {
--		cpos = pci_pcie_cap(child);
--		pci_read_config_word(child, cpos + PCI_EXP_LNKCTL, &reg16);
-+		pci_pcie_capability_read_word(child, PCI_EXP_LNKCTL, &reg16);
- 		child_reg[PCI_FUNC(child->devfn)] = reg16;
- 		if (same_clock)
- 			reg16 |= PCI_EXP_LNKCTL_CCC;
- 		else
- 			reg16 &= ~PCI_EXP_LNKCTL_CCC;
--		pci_write_config_word(child, cpos + PCI_EXP_LNKCTL, reg16);
-+		pci_pcie_capability_write_word(child, PCI_EXP_LNKCTL, reg16);
- 	}
- 
- 	/* Configure upstream component */
--	pci_read_config_word(parent, ppos + PCI_EXP_LNKCTL, &reg16);
-+	pci_pcie_capability_read_word(parent, PCI_EXP_LNKCTL, &reg16);
- 	parent_reg = reg16;
- 	if (same_clock)
- 		reg16 |= PCI_EXP_LNKCTL_CCC;
- 	else
- 		reg16 &= ~PCI_EXP_LNKCTL_CCC;
--	pci_write_config_word(parent, ppos + PCI_EXP_LNKCTL, reg16);
-+	pci_pcie_capability_write_word(parent, PCI_EXP_LNKCTL, reg16);
- 
- 	/* Retrain link */
- 	reg16 |= PCI_EXP_LNKCTL_RL;
--	pci_write_config_word(parent, ppos + PCI_EXP_LNKCTL, reg16);
-+	pci_pcie_capability_write_word(parent, PCI_EXP_LNKCTL, reg16);
- 
- 	/* Wait for link training end. Break out after waiting for timeout */
- 	start_jiffies = jiffies;
- 	for (;;) {
--		pci_read_config_word(parent, ppos + PCI_EXP_LNKSTA, &reg16);
-+		pci_pcie_capability_read_word(parent, PCI_EXP_LNKSTA, &reg16);
- 		if (!(reg16 & PCI_EXP_LNKSTA_LT))
- 			break;
- 		if (time_after(jiffies, start_jiffies + LINK_RETRAIN_TIMEOUT))
-@@ -256,11 +246,10 @@ static void pcie_aspm_configure_common_clock(struct pcie_link_state *link)
- 	dev_printk(KERN_ERR, &parent->dev,
- 		   "ASPM: Could not configure common clock\n");
- 	list_for_each_entry(child, &linkbus->devices, bus_list) {
--		cpos = pci_pcie_cap(child);
--		pci_write_config_word(child, cpos + PCI_EXP_LNKCTL,
--				      child_reg[PCI_FUNC(child->devfn)]);
-+		pci_pcie_capability_write_word(child, PCI_EXP_LNKCTL,
-+					child_reg[PCI_FUNC(child->devfn)]);
- 	}
--	pci_write_config_word(parent, ppos + PCI_EXP_LNKCTL, parent_reg);
-+	pci_pcie_capability_write_word(parent, PCI_EXP_LNKCTL, parent_reg);
- }
- 
- /* Convert L0s latency encoding to ns */
-@@ -305,16 +294,14 @@ struct aspm_register_info {
- static void pcie_get_aspm_reg(struct pci_dev *pdev,
- 			      struct aspm_register_info *info)
- {
--	int pos;
- 	u16 reg16;
- 	u32 reg32;
- 
--	pos = pci_pcie_cap(pdev);
--	pci_read_config_dword(pdev, pos + PCI_EXP_LNKCAP, &reg32);
-+	pci_pcie_capability_read_dword(pdev, PCI_EXP_LNKCAP, &reg32);
- 	info->support = (reg32 & PCI_EXP_LNKCAP_ASPMS) >> 10;
- 	info->latency_encoding_l0s = (reg32 & PCI_EXP_LNKCAP_L0SEL) >> 12;
- 	info->latency_encoding_l1  = (reg32 & PCI_EXP_LNKCAP_L1EL) >> 15;
--	pci_read_config_word(pdev, pos + PCI_EXP_LNKCTL, &reg16);
-+	pci_pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &reg16);
- 	info->enabled = reg16 & PCI_EXP_LNKCTL_ASPMC;
- }
- 
-@@ -420,7 +407,6 @@ static void pcie_aspm_cap_init(struct pcie_link_state *link, int blacklist)
- 
- 	/* Get and check endpoint acceptable latencies */
- 	list_for_each_entry(child, &linkbus->devices, bus_list) {
--		int pos;
- 		u32 reg32, encoding;
- 		struct aspm_latency *acceptable =
- 			&link->acceptable[PCI_FUNC(child->devfn)];
-@@ -429,8 +415,7 @@ static void pcie_aspm_cap_init(struct pcie_link_state *link, int blacklist)
- 		    pci_pcie_type(child) != PCI_EXP_TYPE_LEG_END)
- 			continue;
- 
--		pos = pci_pcie_cap(child);
--		pci_read_config_dword(child, pos + PCI_EXP_DEVCAP, &reg32);
-+		pci_pcie_capability_read_dword(child, PCI_EXP_DEVCAP, &reg32);
- 		/* Calculate endpoint L0s acceptable latency */
- 		encoding = (reg32 & PCI_EXP_DEVCAP_L0S) >> 6;
- 		acceptable->l0s = calc_l0s_acceptable(encoding);
-@@ -444,13 +429,7 @@ static void pcie_aspm_cap_init(struct pcie_link_state *link, int blacklist)
- 
- static void pcie_config_aspm_dev(struct pci_dev *pdev, u32 val)
- {
--	u16 reg16;
--	int pos = pci_pcie_cap(pdev);
--
--	pci_read_config_word(pdev, pos + PCI_EXP_LNKCTL, &reg16);
--	reg16 &= ~0x3;
--	reg16 |= val;
--	pci_write_config_word(pdev, pos + PCI_EXP_LNKCTL, reg16);
-+	pci_pcie_capability_change_word(pdev, PCI_EXP_LNKCTL, val, 0x3);
- }
- 
- static void pcie_config_aspm_link(struct pcie_link_state *link, u32 state)
-@@ -505,7 +484,6 @@ static void free_link_state(struct pcie_link_state *link)
- static int pcie_aspm_sanity_check(struct pci_dev *pdev)
- {
- 	struct pci_dev *child;
--	int pos;
- 	u32 reg32;
- 
- 	/*
-@@ -513,8 +491,7 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
- 	 * very strange. Disable ASPM for the whole slot
- 	 */
- 	list_for_each_entry(child, &pdev->subordinate->devices, bus_list) {
--		pos = pci_pcie_cap(child);
--		if (!pos)
-+		if (!pci_is_pcie(child))
- 			return -EINVAL;
- 
- 		/*
-@@ -530,7 +507,7 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
- 		 * Disable ASPM for pre-1.1 PCIe device, we follow MS to use
- 		 * RBER bit to determine if a function is 1.1 version device
- 		 */
--		pci_read_config_dword(child, pos + PCI_EXP_DEVCAP, &reg32);
-+		pci_pcie_capability_read_dword(child, PCI_EXP_DEVCAP, &reg32);
- 		if (!(reg32 & PCI_EXP_DEVCAP_RBER) && !aspm_force) {
- 			dev_printk(KERN_INFO, &child->dev, "disabling ASPM"
- 				" on pre-1.1 PCIe device.  You can enable it"
+On Tue, Jul 31, 2012 at 4:02 PM, Peter Moody <pmoody@google.com> wrote:
+> I seem to have a reliable oops from 3.5.0-rc6 from Linus's tree. I've
+> bisected it down to, I think, the following commit:
+>
+> 7157486541bffc0dfec912e21ae639b029dae3d3
+>
+> The Oops:
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.471368] Pid: 2643, comm:
+> cc1 Not tainted 3.5.0-rc6-at17+ #33 LENOVO 4291AK7/4291AK7
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.472342] RIP:
+> 0010:[<ffffffff810cec30>]  [<ffffffff810cec30>]
+> audit_copy_inode+0x10/0x90
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.473300] RSP:
+> 0018:ffff8801f88dfc58  EFLAGS: 00010282
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.474253] RAX:
+> ffff8801fb320000 RBX: ffff8801f887c508 RCX: 000000000000c7e8
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.475210] RDX:
+> 0000000000000000 RSI: ffff8801f3f1d970 RDI: ffff8801f887c508
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.476172] RBP:
+> ffff8801f88dfc88 R08: 0000000000000000 R09: 0000000000000000
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.477138] R10:
+> 0000000000000001 R11: 0000000000000000 R12: ffff8801f3f1d970
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.478236] R13:
+> ffff8801f887c4a8 R14: 0000000000000000 R15: 0000000000000000
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.479218] FS:
+> 00007fd6b9473700(0000) GS:ffff880215200000(0000)
+> knlGS:0000000000000000
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.480182] CS:  0010 DS: 0000
+> ES: 0000 CR0: 0000000080050033
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.481143] CR2:
+> 0000000000000040 CR3: 000000020f6a3000 CR4: 00000000000407e0
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.482142] DR0:
+> 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.483121] DR3:
+> 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.484094] Process cc1 (pid:
+> 2643, threadinfo ffff8801f88de000, task ffff8801fb320000)
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.485070] Stack:
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.486030]  ffffffff8161c6fe
+> ffff8801f887c508 ffff8801f3f1d970 ffff8801f887c4a8
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.487011]  ffff8801f887c508
+> ffff8801f3f1d970 ffff8801f88dfcf8 ffffffff810d237c
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.487995]  ffffffff810d22bb
+> 0000000000000000 ffff8801f3f1d970 ffff8801f4575e40
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.488981] Call Trace:
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.489957]
+> [<ffffffff8161c6fe>] ? mutex_unlock+0xe/0x10
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.490934]
+> [<ffffffff810d237c>] __audit_inode+0x13c/0x2a0
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.491927]
+> [<ffffffff810d22bb>] ? __audit_inode+0x7b/0x2a0
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.492916]
+> [<ffffffff8117b44c>] do_last+0x7ac/0xa90
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.493883]
+> [<ffffffff8117cad9>] path_openat+0xd9/0x410
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.494852]
+> [<ffffffff81087f2d>] ? sched_clock_cpu+0xbd/0x110
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.495817]
+> [<ffffffff8101a7a3>] ? native_sched_clock+0x13/0x80
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.496774]
+> [<ffffffff8101a819>] ? sched_clock+0x9/0x10
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.497721]
+> [<ffffffff8117cf32>] do_filp_open+0x42/0xa0
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.498663]
+> [<ffffffff8161ed9b>] ? _raw_spin_unlock+0x2b/0x40
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.499609]
+> [<ffffffff8118a2c2>] ? alloc_fd+0xd2/0x120
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.500579]
+> [<ffffffff8116c2f8>] do_sys_open+0xf8/0x1d0
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.501514]
+> [<ffffffff810d1a8c>] ? __audit_syscall_entry+0xcc/0x310
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.502471]
+> [<ffffffff8116c3f1>] sys_open+0x21/0x30
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.503384]
+> [<ffffffff81627529>] system_call_fastpath+0x16/0x1b
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.504275] Code: 00 00 c7 45
+> cc 1f 00 00 00 e9 2c ff ff ff 66 66 66 66 2e 0f 1f 84 00 00 00 00 00
+> 55 48 89 e5 41 54 53 48 83 ec 20 66 66 66 66 90 <48> 8b 42 40 49 89 f4
+> 48 8d 77 34 48 89 fb 48 89 47 18 48 8b 42
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.506188] RIP
+> [<ffffffff810cec30>] audit_copy_inode+0x10/0x90
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.507108]  RSP <ffff8801f88dfc58>
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.508021] CR2: 0000000000000040
+> Jul 31 15:32:11 pmoody-x220 kernel: [  108.516307] ---[ end trace
+> bcccee9a00e71a3b ]---
+>
+> I can generate this oops by doing the following:
+>
+> sudo /etc/init.d/auditd start ; sudo auditctl -D ; sudo auditctl -a
+> exit,always -F arch=b64 -S chmod -k oops ; gcc hello.c
+>
+> The macro expansion in hello.c seems to be important.
+>
+> Other bits of likely pertinent information: Running Ubuntu.
+> auditd/auditctl version 1.7.13-1ubuntu2 (ancient..), gcc version
+> 4.4.3.
+>
+> Please let me know if there's anything else I can provide (but please
+> cc me, I'm not subscribed to lkml).
+>
+> Cheers,
+> peter
+>
+> --
+> Peter Moody      Google
+> Security Engineer  pgp:0xC3410038
+
+
+
 -- 
-1.7.9.5
-
+Peter Moody      Google    1.650.253.7306
+Security Engineer  pgp:0xC3410038
