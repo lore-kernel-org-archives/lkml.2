@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab2HAWx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 18:53:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48340 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754840Ab2HAWx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 18:53:57 -0400
-Message-ID: <5019B36A.4030604@zytor.com>
-Date: Wed, 01 Aug 2012 15:53:30 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Meredydd Luff <meredydd@senatehouse.org>
-CC: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Ingo Molnar <mingo@redhat.com>, Jeff Dike <jdike@addtoit.com>,
-        Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] [RFC] syscalls,x86: Add execveat() system call (v2)
-References: <1343859049-3632-1-git-send-email-meredydd@senatehouse.org>
-In-Reply-To: <1343859049-3632-1-git-send-email-meredydd@senatehouse.org>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753579Ab2HAWy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 18:54:58 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44381 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398Ab2HAWy4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 18:54:56 -0400
+Date: Thu, 2 Aug 2012 08:54:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Subject: linux-next: unable to fetch the moduleh tree
+Message-Id: <20120802085448.5fb877ce7747128ba354f605@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__2_Aug_2012_08_54_48_+1000_16/lLegNb=dvhQ6H"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2012 03:10 PM, Meredydd Luff wrote:
-> diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-> index 51171ae..c35df9e 100644
-> --- a/arch/x86/syscalls/syscall_64.tbl
-> +++ b/arch/x86/syscalls/syscall_64.tbl
-> @@ -319,6 +319,7 @@
->  310	64	process_vm_readv	sys_process_vm_readv
->  311	64	process_vm_writev	sys_process_vm_writev
->  312	64	kcmp			sys_kcmp
-> +313	64	execveat		stub_execveat
->  
->  #
->  # x32-specific system call numbers start at 512 to avoid cache impact
+--Signature=_Thu__2_Aug_2012_08_54_48_+1000_16/lLegNb=dvhQ6H
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think that should be common, not 64 (as should kcmp be).
+Hi Paul,
 
-	-hpa
+For the last few days, I have been getting this error when trying to
+fetch the moduleh tree:
 
+fatal: unable to connect to openlinux.windriver.com:
+openlinux.windriver.com[0: 192.124.127.100]: errno=3DConnection timed out
+
+Is this tree still in use?  Or should I just remove it from linux-next?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__2_Aug_2012_08_54_48_+1000_16/lLegNb=dvhQ6H
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQGbO4AAoJEECxmPOUX5FEeQMP/A1iXz6KhIwxGHijBFzYknun
+HDfQ70qHvEYM9IJfn59NDHQyY5NJOmoY4zlhcaYOGxy4hrKWgM7FhAiCVYTsOCsX
+aXyLh7QSQOIsNN8W59BLo6LLJiFeheTm/Of1dCTGGbmlxpOwbRom7zxFK/XpMh4Q
+nzATy4NNBJfaZ5TtaSSg3WRx48XVkhNhhH1eoV72D/qis+BTSc0A4YHVo2PpNOuz
+hyDjjRil4lo/Fm1MqpfBm7WRNXRj8PeUEuLtKHFc8y3GnK+dXY310zv/0t5wMTo4
+diS2lMiBDolkq2ienFp1VeiUtuKmXGhWJ3X10/yLK+N6PF8N/nBxZMSabxVX2FcN
+feATUt7r3WicA+0fI5YB7wo+0P72dbJYITpm263Wq4EJ232AWzTg9tNrfcKRlU3e
+TVJMsM667vtyYaLT8BBe5wswpwjVLtDCELZEQnOrQZzR+5OHPbmhsUZT4REXINw7
+47ik/pgWYtnpiv0zmhUEEim7IK0T5rYQksVASJSysesin2CnJ+ebjR0eB7CvHUJh
+QeUGl7C9GQfxqhpqV7kbs8LHXvJVseDB96nqfsmlNXqQvW76ubDWKdCt7dWc7Efg
+vzbM5jAunUrfDBadodgJV0MHftrxVC9SWx9O6XIXJMocLqDs7IZjUX4DyAA7aA4N
+CyFSEd7U1frexa+Vu/aU
+=BkOO
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__2_Aug_2012_08_54_48_+1000_16/lLegNb=dvhQ6H--
