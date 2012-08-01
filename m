@@ -1,81 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2HANAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 09:00:14 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:18300 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab2HANAM (ORCPT
+	id S1753049Ab2HANDa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 09:03:30 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:38155 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751710Ab2HAND2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 09:00:12 -0400
-X-IronPort-AV: E=Sophos;i="4.77,694,1336348800"; 
-   d="scan'208";a="13802856"
-Date: Wed, 1 Aug 2012 13:59:53 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "raghukt@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
-        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
-In-Reply-To: <87txwmlskp.fsf@abhimanyu.in.ibm.com>
-Message-ID: <alpine.DEB.2.02.1208011358100.4645@kaball.uk.xensource.com>
-References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com> <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com> <87ehpuqam8.fsf@linux.vnet.ibm.com> <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com>
- <878vg1rjts.fsf@linux.vnet.ibm.com> <1338901688.28282.168.camel@twins> <alpine.DEB.2.02.1206051422500.6030@kaball.uk.xensource.com> <alpine.DEB.2.02.1208011221140.4645@kaball.uk.xensource.com> <87txwmlskp.fsf@abhimanyu.in.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 1 Aug 2012 09:03:28 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18x4CJ5jJIxVF5YAlAKAIB1eulwaiYi+E0+cxV496
+	R5xvqKX3sqGhEw
+Message-ID: <50192917.2020809@gmx.de>
+Date: Wed, 01 Aug 2012 13:03:19 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: [GIT PULL] fbdev updates for 3.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Aug 2012, Nikunj A Dadhania wrote:
-> Hi Stefano,
-> 
-> On Wed, 1 Aug 2012 12:23:37 +0100, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > On Tue, 5 Jun 2012, Stefano Stabellini wrote:
-> > > On Tue, 5 Jun 2012, Peter Zijlstra wrote:
-> > > > On Tue, 2012-06-05 at 18:34 +0530, Nikunj A Dadhania wrote:
-> > > > > PeterZ, is 7/7 alright to be picked?
-> > > > 
-> > > > Yeah, I guess it is.. I haven't had time to rework my tlb series yet
-> > > > though. But these two patches together should make it work for x86.
-> > > > 
-> > > 
-> > > Good. Do you think they are OK for 3.5-rc2? Or is it better to wait for
-> > > 3.6?
-> > > 
-> > 
-> > Hello Nikunj,
-> > what happened to this patch series?
-> > In particular I am interested in the following two patches:
-> > 
-> > kvm,x86: RCU based table free
-> > Flush page-table pages before freeing them
-> > 
-> > do you still intend to carry on with the development? Is there anything
-> > missing that is preventing them from going upstream?
-> >
-> I have posted a v3 on the kvm-list:
-> http://www.spinics.net/lists/kvm/msg76955.html
-> 
-> I am carrying the above two patches(with one fix) in my series as well
-> for completeness. 
-> 
-> I have picked up the patches from PeterZ's "Unify TLB gather
-> implementations -v3"
-> http://article.gmane.org/gmane.linux.kernel.mm/81278
+Hi Linus,
 
-It is good to see that you are following up on this; since I didn't see
-any updates I got worried :)
-Cheers,
+please pull the changes below.
 
-Stefano
+
+Thanks,
+
+Florian Tobias Schandinat
+
+
+The following changes since commit 485802a6c524e62b5924849dd727ddbb1497cc71:
+
+  Linux 3.5-rc3 (2012-06-16 17:25:17 -0700)
+
+are available in the git repository at:
+
+  git://github.com/schandinat/linux-2.6.git fbdev-updates-for-3.6
+
+for you to fetch changes up to a0239073fd75489d25575cf3aaf71ab55b416020:
+
+  da8xx-fb: fix compile issue due to missing include (2012-07-29 16:47:40 +0000)
+
+----------------------------------------------------------------
+fbdev updates for 3.6
+
+It includes:
+- large updates for OMAP
+  - support for LCD3 overlay manager (omap5)
+  - omapdss output cleanup
+  - removal of passive matrix LCD support as there are no drivers for
+    such panels for DSS or DSS2 and nobody complained (cleanup)
+- large updates for SH Mobile
+  - overlay support
+  - separating MERAM (cache) from framebuffer driver
+- some updates for Exynos and da8xx-fb
+- various other small patches
+
+----------------------------------------------------------------
+Aditya Nellutla (1):
+      da8xx-fb: Rounding FB size to satisfy SGX buffer requirements
+
+Alexander Holler (1):
+      video/smscufx: fix line counting in fb_write
+
+Alexander Shiyan (1):
+      fb: epson1355fb: Fix section mismatch
+
+Archit Taneja (27):
+      OMAPDSS: Remove passive matrix LCD support (part 1)
+      OMAPDSS: Remove passive matrix LCD support (part 2)
+      OMAPDSS: Remove passive matrix LCD support (part 3)
+      OMAPDSS: Remove passive matrix LCD support (part 4)
+      OMAPDSS: Add some new fields to omap_video_timings
+      OMAPDSS: DISPLAY: Ignore newly added omap_video_timings fields for display timings sysfs file
+      OMAPDSS: DISPC: Configure newly added omap_video_timing fields
+      OMAPDSS: DISPC: Remove dispc_mgr_set_pol_freq()
+      OMAPFB: Map the newly added omap_video_timings fields with fb sync flags
+      OMAPDSS: Remove omap_panel_config enum from omap_dss_device
+      OMAPDSS: Add interlace parameter to omap_video_timings
+      OMAPDSS: DISPC/APPLY: Use interlace info in manager timings for dispc_ovl_setup()
+      OMAPFB: Map interlace field in omap_video_timings with fb vmode flags
+      OMAPDSS: HDMI: Remove custom hdmi_video_timings struct
+      OMAPDSS: DSI: Fix HSYNC, VSYNC and DE polarities between DISPC and DSI
+      OMAPDSS: DISPC: Change return type of dispc_mgr_set_clock_div()
+      OMAPDSS: Add struct to hold LCD overlay manager configuration
+      OMAPDSS: DPI: Configure dss_lcd_mgr_config struct with lcd manager parameters
+      OMAPDSS: RFBI: Configure dss_lcd_mgr_config struct with lcd manager parameters
+      OMAPDSS: DSI: Configure dss_lcd_mgr_config struct with lcd manager parameters
+      OMAPDSS: SDI: Configure dss_lcd_mgr_config struct with lcd manager parameters
+      OMAPDSS: APPLY: Remove DISPC writes to manager's lcd parameters in interface drivers
+      OMAPDSS: MANAGER: Check LCD related overlay manager parameters
+      OMAPDSS: APPLY: Remove usage of omap_dss_device from manual/auto update checks
+      OMAPDSS: DISPC: Remove a redundant function
+      OMAPDSS: RFBI: Use dss_mgr_enable to enable the overlay manager
+      OMAPDSS: OVERLAY: Clean up replication checking
+
+Benjamin Herrenschmidt (1):
+      fbdev: Make pixel_to_pat() failure mode more friendly
+
+Chandrabhanu Mahapatra (5):
+      OMAPDSS: Cleanup implementation of LCD channels
+      OMAPDSS: Add support for LCD3 channel
+      OMAPDSS: Add LCD3 overlay manager and Clock and IRQ support
+      OMAPDSS: Add dump and debug support for LCD3
+      ARM: OMAP2PLUS: DSS: Disable LCD3 output when resetting DSS
+
+Donghwa Lee (1):
+      video: exynos mipi dsi: Fix mipi dsi regulators handling issue
+
+Emil Goode (2):
+      grvga: Fix error handling issues
+      aty128fb: Fix coding style issues
+
+Florian Tobias Schandinat (5):
+      Merge branch 'planes' of git://linuxtv.org/pinchartl/fbdev into fbdev-next
+      Merge branch 'fbdev-for-linus' into fbdev-next
+      Merge branch 'for-next' of git://linuxtv.org/pinchartl/fbdev into fbdev-next
+      Merge branch 'for-florian' of git://gitorious.org/linux-omap-dss2/linux into fbdev-next
+      da8xx-fb: fix compile issue due to missing include
+
+Guennadi Liakhovetski (1):
+      fbdev: sh_mipi_dsi: fix a section mismatch
+
+Jassi Brar (2):
+      OMAPDSS: HDMI: Discard phy_tx_enabled member
+      OMAPDSS: HDMI: Replace spinlock with mutex in hdmi_check_hpd_state
+
+Jingoo Han (5):
+      video: exynos_dp: fix build warning due to uninitialized value
+      video: exynos_dp: remove duplicated declarations from header file
+      video: exynos_dp: fix wrong DPCD address during Link Training
+      video: exynos_dp: check the only INTERLANE_ALIGN_DONE bit during Link Training
+      video: exynos_dp: use usleep_range instead of delay
+
+Laurent Pinchart (13):
+      fbdev: sh_mobile_lcdc: Constify sh_mobile_lcdc_fix structure
+      fbdev: sh_mobile_lcdc: Rename fb operation handlers with a common prefix
+      fbdev: sh_mobile_lcdc: Implement overlays support
+      sh_mobile_meram: Rename operations to cache_[alloc|free|update]
+      sh_mobile_meram: Use direct function calls for the public API
+      sh_mobile_meram: Add direct MERAM allocation API
+      fbdev: sh_mobile_lcdc: Destroy mutex at remove time
+      fbdev: sh_mobile_lcdc: Fix line pitch computation
+      fbdev: sh_mobile_lcdc: Use channel configuration to initialize fb device
+      fbdev: sh_mobile_lcdc: Support horizontal panning
+      fbdev: sh_mobile_lcdc: Fix overlay registers update during pan operation
+      fbdev: sh_mobile_lcdc: Fix pan offset computation in YUV mode
+      fbdev: sh_mobile_lcdc: Fix vertical panning step
+
+Liu Ying (2):
+      mx3fb: support pan display with fb_set_var
+      mx3fb: avoid screen flash when panning with fb_set_var
+
+Manjunathappa, Prakash (6):
+      video: da8xx-fb rev2: fix disabling of palette completion interrupt
+      video: da8xx-fb: fix flicker due to 1 frame delay in updated frame
+      video: da8xx-fb: configure FIFO threshold to reduce underflow errors
+      arm: da850: configure LCDC fifo threshold
+      video: da8xx-fb: do clock reset of revision 2 LCDC before enabling
+      da8xx-fb: do not turn ON LCD backlight unless LCDC is enabled
+
+Ondrej Zary (1):
+      s3fb: Add Virge/MX (86C260)
+
+Paul Bolle (1):
+      video: backlight: remove unused header
+
+Paul Parsons (1):
+      video: w100fb: Reduce sleep mode battery discharge
+
+Peter Meerwald (1):
+      OMAPDSS: fix specification spelling in Kconfig
+
+Rajendra Nayak (1):
+      OMAPDSS: add clk_prepare_enable and clk_disable_unprepare
+
+Tomi Valkeinen (8):
+      Merge tag 'v3.5-rc2'
+      OMAPDSS: remove enum omap_dss_overlay_managers
+      OMAPDSS: Use PM notifiers for system suspend
+      OMAPDSS: fix warnings if CONFIG_PM_RUNTIME=n
+      Merge Misc DSS clean ups from Archit
+      Merge "Apply LCD manager related parameters" from Archit
+      OMAPDSS: Use PM notifiers for system suspend
+      OMAPDSS: fix warnings if CONFIG_PM_RUNTIME=n
+
+Yegor Yefremov (1):
+      da8xx-fb: add missing FB_BLANK operations
+
+ .../sysfs-devices-platform-sh_mobile_lcdc_fb       |   44 +
+ arch/arm/mach-davinci/devices-da8xx.c              |    1 +
+ arch/arm/mach-omap2/display.c                      |   25 +-
+ drivers/video/aty/aty128fb.c                       |  180 ++--
+ drivers/video/da8xx-fb.c                           |   78 ++-
+ drivers/video/epson1355fb.c                        |    8 +-
+ drivers/video/exynos/exynos_dp_core.c              |   23 +-
+ drivers/video/exynos/exynos_dp_core.h              |    4 -
+ drivers/video/exynos/exynos_dp_reg.c               |    4 +-
+ drivers/video/exynos/exynos_mipi_dsi.c             |    2 +-
+ drivers/video/exynos/s6e8ax0.h                     |   21 -
+ drivers/video/fb_draw.h                            |    7 +-
+ drivers/video/grvga.c                              |   47 +-
+ drivers/video/mx3fb.c                              |   55 +-
+ drivers/video/omap2/displays/panel-acx565akm.c     |   10 +-
+ drivers/video/omap2/displays/panel-generic-dpi.c   |  179 ++--
+ .../omap2/displays/panel-lgphilips-lb035q02.c      |    8 +-
+ drivers/video/omap2/displays/panel-n8x0.c          |    1 -
+ .../omap2/displays/panel-nec-nl8048hl11-01b.c      |    9 +-
+ drivers/video/omap2/displays/panel-picodlp.c       |    9 +-
+ .../video/omap2/displays/panel-sharp-ls037v7dw01.c |    9 +-
+ drivers/video/omap2/displays/panel-taal.c          |    1 -
+ drivers/video/omap2/displays/panel-tfp410.c        |    7 +-
+ .../video/omap2/displays/panel-tpo-td043mtea1.c    |    8 +-
+ drivers/video/omap2/dss/Kconfig                    |    4 +-
+ drivers/video/omap2/dss/apply.c                    |   91 ++-
+ drivers/video/omap2/dss/core.c                     |   43 +-
+ drivers/video/omap2/dss/dispc.c                    |  496 +++++-----
+ drivers/video/omap2/dss/dispc.h                    |   28 +
+ drivers/video/omap2/dss/display.c                  |   40 +-
+ drivers/video/omap2/dss/dpi.c                      |   64 +-
+ drivers/video/omap2/dss/dsi.c                      |  154 ++--
+ drivers/video/omap2/dss/dss.c                      |   21 +-
+ drivers/video/omap2/dss/dss.h                      |   54 +-
+ drivers/video/omap2/dss/dss_features.h             |    5 +-
+ drivers/video/omap2/dss/hdmi.c                     |  248 ++++-
+ drivers/video/omap2/dss/hdmi_panel.c               |    9 +-
+ drivers/video/omap2/dss/manager.c                  |   51 +-
+ drivers/video/omap2/dss/overlay.c                  |   33 +-
+ drivers/video/omap2/dss/rfbi.c                     |   42 +-
+ drivers/video/omap2/dss/sdi.c                      |   42 +-
+ drivers/video/omap2/dss/ti_hdmi.h                  |   21 +-
+ drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c          |   26 +-
+ drivers/video/omap2/dss/venc.c                     |   10 +-
+ drivers/video/omap2/omapfb/omapfb-main.c           |   51 +-
+ drivers/video/s3fb.c                               |   31 +-
+ drivers/video/sh_mipi_dsi.c                        |    7 +-
+ drivers/video/sh_mobile_lcdcfb.c                   | 1117 +++++++++++++++++---
+ drivers/video/sh_mobile_lcdcfb.h                   |    5 +-
+ drivers/video/sh_mobile_meram.c                    |  235 +++--
+ drivers/video/smscufx.c                            |    2 +-
+ drivers/video/w100fb.c                             |   12 +
+ include/video/da8xx-fb.h                           |    3 +
+ include/video/omapdss.h                            |   51 +-
+ include/video/sh_mobile_lcdc.h                     |    7 +
+ include/video/sh_mobile_meram.h                    |   71 +-
+ 56 files changed, 2654 insertions(+), 1160 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-devices-platform-sh_mobile_lcdc_fb
+ delete mode 100644 drivers/video/exynos/s6e8ax0.h
