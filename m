@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab2HAWqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 18:46:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64865 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755724Ab2HAWqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 18:46:00 -0400
-Date: Wed, 1 Aug 2012 15:45:56 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-Message-ID: <20120801224556.GF15477@google.com>
-References: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com>
- <1343757920-19713-2-git-send-email-levinsasha928@gmail.com>
- <20120731182330.GD21292@google.com>
- <50197348.9010101@gmail.com>
- <20120801182112.GC15477@google.com>
- <50197460.8010906@gmail.com>
- <20120801182749.GD15477@google.com>
- <50197E4A.7020408@gmail.com>
- <20120801202432.GE15477@google.com>
- <5019B0B4.1090102@gmail.com>
+	id S1756321Ab2HAWx6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 18:53:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48340 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754840Ab2HAWx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 18:53:57 -0400
+Message-ID: <5019B36A.4030604@zytor.com>
+Date: Wed, 01 Aug 2012 15:53:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5019B0B4.1090102@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Meredydd Luff <meredydd@senatehouse.org>
+CC: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Ingo Molnar <mingo@redhat.com>, Jeff Dike <jdike@addtoit.com>,
+        Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] [RFC] syscalls,x86: Add execveat() system call (v2)
+References: <1343859049-3632-1-git-send-email-meredydd@senatehouse.org>
+In-Reply-To: <1343859049-3632-1-git-send-email-meredydd@senatehouse.org>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 12:41:56AM +0200, Sasha Levin wrote:
-> How would your DEFINE_HASHTABLE look like if we got for the simple
-> 'struct hash_table' approach?
+On 08/01/2012 03:10 PM, Meredydd Luff wrote:
+> diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+> index 51171ae..c35df9e 100644
+> --- a/arch/x86/syscalls/syscall_64.tbl
+> +++ b/arch/x86/syscalls/syscall_64.tbl
+> @@ -319,6 +319,7 @@
+>  310	64	process_vm_readv	sys_process_vm_readv
+>  311	64	process_vm_writev	sys_process_vm_writev
+>  312	64	kcmp			sys_kcmp
+> +313	64	execveat		stub_execveat
+>  
+>  #
+>  # x32-specific system call numbers start at 512 to avoid cache impact
 
-I think defining a different enclosing anonymous struct which the
-requested number of array entries and then aliasing the actual
-hash_table to that symbol should work.  It's rather horrible and I'm
-not sure it's worth the trouble.
+I think that should be common, not 64 (as should kcmp be).
 
-Thanks.
+	-hpa
 
--- 
-tejun
