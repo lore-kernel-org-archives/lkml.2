@@ -1,46 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2HAP7w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:59:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755556Ab2HAP7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:59:50 -0400
-Date: Wed, 1 Aug 2012 11:59:39 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com, kzak@redhat.com,
-        psusi@ubuntu.com, maxim.patlasov@gmail.com
-Subject: Re: [patch 0/2] [V4] block: Support online resize of disk partitions
-Message-ID: <20120801155939.GK31946@redhat.com>
-References: <20120709213418.799759100@redhat.com>
- <20120801140708.GF31946@redhat.com>
- <50194FF7.6010209@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50194FF7.6010209@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756217Ab2HAQAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 12:00:06 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:62810 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756110Ab2HAP7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 11:59:51 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Ravi Anand <ravi.anand@qlogic.com>,
+        Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-driver@qlogic.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH v3 28/32] PCI/qla: use PCIe capabilities access functions to simplify implementation
+Date: Wed,  1 Aug 2012 23:54:33 +0800
+Message-Id: <1343836477-7287-29-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 05:49:11PM +0200, Jens Axboe wrote:
-> On 08/01/2012 04:07 PM, Vivek Goyal wrote:
-> > On Mon, Jul 09, 2012 at 05:34:18PM -0400, vivek.goyal2008@gmail.com wrote:
-> >> Hi,
-> >>
-> >> Few people have pinged me in rencent past about status of this patch, hence,
-> >> this is V4 of patch which adds support for online resizing of a partition.
-> >> This patch is based on previously posted patches by Phillip Susi. 
-> >>
-> > 
-> > Hi Jens,
-> > 
-> > Can you please consider partition resize patches for inclusion.
-> 
-> Vivek, they are in and were in the pull request sent out earlier today!
+From: Jiang Liu <jiang.liu@huawei.com>
 
-Great. I missed that. Thanks for including the patch.
+Use PCIe capabilities access functions to simplify QLA SCSI drivers'
+implementation.
 
-Vivek
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+---
+ drivers/scsi/qla2xxx/qla_init.c |    4 ++--
+ drivers/scsi/qla2xxx/qla_nx.c   |    8 ++------
+ drivers/scsi/qla4xxx/ql4_nx.c   |    4 +---
+ 3 files changed, 5 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
+index ca50847..a44653b 100644
+--- a/drivers/scsi/qla2xxx/qla_init.c
++++ b/drivers/scsi/qla2xxx/qla_init.c
+@@ -685,7 +685,7 @@ qla24xx_pci_config(scsi_qla_host_t *vha)
+ 		pcix_set_mmrbc(ha->pdev, 2048);
+ 
+ 	/* PCIe -- adjust Maximum Read Request Size (2048). */
+-	if (pci_find_capability(ha->pdev, PCI_CAP_ID_EXP))
++	if (pci_is_pcie(ha->pdev))
+ 		pcie_set_readrq(ha->pdev, 2048);
+ 
+ 	pci_disable_rom(ha->pdev);
+@@ -721,7 +721,7 @@ qla25xx_pci_config(scsi_qla_host_t *vha)
+ 	pci_write_config_word(ha->pdev, PCI_COMMAND, w);
+ 
+ 	/* PCIe -- adjust Maximum Read Request Size (2048). */
+-	if (pci_find_capability(ha->pdev, PCI_CAP_ID_EXP))
++	if (pci_is_pcie(ha->pdev))
+ 		pcie_set_readrq(ha->pdev, 2048);
+ 
+ 	pci_disable_rom(ha->pdev);
+diff --git a/drivers/scsi/qla2xxx/qla_nx.c b/drivers/scsi/qla2xxx/qla_nx.c
+index caf627b..be516e9 100644
+--- a/drivers/scsi/qla2xxx/qla_nx.c
++++ b/drivers/scsi/qla2xxx/qla_nx.c
+@@ -1615,13 +1615,11 @@ qla82xx_get_fw_offs(struct qla_hw_data *ha)
+ char *
+ qla82xx_pci_info_str(struct scsi_qla_host *vha, char *str)
+ {
+-	int pcie_reg;
+ 	struct qla_hw_data *ha = vha->hw;
+ 	char lwstr[6];
+ 	uint16_t lnk;
+ 
+-	pcie_reg = pci_find_capability(ha->pdev, PCI_CAP_ID_EXP);
+-	pci_read_config_word(ha->pdev, pcie_reg + PCI_EXP_LNKSTA, &lnk);
++	pci_pcie_capability_read_word(ha->pdev, PCI_EXP_LNKSTA, &lnk);
+ 	ha->link_width = (lnk >> 4) & 0x3f;
+ 
+ 	strcpy(str, "PCIe (");
+@@ -2497,7 +2495,6 @@ fw_load_failed:
+ int
+ qla82xx_start_firmware(scsi_qla_host_t *vha)
+ {
+-	int           pcie_cap;
+ 	uint16_t      lnk;
+ 	struct qla_hw_data *ha = vha->hw;
+ 
+@@ -2528,8 +2525,7 @@ qla82xx_start_firmware(scsi_qla_host_t *vha)
+ 	}
+ 
+ 	/* Negotiated Link width */
+-	pcie_cap = pci_find_capability(ha->pdev, PCI_CAP_ID_EXP);
+-	pci_read_config_word(ha->pdev, pcie_cap + PCI_EXP_LNKSTA, &lnk);
++	pci_pcie_capability_read_word(ha->pdev, PCI_EXP_LNKSTA, &lnk);
+ 	ha->link_width = (lnk >> 4) & 0x3f;
+ 
+ 	/* Synchronize with Receive peg */
+diff --git a/drivers/scsi/qla4xxx/ql4_nx.c b/drivers/scsi/qla4xxx/ql4_nx.c
+index 228b670..7e30158 100644
+--- a/drivers/scsi/qla4xxx/ql4_nx.c
++++ b/drivers/scsi/qla4xxx/ql4_nx.c
+@@ -1566,7 +1566,6 @@ qla4_8xxx_set_qsnt_ready(struct scsi_qla_host *ha)
+ static int
+ qla4_8xxx_start_firmware(struct scsi_qla_host *ha, uint32_t image_start)
+ {
+-	int pcie_cap;
+ 	uint16_t lnk;
+ 
+ 	/* scrub dma mask expansion register */
+@@ -1590,8 +1589,7 @@ qla4_8xxx_start_firmware(struct scsi_qla_host *ha, uint32_t image_start)
+ 	}
+ 
+ 	/* Negotiated Link width */
+-	pcie_cap = pci_find_capability(ha->pdev, PCI_CAP_ID_EXP);
+-	pci_read_config_word(ha->pdev, pcie_cap + PCI_EXP_LNKSTA, &lnk);
++	pci_pcie_capability_read_word(ha->pdev, PCI_EXP_LNKSTA, &lnk);
+ 	ha->link_width = (lnk >> 4) & 0x3f;
+ 
+ 	/* Synchronize with Receive peg */
+-- 
+1.7.9.5
+
