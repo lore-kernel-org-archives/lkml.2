@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab2HALaU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 07:30:20 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18831 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753633Ab2HALaS convert rfc822-to-8bit (ORCPT
+	id S1753913Ab2HALiD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 07:38:03 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54266 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab2HALiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 07:30:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 01 Aug 2012 04:30:01 -0700
-Subject: Re: How to use the generic thermal sysfs.
-From: Wei Ni <wni@nvidia.com>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Jean Delvare <khali@linux-fr.org>, "R, Durgadoss" <durgadoss.r@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@ger.kernel.org>,
-        Alex Courbot <acourbot@nvidia.com>
-In-Reply-To: <1343782972.1682.489.camel@rui.sh.intel.com>
-References: <1342088573.27605.101.camel@tegra-chromium-2>
-	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
-	 <1342144273.1682.237.camel@rui.sh.intel.com>
-	 <1342164616.27605.129.camel@tegra-chromium-2>
-	 <1342165278.1682.259.camel@rui.sh.intel.com>
-	 <1343295094.4042.24.camel@tegra-chromium-2>
-	 <1343352098.1682.447.camel@rui.sh.intel.com>
-	 <1343357901.4042.70.camel@tegra-chromium-2>
-	 <20120727093037.094335eb@endymion.delvare>
-	 <1343374793.1682.475.camel@rui.sh.intel.com>
-	 <1343386122.4042.88.camel@tegra-chromium-2>
-	 <1343782972.1682.489.camel@rui.sh.intel.com>
-Date: Wed, 1 Aug 2012 19:29:51 +0800
-Message-ID: <1343820591.2295.79.camel@tegra-chromium-2>
+	Wed, 1 Aug 2012 07:38:01 -0400
+Message-ID: <50191509.8030404@pengutronix.de>
+Date: Wed, 01 Aug 2012 13:37:45 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+CC: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH can-next v4] can: add tx/rx LED trigger support
+References: <5017C8E4.4020003@pengutronix.de> <1343772338-1526-1-git-send-email-fabio.baltieri@gmail.com> <5018F8B3.6080404@pengutronix.de> <20120801103032.GA1385@gmail.com>
+In-Reply-To: <20120801103032.GA1385@gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigC03E5205E9B19DD1A9AEE815"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-01 at 09:02 +0800, Zhang Rui wrote:
-> On 五, 2012-07-27 at 18:48 +0800, Wei Ni wrote:
-> > On Fri, 2012-07-27 at 15:39 +0800, Zhang Rui wrote:
-> > > On 五, 2012-07-27 at 09:30 +0200, Jean Delvare wrote:
-> > > > On Fri, 27 Jul 2012 10:58:21 +0800, Wei Ni wrote:
-> > > > > On Fri, 2012-07-27 at 09:21 +0800, Zhang Rui wrote:
-> > > > > > is it possible to program the sensor at this time, in your own thermal
-> > > > > > driver?
-> > > > > 
-> > > > > Since we are using the generic thermal driver lm90.c, I'm not sure if we
-> > > > > could program these limits in the generic driver, I think it's better to
-> > > > > have a generic interface to set the limits, so I wish to add a
-> > > > > callback .set_limits() in the generic thermal framework.
-> > > > 
-> > > > I can confirm that hwmon drivers do not set limits, it is up to
-> > > > user-space to do it if they want. So if there is a need to do so in the
-> > > > kernel itself, a proper interface at the generic thermal framework
-> > > > level seems appropriate.
-> > > > 
-> > > oh, setting limits from userspace?
-> > > I think you can program the senor when writing the trip point?
-> > > with this patch,
-> > > http://marc.info/?l=linux-acpi&m=134318814620429&w=2
-> > 
-> > Do you mean it can use .set_trip_temp() to set limits when writing the
-> > trip point? But I think this callback is used to change the trip_temp,
-> > it could not used to set the limits, in here the limit value is used to
-> > trigger the interrupt.
-> > 
-> yes, you are right. .set_trip_temp does not work.
-> 
-> usually, this is needed to re-program the sensor when the temperature
-> hits a trip point , right?
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigC03E5205E9B19DD1A9AEE815
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes, we need to re-program the sensor to set the limit value.
+On 08/01/2012 12:30 PM, Fabio Baltieri wrote:
+[...]
+>>> +void can_led_init(struct net_device *netdev)
+>>> +{
+>>> +	struct can_priv *priv =3D netdev_priv(netdev);
+>>> +	void *res;
+>>> +
+>>> +	res =3D devres_alloc(can_led_release, 0, GFP_KERNEL);
+>>                                             ^
+>> I'm not really sure if this is working. For example, pinctrl [1]
+>> allocates a double pointer here. The res pointer here and in
+>> can_led_release simply points to invalid memory. But as long as you
+>> don't dereference it, it should work.
+>>
+>> [1] http://lxr.free-electrons.com/source/drivers/pinctrl/core.c#L862
+>=20
+> Actually that's also used by libata-core (not in lxr yet) and dma-mappi=
+ng:
+>=20
+> http://lxr.free-electrons.com/source/drivers/base/dma-mapping.c#L193
+>=20
+> actually, res should point at the end of some internal devres structure=
+,
+> and is only used as return value in this case.
+>=20
+> Of course, in this case the release function can only use the struct
+> device pointer.
+>=20
+> I've run some fail test and ftraced the whole thing and it seems to wor=
+k
+> pretty good!  I'll send a v5 with the rename later.
 
-> 
-> can we make use of the thermal_zone_device_ops.notify()?
-> say we invoke .notify() in thermal_zone_device_update for each trip
-> point.
+Thanks for checking. I just noticed, the pinctrl usecase is a bit differe=
+nt.
 
-oh, it's a good idea, we can re-program the sensor in the .notify(), is
-it right?
-I will try it later, thanks for your suggestions.
-
-> 
-> thanks,
-> rui
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
+--------------enigC03E5205E9B19DD1A9AEE815
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAlAZFRAACgkQjTAFq1RaXHOrAQCgj/wB/GbHM032ywRp9JzCXWaS
+qywAnROqiNlNFCHFUc54uwgV+fzeYl/a
+=v+6P
+-----END PGP SIGNATURE-----
+
+--------------enigC03E5205E9B19DD1A9AEE815--
