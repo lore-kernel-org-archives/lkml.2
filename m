@@ -1,45 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab2HAWY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 18:24:26 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65525 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab2HAWYZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 18:24:25 -0400
-From: Meredydd Luff <meredydd@senatehouse.org>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Weinberger <richard@nod.at>,
-        Meredydd Luff <meredydd@senatehouse.org>
-Subject: [PATCH] um: Coding style fix in sys_execve()
-Date: Wed,  1 Aug 2012 23:23:54 +0100
-Message-Id: <1343859834-4168-1-git-send-email-meredydd@senatehouse.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756202Ab2HAW2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 18:28:41 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756075Ab2HAW2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 18:28:40 -0400
+Message-ID: <5019AD95.60707@nod.at>
+Date: Thu, 02 Aug 2012 00:28:37 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Meredydd Luff <meredydd@senatehouse.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] um: Coding style fix in sys_execve()
+References: <1343859834-4168-1-git-send-email-meredydd@senatehouse.org>
+In-Reply-To: <1343859834-4168-1-git-send-email-meredydd@senatehouse.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Submitting this as a separate patch per richard@nod.at's suggestion.
+On 02.08.2012 00:23, Meredydd Luff wrote:
+> Submitting this as a separate patch per richard@nod.at's suggestion.
+>
+> Signed-off-by: Meredydd Luff <meredydd@senatehouse.org>
 
-Signed-off-by: Meredydd Luff <meredydd@senatehouse.org>
----
- arch/um/kernel/exec.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Queued for 3.7.
 
-diff --git a/arch/um/kernel/exec.c b/arch/um/kernel/exec.c
-index 6cade93..e74ec80 100644
---- a/arch/um/kernel/exec.c
-+++ b/arch/um/kernel/exec.c
-@@ -80,7 +80,8 @@ long sys_execve(const char __user *file, const char __user *const __user *argv,
- 
- 	filename = getname(file);
- 	error = PTR_ERR(filename);
--	if (IS_ERR(filename)) goto out;
-+	if (IS_ERR(filename))
-+		goto out;
- 	error = execve1(filename, argv, env);
- 	putname(filename);
-  out:
--- 
-1.7.4.1
-
+Thanks,
+//richard
