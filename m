@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab2HAAxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 20:53:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40697 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab2HAAxb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 20:53:31 -0400
-Date: Tue, 31 Jul 2012 17:51:17 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alex Courbot <acourbot@nvidia.com>, Jean Pihet <j-pihet@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Liam Girdwood <lrg@ti.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        linux-pm@vger.kernel.org
-Subject: Re: Gethering power management/policy hw drivers under
- drivers/power/? (Re: [RFC][PATCH v3 1/3] runtime interpreted power
- sequences)
-Message-ID: <20120801005117.GA1798@lizard>
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
- <5015E8AE.8060404@nvidia.com>
- <20120730024049.GA10442@lizard>
- <201207302259.39396.rjw@sisk.pl>
+	id S1752850Ab2HAAzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 20:55:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2124 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751710Ab2HAAzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 20:55:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="191553008"
+Date: Wed, 1 Aug 2012 08:56:10 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+To: tglx@linutronix.de
+Cc: tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH 0/5 V2] x86: mce: Bugfixes, cleanups and a new
+ CMCI poll version
+Message-ID: <20120801005610.GA23536@gchen.bj.intel.com>
+Mail-Followup-To: tglx@linutronix.de, tony.luck@intel.com, bp@amd64.org,
+	x86@kernel.org, linux-kernel@vger.kernel.org
+References: <1342720781-4729-1-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
 Content-Disposition: inline
-In-Reply-To: <201207302259.39396.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1342720781-4729-1-git-send-email-gong.chen@linux.intel.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 10:59:39PM +0200, Rafael J. Wysocki wrote:
-[...]
-> > Well, currently drivers/power/ is indeed just for power supply class
-> > subsystem and drivers. But if the trend is to gather power management
-> > ("policy") stuff under one directory, i.e.
-> > 
-> > drivers/
-> >   power/
-> >     supplies/    <- former "power supply class and drivers"
-> >     regulators/
-> >     idle/
-> >     cpuidle/
-> >     cpufreq/
-> >     devfreq/
-> >     avs/
-> >     ...
-> > 
-> > That would probably make sense, we could easily see the big picture.
-> > But if we're not going to do this long-term,
-> 
-> Yes, we may do this eventually, but surely not right now.
 
-OK, great! Then I'll probably start thinking about moving power supply
-drivers into its own directory, maybe in 3.7.
+--FL5UXtIhxfXey3p5
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks!
+On Thu, Jul 19, 2012 at 01:59:36PM -0400, Chen Gong wrote:
+> Date:	Thu, 19 Jul 2012 13:59:36 -0400
+> From: Chen Gong <gong.chen@linux.intel.com>
+> To: tglx@linutronix.de
+> Cc: tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
+> 	linux-kernel@vger.kernel.org
+> Subject: [RESEND PATCH 0/5 V2] x86: mce: Bugfixes, cleanups and a new
+>  CMCI poll version
+> X-Mailer: git-send-email 1.7.10.4
+>=20
+> [PATCH 1/5] x86: mce: Disable preemption when calling raise_local()
+> [PATCH 2/5] x86: mce: Serialize mce injection
+> [PATCH 3/5] x86: mce: Split timer init
+> [PATCH 4/5] x86: mce: Remove the frozen cases in the hotplug code
+> [PATCH 5/5] x86: mce: Add cmci poll mode
+>=20
+> The following series fixes a few interesting bugs (found by review in
+> context of the CMCI poll effort) and a cleanup to the timer/hotplug
+> code followed by a consolidated version of the CMCI poll
+> implementation. This series is based on Linus' tree.
+>=20
+>   git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+>=20
+> Thanks Boris to point out how to use git to commit correct authorship :-).
+>
+Hi, Thomas
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Would you please help to merge this patch series into a proper tree?
+
+--FL5UXtIhxfXey3p5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQGH6qAAoJEI01n1+kOSLHqkAQAIMoyfDC79jHS0syCNg7xx3P
+NFyzZel34NVIimi0rm1rBsQbEZtfsUARAsslvgdw8o9rkSyn/Vz//p0Qna+D2CzE
+UvUKeIeMBvWJA0QZeQI/zv90HR44dFlLNnwFVYDNuDRyk6DfgEM3w182hQVAmxPd
+LNPY4eDpp/QxGilbMxW4exi7BKq1H7ElXvRmH14SceFNP4MNMELEfEX7WuGNVBq7
++hMvxBC2wRHbhRaiZti7+4cLe0BNN7n6g3VcqiJXGzZQ1VDkFXYfHY+rOixWAaDJ
+deeD6g2hSgPYvp3WEZgku/LzcAO3ZT6gET+5Wq1fdcOecnPqbdy7bWv1D9Boky1d
+Q5bGprRIWG/KwmUyxiU8XYbuFgLeh6UKlbdmnd+uoOyaPsJn1eah6oV5nB1TLRkW
+9/U1bA0MwnpgxKQVsDsSGjH0eqz/A8w7pSy6uZ7pQ2c9u6VhAO85qeOqSFh3nE8T
+3KMIzYatKUZ9HeCwnH3BzxZ+dq3W+712jNH5hYMAzOyaaovARcYBMEXWYBbQQahe
+VV+ljYvagD41qp0rj+0Mub1aBTSQO+2t4b2QU3judWjPqy7wGhJ64p51RhO1HEb5
+wkzaOzCzVmnSE59tO/k3s9ulkbFQDWc7LhXNlNZIozDSFlm/1lM9piCQopz21jEG
+iWQS1muHFthCKUUg1gTA
+=amty
+-----END PGP SIGNATURE-----
+
+--FL5UXtIhxfXey3p5--
