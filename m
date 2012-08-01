@@ -1,64 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab2HAWy6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 18:54:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44381 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398Ab2HAWy4 (ORCPT
+	id S1752698Ab2HAXAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 19:00:01 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:8925 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab2HAW7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 18:54:56 -0400
-Date: Thu, 2 Aug 2012 08:54:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
-Subject: linux-next: unable to fetch the moduleh tree
-Message-Id: <20120802085448.5fb877ce7747128ba354f605@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__2_Aug_2012_08_54_48_+1000_16/lLegNb=dvhQ6H"
+	Wed, 1 Aug 2012 18:59:49 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-57-5019b4e3dd78
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Damien Cassou'" <damien.cassou@gmail.com>
+Cc: "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <877gti1t48.fsf@gmail.com>
+In-reply-to: <877gti1t48.fsf@gmail.com>
+Subject: Re: [PATCH v2] video: exynos_dp: use devm_clk_get function
+Date: Thu, 02 Aug 2012 07:59:46 +0900
+Message-id: <000e01cd7039$58e08b90$0aa1a2b0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1wAZrrzyIOF4KjTSaXFU5q6sqr6QAN3Lcw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd3HWyQDDHZ18lqc6PvAanF51xw2
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDIufv/EVLBWpmJi707mBsb9Yl2MnBwSAiYSy3bfZ4Ww
+	xSQu3FvP1sXIxSEksIhR4kTzGlYI5xejxLYTaxlBqtgE1CS+fDnMDmKLCOhKnFx9mxGkiFng
+	OKPEjRvbwBJCQEXN3a/AxnIKqEusungQLC4s4Cxxd8JpsDiLgKpEx4GDzCA2r4CtxI4Fd9kh
+	bEGJH5PvsYDYzAJaEut3HmeCsOUlNq95C1TPAXSqusSjv7oQNxhJdB+bzQxRIiKx78U7xgmM
+	QrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4qJ9J72Bc1WBx
+	iFGAg1GJh3dlqWSAEGtiWXFl7iFGCQ5mJRFexy6gEG9KYmVValF+fFFpTmrxIUZpDhYlcV4T
+	76/+QgLpiSWp2ampBalFMFkmDk6pBkapTd8l9R79lNqQF60V718u8jHhwOsKRXeDi1ul1C+d
+	dLnTtWd3QWvBFO/ixQa217meyDyxlXpdZThfSjJPLSPZiE1j+dNZMwUf7uhi/SHoLJs9yWB+
+	lCS/x48PpyxSg1QjAm4Kx0toO9ye5vprUlMyn2DagulWXy0k/kk6vam18nv+42fZTyWW4oxE
+	Qy3mouJEAH38YjVmAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__2_Aug_2012_08_54_48_+1000_16/lLegNb=dvhQ6H
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thursday, August 02, 2012 1:21 AM Damien Cassou wrote:
+> 
+> From: Damien Cassou <damien.cassou@lifl.fr>
+> 
+> The devm_clk_get function allocates memory that is released when a driver
+> detaches. This patch uses this function for data that is allocated in the probe
+> function of a platform device and is only freed in the remove function.
+> 
+> Additionally, this patch removes a null check after platform_get_resource that
+> is redundant with the one done by devm_request_and_ioremap.
+> 
+> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
 
-Hi Paul,
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-For the last few days, I have been getting this error when trying to
-fetch the moduleh tree:
+Thank you for sending the patch.
 
-fatal: unable to connect to openlinux.windriver.com:
-openlinux.windriver.com[0: 192.124.127.100]: errno=3DConnection timed out
+Best regards,
+Jingoo Han
 
-Is this tree still in use?  Or should I just remove it from linux-next?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> ---
+> Changed subject line and description
+>  drivers/video/exynos/exynos_dp_core.c |   27 +++++++--------------------
+>  1 file changed, 7 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
+> index c6c016a..00fe4f0 100644
+> --- a/drivers/video/exynos/exynos_dp_core.c
+> +++ b/drivers/video/exynos/exynos_dp_core.c
+> @@ -872,7 +872,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+> 
+>  	dp->dev = &pdev->dev;
+> 
+> -	dp->clock = clk_get(&pdev->dev, "dp");
+> +	dp->clock = devm_clk_get(&pdev->dev, "dp");
+>  	if (IS_ERR(dp->clock)) {
+>  		dev_err(&pdev->dev, "failed to get clock\n");
+>  		return PTR_ERR(dp->clock);
+> @@ -881,31 +881,24 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+>  	clk_enable(dp->clock);
+> 
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res) {
+> -		dev_err(&pdev->dev, "failed to get registers\n");
+> -		ret = -EINVAL;
+> -		goto err_clock;
+> -	}
+> 
+>  	dp->reg_base = devm_request_and_ioremap(&pdev->dev, res);
+>  	if (!dp->reg_base) {
+>  		dev_err(&pdev->dev, "failed to ioremap\n");
+> -		ret = -ENOMEM;
+> -		goto err_clock;
+> +		return -ENOMEM;
+>  	}
+> 
+>  	dp->irq = platform_get_irq(pdev, 0);
+>  	if (!dp->irq) {
+>  		dev_err(&pdev->dev, "failed to get irq\n");
+> -		ret = -ENODEV;
+> -		goto err_clock;
+> +		return -ENODEV;
+>  	}
+> 
+>  	ret = devm_request_irq(&pdev->dev, dp->irq, exynos_dp_irq_handler, 0,
+>  				"exynos-dp", dp);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "failed to request irq\n");
+> -		goto err_clock;
+> +		return ret;
+>  	}
+> 
+>  	dp->video_info = pdata->video_info;
+> @@ -917,7 +910,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+>  	ret = exynos_dp_detect_hpd(dp);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to detect hpd\n");
+> -		goto err_clock;
+> +		return ret;
+>  	}
+> 
+>  	exynos_dp_handle_edid(dp);
+> @@ -926,7 +919,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+>  				dp->video_info->link_rate);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to do link train\n");
+> -		goto err_clock;
+> +		return ret;
+>  	}
+> 
+>  	exynos_dp_enable_scramble(dp, 1);
+> @@ -940,17 +933,12 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
+>  	ret = exynos_dp_config_video(dp, dp->video_info);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to config video\n");
+> -		goto err_clock;
+> +		return ret;
+>  	}
+> 
+>  	platform_set_drvdata(pdev, dp);
+> 
+>  	return 0;
+> -
+> -err_clock:
+> -	clk_put(dp->clock);
+> -
+> -	return ret;
+>  }
+> 
+>  static int __devexit exynos_dp_remove(struct platform_device *pdev)
+> @@ -962,7 +950,6 @@ static int __devexit exynos_dp_remove(struct platform_device *pdev)
+>  		pdata->phy_exit();
+> 
+>  	clk_disable(dp->clock);
+> -	clk_put(dp->clock);
+> 
+>  	return 0;
+>  }
 
---Signature=_Thu__2_Aug_2012_08_54_48_+1000_16/lLegNb=dvhQ6H
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQGbO4AAoJEECxmPOUX5FEeQMP/A1iXz6KhIwxGHijBFzYknun
-HDfQ70qHvEYM9IJfn59NDHQyY5NJOmoY4zlhcaYOGxy4hrKWgM7FhAiCVYTsOCsX
-aXyLh7QSQOIsNN8W59BLo6LLJiFeheTm/Of1dCTGGbmlxpOwbRom7zxFK/XpMh4Q
-nzATy4NNBJfaZ5TtaSSg3WRx48XVkhNhhH1eoV72D/qis+BTSc0A4YHVo2PpNOuz
-hyDjjRil4lo/Fm1MqpfBm7WRNXRj8PeUEuLtKHFc8y3GnK+dXY310zv/0t5wMTo4
-diS2lMiBDolkq2ienFp1VeiUtuKmXGhWJ3X10/yLK+N6PF8N/nBxZMSabxVX2FcN
-feATUt7r3WicA+0fI5YB7wo+0P72dbJYITpm263Wq4EJ232AWzTg9tNrfcKRlU3e
-TVJMsM667vtyYaLT8BBe5wswpwjVLtDCELZEQnOrQZzR+5OHPbmhsUZT4REXINw7
-47ik/pgWYtnpiv0zmhUEEim7IK0T5rYQksVASJSysesin2CnJ+ebjR0eB7CvHUJh
-QeUGl7C9GQfxqhpqV7kbs8LHXvJVseDB96nqfsmlNXqQvW76ubDWKdCt7dWc7Efg
-vzbM5jAunUrfDBadodgJV0MHftrxVC9SWx9O6XIXJMocLqDs7IZjUX4DyAA7aA4N
-CyFSEd7U1frexa+Vu/aU
-=BkOO
------END PGP SIGNATURE-----
-
---Signature=_Thu__2_Aug_2012_08_54_48_+1000_16/lLegNb=dvhQ6H--
