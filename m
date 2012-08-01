@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab2HAUYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 16:24:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39461 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab2HAUYh (ORCPT
+	id S1754185Ab2HAU2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 16:28:16 -0400
+Received: from a83-160-107-163.adsl.xs4all.nl ([83.160.107.163]:38020 "EHLO
+	d4rwin.no-ip.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab2HAU2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 16:24:37 -0400
-Date: Wed, 1 Aug 2012 13:24:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-Message-ID: <20120801202432.GE15477@google.com>
-References: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com>
- <1343757920-19713-2-git-send-email-levinsasha928@gmail.com>
- <20120731182330.GD21292@google.com>
- <50197348.9010101@gmail.com>
- <20120801182112.GC15477@google.com>
- <50197460.8010906@gmail.com>
- <20120801182749.GD15477@google.com>
- <50197E4A.7020408@gmail.com>
+	Wed, 1 Aug 2012 16:28:15 -0400
+X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Aug 2012 16:28:15 EDT
+Date: Wed, 1 Aug 2012 22:18:11 +0200
+From: Matthias Kaehlcke <matthias.list@kaehlcke.net>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: a.zummo@towertech.it, sameo@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com, ldewangan@nvidia.com,
+        kyle.manna@fuel7.com, sboyd@codeaurora.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+Message-ID: <20120801201811.GK4701@darwin>
+Mail-Followup-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
+	Venu Byravarasu <vbyravarasu@nvidia.com>, a.zummo@towertech.it,
+	sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
+	ldewangan@nvidia.com, kyle.manna@fuel7.com, sboyd@codeaurora.org,
+	rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+References: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50197E4A.7020408@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
+Organization: sindominio.net
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 09:06:50PM +0200, Sasha Levin wrote:
-> Using a struct makes the dynamic case much easier, but it complicates the static case.
-> 
-> Previously we could create the buckets statically.
-> 
-> Consider this struct:
-> 
-> struct hash_table {
-> 	u32 bits;
-> 	struct hlist_head buckets[];
-> };
-> 
-> We can't make any code that wraps this to make it work properly
-> statically allocated nice enough to be acceptable.
+hi,
 
-I don't know.  Maybe you can create an anonymous outer struct / union
-and play symbol trick to alias hash_table to its member.  If it is
-gimped either way, I'm not sure whether it's really worthwhile to
-create the abstraction.  It's not like we're saving a lot of
-complexity.
+El Wed, Aug 01, 2012 at 11:52:37AM +0530 Venu Byravarasu ha dit:
 
-Thanks.
+> TPS65910 PMIC is a MFD with RTC as one of the device.
+> Adding RTC driver for supporting RTC device present
+> inside TPS65910 PMIC.
+> 
+> Only support for RTC alarm is implemented as part of this patch.
+> 
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
+
+...
+
+> +static irqreturn_t tps65910_rtc_interrupt(int irq, void *rtc)
+> +{
+> +	struct device *dev = rtc;
+> +	unsigned long events = 0;
+> +	struct tps65910 *tps = dev_get_drvdata(dev->parent);
+> +	struct tps65910_rtc *tps_rtc = dev_get_drvdata(dev);
+>
+> ...
+>
+> +static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
+> +{
+>
+> ...
+>
+> +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+> +		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
+> +		"rtc-tps65910", &pdev->dev);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "IRQ is not free.\n");
+> +		return ret;
+> +	}
+> +	device_init_wakeup(&pdev->dev, 1);
+> +
+> +	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+> +		&tps65910_rtc_ops, THIS_MODULE);
+> +	if (IS_ERR(tps_rtc->rtc)) {
+> +		ret = PTR_ERR(tps_rtc->rtc);
+> +		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, tps_rtc);
+
+the interrupt should be requested after this call. otherwise
+tps65910_rtc_interrupt() could be executed before the RTC device is
+registered and the driver data set. normally this shouldn't happen as
+the RTC interrupts are disabled after reset, but the interrupts could
+have been enabled for example by the bootloader
+
+best regards
 
 -- 
-tejun
+Matthias Kaehlcke
+Embedded Linux Developer
+Amsterdam
+
+      Anyone who has never made a mistake has never tried anything new
+                            (Albert Einstein)
+                                                                 .''`.
+    using free software / Debian GNU/Linux | http://debian.org  : :'  :
+                                                                `. `'`
+gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
