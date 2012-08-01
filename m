@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab2HADQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 23:16:37 -0400
-Received: from mail.tmr.com ([64.65.253.246]:51640 "EHLO partygirl.tmr.com"
+	id S1754476Ab2HAD2M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 23:28:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47357 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753230Ab2HADQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 23:16:36 -0400
-Message-ID: <50189F88.9020805@tmr.com>
-Date: Tue, 31 Jul 2012 23:16:24 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-Organization: TMR Associates Inc, Schenectady NY
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Firefox/13.0.1 SeaMonkey/2.10.1
+	id S1754265Ab2HAD1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 23:27:52 -0400
+Date: Wed, 1 Aug 2012 00:19:30 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [RFC PATCH] KVM: Only print vcpu_unimpl when DEBUG is set
+Message-ID: <20120801031930.GB31711@amt.cnet>
+References: <20120726122248.GA252@x4>
 MIME-Version: 1.0
-To: Kevin Ross <kevin@familyross.net>
-CC: Grant Coady <gcoady.lk@gmail.com>, Linux RAID <linux-raid@vger.kernel.org>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RAID extremely slow
-References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org> <5010A386.4080209@familyross.net> <5010CEFF.5030606@familyross.net> <5012E717.9070808@tmr.com> <50130BEE.8080402@familyross.net> <8oq618ldps0ijt76cr3k6vovkksm4b9vsb@4ax.com> <5013A41E.5070500@familyross.net>
-In-Reply-To: <5013A41E.5070500@familyross.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120726122248.GA252@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Ross wrote:
-> On 07/27/2012 09:45 PM, Grant Coady wrote:
->> On Fri, 27 Jul 2012 14:45:18 -0700, you wrote:
->>
->>> On 07/27/2012 12:08 PM, Bill Davidsen wrote:
->>>> Have you set the io scheduler to deadline on all members of the array?
->>>> That's kind of "job one" on older kernels.
->>>>
->>> I have not, thanks for the tip, I'll look into that now.
->> Plus I disable the on-drive queuing (NCQ) during startup, right now
->> I don't have benchmarks to show the difference.  This on a six by 1TB
->> drive RAID6 array I built over a year ago on Slackware64-13.37:
->>
->> # cat /etc/rc.d/rc.local
->> ...
->> # turn off NCQ on the RAID drives by adjusting queue depth to 1
->> n=1
->> echo "rc.local: Disable RAID drives' NCQ"
->> for d in a b c d e f
->> do
->>          echo "  set NCQ depth to $n on sd${d}"
->>          echo $n>  /sys/block/sd${d}/device/queue_depth
->> done
->> ...
->>
->> Maybe you could try that?  See if it makes a difference.  My drives
->> are Seagate.
->>
->> Grant.
->>
->
-> Does disabling NCQ improve performance?
+On Thu, Jul 26, 2012 at 02:22:48PM +0200, Markus Trippelsdorf wrote:
+> Every time I start qemu-kvm on my system the following line is added to
+> the syslog:
+> 
+>  vcpu0 unhandled rdmsr: 0xc0010001
+> 
+> AFAICS all calls to vcpu_unimpl only contain debugging info with little
+> or no value for the end user.
+> 
+> Wouldn't something like the following patch make sense?
+> 
+> Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 
-Does for me!
->
-> The suggestion to use kernel 3.4.6 has been working quite well so far, 
-> hopefully that fixes the problem.  I'll know for sure in a few more days...
->
-> Thanks!
-> -- Kevin
->
+It could be useful for debugging (but then lots of other things could).
 
+Anyone has a use for this?
 
--- 
-Bill Davidsen <davidsen@tmr.com>
-   We are not out of the woods yet, but we know the direction and have
-taken the first step. The steps are many, but finite in number, and if
-we persevere we will reach our destination.  -me, 2010
-
-
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index b70b48b..6bd816f 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -321,7 +321,7 @@ struct kvm {
+>  #define kvm_debug(fmt, ...) \
+>  	pr_debug("kvm [%i]: " fmt, task_pid_nr(current), ## __VA_ARGS__)
+>  #define kvm_pr_unimpl(fmt, ...) \
+> -	pr_err_ratelimited("kvm [%i]: " fmt, \
+> +	pr_debug_ratelimited("kvm [%i]: " fmt, \
+>  			   task_tgid_nr(current), ## __VA_ARGS__)
+>  
+>  /* The guest did something we don't support. */
+> 
+> -- 
+> Markus
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
