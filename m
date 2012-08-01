@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab2HAQAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 12:00:06 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:62810 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110Ab2HAP7v (ORCPT
+	id S1756223Ab2HAQAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 12:00:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59609 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756099Ab2HAQAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:59:51 -0400
+	Wed, 1 Aug 2012 12:00:12 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+        Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
         "Rafael J . Wysocki" <rjw@sisk.pl>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-driver@qlogic.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v3 28/32] PCI/qla: use PCIe capabilities access functions to simplify implementation
-Date: Wed,  1 Aug 2012 23:54:33 +0800
-Message-Id: <1343836477-7287-29-git-send-email-jiang.liu@huawei.com>
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH v3 30/32] PCI/tsi721: use PCIe capabilities access functions to simplify implementation
+Date: Wed,  1 Aug 2012 23:54:35 +0800
+Message-Id: <1343836477-7287-31-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
 References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
@@ -31,97 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCIe capabilities access functions to simplify QLA SCSI drivers'
+Use PCIe capabilities access functions to simplify tsi721 driver's
 implementation.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/scsi/qla2xxx/qla_init.c |    4 ++--
- drivers/scsi/qla2xxx/qla_nx.c   |    8 ++------
- drivers/scsi/qla4xxx/ql4_nx.c   |    4 +---
- 3 files changed, 5 insertions(+), 11 deletions(-)
+ drivers/rapidio/devices/tsi721.c |   19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
-index ca50847..a44653b 100644
---- a/drivers/scsi/qla2xxx/qla_init.c
-+++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -685,7 +685,7 @@ qla24xx_pci_config(scsi_qla_host_t *vha)
- 		pcix_set_mmrbc(ha->pdev, 2048);
- 
- 	/* PCIe -- adjust Maximum Read Request Size (2048). */
--	if (pci_find_capability(ha->pdev, PCI_CAP_ID_EXP))
-+	if (pci_is_pcie(ha->pdev))
- 		pcie_set_readrq(ha->pdev, 2048);
- 
- 	pci_disable_rom(ha->pdev);
-@@ -721,7 +721,7 @@ qla25xx_pci_config(scsi_qla_host_t *vha)
- 	pci_write_config_word(ha->pdev, PCI_COMMAND, w);
- 
- 	/* PCIe -- adjust Maximum Read Request Size (2048). */
--	if (pci_find_capability(ha->pdev, PCI_CAP_ID_EXP))
-+	if (pci_is_pcie(ha->pdev))
- 		pcie_set_readrq(ha->pdev, 2048);
- 
- 	pci_disable_rom(ha->pdev);
-diff --git a/drivers/scsi/qla2xxx/qla_nx.c b/drivers/scsi/qla2xxx/qla_nx.c
-index caf627b..be516e9 100644
---- a/drivers/scsi/qla2xxx/qla_nx.c
-+++ b/drivers/scsi/qla2xxx/qla_nx.c
-@@ -1615,13 +1615,11 @@ qla82xx_get_fw_offs(struct qla_hw_data *ha)
- char *
- qla82xx_pci_info_str(struct scsi_qla_host *vha, char *str)
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index 722246c..5970c43 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -2212,9 +2212,8 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
+ 				  const struct pci_device_id *id)
  {
--	int pcie_reg;
- 	struct qla_hw_data *ha = vha->hw;
- 	char lwstr[6];
- 	uint16_t lnk;
+ 	struct tsi721_device *priv;
+-	int i, cap;
++	int i;
+ 	int err;
+-	u32 regval;
  
--	pcie_reg = pci_find_capability(ha->pdev, PCI_CAP_ID_EXP);
--	pci_read_config_word(ha->pdev, pcie_reg + PCI_EXP_LNKSTA, &lnk);
-+	pci_pcie_capability_read_word(ha->pdev, PCI_EXP_LNKSTA, &lnk);
- 	ha->link_width = (lnk >> 4) & 0x3f;
- 
- 	strcpy(str, "PCIe (");
-@@ -2497,7 +2495,6 @@ fw_load_failed:
- int
- qla82xx_start_firmware(scsi_qla_host_t *vha)
- {
--	int           pcie_cap;
- 	uint16_t      lnk;
- 	struct qla_hw_data *ha = vha->hw;
- 
-@@ -2528,8 +2525,7 @@ qla82xx_start_firmware(scsi_qla_host_t *vha)
+ 	priv = kzalloc(sizeof(struct tsi721_device), GFP_KERNEL);
+ 	if (priv == NULL) {
+@@ -2320,20 +2319,16 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
+ 			dev_info(&pdev->dev, "Unable to set consistent DMA mask\n");
  	}
  
- 	/* Negotiated Link width */
--	pcie_cap = pci_find_capability(ha->pdev, PCI_CAP_ID_EXP);
--	pci_read_config_word(ha->pdev, pcie_cap + PCI_EXP_LNKSTA, &lnk);
-+	pci_pcie_capability_read_word(ha->pdev, PCI_EXP_LNKSTA, &lnk);
- 	ha->link_width = (lnk >> 4) & 0x3f;
+-	cap = pci_pcie_cap(pdev);
+-	BUG_ON(cap == 0);
++	BUG_ON(!pci_is_pcie(pdev));
  
- 	/* Synchronize with Receive peg */
-diff --git a/drivers/scsi/qla4xxx/ql4_nx.c b/drivers/scsi/qla4xxx/ql4_nx.c
-index 228b670..7e30158 100644
---- a/drivers/scsi/qla4xxx/ql4_nx.c
-+++ b/drivers/scsi/qla4xxx/ql4_nx.c
-@@ -1566,7 +1566,6 @@ qla4_8xxx_set_qsnt_ready(struct scsi_qla_host *ha)
- static int
- qla4_8xxx_start_firmware(struct scsi_qla_host *ha, uint32_t image_start)
- {
--	int pcie_cap;
- 	uint16_t lnk;
+ 	/* Clear "no snoop" and "relaxed ordering" bits, use default MRRS. */
+-	pci_read_config_dword(pdev, cap + PCI_EXP_DEVCTL, &regval);
+-	regval &= ~(PCI_EXP_DEVCTL_READRQ | PCI_EXP_DEVCTL_RELAX_EN |
+-		    PCI_EXP_DEVCTL_NOSNOOP_EN);
+-	regval |= 0x2 << MAX_READ_REQUEST_SZ_SHIFT;
+-	pci_write_config_dword(pdev, cap + PCI_EXP_DEVCTL, regval);
++	pci_pcie_capability_change_dword(pdev, PCI_EXP_DEVCTL,
++		0x2 << MAX_READ_REQUEST_SZ_SHIFT,
++		PCI_EXP_DEVCTL_READRQ | PCI_EXP_DEVCTL_RELAX_EN |
++		PCI_EXP_DEVCTL_NOSNOOP_EN);
  
- 	/* scrub dma mask expansion register */
-@@ -1590,8 +1589,7 @@ qla4_8xxx_start_firmware(struct scsi_qla_host *ha, uint32_t image_start)
- 	}
+ 	/* Adjust PCIe completion timeout. */
+-	pci_read_config_dword(pdev, cap + PCI_EXP_DEVCTL2, &regval);
+-	regval &= ~(0x0f);
+-	pci_write_config_dword(pdev, cap + PCI_EXP_DEVCTL2, regval | 0x2);
++	pci_pcie_capability_change_dword(pdev, PCI_EXP_DEVCTL2, 0x2, 0xf);
  
- 	/* Negotiated Link width */
--	pcie_cap = pci_find_capability(ha->pdev, PCI_CAP_ID_EXP);
--	pci_read_config_word(ha->pdev, pcie_cap + PCI_EXP_LNKSTA, &lnk);
-+	pci_pcie_capability_read_word(ha->pdev, PCI_EXP_LNKSTA, &lnk);
- 	ha->link_width = (lnk >> 4) & 0x3f;
- 
- 	/* Synchronize with Receive peg */
+ 	/*
+ 	 * FIXUP: correct offsets of MSI-X tables in the MSI-X Capability Block
 -- 
 1.7.9.5
 
