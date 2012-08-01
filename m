@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab2HAQKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 12:10:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35826 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737Ab2HAQKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 12:10:18 -0400
-Message-ID: <1343837499.18359.7.camel@tucsk.pomaz.szeredi.hu>
-Subject: Re: Oops in audit_copy_inode
-From: Miklos Szeredi <mszeredi@suse.cz>
-To: Peter Moody <pmoody@google.com>
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@google.com>,
-        viro@zeniv.linux.org.uk, Eric Paris <eparis@redhat.com>,
-        miklos@szeredi.hu
-Date: Wed, 01 Aug 2012 18:11:39 +0200
-In-Reply-To: <CALnj_=5qfAxtKN_T+eoAPCswZPrWmKmOK5HSTwCNZV0s08f_qw@mail.gmail.com>
-References: <CALnj_=4r0qdrNUbXmS=q=sk11PZ-Q0z=wPO5wR_DzR4HjnMdqw@mail.gmail.com>
-	 <CALnj_=5qfAxtKN_T+eoAPCswZPrWmKmOK5HSTwCNZV0s08f_qw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752534Ab2HAQSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 12:18:49 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:5707 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab2HAQSs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 12:18:48 -0400
+X-IronPort-AV: E=Sophos;i="4.77,695,1336348800"; 
+   d="scan'208";a="13807950"
+Date: Wed, 1 Aug 2012 17:18:29 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH 20/24] xen: update xen_add_to_physmap interface
+In-Reply-To: <20120801145215.GP7227@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1208011716040.4645@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-20-git-send-email-stefano.stabellini@eu.citrix.com> <20120801145215.GP7227@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Wed, 1 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jul 26, 2012 at 04:34:02PM +0100, Stefano Stabellini wrote:
+> > Update struct xen_add_to_physmap to be in sync with Xen's version of the
+> > structure.
+> > The size field was introduced by:
+> > 
+> > changeset:   24164:707d27fe03e7
+> > user:        Jean Guyader <jean.guyader@eu.citrix.com>
+> > date:        Fri Nov 18 13:42:08 2011 +0000
+> > summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
+> > 
+> > According to the comment:
+> > 
+> > "This new field .size is located in the 16 bits padding between .domid
+> > and .space in struct xen_add_to_physmap to stay compatible with older
+> > versions."
+> > 
+> > This is not true on ARM where there is not padding, but it is valid on
+> > X86, so introducing size is safe on X86 and it is going to fix the
+> > interace for ARM.
+> 
+> Has this been checked actually for backwards compatibility? It sounds
+> like it should work just fine with Xen 4.0 right?
+> 
+> I believe this also helps Mukesh's patches, so CC-ing him here for
+> his Ack.
+> 
+> I can put this in right now in tree if we are 100% sure its compatiblie with 4.0.
 
-Thanks for the report.
-
-Here's a patch.  I haven't tested it but I'm pretty confident that it
-fixes the bug.
-
-Thanks,
-Miklos
-
-
-Subject: vfs: fix audit_inode on negative dentry
-From: Miklos Szeredi <mszeredi@suse.cz>
-
-Peter Moody reported an oops in audit_copy_inode() and bisected it to commit
-7157486541 (vfs: do_last(): common slow lookup).
-
-The problem is that audit_inode() in do_last() is called with a negative dentry.
-
-Previously the non-O_CREAT case didn't call audit_inode() here, but now both
-O_CREAT and non-O_CREAT opens are handled by the same code.
-
-I really have no idea why this audit_inode() is needed here at all but am afaid
-to remove this for fear of breaking audit somehow.  So just fix this case by
-checking for a negative dentry.
-
-Reported-by: Peter Moody <pmoody@google.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: stable@vger.kernel.org
----
- fs/namei.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/fs/namei.c
-===================================================================
---- linux-2.6.orig/fs/namei.c	2012-08-01 17:47:28.000000000 +0200
-+++ linux-2.6/fs/namei.c	2012-08-01 17:49:26.000000000 +0200
-@@ -2607,10 +2607,12 @@ static int do_last(struct nameidata *nd,
- 		goto finish_open_created;
- 	}
- 
--	/*
--	 * It already exists.
--	 */
--	audit_inode(pathname, path->dentry);
-+	if (path->dentry->d_inode) {
-+		/*
-+		 * It already exists.
-+		 */
-+		audit_inode(pathname, path->dentry);
-+	}
- 
- 	/*
- 	 * If atomic_open() acquired write access it is dropped now due to
-
-
+Yes, it is: 4 bytes integers are 4-byte aligned on 32 bit and 64 bit
+on x86.
