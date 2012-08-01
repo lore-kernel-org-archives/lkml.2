@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab2HAVH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 17:07:27 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:7997 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab2HAVHZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 17:07:25 -0400
-Message-ID: <50199A8C.1070500@tilera.com>
-Date: Wed, 1 Aug 2012 17:07:24 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1755781Ab2HAVSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 17:18:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45397 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754187Ab2HAVSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 17:18:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="180443750"
+Date: Wed, 1 Aug 2012 14:18:40 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Peter Stuge <peter@stuge.se>, "Alexis R. Cortes" <alexis.cortes@ti.com>
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, brian.quach@ti.com, jorge.llamas@ti.com
+Subject: Re: [PATCH] usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP
+ Hardware
+Message-ID: <20120801211840.GC7564@xanatos>
+References: <50197DC2.5060905@ti.com>
+ <20120801200131.15606.qmail@stuge.se>
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v3 14/32] PCI/tile: use PCIe capabilities access functions
- to simplify implementation
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com> <1343836477-7287-15-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1343836477-7287-15-git-send-email-jiang.liu@huawei.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120801200131.15606.qmail@stuge.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/1/2012 11:54 AM, Jiang Liu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
->
-> Use PCIe capabilities access functions to simplify PCIe tile implementation.
->
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> ---
->  arch/tile/kernel/pci.c |   25 +++++--------------------
->  1 file changed, 5 insertions(+), 20 deletions(-)
+On Wed, Aug 01, 2012 at 10:01:31PM +0200, Peter Stuge wrote:
+> Hi Alexis,
+> 
+> Did you run the patch through checkpatch.pl before submitting it?
+> 
+> I think you will get a bunch of important and completely automatic
+> feedback when you do that. Please fix everything that the script
+> mentions.
+> 
+> 
+> Alexis R. Cortes wrote:
+> > This patch is intended to work around a known issue on the
+> > SN65LVPE502CP USB3.0 re-driver that can delay the negotiation
+> > between a device and the host past the usual handshake timeout,
+> > and if that happens on the first insertion, the host controller
+> > port will enter in Compliance Mode as per xHCI Spec. The patch
+> > creates a timer which polls every 2 seconds the link state of each
+> > host controller's port (this by reading the PORTSC register) and
+> > recovers the port by issuing a Warm reset every time Compliance mode
+> > is detected.
+> 
+> This is a pretty awful workaround for a teeny tiny hardware error.
+> You're making systems wake up every two seconds. I don't want that on
+> my system. I think making the timer settable would be nice.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Yep, it's not fun, but the timer should only run on particular HP
+systems.  The alternative is "dead" ports.  Alex, can you update your
+description to include that fact?
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Greg and I already argued about making the timer settable via a module
+parameter, and I think the basic answer was that he doesn't want a new
+modparam for this.
 
+> Also, the patch does more things than what you describe. It adds a
+> new quirk, and it adds checks to set said quirk for various different
+> laptop models. Each of those changes (add timer+quirk, and add checks
+> to set quirk for laptops) should rather be a separate commit.
+
+I would really rather the quirk addition and application to some machine
+be in the same patch.  That's how the other quirk patches have been
+applied in the past.
+
+Sarah Sharp
