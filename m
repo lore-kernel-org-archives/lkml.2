@@ -1,151 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab2HAHf0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 03:35:26 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19494 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab2HAHfY (ORCPT
+	id S1754697Ab2HAHhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 03:37:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34049 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754592Ab2HAHhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 03:35:24 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 01 Aug 2012 00:35:24 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: <linux-kernel@vger.kernel.org>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] pwm: add devm_pwm_get() and devm_pwm_put()
-Date: Wed, 1 Aug 2012 16:37:09 +0900
-Message-ID: <1343806629-14397-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.7.11.3
-X-NVConfidentiality: public
+	Wed, 1 Aug 2012 03:37:06 -0400
+Message-ID: <5018DC9F.30502@linaro.org>
+Date: Wed, 01 Aug 2012 08:37:03 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org,
+        linus.walleij@stericsson.com, arnd@arndb.de,
+        broonie@opensource.wolfsonmicro.com, olalilja@yahoo.se,
+        STEricsson_nomadik_linux@list.st.com, lrg@ti.com
+Subject: Re: [PATCH 3/6] ARM: ux500: Fix merge error, so such struct 'snd_soc_u8500'
+References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-6-git-send-email-lee.jones@linaro.org> <50180BF6.6080908@mvista.com>
+In-Reply-To: <50180BF6.6080908@mvista.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add resource managed variants of pwm_get() and pwm_put() for
-convenience. Code is largely inspired by the equivalent devm functions
-of the regulator framework.
+On 31/07/12 17:46, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 07/31/2012 05:31 PM, Lee Jones wrote:
+> 
+>    Subject doesn't parse for me...
+> 
+>> The platform attempts to register platform device 'snd_soc_u8500'
+>> which doesn't actually exist. Here we change the reference to the
+>> correct one 'snd_soc_mop500'.
+> 
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- Documentation/driver-model/devres.txt |  4 +++
- Documentation/pwm.txt                 |  5 +--
- drivers/pwm/core.c                    | 57 +++++++++++++++++++++++++++++++++++
- include/linux/pwm.h                   |  3 ++
- 4 files changed, 67 insertions(+), 2 deletions(-)
+Actually, it does make sense?
 
-diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-index 950856b..43cff70 100644
---- a/Documentation/driver-model/devres.txt
-+++ b/Documentation/driver-model/devres.txt
-@@ -284,3 +284,7 @@ CLOCK
- PINCTRL
-   devm_pinctrl_get()
-   devm_pinctrl_put()
-+
-+PWM
-+  devm_pwm_get()
-+  devm_pwm_put()
-diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
-index 554290e..4719c12 100644
---- a/Documentation/pwm.txt
-+++ b/Documentation/pwm.txt
-@@ -35,8 +35,9 @@ Using PWMs
- Legacy users can request a PWM device using pwm_request() and free it
- after usage with pwm_free().
- 
--New users should use the pwm_get() function and pass to it the consumer
--device or a consumer name. pwm_put() is used to free the PWM device.
-+New users should use the pwm_get() or devm_pwm_get() function and pass to it the
-+consumer device or a consumer name. pwm_put() or devm_pwm_put() is used to free
-+the PWM device.
- 
- After being requested a PWM has to be configured using:
- 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index ecb7690..5a5e19b 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -624,6 +624,63 @@ out:
- }
- EXPORT_SYMBOL_GPL(pwm_put);
- 
-+static void devm_pwm_release(struct device *dev, void *res)
-+{
-+	pwm_put(*(struct pwm_device **)res);
-+}
-+
-+/**
-+ * devm_pwm_get() - Resource managed pwm_get()
-+ *
-+ * This works are pwm_get() but the acquired pwm will automatically be released
-+ * on driver detach. See pwm_get() for more details.
-+ */
-+struct pwm_device *devm_pwm_get(struct device *dev, const char *consumer)
-+{
-+	struct pwm_device **ptr, *pwm;
-+
-+	ptr = devres_alloc(devm_pwm_release, sizeof(**ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	pwm = pwm_get(dev, consumer);
-+	if (!IS_ERR(pwm)) {
-+		*ptr = pwm;
-+		devres_add(dev, ptr);
-+	} else {
-+		devres_free(ptr);
-+	}
-+
-+	return pwm;
-+}
-+EXPORT_SYMBOL_GPL(devm_pwm_get);
-+
-+static int devm_pwm_match(struct device *dev, void *res, void *data)
-+{
-+	struct pwm_device **p = res;
-+
-+	if (WARN_ON(!p || !*p))
-+		return 0;
-+
-+	return *p == data;
-+}
-+
-+/**
-+ * devm_pwm_put() - Resource managed pwm_put()
-+ *
-+ * Releases a pwm previously allocated using devm_pwm_get. Calling this function
-+ * is usually not needed as the devm-allocated pwm will automatically be
-+ * released on driver detach.
-+ */
-+void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
-+{
-+	int ret;
-+
-+	ret = devres_release(dev, devm_pwm_release, devm_pwm_match, pwm);
-+	WARN_ON(ret);
-+}
-+EXPORT_SYMBOL_GPL(devm_pwm_put);
-+
- #ifdef CONFIG_DEBUG_FS
- static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
- {
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 21d076c..af9c39a 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -123,7 +123,10 @@ struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
- 					 const char *label);
- 
- struct pwm_device *pwm_get(struct device *dev, const char *consumer);
-+struct pwm_device *devm_pwm_get(struct device *dev, const char *consumer);
-+
- void pwm_put(struct pwm_device *pwm);
-+void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
- 
- struct pwm_lookup {
- 	struct list_head list;
+As a sentence: "This patch fixes merge error: so such structure 'struct snd_soc_u8500'.
+
+
 -- 
-1.7.11.3
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
