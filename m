@@ -1,183 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab2HAP5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:57:06 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60093 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab2HAP5B (ORCPT
+	id S1755962Ab2HAP5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:57:14 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:56250 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab2HAP5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:57:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALnj_=4r0qdrNUbXmS=q=sk11PZ-Q0z=wPO5wR_DzR4HjnMdqw@mail.gmail.com>
-References: <CALnj_=4r0qdrNUbXmS=q=sk11PZ-Q0z=wPO5wR_DzR4HjnMdqw@mail.gmail.com>
-From: Peter Moody <pmoody@google.com>
-Date: Wed, 1 Aug 2012 08:56:28 -0700
-Message-ID: <CALnj_=5qfAxtKN_T+eoAPCswZPrWmKmOK5HSTwCNZV0s08f_qw@mail.gmail.com>
-Subject: Re: Oops in audit_copy_inode
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@google.com>, mszeredi@suse.cz, viro@zeniv.linux.org.uk,
-        Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Wed, 1 Aug 2012 11:57:08 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH v3 12/32] PCI/ARM: use PCIe capabilities access functions to simplify implementation
+Date: Wed,  1 Aug 2012 23:54:17 +0800
+Message-Id: <1343836477-7287-13-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This time with a cleaner Oops:
+From: Jiang Liu <jiang.liu@huawei.com>
 
-Pid: 2643, comm: cc1 Not tainted 3.5.0-rc6-at17+ #33 LENOVO 4291AK7/4291AK7
-RIP: 0010:[<ffffffff810cec30>]  [<ffffffff810cec30>] audit_copy_inode+0x10/0x90
-RSP: 0018:ffff8801f88dfc58  EFLAGS: 00010282
-RAX: ffff8801fb320000 RBX: ffff8801f887c508 RCX: 000000000000c7e8
-RDX: 0000000000000000 RSI: ffff8801f3f1d970 RDI: ffff8801f887c508
-RBP: ffff8801f88dfc88 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000000 R12: ffff8801f3f1d970
-R13: ffff8801f887c4a8 R14: 0000000000000000 R15: 0000000000000000
-FS: 00007fd6b9473700(0000) GS:ffff880215200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000040 CR3: 000000020f6a3000 CR4: 00000000000407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process cc1 (pid: 2643, threadinfo ffff8801f88de000, task ffff8801fb320000)
-Stack:
- ffffffff8161c6fe ffff8801f887c508 ffff8801f3f1d970 ffff8801f887c4a8
- ffff8801f887c508 ffff8801f3f1d970 ffff8801f88dfcf8 ffffffff810d237c
- ffffffff810d22bb 0000000000000000 ffff8801f3f1d970 ffff8801f4575e40
-Call Trace:
-[<ffffffff8161c6fe>] ? mutex_unlock+0xe/0x10
-[<ffffffff810d237c>] __audit_inode+0x13c/0x2a0
-[<ffffffff810d22bb>] ? __audit_inode+0x7b/0x2a0
-[<ffffffff8117b44c>] do_last+0x7ac/0xa90
-[<ffffffff8117cad9>] path_openat+0xd9/0x410
-[<ffffffff81087f2d>] ? sched_clock_cpu+0xbd/0x110
-[<ffffffff8101a7a3>] ? native_sched_clock+0x13/0x80
-[<ffffffff8101a819>] ? sched_clock+0x9/0x10
-[<ffffffff8117cf32>] do_filp_open+0x42/0xa0
-[<ffffffff8161ed9b>] ? _raw_spin_unlock+0x2b/0x40
-[<ffffffff8118a2c2>] ? alloc_fd+0xd2/0x120
-[<ffffffff8116c2f8>] do_sys_open+0xf8/0x1d0
-[<ffffffff810d1a8c>] ? __audit_syscall_entry+0xcc/0x310
-[<ffffffff8116c3f1>] sys_open+0x21/0x30
-[<ffffffff81627529>] system_call_fastpath+0x16/0x1b
-Code: 00 00 c7 45
-cc 1f 00 00 00 e9 2c ff ff ff 66 66 66 66 2e 0f 1f 84 00 00 00 00 00
-55 48 89 e5 41 54 53 48 83 ec 20 66 66 66 66 90 <48> 8b 42 40 49 89 f4
-48 8d 77 34 48 89 fb 48 89 47 18 48 8b 42
-RIP [<ffffffff810cec30>] audit_copy_inode+0x10/0x90
- RSP <ffff8801f88dfc58>
-CR2: 0000000000000040
----[ end trace bcccee9a00e71a3b ]---
+Use PCIe capabilities access functions to simplify PCIe ARM implementation.
 
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+---
+ arch/arm/mach-tegra/pcie.c |   13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-On Tue, Jul 31, 2012 at 4:02 PM, Peter Moody <pmoody@google.com> wrote:
-> I seem to have a reliable oops from 3.5.0-rc6 from Linus's tree. I've
-> bisected it down to, I think, the following commit:
->
-> 7157486541bffc0dfec912e21ae639b029dae3d3
->
-> The Oops:
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.471368] Pid: 2643, comm:
-> cc1 Not tainted 3.5.0-rc6-at17+ #33 LENOVO 4291AK7/4291AK7
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.472342] RIP:
-> 0010:[<ffffffff810cec30>]  [<ffffffff810cec30>]
-> audit_copy_inode+0x10/0x90
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.473300] RSP:
-> 0018:ffff8801f88dfc58  EFLAGS: 00010282
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.474253] RAX:
-> ffff8801fb320000 RBX: ffff8801f887c508 RCX: 000000000000c7e8
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.475210] RDX:
-> 0000000000000000 RSI: ffff8801f3f1d970 RDI: ffff8801f887c508
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.476172] RBP:
-> ffff8801f88dfc88 R08: 0000000000000000 R09: 0000000000000000
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.477138] R10:
-> 0000000000000001 R11: 0000000000000000 R12: ffff8801f3f1d970
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.478236] R13:
-> ffff8801f887c4a8 R14: 0000000000000000 R15: 0000000000000000
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.479218] FS:
-> 00007fd6b9473700(0000) GS:ffff880215200000(0000)
-> knlGS:0000000000000000
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.480182] CS:  0010 DS: 0000
-> ES: 0000 CR0: 0000000080050033
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.481143] CR2:
-> 0000000000000040 CR3: 000000020f6a3000 CR4: 00000000000407e0
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.482142] DR0:
-> 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.483121] DR3:
-> 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.484094] Process cc1 (pid:
-> 2643, threadinfo ffff8801f88de000, task ffff8801fb320000)
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.485070] Stack:
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.486030]  ffffffff8161c6fe
-> ffff8801f887c508 ffff8801f3f1d970 ffff8801f887c4a8
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.487011]  ffff8801f887c508
-> ffff8801f3f1d970 ffff8801f88dfcf8 ffffffff810d237c
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.487995]  ffffffff810d22bb
-> 0000000000000000 ffff8801f3f1d970 ffff8801f4575e40
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.488981] Call Trace:
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.489957]
-> [<ffffffff8161c6fe>] ? mutex_unlock+0xe/0x10
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.490934]
-> [<ffffffff810d237c>] __audit_inode+0x13c/0x2a0
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.491927]
-> [<ffffffff810d22bb>] ? __audit_inode+0x7b/0x2a0
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.492916]
-> [<ffffffff8117b44c>] do_last+0x7ac/0xa90
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.493883]
-> [<ffffffff8117cad9>] path_openat+0xd9/0x410
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.494852]
-> [<ffffffff81087f2d>] ? sched_clock_cpu+0xbd/0x110
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.495817]
-> [<ffffffff8101a7a3>] ? native_sched_clock+0x13/0x80
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.496774]
-> [<ffffffff8101a819>] ? sched_clock+0x9/0x10
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.497721]
-> [<ffffffff8117cf32>] do_filp_open+0x42/0xa0
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.498663]
-> [<ffffffff8161ed9b>] ? _raw_spin_unlock+0x2b/0x40
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.499609]
-> [<ffffffff8118a2c2>] ? alloc_fd+0xd2/0x120
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.500579]
-> [<ffffffff8116c2f8>] do_sys_open+0xf8/0x1d0
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.501514]
-> [<ffffffff810d1a8c>] ? __audit_syscall_entry+0xcc/0x310
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.502471]
-> [<ffffffff8116c3f1>] sys_open+0x21/0x30
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.503384]
-> [<ffffffff81627529>] system_call_fastpath+0x16/0x1b
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.504275] Code: 00 00 c7 45
-> cc 1f 00 00 00 e9 2c ff ff ff 66 66 66 66 2e 0f 1f 84 00 00 00 00 00
-> 55 48 89 e5 41 54 53 48 83 ec 20 66 66 66 66 90 <48> 8b 42 40 49 89 f4
-> 48 8d 77 34 48 89 fb 48 89 47 18 48 8b 42
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.506188] RIP
-> [<ffffffff810cec30>] audit_copy_inode+0x10/0x90
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.507108]  RSP <ffff8801f88dfc58>
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.508021] CR2: 0000000000000040
-> Jul 31 15:32:11 pmoody-x220 kernel: [  108.516307] ---[ end trace
-> bcccee9a00e71a3b ]---
->
-> I can generate this oops by doing the following:
->
-> sudo /etc/init.d/auditd start ; sudo auditctl -D ; sudo auditctl -a
-> exit,always -F arch=b64 -S chmod -k oops ; gcc hello.c
->
-> The macro expansion in hello.c seems to be important.
->
-> Other bits of likely pertinent information: Running Ubuntu.
-> auditd/auditctl version 1.7.13-1ubuntu2 (ancient..), gcc version
-> 4.4.3.
->
-> Please let me know if there's anything else I can provide (but please
-> cc me, I'm not subscribed to lkml).
->
-> Cheers,
-> peter
->
-> --
-> Peter Moody      Google
-> Security Engineer  pgp:0xC3410038
-
-
-
+diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
+index 0e09137..5f99d33 100644
+--- a/arch/arm/mach-tegra/pcie.c
++++ b/arch/arm/mach-tegra/pcie.c
+@@ -367,17 +367,8 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_NVIDIA, 0x0bf1, tegra_pcie_fixup_class);
+ /* Tegra PCIE requires relaxed ordering */
+ static void __devinit tegra_pcie_relax_enable(struct pci_dev *dev)
+ {
+-	u16 val16;
+-	int pos = pci_find_capability(dev, PCI_CAP_ID_EXP);
+-
+-	if (pos <= 0) {
+-		dev_err(&dev->dev, "skipping relaxed ordering fixup\n");
+-		return;
+-	}
+-
+-	pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &val16);
+-	val16 |= PCI_EXP_DEVCTL_RELAX_EN;
+-	pci_write_config_word(dev, pos + PCI_EXP_DEVCTL, val16);
++	pci_pcie_capability_change_word(dev, PCI_EXP_DEVCTL,
++					PCI_EXP_DEVCTL_RELAX_EN, 0);
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, tegra_pcie_relax_enable);
+ 
 -- 
-Peter Moody      Google    1.650.253.7306
-Security Engineer  pgp:0xC3410038
+1.7.9.5
+
