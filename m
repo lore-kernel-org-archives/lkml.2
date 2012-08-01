@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab2HAU4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 16:56:52 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:49876 "EHLO minas.ics.muni.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753554Ab2HAU4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 16:56:51 -0400
-Date: Wed, 1 Aug 2012 22:56:40 +0200
-From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Roland Dreier <roland@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: mellanox mlx4_core and SR-IOV
-Message-ID: <20120801205640.GN5470@ics.muni.cz>
-References: <20120801133835.GH5470@ics.muni.cz>
- <CAG4TOxONLJnBaY7N5x7Kfi+dwCb507QPqX9s_Wuef10+RzM=AQ@mail.gmail.com>
- <CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
+	id S1754919Ab2HAU46 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 16:56:58 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60745 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753573Ab2HAU4y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 16:56:54 -0400
+Date: Wed, 1 Aug 2012 21:56:52 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] mfd: arizona: simplify use of shared IRQ
+Message-ID: <20120801205650.GB29157@opensource.wolfsonmicro.com>
+References: <1343853455-29131-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
-X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+In-Reply-To: <1343853455-29131-1-git-send-email-swarren@wwwdotorg.org>
+X-Cookie: Your step will soil many countries.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Muni-Spam-TestIP: 94.112.253.31
-X-Muni-Envelope-From: xhejtman@ics.muni.cz
-X-Muni-Virus-Test: Clean
-X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Wed, 01 Aug 2012 22:56:48 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 11:29:02AM -0700, Yinghai Lu wrote:
-> iov bar is not assigned by BIOS, and kernel can not find range for it too.
-> 
-> Lukas, can you post whole boot log with PCI_DEBUG enabled? That will
-> tell exact why kernel does not assign them.
-> 
-> Recent kernel from 3.4... should enable realloc when SRIOV bar is not assigned.
+On Wed, Aug 01, 2012 at 02:37:35PM -0600, Stephen Warren wrote:
 
-sorry for confusing, PCI_DEBUG does not break mlx driver, it is reallocation
-code that results:
-[    3.555008] mlx4_core 0000:02:00.0: Missing UAR, aborting.
+> One outstanding issue with this change is that it removes the pm_runtime
+> calls from the interrupt handler thread. Equivalent code should presumably
+> be added to regmap_irq_thread(). However, I haven't attempted this yet
+> since I understand some pm_runtime support has already been added to
+> regmap, so don't want to duplicate anything, although I haven't seen
+> those changes yet to be sure.
 
--- 
-Luká¹ Hejtmánek
+This would cause massive breakage if applied as is due to the above
+issue (the device won't have physical I/O when handling most interrupts)
+and now that I think about it future work means that I'd actually prefer
+to keep the code as-is for now anyway.
