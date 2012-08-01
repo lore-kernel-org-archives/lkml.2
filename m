@@ -1,159 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab2HAHas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 03:30:48 -0400
-Received: from linux-sh.org ([111.68.239.195]:33697 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753612Ab2HAHaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 03:30:14 -0400
-Date: Wed, 1 Aug 2012 16:30:04 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, kuninori.morimoto.gx@renesas.com
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-Subject: Re: [Regression, post-3.5] System suspend broken on the Mackerel
- board
-Message-ID: <20120801073004.GE15380@linux-sh.org>
+	id S1754637Ab2HAHdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 03:33:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56145 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754523Ab2HAHdW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 03:33:22 -0400
+Message-ID: <5018DBB8.2070004@googlemail.com>
+Date: Wed, 01 Aug 2012 09:33:12 +0200
+From: =?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?= <andreas.devel@googlemail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878vdze039.wl%kuninori.morimoto.gx@renesas.com>
- <201207280053.11701.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?= <andreas@biessmann.de>
+CC: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm:gemini: fix irq.c
+References: <1338981778-19938-1-git-send-email-andreas@biessmann.de> <4FEE13C0.10505@biessmann.de>
+In-Reply-To: <4FEE13C0.10505@biessmann.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 28, 2012 at 12:53:11AM +0200, Rafael J. Wysocki wrote:
-> Unfortunately, your commit
+ping
+
+On 29.06.12 22:44, Andreas Bießmann wrote:
+> On 06.06.12 13:22, Andreas Bießmann wrote:
+>> Commit 9f97da78bf018206fb623cd351d454af2f105fe0 moved disable_hlt() from
+>> arch/arm/include/asm/system.h to arch/arm/include/asm/system_misc.h but missed
+>> to change arch/arm/mach-gemini/irq.c.
+>>
+>> This patch fixes following error:
+>>
+>> ---8<---
+>> arch/arm/mach-gemini/irq.c: In function 'gemini_init_irq':
+>> arch/arm/mach-gemini/irq.c:79:2: error: implicit declaration of function 'disable_hlt' [-Werror=implicit-function-declaration]
+>> --->8---
+>>
+>> Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+>> cc: Hans Ulli Kroll <ulli.kroll@googlemail.com> 
+>> cc: Russell King <linux@arm.linux.org.uk>
+>> cc: linux-arm-kernel@lists.infradead.org
+>> ---
+>> Note: this is broken since 3.4 release, 3.3 is sane.
 > 
-> commit ca5481c68e9fbcea62bb3c78ae6cccf99ca8fb73
-> Author: Paul Mundt <lethal@linux-sh.org>
-> Date:   Tue Jul 10 12:08:14 2012 +0900
+> ping
 > 
->     sh: pfc: Rudimentary pinctrl-backed GPIO support.
+>>
+>>  arch/arm/mach-gemini/irq.c |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/arch/arm/mach-gemini/irq.c b/arch/arm/mach-gemini/irq.c
+>> index ca70e5f..020852d 100644
+>> --- a/arch/arm/mach-gemini/irq.c
+>> +++ b/arch/arm/mach-gemini/irq.c
+>> @@ -17,6 +17,7 @@
+>>  #include <linux/sched.h>
+>>  #include <asm/irq.h>
+>>  #include <asm/mach/irq.h>
+>> +#include <asm/system_misc.h>
+>>  #include <mach/hardware.h>
+>>  
+>>  #define IRQ_SOURCE(base_addr)	(base_addr + 0x00)
+>>
 > 
-> breaks system suspend on the Mackerel board (.config attached).  The system
-> simply doesn't suspend and instead it hangs somewhere while suspending
-> devices (apparently before running the "late" callbacks).
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> If the above commit is reverted, system suspend works normally.
-
-On Tue, Jul 31, 2012 at 08:57:02PM -0700, kuninori.morimoto.gx@renesas.com wrote:
-> gpio: sh7724_pfc handling gpio 0 -> 486
-> core: sh7724_pfc support registered
-> HW Breakpoints: SH-4A UBC support registered
-> autorequest GPIO-53
-> ------------[ cut here ]------------
-> WARNING: at /opt/usr/src/WORK/morimoto/gitlinux/linux-2.6/drivers/gpio/gpiolib.3
-> Modules linked in:
-> 
-> Pid : 1, Comm:          swapper
-> CPU : 0                 Not tainted  (3.5.0-rc6+ #1407)
-> 
-> PC is at gpio_ensure_requested+0x30/0x78
-> PR is at gpio_ensure_requested+0x30/0x78
-
-Morimoto-san's logs off-list made it clear what happened. Both of these
-platforms are going gpio_request() calls at arch_initcall() time which
-completely screwed up the ordering of the pfc core. We seem to -ENODEV
-out in one place due to missing a pfc pointer initialization elsewhere
-resulting in -EPROBE_DEFER from gpiolib.
-
-Turns out we can just collapse the probe/init stuff anyways, so this
-ought to fix it. I've verified that it fixes Morimoto-san's issue, my
-expectation is that the mackerel case is likewise getting tripped up but
-no one bothered implementing any error detecting logic for gpio_request()
-failing, so it doesn't fail gracefully.
-
-I'll be pushing this out to Linus shortly:
-
----
-
-commit 1e32dfe323d156d5d7b25b9feffe015d19713db2
-Author: Paul Mundt <lethal@linux-sh.org>
-Date:   Wed Aug 1 16:27:38 2012 +0900
-
-    sh: pfc: Fix up init ordering mess.
-    
-    Commit ca5481c68e9fbcea62bb3c78ae6cccf99ca8fb73 ("sh: pfc: Rudimentary
-    pinctrl-backed GPIO support.") introduced a regression for platforms that
-    were doing early GPIO API calls (from arch_initcall() or earlier),
-    leading to a situation where our two-stage registration logic would trip
-    itself up and we'd -ENODEV out of the pinctrl registration path,
-    resulting in endless -EPROBE_DEFER errors. Further lack of checking any
-    sort of errors from gpio_request() resulted in boot time warnings,
-    tripping on the FLAG_REQUESTED test-and-set in gpio_ensure_requested().
-    
-    As it turns out there's no particular need to bother with the two-stage
-    registration, as the platform bus is already available at the point that
-    we have to start caring. As such, it's easiest to simply fold these
-    together in to a single init path, the ordering of which is ensured
-    through the platform's mux registration, as usual.
-    
-    Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Reported-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-    Signed-off-by: Paul Mundt <lethal@linux-sh.org>
-
-diff --git a/drivers/sh/pfc/pinctrl.c b/drivers/sh/pfc/pinctrl.c
-index 814b292..2804eaa 100644
---- a/drivers/sh/pfc/pinctrl.c
-+++ b/drivers/sh/pfc/pinctrl.c
-@@ -325,20 +325,6 @@ static struct pinctrl_desc sh_pfc_pinctrl_desc = {
- 	.confops	= &sh_pfc_pinconf_ops,
- };
- 
--int sh_pfc_register_pinctrl(struct sh_pfc *pfc)
--{
--	sh_pfc_pmx = kzalloc(sizeof(struct sh_pfc_pinctrl), GFP_KERNEL);
--	if (unlikely(!sh_pfc_pmx))
--		return -ENOMEM;
--
--	spin_lock_init(&sh_pfc_pmx->lock);
--
--	sh_pfc_pmx->pfc = pfc;
--
--	return 0;
--}
--EXPORT_SYMBOL_GPL(sh_pfc_register_pinctrl);
--
- static inline void __devinit sh_pfc_map_one_gpio(struct sh_pfc *pfc,
- 						 struct sh_pfc_pinctrl *pmx,
- 						 struct pinmux_gpio *gpio,
-@@ -505,7 +491,7 @@ static struct platform_device sh_pfc_pinctrl_device = {
- 	.id		= -1,
- };
- 
--static int __init sh_pfc_pinctrl_init(void)
-+static int sh_pfc_pinctrl_init(void)
- {
- 	int rc;
- 
-@@ -519,10 +505,22 @@ static int __init sh_pfc_pinctrl_init(void)
- 	return rc;
- }
- 
-+int sh_pfc_register_pinctrl(struct sh_pfc *pfc)
-+{
-+	sh_pfc_pmx = kzalloc(sizeof(struct sh_pfc_pinctrl), GFP_KERNEL);
-+	if (unlikely(!sh_pfc_pmx))
-+		return -ENOMEM;
-+
-+	spin_lock_init(&sh_pfc_pmx->lock);
-+
-+	sh_pfc_pmx->pfc = pfc;
-+
-+	return sh_pfc_pinctrl_init();
-+}
-+EXPORT_SYMBOL_GPL(sh_pfc_register_pinctrl);
-+
- static void __exit sh_pfc_pinctrl_exit(void)
- {
- 	platform_driver_unregister(&sh_pfc_pinctrl_driver);
- }
--
--subsys_initcall(sh_pfc_pinctrl_init);
- module_exit(sh_pfc_pinctrl_exit);
