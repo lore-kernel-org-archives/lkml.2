@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab2HANU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 09:20:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52229 "EHLO
+	id S1753564Ab2HAN0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 09:26:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43460 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751356Ab2HANUZ (ORCPT
+	by vger.kernel.org with ESMTP id S1752991Ab2HAN0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 09:20:25 -0400
-Date: Wed, 1 Aug 2012 14:20:23 +0100
+	Wed, 1 Aug 2012 09:26:53 -0400
+Date: Wed, 1 Aug 2012 14:26:51 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-Message-ID: <20120801132022.GS11892@opensource.wolfsonmicro.com>
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
- <1343741493-17671-3-git-send-email-lee.jones@linaro.org>
- <20120731134214.GK4468@opensource.wolfsonmicro.com>
- <5017EAC3.3080504@linaro.org>
- <20120731142820.GW4468@opensource.wolfsonmicro.com>
- <5017EDCA.4020601@linaro.org>
- <20120731145443.GY4468@opensource.wolfsonmicro.com>
- <5017F68B.3060400@linaro.org>
- <20120731151819.GC4468@opensource.wolfsonmicro.com>
- <5018D880.5090306@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Alex Courbot <acourbot@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+Message-ID: <20120801132651.GU11892@opensource.wolfsonmicro.com>
+References: <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
+ <50170EA0.1010408@wwwdotorg.org>
+ <5017B434.2010706@nvidia.com>
+ <20120731105640.GD16155@avionic-0098.adnet.avionic-design.de>
+ <20120731141328.GS4468@opensource.wolfsonmicro.com>
+ <20120731142216.GA19591@avionic-0098.adnet.avionic-design.de>
+ <20120731142607.GV4468@opensource.wolfsonmicro.com>
+ <20120731143235.GA21126@avionic-0098.adnet.avionic-design.de>
+ <20120731153941.GF4468@opensource.wolfsonmicro.com>
+ <20120801074113.GF29673@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5018D880.5090306@linaro.org>
+In-Reply-To: <20120801074113.GF29673@avionic-0098.adnet.avionic-design.de>
 X-Cookie: Caution: Keep out of reach of children.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 08:19:28AM +0100, Lee Jones wrote:
-> On 31/07/12 16:18, Mark Brown wrote:
+On Wed, Aug 01, 2012 at 09:41:13AM +0200, Thierry Reding wrote:
+> On Tue, Jul 31, 2012 at 04:39:41PM +0100, Mark Brown wrote:
 
-> >I'm not going to apply this patch.  This isn't a vendor BSP, we
-> >shouldn't be putting random hacks like this in core code.
+> > Sure there is - take a copy of the platform data in probe().
 
-> BSP kernel or otherwise, it still seems wrong to me to fail and
-> entire audio driver just because of a broken link.
+> Yes, but that will only work for built-in drivers. If you unload the
+> module and that causes the platform data to be discarded, reloading
+> won't work.
 
-No, really.  Random disconnections in the DAPM graph are just endless
-pain from a support and debug point of view.  This isn't something that
-randomly breaks on specific hardware where we'd expect random errors at
-runtime, it's something that will never have worked - it seems clear
-nobody tested the mainline submission.
-
-It's very disappointing to see such an error exist, and even more
-disappointing that there's no interest in fixing the driver.
+This is why __devinit data will only be discarded when this is not
+possible.
