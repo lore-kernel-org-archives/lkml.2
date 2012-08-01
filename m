@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2HABUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 21:20:14 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:35212 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab2HABUM (ORCPT
+	id S1753498Ab2HABhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 21:37:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:42403 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753439Ab2HABhX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 21:20:12 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: NeilBrown <neilb@suse.de>
-Cc: "C. Schmid" <christian.schmid81@gmx.de>, linux-kernel@vger.kernel.org
-Subject: Re: Complaint - pid-owner Support Removed (CONFIG_NETFILTER_XT_MATCH_OWNER)
-In-Reply-To: Your message of "Tue, 31 Jul 2012 12:41:21 +1000."
-             <20120731124121.5fe10478@notabene.brown>
-From: valdis.kletnieks@vt.edu
-References: <5016DEE2.1060900@gmx.de>
-            <20120731124121.5fe10478@notabene.brown>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1343784008_2037P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 31 Jul 2012 21:20:09 -0400
-Message-ID: <62567.1343784009@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 209.85.213.52 mail-yw0-f52.google.com valdis@vt.edu 4 softfail
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.5018844B.00A6,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Tue, 31 Jul 2012 21:37:23 -0400
+X-IronPort-AV: E=Sophos;i="4.77,690,1336320000"; 
+   d="scan'208";a="5524027"
+Message-ID: <5018897E.4040109@cn.fujitsu.com>
+Date: Wed, 01 Aug 2012 09:42:22 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: gerald.schaefer@de.ibm.com
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [RFC PATCH v5 12/19] memory-hotplug: introduce new function arch_remove_memory()
+References: <50126B83.3050201@cn.fujitsu.com>	<50126E2F.8010301@cn.fujitsu.com>	<20120730102305.GB3631@osiris.boeblingen.de.ibm.com>	<50166379.4090305@cn.fujitsu.com> <20120731144000.33fd4a0a@thinkpad>
+In-Reply-To: <20120731144000.33fd4a0a@thinkpad>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/01 09:37:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/01 09:37:54
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1343784008_2037P
-Content-Type: text/plain; charset=us-ascii
+At 07/31/2012 08:40 PM, Gerald Schaefer Wrote:
+> On Mon, 30 Jul 2012 18:35:37 +0800
+> Wen Congyang <wency@cn.fujitsu.com> wrote:
+> 
+>> At 07/30/2012 06:23 PM, Heiko Carstens Wrote:
+>>> On Fri, Jul 27, 2012 at 06:32:15PM +0800, Wen Congyang wrote:
+>>>> We don't call __add_pages() directly in the function add_memory()
+>>>> because some other architecture related things need to be done
+>>>> before or after calling __add_pages(). So we should introduce
+>>>> a new function arch_remove_memory() to revert the things
+>>>> done in arch_add_memory().
+>>>>
+>>>> Note: the function for s390 is not implemented(I don't know how to
+>>>> implement it for s390).
+>>>
+>>> There is no hardware or firmware interface which could trigger a
+>>> hot memory remove on s390. So there is nothing that needs to be
+>>> implemented.
+>>
+>> Thanks for providing this information.
+>>
+>> According to this, arch_remove_memory() for s390 can just return
+>> -EBUSY.
+> 
+> Yes, but there is a prototype mismatch for arch_remove_memory() on s390
+> and also other architectures (u64 vs. unsigned long).
+> 
+> arch/s390/mm/init.c:262: error: conflicting types for
+> ‘arch_remove_memory’ include/linux/memory_hotplug.h:88: error: previous
+> declaration of ‘arch_remove_memory’ was here
+> 
+> In memory_hotplug.h you have:
+> extern int arch_remove_memory(unsigned long start, unsigned long size);
+> 
+> On all archs other than x86 you have:
+> int arch_remove_memory(u64 start, u64 size)
 
-On Tue, 31 Jul 2012 12:41:21 +1000, NeilBrown said:
-> On Mon, 30 Jul 2012 21:22:10 +0200 "C. Schmid" <christian.schmid81@gmx.de> wrote:
-> > i want to complain about the removal of the --pid-owner Support for iptables.
-> > As far as i understand it this support was just removed without replacement.
->
-> Yes, 7 years ago.
+Thanks for pointing it out. I will fix it.
 
-> "Unfixably broken"
+Wen Congyang
 
-Even *before* it was removed, it declared itself "broken on SMP" (which is a
-good hint on exactly *why* it was unfixable), and why it's not applicable to
-most modern desktop systems anyhow - even an iPad is a dual-core.
-
-And to be honest, the "Linux only cares about big iron not the desktop" is a
-total red herring - if anything, many laptops *are* essentially a single-user
-environment, while big iron boxes are even *more* concerned about per-user
-issues.  I just checked one of the compute clusters across the hall, 1100+
-actual users defined.  How often do desktops/laptops have that many real live
-users?
-
-
---==_Exmh_1343784008_2037P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUBiESAdmEQWDXROgAQIMyw/9GgjLziBYJNoadMGOvDkbeBtpTHZL+qQR
-6ZhmsNtGVwH6A02eIF0JVMyfNxUuTVIRD5BH8LcUU+aYG5wbvieT3KjGrZSNdXMk
-0FdzHanE8eazx+/9FTEQomn9GsGK3ehnuZRhyg3VUtupdyAPJ6RiKtGgXhGtQHr2
-O4kBnS0/FAXNZOAHnzfL07f7q9NFCij4ofCG+WXdAtqs0nu3Zkogy5RafuwsR+kP
-YCNMLkwyuIorcAQZZXwekcDuzM89qCaVx/zbd9alohBRNEBOMJqD4C6B75lwcv81
-QJUvyW5z16Kj6CEduvL/N4TPvyf61mMVlhZWwdpKs8xrKebEDAK1BltCWgByoxR7
-cRTTdCFYO1vAQq00ZJ+CeiWDJwwQ+Tmu54FnyX+E8Fo6V7A9r7RLltB4ZbOdkFBm
-ocuwUEpsOApzFxtoCr0VnFfBpHsL8czYgkhgq9UsM4JX3rlMOskn4F5ONGqee0UY
-fXIk/OM1FkdgfxUMdC0uX3ANZffp0WS0FDa45qPq1UwnmwWIJUNUm98ILdX0vSVZ
-TvTqQTIH7p+ihR/9KUE1yEtp5qis1/fZO0lFNZ+ZTaK/nol4fdIQAejKEm7rHAjr
-pn7C/in7ZXKpKPUvIN8qU3pWPpFtwjZ9PcI5UuBQaZYyUjla5yovSpWRBoO00J5L
-AJCCt4Hypys=
-=OdBt
------END PGP SIGNATURE-----
-
---==_Exmh_1343784008_2037P--
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
