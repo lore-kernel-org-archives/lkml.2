@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab2HAHr7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 03:47:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54175 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab2HAHr5 (ORCPT
+	id S1754721Ab2HAH4T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 03:56:19 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64797 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654Ab2HAH4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 03:47:57 -0400
-Date: Wed, 1 Aug 2012 09:47:42 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Borislav Petkov <bp@alien8.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: awful kconfig help texts.
-Message-ID: <20120801074742.GH29673@avionic-0098.adnet.avionic-design.de>
-References: <20120731151600.GA19412@redhat.com>
- <20120731170741.GA4735@x1.osrc.amd.com>
- <20120731172638.GE16873@home.goodmis.org>
- <20120731174249.GB4735@x1.osrc.amd.com>
+	Wed, 1 Aug 2012 03:56:18 -0400
+Message-ID: <5018E11E.7080907@linaro.org>
+Date: Wed, 01 Aug 2012 08:56:14 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4LFBTxd4L5NLO6ly"
-Content-Disposition: inline
-In-Reply-To: <20120731174249.GB4735@x1.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:SqW882SMg+IgMHMxevSp/nIken/O6NN1H1ulN8JpaK9
- FkHKOWLsEnf79a9rajNc5sQ3ITMkAFi0GUPHjruPslADg+LpNY
- uSfShnY9xThAJLSWjhxZqp6IhBeqWQWhBt+EL8itUU2gt6VROm
- HRGIkHeVnRLAb8qK4AwZYDgkTaeLegrtVFDH3Gn7bzAMjqzEm4
- qKyutjAAQcUh3RzAsKzwY2TeQOaHvZq/uaawtP0VlND5/2SwDN
- J7ZjEDsJmidq2C4XDZ7dKRsrB+nezUMOfaebg8+33HJ03bDB9G
- CWXF71V0E1jZ71CQkz+ToAtSaBEA2P+wE0z4UHUAGO++Ni0dO4
- DC/nr5zW3UjmpJHqGFzDbO9eKVwHl8t/N4v/Skqibm/U/HtyiE
- vwHKg+6Qc3J1Z+JbF94Knfq70DVPpHdm6ydtGEe3eDrK10/cF7
- 1gNZ6
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
+        broonie@opensource.wolfsonmicro.com, olalilja@yahoo.se,
+        STEricsson_nomadik_linux@list.st.com, lrg@ti.com
+Subject: Re: [PATCH 5/6] ARM: ux500: Enable HIGHMEM on all mop500 platforms
+References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <5017EBDC.6010005@linaro.org> <20120731143732.GS6802@n2100.arm.linux.org.uk> <201207312050.03113.arnd@arndb.de> <20120731220145.GD10335@n2100.arm.linux.org.uk>
+In-Reply-To: <20120731220145.GD10335@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 31/07/12 23:01, Russell King - ARM Linux wrote:
+> On Tue, Jul 31, 2012 at 08:50:02PM +0000, Arnd Bergmann wrote:
+>> On Tuesday 31 July 2012, Russell King - ARM Linux wrote:
+>>> I still fail to see how not having highmem enabled would ever cause memory
+>>> corruption errors (unless something dealing with memory in a very very
+>>> wrong way - iow, not using one of the reservation or memory allocation
+>>> methods provided by the kernel.)
+>>
+>> The problem is that all users of ux500 systems pass a command line like
+>>
+>> vmalloc=256M mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M mem=48M@328M mem_issw=1M@383M mem=640M@384M
+>>
+>> This is of course totally bogus and should not be done. If I understand
+>> Lee correctly, one of the issues resulting from passing a command
+>> line like this without enabling highmem is memory corruption.
+>
+> But the question is _why_ does that corruption happen.
+>
+>  From the above, we will end up with the kernel getting:
+>
+> 0x00000000 - 0x07ffffff (128M @ 0)
+> 0x14800000 - 0x177fffff (48M  @ 328M)
+> 0x18000000 - 0x3fffffff (640M @ 384M)
+>
+> with:
+>
+> 0x08000000 - 0x081fffff used for mali
+> 0x0a000000 - 0x147fffff used for hwmem
+> 0x17f00000 - 0x17ffffff used for mem_issw
+>
+> Now, with highmem disabled, the kernel should still map exactly the
+> regions: 0x00000000 - 0x07ffffff, 0x14800000 - 0x177fffff, into the
+> direct mapped region, and truncate the 0x18000000 - 0x3fffffff
+> region appropriately, reducing the amount of memory available such
+> that it won't overlap the vmalloc area (which you've specified to be
+> a minimum of 256M.)
+>
+> This should _NOT_ cause any memory corruption.
+>
+> So, come on guys.  Debugging is *mandatory* for this kind of problem.
+> Papering over it is obscene.
 
---4LFBTxd4L5NLO6ly
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Actually I didn't go any further with it, as I changed to another 
+identical piece of hardware and couldn't reproduce the issue.
 
-On Tue, Jul 31, 2012 at 07:42:49PM +0200, Borislav Petkov wrote:
-> On Tue, Jul 31, 2012 at 01:26:38PM -0400, Steven Rostedt wrote:
-> > Then shouldn't this not have a prompt and just be selected by those
-> > PWM drivers below?
->=20
-> It gives an empty menu due to the deps of the single PWM drivers.
->=20
-> But the whole CONFIG_PWM thing should simply depend on !X86 so that it
-> doesn't appear in drivers/.
+FYI, here's the boot log from the broken board:
 
-I don't think that's a good idea. That would mean I would have to add
-!SPARC and !S390 and many other to that list as well. Also there are a
-couple of drivers that are in the process of being ported which are not
-restricted to ARM or embedded in general. So even if we make this !X86
-now, eventually it will pop up again.
+http://paste.ubuntu.com/1102017/
 
-Thierry
-
---4LFBTxd4L5NLO6ly
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQGN8eAAoJEN0jrNd/PrOhPikP/3F1IEyhYM2lRDIejuVTN8UU
-fwYgvyAPJ9gSj9K+9b8djNS6t4rqnM5XZNm/7SSy3XUQMz8jiWXK0NMDNkZrRuh1
-VAt3ug6M+fj5S3XGquuCw/AvZMbvScyMFG4witjDBO0ZlNPI0KQuKqZeM0KiBili
-GZFl8k9M+oIJmOmA5EK6TZr37Y3JkYw7EJ+1gILMevBqJuZHoyvdADhivLTuthrd
-PAjfGdZZ6RNo6D5MTeArgw9tbyrUdwMsm80x31HCB/WaqGA6HCkgZ2RgYJK5hbBt
-wUnCRrCKz3lnldHLhSBA4BDlHsr/usMOSSq5wVsW5uxOEuGGrLizzFTRiDl5C6vr
-YH8qDcXFKX91xZjWeq9PolkBktQDY4JX524w6QyoPl3YZPOS/GOJT3AF9JnLVo67
-zzZttVcsWT4lNAK2Sj/qmaIr3xcukeYjFVSkF9ihzjkL7uK/8vgk05zVkHAbmFR4
-XYoiog8/pxL1FJc14THSS6aCUXcByOHuoOwRdVUa51ntUfY/BVa3lxiQhq+dU9BP
-ln7zhZwic/vyBqawl4c2saYP3e6aVf/X4cCNM42eMhXa/G3L7cC944gRtZZKqbF+
-YHiXaW26mLpGsbK1zK/ZFyN+CTnHc7Z2DFiZLaRkXKIHVT+0ZSmkUs2XS3xCNZZ9
-PeV3iC+gfe0BGiXH2nAx
-=VOg4
------END PGP SIGNATURE-----
-
---4LFBTxd4L5NLO6ly--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
