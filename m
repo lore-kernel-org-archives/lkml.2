@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab2HAVGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 17:06:01 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:57123 "EHLO mail.atlantis.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755280Ab2HAVF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 17:05:59 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: =?iso-8859-1?q?M=E1rton_N=E9meth?= <nm127@freemail.hu>
-Subject: [PATCH 2/2] leds-clevo-mail: Fix Clevo M5x0V DMI strings
-Date: Wed, 1 Aug 2012 23:04:56 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
-        linux-leds@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
+	id S1755572Ab2HAVH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 17:07:27 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:7997 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754939Ab2HAVHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 17:07:25 -0400
+Message-ID: <50199A8C.1070500@tilera.com>
+Date: Wed, 1 Aug 2012 17:07:24 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Jiang Liu <liuj97@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v3 14/32] PCI/tile: use PCIe capabilities access functions
+ to simplify implementation
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com> <1343836477-7287-15-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1343836477-7287-15-git-send-email-jiang.liu@huawei.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201208012304.56859.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are more variants of Clevo M5x0V laptops and Positivo Mobile is just one of them.
-Another one is UMAX VisionBook 2400WXC. Use only generic Clevo DMI strings to match all
-variants.
+On 8/1/2012 11:54 AM, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
+>
+> Use PCIe capabilities access functions to simplify PCIe tile implementation.
+>
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  arch/tile/kernel/pci.c |   25 +++++--------------------
+>  1 file changed, 5 insertions(+), 20 deletions(-)
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-
---- a/drivers/leds/leds-clevo-mail.c
-+++ b/drivers/leds/leds-clevo-mail.c
-@@ -59,11 +59,10 @@ static struct dmi_system_id __initdata clevo_mail_led_dmi_table[] = {
- 	},
- 	{
- 		.callback = clevo_mail_led_dmi_callback,
--		.ident = "Positivo Mobile",
-+		.ident = "Clevo M5x0V",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "CLEVO Co. "),
- 			DMI_MATCH(DMI_BOARD_NAME, "M5X0V "),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Positivo Mobile"),
- 			DMI_MATCH(DMI_PRODUCT_VERSION, "VT6198")
- 		}
- 	},
-
-
-
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
 -- 
-Ondrej Zary
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
