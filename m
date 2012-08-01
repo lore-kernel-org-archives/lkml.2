@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab2HAT5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 15:57:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56440 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899Ab2HAT5c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 15:57:32 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2] regmap: initialize all irqs to wake disabled
-Date: Wed,  1 Aug 2012 13:57:24 -0600
-Message-Id: <1343851044-7872-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	id S1755122Ab2HAT6D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 15:58:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45574 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754155Ab2HAT6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 15:58:00 -0400
+Date: Wed, 1 Aug 2012 21:57:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>
+Cc: linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] parisc: fix personality flag check in copy_thread()
+Message-ID: <alpine.LNX.2.00.1208012155330.14910@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Directly comparing task_struct->personality against PER_* is not fully 
+correct, as it doesn't take flags potentially stored in top three bytes 
+into account.
 
-The kerneldoc for irq_set_irq_wake() says:
+Analogically, directly forcefully setting personality to PER_LINUX32 or
+PER_LINUX discards any flags stored in the top three bytes.
 
-    Enable/disable power management wakeup mode, which is
-    disabled by default.
-
-regmap_irq_set_wake() clears bits to enable wake for an interrupt,
-and sets bits to disable wake. Hence, we should set all bits in
-wake_buf initially, to mirror the expected disabled state.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
-v2: Use regmap_update_bits() instead of regmap_write().
----
- drivers/base/regmap/regmap-irq.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 5ae5d0e..8bbb0ba 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -321,6 +321,22 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 		}
- 	}
+Found accidentally, untested, I don't have the hardware.
+
+ arch/parisc/kernel/process.c    |    2 +-
+ arch/parisc/kernel/sys_parisc.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/parisc/kernel/process.c b/arch/parisc/kernel/process.c
+index d4b94b3..2c05a92 100644
+--- a/arch/parisc/kernel/process.c
++++ b/arch/parisc/kernel/process.c
+@@ -309,7 +309,7 @@ copy_thread(unsigned long clone_flags, unsigned long usp,
+ 		cregs->ksp = (unsigned long)stack
+ 			+ (pregs->gr[21] & (THREAD_SIZE - 1));
+ 		cregs->gr[30] = usp;
+-		if (p->personality == PER_HPUX) {
++		if (personality(p->personality) == PER_HPUX) {
+ #ifdef CONFIG_HPUX
+ 			cregs->kpc = (unsigned long) &hpux_child_return;
+ #else
+diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
+index c9b9322..f309990 100644
+--- a/arch/parisc/kernel/sys_parisc.c
++++ b/arch/parisc/kernel/sys_parisc.c
+@@ -225,12 +225,12 @@ long parisc_personality(unsigned long personality)
+ 	long err;
  
-+	/* Wake is disabled by default */
-+	if (d->wake_buf) {
-+		for (i = 0; i < chip->num_regs; i++) {
-+			d->wake_buf[i] = d->mask_buf_def[i];
-+			reg = chip->wake_base +
-+				(i * map->reg_stride * d->irq_reg_stride);
-+			ret = regmap_update_bits(map, reg, d->wake_buf[i],
-+						 d->wake_buf[i]);
-+			if (ret != 0) {
-+				dev_err(map->dev, "Failed to set masks in 0x%x: %d\n",
-+					reg, ret);
-+				goto err_alloc;
-+			}
-+		}
-+	}
-+
- 	if (irq_base)
- 		d->domain = irq_domain_add_legacy(map->dev->of_node,
- 						  chip->num_irqs, irq_base, 0,
--- 
-1.7.0.4
+ 	if (personality(current->personality) == PER_LINUX32
+-	    && personality == PER_LINUX)
+-		personality = PER_LINUX32;
++	    && personality(personality) == PER_LINUX)
++		personality &= ~PER_LINUX | PER_LINUX32;
+ 
+ 	err = sys_personality(personality);
+-	if (err == PER_LINUX32)
+-		err = PER_LINUX;
++	if (personality(err) == PER_LINUX32)
++		err &= ~PER_LINUX32 | PER_LINUX;
+ 
+ 	return err;
+ }
 
+-- 
+Jiri Kosina
+SUSE Labs
