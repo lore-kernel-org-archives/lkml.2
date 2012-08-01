@@ -1,33 +1,41 @@
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1753928Ab2G3BiN (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Sun, 29 Jul 2012 21:38:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:32852 "EHLO
-        mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1753903Ab2G3BiK (ORCPT
-        <rfc822;linux-kernel@vger.kernel.org>);
-        Sun, 29 Jul 2012 21:38:10 -0400
+	id S1751077Ab2HAEEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 00:04:34 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42038 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750737Ab2HAEEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 00:04:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKmqBnaNMLqLUTbUq==am-SAHEDNCpRnTmq2Wokw4oSv_BLnQw@mail.gmail.com>
-References: <CAKmqBnaO5dXKRBLkvz7M68QjjXGGHmPXwcsuTFp0APb3q_tC-A@mail.gmail.com>
-        <CAKmqBnZgZfXPsbBhJOAH1kkmtJ6pB0-DthwX30cRE0qCAuVagw@mail.gmail.com>
-        <CAKmqBna81qZ7nrz-v7rnizU=VPLk6Sw35YsLc5srvkUwf-Qp8Q@mail.gmail.com>
-        <CAKmqBnbyRuvCbKRTY=pgeYDo9BMbGSPn727a_xMKMOvSBeaqoA@mail.gmail.com>
-        <CAKmqBnbw1Ukkt7JrHHep8cB4dOSbo2eKp6rdsrGWMZTDentF1g@mail.gmail.com>
-        <CAKmqBnbtRcWTtaVREcKPwOf2H=3ZqXDa9RuAo5byW-ZafE5nog@mail.gmail.com>
-        <CAKmqBnaNMLqLUTbUq==am-SAHEDNCpRnTmq2Wokw4oSv_BLnQw@mail.gmail.com>
-Date: Mon, 30 Jul 2012 09:38:08 +0800
-Message-ID: <CAKmqBnbZp2YZestfpRq3SoY+ac0p-2rGK91Bg18B+PYBkyceJQ@mail.gmail.com>
-Subject: hi
-From: Jinghao Printing - CHINA <ulyssesijli@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
+References: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
+Date: Wed, 1 Aug 2012 06:04:31 +0200
+Message-ID: <CABPqkBRRn4f00qCr+p4fh3L7SXqOBHi3CB4TJbjzSxexWRmYRw@mail.gmail.com>
+Subject: Re: [PATCHv8 00/13] perf: Add backtrace post dwarf unwind
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Hi, we are a printing company, we can print hang tags, color box,
-labels. Please reply if you need it.
-
-Best regards,
-David Wu
+On Fri, Jul 27, 2012 at 2:23 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> hi,
+> patches available also as tarball in here:
+> http://people.redhat.com/~jolsa/perf_post_unwind_v8.tar.bz2
+>
+> v8 changes:
+>    - patch 2 - added dump registers ABI specification as suggested
+>                by Stephane
+>    - v7 patches 9,10,16,17 already in
+>
+Patches 4, 7 do not apply cleanly for me on tip-master @ commit 2a7d7ce
+when I use the tarball version of the patchset.
