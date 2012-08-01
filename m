@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab2HAKMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 06:12:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57398 "EHLO mx1.redhat.com"
+	id S1754925Ab2HAKMD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 06:12:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3805 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754865Ab2HAKMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 06:12:10 -0400
+	id S1754177Ab2HAKL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 06:11:59 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,141 +14,80 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 10/13] perf, tool: Add libunwind dependency for dwarf cfi unwinding
-Date: Wed,  1 Aug 2012 12:11:02 +0200
-Message-Id: <1343815865-5511-11-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 05/13] perf: Add perf_output_skip function to skip bytes in sample
+Date: Wed,  1 Aug 2012 12:10:57 +0200
+Message-Id: <1343815865-5511-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1343815865-5511-1-git-send-email-jolsa@redhat.com>
 References: <1343815865-5511-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding libunwind to be linked with perf if available. It's required
-for the to get dwarf cfi unwinding support.
+Introducing perf_output_skip function to be able to skip data
+within the perf ring buffer.
 
-Also building perf with the dwarf call frame informations by default,
-so that we can unwind callchains in perf itself.
+When writing data into perf ring buffer we first reserve needed
+place in ring buffer and then copy the actual data.
 
-Adding LIBUNWIND_DIR Makefile variable allowing user to specify
-the directory with libunwind to be linked. This is used for
-debug purposes.
+There's a possibility we won't be able to fill all the reserved
+size with data, so we need a way to skip the remaining bytes.
+
+This is going to be useful when storing the user stack dump,
+where we might end up with less data than we originally requested.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/Makefile                 |   30 +++++++++++++++++++++++++++++-
- tools/perf/config/feature-tests.mak |   25 +++++++++++++++++++++++++
- 2 files changed, 54 insertions(+), 1 deletions(-)
+ include/linux/perf_event.h  |    2 ++
+ kernel/events/internal.h    |    4 ++++
+ kernel/events/ring_buffer.c |    6 ++++++
+ 3 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 0548d93..a1ee011 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -38,6 +38,9 @@ include config/utilities.mak
- # Define NO_NEWT if you do not want TUI support.
- #
- # Define NO_DEMANGLE if you do not want C++ symbol demangling.
-+#
-+# Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
-+# backtrace post unwind.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index d41394a..8a73f75 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1321,6 +1321,8 @@ extern int perf_output_begin(struct perf_output_handle *handle,
+ extern void perf_output_end(struct perf_output_handle *handle);
+ extern unsigned int perf_output_copy(struct perf_output_handle *handle,
+ 			     const void *buf, unsigned int len);
++extern unsigned int perf_output_skip(struct perf_output_handle *handle,
++				     unsigned int len);
+ extern int perf_swevent_get_recursion_context(void);
+ extern void perf_swevent_put_recursion_context(int rctx);
+ extern void perf_event_enable(struct perf_event *event);
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 7fd5408..ce7bdfc 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -114,6 +114,10 @@ static inline int memcpy_common(void *dst, const void *src, size_t n)
  
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-@@ -59,6 +62,7 @@ AR = $(CROSS_COMPILE)ar
- ifeq ($(ARCH),i386)
- 	ARCH := x86
- 	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
-@@ -72,6 +76,7 @@ ifeq ($(ARCH),x86_64)
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
- 	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
- endif
+ DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
  
- # Treat warnings as errors unless directed not to
-@@ -92,7 +97,7 @@ ifdef PARSER_DEBUG
- 	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
- endif
- 
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
-+CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
-@@ -457,6 +462,21 @@ ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
- endif # Dwarf support
- endif # NO_DWARF
- 
-+ifndef NO_LIBUNWIND
-+# for linking with debug library, run like:
-+# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
-+ifdef LIBUNWIND_DIR
-+	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
-+	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
-+endif
++#define MEMCPY_SKIP(dst, src, n) (n)
 +
-+FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-+ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
-+	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
-+	NO_LIBUNWIND := 1
-+endif # Libunwind support
-+endif # NO_LIBUNWIND
++DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
 +
- -include arch/$(ARCH)/Makefile
- 
- ifneq ($(OUTPUT),)
-@@ -488,6 +508,14 @@ else
- endif # PERF_HAVE_DWARF_REGS
- endif # NO_DWARF
- 
-+ifdef NO_LIBUNWIND
-+	BASIC_CFLAGS += -DNO_LIBUNWIND_SUPPORT
-+else
-+	EXTLIBS += $(LIBUNWIND_LIBS)
-+	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
-+	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
-+endif
-+
- ifdef NO_NEWT
- 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
- else
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 6c18785..2f1156a 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -154,3 +154,28 @@ int main(void)
- 	return 0;
+ #ifndef arch_perf_out_copy_user
+ #define arch_perf_out_copy_user __copy_from_user_inatomic
+ #endif
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index b4c2ad3..23cb34f 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -188,6 +188,12 @@ unsigned int perf_output_copy(struct perf_output_handle *handle,
+ 	return __output_copy(handle, buf, len);
  }
- endef
-+
-+ifndef NO_LIBUNWIND
-+define SOURCE_LIBUNWIND
-+#include <libunwind.h>
-+#include <stdlib.h>
-+
-+extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
-+                                      unw_word_t ip,
-+                                      unw_dyn_info_t *di,
-+                                      unw_proc_info_t *pi,
-+                                      int need_unwind_info, void *arg);
-+
-+
-+#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
-+
-+int main(void)
+ 
++unsigned int perf_output_skip(struct perf_output_handle *handle,
++			      unsigned int len)
 +{
-+	unw_addr_space_t addr_space;
-+	addr_space = unw_create_addr_space(NULL, 0);
-+	unw_init_remote(NULL, addr_space, NULL);
-+	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
-+	return 0;
++	return __output_skip(handle, NULL, len);
 +}
-+endef
-+endif
++
+ void perf_output_end(struct perf_output_handle *handle)
+ {
+ 	perf_output_put_handle(handle);
 -- 
 1.7.7.6
 
