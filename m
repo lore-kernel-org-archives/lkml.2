@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab2HAQyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 12:54:10 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51015 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2HAQyH (ORCPT
+	id S1752958Ab2HAQ5n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 12:57:43 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:35579 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab2HAQ5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 12:54:07 -0400
-Date: Wed, 1 Aug 2012 17:54:00 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: matt.fleming@intel.com, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
-Message-ID: <20120801165400.GA3042@srcf.ucam.org>
-References: <1343407934-459-1-git-send-email-mjg@redhat.com>
- <20120731223240.GD19134@kroah.com>
+	Wed, 1 Aug 2012 12:57:42 -0400
+Date: Wed, 1 Aug 2012 19:57:36 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
+        GregKH <greg@kroah.com>
+Subject: Re: [PATCH 1/2] onewire: w1-gpio: add ext_pullup_enable pin in
+ platform data
+Message-ID: <20120801165736.GQ27847@sci.fi>
+Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>,
+	Daniel Mack <zonque@gmail.com>, Evgeniy Polyakov <zbr@ioremap.net>,
+	linux-kernel@vger.kernel.org, GregKH <greg@kroah.com>
+References: <1343249670-14985-1-git-send-email-zonque@gmail.com>
+ <20120730181238.GA23443@ioremap.net>
+ <20120731005929.GP27847@sci.fi>
+ <501778DA.5020107@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120731223240.GD19134@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <501778DA.5020107@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 03:32:40PM -0700, Greg KH wrote:
+On Tue, Jul 31, 2012 at 08:19:06AM +0200, Daniel Mack wrote:
+> On 31.07.2012 02:59, Ville Syrjälä wrote:
+> > On Mon, Jul 30, 2012 at 10:12:39PM +0400, Evgeniy Polyakov wrote:
+> >> Hi
+> >>
+> >> Sorry for long delay
+> >> [resend with fixed Greg's address :)]
+> >>
+> >> On Wed, Jul 25, 2012 at 10:54:29PM +0200, Daniel Mack (zonque@gmail.com) wrote:
+> >>> In the process of porting boards to devicetree implemenation, we should
+> >>> keep information about external circuitry where they belong - the
+> >>> individual drivers.
+> >>>
+> >>> This patch adds a way to specify a GPIO to drive the (optional) external
+> >>> pull-up logic, rather than using a function pointer for that.
+> >>
+> >> I do not object against this patch, but I have rather limited knowledge
+> >> about gpio driver. Patch looks good, feel free to add my
+> >> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+> >>
+> >> Greg, please pull it into your tree, if Ville does not object.
+> > 
+> > No objections from me.
+> 
+> I take this as an Acked-by:?
 
-> With this series, does the latest MacBook work properly for the Intel
-> graphics driver?  Or is this to resolve some other hardware issue?
+Sure, why not :)
 
-Apple only seem to provide the ROM for the radeon. Intel normally 
-stands a much better chance of working without a ROM - the only thing it 
-really uses it for is the VBT, and I'm thinking about a couple of ways 
-of handlng that.
+Acked-by: Ville Syrjälä <syrjala@sci.fi>
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Ville Syrjälä
+syrjala@sci.fi
+http://www.sci.fi/~syrjala/
