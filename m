@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab2HAAn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 20:43:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1868 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab2HAAnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 20:43:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="191543160"
-Date: Wed, 1 Aug 2012 08:43:19 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org
-Subject: pci_get_subsys: GFP_KERNEL allocations with IRQs disabled
-Message-ID: <20120801004319.GA7043@localhost>
-References: <20120731121759.GA17822@localhost>
- <5017D19B.5080806@redhat.com>
- <1343738627.27983.30.camel@gandalf.stny.rr.com>
- <5017D4AB.3090107@redhat.com>
- <1343740419.27983.33.camel@gandalf.stny.rr.com>
- <20120731234336.GA5526@localhost>
- <1343778699.27983.70.camel@gandalf.stny.rr.com>
- <20120731235705.GW2422@linux.vnet.ibm.com>
- <1343779778.27983.73.camel@gandalf.stny.rr.com>
- <20120801001811.GX2422@linux.vnet.ibm.com>
+	id S1756296Ab2HAAru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 20:47:50 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50668 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab2HAArs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 20:47:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120801001811.GX2422@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120622154645.1405.7749.stgit@localhost.localdomain>
+References: <20120622153600.1405.15575.stgit@localhost.localdomain>
+	<20120622154645.1405.7749.stgit@localhost.localdomain>
+Date: Tue, 31 Jul 2012 17:47:45 -0700
+X-Google-Sender-Auth: fK_b9gO1bWwFXQL80dOe2-Girck
+Message-ID: <CAE9FiQXfHYTM7PQcfeENHa+WXtrc1vJ2WKKFX=DT3tvJJFGb0w@mail.gmail.com>
+Subject: Re: [PATCH 12/12] tty: move the handling of the tty release logic
+From: Yinghai Lu <yinghai@kernel.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 05:18:11PM -0700, Paul E. McKenney wrote:
-> On Tue, Jul 31, 2012 at 08:09:38PM -0400, Steven Rostedt wrote:
-> > On Tue, 2012-07-31 at 16:57 -0700, Paul E. McKenney wrote:
-> > 
-> > > > What was the next lines? I bet you it was "PASSED". Which means it did
-> > > > not fail. This is the second bug you found that has to do with RCU being
-> > > > called in 'idle'. The one that Paul posted a patch for.
-> > > 
-> > > Though it needs another patch to actually use it in the right place...
-> > 
-> > Right. Something like this:
-> 
-> Looks good to me!
- 
-With all 3 patches applied, the warning on __update_max_tr finally
-goes away. Thanks!
+On Fri, Jun 22, 2012 at 8:47 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> Now that we don't have tty->termios tied to drivers->tty we can untangle
+> the logic here. In addition we can push the removal logic out of the
+> destructor path.
+>
+> At that point we can think about sorting out tty_port and console and all
+> the other ugly hangovers.
+>
+> An important other property we now have is that the tty mutex does now cover
+> the drivers array. An assumption other bits of the code made and which is
+> necessary for the tty lock patch.
+>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
+>
+>  drivers/tty/pty.c               |    8 --------
+>  drivers/tty/tty_io.c            |   16 +++++-----------
+>  drivers/tty/vt/vt.c             |    1 -
+>  drivers/usb/serial/usb-serial.c |    3 +--
+>  include/linux/tty.h             |    1 -
+>  include/linux/tty_driver.h      |   11 +++--------
+>  6 files changed, 9 insertions(+), 31 deletions(-)
 
-However, this unrelated warning still reliably remains (the same config).
-I think it's pci_get_subsys() triggered this assert:
+Hi, Alan
 
-        /*
-         * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
-         */
-        if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
-                return;
+This one cause regression on my test setup.
 
-[   91.282131] machine restart
-[   91.283895] ------------[ cut here ]------------
-[   91.284731] WARNING: at /c/wfg/linux/kernel/lockdep.c:2739 lockdep_trace_alloc+0x1fb/0x210()
-[   91.286132] Modules linked in:
-[   91.286703] Pid: 697, comm: reboot Not tainted 3.5.0-00024-g01ff5db-dirty #4
-[   91.287859] Call Trace:
-[   91.288289]  [<81050148>] warn_slowpath_common+0xb8/0x100
-[   91.289338]  [<8110acdb>] ? lockdep_trace_alloc+0x1fb/0x210
-[   91.290264]  [<8110acdb>] ? lockdep_trace_alloc+0x1fb/0x210
-[   91.291161]  [<810501ce>] warn_slowpath_null+0x3e/0x50
-[   91.292042]  [<8110acdb>] lockdep_trace_alloc+0x1fb/0x210
-[   91.292934]  [<81228e25>] kmem_cache_alloc_trace+0x55/0x600
-[   91.292934]  [<813025ca>] ? kobject_put+0x9a/0x160
-[   91.292934]  [<814e95e0>] ? klist_iter_exit+0x30/0x50
-[   91.292934]  [<81405881>] ? bus_find_device+0xf1/0x120
-[   91.292934]  [<81361a3c>] ? pci_get_subsys+0x11c/0x1b0
-[   91.292934]  [<81361a3c>] pci_get_subsys+0x11c/0x1b0
-[   91.292934]  [<81361afe>] pci_get_device+0x2e/0x40
-[   91.292934]  [<81033e25>] mach_reboot_fixups+0xa5/0xd0
-[   91.292934]  [<81027611>] native_machine_emergency_restart+0x1f1/0x590
-[   91.292934]  [<814f2e00>] ? printk+0x4b/0x5b
-[   91.292934]  [<810269ef>] native_machine_restart+0x6f/0x80
-[   91.292934]  [<810271cc>] machine_restart+0x1c/0x30
-[   91.292934]  [<810886e0>] kernel_restart+0x70/0xc0
-[   91.292934]  [<81088a85>] sys_reboot+0x325/0x380
-[   91.292934]  [<811f796c>] ? handle_pte_fault+0xdc/0x1740
-[   91.292934]  [<811f93e7>] ? handle_mm_fault+0x417/0x4a0
-[   91.292934]  [<8103e07b>] ? do_page_fault+0x7fb/0xb30
-[   91.292934]  [<810b33e7>] ? up_read+0x37/0x70
-[   91.292934]  [<8103e07b>] ? do_page_fault+0x7fb/0xb30
-[   91.292934]  [<8123c063>] ? do_sys_open+0x3a3/0x3f0
-[   91.292934]  [<8123c063>] ? do_sys_open+0x3a3/0x3f0
-[   91.292934]  [<810b0270>] ? update_rmtp+0xe0/0xe0
-[   91.292934]  [<8150376e>] ? restore_all+0xf/0xf
-[   91.292934]  [<8103d880>] ? vmalloc_sync_all+0x320/0x320
-[   91.292934]  [<81109fca>] ? trace_hardirqs_on_caller+0x28a/0x380
-[   91.292934]  [<81311594>] ? trace_hardirqs_on_thunk+0xc/0x10
-[   91.292934]  [<81503735>] syscall_call+0x7/0xb
+that setup is booting from pxe and initrd is updated from opensuse
+11.3 rescue disk.
 
-Thanks,
-Fengguang
+kernel has command line 115200, and later serial console will use
+115200 automatically.
+
+but with this one, serial console will switch back to 9600 instead.
+
+bisect said:
+
+36b3c070d2346c890d690d71f6eab02f8c511137 is the first bad commit
+commit 36b3c070d2346c890d690d71f6eab02f8c511137
+Author: Alan Cox <alan@linux.intel.com>
+Date:   Tue Jul 17 17:06:57 2012 +0100
+
+    tty: Move the handling of the tty release logic
+
+    Now that we don't have tty->termios tied to drivers->tty we can untangle
+    the logic here. In addition we can push the removal logic out of the
+    destructor path.
+
+    At that point we can think about sorting out tty_port and console and all
+    the other ugly hangovers.
+
+    Signed-off-by: Alan Cox <alan@linux.intel.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+:040000 040000 44db8111f7e5be2f60ae2b41328108a6e533f8a4
+d0af41e84b2657e308a92e2ebad04ea5594e6bb4 M	drivers
+:040000 040000 f75618c564287072c6a6a9d5462355ab780b06b8
+4606b8b123694a2e8aaf1d3708fda66bda843742 M	include
