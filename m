@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab2HAPHP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:07:15 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59669 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab2HAPHN (ORCPT
+	id S1755488Ab2HAPMY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:12:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51662 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325Ab2HAPMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:07:13 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 1 Aug 2012 08:07:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: omap2-mcspi: Fix the error handling in probe
-Message-ID: <20120801150713.GB15630@roeck-us.net>
-References: <1343813788-19165-1-git-send-email-shubhrajyoti@ti.com>
+	Wed, 1 Aug 2012 11:12:23 -0400
+Message-ID: <50194750.2050601@linutronix.de>
+Date: Wed, 01 Aug 2012 17:12:16 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343813788-19165-1-git-send-email-shubhrajyoti@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Roland McGrath <roland@hack.frob.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, ananth@in.ibm.com,
+        a.p.zijlstra@chello.nl, mingo@redhat.com, srikar@linux.vnet.ibm.com
+Subject: Re: Q: user_enable_single_step() && update_debugctlmsr()
+References: <50183273.9070304@linutronix.de> <20120801122616.GA32705@redhat.com> <20120801130118.GA2386@redhat.com> <50192FF5.1060208@linutronix.de> <20120801134652.GA4707@redhat.com> <50193528.3070503@linutronix.de> <20120801140121.GA5333@redhat.com> <50193B5C.90404@linutronix.de> <20120801143132.GA7550@redhat.com> <5019427B.1070002@linutronix.de> <20120801150119.GA8845@redhat.com>
+In-Reply-To: <20120801150119.GA8845@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 03:06:28PM +0530, Shubhrajyoti D wrote:
-> The kfree() is taken care of by the spi core (spi_master_release() function)
-> that is called once the last reference to the underlying struct device has
-> been released. So the driver need not call kfree.
-> 
-> Also the put was missed in some of the error handling fix the same.
-> There by fixing the missing device_put in some of the error paths.
-> 
-> Cc: Guenter Roeck <linux@roeck-us.net>
+On 08/01/2012 05:01 PM, Oleg Nesterov wrote:
+> On 08/01, Sebastian Andrzej Siewior wrote:
+>> So a patch like
+>> --- a/arch/x86/kernel/step.c
+>> +++ b/arch/x86/kernel/step.c
+>> @@ -173,8 +173,8 @@ static void enable_step(struct task_struct *child,
+>> bool block)
+>>                  unsigned long debugctl = get_debugctlmsr();
+>>
+>>                  debugctl |= DEBUGCTLMSR_BTF;
+>> -               update_debugctlmsr(debugctl);
+>>                  set_tsk_thread_flag(child, TIF_BLOCKSTEP);
+>> +               update_debugctlmsr(debugctl);
+>>          } else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
+>>                  unsigned long debugctl = get_debugctlmsr();
+>>
+>> should fix the race
+>
+> No, I don't think it can fix something ;) or make any difference.
 
-Reported-by: may be better here.
+Why? You _first_ set the task flag followed by the CPU register. Now 
+switch_to() would see the bit set and act.
 
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+>> and _yes_ I also would follow your suggestion to
+>> remove this update_debugctlmsr() here since switch_to() should do this.
+>
+> Agreed, but once again, uprobes needs it if child == current (but we should
+> move this code into the trivial helper). If we change (I hope) uprobes to
+> avoid user_enable_single_step() we will export the helper.
 
-Acked-by: Guenter Roeck <linux@roeck-us.net>
+Okay. Looking at TIF_NOTSC I see that it does a preempt_disable() while
+playing with the bit. So this would be probably more obvious than
+switching the order :)
 
-I suspect that "spi_master_put(master);" may also be missing in
-omap2_mcspi_remove(), but we'll need someone to confirm that.
+>
+> Oleg.
 
-Thanks,
-Guenter
-
-> ---
->  drivers/spi/spi-omap2-mcspi.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-> index 7d46b15..b5035e2 100644
-> --- a/drivers/spi/spi-omap2-mcspi.c
-> +++ b/drivers/spi/spi-omap2-mcspi.c
-> @@ -1203,18 +1203,16 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
->  
->  	status = spi_register_master(master);
->  	if (status < 0)
-> -		goto err_spi_register;
-> +		goto disable_pm;
->  
->  	return status;
->  
-> -err_spi_register:
-> -	spi_master_put(master);
->  disable_pm:
->  	pm_runtime_disable(&pdev->dev);
->  dma_chnl_free:
->  	kfree(mcspi->dma_channels);
->  free_master:
-> -	kfree(master);
-> +	spi_master_put(master);
->  	platform_set_drvdata(pdev, NULL);
->  	return status;
->  }
-> -- 
-> 1.7.5.4
-> 
-> 
+Sebastian
