@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab2HAKL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 06:11:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54932 "EHLO mx1.redhat.com"
+	id S1754950Ab2HAKMO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 06:12:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57398 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754177Ab2HAKLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 06:11:55 -0400
+	id S1754865Ab2HAKMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 06:12:10 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -13,148 +13,142 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
-        Jiri Olsa <jolsa@redhat.com>, Andrew Vagin <avagin@openvz.org>
-Subject: [PATCH 07/13] perf: Add attribute to filter out callchains
-Date: Wed,  1 Aug 2012 12:10:59 +0200
-Message-Id: <1343815865-5511-8-git-send-email-jolsa@redhat.com>
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 10/13] perf, tool: Add libunwind dependency for dwarf cfi unwinding
+Date: Wed,  1 Aug 2012 12:11:02 +0200
+Message-Id: <1343815865-5511-11-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1343815865-5511-1-git-send-email-jolsa@redhat.com>
 References: <1343815865-5511-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com> 
+Adding libunwind to be linked with perf if available. It's required
+for the to get dwarf cfi unwinding support.
 
-Introducing following bits to the the perf_event_attr struct:
-  - exclude_callchain_kernel to filter out kernel callchain
-    from the sample dump
-  - exclude_callchain_user to filter out user callchain
-    from the sample dump
+Also building perf with the dwarf call frame informations by default,
+so that we can unwind callchains in perf itself.
 
-We need to be able to disable standard user callchain dump
-when we use the dwarf cfi callchain mode, because frame
-pointer based user callchains are useless in this mode.
+Adding LIBUNWIND_DIR Makefile variable allowing user to specify
+the directory with libunwind to be linked. This is used for
+debug purposes.
 
-Implementing also exclude_callchain_kernel to have complete
-set of options.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-[ Added kernel callchains filtering ]
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-CC: Andrew Vagin <avagin@openvz.org>
+Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/perf_event.h |    5 ++++-
- kernel/events/callchain.c  |   36 +++++++++++++++++++++---------------
- kernel/events/core.c       |    6 +++++-
- kernel/events/internal.h   |    3 ++-
- 4 files changed, 32 insertions(+), 18 deletions(-)
+ tools/perf/Makefile                 |   30 +++++++++++++++++++++++++++++-
+ tools/perf/config/feature-tests.mak |   25 +++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index d1d25f6..297ca3d 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -268,7 +268,10 @@ struct perf_event_attr {
- 				exclude_host   :  1, /* don't count in host   */
- 				exclude_guest  :  1, /* don't count in guest  */
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 0548d93..a1ee011 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -38,6 +38,9 @@ include config/utilities.mak
+ # Define NO_NEWT if you do not want TUI support.
+ #
+ # Define NO_DEMANGLE if you do not want C++ symbol demangling.
++#
++# Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
++# backtrace post unwind.
  
--				__reserved_1   : 43;
-+				exclude_callchain_kernel : 1, /* exclude kernel callchains */
-+				exclude_callchain_user   : 1, /* exclude user callchains */
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+@@ -59,6 +62,7 @@ AR = $(CROSS_COMPILE)ar
+ ifeq ($(ARCH),i386)
+ 	ARCH := x86
+ 	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86
+ endif
+ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+@@ -72,6 +76,7 @@ ifeq ($(ARCH),x86_64)
+ 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+ 	endif
+ 	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+ endif
+ 
+ # Treat warnings as errors unless directed not to
+@@ -92,7 +97,7 @@ ifdef PARSER_DEBUG
+ 	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
+ endif
+ 
+-CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
++CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
+ EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ ALL_LDFLAGS = $(LDFLAGS)
+@@ -457,6 +462,21 @@ ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
+ endif # Dwarf support
+ endif # NO_DWARF
+ 
++ifndef NO_LIBUNWIND
++# for linking with debug library, run like:
++# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
++ifdef LIBUNWIND_DIR
++	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
++	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
++endif
 +
-+				__reserved_1   : 41;
++FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
++ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
++	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
++	NO_LIBUNWIND := 1
++endif # Libunwind support
++endif # NO_LIBUNWIND
++
+ -include arch/$(ARCH)/Makefile
  
- 	union {
- 		__u32		wakeup_events;	  /* wakeup every n events */
-diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-index 98d4597..cbed627 100644
---- a/kernel/events/callchain.c
-+++ b/kernel/events/callchain.c
-@@ -154,7 +154,8 @@ put_callchain_entry(int rctx)
+ ifneq ($(OUTPUT),)
+@@ -488,6 +508,14 @@ else
+ endif # PERF_HAVE_DWARF_REGS
+ endif # NO_DWARF
+ 
++ifdef NO_LIBUNWIND
++	BASIC_CFLAGS += -DNO_LIBUNWIND_SUPPORT
++else
++	EXTLIBS += $(LIBUNWIND_LIBS)
++	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
++	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
++endif
++
+ ifdef NO_NEWT
+ 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
+ else
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 6c18785..2f1156a 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -154,3 +154,28 @@ int main(void)
+ 	return 0;
  }
- 
- struct perf_callchain_entry *
--perf_callchain(struct perf_event *event, struct pt_regs *regs)
-+perf_callchain(struct perf_event *event, struct pt_regs *regs,
-+	       int kernel, int user)
- {
- 	int rctx;
- 	struct perf_callchain_entry *entry;
-@@ -169,24 +170,29 @@ perf_callchain(struct perf_event *event, struct pt_regs *regs)
- 
- 	entry->nr = 0;
- 
--	if (!user_mode(regs)) {
-+	if (kernel && !user_mode(regs)) {
- 		perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
- 		perf_callchain_kernel(entry, regs);
--		if (current->mm)
--			regs = task_pt_regs(current);
--		else
--			regs = NULL;
- 	}
- 
--	if (regs) {
--		/*
--		 * Disallow cross-task user callchains.
--		 */
--		if (event->ctx->task && event->ctx->task != current)
--			goto exit_put;
--
--		perf_callchain_store(entry, PERF_CONTEXT_USER);
--		perf_callchain_user(entry, regs);
-+	if (user) {
-+		if (!user_mode(regs)) {
-+			if  (current->mm)
-+				regs = task_pt_regs(current);
-+			else
-+				regs = NULL;
-+		}
+ endef
 +
-+		if (regs) {
-+			/*
-+			 * Disallow cross-task user callchains.
-+			 */
-+			if (event->ctx->task && event->ctx->task != current)
-+				goto exit_put;
++ifndef NO_LIBUNWIND
++define SOURCE_LIBUNWIND
++#include <libunwind.h>
++#include <stdlib.h>
 +
-+			perf_callchain_store(entry, PERF_CONTEXT_USER);
-+			perf_callchain_user(entry, regs);
-+		}
- 	}
- 
- exit_put:
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index c4582bb..0902d4a 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4130,8 +4130,12 @@ void perf_prepare_sample(struct perf_event_header *header,
- 
- 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
- 		int size = 1;
-+		int kernel = !event->attr.exclude_callchain_kernel;
-+		int user   = !event->attr.exclude_callchain_user;
- 
--		data->callchain = perf_callchain(event, regs);
-+		if (kernel || user)
-+			data->callchain = perf_callchain(event, regs,
-+							 kernel, user);
- 
- 		if (data->callchain)
- 			size += data->callchain->nr;
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index ce7bdfc..95d0215 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -126,7 +126,8 @@ DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
- 
- /* Callchain handling */
- extern struct perf_callchain_entry *
--perf_callchain(struct perf_event *event, struct pt_regs *regs);
-+perf_callchain(struct perf_event *event, struct pt_regs *regs,
-+	       int kernel, int user);
- extern int get_callchain_buffers(void);
- extern void put_callchain_buffers(void);
- 
++extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
++                                      unw_word_t ip,
++                                      unw_dyn_info_t *di,
++                                      unw_proc_info_t *pi,
++                                      int need_unwind_info, void *arg);
++
++
++#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
++
++int main(void)
++{
++	unw_addr_space_t addr_space;
++	addr_space = unw_create_addr_space(NULL, 0);
++	unw_init_remote(NULL, addr_space, NULL);
++	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
++	return 0;
++}
++endef
++endif
 -- 
 1.7.7.6
 
