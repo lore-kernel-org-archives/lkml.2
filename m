@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab2HAI5s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 04:57:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547Ab2HAI5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 04:57:46 -0400
-Date: Wed, 1 Aug 2012 10:57:12 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Subject: Re: [PATCHv8 00/13] perf: Add backtrace post dwarf unwind
-Message-ID: <20120801085712.GA2528@krava.brq.redhat.com>
-References: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
- <CABPqkBRRn4f00qCr+p4fh3L7SXqOBHi3CB4TJbjzSxexWRmYRw@mail.gmail.com>
+	id S1753107Ab2HAJG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 05:06:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36718 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab2HAJG2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 05:06:28 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, joerg.roedel@amd.com, pullip.cho@samsung.com,
+        sachin.kamat@linaro.org, patches@linaro.org
+Subject: [PATCH] iommu/exynos: Fix build error
+Date: Wed,  1 Aug 2012 14:35:17 +0530
+Message-Id: <1343811917-24054-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBRRn4f00qCr+p4fh3L7SXqOBHi3CB4TJbjzSxexWRmYRw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 06:04:31AM +0200, Stephane Eranian wrote:
-> On Fri, Jul 27, 2012 at 2:23 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > hi,
-> > patches available also as tarball in here:
-> > http://people.redhat.com/~jolsa/perf_post_unwind_v8.tar.bz2
-> >
-> > v8 changes:
-> >    - patch 2 - added dump registers ABI specification as suggested
-> >                by Stephane
-> >    - v7 patches 9,10,16,17 already in
-> >
-> Patches 4, 7 do not apply cleanly for me on tip-master @ commit 2a7d7ce
-> when I use the tarball version of the patchset.
+Fixes the following build error introduced by commit 3177bb76a8
+("iommu/exynos: Implement DOMAIN_ATTR_GEOMETRY attribute"):
 
-there's conflict with fresh commit..
+drivers/iommu/exynos-iommu.c: In function ‘exynos_iommu_domain_init’:
+drivers/iommu/exynos-iommu.c:735:2: error: ‘dom’ undeclared
+(first use in this function)
 
-perf/trace: Add ability to set a target task for events
-commit e6dab5ffab59e910ec0e3355f4a6f29f7a7be474
-Author: Andrew Vagin <avagin@openvz.org>
-Date:   Wed Jul 11 18:14:58 2012 +0400
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/iommu/exynos-iommu.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-I'm testing v9 and will send it out shortly
+diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+index 45350ff..80bad32 100644
+--- a/drivers/iommu/exynos-iommu.c
++++ b/drivers/iommu/exynos-iommu.c
+@@ -732,9 +732,9 @@ static int exynos_iommu_domain_init(struct iommu_domain *domain)
+ 	spin_lock_init(&priv->pgtablelock);
+ 	INIT_LIST_HEAD(&priv->clients);
+ 
+-	dom->geometry.aperture_start = 0;
+-	dom->geometry.aperture_end   = ~0UL;
+-	dom->geometry.force_aperture = true;
++	domain->geometry.aperture_start = 0;
++	domain->geometry.aperture_end   = ~0UL;
++	domain->geometry.force_aperture = true;
+ 
+ 	domain->priv = priv;
+ 	return 0;
+-- 
+1.7.4.1
 
-thanks,
-jirka
