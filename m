@@ -1,89 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab2HAWgo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 18:36:44 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52620 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171Ab2HAWgm (ORCPT
+	id S1756296Ab2HAWgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 18:36:50 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34115 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756171Ab2HAWgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 18:36:42 -0400
-Date: Thu, 2 Aug 2012 00:38:32 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Cc: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
-Message-ID: <20120801223832.GA2769@gmail.com>
-References: <50191EA5.1040303@pengutronix.de>
- <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com>
- <501998D4.2040206@pengutronix.de>
+	Wed, 1 Aug 2012 18:36:47 -0400
+Message-ID: <5019AF84.7020404@ti.com>
+Date: Wed, 1 Aug 2012 17:36:52 -0500
+From: "Alexis R. Cortes" <alexis.cortes@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501998D4.2040206@pengutronix.de>
-X-Operating-System: Linux balto-eee 3.5.0-balto-eee-08842-ge2bb6f7 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <sarah.a.sharp@linux.intel.com>, <gregkh@linuxfoundation.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <brian.quach@ti.com>, <jorge.llamas@ti.com>
+Subject: [PATCH] usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP Hardware
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 11:00:04PM +0200, Marc Kleine-Budde wrote:
-> On 08/01/2012 08:21 PM, Fabio Baltieri wrote:
-> > This patch implements the functions to add two LED triggers, named
-> > <ifname>-tx and <ifname>-rx, to a canbus device driver.
-> > 
-> > Triggers are called from specific handlers by each CAN device driver and
-> > can be disabled altogether with a Kconfig option.
-> > 
-> > The implementation keeps the LED on when the interface is UP and blinks
-> > the LED on network activity at a configurable rate.
-> > 
-> > This only supports can-dev based drivers, as it uses some support field
-> > in the can_priv structure.
-> > 
-> > Supported drivers should call devm_can_led_init() and can_led_event() as
-> > needed.
-> > 
-> > Cleanup is handled automatically by devres, so no *_exit function is
-> > needed.
-> > 
-> > Supported events are:
-> > - CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
-> > - CAN_LED_EVENT_STOP: turn off tx/rx LEDs
-> > - CAN_LED_EVENT_TX: trigger tx LED blink
-> > - CAN_LED_EVENT_RX: trigger tx LED blink
-> > 
-> > Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-> > Cc: Wolfgang Grandegger <wg@grandegger.com>
-> > Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-> > Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-> > ---
-> > 
-> > Hi all,
-> > 
-> > so, v6, change trigger names for fixed size allocation capped to (IFNAMSIZ + 4)
-> > and removed kasprintf as suggested by Oliver (thanks!).
-> > 
-> > This also has the side effect of reducing the error path to just one check to
-> > devres_alloc return value... nice!
-> > 
-> > I've put CAN_LED_NAME_SZ definition with the active function declaration,
-> > but used sizeof(priv->tx_led_trig_name) as snprintf length argument in the
-> > code, as it looks cleaner to me.
-> > 
-> > I'm not reposting the flexcan patch as it's not affected by the change.
-> 
-> Pushed to can-next/master, it even compiles now, as David has included
-> some upstream branches.
-> 
-> I'm still taking Tested- and Acked-by for these patches.
+This patch is intended to work around a known issue on the
+SN65LVPE502CP USB3.0 re-driver that can delay the negotiation
+between a device and the host past the usual handshake timeout,
+and if that happens on the first insertion, the host controller
+port will enter in Compliance Mode as per xHCI Spec, thus causing
+the port to become Unusable. This patch creates a timer which polls
+every 2 seconds the link state of each host controller's port (this
+by reading the PORTSC register) and recovers the port by issuing a
+Warm reset every time Compliance mode is detected. Since the issue
+is being caused by a pice of hardware, the timer will be enabled
+ONLY on those systems that have the SN65LVPE502CP installed (this
+patch uses DMI strings for detecting those systems), therefore
+making this patch to act as a quirk (XHCI_COMP_MODE_QUIRK has been
+added to the xhci stack).
 
-Nice!  So, I'll start preparing some patch for other embedded CAN
-controllers for test/review by developers who have access to the
-actual hardware.
+Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
+---
+ drivers/usb/host/xhci-hub.c |   28 +++++++++++++++
+ drivers/usb/host/xhci.c     |   81 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/xhci.h     |    6 +++
+ 3 files changed, 115 insertions(+), 0 deletions(-)
 
-In the meantime, thanks to everyone on the list for reviews and ideas!
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 7b01094..ce4b181 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -493,7 +493,19 @@ static void xhci_hub_report_link_state(u32 *status, u32 status_reg)
+ 		 * when this bit is set.
+ 		 */
+ 		pls |= USB_PORT_STAT_CONNECTION;
++	} else {
++		/*
++		 * If CAS bit isn't set but the Port is already at
++		 * Compliance Mode, fake a connection so the USB core
++		 * notices the Compliance state and resets the port.
++		 * This resolves an issue generated by the SN65LVPE502CP
++		 * in which sometimes the port enters compliance mode
++		 * caused by a delay on the host-device negotiation.
++		 */
++		if (pls == USB_SS_PORT_LS_COMP_MOD)
++			pls |= USB_PORT_STAT_CONNECTION;
+ 	}
++
+ 	/* update status field */
+ 	*status |= pls;
+ }
+@@ -645,6 +657,22 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+ 		/* Update Port Link State for super speed ports*/
+ 		if (hcd->speed == HCD_USB3) {
+ 			xhci_hub_report_link_state(&status, temp);
++			/*
++			 * Verify if all USB3 Ports Have entered U0. Delete compliance
++			 * mode timer if so.
++			 */
++			if (xhci->quirks & XHCI_COMP_MODE_QUIRK) {
++				if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1)) {
++					if ((temp & PORT_PLS_MASK) == XDEV_U0) {
++						xhci->port_status_u0 |= 1 << wIndex;
++						if (xhci->port_status_u0 == ((1 << xhci->num_usb3_ports)-1)) {
++							del_timer_sync(&xhci->comp_mode_recovery_timer);
++							xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted. "
++									"All USB3 ports have entered U0 at least once.\n");
++						}
++					}
++				}
++			}
+ 		}
+ 		if (bus_state->port_c_suspend & (1 << wIndex))
+ 			status |= 1 << USB_PORT_FEAT_C_SUSPEND;
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index a979cd0..fea738b 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -26,6 +26,7 @@
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/slab.h>
++#include <linux/dmi.h>
+ 
+ #include "xhci.h"
+ 
+@@ -397,6 +398,62 @@ static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+ 
+ #endif
+ 
++static void compliance_mode_recovery(unsigned long arg)
++{
++	struct xhci_hcd *xhci;
++	struct usb_hcd *hcd;
++	u32 temp;
++	int i;
++
++	xhci = (struct xhci_hcd *)arg;
++
++	for (i = 0; i < xhci->num_usb3_ports; i++) {
++		temp = xhci_readl(xhci, xhci->usb3_ports[i]);
++		if ((temp & PORT_PLS_MASK) == USB_SS_PORT_LS_COMP_MOD) {
++			/* Compliance Mode Detected. Letting USB Core handle the Warm Reset */
++			xhci_dbg(xhci, "Compliance Mode Detected on port %d! Attempting recovery routine.\n", i + 1);
++			hcd = xhci->shared_hcd;
++
++			if (hcd->state == HC_STATE_SUSPENDED)
++				usb_hcd_resume_root_hub(hcd);
++
++			usb_hcd_poll_rh_status(hcd);
++		}
++	}
++
++	if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1))
++		mod_timer(&xhci->comp_mode_recovery_timer, jiffies + msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
++}
++
++static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
++{
++	xhci->port_status_u0 = 0;
++	init_timer(&xhci->comp_mode_recovery_timer);
++	xhci->comp_mode_recovery_timer.data = (unsigned long) xhci;
++	xhci->comp_mode_recovery_timer.function = compliance_mode_recovery;
++	xhci->comp_mode_recovery_timer.expires = jiffies + msecs_to_jiffies(COMP_MODE_RCVRY_MSECS);
++	set_timer_slack(&xhci->comp_mode_recovery_timer, msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
++	add_timer(&xhci->comp_mode_recovery_timer);
++	xhci_dbg(xhci, "Compliance Mode Recovery Timer Initialized.\n");
++}
++
++static bool compliance_mode_recovery_timer_quirk_check(void)
++{
++	const char *dmi_product_name, *dmi_sys_vendor;
++
++	dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
++	dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
++
++	if (strstr(dmi_sys_vendor, "Hewlett-Packard")) {
++		if (strstr(dmi_product_name, "Z420") || strstr(dmi_product_name, "Z620") ||
++				strstr(dmi_product_name, "Z820")) {
++			return true;
++		}
++	}
++
++	return false;
++}
++
+ /*
+  * Initialize memory for HCD and xHC (one-time init).
+  *
+@@ -420,6 +477,12 @@ int xhci_init(struct usb_hcd *hcd)
+ 	retval = xhci_mem_init(xhci, GFP_KERNEL);
+ 	xhci_dbg(xhci, "Finished xhci_init\n");
+ 
++	/* Initializing Compliance Mode Recovery Data If Needed */
++	if (compliance_mode_recovery_timer_quirk_check()) {
++		xhci->quirks |= XHCI_COMP_MODE_QUIRK;
++		compliance_mode_recovery_timer_init(xhci);
++	}
++
+ 	return retval;
+ }
+ 
+@@ -628,6 +691,10 @@ void xhci_stop(struct usb_hcd *hcd)
+ 	del_timer_sync(&xhci->event_ring_timer);
+ #endif
+ 
++	/* Deleting Compliance Mode Recovery Timer */
++	if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) && (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1)))
++		del_timer_sync(&xhci->comp_mode_recovery_timer);
++
+ 	if (xhci->quirks & XHCI_AMD_PLL_FIX)
+ 		usb_amd_dev_put();
+ 
+@@ -802,6 +869,15 @@ int xhci_suspend(struct xhci_hcd *xhci)
+ 	}
+ 	spin_unlock_irq(&xhci->lock);
+ 
++	/*
++	 * Deleting Compliance Mode Recovery Timer because the xHCI Host
++	 * is about to be suspended.
++	 */
++	if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) && (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1))) {
++		del_timer_sync(&xhci->comp_mode_recovery_timer);
++		xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted - xHC suspended\n");
++	}
++
+ 	/* step 5: remove core well power */
+ 	/* synchronize irq when using MSI-X */
+ 	xhci_msix_sync_irqs(xhci);
+@@ -934,6 +1010,11 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 		usb_hcd_resume_root_hub(hcd);
+ 		usb_hcd_resume_root_hub(xhci->shared_hcd);
+ 	}
++
++	/* Initializing Compliance Mode Recovery Timer */
++	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
++		compliance_mode_recovery_timer_init(xhci);
++
+ 	return retval;
+ }
+ #endif	/* CONFIG_PM */
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 55c0785..f1e7874 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1494,6 +1494,7 @@ struct xhci_hcd {
+ #define XHCI_TRUST_TX_LENGTH	(1 << 10)
+ #define XHCI_LPM_SUPPORT	(1 << 11)
+ #define XHCI_INTEL_HOST		(1 << 12)
++#define XHCI_COMP_MODE_QUIRK	(1 << 13)
+ 	unsigned int		num_active_eps;
+ 	unsigned int		limit_active_eps;
+ 	/* There are two roothubs to keep track of bus suspend info for */
+@@ -1510,6 +1511,11 @@ struct xhci_hcd {
+ 	unsigned		sw_lpm_support:1;
+ 	/* support xHCI 1.0 spec USB2 hardware LPM */
+ 	unsigned		hw_lpm_support:1;
++	/* Compliance Mode Recovery Data */
++	struct timer_list	comp_mode_recovery_timer;
++	u32			port_status_u0;
++/* Compliance Mode Timer Triggered every 2 seconds */
++#define COMP_MODE_RCVRY_MSECS 2000
+ };
+ 
+ /* convert between an HCD pointer and the corresponding EHCI_HCD */
+-- 
+1.7.1
 
-Cheers!
-Fabio
