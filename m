@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab2HAV1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 17:27:37 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:48416 "EHLO
+	id S1755968Ab2HAVcV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 17:32:21 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64437 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754838Ab2HAV1f (ORCPT
+	with ESMTP id S1755865Ab2HAVcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 17:27:35 -0400
+	Wed, 1 Aug 2012 17:32:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120801202840.GM5470@ics.muni.cz>
+In-Reply-To: <20120801205640.GN5470@ics.muni.cz>
 References: <20120801133835.GH5470@ics.muni.cz>
 	<CAG4TOxONLJnBaY7N5x7Kfi+dwCb507QPqX9s_Wuef10+RzM=AQ@mail.gmail.com>
 	<CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
-	<20120801202840.GM5470@ics.muni.cz>
-Date: Wed, 1 Aug 2012 14:27:34 -0700
-X-Google-Sender-Auth: zb0LxM1ad-v9cCpAIt1xrhJazZA
-Message-ID: <CAE9FiQWY+Z-_=th8ndh15A+AokDFpi2_dk5UiXyJaCj_KovMJw@mail.gmail.com>
+	<20120801205640.GN5470@ics.muni.cz>
+Date: Wed, 1 Aug 2012 14:32:17 -0700
+X-Google-Sender-Auth: v9lC-aMT-6MaVovLYv9jA_Fh2As
+Message-ID: <CAE9FiQWmgyirjjCwn54PkAsfvWxZSY5RhRVDkhhbK7E0NPzqaw@mail.gmail.com>
 Subject: Re: mellanox mlx4_core and SR-IOV
 From: Yinghai Lu <yinghai@kernel.org>
 To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
@@ -26,17 +26,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 1, 2012 at 1:28 PM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
+On Wed, Aug 1, 2012 at 1:56 PM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
 > On Wed, Aug 01, 2012 at 11:29:02AM -0700, Yinghai Lu wrote:
->> On Wed, Aug 1, 2012 at 10:37 AM, Roland Dreier <roland@kernel.org> wrote:
->> > On Wed, Aug 1, 2012 at 6:38 AM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
->> >> [    3.558296] mlx4_core 0000:02:00.0: not enough MMIO resources for SR-IOV (nres: 0, iov->nres: 1)
->> >
->> > This comes from the core sriov_enable() function, not anything in mlx4.
->> > (although my kernel doesn't have the print of nres in that message)
->> >
->> > Not sure what it means.
->>
 >> iov bar is not assigned by BIOS, and kernel can not find range for it too.
 >>
 >> Lukas, can you post whole boot log with PCI_DEBUG enabled? That will
@@ -44,136 +35,15 @@ On Wed, Aug 1, 2012 at 1:28 PM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
 >>
 >> Recent kernel from 3.4... should enable realloc when SRIOV bar is not assigned.
 >
-> here is full boot log.
-> http://www.fi.muni.cz/~xhejtman/dmesg.log
->
-> weird with PCI_DEBUG it does not load mlx driver at all..
+> sorry for confusing, PCI_DEBUG does not break mlx driver, it is reallocation
+> code that results:
+> [    3.555008] mlx4_core 0000:02:00.0: Missing UAR, aborting.
 
-[    0.699280] pci 0000:02:00.0: [15b3:673c] type 00 class 0x0c0600
-[    0.699529] pci 0000:02:00.0: reg 10: [mem 0xfbd00000-0xfbdfffff 64bit]
-[    0.699726] pci 0000:02:00.0: reg 18: [mem 0xf8800000-0xf8ffffff 64bit pref]
-[    0.701577] pci 0000:02:00.0: reg 134: [mem 0x00000000-0x007fffff 64bit pref]
-[    0.710975] pci 0000:00:03.0: PCI bridge to [bus 02-02]
-[    0.711044] pci 0000:00:03.0:   bridge window [mem 0xfbd00000-0xfbdfffff]
-[    0.711049] pci 0000:00:03.0:   bridge window [mem
-0xf8800000-0xf8ffffff 64bit pref]
-...
+yes, i knew that.
 
-kernel try to clear the bridge, but still can not find the range.
+one patch in my for-pci-next should address that.
 
-[    0.761807] PCI: No. 2 try to assign unassigned res
-[    0.761808] release child resource [mem 0xf8800000-0xf8ffffff 64bit pref]
-[    0.761811] pci 0000:00:03.0: resource 15 [mem
-0xf8800000-0xf8ffffff 64bit pref] released
-[    0.761813] pci 0000:00:03.0: PCI bridge to [bus 02-02]
-[    0.761881] release child resource [mem 0xfbc1c000-0xfbc1ffff]
-[    0.761882] release child resource [mem 0xfbc20000-0xfbc3ffff pref]
-[    0.761883] release child resource [mem 0xfbc40000-0xfbc5ffff]
-[    0.761884] release child resource [mem 0xfbc60000-0xfbc7ffff]
-[    0.761885] release child resource [mem 0xfbc9c000-0xfbc9ffff]
-[    0.761886] release child resource [mem 0xfbca0000-0xfbcbffff pref]
-[    0.761887] release child resource [mem 0xfbcc0000-0xfbcdffff]
-[    0.761888] release child resource [mem 0xfbce0000-0xfbcfffff]
-[    0.761891] pci 0000:00:01.0: resource 14 [mem
-0xfbc00000-0xfbcfffff] released
-[    0.761893] pci 0000:00:01.0: PCI bridge to [bus 01-01]
-[    0.761967] pci 0000:00:01.0: bridge window [mem
-0x00100000-0x001fffff] to [bus 01-01] add_size 100000
-[    0.761974] pci 0000:00:03.0: bridge window [mem
-0x00800000-0x00ffffff 64bit pref] to [bus 02-02] add_size 20000000
-[    0.761999] pci 0000:00:03.0: res[15]=[mem 0x00800000-0x00ffffff
-64bit pref] get_res_add_size add_size 20000000
-[    0.762002] pci 0000:00:01.0: res[14]=[mem 0x00100000-0x001fffff]
-get_res_add_size add_size 100000
-[    0.762006] pci 0000:00:03.0: BAR 15: can't assign mem pref (size 0x20800000)
-[    0.762076] pci 0000:00:01.0: BAR 14: assigned [mem 0xc0000000-0xc01fffff]
-[    0.767124] pci 0000:00:01.0: BAR 15: assigned [mem
-0xc0200000-0xc02fffff pref]
-[    0.767218] pci 0000:01:00.0: reg 184: [mem 0x00000000-0x00003fff 64bit]
-[    0.767229] pci 0000:01:00.0: reg 190: [mem 0x00000000-0x00003fff 64bit]
-[    0.767240] pci 0000:01:00.0: reg 184: [mem 0x00000000-0x00003fff 64bit]
-[    0.767252] pci 0000:01:00.0: reg 184: [mem 0x00000000-0x00003fff 64bit]
-[    0.767263] pci 0000:01:00.0: reg 190: [mem 0x00000000-0x00003fff 64bit]
-[    0.767274] pci 0000:01:00.1: reg 184: [mem 0x00000000-0x00003fff 64bit]
-[    0.767285] pci 0000:01:00.0: reg 184: [mem 0x00000000-0x00003fff 64bit]
-[    0.767296] pci 0000:01:00.0: reg 190: [mem 0x00000000-0x00003fff 64bit]
-[    0.767307] pci 0000:01:00.1: reg 190: [mem 0x00000000-0x00003fff 64bit]
-[    0.767318] pci 0000:01:00.0: reg 184: [mem 0x00000000-0x00003fff 64bit]
-[    0.767329] pci 0000:01:00.0: reg 190: [mem 0x00000000-0x00003fff 64bit]
-[    0.767340] pci 0000:01:00.1: reg 184: [mem 0x00000000-0x00003fff 64bit]
-[    0.767347] pci 0000:01:00.0: res[7]=[mem
-0x00000000-0xffffffffffffffff 64bit] get_res_add_size add_size 20000
-[    0.767349] pci 0000:01:00.0: res[10]=[mem
-0x00000000-0xffffffffffffffff 64bit] get_res_add_size add_size 20000
-[    0.767351] pci 0000:01:00.1: res[7]=[mem
-0x00000000-0xffffffffffffffff 64bit] get_res_add_size add_size 20000
-[    0.767354] pci 0000:01:00.1: res[10]=[mem
-0x00000000-0xffffffffffffffff 64bit] get_res_add_size add_size 20000
-[    0.767356] pci 0000:01:00.0: BAR 0: assigned [mem 0xc0000000-0xc001ffff]
-[    0.767427] pci 0000:01:00.0: BAR 1: assigned [mem 0xc0020000-0xc003ffff]
-[    0.767497] pci 0000:01:00.0: BAR 6: assigned [mem
-0xc0200000-0xc021ffff pref]
-[    0.767580] pci 0000:01:00.1: BAR 0: assigned [mem 0xc0040000-0xc005ffff]
-[    0.767651] pci 0000:01:00.1: BAR 1: assigned [mem 0xc0060000-0xc007ffff]
-[    0.767722] pci 0000:01:00.1: BAR 6: assigned [mem
-0xc0220000-0xc023ffff pref]
-[    0.767804] pci 0000:01:00.0: BAR 3: assigned [mem 0xc0080000-0xc0083fff]
-[    0.767884] pci 0000:01:00.0: reg 184: [mem 0x00000000-0x00003fff 64bit]
-[    0.767886] pci 0000:01:00.0: BAR 7: assigned [mem
-0xc0084000-0xc00a3fff 64bit]
-[    0.767981] pci 0000:01:00.0: reg 190: [mem 0x00000000-0x00003fff 64bit]
-[    0.767983] pci 0000:01:00.0: BAR 10: assigned [mem
-0xc00a4000-0xc00c3fff 64bit]
-[    0.768070] pci 0000:01:00.1: BAR 3: assigned [mem 0xc00c4000-0xc00c7fff]
-[    0.768149] pci 0000:01:00.1: reg 184: [mem 0x00000000-0x00003fff 64bit]
-[    0.768151] pci 0000:01:00.1: BAR 7: assigned [mem
-0xc00c8000-0xc00e7fff 64bit]
-[    0.768246] pci 0000:01:00.1: reg 190: [mem 0x00000000-0x00003fff 64bit]
-[    0.768248] pci 0000:01:00.1: BAR 10: assigned [mem
-0xc00e8000-0xc0107fff 64bit]
-[    0.768336] pci 0000:00:01.0: PCI bridge to [bus 01-01]
-[    0.768403] pci 0000:00:01.0:   bridge window [io  0xe000-0xefff]
-[    0.768472] pci 0000:00:01.0:   bridge window [mem 0xc0000000-0xc01fffff]
-[    0.768542] pci 0000:00:01.0:   bridge window [mem
-0xc0200000-0xc02fffff pref]
-[    0.768823] pci 0000:02:00.0: reg 134: [mem 0x00000000-0x007fffff 64bit pref]
-[    0.768826] pci 0000:02:00.0: res[9]=[mem
-0x00000000-0xffffffffffffffff 64bit pref] get_res_add_size add_size
-20000000
-[    0.768829] pci 0000:02:00.0: BAR 2: can't assign mem pref (size 0x800000)
-[    0.769094] pci 0000:02:00.0: reg 134: [mem 0x00000000-0x007fffff 64bit pref]
-[    0.769096] pci 0000:02:00.0: BAR 9: can't assign mem pref (size 0x20000000)
-[    0.769166] pci 0000:02:00.0: BAR 2: can't assign mem pref (size 0x800000)
-[    0.769430] pci 0000:02:00.0: reg 134: [mem 0x00000000-0x007fffff 64bit pref]
-[    0.769432] pci 0000:02:00.0: BAR 9: can't assign mem pref (size 0x20000000)
-[    0.769501] pci 0000:00:03.0: PCI bridge to [bus 02-02]
-[    0.769568] pci 0000:00:03.0:   bridge window [mem 0xfbd00000-0xfbdfffff]
-...
-
-_CRS does not provide 64 bit resource range.
-
-[    0.688670] PCI: Using host bridge windows from ACPI; if necessary,
-use "pci=nocrs" and report a bug
-[    0.688846] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
-[    0.689065] pci_root PNP0A08:00: host bridge window [io  0x0000-0x0cf7]
-[    0.689134] pci_root PNP0A08:00: host bridge window [io  0x0d00-0xffff]
-[    0.689202] pci_root PNP0A08:00: host bridge window [mem
-0x000a0000-0x000bffff]
-[    0.689285] pci_root PNP0A08:00: host bridge window [mem
-0x000d0000-0x000dffff]
-[    0.689368] pci_root PNP0A08:00: host bridge window [mem
-0xc0000000-0xdfffffff]
-[    0.689451] pci_root PNP0A08:00: host bridge window [mem
-0xf0000000-0xfed8ffff]
-[    0.689576] PCI host bridge to bus 0000:00
-[    0.689640] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7]
-[    0.689708] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff]
-[    0.689775] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff]
-[    0.689844] pci_bus 0000:00: root bus resource [mem 0x000d0000-0x000dffff]
-[    0.689913] pci_bus 0000:00: root bus resource [mem 0xc0000000-0xdfffffff]
-[    0.689981] pci_bus 0000:00: root bus resource [mem 0xf0000000-0xfed8ffff]
-
-you may try to boot with pci=nocrs
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=patch;h=fcce563f868e296f46a2eeaa88d6959bcee26a2d
 
 Thanks
 
