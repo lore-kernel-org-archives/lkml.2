@@ -1,288 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab2HALsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 07:48:09 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42592 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab2HALsH (ORCPT
+	id S1755096Ab2HALsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 07:48:20 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:55379 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055Ab2HALsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 07:48:07 -0400
+	Wed, 1 Aug 2012 07:48:15 -0400
 From: Fabio Baltieri <fabio.baltieri@gmail.com>
 To: linux-can@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>,
         Oliver Hartkopp <socketcan@hartkopp.net>,
         Wolfgang Grandegger <wg@grandegger.com>,
         Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH can-next v5 1/2] can: add tx/rx LED trigger support
-Date: Wed,  1 Aug 2012 13:49:41 +0200
-Message-Id: <1343821782-1346-1-git-send-email-fabio.baltieri@gmail.com>
+Subject: [PATCH can-next v5 2/2] can: flexcan: add LED trigger support
+Date: Wed,  1 Aug 2012 13:49:42 +0200
+Message-Id: <1343821782-1346-2-git-send-email-fabio.baltieri@gmail.com>
 X-Mailer: git-send-email 1.7.10.3
-In-Reply-To: <5018F8B3.6080404@pengutronix.de>
+In-Reply-To: <1343821782-1346-1-git-send-email-fabio.baltieri@gmail.com>
 References: <5018F8B3.6080404@pengutronix.de>
+ <1343821782-1346-1-git-send-email-fabio.baltieri@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements the functions to add two LED triggers, named
-<ifname>-tx and <ifname>-rx, to a canbus device driver.
+Add support for canbus activity led indicators on flexcan devices by
+calling appropriate can_led_* functions.
 
-Triggers are called from specific handlers by each CAN device driver and
-can be disabled altogether with a Kconfig option.
-
-The implementation keeps the LED on when the interface is UP and blinks
-the LED on network activity at a configurable rate.
-
-This only supports can-dev based drivers, as it uses some support field
-in the can_priv structure.
-
-Supported drivers should call devm_can_led_init() and can_led_event() as
-needed.
-
-Cleanup is handled automatically by devres, so no *_exit function is
-needed.
-
-Supported events are:
-- CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
-- CAN_LED_EVENT_STOP: turn off tx/rx LEDs
-- CAN_LED_EVENT_TX: trigger tx LED blink
-- CAN_LED_EVENT_RX: trigger tx LED blink
+These are only enabled when CONFIG_CAN_LEDS is Y, becomes no-op
+otherwise.
 
 Cc: Oliver Hartkopp <socketcan@hartkopp.net>
 Cc: Wolfgang Grandegger <wg@grandegger.com>
 Cc: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
 ---
+ drivers/net/can/flexcan.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-Hello,
-
-so, v5, renamed can_led_init to devm_can_led_init like other devres based
-functions.
-
-Also, I'm reposting implementation into flexcan in 2/2... I have a small
-patchset for others embedded can drivers to be tested which I can post in
-another thread if this patch is accepted.
-
-Fabio
-
- drivers/net/can/Kconfig  |  12 ++++++
- drivers/net/can/Makefile |   2 +
- drivers/net/can/led.c    | 102 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/can/dev.h  |   8 ++++
- include/linux/can/led.h  |  34 ++++++++++++++++
- 5 files changed, 158 insertions(+)
- create mode 100644 drivers/net/can/led.c
- create mode 100644 include/linux/can/led.h
-
-diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
-index bb709fd..19dec19 100644
---- a/drivers/net/can/Kconfig
-+++ b/drivers/net/can/Kconfig
-@@ -54,6 +54,18 @@ config CAN_CALC_BITTIMING
- 	  arguments "tq", "prop_seg", "phase_seg1", "phase_seg2" and "sjw".
- 	  If unsure, say Y.
- 
-+config CAN_LEDS
-+	bool "Enable LED triggers for Netlink based drivers"
-+	depends on CAN_DEV
-+	depends on LEDS_CLASS
-+	select LEDS_TRIGGERS
-+	---help---
-+	  This option adds two LED triggers for packet receive and transmit
-+	  events on each supported CAN device.
-+
-+	  Say Y here if you are working on a system with led-class supported
-+	  LEDs and you want to use them as canbus activity indicators.
-+
- config CAN_AT91
- 	tristate "Atmel AT91 onchip CAN controller"
- 	depends on CAN_DEV && (ARCH_AT91SAM9263 || ARCH_AT91SAM9X5)
-diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
-index 938be37..24ee98b 100644
---- a/drivers/net/can/Makefile
-+++ b/drivers/net/can/Makefile
-@@ -8,6 +8,8 @@ obj-$(CONFIG_CAN_SLCAN)		+= slcan.o
- obj-$(CONFIG_CAN_DEV)		+= can-dev.o
- can-dev-y			:= dev.o
- 
-+can-dev-$(CONFIG_CAN_LEDS)	+= led.o
-+
- obj-y				+= usb/
- obj-y				+= softing/
- 
-diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
-new file mode 100644
-index 0000000..8b4f6a9
---- /dev/null
-+++ b/drivers/net/can/led.c
-@@ -0,0 +1,102 @@
-+/*
-+ * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/netdevice.h>
-+#include <linux/can/dev.h>
-+
-+#include <linux/can/led.h>
-+
-+static unsigned long led_delay = 50;
-+module_param(led_delay, ulong, 0644);
-+MODULE_PARM_DESC(led_delay,
-+		"blink delay time for activity leds (msecs, default: 50).");
-+
-+/*
-+ * Trigger a LED event in response to a CAN device event
-+ */
-+void can_led_event(struct net_device *netdev, enum can_led_event event)
-+{
-+	struct can_priv *priv = netdev_priv(netdev);
-+
-+	switch (event) {
-+	case CAN_LED_EVENT_OPEN:
-+		led_trigger_event(priv->tx_led_trig, LED_FULL);
-+		led_trigger_event(priv->rx_led_trig, LED_FULL);
-+		break;
-+	case CAN_LED_EVENT_STOP:
-+		led_trigger_event(priv->tx_led_trig, LED_OFF);
-+		led_trigger_event(priv->rx_led_trig, LED_OFF);
-+		break;
-+	case CAN_LED_EVENT_TX:
-+		if (led_delay)
-+			led_trigger_blink_oneshot(priv->tx_led_trig,
-+						  &led_delay, &led_delay, 1);
-+		break;
-+	case CAN_LED_EVENT_RX:
-+		if (led_delay)
-+			led_trigger_blink_oneshot(priv->rx_led_trig,
-+						  &led_delay, &led_delay, 1);
-+		break;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(can_led_event);
-+
-+static void can_led_release(struct device *gendev, void *res)
-+{
-+	struct can_priv *priv = netdev_priv(to_net_dev(gendev));
-+
-+	led_trigger_unregister_simple(priv->tx_led_trig);
-+	led_trigger_unregister_simple(priv->rx_led_trig);
-+
-+	kfree(priv->tx_led_trig_name);
-+	kfree(priv->rx_led_trig_name);
-+}
-+
-+/*
-+ * Register CAN LED triggers for a CAN device
-+ *
-+ * This is normally called from a driver's probe function
-+ */
-+void devm_can_led_init(struct net_device *netdev)
-+{
-+	struct can_priv *priv = netdev_priv(netdev);
-+	void *res;
-+
-+	res = devres_alloc(can_led_release, 0, GFP_KERNEL);
-+	if (!res)
-+		goto err_out;
-+
-+	priv->tx_led_trig_name = kasprintf(GFP_KERNEL, "%s-tx", netdev->name);
-+	if (!priv->tx_led_trig_name)
-+		goto err_out;
-+
-+	priv->rx_led_trig_name = kasprintf(GFP_KERNEL, "%s-rx", netdev->name);
-+	if (!priv->rx_led_trig_name)
-+		goto err_out_rx;
-+
-+	led_trigger_register_simple(priv->tx_led_trig_name,
-+				    &priv->tx_led_trig);
-+	led_trigger_register_simple(priv->rx_led_trig_name,
-+				    &priv->rx_led_trig);
-+
-+	devres_add(&netdev->dev, res);
-+
-+	return;
-+
-+err_out_rx:
-+	kfree(priv->tx_led_trig_name);
-+	priv->tx_led_trig_name = NULL;
-+err_out:
-+	netdev_err(netdev, "cannot register LED triggers\n");
-+	devres_free(res);
-+}
-+EXPORT_SYMBOL_GPL(devm_can_led_init);
-diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
-index 2b2fc34..167b04a 100644
---- a/include/linux/can/dev.h
-+++ b/include/linux/can/dev.h
-@@ -16,6 +16,7 @@
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index c5f1431..6467fc1 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -23,6 +23,7 @@
  #include <linux/can.h>
- #include <linux/can/netlink.h>
+ #include <linux/can/dev.h>
  #include <linux/can/error.h>
 +#include <linux/can/led.h>
+ #include <linux/can/platform/flexcan.h>
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+@@ -547,6 +548,8 @@ static int flexcan_read_frame(struct net_device *dev)
+ 	stats->rx_packets++;
+ 	stats->rx_bytes += cf->can_dlc;
  
- /*
-  * CAN mode
-@@ -52,6 +53,13 @@ struct can_priv {
++	can_led_event(dev, CAN_LED_EVENT_RX);
++
+ 	return 1;
+ }
  
- 	unsigned int echo_skb_max;
- 	struct sk_buff **echo_skb;
+@@ -635,6 +638,7 @@ static irqreturn_t flexcan_irq(int irq, void *dev_id)
+ 	if (reg_iflag1 & (1 << FLEXCAN_TX_BUF_ID)) {
+ 		stats->tx_bytes += can_get_echo_skb(dev, 0);
+ 		stats->tx_packets++;
++		can_led_event(dev, CAN_LED_EVENT_TX);
+ 		flexcan_write((1 << FLEXCAN_TX_BUF_ID), &regs->iflag1);
+ 		netif_wake_queue(dev);
+ 	}
+@@ -844,6 +848,9 @@ static int flexcan_open(struct net_device *dev)
+ 	err = flexcan_chip_start(dev);
+ 	if (err)
+ 		goto out_close;
 +
-+#ifdef CONFIG_CAN_LEDS
-+	struct led_trigger *tx_led_trig;
-+	char *tx_led_trig_name;
-+	struct led_trigger *rx_led_trig;
-+	char *rx_led_trig_name;
-+#endif
- };
++	can_led_event(dev, CAN_LED_EVENT_OPEN);
++
+ 	napi_enable(&priv->napi);
+ 	netif_start_queue(dev);
  
- /*
-diff --git a/include/linux/can/led.h b/include/linux/can/led.h
-new file mode 100644
-index 0000000..946059c
---- /dev/null
-+++ b/include/linux/can/led.h
-@@ -0,0 +1,34 @@
-+/*
-+ * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+@@ -872,6 +879,8 @@ static int flexcan_close(struct net_device *dev)
+ 
+ 	close_candev(dev);
+ 
++	can_led_event(dev, CAN_LED_EVENT_STOP);
 +
-+#ifndef CAN_LED_H
-+#define CAN_LED_H
+ 	return 0;
+ }
+ 
+@@ -1068,6 +1077,8 @@ static int __devinit flexcan_probe(struct platform_device *pdev)
+ 		goto failed_register;
+ 	}
+ 
++	devm_can_led_init(dev);
 +
-+#include <linux/leds.h>
-+
-+enum can_led_event {
-+	CAN_LED_EVENT_OPEN,
-+	CAN_LED_EVENT_STOP,
-+	CAN_LED_EVENT_TX,
-+	CAN_LED_EVENT_RX,
-+};
-+
-+#ifdef CONFIG_CAN_LEDS
-+void can_led_event(struct net_device *netdev, enum can_led_event event);
-+void devm_can_led_init(struct net_device *netdev);
-+#else
-+static inline void can_led_event(struct net_device *netdev,
-+				 enum can_led_event event)
-+{
-+}
-+static inline void devm_can_led_init(struct net_device *netdev)
-+{
-+}
-+#endif
-+
-+#endif
+ 	dev_info(&pdev->dev, "device registered (reg_base=%p, irq=%d)\n",
+ 		 priv->base, dev->irq);
+ 
 -- 
 1.7.11.rc1.9.gf623ca1.dirty
 
