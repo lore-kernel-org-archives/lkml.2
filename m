@@ -1,79 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab2HAHXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 03:23:01 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:58023 "EHLO e5.ny.us.ibm.com"
+	id S1754613Ab2HAHas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 03:30:48 -0400
+Received: from linux-sh.org ([111.68.239.195]:33697 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753547Ab2HAHXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 03:23:00 -0400
-Message-ID: <5018D926.6010709@linux.vnet.ibm.com>
-Date: Wed, 01 Aug 2012 02:22:14 -0500
-From: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753612Ab2HAHaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 03:30:14 -0400
+Date: Wed, 1 Aug 2012 16:30:04 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, kuninori.morimoto.gx@renesas.com
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+Subject: Re: [Regression, post-3.5] System suspend broken on the Mackerel
+ board
+Message-ID: <20120801073004.GE15380@linux-sh.org>
 MIME-Version: 1.0
-To: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] vphn: fix arch_update_cpu_topology() return value
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080107-5930-0000-0000-00000A699A4C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878vdze039.wl%kuninori.morimoto.gx@renesas.com>
+ <201207280053.11701.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 5dfd547532fca61462dc17fd0bb8e533002c4bc5 Mon Sep 17 00:00:00 2001
-From: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
-Date: Thu, 7 Jun 2012 16:04:34 -0500
+On Sat, Jul 28, 2012 at 12:53:11AM +0200, Rafael J. Wysocki wrote:
+> Unfortunately, your commit
+> 
+> commit ca5481c68e9fbcea62bb3c78ae6cccf99ca8fb73
+> Author: Paul Mundt <lethal@linux-sh.org>
+> Date:   Tue Jul 10 12:08:14 2012 +0900
+> 
+>     sh: pfc: Rudimentary pinctrl-backed GPIO support.
+> 
+> breaks system suspend on the Mackerel board (.config attached).  The system
+> simply doesn't suspend and instead it hangs somewhere while suspending
+> devices (apparently before running the "late" callbacks).
+> 
+> If the above commit is reverted, system suspend works normally.
 
-arch_update_cpu_topology() should only return 1 when the topology has
-actually changed, and should return 0 otherwise.
+On Tue, Jul 31, 2012 at 08:57:02PM -0700, kuninori.morimoto.gx@renesas.com wrote:
+> gpio: sh7724_pfc handling gpio 0 -> 486
+> core: sh7724_pfc support registered
+> HW Breakpoints: SH-4A UBC support registered
+> autorequest GPIO-53
+> ------------[ cut here ]------------
+> WARNING: at /opt/usr/src/WORK/morimoto/gitlinux/linux-2.6/drivers/gpio/gpiolib.3
+> Modules linked in:
+> 
+> Pid : 1, Comm:          swapper
+> CPU : 0                 Not tainted  (3.5.0-rc6+ #1407)
+> 
+> PC is at gpio_ensure_requested+0x30/0x78
+> PR is at gpio_ensure_requested+0x30/0x78
 
-This patch fixes a potential bug where rebuild_sched_domains() would
-reinitialize the sched domains even when the topology hasn't changed.
+Morimoto-san's logs off-list made it clear what happened. Both of these
+platforms are going gpio_request() calls at arch_initcall() time which
+completely screwed up the ordering of the pfc core. We seem to -ENODEV
+out in one place due to missing a pfc pointer initialization elsewhere
+resulting in -EPROBE_DEFER from gpiolib.
 
-Signed-off-by: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+Turns out we can just collapse the probe/init stuff anyways, so this
+ought to fix it. I've verified that it fixes Morimoto-san's issue, my
+expectation is that the mackerel case is likewise getting tripped up but
+no one bothered implementing any error detecting logic for gpio_request()
+failing, so it doesn't fail gracefully.
+
+I'll be pushing this out to Linus shortly:
+
 ---
- arch/powerpc/mm/numa.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
-index 39b1597..59213cf 100644
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -1436,11 +1436,11 @@ static long vphn_get_associativity(unsigned long cpu,
+commit 1e32dfe323d156d5d7b25b9feffe015d19713db2
+Author: Paul Mundt <lethal@linux-sh.org>
+Date:   Wed Aug 1 16:27:38 2012 +0900
+
+    sh: pfc: Fix up init ordering mess.
+    
+    Commit ca5481c68e9fbcea62bb3c78ae6cccf99ca8fb73 ("sh: pfc: Rudimentary
+    pinctrl-backed GPIO support.") introduced a regression for platforms that
+    were doing early GPIO API calls (from arch_initcall() or earlier),
+    leading to a situation where our two-stage registration logic would trip
+    itself up and we'd -ENODEV out of the pinctrl registration path,
+    resulting in endless -EPROBE_DEFER errors. Further lack of checking any
+    sort of errors from gpio_request() resulted in boot time warnings,
+    tripping on the FLAG_REQUESTED test-and-set in gpio_ensure_requested().
+    
+    As it turns out there's no particular need to bother with the two-stage
+    registration, as the platform bus is already available at the point that
+    we have to start caring. As such, it's easiest to simply fold these
+    together in to a single init path, the ordering of which is ensured
+    through the platform's mux registration, as usual.
+    
+    Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
+    Reported-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+    Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+
+diff --git a/drivers/sh/pfc/pinctrl.c b/drivers/sh/pfc/pinctrl.c
+index 814b292..2804eaa 100644
+--- a/drivers/sh/pfc/pinctrl.c
++++ b/drivers/sh/pfc/pinctrl.c
+@@ -325,20 +325,6 @@ static struct pinctrl_desc sh_pfc_pinctrl_desc = {
+ 	.confops	= &sh_pfc_pinconf_ops,
+ };
  
- /*
-  * Update the node maps and sysfs entries for each cpu whose home node
-- * has changed.
-+ * has changed. Returns 1 when the topology has changed, and 0 otherwise.
-  */
- int arch_update_cpu_topology(void)
+-int sh_pfc_register_pinctrl(struct sh_pfc *pfc)
+-{
+-	sh_pfc_pmx = kzalloc(sizeof(struct sh_pfc_pinctrl), GFP_KERNEL);
+-	if (unlikely(!sh_pfc_pmx))
+-		return -ENOMEM;
+-
+-	spin_lock_init(&sh_pfc_pmx->lock);
+-
+-	sh_pfc_pmx->pfc = pfc;
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(sh_pfc_register_pinctrl);
+-
+ static inline void __devinit sh_pfc_map_one_gpio(struct sh_pfc *pfc,
+ 						 struct sh_pfc_pinctrl *pmx,
+ 						 struct pinmux_gpio *gpio,
+@@ -505,7 +491,7 @@ static struct platform_device sh_pfc_pinctrl_device = {
+ 	.id		= -1,
+ };
+ 
+-static int __init sh_pfc_pinctrl_init(void)
++static int sh_pfc_pinctrl_init(void)
  {
--	int cpu, nid, old_nid;
-+	int cpu, nid, old_nid, changed = 0;
- 	unsigned int associativity[VPHN_ASSOC_BUFSIZE] = {0};
- 	struct device *dev;
+ 	int rc;
  
-@@ -1466,9 +1466,10 @@ int arch_update_cpu_topology(void)
- 		dev = get_cpu_device(cpu);
- 		if (dev)
- 			kobject_uevent(&dev->kobj, KOBJ_CHANGE);
-+		changed = 1;
- 	}
- 
--	return 1;
-+	return changed;
+@@ -519,10 +505,22 @@ static int __init sh_pfc_pinctrl_init(void)
+ 	return rc;
  }
  
- static void topology_work_fn(struct work_struct *work)
--- 
-1.7.7.6
-
-
-Jesse Larrew
-Software Engineer, Linux on Power Kernel Team
-IBM Linux Technology Center
-Phone: (512) 973-2052 (T/L: 363-2052)
-jlarrew@linux.vnet.ibm.com
-
++int sh_pfc_register_pinctrl(struct sh_pfc *pfc)
++{
++	sh_pfc_pmx = kzalloc(sizeof(struct sh_pfc_pinctrl), GFP_KERNEL);
++	if (unlikely(!sh_pfc_pmx))
++		return -ENOMEM;
++
++	spin_lock_init(&sh_pfc_pmx->lock);
++
++	sh_pfc_pmx->pfc = pfc;
++
++	return sh_pfc_pinctrl_init();
++}
++EXPORT_SYMBOL_GPL(sh_pfc_register_pinctrl);
++
+ static void __exit sh_pfc_pinctrl_exit(void)
+ {
+ 	platform_driver_unregister(&sh_pfc_pinctrl_driver);
+ }
+-
+-subsys_initcall(sh_pfc_pinctrl_init);
+ module_exit(sh_pfc_pinctrl_exit);
