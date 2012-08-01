@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab2HAPBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:01:34 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:24592 "EHLO
+	id S1755448Ab2HAPCY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:02:24 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:25207 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab2HAPBc (ORCPT
+	with ESMTP id S1755174Ab2HAPCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:01:32 -0400
-Date: Wed, 1 Aug 2012 10:52:15 -0400
+	Wed, 1 Aug 2012 11:02:23 -0400
+Date: Wed, 1 Aug 2012 10:52:58 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         Ian.Campbell@citrix.com, tim@xen.org,
         linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
         catalin.marinas@arm.com, arnd@arndb.de
-Subject: Re: [PATCH 20/24] xen: update xen_add_to_physmap interface
-Message-ID: <20120801145215.GP7227@phenom.dumpdata.com>
+Subject: Re: [PATCH 21/24] arm/v2m: initialize arch_timers even if v2m_timer
+ is not present
+Message-ID: <20120801145257.GQ7227@phenom.dumpdata.com>
 References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-20-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1343316846-25860-21-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343316846-25860-20-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1343316846-25860-21-git-send-email-stefano.stabellini@eu.citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 04:34:02PM +0100, Stefano Stabellini wrote:
-> Update struct xen_add_to_physmap to be in sync with Xen's version of the
-> structure.
-> The size field was introduced by:
-> 
-> changeset:   24164:707d27fe03e7
-> user:        Jean Guyader <jean.guyader@eu.citrix.com>
-> date:        Fri Nov 18 13:42:08 2011 +0000
-> summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
-> 
-> According to the comment:
-> 
-> "This new field .size is located in the 16 bits padding between .domid
-> and .space in struct xen_add_to_physmap to stay compatible with older
-> versions."
-> 
-> This is not true on ARM where there is not padding, but it is valid on
-> X86, so introducing size is safe on X86 and it is going to fix the
-> interace for ARM.
-
-Has this been checked actually for backwards compatibility? It sounds
-like it should work just fine with Xen 4.0 right?
-
-I believe this also helps Mukesh's patches, so CC-ing him here for
-his Ack.
-
-I can put this in right now in tree if we are 100% sure its compatiblie with 4.0.
-
-> 
+On Thu, Jul 26, 2012 at 04:34:03PM +0100, Stefano Stabellini wrote:
 > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+Should the maintainer of the v2m be CC-ed here?
+This looks like a bug-fix of itself?
+
 > ---
->  include/xen/interface/memory.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+>  arch/arm/mach-vexpress/v2m.c |   11 ++++++-----
+>  1 files changed, 6 insertions(+), 5 deletions(-)
 > 
-> diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> index abbbff0..d8e33a9 100644
-> --- a/include/xen/interface/memory.h
-> +++ b/include/xen/interface/memory.h
-> @@ -163,6 +163,9 @@ struct xen_add_to_physmap {
->      /* Which domain to change the mapping for. */
->      domid_t domid;
+> diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+> index fde26ad..dee1451 100644
+> --- a/arch/arm/mach-vexpress/v2m.c
+> +++ b/arch/arm/mach-vexpress/v2m.c
+> @@ -637,16 +637,17 @@ static void __init v2m_dt_timer_init(void)
+>  	node = of_find_compatible_node(NULL, NULL, "arm,sp810");
+>  	v2m_sysctl_init(of_iomap(node, 0));
 >  
-> +    /* Number of pages to go through for gmfn_range */
-> +    uint16_t    size;
+> -	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> -	if (WARN_ON(err))
+> -		return;
+> -	node = of_find_node_by_path(path);
+> -	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+>  	if (arch_timer_of_register() != 0)
+>  		twd_local_timer_of_register();
+>  
+>  	if (arch_timer_sched_clock_init() != 0)
+>  		versatile_sched_clock_init(v2m_sysreg_base + V2M_SYS_24MHZ, 24000000);
 > +
->      /* Source mapping space. */
->  #define XENMAPSPACE_shared_info 0 /* shared info page */
->  #define XENMAPSPACE_grant_table 1 /* grant table page */
+> +	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> +	if (WARN_ON(err))
+> +		return;
+> +	node = of_find_node_by_path(path);
+> +	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+>  }
+>  
+>  static struct sys_timer v2m_dt_timer = {
 > -- 
 > 1.7.2.5
