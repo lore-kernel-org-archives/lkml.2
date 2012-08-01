@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180Ab2HAP7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:59:35 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59287 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755556Ab2HAP7b (ORCPT
+	id S1756194Ab2HAP7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:59:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61939 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755556Ab2HAP7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:59:31 -0400
+	Wed, 1 Aug 2012 11:59:40 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
+        Mike Marciniszyn <infinipath@intel.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
         "Rafael J . Wysocki" <rjw@sisk.pl>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v3 26/32] PCI/mthca: use PCIe capabilities access functions to simplify implementation
-Date: Wed,  1 Aug 2012 23:54:31 +0800
-Message-Id: <1343836477-7287-27-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v3 27/32] PCI/qib: use PCIe capabilities access functions to simplify implementation
+Date: Wed,  1 Aug 2012 23:54:32 +0800
+Message-Id: <1343836477-7287-28-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
 References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
@@ -29,40 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCIe capabilities access functions to simplify mthca driver's
-implementation.
+Use PCIe capabilities access functions to simplify qib driver's implementation.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/infiniband/hw/mthca/mthca_reset.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/qib/qib_pcie.c |   40 +++++++++++++++-------------------
+ 1 file changed, 17 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/infiniband/hw/mthca/mthca_reset.c b/drivers/infiniband/hw/mthca/mthca_reset.c
-index 4fa3534..7b1a3bc 100644
---- a/drivers/infiniband/hw/mthca/mthca_reset.c
-+++ b/drivers/infiniband/hw/mthca/mthca_reset.c
-@@ -241,16 +241,16 @@ good:
+diff --git a/drivers/infiniband/hw/qib/qib_pcie.c b/drivers/infiniband/hw/qib/qib_pcie.c
+index 790646e..9a5cb02 100644
+--- a/drivers/infiniband/hw/qib/qib_pcie.c
++++ b/drivers/infiniband/hw/qib/qib_pcie.c
+@@ -271,10 +271,9 @@ int qib_pcie_params(struct qib_devdata *dd, u32 minw, u32 *nent,
+ 		    struct qib_msix_entry *entry)
+ {
+ 	u16 linkstat, speed;
+-	int pos = 0, pose, ret = 1;
++	int pos = 0, ret = 1;
  
- 	if (hca_pcie_cap) {
- 		devctl = hca_header[(hca_pcie_cap + PCI_EXP_DEVCTL) / 4];
--		if (pci_write_config_word(mdev->pdev, hca_pcie_cap + PCI_EXP_DEVCTL,
--					   devctl)) {
-+		if (pci_pcie_capability_write_word(mdev->pdev, PCI_EXP_DEVCTL,
-+						   devctl)) {
- 			err = -ENODEV;
- 			mthca_err(mdev, "Couldn't restore HCA PCI Express "
- 				  "Device Control register, aborting.\n");
- 			goto out;
- 		}
- 		linkctl = hca_header[(hca_pcie_cap + PCI_EXP_LNKCTL) / 4];
--		if (pci_write_config_word(mdev->pdev, hca_pcie_cap + PCI_EXP_LNKCTL,
--					   linkctl)) {
-+		if (pci_pcie_capability_write_word(mdev->pdev, PCI_EXP_LNKCTL,
-+						   linkctl)) {
- 			err = -ENODEV;
- 			mthca_err(mdev, "Couldn't restore HCA PCI Express "
- 				  "Link control register, aborting.\n");
+-	pose = pci_pcie_cap(dd->pcidev);
+-	if (!pose) {
++	if (!pci_is_pcie(dd->pcidev)) {
+ 		qib_dev_err(dd, "Can't find PCI Express capability!\n");
+ 		/* set up something... */
+ 		dd->lbus_width = 1;
+@@ -296,7 +295,7 @@ int qib_pcie_params(struct qib_devdata *dd, u32 minw, u32 *nent,
+ 	if (!pos)
+ 		qib_enable_intx(dd->pcidev);
+ 
+-	pci_read_config_word(dd->pcidev, pose + PCI_EXP_LNKSTA, &linkstat);
++	pci_pcie_capability_read_word(dd->pcidev, PCI_EXP_LNKSTA, &linkstat);
+ 	/*
+ 	 * speed is bits 0-3, linkwidth is bits 4-8
+ 	 * no defines for them in headers
+@@ -514,7 +513,6 @@ static int qib_tune_pcie_coalesce(struct qib_devdata *dd)
+ {
+ 	int r;
+ 	struct pci_dev *parent;
+-	int ppos;
+ 	u16 devid;
+ 	u32 mask, bits, val;
+ 
+@@ -527,8 +525,7 @@ static int qib_tune_pcie_coalesce(struct qib_devdata *dd)
+ 		qib_devinfo(dd->pcidev, "Parent not root\n");
+ 		return 1;
+ 	}
+-	ppos = pci_pcie_cap(parent);
+-	if (!ppos)
++	if (!pci_is_pcie(parent))
+ 		return 1;
+ 	if (parent->vendor != 0x8086)
+ 		return 1;
+@@ -585,7 +582,6 @@ static int qib_tune_pcie_caps(struct qib_devdata *dd)
+ {
+ 	int ret = 1; /* Assume the worst */
+ 	struct pci_dev *parent;
+-	int ppos, epos;
+ 	u16 pcaps, pctl, ecaps, ectl;
+ 	int rc_sup, ep_sup;
+ 	int rc_cur, ep_cur;
+@@ -596,19 +592,15 @@ static int qib_tune_pcie_caps(struct qib_devdata *dd)
+ 		qib_devinfo(dd->pcidev, "Parent not root\n");
+ 		goto bail;
+ 	}
+-	ppos = pci_pcie_cap(parent);
+-	if (ppos) {
+-		pci_read_config_word(parent, ppos + PCI_EXP_DEVCAP, &pcaps);
+-		pci_read_config_word(parent, ppos + PCI_EXP_DEVCTL, &pctl);
+-	} else
++
++	if (!pci_is_pcie(parent) || !pci_is_pcie(dd->pcidev))
+ 		goto bail;
++	pci_pcie_capability_read_word(parent, PCI_EXP_DEVCAP, &pcaps);
++	pci_pcie_capability_read_word(parent, PCI_EXP_DEVCTL, &pctl);
+ 	/* Find out supported and configured values for endpoint (us) */
+-	epos = pci_pcie_cap(dd->pcidev);
+-	if (epos) {
+-		pci_read_config_word(dd->pcidev, epos + PCI_EXP_DEVCAP, &ecaps);
+-		pci_read_config_word(dd->pcidev, epos + PCI_EXP_DEVCTL, &ectl);
+-	} else
+-		goto bail;
++	pci_pcie_capability_read_word(dd->pcidev, PCI_EXP_DEVCAP, &ecaps);
++	pci_pcie_capability_read_word(dd->pcidev, PCI_EXP_DEVCTL, &ectl);
++
+ 	ret = 0;
+ 	/* Find max payload supported by root, endpoint */
+ 	rc_sup = fld2val(pcaps, PCI_EXP_DEVCAP_PAYLOAD);
+@@ -627,14 +619,15 @@ static int qib_tune_pcie_caps(struct qib_devdata *dd)
+ 		rc_cur = rc_sup;
+ 		pctl = (pctl & ~PCI_EXP_DEVCTL_PAYLOAD) |
+ 			val2fld(rc_cur, PCI_EXP_DEVCTL_PAYLOAD);
+-		pci_write_config_word(parent, ppos + PCI_EXP_DEVCTL, pctl);
++		pci_pcie_capability_write_word(parent, PCI_EXP_DEVCTL, pctl);
+ 	}
+ 	/* If less than (allowed, supported), bump endpoint payload */
+ 	if (rc_sup > ep_cur) {
+ 		ep_cur = rc_sup;
+ 		ectl = (ectl & ~PCI_EXP_DEVCTL_PAYLOAD) |
+ 			val2fld(ep_cur, PCI_EXP_DEVCTL_PAYLOAD);
+-		pci_write_config_word(dd->pcidev, epos + PCI_EXP_DEVCTL, ectl);
++		pci_pcie_capability_write_word(dd->pcidev,
++					       PCI_EXP_DEVCTL, ectl);
+ 	}
+ 
+ 	/*
+@@ -652,13 +645,14 @@ static int qib_tune_pcie_caps(struct qib_devdata *dd)
+ 		rc_cur = rc_sup;
+ 		pctl = (pctl & ~PCI_EXP_DEVCTL_READRQ) |
+ 			val2fld(rc_cur, PCI_EXP_DEVCTL_READRQ);
+-		pci_write_config_word(parent, ppos + PCI_EXP_DEVCTL, pctl);
++		pci_pcie_capability_write_word(parent, PCI_EXP_DEVCTL, pctl);
+ 	}
+ 	if (rc_sup > ep_cur) {
+ 		ep_cur = rc_sup;
+ 		ectl = (ectl & ~PCI_EXP_DEVCTL_READRQ) |
+ 			val2fld(ep_cur, PCI_EXP_DEVCTL_READRQ);
+-		pci_write_config_word(dd->pcidev, epos + PCI_EXP_DEVCTL, ectl);
++		pci_pcie_capability_write_word(dd->pcidev,
++					       PCI_EXP_DEVCTL, ectl);
+ 	}
+ bail:
+ 	return ret;
 -- 
 1.7.9.5
 
