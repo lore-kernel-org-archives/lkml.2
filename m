@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab2HAN0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 09:26:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43460 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752991Ab2HAN0x (ORCPT
+	id S1753643Ab2HANcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 09:32:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:49235 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab2HANcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 09:26:53 -0400
-Date: Wed, 1 Aug 2012 14:26:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Alex Courbot <acourbot@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-Message-ID: <20120801132651.GU11892@opensource.wolfsonmicro.com>
-References: <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
- <50170EA0.1010408@wwwdotorg.org>
- <5017B434.2010706@nvidia.com>
- <20120731105640.GD16155@avionic-0098.adnet.avionic-design.de>
- <20120731141328.GS4468@opensource.wolfsonmicro.com>
- <20120731142216.GA19591@avionic-0098.adnet.avionic-design.de>
- <20120731142607.GV4468@opensource.wolfsonmicro.com>
- <20120731143235.GA21126@avionic-0098.adnet.avionic-design.de>
- <20120731153941.GF4468@opensource.wolfsonmicro.com>
- <20120801074113.GF29673@avionic-0098.adnet.avionic-design.de>
+	Wed, 1 Aug 2012 09:32:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 5/6] ARM: ux500: Ensure probing of Audio devices when Device Tree is enabled
+Date: Wed, 1 Aug 2012 13:32:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        lrg@ti.com
+References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <201207312054.13818.arnd@arndb.de> <5018DBEE.9090203@linaro.org>
+In-Reply-To: <5018DBEE.9090203@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120801074113.GF29673@avionic-0098.adnet.avionic-design.de>
-X-Cookie: Caution: Keep out of reach of children.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208011332.02500.arnd@arndb.de>
+X-Provags-ID: V02:K0:OF7jWUCPHAU5pyhrgmWc0ALy1yVJgfYcDcC3hJ0tqyF
+ vW+y0mtweR8QWkZ5mhrW2JDvVihhKkM5fcidt4w839yeGCH8Lh
+ M7QXPRFnlFOfdnV0Vg7K80k3f/XGsR/YJIj6VPpI8Tw0V+GE7t
+ alAK68YaCAbYlALYxicj0ToKUHmq6KWfdSf8LI5YUGJORLdDjJ
+ 6HTRjvVnSt746Lu3WLlVamtKCT739HM75KmCbtgtrW+e2hoCrX
+ ZPHOYd1nJhAX/gw/P37RKDZit4W+aY8SNbTtwfvUlttfw+QvZy
+ cYnT3Qf7MWjDfH+63bg3lQzW49jFpGqIn/k5D2Uu2EBA7p02Vq
+ fozbYI1WFqs+IiTbbOtY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 09:41:13AM +0200, Thierry Reding wrote:
-> On Tue, Jul 31, 2012 at 04:39:41PM +0100, Mark Brown wrote:
+On Wednesday 01 August 2012, Lee Jones wrote:
+> > Looks like you're adding the same call to each of the three cases:
+> > mop500, snowball and hrefv60+. How about moving it before or after
+> > the if/elseif block?
+> 
+> The Snowball one is different 'mop500_msp_init' -> 'mop500_of_msp_init'.
 
-> > Sure there is - take a copy of the platform data in probe().
+Ah, I see. Is there a problem in always using mop500_of_msp_init then?
+I would guess that this just means you'd have to put the msp into the
+device tree files, which don't yet exist for mop500 and hrefv60.
 
-> Yes, but that will only work for built-in drivers. If you unload the
-> module and that causes the platform data to be discarded, reloading
-> won't work.
-
-This is why __devinit data will only be discarded when this is not
-possible.
+	Arnd
