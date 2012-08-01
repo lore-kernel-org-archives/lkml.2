@@ -1,78 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab2HAMas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 08:30:48 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44009 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab2HAMaq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 08:30:46 -0400
-Message-ID: <50192171.5070701@pengutronix.de>
-Date: Wed, 01 Aug 2012 14:30:41 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1753395Ab2HAMcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 08:32:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51016 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752250Ab2HAMcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 08:32:14 -0400
+Date: Wed, 1 Aug 2012 14:32:09 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Larry Woodman <lwoodman@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+Message-ID: <20120801123209.GK4436@tiehlicka.suse.cz>
+References: <alpine.LSU.2.00.1207222033030.6810@eggly.anvils>
+ <50118E7F.8000609@redhat.com>
+ <50120FA8.20409@redhat.com>
+ <20120727102356.GD612@suse.de>
+ <5016DC5F.7030604@redhat.com>
+ <20120731124650.GO612@suse.de>
+ <50181AA1.0@redhat.com>
+ <20120731200650.GB19524@tiehlicka.suse.cz>
+ <50189857.4000501@redhat.com>
+ <20120801082036.GC4436@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-CC: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH can-next v5 2/2] can: flexcan: add LED trigger support
-References: <5018F8B3.6080404@pengutronix.de> <1343821782-1346-1-git-send-email-fabio.baltieri@gmail.com> <1343821782-1346-2-git-send-email-fabio.baltieri@gmail.com> <501918B2.6070703@pengutronix.de> <20120801122443.GA1311@gmail.com>
-In-Reply-To: <20120801122443.GA1311@gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig142C0572C1C4953FB28615DD"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120801082036.GC4436@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig142C0572C1C4953FB28615DD
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed 01-08-12 10:20:36, Michal Hocko wrote:
+> On Tue 31-07-12 22:45:43, Larry Woodman wrote:
+> > On 07/31/2012 04:06 PM, Michal Hocko wrote:
+> > >On Tue 31-07-12 13:49:21, Larry Woodman wrote:
+> > >>On 07/31/2012 08:46 AM, Mel Gorman wrote:
+> > >>>Fundamentally I think the problem is that we are not correctly detecting
+> > >>>that page table sharing took place during huge_pte_alloc(). This patch is
+> > >>>longer and makes an API change but if I'm right, it addresses the underlying
+> > >>>problem. The first VM_MAYSHARE patch is still necessary but would you mind
+> > >>>testing this on top please?
+> > >>Hi Mel, yes this does work just fine.  It ran for hours without a panic so
+> > >>I'll Ack this one if you send it to the list.
+> > >Hi Larry, thanks for testing! I have a different patch which tries to
+> > >address this very same issue. I am not saying it is better or that it
+> > >should be merged instead of Mel's one but I would be really happy if you
+> > >could give it a try. We can discuss (dis)advantages of both approaches
+> > >later.
+> > >
+> > >Thanks!
+> > 
+> > Hi Michal, the system hung when I tested this patch on top of the
+> > latest 3.5 kernel.  I wont have AltSysrq access to the system until
+> > tomorrow AM.  
+> 
+> Please hold on. The patch is crap. I forgot about 
+> if (!vma_shareable(vma, addr))
+> 	return;
+> 
+> case so somebody got an uninitialized pmd. The patch bellow handles
+> that.
+> 
 
-On 08/01/2012 02:24 PM, Fabio Baltieri wrote:
-> On Wed, Aug 01, 2012 at 01:53:22PM +0200, Marc Kleine-Budde wrote:
-> [...]
->>> @@ -635,6 +638,7 @@ static irqreturn_t flexcan_irq(int irq, void *dev=
-_id)
->>>  	if (reg_iflag1 & (1 << FLEXCAN_TX_BUF_ID)) {
->>>  		stats->tx_bytes +=3D can_get_echo_skb(dev, 0);
->>>  		stats->tx_packets++;
->>> +		can_led_event(dev, CAN_LED_EVENT_TX);
->>
->> Should the led blink on TX or TX completion interrupt?
->=20
-> I'd say on complention interrupt, together with can_get_echo_skb().
+I am really lame :/. The previous patch is wrong as well for goto out
+branch. The updated patch as follows:
+---
+>From 886b79204491b500437e156aa8eb35e776a4bb07 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Tue, 31 Jul 2012 15:00:26 +0200
+Subject: [PATCH] mm: hugetlbfs: Correctly populate shared pmd
 
-Yes, good that we already agreed on this :D
+Each page mapped in a processes address space must be correctly
+accounted for in _mapcount. Normally the rules for this are
+straight-forward but hugetlbfs page table sharing is different.
+The page table pages at the PMD level are reference counted while
+the mapcount remains the same. If this accounting is wrong, it causes
+bugs like this one reported by Larry Woodman
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+[ 1106.156569] ------------[ cut here ]------------
+[ 1106.161731] kernel BUG at mm/filemap.c:135!
+[ 1106.166395] invalid opcode: 0000 [#1] SMP
+[ 1106.170975] CPU 22
+[ 1106.173115] Modules linked in: bridge stp llc sunrpc binfmt_misc dcdbas microcode pcspkr acpi_pad acpi]
+[ 1106.201770]
+[ 1106.203426] Pid: 18001, comm: mpitest Tainted: G        W    3.3.0+ #4 Dell Inc. PowerEdge R620/07NDJ2
+[ 1106.213822] RIP: 0010:[<ffffffff8112cfed>]  [<ffffffff8112cfed>] __delete_from_page_cache+0x15d/0x170
+[ 1106.224117] RSP: 0018:ffff880428973b88  EFLAGS: 00010002
+[ 1106.230032] RAX: 0000000000000001 RBX: ffffea0006b80000 RCX: 00000000ffffffb0
+[ 1106.237979] RDX: 0000000000016df1 RSI: 0000000000000009 RDI: ffff88043ffd9e00
+[ 1106.245927] RBP: ffff880428973b98 R08: 0000000000000050 R09: 0000000000000003
+[ 1106.253876] R10: 000000000000000d R11: 0000000000000000 R12: ffff880428708150
+[ 1106.261826] R13: ffff880428708150 R14: 0000000000000000 R15: ffffea0006b80000
+[ 1106.269780] FS:  0000000000000000(0000) GS:ffff88042fd60000(0000) knlGS:0000000000000000
+[ 1106.278794] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 1106.285193] CR2: 0000003a1d38c4a8 CR3: 000000000187d000 CR4: 00000000000406e0
+[ 1106.293149] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1106.301097] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 1106.309046] Process mpitest (pid: 18001, threadinfo ffff880428972000, task ffff880428b5cc20)
+[ 1106.318447] Stack:
+[ 1106.320690]  ffffea0006b80000 0000000000000000 ffff880428973bc8 ffffffff8112d040
+[ 1106.328958]  ffff880428973bc8 00000000000002ab 00000000000002a0 ffff880428973c18
+[ 1106.337234]  ffff880428973cc8 ffffffff8125b405 ffff880400000001 0000000000000000
+[ 1106.345513] Call Trace:
+[ 1106.348235]  [<ffffffff8112d040>] delete_from_page_cache+0x40/0x80
+[ 1106.355128]  [<ffffffff8125b405>] truncate_hugepages+0x115/0x1f0
+[ 1106.361826]  [<ffffffff8125b4f8>] hugetlbfs_evict_inode+0x18/0x30
+[ 1106.368615]  [<ffffffff811ab1af>] evict+0x9f/0x1b0
+[ 1106.373951]  [<ffffffff811ab3a3>] iput_final+0xe3/0x1e0
+[ 1106.379773]  [<ffffffff811ab4de>] iput+0x3e/0x50
+[ 1106.384922]  [<ffffffff811a8e18>] d_kill+0xf8/0x110
+[ 1106.390356]  [<ffffffff811a8f12>] dput+0xe2/0x1b0
+[ 1106.395595]  [<ffffffff81193612>] __fput+0x162/0x240
 
+During fork(), copy_hugetlb_page_range() detects if huge_pte_alloc()
+shared page tables with the check dst_pte == src_pte. The logic is if
+the PMD page is the same, they must be shared. This assumes that the
+sharing is between the parent and child. However, if the sharing is with
+a different process entirely then this check fails as in this diagram.
 
---------------enig142C0572C1C4953FB28615DD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+parent
+  |
+  ------------>pmd
+               src_pte----------> data page
+                                      ^
+other--------->pmd--------------------|
+                ^
+child-----------|
+               dst_pte
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+For this situation to occur, it must be possible for Parent and Other
+to have faulted and failed to share page tables with each other. This is
+possible due to the following style of race.
 
-iEYEARECAAYFAlAZIXEACgkQjTAFq1RaXHMkygCfYZDzF+0I2QvKlUnS1svMPQGp
-b+MAniMbi57KUVVfG05IJfrfRU70apg2
-=1q2G
------END PGP SIGNATURE-----
+PROC A                                          PROC B
+copy_hugetlb_page_range                         copy_hugetlb_page_range
+  src_pte == huge_pte_offset                      src_pte == huge_pte_offset
+  !src_pte so no sharing                          !src_pte so no sharing
 
---------------enig142C0572C1C4953FB28615DD--
+(time passes)
+
+hugetlb_fault                                   hugetlb_fault
+  huge_pte_alloc                                  huge_pte_alloc
+    huge_pmd_share                                 huge_pmd_share
+      LOCK(i_mmap_mutex)
+      find nothing, no sharing
+      UNLOCK(i_mmap_mutex)
+                                                    LOCK(i_mmap_mutex)
+                                                    find nothing, no sharing
+                                                    UNLOCK(i_mmap_mutex)
+    pmd_alloc                                       pmd_alloc
+    LOCK(instantiation_mutex)
+    fault
+    UNLOCK(instantiation_mutex)
+                                                LOCK(instantiation_mutex)
+                                                fault
+                                                UNLOCK(instantiation_mutex)
+
+These two processes are not poing to the same data page but are not sharing
+page tables because the opportunity was missed. When either process later
+forks, the src_pte == dst pte is potentially insufficient.  As the check
+falls through, the wrong PTE information is copied in (harmless but wrong)
+and the mapcount is bumped for a page mapped by a shared page table leading
+to the BUG_ON.
+
+This patch addresses the issue by moving pmd_alloc into huge_pmd_share
+which guarantees that the shared pud is populated in the same
+critical section as pmd. This also means that huge_pte_offset test in
+huge_pmd_share is serialized correctly now.
+
+Changelog and race identified by Mel Gorman
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Larry Woodman <lwoodman@redhat.com>
+---
+ arch/x86/mm/hugetlbpage.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index f6679a7..40b2500 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -58,7 +58,8 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
+ /*
+  * search for a shareable pmd page for hugetlb.
+  */
+-static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
++static pte_t*
++huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ {
+ 	struct vm_area_struct *vma = find_vma(mm, addr);
+ 	struct address_space *mapping = vma->vm_file->f_mapping;
+@@ -68,9 +69,10 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ 	struct vm_area_struct *svma;
+ 	unsigned long saddr;
+ 	pte_t *spte = NULL;
++	pte_t *pte;
+ 
+ 	if (!vma_shareable(vma, addr))
+-		return;
++		return (pte_t *)pmd_alloc(mm, pud, addr);
+ 
+ 	mutex_lock(&mapping->i_mmap_mutex);
+ 	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
+@@ -97,7 +99,9 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ 		put_page(virt_to_page(spte));
+ 	spin_unlock(&mm->page_table_lock);
+ out:
++	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+ 	mutex_unlock(&mapping->i_mmap_mutex);
++	return pte;
+ }
+ 
+ /*
+@@ -142,8 +146,9 @@ pte_t *huge_pte_alloc(struct mm_struct *mm,
+ 		} else {
+ 			BUG_ON(sz != PMD_SIZE);
+ 			if (pud_none(*pud))
+-				huge_pmd_share(mm, addr, pud);
+-			pte = (pte_t *) pmd_alloc(mm, pud, addr);
++				pte = huge_pmd_share(mm, addr, pud);
++			else
++				pte = (pte_t *) pmd_alloc(mm, pud, addr);
+ 		}
+ 	}
+ 	BUG_ON(pte && !pte_none(*pte) && !pte_huge(*pte));
+-- 
+1.7.10.4
+
+-- 
+Michal Hocko
+SUSE Labs
