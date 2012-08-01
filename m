@@ -1,127 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab2HAKjA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 06:39:00 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59143 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750915Ab2HAKi7 (ORCPT
+	id S1752649Ab2HAKmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 06:42:00 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:5594 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2HAKl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 06:38:59 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: ebiederm@xmission.com, jack@suse.cz, containers@lists.linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, serge@hallyn.com,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH] userns: Convert quota to user kuid/kgid where appropriate
-Date: Wed,  1 Aug 2012 14:38:52 +0400
-Message-Id: <1343817532-12021-1-git-send-email-dmonakhov@openvz.org>
-X-Mailer: git-send-email 1.7.5.4
+	Wed, 1 Aug 2012 06:41:59 -0400
+Date: Wed, 1 Aug 2012 12:41:45 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>,
+        Aaron Sierra <asierra@xes-inc.com>
+Subject: Re: [PATCH] gpio-ich: Share ownership of GPIO groups
+Message-ID: <20120801124145.66db90db@endymion.delvare>
+In-Reply-To: <20120801101646.GG16859@sortiz-mobl>
+References: <20120723173415.5b80b28b@endymion.delvare>
+	<20120801111359.6839bec7@endymion.delvare>
+	<20120801101646.GG16859@sortiz-mobl>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Map uid/gid to global kuid/kgid before pass it down to quota infrastructure.
+On Wed, 1 Aug 2012 12:16:46 +0200, Samuel Ortiz wrote:
+> On Wed, Aug 01, 2012 at 11:13:59AM +0200, Jean Delvare wrote:
+> > Grant, Samuel, Linus (sorry for not including you on original
+> > submission), any comment on this? I suppose it's too late for 3.6 but
+> > can this be scheduled to be integrated in 3.7?
+>
+> I was planning to look at this one and queue it for 3.7 as I'll be working on
+> my for-next branch once rc1 is tagged.
+> As you said, this is not the nicest code ever, so I may have a few comments.
+> No time for that right now though.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- fs/quota/quota.c |   45 ++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 36 insertions(+), 9 deletions(-)
+Great, thank you.
 
-diff --git a/fs/quota/quota.c b/fs/quota/quota.c
-index 6f15578..a59efd4 100644
---- a/fs/quota/quota.c
-+++ b/fs/quota/quota.c
-@@ -19,8 +19,13 @@
- #include <linux/writeback.h>
- 
- static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
--				     qid_t id)
-+				     qid_t id, qid_t* global_id)
- {
-+	kuid_t kuid;
-+	kgid_t kgid;
-+	struct user_namespace *ns = current_user_ns();
-+	int is_get_query = 0;
-+
- 	switch (cmd) {
- 	/* these commands do not require any special privilegues */
- 	case Q_GETFMT:
-@@ -29,11 +34,32 @@ static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
- 	case Q_XGETQSTAT:
- 	case Q_XQUOTASYNC:
- 		break;
--	/* allow to query information for dquots we "own" */
- 	case Q_GETQUOTA:
- 	case Q_XGETQUOTA:
--		if ((type == USRQUOTA && current_euid() == id) ||
--		    (type == GRPQUOTA && in_egroup_p(id)))
-+		is_get_query = 1;
-+	case Q_SETQUOTA:
-+	case Q_XSETQLIM:
-+		/* Map to global user namespace */
-+		switch (type) {
-+		case USRQUOTA:
-+			kuid = make_kuid(ns, id);
-+			if (!uid_valid(kuid))
-+				return -EINVAL;
-+			*global_id = from_kuid_munged(&init_user_ns, kuid);
-+			break;
-+		case GRPQUOTA:
-+			kgid = make_kgid(ns, id);
-+			if (!gid_valid(kgid))
-+				return -EINVAL;
-+			*global_id = from_kgid_munged(&init_user_ns, kgid);
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+		/* allow to query information for dquots we "own" */
-+		if (is_get_query &&
-+		    ((type == USRQUOTA && uid_eq(current_euid(), kuid)) ||
-+		     (type == GRPQUOTA && in_egroup_p(kgid))))
- 			break;
- 		/*FALLTHROUGH*/
- 	default:
-@@ -240,13 +266,14 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
- 		       void __user *addr, struct path *path)
- {
- 	int ret;
-+	qid_t qid = -1;
- 
- 	if (type >= (XQM_COMMAND(cmd) ? XQM_MAXQUOTAS : MAXQUOTAS))
- 		return -EINVAL;
- 	if (!sb->s_qcop)
- 		return -ENOSYS;
- 
--	ret = check_quotactl_permission(sb, type, cmd, id);
-+	ret = check_quotactl_permission(sb, type, cmd, id, &qid);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -264,9 +291,9 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
- 	case Q_SETINFO:
- 		return quota_setinfo(sb, type, addr);
- 	case Q_GETQUOTA:
--		return quota_getquota(sb, type, id, addr);
-+		return quota_getquota(sb, type, qid, addr);
- 	case Q_SETQUOTA:
--		return quota_setquota(sb, type, id, addr);
-+		return quota_setquota(sb, type, qid, addr);
- 	case Q_SYNC:
- 		if (!sb->s_qcop->quota_sync)
- 			return -ENOSYS;
-@@ -278,9 +305,9 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
- 	case Q_XGETQSTAT:
- 		return quota_getxstate(sb, addr);
- 	case Q_XSETQLIM:
--		return quota_setxquota(sb, type, id, addr);
-+		return quota_setxquota(sb, type, qid, addr);
- 	case Q_XGETQUOTA:
--		return quota_getxquota(sb, type, id, addr);
-+		return quota_getxquota(sb, type, qid, addr);
- 	case Q_XQUOTASYNC:
- 		if (sb->s_flags & MS_RDONLY)
- 			return -EROFS;
 -- 
-1.7.1
-
+Jean Delvare
