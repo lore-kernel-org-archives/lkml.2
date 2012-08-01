@@ -1,109 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab2HAOuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 10:50:18 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:41642 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab2HAOuQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 10:50:16 -0400
-Date: Wed, 1 Aug 2012 10:40:59 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Ian.Campbell@citrix.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        catalin.marinas@arm.com, arnd@arndb.de
-Subject: Re: [PATCH 14/24] xen/arm: initialize grant_table on ARM
-Message-ID: <20120801144059.GL7227@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-14-git-send-email-stefano.stabellini@eu.citrix.com>
+	id S1755354Ab2HAOum (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 10:50:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8552 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754992Ab2HAOuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 10:50:40 -0400
+Date: Wed, 1 Aug 2012 16:50:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 13/13] perf, tool: Support for dwarf mode callchain on
+ perf record
+Message-ID: <20120801145006.GG2528@krava.brq.redhat.com>
+References: <1343815865-5511-1-git-send-email-jolsa@redhat.com>
+ <1343815865-5511-14-git-send-email-jolsa@redhat.com>
+ <50193C83.6050503@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343316846-25860-14-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <50193C83.6050503@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 04:33:56PM +0100, Stefano Stabellini wrote:
-> Initialize the grant table mapping at the address specified at index 0
-> in the DT under the /xen node.
-
-Is it always index 0? If so, should it have a #define for the
-other index values?
-
-> After the grant table is initialized, call xenbus_probe (if not dom0).
+On Wed, Aug 01, 2012 at 08:26:11AM -0600, David Ahern wrote:
+> On 8/1/12 4:11 AM, Jiri Olsa wrote:
+> >+static int
+> >+parse_callchain_opt(const struct option *opt __used, const char *arg,
+> >+		    int unset)
+> >+{
+> >+	struct perf_record *rec = (struct perf_record *)opt->value;
+> >+	char *tok, *name, *saveptr = NULL;
+> >+	char buf[20];
+> >+	int ret = -1;
+> >+
+> >+	/* --no-call-graph */
+> >+	if (unset)
+> >+		return 0;
+> >+
+> >+	/* We specified default option if none is provided. */
+> >+	BUG_ON(!arg);
+> >+
+> >+	/* We need buffer that we know we can write to. */
+> >+	snprintf(buf, 20, "%s", arg);
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/arm/xen/enlighten.c  |   13 +++++++++++++
->  drivers/xen/grant-table.c |    2 +-
->  2 files changed, 14 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index 2e013cf..854af1e 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -1,8 +1,12 @@
->  #include <xen/xen.h>
->  #include <xen/interface/xen.h>
->  #include <xen/interface/memory.h>
-> +#include <xen/interface/hvm/params.h>
->  #include <xen/platform_pci.h>
->  #include <xen/features.h>
-> +#include <xen/grant_table.h>
-> +#include <xen/hvm.h>
-> +#include <xen/xenbus.h>
->  #include <asm/xen/hypervisor.h>
->  #include <asm/xen/hypercall.h>
->  #include <linux/module.h>
-> @@ -51,12 +55,16 @@ int __init xen_guest_init(void)
->  	struct xen_add_to_physmap xatp;
->  	static struct shared_info *shared_info_page = 0;
->  	struct device_node *node;
-> +	struct resource res;
->  
->  	node = of_find_compatible_node(NULL, NULL, "arm,xen");
->  	if (!node) {
->  		pr_info("No Xen support\n");
->  		return 0;
->  	}
-> +	if (of_address_to_resource(node, 0, &res))
-> +		return -EINVAL;
-> +	xen_hvm_resume_frames = res.start >> PAGE_SHIFT;
->  	xen_domain_type = XEN_HVM_DOMAIN;
->  
->  	xen_setup_features();
-> @@ -97,6 +105,11 @@ int __init xen_guest_init(void)
->  		per_cpu(xen_vcpu, cpu) =
->  			&HYPERVISOR_shared_info->vcpu_info[cpu];
->  	}
-> +
-> +	gnttab_init();
-> +	if (!xen_initial_domain())
-> +		xenbus_probe(NULL);
-> +
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(xen_guest_init);
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index 1d0d95e..fd2137a 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -62,7 +62,7 @@
->  
->  static grant_ref_t **gnttab_list;
->  static unsigned int nr_grant_frames;
-> -static unsigned int boot_max_nr_grant_frames;
-> +static unsigned int boot_max_nr_grant_frames = 1;
+> Isn't arg the user supplied string? What if the user messes up and
+> passes in 20+ characters to -g argument?
 
-Is this going to impact x86 version?
+  [jolsa@dhcp-26-214 perf]$ ./perf record -g dwarf123213214321432143214321432143214321432143214321 ls
+  callchain: Unknown -g option value: dwarf12321321432143
+  ...
 
->  static int gnttab_free_count;
->  static grant_ref_t gnttab_free_head;
->  static DEFINE_SPINLOCK(gnttab_list_lock);
-> -- 
-> 1.7.2.5
+hm, but if user specified it like this:
+
+  [jolsa@dhcp-26-214 perf]$ ./perf record -vg 'dwarf,                    50000' ls
+  callchain: Incorrect stack dump size (max 65528):              
+
+then we're in trouble.. I'll send a fix
+
+thanks,
+jirka
