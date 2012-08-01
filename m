@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab2HALX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 07:23:57 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:30791 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab2HALXz (ORCPT
+	id S1754900Ab2HAL3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 07:29:16 -0400
+Received: from mail.profihost.ag ([85.158.179.208]:55968 "EHLO
+	mail.profihost.ag" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933Ab2HAL3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 07:23:55 -0400
-X-IronPort-AV: E=Sophos;i="4.77,693,1336348800"; 
-   d="scan'208";a="13800639"
-Date: Wed, 1 Aug 2012 12:23:37 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "raghukt@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
-        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
-In-Reply-To: <alpine.DEB.2.02.1206051422500.6030@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1208011221140.4645@kaball.uk.xensource.com>
-References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>  <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com>  <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com>  <87ehpuqam8.fsf@linux.vnet.ibm.com>  <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com>
-  <878vg1rjts.fsf@linux.vnet.ibm.com> <1338901688.28282.168.camel@twins> <alpine.DEB.2.02.1206051422500.6030@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 1 Aug 2012 07:29:15 -0400
+Message-ID: <50191304.6020503@profihost.ag>
+Date: Wed, 01 Aug 2012 13:29:08 +0200
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
+References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com> <501817C9.6090405@profihost.ag> <5018EC7D.9090702@redhat.com> <5018F5BB.9070500@profihost.ag> <5018F7E6.4020909@redhat.com> <5018F9F6.70307@profihost.ag> <5018FC9B.8040808@redhat.com>
+In-Reply-To: <5018FC9B.8040808@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Jun 2012, Stefano Stabellini wrote:
-> On Tue, 5 Jun 2012, Peter Zijlstra wrote:
-> > On Tue, 2012-06-05 at 18:34 +0530, Nikunj A Dadhania wrote:
-> > > PeterZ, is 7/7 alright to be picked?
-> > 
-> > Yeah, I guess it is.. I haven't had time to rework my tlb series yet
-> > though. But these two patches together should make it work for x86.
-> > 
-> 
-> Good. Do you think they are OK for 3.5-rc2? Or is it better to wait for
-> 3.6?
-> 
+Am 01.08.2012 11:53, schrieb Avi Kivity:
+> On 08/01/2012 12:42 PM, Stefan Priebe - Profihost AG wrote:
+>> Am 01.08.2012 11:33, schrieb Avi Kivity:
+>>>> So here are 3 backtraces from booting the rescue system:
+>>>> http://pastebin.com/raw.php?i=xCy2pEcP
+>>>>
+>>>> To me they all look the same.
+>>>
+>>> They are.  What version of qemu are you using?
+>>
+>> latest stable-1.1 branch (1.1.1) - which works fine with latest RHEL6
+>> kernel.
+>
+> This could be due to a kernel bug, or due to a different code path taken
+> in qemu because of differing features exposed to kvm.
+>
+> Please try qemu-kvm.git master and report.
 
-Hello Nikunj,
-what happened to this patch series?
-In particular I am interested in the following two patches:
+Can't get the latest version running. 1st it doesn't know the -id 
+parameter. 2nd parameter -vnc 
+unix:/var/run/qemu-server/103.vnc,x509,password does not work too => No 
+certificate path provided
 
-kvm,x86: RCU based table free
-Flush page-table pages before freeing them
-
-do you still intend to carry on with the development? Is there anything
-missing that is preventing them from going upstream?
-
-Cheers,
-
-Stefano
+Stefan
