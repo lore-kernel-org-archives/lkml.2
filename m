@@ -1,277 +1,420 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab2HAJOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 05:14:16 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:43289 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab2HAJON (ORCPT
+	id S1753795Ab2HAJOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 05:14:35 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:33811
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752171Ab2HAJOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 05:14:13 -0400
-Date: Wed, 1 Aug 2012 11:13:59 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>,
-        Aaron Sierra <asierra@xes-inc.com>
-Subject: Re: [PATCH] gpio-ich: Share ownership of GPIO groups
-Message-ID: <20120801111359.6839bec7@endymion.delvare>
-In-Reply-To: <20120723173415.5b80b28b@endymion.delvare>
-References: <20120723173415.5b80b28b@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Aug 2012 05:14:33 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
+From: <qiang.liu@freescale.com>
+To: <linux-crypto@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <dan.j.williams@gmail.com>
+CC: <kim.phillips@freescale.com>, <herbert@gondor.hengli.com.au>,
+        <davem@davemloft.net>, Qiang Liu <qiang.liu@freescale.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Li Yang <leoli@freescale.com>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: [PATCH v5 3/6] fsl-dma: change release process of dma descriptor for supporting async_tx
+Date: Wed, 1 Aug 2012 16:49:17 +0800
+Message-ID: <1343810957-25378-1-git-send-email-qiang.liu@freescale.com>
+X-Mailer: git-send-email 1.7.5.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jul 2012 17:34:15 +0200, Jean Delvare wrote:
-> The ICH chips have their GPIO pins organized in 2 or 3 independent
-> groups of 32 GPIO pins. It can happen that the ACPI BIOS wants to make
-> use of pins in one group, preventing the OS to access these. This does
-> not prevent the OS from accessing the other group(s).
-> 
-> This is the case for example on my Asus Z8NA-D6 board. The ACPI BIOS
-> wants to control GPIO 18 (group 1), while I (the OS) need to control
-> GPIO 52 and 53 (group 2) for SMBus multiplexing.
-> 
-> So instead of checking for ACPI resource conflict on the whole I/O
-> range, check on a per-group basis, and consider it a success if at
-> least one of the groups is available for the OS to use.
-> 
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> Cc: Peter Tyser <ptyser@xes-inc.com>
-> Cc: Aaron Sierra <asierra@xes-inc.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> ---
-> That's probably not the nicest code you've seen, but everything else I
-> could think of either couldn't work or was looking worse. If anyone can
-> think of a better approach, I'm all ears.
-> 
->  drivers/gpio/gpio-ich.c     |   79 +++++++++++++++++++++++++++++++++++++------
->  drivers/mfd/lpc_ich.c       |   29 ++++++++++++++-
->  include/linux/mfd/lpc_ich.h |    1 
->  3 files changed, 97 insertions(+), 12 deletions(-)
+From: Qiang Liu <qiang.liu@freescale.com>
 
-Grant, Samuel, Linus (sorry for not including you on original
-submission), any comment on this? I suppose it's too late for 3.6 but
-can this be scheduled to be integrated in 3.7?
+Fix the potential risk when enable config NET_DMA and ASYNC_TX.
+Async_tx is lack of support in current release process of dma descriptor,
+all descriptors will be released whatever is acked or no-acked by async_tx,
+so there is a potential race condition when dma engine is uesd by others
+clients (e.g. when enable NET_DMA to offload TCP).
 
-Thanks,
-Jean
+In our case, a race condition which is raised when use both of talitos
+and dmaengine to offload xor is because napi scheduler will sync all
+pending requests in dma channels, it affects the process of raid operations
+due to ack_tx is not checked in fsl dma. The no-acked descriptor is freed
+which is submitted just now, as a dependent tx, this freed descriptor trigger
+BUG_ON(async_tx_test_ack(depend_tx)) in async_tx_submit().
 
-> --- linux-3.5.orig/drivers/mfd/lpc_ich.c	2012-07-23 14:41:30.794134320 +0200
-> +++ linux-3.5/drivers/mfd/lpc_ich.c	2012-07-23 14:57:05.006073824 +0200
-> @@ -683,6 +683,30 @@ static void __devinit lpc_ich_finalize_c
->  	cell->pdata_size = sizeof(struct lpc_ich_info);
->  }
->  
-> +/*
-> + * We don't check for resource conflict globally. There are 2 or 3 independent
-> + * GPIO groups and it's enough to have access to one of these to instantiate
-> + * the device.
-> + */
-> +static int __devinit lpc_ich_check_conflict_gpio(struct resource *res)
-> +{
-> +	int ret;
-> +	u8 use_gpio = 0;
-> +
-> +	if (resource_size(res) >= 0x50 &&
-> +	    !acpi_check_region(res->start + 0x40, 0x10, "LPC ICH GPIO3"))
-> +		use_gpio |= 1 << 2;
-> +
-> +	if (!acpi_check_region(res->start + 0x30, 0x10, "LPC ICH GPIO2"))
-> +		use_gpio |= 1 << 1;
-> +
-> +	ret = acpi_check_region(res->start + 0x00, 0x30, "LPC ICH GPIO1");
-> +	if (!ret)
-> +		use_gpio |= 1 << 0;
-> +
-> +	return use_gpio ? use_gpio : ret;
-> +}
-> +
->  static int __devinit lpc_ich_init_gpio(struct pci_dev *dev,
->  				const struct pci_device_id *id)
->  {
-> @@ -740,12 +764,13 @@ gpe0_done:
->  		break;
->  	}
->  
-> -	ret = acpi_check_resource_conflict(res);
-> -	if (ret) {
-> +	ret = lpc_ich_check_conflict_gpio(res);
-> +	if (ret < 0) {
->  		/* this isn't necessarily fatal for the GPIO */
->  		acpi_conflict = true;
->  		goto gpio_done;
->  	}
-> +	lpc_chipset_info[id->driver_data].use_gpio = ret;
->  	lpc_ich_enable_gpio_space(dev);
->  
->  	lpc_ich_finalize_cell(&lpc_ich_cells[LPC_GPIO], id);
-> --- linux-3.5.orig/include/linux/mfd/lpc_ich.h	2012-07-23 14:41:30.795134320 +0200
-> +++ linux-3.5/include/linux/mfd/lpc_ich.h	2012-07-23 14:42:57.034135599 +0200
-> @@ -43,6 +43,7 @@ struct lpc_ich_info {
->  	char name[32];
->  	unsigned int iTCO_version;
->  	unsigned int gpio_version;
-> +	u8 use_gpio;
->  };
->  
->  #endif
-> --- linux-3.5.orig/drivers/gpio/gpio-ich.c	2012-07-23 14:41:30.795134320 +0200
-> +++ linux-3.5/drivers/gpio/gpio-ich.c	2012-07-23 15:08:57.699546528 +0200
-> @@ -49,6 +49,10 @@ static const u8 ichx_regs[3][3] = {
->  	{0x0c, 0x38, 0x48},	/* LVL[1-3] offsets */
->  };
->  
-> +static const u8 ichx_reglen[3] = {
-> +	0x30, 0x10, 0x10,
-> +};
-> +
->  #define ICHX_WRITE(val, reg, base_res)	outl(val, (reg) + (base_res)->start)
->  #define ICHX_READ(reg, base_res)	inl((reg) + (base_res)->start)
->  
-> @@ -75,6 +79,7 @@ static struct {
->  	struct resource *pm_base;	/* Power Mangagment IO base */
->  	struct ichx_desc *desc;	/* Pointer to chipset-specific description */
->  	u32 orig_gpio_ctrl;	/* Orig CTRL value, used to restore on exit */
-> +	u8 use_gpio;		/* Which GPIO groups are usable */
->  } ichx_priv;
->  
->  static int modparam_gpiobase = -1;	/* dynamic */
-> @@ -123,8 +128,16 @@ static int ichx_read_bit(int reg, unsign
->  	return data & (1 << bit) ? 1 : 0;
->  }
->  
-> +static int ichx_gpio_check_available(struct gpio_chip *gpio, unsigned nr)
-> +{
-> +	return (ichx_priv.use_gpio & (1 << (nr / 32))) ? 0 : -ENXIO;
-> +}
-> +
->  static int ichx_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
->  {
-> +	if (!ichx_gpio_check_available(gpio, nr))
-> +		return -ENXIO;
-> +
->  	/*
->  	 * Try setting pin as an input and verify it worked since many pins
->  	 * are output-only.
-> @@ -138,6 +151,9 @@ static int ichx_gpio_direction_input(str
->  static int ichx_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
->  					int val)
->  {
-> +	if (!ichx_gpio_check_available(gpio, nr))
-> +		return -ENXIO;
-> +
->  	/* Set GPIO output value. */
->  	ichx_write_bit(GPIO_LVL, nr, val, 0);
->  
-> @@ -153,6 +169,9 @@ static int ichx_gpio_direction_output(st
->  
->  static int ichx_gpio_get(struct gpio_chip *chip, unsigned nr)
->  {
-> +	if (!ichx_gpio_check_available(chip, nr))
-> +		return -ENXIO;
-> +
->  	return ichx_read_bit(GPIO_LVL, nr);
->  }
->  
-> @@ -161,6 +180,9 @@ static int ich6_gpio_get(struct gpio_chi
->  	unsigned long flags;
->  	u32 data;
->  
-> +	if (!ichx_gpio_check_available(chip, nr))
-> +		return -ENXIO;
-> +
->  	/*
->  	 * GPI 0 - 15 need to be read from the power management registers on
->  	 * a ICH6/3100 bridge.
-> @@ -291,6 +313,46 @@ static struct ichx_desc intel5_desc = {
->  	.ngpio = 76,
->  };
->  
-> +static int __devinit ichx_gpio_request_regions(struct resource *res_base,
-> +						const char *name, u8 use_gpio)
-> +{
-> +	int i;
-> +
-> +	if (!res_base || !res_base->start || !res_base->end)
-> +		return -ENODEV;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(ichx_regs[0]); i++) {
-> +		if (!(use_gpio & (1 << i)))
-> +			continue;
-> +		if (!request_region(res_base->start + ichx_regs[0][i],
-> +				    ichx_reglen[i], name))
-> +			goto request_err;
-> +	}
-> +	return 0;
-> +
-> +request_err:
-> +	/* Clean up: release already requested regions, if any */
-> +	for (i--; i >= 0; i--) {
-> +		if (!(use_gpio & (1 << i)))
-> +			continue;
-> +		release_region(res_base->start + ichx_regs[0][i],
-> +			       ichx_reglen[i]);
-> +	}
-> +	return -EBUSY;
-> +}
-> +
-> +static void ichx_gpio_release_regions(struct resource *res_base, u8 use_gpio)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(ichx_regs[0]); i++) {
-> +		if (!(use_gpio & (1 << i)))
-> +			continue;
-> +		release_region(res_base->start + ichx_regs[0][i],
-> +			       ichx_reglen[i]);
-> +	}
-> +}
-> +
->  static int __devinit ichx_gpio_probe(struct platform_device *pdev)
->  {
->  	struct resource *res_base, *res_pm;
-> @@ -329,12 +391,11 @@ static int __devinit ichx_gpio_probe(str
->  	}
->  
->  	res_base = platform_get_resource(pdev, IORESOURCE_IO, ICH_RES_GPIO);
-> -	if (!res_base || !res_base->start || !res_base->end)
-> -		return -ENODEV;
-> -
-> -	if (!request_region(res_base->start, resource_size(res_base),
-> -				pdev->name))
-> -		return -EBUSY;
-> +	ichx_priv.use_gpio = ich_info->use_gpio;
-> +	err = ichx_gpio_request_regions(res_base, pdev->name,
-> +					ichx_priv.use_gpio);
-> +	if (err)
-> +		return err;
->  
->  	ichx_priv.gpio_base = res_base;
->  
-> @@ -374,8 +435,7 @@ init:
->  	return 0;
->  
->  add_err:
-> -	release_region(ichx_priv.gpio_base->start,
-> -			resource_size(ichx_priv.gpio_base));
-> +	ichx_gpio_release_regions(ichx_priv.gpio_base, ichx_priv.use_gpio);
->  	if (ichx_priv.pm_base)
->  		release_region(ichx_priv.pm_base->start,
->  				resource_size(ichx_priv.pm_base));
-> @@ -393,8 +453,7 @@ static int __devexit ichx_gpio_remove(st
->  		return err;
->  	}
->  
-> -	release_region(ichx_priv.gpio_base->start,
-> -				resource_size(ichx_priv.gpio_base));
-> +	ichx_gpio_release_regions(ichx_priv.gpio_base, ichx_priv.use_gpio);
->  	if (ichx_priv.pm_base)
->  		release_region(ichx_priv.pm_base->start,
->  				resource_size(ichx_priv.pm_base));
-> 
+TASK = ee1a94a0[1390] 'md0_raid5' THREAD: ecf40000 CPU: 0
+GPR00: 00000001 ecf41ca0 ee44/921a94a0 0000003f 00000001 c00593e4 00000000 00000001
+GPR08: 00000000 a7a7a7a7 00000001 045/920000002 42028042 100a38d4 ed576d98 00000000
+GPR16: ed5a11b0 00000000 2b162000 00000200 046/920000000 2d555000 ed3015e8 c15a7aa0
+GPR24: 00000000 c155fc40 00000000 ecb63220 ecf41d28 e47/92f640bb0 ef640c30 ecf41ca0
+NIP [c02b048c] async_tx_submit+0x6c/0x2b4
+LR [c02b068c] async_tx_submit+0x26c/0x2b4
+Call Trace:
+[ecf41ca0] [c02b068c] async_tx_submit+0x26c/0x2b448/92 (unreliable)
+[ecf41cd0] [c02b0a4c] async_memcpy+0x240/0x25c
+[ecf41d20] [c0421064] async_copy_data+0xa0/0x17c
+[ecf41d70] [c0421cf4] __raid_run_ops+0x874/0xe10
+[ecf41df0] [c0426ee4] handle_stripe+0x820/0x25e8
+[ecf41e90] [c0429080] raid5d+0x3d4/0x5b4
+[ecf41f40] [c04329b8] md_thread+0x138/0x16c
+[ecf41f90] [c008277c] kthread+0x8c/0x90
+[ecf41ff0] [c0011630] kernel_thread+0x4c/0x68
+
+Another major modification in this patch is the change to completed descriptors,
+there is a potential risk which caused by exception interrupt, all descriptors
+in ld_running list are seemed completed when an interrupt raised, it works fine
+under normal condition, but if there is an exception occured, it cannot work
+as our excepted. Hardware should not depend on s/w list, the right way is
+to read current descriptor address register to find the last completed
+descriptor. If an interrupt is raised by an error, all descriptors in ld_running
+should not be seemed finished, or these unfinished descriptors in ld_running
+will be released wrongly.
+
+A simple way to reproduce,
+Enable dmatest first, then insert some bad descriptors which can trigger
+Programming Error interrupts before the good descriptors. Last, the good
+descriptors will be freed before they are processsed because of the exception
+intrerrupt.
+
+Note: the bad descriptors are only for simulating an exception interrupt.
+This case can illustrate the potential risk in current fsl-dma very well.
+
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Dan Williams <dan.j.williams@gmail.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Li Yang <leoli@freescale.com>
+Cc: Ira W. Snyder <iws@ovro.caltech.edu>
+Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
+---
+ drivers/dma/fsldma.c |  242 +++++++++++++++++++++++++++++++++++---------------
+ drivers/dma/fsldma.h |    1 +
+ 2 files changed, 172 insertions(+), 71 deletions(-)
+
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 4f2f212..87f52c0 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -400,6 +400,125 @@ out_splice:
+ 	list_splice_tail_init(&desc->tx_list, &chan->ld_pending);
+ }
+
++static void fsldma_cleanup_descriptor(struct fsldma_chan *chan);
++static void fsl_chan_xfer_ld_queue(struct fsldma_chan *chan);
++
++/**
++ * fsldma_clean_completed_descriptor - free all descriptors which
++ * has been completed and acked
++ * @chan: Freescale DMA channel
++ *
++ * This function is used on all completed and acked descriptors.
++ * All descriptors should only be freed in this function.
++ */
++static int
++fsldma_clean_completed_descriptor(struct fsldma_chan *chan)
++{
++	struct fsl_desc_sw *desc, *_desc;
++
++	/* Run the callback for each descriptor, in order */
++	list_for_each_entry_safe(desc, _desc, &chan->ld_completed, node) {
++
++		if (async_tx_test_ack(&desc->async_tx)) {
++			/* Remove from the list of transactions */
++			list_del(&desc->node);
++#ifdef FSL_DMA_LD_DEBUG
++			chan_dbg(chan, "LD %p free\n", desc);
++#endif
++			dma_pool_free(chan->desc_pool, desc,
++					desc->async_tx.phys);
++		}
++	}
++
++	return 0;
++}
++
++/**
++ * fsldma_run_tx_complete_actions - cleanup and free a single link descriptor
++ * @chan: Freescale DMA channel
++ * @desc: descriptor to cleanup and free
++ * @cookie: Freescale DMA transaction identifier
++ *
++ * This function is used on a descriptor which has been executed by the DMA
++ * controller. It will run any callbacks, submit any dependencies.
++ */
++static dma_cookie_t fsldma_run_tx_complete_actions(struct fsl_desc_sw *desc,
++		struct fsldma_chan *chan, dma_cookie_t cookie)
++{
++	struct dma_async_tx_descriptor *txd = &desc->async_tx;
++	struct device *dev = chan->common.device->dev;
++	dma_addr_t src = get_desc_src(chan, desc);
++	dma_addr_t dst = get_desc_dst(chan, desc);
++	u32 len = get_desc_cnt(chan, desc);
++
++	BUG_ON(txd->cookie < 0);
++
++	if (txd->cookie > 0) {
++		cookie = txd->cookie;
++
++		/* Run the link descriptor callback function */
++		if (txd->callback) {
++#ifdef FSL_DMA_LD_DEBUG
++			chan_dbg(chan, "LD %p callback\n", desc);
++#endif
++			txd->callback(txd->callback_param);
++		}
++
++		/* Unmap the dst buffer, if requested */
++		if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
++			if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
++				dma_unmap_single(dev, dst, len, DMA_FROM_DEVICE);
++			else
++				dma_unmap_page(dev, dst, len, DMA_FROM_DEVICE);
++		}
++
++		/* Unmap the src buffer, if requested */
++		if (!(txd->flags & DMA_COMPL_SKIP_SRC_UNMAP)) {
++			if (txd->flags & DMA_COMPL_SRC_UNMAP_SINGLE)
++				dma_unmap_single(dev, src, len, DMA_TO_DEVICE);
++			else
++				dma_unmap_page(dev, src, len, DMA_TO_DEVICE);
++		}
++	}
++
++	/* Run any dependencies */
++	dma_run_dependencies(txd);
++
++	return cookie;
++}
++
++/**
++ * fsldma_clean_running_descriptor - move the completed descriptor from
++ * ld_running to ld_completed
++ * @chan: Freescale DMA channel
++ * @desc: the descriptor which is completed
++ *
++ * Free the descriptor directly if acked by async_tx api, or move it to
++ * queue ld_completed.
++ */
++static int
++fsldma_clean_running_descriptor(struct fsldma_chan *chan,
++		struct fsl_desc_sw *desc)
++{
++	/* Remove from the list of transactions */
++	list_del(&desc->node);
++	/*
++	 * the client is allowed to attach dependent operations
++	 * until 'ack' is set
++	 */
++	if (!async_tx_test_ack(&desc->async_tx)) {
++		/*
++		 * Move this descriptor to the list of descriptors which is
++		 * completed, but still awaiting the 'ack' bit to be set.
++		 */
++		list_add_tail(&desc->node, &chan->ld_completed);
++		return 0;
++	}
++
++	dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
++	return 0;
++}
++
+ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+ {
+ 	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
+@@ -534,8 +653,10 @@ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
+
+ 	chan_dbg(chan, "free all channel resources\n");
+ 	spin_lock_irqsave(&chan->desc_lock, flags);
++	fsldma_cleanup_descriptor(chan);
+ 	fsldma_free_desc_list(chan, &chan->ld_pending);
+ 	fsldma_free_desc_list(chan, &chan->ld_running);
++	fsldma_free_desc_list(chan, &chan->ld_completed);
+ 	spin_unlock_irqrestore(&chan->desc_lock, flags);
+
+ 	dma_pool_destroy(chan->desc_pool);
+@@ -819,46 +940,53 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+  * controller. It will run any callbacks, submit any dependencies, and then
+  * free the descriptor.
+  */
+-static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
+-				      struct fsl_desc_sw *desc)
++static void fsldma_cleanup_descriptor(struct fsldma_chan *chan)
+ {
+-	struct dma_async_tx_descriptor *txd = &desc->async_tx;
+-	struct device *dev = chan->common.device->dev;
+-	dma_addr_t src = get_desc_src(chan, desc);
+-	dma_addr_t dst = get_desc_dst(chan, desc);
+-	u32 len = get_desc_cnt(chan, desc);
++	struct fsl_desc_sw *desc, *_desc;
++	dma_cookie_t cookie = 0;
++	dma_addr_t curr_phys = get_cdar(chan);
++	int idle = dma_is_idle(chan);
++	int seen_current = 0;
+
+-	/* Run the link descriptor callback function */
+-	if (txd->callback) {
+-#ifdef FSL_DMA_LD_DEBUG
+-		chan_dbg(chan, "LD %p callback\n", desc);
+-#endif
+-		txd->callback(txd->callback_param);
+-	}
++	fsldma_clean_completed_descriptor(chan);
+
+-	/* Run any dependencies */
+-	dma_run_dependencies(txd);
++	/* Run the callback for each descriptor, in order */
++	list_for_each_entry_safe(desc, _desc, &chan->ld_running, node) {
++		/*
++		 * do not advance past the current descriptor loaded into the
++		 * hardware channel, subsequent descriptors are either in
++		 * process or have not been submitted
++		 */
++		if (seen_current)
++			break;
+
+-	/* Unmap the dst buffer, if requested */
+-	if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
+-		if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
+-			dma_unmap_single(dev, dst, len, DMA_FROM_DEVICE);
+-		else
+-			dma_unmap_page(dev, dst, len, DMA_FROM_DEVICE);
+-	}
++		/*
++		 * stop the search if we reach the current descriptor and the
++		 * channel is busy
++		 */
++		if (desc->async_tx.phys == curr_phys) {
++			seen_current = 1;
++			if (!idle)
++				break;
++		}
++
++		cookie = fsldma_run_tx_complete_actions(desc, chan, cookie);
++
++		if (fsldma_clean_running_descriptor(chan, desc))
++			break;
+
+-	/* Unmap the src buffer, if requested */
+-	if (!(txd->flags & DMA_COMPL_SKIP_SRC_UNMAP)) {
+-		if (txd->flags & DMA_COMPL_SRC_UNMAP_SINGLE)
+-			dma_unmap_single(dev, src, len, DMA_TO_DEVICE);
+-		else
+-			dma_unmap_page(dev, src, len, DMA_TO_DEVICE);
+ 	}
+
+-#ifdef FSL_DMA_LD_DEBUG
+-	chan_dbg(chan, "LD %p free\n", desc);
+-#endif
+-	dma_pool_free(chan->desc_pool, desc, txd->phys);
++	/*
++	 * Start any pending transactions automatically
++	 *
++	 * In the ideal case, we keep the DMA controller busy while we go
++	 * ahead and free the descriptors below.
++	 */
++	fsl_chan_xfer_ld_queue(chan);
++
++	if (cookie > 0)
++		chan->common.completed_cookie = cookie;
+ }
+
+ /**
+@@ -954,11 +1082,15 @@ static enum dma_status fsl_tx_status(struct dma_chan *dchan,
+ 	enum dma_status ret;
+ 	unsigned long flags;
+
+-	spin_lock_irqsave(&chan->desc_lock, flags);
+ 	ret = dma_cookie_status(dchan, cookie, txstate);
++	if (ret == DMA_SUCCESS)
++		return ret;
++
++	spin_lock_irqsave(&chan->desc_lock, flags);
++	fsldma_cleanup_descriptor(chan);
+ 	spin_unlock_irqrestore(&chan->desc_lock, flags);
+
+-	return ret;
++	return dma_cookie_status(dchan, cookie, txstate);
+ }
+
+ /*----------------------------------------------------------------------------*/
+@@ -1035,52 +1167,19 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
+ static void dma_do_tasklet(unsigned long data)
+ {
+ 	struct fsldma_chan *chan = (struct fsldma_chan *)data;
+-	struct fsl_desc_sw *desc, *_desc;
+-	LIST_HEAD(ld_cleanup);
+ 	unsigned long flags;
+
+ 	chan_dbg(chan, "tasklet entry\n");
+
+ 	spin_lock_irqsave(&chan->desc_lock, flags);
+
+-	/* update the cookie if we have some descriptors to cleanup */
+-	if (!list_empty(&chan->ld_running)) {
+-		dma_cookie_t cookie;
+-
+-		desc = to_fsl_desc(chan->ld_running.prev);
+-		cookie = desc->async_tx.cookie;
+-		dma_cookie_complete(&desc->async_tx);
+-
+-		chan_dbg(chan, "completed_cookie=%d\n", cookie);
+-	}
+-
+-	/*
+-	 * move the descriptors to a temporary list so we can drop the lock
+-	 * during the entire cleanup operation
+-	 */
+-	list_splice_tail_init(&chan->ld_running, &ld_cleanup);
+-
+ 	/* the hardware is now idle and ready for more */
+ 	chan->idle = true;
+
+-	/*
+-	 * Start any pending transactions automatically
+-	 *
+-	 * In the ideal case, we keep the DMA controller busy while we go
+-	 * ahead and free the descriptors below.
+-	 */
+-	fsl_chan_xfer_ld_queue(chan);
+-	spin_unlock_irqrestore(&chan->desc_lock, flags);
+-
+-	/* Run the callback for each descriptor, in order */
+-	list_for_each_entry_safe(desc, _desc, &ld_cleanup, node) {
++	/* Run all cleanup for this descriptor */
++	fsldma_cleanup_descriptor(chan);
+
+-		/* Remove from the list of transactions */
+-		list_del(&desc->node);
+-
+-		/* Run all cleanup for this descriptor */
+-		fsldma_cleanup_descriptor(chan, desc);
+-	}
++	spin_unlock_irqrestore(&chan->desc_lock, flags);
+
+ 	chan_dbg(chan, "tasklet exit\n");
+ }
+@@ -1262,6 +1361,7 @@ static int __devinit fsl_dma_chan_probe(struct fsldma_device *fdev,
+ 	spin_lock_init(&chan->desc_lock);
+ 	INIT_LIST_HEAD(&chan->ld_pending);
+ 	INIT_LIST_HEAD(&chan->ld_running);
++	INIT_LIST_HEAD(&chan->ld_completed);
+ 	chan->idle = true;
+
+ 	chan->common.device = &fdev->common;
+diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
+index f5c3879..7ede908 100644
+--- a/drivers/dma/fsldma.h
++++ b/drivers/dma/fsldma.h
+@@ -140,6 +140,7 @@ struct fsldma_chan {
+ 	spinlock_t desc_lock;		/* Descriptor operation lock */
+ 	struct list_head ld_pending;	/* Link descriptors queue */
+ 	struct list_head ld_running;	/* Link descriptors queue */
++	struct list_head ld_completed;	/* Link descriptors queue */
+ 	struct dma_chan common;		/* DMA common channel */
+ 	struct dma_pool *desc_pool;	/* Descriptors pool */
+ 	struct device *dev;		/* Channel device */
+--
+1.7.5.1
+
+
