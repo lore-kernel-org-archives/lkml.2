@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab2HAIRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 04:17:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48766 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752416Ab2HAIRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 04:17:31 -0400
-Message-ID: <5018E75D.3030907@redhat.com>
-Date: Wed, 01 Aug 2012 10:22:53 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754763Ab2HAITl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 04:19:41 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36462 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752Ab2HAITi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 04:19:38 -0400
+Message-ID: <5018E696.9000305@linaro.org>
+Date: Wed, 01 Aug 2012 09:19:34 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-media <linux-media@vger.kernel.org>
-Subject: Re: linux-next: Tree for July 31 (media/radio-tea5777)
-References: <20120731152614.de6ebe9e0d4b8fc6645b793a@canb.auug.org.au> <50181451.5040202@xenotime.net> <50183865.9090700@redhat.com>
-In-Reply-To: <50183865.9090700@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org,
+        linus.walleij@stericsson.com, arnd@arndb.de,
+        broonie@opensource.wolfsonmicro.com, olalilja@yahoo.se,
+        STEricsson_nomadik_linux@list.st.com, lrg@ti.com
+Subject: Re: [PATCH 3/6] ARM: ux500: Fix merge error, so such struct 'snd_soc_u8500'
+References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-6-git-send-email-lee.jones@linaro.org> <50180BF6.6080908@mvista.com> <5018DC9F.30502@linaro.org>
+In-Reply-To: <5018DC9F.30502@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for fixing this for me!
-
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-
-On 07/31/2012 09:56 PM, Mauro Carvalho Chehab wrote:
-> Em 31-07-2012 14:22, Randy Dunlap escreveu:
->> drivers/built-in.o: In function `radio_tea5777_set_freq':
->> radio-tea5777.c:(.text+0x4d8704): undefined reference to `__udivdi3'
+On 01/08/12 08:37, Lee Jones wrote:
+> On 31/07/12 17:46, Sergei Shtylyov wrote:
+>> Hello.
 >>
-> The patch below should fix it.
+>> On 07/31/2012 05:31 PM, Lee Jones wrote:
+>>
+>>     Subject doesn't parse for me...
+>>
+>>> The platform attempts to register platform device 'snd_soc_u8500'
+>>> which doesn't actually exist. Here we change the reference to the
+>>> correct one 'snd_soc_mop500'.
+>>
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 >
-> Thanks for reporting it!
+> Actually, it does make sense?
 >
-> Regards,
-> Mauro
->
-> [media] radio-tea5777: use library for 64bits div
->
-> From: Mauro Carvalho Chehab <mchehab@redhat.com>
->
-> drivers/built-in.o: In function `radio_tea5777_set_freq':
-> radio-tea5777.c:(.text+0x4d8704): undefined reference to `__udivdi3'
->
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Hans de Goede <hdegoede@redhat.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
->
-> diff --git a/drivers/media/radio/radio-tea5777.c b/drivers/media/radio/radio-tea5777.c
-> index 3e12179..5bc9fa6 100644
-> --- a/drivers/media/radio/radio-tea5777.c
-> +++ b/drivers/media/radio/radio-tea5777.c
-> @@ -33,6 +33,7 @@
->   #include <media/v4l2-fh.h>
->   #include <media/v4l2-ioctl.h>
->   #include <media/v4l2-event.h>
-> +#include <asm/div64.h>
->   #include "radio-tea5777.h"
->
->   MODULE_AUTHOR("Hans de Goede <perex@perex.cz>");
-> @@ -158,10 +159,11 @@ static int radio_tea5777_set_freq(struct radio_tea5777 *tea)
->   	int res;
->
->   	freq = clamp_t(u32, tea->freq,
-> -		       TEA5777_FM_RANGELOW, TEA5777_FM_RANGEHIGH);
-> -	freq = (freq + 8) / 16; /* to kHz */
-> +		       TEA5777_FM_RANGELOW, TEA5777_FM_RANGEHIGH) + 8;
-> +	do_div(freq, 16); /* to kHz */
->
-> -	freq = (freq - TEA5777_FM_IF) / TEA5777_FM_FREQ_STEP;
-> +	freq -= TEA5777_FM_IF;
-> +	do_div(freq, TEA5777_FM_FREQ_STEP);
->
->   	tea->write_reg &= ~(TEA5777_W_FM_PLL_MASK | TEA5777_W_FM_FREF_MASK);
->   	tea->write_reg |= freq << TEA5777_W_FM_PLL_SHIFT;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> As a sentence: "This patch fixes merge error: so such structure 'struct snd_soc_u8500'.
+
+That's interesting. Not only when I read it did it seem correct, I also 
+wrote it wrong "as a sentence". Of course "so" should be "no".
+
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
