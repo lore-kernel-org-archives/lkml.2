@@ -1,74 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab2HAHeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 03:34:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34079 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754523Ab2HAHeM (ORCPT
+	id S1754640Ab2HAHf0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 03:35:26 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19494 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753547Ab2HAHfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 03:34:12 -0400
-Message-ID: <5018DBEE.9090203@linaro.org>
-Date: Wed, 01 Aug 2012 08:34:06 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 1 Aug 2012 03:35:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 01 Aug 2012 00:35:24 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: <linux-kernel@vger.kernel.org>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] pwm: add devm_pwm_get() and devm_pwm_put()
+Date: Wed, 1 Aug 2012 16:37:09 +0900
+Message-ID: <1343806629-14397-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.7.11.3
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        lrg@ti.com
-Subject: Re: [PATCH 5/6] ARM: ux500: Ensure probing of Audio devices when
- Device Tree is enabled
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-11-git-send-email-lee.jones@linaro.org> <201207312054.13818.arnd@arndb.de>
-In-Reply-To: <201207312054.13818.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/07/12 21:54, Arnd Bergmann wrote:
-> On Tuesday 31 July 2012, Lee Jones wrote:
->> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
->> index e641003..87a5cd7 100644
->> --- a/arch/arm/mach-ux500/board-mop500.c
->> +++ b/arch/arm/mach-ux500/board-mop500.c
->> @@ -794,6 +794,7 @@ static void __init u8500_init_machine(void)
->>                                  ARRAY_SIZE(mop500_platform_devs));
->>
->>                  mop500_sdi_init(parent);
->> +               mop500_msp_init(parent);
->>                  i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
->>                  i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
->>                  i2c_register_board_info(2, mop500_i2c2_devices,
->> @@ -801,6 +802,8 @@ static void __init u8500_init_machine(void)
->>
->>                  mop500_uib_init();
->>
->> +       } else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
->> +               mop500_of_msp_init(parent);
->>          } else if (of_machine_is_compatible("st-ericsson,hrefv60+")) {
->>                  /*
->>                   * The HREFv60 board removed a GPIO expander and routed
->> @@ -812,6 +815,7 @@ static void __init u8500_init_machine(void)
->>                                  ARRAY_SIZE(mop500_platform_devs));
->>
->>                  hrefv60_sdi_init(parent);
->> +               mop500_msp_init(parent);
->>
->>                  i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
->>                  i2c0_devs -= NUM_PRE_V60_I2C0_DEVICES;
->
->
-> Looks like you're adding the same call to each of the three cases:
-> mop500, snowball and hrefv60+. How about moving it before or after
-> the if/elseif block?
+Add resource managed variants of pwm_get() and pwm_put() for
+convenience. Code is largely inspired by the equivalent devm functions
+of the regulator framework.
 
-The Snowball one is different 'mop500_msp_init' -> 'mop500_of_msp_init'.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ Documentation/driver-model/devres.txt |  4 +++
+ Documentation/pwm.txt                 |  5 +--
+ drivers/pwm/core.c                    | 57 +++++++++++++++++++++++++++++++++++
+ include/linux/pwm.h                   |  3 ++
+ 4 files changed, 67 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 950856b..43cff70 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -284,3 +284,7 @@ CLOCK
+ PINCTRL
+   devm_pinctrl_get()
+   devm_pinctrl_put()
++
++PWM
++  devm_pwm_get()
++  devm_pwm_put()
+diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
+index 554290e..4719c12 100644
+--- a/Documentation/pwm.txt
++++ b/Documentation/pwm.txt
+@@ -35,8 +35,9 @@ Using PWMs
+ Legacy users can request a PWM device using pwm_request() and free it
+ after usage with pwm_free().
+ 
+-New users should use the pwm_get() function and pass to it the consumer
+-device or a consumer name. pwm_put() is used to free the PWM device.
++New users should use the pwm_get() or devm_pwm_get() function and pass to it the
++consumer device or a consumer name. pwm_put() or devm_pwm_put() is used to free
++the PWM device.
+ 
+ After being requested a PWM has to be configured using:
+ 
+diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+index ecb7690..5a5e19b 100644
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -624,6 +624,63 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(pwm_put);
+ 
++static void devm_pwm_release(struct device *dev, void *res)
++{
++	pwm_put(*(struct pwm_device **)res);
++}
++
++/**
++ * devm_pwm_get() - Resource managed pwm_get()
++ *
++ * This works are pwm_get() but the acquired pwm will automatically be released
++ * on driver detach. See pwm_get() for more details.
++ */
++struct pwm_device *devm_pwm_get(struct device *dev, const char *consumer)
++{
++	struct pwm_device **ptr, *pwm;
++
++	ptr = devres_alloc(devm_pwm_release, sizeof(**ptr), GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	pwm = pwm_get(dev, consumer);
++	if (!IS_ERR(pwm)) {
++		*ptr = pwm;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return pwm;
++}
++EXPORT_SYMBOL_GPL(devm_pwm_get);
++
++static int devm_pwm_match(struct device *dev, void *res, void *data)
++{
++	struct pwm_device **p = res;
++
++	if (WARN_ON(!p || !*p))
++		return 0;
++
++	return *p == data;
++}
++
++/**
++ * devm_pwm_put() - Resource managed pwm_put()
++ *
++ * Releases a pwm previously allocated using devm_pwm_get. Calling this function
++ * is usually not needed as the devm-allocated pwm will automatically be
++ * released on driver detach.
++ */
++void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
++{
++	int ret;
++
++	ret = devres_release(dev, devm_pwm_release, devm_pwm_match, pwm);
++	WARN_ON(ret);
++}
++EXPORT_SYMBOL_GPL(devm_pwm_put);
++
+ #ifdef CONFIG_DEBUG_FS
+ static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
+ {
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index 21d076c..af9c39a 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -123,7 +123,10 @@ struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
+ 					 const char *label);
+ 
+ struct pwm_device *pwm_get(struct device *dev, const char *consumer);
++struct pwm_device *devm_pwm_get(struct device *dev, const char *consumer);
++
+ void pwm_put(struct pwm_device *pwm);
++void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
+ 
+ struct pwm_lookup {
+ 	struct list_head list;
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.11.3
+
