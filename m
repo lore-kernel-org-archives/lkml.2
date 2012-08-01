@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab2HAP5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:57:32 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61462 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab2HAP52 (ORCPT
+	id S1756000Ab2HAP5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:57:40 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:56250 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755771Ab2HAP5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:57:28 -0400
+	Wed, 1 Aug 2012 11:57:37 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
+        Realtek linux nic maintainers <nic_swsd@realtek.com>,
+        Francois Romieu <romieu@fr.zoreil.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
         "Rafael J . Wysocki" <rjw@sisk.pl>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v3 14/32] PCI/tile: use PCIe capabilities access functions to simplify implementation
-Date: Wed,  1 Aug 2012 23:54:19 +0800
-Message-Id: <1343836477-7287-15-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v3 15/32] PCI/r8169: use PCIe capabilities access functions to simplify implementation
+Date: Wed,  1 Aug 2012 23:54:20 +0800
+Message-Id: <1343836477-7287-16-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
 References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
@@ -28,60 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCIe capabilities access functions to simplify PCIe tile implementation.
+Use PCIe capabilities access functions to simplify r8169 driver's
+implementation.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/tile/kernel/pci.c |   25 +++++--------------------
- 1 file changed, 5 insertions(+), 20 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |   44 +++++++---------------------------
+ 1 file changed, 9 insertions(+), 35 deletions(-)
 
-diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
-index 0fdd99d..4640690 100644
---- a/arch/tile/kernel/pci.c
-+++ b/arch/tile/kernel/pci.c
-@@ -246,16 +246,13 @@ static void __devinit fixup_read_and_payload_sizes(void)
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 9757ce3..d575fbf 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -807,15 +807,8 @@ static void rtl_unlock_work(struct rtl8169_private *tp)
  
- 	/* Scan for the smallest maximum payload size. */
- 	while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)) != NULL) {
--		int pcie_caps_offset;
- 		u32 devcap;
- 		int max_payload;
- 
--		pcie_caps_offset = pci_find_capability(dev, PCI_CAP_ID_EXP);
--		if (pcie_caps_offset == 0)
-+		if (!pci_is_pcie(dev))
- 			continue;
- 
--		pci_read_config_dword(dev, pcie_caps_offset + PCI_EXP_DEVCAP,
--				      &devcap);
-+		pci_pcie_capability_read_dword(dev, PCI_EXP_DEVCAP, &devcap);
- 		max_payload = devcap & PCI_EXP_DEVCAP_PAYLOAD;
- 		if (max_payload < smallest_max_payload)
- 			smallest_max_payload = max_payload;
-@@ -263,21 +260,9 @@ static void __devinit fixup_read_and_payload_sizes(void)
- 
- 	/* Now, set the max_payload_size for all devices to that value. */
- 	new_values = (max_read_size << 12) | (smallest_max_payload << 5);
--	while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)) != NULL) {
--		int pcie_caps_offset;
--		u16 devctl;
+ static void rtl_tx_performance_tweak(struct pci_dev *pdev, u16 force)
+ {
+-	int cap = pci_pcie_cap(pdev);
 -
--		pcie_caps_offset = pci_find_capability(dev, PCI_CAP_ID_EXP);
--		if (pcie_caps_offset == 0)
--			continue;
+-	if (cap) {
+-		u16 ctl;
 -
--		pci_read_config_word(dev, pcie_caps_offset + PCI_EXP_DEVCTL,
--				     &devctl);
--		devctl &= ~(PCI_EXP_DEVCTL_PAYLOAD | PCI_EXP_DEVCTL_READRQ);
--		devctl |= new_values;
--		pci_write_config_word(dev, pcie_caps_offset + PCI_EXP_DEVCTL,
--				      devctl);
+-		pci_read_config_word(pdev, cap + PCI_EXP_DEVCTL, &ctl);
+-		ctl = (ctl & ~PCI_EXP_DEVCTL_READRQ) | force;
+-		pci_write_config_word(pdev, cap + PCI_EXP_DEVCTL, ctl);
 -	}
-+	while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)) != NULL)
-+		pci_pcie_capability_change_word(dev, PCI_EXP_DEVCTL, new_values,
-+				PCI_EXP_DEVCTL_PAYLOAD | PCI_EXP_DEVCTL_READRQ);
++	pci_pcie_capability_change_word(pdev, PCI_EXP_DEVCTL,
++		force, PCI_EXP_DEVCTL_READRQ);
  }
  
+ static u32 ocp_read(struct rtl8169_private *tp, u8 mask, u16 reg)
+@@ -4504,28 +4497,14 @@ static void rtl_ephy_init(void __iomem *ioaddr, const struct ephy_info *e, int l
+ 
+ static void rtl_disable_clock_request(struct pci_dev *pdev)
+ {
+-	int cap = pci_pcie_cap(pdev);
+-
+-	if (cap) {
+-		u16 ctl;
+-
+-		pci_read_config_word(pdev, cap + PCI_EXP_LNKCTL, &ctl);
+-		ctl &= ~PCI_EXP_LNKCTL_CLKREQ_EN;
+-		pci_write_config_word(pdev, cap + PCI_EXP_LNKCTL, ctl);
+-	}
++	pci_pcie_capability_change_word(pdev, PCI_EXP_LNKCTL,
++					0, PCI_EXP_LNKCTL_CLKREQ_EN);
+ }
+ 
+ static void rtl_enable_clock_request(struct pci_dev *pdev)
+ {
+-	int cap = pci_pcie_cap(pdev);
+-
+-	if (cap) {
+-		u16 ctl;
+-
+-		pci_read_config_word(pdev, cap + PCI_EXP_LNKCTL, &ctl);
+-		ctl |= PCI_EXP_LNKCTL_CLKREQ_EN;
+-		pci_write_config_word(pdev, cap + PCI_EXP_LNKCTL, ctl);
+-	}
++	pci_pcie_capability_change_word(pdev, PCI_EXP_LNKCTL,
++					PCI_EXP_LNKCTL_CLKREQ_EN, 0);
+ }
+ 
+ #define R8168_CPCMD_QUIRK_MASK (\
+@@ -5132,14 +5111,9 @@ static void rtl_hw_start_8101(struct net_device *dev)
+ 		tp->event_slow &= ~RxFIFOOver;
+ 
+ 	if (tp->mac_version == RTL_GIGA_MAC_VER_13 ||
+-	    tp->mac_version == RTL_GIGA_MAC_VER_16) {
+-		int cap = pci_pcie_cap(pdev);
+-
+-		if (cap) {
+-			pci_write_config_word(pdev, cap + PCI_EXP_DEVCTL,
+-					      PCI_EXP_DEVCTL_NOSNOOP_EN);
+-		}
+-	}
++	    tp->mac_version == RTL_GIGA_MAC_VER_16)
++		pci_pcie_capability_write_word(pdev, PCI_EXP_DEVCTL,
++					       PCI_EXP_DEVCTL_NOSNOOP_EN);
+ 
+ 	RTL_W8(Cfg9346, Cfg9346_Unlock);
  
 -- 
 1.7.9.5
