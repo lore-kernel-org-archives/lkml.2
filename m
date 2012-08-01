@@ -1,198 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab2HARbG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 13:31:06 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:36144 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab2HARbD (ORCPT
+	id S1754318Ab2HARhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 13:37:23 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:61161 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105Ab2HARhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 13:31:03 -0400
-Date: Wed, 1 Aug 2012 10:30:59 -0700
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: qiang.liu@freescale.com
-Cc: linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, dan.j.williams@gmail.com,
-        Vinod Koul <vinod.koul@intel.com>, Timur Tabi <timur@freescale.com>,
-        herbert@gondor.hengli.com.au, Dan Williams <dan.j.williams@intel.com>,
-        davem@davemloft.net
-Subject: Re: [PATCH v5 5/6] fsl-dma: use spin_lock_bh to instead of
- spin_lock_irqsave
-Message-ID: <20120801173059.GF11359@ovro.caltech.edu>
-References: <1343811009-25466-1-git-send-email-qiang.liu@freescale.com>
+	Wed, 1 Aug 2012 13:37:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343811009-25466-1-git-send-email-qiang.liu@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (ovro.ovro.caltech.edu); Wed, 01 Aug 2012 10:31:00 -0700 (PDT)
+In-Reply-To: <20120801133835.GH5470@ics.muni.cz>
+References: <20120801133835.GH5470@ics.muni.cz>
+From: Roland Dreier <roland@kernel.org>
+Date: Wed, 1 Aug 2012 10:37:01 -0700
+X-Google-Sender-Auth: ffnrfYS-tiKDiN2PDc8ptmwipXQ
+Message-ID: <CAG4TOxONLJnBaY7N5x7Kfi+dwCb507QPqX9s_Wuef10+RzM=AQ@mail.gmail.com>
+Subject: Re: mellanox mlx4_core and SR-IOV
+To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 04:50:09PM +0800, qiang.liu@freescale.com wrote:
-> From: Qiang Liu <qiang.liu@freescale.com>
-> 
-> - use spin_lock_bh() is the right way to use async_tx api,
-> dma_run_dependencies() should not be protected by spin_lock_irqsave();
-> - use spin_lock_bh to instead of spin_lock_irqsave for improving performance,
-> There is not any place to access descriptor queues in fsl-dma ISR except its
-> tasklet, spin_lock_bh() is more proper here. Interrupts will be turned off and
-> context will be save in irqsave, there is needless to use irqsave..
-> 
+On Wed, Aug 1, 2012 at 6:38 AM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
+> [    3.558296] mlx4_core 0000:02:00.0: not enough MMIO resources for SR-IOV (nres: 0, iov->nres: 1)
 
-This description is not very clear English. I understand it is not your
-native language. Let me try to help.
+This comes from the core sriov_enable() function, not anything in mlx4.
+(although my kernel doesn't have the print of nres in that message)
 
-"""
-The use of spin_lock_irqsave() is a stronger locking mechanism than is
-required throughout the driver. The minimum locking required should be
-used instead.
-
-Change all instances of spin_lock_irqsave() to spin_lock_bh(). All
-manipulation of protected fields is done using tasklet context or
-weaker, which makes spin_lock_bh() the correct choice.
-"""
-
-Other than that,
-Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
-
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Li Yang <leoli@freescale.com>
-> Cc: Timur Tabi <timur@freescale.com>
-> Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
-> ---
->  drivers/dma/fsldma.c |   30 ++++++++++++------------------
->  1 files changed, 12 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-> index bb883c0..e3814aa 100644
-> --- a/drivers/dma/fsldma.c
-> +++ b/drivers/dma/fsldma.c
-> @@ -645,10 +645,9 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
->  	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
->  	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
->  	struct fsl_desc_sw *child;
-> -	unsigned long flags;
->  	dma_cookie_t cookie;
-> 
-> -	spin_lock_irqsave(&chan->desc_lock, flags);
-> +	spin_lock_bh(&chan->desc_lock);
-> 
->  	/*
->  	 * assign cookies to all of the software descriptors
-> @@ -661,7 +660,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
->  	/* put this transaction onto the tail of the pending queue */
->  	append_ld_queue(chan, desc);
-> 
-> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> +	spin_unlock_bh(&chan->desc_lock);
-> 
->  	return cookie;
->  }
-> @@ -770,15 +769,14 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
->  static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
->  {
->  	struct fsldma_chan *chan = to_fsl_chan(dchan);
-> -	unsigned long flags;
-> 
->  	chan_dbg(chan, "free all channel resources\n");
-> -	spin_lock_irqsave(&chan->desc_lock, flags);
-> +	spin_lock_bh(&chan->desc_lock);
->  	fsldma_cleanup_descriptor(chan);
->  	fsldma_free_desc_list(chan, &chan->ld_pending);
->  	fsldma_free_desc_list(chan, &chan->ld_running);
->  	fsldma_free_desc_list(chan, &chan->ld_completed);
-> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> +	spin_unlock_bh(&chan->desc_lock);
-> 
->  	dma_pool_destroy(chan->desc_pool);
->  	chan->desc_pool = NULL;
-> @@ -997,7 +995,6 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
->  {
->  	struct dma_slave_config *config;
->  	struct fsldma_chan *chan;
-> -	unsigned long flags;
->  	int size;
-> 
->  	if (!dchan)
-> @@ -1007,7 +1004,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
-> 
->  	switch (cmd) {
->  	case DMA_TERMINATE_ALL:
-> -		spin_lock_irqsave(&chan->desc_lock, flags);
-> +		spin_lock_bh(&chan->desc_lock);
-> 
->  		/* Halt the DMA engine */
->  		dma_halt(chan);
-> @@ -1017,7 +1014,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
->  		fsldma_free_desc_list(chan, &chan->ld_running);
->  		chan->idle = true;
-> 
-> -		spin_unlock_irqrestore(&chan->desc_lock, flags);
-> +		spin_unlock_bh(&chan->desc_lock);
->  		return 0;
-> 
->  	case DMA_SLAVE_CONFIG:
-> @@ -1059,11 +1056,10 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
->  static void fsl_dma_memcpy_issue_pending(struct dma_chan *dchan)
->  {
->  	struct fsldma_chan *chan = to_fsl_chan(dchan);
-> -	unsigned long flags;
-> 
-> -	spin_lock_irqsave(&chan->desc_lock, flags);
-> +	spin_lock_bh(&chan->desc_lock);
->  	fsl_chan_xfer_ld_queue(chan);
-> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> +	spin_unlock_bh(&chan->desc_lock);
->  }
-> 
->  /**
-> @@ -1076,15 +1072,14 @@ static enum dma_status fsl_tx_status(struct dma_chan *dchan,
->  {
->  	struct fsldma_chan *chan = to_fsl_chan(dchan);
->  	enum dma_status ret;
-> -	unsigned long flags;
-> 
->  	ret = dma_cookie_status(dchan, cookie, txstate);
->  	if (ret == DMA_SUCCESS)
->  		return ret;
-> 
-> -	spin_lock_irqsave(&chan->desc_lock, flags);
-> +	spin_lock_bh(&chan->desc_lock);
->  	fsldma_cleanup_descriptor(chan);
-> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> +	spin_unlock_bh(&chan->desc_lock);
-> 
->  	return dma_cookie_status(dchan, cookie, txstate);
->  }
-> @@ -1163,11 +1158,10 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
->  static void dma_do_tasklet(unsigned long data)
->  {
->  	struct fsldma_chan *chan = (struct fsldma_chan *)data;
-> -	unsigned long flags;
-> 
->  	chan_dbg(chan, "tasklet entry\n");
-> 
-> -	spin_lock_irqsave(&chan->desc_lock, flags);
-> +	spin_lock_bh(&chan->desc_lock);
-> 
->  	/* the hardware is now idle and ready for more */
->  	chan->idle = true;
-> @@ -1175,7 +1169,7 @@ static void dma_do_tasklet(unsigned long data)
->  	/* Run all cleanup for this descriptor */
->  	fsldma_cleanup_descriptor(chan);
-> 
-> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> +	spin_unlock_bh(&chan->desc_lock);
-> 
->  	chan_dbg(chan, "tasklet exit\n");
->  }
-> --
-> 1.7.5.1
-> 
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
+Not sure what it means.
