@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab2HAAjZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 20:39:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52151 "EHLO mx1.redhat.com"
+	id S1755519Ab2HAAn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 20:43:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1868 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab2HAAjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 20:39:24 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        vijay.chauhan@netapp.com
-Subject: [RESEND PATCH] block: do not artificially constrain max_sectors for stacking drivers
-Date: Tue, 31 Jul 2012 20:39:13 -0400
-Message-Id: <1343781553-17089-1-git-send-email-snitzer@redhat.com>
-In-Reply-To: <20120710191859.GB3831@redhat.com>
-References: <20120710191859.GB3831@redhat.com>
+	id S1752146Ab2HAAnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 20:43:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="191543160"
+Date: Wed, 1 Aug 2012 08:43:19 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org
+Subject: pci_get_subsys: GFP_KERNEL allocations with IRQs disabled
+Message-ID: <20120801004319.GA7043@localhost>
+References: <20120731121759.GA17822@localhost>
+ <5017D19B.5080806@redhat.com>
+ <1343738627.27983.30.camel@gandalf.stny.rr.com>
+ <5017D4AB.3090107@redhat.com>
+ <1343740419.27983.33.camel@gandalf.stny.rr.com>
+ <20120731234336.GA5526@localhost>
+ <1343778699.27983.70.camel@gandalf.stny.rr.com>
+ <20120731235705.GW2422@linux.vnet.ibm.com>
+ <1343779778.27983.73.camel@gandalf.stny.rr.com>
+ <20120801001811.GX2422@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120801001811.GX2422@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk_set_stacking_limits is intended to allow stacking drivers to build
-up the limits of the stacked device based on the underlying devices'
-limits.  But defaulting 'max_sectors' to BLK_DEF_MAX_SECTORS (1024)
-doesn't allow the stacking driver to inherit a max_sectors larger than
-1024 -- due to blk_stack_limits' use of min_not_zero.
-
-It is now clear that this artificial limit is getting in the way so
-change blk_set_stacking_limits's max_sectors to UINT_MAX (which allows
-stacking drivers like dm-multipath to inherit 'max_sectors' from the
-underlying paths).
-
-Reported-by: Vijay Chauhan <vijay.chauhan@netapp.com>
-Tested-by: Vijay Chauhan <vijay.chauhan@netapp.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
----
- block/blk-settings.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index d3234fc..565a678 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -143,8 +143,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
- 	lim->discard_zeroes_data = 1;
- 	lim->max_segments = USHRT_MAX;
- 	lim->max_hw_sectors = UINT_MAX;
--
--	lim->max_sectors = BLK_DEF_MAX_SECTORS;
-+	lim->max_sectors = UINT_MAX;
- }
- EXPORT_SYMBOL(blk_set_stacking_limits);
+On Tue, Jul 31, 2012 at 05:18:11PM -0700, Paul E. McKenney wrote:
+> On Tue, Jul 31, 2012 at 08:09:38PM -0400, Steven Rostedt wrote:
+> > On Tue, 2012-07-31 at 16:57 -0700, Paul E. McKenney wrote:
+> > 
+> > > > What was the next lines? I bet you it was "PASSED". Which means it did
+> > > > not fail. This is the second bug you found that has to do with RCU being
+> > > > called in 'idle'. The one that Paul posted a patch for.
+> > > 
+> > > Though it needs another patch to actually use it in the right place...
+> > 
+> > Right. Something like this:
+> 
+> Looks good to me!
  
--- 
-1.7.4.4
+With all 3 patches applied, the warning on __update_max_tr finally
+goes away. Thanks!
 
+However, this unrelated warning still reliably remains (the same config).
+I think it's pci_get_subsys() triggered this assert:
+
+        /*
+         * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
+         */
+        if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
+                return;
+
+[   91.282131] machine restart
+[   91.283895] ------------[ cut here ]------------
+[   91.284731] WARNING: at /c/wfg/linux/kernel/lockdep.c:2739 lockdep_trace_alloc+0x1fb/0x210()
+[   91.286132] Modules linked in:
+[   91.286703] Pid: 697, comm: reboot Not tainted 3.5.0-00024-g01ff5db-dirty #4
+[   91.287859] Call Trace:
+[   91.288289]  [<81050148>] warn_slowpath_common+0xb8/0x100
+[   91.289338]  [<8110acdb>] ? lockdep_trace_alloc+0x1fb/0x210
+[   91.290264]  [<8110acdb>] ? lockdep_trace_alloc+0x1fb/0x210
+[   91.291161]  [<810501ce>] warn_slowpath_null+0x3e/0x50
+[   91.292042]  [<8110acdb>] lockdep_trace_alloc+0x1fb/0x210
+[   91.292934]  [<81228e25>] kmem_cache_alloc_trace+0x55/0x600
+[   91.292934]  [<813025ca>] ? kobject_put+0x9a/0x160
+[   91.292934]  [<814e95e0>] ? klist_iter_exit+0x30/0x50
+[   91.292934]  [<81405881>] ? bus_find_device+0xf1/0x120
+[   91.292934]  [<81361a3c>] ? pci_get_subsys+0x11c/0x1b0
+[   91.292934]  [<81361a3c>] pci_get_subsys+0x11c/0x1b0
+[   91.292934]  [<81361afe>] pci_get_device+0x2e/0x40
+[   91.292934]  [<81033e25>] mach_reboot_fixups+0xa5/0xd0
+[   91.292934]  [<81027611>] native_machine_emergency_restart+0x1f1/0x590
+[   91.292934]  [<814f2e00>] ? printk+0x4b/0x5b
+[   91.292934]  [<810269ef>] native_machine_restart+0x6f/0x80
+[   91.292934]  [<810271cc>] machine_restart+0x1c/0x30
+[   91.292934]  [<810886e0>] kernel_restart+0x70/0xc0
+[   91.292934]  [<81088a85>] sys_reboot+0x325/0x380
+[   91.292934]  [<811f796c>] ? handle_pte_fault+0xdc/0x1740
+[   91.292934]  [<811f93e7>] ? handle_mm_fault+0x417/0x4a0
+[   91.292934]  [<8103e07b>] ? do_page_fault+0x7fb/0xb30
+[   91.292934]  [<810b33e7>] ? up_read+0x37/0x70
+[   91.292934]  [<8103e07b>] ? do_page_fault+0x7fb/0xb30
+[   91.292934]  [<8123c063>] ? do_sys_open+0x3a3/0x3f0
+[   91.292934]  [<8123c063>] ? do_sys_open+0x3a3/0x3f0
+[   91.292934]  [<810b0270>] ? update_rmtp+0xe0/0xe0
+[   91.292934]  [<8150376e>] ? restore_all+0xf/0xf
+[   91.292934]  [<8103d880>] ? vmalloc_sync_all+0x320/0x320
+[   91.292934]  [<81109fca>] ? trace_hardirqs_on_caller+0x28a/0x380
+[   91.292934]  [<81311594>] ? trace_hardirqs_on_thunk+0xc/0x10
+[   91.292934]  [<81503735>] syscall_call+0x7/0xb
+
+Thanks,
+Fengguang
