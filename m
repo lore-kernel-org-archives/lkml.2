@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab2HAQA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 12:00:27 -0400
+	id S1756258Ab2HAQAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 12:00:42 -0400
 Received: from mail-gg0-f174.google.com ([209.85.161.174]:40535 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756147Ab2HAQAW (ORCPT
+	with ESMTP id S1755880Ab2HAQAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 12:00:22 -0400
+	Wed, 1 Aug 2012 12:00:37 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Mark Einon <mark.einon@gmail.com>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Mike McCormack <mikem@ring3k.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
         "Rafael J . Wysocki" <rjw@sisk.pl>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v3 31/32] PCI/et131x: use PCIe capabilities access functions to simplify implementation
-Date: Wed,  1 Aug 2012 23:54:36 +0800
-Message-Id: <1343836477-7287-32-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v3 32/32] PCI/rtl8192e: use PCIe capabilities access functions to simplify implementation
+Date: Wed,  1 Aug 2012 23:54:37 +0800
+Message-Id: <1343836477-7287-33-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
 References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
@@ -28,66 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCIe capabilities access functions to simplify et131x driver's
+Use PCIe capabilities access functions to simplify rtl8192e driver's
 implementation.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/staging/et131x/et131x.c |   19 +++++--------------
- 1 file changed, 5 insertions(+), 14 deletions(-)
+ drivers/staging/rtl8192e/rtl8192e/rtl_pci.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 5b11c5e..7c2e781 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -4001,16 +4001,14 @@ static void et131x_hwaddr_init(struct et131x_adapter *adapter)
- static int et131x_pci_init(struct et131x_adapter *adapter,
- 						struct pci_dev *pdev)
- {
--	int cap = pci_pcie_cap(pdev);
- 	u16 max_payload;
--	u16 ctl;
- 	int i, rc;
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_pci.c b/drivers/staging/rtl8192e/rtl8192e/rtl_pci.c
+index ddadcc3..820cc68 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_pci.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_pci.c
+@@ -31,12 +31,10 @@ static void rtl8192_parse_pci_configuration(struct pci_dev *pdev,
+ 	struct r8192_priv *priv = (struct r8192_priv *)rtllib_priv(dev);
  
- 	rc = et131x_init_eeprom(adapter);
- 	if (rc < 0)
- 		goto out;
+ 	u8 tmp;
+-	int pos;
+-	u8 LinkCtrlReg;
++	u16 LinkCtrlReg;
  
--	if (!cap) {
-+	if (!pci_is_pcie(pdev)) {
- 		dev_err(&pdev->dev, "Missing PCIe capabilities\n");
- 		goto err_out;
- 	}
-@@ -4018,7 +4016,7 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
- 	/* Let's set up the PORT LOGIC Register.  First we need to know what
- 	 * the max_payload_size is
- 	 */
--	if (pci_read_config_word(pdev, cap + PCI_EXP_DEVCAP, &max_payload)) {
-+	if (pci_pcie_capability_read_word(pdev, PCI_EXP_DEVCAP, &max_payload)) {
- 		dev_err(&pdev->dev,
- 		    "Could not read PCI config space for Max Payload Size\n");
- 		goto err_out;
-@@ -4055,17 +4053,10 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
- 	}
+-	pos = pci_find_capability(priv->pdev, PCI_CAP_ID_EXP);
+-	pci_read_config_byte(priv->pdev, pos + PCI_EXP_LNKCTL, &LinkCtrlReg);
+-	priv->NdisAdapter.LinkCtrlReg = LinkCtrlReg;
++	pci_pcie_capability_read_word(priv->pdev, PCI_EXP_LNKCTL, &LinkCtrlReg);
++	priv->NdisAdapter.LinkCtrlReg = (u8)LinkCtrlReg;
  
- 	/* Change the max read size to 2k */
--	if (pci_read_config_word(pdev, cap + PCI_EXP_DEVCTL, &ctl)) {
-+	if (pci_pcie_capability_change_word(pdev, PCI_EXP_DEVCTL,
-+				0x4 << 12, PCI_EXP_DEVCTL_READRQ)) {
- 		dev_err(&pdev->dev,
--			"Could not read PCI config space for Max read size\n");
--		goto err_out;
--	}
--
--	ctl = (ctl & ~PCI_EXP_DEVCTL_READRQ) | (0x04 << 12);
--
--	if (pci_write_config_word(pdev, cap + PCI_EXP_DEVCTL, ctl)) {
--		dev_err(&pdev->dev,
--		      "Could not write PCI config space for Max read size\n");
-+			"Couldn't change PCI config space for Max read size\n");
- 		goto err_out;
- 	}
- 
+ 	RT_TRACE(COMP_INIT, "Link Control Register =%x\n",
+ 		 priv->NdisAdapter.LinkCtrlReg);
 -- 
 1.7.9.5
 
