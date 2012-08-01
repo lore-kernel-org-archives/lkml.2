@@ -1,78 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab2HAM2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 08:28:33 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36678 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab2HAM2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 08:28:31 -0400
-Date: Wed, 1 Aug 2012 14:28:24 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
-Message-ID: <20120801122821.GA28650@somewhere.redhat.com>
-References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
- <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
- <1343660892.20897.3.camel@twins>
- <20120730155059.GB17078@somewhere.redhat.com>
- <20120731070640.GA2950@gmail.com>
- <20120731104845.GC17078@somewhere.redhat.com>
- <20120731145742.GA6934@gmail.com>
- <1343751262.20897.29.camel@twins>
+	id S1753563Ab2HAM3g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 08:29:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38579 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752154Ab2HAM3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 08:29:34 -0400
+Date: Wed, 1 Aug 2012 14:26:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, ananth@in.ibm.com, a.p.zijlstra@chello.nl,
+        mingo@redhat.com, srikar@linux.vnet.ibm.com, roland@hack.frob.com
+Subject: Re: [PATCH 2/2] x86/uprobes: implement x86 specific
+	arch_uprobe_*_step
+Message-ID: <20120801122616.GA32705@redhat.com>
+References: <20120730141638.GA5306@redhat.com> <1343735548-18101-1-git-send-email-bigeasy@linutronix.de> <1343735548-18101-2-git-send-email-bigeasy@linutronix.de> <20120731175108.GC14576@redhat.com> <50183273.9070304@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343751262.20897.29.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50183273.9070304@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 06:14:22PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-07-31 at 16:57 +0200, Ingo Molnar wrote:
-> > 
-> > 'callback', while a longer word, is almost always used as a noun 
-> > within the kernel - and it also has a pretty narrow meaning. 
-> 
-> An altogether different naming would be something like:
-> 
-> struct user_kernel_tracking {
-> 	int want_uk_tracking;
-> 	enum {
-> 		in_kernel = 0,
-> 		in_user,
-> 	} uk_state;
-> };
-> 
-> 
+On 07/31, Sebastian Andrzej Siewior wrote:
+>
+> On 07/31/2012 07:51 PM, Oleg Nesterov wrote:
+>> However, honestly I do not like it. I think we should change this
+>> step-by-step, that is why I suggested to use TIF_SINGLESTEP and
+>> user_enable_single_step() like your initial patch did. With this
+>> patch at least the debugger doesn't lose the control over the tracee
+>> if it steps over the probed insn, and this is the main (and known ;)
+>> problem to me.
+>
+> I thought you did not like the nesting with TIF_SIGNLESTEP and the
+> _FORCE and suggested to handle the complete state within uprobe.
 
-You bet we might also extend this to track guest as well in the future
-because it appears that we could also enter into RCU extended quiescent
-state when we run in guest.
+Yes, but I suggested to do this in a separate patch.
 
-So we probably need to generalize a bit more. Some naming based on
-"code domain"?
+In particular, because even if we do not care about DEBUGCTLMSR_BTF
+after _disable, _enable has to clear it. See below.
 
-struct code_domain {
-	int is_tracking;
-	enum {
-		in_kernel,
-		in_user,
-		in_guest
-	} state;
-}
+>> Every change needs the discussion. For example, _enable should
+>> clear DEBUGCTLMSR_BTF, this is obvious. But it is not clear to
+>> me if _disable should restore it. What if the probed insn was
+>> "jmp"? We need the additional complications to handle this case
+>> really correctly, and for what? OK, gdb can get the extra SIGTRAP
+>> from the tracee, but this is fine. And uprobes can confuse gdb
+>> in many ways.
+>
+> I don't know if it is worth to have correct behavior here or rather go
+> for the easy way which is either always do the wakeup or delay until
+> the next jump.
+
+This is debatable, personally I think it is fine to lose DEBUGCTLMSR_BTF.
+Otherwise we need much more complications, not sure if it worth a trouble.
+And an extra SIGTRAP for gdb is certainly better than the lost SIGTRAP.
+
+However, once again, at least we should clear DEBUGCTLMSR_BTF
+before the step. And I strongly believe we should not copy-and-paste
+this code from step.c. This means we need something like the patch
+below, before we teach uprobes to play with _TF directly, imho.
+
+And btw, this is offtopic, but the usage of update_debugctlmsr()
+doesn't look right to me (I can be easily wrong though). I'll write
+another email.
+
+Oleg.
+
+--- x/arch/x86/kernel/step.c
++++ x/arch/x86/kernel/step.c
+@@ -157,6 +157,21 @@ static int enable_single_step(struct tas
+ 	return 1;
+ }
+ 
++void enable_block_step(struct task_struct *child, bool on)
++{
++	unsigned long debugctl = get_debugctlmsr();
++
++	if (on) {
++		set_tsk_thread_flag(child, TIF_BLOCKSTEP);
++		debugctl |= DEBUGCTLMSR_BTF;
++	} else {
++		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
++		debugctl &= ~DEBUGCTLMSR_BTF;
++	}
++
++	update_debugctlmsr(debugctl);
++}
++
+ /*
+  * Enable single or block step.
+  */
+@@ -169,19 +184,10 @@ static void enable_step(struct task_stru
+ 	 * So no one should try to use debugger block stepping in a program
+ 	 * that uses user-mode single stepping itself.
+ 	 */
+-	if (enable_single_step(child) && block) {
+-		unsigned long debugctl = get_debugctlmsr();
+-
+-		debugctl |= DEBUGCTLMSR_BTF;
+-		update_debugctlmsr(debugctl);
+-		set_tsk_thread_flag(child, TIF_BLOCKSTEP);
+-	} else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
+-		unsigned long debugctl = get_debugctlmsr();
+-
+-		debugctl &= ~DEBUGCTLMSR_BTF;
+-		update_debugctlmsr(debugctl);
+-		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
+-	}
++	if (enable_single_step(child) && block)
++		enable_block_step(true);
++	else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
++		enable_block_step(false);
+ }
+ 
+ void user_enable_single_step(struct task_struct *child)
+@@ -199,13 +205,8 @@ void user_disable_single_step(struct tas
+ 	/*
+ 	 * Make sure block stepping (BTF) is disabled.
+ 	 */
+-	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
+-		unsigned long debugctl = get_debugctlmsr();
+-
+-		debugctl &= ~DEBUGCTLMSR_BTF;
+-		update_debugctlmsr(debugctl);
+-		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
+-	}
++	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
++		enable_block_step(false);
+ 
+ 	/* Always clear TIF_SINGLESTEP... */
+ 	clear_tsk_thread_flag(child, TIF_SINGLESTEP);
 
