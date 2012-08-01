@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab2HANOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 09:14:49 -0400
-Received: from smtp-out-181.synserver.de ([212.40.185.181]:1071 "EHLO
-	smtp-out-181.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab2HANOs (ORCPT
+	id S1753450Ab2HANU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 09:20:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52229 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751356Ab2HANUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 09:14:48 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 4201
-Message-ID: <50192CBF.6040903@metafoo.de>
-Date: Wed, 01 Aug 2012 15:18:55 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Wed, 1 Aug 2012 09:20:25 -0400
+Date: Wed, 1 Aug 2012 14:20:23 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
+ subsequent widgets to fail too
+Message-ID: <20120801132022.GS11892@opensource.wolfsonmicro.com>
+References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
+ <1343741493-17671-3-git-send-email-lee.jones@linaro.org>
+ <20120731134214.GK4468@opensource.wolfsonmicro.com>
+ <5017EAC3.3080504@linaro.org>
+ <20120731142820.GW4468@opensource.wolfsonmicro.com>
+ <5017EDCA.4020601@linaro.org>
+ <20120731145443.GY4468@opensource.wolfsonmicro.com>
+ <5017F68B.3060400@linaro.org>
+ <20120731151819.GC4468@opensource.wolfsonmicro.com>
+ <5018D880.5090306@linaro.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Borislav Petkov <bp@alien8.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: awful kconfig help texts.
-References: <20120731151600.GA19412@redhat.com>  <20120731170741.GA4735@x1.osrc.amd.com>  <20120731172638.GE16873@home.goodmis.org>  <20120731174249.GB4735@x1.osrc.amd.com>  <20120801074742.GH29673@avionic-0098.adnet.avionic-design.de>  <20120801085644.GA21303@liondog.tnic> <5018F537.209@metafoo.de>  <20120801092625.GB21303@liondog.tnic> <5018F908.9090607@metafoo.de>  <20120801100455.GD21303@liondog.tnic> <50190B67.5050108@metafoo.de> <1343825179.27983.76.camel@gandalf.stny.rr.com>
-In-Reply-To: <1343825179.27983.76.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5018D880.5090306@linaro.org>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2012 02:46 PM, Steven Rostedt wrote:
-> On Wed, 2012-08-01 at 12:56 +0200, Lars-Peter Clausen wrote:
-> 
->> You could do that by using a construct like below, but well...
->>
->> config HAS_PWM
->>     bool
->>
->> config PWM
->>     bool "PWM
->>     depends on HAS_PWM
->>
->> config PWM_CAN_BUILD_DRIVER_X
->>     defbool I2C
->>     select HAS_PWM
->>
->> config PWM_DRIVER_X
->>     tristate "PWM chip X support"
->>     depends on PWM && PWM_CAN_BUILD_DRIVER_X
->>
->> config PWM_CAN_BUILD_DRIVER_Y
->>     defbool ARCH_Y
->>     select HAS_PWM
->>
->> config PWM_DRIVER_Y
->>     tristate "PWM chip Y support"
->>     depends on PWM && PWM_CAN_BUILD_DRIVER_Y
-> 
-> What selects the 'PWM_CAN_BUILD_DRIVER_FOO'?
-> 
+On Wed, Aug 01, 2012 at 08:19:28AM +0100, Lee Jones wrote:
+> On 31/07/12 16:18, Mark Brown wrote:
 
-Its def_bool statement, which lists the prerequisites to build the driver.
-E.g. for a I2C PWM expander I2S support, for a on-SoC PWM core support for
-the SoC family, etc.. So it will be true if the driver can actually be built
-and false otherwise. If one of the PWM_CAN_BUILD_DRIVER_FOO symbols is true
-also HAS_PWM will be true and PWM becomes selectable.
+> >I'm not going to apply this patch.  This isn't a vendor BSP, we
+> >shouldn't be putting random hacks like this in core code.
 
-But it seems to be a bid tedious to have these extra lines for each driver
-and I guess it is not a PWM subsystem specific issue. There are other
-subsystems where this probably applies as well, e.g. the MFD subsystem.
-Also such a solution would rule out out-of-tree PWM driver modules, since it
-is not possible to get CONFIG_PWM selected.
+> BSP kernel or otherwise, it still seems wrong to me to fail and
+> entire audio driver just because of a broken link.
 
-- Lars
+No, really.  Random disconnections in the DAPM graph are just endless
+pain from a support and debug point of view.  This isn't something that
+randomly breaks on specific hardware where we'd expect random errors at
+runtime, it's something that will never have worked - it seems clear
+nobody tested the mainline submission.
 
+It's very disappointing to see such an error exist, and even more
+disappointing that there's no interest in fixing the driver.
