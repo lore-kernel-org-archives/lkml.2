@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab2HATGW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 15:06:22 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33984 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab2HATGV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 15:06:21 -0400
-Message-ID: <50197E4A.7020408@gmail.com>
-Date: Wed, 01 Aug 2012 21:06:50 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-References: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com> <1343757920-19713-2-git-send-email-levinsasha928@gmail.com> <20120731182330.GD21292@google.com> <50197348.9010101@gmail.com> <20120801182112.GC15477@google.com> <50197460.8010906@gmail.com> <20120801182749.GD15477@google.com>
-In-Reply-To: <20120801182749.GD15477@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756319Ab2HATGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 15:06:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18048 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756243Ab2HATGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 15:06:45 -0400
+Message-ID: <1343848002.6698.38.camel@bling.home>
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Wed, 01 Aug 2012 13:06:42 -0600
+In-Reply-To: <1343697135.8073.245.camel@ul30vt>
+References: <20120724203628.21081.56884.stgit@bling.home>
+	 <20120724204320.21081.32333.stgit@bling.home>
+	 <20120729145452.GD14278@redhat.com> <1343665330.8073.108.camel@ul30vt>
+	 <20120731000100.GA17612@redhat.com> <1343694391.8073.227.camel@ul30vt>
+	 <20120731003636.GC17922@redhat.com> <1343697135.8073.245.camel@ul30vt>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2012 08:27 PM, Tejun Heo wrote:
-> On Wed, Aug 01, 2012 at 08:24:32PM +0200, Sasha Levin wrote:
->> On 08/01/2012 08:21 PM, Tejun Heo wrote:
->>> On Wed, Aug 01, 2012 at 08:19:52PM +0200, Sasha Levin wrote:
->>>> If we switch to using functions, we could no longer hide it anywhere
->>>> (we'd need to either turn the buckets into a struct, or have the
->>>> user pass it around to all functions).
->>>
->>> Create an outer struct hash_table which remembers the size?
->>
->> Possible. I just wanted to avoid creating new structs where they're not really required.
->>
->> Do you think it's worth it for eliminating those two macros?
+On Mon, 2012-07-30 at 19:12 -0600, Alex Williamson wrote:
+> On Tue, 2012-07-31 at 03:36 +0300, Michael S. Tsirkin wrote:
+> > On Mon, Jul 30, 2012 at 06:26:31PM -0600, Alex Williamson wrote:
+> > > On Tue, 2012-07-31 at 03:01 +0300, Michael S. Tsirkin wrote:
+> > > > You keep saying this but it is still true: once irqfd
+> > > > is closed eoifd does not get any more interrupts.
+> > > 
+> > > How does that matter?
+> > 
+> > Well if it does not get events it is disabled.
+> > so you have one ifc disabling another, anyway.
 > 
-> What if someone wants to allocate hashtable dynamically which isn't
-> too unlikely?  I think it's best to stay away from macro tricks as
-> much as possible although I gotta admit I fall into the macro trap
-> more often than I would like.
+> And a level irqfd without an eoifd can never be de-asserted.  Either we
+> make modular components, assemble them to do useful work, and
+> disassemble them independently so they can be used by future interfaces
+> or we bundle eoifd as just an option of irqfd.  Which is it gonna be?
 
-Using a struct makes the dynamic case much easier, but it complicates the static case.
+I don't think I've been successful at explaining my reasoning for making
+EOI notification a separate interface, so let me try again...
 
-Previously we could create the buckets statically.
+When kvm is not enabled, the qemu vfio driver still needs to know about
+EOIs to re-enable the physical interrupt.  Since the ioapic is emulated
+in qemu, we can setup a notifier for this and create abstraction to make
+it non-x86 specific, etc.  We just need to come up with a design and
+implement it.  But what happens when kvm is then enabled?  ioapic
+emulation moves to the kernel (assume kvm includes irqchip for this
+argument even though it doesn't for POWER), qemu no longer knows about
+EOIs, and the interface we just created to handle the non-kvm case stops
+working.  Is anyone going to accept adding a qemu EOI notification
+interface that only works when kvm is not enabled?
 
-Consider this struct:
+I suspect we therefore need a notification mechanism between kvm and
+qemu to make it possible for that interface to continue working.  An
+eventfd also seems like the right mechanism there.  A simple
+modification to the proposed KVM_EOIFD here would allow it to trigger an
+eventfd when an EOI is written to a specific gsi on
+KVM_USERSPACE_IRQ_SOURCE_ID (define a flag and pass gsi in place of
+key).
 
-struct hash_table {
-	u32 bits;
-	struct hlist_head buckets[];
-};
+The split proposed here does require some assembly, but KVM_EOIFD is
+re-usable as either a de-assert and notify mechanism tied to an irqfd or
+a notify-only mechanism allowing users of a qemu EOI notification
+infrastructure to continue working.  vfio doesn't necessarily need this
+middle ground, but can easily be used to test it.
 
-We can't make any code that wraps this to make it work properly statically allocated nice enough to be acceptable.
+The alternative is that we pull eoifd into KVM_IRQFD and invent some
+other new EOI interface for qemu.  That means we get EOIs tied to an
+irqfd via one path and other EOIs via another ioctl.  Personally that
+seems less desirable, but I'm willing to explore that route if
+necessary.  Thanks,
 
+Alex
 
-What if when creating the buckets, we actually allocate bits+1 buckets, and use the last bucket not as a bucket but as the bitcount? It looks like a hack but I think it's much nicer than the previous.
