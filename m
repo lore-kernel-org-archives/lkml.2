@@ -1,133 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2HAK2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 06:28:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43436 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab2HAK2m (ORCPT
+	id S1752923Ab2HAKjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 06:39:00 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59143 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750915Ab2HAKi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 06:28:42 -0400
-Date: Wed, 1 Aug 2012 12:30:32 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH can-next v4] can: add tx/rx LED trigger support
-Message-ID: <20120801103032.GA1385@gmail.com>
-References: <5017C8E4.4020003@pengutronix.de>
- <1343772338-1526-1-git-send-email-fabio.baltieri@gmail.com>
- <5018F8B3.6080404@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5018F8B3.6080404@pengutronix.de>
-X-Operating-System: Linux balto-eee 3.5.0-balto-eee-08206-g03ac383-dirty
- GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 1 Aug 2012 06:38:59 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: ebiederm@xmission.com, jack@suse.cz, containers@lists.linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, serge@hallyn.com,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH] userns: Convert quota to user kuid/kgid where appropriate
+Date: Wed,  1 Aug 2012 14:38:52 +0400
+Message-Id: <1343817532-12021-1-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 11:36:51AM +0200, Marc Kleine-Budde wrote:
-> On 08/01/2012 12:05 AM, Fabio Baltieri wrote:
-> > This patch implements the functions to add two LED triggers, named
-> > <ifname>-tx and <ifname>-rx, to a canbus device driver.
-> > 
-> > Triggers are called from specific handlers by each CAN device driver and
-> > can be disabled altogether with a Kconfig option.
-> > 
-> > The implementation keeps the LED on when the interface is UP and blinks
-> > the LED on network activity at a configurable rate.
-> > 
-> > This only supports can-dev based drivers, as it uses some support field
-> > in the can_priv structure.
-> > 
-> > Supported drivers should call can_led_init() and can_led_event() as
-> > needed.
-> > 
-> > Cleanup is handled automatically by devres, so no *_exit function is
-> > needed.
-> > 
-> > Supported events are:
-> > - CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
-> > - CAN_LED_EVENT_STOP: turn off tx/rx LEDs
-> > - CAN_LED_EVENT_TX: trigger tx LED blink
-> > - CAN_LED_EVENT_RX: trigger tx LED blink
-> > 
-> > Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-> > Cc: Wolfgang Grandegger <wg@grandegger.com>
-> > Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-> > Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-> > ---
-> > 
-> > Hi!
-> > 
-> > So, here is the v4.
-> > 
-> > Changes against v3:
-> > - add a netdev_err message in kasprintf error path
-> > - implement a devres_alloc release function to de-allocate strings and trigger
-> > - can_led_exit is now unneeded and gone
-> > 
-> > Is that what you had in mind Marc?
-> 
-> Yes, that's it. Can you add a devm_ prefix to can_led_init() please.
+Map uid/gid to global kuid/kgid before pass it down to quota infrastructure.
 
-Okay.
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+---
+ fs/quota/quota.c |   45 ++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 36 insertions(+), 9 deletions(-)
 
-> 
-> > I like the devres implementation, as callers don't have to care about exit
-> > function anymore... still it looks like a bit of an hack to me.
-> 
-> No :)
+diff --git a/fs/quota/quota.c b/fs/quota/quota.c
+index 6f15578..a59efd4 100644
+--- a/fs/quota/quota.c
++++ b/fs/quota/quota.c
+@@ -19,8 +19,13 @@
+ #include <linux/writeback.h>
+ 
+ static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
+-				     qid_t id)
++				     qid_t id, qid_t* global_id)
+ {
++	kuid_t kuid;
++	kgid_t kgid;
++	struct user_namespace *ns = current_user_ns();
++	int is_get_query = 0;
++
+ 	switch (cmd) {
+ 	/* these commands do not require any special privilegues */
+ 	case Q_GETFMT:
+@@ -29,11 +34,32 @@ static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
+ 	case Q_XGETQSTAT:
+ 	case Q_XQUOTASYNC:
+ 		break;
+-	/* allow to query information for dquots we "own" */
+ 	case Q_GETQUOTA:
+ 	case Q_XGETQUOTA:
+-		if ((type == USRQUOTA && current_euid() == id) ||
+-		    (type == GRPQUOTA && in_egroup_p(id)))
++		is_get_query = 1;
++	case Q_SETQUOTA:
++	case Q_XSETQLIM:
++		/* Map to global user namespace */
++		switch (type) {
++		case USRQUOTA:
++			kuid = make_kuid(ns, id);
++			if (!uid_valid(kuid))
++				return -EINVAL;
++			*global_id = from_kuid_munged(&init_user_ns, kuid);
++			break;
++		case GRPQUOTA:
++			kgid = make_kgid(ns, id);
++			if (!gid_valid(kgid))
++				return -EINVAL;
++			*global_id = from_kgid_munged(&init_user_ns, kgid);
++			break;
++		default:
++			return -EINVAL;
++		}
++		/* allow to query information for dquots we "own" */
++		if (is_get_query &&
++		    ((type == USRQUOTA && uid_eq(current_euid(), kuid)) ||
++		     (type == GRPQUOTA && in_egroup_p(kgid))))
+ 			break;
+ 		/*FALLTHROUGH*/
+ 	default:
+@@ -240,13 +266,14 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
+ 		       void __user *addr, struct path *path)
+ {
+ 	int ret;
++	qid_t qid = -1;
+ 
+ 	if (type >= (XQM_COMMAND(cmd) ? XQM_MAXQUOTAS : MAXQUOTAS))
+ 		return -EINVAL;
+ 	if (!sb->s_qcop)
+ 		return -ENOSYS;
+ 
+-	ret = check_quotactl_permission(sb, type, cmd, id);
++	ret = check_quotactl_permission(sb, type, cmd, id, &qid);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -264,9 +291,9 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
+ 	case Q_SETINFO:
+ 		return quota_setinfo(sb, type, addr);
+ 	case Q_GETQUOTA:
+-		return quota_getquota(sb, type, id, addr);
++		return quota_getquota(sb, type, qid, addr);
+ 	case Q_SETQUOTA:
+-		return quota_setquota(sb, type, id, addr);
++		return quota_setquota(sb, type, qid, addr);
+ 	case Q_SYNC:
+ 		if (!sb->s_qcop->quota_sync)
+ 			return -ENOSYS;
+@@ -278,9 +305,9 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
+ 	case Q_XGETQSTAT:
+ 		return quota_getxstate(sb, addr);
+ 	case Q_XSETQLIM:
+-		return quota_setxquota(sb, type, id, addr);
++		return quota_setxquota(sb, type, qid, addr);
+ 	case Q_XGETQUOTA:
+-		return quota_getxquota(sb, type, id, addr);
++		return quota_getxquota(sb, type, qid, addr);
+ 	case Q_XQUOTASYNC:
+ 		if (sb->s_flags & MS_RDONLY)
+ 			return -EROFS;
+-- 
+1.7.1
 
-Fair enough :)
-
-> > Also, I made an initial version with the four pointers in a separate can_led
-> > struct to be allocated as a payload of devres_alloc - but I think this one
-> > looks cleaner and is more cache-friendly.
-> 
-> If you allocate the 4 pointers in a separate struct you only save 3
-> points, as you need the pointer to the struct anyways.
-> 
-> > What you think about this?
-> 
-> Looks good. See comment inline,
-> 
-> Marc
-> 
-> > +/*
-> > + * Register CAN LED triggers for a CAN device
-> > + *
-> > + * This is normally called from a driver's probe function
-> > + */
-> > +void can_led_init(struct net_device *netdev)
-> > +{
-> > +	struct can_priv *priv = netdev_priv(netdev);
-> > +	void *res;
-> > +
-> > +	res = devres_alloc(can_led_release, 0, GFP_KERNEL);
->                                             ^
-> I'm not really sure if this is working. For example, pinctrl [1]
-> allocates a double pointer here. The res pointer here and in
-> can_led_release simply points to invalid memory. But as long as you
-> don't dereference it, it should work.
-> 
-> [1] http://lxr.free-electrons.com/source/drivers/pinctrl/core.c#L862
-
-Actually that's also used by libata-core (not in lxr yet) and dma-mapping:
-
-http://lxr.free-electrons.com/source/drivers/base/dma-mapping.c#L193
-
-actually, res should point at the end of some internal devres structure,
-and is only used as return value in this case.
-
-Of course, in this case the release function can only use the struct
-device pointer.
-
-I've run some fail test and ftraced the whole thing and it seems to work
-pretty good!  I'll send a v5 with the rename later.
-
-Thanks,
-Fabio
