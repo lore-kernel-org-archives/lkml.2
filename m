@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab2HAVcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 17:32:21 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64437 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865Ab2HAVcS (ORCPT
+	id S1756019Ab2HAVkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 17:40:01 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56917 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755439Ab2HAVjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 17:32:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120801205640.GN5470@ics.muni.cz>
-References: <20120801133835.GH5470@ics.muni.cz>
-	<CAG4TOxONLJnBaY7N5x7Kfi+dwCb507QPqX9s_Wuef10+RzM=AQ@mail.gmail.com>
-	<CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
-	<20120801205640.GN5470@ics.muni.cz>
-Date: Wed, 1 Aug 2012 14:32:17 -0700
-X-Google-Sender-Auth: v9lC-aMT-6MaVovLYv9jA_Fh2As
-Message-ID: <CAE9FiQWmgyirjjCwn54PkAsfvWxZSY5RhRVDkhhbK7E0NPzqaw@mail.gmail.com>
-Subject: Re: mellanox mlx4_core and SR-IOV
-From: Yinghai Lu <yinghai@kernel.org>
-To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-Cc: Roland Dreier <roland@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 1 Aug 2012 17:39:55 -0400
+Date: Wed, 1 Aug 2012 22:43:42 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: dmarkh@cfl.rr.com
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: MODULE_LICENSE("GPL")??
+Message-ID: <20120801224342.5b90747f@pyramind.ukuu.org.uk>
+In-Reply-To: <50199E91.5040308@cfl.rr.com>
+References: <50199E91.5040308@cfl.rr.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 1, 2012 at 1:56 PM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
-> On Wed, Aug 01, 2012 at 11:29:02AM -0700, Yinghai Lu wrote:
->> iov bar is not assigned by BIOS, and kernel can not find range for it too.
->>
->> Lukas, can you post whole boot log with PCI_DEBUG enabled? That will
->> tell exact why kernel does not assign them.
->>
->> Recent kernel from 3.4... should enable realloc when SRIOV bar is not assigned.
->
-> sorry for confusing, PCI_DEBUG does not break mlx driver, it is reallocation
-> code that results:
-> [    3.555008] mlx4_core 0000:02:00.0: Missing UAR, aborting.
+On Wed, 01 Aug 2012 17:24:33 -0400
+Mark Hounschell <dmarkh@cfl.rr.com> wrote:
 
-yes, i knew that.
+> What would happen if NVIDIA used this define in their proprietary driver? I 
 
-one patch in my for-pci-next should address that.
+Ask a lawyer but I believe Nvidia has more sense than that both
+politically and legally. They walk a very fine line as it is (and IMHO
+the wrong side of it but one day I guess a court will figure out where
+the line actually is).
 
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=patch;h=fcce563f868e296f46a2eeaa88d6959bcee26a2d
+> ask because I am currently in a situation where I believe I may be about to 
+> use a product that may be doing this very thing. We had to sign a license 
+> agreement to get the kernel driver source for this product. What we 
+> received contained the kernel driver source and user land library stuff. 
+> The source code for the kernel driver has MODULE_LICENSE("GPL") defined. 
+> The only license info in the package received was NOT the GPL license.
 
-Thanks
+You cannot combine GPL and non GPL code, and since you are aware of the
+fact there is a problem then you are probably a knowing infringer, which
+is not a good situation to be in (triple damages in the US). If the module
+license tag says it is GPL then I would talk to your lawyer about
+it - you might actually be able to argue that it is therefore GPL
+but I'm not a lawyer and you *really* don't want to try that stunt without
+advice!
 
-Yinghai
+> On this particular vendors web site they offer unrestricted downloads of 
+> binary packages for their product/s that are for specific DIST kernels. But 
+> to get the source requires signing a license agreement that is NOT GPL.
+
+Talk to the Free Software Conservancy and gpl-violations.org.
+
+Beyond that have a detailed discussion with your lawyer on the licence,
+on "knowing infringment" and in particular check your insurance as most
+legal insurance won't cover you in such a situation. If you redistribute
+such material you are likely to also be liable, which can be very
+expensive.
+
+All of this comes down to one thing - you need to ask a lawyer legal
+questions. I think you can already answer the "what happens if you get
+caught" political questions. Given that maybe you don't need to ask a
+lawyer but just say no ?
+
+Alan
