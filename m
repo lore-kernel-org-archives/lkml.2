@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab2HAVFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 17:05:34 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:21199 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753825Ab2HAVFc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 17:05:32 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrcy6sj4gft1kacwec3HuWvN1TWpKmxUw==
-X-RZG-CLASS-ID: mo00
-Date: Wed, 1 Aug 2012 23:05:28 +0200 (CEST)
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-Reply-To: Oliver Hartkopp <socketcan@hartkopp.net>
-To: linux-can@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Message-ID: <1175619568.117607.1343855128267.JavaMail.open-xchange@webmail.strato.de>
-In-Reply-To: <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com>
-References: <50191EA5.1040303@pengutronix.de> <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com>
-Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
+	id S1755500Ab2HAVFl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 17:05:41 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:36448 "EHLO mail.atlantis.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755398Ab2HAVFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 17:05:39 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: =?iso-8859-1?q?M=E1rton_N=E9meth?= <nm127@freemail.hu>
+Subject: [PATCH 1/2] leds-clevo-mail: add MODULE_DEVICE_TABLE
+Date: Wed, 1 Aug 2012 23:04:46 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v6.20.6-Rev3
+Content-Disposition: inline
+Message-Id: <201208012304.46593.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fabio Baltieri <fabio.baltieri@gmail.com> hat am 1. August 2012 um 20:21
-geschrieben:
+Enable autoloading of leds-clevo-mail by using MODULE_DEVICE_TABLE.
 
-> so, v6, change trigger names for fixed size allocation capped to (IFNAMSIZ +
-> 4)
-> and removed kasprintf as suggested by Oliver (thanks!).
->
-> This also has the side effect of reducing the error path to just one check to
-> devres_alloc return value... nice!
->
-> I've put CAN_LED_NAME_SZ definition with the active function declaration,
-> but used sizeof(priv->tx_led_trig_name) as snprintf length argument in the
-> code, as it looks cleaner to me.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Yes. Nice improvement.
+--- a/drivers/leds/leds-clevo-mail.c
++++ b/drivers/leds/leds-clevo-mail.c
+@@ -31,7 +31,7 @@ static int __init clevo_mail_led_dmi_callback(const struct dmi_system_id *id)
+ }
+ 
+ /*
+- * struct mail_led_whitelist - List of known good models
++ * struct clevo_mail_led_dmi_table - List of known good models
+  *
+  * Contains the known good models this driver is compatible with.
+  * When adding a new model try to be as strict as possible. This
+@@ -39,7 +39,7 @@ static int __init clevo_mail_led_dmi_callback(const struct dmi_system_id *id)
+  * detected as working, but in reality it is not) as low as
+  * possible.
+  */
+-static struct dmi_system_id __initdata mail_led_whitelist[] = {
++static struct dmi_system_id __initdata clevo_mail_led_dmi_table[] = {
+ 	{
+ 		.callback = clevo_mail_led_dmi_callback,
+ 		.ident = "Clevo D410J",
+@@ -89,6 +89,7 @@ static struct dmi_system_id __initdata mail_led_whitelist[] = {
+ 	},
+ 	{ }
+ };
++MODULE_DEVICE_TABLE(dmi, clevo_mail_led_dmi_table);
+ 
+ static void clevo_mail_led_set(struct led_classdev *led_cdev,
+ 				enum led_brightness value)
+@@ -180,7 +181,7 @@ static int __init clevo_mail_led_init(void)
+ 
+ 	/* Check with the help of DMI if we are running on supported hardware */
+ 	if (!nodetect) {
+-		count = dmi_check_system(mail_led_whitelist);
++		count = dmi_check_system(clevo_mail_led_dmi_table);
+ 	} else {
+ 		count = 1;
+ 		printk(KERN_ERR KBUILD_MODNAME ": Skipping DMI detection. "
 
-Thanks Fabio!
 
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
+
+
+-- 
+Ondrej Zary
