@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab2HALiD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 07:38:03 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54266 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab2HALiB (ORCPT
+	id S1753630Ab2HALlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 07:41:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51944 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751407Ab2HALlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 07:38:01 -0400
-Message-ID: <50191509.8030404@pengutronix.de>
-Date: Wed, 01 Aug 2012 13:37:45 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Wed, 1 Aug 2012 07:41:45 -0400
+Date: Wed, 1 Aug 2012 12:41:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 3/3] regmap: enhance regmap-irq to handle 1 IRQ feeding n
+ chips
+Message-ID: <20120801114142.GN11892@opensource.wolfsonmicro.com>
+References: <1343415716-27134-1-git-send-email-swarren@wwwdotorg.org>
+ <1343415716-27134-3-git-send-email-swarren@wwwdotorg.org>
+ <20120729203636.GE4384@opensource.wolfsonmicro.com>
+ <5016BD94.4080302@wwwdotorg.org>
+ <20120730172538.GM4468@opensource.wolfsonmicro.com>
+ <501867CC.50909@wwwdotorg.org>
 MIME-Version: 1.0
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-CC: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH can-next v4] can: add tx/rx LED trigger support
-References: <5017C8E4.4020003@pengutronix.de> <1343772338-1526-1-git-send-email-fabio.baltieri@gmail.com> <5018F8B3.6080404@pengutronix.de> <20120801103032.GA1385@gmail.com>
-In-Reply-To: <20120801103032.GA1385@gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigC03E5205E9B19DD1A9AEE815"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501867CC.50909@wwwdotorg.org>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigC03E5205E9B19DD1A9AEE815
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jul 31, 2012 at 05:18:36PM -0600, Stephen Warren wrote:
 
-On 08/01/2012 12:30 PM, Fabio Baltieri wrote:
-[...]
->>> +void can_led_init(struct net_device *netdev)
->>> +{
->>> +	struct can_priv *priv =3D netdev_priv(netdev);
->>> +	void *res;
->>> +
->>> +	res =3D devres_alloc(can_led_release, 0, GFP_KERNEL);
->>                                             ^
->> I'm not really sure if this is working. For example, pinctrl [1]
->> allocates a double pointer here. The res pointer here and in
->> can_led_release simply points to invalid memory. But as long as you
->> don't dereference it, it should work.
->>
->> [1] http://lxr.free-electrons.com/source/drivers/pinctrl/core.c#L862
->=20
-> Actually that's also used by libata-core (not in lxr yet) and dma-mappi=
-ng:
->=20
-> http://lxr.free-electrons.com/source/drivers/base/dma-mapping.c#L193
->=20
-> actually, res should point at the end of some internal devres structure=
-,
-> and is only used as return value in this case.
->=20
-> Of course, in this case the release function can only use the struct
-> device pointer.
->=20
-> I've run some fail test and ftraced the whole thing and it seems to wor=
-k
-> pretty good!  I'll send a v5 with the rename later.
+> I don't think it's appropriate to put this support into the IRQ core.
+> The main issue is that all the handlers for any shared wired-or
+> interrupt line have to be registered before the IRQ is enabled, to avoid
+> some initially active interrupt continually firing before the IRQ is
+> enabled. Co-ordinating this when the wired-or line is on a board outside
+> a device driver rather than internal to a chip and one device driver is
+> a bit more than the IRQ core should probably be doing, hence I imagine
+> why it doesn't support it.
 
-Thanks for checking. I just noticed, the pinctrl usecase is a bit differe=
-nt.
+No, that's not the issue at all - none of the above is at all different
+to any other shared interrupt and obviously we support shared IRQs quite
+happily (we wouldn't run on a good chunk of PCs if we didn't).  Shared
+interrupts do require the hardware design not be insane but generally
+hardware engineers do manage to get that right.
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+We don't support this for threaded IRQs due to thorny synchronisation
+issues in fast paths.
 
+> Co-ordinating this setup where all the sources of the wired-or are in
+> one chip seems to belong to the chip driver, which is where my patch did
+> this.
 
---------------enigC03E5205E9B19DD1A9AEE815
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Well, no.  It did this by having a piece of framework code add a round
+robin irq_chip (essentially a shared threaded IRQ) layered on top of the
+existing regmap-irq code which had nothing to do with the rest of that
+code.  There's nothing at all about that framework code which is at all
+specific to regmap-irq, it just calls a series of sub IRQs every time
+the primary IRQ goes off.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+This isn't the chip driver that's doing things, it's the regmap-irq
+code.  With the current round robin implementation there's no reason for
+regmap to implement it, other things can quite happily do the same thing.
+Having a regmap helper which used a generic facility would be reasonable
+but the actual demux is a generic thing.
 
-iEYEARECAAYFAlAZFRAACgkQjTAFq1RaXHOrAQCgj/wB/GbHM032ywRp9JzCXWaS
-qywAnROqiNlNFCHFUc54uwgV+fzeYl/a
-=v+6P
------END PGP SIGNATURE-----
+[Suggestion to not bounce back into the IRQ core]
 
---------------enigC03E5205E9B19DD1A9AEE815--
+> but it seems a little hokey to short-circuit the IRQ core; it would
+> prevent execution of any statistics gathering or stuck interrupt
+> handling that handle_nested_irq() might do for example.
+
+This seems like a better approach if doing things entirely in regmap.  I
+can't see any impact on any of the IRQ core features here, we're always
+going to call each of the sub IRQs exactly once for each call to the IRQ
+handler and the stuck IRQ code is still going to identify the same set
+of real IRQs as stuck.
+
+> Now, if we made each child regmap_irq not be its own IRQ domain or
+> irq_chip, but simply had one top-level domain/chip that aggregated them,
+> that argument would be moot. However, that top-level domain/chip would
+> become rather complex and just end up doing a bunch of demultiplexing
+> code that's not needed if we do it like in my patch...
+
+That demultiplexing seems excessively complex, yes.
