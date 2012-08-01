@@ -1,155 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab2HABG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 21:06:26 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43618 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab2HABGZ (ORCPT
+	id S1753267Ab2HABIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 21:08:24 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44737 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab2HABIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 21:06:25 -0400
-X-AuditID: 9c930197-b7b66ae000006a2c-8f-5018810fbf0b
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Venkatraman S <svenkatr@ti.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [PATCH RESEND v4] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-Date: Wed,  1 Aug 2012 10:05:45 +0900
-Message-Id: <1343783145-17623-1-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 31 Jul 2012 21:08:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120731081945.GB14593@avionic-0098.adnet.avionic-design.de>
+References: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
+ <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com> <20120731081945.GB14593@avionic-0098.adnet.avionic-design.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 31 Jul 2012 18:08:01 -0700
+X-Google-Sender-Auth: a7gNHAP236eohpLYiboFxjDgosY
+Message-ID: <CA+55aFx=m=+7QTBKH3_bBzustGRePy0XrykE3ZVzFi5wyG6rQg@mail.gmail.com>
+Subject: Re: [GIT PULL] PWM subsystem for v3.6
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is expected that Extended CSD register(the size of this register
-is larger than CID/CSD) will be referenced more frequently as more
-fields have been added to Extended CSD and it seems that it is not
-a good option to double the memory used.
+On Tue, Jul 31, 2012 at 1:19 AM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+>
+> I just sent a new pull request with a signed tag. I've also included a
+> more detailed description of why this is useful, along the lines of what
+> Arnd already mentioned.
+>
+> My key was signed by Sebastian Andrzej Siewior today and I uploaded the
+> signature only now, so it may take some time to propagate.
 
-This patch is intended to avoid the use of bounce buffer for reading
-Extended CSD register in mmc_send_cxd_data().
+Ok. I had decided that I had lots of acks for your code and had
+actually pulled your code yesterday, so my merge doesn't have that new
+tag information. But I verified your tag separately, and everything
+looks fine. So future pulls will then be properly signed in my repo
+too if you use tags,
 
-Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
-Signed-off-by: S, Venkatraman <svenkatr@ti.com>
----
-Changes in v2:
-- Handling on-stack buffer if it's used in caller.
-
-Changes in v3:
-- Remove unnecesary code.
-
-Changes in v4:
-- Modify codes based-on S, Venkatraman's comments.
----
- drivers/mmc/core/mmc_ops.c |   54 +++++++++++++++++++++++++++++++-------------
- 1 files changed, 38 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index 0ed2cc5..920a017 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -239,13 +239,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 	struct mmc_data data = {0};
- 	struct scatterlist sg;
- 	void *data_buf;
-+	int is_on_stack;
- 
--	/* dma onto stack is unsafe/nonportable, but callers to this
--	 * routine normally provide temporary on-stack buffers ...
--	 */
--	data_buf = kmalloc(len, GFP_KERNEL);
--	if (data_buf == NULL)
--		return -ENOMEM;
-+	is_on_stack = object_is_on_stack(buf);
-+	if (is_on_stack) {
-+
-+		/* dma onto stack is unsafe/nonportable, but callers to this
-+		 * routine normally provide temporary on-stack buffers ...
-+		 */
-+		data_buf = kmalloc(len, GFP_KERNEL);
-+		if (data_buf == NULL)
-+			return -ENOMEM;
-+	} else
-+		data_buf = buf;
- 
- 	mrq.cmd = &cmd;
- 	mrq.data = &data;
-@@ -280,8 +286,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 
- 	mmc_wait_for_req(host, &mrq);
- 
--	memcpy(buf, data_buf, len);
--	kfree(data_buf);
-+	if (is_on_stack) {
-+		memcpy(buf, data_buf, len);
-+		kfree(data_buf);
-+	}
- 
- 	if (cmd.error)
- 		return cmd.error;
-@@ -294,24 +302,32 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- int mmc_send_csd(struct mmc_card *card, u32 *csd)
- {
- 	int ret, i;
-+	u32 *csd_tmp;
- 
- 	if (!mmc_host_is_spi(card->host))
- 		return mmc_send_cxd_native(card->host, card->rca << 16,
- 				csd, MMC_SEND_CSD);
- 
--	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
-+	csd_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!csd_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
- 
- 	for (i = 0;i < 4;i++)
--		csd[i] = be32_to_cpu(csd[i]);
-+		csd[i] = be32_to_cpu(csd_tmp[i]);
- 
--	return 0;
-+err:
-+	kfree(csd_tmp);
-+	return ret;
- }
- 
- int mmc_send_cid(struct mmc_host *host, u32 *cid)
- {
- 	int ret, i;
-+	u32 *cid_tmp;
- 
- 	if (!mmc_host_is_spi(host)) {
- 		if (!host->card)
-@@ -320,14 +336,20 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
- 				cid, MMC_SEND_CID);
- 	}
- 
--	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
-+	cid_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!cid_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
- 
- 	for (i = 0;i < 4;i++)
--		cid[i] = be32_to_cpu(cid[i]);
-+		cid[i] = be32_to_cpu(cid_tmp[i]);
- 
--	return 0;
-+err:
-+	kfree(cid_tmp);
-+	return ret;
- }
- 
- int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
--- 
-1.7.0.4
-
+            Linus
