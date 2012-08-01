@@ -1,83 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab2HAKJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 06:09:31 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35728 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab2HAKJa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 06:09:30 -0400
-X-IronPort-AV: E=Sophos;i="4.77,693,1336348800"; 
-   d="scan'208";a="13798937"
-Date: Wed, 1 Aug 2012 11:09:12 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "fujita.tomonori@lab.ntt.co.jp" <fujita.tomonori@lab.ntt.co.jp>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "JBeulich@suse.com" <JBeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH 2/5] xen/swiotlb: With more than 4GB on
- 64-bit, disable the native SWIOTLB.
-In-Reply-To: <20120731182551.GA1559@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1208011108590.4645@kaball.uk.xensource.com>
-References: <1343743223-30092-1-git-send-email-konrad.wilk@oracle.com> <1343743223-30092-3-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1207311542520.4645@kaball.uk.xensource.com> <20120731182551.GA1559@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1754542Ab2HAKLd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 06:11:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28565 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754177Ab2HAKLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 06:11:31 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
+        mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org
+Subject: [PATCHv9 00/13] perf: Add backtrace post dwarf unwind 
+Date: Wed,  1 Aug 2012 12:10:52 +0200
+Message-Id: <1343815865-5511-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> commit 21ef55f4ab2b6d63eb0ed86abbc959d31377853b
-> Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date:   Fri Jul 27 20:16:00 2012 -0400
-> 
->     xen/swiotlb: With more than 4GB on 64-bit, disable the native SWIOTLB.
->     
->     If a PV guest is booted the native SWIOTLB should not be
->     turned on. It does not help us (we don't have any PCI devices)
->     and it eats 64MB of good memory. In the case of PV guests
->     with PCI devices we need the Xen-SWIOTLB one.
->    
->     [v1: Rewrite comment per Stefano's suggestion] 
->     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+hi,
+patches available also as tarball in here:
+http://people.redhat.com/~jolsa/perf_post_unwind_v9.tar.bz2
+
+v9 changes:
+   - rebased to current tip tree
+
+v8 changes:
+   - patch 2 - added dump registers ABI specification as suggested
+               by Stephane
+   - v7 patches 9,10,16,17 already in
+
+v7 changes:
+   - omitted v6 patches 9 and 15
+     They need more work and will be sent separately. I dont want to hold off whole
+     patchset because of them. We could miss some related backtraces (syscall, vdso)
+     in this version.
+   - v6 patch 11, 14, 20 already in
+
+v6 changes:
+   patch 01/23 - unrelated - ftrace stuff
+   patch 03/23 - added PERF_SAMPLE_REGS_USER bit
+               - added regs_user initialization
+   patch 07/23 - added PERF_SAMPLE_STACK_USER bit
+               - sample_stack_user changed to u32 and
+                 added size check
+   new patches 1,9,10,20
+
+v5 changes:
+   patch 1/19 - having just one enum set of the perf registers
+   patch 2/19 - using for_each_set_bit for scanning the mask
+              - single regs enum for both 32 and 64 bits versions
+              - using regs mask != 0 trigger to trigger the regs dump
+   patch 5/19 - adding perf_output_skip so we can skip undumped part of the stack in RB
+   patch 6/19 - using stack size != 0 trigger to trigger the stack dump
+              - do not zero the memory for non retrieved part of the stack dump
+   patch 7/19 - adding exclude_callchain_kernel attribute
+   patch 8/19 - this could be taken without the rest of the series
+
+v4 changes:
+   - no real change from v3, just rebase
+   - v3 patch 06/17 got already merged
+
+v3 changes:
+   patch 01/17
+   - added HAVE_PERF_REGS config option
+   patch 02/17, 04/17
+   - regs and stack perf interface is more general now
+   patch 06/17
+   - unrelated online fix for i386 compilation
+   patch 16/17
+   - few namespace fixies
+
+---
+Adding the post unwinding user stack backtrace using dwarf unwind
+via libunwind. The original work was done by Frederic. I mostly took
+his patches and make them compile in current kernel code plus I added
+some stuff here and there.
+
+The main idea is to store user registers and portion of user
+stack when the sample data during the record phase. Then during
+the report, when the data is presented, perform the actual dwarf
+dwarf unwind.
+
+attached patches:
+  01/13 perf: Unified API to record selective sets of arch registers
+  02/13 perf: Add ability to attach user level registers dump to sample
+  03/13 perf, x86: Add copy_from_user_nmi_nochk for best effort copy
+  04/13 perf: Factor __output_copy to be usable with specific copy function
+  05/13 perf: Add perf_output_skip function to skip bytes in sample
+  06/13 perf: Add ability to attach user stack dump to sample
+  07/13 perf: Add attribute to filter out callchains
+  08/13 perf, tool: Adding PERF_ATTR_SIZE_VER2 to the header swap check
+  09/13 perf, tool: Add interface to arch registers sets
+  10/13 perf, tool: Add libunwind dependency for dwarf cfi unwinding
+  11/13 perf, tool: Support user regs and stack in sample parsing
+  12/13 perf, tool: Support for dwarf cfi unwinding on post processing
+  13/13 perf, tool: Support for dwarf mode callchain on perf record
 
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+I tested on Fedora. There was not much gain on i386, because the
+binaries are compiled with frame pointers. Thought the dwarf
+backtrace is more accurate and unwraps calls in more details
+(functions that do not set the frame pointers).
 
-> diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
-> index b6a5340..1c17227 100644
-> --- a/arch/x86/xen/pci-swiotlb-xen.c
-> +++ b/arch/x86/xen/pci-swiotlb-xen.c
-> @@ -8,6 +8,11 @@
->  #include <xen/xen.h>
->  #include <asm/iommu_table.h>
->  
-> +#ifdef CONFIG_X86_64
-> +#include <asm/iommu.h>
-> +#include <asm/dma.h>
-> +#endif
-> +
->  int xen_swiotlb __read_mostly;
->  
->  static struct dma_map_ops xen_swiotlb_dma_ops = {
-> @@ -49,6 +54,15 @@ int __init pci_xen_swiotlb_detect(void)
->  	 * the 'swiotlb' flag is the only one turning it on. */
->  	swiotlb = 0;
->  
-> +#ifdef CONFIG_X86_64
-> +	/* pci_swiotlb_detect_4gb turns on native SWIOTLB if no_iommu == 0
-> +	 * (so no iommu=X command line over-writes).
-> +	 * Considering that PV guests do not want the *native SWIOTLB* but
-> +	 * only Xen SWIOTLB it is not useful to us so set no_iommu=1 here.
-> +	 */
-> +	if (max_pfn > MAX_DMA32_PFN)
-> +		no_iommu = 1;
-> +#endif
->  	return xen_swiotlb;
->  }
->  
-> 
+I could see some improvement on x86_64, where I got full backtrace
+where current code could got just the first address out of the
+instruction pointer.
+
+Example on x86_64:
+[dwarf]
+   perf record -g dwarf -e syscalls:sys_enter_write date
+
+   100.00%     date  libc-2.14.90.so  [.] __GI___libc_write
+               |
+               --- __GI___libc_write
+                   _IO_file_write@@GLIBC_2.2.5
+                   new_do_write
+                   _IO_do_write@@GLIBC_2.2.5
+                   _IO_file_overflow@@GLIBC_2.2.5
+                   0x4022cd
+                   0x401ee6
+                   __libc_start_main
+                   0x4020b9
+
+
+[frame pointer]
+   perf record -g fp -e syscalls:sys_enter_write date
+
+   100.00%     date  libc-2.14.90.so  [.] __GI___libc_write
+               |
+               --- __GI___libc_write
+
+Also I tested on coreutils binaries mainly, but I could see
+getting wider backtraces with dwarf unwind for more complex
+application like firefox.
+
+Attached patches should work on both x86 and x86_64.
+
+The unwind backtrace can be interrupted by following reasons:
+    - bug in unwind information of processed shared library
+    - bug in unwind processing code (most likely ;) )
+    - insufficient dump stack size
+    - until full syscall register storage and vdso support
+      we could miss some related backtraces 
+
+jirka
+---
+ arch/Kconfig                                       |    6 +
+ arch/x86/Kconfig                                   |    1 +
+ arch/x86/include/asm/perf_event.h                  |    2 +
+ arch/x86/include/asm/perf_regs.h                   |   33 ++
+ arch/x86/include/asm/uaccess.h                     |    2 +
+ arch/x86/kernel/Makefile                           |    2 +
+ arch/x86/kernel/perf_regs.c                        |  105 ++++
+ arch/x86/lib/usercopy.c                            |   15 +-
+ include/linux/perf_event.h                         |   60 ++-
+ include/linux/perf_regs.h                          |   25 +
+ kernel/events/callchain.c                          |   36 +-
+ kernel/events/core.c                               |  191 +++++++-
+ kernel/events/internal.h                           |   69 ++-
+ kernel/events/ring_buffer.c                        |   10 +-
+ tools/perf/Makefile                                |   45 ++-
+ tools/perf/arch/x86/Makefile                       |    3 +
+ tools/perf/arch/x86/include/perf_regs.h            |   80 +++
+ tools/perf/arch/x86/util/unwind.c                  |  111 ++++
+ tools/perf/builtin-record.c                        |  108 ++++-
+ tools/perf/builtin-report.c                        |   24 +-
+ tools/perf/builtin-script.c                        |   16 +-
+ tools/perf/builtin-test.c                          |    4 +-
+ tools/perf/builtin-top.c                           |    5 +-
+ tools/perf/config/feature-tests.mak                |   25 +
+ tools/perf/perf.h                                  |    9 +-
+ tools/perf/util/event.h                            |   16 +-
+ tools/perf/util/evlist.c                           |    8 +
+ tools/perf/util/evlist.h                           |    1 +
+ tools/perf/util/evsel.c                            |   43 ++-
+ tools/perf/util/header.c                           |    3 +
+ tools/perf/util/include/linux/compiler.h           |    1 +
+ tools/perf/util/map.h                              |    7 +-
+ tools/perf/util/perf_regs.h                        |   14 +
+ tools/perf/util/python.c                           |    3 +-
+ .../perf/util/scripting-engines/trace-event-perl.c |    3 +-
+ .../util/scripting-engines/trace-event-python.c    |    3 +-
+ tools/perf/util/session.c                          |   97 +++-
+ tools/perf/util/session.h                          |   11 +-
+ tools/perf/util/trace-event-scripting.c            |    3 +-
+ tools/perf/util/trace-event.h                      |    5 +-
+ tools/perf/util/unwind.c                           |  567 ++++++++++++++++++++
+ tools/perf/util/unwind.h                           |   34 ++
+ 42 files changed, 1707 insertions(+), 99 deletions(-)
