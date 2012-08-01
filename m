@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2HARjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 13:39:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42715 "EHLO
+	id S1754563Ab2HARkz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 13:40:55 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37445 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092Ab2HARjv (ORCPT
+	with ESMTP id S1754281Ab2HARky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 13:39:51 -0400
+	Wed, 1 Aug 2012 13:40:54 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] regmap: initialize all irqs to wake disabled
-Date: Wed,  1 Aug 2012 11:39:44 -0600
-Message-Id: <1343842784-15912-1-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH 1/3] regmap: store irq_chip inside regmap_irq_chip_data
+Date: Wed,  1 Aug 2012 11:40:47 -0600
+Message-Id: <1343842849-15958-1-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
 X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,46 +21,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-The kerneldoc for irq_set_irq_wake() says:
-
-    Enable/disable power management wakeup mode, which is
-    disabled by default.
-
-regmap_irq_set_wake() clears bits to enable wake for an interrupt,
-and sets bits to disable wake. Hence, we should set all bits in
-wake_buf initially, to mirror the expected disabled state.
+This will allow later patches to adjust portions of the irq_chip
+individually for each regmap_irq_chip that is created.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/base/regmap/regmap-irq.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ drivers/base/regmap/regmap-irq.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index c7e5b18..75b6939 100644
+index 75b6939..07fae4c 100644
 --- a/drivers/base/regmap/regmap-irq.c
 +++ b/drivers/base/regmap/regmap-irq.c
-@@ -314,6 +314,21 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 		}
+@@ -22,6 +22,7 @@
+ 
+ struct regmap_irq_chip_data {
+ 	struct mutex lock;
++	struct irq_chip irq_chip;
+ 
+ 	struct regmap *map;
+ 	const struct regmap_irq_chip *chip;
+@@ -129,7 +130,7 @@ static int regmap_irq_set_wake(struct irq_data *data, unsigned int on)
+ 	return 0;
+ }
+ 
+-static struct irq_chip regmap_irq_chip = {
++static const struct irq_chip regmap_irq_chip = {
+ 	.name			= "regmap",
+ 	.irq_bus_lock		= regmap_irq_lock,
+ 	.irq_bus_sync_unlock	= regmap_irq_sync_unlock,
+@@ -197,7 +198,7 @@ static int regmap_irq_map(struct irq_domain *h, unsigned int virq,
+ 	struct regmap_irq_chip_data *data = h->host_data;
+ 
+ 	irq_set_chip_data(virq, data);
+-	irq_set_chip_and_handler(virq, &regmap_irq_chip, handle_edge_irq);
++	irq_set_chip_and_handler(virq, &data->irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(virq, 1);
+ 
+ 	/* ARM needs us to explicitly flag the IRQ as valid
+@@ -285,6 +286,7 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 			goto err_alloc;
  	}
  
-+	/* Wake is disabled by default */
-+	if (d->wake_buf) {
-+		for (i = 0; i < chip->num_regs; i++) {
-+			d->wake_buf[i] = d->mask_buf_def[i];
-+			reg = chip->wake_base +
-+				(i * map->reg_stride * d->irq_reg_stride);
-+			ret = regmap_write(map, reg, d->wake_buf[i]);
-+			if (ret != 0) {
-+				dev_err(map->dev, "Failed to set masks in 0x%x: %d\n",
-+					reg, ret);
-+				goto err_alloc;
-+			}
-+		}
-+	}
-+
- 	if (irq_base)
- 		d->domain = irq_domain_add_legacy(map->dev->of_node,
- 						  chip->num_irqs, irq_base, 0,
++	d->irq_chip = regmap_irq_chip;
+ 	d->irq = irq;
+ 	d->map = map;
+ 	d->chip = chip;
 -- 
 1.7.0.4
 
