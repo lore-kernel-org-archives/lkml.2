@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab2HADAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 23:00:17 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:56726 "EHLO
-	homiemail-a83.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752676Ab2HADAP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 23:00:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=mime-version
-	:content-type:content-transfer-encoding:date:from:to:subject
-	:in-reply-to:references:message-id; q=dns; s=shealevy.com; b=YCw
-	rcGKK7yA6VVhLCWxBOklZdKoHWtYKGG/W09bjhSD1FaWpRfkx0zpeyqSkJnC4ZGR
-	xD0UufUhJ/QjLV07K51IJD00xp9SuWWTNtMFqsbGBTw/5Hdno2USojs3GeBiIL5J
-	XimkBghoRnp8O9uxAYCEsGDZUY5Sp67jvmEBubqg=
+	id S1754323Ab2HADPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 23:15:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47966 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753048Ab2HADPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 23:15:30 -0400
+Date: Wed, 1 Aug 2012 00:07:36 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Alexander Graf <agraf@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>, KVM <kvm@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
+Message-ID: <20120801030736.GA31711@amt.cnet>
+References: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Tue, 31 Jul 2012 23:00:14 -0400
-From: shea@shealevy.com
-To: <linux-kbuild@vger.kernel.org>, <mmarek@suse.cz>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix firmware installation for images w/o subdirs
-In-Reply-To: <663f65e29cc718b63ef0e2a769d03606@shealevy.com>
-References: <663f65e29cc718b63ef0e2a769d03606@shealevy.com>
-Message-ID: <da6d59384139a520b703d84d1be2ac92@shealevy.com>
-User-Agent: RoundCube Webmail/0.7.1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.07.2012 22:59, shea@shealevy.com wrote:
-> On some setups (probably due to too new a GNU Make), firmware
-> installation fails with
-> *** No rule to make target `lib/firmware/./', needed by
-> `lib/firmware/<file>.fw'.  Stop.
-> when a file in the top-level firmware/ directory is needed.
->
-> Original patch idea by Denys Dmytriyenko, see
-> http://permalink.gmane.org/gmane.linux.embedded.yocto.meta-ti/27
->
-> Signed-off-by: Shea Levy <shea@shealevy.com>
+On Tue, Jul 24, 2012 at 02:23:59PM +0530, Raghavendra K T wrote:
+> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> 
+> Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ,
+> and Peter (HPA) for suggesting hypercall ABI addition.
+> 
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 > ---
->  scripts/Makefile.fwinst | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Please have a closer look at Hypercall ABI newly added
+> 
+> Changes since last post:
+>  - Added hypercall ABI (Peter)
+>  - made KVM_HC_VAPIC_POLL_IRQ active explicitly (Randy)
+> 
+> TODO: We need to add history details of each hypercall as suggested by HPA,
+> which I could not trace easily. Hope it is easy for hypercall authors
+> 
+>  Documentation/virtual/hypercalls.txt |   71 ++++++++++++++++++++++++++++++++++
+>  1 files changed, 71 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/virtual/hypercalls.txt
+> 
+> diff --git a/Documentation/virtual/hypercalls.txt b/Documentation/virtual/hypercalls.txt
+> new file mode 100644
+> index 0000000..caffc08
+> --- /dev/null
+> +++ b/Documentation/virtual/hypercalls.txt
+> @@ -0,0 +1,71 @@
+> +Hypercall ABI:
+> +=============
+> +A brief look at calling conventions of X86, S390 and PPC
+> +X86:
+> + KVM Hypercalls have a three-byte sequence of either the vmrun or the vmmrun
+> + instruction. The hypervisor can replace it with instructions that are
+> + guaranteed to be supported.
 
-Whoops, sorry for the double post.
+vmcall.
+
+> +
+> + Up to four arguments may be passed in rbx, rcx, rdx, and rsi respectively.
+> + The hypercall number should be placed in rax and the return value will be
+> + placed in rax.  No other registers will be clobbered unless explicitly stated
+> + by the particular hypercall.
+
+It depends on the hypercall. It happens that current hypercalls use
+the four registers, but its not an ABI (hyper-v hypercalls uses r8, for example).
+
