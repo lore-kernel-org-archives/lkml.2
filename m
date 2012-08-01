@@ -1,123 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab2HAMVE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 08:21:04 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:42301 "EHLO mx1.fusionio.com"
+	id S1752784Ab2HAMWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 08:22:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51761 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100Ab2HAMVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 08:21:01 -0400
-X-ASG-Debug-ID: 1343823660-03d6a5408e1a1220001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <50191F25.60806@fusionio.com>
-Date: Wed, 1 Aug 2012 14:20:53 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1751100Ab2HAMWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 08:22:31 -0400
+Date: Wed, 1 Aug 2012 14:21:45 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf: commit 44f24cb3156a1e (Factor DSO symtab types) causes
+ segfaults
+Message-ID: <20120801122145.GD2528@krava.brq.redhat.com>
+References: <20120731141455.GA5570@gmail.com>
+ <20120801115740.GA16297@x4>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Neil Brown <neilb@suse.de>
-Subject: [GIT PULL] Block driver changes for 3.6
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] Block driver changes for 3.6
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1343823660
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.104368
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120801115740.GA16297@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Aug 01, 2012 at 01:57:40PM +0200, Markus Trippelsdorf wrote:
+> On 2012.07.31 at 16:14 +0200, Ingo Molnar wrote:
+> > Jiri Olsa (4):
+> >       perf symbols: Factor DSO symtab types to generic binary types
+> 
+> The commit above causes perf segfaults on my machine (running glibc trunk):
+> 
+> (gdb) run top --stdio
+> Starting program: /usr/src/linux/tools/perf/perf top --stdio
+> warning: no loadable sections found in added symbol-file system-supplied DSO at 0x7ffff7ffa000
+> [Thread debugging using libthread_db enabled]
+> Using host libthread_db library "/lib/libthread_db.so.1".
+> 
+> Program received signal SIGSEGV, Segmentation fault.
+> dso__load (dso=0x6661d0, map=map@entry=0x666170, filter=filter@entry=0x426840 <symbol_filter>) at util/symbol.c:1833
+> 1833                    dso->symtab_type = binary_type_symtab[i];
+> (gdb) bt
+> #0  dso__load (dso=0x6661d0, map=map@entry=0x666170, filter=filter@entry=0x426840 <symbol_filter>) at util/symbol.c:1833
+> #1  0x000000000045fe87 in map__load (self=self@entry=0x666170, filter=filter@entry=0x426840 <symbol_filter>) at util/map.c:124
+> #2  0x000000000045ffbd in map__find_symbol (self=0x666170, addr=11008, filter=filter@entry=0x426840 <symbol_filter>) at util/map.c:168
+> #3  0x000000000043b5df in perf_event__preprocess_sample (event=event@entry=0x7ffff44c8720, machine=machine@entry=0x647730, 
+>     al=al@entry=0x7fffffffb030, sample=sample@entry=0x7fffffffb060, filter=filter@entry=0x426840 <symbol_filter>) at util/event.c:886
+> #4  0x0000000000426d8e in perf_event__process_sample (machine=0x647730, sample=0x7fffffffb060, evsel=<optimized out>, event=0x7ffff44c8720, 
+>     tool=0x7fffffffb2c0) at builtin-top.c:723
+> #5  perf_top__mmap_read_idx (top=top@entry=0x7fffffffb2c0, idx=idx@entry=3) at builtin-top.c:858
+> #6  0x00000000004291c3 in perf_top__mmap_read (top=<optimized out>) at builtin-top.c:873
+> #7  __cmd_top (top=0x7fffffffb2c0) at builtin-top.c:1040
+> #8  cmd_top (argc=<optimized out>, argv=<optimized out>, prefix=<optimized out>) at builtin-top.c:1348
+> #9  0x0000000000414d03 in run_builtin (p=p@entry=0x4dc888, argc=argc@entry=2, argv=argv@entry=0x7fffffffe0b0) at perf.c:273
+> #10 0x0000000000415487 in handle_internal_command (argv=0x7fffffffe0b0, argc=2) at perf.c:345
+> #11 run_argv (argv=0x7fffffffdeb0, argcp=0x7fffffffdebc) at perf.c:389
+> #12 main (argc=2, argv=0x7fffffffe0b0) at perf.c:487
+> (gdb)
+hi,
+I cannot reproduce, but found one obvious bug,
+could you please test?
 
-These are the driver bits for 3.6, based on (an earlier version)
-of for-3.6/core that I just asked you to pull. It contains:
+thanks,
+jirka
 
-- Making the plugging support for drivers a bit more sane from
-  Neil. This supersedes the plugging change from Shaohua as well.
-- The usual round of drbd updates.
-- Using a tail add instead of a head add in the request completion
-  for ndb, making us find the most completed request more quickly.
-- A few floppy changes, getting rid of a duplicated flag and also
-  running the floppy init async (since it takes forever in boot
-  terms) from Andi.
+---
+ tools/perf/util/symbol.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-
-  git://git.kernel.dk/linux-block.git for-3.6/drivers
-
-Andi Kleen (1):
-      floppy: Run floppy initialization asynchronous
-
-Chetan Loke (1):
-      block/nbd: micro-optimization in nbd request completion
-
-Fengguang Wu (1):
-      floppy: remove duplicated flag FD_RAW_NEED_DISK
-
-Jens Axboe (3):
-      Merge branch 'upstream' of git://git.kernel.org/.../jikos/floppy into for-3.6/drivers
-      Merge branch 'for-jens' of git://git.drbd.org/linux-drbd into for-3.6/drivers
-      Merge branch 'upstream' of git://git.kernel.org/.../jikos/floppy into for-3.6/drivers
-
-Lars Ellenberg (10):
-      drbd: cleanup, remove two unused global flags
-      drbd: differentiate between normal and forced detach
-      drbd: report congestion if we are waiting for some userland callback
-      drbd: reset congestion information before reporting it in /proc/drbd
-      drbd: do not reset rs_pending_cnt too early
-      drbd: call local-io-error handler early
-      drbd: fix potential access after free
-      drbd: flush drbd work queue before invalidate/invalidate remote
-      drbd: fix max_bio_size to be unsigned
-      drbd: announce FLUSH/FUA capability to upper layers
-
-NeilBrown (3):
-      md: remove plug_cnt feature of plugging.
-      blk: centralize non-request unplug handling.
-      blk: pass from_schedule to non-request unplug functions.
-
-Shaohua Li (1):
-      block: stack unplug
-
- Documentation/block/queue-sysfs.txt |   7 +
- block/blk-cgroup.c                  | 139 +++++++++++++-------
- block/blk-cgroup.h                  | 128 +++++++++++++++++-
- block/blk-core.c                    | 253 +++++++++++++++++++++---------------
- block/blk-sysfs.c                   |  34 ++---
- block/blk-throttle.c                |   3 -
- block/blk.h                         |   3 +
- block/bsg-lib.c                     |  53 --------
- drivers/block/drbd/drbd_actlog.c    |   8 +-
- drivers/block/drbd/drbd_bitmap.c    |   4 +-
- drivers/block/drbd/drbd_int.h       |  44 +++++--
- drivers/block/drbd/drbd_main.c      |  65 ++++++---
- drivers/block/drbd/drbd_nl.c        |  36 +++--
- drivers/block/drbd/drbd_proc.c      |   3 +
- drivers/block/drbd/drbd_receiver.c  |  38 ++++--
- drivers/block/drbd/drbd_req.c       |   9 +-
- drivers/block/drbd/drbd_worker.c    |  12 +-
- drivers/block/floppy.c              |  24 +++-
- drivers/block/nbd.c                 |   2 +-
- drivers/block/umem.c                |  37 +-----
- drivers/md/md.c                     |  59 +--------
- drivers/md/md.h                     |  11 +-
- drivers/md/raid1.c                  |   3 +-
- drivers/md/raid10.c                 |   3 +-
- drivers/md/raid5.c                  |   5 +-
- drivers/scsi/scsi_transport_fc.c    |  38 ------
- drivers/scsi/scsi_transport_iscsi.c |   2 +-
- include/linux/blkdev.h              |  61 +++++----
- include/linux/bsg-lib.h             |   1 -
- include/linux/mempool.h             |   3 +-
- mm/mempool.c                        |  12 +-
- 31 files changed, 634 insertions(+), 466 deletions(-)
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index fdad4eee..fe86612 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -64,7 +64,7 @@ static enum dso_binary_type binary_type_symtab[] = {
+ 	DSO_BINARY_TYPE__NOT_FOUND,
+ };
+ 
+-#define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
++#define DSO_BINARY_TYPE__SYMTAB_CNT ARRAY_SIZE(binary_type_symtab)
+ 
+ static enum dso_binary_type binary_type_data[] = {
+ 	DSO_BINARY_TYPE__BUILD_ID_CACHE,
+@@ -72,7 +72,7 @@ static enum dso_binary_type binary_type_data[] = {
+ 	DSO_BINARY_TYPE__NOT_FOUND,
+ };
+ 
+-#define DSO_BINARY_TYPE__DATA_CNT sizeof(binary_type_data)
++#define DSO_BINARY_TYPE__DATA_CNT ARRAY_SIZE(binary_type_data)
+ 
+ int dso__name_len(const struct dso *dso)
+ {
 -- 
-Jens Axboe
+1.7.7.6
 
