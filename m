@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab2HAMM4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 08:12:56 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:51952 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab2HAMMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 08:12:55 -0400
-X-ASG-Debug-ID: 1343823174-0421b5402c4c500001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <50191D3F.3050308@fusionio.com>
-Date: Wed, 1 Aug 2012 14:12:47 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1755169Ab2HAMNE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 08:13:04 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:54954 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab2HAMM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 08:12:59 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "mingo\@elte.hu" <mingo@elte.hu>,
+        "mtosatti\@redhat.com" <mtosatti@redhat.com>,
+        "avi\@redhat.com" <avi@redhat.com>,
+        "raghukt\@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
+        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86\@kernel.org" <x86@kernel.org>,
+        "jeremy\@goop.org" <jeremy@goop.org>,
+        "vatsa\@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "hpa\@zytor.com" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
+In-Reply-To: <alpine.DEB.2.02.1208011221140.4645@kaball.uk.xensource.com>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com> <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com> <87ehpuqam8.fsf@linux.vnet.ibm.com> <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com> <878vg1rjts.fsf@linux.vnet.ibm.com> <1338901688.28282.168.camel@twins> <alpine.DEB.2.02.1206051422500.6030@kaball.uk.xensource.com> <alpine.DEB.2.02.1208011221140.4645@kaball.uk.xensource.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Wed, 01 Aug 2012 17:42:06 +0530
+Message-ID: <87txwmlskp.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Neil Brown <neilb@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Block IO core bits for 3.6
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] Block IO core bits for 3.6
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1343823174
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.104368
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain
+x-cbid: 12080112-6102-0000-0000-000001FB300C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Stefano,
 
-Later than usual, your merge window coincided with my vacation. I'm sure
-we both agree that this should never ever happen again. Kthx.
+On Wed, 1 Aug 2012 12:23:37 +0100, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> On Tue, 5 Jun 2012, Stefano Stabellini wrote:
+> > On Tue, 5 Jun 2012, Peter Zijlstra wrote:
+> > > On Tue, 2012-06-05 at 18:34 +0530, Nikunj A Dadhania wrote:
+> > > > PeterZ, is 7/7 alright to be picked?
+> > > 
+> > > Yeah, I guess it is.. I haven't had time to rework my tlb series yet
+> > > though. But these two patches together should make it work for x86.
+> > > 
+> > 
+> > Good. Do you think they are OK for 3.5-rc2? Or is it better to wait for
+> > 3.6?
+> > 
+> 
+> Hello Nikunj,
+> what happened to this patch series?
+> In particular I am interested in the following two patches:
+> 
+> kvm,x86: RCU based table free
+> Flush page-table pages before freeing them
+> 
+> do you still intend to carry on with the development? Is there anything
+> missing that is preventing them from going upstream?
+>
+I have posted a v3 on the kvm-list:
+http://www.spinics.net/lists/kvm/msg76955.html
 
-The most complicated part if this is the request allocation rework by
-Tejun, which has been queued up for a long time and has been in for-next
-ditto as well. There are a few commits from yesterday and today, mostly
-trivial and obvious fixes. So I'm pretty confident that it is sound.
-It's also smaller than usual.
+I am carrying the above two patches(with one fix) in my series as well
+for completeness. 
 
-It auto-merges directly into current master, so you should have no
-trouble with conflict resolutions.
+I have picked up the patches from PeterZ's "Unify TLB gather
+implementations -v3"
+http://article.gmane.org/gmane.linux.kernel.mm/81278
 
-Please pull:
-
-  git://git.kernel.dk/linux-block.git for-3.6/core
-
-Mike Snitzer (1):
-      block: do not artificially constrain max_sectors for stacking drivers
-
-Olof Johansson (1):
-      block: uninitialized ioc->nr_tasks triggers WARN_ON
-
-Tejun Heo (10):
-      blkcg: __blkg_lookup_create() doesn't need radix preload
-      blkcg: make root blkcg allocation use %GFP_KERNEL
-      mempool: add @gfp_mask to mempool_create_node()
-      block: drop custom queue draining used by scsi_transport_{iscsi|fc}
-      block: refactor get_request[_wait]()
-      block: allocate io_context upfront
-      blkcg: inline bio_blkcg() and friends
-      block: add q->nr_rqs[] and move q->rq.elvpriv to q->nr_rqs_elvpriv
-      block: prepare for multiple request_lists
-      blkcg: implement per-blkg request allocation
-
-Vivek Goyal (1):
-      block: add partition resize function to blkpg ioctl
-
-Yuanhan Liu (1):
-      block: remove dead func declaration
-
- Documentation/block/queue-sysfs.txt |   7 ++
- block/blk-cgroup.c                  | 139 +++++++++++++++---------
- block/blk-cgroup.h                  | 128 +++++++++++++++++++++-
- block/blk-core.c                    | 209 +++++++++++++++++++-----------------
- block/blk-ioc.c                     |   1 +
- block/blk-settings.c                |   3 +-
- block/blk-sysfs.c                   |  34 +++---
- block/blk-throttle.c                |   3 -
- block/blk.h                         |   4 +-
- block/bsg-lib.c                     |  53 ---------
- block/genhd.c                       |  20 +++-
- block/ioctl.c                       |  59 +++++++++-
- block/partition-generic.c           |   4 +-
- drivers/scsi/scsi_transport_fc.c    |  38 -------
- drivers/scsi/scsi_transport_iscsi.c |   2 +-
- include/linux/blkdev.h              |  53 +++++----
- include/linux/blkpg.h               |   1 +
- include/linux/bsg-lib.h             |   1 -
- include/linux/genhd.h               |  57 ++++++++++
- include/linux/mempool.h             |   3 +-
- mm/mempool.c                        |  12 ++-
- 21 files changed, 530 insertions(+), 301 deletions(-)
-
--- 
-Jens Axboe
+Regards
+Nikunj
 
