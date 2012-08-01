@@ -1,212 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab2HACqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 22:46:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752783Ab2HACp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 22:45:58 -0400
-Message-ID: <50189857.4000501@redhat.com>
-Date: Tue, 31 Jul 2012 22:45:43 -0400
-From: Larry Woodman <lwoodman@redhat.com>
-Reply-To: lwoodman@redhat.com
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120422 Thunderbird/10.0.4
+	id S1754075Ab2HACsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 22:48:46 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9459 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab2HACso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jul 2012 22:48:44 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 31 Jul 2012 19:48:43 -0700
+Message-ID: <5018997B.7010808@nvidia.com>
+Date: Wed, 1 Aug 2012 11:50:35 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-References: <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118E7F.8000609@redhat.com> <50120FA8.20409@redhat.com> <20120727102356.GD612@suse.de> <5016DC5F.7030604@redhat.com> <20120731124650.GO612@suse.de> <50181AA1.0@redhat.com> <20120731200650.GB19524@tiehlicka.suse.cz>
-In-Reply-To: <20120731200650.GB19524@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <20120730113323.GA7303@avionic-0098.adnet.avionic-design.de> <5017AA87.2040503@nvidia.com> <20120731101931.GB16155@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20120731101931.GB16155@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 04:06 PM, Michal Hocko wrote:
-> On Tue 31-07-12 13:49:21, Larry Woodman wrote:
->> On 07/31/2012 08:46 AM, Mel Gorman wrote:
->>> Fundamentally I think the problem is that we are not correctly detecting
->>> that page table sharing took place during huge_pte_alloc(). This patch is
->>> longer and makes an API change but if I'm right, it addresses the underlying
->>> problem. The first VM_MAYSHARE patch is still necessary but would you mind
->>> testing this on top please?
->> Hi Mel, yes this does work just fine.  It ran for hours without a panic so
->> I'll Ack this one if you send it to the list.
-> Hi Larry, thanks for testing! I have a different patch which tries to
-> address this very same issue. I am not saying it is better or that it
-> should be merged instead of Mel's one but I would be really happy if you
-> could give it a try. We can discuss (dis)advantages of both approaches
-> later.
+On 07/31/2012 07:19 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 >
-> Thanks!
+> On Tue, Jul 31, 2012 at 06:51:03PM +0900, Alex Courbot wrote:
+>> On 07/30/2012 08:33 PM, Thierry Reding wrote:
+>>>> +You will need an instance of power_seq_resources to keep track of the resources
+>>>> +that are already allocated. On success, the function returns a devm allocated
+>>>> +resolved sequence that is ready to be passed to power_seq_run(). In case of
+>>>> +failure, and error code is returned.
+>>>
+>>> I don't quite understand why the struct power_seq_resources is needed.
+>>> Can this not be stored within power_seq?
+>>
+>> power_seq_resources serves two purposes:
+>> 1) When parsing sequences, it keeps track of the resources we have
+>> already allocated to avoid getting the same resource twice
+>> 2) On cleanup, it cleans the resources that needs to be freed (i.e.
+>> those that are not devm-handled).
+>>
+>> 2) can certainly be removed either by enforcing use of devm, or by
+>> doing reference counting. 1) seems more difficult to avoid - we need
+>> to keep track of the resources we already own between calls to
+>> power_seq_build(). I'd certainly be glad to remove that structure
+>> from public view and simplify the code if that is possible though.
+>
+> I still don't see the problem. Managing the resources should be part of
+> the power_seq core and shouldn't be visible to users. Maybe what you are
+> worried about is that you may need the same resource both for a power-up
+> and a power-down sequence? I can see how that would require a global
+> list of resources.
 
-Hi Michal, the system hung when I tested this patch on top of the
-latest 3.5 kernel.  I wont have AltSysrq access to the system until
-tomorrow AM.  I'll retry this kernel and get AltSysrq output and let
-you know whats happening in the morning.
+Yes, that is precisely my concern. Sorry for not stating that more clearly.
 
-Larry
+> However I still think it would be easier to encapsulate that completely.
+> Maybe another level of abstraction is required. You could for example
+> add another type to encapsulate several power sequences and that could
+> keep a list of used resources. I can't think of a good name, but maybe
+> the following DT snippet clarifies what I mean:
+>
+>          power-sequences {
+>                  #address-cells = <1>;
+>                  #size-cells = <0>;
+>
+>                  sequence@0 {
+>                          name = "up";
+>
+>                          #address-cells = <1>;
+>                          #size-cells = <0>;
+>
+>                          step@0 {
+>                                  ...
+>                          };
+>
+>                          ...
+>                  };
+>
+>                  sequence@1 {
+>                          name = "down";
+>
+>                          #address-cells = <1>;
+>                          #size-cells = <0>;
+>
+>                          step@0 {
+>                                  ...
+>                          };
+>
+>                          ...
+>                  };
+>          };
+>
+> If you add a name property like this, you could extend the API to
+> support running a named sequence:
+>
+>          power_seq_run(seq, "up");
+>          ...
+>          power_seq_run(seq, "down);
 
-> ---
->  From 8cbf3bd27125fc0a2a46cd5b1085d9e63f9c01fd Mon Sep 17 00:00:00 2001
-> From: Michal Hocko<mhocko@suse.cz>
-> Date: Tue, 31 Jul 2012 15:00:26 +0200
-> Subject: [PATCH] mm: hugetlbfs: Correctly populate shared pmd
+Mmm, that's something to consider. Forcing power sequences to be grouped 
+within a "power-sequences" node would also make parsing easier from the 
+driver side since it would not have to explicitly parse every sequence. 
+We could even imagine some tighter integration with the device subsystem 
+to automatically run specifically-named sequences during suspend/resume. 
+But maybe I'm thinking too much here.
+
 >
-> Each page mapped in a processes address space must be correctly
-> accounted for in _mapcount. Normally the rules for this are
-> straight-forward but hugetlbfs page table sharing is different.
-> The page table pages at the PMD level are reference counted while
-> the mapcount remains the same. If this accounting is wrong, it causes
-> bugs like this one reported by Larry Woodman
+>>> Also, is there some way we can make the id property for GPIOs not
+>>> require the -gpio suffix? If the resource type is already GPIO, then it
+>>> seems redundant to add -gpio to the ID.
+>>
+>> There is unfortunately an inconsistency between the way regulators
+>> and GPIOs are gotten by name. regulator_get(id) will expect to find
+>> a property named "id-supply", while gpio_request_one(id) expects a
+>> property named exactly "id". To workaround this we could sprintf the
+>> correct property name from a non-suffixed property name within the
+>> driver, but I think this actually speaks more in favor of having
+>> phandles directly into the sequences.
 >
-> [ 1106.156569] ------------[ cut here ]------------
-> [ 1106.161731] kernel BUG at mm/filemap.c:135!
-> [ 1106.166395] invalid opcode: 0000 [#1] SMP
-> [ 1106.170975] CPU 22
-> [ 1106.173115] Modules linked in: bridge stp llc sunrpc binfmt_misc dcdbas microcode pcspkr acpi_pad acpi]
-> [ 1106.201770]
-> [ 1106.203426] Pid: 18001, comm: mpitest Tainted: G        W    3.3.0+ #4 Dell Inc. PowerEdge R620/07NDJ2
-> [ 1106.213822] RIP: 0010:[<ffffffff8112cfed>]  [<ffffffff8112cfed>] __delete_from_page_cache+0x15d/0x170
-> [ 1106.224117] RSP: 0018:ffff880428973b88  EFLAGS: 00010002
-> [ 1106.230032] RAX: 0000000000000001 RBX: ffffea0006b80000 RCX: 00000000ffffffb0
-> [ 1106.237979] RDX: 0000000000016df1 RSI: 0000000000000009 RDI: ffff88043ffd9e00
-> [ 1106.245927] RBP: ffff880428973b98 R08: 0000000000000050 R09: 0000000000000003
-> [ 1106.253876] R10: 000000000000000d R11: 0000000000000000 R12: ffff880428708150
-> [ 1106.261826] R13: ffff880428708150 R14: 0000000000000000 R15: ffffea0006b80000
-> [ 1106.269780] FS:  0000000000000000(0000) GS:ffff88042fd60000(0000) knlGS:0000000000000000
-> [ 1106.278794] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [ 1106.285193] CR2: 0000003a1d38c4a8 CR3: 000000000187d000 CR4: 00000000000406e0
-> [ 1106.293149] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [ 1106.301097] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [ 1106.309046] Process mpitest (pid: 18001, threadinfo ffff880428972000, task ffff880428b5cc20)
-> [ 1106.318447] Stack:
-> [ 1106.320690]  ffffea0006b80000 0000000000000000 ffff880428973bc8 ffffffff8112d040
-> [ 1106.328958]  ffff880428973bc8 00000000000002ab 00000000000002a0 ffff880428973c18
-> [ 1106.337234]  ffff880428973cc8 ffffffff8125b405 ffff880400000001 0000000000000000
-> [ 1106.345513] Call Trace:
-> [ 1106.348235]  [<ffffffff8112d040>] delete_from_page_cache+0x40/0x80
-> [ 1106.355128]  [<ffffffff8125b405>] truncate_hugepages+0x115/0x1f0
-> [ 1106.361826]  [<ffffffff8125b4f8>] hugetlbfs_evict_inode+0x18/0x30
-> [ 1106.368615]  [<ffffffff811ab1af>] evict+0x9f/0x1b0
-> [ 1106.373951]  [<ffffffff811ab3a3>] iput_final+0xe3/0x1e0
-> [ 1106.379773]  [<ffffffff811ab4de>] iput+0x3e/0x50
-> [ 1106.384922]  [<ffffffff811a8e18>] d_kill+0xf8/0x110
-> [ 1106.390356]  [<ffffffff811a8f12>] dput+0xe2/0x1b0
-> [ 1106.395595]  [<ffffffff81193612>] __fput+0x162/0x240
+> Yes, if it can be made to work by specifying the phandle directly that
+> is certainly better.
+
+Let's do that then - as for the PWM issue I had, let's address that by 
+clearly stating in the documentation that phandles referring to a same 
+device *must* be identical.
+
+>>>> +     if (!seq) return 0;
+>>>
+>>> I don't think this is acceptable according to the coding style. Also,
+>>> perhaps returning -EINVAL would be more meaningful?
+>>
+>> I neglected running checkpatch before submitting, apologies for
+>> that. The return value seems correct to me, a NULL sequence has no
+>> effect.
 >
-> During fork(), copy_hugetlb_page_range() detects if huge_pte_alloc()
-> shared page tables with the check dst_pte == src_pte. The logic is if
-> the PMD page is the same, they must be shared. This assumes that the
-> sharing is between the parent and child. However, if the sharing is with
-> a different process entirely then this check fails as in this diagram.
+> But seq == NULL should never happen anyway, right?
+
+It could if you are parsing a NULL node. It seems safe to me to consider 
+that a NULL sequence is an empty sequence, but if I go for your solution 
+involving another data structure to encapsulate the sequence, then this 
+might change.
+
+>>> Perhaps this should check for POWER_SEQ_STOP instead?
+>>
+>> There is no resource for POWER_SEQ_STOP - therefore, a NULL resource
+>> is used instead.
 >
-> parent
->    |
->    ------------>pmd
->                 src_pte---------->  data page
->                                        ^
-> other--------->pmd--------------------|
->                  ^
-> child-----------|
->                 dst_pte
+> Still, you use POWER_SEQ_STOP as an explicit sentinel to mark the end of
+> a sequence, so intuitively I'd be looking for that as a stop condition.
+
+That is for platform data - resolved sequences get their type from their 
+resource, and a STOP sequence does not have a resource. But the STOP 
+type will go away too since we will have a steps count in the platform 
+data instead.
+
+>> I would like to do that actually. The issue is that it did not work
+>> go well with the legacy pwm_backlight behavior: a power sequence
+>> needs to be constructed out of a PWM obtained through
+>> pwm_request(int pwm_id, char *label) and this behavior cannot be
+>> emulated using the new platform data interface (which only works
+>> with pwm_get()). But if I remove this old behavior, then I could
+>> make power_seq opaque. I don't think many drivers are using it. What
+>> do you think?
 >
-> For this situation to occur, it must be possible for Parent and Other
-> to have faulted and failed to share page tables with each other. This is
-> possible due to the following style of race.
+> I don't see how that is relevant here, since this power-sequencing code
+> is supposed to be generic and not tied to any specific implementation.
+> Can you explain further?
 >
-> PROC A                                          PROC B
-> copy_hugetlb_page_range                         copy_hugetlb_page_range
->    src_pte == huge_pte_offset                      src_pte == huge_pte_offset
->    !src_pte so no sharing                          !src_pte so no sharing
->
-> (time passes)
->
-> hugetlb_fault                                   hugetlb_fault
->    huge_pte_alloc                                  huge_pte_alloc
->      huge_pmd_share                                 huge_pmd_share
->        LOCK(i_mmap_mutex)
->        find nothing, no sharing
->        UNLOCK(i_mmap_mutex)
->                                                      LOCK(i_mmap_mutex)
->                                                      find nothing, no sharing
->                                                      UNLOCK(i_mmap_mutex)
->      pmd_alloc                                       pmd_alloc
->      LOCK(instantiation_mutex)
->      fault
->      UNLOCK(instantiation_mutex)
->                                                  LOCK(instantiation_mutex)
->                                                  fault
->                                                  UNLOCK(instantiation_mutex)
->
-> These two processes are not poing to the same data page but are not sharing
-> page tables because the opportunity was missed. When either process later
-> forks, the src_pte == dst pte is potentially insufficient.  As the check
-> falls through, the wrong PTE information is copied in (harmless but wrong)
-> and the mapcount is bumped for a page mapped by a shared page table leading
-> to the BUG_ON.
->
-> This patch addresses the issue by moving pmd_alloc into huge_pmd_share
-> which guarantees that the shared pud is populated in the same
-> critical section as pmd. This also means that huge_pte_offset test in
-> huge_pmd_share is serialized correctly now.
->
-> Changelog and race identified by Mel Gorman
-> Signed-off-by: Michal Hocko<mhocko@suse.cz>
-> Reported-by: Larry Woodman<lwoodman@redhat.com>
-> ---
->   arch/x86/mm/hugetlbpage.c |   10 +++++++---
->   1 file changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-> index f6679a7..bb05f79 100644
-> --- a/arch/x86/mm/hugetlbpage.c
-> +++ b/arch/x86/mm/hugetlbpage.c
-> @@ -58,7 +58,7 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
->   /*
->    * search for a shareable pmd page for hugetlb.
->    */
-> -static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
-> +static pte_t* huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
->   {
->   	struct vm_area_struct *vma = find_vma(mm, addr);
->   	struct address_space *mapping = vma->vm_file->f_mapping;
-> @@ -68,6 +68,7 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
->   	struct vm_area_struct *svma;
->   	unsigned long saddr;
->   	pte_t *spte = NULL;
-> +	pte_t *pte;
->
->   	if (!vma_shareable(vma, addr))
->   		return;
-> @@ -96,8 +97,10 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
->   	else
->   		put_page(virt_to_page(spte));
->   	spin_unlock(&mm->page_table_lock);
-> +	pte = pmd_alloc(mm, pud, addr);
->   out:
->   	mutex_unlock(&mapping->i_mmap_mutex);
-> +	return pte;
->   }
->
->   /*
-> @@ -142,8 +145,9 @@ pte_t *huge_pte_alloc(struct mm_struct *mm,
->   		} else {
->   			BUG_ON(sz != PMD_SIZE);
->   			if (pud_none(*pud))
-> -				huge_pmd_share(mm, addr, pud);
-> -			pte = (pte_t *) pmd_alloc(mm, pud, addr);
-> +				pte = huge_pmd_share(mm, addr, pud);
-> +			else
-> +				pte = (pte_t *) pmd_alloc(mm, pud, addr);
->   		}
->   	}
->   	BUG_ON(pte&&  !pte_none(*pte)&&  !pte_huge(*pte));
+> In any case you shouldn't be using pwm_request() in new code.
+
+Power sequences only rely on pwm_get, and never call pwm_request since 
+it is, as you stated, deprecated. However there are still boards that 
+use the old pwm_id member of the pwm_backlight_platform_data. For these, 
+we must call pwm_request from the pwm_backlight driver in order to 
+resolve the PWM (see pwm_backlight_legacy_probe of the seconds patch). 
+As the PWM is being resolved by the backlight driver, and not within the 
+power sequences parser, the resolved data structure must be visible to 
+pwm_backlight so it can construct it. There are two ways to solve this 
+and keep the power sequences structure private:
+
+1) Add a way to resolve a PWM by id using pwm_request in the power 
+sequences (we probably should not do that)
+2) Port the old platform pwm_request code to use pwm_add_table and 
+pwm_get instead.
+
+Do I get points if I do 2)? :)
+
+Thanks,
+Alex.
 
