@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2HAUHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 16:07:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39306 "EHLO
+	id S1755972Ab2HAUHb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 16:07:31 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39311 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752452Ab2HAUG6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752452Ab2HAUH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 16:06:58 -0400
-Date: Wed, 1 Aug 2012 21:06:57 +0100
+	Wed, 1 Aug 2012 16:07:29 -0400
+Date: Wed, 1 Aug 2012 21:07:27 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [RFT][PATCH 1/5] regulator: palmas: Fix calculating selector in
- palmas_map_voltage_ldo
-Message-ID: <20120801200656.GS4483@opensource.wolfsonmicro.com>
-References: <1342585811.28942.3.camel@phoenix>
+Cc: Nancy Chen <Nancy.Chen@freescale.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: anatop: Fix wrong mask used in
+ anatop_get_voltage_sel
+Message-ID: <20120801200727.GT4483@opensource.wolfsonmicro.com>
+References: <1342455042.25850.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342585811.28942.3.camel@phoenix>
+In-Reply-To: <1342455042.25850.1.camel@phoenix>
 X-Cookie: Don't feed the bats tonight.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 12:30:11PM +0800, Axel Lin wrote:
-> This patch fixes below issues when choosing selector:
-> 
-> 1. Current code returns negative selector if min_uV < 900000 which is wrong.
->    For example, it is possible to satisfy the request with selector = 1 if
->    the requested min_uV is 850000.
+On Tue, Jul 17, 2012 at 12:10:42AM +0800, Axel Lin wrote:
+> The mask used in anatop_get_voltage_sel does not match the mask used in
+> anatop_set_voltage_sel.
+> We need to do left shift anatop_reg->vol_bit_shift bits for the correct mask.
 
-Applied 1-4, thanks.
+Applied, thanks.
