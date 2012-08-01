@@ -1,76 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab2HAQuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 12:50:11 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:47823 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2HAQuJ (ORCPT
+	id S1753218Ab2HAQvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 12:51:07 -0400
+Received: from extranet.aprogsys.com ([91.121.73.63]:46338 "EHLO
+	extranet.aprogsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab2HAQvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 12:50:09 -0400
-Message-ID: <50195E20.90704@linaro.org>
-Date: Wed, 01 Aug 2012 09:49:36 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 1 Aug 2012 12:51:05 -0400
+Message-ID: <50195E74.6030107@aprogsys.com>
+Date: Wed, 01 Aug 2012 18:51:00 +0200
+From: Vincent ETIENNE <vetienne@aprogsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: Re: [PATCH 1/2] [RFC] time: Fix problem with large timespecs & ktime_get_update_offsets
-References: <1343716548-38742-1-git-send-email-john.stultz@linaro.org> <1343716548-38742-2-git-send-email-john.stultz@linaro.org> <alpine.LFD.2.02.1208010850510.32033@ionos>
-In-Reply-To: <alpine.LFD.2.02.1208010850510.32033@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080116-2356-0000-0000-000000E588CD
+To: Vincent ETIENNE <ve@vetienne.net>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, ocfs2-devel@oss.oracle.com
+Subject: Re: kernel BUG at fs/buffer.c:2886! Linux 3.5.0
+References: <501313B6.70801@aprogsys.com> <20120730063000.GA4025@dhcp-172-17-9-228.mtv.corp.google.com> <50163B8A.7060509@aprogsys.com> <20120730075333.GC4025@dhcp-172-17-9-228.mtv.corp.google.com> <5016D2C0.6090708@vetienne.net>
+In-Reply-To: <5016D2C0.6090708@vetienne.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 11:52 PM, Thomas Gleixner wrote:
-> On Tue, 31 Jul 2012, John Stultz wrote:
->> There's currently a slight difference in ktime_get_update_offsets()
->> vs ktime_get() which can result in boot time crashes when booting
->> with insane CMOS clock values larger then ~2264.
->>
->> ktime_get() does basically the following:
->>          return timespec_to_ktime(timespec_add(xtime, wall_to_monotonic))
->>
->> Where as ktime_get_update_offsets does approximately:
->>          return ktime_sub(timespec_to_ktime(xtime), realtime_offset);
->>
->> The problem is, at boot we set xtime = year 8200 and
->> wall_to_monotonic = year -8200,  ktime_get adds both values, mostly
->> nulling the difference out (leaving only how long the system has been
->> up), then converts that relatively small value to a ktime_t properly
->> without losing any information.
->>
->> ktime_get_update_offsets however, since it converts xtime (again set
->> to some value greater then year 8200), to a ktime, it gets clamped at
->> KTIME_MAX, then we subtract realtime_offset, which is _also_ clamped
->> at KTIME_MAX, resulting in us always returning almost[1] zero. This
->> causes us to stop expiring timers.
->>
->> Now, one of the reasons Thomas and I changed the logic was that using
->> the precalculated realtime_offset was slightly more efficient then
->> re-adding xtime and wall_to_monotonic's components separately. But
->> how valuable this unmeasured slight efficiency is vs extra
->> robustness for crazy time values is questionable.
->>
->> So switch back to the ktime_get implementation for
->> ktime_get_update_offsets
-> NAK.
->
-> You're papering over the real problem: Using crap values without
-> sanity checking them in the first place.
->
-> All your patch does is papering over the problem. Heck, year 8200 is
-> obvious bullshit, so we can detect and reject it.
 
-Ok, sounds good. I'll drop this one and just keep the sanity checking patch.
 
-thanks
--john
+Some progress
+
+the fallocate bug is not the only bug
+latest head with the fallocate correction still crash
+( in read_blocks )
+
+So i have restart bisection but at each stage i reinject the fallocate
+patch ( is it a corerct way to do this ?)
+Bisection is not very fast but for the moment (sometimes i need to rebot
+harsly and it kicks a rebuild of the raid array ) :
+
+git bisect start
+# bad: [2d534926205db9ffce4bbbde67cb9b2cee4b835c] Merge tag
+'irqdomain-for-linus' of git://git.secretlab.ca/git/linux-2.6
+git bisect bad 2d534926205db9ffce4bbbde67cb9b2cee4b835c
+# good: [c3b92c8787367a8bb53d57d9789b558f1295cc96] Linux 3.1
+git bisect good c3b92c8787367a8bb53d57d9789b558f1295cc96
+# good: [95211279c5ad00a317c98221d7e4365e02f20836] Merge branch 'akpm'
+(Andrew's patch-bomb)
+git bisect good 95211279c5ad00a317c98221d7e4365e02f20836
+# good: [654443e20dfc0617231f28a07c96a979ee1a0239] Merge branch
+'perf-uprobes-for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect good 654443e20dfc0617231f28a07c96a979ee1a0239
+# bad: [f0a08fcb5972167e55faa330c4a24fbaa3328b1f] Merge
+git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile
+git bisect bad f0a08fcb5972167e55faa330c4a24fbaa3328b1f
+# bad: [f5e7e844a571124ffc117d4696787d6afc4fc5ae] Merge tag
+'for-linus-3.5-20120601' of git://git.infradead.org/linux-mtd
+git bisect bad f5e7e844a571124ffc117d4696787d6afc4fc5ae
+
+Each bad has failed with the read_block OOPS ( so somewhat consistent
+for now )
+
+
+
+
+Le 30/07/2012 20:30, Vincent ETIENNE a écrit :
+>
+>
+> On 30/07/2012 09:53, Joel Becker wrote:
+>> On Mon, Jul 30, 2012 at 09:45:14AM +0200, Vincent ETIENNE wrote:
+>>> Le 30/07/2012 08:30, Joel Becker a écrit :
+>>>> On Sat, Jul 28, 2012 at 12:18:30AM +0200, Vincent ETIENNE wrote:
+>>>>> Hello
+>>>>>
+>>>>> Get this on first write made ( by deliver sending mail to inform of the
+>>>>> restart of services  )
+>>>>> Home partition (the one receiving the mail) is based on ocfs2 created
+>>>>> from drbd block device in primary/primary mode
+>>>>> These drbd devices are based on lvm.
+>>>>>
+>>>>> system is running linux-3.5.0, identical symptom with linux 3.3 and 3.2
+>>>>> but working with linux 3.0 kernel
+>>>>>
+>>>>> reproduced on two machines ( so different hardware involved on this one
+>>>>> software md raid on SATA, on second one areca hardware raid card )
+>>>>> but the 2 machines are the one sharing this partition ( so share the
+>>>>> same data )
+>>>> 	Hmm.  Any chance you can bisect this further?
+>>> Will try to. Will take a few days as the server is in production ( but
+>>> used as backup so...)
+>>>
+>>>>> Jul 27 23:41:41 jupiter2 kernel: [  351.169213] ------------[ cut here
+>>>>> ]------------
+>>>>> Jul 27 23:41:41 jupiter2 kernel: [  351.169261] kernel BUG at
+>>>>> fs/buffer.c:2886!
+>>>> 	This is:
+>>>>
+>>>> 	BUG_ON(!buffer_mapped(bh));
+>>>>
+>>>> in submit_bh().
+>>>>
+>>>> system_call_fastpath+0x16/0x1b
+>>>> 	This stack trace is from 3.5, because of the location of the
+>>>> BUG.  The call path in the trace suggests the code added by Al's ea022d,
+>>>> but you say it breaks in 3.2 and 3.3 as well.  Can you give me a trace
+>>>> from 3.2?
+>>> For a 3.2 kernel i get this stack trace. Different trace form 3.5 but
+>>> exactly at the same moment. and for the same reasons.
+>>> Seems to be less immmediate than with 3.5 but more a subjective
+>>> imrpession than something based on fact. ( it takes a few seconds after
+>>> deliver is started to have the bug )
+>> Totally different stack trace.  Not in symlink code, but instead in
+>> fallocate.  Weird.  I wonder if you are hitting two things.  Bisection
+>> will definitely help.
+> Yes could be, that would explain the 2 stack trace ( and the different
+> timing observed )
+> Bisection is in progress. The fallocate bug is certainly already
+> corrected ( info sent by
+> sunil.mushran@gmail.com but unavailable on the list for the moment  ?)
+>
+> ------
+>
+> The fallocate() oops is probably the same that is fixed by this patch.
+> https://oss.oracle.com/git/?p=smushran/linux-2.6.git;a=commit;h=a2118b301104a24381b414bc93371d666fe8d43a
+>
+>
+> Is in the list of patches that are ready to be pushed.
+> https://oss.oracle.com/git/?p=smushran/linux-2.6.git;a=shortlog;h=mw-3.4-mar15
+>
+> ----
+>
+> But not sure it will correct all i observed. So i will continue to
+> bisect to confirm/infirm.
+> ( But i seems to have lost network on my server after a reboot and so no
+> more access before tomorrow , I have certainly forget to do make
+> modules_install before installing new kernel ... Being stupid is not
+> very helpful... ) . I hope to finish the bisection tomorrow or wednesday.
+>  
+> Thanks a lot for the support.
+>> Joel
+>>
+>>
 
