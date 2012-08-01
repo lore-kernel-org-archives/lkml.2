@@ -1,40 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab2HAN4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 09:56:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52027 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753692Ab2HAN4d (ORCPT
+	id S1754324Ab2HAN6w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 09:58:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:64384 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab2HAN6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 09:56:33 -0400
-Date: Wed, 1 Aug 2012 14:56:31 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 2/3] regmap: implement irq chip suspend/resume operations
-Message-ID: <20120801135631.GY11892@opensource.wolfsonmicro.com>
-References: <1343415716-27134-1-git-send-email-swarren@wwwdotorg.org>
- <1343415716-27134-2-git-send-email-swarren@wwwdotorg.org>
- <20120729210410.GM4384@opensource.wolfsonmicro.com>
- <5016C006.80008@wwwdotorg.org>
- <20120730173822.GN4468@opensource.wolfsonmicro.com>
- <5018311B.8070202@wwwdotorg.org>
+	Wed, 1 Aug 2012 09:58:50 -0400
+Date: Wed, 1 Aug 2012 15:58:39 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: x86 and I/O APIC IRQ domains
+Message-ID: <20120801135839.GA19957@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
 Content-Disposition: inline
-In-Reply-To: <5018311B.8070202@wwwdotorg.org>
-X-Cookie: Caution: Keep out of reach of children.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:OZYAFFHhqYIseLLo/VV2wpMRKnl4zB7dgDrdXtAy0L2
+ rUE8b3XMKU96spoIBRejIKCn38L14KKyLJ8axz4lRMxsi6YlVB
+ rs6bg9Y7x5Pwb0vNJeFpNdMMPXc9NM52nao1bQTuIGC2pRQM3V
+ UZXjV5MZ2jrUm7+1svTlVN0949m/pfnJKudLrMmG98bnZJi2Oc
+ MJYCGwXasx0Hd69cRlj5PY77iA5ag/q1gloCxYcdSqbqdjW+6I
+ O1CRo6o6R3hZNfwSMh6xEoiwAJFrZkKEpbIXlInhG/urAK0gwv
+ sCifIIZ4wwmY2KbjnyHOBBrYE4V1zIy5u327AD9ckhxO5fkJEE
+ HNumZwFr2vxsWAz93DtqY9qSENJ4UBtZDFPD75Q0HzOJQ5QlYQ
+ f/I2JMiNYRBu4/5ysneYkMu5q43/0nm8Rk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 01:25:15PM -0600, Stephen Warren wrote:
 
-> It looks like the answer here is to set irq_chip flags
-> IRQCHIP_MASK_ON_SUSPEND and IRQCHIP_SKIP_SET_WAKE. Perhaps regmap-irq
-> should do this automatically if (!regmap_irq_chip.wake_base)?
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Sounds like a plan.
+Hi,
+
+I've been working on an x86 platform and want to use DT. However I've
+hit a snag when trying to instantiate the I/O APIC. I've been trying to
+follow what the CE4100 does and most things seem to work fine but when
+I add the DT node for the I/O APIC things start to fail. I've been able
+to trace the issue to x86_add_irq_domains(), which in turn calls
+ioapic_add_ofnode() from which irq_domain_add_legacy() is called.
+
+The platform that I use hits the WARN_ON(!irq_data || irq_data->domain).
+Looking further this seems to be caused by all irq_get_irq_data(irq)
+returning NULL for irq >= 16. That in turn I think is due to
+init_ISA_irqs() setting up only the first NR_IRQS_LEGACY interrupts.
+However the call to irq_domain_add_legacy() wants 32 interrupts.
+
+This was introduced by commit b4e5185 "irq_domain/x86: Convert x86
+(embedded) to use common irq_domain)". I wonder what I'm doing wrong. I
+don't get how this is made to work on CE4100.
+
+Later the code crashes, but I can't exactly pinpoint the location
+because the oops doesn't fit on the screen. I don't have a serial port
+that I can use instead, so is there anything else I can do to obtain a
+complete backtrace?
+
+Thierry
+
+--EeQfGwPcQSOJBaQU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQGTYPAAoJEN0jrNd/PrOhOEQP/05gRtNR/YMHyw2vix50S3lU
+W+W2qzKqeIe2F8+vkeSYbNsGdKNVZDxNeyuhNjPnXJ0S/NaZ2eVdHvDjWZ7J+34E
+ZwLko1hCgUpYo3QTrm3eDy7IR+aWyer8xQ2p5AAWroyKH/o1gbWeIhyOGjZQzzZY
+Ooo7v2+rlClrVlhh3koVxvT7vRPSGyzbYTOkPAcdmeKotZpbTJqIPUVAhDTv44az
+23KVdsNGNhbW/y6lCXouGykG6CIGbBo8mgeSgj1DVTodtarbrUBgjRXnZXbfeiER
+sGXqMj5pdJ665QatwNUsKOBNtosfWq6XO5twwM3BPthkSBE9DA8MxZt/Rb4FfhtT
+E9Umt23zfdNtLfgJi+zy2yKXMsEUmWuMSTmUBhvvs2ERrXOOag6j3jwbK0++0MZC
+kKUozOwq8yukL3EEzlHAXKCxQ9+XqUctPFTURMD8eg+m7PfvoQB58Dsx0AcLpn+k
+r6ADFCokrC7i4CshFVEGy58SKfUNo/2+H8Fg1SKCfP5z2oWcSiSSD4lQJ/6KWrmZ
+rpWtwYFvezyXhuxdDxHSQl1/e0HLglsPImUfKXFipNAf/VpF1KXURlIy5kBqdsRu
+F8KugKL5D0N4KPlP5JRmb67xbxKTm0XOzEbPprN+jFmMB86KjU2VR2Wlo1wB6FIG
+zt0lqQxI81RUhg4bFzpd
+=o4x8
+-----END PGP SIGNATURE-----
+
+--EeQfGwPcQSOJBaQU--
