@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab2HAHTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 03:19:33 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46863 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab2HAHTc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 03:19:32 -0400
-Message-ID: <5018D880.5090306@linaro.org>
-Date: Wed, 01 Aug 2012 08:19:28 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754562Ab2HAHXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 03:23:01 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58023 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753547Ab2HAHXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 03:23:00 -0400
+Message-ID: <5018D926.6010709@linux.vnet.ibm.com>
+Date: Wed, 01 Aug 2012 02:22:14 -0500
+From: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-3-git-send-email-lee.jones@linaro.org> <20120731134214.GK4468@opensource.wolfsonmicro.com> <5017EAC3.3080504@linaro.org> <20120731142820.GW4468@opensource.wolfsonmicro.com> <5017EDCA.4020601@linaro.org> <20120731145443.GY4468@opensource.wolfsonmicro.com> <5017F68B.3060400@linaro.org> <20120731151819.GC4468@opensource.wolfsonmicro.com>
-In-Reply-To: <20120731151819.GC4468@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] vphn: fix arch_update_cpu_topology() return value
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080107-5930-0000-0000-00000A699A4C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/07/12 16:18, Mark Brown wrote:
->>> It's certainly totally inappropriate for an "urgent" bugfix.
->
->> Well it just means that audio won't work for the ux500 for this
->> kernel release, but as we're waiting on clocks, this isn't a big
->> issue for us. If you do take it (with or without the return code),
->> feel free to add it to for-next instead of the -rc:s
->
-> I'm not going to apply this patch.  This isn't a vendor BSP, we
-> shouldn't be putting random hacks like this in core code.
+>From 5dfd547532fca61462dc17fd0bb8e533002c4bc5 Mon Sep 17 00:00:00 2001
+From: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+Date: Thu, 7 Jun 2012 16:04:34 -0500
 
-BSP kernel or otherwise, it still seems wrong to me to fail and entire 
-audio driver just because of a broken link.
+arch_update_cpu_topology() should only return 1 when the topology has
+actually changed, and should return 0 otherwise.
 
+This patch fixes a potential bug where rebuild_sched_domains() would
+reinitialize the sched domains even when the topology hasn't changed.
+
+Signed-off-by: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+---
+ arch/powerpc/mm/numa.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index 39b1597..59213cf 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -1436,11 +1436,11 @@ static long vphn_get_associativity(unsigned long cpu,
+ 
+ /*
+  * Update the node maps and sysfs entries for each cpu whose home node
+- * has changed.
++ * has changed. Returns 1 when the topology has changed, and 0 otherwise.
+  */
+ int arch_update_cpu_topology(void)
+ {
+-	int cpu, nid, old_nid;
++	int cpu, nid, old_nid, changed = 0;
+ 	unsigned int associativity[VPHN_ASSOC_BUFSIZE] = {0};
+ 	struct device *dev;
+ 
+@@ -1466,9 +1466,10 @@ int arch_update_cpu_topology(void)
+ 		dev = get_cpu_device(cpu);
+ 		if (dev)
+ 			kobject_uevent(&dev->kobj, KOBJ_CHANGE);
++		changed = 1;
+ 	}
+ 
+-	return 1;
++	return changed;
+ }
+ 
+ static void topology_work_fn(struct work_struct *work)
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.7.6
+
+
+Jesse Larrew
+Software Engineer, Linux on Power Kernel Team
+IBM Linux Technology Center
+Phone: (512) 973-2052 (T/L: 363-2052)
+jlarrew@linux.vnet.ibm.com
+
