@@ -1,87 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab2HAXS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 19:18:27 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1754763Ab2HAXVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 19:21:32 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:49078 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753498Ab2HAXS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 19:18:26 -0400
-Message-ID: <5019B93E.4080006@nod.at>
-Date: Thu, 02 Aug 2012 01:18:22 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        toralf.foerster@gmx.de
-Subject: [GIT PULL] UML fixes for 3.6-rc1
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753498Ab2HAXVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 19:21:30 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>,
+        CAI Qian <caiqian@redhat.com>, stable@vger.kernel.org
+Subject: [PATCH] time: Limit time values that would overflow ktime_t
+Date: Wed,  1 Aug 2012 19:21:16 -0400
+Message-Id: <1343863276-30340-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080123-5806-0000-0000-000017ED15AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Thomas, Ingo,
+	This is against tip/timers/urgent. Let me know
+if you'd like to see any further changes
 
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+-john
 
-   Linux 3.5 (2012-07-21 13:58:29 -0700)
+Unexpected behavior could occur if the time is set to
+a value large enough to overflow a 64bit ktime_t
+(which is something larger then the year 2264).
 
-are available in the git repository at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git for-linus-3.6-rc1
+So check timekeeping inputs to make sure we don't set
+the time to a value that overflows ktime_t.
 
+Note: This does not protect from setting the time close to
+overflowing ktime_t and then letting natural accumulation
+cause the overflow.
+
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Zhouping Liu <zliu@redhat.com>
+Cc: CAI Qian <caiqian@redhat.com>
+Cc: stable@vger.kernel.org
+Reported-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
-This patch set contains mostly fixes and cleanups.
-The UML tty driver uses now tty_port and is no longer broken
-like hell. :-)
----
+ kernel/time/timekeeping.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
-Al Viro (3):
-       um: switch UPT_SET_RETURN_VALUE and regs_return_value to pt_regs
-       um: split syscall_trace(), pass pt_regs to it
-       um: pull interrupt_end() into userspace()
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 2988bc8..6a31968 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -88,6 +88,8 @@ __cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
+ /* flag for if timekeeping is suspended */
+ int __read_mostly timekeeping_suspended;
+ 
++#define TWENTY_YEARS (20LL*365*24*60*60)
++
+ static inline void tk_normalize_xtime(struct timekeeper *tk)
+ {
+ 	while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
+@@ -430,6 +432,9 @@ int do_settimeofday(const struct timespec *tv)
+ 	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
+ 		return -EINVAL;
+ 
++	if ((unsigned long long)tv->tv_sec >= KTIME_SEC_MAX)
++		return -EINVAL;
++
+ 	write_seqlock_irqsave(&tk->lock, flags);
+ 
+ 	timekeeping_forward_now(tk);
+@@ -463,6 +468,8 @@ int timekeeping_inject_offset(struct timespec *ts)
+ {
+ 	struct timekeeper *tk = &timekeeper;
+ 	unsigned long flags;
++	long long tmp;
++	int ret = 0;
+ 
+ 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
+ 		return -EINVAL;
+@@ -471,10 +478,17 @@ int timekeeping_inject_offset(struct timespec *ts)
+ 
+ 	timekeeping_forward_now(tk);
+ 
++	/* Make sure the increased value won't cause ktime_t trouble */
++	tmp = tk->xtime_sec + ts->tv_sec;
++	if (tmp >= KTIME_SEC_MAX) {
++		ret = -EINVAL;
++		goto error;
++	}
+ 
+ 	tk_xtime_add(tk, ts);
+ 	tk_set_wall_to_mono(tk, timespec_sub(tk->wall_to_monotonic, *ts));
+ 
++error: /* even if we error out, we forwarded the time, so call update */
+ 	timekeeping_update(tk, true);
+ 
+ 	write_sequnlock_irqrestore(&tk->lock, flags);
+@@ -482,7 +496,7 @@ int timekeeping_inject_offset(struct timespec *ts)
+ 	/* signal hrtimers about time change */
+ 	clock_was_set();
+ 
+-	return 0;
++	return ret;
+ }
+ EXPORT_SYMBOL(timekeeping_inject_offset);
+ 
+@@ -651,6 +665,16 @@ void __init timekeeping_init(void)
+ 	read_persistent_clock(&now);
+ 	read_boot_clock(&boot);
+ 
++	/*
++	 * Check to make sure the persistent clock
++	 * didn't return something crazy.
++	 */
++	if (now.tv_sec > (KTIME_SEC_MAX - TWENTY_YEARS)) {
++		pr_warn("WARNING: Persistent clock returned > year 2242!\n"
++			"         Check your CMOS/BIOS settings.\n");
++		now.tv_sec = KTIME_SEC_MAX - TWENTY_YEARS;
++	}
++
+ 	seqlock_init(&tk->lock);
+ 
+ 	ntp_init();
+-- 
+1.7.9.5
 
-Jiri Slaby (2):
-       TTY: um/line, add tty_port
-       TTY: um/line, use tty from tty_port
-
-Martin Pärtel (2):
-       um: fix ubd_file_size for read-only files
-       um: pass siginfo to guest process
-
-Richard Weinberger (6):
-       um: remove line_ioctl()
-       um: Remove dead code
-       um: fully use tty_port
-       um: remove count_lock
-       um: set BLK_CGROUP=y in defconfig
-       um: Add arch/x86/um to MAINTAINERS
-
-  MAINTAINERS                          |    1 +
-  arch/um/defconfig                    |    2 +-
-  arch/um/drivers/chan_kern.c          |    4 +-
-  arch/um/drivers/line.c               |  218 ++++++++++------------------------
-  arch/um/drivers/line.h               |   12 +-
-  arch/um/drivers/ssl.c                |   42 +------
-  arch/um/drivers/stdio_console.c      |   21 ++--
-  arch/um/drivers/ubd_kern.c           |    2 +-
-  arch/um/include/asm/ptrace-generic.h |    2 +
-  arch/um/include/shared/as-layout.h   |    3 +-
-  arch/um/include/shared/irq_user.h    |    3 +-
-  arch/um/include/shared/kern_util.h   |   13 +-
-  arch/um/kernel/irq.c                 |    2 +-
-  arch/um/kernel/process.c             |   13 +--
-  arch/um/kernel/ptrace.c              |   71 +++++-------
-  arch/um/kernel/skas/syscall.c        |    6 +-
-  arch/um/kernel/time.c                |    2 +-
-  arch/um/kernel/trap.c                |   39 +++++-
-  arch/um/os-Linux/internal.h          |    2 +-
-  arch/um/os-Linux/signal.c            |   26 +++--
-  arch/um/os-Linux/skas/process.c      |   16 ++-
-  arch/um/os-Linux/time.c              |    2 +-
-  arch/x86/um/asm/ptrace.h             |    6 +-
-  23 files changed, 206 insertions(+), 302 deletions(-)
-
-Thanks,
-//richard
