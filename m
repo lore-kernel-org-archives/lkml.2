@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2HAUzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 16:55:24 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:46871 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab2HAUzX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 16:55:23 -0400
-Date: Wed, 1 Aug 2012 13:53:06 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [PATCH 11/11] ARM: Get rid of .LCcralign local label usage in
- alignment_trap macro
-Message-ID: <20120801205306.GB20714@lizard>
-References: <20120730115719.GA5742@lizard>
- <1343649500-18491-11-git-send-email-anton.vorontsov@linaro.org>
- <20120730141544.GJ6802@n2100.arm.linux.org.uk>
+	id S1754595Ab2HAUzj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 16:55:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32854 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753573Ab2HAUzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 16:55:38 -0400
+Message-ID: <5019975B.6010708@redhat.com>
+Date: Wed, 01 Aug 2012 16:53:47 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120730141544.GJ6802@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rafael Aquini <aquini@redhat.com>
+CC: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Rafael Aquini <aquini@linux.com>
+Subject: Re: [PATCH v4 1/3] mm: introduce compaction and migration for virtio
+ ballooned pages
+References: <cover.1342485774.git.aquini@redhat.com> <49f828a9331c9b729fcf77226006921ec5bc52fa.1342485774.git.aquini@redhat.com> <20120718054824.GA32341@bbox> <20120720194858.GA16249@t510.redhat.com> <20120723023332.GA6832@bbox> <20120723181952.GA27373@t510.redhat.com>
+In-Reply-To: <20120723181952.GA27373@t510.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 03:15:44PM +0100, Russell King - ARM Linux wrote:
-> On Mon, Jul 30, 2012 at 04:58:20AM -0700, Anton Vorontsov wrote:
-> > This makes the code more izolated.
-> > 
-> > The downside of this is that we now have an additional branch and the
-> > code itself is 8 bytes longer. But on the bright side, this new layout
-> > can be more cache friendly since cr_alignment address might be already
-> > in the cache line (not that I measured anything, it's just fun to think
-> > about it).
-> 
-> The caches are harvard, so mixing data and code together does not increase
-> performance.  Having data which is used by the same code in the same cache
-> line results in better performance.
-> 
-> The additional branch will also cause a pipeline stall on older CPUs.
-> 
-> So no, I don't see any way that this is a performance improvement.  Please
-> leave this as is.
+On 07/23/2012 02:19 PM, Rafael Aquini wrote:
 
-Sure, will drop it.
+> In a glance, I believe this whole dance you're suggesting might just be too much
+> of an overcomplication, and the best approach would be simply teaching the
+> hotplug bits about the ballooned corner case just like it's being done to
+> compaction/migration. However, I'll look at it carefully before making any other
+> adjustments/propositions over here.
 
-Thanks!
+Compaction and hotplug do essentially the same thing
+here: "collect all the movable pages from a page block,
+and move them elsewhere".
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Whether or not it is easier for them to share code, or
+to duplicate a few lines of code, is something that can
+be looked into later.
