@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab2HAU2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 16:28:16 -0400
-Received: from a83-160-107-163.adsl.xs4all.nl ([83.160.107.163]:38020 "EHLO
-	d4rwin.no-ip.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab2HAU2P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 16:28:15 -0400
-X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Aug 2012 16:28:15 EDT
-Date: Wed, 1 Aug 2012 22:18:11 +0200
-From: Matthias Kaehlcke <matthias.list@kaehlcke.net>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: a.zummo@towertech.it, sameo@linux.intel.com,
-        broonie@opensource.wolfsonmicro.com, ldewangan@nvidia.com,
-        kyle.manna@fuel7.com, sboyd@codeaurora.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-Message-ID: <20120801201811.GK4701@darwin>
-Mail-Followup-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
-	Venu Byravarasu <vbyravarasu@nvidia.com>, a.zummo@towertech.it,
-	sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
-	ldewangan@nvidia.com, kyle.manna@fuel7.com, sboyd@codeaurora.org,
-	rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-References: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
+	id S1754320Ab2HAUas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 16:30:48 -0400
+Received: from minas.ics.muni.cz ([147.251.4.40]:39688 "EHLO minas.ics.muni.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752711Ab2HAUar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 16:30:47 -0400
+Date: Wed, 1 Aug 2012 22:28:40 +0200
+From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Roland Dreier <roland@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: mellanox mlx4_core and SR-IOV
+Message-ID: <20120801202840.GM5470@ics.muni.cz>
+References: <20120801133835.GH5470@ics.muni.cz>
+ <CAG4TOxONLJnBaY7N5x7Kfi+dwCb507QPqX9s_Wuef10+RzM=AQ@mail.gmail.com>
+ <CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-2
 Content-Disposition: inline
-In-Reply-To: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
-Organization: sindominio.net
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
+X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Muni-Spam-TestIP: 94.112.253.31
+X-Muni-Envelope-From: xhejtman@ics.muni.cz
+X-Muni-Virus-Test: Clean
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Wed, 01 Aug 2012 22:28:49 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-
-El Wed, Aug 01, 2012 at 11:52:37AM +0530 Venu Byravarasu ha dit:
-
-> TPS65910 PMIC is a MFD with RTC as one of the device.
-> Adding RTC driver for supporting RTC device present
-> inside TPS65910 PMIC.
+On Wed, Aug 01, 2012 at 11:29:02AM -0700, Yinghai Lu wrote:
+> On Wed, Aug 1, 2012 at 10:37 AM, Roland Dreier <roland@kernel.org> wrote:
+> > On Wed, Aug 1, 2012 at 6:38 AM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
+> >> [    3.558296] mlx4_core 0000:02:00.0: not enough MMIO resources for SR-IOV (nres: 0, iov->nres: 1)
+> >
+> > This comes from the core sriov_enable() function, not anything in mlx4.
+> > (although my kernel doesn't have the print of nres in that message)
+> >
+> > Not sure what it means.
 > 
-> Only support for RTC alarm is implemented as part of this patch.
+> iov bar is not assigned by BIOS, and kernel can not find range for it too.
 > 
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> ---
+> Lukas, can you post whole boot log with PCI_DEBUG enabled? That will
+> tell exact why kernel does not assign them.
+> 
+> Recent kernel from 3.4... should enable realloc when SRIOV bar is not assigned.
 
-...
+here is full boot log.
+http://www.fi.muni.cz/~xhejtman/dmesg.log
 
-> +static irqreturn_t tps65910_rtc_interrupt(int irq, void *rtc)
-> +{
-> +	struct device *dev = rtc;
-> +	unsigned long events = 0;
-> +	struct tps65910 *tps = dev_get_drvdata(dev->parent);
-> +	struct tps65910_rtc *tps_rtc = dev_get_drvdata(dev);
->
-> ...
->
-> +static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
-> +{
->
-> ...
->
-> +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-> +		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
-> +		"rtc-tps65910", &pdev->dev);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "IRQ is not free.\n");
-> +		return ret;
-> +	}
-> +	device_init_wakeup(&pdev->dev, 1);
-> +
-> +	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
-> +		&tps65910_rtc_ops, THIS_MODULE);
-> +	if (IS_ERR(tps_rtc->rtc)) {
-> +		ret = PTR_ERR(tps_rtc->rtc);
-> +		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, tps_rtc);
-
-the interrupt should be requested after this call. otherwise
-tps65910_rtc_interrupt() could be executed before the RTC device is
-registered and the driver data set. normally this shouldn't happen as
-the RTC interrupts are disabled after reset, but the interrupts could
-have been enabled for example by the bootloader
-
-best regards
+weird with PCI_DEBUG it does not load mlx driver at all..
 
 -- 
-Matthias Kaehlcke
-Embedded Linux Developer
-Amsterdam
-
-      Anyone who has never made a mistake has never tried anything new
-                            (Albert Einstein)
-                                                                 .''`.
-    using free software / Debian GNU/Linux | http://debian.org  : :'  :
-                                                                `. `'`
-gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
+Luká¹ Hejtmánek
