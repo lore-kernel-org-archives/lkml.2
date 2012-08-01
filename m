@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab2HAUas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 16:30:48 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:39688 "EHLO minas.ics.muni.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752711Ab2HAUar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 16:30:47 -0400
-Date: Wed, 1 Aug 2012 22:28:40 +0200
-From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Roland Dreier <roland@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: mellanox mlx4_core and SR-IOV
-Message-ID: <20120801202840.GM5470@ics.muni.cz>
-References: <20120801133835.GH5470@ics.muni.cz>
- <CAG4TOxONLJnBaY7N5x7Kfi+dwCb507QPqX9s_Wuef10+RzM=AQ@mail.gmail.com>
- <CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
+	id S1754147Ab2HAUfi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 16:35:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42636 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754018Ab2HAUfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 16:35:37 -0400
+Date: Wed, 1 Aug 2012 21:35:34 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] leds: add new lp8788 led driver
+Message-ID: <20120801203534.GY4483@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
+ <1342799346.5138.7.camel@lorien2>
+ <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
+ <20120722181956.GA4557@opensource.wolfsonmicro.com>
+ <CAK5ve-KAufV5h93AcWdVUVZx2E+pfgQ1L0jp5H28wHgBfV2zPA@mail.gmail.com>
+ <20120724125513.GG12438@opensource.wolfsonmicro.com>
+ <CAK5ve-Lyk_EjOjSKHF-j0J1_8oey8wWKkVXAdqbKpRX2eZY+hg@mail.gmail.com>
+ <20120725184302.GP3099@opensource.wolfsonmicro.com>
+ <CAK5ve-JYu9x_pnO2L2R-5933B-TJD4yWukkL9dJYpDLO6+i0Ug@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
-X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+In-Reply-To: <CAK5ve-JYu9x_pnO2L2R-5933B-TJD4yWukkL9dJYpDLO6+i0Ug@mail.gmail.com>
+X-Cookie: Don't feed the bats tonight.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Muni-Spam-TestIP: 94.112.253.31
-X-Muni-Envelope-From: xhejtman@ics.muni.cz
-X-Muni-Virus-Test: Clean
-X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Wed, 01 Aug 2012 22:28:49 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 11:29:02AM -0700, Yinghai Lu wrote:
-> On Wed, Aug 1, 2012 at 10:37 AM, Roland Dreier <roland@kernel.org> wrote:
-> > On Wed, Aug 1, 2012 at 6:38 AM, Lukas Hejtmanek <xhejtman@ics.muni.cz> wrote:
-> >> [    3.558296] mlx4_core 0000:02:00.0: not enough MMIO resources for SR-IOV (nres: 0, iov->nres: 1)
-> >
-> > This comes from the core sriov_enable() function, not anything in mlx4.
-> > (although my kernel doesn't have the print of nres in that message)
-> >
-> > Not sure what it means.
-> 
-> iov bar is not assigned by BIOS, and kernel can not find range for it too.
-> 
-> Lukas, can you post whole boot log with PCI_DEBUG enabled? That will
-> tell exact why kernel does not assign them.
-> 
-> Recent kernel from 3.4... should enable realloc when SRIOV bar is not assigned.
+On Thu, Jul 26, 2012 at 10:51:18AM +0800, Bryan Wu wrote:
 
-here is full boot log.
-http://www.fi.muni.cz/~xhejtman/dmesg.log
+> OK, thanks, I've merge this patch through my tree and can I add your ack to it?
 
-weird with PCI_DEBUG it does not load mlx driver at all..
+Sure,
 
--- 
-Luká¹ Hejtmánek
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
