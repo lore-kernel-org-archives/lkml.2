@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2HAQI2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 12:08:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48350 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753531Ab2HAQI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 12:08:27 -0400
-Date: Wed, 1 Aug 2012 17:08:24 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-Message-ID: <20120801160824.GB11892@opensource.wolfsonmicro.com>
-References: <20120731134214.GK4468@opensource.wolfsonmicro.com>
- <5017EAC3.3080504@linaro.org>
- <20120731142820.GW4468@opensource.wolfsonmicro.com>
- <5017EDCA.4020601@linaro.org>
- <20120731145443.GY4468@opensource.wolfsonmicro.com>
- <5017F68B.3060400@linaro.org>
- <20120731151819.GC4468@opensource.wolfsonmicro.com>
- <5018D880.5090306@linaro.org>
- <20120801132022.GS11892@opensource.wolfsonmicro.com>
- <50193428.5000708@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50193428.5000708@linaro.org>
-X-Cookie: Caution: Keep out of reach of children.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753447Ab2HAQKU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 12:10:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35826 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750737Ab2HAQKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 12:10:18 -0400
+Message-ID: <1343837499.18359.7.camel@tucsk.pomaz.szeredi.hu>
+Subject: Re: Oops in audit_copy_inode
+From: Miklos Szeredi <mszeredi@suse.cz>
+To: Peter Moody <pmoody@google.com>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@google.com>,
+        viro@zeniv.linux.org.uk, Eric Paris <eparis@redhat.com>,
+        miklos@szeredi.hu
+Date: Wed, 01 Aug 2012 18:11:39 +0200
+In-Reply-To: <CALnj_=5qfAxtKN_T+eoAPCswZPrWmKmOK5HSTwCNZV0s08f_qw@mail.gmail.com>
+References: <CALnj_=4r0qdrNUbXmS=q=sk11PZ-Q0z=wPO5wR_DzR4HjnMdqw@mail.gmail.com>
+	 <CALnj_=5qfAxtKN_T+eoAPCswZPrWmKmOK5HSTwCNZV0s08f_qw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 02:50:32PM +0100, Lee Jones wrote:
+Hi Peter,
 
-> I am under the impression that it was tested. Perhaps before it was
-> rebased, but tests were completed. Ola was very surprised when I
-> told him there were link failures. The only issue is that I only
-> found out and told him a day before he was due to take his Summer
-> leave.
+Thanks for the report.
 
-That's really surprising.  What are the actual issues here, you've never
-shown the actual errors?
+Here's a patch.  I haven't tested it but I'm pretty confident that it
+fixes the bug.
 
-> >It's very disappointing to see such an error exist, and even more
-> >disappointing that there's no interest in fixing the driver.
+Thanks,
+Miklos
 
-> This is incorrect. I'm sure the driver will be fixed post-haste when
-> Ola returns back from vacation. If I can find some time I might
-> dabble in the mean-time also.
 
-It may not be what you're intending but it's unfortuantely what's I'm
-seeing.
+Subject: vfs: fix audit_inode on negative dentry
+From: Miklos Szeredi <mszeredi@suse.cz>
+
+Peter Moody reported an oops in audit_copy_inode() and bisected it to commit
+7157486541 (vfs: do_last(): common slow lookup).
+
+The problem is that audit_inode() in do_last() is called with a negative dentry.
+
+Previously the non-O_CREAT case didn't call audit_inode() here, but now both
+O_CREAT and non-O_CREAT opens are handled by the same code.
+
+I really have no idea why this audit_inode() is needed here at all but am afaid
+to remove this for fear of breaking audit somehow.  So just fix this case by
+checking for a negative dentry.
+
+Reported-by: Peter Moody <pmoody@google.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: stable@vger.kernel.org
+---
+ fs/namei.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/fs/namei.c
+===================================================================
+--- linux-2.6.orig/fs/namei.c	2012-08-01 17:47:28.000000000 +0200
++++ linux-2.6/fs/namei.c	2012-08-01 17:49:26.000000000 +0200
+@@ -2607,10 +2607,12 @@ static int do_last(struct nameidata *nd,
+ 		goto finish_open_created;
+ 	}
+ 
+-	/*
+-	 * It already exists.
+-	 */
+-	audit_inode(pathname, path->dentry);
++	if (path->dentry->d_inode) {
++		/*
++		 * It already exists.
++		 */
++		audit_inode(pathname, path->dentry);
++	}
+ 
+ 	/*
+ 	 * If atomic_open() acquired write access it is dropped now due to
+
+
