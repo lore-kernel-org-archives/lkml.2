@@ -1,179 +1,465 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab2HAGUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 02:20:09 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:53509 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab2HAGUG (ORCPT
+	id S1753935Ab2HAG2s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 02:28:48 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12251 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab2HAG2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 02:20:06 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q716JH83003472, This message is released by code: ctaloc0852
-Message-ID: <5018CA65.1080906@realsil.com.cn>
-Date: Wed, 1 Aug 2012 14:19:17 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 1 Aug 2012 02:28:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 31 Jul 2012 23:23:16 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <a.zummo@towertech.it>, <sameo@linux.intel.com>,
+        <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
+        <kyle.manna@fuel7.com>, <sboyd@codeaurora.org>
+CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+Date: Wed, 1 Aug 2012 11:52:37 +0530
+Message-ID: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>, "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH 1/3] drivers/misc: Add realtek card reader core driver
-References: <1343720536-22077-1-git-send-email-wei_wang@realsil.com.cn> <201207311123.25862.arnd@arndb.de>
-In-Reply-To: <201207311123.25862.arnd@arndb.de>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年07月31日 19:23, Arnd Bergmann 写道:
->
-> You posted the sdmmc host driver and the pci card reader driver.
-> I assume that the USB card reader and the memstick host
-> will also get posted at some point. Do you have a timeframe
-> for those?
+TPS65910 PMIC is a MFD with RTC as one of the device.
+Adding RTC driver for supporting RTC device present
+inside TPS65910 PMIC.
 
-I will submit my memstick host driver around two months later, and
-submit USB part at the end of this year.
+Only support for RTC alarm is implemented as part of this patch.
 
->
-> The hardware seems to also support xd/smartmedia. Do you have
-> plans to add those? I think we have some code in drivers/mfd
-> that acts as an abstraction layer for these, given that the
-> host has to do the wear leveling there too.
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+delta from patch v1:
 
-Yes, xD is still in our plan. But because the user population of xD/SM
-is so small, we put the priority of writing xD host driver in a relevant
-low level.
-Maybe we will submit this driver in the next year.
+1. Added const qualifier to rtc_class_ops
+2. Removed some of the local variables initialization
+3. Passing string "rtc-tps65910" to devm_request_threaded_irq.
+4. Changed driver name from "tps65910-rtc" to "rtc-tps65910"
 
-> As usual for most things getting added to drivers/misc, I'm skeptical
-> about it actually fitting in here. Normally I'd put such a multiplexer
-> into drivers/mfd. Given that you actually need your own bus, rather
-> than just a single host with multiple endpoints, drivers/bus/realtek/cr
-> might be best.
-We do need a bus driver. We support multi models of card at the same
-time, so we need a way to bind all of the host drivers. And in the
-internal of our card reader, we have only one DMA engine and one ring
-buffer to handle massive data, so we also need a way to protect the
-critical area between different card hosts. Bus driver is convenient to
-handle this situation. Another way to fulfill is to call every register
-function of different host (like mmc, memstick) in sequence in card
-reader driver, whether pci-based or usb-based, if not using bus driver.
-I prefer the prior scheme, which is more flexible and less redundant code.
+ drivers/rtc/Kconfig          |   10 ++
+ drivers/rtc/Makefile         |    1 +
+ drivers/rtc/rtc-tps65910.c   |  353 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65910.h |   10 ++
+ 4 files changed, 374 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-tps65910.c
 
-Using bus driver:
-
-sdmmc memstick
-\ /
-\ /
-\ /
-rtsx bus driver
-/ \
-/ \
-/ \
-/ \
-rtsx pci rtsx usb
-
-
-Not using bus driver:
-
-sdmmc-pci memstick-pci
-\ /
-\ /
-\ /
-\ /
-rtsx pci
-
-sdmmc-usb memstick-usb
-\ /
-\ /
-\ /
-\ /
-rtsx usb
-
-And you said we should put our own bus driver in drivers/bus/realtek/cr,
-but where is drivers/bus? Or can I just put this bus driver and our
-pci/usb card reader driver into drivers/mfd?
-
->> +udev rules
->> +----------
->> +
->> +In order to modprobe Realtek SD/MMC interface driver automatically, the following rule
->> +should be added to the udev rules file:
->> +
->> +SUBSYSTEM=="rtsx_cr", ENV{RTSX_CARD_TYPE}=="SD", RUN+="/sbin/modprobe -bv rtsx_sdmmc"
-> This should not be necessary if you put the right module alias into the driver itself.
->
-> You should generally use EXPORT_SYMBOL_GPL for new symbols unless there is
-> a strong reason not to (and then you should explain that reason).
-
-Got it, I will modify it.
-
->> +
->> +void rtsx_queue_work(struct work_struct *work)
->> +{
->> +	queue_work(workqueue, work);
->> +}
->> +EXPORT_SYMBOL(rtsx_queue_work);
->> +
->> +void rtsx_queue_delayed_work(struct delayed_work *dwork, unsigned long delay)
->> +{
->> +	queue_delayed_work(workqueue, dwork, delay);
->> +}
->> +EXPORT_SYMBOL(rtsx_queue_delayed_work);
-> I would not bother with this, just move the workqueue into the client driver
-> itself, which may result in a few duplicate lines but less code overall.
->
->> +int rtsx_register_driver(struct rtsx_driver *drv)
->> +{
->> +	drv->driver.bus = &rtsx_bus_type;
->> +
->> +	return driver_register(&drv->driver);
->> +}
->> +EXPORT_SYMBOL(rtsx_register_driver);
->> +
->> +void rtsx_unregister_driver(struct rtsx_driver *drv)
->> +{
->> +	driver_unregister(&drv->driver);
->> +}
->> +EXPORT_SYMBOL(rtsx_unregister_driver);
-> Same thing here: There will only be very few drivers for this bus, so it's
-> easier to call the driver_register function from the drivers. You need to export
-> the rtsx_bus_type in that case though, but that is done for most buses.
-
-I will consider this.
-
-> With this level of abstraction in your own driver, I wonder if it wouldn't be
-> easier to have completely separate mmc drivers for each of the two host options
-> (pci and usb). Apparently you have almost no shared code in the MMC driver
-> /or/ in the bus driver.
-
-If we support MMC only, writing separate drivers for pci and usb is more
-proper and clear. But we try to support mmc and memstick, and maybe xD
-later, it seems that having a bus driver is more convenient.
-
->
-> From this, I think it would be easier to kill off your own bus driver entirely
-> and move the rtsx_pci.c driver into drivers/mfd, and then merge your
-> pci/sdmmc.c file with rtsx_sdmmc.c.
->
->> +#define wait_timeout_x(task_state, msecs)			\
->> +do {								\
->> +	set_current_state((task_state));			\
->> +	schedule_timeout(msecs_to_jiffies(msecs));		\
->> +} while (0)
->> +
->> +#define wait_timeout(msecs)	wait_timeout_x(TASK_INTERRUPTIBLE, (msecs))
-> This is the same as msleep_interruptible, right? Note that with interuptible
-> sleep, you should always check if you got interrupted and return -ERESTARTSYS
-> to user space.
-
-Thank you for your explanation. It seems that I should call msleep
-instead of msleep_interruptible.
-
-Best regards,
-wwang
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index fabc99a..b4f1234 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -333,6 +333,16 @@ config RTC_DRV_TWL4030
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-twl.
+ 
++config RTC_DRV_TPS65910
++	tristate "TI TPS65910 RTC driver"
++	depends on RTC_CLASS && MFD_TPS65910
++	help
++	  If you say yes here you get support for the RTC on the
++	  TPS65910 chips.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-tps65910.
++
+ config RTC_DRV_S35390A
+ 	tristate "Seiko Instruments S-35390A"
+ 	select BITREVERSE
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 0d5b2b6..3b596af 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -105,6 +105,7 @@ obj-$(CONFIG_RTC_DRV_TEGRA)	+= rtc-tegra.o
+ obj-$(CONFIG_RTC_DRV_TEST)	+= rtc-test.o
+ obj-$(CONFIG_RTC_DRV_TILE)	+= rtc-tile.o
+ obj-$(CONFIG_RTC_DRV_TWL4030)	+= rtc-twl.o
++obj-$(CONFIG_RTC_DRV_TPS65910)	+= rtc-tps65910.o
+ obj-$(CONFIG_RTC_DRV_TX4939)	+= rtc-tx4939.o
+ obj-$(CONFIG_RTC_DRV_V3020)	+= rtc-v3020.o
+ obj-$(CONFIG_RTC_DRV_VR41XX)	+= rtc-vr41xx.o
+diff --git a/drivers/rtc/rtc-tps65910.c b/drivers/rtc/rtc-tps65910.c
+new file mode 100644
+index 0000000..1b8991c
+--- /dev/null
++++ b/drivers/rtc/rtc-tps65910.c
+@@ -0,0 +1,353 @@
++/*
++ * rtc-tps65910.c -- TPS65910 Real Time Clock interface
++ *
++ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ * Author: Venu Byravarasu <vbyravarasu@nvidia.com>
++ *
++ * Based on original TI driver rtc-twl.c
++ *   Copyright (C) 2007 MontaVista Software, Inc
++ *   Author: Alexandre Rusev <source@mvista.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/rtc.h>
++#include <linux/bcd.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/mfd/tps65910.h>
++
++struct tps65910_rtc {
++	struct rtc_device	*rtc;
++	/* To store the list of enabled interrupts */
++	u32 irqstat;
++};
++
++/* Total number of RTC registers needed to set time*/
++#define NUM_TIME_REGS	(TPS65910_YEARS - TPS65910_SECONDS + 1)
++
++static int tps65910_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
++{
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	u8 val = 0;
++
++	if (enabled)
++		val = TPS65910_RTC_INTERRUPTS_IT_ALARM;
++
++	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS, val);
++}
++
++/*
++ * Gets current tps65910 RTC time and date parameters.
++ *
++ * The RTC's time/alarm representation is not what gmtime(3) requires
++ * Linux to use:
++ *
++ *  - Months are 1..12 vs Linux 0-11
++ *  - Years are 0..99 vs Linux 1900..N (we assume 21st century)
++ */
++static int tps65910_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	unsigned char rtc_data[NUM_TIME_REGS];
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	int ret;
++
++	/* Copy RTC counting registers to static registers or latches */
++	ret = regmap_update_bits(tps->regmap, TPS65910_RTC_CTRL,
++		TPS65910_RTC_CTRL_GET_TIME, TPS65910_RTC_CTRL_GET_TIME);
++	if (ret < 0) {
++		dev_err(dev, "RTC CTRL reg update failed with err:%d\n", ret);
++		return ret;
++	}
++
++	ret = regmap_bulk_read(tps->regmap, TPS65910_SECONDS, rtc_data,
++		NUM_TIME_REGS);
++	if (ret < 0) {
++		dev_err(dev, "reading from RTC failed with err:%d\n", ret);
++		return ret;
++	}
++
++	tm->tm_sec = bcd2bin(rtc_data[0]);
++	tm->tm_min = bcd2bin(rtc_data[1]);
++	tm->tm_hour = bcd2bin(rtc_data[2]);
++	tm->tm_mday = bcd2bin(rtc_data[3]);
++	tm->tm_mon = bcd2bin(rtc_data[4]) - 1;
++	tm->tm_year = bcd2bin(rtc_data[5]) + 100;
++
++	return ret;
++}
++
++static int tps65910_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	unsigned char rtc_data[NUM_TIME_REGS];
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	int ret;
++
++	rtc_data[0] = bin2bcd(tm->tm_sec);
++	rtc_data[1] = bin2bcd(tm->tm_min);
++	rtc_data[2] = bin2bcd(tm->tm_hour);
++	rtc_data[3] = bin2bcd(tm->tm_mday);
++	rtc_data[4] = bin2bcd(tm->tm_mon + 1);
++	rtc_data[5] = bin2bcd(tm->tm_year - 100);
++
++	/* Stop RTC while updating the RTC time registers */
++	ret = regmap_update_bits(tps->regmap, TPS65910_RTC_CTRL,
++		TPS65910_RTC_CTRL_STOP_RTC, 0);
++	if (ret < 0) {
++		dev_err(dev, "RTC stop failed with err:%d\n", ret);
++		return ret;
++	}
++
++	/* update all the time registers in one shot */
++	ret = regmap_bulk_write(tps->regmap, TPS65910_SECONDS, rtc_data,
++		NUM_TIME_REGS);
++	if (ret < 0) {
++		dev_err(dev, "rtc_set_time error %d\n", ret);
++		return ret;
++	}
++
++	/* Start back RTC */
++	ret = regmap_update_bits(tps->regmap, TPS65910_RTC_CTRL,
++		TPS65910_RTC_CTRL_STOP_RTC, 1);
++	if (ret < 0)
++		dev_err(dev, "RTC start failed with err:%d\n", ret);
++
++	return ret;
++}
++
++/*
++ * Gets current tps65910 RTC alarm time.
++ */
++static int tps65910_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
++{
++	unsigned char alarm_data[NUM_TIME_REGS];
++	u32 int_val;
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	int ret;
++
++	ret = regmap_bulk_read(tps->regmap, TPS65910_SECONDS, alarm_data,
++		NUM_TIME_REGS);
++	if (ret < 0) {
++		dev_err(dev, "rtc_read_alarm error %d\n", ret);
++		return ret;
++	}
++
++	alm->time.tm_sec = bcd2bin(alarm_data[0]);
++	alm->time.tm_min = bcd2bin(alarm_data[1]);
++	alm->time.tm_hour = bcd2bin(alarm_data[2]);
++	alm->time.tm_mday = bcd2bin(alarm_data[3]);
++	alm->time.tm_mon = bcd2bin(alarm_data[4]) - 1;
++	alm->time.tm_year = bcd2bin(alarm_data[5]) + 100;
++
++	ret = regmap_read(tps->regmap, TPS65910_RTC_INTERRUPTS, &int_val);
++	if (ret < 0)
++		return ret;
++
++	if (int_val & TPS65910_RTC_INTERRUPTS_IT_ALARM)
++		alm->enabled = 1;
++
++	return ret;
++}
++
++static int tps65910_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
++{
++	unsigned char alarm_data[NUM_TIME_REGS];
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	int ret;
++
++	ret = tps65910_rtc_alarm_irq_enable(dev, 0);
++	if (ret)
++		return ret;
++
++	alarm_data[0] = bin2bcd(alm->time.tm_sec);
++	alarm_data[1] = bin2bcd(alm->time.tm_min);
++	alarm_data[2] = bin2bcd(alm->time.tm_hour);
++	alarm_data[3] = bin2bcd(alm->time.tm_mday);
++	alarm_data[4] = bin2bcd(alm->time.tm_mon + 1);
++	alarm_data[5] = bin2bcd(alm->time.tm_year - 100);
++
++	/* update all the alarm registers in one shot */
++	ret = regmap_bulk_write(tps->regmap, TPS65910_ALARM_SECONDS,
++		alarm_data, NUM_TIME_REGS);
++	if (ret) {
++		dev_err(dev, "rtc_set_alarm error %d\n", ret);
++		return ret;
++	}
++
++	if (alm->enabled)
++		ret = tps65910_rtc_alarm_irq_enable(dev, 1);
++
++	return ret;
++}
++
++static irqreturn_t tps65910_rtc_interrupt(int irq, void *rtc)
++{
++	struct device *dev = rtc;
++	unsigned long events = 0;
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	struct tps65910_rtc *tps_rtc = dev_get_drvdata(dev);
++	int ret;
++	u32 rtc_reg;
++
++	ret = regmap_read(tps->regmap, TPS65910_RTC_STATUS, &rtc_reg);
++	if (ret)
++		return IRQ_NONE;
++
++	if (rtc_reg & TPS65910_RTC_STATUS_ALARM)
++		events = RTC_IRQF | RTC_AF;
++
++	ret = regmap_write(tps->regmap, TPS65910_RTC_STATUS, rtc_reg);
++	if (ret)
++		return IRQ_NONE;
++
++	/* Notify RTC core on event */
++	rtc_update_irq(tps_rtc->rtc, 1, events);
++
++	return IRQ_HANDLED;
++}
++
++static const struct rtc_class_ops tps65910_rtc_ops = {
++	.read_time	= tps65910_rtc_read_time,
++	.set_time	= tps65910_rtc_set_time,
++	.read_alarm	= tps65910_rtc_read_alarm,
++	.set_alarm	= tps65910_rtc_set_alarm,
++	.alarm_irq_enable = tps65910_rtc_alarm_irq_enable,
++};
++
++static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
++{
++	struct tps65910 *tps65910 = NULL;
++	struct tps65910_rtc *tps_rtc = NULL;
++	struct tps65910_board *pmic_plat_data;
++	int ret;
++	int irq;
++	u32 rtc_reg;
++
++	tps65910 = dev_get_drvdata(pdev->dev.parent);
++
++	tps_rtc = devm_kzalloc(&pdev->dev, sizeof(struct tps65910_rtc),
++			GFP_KERNEL);
++	if (!tps_rtc)
++		return -ENOMEM;
++
++	/* Clear pending interrupts */
++	ret = regmap_read(tps65910->regmap, TPS65910_RTC_STATUS, &rtc_reg);
++	if (ret < 0)
++		return ret;
++
++	ret = regmap_write(tps65910->regmap, TPS65910_RTC_STATUS, rtc_reg);
++	if (ret < 0)
++		return ret;
++
++	dev_dbg(&pdev->dev, "Enabling rtc-tps65910.\n");
++	rtc_reg = TPS65910_RTC_CTRL_STOP_RTC;
++	ret = regmap_write(tps65910->regmap, TPS65910_RTC_CTRL, rtc_reg);
++	if (ret < 0)
++		return ret;
++
++	pmic_plat_data = dev_get_platdata(tps65910->dev);
++	irq = pmic_plat_data->irq_base;
++	if (irq <= 0) {
++		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n",
++			irq);
++		return ret;
++	}
++
++	irq += TPS65910_IRQ_RTC_ALARM;
++	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
++		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
++		"rtc-tps65910", &pdev->dev);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "IRQ is not free.\n");
++		return ret;
++	}
++	device_init_wakeup(&pdev->dev, 1);
++
++	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
++		&tps65910_rtc_ops, THIS_MODULE);
++	if (IS_ERR(tps_rtc->rtc)) {
++		ret = PTR_ERR(tps_rtc->rtc);
++		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, tps_rtc);
++
++	return 0;
++}
++
++/*
++ * Disable tps65910 RTC interrupts.
++ * Sets status flag to free.
++ */
++static int __devexit tps65910_rtc_remove(struct platform_device *pdev)
++{
++	/* leave rtc running, but disable irqs */
++	struct rtc_device *rtc = platform_get_drvdata(pdev);
++
++	tps65910_rtc_alarm_irq_enable(&rtc->dev, 0);
++
++	rtc_device_unregister(rtc);
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++
++static int tps65910_rtc_suspend(struct platform_device *pdev,
++		pm_message_t state)
++{
++	struct tps65910 *tps = dev_get_drvdata(pdev->dev.parent);
++	u8 alarm = TPS65910_RTC_INTERRUPTS_IT_ALARM;
++	int ret;
++
++	/* Store current list of enabled interrupts*/
++	ret = regmap_read(tps->regmap, TPS65910_RTC_INTERRUPTS,
++		&tps->rtc.irqstat);
++	if (ret < 0)
++		return ret;
++
++	/* Enable RTC ALARM interrupt only */
++	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS, alarm);
++}
++
++static int tps65910_rtc_resume(struct platform_device *pdev)
++{
++	struct tps65910 *tps = dev_get_drvdata(pdev->dev.parent);
++
++	/* Restore list of enabled interrupts before suspend */
++	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS,
++		tps->rtc.irqstat);
++}
++
++static const struct dev_pm_ops tps65910_rtc_pm_ops = {
++	.suspend	= tps65910_rtc_suspend,
++	.resume		= tps65910_rtc_resume,
++};
++
++#define DEV_PM_OPS     (&tps65910_rtc_pm_ops)
++#else
++#define DEV_PM_OPS     NULL
++#endif
++
++static struct platform_driver tps65910_rtc_driver = {
++	.probe		= tps65910_rtc_probe,
++	.remove		= __devexit_p(tps65910_rtc_remove),
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= "rtc-tps65910",
++		.pm	= DEV_PM_OPS,
++	},
++};
++
++module_platform_driver(tps65910_rtc_driver);
++MODULE_ALIAS("platform:rtc-tps65910");
++MODULE_AUTHOR("Venu Byravarasu <vbyravarasu@nvidia.com>");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+index 9bf8767..ba2eb25 100644
+--- a/include/linux/mfd/tps65910.h
++++ b/include/linux/mfd/tps65910.h
+@@ -132,6 +132,16 @@
+  *
+  */
+ 
++/* RTC_CTRL_REG bitfields */
++#define TPS65910_RTC_CTRL_STOP_RTC			0x01 /*0=stop, 1=run */
++#define TPS65910_RTC_CTRL_GET_TIME			0x40
++
++/* RTC_STATUS_REG bitfields */
++#define TPS65910_RTC_STATUS_ALARM               0x40
++
++/* RTC_INTERRUPTS_REG bitfields */
++#define TPS65910_RTC_INTERRUPTS_EVERY           0x03
++#define TPS65910_RTC_INTERRUPTS_IT_ALARM        0x08
+ 
+ /*Register BCK1  (0x80) register.RegisterDescription */
+ #define BCK1_BCKUP_MASK					0xFF
+-- 
+1.7.1.1
 
