@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab2HAL4V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 07:56:21 -0400
-Received: from fieldses.org ([174.143.236.118]:52809 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751910Ab2HAL4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 07:56:20 -0400
-Date: Wed, 1 Aug 2012 07:56:16 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, matthew@wil.cx
-Subject: [PATCH] locks: remove unused lm_release_private
-Message-ID: <20120801115616.GA3958@fieldses.org>
-References: <20120731142948.GC27834@fieldses.org>
- <20120731143600.GD27834@fieldses.org>
- <CA+55aFzM8S0sEAAUXK9f1OhSL-OXmZ_jx_UHF81Eo0-Mi-+T_w@mail.gmail.com>
+	id S1755117Ab2HAL5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 07:57:45 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:36323 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab2HAL5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 07:57:44 -0400
+Date: Wed, 1 Aug 2012 13:57:40 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf: commit 44f24cb3156a1e (Factor DSO symtab types) causes
+ segfaults
+Message-ID: <20120801115740.GA16297@x4>
+References: <20120731141455.GA5570@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzM8S0sEAAUXK9f1OhSL-OXmZ_jx_UHF81Eo0-Mi-+T_w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120731141455.GA5570@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+On 2012.07.31 at 16:14 +0200, Ingo Molnar wrote:
+> Jiri Olsa (4):
+>       perf symbols: Factor DSO symtab types to generic binary types
 
-3b6e2723f32de42028617f2c99b244ccd72cd959 "locks: prevent side-effects of
-locks_release_private before file_lock is initialized" removed the last
-user of lm_release_private without removing the field itself.
+The commit above causes perf segfaults on my machine (running glibc trunk):
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
----
- Documentation/filesystems/Locking |    2 --
- fs/locks.c                        |    6 +-----
- include/linux/fs.h                |    1 -
- 3 files changed, 1 insertion(+), 8 deletions(-)
+(gdb) run top --stdio
+Starting program: /usr/src/linux/tools/perf/perf top --stdio
+warning: no loadable sections found in added symbol-file system-supplied DSO at 0x7ffff7ffa000
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/libthread_db.so.1".
 
-On Tue, Jul 31, 2012 at 02:54:05PM -0700, Linus Torvalds wrote:
-> Maybe I missed some odd user that somehow avoids the grep, but I don't
-> think so. So there is nothing that ever sets it, why the hell does the
-> thing still remain at all?
+Program received signal SIGSEGV, Segmentation fault.
+dso__load (dso=0x6661d0, map=map@entry=0x666170, filter=filter@entry=0x426840 <symbol_filter>) at util/symbol.c:1833
+1833                    dso->symtab_type = binary_type_symtab[i];
+(gdb) bt
+#0  dso__load (dso=0x6661d0, map=map@entry=0x666170, filter=filter@entry=0x426840 <symbol_filter>) at util/symbol.c:1833
+#1  0x000000000045fe87 in map__load (self=self@entry=0x666170, filter=filter@entry=0x426840 <symbol_filter>) at util/map.c:124
+#2  0x000000000045ffbd in map__find_symbol (self=0x666170, addr=11008, filter=filter@entry=0x426840 <symbol_filter>) at util/map.c:168
+#3  0x000000000043b5df in perf_event__preprocess_sample (event=event@entry=0x7ffff44c8720, machine=machine@entry=0x647730, 
+    al=al@entry=0x7fffffffb030, sample=sample@entry=0x7fffffffb060, filter=filter@entry=0x426840 <symbol_filter>) at util/event.c:886
+#4  0x0000000000426d8e in perf_event__process_sample (machine=0x647730, sample=0x7fffffffb060, evsel=<optimized out>, event=0x7ffff44c8720, 
+    tool=0x7fffffffb2c0) at builtin-top.c:723
+#5  perf_top__mmap_read_idx (top=top@entry=0x7fffffffb2c0, idx=idx@entry=3) at builtin-top.c:858
+#6  0x00000000004291c3 in perf_top__mmap_read (top=<optimized out>) at builtin-top.c:873
+#7  __cmd_top (top=0x7fffffffb2c0) at builtin-top.c:1040
+#8  cmd_top (argc=<optimized out>, argv=<optimized out>, prefix=<optimized out>) at builtin-top.c:1348
+#9  0x0000000000414d03 in run_builtin (p=p@entry=0x4dc888, argc=argc@entry=2, argv=argv@entry=0x7fffffffe0b0) at perf.c:273
+#10 0x0000000000415487 in handle_internal_command (argv=0x7fffffffe0b0, argc=2) at perf.c:345
+#11 run_argv (argv=0x7fffffffdeb0, argcp=0x7fffffffdebc) at perf.c:389
+#12 main (argc=2, argv=0x7fffffffe0b0) at perf.c:487
+(gdb)
 
-Embarassingly: I had work in progress that could make use of
-lm_release_private soon, so I didn't bother removing it.
+44f24cb3156a1e7d2b6bb501b7f6153aed08994c is the first bad commit
+commit 44f24cb3156a1e7d2b6bb501b7f6153aed08994c
+Author: Jiri Olsa <jolsa@redhat.com>
+Date:   Sun Jul 22 14:14:32 2012 +0200
 
-But "soon" was optimistic, and anyway why leave the code in a confusing
-state, so: agreed it should have gone, apologies.
+    perf symbols: Factor DSO symtab types to generic binary types
 
---b.
-
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 8e2da1e..f11d51f 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -343,7 +343,6 @@ prototypes:
- 	int (*lm_compare_owner)(struct file_lock *, struct file_lock *);
- 	void (*lm_notify)(struct file_lock *);  /* unblock callback */
- 	int (*lm_grant)(struct file_lock *, struct file_lock *, int);
--	void (*lm_release_private)(struct file_lock *);
- 	void (*lm_break)(struct file_lock *); /* break_lease callback */
- 	int (*lm_change)(struct file_lock **, int);
- 
-@@ -352,7 +351,6 @@ locking rules:
- lm_compare_owner:	yes		no
- lm_notify:		yes		no
- lm_grant:		no		no
--lm_release_private:	maybe		no
- lm_break:		yes		no
- lm_change		yes		no
- 
-diff --git a/fs/locks.c b/fs/locks.c
-index 541075a..5cf874c 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -200,11 +200,7 @@ void locks_release_private(struct file_lock *fl)
- 			fl->fl_ops->fl_release_private(fl);
- 		fl->fl_ops = NULL;
- 	}
--	if (fl->fl_lmops) {
--		if (fl->fl_lmops->lm_release_private)
--			fl->fl_lmops->lm_release_private(fl);
--		fl->fl_lmops = NULL;
--	}
-+	fl->fl_lmops = NULL;
- 
- }
- EXPORT_SYMBOL_GPL(locks_release_private);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index a1e7727..9a6ac61 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1154,7 +1154,6 @@ struct lock_manager_operations {
- 	int (*lm_compare_owner)(struct file_lock *, struct file_lock *);
- 	void (*lm_notify)(struct file_lock *);	/* unblock callback */
- 	int (*lm_grant)(struct file_lock *, struct file_lock *, int);
--	void (*lm_release_private)(struct file_lock *);
- 	void (*lm_break)(struct file_lock *);
- 	int (*lm_change)(struct file_lock **, int);
- };
 -- 
-1.7.9.5
-
+Markus
