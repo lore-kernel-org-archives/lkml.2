@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751077Ab2HAEEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 00:04:34 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42038 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750737Ab2HAEEd (ORCPT
+	id S1751268Ab2HAEPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 00:15:43 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:35268 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab2HAEPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 00:04:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
-References: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
-Date: Wed, 1 Aug 2012 06:04:31 +0200
-Message-ID: <CABPqkBRRn4f00qCr+p4fh3L7SXqOBHi3CB4TJbjzSxexWRmYRw@mail.gmail.com>
-Subject: Re: [PATCHv8 00/13] perf: Add backtrace post dwarf unwind
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Wed, 1 Aug 2012 00:15:40 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Michael Neuling <mikey@neuling.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kent Yoder <key@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, anton@samba.org
+Subject: [PATCH v2] powerpc/crypto: fix defconfig break
+Date: Tue, 31 Jul 2012 23:15:29 -0500
+Message-Id: <1343794529-28329-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080104-6148-0000-0000-00000834CCCD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 2:23 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> hi,
-> patches available also as tarball in here:
-> http://people.redhat.com/~jolsa/perf_post_unwind_v8.tar.bz2
->
-> v8 changes:
->    - patch 2 - added dump registers ABI specification as suggested
->                by Stephane
->    - v7 patches 9,10,16,17 already in
->
-Patches 4, 7 do not apply cleanly for me on tip-master @ commit 2a7d7ce
-when I use the tarball version of the patchset.
+As part of the Kconfig rework for drivers/crypto/nx, the meaning of
+CONFIG_CRYPTO_DEV_NX was changed.  At the same time this commit was
+heading upstream
+
+fd297b3a7302ab866306f53c1fd1e97b083fe83e
+powerpc: Enable pseries hardware RNG and crypto module
+
+still used the old meaning, set CONFIG_CRYPTO_DEV_NX=m when it
+is now a bool in the Kconfig.  This patch repairs the break.
+
+Reported-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+This patch is based on Linus master which already contains
+the commit above.  Please apply this patch before my patchset
+(powerpc/crypto: IBM Power7+ in-Nest compression support) to
+avoid the defconfig break.
+
+ arch/powerpc/configs/ppc64_defconfig   |    3 ++-
+ arch/powerpc/configs/pseries_defconfig |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/powerpc/configs/ppc64_defconfig b/arch/powerpc/configs/ppc64_defconfig
+index db27c82..2d9150a1 100644
+--- a/arch/powerpc/configs/ppc64_defconfig
++++ b/arch/powerpc/configs/ppc64_defconfig
+@@ -487,7 +487,8 @@ CONFIG_CRYPTO_TWOFISH=m
+ CONFIG_CRYPTO_LZO=m
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+ CONFIG_CRYPTO_HW=y
+-CONFIG_CRYPTO_DEV_NX=m
++CONFIG_CRYPTO_DEV_NX=y
++CONFIG_CRYPTO_DEV_NX_ENCRYPT=m
+ CONFIG_VIRTUALIZATION=y
+ CONFIG_KVM_BOOK3S_64=m
+ CONFIG_KVM_BOOK3S_64_HV=y
+diff --git a/arch/powerpc/configs/pseries_defconfig b/arch/powerpc/configs/pseries_defconfig
+index 1f65b3c..9f4a936 100644
+--- a/arch/powerpc/configs/pseries_defconfig
++++ b/arch/powerpc/configs/pseries_defconfig
+@@ -369,7 +369,8 @@ CONFIG_CRYPTO_TWOFISH=m
+ CONFIG_CRYPTO_LZO=m
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+ CONFIG_CRYPTO_HW=y
+-CONFIG_CRYPTO_DEV_NX=m
++CONFIG_CRYPTO_DEV_NX=y
++CONFIG_CRYPTO_DEV_NX_ENCRYPT=m
+ CONFIG_VIRTUALIZATION=y
+ CONFIG_KVM_BOOK3S_64=m
+ CONFIG_KVM_BOOK3S_64_HV=y
+-- 
+1.7.9.5
+
