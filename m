@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab2HANkh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 09:40:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45774 "EHLO mx1.redhat.com"
+	id S1753995Ab2HANkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 09:40:41 -0400
+Received: from minas.ics.muni.cz ([147.251.4.40]:49072 "EHLO minas.ics.muni.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753692Ab2HANkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 09:40:35 -0400
-Date: Wed, 1 Aug 2012 09:40:18 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        martin.petersen@oracle.com, david@fromorbit.com, xfs@oss.sgi.com,
-        dm-devel@redhat.com, hch@lst.de, vgoyal@redhat.com
-Subject: Re: [PATCH v3 0/2] block: improvements for discard alignment
-Message-ID: <20120801134018.GC20830@redhat.com>
-References: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+	id S1753694Ab2HANkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 09:40:36 -0400
+Date: Wed, 1 Aug 2012 15:38:35 +0200
+From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+To: roland@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: mellanox mlx4_core and SR-IOV
+Message-ID: <20120801133835.GH5470@ics.muni.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-2
 Content-Disposition: inline
-In-Reply-To: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+Content-Transfer-Encoding: 8bit
+X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Muni-Spam-TestIP: 147.251.17.147
+X-Muni-Envelope-From: xhejtman@ics.muni.cz
+X-Muni-Virus-Test: Clean
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Wed, 01 Aug 2012 15:38:38 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05 2012 at 12:01pm -0400,
-Paolo Bonzini <pbonzini@redhat.com> wrote:
+Hello,
 
-> When a disk has a large discard_granularity, discards are not split with
-> optimal alignment; the pessimization gets bigger as discard_granularity
-> and max_discard_sectors become closer.
-> 
-> Take the limit case of discard_granularity == max_discard_sectors == 64.
-> Then, if a request is submitted for 256 sectors 2..257 it will be split
-> like this: 2..65, 66..129, 130..193, 194..257.  None of these requests
-> is aligned, so in fact you might end up with no discarded logical blocks
-> at all.  With this patch, the split will be 2..63, 64..127, 128..191,
-> 192..255, 256..257.  The patches also take the discard_alignment into
-> consideration.
-> 
-> Patch 1 adjusts the computation of the granularity-adjusted
-> max_discard_sectors so that it prepares for the new code in patch 2,
-> which actually adjusts the split.
-> 
-> v2->v3: drop addition of queue/discard_alignment to sysfs, use
->   correct alignment for partitions
-> 
-> Paolo Bonzini (2):
->   block: reorganize rounding of max_discard_sectors
->   block: split discard into aligned requests
-> 
->  block/blk-lib.c        |   41 ++++++++++++++++++++++++++++-------------
->  include/linux/blkdev.h |   10 ++++++++++
->  2 files changed, 38 insertions(+), 13 deletions(-)
+I tried to use SR-IOV virtualizaton for Mellanox ConnectX2 card with
+mlx4_core driver with kernel 3.5.0. I built firware for the IB card with
+sriov_en = true, lspci shows:
+02:00.0 InfiniBand: Mellanox Technologies MT26428 [ConnectX VPI PCIe 2.0 5GT/s
+- IB QDR / 10GigE] (rev b0)
+        Subsystem: Super Micro Computer Inc Device 0048
+        Flags: bus master, fast devsel, latency 0, IRQ 24
+        Memory at fbd00000 (64-bit, non-prefetchable) [size=1M]
+        Memory at f8800000 (64-bit, prefetchable) [size=8M]
+        Capabilities: [40] Power Management version 3
+        Capabilities: [48] Vital Product Data
+        Capabilities: [9c] MSI-X: Enable+ Count=128 Masked-
+        Capabilities: [60] Express Endpoint, MSI 00
+        Capabilities: [100] Alternative Routing-ID Interpretation (ARI)
+        Capabilities: [148] Device Serial Number 00-25-90-ff-ff-28-09-08
+        Capabilities: [108] Single Root I/O Virtualization (SR-IOV)
+        Kernel driver in use: mlx4_core
 
-Hey Jens,
+however, the driver complains:
+[    3.558221] mlx4_core 0000:02:00.0: Enabling sriov with:4 vfs
+[    3.558296] mlx4_core 0000:02:00.0: not enough MMIO resources for SR-IOV (nres: 0, iov->nres: 1)
+[    3.558299] mlx4_core 0000:02:00.0: Failed to enable sriov,continuing without sriov enabled (err = -12).
 
-Would be great to get these discard fixes in.  I know both Christoph and
-Vivek have reviewed these changes but that isn't reflected in the patch
-headers.
+Is there any workaround for this? Or the bug is in BIOS and without a proper
+fix this is never gonna work? 
 
-These patches eliminate misaligned discard from being sent to the
-dm-thinp target.
+Perhaps, are there any persons more suitable for these kind of questions?
 
-Tested-by: Mike Snitzer <snitzer@redhat.com>
+-- 
+Luká¹ Hejtmánek
