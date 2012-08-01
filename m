@@ -1,115 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab2HASE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 14:04:57 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:38796 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748Ab2HASE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 14:04:56 -0400
-Date: Wed, 1 Aug 2012 20:04:46 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: ACPI: Invalid Power Resource to register!
-Message-ID: <20120801180446.GJ8082@aftab.osrc.amd.com>
+	id S1754902Ab2HASTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 14:19:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55395 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab2HASTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 14:19:22 -0400
+Message-ID: <50197348.9010101@gmail.com>
+Date: Wed, 01 Aug 2012 20:19:52 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+References: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com> <1343757920-19713-2-git-send-email-levinsasha928@gmail.com> <20120731182330.GD21292@google.com>
+In-Reply-To: <20120731182330.GD21292@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 07/31/2012 08:23 PM, Tejun Heo wrote:
+> Hello, Sasha.
+> 
+> On Tue, Jul 31, 2012 at 08:05:17PM +0200, Sasha Levin wrote:
+>> +#define HASH_INIT(name)							\
+>> +({									\
+>> +	int __i;							\
+>> +	for (__i = 0 ; __i < HASH_SIZE(name) ; __i++)			\
+>> +		INIT_HLIST_HEAD(&name[__i]);				\
+>> +})
+> 
+> Why use macro?
+> 
+>> +#define HASH_ADD(name, obj, key)					\
+>> +	hlist_add_head(obj, &name[					\
+>> +		hash_long((unsigned long)key, HASH_BITS(name))]);
+> 
+> Ditto.
 
-I'm getting the message in $Subject with latest linus:v3.5-8833-g2d534926205d
+Oh, yes, I've started working on this and remembered why it's macro in the first place.
 
-The dmesg printk is delayed for 5 seconds probably due to async scanning
-(see trace below):
+Notice that we don't store hashtable size anywhere, this is because we can get it directly from the size of the hashtable array itself.
 
-[   10.746148] [drm] vram apper at 0xD0000000
-[   10.750680] [drm] size 786432
-[   10.754050] [drm] fb depth is 8
-[   10.757593] [drm]    pitch is 1024
-[   10.761862] fbcon: radeondrmfb (fb0) is primary device
-
-[    5.163363] ACPI: Invalid Power Resource to register			<----
-
-[   10.949414] Console: switching to colour frame buffer device 128x48
-[   10.977810] fb0: radeondrmfb frame buffer device
-[   10.982601] drm: registered panic notifier
-[   10.986892] [drm] Initialized radeon 2.17.0 20080528 for 0000:02:06.0 on minor 0
-
-So I added some debugging code to see where exactly this happens:
-
-diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-index 215ecd097408..d79e0f8c1f4e 100644
---- a/drivers/acpi/power.c
-+++ b/drivers/acpi/power.c
-@@ -432,11 +432,17 @@ int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
-                return -ENODEV;
- 
-        ret = acpi_bus_get_device(handle, &acpi_dev);
--       if (ret)
-+       if (ret) {
-+               pr_warn(PREFIX "error getting device %s\n", dev_name(&acpi_dev->dev));
-+               dump_stack();
-                goto no_power_resource;
-+       }
- 
--       if (!acpi_dev->power.flags.power_resources)
-+       if (!acpi_dev->power.flags.power_resources) {
-+               pr_warn(PREFIX "no power resources %s\n", dev_name(&acpi_dev->dev));
-+               dump_stack();
-                goto no_power_resource;
-+       }
- 
-        powered_device = kzalloc(sizeof(*powered_device), GFP_KERNEL);
-        if (!powered_device)
----
-
-and I got the following trace:
-
----
-[    5.163287] ACPI: no power resources device:1a
-[    5.163292] Pid: 1023, comm: kworker/u:4 Tainted: G        W    3.5.0+ #9
-[    5.163293] Call Trace:
-[    5.163300]  [<ffffffff81227866>] acpi_power_resource_register_device+0x8f/0x1bf
-[    5.163305]  [<ffffffff81221a5f>] ? acpi_get_child+0x48/0x4e
-[    5.163310]  [<ffffffff812e34db>] ata_acpi_bind+0x80/0x87
-[    5.163313]  [<ffffffff812d891e>] ata_scsi_scan_host+0x91/0x184
-[    5.163317]  [<ffffffff812d4f4f>] async_port_probe+0x4a/0x4f
-[    5.163321]  [<ffffffff810568cc>] async_run_entry_fn+0x9a/0x152
-[    5.163325]  [<ffffffff8104a103>] process_one_work+0x265/0x438
-[    5.163328]  [<ffffffff8104a080>] ? process_one_work+0x1e2/0x438
-[    5.163331]  [<ffffffff81475a01>] ? _raw_spin_lock_irq+0x17/0x46
-[    5.163335]  [<ffffffff81056832>] ? async_schedule+0x17/0x17
-[    5.163339]  [<ffffffff8104c47f>] worker_thread+0x260/0x329
-[    5.163342]  [<ffffffff8107ac72>] ? trace_hardirqs_on+0xd/0xf
-[    5.163346]  [<ffffffff8104c21f>] ? manage_workers.clone.15+0x1f6/0x1f6
-[    5.163349]  [<ffffffff810502ee>] kthread+0x89/0x91
-[    5.163353]  [<ffffffff8147dd64>] kernel_thread_helper+0x4/0x10
-[    5.163356]  [<ffffffff814762d9>] ? retint_restore_args+0xe/0xe
-[    5.163359]  [<ffffffff81050265>] ? __init_kthread_worker+0x5b/0x5b
-[    5.163362]  [<ffffffff8147dd60>] ? gs_change+0xb/0xb
-
-
-And as it looks like, acpi_dev->power.flags.power_resources is 0.
-
-This thing is set in acpi_bus_get_power_flags() so I'd guess some of
-those _PR* objects are probably not completely correct and they should
-be fixed in the BIOS?
-
-Any comments are appreciated.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+If we switch to using functions, we could no longer hide it anywhere (we'd need to either turn the buckets into a struct, or have the user pass it around to all functions).
