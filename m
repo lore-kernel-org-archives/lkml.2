@@ -1,68 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab2HAPMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 11:12:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51662 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755325Ab2HAPMX (ORCPT
+	id S1755499Ab2HAPN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 11:13:26 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44787 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325Ab2HAPNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 11:12:23 -0400
-Message-ID: <50194750.2050601@linutronix.de>
-Date: Wed, 01 Aug 2012 17:12:16 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Wed, 1 Aug 2012 11:13:24 -0400
+Date: Wed, 1 Aug 2012 16:13:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: the second vfs pile - rebase or no rebase?
+Message-ID: <20120801151318.GH6481@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Roland McGrath <roland@hack.frob.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, ananth@in.ibm.com,
-        a.p.zijlstra@chello.nl, mingo@redhat.com, srikar@linux.vnet.ibm.com
-Subject: Re: Q: user_enable_single_step() && update_debugctlmsr()
-References: <50183273.9070304@linutronix.de> <20120801122616.GA32705@redhat.com> <20120801130118.GA2386@redhat.com> <50192FF5.1060208@linutronix.de> <20120801134652.GA4707@redhat.com> <50193528.3070503@linutronix.de> <20120801140121.GA5333@redhat.com> <50193B5C.90404@linutronix.de> <20120801143132.GA7550@redhat.com> <5019427B.1070002@linutronix.de> <20120801150119.GA8845@redhat.com>
-In-Reply-To: <20120801150119.GA8845@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2012 05:01 PM, Oleg Nesterov wrote:
-> On 08/01, Sebastian Andrzej Siewior wrote:
->> So a patch like
->> --- a/arch/x86/kernel/step.c
->> +++ b/arch/x86/kernel/step.c
->> @@ -173,8 +173,8 @@ static void enable_step(struct task_struct *child,
->> bool block)
->>                  unsigned long debugctl = get_debugctlmsr();
->>
->>                  debugctl |= DEBUGCTLMSR_BTF;
->> -               update_debugctlmsr(debugctl);
->>                  set_tsk_thread_flag(child, TIF_BLOCKSTEP);
->> +               update_debugctlmsr(debugctl);
->>          } else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
->>                  unsigned long debugctl = get_debugctlmsr();
->>
->> should fix the race
->
-> No, I don't think it can fix something ;) or make any difference.
+	The thing is, there's a couple of trivial conflicts on merge.
+One in drivers/staging/gdm72xx/usb_boot.c (my patch has set_fs()
+removed, since it's immediately followed by goto restore_fs, where
+we do the same set_fs() anyway, and in your tree ret = -ENOENT; right
+before that line is replaced with more informative ret = PTR_ERR(filp);
+the conflict is resolved by keeping the assignment from your tree
+and removing set_fs() call).  Another is in drivers/usb/gadget/storage_common.c,
+where you have
+        if (fsg_lun_is_open(curlun))
+                fsg_lun_close(curlun);
 
-Why? You _first_ set the task flag followed by the CPU register. Now 
-switch_to() would see the bit set and act.
+        curlun->blksize = blksize;
+        curlun->blkbits = blkbits;
+added around the get_file(filp) line that had been removed in my branch.
+Resolved by keeping these added lines and dropping get_file() one...
 
->> and _yes_ I also would follow your suggestion to
->> remove this update_debugctlmsr() here since switch_to() should do this.
->
-> Agreed, but once again, uprobes needs it if child == current (but we should
-> move this code into the trivial helper). If we change (I hope) uprobes to
-> avoid user_enable_single_step() we will export the helper.
+	Alternatively, I can rebase the damn thing; up to you.  I would've
+done just that (there's very little chance of this stuff having been pulled
+anywhere in the few days this part of queue had been public), but considering
+the fuckup in the first pile when I hadn't noticed the trouble to nfs.git
+caused by rebase...
 
-Okay. Looking at TIF_NOTSC I see that it does a preempt_disable() while
-playing with the bit. So this would be probably more obvious than
-switching the order :)
+	The stuff in there: fsfreeze deadlock fixes by Jan (essentially,
+the deadlock reproduced by xfstests 068), symlink and hardlink
+restriction patches (I still think that this is pointless as all
+"security sclerosis^Whardening" tends to be, but Kees has addressed the
+rest of objections and result is reasonably sane), plus assorted cleanups
+and fixes.  Note that another fsfreeze deadlock (emergency thaw one) is *not*
+dealt with - the series by Fernando conflicts a lot with Jan's, breaks
+userland ABI (FIFREEZE semantics gets changed) and trades the deadlock
+for massive vfsmount leak; this is going to be handled next cycle.  There
+probably will be another pull request, but that stuff won't be in it.
+Sorry.
 
->
-> Oleg.
+	In case you prefer to pull it as-is and resolve the conflicts
+in merge commit, it's in the usual place -
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-Sebastian
+Shortlog:
+Al Viro (24):
+      move spu_forget() into spufs_rmdir()
+      spufs_create_context(): simplify failure exits
+      spufs: pull unlock-and-dput() up into spufs_create()
+      pull unlock+dput() out into do_spu_create()
+      new helper: done_path_create()
+      mknod: take sanity checks on mode into the very beginning
+      pull mnt_want_write()/mnt_drop_write() into kern_path_create()/done_path_create() resp.
+      clean unix_bind() up a bit
+      sanitize ecryptfs_lookup()
+      ecryptfs_lookup_interpose(): allocate dentry_info first
+      uninline file_free_rcu()
+      take grabbing f->f_path to do_dentry_open()
+      consolidate pipe file creation
+      slightly reduce idiocy in drivers/staging/bcm/Misc.c
+      slightly reduce lossage in gdm72xx
+      gadgetfs: clean up
+      sound_firmware: don't pass crap to filp_close()
+      brcm80211: pointless current->files passed to filp_close()
+      lockd: shift grabbing a reference to nlm_host into nlm_alloc_call()
+      lockd: handle lockowner allocation failure in nlmclnt_proc()
+      fix O_EXCL handling for devices
+      simplify lookup_open()/atomic_open() - do the temporary mnt_want_write() early
+      switch the protection of percpu_counter list to spinlock
+      delousing target_core_file a bit
+
+Jan Kara (26):
+      fb_defio: Push file_update_time() into fb_deferred_io_mkwrite()
+      fs: Push file_update_time() into __block_page_mkwrite()
+      ceph: Push file_update_time() into ceph_page_mkwrite()
+      9p: Push file_update_time() into v9fs_vm_page_mkwrite()
+      gfs2: Push file_update_time() into gfs2_page_mkwrite()
+      sysfs: Push file_update_time() into bin_page_mkwrite()
+      mm: Update file times from fault path only if .page_mkwrite is not set
+      mm: Make default vm_ops provide ->page_mkwrite handler
+      fs: Push mnt_want_write() outside of i_mutex
+      fat: Push mnt_want_write() outside of i_mutex
+      btrfs: Push mnt_want_write() outside of i_mutex
+      nfsd: Push mnt_want_write() outside of i_mutex
+      fs: Improve filesystem freezing handling
+      fs: Add freezing handling to mnt_want_write() / mnt_drop_write()
+      fs: Skip atime update on frozen filesystem
+      fs: Protect write paths by sb_start_write - sb_end_write
+      ext4: Convert to new freezing mechanism
+      xfs: Convert to new freezing code
+      ocfs2: Convert to new freezing mechanism
+      gfs2: Convert to new freezing mechanism
+      fuse: Convert to new freezing mechanism
+      ntfs: Convert to new freezing mechanism
+      nilfs2: Convert to new freezing mechanism
+      btrfs: Convert to new freezing mechanism
+      ext2: Implement freezing
+      fs: Remove old freezing mechanism
+
+Jeff Layton (1):
+      vfs: don't let do_last pass negative dentry to audit_inode
+
+Kees Cook (2):
+      fs: add link restrictions
+      fs: add link restriction audit reporting
+
+Valerie Aurora (1):
+      Documentation: Correct s_umount state for freeze_fs/unfreeze_fs
+
+Diffstat:
+ Documentation/filesystems/Locking                  |    4 +-
+ Documentation/sysctl/fs.txt                        |   42 +++
+ arch/powerpc/platforms/cell/spufs/inode.c          |   77 ++----
+ arch/powerpc/platforms/cell/spufs/syscalls.c       |    2 +-
+ drivers/base/devtmpfs.c                            |    9 +-
+ .../net/wireless/brcm80211/brcmfmac/dhd_linux.c    |    2 +-
+ drivers/staging/bcm/Misc.c                         |   31 +--
+ drivers/staging/gdm72xx/sdio_boot.c                |    7 +-
+ drivers/staging/gdm72xx/usb_boot.c                 |   22 +-
+ drivers/target/target_core_file.c                  |   32 +--
+ drivers/usb/gadget/storage_common.c                |   12 +-
+ drivers/usb/gadget/u_uac1.c                        |    6 +-
+ drivers/video/fb_defio.c                           |    2 +
+ fs/9p/vfs_file.c                                   |    3 +
+ fs/btrfs/disk-io.c                                 |    3 -
+ fs/btrfs/file.c                                    |    3 +-
+ fs/btrfs/inode.c                                   |    6 +-
+ fs/btrfs/ioctl.c                                   |   23 +-
+ fs/btrfs/transaction.c                             |    7 +
+ fs/buffer.c                                        |   28 +--
+ fs/ceph/addr.c                                     |    3 +
+ fs/ecryptfs/inode.c                                |   30 +--
+ fs/exec.c                                          |   19 +-
+ fs/ext2/inode.c                                    |    5 +-
+ fs/ext2/super.c                                    |   33 ++
+ fs/ext4/inode.c                                    |   15 +-
+ fs/ext4/mmp.c                                      |    6 +
+ fs/ext4/super.c                                    |   31 +--
+ fs/fat/file.c                                      |   15 +-
+ fs/file_table.c                                    |    4 +-
+ fs/fuse/file.c                                     |    4 +-
+ fs/gfs2/file.c                                     |   18 +-
+ fs/gfs2/trans.c                                    |    4 +
+ fs/inode.c                                         |   12 +-
+ fs/internal.h                                      |    4 +
+ fs/lockd/clntproc.c                                |   14 +-
+ fs/lockd/svc4proc.c                                |    1 +
+ fs/lockd/svclock.c                                 |    1 -
+ fs/lockd/svcproc.c                                 |    1 +
+ fs/namei.c                                         |  313 +++++++++++++-------
+ fs/namespace.c                                     |   97 +++++--
+ fs/nfsd/nfs4recover.c                              |    9 +-
+ fs/nfsd/nfsfh.c                                    |    1 +
+ fs/nfsd/nfsproc.c                                  |    9 +-
+ fs/nfsd/vfs.c                                      |   79 +++---
+ fs/nfsd/vfs.h                                      |   11 +-
+ fs/nilfs2/file.c                                   |   18 +-
+ fs/nilfs2/ioctl.c                                  |    2 -
+ fs/nilfs2/segment.c                                |    5 +-
+ fs/ntfs/file.c                                     |    3 +-
+ fs/ocfs2/file.c                                    |   11 +-
+ fs/ocfs2/ioctl.c                                   |   14 +-
+ fs/ocfs2/journal.c                                 |    7 +-
+ fs/ocfs2/mmap.c                                    |    2 +
+ fs/ocfs2/refcounttree.c                            |   11 +-
+ fs/open.c                                          |   15 +-
+ fs/pipe.c                                          |   75 ++---
+ fs/splice.c                                        |    3 +
+ fs/super.c                                         |  252 ++++++++++++++--
+ fs/sysfs/bin.c                                     |    2 +
+ fs/xfs/xfs_aops.c                                  |   18 ++
+ fs/xfs/xfs_file.c                                  |   10 +-
+ fs/xfs/xfs_ioctl.c                                 |   55 ++++-
+ fs/xfs/xfs_ioctl32.c                               |   12 +
+ fs/xfs/xfs_iomap.c                                 |    4 +-
+ fs/xfs/xfs_mount.c                                 |    2 +-
+ fs/xfs/xfs_mount.h                                 |    3 -
+ fs/xfs/xfs_sync.c                                  |    2 +-
+ fs/xfs/xfs_trans.c                                 |   17 +-
+ fs/xfs/xfs_trans.h                                 |    2 +
+ include/linux/audit.h                              |    4 +
+ include/linux/fs.h                                 |  154 +++++++++-
+ include/linux/mm.h                                 |    1 +
+ include/linux/namei.h                              |    1 +
+ include/linux/nfsd/nfsfh.h                         |    1 +
+ include/linux/pipe_fs_i.h                          |    2 +
+ kernel/audit.c                                     |   21 ++
+ kernel/sysctl.c                                    |   18 ++
+ lib/percpu_counter.c                               |   14 +-
+ mm/filemap.c                                       |   31 ++-
+ mm/filemap_xip.c                                   |    6 +-
+ mm/memory.c                                        |   14 +-
+ net/unix/af_unix.c                                 |   93 +++---
+ sound/sound_firmware.c                             |    8 +-
+ 84 files changed, 1327 insertions(+), 646 deletions(-)
