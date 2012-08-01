@@ -1,228 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab2HAJKr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 05:10:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753363Ab2HAJKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 05:10:45 -0400
-Date: Wed, 1 Aug 2012 11:10:25 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: Re: [PATCH 0/3] x86, MSI: Support multiple MSIs in presense of IRQ
- remapping
-Message-ID: <20120801091024.GB20638@dhcp-26-207.brq.redhat.com>
-References: <cover.1343732015.git.agordeev@redhat.com>
- <1343769169.2041.10.camel@sbsiddha-desk.sc.intel.com>
+	id S1753551Ab2HAJLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 05:11:00 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:42551 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753246Ab2HAJK4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 05:10:56 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh2a8h668h839hd24he5bhf0ah107ah)
+From: <qiang.liu@freescale.com>
+To: <linux-crypto@vger.kernel.org>, <vinod.koul@intel.com>,
+        <dan.j.williams@intel.com>, <herbert@gondor.hengli.com.au>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <dan.j.williams@gmail.com>
+CC: <leoli@freescale.com>, <kim.phillips@freescale.com>
+Subject: [PATCH v5 0/6] Raid: enable talitos xor offload for improving performance
+Date: Wed, 1 Aug 2012 16:46:00 +0800
+Message-ID: <1343810760-8035-1-git-send-email-qiang.liu@freescale.com>
+X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343769169.2041.10.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 02:12:49PM -0700, Suresh Siddha wrote:
-> On Tue, 2012-07-31 at 13:41 +0200, Alexander Gordeev wrote:
-> > Currently multiple MSI mode is limited to a single vector per device (at
-> > least on x86 and PPC). This series breathes life into pci_enable_msi_block()
-> > and makes it possible to set interrupt affinity for multiple IRQs, similarly
-> > to MSI-X. Yet, only for x86 and only when IOMMUs are present.
-> > 
-> > Although IRQ and PCI subsystems are modified, the current behaviour left
-> > intact. The drivers could just start using multiple MSIs just by following
-> > the existing documentation.
-> 
-> So while I am ok with the proposed changes, I will hold off acking until
-> I see the corresponding driver changes (using pci_enable_msi_block()
-> etc) that take advantage of these changes ;)
+Hi,
 
-Well, I make Broadcom driver believe it is running MSI-X while it is running
-multipe MSIs in fact. This is not at all a decent patch, just to make debugging
-possible.
+The following 6 patches enabling fsl-dma and talitos offload raid
+operations for improving raid performance and balancing CPU load.
 
->From 62b14a9e89e866f0883fc8bde17a3196740493b7 Mon Sep 17 00:00:00 2001
-From: Alexander Gordeev <agordeev@redhat.com>
-Date: Thu, 19 Jul 2012 14:07:00 -0400
-Subject: [PATCH] bnx2: Force MSI being used as MSI-X
+Write performance will be improved by 25-30% tested by iozone.
+Write performance is improved about 2% after using spin_lock_bh replace
+spin_lock_irqsave.
+CPU load will be reduced by 8%.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/broadcom/bnx2.c |   62 ++++++++++++++++++++++++----------
- drivers/net/ethernet/broadcom/bnx2.h |    1 +
- 2 files changed, 46 insertions(+), 17 deletions(-)
+Changes in v5:
+	- add detail description in patch 3/6 about the process of completed
+	descriptor, the process is in align with fsl-dma Reference Manual,
+	illustrate the potential risk and how to reproduce it;
+	- drop the patch 7/7 in v4 according to Timur's comments;
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2.c b/drivers/net/ethernet/broadcom/bnx2.c
-index ac7b744..84529ec 100644
---- a/drivers/net/ethernet/broadcom/bnx2.c
-+++ b/drivers/net/ethernet/broadcom/bnx2.c
-@@ -6183,7 +6183,7 @@ bnx2_free_irq(struct bnx2 *bp)
- {
- 
- 	__bnx2_free_irq(bp);
--	if (bp->flags & BNX2_FLAG_USING_MSI)
-+	if (bp->flags & (BNX2_FLAG_USING_FORCED_MSI | BNX2_FLAG_USING_MSI))
- 		pci_disable_msi(bp->pdev);
- 	else if (bp->flags & BNX2_FLAG_USING_MSIX)
- 		pci_disable_msix(bp->pdev);
-@@ -6192,6 +6192,42 @@ bnx2_free_irq(struct bnx2 *bp)
- }
- 
- static void
-+bnx2_enable_msi(struct bnx2 *bp, int msix_vecs)
-+{
-+	int i, total_vecs, rc;
-+	struct net_device *dev = bp->dev;
-+	const int len = sizeof(bp->irq_tbl[0].name);
-+
-+	total_vecs = msix_vecs;
-+#ifdef BCM_CNIC
-+	total_vecs++;
-+#endif
-+	rc = -ENOSPC;
-+	while (total_vecs >= BNX2_MIN_MSIX_VEC) {
-+		rc = pci_enable_msi_block(bp->pdev, total_vecs);
-+		if (rc <= 0)
-+			break;
-+		if (rc > 0)
-+			total_vecs = rc;
-+	}
-+
-+	if (rc != 0)
-+		return;
-+
-+	msix_vecs = total_vecs;
-+#ifdef BCM_CNIC
-+	msix_vecs--;
-+#endif
-+	bp->irq_nvecs = msix_vecs;
-+	bp->flags |= BNX2_FLAG_USING_FORCED_MSI | BNX2_FLAG_USING_MSIX | BNX2_FLAG_ONE_SHOT_MSI;
-+	for (i = 0; i < total_vecs; i++) {
-+		bp->irq_tbl[i].vector = bp->pdev->irq + i;
-+		snprintf(bp->irq_tbl[i].name, len, "%s-%d", dev->name, i);
-+		bp->irq_tbl[i].handler = bnx2_msi_1shot;
-+	}
-+}
-+
-+static void
- bnx2_enable_msix(struct bnx2 *bp, int msix_vecs)
- {
- 	int i, total_vecs, rc;
-@@ -6262,22 +6298,12 @@ bnx2_setup_int_mode(struct bnx2 *bp, int dis_msi)
- 	bp->irq_nvecs = 1;
- 	bp->irq_tbl[0].vector = bp->pdev->irq;
- 
--	if ((bp->flags & BNX2_FLAG_MSIX_CAP) && !dis_msi)
--		bnx2_enable_msix(bp, msix_vecs);
-+	if ((bp->flags & BNX2_FLAG_MSI_CAP) && !dis_msi)
-+		bnx2_enable_msi(bp, msix_vecs);
- 
--	if ((bp->flags & BNX2_FLAG_MSI_CAP) && !dis_msi &&
--	    !(bp->flags & BNX2_FLAG_USING_MSIX)) {
--		if (pci_enable_msi(bp->pdev) == 0) {
--			bp->flags |= BNX2_FLAG_USING_MSI;
--			if (CHIP_NUM(bp) == CHIP_NUM_5709) {
--				bp->flags |= BNX2_FLAG_ONE_SHOT_MSI;
--				bp->irq_tbl[0].handler = bnx2_msi_1shot;
--			} else
--				bp->irq_tbl[0].handler = bnx2_msi;
--
--			bp->irq_tbl[0].vector = bp->pdev->irq;
--		}
--	}
-+	if ((bp->flags & BNX2_FLAG_MSIX_CAP) && !dis_msi &&
-+	    !(bp->flags & BNX2_FLAG_USING_MSIX))
-+		bnx2_enable_msix(bp, msix_vecs);
- 
- 	if (!bp->num_req_tx_rings)
- 		bp->num_tx_rings = rounddown_pow_of_two(bp->irq_nvecs);
-@@ -6359,7 +6385,9 @@ bnx2_open(struct net_device *dev)
- 			bnx2_enable_int(bp);
- 		}
- 	}
--	if (bp->flags & BNX2_FLAG_USING_MSI)
-+	if (bp->flags & BNX2_FLAG_USING_FORCED_MSI)
-+		netdev_info(dev, "using forced MSI\n");
-+	else if (bp->flags & BNX2_FLAG_USING_MSI)
- 		netdev_info(dev, "using MSI\n");
- 	else if (bp->flags & BNX2_FLAG_USING_MSIX)
- 		netdev_info(dev, "using MSIX\n");
-diff --git a/drivers/net/ethernet/broadcom/bnx2.h b/drivers/net/ethernet/broadcom/bnx2.h
-index dc06bda..4a65a64 100644
---- a/drivers/net/ethernet/broadcom/bnx2.h
-+++ b/drivers/net/ethernet/broadcom/bnx2.h
-@@ -6757,6 +6757,7 @@ struct bnx2 {
- #define BNX2_FLAG_CAN_KEEP_VLAN		0x00001000
- #define BNX2_FLAG_BROKEN_STATS		0x00002000
- #define BNX2_FLAG_AER_ENABLED		0x00004000
-+#define BNX2_FLAG_USING_FORCED_MSI	0x00008000
- 
- 	struct bnx2_napi	bnx2_napi[BNX2_MAX_MSIX_VEC];
- 
--- 
-1.7.10.4
+Changes in v4:
+	- fix an error in talitos when dest addr is same with src addr, dest
+	should be freed only one time if src is same with dest addr;
+	- correct coding style in fsl-dma according to Ira's comments;
+	- fix a race condition in fsl-dma fsl_tx_status(), remove the interface
+	which is used to free descriptors in queue ld_completed, this interface
+	has been included in fsldma_cleanup_descriptor(), in v3, there is one
+	place missed spin_lock protect;
+	- split the original patch 3/4 up to 2 patches 3/7 and 4/7 according to
+	Li Yang's comments;
+	- fix a warning of unitialized cookie;
+	- add memory copy self test in fsl-dma;
+	- add more detail description about use spin_lock_bh() to instead of
+	spin_lock_irqsave() according to Timur's comments.
 
+Changes in v3:
+	- change release process of fsl-dma descriptor for resolve the
+	potential race condition;
+	- add test result when use spin_lock_bh replace spin_lock_irqsave;
+	- modify the benchmark results according to the latest patch.
 
-# lspci -v -s 01:00.0
-01:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709S Gigabit
-Ethernet (rev 20)
-	Subsystem: Dell Device 02dc
-	Flags: bus master, fast devsel, latency 0, IRQ 81
-	Memory at f2000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: [48] Power Management version 3
-	Capabilities: [50] Vital Product Data
-	Capabilities: [58] MSI: Enable+ Count=16/16 Maskable- 64bit+
-	Capabilities: [a0] MSI-X: Enable- Count=9 Masked-
-	Capabilities: [ac] Express Endpoint, MSI 00
-	Capabilities: [100] Device Serial Number b8-ac-6f-ff-fe-d2-68-58
-	Capabilities: [110] Advanced Error Reporting
-	Capabilities: [150] Power Budgeting <?>
-	Capabilities: [160] Virtual Channel
-	Kernel driver in use: bnx2
-	Kernel modules: bnx2
+Changes in v2:
+	- rebase onto cryptodev tree;
+	- split the patch 3/4 up to 3 independent patches;
+	- remove the patch 4/4, the fix is not for cryptodev tree;
 
-# dmesg | grep 01:00.0
-[    2.614330] pci 0000:01:00.0: [14e4:163a] type 00 class 0x020000
-[    2.620457] pci 0000:01:00.0: reg 10: [mem 0xf2000000-0xf3ffffff 64bit]
-[    2.627267] pci 0000:01:00.0: PME# supported from D0 D3hot D3cold
-[    5.424713] pci 0000:01:00.0: Signaling PME through PCIe PME interrupt
-[   63.575032] bnx2 0000:01:00.0: eth0: Broadcom NetXtreme II BCM5709 1000Base-SX (C0) PCI Express found at mem f2000000, IRQ 36, node addr b8:ac:6f:d2:68:58
-[  105.706316] bnx2 0000:01:00.0: irq 81 for MSI/MSI-X
-[  105.706322] bnx2 0000:01:00.0: irq 82 for MSI/MSI-X
-[  105.706327] bnx2 0000:01:00.0: irq 83 for MSI/MSI-X
-[  105.706333] bnx2 0000:01:00.0: irq 84 for MSI/MSI-X
-[  105.706337] bnx2 0000:01:00.0: irq 85 for MSI/MSI-X
-[  105.706342] bnx2 0000:01:00.0: irq 86 for MSI/MSI-X
-[  105.706347] bnx2 0000:01:00.0: irq 87 for MSI/MSI-X
-[  105.706352] bnx2 0000:01:00.0: irq 88 for MSI/MSI-X
-[  105.706357] bnx2 0000:01:00.0: irq 89 for MSI/MSI-X
-[  105.763869] bnx2 0000:01:00.0: em1: using forced MSI
-[  106.477183] bnx2 0000:01:00.0: em1: NIC Remote Copper Link is Up, 1000 Mbps full duplex
-# for irq in {81..89}; do cat /proc/irq/$irq/smp_affinity ; done
-0000,00000000,01000000
-0000,00001111,11111111
-0000,00000000,00000001
-0000,00004444,44444444
-0000,00004444,44444444
-0000,00008888,88888888
-0000,00001111,11111111
-0000,00001111,11111111
-cat: /proc/irq/89/smp_affinity: No such file or directory
-# 
+Qiang Liu (6):
+      Talitos: Support for async_tx XOR offload
+      fsl-dma: remove attribute DMA_INTERRUPT of dmaengine
+      fsl-dma: change release process of dma descriptor for supporting async_tx
+      fsl-dma: move the function ahead of its invoke function
+      fsl-dma: use spin_lock_bh to instead of spin_lock_irqsave
+      fsl-dma: fix a warning of unitialized cookie
 
-> Did you have a specific device in mind and are the driver changes
-> coming?
+ drivers/crypto/Kconfig   |    9 +
+ drivers/crypto/talitos.c |  413 ++++++++++++++++++++++++++++++++++++++++
+ drivers/crypto/talitos.h |   53 ++++++
+ drivers/dma/fsldma.c     |  467 ++++++++++++++++++++++++++--------------------
+ drivers/dma/fsldma.h     |    1 +
+ 5 files changed, 739 insertions(+), 204 deletions(-)
 
-Yes, I keep in mind at least AHCI and some QLA chips which do not support
-MSI-X. Not to mention MSI-X fallback paths many (most?) drivers have.
-Regarding coming driver changes.. depends from the fate of this series :)
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
