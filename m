@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990Ab2HAJbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 05:31:41 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:42735 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858Ab2HAJbk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 05:31:40 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-b8-5018f778c052
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Sachin Kamat'" <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org
-Cc: joerg.roedel@amd.com, pullip.cho@samsung.com, patches@linaro.org
-References: <1343811917-24054-1-git-send-email-sachin.kamat@linaro.org>
-In-reply-to: <1343811917-24054-1-git-send-email-sachin.kamat@linaro.org>
-Subject: RE: [PATCH] iommu/exynos: Fix build error
-Date: Wed, 01 Aug 2012 18:31:36 +0900
-Message-id: <037001cd6fc8$72341290$569c37b0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1vxPBVyZM3TnIvRBi6mLrNJwUpggAA20IQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd2K7xIBBhc3KVpc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MX71qBX9ZKr79vc/WwLiApYuRk0NCwETi3sGN7BC2mMSFe+vZ
-	uhi5OIQEpjNK7Hm1nRnCmcckseL7bDaQKjYBDYnD75+BdYgIeElcnP+bEcRmFnCReNV2HqxG
-	SMBdYmLrHyYQm1PAQ+J6+zVWEFtYwEhi3acfYL0sAqoS02b8BevlFbCVmHzrJjuELSjxY/I9
-	FoiZ6hKT5i1ihrC1JZ68uwA0hwPoUnWJR391IU4wkth5u4MNokREYt+Ld4wTGIVmIZk0C8mk
-	WUgmzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcBg/k9rBuLLB4hCjAAejEg/v
-	RBOJACHWxLLiytxDjBIczEoivAU3gUK8KYmVValF+fFFpTmpxYcYpTlYlMR5jb2/+gsJpCeW
-	pGanphakFsFkmTg4pRoYuRfVchyOn7Oad/a8oGuzE7y7inJsDSXPNsrYLiubEP7P50ll0sk9
-	sxjWCwTc55/+sE/C8PZcrqoNa97J3PJLNBBdt7szVC7//oEPQWurZ/M533zPuy+s62SZdLSf
-	nfF1ERnrv476e7kFXjTyBPRnNv61WLtnQUbvvLCVT835V7ZPZWI73s2oxFKckWioxVxUnAgA
-	MNcIHF8CAAA=
-X-TM-AS-MML: No
+	id S1753361Ab2HAJde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 05:33:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751858Ab2HAJdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 05:33:32 -0400
+Message-ID: <5018F7E6.4020909@redhat.com>
+Date: Wed, 01 Aug 2012 12:33:26 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
+References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com> <501817C9.6090405@profihost.ag> <5018EC7D.9090702@redhat.com> <5018F5BB.9070500@profihost.ag>
+In-Reply-To: <5018F5BB.9070500@profihost.ag>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sachin Kamat wrote:
+On 08/01/2012 12:24 PM, Stefan Priebe - Profihost AG wrote:
+> Hi,
 > 
-> Fixes the following build error introduced by commit 3177bb76a8
-> ("iommu/exynos: Implement DOMAIN_ATTR_GEOMETRY attribute"):
+> ok i found a faster way to trigger this. Just boot the ubuntu rescue
+> system.
 > 
-> drivers/iommu/exynos-iommu.c: In function ‘exynos_iommu_domain_init’:
-> drivers/iommu/exynos-iommu.c:735:2: error: ‘dom’ undeclared
-> (first use in this function)
+> So here are 3 backtraces from booting the rescue system:
+> http://pastebin.com/raw.php?i=xCy2pEcP
 > 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> To me they all look the same.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+They are.  What version of qemu are you using?
 
-Thanks.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+-- 
+error compiling committee.c: too many arguments to function
+
 
