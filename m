@@ -1,77 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2HAKRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 06:17:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3536 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753516Ab2HAKRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 06:17:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="174019393"
-Date: Wed, 1 Aug 2012 12:16:46 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>,
-        Aaron Sierra <asierra@xes-inc.com>
-Subject: Re: [PATCH] gpio-ich: Share ownership of GPIO groups
-Message-ID: <20120801101646.GG16859@sortiz-mobl>
-References: <20120723173415.5b80b28b@endymion.delvare>
- <20120801111359.6839bec7@endymion.delvare>
+	id S1754808Ab2HAKTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 06:19:14 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18871 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab2HAKTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 06:19:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 01 Aug 2012 03:19:12 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: <linux-kernel@vger.kernel.org>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v2] pwm: add devm_pwm_get() and devm_pwm_put()
+Date: Wed, 1 Aug 2012 19:20:58 +0900
+Message-ID: <1343816458-24699-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.7.11.3
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120801111359.6839bec7@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
+Add resource managed variants of pwm_get() and pwm_put() for
+convenience. Code is largely inspired by the equivalent devm functions
+of the regulator framework.
 
-On Wed, Aug 01, 2012 at 11:13:59AM +0200, Jean Delvare wrote:
-> On Mon, 23 Jul 2012 17:34:15 +0200, Jean Delvare wrote:
-> > The ICH chips have their GPIO pins organized in 2 or 3 independent
-> > groups of 32 GPIO pins. It can happen that the ACPI BIOS wants to make
-> > use of pins in one group, preventing the OS to access these. This does
-> > not prevent the OS from accessing the other group(s).
-> > 
-> > This is the case for example on my Asus Z8NA-D6 board. The ACPI BIOS
-> > wants to control GPIO 18 (group 1), while I (the OS) need to control
-> > GPIO 52 and 53 (group 2) for SMBus multiplexing.
-> > 
-> > So instead of checking for ACPI resource conflict on the whole I/O
-> > range, check on a per-group basis, and consider it a success if at
-> > least one of the groups is available for the OS to use.
-> > 
-> > Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> > Cc: Peter Tyser <ptyser@xes-inc.com>
-> > Cc: Aaron Sierra <asierra@xes-inc.com>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > ---
-> > That's probably not the nicest code you've seen, but everything else I
-> > could think of either couldn't work or was looking worse. If anyone can
-> > think of a better approach, I'm all ears.
-> > 
-> >  drivers/gpio/gpio-ich.c     |   79 +++++++++++++++++++++++++++++++++++++------
-> >  drivers/mfd/lpc_ich.c       |   29 ++++++++++++++-
-> >  include/linux/mfd/lpc_ich.h |    1 
-> >  3 files changed, 97 insertions(+), 12 deletions(-)
-> 
-> Grant, Samuel, Linus (sorry for not including you on original
-> submission), any comment on this? I suppose it's too late for 3.6 but
-> can this be scheduled to be integrated in 3.7?
-I was planning to look at this one and queue it for 3.7 as I'll be working on
-my for-next branch once rc1 is tagged.
-As you said, this is not the nicest code ever, so I may have a few comments.
-No time for that right now though.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ Documentation/driver-model/devres.txt |  4 +++
+ Documentation/pwm.txt                 |  3 +-
+ drivers/pwm/core.c                    | 68 +++++++++++++++++++++++++++++++++++
+ include/linux/pwm.h                   |  3 ++
+ 4 files changed, 77 insertions(+), 1 deletion(-)
 
-Cheers,
-Samuel.
-
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 950856b..43cff70 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -284,3 +284,7 @@ CLOCK
+ PINCTRL
+   devm_pinctrl_get()
+   devm_pinctrl_put()
++
++PWM
++  devm_pwm_get()
++  devm_pwm_put()
+diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
+index 554290e..47cd24d 100644
+--- a/Documentation/pwm.txt
++++ b/Documentation/pwm.txt
+@@ -36,7 +36,8 @@ Legacy users can request a PWM device using pwm_request() and free it
+ after usage with pwm_free().
+ 
+ New users should use the pwm_get() function and pass to it the consumer
+-device or a consumer name. pwm_put() is used to free the PWM device.
++device or a consumer name. pwm_put() is used to free the PWM device. Devm
++variants of these functions also exist.
+ 
+ After being requested a PWM has to be configured using:
+ 
+diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+index ecb7690..62315d7 100644
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -624,6 +624,74 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(pwm_put);
+ 
++static void devm_pwm_release(struct device *dev, void *res)
++{
++	pwm_put(*(struct pwm_device **)res);
++}
++
++/**
++ * devm_pwm_get() - Resource managed pwm_get()
++ * @dev: device for PWM consumer
++ * @con_id: consumer name
++ *
++ * This function performs like pwm_get() but the acquired PWM device will
++ * automatically be released on driver detach.
++ *
++ * Lookup is first attempted using DT. If the device was not instantiated from
++ * a device tree, a PWM chip and a relative index is looked up via a table
++ * supplied by board setup code (see pwm_add_table()).
++ *
++ * Once a PWM chip has been found the specified PWM device will be requested
++ * and is ready to be used.
++ */
++struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id)
++{
++	struct pwm_device **ptr, *pwm;
++
++	ptr = devres_alloc(devm_pwm_release, sizeof(**ptr), GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	pwm = pwm_get(dev, con_id);
++	if (!IS_ERR(pwm)) {
++		*ptr = pwm;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return pwm;
++}
++EXPORT_SYMBOL_GPL(devm_pwm_get);
++
++static int devm_pwm_match(struct device *dev, void *res, void *data)
++{
++	struct pwm_device **p = res;
++
++	if (WARN_ON(!p || !*p))
++		return 0;
++
++	return *p == data;
++}
++
++/**
++ * devm_pwm_put() - Resource managed pwm_put()
++ * @dev: device for PWM consumer
++ * @pwm: PWM device
++ *
++ * Release a PWM previously allocated using devm_pwm_get. Calling this function
++ * is usually not needed as devm-allocated resources are automatically released
++ * on driver detach.
++ */
++void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
++{
++	int ret;
++
++	ret = devres_release(dev, devm_pwm_release, devm_pwm_match, pwm);
++	WARN_ON(ret);
++}
++EXPORT_SYMBOL_GPL(devm_pwm_put);
++
+ #ifdef CONFIG_DEBUG_FS
+ static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
+ {
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index 21d076c..8ddc824 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -125,6 +125,9 @@ struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
+ struct pwm_device *pwm_get(struct device *dev, const char *consumer);
+ void pwm_put(struct pwm_device *pwm);
+ 
++struct pwm_device *devm_pwm_get(struct device *dev, const char *consumer);
++void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
++
+ struct pwm_lookup {
+ 	struct list_head list;
+ 	const char *provider;
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.11.3
+
