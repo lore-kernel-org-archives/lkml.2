@@ -1,221 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab2HAUho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 16:37:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51734 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab2HAUhm (ORCPT
+	id S1755491Ab2HAUn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 16:43:27 -0400
+Received: from extranet.aprogsys.com ([91.121.73.63]:48783 "EHLO
+	extranet.aprogsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab2HAUnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 16:37:42 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] mfd: arizona: simplify use of shared IRQ
-Date: Wed,  1 Aug 2012 14:37:35 -0600
-Message-Id: <1343853455-29131-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Wed, 1 Aug 2012 16:43:25 -0400
+Message-ID: <501994E8.9070100@aprogsys.com>
+Date: Wed, 01 Aug 2012 22:43:20 +0200
+From: Vincent ETIENNE <vetienne@aprogsys.com>
+Organization: APROGSYS
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Vincent ETIENNE <ve@vetienne.net>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, ocfs2-devel@oss.oracle.com
+Subject: Re: kernel BUG at fs/buffer.c:2886! Linux 3.5.0
+References: <501313B6.70801@aprogsys.com> <20120730063000.GA4025@dhcp-172-17-9-228.mtv.corp.google.com> <50163B8A.7060509@aprogsys.com> <20120730075333.GC4025@dhcp-172-17-9-228.mtv.corp.google.com> <5016D2C0.6090708@vetienne.net>
+In-Reply-To: <5016D2C0.6090708@vetienne.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Hi
+Some further progress on bisection
 
-The Arizona core contains a shared IRQ line driven by multiple blocks,
-each represented as a separate regmap_irq_chip in the kernel.
+I'm now here
 
-The existing code avoids calling request_threaded_irq() with no handler
-multiple times on this shared interrupt line (which apparently wasn't
-supported or didn't work in the past) by using a handler that manually
-distributes the shared interrupt to each regmap_irq_chip. Since the IRQ
-core appears to support this now, simplify the code by removing the
-open-coded handler.
+git bisect start
+# bad: [2d534926205db9ffce4bbbde67cb9b2cee4b835c] Merge tag
+'irqdomain-for-linus' of git://git.secretlab.ca/git/linux-2.6
+git bisect bad 2d534926205db9ffce4bbbde67cb9b2cee4b835c
+# good: [c3b92c8787367a8bb53d57d9789b558f1295cc96] Linux 3.1
+git bisect good c3b92c8787367a8bb53d57d9789b558f1295cc96
+# good: [95211279c5ad00a317c98221d7e4365e02f20836] Merge branch 'akpm'
+(Andrew's patch-bomb)
+git bisect good 95211279c5ad00a317c98221d7e4365e02f20836
+# good: [654443e20dfc0617231f28a07c96a979ee1a0239] Merge branch
+'perf-uprobes-for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect good 654443e20dfc0617231f28a07c96a979ee1a0239
+# bad: [f0a08fcb5972167e55faa330c4a24fbaa3328b1f] Merge
+git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile
+git bisect bad f0a08fcb5972167e55faa330c4a24fbaa3328b1f
+# bad: [f5e7e844a571124ffc117d4696787d6afc4fc5ae] Merge tag
+'for-linus-3.5-20120601' of git://git.infradead.org/linux-mtd
+git bisect bad f5e7e844a571124ffc117d4696787d6afc4fc5ae
+# good: [f465d145d76803fe6332092775d891c8c509aa44] Merge tag
+'cleanup-initcall' of
+git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
+git bisect good f465d145d76803fe6332092775d891c8c509aa44
+# good: [a70f35af4e49f87ba4b6c4b30220fbb66cd74af6] Merge branch
+'for-3.5/drivers' of git://git.kernel.dk/linux-block
+git bisect good a70f35af4e49f87ba4b6c4b30220fbb66cd74af6
+# good: [a00b6151a2ae4c52576c35d3998e144a993d50b8] Merge branch
+'for-3.5-take-2' of git://linux-nfs.org/~bfields/linux
+git bisect good a00b6151a2ae4c52576c35d3998e144a993d50b8
+# bad: [1193755ac6328ad240ba987e6ec41d5e8baf0680] Merge branch
+'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs
+git bisect bad 1193755ac6328ad240ba987e6ec41d5e8baf0680
+# good: [51eab603f5c86dd1eae4c525df3e7f7eeab401d6] Merge branch
+'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs
+git bisect good 51eab603f5c86dd1eae4c525df3e7f7eeab401d6
+# bad: [eb36c5873b96e8c7376768d3906da74aae6e3839] new helper:
+vm_mmap_pgoff()
+git bisect bad eb36c5873b96e8c7376768d3906da74aae6e3839
 
-This also removes the top-level IRQ domain for the Arizona core. In
-theory, such a change would prevent this driver acting as an interrupt
-controller when instantiated from device tree. However, I don't believe
-that worked before, since the IRQ domain only contained the two virtual
-interrupts needed to invoke the regmap_irq_chip handlers, and hence did
-not allow the child interrupts to be translated anyway. Hence, this is
-unlikely to be a regression.
+but got a problem ( kernel does not compile ) at next iteration
+need to dig into git bisect for how to select another entry
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-One outstanding issue with this change is that it removes the pm_runtime
-calls from the interrupt handler thread. Equivalent code should presumably
-be added to regmap_irq_thread(). However, I haven't attempted this yet
-since I understand some pm_runtime support has already been added to
-regmap, so don't want to duplicate anything, although I haven't seen
-those changes yet to be sure.
+Vincent
 
-Note: I have only compile-tested this particular change. However, I have
-runtime tested the same shared-interrupt logic in the MAX8907 driver which
-has a similar HW setup.
----
- drivers/mfd/arizona-irq.c        |  101 ++++----------------------------------
- include/linux/mfd/arizona/core.h |    1 -
- 2 files changed, 10 insertions(+), 92 deletions(-)
-
-diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
-index 98ac345..6b97876 100644
---- a/drivers/mfd/arizona-irq.c
-+++ b/drivers/mfd/arizona-irq.c
-@@ -91,66 +91,6 @@ static irqreturn_t arizona_ctrlif_err(int irq, void *data)
- 	return IRQ_HANDLED;
- }
- 
--static irqreturn_t arizona_irq_thread(int irq, void *data)
--{
--	struct arizona *arizona = data;
--	int i, ret;
--
--	ret = pm_runtime_get_sync(arizona->dev);
--	if (ret < 0) {
--		dev_err(arizona->dev, "Failed to resume device: %d\n", ret);
--		return IRQ_NONE;
--	}
--
--	/* Check both domains */
--	for (i = 0; i < 2; i++)
--		handle_nested_irq(irq_find_mapping(arizona->virq, i));
--
--	pm_runtime_mark_last_busy(arizona->dev);
--	pm_runtime_put_autosuspend(arizona->dev);
--
--	return IRQ_HANDLED;
--}
--
--static void arizona_irq_enable(struct irq_data *data)
--{
--}
--
--static void arizona_irq_disable(struct irq_data *data)
--{
--}
--
--static struct irq_chip arizona_irq_chip = {
--	.name			= "arizona",
--	.irq_disable		= arizona_irq_disable,
--	.irq_enable		= arizona_irq_enable,
--};
--
--static int arizona_irq_map(struct irq_domain *h, unsigned int virq,
--			      irq_hw_number_t hw)
--{
--	struct regmap_irq_chip_data *data = h->host_data;
--
--	irq_set_chip_data(virq, data);
--	irq_set_chip_and_handler(virq, &arizona_irq_chip, handle_edge_irq);
--	irq_set_nested_thread(virq, 1);
--
--	/* ARM needs us to explicitly flag the IRQ as valid
--	 * and will set them noprobe when we do so. */
--#ifdef CONFIG_ARM
--	set_irq_flags(virq, IRQF_VALID);
--#else
--	irq_set_noprobe(virq);
--#endif
--
--	return 0;
--}
--
--static struct irq_domain_ops arizona_domain_ops = {
--	.map	= arizona_irq_map,
--	.xlate	= irq_domain_xlate_twocell,
--};
--
- int arizona_irq_init(struct arizona *arizona)
- {
- 	int flags = IRQF_ONESHOT;
-@@ -189,26 +129,18 @@ int arizona_irq_init(struct arizona *arizona)
- 		flags |= IRQF_TRIGGER_LOW;
- 	}
- 
--	/* Allocate a virtual IRQ domain to distribute to the regmap domains */
--	arizona->virq = irq_domain_add_linear(NULL, 2, &arizona_domain_ops,
--					      arizona);
--	if (!arizona->virq) {
--		ret = -EINVAL;
--		goto err;
--	}
-+	irq_set_status_flags(arizona->irq, IRQ_NOAUTOEN);
- 
--	ret = regmap_add_irq_chip(arizona->regmap,
--				  irq_create_mapping(arizona->virq, 0),
--				  IRQF_ONESHOT, -1, aod,
-+	ret = regmap_add_irq_chip(arizona->regmap, arizona->irq,
-+				  IRQF_ONESHOT | IRQF_SHARED, -1, aod,
- 				  &arizona->aod_irq_chip);
- 	if (ret != 0) {
- 		dev_err(arizona->dev, "Failed to add AOD IRQs: %d\n", ret);
- 		goto err_domain;
- 	}
- 
--	ret = regmap_add_irq_chip(arizona->regmap,
--				  irq_create_mapping(arizona->virq, 1),
--				  IRQF_ONESHOT, -1, irq,
-+	ret = regmap_add_irq_chip(arizona->regmap, arizona->irq,
-+				  IRQF_ONESHOT | IRQF_SHARED, -1, irq,
- 				  &arizona->irq_chip);
- 	if (ret != 0) {
- 		dev_err(arizona->dev, "Failed to add AOD IRQs: %d\n", ret);
-@@ -235,27 +167,16 @@ int arizona_irq_init(struct arizona *arizona)
- 		goto err_ctrlif;
- 	}
- 
--	ret = request_threaded_irq(arizona->irq, NULL, arizona_irq_thread,
--				   flags, "arizona", arizona);
--
--	if (ret != 0) {
--		dev_err(arizona->dev, "Failed to request IRQ %d: %d\n",
--			arizona->irq, ret);
--		goto err_main_irq;
--	}
-+	enable_irq(arizona->irq);
- 
- 	return 0;
- 
--err_main_irq:
--	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
- err_ctrlif:
- 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
- err_boot_done:
--	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 1),
--			    arizona->irq_chip);
-+	regmap_del_irq_chip(arizona->irq, arizona->irq_chip);
- err_aod:
--	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 0),
--			    arizona->aod_irq_chip);
-+	regmap_del_irq_chip(arizona->irq, arizona->aod_irq_chip);
- err_domain:
- err:
- 	return ret;
-@@ -265,10 +186,8 @@ int arizona_irq_exit(struct arizona *arizona)
- {
- 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
- 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
--	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 1),
--			    arizona->irq_chip);
--	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 0),
--			    arizona->aod_irq_chip);
-+	regmap_del_irq_chip(arizona->irq, arizona->irq_chip);
-+	regmap_del_irq_chip(arizona->irq, arizona->aod_irq_chip);
- 	free_irq(arizona->irq, arizona);
- 
- 	return 0;
-diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
-index dd231ac..b9e758b 100644
---- a/include/linux/mfd/arizona/core.h
-+++ b/include/linux/mfd/arizona/core.h
-@@ -92,7 +92,6 @@ struct arizona {
- 	struct arizona_pdata pdata;
- 
- 	int irq;
--	struct irq_domain *virq;
- 	struct regmap_irq_chip_data *aod_irq_chip;
- 	struct regmap_irq_chip_data *irq_chip;
- 
--- 
-1.7.0.4
 
