@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab2HAOoV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 10:44:21 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:22684 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204Ab2HAOoU (ORCPT
+	id S1755275Ab2HAOok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 10:44:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61834 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174Ab2HAOoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 10:44:20 -0400
-Date: Wed, 1 Aug 2012 10:34:59 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        linaro-dev@lists.linaro.org, Ian.Campbell@citrix.com, arnd@arndb.de,
-        catalin.marinas@arm.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Xen-devel] [PATCH 11/24] xen/arm: introduce CONFIG_XEN on ARM
-Message-ID: <20120801143459.GH7227@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-11-git-send-email-stefano.stabellini@eu.citrix.com>
+	Wed, 1 Aug 2012 10:44:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vinayak Holikatti <vinholikatti@gmail.com>
+Subject: Re: [PATCH V3 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
+Date: Wed, 1 Aug 2012 14:44:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
+        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
+        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
+        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
+        sreekumar.c@samsung.com
+References: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
+In-Reply-To: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343316846-25860-11-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208011444.34598.arnd@arndb.de>
+X-Provags-ID: V02:K0:HtD72nEJPg6Vb74/vUSxtont7KBshr5sA8IV2CpCgMD
+ UNNfmzLTitDmDIZhHpq5WKFSDV+bB7qoG8NEnRcm1fZOExSR0W
+ 4sVFbSMcG3UTo1YZx0J28iDpuLuKzGWUvMpqUUAurTwpRNs4Sy
+ 7Zd9zlbm6BvFzQ7db3yAky6H7LBF4uHLtZlgTXRO3/XwC/xh1h
+ /aKqHC45xtZ9nvpS5WWvMLXzEInaSr4YmylEYi2lhOyBE4Xm9i
+ ustQi03unAm15DsWvyuRauklBh+fAgESvcrgzIJNOeogJAw90S
+ 9lEUFoJD75m+2HoV9pXVOKCWy7gWyxAJPgvFtz3Z70FtCGeabH
+ DEFK+EMo9ttsmc9Cjg80=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 04:33:53PM +0100, Stefano Stabellini wrote:
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/arm/Kconfig |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
+On Thursday 26 July 2012, Vinayak Holikatti wrote:
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index a91009c..9c54cb4 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -2228,6 +2228,16 @@ config NEON
->  	  Say Y to include support code for NEON, the ARMv7 Advanced SIMD
->  	  Extension.
->  
-> +config XEN_DOM0
-> +	def_bool y
+> This patch set adds following features
+>  - Seggregate PCI specific code in ufshcd.c
+>  - Adds PCI glue driver ufshcd-pci.c and ufshcd.c become core module
+>  - Adds Platform glue driver ufshcd-pltfrm.c
+>  - Update correct transfer size in Command UPIU
 
-What is the benefit of this ? I was hoping at some point to rip out all of those
-XEN_DOM0 and just have, mostly,
-	CONFIG_XEN_BACKEND_SUPPORT
-		(which would compile whatever is needed for HVM or PV guests to run
-		blkback/netback/grant/grantalloc/etc)
-	CONFIG_XEN_FRONTEND_SUPPORT
-		(the vice-versa)
+I've found a few trivial issues that I just replied on. Other than that,
+please add my
 
-	CONFIG_XEN_PCI
-		which would have the PCI support, the ACPI routing (which is
-		predomaintaly most of the dom0 support), VGA text support, and
-		whatever else is in there.
-
-In that fashion you could compile a kernel with CONFIG_XEN_BACKEND_SUPPORT
-without any CONFIG_XEN_PCI and drop it in as an HVM device driver domain.
-Thought maybe that wouldn't really work as if you do PCI passthrough to such
-domain, you are going to need the PCI support and ACPI routing. The VGA text
-maybe not...
-
-OK, never mind - we should brainstorm it and figure out how to make this
-nicely work. In the meantime this is OK.
-
-> +
-> +config XEN
-> +	bool "Xen guest support on ARM"
-> +	depends on ARM && OF
-> +	select XEN_DOM0
-> +	help
-> +	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
-> +
->  endmenu
->  
->  menu "Userspace binary formats"
-> -- 
-> 1.7.2.5
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
