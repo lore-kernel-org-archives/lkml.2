@@ -1,76 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab2HALmf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 07:42:35 -0400
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:41595 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab2HALmd (ORCPT
+	id S1755038Ab2HALsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 07:48:09 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42592 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab2HALsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 07:42:33 -0400
-X-Greylist: delayed 1143 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Aug 2012 07:42:33 EDT
-Date: Wed, 1 Aug 2012 07:22:47 -0400
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: Shea Levy <shea@shealevy.com>
-Cc: netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Build failure when installing atm ambassador firmware
-Message-ID: <20120801072247.589c7162@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <50188D89.3040404@shealevy.com>
-References: <50188D89.3040404@shealevy.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-NRLCMF-Spam-Score: () hits=-1.011
-X-NRLCMF-Virus-Scanned: No virus found
+	Wed, 1 Aug 2012 07:48:07 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: linux-can@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH can-next v5 1/2] can: add tx/rx LED trigger support
+Date: Wed,  1 Aug 2012 13:49:41 +0200
+Message-Id: <1343821782-1346-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <5018F8B3.6080404@pengutronix.de>
+References: <5018F8B3.6080404@pengutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jul 2012 21:59:37 -0400
-Shea Levy <shea@shealevy.com> wrote:
+This patch implements the functions to add two LED triggers, named
+<ifname>-tx and <ifname>-rx, to a canbus device driver.
 
-> Hello,
-> 
-> When building with 
-> MODLIB=/nix/store/ghx6s9hnk9irim7c7f63zrxqiv6xjh3w-linux-3.5/lib/modules/3.5.0 
-> and 
-> ="/nix/store/ghx6s9hnk9irim7c7f63zrxqiv6xjh3w-linux-3.5/lib/firmware", 
-> building Linux 3.5 with CONFIG_ATM_AMBASSADOR=m fails with:
-> 
-> "make[2]: *** No rule to make target 
-> `"/nix/store/ghx6s9hnk9irim7c7f63zrxqiv6xjh3w-linux-3.5/lib/firmware"/./', 
-> needed by 
-> `"/nix/store/ghx6s9hnk9irim7c7f63zrxqiv6xjh3w-linux-3.5/lib/firmware"/atmsar11.fw'.  
-> Stop."
+Triggers are called from specific handlers by each CAN device driver and
+can be disabled altogether with a Kconfig option.
 
-i think it might be trying to tell you that the target directory
-$INSTALL_FW_PATH doesn't exist and is a prerequisite to actually
-perform the action.
+The implementation keeps the LED on when the interface is UP and blinks
+the LED on network activity at a configurable rate.
 
-it complains about atmsar11.fw first because it just happens to be the
-first firmware that needs to be installed.
+This only supports can-dev based drivers, as it uses some support field
+in the can_priv structure.
 
-/scratch/chas/net-next relax.53% ls -ld /tmp/funk
-ls: cannot access /tmp/funk: No such file or directory
-/scratch/chas/net-next relax.54% make INSTALL_FW_PATH="/tmp/funk" firmware_install
-make[1]: *** No rule to make target `/tmp/funk/./', needed by `/tmp/funk/atmsar11.fw'.  Stop.
-make: *** [firmware_install] Error 2
-/scratch/chas/net-next relax.55% mkdir /tmp/funk
-/scratch/chas/net-next relax.56% make INSTALL_FW_PATH="/tmp/funk" firmware_install
-  INSTALL /tmp/funk/atmsar11.fw
-  MKDIR   /tmp/funk/e100/
-  INSTALL /tmp/funk/e100/d101m_ucode.bin
-  INSTALL /tmp/funk/e100/d101s_ucode.bin
-  INSTALL /tmp/funk/e100/d102e_ucode.bin
-...
+Supported drivers should call devm_can_led_init() and can_led_event() as
+needed.
 
-i am somewhat concerned that it appears to have an extra set of "'s in
-the path as well.  how are you passing in INSTALL_FW_PATH?  i can get
-the same result with:
+Cleanup is handled automatically by devres, so no *_exit function is
+needed.
 
-/scratch/chas/net-next relax.57% make 'INSTALL_FW_PATH="/tmp/funk"' firmware_install
-make[1]: *** No rule to make target `"/tmp/funk"/./', needed by `"/tmp/funk"/atmsar11.fw'.  Stop.
-make: *** [firmware_install] Error 2
+Supported events are:
+- CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
+- CAN_LED_EVENT_STOP: turn off tx/rx LEDs
+- CAN_LED_EVENT_TX: trigger tx LED blink
+- CAN_LED_EVENT_RX: trigger tx LED blink
 
-but it would be wrong to do it this way.
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+---
+
+Hello,
+
+so, v5, renamed can_led_init to devm_can_led_init like other devres based
+functions.
+
+Also, I'm reposting implementation into flexcan in 2/2... I have a small
+patchset for others embedded can drivers to be tested which I can post in
+another thread if this patch is accepted.
+
+Fabio
+
+ drivers/net/can/Kconfig  |  12 ++++++
+ drivers/net/can/Makefile |   2 +
+ drivers/net/can/led.c    | 102 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/can/dev.h  |   8 ++++
+ include/linux/can/led.h  |  34 ++++++++++++++++
+ 5 files changed, 158 insertions(+)
+ create mode 100644 drivers/net/can/led.c
+ create mode 100644 include/linux/can/led.h
+
+diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+index bb709fd..19dec19 100644
+--- a/drivers/net/can/Kconfig
++++ b/drivers/net/can/Kconfig
+@@ -54,6 +54,18 @@ config CAN_CALC_BITTIMING
+ 	  arguments "tq", "prop_seg", "phase_seg1", "phase_seg2" and "sjw".
+ 	  If unsure, say Y.
+ 
++config CAN_LEDS
++	bool "Enable LED triggers for Netlink based drivers"
++	depends on CAN_DEV
++	depends on LEDS_CLASS
++	select LEDS_TRIGGERS
++	---help---
++	  This option adds two LED triggers for packet receive and transmit
++	  events on each supported CAN device.
++
++	  Say Y here if you are working on a system with led-class supported
++	  LEDs and you want to use them as canbus activity indicators.
++
+ config CAN_AT91
+ 	tristate "Atmel AT91 onchip CAN controller"
+ 	depends on CAN_DEV && (ARCH_AT91SAM9263 || ARCH_AT91SAM9X5)
+diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
+index 938be37..24ee98b 100644
+--- a/drivers/net/can/Makefile
++++ b/drivers/net/can/Makefile
+@@ -8,6 +8,8 @@ obj-$(CONFIG_CAN_SLCAN)		+= slcan.o
+ obj-$(CONFIG_CAN_DEV)		+= can-dev.o
+ can-dev-y			:= dev.o
+ 
++can-dev-$(CONFIG_CAN_LEDS)	+= led.o
++
+ obj-y				+= usb/
+ obj-y				+= softing/
+ 
+diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
+new file mode 100644
+index 0000000..8b4f6a9
+--- /dev/null
++++ b/drivers/net/can/led.c
+@@ -0,0 +1,102 @@
++/*
++ * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/netdevice.h>
++#include <linux/can/dev.h>
++
++#include <linux/can/led.h>
++
++static unsigned long led_delay = 50;
++module_param(led_delay, ulong, 0644);
++MODULE_PARM_DESC(led_delay,
++		"blink delay time for activity leds (msecs, default: 50).");
++
++/*
++ * Trigger a LED event in response to a CAN device event
++ */
++void can_led_event(struct net_device *netdev, enum can_led_event event)
++{
++	struct can_priv *priv = netdev_priv(netdev);
++
++	switch (event) {
++	case CAN_LED_EVENT_OPEN:
++		led_trigger_event(priv->tx_led_trig, LED_FULL);
++		led_trigger_event(priv->rx_led_trig, LED_FULL);
++		break;
++	case CAN_LED_EVENT_STOP:
++		led_trigger_event(priv->tx_led_trig, LED_OFF);
++		led_trigger_event(priv->rx_led_trig, LED_OFF);
++		break;
++	case CAN_LED_EVENT_TX:
++		if (led_delay)
++			led_trigger_blink_oneshot(priv->tx_led_trig,
++						  &led_delay, &led_delay, 1);
++		break;
++	case CAN_LED_EVENT_RX:
++		if (led_delay)
++			led_trigger_blink_oneshot(priv->rx_led_trig,
++						  &led_delay, &led_delay, 1);
++		break;
++	}
++}
++EXPORT_SYMBOL_GPL(can_led_event);
++
++static void can_led_release(struct device *gendev, void *res)
++{
++	struct can_priv *priv = netdev_priv(to_net_dev(gendev));
++
++	led_trigger_unregister_simple(priv->tx_led_trig);
++	led_trigger_unregister_simple(priv->rx_led_trig);
++
++	kfree(priv->tx_led_trig_name);
++	kfree(priv->rx_led_trig_name);
++}
++
++/*
++ * Register CAN LED triggers for a CAN device
++ *
++ * This is normally called from a driver's probe function
++ */
++void devm_can_led_init(struct net_device *netdev)
++{
++	struct can_priv *priv = netdev_priv(netdev);
++	void *res;
++
++	res = devres_alloc(can_led_release, 0, GFP_KERNEL);
++	if (!res)
++		goto err_out;
++
++	priv->tx_led_trig_name = kasprintf(GFP_KERNEL, "%s-tx", netdev->name);
++	if (!priv->tx_led_trig_name)
++		goto err_out;
++
++	priv->rx_led_trig_name = kasprintf(GFP_KERNEL, "%s-rx", netdev->name);
++	if (!priv->rx_led_trig_name)
++		goto err_out_rx;
++
++	led_trigger_register_simple(priv->tx_led_trig_name,
++				    &priv->tx_led_trig);
++	led_trigger_register_simple(priv->rx_led_trig_name,
++				    &priv->rx_led_trig);
++
++	devres_add(&netdev->dev, res);
++
++	return;
++
++err_out_rx:
++	kfree(priv->tx_led_trig_name);
++	priv->tx_led_trig_name = NULL;
++err_out:
++	netdev_err(netdev, "cannot register LED triggers\n");
++	devres_free(res);
++}
++EXPORT_SYMBOL_GPL(devm_can_led_init);
+diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+index 2b2fc34..167b04a 100644
+--- a/include/linux/can/dev.h
++++ b/include/linux/can/dev.h
+@@ -16,6 +16,7 @@
+ #include <linux/can.h>
+ #include <linux/can/netlink.h>
+ #include <linux/can/error.h>
++#include <linux/can/led.h>
+ 
+ /*
+  * CAN mode
+@@ -52,6 +53,13 @@ struct can_priv {
+ 
+ 	unsigned int echo_skb_max;
+ 	struct sk_buff **echo_skb;
++
++#ifdef CONFIG_CAN_LEDS
++	struct led_trigger *tx_led_trig;
++	char *tx_led_trig_name;
++	struct led_trigger *rx_led_trig;
++	char *rx_led_trig_name;
++#endif
+ };
+ 
+ /*
+diff --git a/include/linux/can/led.h b/include/linux/can/led.h
+new file mode 100644
+index 0000000..946059c
+--- /dev/null
++++ b/include/linux/can/led.h
+@@ -0,0 +1,34 @@
++/*
++ * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef CAN_LED_H
++#define CAN_LED_H
++
++#include <linux/leds.h>
++
++enum can_led_event {
++	CAN_LED_EVENT_OPEN,
++	CAN_LED_EVENT_STOP,
++	CAN_LED_EVENT_TX,
++	CAN_LED_EVENT_RX,
++};
++
++#ifdef CONFIG_CAN_LEDS
++void can_led_event(struct net_device *netdev, enum can_led_event event);
++void devm_can_led_init(struct net_device *netdev);
++#else
++static inline void can_led_event(struct net_device *netdev,
++				 enum can_led_event event)
++{
++}
++static inline void devm_can_led_init(struct net_device *netdev)
++{
++}
++#endif
++
++#endif
+-- 
+1.7.11.rc1.9.gf623ca1.dirty
+
