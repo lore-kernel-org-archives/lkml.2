@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab2HAOok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 10:44:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61834 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab2HAOoi (ORCPT
+	id S1755260Ab2HAOpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 10:45:14 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:30256 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab2HAOpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 10:44:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinayak Holikatti <vinholikatti@gmail.com>
-Subject: Re: [PATCH V3 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
-Date: Wed, 1 Aug 2012 14:44:34 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
-        sreekumar.c@samsung.com
-References: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
-In-Reply-To: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
+	Wed, 1 Aug 2012 10:45:11 -0400
+Date: Wed, 1 Aug 2012 10:35:51 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 04/24] xen/arm: sync_bitops
+Message-ID: <20120801143551.GI7227@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
+ <1343316846-25860-4-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20120726163759.GE9222@phenom.dumpdata.com>
+ <1343381305.6812.116.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208011444.34598.arnd@arndb.de>
-X-Provags-ID: V02:K0:HtD72nEJPg6Vb74/vUSxtont7KBshr5sA8IV2CpCgMD
- UNNfmzLTitDmDIZhHpq5WKFSDV+bB7qoG8NEnRcm1fZOExSR0W
- 4sVFbSMcG3UTo1YZx0J28iDpuLuKzGWUvMpqUUAurTwpRNs4Sy
- 7Zd9zlbm6BvFzQ7db3yAky6H7LBF4uHLtZlgTXRO3/XwC/xh1h
- /aKqHC45xtZ9nvpS5WWvMLXzEInaSr4YmylEYi2lhOyBE4Xm9i
- ustQi03unAm15DsWvyuRauklBh+fAgESvcrgzIJNOeogJAw90S
- 9lEUFoJD75m+2HoV9pXVOKCWy7gWyxAJPgvFtz3Z70FtCGeabH
- DEFK+EMo9ttsmc9Cjg80=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343381305.6812.116.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 July 2012, Vinayak Holikatti wrote:
+On Fri, Jul 27, 2012 at 10:28:25AM +0100, Ian Campbell wrote:
+> On Thu, 2012-07-26 at 17:37 +0100, Konrad Rzeszutek Wilk wrote:
+> > On Thu, Jul 26, 2012 at 04:33:46PM +0100, Stefano Stabellini wrote:
+> > > sync_bitops functions are equivalent to the SMP implementation of the
+> > > original functions, independently from CONFIG_SMP being defined.
+> > 
+> > So why can't the code be changed to use that? Is it that
+> > the _set_bit, _clear_bit, etc are not available with !CONFIG_SMP?
 > 
-> This patch set adds following features
->  - Seggregate PCI specific code in ufshcd.c
->  - Adds PCI glue driver ufshcd-pci.c and ufshcd.c become core module
->  - Adds Platform glue driver ufshcd-pltfrm.c
->  - Update correct transfer size in Command UPIU
+> _set_bit etc are not SMP safe if !CONFIG_SMP. But under Xen you might be
+> communicating with a completely external entity who might be on another
+> CPU (e.g. two uniprocessor guests communicating via event channels and
+> grant tables). So we need a variant of the bit ops which are SMP safe
+> even on a UP kernel.
+> 
+> The users are common code and the sync_foo vs foo distinction matters on
+> some platforms (e.g. x86 where a UP kernel would omit the LOCK prefix
+> for the normal ones).
 
-I've found a few trivial issues that I just replied on. Other than that,
-please add my
-
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+OK, that makes sense. Stefano can you include that comment in the git
+commit description and in the sync_bitops.h file please?
+> 
+> > 
+> > > 
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > ---
+> > >  arch/arm/include/asm/sync_bitops.h |   17 +++++++++++++++++
+> > >  1 files changed, 17 insertions(+), 0 deletions(-)
+> > >  create mode 100644 arch/arm/include/asm/sync_bitops.h
+> > > 
+> > > diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
+> > > new file mode 100644
+> > > index 0000000..d975092903
+> > > --- /dev/null
+> > > +++ b/arch/arm/include/asm/sync_bitops.h
+> > > @@ -0,0 +1,17 @@
+> > > +#ifndef __ASM_SYNC_BITOPS_H__
+> > > +#define __ASM_SYNC_BITOPS_H__
+> > > +
+> > > +#include <asm/bitops.h>
+> > > +#include <asm/system.h>
+> > > +
+> > > +#define sync_set_bit(nr, p)		_set_bit(nr, p)
+> > > +#define sync_clear_bit(nr, p)		_clear_bit(nr, p)
+> > > +#define sync_change_bit(nr, p)		_change_bit(nr, p)
+> > > +#define sync_test_and_set_bit(nr, p)	_test_and_set_bit(nr, p)
+> > > +#define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
+> > > +#define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
+> > > +#define sync_test_bit(nr, addr)		test_bit(nr, addr)
+> > > +#define sync_cmpxchg			cmpxchg
+> > > +
+> > > +
+> > > +#endif
+> > > -- 
+> > > 1.7.2.5
+> > > 
+> > > 
+> > > _______________________________________________
+> > > Xen-devel mailing list
+> > > Xen-devel@lists.xen.org
+> > > http://lists.xen.org/xen-devel
+> 
