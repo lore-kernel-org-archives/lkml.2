@@ -1,129 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab2HAO3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 10:29:23 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33477 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab2HAO3V (ORCPT
+	id S1754911Ab2HAObl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 10:31:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55127 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab2HAObj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 10:29:21 -0400
-Date: Wed, 1 Aug 2012 10:19:59 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Ian.Campbell@citrix.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        catalin.marinas@arm.com, arnd@arndb.de
-Subject: Re: [PATCH 07/24] xen/arm: Xen detection and shared_info page mapping
-Message-ID: <20120801141959.GE7227@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-7-git-send-email-stefano.stabellini@eu.citrix.com>
+	Wed, 1 Aug 2012 10:31:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: wwang <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 1/3] drivers/misc: Add realtek card reader core driver
+Date: Wed, 1 Aug 2012 14:31:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>, "bp@alien8.de" <bp@alien8.de>
+References: <1343720536-22077-1-git-send-email-wei_wang@realsil.com.cn> <201207311123.25862.arnd@arndb.de> <5018CA65.1080906@realsil.com.cn>
+In-Reply-To: <5018CA65.1080906@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343316846-25860-7-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: Text/Plain;
+  charset="gb2312"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201208011431.02050.arnd@arndb.de>
+X-Provags-ID: V02:K0:s+Hm846iy51wOfroA/NGJWLJC9PTMlpmR2HlqO6tKpS
+ F4BWsWHkPH7KQ/KNCcVfEI89R3mMviveqs7Cq53bvEWO+EI79C
+ 7TEDJYbdvMqqlDj4g2erQpEAFkP+UyFIxnaPOcJsmEWpzriCtz
+ kBw/bJob6b46bgDqFtsb2sN+qxVW4YO5p1Ao0IAPyiiQgwKv5b
+ KfEzLT+A5JMvRB3YoOZ+eAryRW6oLpLlOAQEEJWK0/qtpno5sy
+ F5xreld0UOYHlpwog00nCdbqP+GwHNIXBpDuB6Umaaxqv58lxt
+ tvbM/PIsCigEiLsjx7DzWmdOMjC8qKa0ifJzd99iicuBRktJ9j
+ RSzKyvjYrRCfCeEXTRpQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 04:33:49PM +0100, Stefano Stabellini wrote:
-> Check for a "/xen" node in the device tree, if it is present set
-> xen_domain_type to XEN_HVM_DOMAIN and continue initialization.
+On Wednesday 01 August 2012, wwang wrote:
+> 于 2012年07月31日 19:23, Arnd Bergmann 写道:
+> >
+> > You posted the sdmmc host driver and the pci card reader driver.
+> > I assume that the USB card reader and the memstick host
+> > will also get posted at some point. Do you have a timeframe
+> > for those?
 > 
-> Map the real shared info page using XENMEM_add_to_physmap with
-> XENMAPSPACE_shared_info.
+> I will submit my memstick host driver around two months later, and
+> submit USB part at the end of this year.
+
+ok.
+
+> > The hardware seems to also support xd/smartmedia. Do you have
+> > plans to add those? I think we have some code in drivers/mfd
+> > that acts as an abstraction layer for these, given that the
+> > host has to do the wear leveling there too.
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/arm/xen/enlighten.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 56 insertions(+), 0 deletions(-)
+> Yes, xD is still in our plan. But because the user population of xD/SM
+> is so small, we put the priority of writing xD host driver in a relevant
+> low level.
+> Maybe we will submit this driver in the next year.
+
+Ok. When you get to that, I think you should use the code
+from drivers/mtd/nand/sm_common.c, but it's better to confirm
+that with the MTD maintainers first.
+
+> > As usual for most things getting added to drivers/misc, I'm skeptical
+> > about it actually fitting in here. Normally I'd put such a multiplexer
+> > into drivers/mfd. Given that you actually need your own bus, rather
+> > than just a single host with multiple endpoints, drivers/bus/realtek/cr
+> > might be best.
+> We do need a bus driver. We support multi models of card at the same
+> time, so we need a way to bind all of the host drivers. And in the
+> internal of our card reader, we have only one DMA engine and one ring
+> buffer to handle massive data, so we also need a way to protect the
+> critical area between different card hosts. Bus driver is convenient to
+> handle this situation. Another way to fulfill is to call every register
+> function of different host (like mmc, memstick) in sequence in card
+> reader driver, whether pci-based or usb-based, if not using bus driver.
+> I prefer the prior scheme, which is more flexible and less redundant code.
+
+I understand where you are coming from, but IMHO a bus driver would
+make more sense if the bus was a low-level abstraction that allows you
+to add new high-level drivers (memstick, smartmedia, ...) without
+having to modify the low-level drivers, which I believe is not possible
+with your current code.
+
+> Using bus driver:
 > 
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index d27c2a6..8c923af 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -5,6 +5,9 @@
->  #include <asm/xen/hypervisor.h>
->  #include <asm/xen/hypercall.h>
->  #include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_address.h>
->  
->  struct start_info _xen_start_info;
->  struct start_info *xen_start_info = &_xen_start_info;
-> @@ -33,3 +36,56 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
->  	return -ENOSYS;
->  }
->  EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
-> +
-> +/*
-> + * == Xen Device Tree format ==
-> + * - /xen node;
-> + * - compatible "arm,xen";
-> + * - one interrupt for Xen event notifications;
-> + * - one memory region to map the grant_table.
-> + */
-> +static int __init xen_guest_init(void)
-> +{
-> +	int cpu;
-> +	struct xen_add_to_physmap xatp;
-> +	static struct shared_info *shared_info_page = 0;
-> +	struct device_node *node;
-> +
-> +	node = of_find_compatible_node(NULL, NULL, "arm,xen");
-> +	if (!node) {
-> +		pr_info("No Xen support\n");
+> sdmmc memstick
+> \ /
+> \ /
+> \ /
+> rtsx bus driver
+> / \
+> / \
+> / \
+> / \
+> rtsx pci rtsx usb
 
-I don't think the pr_info is appropiate here?
-> +		return 0;
+In reality, what you have seems to be actually more like
 
-Should this be -ENODEV?
+    sdmmc    memstick
+        \       /
+         \     /
+          \   /
+     rtsx bus driver
+       /         \
+      /           \
+     /             \
+    /               \
+  rtsx-pci         rtsx-usb
+   /    \           /    \
+ pci-mmc \       usb-mmc  \
+   pci-memstick       usb-memstick
 
-> +	}
-> +	xen_domain_type = XEN_HVM_DOMAIN;
-> +
-> +	if (!shared_info_page)
-> +		shared_info_page = (struct shared_info *)
-> +			get_zeroed_page(GFP_KERNEL);
-> +	if (!shared_info_page) {
-> +		pr_err("not enough memory");
+> Not using bus driver:
+> 
+> sdmmc-pci memstick-pci
+> \ /
+> \ /
+> \ /
+> \ /
+> rtsx pci
+> 
+> sdmmc-usb memstick-usb
+> \ /
+> \ /
+> \ /
+> \ /
+> rtsx usb
+> 
+> And you said we should put our own bus driver in drivers/bus/realtek/cr,
+> but where is drivers/bus? Or can I just put this bus driver and our
+> pci/usb card reader driver into drivers/mfd?
 
-\n
+The best driver abstractions have the most specific code as a top-level
+module that calls into more generic code.
 
-> +		return -ENOMEM;
-> +	}
-> +	xatp.domid = DOMID_SELF;
-> +	xatp.idx = 0;
-> +	xatp.space = XENMAPSPACE_shared_info;
-> +	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
-> +	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
-> +		BUG();
-> +
-> +	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
-> +
-> +	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
-> +	 * page, we use it in the event channel upcall and in some pvclock
-> +	 * related functions. We don't need the vcpu_info placement
-> +	 * optimizations because we don't use any pv_mmu or pv_irq op on
-> +	 * HVM.
-> +	 * When xen_hvm_init_shared_info is run at boot time only vcpu 0 is
-> +	 * online but xen_hvm_init_shared_info is run at resume time too and
-> +	 * in that case multiple vcpus might be online. */
-> +	for_each_online_cpu(cpu) {
-> +		per_cpu(xen_vcpu, cpu) =
-> +			&HYPERVISOR_shared_info->vcpu_info[cpu];
-> +	}
-> +	return 0;
-
-This above looks stringly similar to the x86 one. Could it be
-abstracted away to share the same code? Or is that something that
-ought to be done later on when there is more meat on the bone?
+What I would suggest you do is to have the code that is common between
+the USB and PCI drivers in a loadable module that both of the other
+modules call into:
 
 
-> +}
-> +core_initcall(xen_guest_init);
-> -- 
-> 1.7.2.5
+   sdmmc-pci      sdmmc-usb        memstick-pci      memstick-usb
+     \   \           /   \             /    \           /   |
+      |   \         /     \           /      \         /    |
+      |    \       /       \___      /        \       /     |
+      \    sdmmc-common     ___|____/      memstick-common  |
+       \     |             /   |                       |    /
+        \____|______      /    |____________      _____|___/
+             |      \    /                  \    /     |   
+             |     pci-common             usb-common   |
+             \              \              /           /
+              \              \            /            /
+               \_____________ \          /____________/
+                             \rtsx-common/
+
+
+You can skip a few of these if they are not needed, but in principle
+you should get the idea. In this example, the pci-common and the
+usb-common drivers would each be MFD driver that export a bunch
+of slave devices. All the mmc specific code that you currently
+have in the pci driver would then go all the way to the top into
+the sdmmc-pci driver, and anything that is shared goes into one
+of the lower modules.
+
+	Arnd
