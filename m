@@ -1,101 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab2HAJOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 05:14:08 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:20258
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752171Ab2HAJOF (ORCPT
+	id S1753696Ab2HAJOQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 05:14:16 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:43289 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab2HAJON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 05:14:05 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
-From: <qiang.liu@freescale.com>
-To: <linux-crypto@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <dan.j.williams@gmail.com>
-CC: <kim.phillips@freescale.com>, <herbert@gondor.hengli.com.au>,
-        <davem@davemloft.net>, Qiang Liu <qiang.liu@freescale.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Li Yang <leoli@freescale.com>
-Subject: [PATCH v5 2/6] fsl-dma: remove attribute DMA_INTERRUPT of dmaengine
-Date: Wed, 1 Aug 2012 16:49:08 +0800
-Message-ID: <1343810948-25343-1-git-send-email-qiang.liu@freescale.com>
-X-Mailer: git-send-email 1.7.5.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Wed, 1 Aug 2012 05:14:13 -0400
+Date: Wed, 1 Aug 2012 11:13:59 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>,
+        Aaron Sierra <asierra@xes-inc.com>
+Subject: Re: [PATCH] gpio-ich: Share ownership of GPIO groups
+Message-ID: <20120801111359.6839bec7@endymion.delvare>
+In-Reply-To: <20120723173415.5b80b28b@endymion.delvare>
+References: <20120723173415.5b80b28b@endymion.delvare>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Qiang Liu <qiang.liu@freescale.com>
+On Mon, 23 Jul 2012 17:34:15 +0200, Jean Delvare wrote:
+> The ICH chips have their GPIO pins organized in 2 or 3 independent
+> groups of 32 GPIO pins. It can happen that the ACPI BIOS wants to make
+> use of pins in one group, preventing the OS to access these. This does
+> not prevent the OS from accessing the other group(s).
+> 
+> This is the case for example on my Asus Z8NA-D6 board. The ACPI BIOS
+> wants to control GPIO 18 (group 1), while I (the OS) need to control
+> GPIO 52 and 53 (group 2) for SMBus multiplexing.
+> 
+> So instead of checking for ACPI resource conflict on the whole I/O
+> range, check on a per-group basis, and consider it a success if at
+> least one of the groups is available for the OS to use.
+> 
+> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> Cc: Peter Tyser <ptyser@xes-inc.com>
+> Cc: Aaron Sierra <asierra@xes-inc.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> ---
+> That's probably not the nicest code you've seen, but everything else I
+> could think of either couldn't work or was looking worse. If anyone can
+> think of a better approach, I'm all ears.
+> 
+>  drivers/gpio/gpio-ich.c     |   79 +++++++++++++++++++++++++++++++++++++------
+>  drivers/mfd/lpc_ich.c       |   29 ++++++++++++++-
+>  include/linux/mfd/lpc_ich.h |    1 
+>  3 files changed, 97 insertions(+), 12 deletions(-)
 
-Delete attribute DMA_INTERRUPT because fsl-dma doesn't support this function,
-exception will be thrown if talitos is used to offload xor at the same time.
+Grant, Samuel, Linus (sorry for not including you on original
+submission), any comment on this? I suppose it's too late for 3.6 but
+can this be scheduled to be integrated in 3.7?
 
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Li Yang <leoli@freescale.com>
-Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
-Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
----
- drivers/dma/fsldma.c |   31 -------------------------------
- 1 files changed, 0 insertions(+), 31 deletions(-)
+Thanks,
+Jean
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 8f84761..4f2f212 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -543,35 +543,6 @@ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
- }
-
- static struct dma_async_tx_descriptor *
--fsl_dma_prep_interrupt(struct dma_chan *dchan, unsigned long flags)
--{
--	struct fsldma_chan *chan;
--	struct fsl_desc_sw *new;
--
--	if (!dchan)
--		return NULL;
--
--	chan = to_fsl_chan(dchan);
--
--	new = fsl_dma_alloc_descriptor(chan);
--	if (!new) {
--		chan_err(chan, "%s\n", msg_ld_oom);
--		return NULL;
--	}
--
--	new->async_tx.cookie = -EBUSY;
--	new->async_tx.flags = flags;
--
--	/* Insert the link descriptor to the LD ring */
--	list_add_tail(&new->node, &new->tx_list);
--
--	/* Set End-of-link to the last link descriptor of new list */
--	set_ld_eol(chan, new);
--
--	return &new->async_tx;
--}
--
--static struct dma_async_tx_descriptor *
- fsl_dma_prep_memcpy(struct dma_chan *dchan,
- 	dma_addr_t dma_dst, dma_addr_t dma_src,
- 	size_t len, unsigned long flags)
-@@ -1352,12 +1323,10 @@ static int __devinit fsldma_of_probe(struct platform_device *op)
- 	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
-
- 	dma_cap_set(DMA_MEMCPY, fdev->common.cap_mask);
--	dma_cap_set(DMA_INTERRUPT, fdev->common.cap_mask);
- 	dma_cap_set(DMA_SG, fdev->common.cap_mask);
- 	dma_cap_set(DMA_SLAVE, fdev->common.cap_mask);
- 	fdev->common.device_alloc_chan_resources = fsl_dma_alloc_chan_resources;
- 	fdev->common.device_free_chan_resources = fsl_dma_free_chan_resources;
--	fdev->common.device_prep_dma_interrupt = fsl_dma_prep_interrupt;
- 	fdev->common.device_prep_dma_memcpy = fsl_dma_prep_memcpy;
- 	fdev->common.device_prep_dma_sg = fsl_dma_prep_sg;
- 	fdev->common.device_tx_status = fsl_tx_status;
---
-1.7.5.1
-
-
+> --- linux-3.5.orig/drivers/mfd/lpc_ich.c	2012-07-23 14:41:30.794134320 +0200
+> +++ linux-3.5/drivers/mfd/lpc_ich.c	2012-07-23 14:57:05.006073824 +0200
+> @@ -683,6 +683,30 @@ static void __devinit lpc_ich_finalize_c
+>  	cell->pdata_size = sizeof(struct lpc_ich_info);
+>  }
+>  
+> +/*
+> + * We don't check for resource conflict globally. There are 2 or 3 independent
+> + * GPIO groups and it's enough to have access to one of these to instantiate
+> + * the device.
+> + */
+> +static int __devinit lpc_ich_check_conflict_gpio(struct resource *res)
+> +{
+> +	int ret;
+> +	u8 use_gpio = 0;
+> +
+> +	if (resource_size(res) >= 0x50 &&
+> +	    !acpi_check_region(res->start + 0x40, 0x10, "LPC ICH GPIO3"))
+> +		use_gpio |= 1 << 2;
+> +
+> +	if (!acpi_check_region(res->start + 0x30, 0x10, "LPC ICH GPIO2"))
+> +		use_gpio |= 1 << 1;
+> +
+> +	ret = acpi_check_region(res->start + 0x00, 0x30, "LPC ICH GPIO1");
+> +	if (!ret)
+> +		use_gpio |= 1 << 0;
+> +
+> +	return use_gpio ? use_gpio : ret;
+> +}
+> +
+>  static int __devinit lpc_ich_init_gpio(struct pci_dev *dev,
+>  				const struct pci_device_id *id)
+>  {
+> @@ -740,12 +764,13 @@ gpe0_done:
+>  		break;
+>  	}
+>  
+> -	ret = acpi_check_resource_conflict(res);
+> -	if (ret) {
+> +	ret = lpc_ich_check_conflict_gpio(res);
+> +	if (ret < 0) {
+>  		/* this isn't necessarily fatal for the GPIO */
+>  		acpi_conflict = true;
+>  		goto gpio_done;
+>  	}
+> +	lpc_chipset_info[id->driver_data].use_gpio = ret;
+>  	lpc_ich_enable_gpio_space(dev);
+>  
+>  	lpc_ich_finalize_cell(&lpc_ich_cells[LPC_GPIO], id);
+> --- linux-3.5.orig/include/linux/mfd/lpc_ich.h	2012-07-23 14:41:30.795134320 +0200
+> +++ linux-3.5/include/linux/mfd/lpc_ich.h	2012-07-23 14:42:57.034135599 +0200
+> @@ -43,6 +43,7 @@ struct lpc_ich_info {
+>  	char name[32];
+>  	unsigned int iTCO_version;
+>  	unsigned int gpio_version;
+> +	u8 use_gpio;
+>  };
+>  
+>  #endif
+> --- linux-3.5.orig/drivers/gpio/gpio-ich.c	2012-07-23 14:41:30.795134320 +0200
+> +++ linux-3.5/drivers/gpio/gpio-ich.c	2012-07-23 15:08:57.699546528 +0200
+> @@ -49,6 +49,10 @@ static const u8 ichx_regs[3][3] = {
+>  	{0x0c, 0x38, 0x48},	/* LVL[1-3] offsets */
+>  };
+>  
+> +static const u8 ichx_reglen[3] = {
+> +	0x30, 0x10, 0x10,
+> +};
+> +
+>  #define ICHX_WRITE(val, reg, base_res)	outl(val, (reg) + (base_res)->start)
+>  #define ICHX_READ(reg, base_res)	inl((reg) + (base_res)->start)
+>  
+> @@ -75,6 +79,7 @@ static struct {
+>  	struct resource *pm_base;	/* Power Mangagment IO base */
+>  	struct ichx_desc *desc;	/* Pointer to chipset-specific description */
+>  	u32 orig_gpio_ctrl;	/* Orig CTRL value, used to restore on exit */
+> +	u8 use_gpio;		/* Which GPIO groups are usable */
+>  } ichx_priv;
+>  
+>  static int modparam_gpiobase = -1;	/* dynamic */
+> @@ -123,8 +128,16 @@ static int ichx_read_bit(int reg, unsign
+>  	return data & (1 << bit) ? 1 : 0;
+>  }
+>  
+> +static int ichx_gpio_check_available(struct gpio_chip *gpio, unsigned nr)
+> +{
+> +	return (ichx_priv.use_gpio & (1 << (nr / 32))) ? 0 : -ENXIO;
+> +}
+> +
+>  static int ichx_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
+>  {
+> +	if (!ichx_gpio_check_available(gpio, nr))
+> +		return -ENXIO;
+> +
+>  	/*
+>  	 * Try setting pin as an input and verify it worked since many pins
+>  	 * are output-only.
+> @@ -138,6 +151,9 @@ static int ichx_gpio_direction_input(str
+>  static int ichx_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
+>  					int val)
+>  {
+> +	if (!ichx_gpio_check_available(gpio, nr))
+> +		return -ENXIO;
+> +
+>  	/* Set GPIO output value. */
+>  	ichx_write_bit(GPIO_LVL, nr, val, 0);
+>  
+> @@ -153,6 +169,9 @@ static int ichx_gpio_direction_output(st
+>  
+>  static int ichx_gpio_get(struct gpio_chip *chip, unsigned nr)
+>  {
+> +	if (!ichx_gpio_check_available(chip, nr))
+> +		return -ENXIO;
+> +
+>  	return ichx_read_bit(GPIO_LVL, nr);
+>  }
+>  
+> @@ -161,6 +180,9 @@ static int ich6_gpio_get(struct gpio_chi
+>  	unsigned long flags;
+>  	u32 data;
+>  
+> +	if (!ichx_gpio_check_available(chip, nr))
+> +		return -ENXIO;
+> +
+>  	/*
+>  	 * GPI 0 - 15 need to be read from the power management registers on
+>  	 * a ICH6/3100 bridge.
+> @@ -291,6 +313,46 @@ static struct ichx_desc intel5_desc = {
+>  	.ngpio = 76,
+>  };
+>  
+> +static int __devinit ichx_gpio_request_regions(struct resource *res_base,
+> +						const char *name, u8 use_gpio)
+> +{
+> +	int i;
+> +
+> +	if (!res_base || !res_base->start || !res_base->end)
+> +		return -ENODEV;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(ichx_regs[0]); i++) {
+> +		if (!(use_gpio & (1 << i)))
+> +			continue;
+> +		if (!request_region(res_base->start + ichx_regs[0][i],
+> +				    ichx_reglen[i], name))
+> +			goto request_err;
+> +	}
+> +	return 0;
+> +
+> +request_err:
+> +	/* Clean up: release already requested regions, if any */
+> +	for (i--; i >= 0; i--) {
+> +		if (!(use_gpio & (1 << i)))
+> +			continue;
+> +		release_region(res_base->start + ichx_regs[0][i],
+> +			       ichx_reglen[i]);
+> +	}
+> +	return -EBUSY;
+> +}
+> +
+> +static void ichx_gpio_release_regions(struct resource *res_base, u8 use_gpio)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(ichx_regs[0]); i++) {
+> +		if (!(use_gpio & (1 << i)))
+> +			continue;
+> +		release_region(res_base->start + ichx_regs[0][i],
+> +			       ichx_reglen[i]);
+> +	}
+> +}
+> +
+>  static int __devinit ichx_gpio_probe(struct platform_device *pdev)
+>  {
+>  	struct resource *res_base, *res_pm;
+> @@ -329,12 +391,11 @@ static int __devinit ichx_gpio_probe(str
+>  	}
+>  
+>  	res_base = platform_get_resource(pdev, IORESOURCE_IO, ICH_RES_GPIO);
+> -	if (!res_base || !res_base->start || !res_base->end)
+> -		return -ENODEV;
+> -
+> -	if (!request_region(res_base->start, resource_size(res_base),
+> -				pdev->name))
+> -		return -EBUSY;
+> +	ichx_priv.use_gpio = ich_info->use_gpio;
+> +	err = ichx_gpio_request_regions(res_base, pdev->name,
+> +					ichx_priv.use_gpio);
+> +	if (err)
+> +		return err;
+>  
+>  	ichx_priv.gpio_base = res_base;
+>  
+> @@ -374,8 +435,7 @@ init:
+>  	return 0;
+>  
+>  add_err:
+> -	release_region(ichx_priv.gpio_base->start,
+> -			resource_size(ichx_priv.gpio_base));
+> +	ichx_gpio_release_regions(ichx_priv.gpio_base, ichx_priv.use_gpio);
+>  	if (ichx_priv.pm_base)
+>  		release_region(ichx_priv.pm_base->start,
+>  				resource_size(ichx_priv.pm_base));
+> @@ -393,8 +453,7 @@ static int __devexit ichx_gpio_remove(st
+>  		return err;
+>  	}
+>  
+> -	release_region(ichx_priv.gpio_base->start,
+> -				resource_size(ichx_priv.gpio_base));
+> +	ichx_gpio_release_regions(ichx_priv.gpio_base, ichx_priv.use_gpio);
+>  	if (ichx_priv.pm_base)
+>  		release_region(ichx_priv.pm_base->start,
+>  				resource_size(ichx_priv.pm_base));
+> 
