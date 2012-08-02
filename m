@@ -1,132 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab2HBLGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 07:06:52 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:41712 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737Ab2HBLGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 07:06:51 -0400
-Date: Thu, 2 Aug 2012 13:06:41 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: WARNING: at mm/page_alloc.c:4514 free_area_init_node+0x4f/0x37b()
-Message-ID: <20120802110641.GA16328@aftab.osrc.amd.com>
-References: <20120801173837.GI8082@aftab.osrc.amd.com>
- <20120801233335.GA4673@barrios>
+	id S1751534Ab2HBLLn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 07:11:43 -0400
+Received: from [65.55.88.12] ([65.55.88.12]:57885 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750737Ab2HBLLm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 07:11:42 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zz98dI9371I168aJ1432Izz1202hzz8275bhz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Thu, 2 Aug 2012 19:12:24 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Kumar Gala <galak@kernel.crashing.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Subject: Re: [PATCH v8 5/7] powerpc/85xx: add sleep and deep sleep support
+Message-ID: <20120802111224.GB13777@localhost.localdomain>
+References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com>
+ <1342788159-27529-6-git-send-email-chenhui.zhao@freescale.com>
+ <F8FE8505-6F6A-4A4B-8302-C1CF16B48B60@kernel.crashing.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120801233335.GA4673@barrios>
+In-Reply-To: <F8FE8505-6F6A-4A4B-8302-C1CF16B48B60@kernel.crashing.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 08:33:35AM +0900, Minchan Kim wrote:
-> Hello Borislav,
+On Tue, Jul 31, 2012 at 09:15:33AM -0500, Kumar Gala wrote:
 > 
-> On Wed, Aug 01, 2012 at 07:38:37PM +0200, Borislav Petkov wrote:
-> > Hi,
+> On Jul 20, 2012, at 7:42 AM, Zhao Chenhui wrote:
+> 
+> > In sleep PM mode, the clocks of e500 core and unused IP blocks is
+> > turned off. IP blocks which are allowed to wake up the processor
+> > are still running.
 > > 
-> > I'm hitting the WARN_ON in $Subject with latest linus:
-> > v3.5-8833-g2d534926205d on a 4-node AMD system. As it looks from
-> > dmesg, it is happening on node 0, 1 and 2 but not on 3. Probably the
-> > pgdat->nr_zones thing but I'll have to add more dbg code to be sure.
+> > Some Freescale chips like MPC8536 and P1022 has deep sleep PM mode
+> > in addtion to the sleep PM mode.
+> > 
+> > While in deep sleep PM mode, additionally, the power supply is
+> > removed from e500 core and most IP blocks. Only the blocks needed
+> > to wake up the chip out of deep sleep are ON.
+> > 
+> > This patch supports 32-bit and 36-bit address space.
+> > 
+> > The sleep mode is equal to the Standby state in Linux. The deep sleep
+> > mode is equal to the Suspend-to-RAM state of Linux Power Management.
+> > 
+> > Command to enter sleep mode.
+> >  echo standby > /sys/power/state
+> > Command to enter deep sleep mode.
+> >  echo mem > /sys/power/state
+> > 
+> > Signed-off-by: Dave Liu <daveliu@freescale.com>
+> > Signed-off-by: Li Yang <leoli@freescale.com>
+> > Signed-off-by: Jin Qing <b24347@freescale.com>
+> > Signed-off-by: Jerry Huang <Chang-Ming.Huang@freescale.com>
+> > Cc: Scott Wood <scottwood@freescale.com>
+> > Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> > ---
+> > arch/powerpc/Kconfig                  |    2 +-
+> > arch/powerpc/include/asm/cacheflush.h |    2 +
+> > arch/powerpc/kernel/Makefile          |    3 +
+> > arch/powerpc/kernel/l2cache_85xx.S    |   56 +++
+> > arch/powerpc/platforms/85xx/Makefile  |    2 +-
+> > arch/powerpc/platforms/85xx/sleep.S   |  621 +++++++++++++++++++++++++++++++++
+> > arch/powerpc/sysdev/fsl_pmc.c         |   98 +++++-
+> > arch/powerpc/sysdev/fsl_soc.h         |    5 +
+> > 8 files changed, 769 insertions(+), 20 deletions(-)
+> > create mode 100644 arch/powerpc/kernel/l2cache_85xx.S
+> > create mode 100644 arch/powerpc/platforms/85xx/sleep.S
+> > 
+> > diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> > index a7c6914..9d6de82 100644
+> > --- a/arch/powerpc/Kconfig
+> > +++ b/arch/powerpc/Kconfig
+> > @@ -665,7 +665,7 @@ config FSL_PCI
+> > config FSL_PMC
+> > 	bool
+> > 	default y
+> > -	depends on SUSPEND && (PPC_85xx || PPC_86xx)
+> > +	depends on SUSPEND && (PPC_85xx || PPC_86xx) && !PPC_E500MC
+> > 	help
+> > 	  Freescale MPC85xx/MPC86xx power management controller support
+> > 	  (suspend/resume). For MPC83xx see platforms/83xx/suspend.c
+> > diff --git a/arch/powerpc/include/asm/cacheflush.h b/arch/powerpc/include/asm/cacheflush.h
+> > index b843e35..6c5f1c2 100644
+> > --- a/arch/powerpc/include/asm/cacheflush.h
+> > +++ b/arch/powerpc/include/asm/cacheflush.h
+> > @@ -58,6 +58,8 @@ extern void flush_inval_dcache_range(unsigned long start, unsigned long stop);
+> > extern void flush_dcache_phys_range(unsigned long start, unsigned long stop);
+> > #endif
+> > 
+> > +extern void flush_dcache_L1(void);
+> > +
+> > #define copy_to_user_page(vma, page, vaddr, dst, src, len) \
+> > 	do { \
+> > 		memcpy(dst, src, len); \
+> > diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
+> > index 83afacd..0ddef24 100644
+> > --- a/arch/powerpc/kernel/Makefile
+> > +++ b/arch/powerpc/kernel/Makefile
+> > @@ -64,6 +64,9 @@ obj-$(CONFIG_FA_DUMP)		+= fadump.o
+> > ifeq ($(CONFIG_PPC32),y)
+> > obj-$(CONFIG_E500)		+= idle_e500.o
+> > endif
+> > +ifneq ($(CONFIG_PPC_E500MC),y)
+> > +obj-$(CONFIG_PPC_85xx)		+= l2cache_85xx.o
+> > +endif
 > 
-> As I look the code quickly, free_area_init_node initializes node_id and
-> node_start_pfn doublely. They were initialized by setup_node_data.
+> why do we need this, beyond reduce code size on an e500mc kernel build?  If so why isn't 85xx/sleep.S doing the same thing?
+> - k
 > 
-> Could you test below patch? It's not a totally right way to fix it but
-> I want to confirm why it happens.
-> 
-> (I'm on vacation now so please understand that it hard to reach me)
 
-I sincerely hope you're not going to interrupt your vacation because of
-this.
+Yes, it is a little awkward. I have an idea to put e500/e500mc/e5500/e6500 related flush cache routines
+into this file, and rename it to cache_fsl_booke.S.
 
-:-).
+As for 85xx/sleep.S, it is used by fsl_pmc.c. I will use CONFIG_FSL_PMC to guard it.
 
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 889532b..009ac28 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4511,7 +4511,7 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
->         pg_data_t *pgdat = NODE_DATA(nid);
->  
->         /* pg_data_t should be reset to zero when it's allocated */
-> -       WARN_ON(pgdat->nr_zones || pgdat->node_start_pfn || pgdat->classzone_idx);
-> +       WARN_ON(pgdat->nr_zones || pgdat->classzone_idx);
->  
->         pgdat->node_id = nid;
->         pgdat->node_start_pfn = node_start_pfn;
+-Chenhui
 
-Yep, you were right: ->node_start_pfn is set. I added additional debug
-output for more info:
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 889532b8e6c1..c249abe4fee2 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4511,7 +4511,17 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
-        pg_data_t *pgdat = NODE_DATA(nid);
- 
-        /* pg_data_t should be reset to zero when it's allocated */
--       WARN_ON(pgdat->nr_zones || pgdat->node_start_pfn || pgdat->classzone_idx);
-+       WARN_ON(pgdat->nr_zones || pgdat->classzone_idx);
-+
-+       if (pgdat->node_start_pfn)
-+               pr_warn("%s: pgdat->node_start_pfn: %lu\n", __func__, pgdat->node_start_pfn);
-+
-+       if (pgdat->nr_zones)
-+               pr_warn("%s: pgdat->nr_zones: %d\n", __func__, pgdat->nr_zones);
-+
-+       if (pgdat->classzone_idx)
-+               pr_warn("%s: pgdat->classzone_idx: %d\n", __func__, pgdat->classzone_idx);
-+
- 
-        pgdat->node_id = nid;
-        pgdat->node_start_pfn = node_start_pfn;
-
-
-
-Here's what it says:
-
-[    0.000000] On node 0 totalpages: 4193848
-[    0.000000]   DMA zone: 64 pages used for memmap
-[    0.000000]   DMA zone: 6 pages reserved
-[    0.000000]   DMA zone: 3890 pages, LIFO batch:0
-[    0.000000]   DMA32 zone: 16320 pages used for memmap
-[    0.000000]   DMA32 zone: 798464 pages, LIFO batch:31
-[    0.000000]   Normal zone: 52736 pages used for memmap
-[    0.000000]   Normal zone: 3322368 pages, LIFO batch:31
-[    0.000000] free_area_init_node: pgdat->node_start_pfn: 4423680	<----
-[    0.000000] On node 1 totalpages: 4194304
-[    0.000000]   Normal zone: 65536 pages used for memmap
-[    0.000000]   Normal zone: 4128768 pages, LIFO batch:31
-[    0.000000] free_area_init_node: pgdat->node_start_pfn: 8617984	<----
-[    0.000000] On node 2 totalpages: 4194304
-[    0.000000]   Normal zone: 65536 pages used for memmap
-[    0.000000]   Normal zone: 4128768 pages, LIFO batch:31
-[    0.000000] free_area_init_node: pgdat->node_start_pfn: 12812288	<----
-[    0.000000] On node 3 totalpages: 4194304
-[    0.000000]   Normal zone: 65536 pages used for memmap
-[    0.000000]   Normal zone: 4128768 pages, LIFO batch:31
-[    0.000000] ACPI: PM-Timer IO Port: 0x2008
-[    0.000000] ACPI: Local APIC address 0xfee00000
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
