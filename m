@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2HBGlD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 02:41:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27441 "EHLO mx1.redhat.com"
+	id S1753639Ab2HBGpH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 02:45:07 -0400
+Received: from linux-sh.org ([111.68.239.195]:42669 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237Ab2HBGlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 02:41:00 -0400
-Message-ID: <501A2178.3000906@redhat.com>
-Date: Thu, 02 Aug 2012 14:43:04 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1752368Ab2HBGpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 02:45:05 -0400
+Date: Thu, 2 Aug 2012 15:45:00 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 3.6-rc1, round 2.
+Message-ID: <20120802064500.GC9596@linux-sh.org>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Shaohua Li <shli@kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH V5 4/4] virtio-blk: Add REQ_FLUSH and REQ_FUA support
- to bio path
-References: <1343888757-25723-1-git-send-email-asias@redhat.com> <1343888757-25723-5-git-send-email-asias@redhat.com> <20120802062742.GA23573@lst.de>
-In-Reply-To: <20120802062742.GA23573@lst.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 02:27 PM, Christoph Hellwig wrote:
-> On Thu, Aug 02, 2012 at 02:25:56PM +0800, Asias He wrote:
->> We need to support both REQ_FLUSH and REQ_FUA for bio based path since
->> it does not get the sequencing of REQ_FUA into REQ_FLUSH that request
->> based drivers can request.
->>
->> REQ_FLUSH is emulated by:
->> 1. Send VIRTIO_BLK_T_FLUSH to device
->> 2. Wait until the flush is finished
->
-> There is no need to wait for the flush to finish if the REQ_FLUSH
-> request has no data payload.
->
-> Even if it has a payload waiting is highly suboptimal and it should
-> use a non-blocking sequencing like it is done in the request layer.
+The following changes since commit 2d534926205db9ffce4bbbde67cb9b2cee4b835c:
 
-So, for REQ_FLUSH, what we need is that send out the VIRTIO_BLK_T_FLUSH 
-and not to wait.
+  Merge tag 'irqdomain-for-linus' of git://git.secretlab.ca/git/linux-2.6 (2012-07-31 20:44:03 -0700)
 
->>
->> REQ_FUA is emulated by:
->> 1. Send the actual write
->> 2. Wait until the actual write is finished
->> 3. Send VIRTIO_BLK_T_FLUSH to device
->> 4. Wait until the flush is finished
->> 5. Signal the end of the write to upper layer
->
-> The same comment about not blocking applies here as well.
+are available in the git repository at:
 
-We still need to wait until the actual write is finished here?
-Like,
 
-REQ_FUA is emulated by:
-1. Send the actual write
-2. Wait until the actual write is finished
-3. Send VIRTIO_BLK_T_FLUSH to device
-4. Signal the end of the write to upper layer
--- 
-Asias
+  git://github.com/pmundt/linux-sh tags/sh-for-linus
+
+for you to fetch changes up to 08298f0612e5e369d1da89b92cac5d2c71ddb9af:
+
+  sh: explicitly include sh_dma.h in setup-sh7722.c (2012-08-02 15:37:26 +0900)
+
+----------------------------------------------------------------
+SuperH fixes for 3.6-rc1 merge window
+
+----------------------------------------------------------------
+Guennadi Liakhovetski (17):
+      sh: add fixed voltage regulators to apsh4a3a
+      sh: add fixed voltage regulators to apsh4ad0a
+      sh: add fixed voltage regulators to magicpanelr2
+      sh: add fixed voltage regulators to polaris
+      sh: add fixed voltage regulators to sh2007
+      sh: add fixed voltage regulators to sh7757lcr
+      sh: add fixed voltage regulators to ap325rxa
+      sh: add fixed voltage regulators to kfr2r09
+      sh: add fixed voltage regulators to migor
+      sh: add fixed voltage regulators to rsk
+      sh: add fixed voltage regulators to sdk7786
+      sh: add fixed voltage regulators to se7724
+      sh: ecovec: switch MMC power control to regulators
+      sh: select the fixed regulator driver on several boards
+      dmaengine: shdma: restore partial transfer calculation
+      serial: sh-sci: fix compilation breakage, when DMA is enabled
+      sh: explicitly include sh_dma.h in setup-sh7722.c
+
+Kuninori Morimoto (2):
+      sh: sh7724: fixup renesas_usbhs clock settings
+      sh: ecovec: care CN5 VBUS if USB host mode
+
+Paul Mundt (8):
+      sh: pfc: Build fix for pinctrl_remove_gpio_range() changes.
+      sh: Fix up recursive fault in oops with unset TTB.
+      Merge branches 'sh/urgent' and 'sh/regulator' into sh-latest
+      Merge branch 'sh/dmaengine' into sh-latest
+      sh: pfc: Fix up init ordering mess.
+      Merge branch 'common/pinctrl' into sh-latest
+      sh: intc: initial irqdomain support.
+      Merge branch 'common/irqdomain' into sh-latest
+
+Shimoda, Yoshihiro (1):
+      sh: modify the sh_dmae_slave_config for RSPI in setup-sh7757
+
+ arch/sh/boards/Kconfig                 |  13 ++++
+ arch/sh/boards/board-apsh4a3a.c        |  10 +++
+ arch/sh/boards/board-apsh4ad0a.c       |  10 +++
+ arch/sh/boards/board-magicpanelr2.c    |  10 +++
+ arch/sh/boards/board-polaris.c         |  10 +++
+ arch/sh/boards/board-sh2007.c          |  12 ++++
+ arch/sh/boards/board-sh7757lcr.c       |  14 ++++
+ arch/sh/boards/mach-ap325rxa/setup.c   |  21 ++++++
+ arch/sh/boards/mach-ecovec24/setup.c   | 125 ++++++++++++++++++++++++++++-----
+ arch/sh/boards/mach-kfr2r09/setup.c    |  12 ++++
+ arch/sh/boards/mach-migor/setup.c      |  13 ++++
+ arch/sh/boards/mach-rsk/setup.c        |  10 +++
+ arch/sh/boards/mach-sdk7786/setup.c    |  10 +++
+ arch/sh/boards/mach-se/7724/setup.c    |  15 ++++
+ arch/sh/include/cpu-sh4/cpu/sh7757.h   |   2 +
+ arch/sh/kernel/cpu/sh4a/clock-sh7724.c |   4 +-
+ arch/sh/kernel/cpu/sh4a/setup-sh7722.c |   1 +
+ arch/sh/kernel/cpu/sh4a/setup-sh7757.c |  14 ++++
+ arch/sh/mm/fault.c                     |   8 ++-
+ drivers/dma/sh/shdma-base.c            |   9 +++
+ drivers/dma/sh/shdma.c                 |  12 ++++
+ drivers/sh/intc/Kconfig                |   4 ++
+ drivers/sh/intc/Makefile               |   2 +-
+ drivers/sh/intc/core.c                 |  11 +--
+ drivers/sh/intc/internals.h            |   5 ++
+ drivers/sh/intc/irqdomain.c            |  68 ++++++++++++++++++
+ drivers/sh/pfc/pinctrl.c               |  34 ++++-----
+ drivers/tty/serial/sh-sci.c            |   5 +-
+ include/linux/shdma-base.h             |   2 +
+ 29 files changed, 419 insertions(+), 47 deletions(-)
+ create mode 100644 drivers/sh/intc/irqdomain.c
