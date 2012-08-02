@@ -1,214 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab2HBORA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 10:17:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40697 "EHLO mx2.suse.de"
+	id S1753730Ab2HBOS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 10:18:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40737 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab2HBOQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 10:16:58 -0400
-Date: Thu, 2 Aug 2012 16:16:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm] mm: hugetlbfs: Correctly populate shared pmd
-Message-ID: <20120802141656.GB18084@dhcp22.suse.cz>
+	id S1752484Ab2HBOSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 10:18:55 -0400
+Date: Thu, 2 Aug 2012 10:18:47 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Borislav Petkov <bp@alien8.de>, Borislav Petkov <borislav.petkov@amd.com>,
+        Michal Marek <mmarek@suse.cz>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 0/6] menuconfig: jump to search results
+Message-ID: <20120802141847.GB21766@d2.synalogic.ca>
+References: <1343676130-29770-1-git-send-email-bpoirier@suse.de>
+ <20120730195826.GA8242@liondog.tnic>
+ <20120730202212.GA31790@d2.synalogic.ca>
+ <20120731075751.GB23595@liondog.tnic>
+ <20120731131751.GA10910@d2.synalogic.ca>
+ <20120802133252.GA3752@x1.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120802133252.GA3752@x1.osrc.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-the following patch fixes yet-another race in the hugetlb pte sharing
-code reported by Larry. It is based on top of the current -mm tree but
-it cleanly applies to linus tree as well. It should go to stable as
-well. The bug is there for ages but this fix is possible only since 3.0
-because i_mmap_lock used to be a spinlock until 3d48ae45 which turned it
-into mutex and so we can call pmd_alloc.
-There was another candidate for the same issue by Mel
-(https://lkml.org/lkml/2012/7/31/275) but we considered this one to be
-better because it is more focused on the arch specific code and it also
-highers chances for sharing.
----
->From 68e132e56793073ba9a6efc20f8fcc7de0f701b6 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Tue, 31 Jul 2012 15:00:26 +0200
-Subject: [PATCH] mm: hugetlbfs: Correctly populate shared pmd
+On 2012/08/02 15:32, Borislav Petkov wrote:
+> On Tue, Jul 31, 2012 at 09:17:51AM -0400, Benjamin Poirier wrote:
+> > > * when searching for "DELAY" for example, I get results without numbers
+> > > to which I can't jump to:
+> > > 
+> > > ...
+> > >   │ Symbol: DEFAULT_IO_DELAY_TYPE [=0]
+> > >   │ Type  : integer
+> > >   │
+> > >   │
+> > >   │ Symbol: IO_DELAY_TYPE_0X80 [=0]
+> > >   │ Type  : integer
+> > > ...
+> > > 
+> > > maybe because they don't have "---help---" section?
+> > 
+> > Because they don't have a prompt - they don't appear in any menu at all.
+> > In that case there's nowhere to jump to. That's why those symbols don't
+> > get a number.
+> 
+> Right, so how about you don't show them at all then?
 
-Each page mapped in a processes address space must be correctly
-accounted for in _mapcount. Normally the rules for this are
-straight-forward but hugetlbfs page table sharing is different.
-The page table pages at the PMD level are reference counted while
-the mapcount remains the same. If this accounting is wrong, it causes
-bugs like this one reported by Larry Woodman
+It's a search for CONFIG_ symbols not "menus". Even though the user
+doesn't have direct control over some symbols, it's still useful to know
+they exist and (possibly) what enables them. For example, searching for
+LOCKDEP tells me I can enable DEBUG_LOCK_ALLOC to get it.
 
-[ 1106.156569] ------------[ cut here ]------------
-[ 1106.161731] kernel BUG at mm/filemap.c:135!
-[ 1106.166395] invalid opcode: 0000 [#1] SMP
-[ 1106.170975] CPU 22
-[ 1106.173115] Modules linked in: bridge stp llc sunrpc binfmt_misc dcdbas microcode pcspkr acpi_pad acpi]
-[ 1106.201770]
-[ 1106.203426] Pid: 18001, comm: mpitest Tainted: G        W    3.3.0+ #4 Dell Inc. PowerEdge R620/07NDJ2
-[ 1106.213822] RIP: 0010:[<ffffffff8112cfed>]  [<ffffffff8112cfed>] __delete_from_page_cache+0x15d/0x170
-[ 1106.224117] RSP: 0018:ffff880428973b88  EFLAGS: 00010002
-[ 1106.230032] RAX: 0000000000000001 RBX: ffffea0006b80000 RCX: 00000000ffffffb0
-[ 1106.237979] RDX: 0000000000016df1 RSI: 0000000000000009 RDI: ffff88043ffd9e00
-[ 1106.245927] RBP: ffff880428973b98 R08: 0000000000000050 R09: 0000000000000003
-[ 1106.253876] R10: 000000000000000d R11: 0000000000000000 R12: ffff880428708150
-[ 1106.261826] R13: ffff880428708150 R14: 0000000000000000 R15: ffffea0006b80000
-[ 1106.269780] FS:  0000000000000000(0000) GS:ffff88042fd60000(0000) knlGS:0000000000000000
-[ 1106.278794] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1106.285193] CR2: 0000003a1d38c4a8 CR3: 000000000187d000 CR4: 00000000000406e0
-[ 1106.293149] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1106.301097] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1106.309046] Process mpitest (pid: 18001, threadinfo ffff880428972000, task ffff880428b5cc20)
-[ 1106.318447] Stack:
-[ 1106.320690]  ffffea0006b80000 0000000000000000 ffff880428973bc8 ffffffff8112d040
-[ 1106.328958]  ffff880428973bc8 00000000000002ab 00000000000002a0 ffff880428973c18
-[ 1106.337234]  ffff880428973cc8 ffffffff8125b405 ffff880400000001 0000000000000000
-[ 1106.345513] Call Trace:
-[ 1106.348235]  [<ffffffff8112d040>] delete_from_page_cache+0x40/0x80
-[ 1106.355128]  [<ffffffff8125b405>] truncate_hugepages+0x115/0x1f0
-[ 1106.361826]  [<ffffffff8125b4f8>] hugetlbfs_evict_inode+0x18/0x30
-[ 1106.368615]  [<ffffffff811ab1af>] evict+0x9f/0x1b0
-[ 1106.373951]  [<ffffffff811ab3a3>] iput_final+0xe3/0x1e0
-[ 1106.379773]  [<ffffffff811ab4de>] iput+0x3e/0x50
-[ 1106.384922]  [<ffffffff811a8e18>] d_kill+0xf8/0x110
-[ 1106.390356]  [<ffffffff811a8f12>] dput+0xe2/0x1b0
-[ 1106.395595]  [<ffffffff81193612>] __fput+0x162/0x240
-
-During fork(), copy_hugetlb_page_range() detects if huge_pte_alloc()
-shared page tables with the check dst_pte == src_pte. The logic is if
-the PMD page is the same, they must be shared. This assumes that the
-sharing is between the parent and child. However, if the sharing is with
-a different process entirely then this check fails as in this diagram.
-
-parent
-  |
-  ------------>pmd
-               src_pte----------> data page
-                                      ^
-other--------->pmd--------------------|
-                ^
-child-----------|
-               dst_pte
-
-For this situation to occur, it must be possible for Parent and Other
-to have faulted and failed to share page tables with each other. This is
-possible due to the following style of race.
-
-PROC A                                          PROC B
-copy_hugetlb_page_range                         copy_hugetlb_page_range
-  src_pte == huge_pte_offset                      src_pte == huge_pte_offset
-  !src_pte so no sharing                          !src_pte so no sharing
-
-(time passes)
-
-hugetlb_fault                                   hugetlb_fault
-  huge_pte_alloc                                  huge_pte_alloc
-    huge_pmd_share                                 huge_pmd_share
-      LOCK(i_mmap_mutex)
-      find nothing, no sharing
-      UNLOCK(i_mmap_mutex)
-                                                    LOCK(i_mmap_mutex)
-                                                    find nothing, no sharing
-                                                    UNLOCK(i_mmap_mutex)
-    pmd_alloc                                       pmd_alloc
-    LOCK(instantiation_mutex)
-    fault
-    UNLOCK(instantiation_mutex)
-                                                LOCK(instantiation_mutex)
-                                                fault
-                                                UNLOCK(instantiation_mutex)
-
-These two processes are not poing to the same data page but are not sharing
-page tables because the opportunity was missed. When either process later
-forks, the src_pte == dst pte is potentially insufficient.  As the check
-falls through, the wrong PTE information is copied in (harmless but wrong)
-and the mapcount is bumped for a page mapped by a shared page table leading
-to the BUG_ON.
-
-This patch addresses the issue by moving pmd_alloc into huge_pmd_share
-which guarantees that the shared pud is populated in the same
-critical section as pmd. This also means that huge_pte_offset test in
-huge_pmd_share is serialized correctly now which in turn means that
-the success of the sharing will be higher as the racing tasks see the
-pud and pmd populated together.
-
-Race identified and changelog written mostly by Mel Gorman
-Reported-and-tested-by: Larry Woodman <lwoodman@redhat.com>
-Reviewed-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- arch/x86/mm/hugetlbpage.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-index f6679a7..51839d1 100644
---- a/arch/x86/mm/hugetlbpage.c
-+++ b/arch/x86/mm/hugetlbpage.c
-@@ -56,9 +56,16 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
- }
- 
- /*
-- * search for a shareable pmd page for hugetlb.
-+ * search for a shareable pmd page for hugetlb. In any case calls
-+ * pmd_alloc and returns the corresponding pte. While this not necessary
-+ * for the !shared pmd case because we can allocate the pmd later as
-+ * well it makes the code much cleaner. pmd allocation is essential for
-+ * the shared case though because pud has to be populated inside the
-+ * same i_mmap_mutex section otherwise racing tasks could either miss
-+ * the sharing (see huge_pte_offset) or selected a bad pmd for sharing.
-  */
--static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
-+static pte_t*
-+huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
- {
- 	struct vm_area_struct *vma = find_vma(mm, addr);
- 	struct address_space *mapping = vma->vm_file->f_mapping;
-@@ -68,9 +75,10 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
- 	struct vm_area_struct *svma;
- 	unsigned long saddr;
- 	pte_t *spte = NULL;
-+	pte_t *pte;
- 
- 	if (!vma_shareable(vma, addr))
--		return;
-+		return (pte_t *)pmd_alloc(mm, pud, addr);
- 
- 	mutex_lock(&mapping->i_mmap_mutex);
- 	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
-@@ -97,7 +105,9 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
- 		put_page(virt_to_page(spte));
- 	spin_unlock(&mm->page_table_lock);
- out:
-+	pte = (pte_t *)pmd_alloc(mm, pud, addr);
- 	mutex_unlock(&mapping->i_mmap_mutex);
-+	return pte;
- }
- 
- /*
-@@ -142,8 +152,9 @@ pte_t *huge_pte_alloc(struct mm_struct *mm,
- 		} else {
- 			BUG_ON(sz != PMD_SIZE);
- 			if (pud_none(*pud))
--				huge_pmd_share(mm, addr, pud);
--			pte = (pte_t *) pmd_alloc(mm, pud, addr);
-+				pte = huge_pmd_share(mm, addr, pud);
-+			else
-+				pte = (pte_t *) pmd_alloc(mm, pud, addr);
- 		}
- 	}
- 	BUG_ON(pte && !pte_none(*pte) && !pte_huge(*pte));
--- 
-1.7.10.4
-
--- 
-Michal Hocko
-SUSE Labs
+Besides, this patchset to add the jumps keys didn't change that behavior at
+all. You're gonna get the same search results with the current menuconfig.
