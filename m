@@ -1,94 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab2HBHFR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 03:05:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59665 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753879Ab2HBHFP convert rfc822-to-8bit (ORCPT
+	id S1753879Ab2HBHFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 03:05:51 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:41012 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab2HBHFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 03:05:15 -0400
-X-IronPort-AV: E=Sophos;i="4.77,699,1336320000"; 
-   d="scan'208";a="5535514"
-Message-ID: <501A271A.5030808@cn.fujitsu.com>
-Date: Thu, 02 Aug 2012 15:07:06 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Thu, 2 Aug 2012 03:05:50 -0400
+Message-ID: <501A2686.8000605@windriver.com>
+Date: Thu, 2 Aug 2012 15:04:38 +0800
+From: wyang1 <Wei.Yang@windriver.com>
+Reply-To: <Wei.Yang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <lenb@kernel.org>, Tony Luck <tony.luch@intel.com>,
-        Bob Moore <robert.moore@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Hanjun Guo <guohanjun@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        Gaohuai Han <hangaohuai@huawei.com>
-Subject: Re: [RFC PATCH 1/3] ACPIHP: introduce a framework for ACPI based
- system device hotplug
-References: <1343475772-21345-1-git-send-email-jiang.liu@huawei.com> <1343475772-21345-2-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1343475772-21345-2-git-send-email-jiang.liu@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/02 15:05:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/02 15:05:44
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: <linux-kernel@vger.kernel.org>, <robert.richter@amd.com>
+Subject: oops in x86/oprofile/dump_stack with 3.4.6
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.162.190]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi all,
 
-A little problem here. :)
+A couple of days ago I tried to use oprofile with enabling call graph in 
+a recent build of 3.4.6. this causes a OOPS
+"BUG: unable to handle kernel paging request at 636f7270".
 
-On 07/28/2012 07:42 PM, Jiang Liu wrote:
-> +int acpihp_register_slot(struct acpihp_slot *slot)
-> +{
-> +	int ret;
-> +	char *name;
-> +	size_t off;
-> +
-> +	if (!slot || !slot->slot_ops)
-> +		return -EINVAL;
-> +
-> +	/* Hook top level hotplug slots under ACPI root device */
-> +	if (slot->parent)
-> +		slot->dev.parent = &slot->parent->dev;
-> +	else
-> +		slot->dev.parent = &acpi_root->dev;
-> +
-> +	ret = device_add(&slot->dev);
-> +	if (!ret) {
-> +		slot->flags |= ACPIHP_SLOT_FLAG_REGISTERED;
-> +		name = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> +		if (name) {
-> +			off = acpihp_generate_link_name(slot, name, 0);
-> +			name[off - 1] = '\0';
-> +			sysfs_create_link(&acpihp_slot_kset->kobj,
-> +					  &slot->dev.kobj, name);
+The oops can be often reproduced by the following steps on my board 
+based on Intel Atom.
 
-I got a compiler warning here:
-  CC      drivers/acpi/hotplug/core.o
-drivers/acpi/hotplug/core.c: In function ‘acpihp_register_slot’:
-drivers/acpi/hotplug/core.c:199: warning: ignoring return value of ‘sysfs_create_link’, declared with attribute warn_unused_result
+opcontrol --no-vmlinux
+opcontrol -c 10
+opcontrol -e BR_INST_RETIRED:8000
+opcontrl -s
 
-Seems that we need to check the sysfs_create_link()'s return value here, and if it fails, 
-shall we at least give a warning message here ?
+With a few seconds I get the oops.
 
-Thanks. :)
+I've spent some time investigating the problem, and found it is possible 
+that the marked line in dump_strace function results in the oops as the 
+content of stack
+variable is less than CONFIG_PAGE_OFFSET(0xc000_0000).
+arch/x86/kernel/dumpstack_32.c
+int dump_stack()
+...
+for (;;) {
+         struct thread_info *context;
+         context = (struct thread_info *)
+             ((unsigned long)stack & (~(THREAD_SIZE - 1)));
+         bp = ops->walk_stack(context, stack, bp, ops, data, NULL, &graph);
+
+----->  stack = (unsigned long *)context->previous_esp;
+         if (!stack)
+             break;
+         if (ops->stack(data, "IRQ") < 0)
+             break;
+         touch_nmi_watchdog();
+     }
+...
+Actually I think this scenario should not happen, because the stack 
+should be kernel stack or irq stack.
+So I changed this function by adding simplistic check to avoid this 
+scenario. It seems to work for my board.
+
+for (;;) {
+                 struct thread_info *context;
++               /*
++                * Somehow stack may be less than CONFIG_PAGE_OFFSET,
++                * So we should temporarily avoid the scenario before
++                * figuring out the root cause.
++                */
++               if (stack < CONFIG_PAGE_OFFSET)
++                       break;
+
+                 context = (struct thread_info *)
+                         ((unsigned long)stack & (~(THREAD_SIZE - 1)));
 
 
-> +			kfree(name);
-> +		}
-> +	}
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(acpihp_register_slot);
+Any suggestion for the change.
 
--- 
-Best Regards,
-Tang chen
+Thanks
+Wei
+
+The following is the oops I encountered.
+BUG: unable to handle kernel paging request at 636f7270
+IP: [<c1005229>] print_context_stack+0x69/0x130
+*pde = 00000000
+Oops: 0000 [#1] PREEMPT SMP
+LTT NESTING LEVEL : 0
+Modules linked in:
+
+Pid: 0, comm: swapper/0 Not tainted 
+3.4.6-WR5.0+snapshot-20120801_standard #9 To be filled by O.E.M. To be 
+filled by O.E.M./To be filled by O.E.M.
+EIP: 0060:[<c1005229>] EFLAGS: 00010046 CPU: 0
+EIP is at print_context_stack+0x69/0x130
+EAX: 0000002e EBX: 636f7270 ECX: 00000000 EDX: 04010000
+ESI: ffffe000 EDI: 00000000 EBP: f680be98 ESP: f680be68
+  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+CR0: 8005003b CR2: 636f7270 CR3: 0192e000 CR4: 000007d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process swapper/0 (pid: 0, ti=f680a000 task=c183cfa0 task.ti=c1832000)
+Stack:
+  c1761c2c 636f7270 636f6000 00000000 636f7ffc 636f6000 c1833ed4 ffffe000
+  c1833ed4 636f7270 c18888dc 636f6000 f680bec8 c1004218 c18888dc f680bedc
+  00000000 f680beb4 c1833ed4 00000000 f680bec0 c1833ed4 f680bfc4 0000000a
+Call Trace:
+  [<c1004218>] dump_trace+0x68/0xf0
+  [<c1554682>] x86_backtrace+0xb2/0xc0
+  [<c1552682>] oprofile_add_sample+0xa2/0xc0
+  [<c10040df>] ? do_softirq+0x6f/0xa0
+  [<c15562c9>] ppro_check_ctrs+0x79/0x100
+  [<c1556250>] ? ppro_shutdown+0x60/0x60
+  [<c15550af>] profile_exceptions_notify+0x8f/0xb0
+  [<c1660d78>] nmi_handle.isra.0+0x48/0x70
+  [<c1660e9f>] do_nmi+0xff/0x570
+  [<c105bd75>] ? run_rebalance_domains+0x155/0x180
+  [<c105428b>] ? get_parent_ip+0xb/0x40
+  [<c102e379>] ? __local_bh_enable+0x29/0x70
+  [<c102ecd0>] ? ftrace_define_fields_irq_handler_entry+0x80/0x80
+  [<c16601c9>] nmi_stack_correct+0x28/0x2d
+  [<c102ecd0>] ? ftrace_define_fields_irq_handler_entry+0x80/0x80
+  [<c10040df>] ? do_softirq+0x6f/0xa0
+<IRQ>
+  [<c102f155>] irq_exit+0x65/0x70
+  [<c1666441>] do_IRQ+0x51/0xc0
+  [<c1666369>] common_interrupt+0x29/0x30
+  [<c102007b>] ? amd_get_subcaches+0x4b/0x90
+  [<c1330416>] ? intel_idle+0xc6/0x120
+  [<c14e4719>] cpuidle_enter+0x19/0x30
+  [<c14e4cf0>] cpuidle_idle_call+0xa0/0x320
+  [<c1009e8a>] cpu_idle+0x5a/0xc0
+  [<c163fa48>] rest_init+0x6c/0x74
+  [<c189d703>] start_kernel+0x2fe/0x305
+  [<c189d23d>] ? repair_env_string+0x51/0x51
+  [<c189d078>] i386_start_kernel+0x78/0x7d
+Code: 00 00 3b 5d dc 72 13 8b 45 f0 8d 64 24 24 5b 5e 5f 5d c3 8d b4 26 
+00 00 00 00 3b 5d ec 72 e8 81 fb ff ff ff bf 0f 86 a3 00 00 00 <8b> 33 
+89 f0 e8 ae e5 03 00 85 c0 74 1e 8b 45 f0 83 c0 04 39 c3
+EIP: [<c1005229>] print_context_stack+0x69/0x130 SS:ESP 0068:f680be68
+CR2: 00000000636f7270
+---[ end trace d4af25ee5ff6fd8c ]---
