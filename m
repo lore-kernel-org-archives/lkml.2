@@ -1,198 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab2HBFjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 01:39:44 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59576 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab2HBFjm (ORCPT
+	id S1752634Ab2HBFww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 01:52:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34299 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab2HBFwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 01:39:42 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-c9-501a129b6648
-Message-ID: <501A129B.2020709@lge.com>
-Date: Thu, 02 Aug 2012 14:39:39 +0900
-From: "kyungsik.lee" <kyungsik.lee@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 2 Aug 2012 01:52:51 -0400
 MIME-Version: 1.0
-To: Chanho Min <chanho.min@lge.com>, "'Chris Ball'" <cjb@laptop.org>
-CC: "'Venkatraman S'" <svenkatr@ti.com>, raphael.andy.lee@gmail.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v4] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-References: <1343783145-17623-1-git-send-email-kyungsik.lee@lge.com> <000001cd7059$8f1a7b10$ad4f7130$@min@lge.com>
-In-Reply-To: <000001cd7059$8f1a7b10$ad4f7130$@min@lge.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <alpine.DEB.2.00.1208011259550.4606@router.home>
+References: <1343411703-2720-1-git-send-email-js1304@gmail.com>
+ <1343411703-2720-4-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1207271550190.25434@router.home>
+ <CAAmzW4MdiJOaZW_b+fz1uYyj0asTCveN=24st4xKymKEvkzdgQ@mail.gmail.com>
+ <alpine.DEB.2.00.1207301425410.28838@router.home> <CAHO5Pa0wwSi3VH1ytLZsEJs99i_=5qN5ax=8y=uz1jbG+P03sw@mail.gmail.com>
+ <alpine.DEB.2.00.1208011259550.4606@router.home>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Thu, 2 Aug 2012 07:52:30 +0200
+X-Google-Sender-Auth: 0GMPVN03duMAFdItb7bBeSq7Phc
+Message-ID: <CAHO5Pa2LhC2YxVtGguVc5Ppts7pGAGRD47L41OzGjJ+a9DfZaQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH 4/4 v3] mm: fix possible incorrect return value of
+ move_pages() syscall
+To: Christoph Lameter <cl@linux.com>
+Cc: JoonSoo Kim <js1304@gmail.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Brice Goglin <brice@myri.com>, Minchan Kim <minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Chanho Min,
-
-
-On 2012-08-02 오전 11:50, Chanho Min wrote:
->> -----Original Message-----
->> From: Kyungsik Lee [mailto:kyungsik.lee@lge.com]
->> Sent: Wednesday, August 01, 2012 10:06 AM
->> To: Chris Ball
->> Cc: Venkatraman S; Jaehoon Chung; raphael.andy.lee@gmail.com; linux-
->> mmc@vger.kernel.org; linux-kernel@vger.kernel.org; Kyungsik Lee
->> Subject: [PATCH RESEND v4] mmc: core: Remove bounce buffer in
->> mmc_send_cxd_data()
->>
->> It is expected that Extended CSD register(the size of this register
->> is larger than CID/CSD) will be referenced more frequently as more
->> fields have been added to Extended CSD and it seems that it is not
->> a good option to double the memory used.
->>
->> This patch is intended to avoid the use of bounce buffer for reading
->> Extended CSD register in mmc_send_cxd_data().
->>
->> Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
->> Signed-off-by: S, Venkatraman <svenkatr@ti.com>
->> ---
->> Changes in v2:
->> - Handling on-stack buffer if it's used in caller.
->>
->> Changes in v3:
->> - Remove unnecesary code.
->>
->> Changes in v4:
->> - Modify codes based-on S, Venkatraman's comments.
->> ---
->> drivers/mmc/core/mmc_ops.c |   54
-> +++++++++++++++++++++++++++++++------------
->> -
->> 1 files changed, 38 insertions(+), 16 deletions(-)
->>
->> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
->> index 0ed2cc5..920a017 100644
->> --- a/drivers/mmc/core/mmc_ops.c
->> +++ b/drivers/mmc/core/mmc_ops.c
->> @@ -239,13 +239,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct
-> mmc_host
->> *host,
->> 	struct mmc_data data = {0};
->> 	struct scatterlist sg;
->> 	void *data_buf;
->> +	int is_on_stack;
->>
->> -	/* dma onto stack is unsafe/nonportable, but callers to this
->> -	 * routine normally provide temporary on-stack buffers ...
->> -	 */
->> -	data_buf = kmalloc(len, GFP_KERNEL);
->> -	if (data_buf == NULL)
->> -		return -ENOMEM;
->> +	is_on_stack = object_is_on_stack(buf);
->> +	if (is_on_stack) {
->> +
->> +		/* dma onto stack is unsafe/nonportable, but callers to this
->> +		 * routine normally provide temporary on-stack buffers ...
->> +		 */
->> +		data_buf = kmalloc(len, GFP_KERNEL);
->> +		if (data_buf == NULL)
->> +			return -ENOMEM;
->> +	} else
->> +		data_buf = buf;
->>
->> 	mrq.cmd = &cmd;
->> 	mrq.data = &data;
->> @@ -280,8 +286,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct
-> mmc_host
->> *host,
->>
->> 	mmc_wait_for_req(host, &mrq);
->>
->> -	memcpy(buf, data_buf, len);
->> -	kfree(data_buf);
->> +	if (is_on_stack) {
->> +		memcpy(buf, data_buf, len);
->> +		kfree(data_buf);
->> +	}
->>
->> 	if (cmd.error)
->> 		return cmd.error;
->> @@ -294,24 +302,32 @@ mmc_send_cxd_data(struct mmc_card *card, struct
-> mmc_host
->> *host,
->> int mmc_send_csd(struct mmc_card *card, u32 *csd)
->> {
->> 	int ret, i;
->> +	u32 *csd_tmp;
->>
->> 	if (!mmc_host_is_spi(card->host))
->> 		return mmc_send_cxd_native(card->host, card->rca << 16,
->> 				csd, MMC_SEND_CSD);
->>
->> -	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
->> +	csd_tmp = kmalloc(16, GFP_KERNEL);
->> +	if (!csd_tmp)
->> +		return -ENOMEM;
->> +
->> +	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp,
-> 16);
->> 	if (ret)
->> -		return ret;
->> +		goto err;
->>
->> 	for (i = 0;i < 4;i++)
->> -		csd[i] = be32_to_cpu(csd[i]);
->> +		csd[i] = be32_to_cpu(csd_tmp[i]);
->>
->> -	return 0;
->> +err:
->> +	kfree(csd_tmp);
->> +	return ret;
->> }
-> If we can handle for the on-stack buffer in mmc_send_cxd_data, why do we
-> need callers's modification as bellows?
-As you comment above, on-stack buffer can be handled with no better 
-performance gain.
-In case of both mmc_send_cid() and mmc_send_csd(), on-stack buffers have 
-not been allocated
-in the upper callers to the two functions(you may check it in the upper 
-callers).
-And you will find out the reason why such a modification below is needed 
-in the mail thread
-(Reply to S, Venkatraman's comment).
-
-Thanks
-Kyungsik Lee
->> int mmc_send_cid(struct mmc_host *host, u32 *cid)
->> {
->> 	int ret, i;
->> +	u32 *cid_tmp;
->>
->> 	if (!mmc_host_is_spi(host)) {
->> 		if (!host->card)
->> @@ -320,14 +336,20 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
->> 				cid, MMC_SEND_CID);
->> 	}
->>
->> -	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
->> +	cid_tmp = kmalloc(16, GFP_KERNEL);
->> +	if (!cid_tmp)
->> +		return -ENOMEM;
->> +
->> +	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
->> 	if (ret)
->> -		return ret;
->> +		goto err;
->>
->> 	for (i = 0;i < 4;i++)
->> -		cid[i] = be32_to_cpu(cid[i]);
->> +		cid[i] = be32_to_cpu(cid_tmp[i]);
->>
->> -	return 0;
->> +err:
->> +	kfree(cid_tmp);
->> +	return ret;
->> }
->>
->> int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
->> --
->> 1.7.0.4
-> Thanks
-> Chanho Min
+On Wed, Aug 1, 2012 at 8:00 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Wed, 1 Aug 2012, Michael Kerrisk wrote:
 >
+>> Is the patch below acceptable? (I've attached the complete page as well.)
 >
+> Yes looks good.
 
+Thanks for checking it!
+
+>> See you in San Diego (?),
+>
+> Yup. I will be there too.
+
+See you then!
+
+Cheers,
+
+Michael
+
+-- 
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
