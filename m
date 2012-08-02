@@ -1,140 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab2HBGFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 02:05:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32170 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753043Ab2HBGA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 02:00:59 -0400
-X-IronPort-AV: E=Sophos;i="4.77,698,1336320000"; 
-   d="scan'208";a="5534625"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.linux-foundation.org
-Subject: [RFC PATCH 07/23 V2] memcontrol: use N_MEMORY instead N_HIGH_MEMORY
-Date: Thu, 2 Aug 2012 14:01:12 +0800
-Message-Id: <1343887288-8866-8-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/02 14:01:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/02 14:01:28,
-	Serialize complete at 2012/08/02 14:01:28
+	id S1753500Ab2HBGGF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 02:06:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35891 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab2HBGAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 02:00:55 -0400
+Date: Wed, 1 Aug 2012 23:00:47 -0700
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        ecryptfs@vger.kernel.org
+Subject: [GIT PULL] eCryptfs fixes for 3.6-rc1
+Message-ID: <20120802060047.GA24033@boyd>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-N_HIGH_MEMORY stands for the nodes that has normal or high memory.
-N_MEMORY stands for the nodes that has any memory.
 
-The code here need to handle with the nodes which have memory, we should
-use N_MEMORY instead.
+--h31gzZEtNLTqOjlF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- mm/memcontrol.c  |   18 +++++++++---------
- mm/page_cgroup.c |    2 +-
- 2 files changed, 10 insertions(+), 10 deletions(-)
+Hi Linus,
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f72b5e5..4402c2e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -797,7 +797,7 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
- 	int nid;
- 	u64 total = 0;
- 
--	for_each_node_state(nid, N_HIGH_MEMORY)
-+	for_each_node_state(nid, N_MEMORY)
- 		total += mem_cgroup_node_nr_lru_pages(memcg, nid, lru_mask);
- 	return total;
- }
-@@ -1549,9 +1549,9 @@ static void mem_cgroup_may_update_nodemask(struct mem_cgroup *memcg)
- 		return;
- 
- 	/* make a nodemask where this memcg uses memory from */
--	memcg->scan_nodes = node_states[N_HIGH_MEMORY];
-+	memcg->scan_nodes = node_states[N_MEMORY];
- 
--	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
-+	for_each_node_mask(nid, node_states[N_MEMORY]) {
- 
- 		if (!test_mem_cgroup_node_reclaimable(memcg, nid, false))
- 			node_clear(nid, memcg->scan_nodes);
-@@ -1622,7 +1622,7 @@ static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
- 	/*
- 	 * Check rest of nodes.
- 	 */
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		if (node_isset(nid, memcg->scan_nodes))
- 			continue;
- 		if (test_mem_cgroup_node_reclaimable(memcg, nid, noswap))
-@@ -3700,7 +3700,7 @@ move_account:
- 		drain_all_stock_sync(memcg);
- 		ret = 0;
- 		mem_cgroup_start_move(memcg);
--		for_each_node_state(node, N_HIGH_MEMORY) {
-+		for_each_node_state(node, N_MEMORY) {
- 			for (zid = 0; !ret && zid < MAX_NR_ZONES; zid++) {
- 				enum lru_list lru;
- 				for_each_lru(lru) {
-@@ -4025,7 +4025,7 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 
- 	total_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL);
- 	seq_printf(m, "total=%lu", total_nr);
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid, LRU_ALL);
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
- 	}
-@@ -4033,7 +4033,7 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 
- 	file_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_FILE);
- 	seq_printf(m, "file=%lu", file_nr);
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
- 				LRU_ALL_FILE);
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
-@@ -4042,7 +4042,7 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 
- 	anon_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_ANON);
- 	seq_printf(m, "anon=%lu", anon_nr);
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
- 				LRU_ALL_ANON);
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
-@@ -4051,7 +4051,7 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 
- 	unevictable_nr = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_UNEVICTABLE));
- 	seq_printf(m, "unevictable=%lu", unevictable_nr);
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
- 				BIT(LRU_UNEVICTABLE));
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index eb750f8..e775239 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -271,7 +271,7 @@ void __init page_cgroup_init(void)
- 	if (mem_cgroup_disabled())
- 		return;
- 
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		unsigned long start_pfn, end_pfn;
- 
- 		start_pfn = node_start_pfn(nid);
--- 
-1.7.1
+The following changes since commit bd0a521e88aa7a06ae7aabaed7ae196ed4ad867a:
 
+  Linux 3.5-rc6 (2012-07-07 17:23:56 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tyhicks/ecryptfs.git tags/ecryptfs-3.6-rc1-fixes
+
+for you to fetch changes up to 5f5b331d5c21228a6519dcb793fc1629646c51a6:
+
+  eCryptfs: check for eCryptfs cipher support at mount (2012-07-13 17:20:34 -0700)
+
+----------------------------------------------------------------
+- Fixes a bug when the lower filesystem mount options include 'acl', but the
+  eCryptfs mount options do not
+- Cleanups in the messaging code
+- Better handling of empty files in the lower filesystem to improve usability.
+  Failed file creations are now cleaned up and empty lower files are converted
+  into eCryptfs during open().
+- The write-through cache changes are being reverted due to bugs that are not
+  easy to fix. Stability outweighs the performance enhancements here.
+- Improvement to the mount code to catch unsupported ciphers specified in the
+  mount options
+
+----------------------------------------------------------------
+Tim Sally (1):
+      eCryptfs: check for eCryptfs cipher support at mount
+
+Tyler Hicks (6):
+      eCryptfs: Copy up POSIX ACL and read-only flags from lower mount
+      eCryptfs: Remove unused messaging declarations and function
+      eCryptfs: Make all miscdev functions use daemon ptr in file private_data
+      eCryptfs: Unlink lower inode when ecryptfs_create() fails
+      eCryptfs: Initialize empty lower files when opening them
+      eCryptfs: Revert to a writethrough cache model
+
+ fs/ecryptfs/ecryptfs_kernel.h |   24 +++-----
+ fs/ecryptfs/file.c            |   90 ++++++++++++---------------
+ fs/ecryptfs/inode.c           |   65 ++++++++++----------
+ fs/ecryptfs/main.c            |   23 ++++++-
+ fs/ecryptfs/messaging.c       |  136 +++++------------------------------------
+ fs/ecryptfs/miscdev.c         |   98 ++++++++---------------------
+ fs/ecryptfs/mmap.c            |   39 ++++--------
+ 7 files changed, 158 insertions(+), 317 deletions(-)
+
+--h31gzZEtNLTqOjlF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCgAGBQJQGhePAAoJENaSAD2qAscK/ekP/3XOqtYJXgQmv/78VqOov+oR
+9pmex23XpKVfc7Huok1ARxDJwvrLx4wjfmx/SMo5EBoxb0Y65KhiEum7CpG1GxXJ
+qgdhOMAEYrpZhrZ125LsQufa2yaNJUsgNuhDpaKmidS76WtPkhGmSSEBV++PNng7
+HSB7Rq+a7+BVwT1dAllzA2jVrdbHKfqrfxf/Dk6hgYLj3UgKow8Y4kFJAypFjNx8
+4NfLaU1uEe04hv8qigLqEzArxuLktniGowgiv4VwtnmjBudSRBTR6c9kRjrkRmHf
+E4svnrdUZtPKLZdUrA7IoWB6sxuyM4X6ymeVGfIAot9I5VnaZ2+WLvpIYyUyHccY
+cwlMl8WNi47XgxzQ5Da+L3a618A/8aj1uTRZnfbgoje1wcalhGcbFWIGKKavlP7M
+9CxSNyIx+N+houIFasREQC0IifpG9eWxcp0VSgb/SilD7pxQ1ari6K6PcwooKKm3
+gV91bYJA8zVk1RJPiyfnRxJZn6jkStLraDXYbTAMkAeFBRXeZggM3cICxKAKzwIS
+ZzlJlM1VIEqOPlHr/I8QOL2tlcPLyc7Zj+frsxQdxcv0ikTUAWdydVO8ilJoP+eK
+KUH6rR1iLxIRy+y1OLtNdkqGZMN0PPgwNvKBmbh8SJNQJG00lQWlN7adfP6wXgsh
+qFHtwT8t0h4OWkStsTH4
+=Riet
+-----END PGP SIGNATURE-----
+
+--h31gzZEtNLTqOjlF--
