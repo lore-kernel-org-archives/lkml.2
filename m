@@ -1,117 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2HBGYo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 02:24:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29135 "EHLO mx1.redhat.com"
+	id S1754125Ab2HBGYu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 02:24:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38558 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979Ab2HBGYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 02:24:40 -0400
+	id S1753209Ab2HBGYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 02:24:46 -0400
 From: Asias He <asias@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
         Christoph Hellwig <hch@lst.de>, Tejun Heo <tj@kernel.org>,
         Shaohua Li <shli@kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH V5 3/4] virtio-blk: Add bio-based IO path for virtio-blk
-Date: Thu,  2 Aug 2012 14:25:55 +0800
-Message-Id: <1343888757-25723-4-git-send-email-asias@redhat.com>
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: [PATCH V5 4/4] virtio-blk: Add REQ_FLUSH and REQ_FUA support to bio path
+Date: Thu,  2 Aug 2012 14:25:56 +0800
+Message-Id: <1343888757-25723-5-git-send-email-asias@redhat.com>
 In-Reply-To: <1343888757-25723-1-git-send-email-asias@redhat.com>
 References: <1343888757-25723-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces bio-based IO path for virtio-blk.
+We need to support both REQ_FLUSH and REQ_FUA for bio based path since
+it does not get the sequencing of REQ_FUA into REQ_FLUSH that request
+based drivers can request.
 
-Compared to request-based IO path, bio-based IO path uses driver
-provided ->make_request_fn() method to bypasses the IO scheduler. It
-handles the bio to device directly without allocating a request in block
-layer. This reduces the IO path in guest kernel to achieve high IOPS
-and lower latency. The downside is that guest can not use the IO
-scheduler to merge and sort requests. However, this is not a big problem
-if the backend disk in host side uses faster disk device.
+REQ_FLUSH is emulated by:
+1. Send VIRTIO_BLK_T_FLUSH to device
+2. Wait until the flush is finished
 
-When the bio-based IO path is not enabled, virtio-blk still uses the
-original request-based IO path, no performance difference is observed.
-
-Performance evaluation:
------------------------------
-1) Fio test is performed in a 8 vcpu guest with ramdisk based guest using
-kvm tool.
-
-Short version:
- With bio-based IO path, sequential read/write, random read/write
- IOPS boost         : 28%, 24%, 21%, 16%
- Latency improvement: 32%, 17%, 21%, 16%
-
-Long version:
- With bio-based IO path:
-  seq-read  : io=2048.0MB, bw=116996KB/s, iops=233991 , runt= 17925msec
-  seq-write : io=2048.0MB, bw=100829KB/s, iops=201658 , runt= 20799msec
-  rand-read : io=3095.7MB, bw=112134KB/s, iops=224268 , runt= 28269msec
-  rand-write: io=3095.7MB, bw=96198KB/s,  iops=192396 , runt= 32952msec
-    clat (usec): min=0 , max=2631.6K, avg=58716.99, stdev=191377.30
-    clat (usec): min=0 , max=1753.2K, avg=66423.25, stdev=81774.35
-    clat (usec): min=0 , max=2915.5K, avg=61685.70, stdev=120598.39
-    clat (usec): min=0 , max=1933.4K, avg=76935.12, stdev=96603.45
-  cpu : usr=74.08%, sys=703.84%, ctx=29661403, majf=21354, minf=22460954
-  cpu : usr=70.92%, sys=702.81%, ctx=77219828, majf=13980, minf=27713137
-  cpu : usr=72.23%, sys=695.37%, ctx=88081059, majf=18475, minf=28177648
-  cpu : usr=69.69%, sys=654.13%, ctx=145476035, majf=15867, minf=26176375
- With request-based IO path:
-  seq-read  : io=2048.0MB, bw=91074KB/s, iops=182147 , runt= 23027msec
-  seq-write : io=2048.0MB, bw=80725KB/s, iops=161449 , runt= 25979msec
-  rand-read : io=3095.7MB, bw=92106KB/s, iops=184211 , runt= 34416msec
-  rand-write: io=3095.7MB, bw=82815KB/s, iops=165630 , runt= 38277msec
-    clat (usec): min=0 , max=1932.4K, avg=77824.17, stdev=170339.49
-    clat (usec): min=0 , max=2510.2K, avg=78023.96, stdev=146949.15
-    clat (usec): min=0 , max=3037.2K, avg=74746.53, stdev=128498.27
-    clat (usec): min=0 , max=1363.4K, avg=89830.75, stdev=114279.68
-  cpu : usr=53.28%, sys=724.19%, ctx=37988895, majf=17531, minf=23577622
-  cpu : usr=49.03%, sys=633.20%, ctx=205935380, majf=18197, minf=27288959
-  cpu : usr=55.78%, sys=722.40%, ctx=101525058, majf=19273, minf=28067082
-  cpu : usr=56.55%, sys=690.83%, ctx=228205022, majf=18039, minf=26551985
-
-2) Fio test is performed in a 8 vcpu guest with Fusion-IO based guest using
-kvm tool.
-
-Short version:
- With bio-based IO path, sequential read/write, random read/write
- IOPS boost         : 11%, 11%, 13%, 10%
- Latency improvement: 10%, 10%, 12%, 10%
-Long Version:
- With bio-based IO path:
-  read : io=2048.0MB, bw=58920KB/s, iops=117840 , runt= 35593msec
-  write: io=2048.0MB, bw=64308KB/s, iops=128616 , runt= 32611msec
-  read : io=3095.7MB, bw=59633KB/s, iops=119266 , runt= 53157msec
-  write: io=3095.7MB, bw=62993KB/s, iops=125985 , runt= 50322msec
-    clat (usec): min=0 , max=1284.3K, avg=128109.01, stdev=71513.29
-    clat (usec): min=94 , max=962339 , avg=116832.95, stdev=65836.80
-    clat (usec): min=0 , max=1846.6K, avg=128509.99, stdev=89575.07
-    clat (usec): min=0 , max=2256.4K, avg=121361.84, stdev=82747.25
-  cpu : usr=56.79%, sys=421.70%, ctx=147335118, majf=21080, minf=19852517
-  cpu : usr=61.81%, sys=455.53%, ctx=143269950, majf=16027, minf=24800604
-  cpu : usr=63.10%, sys=455.38%, ctx=178373538, majf=16958, minf=24822612
-  cpu : usr=62.04%, sys=453.58%, ctx=226902362, majf=16089, minf=23278105
- With request-based IO path:
-  read : io=2048.0MB, bw=52896KB/s, iops=105791 , runt= 39647msec
-  write: io=2048.0MB, bw=57856KB/s, iops=115711 , runt= 36248msec
-  read : io=3095.7MB, bw=52387KB/s, iops=104773 , runt= 60510msec
-  write: io=3095.7MB, bw=57310KB/s, iops=114619 , runt= 55312msec
-    clat (usec): min=0 , max=1532.6K, avg=142085.62, stdev=109196.84
-    clat (usec): min=0 , max=1487.4K, avg=129110.71, stdev=114973.64
-    clat (usec): min=0 , max=1388.6K, avg=145049.22, stdev=107232.55
-    clat (usec): min=0 , max=1465.9K, avg=133585.67, stdev=110322.95
-  cpu : usr=44.08%, sys=590.71%, ctx=451812322, majf=14841, minf=17648641
-  cpu : usr=48.73%, sys=610.78%, ctx=418953997, majf=22164, minf=26850689
-  cpu : usr=45.58%, sys=581.16%, ctx=714079216, majf=21497, minf=22558223
-  cpu : usr=48.40%, sys=599.65%, ctx=656089423, majf=16393, minf=23824409
-
-How to use:
------------------------------
-Add 'virtio_blk.use_bio=1' to kernel cmdline or 'modprobe virtio_blk
-use_bio=1' to enable ->make_request_fn() based I/O path.
+REQ_FUA is emulated by:
+1. Send the actual write
+2. Wait until the actual write is finished
+3. Send VIRTIO_BLK_T_FLUSH to device
+4. Wait until the flush is finished
+5. Signal the end of the write to upper layer
 
 Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Jens Axboe <axboe@kernel.dk>
@@ -122,262 +45,85 @@ Cc: "Michael S. Tsirkin" <mst@redhat.com>
 Cc: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: virtualization@lists.linux-foundation.org
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 Signed-off-by: Asias He <asias@redhat.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 ---
- drivers/block/virtio_blk.c | 203 ++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 163 insertions(+), 40 deletions(-)
+ drivers/block/virtio_blk.c | 104 +++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 91 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index c0bbeb4..95cfeed 100644
+index 95cfeed..9ebaea7 100644
 --- a/drivers/block/virtio_blk.c
 +++ b/drivers/block/virtio_blk.c
-@@ -14,6 +14,9 @@
+@@ -54,6 +54,8 @@ struct virtio_blk
  
- #define PART_BITS 4
- 
-+static bool use_bio;
-+module_param(use_bio, bool, S_IRUGO);
-+
- static int major;
- static DEFINE_IDA(vd_index_ida);
- 
-@@ -23,6 +26,7 @@ struct virtio_blk
- {
- 	struct virtio_device *vdev;
- 	struct virtqueue *vq;
-+	wait_queue_head_t queue_wait;
- 
- 	/* The disk structure for the kernel. */
- 	struct gendisk *disk;
-@@ -51,53 +55,87 @@ struct virtio_blk
  struct virtblk_req
  {
++	struct completion *flush_done;
++	struct completion *bio_done;
  	struct request *req;
-+	struct bio *bio;
+ 	struct bio *bio;
  	struct virtio_blk_outhdr out_hdr;
- 	struct virtio_scsi_inhdr in_hdr;
- 	u8 status;
-+	struct scatterlist sg[];
- };
- 
--static void blk_done(struct virtqueue *vq)
-+static inline int virtblk_result(struct virtblk_req *vbr)
-+{
-+	switch (vbr->status) {
-+	case VIRTIO_BLK_S_OK:
-+		return 0;
-+	case VIRTIO_BLK_S_UNSUPP:
-+		return -ENOTTY;
-+	default:
-+		return -EIO;
-+	}
-+}
-+
-+static inline void virtblk_request_done(struct virtio_blk *vblk,
-+					struct virtblk_req *vbr)
-+{
-+	struct request *req = vbr->req;
-+	int error = virtblk_result(vbr);
-+
-+	if (req->cmd_type == REQ_TYPE_BLOCK_PC) {
-+		req->resid_len = vbr->in_hdr.residual;
-+		req->sense_len = vbr->in_hdr.sense_len;
-+		req->errors = vbr->in_hdr.errors;
-+	} else if (req->cmd_type == REQ_TYPE_SPECIAL) {
-+		req->errors = (error != 0);
-+	}
-+
-+	__blk_end_request_all(req, error);
-+	mempool_free(vbr, vblk->pool);
-+}
-+
-+static inline void virtblk_bio_done(struct virtio_blk *vblk,
-+				    struct virtblk_req *vbr)
-+{
-+	bio_endio(vbr->bio, virtblk_result(vbr));
-+	mempool_free(vbr, vblk->pool);
-+}
-+
-+static void virtblk_done(struct virtqueue *vq)
+@@ -95,14 +97,25 @@ static inline void virtblk_request_done(struct virtio_blk *vblk,
+ static inline void virtblk_bio_done(struct virtio_blk *vblk,
+ 				    struct virtblk_req *vbr)
  {
- 	struct virtio_blk *vblk = vq->vdev->priv;
-+	unsigned long bio_done = 0, req_done = 0;
- 	struct virtblk_req *vbr;
--	unsigned int len;
- 	unsigned long flags;
-+	unsigned int len;
- 
- 	spin_lock_irqsave(vblk->disk->queue->queue_lock, flags);
- 	while ((vbr = virtqueue_get_buf(vblk->vq, &len)) != NULL) {
--		int error;
--
--		switch (vbr->status) {
--		case VIRTIO_BLK_S_OK:
--			error = 0;
--			break;
--		case VIRTIO_BLK_S_UNSUPP:
--			error = -ENOTTY;
--			break;
--		default:
--			error = -EIO;
--			break;
--		}
--
--		switch (vbr->req->cmd_type) {
--		case REQ_TYPE_BLOCK_PC:
--			vbr->req->resid_len = vbr->in_hdr.residual;
--			vbr->req->sense_len = vbr->in_hdr.sense_len;
--			vbr->req->errors = vbr->in_hdr.errors;
--			break;
--		case REQ_TYPE_SPECIAL:
--			vbr->req->errors = (error != 0);
--			break;
--		default:
--			break;
-+		if (vbr->bio) {
-+			virtblk_bio_done(vblk, vbr);
-+			bio_done++;
-+		} else {
-+			virtblk_request_done(vblk, vbr);
-+			req_done++;
- 		}
--
--		__blk_end_request_all(vbr->req, error);
--		mempool_free(vbr, vblk->pool);
- 	}
- 	/* In case queue is stopped waiting for more buffers. */
--	blk_start_queue(vblk->disk->queue);
-+	if (req_done)
-+		blk_start_queue(vblk->disk->queue);
- 	spin_unlock_irqrestore(vblk->disk->queue->queue_lock, flags);
-+
-+	if (bio_done)
-+		wake_up(&vblk->queue_wait);
-+}
-+
-+static inline struct virtblk_req *virtblk_alloc_req(struct virtio_blk *vblk,
-+						    gfp_t gfp_mask)
-+{
-+	struct virtblk_req *vbr;
-+
-+	vbr = mempool_alloc(vblk->pool, gfp_mask);
-+	if (vbr && use_bio)
-+		sg_init_table(vbr->sg, vblk->sg_elems);
-+
-+	return vbr;
- }
- 
- static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
-@@ -106,13 +144,13 @@ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
- 	unsigned long num, out = 0, in = 0;
- 	struct virtblk_req *vbr;
- 
--	vbr = mempool_alloc(vblk->pool, GFP_ATOMIC);
-+	vbr = virtblk_alloc_req(vblk, GFP_ATOMIC);
- 	if (!vbr)
- 		/* When another request finishes we'll try again. */
- 		return false;
- 
- 	vbr->req = req;
--
-+	vbr->bio = NULL;
- 	if (req->cmd_flags & REQ_FLUSH) {
- 		vbr->out_hdr.type = VIRTIO_BLK_T_FLUSH;
- 		vbr->out_hdr.sector = 0;
-@@ -172,7 +210,8 @@ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
- 		}
- 	}
- 
--	if (virtqueue_add_buf(vblk->vq, vblk->sg, out, in, vbr, GFP_ATOMIC)<0) {
-+	if (virtqueue_add_buf(vblk->vq, vblk->sg, out, in, vbr,
-+			      GFP_ATOMIC) < 0) {
- 		mempool_free(vbr, vblk->pool);
- 		return false;
- 	}
-@@ -180,7 +219,7 @@ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
- 	return true;
- }
- 
--static void do_virtblk_request(struct request_queue *q)
-+static void virtblk_request(struct request_queue *q)
- {
- 	struct virtio_blk *vblk = q->queuedata;
- 	struct request *req;
-@@ -203,6 +242,82 @@ static void do_virtblk_request(struct request_queue *q)
- 		virtqueue_kick(vblk->vq);
- }
- 
-+static void virtblk_add_buf_wait(struct virtio_blk *vblk,
-+				 struct virtblk_req *vbr,
-+				 unsigned long out,
-+				 unsigned long in)
-+{
-+	DEFINE_WAIT(wait);
-+
-+	for (;;) {
-+		prepare_to_wait_exclusive(&vblk->queue_wait, &wait,
-+					  TASK_UNINTERRUPTIBLE);
-+
-+		spin_lock_irq(vblk->disk->queue->queue_lock);
-+		if (virtqueue_add_buf(vblk->vq, vbr->sg, out, in, vbr,
-+				      GFP_ATOMIC) < 0) {
-+			spin_unlock_irq(vblk->disk->queue->queue_lock);
-+			io_schedule();
-+		} else {
-+			virtqueue_kick(vblk->vq);
-+			spin_unlock_irq(vblk->disk->queue->queue_lock);
-+			break;
-+		}
-+
-+	}
-+
-+	finish_wait(&vblk->queue_wait, &wait);
-+}
-+
-+static void virtblk_make_request(struct request_queue *q, struct bio *bio)
-+{
-+	struct virtio_blk *vblk = q->queuedata;
-+	unsigned int num, out = 0, in = 0;
-+	struct virtblk_req *vbr;
-+
-+	BUG_ON(bio->bi_phys_segments + 2 > vblk->sg_elems);
-+	BUG_ON(bio->bi_rw & (REQ_FLUSH | REQ_FUA));
-+
-+	vbr = virtblk_alloc_req(vblk, GFP_NOIO);
-+	if (!vbr) {
-+		bio_endio(bio, -ENOMEM);
++	if (unlikely(vbr->bio_done)) {
++		complete(vbr->bio_done);
 +		return;
 +	}
+ 	bio_endio(vbr->bio, virtblk_result(vbr));
+ 	mempool_free(vbr, vblk->pool);
+ }
+ 
++static inline void virtblk_flush_done(struct virtio_blk *vblk,
++				    struct virtblk_req *vbr)
++{
++	complete(vbr->flush_done);
++	mempool_free(vbr, vblk->pool);
++}
 +
-+	vbr->bio = bio;
-+	vbr->req = NULL;
-+	vbr->out_hdr.type = 0;
-+	vbr->out_hdr.sector = bio->bi_sector;
-+	vbr->out_hdr.ioprio = bio_prio(bio);
-+
-+	sg_set_buf(&vbr->sg[out++], &vbr->out_hdr, sizeof(vbr->out_hdr));
-+
-+	num = blk_bio_map_sg(q, bio, vbr->sg + out);
-+
-+	sg_set_buf(&vbr->sg[num + out + in++], &vbr->status,
-+		   sizeof(vbr->status));
-+
-+	if (num) {
-+		if (bio->bi_rw & REQ_WRITE) {
-+			vbr->out_hdr.type |= VIRTIO_BLK_T_OUT;
-+			out += num;
-+		} else {
-+			vbr->out_hdr.type |= VIRTIO_BLK_T_IN;
-+			in += num;
-+		}
-+	}
-+
+ static void virtblk_done(struct virtqueue *vq)
+ {
++	unsigned long flush_done = 0, bio_done = 0, req_done = 0;
+ 	struct virtio_blk *vblk = vq->vdev->priv;
+-	unsigned long bio_done = 0, req_done = 0;
+ 	struct virtblk_req *vbr;
+ 	unsigned long flags;
+ 	unsigned int len;
+@@ -112,9 +125,12 @@ static void virtblk_done(struct virtqueue *vq)
+ 		if (vbr->bio) {
+ 			virtblk_bio_done(vblk, vbr);
+ 			bio_done++;
+-		} else {
++		} else if (vbr->req) {
+ 			virtblk_request_done(vblk, vbr);
+ 			req_done++;
++		} else if (vbr->flush_done) {
++			virtblk_flush_done(vblk, vbr);
++			flush_done++;
+ 		}
+ 	}
+ 	/* In case queue is stopped waiting for more buffers. */
+@@ -122,7 +138,7 @@ static void virtblk_done(struct virtqueue *vq)
+ 		blk_start_queue(vblk->disk->queue);
+ 	spin_unlock_irqrestore(vblk->disk->queue->queue_lock, flags);
+ 
+-	if (bio_done)
++	if (bio_done || flush_done)
+ 		wake_up(&vblk->queue_wait);
+ }
+ 
+@@ -269,14 +285,65 @@ static void virtblk_add_buf_wait(struct virtio_blk *vblk,
+ 	finish_wait(&vblk->queue_wait, &wait);
+ }
+ 
++static inline void virtblk_add_req(struct virtio_blk *vblk,
++				   struct virtblk_req *vbr,
++				   unsigned int out, unsigned int in)
++{
 +	spin_lock_irq(vblk->disk->queue->queue_lock);
 +	if (unlikely(virtqueue_add_buf(vblk->vq, vbr->sg, out, in, vbr,
-+				       GFP_ATOMIC) < 0)) {
++					GFP_ATOMIC) < 0)) {
 +		spin_unlock_irq(vblk->disk->queue->queue_lock);
 +		virtblk_add_buf_wait(vblk, vbr, out, in);
 +		return;
@@ -386,85 +132,105 @@ index c0bbeb4..95cfeed 100644
 +	spin_unlock_irq(vblk->disk->queue->queue_lock);
 +}
 +
++static int virtblk_flush(struct virtio_blk *vblk)
++{
++	DECLARE_COMPLETION_ONSTACK(done);
++	unsigned int out = 0, in = 0;
++	struct virtblk_req *vbr;
++
++	vbr = virtblk_alloc_req(vblk, GFP_NOIO);
++	if (!vbr)
++		return -ENOMEM;
++
++	vbr->flush_done = &done;
++	vbr->bio = NULL;
++	vbr->req = NULL;
++	vbr->out_hdr.type = VIRTIO_BLK_T_FLUSH;
++	vbr->out_hdr.sector = 0;
++	vbr->out_hdr.ioprio = 0;
++	sg_set_buf(&vbr->sg[out++], &vbr->out_hdr, sizeof(vbr->out_hdr));
++	sg_set_buf(&vbr->sg[out + in++], &vbr->status, sizeof(vbr->status));
++
++	virtblk_add_req(vblk, vbr, out, in);
++
++	wait_for_completion(&done);
++
++	return 0;
++}
++
+ static void virtblk_make_request(struct request_queue *q, struct bio *bio)
+ {
++	bool req_flush = false, req_fua = false;
+ 	struct virtio_blk *vblk = q->queuedata;
+ 	unsigned int num, out = 0, in = 0;
++	DECLARE_COMPLETION_ONSTACK(done);
+ 	struct virtblk_req *vbr;
+ 
+ 	BUG_ON(bio->bi_phys_segments + 2 > vblk->sg_elems);
+-	BUG_ON(bio->bi_rw & (REQ_FLUSH | REQ_FUA));
++
++	if (bio->bi_rw & REQ_FLUSH)
++		req_flush = true;
++	if (bio->bi_rw & REQ_FUA)
++		req_fua = true;
++
++	/* Execute a flush & wait until it finishes */
++	if (unlikely(req_flush))
++		virtblk_flush(vblk);
+ 
+ 	vbr = virtblk_alloc_req(vblk, GFP_NOIO);
+ 	if (!vbr) {
+@@ -290,6 +357,11 @@ static void virtblk_make_request(struct request_queue *q, struct bio *bio)
+ 	vbr->out_hdr.sector = bio->bi_sector;
+ 	vbr->out_hdr.ioprio = bio_prio(bio);
+ 
++	if (unlikely(req_fua))
++		vbr->bio_done = &done;
++	else
++		vbr->bio_done = NULL;
++
+ 	sg_set_buf(&vbr->sg[out++], &vbr->out_hdr, sizeof(vbr->out_hdr));
+ 
+ 	num = blk_bio_map_sg(q, bio, vbr->sg + out);
+@@ -307,15 +379,21 @@ static void virtblk_make_request(struct request_queue *q, struct bio *bio)
+ 		}
+ 	}
+ 
+-	spin_lock_irq(vblk->disk->queue->queue_lock);
+-	if (unlikely(virtqueue_add_buf(vblk->vq, vbr->sg, out, in, vbr,
+-				       GFP_ATOMIC) < 0)) {
+-		spin_unlock_irq(vblk->disk->queue->queue_lock);
+-		virtblk_add_buf_wait(vblk, vbr, out, in);
+-		return;
++	virtblk_add_req(vblk, vbr, out, in);
++
++	if (unlikely(req_fua)) {
++		/*
++		 * We emulate the REQ_FUA here:
++		 *
++		 * 1. Wait until the bio is finished
++		 * 2. Execute a flush & wait until it finishes
++		 * 3. Signal the end of the bio & free the vbr
++		 */
++		wait_for_completion(vbr->bio_done);
++		virtblk_flush(vblk);
++		bio_endio(vbr->bio, virtblk_result(vbr));
++		mempool_free(vbr, vblk->pool);
+ 	}
+-	virtqueue_kick(vblk->vq);
+-	spin_unlock_irq(vblk->disk->queue->queue_lock);
+ }
+ 
  /* return id (s/n) string for *disk to *id_str
-  */
- static int virtblk_get_id(struct gendisk *disk, char *id_str)
-@@ -360,7 +475,7 @@ static int init_vq(struct virtio_blk *vblk)
- 	int err = 0;
- 
- 	/* We expect one virtqueue, for output. */
--	vblk->vq = virtio_find_single_vq(vblk->vdev, blk_done, "requests");
-+	vblk->vq = virtio_find_single_vq(vblk->vdev, virtblk_done, "requests");
- 	if (IS_ERR(vblk->vq))
- 		err = PTR_ERR(vblk->vq);
- 
-@@ -414,7 +529,7 @@ static void virtblk_update_cache_mode(struct virtio_device *vdev)
+@@ -529,7 +607,7 @@ static void virtblk_update_cache_mode(struct virtio_device *vdev)
  	u8 writeback = virtblk_get_cache_mode(vdev);
  	struct virtio_blk *vblk = vdev->priv;
  
--	if (writeback)
-+	if (writeback && !use_bio)
+-	if (writeback && !use_bio)
++	if (writeback)
  		blk_queue_flush(vblk->disk->queue, REQ_FLUSH);
  	else
  		blk_queue_flush(vblk->disk->queue, 0);
-@@ -477,6 +592,8 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
- 	struct virtio_blk *vblk;
- 	struct request_queue *q;
- 	int err, index;
-+	int pool_size;
-+
- 	u64 cap;
- 	u32 v, blk_size, sg_elems, opt_io_size;
- 	u16 min_io_size;
-@@ -506,10 +623,12 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
- 		goto out_free_index;
- 	}
- 
-+	init_waitqueue_head(&vblk->queue_wait);
- 	vblk->vdev = vdev;
- 	vblk->sg_elems = sg_elems;
- 	sg_init_table(vblk->sg, vblk->sg_elems);
- 	mutex_init(&vblk->config_lock);
-+
- 	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
- 	vblk->config_enable = true;
- 
-@@ -517,7 +636,10 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
- 	if (err)
- 		goto out_free_vblk;
- 
--	vblk->pool = mempool_create_kmalloc_pool(1,sizeof(struct virtblk_req));
-+	pool_size = sizeof(struct virtblk_req);
-+	if (use_bio)
-+		pool_size += sizeof(struct scatterlist) * sg_elems;
-+	vblk->pool = mempool_create_kmalloc_pool(1, pool_size);
- 	if (!vblk->pool) {
- 		err = -ENOMEM;
- 		goto out_free_vq;
-@@ -530,12 +652,14 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
- 		goto out_mempool;
- 	}
- 
--	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, NULL);
-+	q = vblk->disk->queue = blk_init_queue(virtblk_request, NULL);
- 	if (!q) {
- 		err = -ENOMEM;
- 		goto out_put_disk;
- 	}
- 
-+	if (use_bio)
-+		blk_queue_make_request(q, virtblk_make_request);
- 	q->queuedata = vblk;
- 
- 	virtblk_name_format("vd", index, vblk->disk->disk_name, DISK_NAME_LEN);
-@@ -620,7 +744,6 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
- 	if (!err && opt_io_size)
- 		blk_queue_io_opt(q, blk_size * opt_io_size);
- 
--
- 	add_disk(vblk->disk);
- 	err = device_create_file(disk_to_dev(vblk->disk), &dev_attr_serial);
- 	if (err)
 -- 
 1.7.11.2
 
