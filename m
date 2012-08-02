@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2HBN1z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 09:27:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57656 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753872Ab2HBN1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 09:27:54 -0400
-Date: Thu, 2 Aug 2012 15:24:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Roland McGrath <roland@hack.frob.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, ananth@in.ibm.com,
-        a.p.zijlstra@chello.nl, mingo@redhat.com, srikar@linux.vnet.ibm.com
-Subject: Re: Q: user_enable_single_step() && update_debugctlmsr()
-Message-ID: <20120802132434.GA3019@redhat.com>
-References: <20120801140121.GA5333@redhat.com> <50193B5C.90404@linutronix.de> <20120801143132.GA7550@redhat.com> <5019427B.1070002@linutronix.de> <20120801150119.GA8845@redhat.com> <50194750.2050601@linutronix.de> <20120801151442.GA9697@redhat.com> <50197994.4090800@linutronix.de> <20120802130509.GA1465@redhat.com> <501A7E94.4030309@linutronix.de>
+	id S1754689Ab2HBNcu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 09:32:50 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56130 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab2HBNct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 09:32:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501A7E94.4030309@linutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1343911533-3423-1-git-send-email-shea@shealevy.com>
+References: <1343911533-3423-1-git-send-email-shea@shealevy.com>
+Date: Thu, 2 Aug 2012 15:32:47 +0200
+Message-ID: <CANq1E4Tn6nugb0vmMb1VzTE+-io0bV2y7OLaEXtXbav4W51Kag@mail.gmail.com>
+Subject: Re: [PATCH] Bluetooth: Add support for Apple MacBook Pro 9,2
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: shea@shealevy.com
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02, Sebastian Andrzej Siewior wrote:
+Hi Shea
+
+On Thu, Aug 2, 2012 at 2:45 PM,  <shea@shealevy.com> wrote:
+> From: Shea Levy <shea@shealevy.com>
 >
->>> From the link above,
->>
->> 	We have the GDB process and the (stopped) tracee T. And we have
->> 	another task X
->>          ^^^^^^^^^^^^^^
 >
-> Yes that is correct. Let me try to figure out how to plumb that leak
-> and fix this before playing with it further.
+> Signed-off-by: Shea Levy <shea@shealevy.com>
 
-I'll send 2 patches today. the 1st one adds the helper, the 2nd patch
-fixes the usage of update_debugctlmsr().
+Why is this patch missing a commit-message? Please add one. And also
+include the output of "usb-devices" or the contents of
+/sys/kernel/debug/usb/devices in this commit-message.
 
-Oleg.
+Regards
+David
 
+> ---
+>  drivers/bluetooth/btusb.c | 3 +++
+>  1 file changed, 3 insertions(+)
