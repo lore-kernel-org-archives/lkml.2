@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab2HBKMM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 06:12:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54447 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094Ab2HBKMJ convert rfc822-to-8bit (ORCPT
+	id S1754025Ab2HBKQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 06:16:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60315 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753378Ab2HBKQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 06:12:09 -0400
-References: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com> <20120801030736.GA31711@amt.cnet> <5019099D.9050608@linux.vnet.ibm.com> <20120801182554.GA9464@amt.cnet> <501A2775.90404@linux.vnet.ibm.com>
-In-Reply-To: <501A2775.90404@linux.vnet.ibm.com>
-Mime-Version: 1.0 (1.0)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <843859B1-67E7-46E3-9121-592F59450AA8@suse.de>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Rob Landley <rob@landley.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, KVM <kvm@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-X-Mailer: iPhone Mail (9A406)
-From: Alexander Graf <agraf@suse.de>
-Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
-Date: Thu, 2 Aug 2012 12:13:00 +0200
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+	Thu, 2 Aug 2012 06:16:29 -0400
+Date: Thu, 2 Aug 2012 11:16:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [NEW DRIVER V1 1/7] DA9058 MFD core and ADC driver
+Message-ID: <20120802101626.GE29157@opensource.wolfsonmicro.com>
+References: <201208020849.q728nhpW007804@latitude.olech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208020849.q728nhpW007804@latitude.olech.com>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 02, 2012 at 09:48:55AM +0100, Anthony Olech wrote:
 
+> +#if 0
+> +	return regmap_bulk_read(da9058->regmap, reg, val, val_count);
+> +#else
+> +	int ret = regmap_bulk_read(da9058->regmap, reg, val, val_count);
+> +	return ret;
+> +#endif
 
-On 02.08.2012, at 09:08, Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+This shouldn't be going into mainline...
 
-> On 08/01/2012 11:55 PM, Marcelo Tosatti wrote:
->> On Wed, Aug 01, 2012 at 04:19:01PM +0530, Raghavendra K T wrote:
->>> On 08/01/2012 08:37 AM, Marcelo Tosatti wrote:
->>>> On Tue, Jul 24, 2012 at 02:23:59PM +0530, Raghavendra K T wrote:
->>>>> From: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
->>>>> 
->>>>> Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ,
->>>>> and Peter (HPA) for suggesting hypercall ABI addition.
->>>>> 
->>>>> Signed-off-by: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
->>>>> ---
-> [...]
->>>>> +
->>>>> + Up to four arguments may be passed in rbx, rcx, rdx, and rsi respectively.
->>>>> + The hypercall number should be placed in rax and the return value will be
->>>>> + placed in rax.  No other registers will be clobbered unless explicitly stated
->>>>> + by the particular hypercall.
->>>> 
->>>> It depends on the hypercall. It happens that current hypercalls use
->>>> the four registers, but its not an ABI (hyper-v hypercalls uses r8, for example).
->>>> 
->>> 
->>> Okay, agree. I did not know about hyper-v. Above one is for X86 and
->>> KVM  (and not X86 / hyper-v). So I should remove ABI and probably say,
->> 
->> Just say "Linux x86 Hypercall", yeah.
->> 
-> 
-> Ok, Thanks Marcelo.will respin patches with the changes you suggested.
-> 
-> Also I would  like add Alex's description on ppc hypercalls
-> into Documentation/virtual/kvm/ppc-pv.txt with Alex from/sob or
-> suggested-by in a separate patch unless I see any objection to that.
-> 
+> +/*
+> + *  if the PMIC is in automatic ADC consersion mode we have the choice
+> + *  of just getting the last (automatic) conversion or doing a manual
+> + *  conversion anyway.
+> + *
+> + *  if the PMIC is not in automatic ADC consersion mode we have no choice
+> + *  we just have to ignore the requested mode and just do a manual
+> + *  ADC conversion.
+> + */
+> +static int da9058_automatic_adc_conversion(struct da9058 *da9058,
+> +				const int channel, int *value)
 
-Yeah, don't stall this on me :)
+This ADC stuff should be an IIO driver now.
 
-Alex
+> +	if (pdata->init_board_irq) {
+> +		ret = pdata->init_board_irq();
+> +		if (ret)
+
+Why is this conditional?  With irqdomains there's no real reason to not
+allocate the IRQs even if you can't usefully use them and it helps make
+the code simpler.
+
+> +			goto err4;
+
+Named labesl are *much* better, it's vastly less painful if you need to
+add new code.
+
+> +	da9058->reg_read = da9058_register_read;
+> +	da9058->reg_write = da9058_register_write;
+> +	da9058->reg_raw_read = da9058_register_raw_read;
+> +	da9058->reg_raw_write = da9058_register_raw_write;
+> +	da9058->reg_bulk_read = da9058_register_bulk_read;
+> +	da9058->reg_bulk_write = da9058_register_bulk_write;
+> +	da9058->reg_update_bits = da9058_register_update_bits;
+
+These are always the same thing.  Just have some inline functions in the
+header if you find this useful, the vtable in the driver is just
+replicating what regmap does and making things more complicated.
+
+> +int da9058_to_virt_irq_num(struct da9058 *da9058, int irq)
+> +{
+> +	return da9058->irq_base + irq;
+> +}
+> +EXPORT_SYMBOL_GPL(da9058_to_virt_irq_num);
+
+This should be calling regmap_irq_get_virq() and a static inlinne in the
+header.
+
+> +	dev_info(da9058->dev, "IRQ %d mapped to virtual array based at %d\n",
+> +			da9058->chip_irq, da9058->irq_base);
+
+This sort of log message isn't terribly useful and isn't accurate with
+irq domains.
