@@ -1,81 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2HBNdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 09:33:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38374 "EHLO mx2.suse.de"
+	id S1754719Ab2HBNeI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 09:34:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38389 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab2HBNdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 09:33:14 -0400
-Date: Thu, 2 Aug 2012 14:33:10 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-Message-ID: <20120802133310.GD29814@suse.de>
-References: <20120731124650.GO612@suse.de>
- <50181AA1.0@redhat.com>
- <20120731200650.GB19524@tiehlicka.suse.cz>
- <50189857.4000501@redhat.com>
- <20120801082036.GC4436@tiehlicka.suse.cz>
- <20120801123209.GK4436@tiehlicka.suse.cz>
- <501945F9.2030402@redhat.com>
- <20120802071934.GA7557@dhcp22.suse.cz>
- <20120802073757.GC29814@suse.de>
- <20120802123658.GA5194@dhcp22.suse.cz>
+	id S1752154Ab2HBNeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 09:34:06 -0400
+Date: Thu, 2 Aug 2012 15:33:59 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] parisc: fix personality flag check in copy_thread()
+In-Reply-To: <1343912818.5073.48.camel@dabdike.int.hansenpartnership.com>
+Message-ID: <alpine.LNX.2.00.1208021531540.4820@pobox.suse.cz>
+References: <alpine.LNX.2.00.1208012155330.14910@pobox.suse.cz>   <alpine.LNX.2.00.1208020911300.14910@pobox.suse.cz>  <1343897272.5073.5.camel@dabdike.int.hansenpartnership.com>  <alpine.LNX.2.00.1208021342120.4820@pobox.suse.cz>
+ <1343912818.5073.48.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120802123658.GA5194@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 02:36:58PM +0200, Michal Hocko wrote:
-> On Thu 02-08-12 08:37:57, Mel Gorman wrote:
-> > On Thu, Aug 02, 2012 at 09:19:34AM +0200, Michal Hocko wrote:
-> [...]
-> > > On the other hand, mine is more coupled with the sharing code so it
-> > > makes the code easier to follow and also makes the sharing more
-> > > effective because racing processes see pmd populated when checking for
-> > > shareable mappings.
-> > > 
-> > 
-> > It could do with a small comment above huge_pmd_share() explaining that
-> > calling pmd_alloc() under the i_mmap_mutex is necessary to prevent two
-> > parallel faults missing a sharing opportunity with each other but it's
-> > not mandatory.
-> 
-> Sure, that's a good idea. What about the following:
-> 
-> diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-> index 40b2500..51839d1 100644
-> --- a/arch/x86/mm/hugetlbpage.c
-> +++ b/arch/x86/mm/hugetlbpage.c
-> @@ -56,7 +56,13 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
->  }
->  
->  /*
-> - * search for a shareable pmd page for hugetlb.
-> + * search for a shareable pmd page for hugetlb. In any case calls
-> + * pmd_alloc and returns the corresponding pte. While this not necessary
-> + * for the !shared pmd case because we can allocate the pmd later as
-> + * well it makes the code much cleaner. pmd allocation is essential for
-> + * the shared case though because pud has to be populated inside the
-> + * same i_mmap_mutex section otherwise racing tasks could either miss
-> + * the sharing (see huge_pte_offset) or selected a bad pmd for sharing.
->   */
->  static pte_t*
->  huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
-> 
+On Thu, 2 Aug 2012, James Bottomley wrote:
 
-Looks reasonable to me.
+> > In case of parsic, let's take a process with current->personality == 
+> > PER_LINUX32 callling personality(PER_LINUX | UNAME26). The
+> > 
+> >         if (personality(current->personality) == PER_LINUX32
+> >             && personality == PER_LINUX)
+> >                 personality = PER_LINUX32;
+> > 
+> > would that have no effect, and sys_personality() would be called with 
+> > (PER_LINUX | UNAME26) instead of PER_LINUX32, just because of UNAME26 
+> > being set as well. That doesn't seem really correct. Is it?
+> 
+> Heh, no.  This is a nasty mess.  
+
+Indeed.
+
+> Our assumption was that we own the flags ... hence the code.  There are 
+> some flags we can't allow to be set or reset ... but that's only for the 
+> mythical 64 bit userspace, so I suppose we just ignore that for now and 
+> fix it if this ever appears.
+>
+> I don't like the hidden assumption that PER_LINUX == 0, but otherwise
+> the code looks fine.
+> 
+> How about 
+> 
+> personality = (personality & ~PER_MASK) | PER_LINUX32;
+> 
+> and
+> 
+> err = (personality & ~PER_MASK) | PER_LINUX;
+
+Agreed, that's a little bit nicer way how to express it (modulo the 
+fact that the last 'personality' in your example should in fact be 'err'). 
+Updated patch below, thanks.
+
+
+
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 2/4] parisc: fix personality flag check in copy_thread()
+
+Directly comparing task_struct->personality against PER_* is not fully
+correct, as it doesn't take flags potentially stored in top three bytes
+into account.
+
+Analogically, directly forcefully setting personality to PER_LINUX32 or
+PER_LINUX discards any flags stored in the top three bytes.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+v0->v1: fix the bit ops to reflect the fact that PER_LINUX is actually 0
+v2->v2: express the PER_LINUX==0 fact in the bitops in a more obvious way
+
+ arch/parisc/kernel/process.c    |    2 +-
+ arch/parisc/kernel/sys_parisc.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/parisc/kernel/process.c b/arch/parisc/kernel/process.c
+index d4b94b3..2c05a92 100644
+--- a/arch/parisc/kernel/process.c
++++ b/arch/parisc/kernel/process.c
+@@ -309,7 +309,7 @@ copy_thread(unsigned long clone_flags, unsigned long usp,
+ 		cregs->ksp = (unsigned long)stack
+ 			+ (pregs->gr[21] & (THREAD_SIZE - 1));
+ 		cregs->gr[30] = usp;
+-		if (p->personality == PER_HPUX) {
++		if (personality(p->personality) == PER_HPUX) {
+ #ifdef CONFIG_HPUX
+ 			cregs->kpc = (unsigned long) &hpux_child_return;
+ #else
+diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
+index c9b9322..7f9658e 100644
+--- a/arch/parisc/kernel/sys_parisc.c
++++ b/arch/parisc/kernel/sys_parisc.c
+@@ -225,12 +225,12 @@ long parisc_personality(unsigned long personality)
+ 	long err;
+ 
+ 	if (personality(current->personality) == PER_LINUX32
+-	    && personality == PER_LINUX)
+-		personality = PER_LINUX32;
++	    && personality(personality) == PER_LINUX)
++		personality = (personality & ~PER_MASK) | PER_LINUX32;
+ 
+ 	err = sys_personality(personality);
+-	if (err == PER_LINUX32)
+-		err = PER_LINUX;
++	if (personality(err) == PER_LINUX32)
++		err = (err & ~PER_MASK) | PER_LINUX;
+ 
+ 	return err;
+ }
 
 -- 
-Mel Gorman
+Jiri Kosina
 SUSE Labs
