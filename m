@@ -1,168 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab2HBVZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 17:25:43 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52295 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab2HBVZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 17:25:40 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Manju <manjunath.hadli@ti.com>
-Cc: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        LMML <linux-media@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: Re: [PATCH] [media] davinci: vpfe: Add documentation
-Date: Thu, 02 Aug 2012 23:25:43 +0200
-Message-ID: <8508926.WDmbUJmVgK@avalon>
-User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <50178D17.8030504@ti.com>
-References: <1342021166-6092-1-git-send-email-manjunath.hadli@ti.com> <1461029.ufNJEg1MSf@avalon> <50178D17.8030504@ti.com>
+	id S1753337Ab2HBV1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 17:27:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38866 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753074Ab2HBV1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 17:27:50 -0400
+Message-ID: <501AF0CC.6010903@suse.de>
+Date: Thu, 02 Aug 2012 17:27:40 -0400
+From: Jeff Mahoney <jeffm@suse.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
+Subject: Re: R.I.P. pdflush
+References: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
+In-Reply-To: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manjunath,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On Tuesday 31 July 2012 13:15:27 Manju wrote:
-> On Friday 27 July 2012 04:19 PM, Laurent Pinchart wrote:
-> > On Friday 27 July 2012 05:49:24 Hadli, Manjunath wrote:
-> >> On Thu, Jul 26, 2012 at 05:55:31, Laurent Pinchart wrote:
-> >>> On Tuesday 17 July 2012 10:43:54 Hadli, Manjunath wrote:
-> >>>> On Sun, Jul 15, 2012 at 18:16:25, Laurent Pinchart wrote:
-> >>>>> On Wednesday 11 July 2012 21:09:26 Manjunath Hadli wrote:
-> >>>>>> Add documentation on the Davinci VPFE driver. Document the subdevs,
-> >>>>>> and private IOTCLs the driver implements
-> >>>>>> 
-> >>>>>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> >>>>>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> >>> 
-> >>> [snip]
-> >>> 
-> >>>>>> +Private IOCTLs
-> >>>>>> +==============
-> >>>>>> +
-> >>>>>> +The Davinci Video processing Front End (VPFE) driver supports
-> >>>>>> standard V4L2
-> >>>>>> +IOCTLs and controls where possible and practical. Much of the
-> >>>>>> functions provided
-> >>>>>> +by the VPFE, however, does not fall under the standard IOCTLs.
-> >>>>>> +
-> >>>>>> +In general, there is a private ioctl for configuring each of the
-> >>>>>> blocks
-> >>>>>> +containing hardware-dependent functions.
-> >>>>>> +
-> >>>>>> +The following private IOCTLs are supported:
-> >>>>>> +
-> >>>>>> +1: IOCTL: PREV_S_PARAM/PREV_G_PARAM
-> >>>>>> +Description:
-> >>>>>> +	Sets/Gets the parameters required by the previewer module
-> >>>>>> +Parameter:
-> >>>>>> +	/**
-> >>>>>> +	 * struct prev_module_param- structure to configure preview
-> >>>>>> modules
-> >>>>>> +	 * @version: Version of the preview module
-> >>>>> 
-> >>>>> Who is responsible for filling this field, the application or the
-> >>>>> driver ?
-> >>>> 
-> >>>> The application is responsible for filling this info. He would
-> >>>> enumerate the capabilities first and  set them using S_PARAM/G_PARAM.
-> >>> 
-> >>> And what's the point of the application setting the version field ? How
-> >>> does the driver use it ?
-> >> 
-> >> The version may not be required. Will remove it.
-> >> 
-> >>>>>> +	 * @len: Length of the module config structure
-> >>>>>> +	 * @module_id: Module id
-> >>>>>> +	 * @param: pointer to module config parameter.
-> >>>>> 
-> >>>>> What is module_id for ? What does param point to ?
-> >>>> 
-> >>>> There are a lot of tiny modules in the previewer/resizer which are
-> >>>> enumerated as individual modules. The param points to the parameter set
-> >>>> that the module expects to be set.
-> >>> 
-> >>> Why don't you implement something similar to
-> >>> VPFE_CMD_S_CCDC_RAW_PARAMS/VPFE_CMD_G_CCDC_RAW_PARAMS instead ?
-> >> 
-> >> I feel if we implement direct IOCTLS there might be many of them. To make
-> >> sure than independent of the number of internal modules present, having
-> >> the
-> >> same IOCTL used for all modules is a good idea.
-> > 
-> > You can set several parameters using a single ioctl, much like
-> > VPFE_CMD_S_CCDC_RAW_PARAMS does. You don't need one ioctl per parameter.
-> > 
-> > PREV_ENUM_CAP, PREV_[GS]_PARAM and PREV_[GS]_CONFIG are essentially
-> > reinventing V4L2 controls, and I don't think that's a good idea.
-> 
-> Ok. I looked into this, and found that the structure needed to pass
-> all the parameters is going to be huge. just to avoid a big structure
-> from the user space, I propose:
-> 
-> Having a union of structures and a parameter identifying the structure.
-> 
-> In that way, we will remove the enumeration and all the other
-> things except for a SET and GET, much like the CCDC_RAW_PARAMS
-> like you suggested. So essentially we will have only 2 IOCTLS for setting
-> the private params/configs and remove the rest.  I hope that was your
-> point and this proposal will solve it?
+On 7/25/12 11:11 AM, Artem Bityutskiy wrote:
+> For example, reiserfs deadlocked quickly when I tested it using
+> xfstests with resierfs quota support enabled. I spend several days
+> trying to fix this, but reiserfs is quite complex and I'd say its
+> locking is crazy (partially because of the BKL push-down). But I
+> gave up after I realized that the dead-lock is related to the quota
+> support. I disabled quotas and xfstests passed.
 
-What about something like the following structure, from the OMAP3 ISP driver ?
+Thanks for mentioning this. This is due to both reiserfs_write_dquot
+and reiserfs_evict_inode taking the reiserfs_write_lock. The old
+reiserfs locking code depended on the recursive locking ability of the
+BKL and the push-down made that a special case. This case isn't
+handled so even though the write lock is supposed to be dropped to
+take the journal lock safely, it's not and we end up with an ABBA case
+there.
 
-struct omap3isp_prev_update_config {
-        __u32 update;
-        __u32 flag;
-        __u32 shading_shift;
-        struct omap3isp_prev_luma __user *luma;
-        struct omap3isp_prev_hmed __user *hmed;
-        struct omap3isp_prev_cfa __user *cfa;
-        struct omap3isp_prev_csup __user *csup;
-        struct omap3isp_prev_wbal __user *wbal;
-        struct omap3isp_prev_blkadj __user *blkadj;
-        struct omap3isp_prev_rgbtorgb __user *rgb2rgb;
-        struct omap3isp_prev_csc __user *csc;
-        struct omap3isp_prev_yclimit __user *yclimit;
-        struct omap3isp_prev_dcor __user *dcor;
-        struct omap3isp_prev_nf __user *nf;
-        struct omap3isp_prev_gtables __user *gamma;
-};
+I'll work up a fix.
 
-I'll probably have more comments when I'll see the complete list of parameters 
-you need to expose.
+- -Jeff
 
-> >>>>>> +	 */
-> >>>>>> +	struct prev_module_param {
-> >>>>>> +		char version[IMP_MAX_NAME_SIZE];
-> >>>>> 
-> >>>>> Is there a need to express the version as a string instead of an
-> >>>>> integer ?
-> >>>> 
-> >>>> It could be integer. It is generally a fixed point num, and easy to
-> >>>> read
-> >>>> it as a string than an integer. Can I keep it as a string?
-> >>> 
-> >>> Let's first decide whether a version field is needed at all :-)
-> >> 
-> >> Will remove.
-> >> 
-> >>>>>> +		unsigned short len;
-> >>>>>> +		unsigned short module_id;
-> >>>>>> +		void *param;
-> >>>>>> +	};
+- -- 
+Jeff Mahoney
+SUSE Labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
+Comment: GPGTools - http://gpgtools.org
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
--- 
-Regards,
-
-Laurent Pinchart
-
+iQIcBAEBAgAGBQJQGvDMAAoJEB57S2MheeWy+zMQAKUwXaF7O2WyDfl3B3/2tL6b
+f+Q1BPkgD7UIgjJ9wnakb4F72+k79gLGq11V39MXfrBKnzQAgprb5Ll9eUNl1f9x
+9KgAkeKQTYowYpUXfuLZUzevAX5Ys6dB3+XOWhgTaVc/L0TTgKc7aET5JotDTJM4
+V6SiKcb2uqDrEk5IAo/t3pfxaSe1gOYkZWfxSOzG1l3Kp5HHJ5B6Ya4Nx5Qw2llM
+Vt6fK0KLjN2kqmv80SlHRy7vOnhM1EAOrkzNuzGmdDPgAk1nBJnB8oO9W3x6WFO+
+Tsc5KbiJss6Nf0dHbyNNX1hJpnyJr9kBGrVADLMZEXIqGp3eIgIy04W/QV2fvWOz
+650aogYvY44mEC+55jV5RD2ubBfBhROazJsrLN4ACKIjo3KE6P/50vD8Pi9gH/F+
+rq15ytztlroF3M6ejVVjfTK5BOlx+H1bIrat06aBHsyWXTcNoLpa32z6BVhldrc6
+a/XdKP0CwKtIRcvr8f8zg4PHLoejaTXULJnNSQyDrIzXLz08kkEK6nxe3q1+Mp+a
+uH9y6y9SToaCPcLZUT9vInnmvxL/qV/uvspPDXFsZDAMAmfFVycpwGybiuTt5Y2T
+vCzOJVcCodX1cONiYfMrlNfqRGFewi0GCYTtMaz9Z1zOE9C1fwLeBorkUigxzIzT
+M6uA+edSRUBjg45r1EaR
+=oelZ
+-----END PGP SIGNATURE-----
