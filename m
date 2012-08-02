@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750910Ab2HBECw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 00:02:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35679 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab2HBECu (ORCPT
+	id S1750972Ab2HBEEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 00:04:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57978 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab2HBEEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 00:02:50 -0400
-Date: Wed, 1 Aug 2012 23:02:42 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
-Message-ID: <20120802040242.GB25933@thinkpad-t410>
-Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
-	Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
-	linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
-References: <1343407934-459-1-git-send-email-mjg@redhat.com>
- <20120731223240.GD19134@kroah.com>
- <20120801165400.GA3042@srcf.ucam.org>
- <20120801232147.GA6228@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120801232147.GA6228@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 2 Aug 2012 00:04:38 -0400
+Date: Thu, 2 Aug 2012 14:04:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nathan Zimmer <nzimmer@sgi.com>
+Subject: linux-next: build warning after merge of the final tree
+Message-Id: <20120802140428.f045d5eb03bd2a5e03a5230d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__2_Aug_2012_14_04_28_+1000_WBWKaM5D6RfTqI.L"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 04:21:47PM -0700, Greg KH wrote:
-> On Wed, Aug 01, 2012 at 05:54:00PM +0100, Matthew Garrett wrote:
-> > On Tue, Jul 31, 2012 at 03:32:40PM -0700, Greg KH wrote:
-> > 
-> > > With this series, does the latest MacBook work properly for the Intel
-> > > graphics driver?  Or is this to resolve some other hardware issue?
-> > 
-> > Apple only seem to provide the ROM for the radeon. Intel normally 
-> > stands a much better chance of working without a ROM - the only thing it 
-> > really uses it for is the VBT, and I'm thinking about a couple of ways 
-> > of handlng that.
-> 
-> Ok, thanks for letting me know.  For some reason, the gmux isn't working
-> on the latest MacBook Pro so I can't get the vga switched to the Intel
-> PCI device.  Rumor has it the osx tool at
-> http://codykrieger.com/gfxCardStatus will switch into the Intel chip
-> until the laptop is hard powered off, so it is possible, just need to
-> figure out how to make the hardware do the switch...
+--Signature=_Thu__2_Aug_2012_14_04_28_+1000_WBWKaM5D6RfTqI.L
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There's a tool that enables some verbose logging which records all the
-I/O to the gmux. It works for me with a Macbook Pro 8,2 running OS X
-Lion, so you might give it a try.
+Hi all,
 
-All you need to do is clone https://github.com/ah-/switcher.git, build,
-and run switcher. If it works you'll see messages prefixed with AGC in
-dmesg. Then you can use gfxCardStatus to force some switches between the
-integrated and discrete cards. After that you'll want to grab
-/var/log/kern.log to get the full logs of everything that happened.
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+produced this warning:
 
-If you try this and it works, I'd appreciate it if you could send me a
-copy of kern.log so I can apply the information towards getting graphics
-switching into apple-gmux.
+mm/shmem.c: In function 'shmem_interleave':
+mm/shmem.c:1343:9: warning: assignment makes integer from pointer without a=
+ cast [enabled by default]
 
-Seth
+Introduced by commit c3cfa3129c03 ("tmpfs: interleave the starting node
+of /dev/shmem") from the akpm tree.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__2_Aug_2012_14_04_28_+1000_WBWKaM5D6RfTqI.L
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQGfxMAAoJEECxmPOUX5FEsrcQAIfvnMR6mbvBQ8JFRw/8Wm54
+PpekKD98RgweLczIJBgKk93bQhSTi5cHwe1XbB/seDNarmZbHzikq9UbWZb+JWwX
+yUIw9/g3doi3aSMcUtxkhA+cJpDuENUg2Y+JHjAgYg5uM/QOCRVmYAar1FZAoLtJ
+W7zZOVEq9VXSRegQejhhRKKvFGS+GnZVcKiK9++PP2jxNoKrQ/AkarNon4TJHtSN
+eKkgGBp/zjF/vbR8vq3dpKSG0FuD8eb9l+KxdRq6a3FLFtrRjiIpd2/CzZEBFwrz
+DW9h77pwPnzKpLBxVjdidoFbBIDKp5YufBt71hF0SViCqkTGDa4FIHF7SJJ7jaZ4
+B+b4055xqlDS2qqecmgXry+zzIF6rc++ON2fFh5luEJDxtmatNa0OOt2lYD//Ube
+KmfH/gUOATFhe86qAmV/cZ/D03muh/q/5SIKtar6FZYto3nkY/c3UzOYsPsopCly
+EykyON7zgltFUS4qpMNA7wHxREzBcONv+bXnnQiY7FiOi2/kiJfDz33q+ppf62sQ
+YB8nEOmZGPrY7hW6yaVhNm3Rp/7Mfa1r7sbj0f5g7mXwI9+qq/RU3XdFWyZMWXHR
+xFdf7LeGg9OQ+DMQiY41J5LTkPtBBdv5dv7RVqcP54S+gbD1v7WN2o6IPRXQJL8O
+NkBhtCaw2kzOdgMwMC+V
+=sQdr
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__2_Aug_2012_14_04_28_+1000_WBWKaM5D6RfTqI.L--
