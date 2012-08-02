@@ -1,218 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2HBVR0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 17:17:26 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41938 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab2HBVRW (ORCPT
+	id S1753119Ab2HBVVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 17:21:49 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:43603 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922Ab2HBVVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 17:17:22 -0400
-Message-ID: <501AEE5E.8090303@gmail.com>
-Date: Thu, 02 Aug 2012 17:17:18 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 2 Aug 2012 17:21:48 -0400
+X-Originating-IP: 217.70.178.139
+X-Originating-IP: 173.246.103.110
+Date: Thu, 2 Aug 2012 14:21:41 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+Message-ID: <20120802212140.GC7916@jtriplet-mobl1>
+References: <20120802103244.GA23318@leaf>
+ <501A633B.3010509@gmail.com>
+ <87txwl1dsq.fsf@xmission.com>
+ <501AAC26.6030703@gmail.com>
+ <87fw851c3d.fsf@xmission.com>
+ <CA+55aFw_dwO5ZOuaz9eDxgnTZFDGVZKSLUTm5Fn99faALxxJRQ@mail.gmail.com>
+ <20120802175904.GB6251@jtriplet-mobl1>
+ <CA+55aFwqC9hF++S-VPHJBFRrqfyNvsvqwzP=Vtzkv8qSYVqLxA@mail.gmail.com>
+ <20120802202516.GA7916@jtriplet-mobl1>
+ <CA+55aFybtRdg=AzcHv3CPm-_wx8LT2_CXaKr4K+i94QSPauZOw@mail.gmail.com>
 MIME-Version: 1.0
-To: xufeng zhang <xufeng.zhang@windriver.com>
-CC: Xufeng Zhang <xufengzhang.main@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, sri@us.ibm.com,
-        davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
- SACK when bundling
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>	<500E1057.3020509@windriver.com>	<75bdd73e-1c47-4fd6-bc29-5b86ee6da69a@email.android.com>	<CA+=dFzg=Bpsv5bMzECoAXYVcbD95eYy6xDAzL6fwiHrunfq-tg@mail.gmail.com>	<e7f8a685-9635-4aa9-bd67-1044e0720b29@email.android.com>	<CA+=dFzifKwbiXmw=pu0+rWmz72+4jsbv6bXOBHyL0LmxaL9byg@mail.gmail.com>	<CA+=dFzgXq3Sx-Ny+6oDZ3BEdsMQCgswNEVPVnhmhedHFvazzWw@mail.gmail.com>	<50100A29.8010705@gmail.com>	<CA+=dFzj11c9K0TS0T7D1aBVz+ppdFK91ZzBbevLV23FrWJNzmw@mail.gmail.com>	<CA+=dFziK09TVcK29x1SLg+JanOj6o__bJKf8yohw6dTYCUCF5A@mail.gmail.com>	<8ea83e51-81d1-407a-be06-98d2c99c876d@email.android.com>	<CA+=dFzguqjjnnqHO53Mx859VB6NU=4MaPWAUzGQB2qtZGfdAUg@mail.gmail.com>	<5013069F.3080306@gmail.com>	<CA+=dFzh4dFatOy42FydbVvoXB8=5CvLu5AwPvUA16h+kymq0Lw@mail.gmail.com>	<CA+=dFzh1wQx2rBs_2RAwrXsz79WS3njnO8=2ntQZUbB5So69gg@mail.gmail.com> <CA+=dFzhXY9aJ6_Yu-4a3g+6RyN5_mxXY=U3HnzKdi8TH-rqWcA@mail.gmail.com> <50178061.4010709@windriver.com>
-In-Reply-To: <50178061.4010709@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFybtRdg=AzcHv3CPm-_wx8LT2_CXaKr4K+i94QSPauZOw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 02:51 AM, xufeng zhang wrote:
-> Sorry, please ignore the above patch, there was an paste error.
-> Please check the following patch.
-> ============================================
-> I'm wondering if the below solution is fine to you which is based on
-> your changes.
-> BTW, I have verified this patch and it works ok for all the situation,
-> but only one problem persists:
-> there is a potential that commands will exceeds SCTP_MAX_NUM_COMMANDS
-> which happens during sending lots of small error DATA chunks.
->
+On Thu, Aug 02, 2012 at 01:32:41PM -0700, Linus Torvalds wrote:
+> On Thu, Aug 2, 2012 at 1:25 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> >
+> > Sorry, I should clarify what I meant: you'll have a total of one extra
+> > indirection, not two.
+> 
+> Yes. But the hash table address generation is noticeably bigger and
+> slower due to the non-fixed size too.
 
-I started thinking along the same vein, but was thinking that maybe it 
-makes sense to make error list more generic. I need to check the spec on 
-the ordering of ERROR chunks.  If they are always after other control 
-chunks, then maybe make an error list and queue all errors there.  Then 
-when sending control chunks, drain the control queue first, then the 
-error queue, and finally the data queue.
+If you store the size as a precomputed bitmask, that should simplify the
+bucket lookup to just a fetch, mask, and offset.  (You shouldn't ever
+need the actual number of buckets or the shift except when resizing, so
+the bitmask seems like the optimal thing to store.)  With a fixed table
+size, I'd expect to see the same code minus the fetch, with an immediate
+in the masking instruction.  Did GCC's generated code have worse
+differences than an immediate versus a fetched value?
 
-BTW, the patch below doesn't include the code to queue the error chunk 
-onto the new error queue.
+> In general, you can basically think of a dynamic hash table as always
+> having one extra entry in the hash chains. Sure, the base address
+> *may* cache well, but on the other hand, a smaller static hash table
+> caches better than a big one, so you lose some and you win some.
+> According to my numbers, you win a lot more than you lose.
 
--vlad
+Agreed.
 
-> Thanks,
-> Xufeng Zhang
->
-> ---
->   include/net/sctp/command.h |    1 +
->   include/net/sctp/structs.h |    3 +++
->   net/sctp/outqueue.c        |    7 +++++++
->   net/sctp/sm_sideeffect.c   |   16 ++++++++++++++++
->   net/sctp/sm_statefuns.c    |   17 ++++++++++++++---
->   5 files changed, 41 insertions(+), 3 deletions(-)
->
-> diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
-> index 712b3be..62c34f5 100644
-> --- a/include/net/sctp/command.h
-> +++ b/include/net/sctp/command.h
-> @@ -110,6 +110,7 @@ typedef enum {
->          SCTP_CMD_SEND_NEXT_ASCONF, /* Send the next ASCONF after ACK */
->          SCTP_CMD_PURGE_ASCONF_QUEUE, /* Purge all asconf queues.*/
->          SCTP_CMD_SET_ASOC,       /* Restore association context */
-> +       SCTP_CMD_GEN_BAD_STREAM, /* Invalid Stream errors happened
-> command */
->          SCTP_CMD_LAST
->   } sctp_verb_t;
->
-> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
-> index fc5e600..3d218e0 100644
-> --- a/include/net/sctp/structs.h
-> +++ b/include/net/sctp/structs.h
-> @@ -1183,6 +1183,9 @@ struct sctp_outq {
->           */
->          struct list_head abandoned;
->
-> +       /* Put Invalid Stream error chunks on this list */
-> +       struct list_head bad_stream_err;
-> +
->          /* How many unackd bytes do we have in-flight?  */
->          __u32 outstanding_bytes;
->
-> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-> index e7aa177..1e87b0b 100644
-> --- a/net/sctp/outqueue.c
-> +++ b/net/sctp/outqueue.c
-> @@ -211,6 +211,7 @@ void sctp_outq_init(struct sctp_association *asoc,
-> struct sctp_outq *q)
->          INIT_LIST_HEAD(&q->retransmit);
->          INIT_LIST_HEAD(&q->sacked);
->          INIT_LIST_HEAD(&q->abandoned);
-> +       INIT_LIST_HEAD(&q->bad_stream_err);
->
->          q->fast_rtx = 0;
->          q->outstanding_bytes = 0;
-> @@ -283,6 +284,12 @@ void sctp_outq_teardown(struct sctp_outq *q)
->                  list_del_init(&chunk->list);
->                  sctp_chunk_free(chunk);
->          }
-> +
-> +       /* Throw away any pending Invalid Stream error chunks */
-> +       list_for_each_entry_safe(chunk, tmp,&q->bad_stream_err, list) {
-> +               list_del_init(&chunk->list);
-> +               sctp_chunk_free(chunk);
-> +       }
->   }
->
->   /* Free the outqueue structure and any related pending chunks.  */
-> diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
-> index fe99628..4698593 100644
-> --- a/net/sctp/sm_sideeffect.c
-> +++ b/net/sctp/sm_sideeffect.c
-> @@ -1060,6 +1060,18 @@ static void sctp_cmd_send_asconf(struct
-> sctp_association *asoc)
->          }
->   }
->
-> +static void sctp_cmd_make_inv_stream_err(sctp_cmd_seq_t *commands,
-> +               struct sctp_association *asoc)
-> +{
-> +       struct sctp_chunk *err, *tmp;
-> +       struct sctp_outq *q =&asoc->outqueue;
-> +
-> +       list_for_each_entry_safe(err, tmp,&q->bad_stream_err, list) {
-> +               list_del_init(&err->list);
-> +               sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
-> +                               SCTP_CHUNK(err));
-> +       }
-> +}
->
->   /* These three macros allow us to pull the debugging code out of the
->    * main flow of sctp_do_sm() to keep attention focused on the real
-> @@ -1724,6 +1736,10 @@ static int sctp_cmd_interpreter(sctp_event_t
-> event_type,
->                          asoc = cmd->obj.asoc;
->                          break;
->
-> +               case SCTP_CMD_GEN_BAD_STREAM:
-> +                       sctp_cmd_make_inv_stream_err(commands, asoc);
-> +                       break;
-> +
->                  default:
->                          pr_warn("Impossible command: %u, %p\n",
->                                  cmd->verb, cmd->obj.ptr);
-> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-> index 9fca103..1c1bcd9 100644
-> --- a/net/sctp/sm_statefuns.c
-> +++ b/net/sctp/sm_statefuns.c
-> @@ -2967,8 +2967,14 @@ discard_force:
->          return SCTP_DISPOSITION_DISCARD;
->
->   discard_noforce:
-> -       if (chunk->end_of_packet)
-> +       if (chunk->end_of_packet) {
-> +               struct sctp_outq *q =&asoc->outqueue;
->                  sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, force);
-> +               /* Queue the INVALID STREAM error after the SACK if one
-> is needed. */
-> +               if (!list_empty(&q->bad_stream_err))
-> +                       sctp_add_cmd_sf(commands, SCTP_CMD_GEN_BAD_STREAM,
-> +                                       SCTP_NULL());
-> +       }
->
->          return SCTP_DISPOSITION_DISCARD;
->   consume:
-> @@ -3037,11 +3043,16 @@ sctp_disposition_t
-> sctp_sf_eat_data_fast_4_4(const struct sctp_endpoint *ep,
->           * with a SACK, a SHUTDOWN chunk, and restart the T2-shutdown
-> timer
->           */
->          if (chunk->end_of_packet) {
-> +               struct sctp_outq *q =&asoc->outqueue;
->                  /* We must delay the chunk creation since the cumulative
->                   * TSN has not been updated yet.
->                   */
->                  sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SHUTDOWN,
-> SCTP_NULL());
->                  sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK,
-> SCTP_FORCE());
-> +               /* Queue the INVALID STREAM error after the SACK if one
-> is needed. */
-> +               if (!list_empty(&q->bad_stream_err))
-> +                       sctp_add_cmd_sf(commands, SCTP_CMD_GEN_BAD_STREAM,
-> +                                       SCTP_NULL());
->                  sctp_add_cmd_sf(commands, SCTP_CMD_TIMER_RESTART,
->                                  SCTP_TO(SCTP_EVENT_TIMEOUT_T2_SHUTDOWN));
->          }
-> @@ -6136,6 +6147,7 @@ static int sctp_eat_data(const struct
-> sctp_association *asoc,
->           */
->          sid = ntohs(data_hdr->stream);
->          if (sid>= asoc->c.sinit_max_instreams) {
-> +               struct sctp_outq *q =&asoc->outqueue;
->                  /* Mark tsn as received even though we drop it */
->                  sctp_add_cmd_sf(commands, SCTP_CMD_REPORT_TSN,
-> SCTP_U32(tsn));
->
-> @@ -6144,8 +6156,7 @@ static int sctp_eat_data(const struct
-> sctp_association *asoc,
->                                           sizeof(data_hdr->stream),
->                                           sizeof(u16));
->                  if (err)
-> -                       sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
-> -                                       SCTP_CHUNK(err));
-> +                       list_add_tail(&err->list,&q->bad_stream_err);
->                  return SCTP_IERROR_BAD_STREAM;
->          }
->
+I don't think any of this argues against having a second-level cache,
+though, and making that one resizable seems sensible.  So, having a
+scalable resizable hash table seems orthogonal to having a small
+fixed-size hash table as a first-level cache.  I already agree with you
+that the hash table API should not make the latter more complex or
+expensive to better suit the former; as far as I can tell, address
+generation seems like the only issue there.
+
+> > Does your two-level dcache handle eviction?
+> >
+> > Mind posting the WIP patches?
+> 
+> Attached. It's against an older kernel, but I suspect it still applies
+> cleanly. The patch is certainly simple, but note the warning (you can
+> *run* it, though - the race is almost entirely theoretical, so you can
+> get numbers without ever seeing it)
+> 
+>            Linus
+
 
