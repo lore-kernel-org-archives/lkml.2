@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab2HBMTj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 08:19:39 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:2922 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab2HBMTi (ORCPT
+	id S1754007Ab2HBMVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 08:21:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52800 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449Ab2HBMVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 08:19:38 -0400
-X-Authority-Analysis: v=2.0 cv=IuCcgcDg c=1 sm=0 a=YPDeGStqRoQnMAluW+pq4Q==:17 a=65KWcu232dMA:10 a=sgO5gNtQRqEA:10 a=wkBGhNO-IO0A:10 a=05ChyHeVI94A:10 a=8nJEP1OIZ-IA:10 a=ayC55rCoAAAA:8 a=mcDxTtMMAAAA:8 a=JdW3uVL77AheQr_CoWsA:9 a=wPNLvfGTeEIA:10 a=WsY8weZRIU8A:10 a=obEvX5WeFJ550JM3:21 a=-p0wh33FQHDmWRzY:21 a=YPDeGStqRoQnMAluW+pq4Q==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 50.89.247.146
-Message-ID: <501A704E.2000301@cfl.rr.com>
-Date: Thu, 02 Aug 2012 08:19:26 -0400
-From: Mark Hounschell <dmarkh@cfl.rr.com>
-Reply-To: dmarkh@cfl.rr.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 2 Aug 2012 08:21:08 -0400
+Date: Thu, 2 Aug 2012 13:21:03 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        lrg@ti.com
+Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
+ subsequent widgets to fail too
+Message-ID: <20120802122101.GA22228@gmail.com>
+References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
+ <1343741493-17671-3-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: MODULE_LICENSE("GPL")??
-References: <50199E91.5040308@cfl.rr.com> <20120801224342.5b90747f@pyramind.ukuu.org.uk>
-In-Reply-To: <20120801224342.5b90747f@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1343741493-17671-3-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2012 05:43 PM, Alan Cox wrote:
-> On Wed, 01 Aug 2012 17:24:33 -0400
-> Mark Hounschell <dmarkh@cfl.rr.com> wrote:
->
->> What would happen if NVIDIA used this define in their proprietary driver? I
->
-> Ask a lawyer but I believe Nvidia has more sense than that both
-> politically and legally. They walk a very fine line as it is (and IMHO
-> the wrong side of it but one day I guess a court will figure out where
-> the line actually is).
->
->> ask because I am currently in a situation where I believe I may be about to
->> use a product that may be doing this very thing. We had to sign a license
->> agreement to get the kernel driver source for this product. What we
->> received contained the kernel driver source and user land library stuff.
->> The source code for the kernel driver has MODULE_LICENSE("GPL") defined.
->> The only license info in the package received was NOT the GPL license.
->
-> You cannot combine GPL and non GPL code, and since you are aware of the
-> fact there is a problem then you are probably a knowing infringer, which
-> is not a good situation to be in (triple damages in the US). If the module
-> license tag says it is GPL then I would talk to your lawyer about
-> it - you might actually be able to argue that it is therefore GPL
-> but I'm not a lawyer and you *really* don't want to try that stunt without
-> advice!
->
->> On this particular vendors web site they offer unrestricted downloads of
->> binary packages for their product/s that are for specific DIST kernels. But
->> to get the source requires signing a license agreement that is NOT GPL.
->
-> Talk to the Free Software Conservancy and gpl-violations.org.
->
-> Beyond that have a detailed discussion with your lawyer on the licence,
-> on "knowing infringment" and in particular check your insurance as most
-> legal insurance won't cover you in such a situation. If you redistribute
-> such material you are likely to also be liable, which can be very
-> expensive.
->
-> All of this comes down to one thing - you need to ask a lawyer legal
-> questions. I think you can already answer the "what happens if you get
-> caught" political questions. Given that maybe you don't need to ask a
-> lawyer but just say no ?
->
+Patch withdrawn.
 
-OK, thanks. Just to verify they actually had a "need" to specify GPL, I 
-changed it to proprietary to see if they in fact were using GPL-only 
-symbols. It compiled without complaint. As I've seen in the past, and one 
-reason why our drivers are GPL, they won't even build if a GPL exported 
-symbol is referenced. IE
+On Tue, Jul 31, 2012 at 02:31:23PM +0100, Lee Jones wrote:
+> If a list of widgets is provided and one of them fails to be added as
+> a control, the present semantics fail all subsequent widgets. A better
+> solution would be to only fail that widget, but pursue in attempting
+> to add the rest of the list.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  sound/soc/soc-dapm.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+> index eded657..7d9c154 100644
+> --- a/sound/soc/soc-dapm.c
+> +++ b/sound/soc/soc-dapm.c
+> @@ -3095,8 +3095,6 @@ int snd_soc_dapm_new_controls(struct snd_soc_dapm_context *dapm,
+>  			dev_err(dapm->dev,
+>  				"ASoC: Failed to create DAPM control %s\n",
+>  				widget->name);
+> -			ret = -ENOMEM;
+> -			break;
+>  		}
+>  		widget++;
+>  	}
+> -- 
+> 1.7.9.5
+> 
 
-   Building modules, stage 2.
-   MODPOST 1 modules
-FATAL: modpost: GPL-incompatible module somemod.ko uses GPL-only symbol 
-'somesymbol'
-
-This particular driver  does in fact build cleanly after changing the GPL 
-to PROPRIETARY. I haven't actually purchased the product yet so am unable 
-to load it, but can I assume that if I don't have a build issue when 
-specifying PROPRIETARY, that they are in fact NOT using GPL symbols and 
-maybe they just thought they needed to specify GPL for some reason or another?
-
-Thanks
-Mark
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
