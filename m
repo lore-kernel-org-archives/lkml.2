@@ -1,102 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab2HBHid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 03:38:33 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:28537 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750807Ab2HBHib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 03:38:31 -0400
-Date: Thu, 2 Aug 2012 11:38:26 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: "acme@redhat.com" <acme@redhat.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "mingo@elte.hu" <mingo@elte.hu>, "paulus@samba.org" <paulus@samba.org>,
-        "cjashfor@linux.vnet.ibm.com" <cjashfor@linux.vnet.ibm.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "eranian@google.com" <eranian@google.com>,
-        "gorcunov@openvz.org" <gorcunov@openvz.org>,
-        "tzanussi@gmail.com" <tzanussi@gmail.com>,
-        "mhiramat@redhat.com" <mhiramat@redhat.com>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "fche@redhat.com" <fche@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "drepper@gmail.com" <drepper@gmail.com>,
-        "asharma@fb.com" <asharma@fb.com>,
-        "benjamin.redelings@nescent.org" <benjamin.redelings@nescent.org>,
-        Andrew Vagin <avagin@openvz.org>
-Subject: Re: [PATCH 07/13] perf: Add attribute to filter out callchains
-Message-ID: <20120802073826.GA6847@avaginn.sw.ru>
-References: <1343815865-5511-1-git-send-email-jolsa@redhat.com>
- <1343815865-5511-8-git-send-email-jolsa@redhat.com>
+	id S1753995Ab2HBHns (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 03:43:48 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:51196 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab2HBHnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 03:43:46 -0400
+Date: Thu, 2 Aug 2012 01:43:45 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Omar Ramirez Luna <omar.luna@linaro.org>
+cc: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Kevin Hilman <khilman@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] ARM: OMAP: omap_device: expose hwmod assert/deassert
+ to omap devices
+In-Reply-To: <1342466485-1050-4-git-send-email-omar.luna@linaro.org>
+Message-ID: <alpine.DEB.2.00.1208020141140.4177@utopia.booyaka.com>
+References: <1342466485-1050-1-git-send-email-omar.luna@linaro.org> <1342466485-1050-4-git-send-email-omar.luna@linaro.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <1343815865-5511-8-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 02:10:59PM +0400, Jiri Olsa wrote:
-> From: Frederic Weisbecker <fweisbec@gmail.com> 
-> 
-> Introducing following bits to the the perf_event_attr struct:
->   - exclude_callchain_kernel to filter out kernel callchain
->     from the sample dump
->   - exclude_callchain_user to filter out user callchain
->     from the sample dump
-> 
-> We need to be able to disable standard user callchain dump
-> when we use the dwarf cfi callchain mode, because frame
-> pointer based user callchains are useless in this mode.
-> 
-> Implementing also exclude_callchain_kernel to have complete
-> set of options.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> [ Added kernel callchains filtering ]
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> CC: Andrew Vagin <avagin@openvz.org>
+Hi Omar
 
-Acked-by: Andrew Vagin <avagin@openvz.org>
+On Mon, 16 Jul 2012, Omar Ramirez Luna wrote:
+
+> This APIs are meant to be an interface to hwmod assert/deassert
+> function, omap devices can call them through their platform data
+> to control their reset lines, they are expected to know the name
+> of the reset line they are trying to control.
+> 
+> Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
+
+This one has been queued for 3.7 with a few changes. Some more detail was 
+added to the function documentationrovement.  Also the multiple 
+assignments were removed per Documentation/CodingStyle chapter 1:
+
+"Don't put multiple assignments on a single line either."
+
+Please let me know if you have any comments.
 
 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index c4582bb..0902d4a 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -4130,8 +4130,12 @@ void perf_prepare_sample(struct perf_event_header *header,
->  
->  	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
->  		int size = 1;
-> +		int kernel = !event->attr.exclude_callchain_kernel;
-> +		int user   = !event->attr.exclude_callchain_user;
->  
-> -		data->callchain = perf_callchain(event, regs);
-> +		if (kernel || user)
-> +			data->callchain = perf_callchain(event, regs,
-> +							 kernel, user);
-I am not sure, that we need two arguments kernel and user here,
-we can get them from event inside perf_callchain...
->  
->  		if (data->callchain)
->  			size += data->callchain->nr;
-> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-> index ce7bdfc..95d0215 100644
-> --- a/kernel/events/internal.h
-> +++ b/kernel/events/internal.h
-> @@ -126,7 +126,8 @@ DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
->  
->  /* Callchain handling */
->  extern struct perf_callchain_entry *
-> -perf_callchain(struct perf_event *event, struct pt_regs *regs);
-> +perf_callchain(struct perf_event *event, struct pt_regs *regs,
-> +	       int kernel, int user);
->  extern int get_callchain_buffers(void);
->  extern void put_callchain_buffers(void);
->  
-> -- 
-> 1.7.7.6
-> 
+- Paul
+
+From: Omar Ramirez Luna <omar.luna@linaro.org>
+Date: Mon, 16 Jul 2012 14:21:25 -0500
+Subject: [PATCH] ARM: OMAP2+: omap_device: expose hwmod assert/deassert to
+ omap devices
+
+This API is meant to be an interface to hwmod assert/deassert
+function, omap devices can call them through their platform data to
+control their reset lines, they are expected to know the name of the
+reset line they are trying to control.
+
+Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
+[paul@pwsan.com: tweaked some documentation; fixed CodingStyle issue]
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+---
+ arch/arm/plat-omap/include/plat/omap_device.h |    4 ++
+ arch/arm/plat-omap/omap_device.c              |   55 +++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+)
+
+diff --git a/arch/arm/plat-omap/include/plat/omap_device.h b/arch/arm/plat-omap/include/plat/omap_device.h
+index 4327b2c..27bcc24 100644
+--- a/arch/arm/plat-omap/include/plat/omap_device.h
++++ b/arch/arm/plat-omap/include/plat/omap_device.h
+@@ -118,6 +118,10 @@ int omap_device_get_context_loss_count(struct platform_device *pdev);
+ 
+ /* Other */
+ 
++int omap_device_assert_hardreset(struct platform_device *pdev,
++				 const char *name);
++int omap_device_deassert_hardreset(struct platform_device *pdev,
++				 const char *name);
+ int omap_device_idle_hwmods(struct omap_device *od);
+ int omap_device_enable_hwmods(struct omap_device *od);
+ 
+diff --git a/arch/arm/plat-omap/omap_device.c b/arch/arm/plat-omap/omap_device.c
+index c490240..3b02312 100644
+--- a/arch/arm/plat-omap/omap_device.c
++++ b/arch/arm/plat-omap/omap_device.c
+@@ -925,6 +925,61 @@ int omap_device_shutdown(struct platform_device *pdev)
+ }
+ 
+ /**
++ * omap_device_assert_hardreset - set a device's hardreset line
++ * @pdev: struct platform_device * to reset
++ * @name: const char * name of the reset line
++ *
++ * Set the hardreset line identified by @name on the IP blocks
++ * associated with the hwmods backing the platform_device @pdev.  All
++ * of the hwmods associated with @pdev must have the same hardreset
++ * line linked to them for this to work.  Passes along the return value
++ * of omap_hwmod_assert_hardreset() in the event of any failure, or
++ * returns 0 upon success.
++ */
++int omap_device_assert_hardreset(struct platform_device *pdev, const char *name)
++{
++	struct omap_device *od = to_omap_device(pdev);
++	int ret = 0;
++	int i;
++
++	for (i = 0; i < od->hwmods_cnt; i++) {
++		ret = omap_hwmod_assert_hardreset(od->hwmods[i], name);
++		if (ret)
++			break;
++	}
++
++	return ret;
++}
++
++/**
++ * omap_device_deassert_hardreset - release a device's hardreset line
++ * @pdev: struct platform_device * to reset
++ * @name: const char * name of the reset line
++ *
++ * Release the hardreset line identified by @name on the IP blocks
++ * associated with the hwmods backing the platform_device @pdev.  All
++ * of the hwmods associated with @pdev must have the same hardreset
++ * line linked to them for this to work.  Passes along the return
++ * value of omap_hwmod_deassert_hardreset() in the event of any
++ * failure, or returns 0 upon success.
++ */
++int omap_device_deassert_hardreset(struct platform_device *pdev,
++				   const char *name)
++{
++	struct omap_device *od = to_omap_device(pdev);
++	int ret = 0;
++	int i;
++
++	for (i = 0; i < od->hwmods_cnt; i++) {
++		ret = omap_hwmod_deassert_hardreset(od->hwmods[i], name);
++		if (ret)
++			break;
++	}
++
++	return ret;
++}
++
++/**
+  * omap_device_align_pm_lat - activate/deactivate device to match wakeup lat lim
+  * @od: struct omap_device *
+  *
+-- 
+1.7.10.4
+
