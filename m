@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2HBKcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 06:32:52 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48587 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab2HBKcv (ORCPT
+	id S1753740Ab2HBKee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 06:34:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40213 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab2HBKec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 06:32:51 -0400
-X-Originating-IP: 217.70.178.136
-X-Originating-IP: 50.43.46.74
-Date: Thu, 2 Aug 2012 03:32:44 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-Message-ID: <20120802103244.GA23318@leaf>
-References: <20120731182330.GD21292@google.com>
- <50197348.9010101@gmail.com>
- <20120801182112.GC15477@google.com>
- <50197460.8010906@gmail.com>
- <20120801182749.GD15477@google.com>
- <50197E4A.7020408@gmail.com>
- <20120801202432.GE15477@google.com>
- <5019B0B4.1090102@gmail.com>
- <20120801224556.GF15477@google.com>
- <501A4FC1.8040907@gmail.com>
+	Thu, 2 Aug 2012 06:34:32 -0400
+Date: Thu, 2 Aug 2012 03:34:23 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Francois Rigaut <frigaut@mso.anu.edu.au>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
+Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
+Message-ID: <20120802103423.GA1921@kroah.com>
+References: <1343407934-459-1-git-send-email-mjg@redhat.com>
+ <20120731223240.GD19134@kroah.com>
+ <20120801165400.GA3042@srcf.ucam.org>
+ <20120801232147.GA6228@kroah.com>
+ <20120802040242.GB25933@thinkpad-t410>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <501A4FC1.8040907@gmail.com>
+In-Reply-To: <20120802040242.GB25933@thinkpad-t410>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 12:00:33PM +0200, Sasha Levin wrote:
-> On 08/02/2012 12:45 AM, Tejun Heo wrote:
-> > On Thu, Aug 02, 2012 at 12:41:56AM +0200, Sasha Levin wrote:
-> >> How would your DEFINE_HASHTABLE look like if we got for the simple
-> >> 'struct hash_table' approach?
+On Wed, Aug 01, 2012 at 11:02:42PM -0500, Seth Forshee wrote:
+> On Wed, Aug 01, 2012 at 04:21:47PM -0700, Greg KH wrote:
+> > On Wed, Aug 01, 2012 at 05:54:00PM +0100, Matthew Garrett wrote:
+> > > On Tue, Jul 31, 2012 at 03:32:40PM -0700, Greg KH wrote:
+> > > 
+> > > > With this series, does the latest MacBook work properly for the Intel
+> > > > graphics driver?  Or is this to resolve some other hardware issue?
+> > > 
+> > > Apple only seem to provide the ROM for the radeon. Intel normally 
+> > > stands a much better chance of working without a ROM - the only thing it 
+> > > really uses it for is the VBT, and I'm thinking about a couple of ways 
+> > > of handlng that.
 > > 
-> > I think defining a different enclosing anonymous struct which the
-> > requested number of array entries and then aliasing the actual
-> > hash_table to that symbol should work.  It's rather horrible and I'm
-> > not sure it's worth the trouble.
+> > Ok, thanks for letting me know.  For some reason, the gmux isn't working
+> > on the latest MacBook Pro so I can't get the vga switched to the Intel
+> > PCI device.  Rumor has it the osx tool at
+> > http://codykrieger.com/gfxCardStatus will switch into the Intel chip
+> > until the laptop is hard powered off, so it is possible, just need to
+> > figure out how to make the hardware do the switch...
 > 
-> I agree that this is probably not worth the trouble.
+> There's a tool that enables some verbose logging which records all the
+> I/O to the gmux. It works for me with a Macbook Pro 8,2 running OS X
+> Lion, so you might give it a try.
 > 
-> At the moment I see two alternatives:
+> All you need to do is clone https://github.com/ah-/switcher.git, build,
+> and run switcher. If it works you'll see messages prefixed with AGC in
+> dmesg. Then you can use gfxCardStatus to force some switches between the
+> integrated and discrete cards. After that you'll want to grab
+> /var/log/kern.log to get the full logs of everything that happened.
 > 
-> 1. Dynamically allocate the hash buckets.
-> 
-> 2. Use the first bucket to store size. Something like the follows:
-> 
-> 	#define HASH_TABLE(name, bits)	\
->         	struct hlist_head name[1 << bits + 1];
-> 
-> 	#define HASH_TABLE_INIT (bits) ({name[0].next = bits});
-> 
-> And then have hash_{add,get} just skip the first bucket.
-> 
-> 
-> While it's not a pretty hack, I don't see a nice way to avoid having to dynamically allocate buckets for all cases.
+> If you try this and it works, I'd appreciate it if you could send me a
+> copy of kern.log so I can apply the information towards getting graphics
+> switching into apple-gmux.
 
-What about using a C99 flexible array member?  Kernel style prohibits
-variable-length arrays, but I don't think the same rationale applies to
-flexible array members.
+Francois, any chance you can ty this and let Seth know the results?  I
+don't have OSX on my machine anymore to do this myself.
 
-struct hash_table {
-    size_t count;
-    struct hlist_head buckets[];
-};
+thanks,
 
-#define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
-
-- Josh Triplett
+greg k-h
