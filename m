@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab2HBHKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 03:10:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43411 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab2HBHKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 03:10:11 -0400
-Date: Thu, 2 Aug 2012 09:10:03 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] powerpc: fix personality handling in
- ppc64_personality()
-In-Reply-To: <m27gtitfv4.fsf@igel.home>
-Message-ID: <alpine.LNX.2.00.1208020907490.14910@pobox.suse.cz>
-References: <alpine.LNX.2.00.1208012201520.14910@pobox.suse.cz> <m27gtitfv4.fsf@igel.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754178Ab2HBHLQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 03:11:16 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44463 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936Ab2HBHLO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 03:11:14 -0400
+Message-ID: <501A2775.90404@linux.vnet.ibm.com>
+Date: Thu, 02 Aug 2012 12:38:37 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>
+CC: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        KVM <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
+References: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com> <20120801030736.GA31711@amt.cnet> <5019099D.9050608@linux.vnet.ibm.com> <20120801182554.GA9464@amt.cnet>
+In-Reply-To: <20120801182554.GA9464@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12080207-5140-0000-0000-000001DA55ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Directly comparing current->personality against PER_LINUX32 doesn't work
-in cases when any of the personality flags stored in the top three bytes
-are used.
+On 08/01/2012 11:55 PM, Marcelo Tosatti wrote:
+> On Wed, Aug 01, 2012 at 04:19:01PM +0530, Raghavendra K T wrote:
+>> On 08/01/2012 08:37 AM, Marcelo Tosatti wrote:
+>>> On Tue, Jul 24, 2012 at 02:23:59PM +0530, Raghavendra K T wrote:
+>>>> From: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
+>>>>
+>>>> Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ,
+>>>> and Peter (HPA) for suggesting hypercall ABI addition.
+>>>>
+>>>> Signed-off-by: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
+>>>> ---
+[...]
+>>>> +
+>>>> + Up to four arguments may be passed in rbx, rcx, rdx, and rsi respectively.
+>>>> + The hypercall number should be placed in rax and the return value will be
+>>>> + placed in rax.  No other registers will be clobbered unless explicitly stated
+>>>> + by the particular hypercall.
+>>>
+>>> It depends on the hypercall. It happens that current hypercalls use
+>>> the four registers, but its not an ABI (hyper-v hypercalls uses r8, for example).
+>>>
+>>
+>> Okay, agree. I did not know about hyper-v. Above one is for X86 and
+>> KVM  (and not X86 / hyper-v). So I should remove ABI and probably say,
+>
+> Just say "Linux x86 Hypercall", yeah.
+>
 
-Directly forcefully setting personality to PER_LINUX32 or PER_LINUX
-discards any flags stored in the top three bytes
+Ok, Thanks Marcelo.will respin patches with the changes you suggested.
 
-Use personality() macro to compare only PER_MASK bytes and make sure that
-we are setting only the bits that should be set, instead of
-overwriting the whole value.
+Also I would  like add Alex's description on ppc hypercalls
+into Documentation/virtual/kvm/ppc-pv.txt with Alex from/sob or
+suggested-by in a separate patch unless I see any objection to that.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
-
-changed since v1: fix the bit ops to reflect the fact that PER_LINUX is 
-actually 0
-
- arch/powerpc/kernel/syscalls.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/powerpc/kernel/syscalls.c b/arch/powerpc/kernel/syscalls.c
-index f2496f2..dc1558e 100644
---- a/arch/powerpc/kernel/syscalls.c
-+++ b/arch/powerpc/kernel/syscalls.c
-@@ -107,11 +107,11 @@ long ppc64_personality(unsigned long personality)
- 	long ret;
- 
- 	if (personality(current->personality) == PER_LINUX32
--	    && personality == PER_LINUX)
--		personality = PER_LINUX32;
-+	    && personality(personality) == PER_LINUX)
-+		personality |= PER_LINUX32;
- 	ret = sys_personality(personality);
--	if (ret == PER_LINUX32)
--		ret = PER_LINUX;
-+	if (personality(ret) == PER_LINUX32)
-+		ret &= ~PER_LINUX32;
- 	return ret;
- }
- #endif
--- 
-1.7.3.1
-
--- 
-Jiri Kosina
-SUSE Labs
