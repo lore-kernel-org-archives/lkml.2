@@ -1,122 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab2HBNeI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 09:34:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38389 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab2HBNeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 09:34:06 -0400
-Date: Thu, 2 Aug 2012 15:33:59 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] parisc: fix personality flag check in copy_thread()
-In-Reply-To: <1343912818.5073.48.camel@dabdike.int.hansenpartnership.com>
-Message-ID: <alpine.LNX.2.00.1208021531540.4820@pobox.suse.cz>
-References: <alpine.LNX.2.00.1208012155330.14910@pobox.suse.cz>   <alpine.LNX.2.00.1208020911300.14910@pobox.suse.cz>  <1343897272.5073.5.camel@dabdike.int.hansenpartnership.com>  <alpine.LNX.2.00.1208021342120.4820@pobox.suse.cz>
- <1343912818.5073.48.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754745Ab2HBNjp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 09:39:45 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:36756 "EHLO
+	homiemail-a94.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754332Ab2HBNjo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 09:39:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=references
+	:in-reply-to:mime-version:content-transfer-encoding:content-type
+	:message-id:cc:from:subject:date:to; q=dns; s=shealevy.com; b=Dr
+	Vfy1MLtgDKisumckgstVaCGmu8QjGA+ZjdBPNfOBOGA2IvPJGsas8EfXrkg2injJ
+	RZU9oJWbbHStVduKn0H8J6GB4a3UGp4AZLNcpvpPwmZcYorGgW3uzCyyjISvWcXM
+	HCvVSb75uiFStlBJarwc4rzUnHGurE7zI1E3S03eg=
+References: <1343911533-3423-1-git-send-email-shea@shealevy.com> <CANq1E4Tn6nugb0vmMb1VzTE+-io0bV2y7OLaEXtXbav4W51Kag@mail.gmail.com>
+In-Reply-To: <CANq1E4Tn6nugb0vmMb1VzTE+-io0bV2y7OLaEXtXbav4W51Kag@mail.gmail.com>
+Mime-Version: 1.0 (1.0)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <65B6AB74-5658-49F1-BB6F-5A644CC10098@shealevy.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPad Mail (9B206)
+From: Shea Levy <shea@shealevy.com>
+Subject: Re: [PATCH] Bluetooth: Add support for Apple MacBook Pro 9,2
+Date: Thu, 2 Aug 2012 09:39:44 -0400
+To: David Herrmann <dh.herrmann@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Aug 2012, James Bottomley wrote:
+Hi David,
 
-> > In case of parsic, let's take a process with current->personality == 
-> > PER_LINUX32 callling personality(PER_LINUX | UNAME26). The
-> > 
-> >         if (personality(current->personality) == PER_LINUX32
-> >             && personality == PER_LINUX)
-> >                 personality = PER_LINUX32;
-> > 
-> > would that have no effect, and sys_personality() would be called with 
-> > (PER_LINUX | UNAME26) instead of PER_LINUX32, just because of UNAME26 
-> > being set as well. That doesn't seem really correct. Is it?
+On Aug 2, 2012, at 9:32 AM, David Herrmann <dh.herrmann@googlemail.com> wrote:
+
+> Hi Shea
 > 
-> Heh, no.  This is a nasty mess.  
-
-Indeed.
-
-> Our assumption was that we own the flags ... hence the code.  There are 
-> some flags we can't allow to be set or reset ... but that's only for the 
-> mythical 64 bit userspace, so I suppose we just ignore that for now and 
-> fix it if this ever appears.
->
-> I don't like the hidden assumption that PER_LINUX == 0, but otherwise
-> the code looks fine.
+> On Thu, Aug 2, 2012 at 2:45 PM,  <shea@shealevy.com> wrote:
+>> From: Shea Levy <shea@shealevy.com>
+>> 
+>> 
+>> Signed-off-by: Shea Levy <shea@shealevy.com>
 > 
-> How about 
+> Why is this patch missing a commit-message? Please add one.
+
+The commit message was only one line, which git-send-email puts in the subject.
+
+> And also
+> include the output of "usb-devices" or the contents of
+> /sys/kernel/debug/usb/devices in this commit-message.
 > 
-> personality = (personality & ~PER_MASK) | PER_LINUX32;
-> 
-> and
-> 
-> err = (personality & ~PER_MASK) | PER_LINUX;
 
-Agreed, that's a little bit nicer way how to express it (modulo the 
-fact that the last 'personality' in your example should in fact be 'err'). 
-Updated patch below, thanks.
+OK. The whole thing or just the relevant bits? Does it matter if I'm booted into the patched kernel or not?
 
-
-
-
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 2/4] parisc: fix personality flag check in copy_thread()
-
-Directly comparing task_struct->personality against PER_* is not fully
-correct, as it doesn't take flags potentially stored in top three bytes
-into account.
-
-Analogically, directly forcefully setting personality to PER_LINUX32 or
-PER_LINUX discards any flags stored in the top three bytes.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
-v0->v1: fix the bit ops to reflect the fact that PER_LINUX is actually 0
-v2->v2: express the PER_LINUX==0 fact in the bitops in a more obvious way
-
- arch/parisc/kernel/process.c    |    2 +-
- arch/parisc/kernel/sys_parisc.c |    8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/parisc/kernel/process.c b/arch/parisc/kernel/process.c
-index d4b94b3..2c05a92 100644
---- a/arch/parisc/kernel/process.c
-+++ b/arch/parisc/kernel/process.c
-@@ -309,7 +309,7 @@ copy_thread(unsigned long clone_flags, unsigned long usp,
- 		cregs->ksp = (unsigned long)stack
- 			+ (pregs->gr[21] & (THREAD_SIZE - 1));
- 		cregs->gr[30] = usp;
--		if (p->personality == PER_HPUX) {
-+		if (personality(p->personality) == PER_HPUX) {
- #ifdef CONFIG_HPUX
- 			cregs->kpc = (unsigned long) &hpux_child_return;
- #else
-diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
-index c9b9322..7f9658e 100644
---- a/arch/parisc/kernel/sys_parisc.c
-+++ b/arch/parisc/kernel/sys_parisc.c
-@@ -225,12 +225,12 @@ long parisc_personality(unsigned long personality)
- 	long err;
- 
- 	if (personality(current->personality) == PER_LINUX32
--	    && personality == PER_LINUX)
--		personality = PER_LINUX32;
-+	    && personality(personality) == PER_LINUX)
-+		personality = (personality & ~PER_MASK) | PER_LINUX32;
- 
- 	err = sys_personality(personality);
--	if (err == PER_LINUX32)
--		err = PER_LINUX;
-+	if (personality(err) == PER_LINUX32)
-+		err = (err & ~PER_MASK) | PER_LINUX;
- 
- 	return err;
- }
-
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+Shea
