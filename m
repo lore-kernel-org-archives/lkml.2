@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab2HBAfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Aug 2012 20:35:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60919 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab2HBAfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Aug 2012 20:35:42 -0400
-Date: Thu, 2 Aug 2012 10:35:24 +1000
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux RAID <linux-raid@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>, Shaohua Li <shli@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Jonathan Brassow <jbrassow@redhat.com>
-Subject: [PULL REQUEST] few more md patches now that dependencies are
- present.
-Message-ID: <20120802103524.043132e7@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/G6QEaDuQ_g6z3VdFwiNKM8B"; protocol="application/pgp-signature"
+	id S1753686Ab2HBAgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Aug 2012 20:36:51 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29134 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab2HBAgu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Aug 2012 20:36:50 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: David Airlie <airlied@linux.ie>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] intel-gtt: Read 64bit for gmar_bus_addr
+Date: Wed,  1 Aug 2012 17:36:41 -0700
+Message-Id: <1343867801-12925-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/G6QEaDuQ_g6z3VdFwiNKM8B
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+That bar could be 64bit pref mem.
 
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: David Airlie <airlied@linux.ie>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-Is it still Wednesday?
+---
+ drivers/char/agp/intel-gtt.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-As promised, here are the last bits for md.  Primarily performance
-improvements made possible the new plugging code.  These can make a
-significant difference on SDD's and a noticeable difference on spinning rus=
-t.
-
-Thanks,
-NeilBrown
-
-
-The following changes since commit 74018dc3063a2c729fc73041c0a9f03aac995920:
-
-  blk: pass from_schedule to non-request unplug functions. (2012-07-31 09:0=
-8:15 +0200)
-
-are available in the git repository at:
-
-  git://neil.brown.name/md tags/md-3.6
-
-for you to fetch changes up to d9f691c365a83ce2530f0e46b947365c2db44ea0:
-
-  md/dm-raid: DM_RAID should select MD_RAID10 (2012-08-02 08:35:43 +1000)
-
-----------------------------------------------------------------
-Additional md update for 3.6
-
-This contains a few patches that depend on
-plugging changes in the block layer so needs to wait
-for those.
-It also contains a Kconfig fix for the new RAID10 support
-in dm-raid.
-
-----------------------------------------------------------------
-NeilBrown (2):
-      md/raid1: submit IO from originating thread instead of md thread.
-      md/dm-raid: DM_RAID should select MD_RAID10
-
-Shaohua Li (2):
-      raid5: make_request use batch stripe release
-      raid5: raid5d handle stripe in batch way
-
- drivers/md/Kconfig  |    5 ++-
- drivers/md/bitmap.c |    2 +-
- drivers/md/raid1.c  |   57 +++++++++++++++++++++++++--
- drivers/md/raid5.c  |  107 +++++++++++++++++++++++++++++++++++++++++++----=
-----
- drivers/md/raid5.h  |    1 +
- 5 files changed, 150 insertions(+), 22 deletions(-)
-
---Sig_/G6QEaDuQ_g6z3VdFwiNKM8B
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUBnLTDnsnt1WYoG5AQKSSQ/9E5c9SJj6HYE3pRc6k21fnJS58rmpudS8
-xj70LT/1sn2azFqroleTh/FKdCfCzZUloMW47LKN9O9402YZDut8fQfwoX7BYNDX
-eLJTD909iZ4GA/HJl4QLO59b3JtluLzk6jKRy3uYp70OOoVm7j7tXNLYcXLSDMu1
-TUXQj7DdkKQKdPzvuFwmLFHfQA+e9vBfBDdta9w9va+RmYEk6bT+noEoxs9m/0mR
-wbH3y1PQGFdOFbxPEwQYanuzMpzIKXH4eqBDKvmqaLeMQuF/QNOgWOwiG4amIlXG
-4a3ssx3pKa4T4Ow4pL7iRwEcUOAkR9NzkMKeXQzDwpgXYY+FqDdDNozrLhIASrNX
-EFvNUJFjmtNrg03CEqPCoSMCjhWKXm0gWDWx741LSkLUrk8/2Oc1Z1bMwCtLDGHw
-04IDIr+7ohzoSZrt1O+xjtVy8vNvOz/d6+fIcl5i4IWGqHRjiwnL7pVODU2w+5Nf
-L95ubBbh6BpZJkvBqXssNO6VrfkLIRn7JrA9SKlb8VcYCazWzRS4dlGZ0OOtBvWe
-CgCcDSRx5gtzWzhpgq4QIn6F9AzbL3sKMFaRqlj2S7nThj8953HT4+P3OEi8Pigc
-wMa7P1vRxLj/EnXeJHo0fJCW8YrS7ENNh3pzT0kSLDNvf5gxA3t3swREar4S+MFp
-UvxaLbdyB1c=
-=jTHV
------END PGP SIGNATURE-----
-
---Sig_/G6QEaDuQ_g6z3VdFwiNKM8B--
+Index: linux-2.6/drivers/char/agp/intel-gtt.c
+===================================================================
+--- linux-2.6.orig/drivers/char/agp/intel-gtt.c
++++ linux-2.6/drivers/char/agp/intel-gtt.c
+@@ -649,8 +649,10 @@ static void intel_gtt_cleanup(void)
+ static int intel_gtt_init(void)
+ {
+ 	u32 gma_addr;
++	u32 addr_hi = 0;
+ 	u32 gtt_map_size;
+ 	int ret;
++	int pos;
+ 
+ 	ret = intel_private.driver->setup();
+ 	if (ret != 0)
+@@ -696,13 +698,17 @@ static int intel_gtt_init(void)
+ 	}
+ 
+ 	if (INTEL_GTT_GEN <= 2)
+-		pci_read_config_dword(intel_private.pcidev, I810_GMADDR,
+-				      &gma_addr);
++		pos = I810_GMADDR;
+ 	else
+-		pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
+-				      &gma_addr);
++		pos = I915_GMADDR;
++
++	pci_read_config_dword(intel_private.pcidev, pos, &gma_addr);
++
++	if (gma_addr & PCI_BASE_ADDRESS_MEM_TYPE_64)
++		pci_read_config_dword(intel_private.pcidev, pos + 4, &addr_hi);
+ 
+ 	intel_private.base.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
++	intel_private.base.gma_bus_addr |= (u64)addr_hi << 32;
+ 
+ 	return 0;
+ }
