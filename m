@@ -1,74 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab2HBImh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 04:42:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752379Ab2HBImK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 04:42:10 -0400
-Date: Thu, 2 Aug 2012 11:42:52 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120802084252.GC24929@redhat.com>
-References: <20120724203628.21081.56884.stgit@bling.home>
- <20120724204320.21081.32333.stgit@bling.home>
- <20120729145452.GD14278@redhat.com>
- <1343665330.8073.108.camel@ul30vt>
- <20120731000100.GA17612@redhat.com>
- <1343694391.8073.227.camel@ul30vt>
- <20120731003636.GC17922@redhat.com>
- <1343697135.8073.245.camel@ul30vt>
+	id S1752755Ab2HBIpv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 04:45:51 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53527 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab2HBIps (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 04:45:48 -0400
+Date: Thu, 2 Aug 2012 10:45:41 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+Message-ID: <20120802084541.GA15042@avionic-0098.adnet.avionic-design.de>
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
+ <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
+ <50170EA0.1010408@wwwdotorg.org>
+ <501A338D.7080105@nvidia.com>
+ <20120802082157.GA14866@avionic-0098.adnet.avionic-design.de>
+ <501A3A00.7070207@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
 Content-Disposition: inline
-In-Reply-To: <1343697135.8073.245.camel@ul30vt>
+In-Reply-To: <501A3A00.7070207@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:5VIQVQOFr4Aimxfcpez98NVcluY/B+gRc6Lau6j18Ji
+ eVGU5nfp0jqMkx2iv2CPFV0GoRN/7BPzAU/Sxn89kxjoVfitjp
+ GPKVwTWwzDp8Tf4JzaynEeN66cIOHE+35dOn3xBC/viS73kNtj
+ Vq+sPu1Loiu65MLU/P13Miaz4YE3fqOS0mq84Z4kowD1HFDBFu
+ x2Ec389tqS8ZRBirbZc0PX1VBHbHg699YPfKevCcfL95egZpAh
+ SV+XjdsBdS9wBs7v2YcveeRCWTzNR3ZcizMl4/BUCNshSGwxBS
+ 6c2/LKTLr1F8cReoWP+ntgks8sOQ0v4Ho8Qz9jnELi+CleRTR0
+ RQFpJmPe7EiChwaPurZg1sxk67r/yjXBAHn46C9aTgn6KmLZdO
+ KNKzZQWu45H4MjM6QqpeWu6DVG9YaypGug=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 07:12:15PM -0600, Alex Williamson wrote:
-> > > > > > >  kvm_eoifd.fd specifies the eventfd used for
-> > > > > > > +notification.  KVM_EOIFD_FLAG_DEASSIGN is used to de-assign an eoifd
-> > > > > > > +once assigned.  KVM_EOIFD also requires additional bits set in
-> > > > > > > +kvm_eoifd.flags to bind to the proper interrupt line.  The
-> > > > > > > +KVM_EOIFD_FLAG_LEVEL_IRQFD indicates that kvm_eoifd.key is provided
-> > > > > > > +and is a key from a level triggered interrupt (configured from
-> > > > > > > +KVM_IRQFD using KVM_IRQFD_FLAG_LEVEL).  The EOI notification is bound
-> > > > > > > +to the same GSI and irqchip input as the irqfd.  Both kvm_eoifd.key
-> > > > > > > +and KVM_EOIFD_FLAG_LEVEL_IRQFD must be specified on assignment and
-> > > > > > > +de-assignment of KVM_EOIFD.  A level irqfd may only be bound to a
-> > > > > > > +single eoifd.  KVM_CAP_EOIFD_LEVEL_IRQFD indicates support of
-> > > > > > > +KVM_EOIFD_FLAG_LEVEL_IRQFD.
-> > > > > > >  
-> > > > > > 
-> > > > > > Hmm returning the key means we'll need to keep refcounting for source
-> > > > > > IDs around forever. I liked passing the fd better: make implementation
-> > > > > > match interface and not the other way around.
-> > > > > 
-> > > > > False, a source ID has a finite lifecycle.  The fd approach was broken.
-> > > > > Holding the irqfd context imposed too many dependencies between eoifd
-> > > > > and irqfd necessitating things like one interface disabling another.  I
-> > > > > thoroughly disagree with that approach.
-> > > > 
-> > > > You keep saying this but it is still true: once irqfd
-> > > > is closed eoifd does not get any more interrupts.
-> > > 
-> > > How does that matter?
-> > 
-> > Well if it does not get events it is disabled.
-> > so you have one ifc disabling another, anyway.
-> 
-> And a level irqfd without an eoifd can never be de-asserted.  Either we
-> make modular components, assemble them to do useful work, and
-> disassemble them independently so they can be used by future interfaces
-> or we bundle eoifd as just an option of irqfd.  Which is it gonna be?
 
-I'm fine just making it an option. I think Gleb wanted a separate
-EOIFD to handle timedrift but it later seemed that eventfd is not
-suitable for that?
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-MST
+On Thu, Aug 02, 2012 at 05:27:44PM +0900, Alex Courbot wrote:
+> On Thu 02 Aug 2012 05:21:57 PM JST, Thierry Reding wrote:
+> >* PGP Signed by an unknown key
+> >
+> >On Thu, Aug 02, 2012 at 05:00:13PM +0900, Alex Courbot wrote:
+> >>On 07/31/2012 07:45 AM, Stephen Warren wrote:
+> >>>Oh I see. That's a little confusing. Why not just reference the releva=
+nt
+> >>>resources directly in each step; something more like:
+> >>>
+> >>>		gpio@1 {
+> >>>			action =3D "enable-gpio";
+> >>>			gpio =3D <&gpio 1 0>;
+> >>>		};
+> >>>
+> >>>I guess that might make parsing/building a little harder, since you'd
+> >>>have to detect when you'd already done gpio_request() on a given GPIO
+> >>>and not repeat it or something like that, but to me this makes the DT a
+> >>>lot easier to comprehend.
+> >>
+> >>I tried to move towards having the phandles directly in the
+> >>sequences themselves - that reminded me why I did not do that in the
+> >>first place. Let's say we have a sequence like this (reg property
+> >>omitted on purpose):
+> >>
+> >>	power-on-sequence {
+> >>		step@0 {
+> >>			regulator =3D <&backlight_reg>;
+> >>			enable;
+> >>		};
+> >>		step@1 {
+> >>			delay =3D <10000>;
+> >>		};
+> >>		step@2 {
+> >>			pwm =3D <&pwm 2 5000000>;
+> >>			enable;
+> >>		};
+> >>		step@3 {
+> >>			gpio =3D <&gpio 28 0>;
+> >>			enable;
+> >>		};
+> >>	};
+> >>
+> >>The problem is, how do we turn these phandles into the resource of
+> >>interest. The type of the resource can be infered by the name of the
+> >>property. The hard part is resolving the resource from the phandle -
+> >>it seems like the API just does not allow to do this. GPIO has
+> >>of_get_named_gpio, but AFAIK there are no equivalent for regulator
+> >>consumer and PWM: the only way to use the DT with them is through
+> >>get_regulator and get_pwm which work at the device level.
+> >>
+> >>Or is there a way that I overlooked?
+> >
+> >No, you are right. Perhaps we should add exported functions that do the
+> >equivalent of of_pwm_request() or the regulator_dev_lookup() and
+> >of_get_regulator() pair.
+>=20
+> How would that be looked with respect to "good DT practices"? I can
+> somehow understand the wish to restrain DT access to these functions
+> that integrate well with current workflows. Aren't we going to be
+> frowned upon if we make more low-level functions public?
+
+Yes, I think that's exactly what will happen.
+
+Thierry
+
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQGj41AAoJEN0jrNd/PrOhmDwQAMEvzOjcnqnUhkvHRWK3SvID
+9dVc3dGgPm3A+8b2HCUDkfkaaMTZyRr2iOM3gM33T6zXi821tdYibBOyPyOT1Ckj
+PmuOaCG1NW8duDvbLnqAd5D58l9mVDJk2j3CNVF4XCiC+Ul+9qNLu3RngFf+t0z7
+U8Q1Kq2tP51LPxYjK67IgFpRdQvzdq8XQA2jXlHSBkSmMqIt61dWcAvNqJvlqpa9
+bFg18L3zQG1YzFrOXvfRKIX4hTblPkvBoxmrbn9j6oR/mAOJLNu8tpWtHs3SocnB
+tCH1NowSgGjiLeFLXTQxnfD421YsPZhyjWi+WXvsRnMLIaM+IqRtm/jYcfu2Os5M
+aiueERjqaGOnAq7k4gWPGzbhZ2a2fiuw26XUr3fIi2Ae+HnP8FYJLWyW7zAXOmYM
+zyv98RRdkP3LscUlZOzWIglpwQgOq/NSySFS/WyeGtkvJYxZ+CQg+Q6pomwAiQsC
+r86+koAUrtTHl4sO/FosDT9Q3/HCItF7j3Dw85PhszzZiIdg0PnW7XrQKsQZknch
+MqbxNzOrKUf6+Nd1npjmZSkTdpLvpSm0rD+sO3ET4YJxhnQF1sFvRhyW62q5XyWM
+Yp9yGbFgmLr8CKrBmlpkbaTqwS9372ZFTYsxb7ATqhGx+KHL2EPxLDXX/TFWCpeR
+ZfG5wD9BuY7YT0BzesTT
+=tJ1V
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
