@@ -1,342 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab2HBJfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 05:35:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753991Ab2HBJe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 05:34:58 -0400
-Message-ID: <501A49A4.90107@redhat.com>
-Date: Thu, 02 Aug 2012 11:34:28 +0200
-From: Igor Mammedov <imammedo@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754185Ab2HBJfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 05:35:48 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53861 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753900Ab2HBJfq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 05:35:46 -0400
+X-Originating-IP: 217.70.178.136
+X-Originating-IP: 50.43.46.74
+Date: Thu, 2 Aug 2012 02:35:36 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+Message-ID: <20120802093536.GA23089@leaf>
+References: <1343757920-19713-1-git-send-email-levinsasha928@gmail.com>
+ <1343757920-19713-2-git-send-email-levinsasha928@gmail.com>
+ <20120731182330.GD21292@google.com>
+ <50197348.9010101@gmail.com>
+ <20120801182112.GC15477@google.com>
+ <50197460.8010906@gmail.com>
+ <20120801182749.GD15477@google.com>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: linux-kernel@vger.kernel.org, prarit@redhat.com, oleg@redhat.com,
-        rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, luto@mit.edu,
-        suresh b siddha <suresh.b.siddha@intel.com>, avi@redhat.com,
-        a p zijlstra <a.p.zijlstra@chello.nl>, johnstul@us.ibm.com,
-        a17711@motorola.com, shuahkhan@gmail.com
-Subject: Re: [PATCH 1/2] x86: abort secondary CPU bring-up gracefully if do_boot_cpu
- timed out on cpu_callin_mask
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120801182749.GD15477@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+On Wed, Aug 01, 2012 at 11:27:49AM -0700, Tejun Heo wrote:
+> On Wed, Aug 01, 2012 at 08:24:32PM +0200, Sasha Levin wrote:
+> > On 08/01/2012 08:21 PM, Tejun Heo wrote:
+> > > On Wed, Aug 01, 2012 at 08:19:52PM +0200, Sasha Levin wrote:
+> > >> If we switch to using functions, we could no longer hide it anywhere
+> > >> (we'd need to either turn the buckets into a struct, or have the
+> > >> user pass it around to all functions).
+> > > 
+> > > Create an outer struct hash_table which remembers the size?
+> > 
+> > Possible. I just wanted to avoid creating new structs where they're not really required.
+> > 
+> > Do you think it's worth it for eliminating those two macros?
+> 
+> What if someone wants to allocate hashtable dynamically which isn't
+> too unlikely?
 
-I'm sorry for delayed response, I was on vacation. Thanks for looking at 
-the patch, my comments are below.
+In particular, once this goes in, I'd like to add RCU-based hash
+resizing to it, which will require wrapping the hash table in a struct
+that also contains the size.  So, please do consider having such a
+struct rather than relying on static array sizes.
 
-PS:
-I'm not happy with introducing one more sync point and bitmat. Well, 
-it's necessary to somehow notify being on-lined CPU that master CPU will 
-wait for it, but perhaps it could be done even earlier than in this 
-patch and less stuff should be backed-out.
-
-Currently master CPU spins on cpu_callin_mask till secondary CPU sets it
-in smp_callin(). Then master CPU leaves do_boot_cpu() and does nothing 
-in native_cpu_up() first waiting for secondary CPU in 
-check_tsc_sync_source() or if that is skipped then immediately spinning 
-on 'while (!cpu_online(cpu))'.
-Master CPU will do nothing and will not call any CPU notifiers until 
-secondary CPU reports that it is ONLINE by setting bit in 
-cpu_online_mask at the end of start_secondary().
-
-So questions to experts are:
-
-  1. what is purpose of cpu_callin_mask
-
-  2. why master CPU spins on cpu_callin_mask but not on cpu_initialized_mask
-
-In current state of code, it looks like cpu_callin_mask is not necessary 
-and we could remove it completely and spin on cpu_initialized_mask in 
-do_boot_cpu() instead. Then when master CPU
-sees secondary CPU in cpu_initialized_mask it could set cpu_callout_mask 
-to ack its intention not to cancel and wait until
-secondary CPU is booted.
-
-
-PS2:
-I wish x86 maintainers were more responsive to the topic and in 
-discussion we could find a way to fix problem. With their expertise, 
-It's surely easier to spot potential issues and see correct approach for 
-the fix.
-
------ Original Message -----
-> From: "Toshi Kani" <toshi.kani@hp.com>
-> To: imammedo@redhat.com
-> Cc: linux-kernel@vger.kernel.org, prarit@redhat.com, oleg@redhat.com, rob@landley.net, tglx@linutronix.de,
-> mingo@redhat.com, hpa@zytor.com, x86@kernel.org, luto@mit.edu, "suresh b siddha" <suresh.b.siddha@intel.com>,
-> avi@redhat.com, "a p zijlstra" <a.p.zijlstra@chello.nl>, johnstul@us.ibm.com, "toshi kani" <toshi.kani@hp.com>
-> Sent: Wednesday, July 11, 2012 11:49:19 PM
-> Subject: Re: [PATCH 1/2] x86: abort secondary CPU bring-up gracefully if do_boot_cpu timed out on cpu_callin_mask
->
-> Hi Igor,
->
-> This is a nice work to handle CPU bring-up error properly.  My
-> comments
-> are in-line below.
->
-> On Wed, 2012-07-11 at 14:12 -0600, Toshi Kani wrote:
-> > Master CPU may timeout before cpu_callin_mask is set and cancel
-> > booting CPU, but being onlined CPU still continues to boot, sets
-> > cpu_active_mask (CPU_STARTING notifiers) and spins in
-> > check_tsc_sync_target() for master cpu to arrive. Following attempt
-> > to online another cpu hangs in stop_machine, initiated from here:
-> >
-> > smp_callin ->
-> >   smp_store_cpu_info ->
-> >     identify_secondary_cpu ->
-> >       mtrr_ap_init -> set_mtrr_from_inactive_cpu
-> >
-> > stop_machine waits on completion of stop_work on all CPUs from
-> > cpu_active_mask including a failed CPU that spins in
-> > check_tsc_sync_target().
-> >
-> > Issue could be fixed if being onlined CPU continues to boot and
-> > calls
-> > notify_cpu_starting(cpuid) only when master CPU waits for it to
-> > come online. If master CPU times out on cpu_callin_mask and goes
-> > via
-> > cancel path, the being onlined CPU should gracefully shutdown
-> > itself.
-> >
-> > Patch introduces cpu_may_complete_boot_mask to notify a being
-> > onlined
-> > CPU that it may call notify_cpu_starting(cpuid) and continue to
-> > boot
-> > when master CPU goes via normal boot path and going to wait till
-> > the
-> > being onlined CPU completes its initialization.
-> >
-> > normal boot sequence will look like:
-> >     master CPU1                         being onlined CPU2
-> >
-> >  * wait for CPU2 in cpu_callin_mask
-> > ---------------------------------------------------------------------
-> >                                         * set CPU2 in
-> >                                         cpu_callin_mask
-> >                                         * wait till CPU1 set CPU2
-> >                                         bit
-> >                                         in
-> >                                         cpu_may_complete_boot_mask
-> > ---------------------------------------------------------------------
-> >  * set CPU2 bit in
-> >    cpu_may_complete_boot_mask
-> >  * return from do_boot_cpu() and
-> >    wait in
-> >      - check_tsc_sync_source() or
-> >      - while (!cpu_online(CPU2))
-> > ---------------------------------------------------------------------
-> >                                         * call
-> >                                         notify_cpu_starting()
-> > 					  and continue CPU2 initialization
-> > 					* mark itself as ONLINE
-> > ---------------------------------------------------------------------
-> >  * return to _cpu_up and call
-> >    cpu_notify(CPU_ONLINE, ...)
-> >
-> > cancel/error path will look like:
-> >     master CPU1                         being onlined CPU2
-> >
-> >  * time out on cpu_callin_mask
-> > ---------------------------------------------------------------------
-> >                                        * set CPU2 in
-> >                                        cpu_callin_mask
-> >                                        * wait till CPU2 is set in
-> >                                          cpu_may_complete_boot_mask
-> >                                          or
-> >                                          cleared in
-> >                                          cpu_callout_mask
-> > ---------------------------------------------------------------------
-> >  * clear CPU2 in cpu_callout_mask
-> >  and return with error
-> > ---------------------------------------------------------------------
-> >                                        * do cleanups and
-> >                                        play_dead()
-> >
-> > Note:
-> > It's safe for being onlined CPU to set cpu_callin_mask before
-> > calling
-> > notify_cpu_starting() because master CPU may first wait for being
-> > booted
-> > CPU in check_tsc_sync_source() and then it waits in native_cpu_up()
-> > till
-> > being booted CPU comes online and only when being booted CPU sets
-> > cpu_online_mask
-> > it will exit native_cpu_up() and then call CPU_ONLINE notifiers.
-> >
-> > v3:
-> >   - added missing remove_siblinginfo() on 'die' error path.
-> >   - added explanation why it's ok to set cpu_callin_mask before
-> >   calling
-> >     CPU_STARTING notifiers
-> >   - being booted CPU will wait for master CPU without timeouts
-> >
-> > Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-> > ---
-> >  arch/x86/include/asm/cpumask.h |    1 +
-> >  arch/x86/kernel/cpu/common.c   |    2 ++
-> >  arch/x86/kernel/smpboot.c      |   34
-> >  ++++++++++++++++++++++++++++++++--
-> >  3 files changed, 35 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/arch/x86/include/asm/cpumask.h
-> > b/arch/x86/include/asm/cpumask.h
-> > index 61c852f..eacd269 100644
-> > --- a/arch/x86/include/asm/cpumask.h
-> > +++ b/arch/x86/include/asm/cpumask.h
-> > @@ -7,6 +7,7 @@ extern cpumask_var_t cpu_callin_mask;
-> >  extern cpumask_var_t cpu_callout_mask;
-> >  extern cpumask_var_t cpu_initialized_mask;
-> >  extern cpumask_var_t cpu_sibling_setup_mask;
-> > +extern cpumask_var_t cpu_may_complete_boot_mask;
-> >
-> >  extern void setup_cpu_local_masks(void);
-> >
-> > diff --git a/arch/x86/kernel/cpu/common.c
-> > b/arch/x86/kernel/cpu/common.c
-> > index 6b9333b..16984f1 100644
-> > --- a/arch/x86/kernel/cpu/common.c
-> > +++ b/arch/x86/kernel/cpu/common.c
-> > @@ -48,6 +48,7 @@
-> >  cpumask_var_t cpu_initialized_mask;
-> >  cpumask_var_t cpu_callout_mask;
-> >  cpumask_var_t cpu_callin_mask;
-> > +cpumask_var_t cpu_may_complete_boot_mask;
-> >
-> >  /* representing cpus for which sibling maps can be computed */
-> >  cpumask_var_t cpu_sibling_setup_mask;
-> > @@ -59,6 +60,7 @@ void __init setup_cpu_local_masks(void)
-> >  	alloc_bootmem_cpumask_var(&cpu_callin_mask);
-> >  	alloc_bootmem_cpumask_var(&cpu_callout_mask);
-> >  	alloc_bootmem_cpumask_var(&cpu_sibling_setup_mask);
-> > +	alloc_bootmem_cpumask_var(&cpu_may_complete_boot_mask);
-> >  }
-> >
-> >  static void __cpuinit default_init(struct cpuinfo_x86 *c)
-> > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> > index 7bd8a08..95948b9 100644
-> > --- a/arch/x86/kernel/smpboot.c
-> > +++ b/arch/x86/kernel/smpboot.c
-> > @@ -122,6 +122,8 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
-> >
-> >  atomic_t init_deasserted;
-> >
-> > +static void remove_siblinginfo(int cpu);
-> > +
-> >  /*
-> >   * Report back to the Boot Processor.
-> >   * Running on AP.
-> > @@ -218,12 +220,37 @@ static void __cpuinit smp_callin(void)
-> >  	set_cpu_sibling_map(raw_smp_processor_id());
-> >  	wmb();
-> >
-> > -	notify_cpu_starting(cpuid);
-> > -
-> >  	/*
-> >  	 * Allow the master to continue.
-> >  	 */
-> >  	cpumask_set_cpu(cpuid, cpu_callin_mask);
-> > +
-> > +	/*
-> > +	 * Wait for signal from master CPU to continue or abort.
-> > +	 */
-> > +	while (!cpumask_test_cpu(cpuid, cpu_may_complete_boot_mask) &&
-> > +		cpumask_test_cpu(cpuid, cpu_callout_mask)) {
-> > +		cpu_relax();
-> > +	}
-> > +
-> > +	/* die if master cancelled cpu_up */
-> > +	if (!cpumask_test_cpu(cpuid, cpu_may_complete_boot_mask))
-> > +		goto die;
-> > +
-> > +	notify_cpu_starting(cpuid);
-> > +	return;
-> > +
-> > +die:
-> > +#ifdef CONFIG_HOTPLUG_CPU
-> > +	numa_remove_cpu(cpuid);
->
-> smp_callin() calls numa_add_cpu(), so it makes sense to perform this
-> back-out from here.  However, do_boot_cpu() also calls this function
-> in
-> its error path.  I think we should change do_boot_cpu() to perform
-> its
-> back-out to the master CPU's initialization code only.  This would
-> keep
-> their responsibility clear and avoid any race condition.
-Reason to keep numa_remove_cpu() in do_boot_cpu() is for the case where
-being onlined CPU is permanently stuck on boot. In this case 
-numa_remove_cpu() would not be called from smp_callin().
-Anyway race is still there:
-  master CPU: numa_remove_cpu()
-   ... window with incorrect numa state
-  secondary CPU: numa_add_cpu()
-  secondary CPU: numa_remove_cpu()
-
->
-> Also, it would be helpful to have a comment like /* was set by
-> smp_store_cpu_info() */ to state this responsibility clearly.
-I'll fix it in next version.
-
->
-> > +	remove_siblinginfo(cpuid);
-> > +	clear_local_APIC();
-> > +	/* was set by cpu_init() */
-> > +	cpumask_clear_cpu(cpuid, cpu_initialized_mask);
->
-> This is also called by do_boot_cpu().  Same comment as above.
->
-> > +	cpumask_clear_cpu(cpuid, cpu_callin_mask);
-> > +	play_dead();
-> > +#endif
-> > +	panic("%s: Failed to online CPU%d!\n", __func__, cpuid);
->
-> Why does it panic in case of !CONFIG_HOTPLUG_CPU?  Is this because
-> user
-> cannot online this CPU later on, so it might be better off rebooting
-> with a panic?  Can I also assume that user can try to on-line this
-> failed CPU if CONFIG_HOTPLUG_CPU is set?  Some comment would be
-> helpful
-> to clarify this behavior.
-User isn't able to online/offline CPUs if kernel is built without 
-CONFIG_HOTPLUG_CPU.
-Define is here to cover failed on boot CPU for non hotplug capable 
-kernel. A bunch of code to stop CPU is just not built for non hotplug
-kernel so what else to do except of panicking?
-
->
-> Thanks,
-> -Toshi
->
->
-> >  }
-> >
-> >  /*
-> > @@ -752,6 +779,8 @@ static int __cpuinit do_boot_cpu(int apicid,
-> > int cpu, struct task_struct *idle)
-> >  		}
-> >
-> >  		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
-> > +			/* Signal AP that it may continue to boot */
-> > +			cpumask_set_cpu(cpu, cpu_may_complete_boot_mask);
-> >  			print_cpu_msr(&cpu_data(cpu));
-> >  			pr_debug("CPU%d: has booted.\n", cpu);
-> >  		} else {
-> > @@ -1225,6 +1254,7 @@ static void __ref remove_cpu_from_maps(int
-> > cpu)
-> >  	cpumask_clear_cpu(cpu, cpu_callin_mask);
-> >  	/* was set by cpu_init() */
-> >  	cpumask_clear_cpu(cpu, cpu_initialized_mask);
-> > +	cpumask_clear_cpu(cpu, cpu_may_complete_boot_mask);
-> >  	numa_remove_cpu(cpu);
-> >  }
-> >
->
->
->
+- Josh Triplett
