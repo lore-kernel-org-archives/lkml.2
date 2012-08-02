@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab2HBGBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 02:01:38 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49081 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753118Ab2HBGBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 02:01:34 -0400
-X-IronPort-AV: E=Sophos;i="4.77,698,1336320000"; 
-   d="scan'208";a="5534642"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yinghai@kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
-        Ingo Molnar <mingo@kernel.org>, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org
-Subject: [RFC PATCH 21/23 V2] memblock: limit memory address from memblock
-Date: Thu, 2 Aug 2012 14:01:26 +0800
-Message-Id: <1343887288-8866-22-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/02 14:02:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/02 14:02:04,
-	Serialize complete at 2012/08/02 14:02:04
+	id S1753958Ab2HBGCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 02:02:09 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:35263 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab2HBGCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 02:02:06 -0400
+Subject: [PATCH][TRIVIAL] fix some typos in kernel/trace
+From: Wang Tianhong <wangthbj@linux.vnet.ibm.com>
+To: mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Aug 2012 14:02:00 +0800
+Message-ID: <1343887320.2228.9.camel@louis-ThinkPad-T410>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+x-cbid: 12080206-2000-0000-0000-000008925DA4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Fix some typos in kernel/trace.
 
-Setting kernelcore_max_pfn means all memory which is bigger than
-the boot parameter is allocated as ZONE_MOVABLE. So memory which
-is allocated by memblock also should be limited by the parameter.
+Signed-off-by: Wang Tianhong <wangthbj@linux.vnet.ibm.com>
 
-The patch limits memory from memblock.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- include/linux/memblock.h |    1 +
- mm/memblock.c            |    5 ++++-
- mm/page_alloc.c          |    6 +++++-
- 3 files changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 19dc455..f2977ae 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -42,6 +42,7 @@ struct memblock {
- 
- extern struct memblock memblock;
- extern int memblock_debug;
-+extern phys_addr_t memblock_limit;
- 
- #define memblock_dbg(fmt, ...) \
- 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 5cc6731..663b805 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -931,7 +931,10 @@ int __init_memblock memblock_is_region_reserved(phys_addr_t base, phys_addr_t si
- 
- void __init_memblock memblock_set_current_limit(phys_addr_t limit)
- {
--	memblock.current_limit = limit;
-+	if (!memblock_limit || (memblock_limit > limit))
-+		memblock.current_limit = limit;
-+	else
-+		memblock.current_limit = memblock_limit;
- }
- 
- static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 65ac5c9..c4d3aa0 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -209,6 +209,8 @@ static unsigned long __initdata required_kernelcore;
- static unsigned long __initdata required_movablecore;
- static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
- 
-+phys_addr_t memblock_limit;
-+
- /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
- int movable_zone;
- EXPORT_SYMBOL(movable_zone);
-@@ -4876,7 +4878,9 @@ static int __init cmdline_parse_core(char *p, unsigned long *core)
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 49491fa..b32ed0e 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2816,7 +2816,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_enable);
+  * to the buffer after this will fail and return NULL.
+  *
+  * This is different than ring_buffer_record_disable() as
+- * it works like an on/off switch, where as the disable() verison
++ * it works like an on/off switch, where as the disable() version
+  * must be paired with a enable().
   */
- static int __init cmdline_parse_kernelcore_max_addr(char *p)
+ void ring_buffer_record_off(struct ring_buffer *buffer)
+@@ -2839,7 +2839,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_off);
+  * ring_buffer_record_off().
+  *
+  * This is different than ring_buffer_record_enable() as
+- * it works like an on/off switch, where as the enable() verison
++ * it works like an on/off switch, where as the enable() version
+  * must be paired with a disable().
+  */
+ void ring_buffer_record_on(struct ring_buffer *buffer)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5c38c81..08acf42 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -426,15 +426,15 @@ __setup("trace_buf_size=", set_buf_size);
+
+ static int __init set_tracing_thresh(char *str)
  {
--	return cmdline_parse_core(p, &required_kernelcore_max_pfn);
-+	cmdline_parse_core(p, &required_kernelcore_max_pfn);
-+	memblock_limit = required_kernelcore_max_pfn << PAGE_SHIFT;
-+	return 0;
+-       unsigned long threshhold;
++       unsigned long threshold;
+        int ret;
+
+        if (!str)
+                return 0;
+-       ret = strict_strtoul(str, 0, &threshhold);
++       ret = strict_strtoul(str, 0, &threshold);
+        if (ret < 0)
+                return 0;
+-       tracing_thresh = threshhold * 1000;
++       tracing_thresh = threshold * 1000;
+        return 1;
  }
- early_param("kernelcore_max_addr", cmdline_parse_kernelcore_max_addr);
- #endif
--- 
-1.7.1
+ __setup("tracing_thresh=", set_tracing_thresh);
+
 
