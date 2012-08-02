@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab2HBQmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:42:13 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:55171 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099Ab2HBQmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:42:12 -0400
-Date: Thu, 2 Aug 2012 18:42:03 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH] slub: use free_page instead of put_page for freeing
- kmalloc allocation
-Message-ID: <20120802164203.GA30111@cmpxchg.org>
-References: <1343913065-14631-1-git-send-email-glommer@parallels.com>
- <alpine.DEB.2.00.1208020902390.23049@router.home>
+	id S1754237Ab2HBQng (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:43:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38548 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099Ab2HBQne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 12:43:34 -0400
+Date: Thu, 2 Aug 2012 11:43:28 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 2 (drivers/platform/x86/apple-gmux.c)
+Message-ID: <20120802164328.GJ32395@thinkpad-t410>
+Mail-Followup-To: Randy Dunlap <rdunlap@xenotime.net>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>,
+	Matthew Garrett <mjg@redhat.com>,
+	platform-driver-x86@vger.kernel.org
+References: <20120802141505.d30da7f7113e955679383acb@canb.auug.org.au>
+ <501AA5A8.1070607@xenotime.net>
+ <20120802161504.GG32395@thinkpad-t410>
+ <501AA892.70207@xenotime.net>
+ <20120802163154.GH32395@thinkpad-t410>
+ <20120802163616.GI32395@thinkpad-t410>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1208020902390.23049@router.home>
+In-Reply-To: <20120802163616.GI32395@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 09:06:41AM -0500, Christoph Lameter wrote:
-> On Thu, 2 Aug 2012, Glauber Costa wrote:
+On Thu, Aug 02, 2012 at 11:36:16AM -0500, Seth Forshee wrote:
+> On Thu, Aug 02, 2012 at 11:31:54AM -0500, Seth Forshee wrote:
+> > On Thu, Aug 02, 2012 at 09:19:30AM -0700, Randy Dunlap wrote:
+> > > On 08/02/2012 09:15 AM, Seth Forshee wrote:
+> > > 
+> > > > On Thu, Aug 02, 2012 at 09:07:04AM -0700, Randy Dunlap wrote:
+> > > >> On 08/01/2012 09:15 PM, Stephen Rothwell wrote:
+> > > >>
+> > > >>> Hi all,
+> > > >>>
+> > > >>> Please do not add anything to linux-next included branches/series that is
+> > > >>> destined for v3.7 until after v3.6-rc1 is released.
+> > > >>>
+> > > >>> Reminder: do not rebase your branches before asking Linus to pull them ...
+> > > >>>
+> > > >>> Changes since 20120731:
+> > > >>>
+> > > >>
+> > > >>
+> > > >> when CONFIG_ACPI is not enabled: (on i386)
+> > > >>
+> > > >> drivers/platform/x86/apple-gmux.c: In function 'gmux_probe':
+> > > >> drivers/platform/x86/apple-gmux.c:196:2: error: implicit declaration of function 'acpi_video_dmi_promote_vendor'
+> > > >> drivers/platform/x86/apple-gmux.c: In function 'gmux_remove':
+> > > >> drivers/platform/x86/apple-gmux.c:219:2: error: implicit declaration of function 'acpi_video_dmi_demote_vendor'
+> > > >>
+> > > >>
+> > > >> Full randconfig file is attached.
+> > > > 
+> > > > I sent Matthew a patch that should fix this [1], but he doesn't seem to
+> > > > have picked it up yet.
+> > > > 
+> > > > Seth
+> > > > 
+> > > > [1] https://lkml.org/lkml/2012/7/2/257
+> > > > 
+> > > 
+> > > 
+> > > That patch does not fix this build error.
+> > > There is still an implicit assumption in Kconfig and
+> > > the driver source that ACPI is enabled.
+> > 
+> > The functions in question are built or not based off of ACPI_VIDEO,
+> > which in turn depends on ACPI. So if ACPI=n, then ACPI_VIDEO=n and you
+> > can't configure APPLE_GMUX=(m|y). Is that right, or am I missing
+> > something?
 > 
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > index e517d43..9ca4e20 100644
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -3453,7 +3453,7 @@ void kfree(const void *x)
-> >  	if (unlikely(!PageSlab(page))) {
-> >  		BUG_ON(!PageCompound(page));
-> >  		kmemleak_free(x);
-> > -		put_page(page);
-> > +		__free_pages(page, compound_order(page));
+> Nevermind, I see what I missed.
 > 
-> Hmmm... put_page would have called put_compound_page(). which would have
-> called the dtor function. dtor is set to __free_pages() ok which does
-> mlock checks and verifies that the page is in a proper condition for
-> freeing. Then it calls free_one_page().
-> 
-> __free_pages() decrements the refcount and then calls __free_pages_ok().
-> 
-> So we loose the checking and the dtor stuff with this patch. Guess that is
-> ok?
+> This is kind of messy -- maybe those declartions should be extracted
+> from the #ifdef CONFIG_ACPI to avoid this kind of Kconfig madness?
 
-The changelog is not correct, however.  People DO get pages underlying
-slab objects and even free the slab objects before returning the page.
-See recent fix:
+Eh, the driver doesn't make any sense without ACPI anyway, so I'll
+refresh the patch with that dependency.
 
-commit 5bf5f03c271907978489868a4c72aeb42b5127d2
-Author: Pravin B Shelar <pshelar@nicira.com>
-Date:   Tue May 29 15:06:49 2012 -0700
+Seth
 
-    mm: fix slab->page flags corruption
-    
-    Transparent huge pages can change page->flags (PG_compound_lock) without
-    taking Slab lock.  Since THP can not break slab pages we can safely access
-    compound page without taking compound lock.
-    
-    Specifically this patch fixes a race between compound_unlock() and slab
-    functions which perform page-flags updates.  This can occur when
-    get_page()/put_page() is called on a page from slab.
