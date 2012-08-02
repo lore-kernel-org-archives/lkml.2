@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab2HBRCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:02:23 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44857 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754430Ab2HBRCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:02:21 -0400
-Message-ID: <1343926940.2011.18.camel@joe2Laptop>
-Subject: Re: [PATCH v2] dynamic_debug: Restore dev_dbg functionality,
- optimize stack
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
-        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Thu, 02 Aug 2012 10:02:20 -0700
-In-Reply-To: <20120731145534.5606e840.akpm@linux-foundation.org>
-References: <1343334310.17538.32.camel@joe2Laptop>
-	 <333324dcdfdc891ba214d2de8f9a3d056dd7aea9.1343461712.git.joe@perches.com>
-	 <20120731145534.5606e840.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1754608Ab2HBRGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:06:23 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754418Ab2HBRGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 13:06:22 -0400
+Date: Thu, 2 Aug 2012 19:06:17 +0200
+From: Richard Weinberger <richard@nod.at>
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "adrian.hunter@intel.com" <adrian.hunter@intel.com>,
+        "Heinz.Egger@linutronix.de" <Heinz.Egger@linutronix.de>,
+        "thomas.wucher@linutronix.de" <thomas.wucher@linutronix.de>,
+        "shmulik.ladkani@gmail.com" <shmulik.ladkani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Marius.Mazarel@ugal.ro" <Marius.Mazarel@ugal.ro>,
+        "nyoushchenko@mvista.com" <nyoushchenko@mvista.com>
+Subject: Re: UBI fastmap updates
+Message-ID: <20120802190617.7182924f@spider.haslach.nod.at>
+In-Reply-To: <501AB2C8.9010805@am.sony.com>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	<1343916747.25013.112.camel@sauron.fi.intel.com>
+	<20120802161512.5ac7a303@spider.haslach.nod.at>
+	<1343917741.25013.114.camel@sauron.fi.intel.com>
+	<20120802165132.1bf1e5d7@spider.haslach.nod.at>
+	<1343924267.25013.156.camel@sauron.fi.intel.com>
+	<20120802183210.7076aa48@spider.haslach.nod.at>
+	<1343925930.25013.163.camel@sauron.fi.intel.com>
+	<501AB2C8.9010805@am.sony.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 14:55 -0700, Andrew Morton wrote:
-> On Sat, 28 Jul 2012 00:55:07 -0700
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > commit c4e00daaa9 ("driver-core: extend dev_printk() to pass structured data")
-> > changed __dev_printk and broke dynamic-debug's ability to control the
-> > dynamic prefix of dev_dbg(dev,..).
+Am Thu, 2 Aug 2012 10:03:04 -0700
+schrieb Tim Bird <tim.bird@am.sony.com>:
+> >> If everything goes wrong, fastmap makes sure that no fastmap is on
+> >> flash.
+> >> In case of a powercut we fall back to scanning mode.
+> >> R/O mode is overkill IMHO.
 > > 
-> > dynamic_emit_prefix() adds "[tid] module:func:line:" to the output and
-> > those additions got lost.
+> > So can I interpret this the following way. Not only fastmap give no
+> > guarantees that it exists after an unclean reboot, it does not even
+> > give guarantees that it exists after a clean reboot.
 > > 
-> > In addition, the current dynamic debug code uses up to 3 recursion
-> > levels via %pV.  This can consume quite a bit of stack.  Directly
-> > call printk_emit to reduce the recursion depth.
-[]
-> > Changes in v2:
-> > 
-> > o Fix dynamic_emit_prefix to always initialize output
-> > o Call create_syslog_header and emit_printk from__netdev_printk and
-> >   eliminate call to dev_printk to remove another recursion via %pV
+> > Unless I am confused, the fastmap design is over-simplified.
 > 
-> This one causes an oops-on-boot
-> (http://ozlabs.org/~akpm/stuff/IMG_20120731_144047.jpg).  v1 didn't do
-> that.
-> 
-> config: http://ozlabs.org/~akpm/stuff/config-akpm2
-> 
+> Fastmap is an optimization.  Maybe I'm missing something, but
+> I'm not sure why, if the optimization stopped working, you
+> would want to reduce the functionality of the file system.
 
-Thanks.  I'll fix it when I can.
-Expect a week or so delay though.
+That's *exactly* my point.
+If fastmap is available - fine, we have fast boot - yay!
+But if something really nasty happens we can safely fall back
+to scanning mode.
+And fastmap is designed to allow this.
 
-I'm a bit busy on other projects and this one seems to
-require additional testing.
-
-cheers, Joe
-
+Thanks,
+//richard
