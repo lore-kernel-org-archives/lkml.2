@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab2HBPCb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 11:02:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54740 "EHLO mga01.intel.com"
+	id S1752037Ab2HBPOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 11:14:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:31819 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750786Ab2HBPC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 11:02:27 -0400
+	id S1750799Ab2HBPOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 11:14:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="192495593"
-Date: Thu, 2 Aug 2012 23:02:09 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: linux-alpha@vger.kernel.org
-Cc: Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, Tony Luck <tony.luck@gmail.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        John David Anglin <dave.anglin@bell.net>, Mel Gorman <mgorman@suse.de>,
-        kernel-janitors@vger.kernel.org, Kyle McMartin <kyle@parisc-linux.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Parisc List <linux-parisc@vger.kernel.org>
-Subject: Re: [next:akpm 129/309] net/core/sock.c:274:36: error: initializer
- element is not constant
-Message-ID: <20120802150209.GA26601@localhost>
-References: <20120722163058.GB13376@localhost>
- <20120723111619.GT9222@suse.de>
- <1343042420.3027.11.camel@dabdike.int.hansenpartnership.com>
- <20120723114258.GV9222@suse.de>
- <20120723122905.GA22476@localhost>
- <BLU0-SMTP2254F8872DDE5FA6035CDE97DD0@phx.gbl>
- <20120724074844.GA9519@localhost>
- <BLU0-SMTP6C7CFCFF734FE10A39B6E97DC0@phx.gbl>
- <1343193053.3139.6.camel@dabdike>
- <CA+8MBbJkGN+zGBdD5Hg26wW_6E9L_ufoutn7wj+Y+nhtW7WKWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbJkGN+zGBdD5Hg26wW_6E9L_ufoutn7wj+Y+nhtW7WKWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="asc'?scan'208";a="192500603"
+Message-ID: <1343920728.25013.131.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
+        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
+        nyoushchenko@mvista.com
+Date: Thu, 02 Aug 2012 18:18:48 +0300
+In-Reply-To: <20120802165921.17d83b8c@spider.haslach.nod.at>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	 <1343919530.25013.116.camel@sauron.fi.intel.com>
+	 <20120802165921.17d83b8c@spider.haslach.nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-QhU7o7L/sz95XD7zCI0K"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 10:06:41AM -0700, Tony Luck wrote:
-> On Tue, Jul 24, 2012 at 10:10 PM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
-> >> Here is the line in sock.i:
-> >>
-> >> struct static_key memalloc_socks = ((struct static_key) { .enabled =
-> >> ((atomic_t) { (0) }) });
+
+--=-QhU7o7L/sz95XD7zCI0K
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, 2012-08-02 at 16:59 +0200, Richard Weinberger wrote:
+> Am Thu, 02 Aug 2012 17:58:50 +0300
+> schrieb Artem Bityutskiy <artem.bityutskiy@linux.intel.com>:
+>=20
+> > On Mon, 2012-07-09 at 14:18 +0200, Richard Weinberger wrote:
+> > > This is the next round of UBI fastmap updates.
+> > > It fixes all issues pointed out by Shmulik. :-)
+> >=20
+> > Hi Richard,
+> >=20
+> > when I try to attach mtdram (NOR flash), UBI fails:
 > >
-> > The above line contains two compound literals.  It also uses a designated
-> > initializer to initialize the field enabled.  A compound literal is not a
-> > constant expression.
-> 
-> Seeing the same thing on ia64 building next-20120726.  Same fix works
-> for me ... so I'll steal this whole changelog and attributes.
+> =20
+> Hmm, and without fastmap it works fine?
 
-I got the same error for alpha, the same fix applies.
----
-From: Mel Gorman <mgorman@suse.de>
-Subject: [PATCH] [ALPHA] Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
+Yes.
 
-The following build error occurred during an alpha build:
+> I don't see much fastmap related here.
 
-net/core/sock.c:274:36: error: initializer element is not constant
+It is related to your changes in attach.c.
 
-Dave Anglin says:
-> Here is the line in sock.i:
->
-> struct static_key memalloc_socks = ((struct static_key) { .enabled =
-> ((atomic_t) { (0) }) });
+> Anyway, I'll try to reproduce.
 
-The above line contains two compound literals.  It also uses a designated
-initializer to initialize the field enabled.  A compound literal is not a
-constant expression.
+Please, make sure that UBI tests work fine on mtdram as well.
 
-The location of the above statement isn't fully clear, but if a compound
-literal occurs outside the body of a function, the initializer list must
-consist of constant expressions.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: <stable@vger.kernel.org>
----
- arch/alpha/include/asm/atomic.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+--=-QhU7o7L/sz95XD7zCI0K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
---- linux.orig/arch/alpha/include/asm/atomic.h	2012-05-24 19:03:06.000000000 +0800
-+++ linux/arch/alpha/include/asm/atomic.h	2012-08-02 23:01:02.243224220 +0800
-@@ -14,8 +14,8 @@
-  */
- 
- 
--#define ATOMIC_INIT(i)		( (atomic_t) { (i) } )
--#define ATOMIC64_INIT(i)	( (atomic64_t) { (i) } )
-+#define ATOMIC_INIT(i)		( { (i) } )
-+#define ATOMIC64_INIT(i)	( { (i) } )
- 
- #define atomic_read(v)		(*(volatile int *)&(v)->counter)
- #define atomic64_read(v)	(*(volatile long *)&(v)->counter)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQGppYAAoJECmIfjd9wqK0DwcP/A7X6WG/JvqWuXZwjxk4DdUe
+fs1YfcmdH5PWCR60r4X+U2jKeD6tFQJDqaBvVg4HnBWE34XZl4tbbvkmnr9m+/x1
+GRJoCORjs5vjOKK80s9x0pmZZ3+putifnCiB+aL2yAV/XQPwJE86YGE4euhVhX+O
+GodDBLMZkvqD4DpIhRDPTuOA37iXZFrUFYxeCecJFu+yjilSTiZc9GTUwpNECVaV
+BwzqCBH0hLOq3n3jQe0kDs0vrk9X6X3KSaIzagDDdZAzK8PbzwOSAUPw0eQ/S11H
+iXxCcBY0MrduuJZQqeLbXRRoXbk+6aYGLpUQtCgoxcBgC4hw3k/iviGwGSUNviXM
+bmzaR1Et4ir0yOFjQivxev1Z+p4CsSsus/RVu60a0s3XoMi3HYmlZmBTv0ioXEsb
+cklP8ekwDdLCmm9yFZ+Fs0+dheXd8AhREw8B0UFvRJ5KbMjnR7g0WMW9w1LYUbm+
+zn3gv22TaiO1pZQ0JBQlDY/3IXD68VWJdWSJ9omyshkYwmqcfVnqKVGmnKPbFOvu
+f5bxN2NOGqj2S+K6I2ORX9xsbolN3G7zReNwFUBUTw447pD0NblXBBCMVVxdMf2k
+Ej+JkJTJo/vrRenQ2YCrZpM+eLqqRXGLlPe2GGO5fRS6LCuHxyQBWMEA9vWmMx5A
+N54ng8dFJ5DIQNFTMKrG
+=72Vh
+-----END PGP SIGNATURE-----
+
+--=-QhU7o7L/sz95XD7zCI0K--
+
