@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab2HBWzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 18:55:18 -0400
-Received: from mso.anu.edu.au ([150.203.89.32]:46904 "EHLO mso.anu.edu.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab2HBWzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 18:55:14 -0400
-Message-ID: <501B0536.6070001@mso.anu.edu.au>
-Date: Fri, 03 Aug 2012 08:54:46 +1000
-From: Francois Rigaut <frigaut@mso.anu.edu.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
-References: <1343407934-459-1-git-send-email-mjg@redhat.com> <20120731223240.GD19134@kroah.com> <20120801165400.GA3042@srcf.ucam.org> <20120801232147.GA6228@kroah.com> <20120802040242.GB25933@thinkpad-t410> <20120802103423.GA1921@kroah.com> <501A955D.6030500@mso.anu.edu.au> <20120802161209.GF32395@thinkpad-t410> <501B01ED.9080309@mso.anu.edu.au>
-In-Reply-To: <501B01ED.9080309@mso.anu.edu.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754043Ab2HBXDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 19:03:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37327 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469Ab2HBXDX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 19:03:23 -0400
+Date: Fri, 3 Aug 2012 09:03:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>
+Subject: Re: linux-next: unable to fetch the moduleh tree
+Message-Id: <20120803090315.bbbea5dea5528bb8a2b2a3b3@canb.auug.org.au>
+In-Reply-To: <501AEB8F.10908@windriver.com>
+References: <20120802085448.5fb877ce7747128ba354f605@canb.auug.org.au>
+	<501AEB8F.10908@windriver.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__3_Aug_2012_09_03_15_+1000_4hNOiJ9SDEeuLaFn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seth,
+--Signature=_Fri__3_Aug_2012_09_03_15_+1000_4hNOiJ9SDEeuLaFn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I have put the osx system.log, which is the only file where I can see 
-mux and AGC related message, at http://maumae.net/retina/system.log
-Thanks,
-Francois
+Hi Paul,
 
-On 03/08/12 08:40, Francois Rigaut wrote:
-> Hi Seth,
+On Thu, 2 Aug 2012 17:05:19 -0400 Paul Gortmaker <paul.gortmaker@windriver.=
+com> wrote:
 >
-> Sorry for the belated response. On Oz time here.
-> I don't have a /var/log/kernel.log !
-> Let me make sure of something:
-> This switcher code is to be run on osx, no? That's where gfxcardstatus 
-> lives and where I can effect the card switch. Just to make sure.
-> So I'm running osx mountain lion, and the only thing I see in the logs 
-> when I switch cards (using gfxcardstatus) is what I pasted below. and 
-> you're right, it was not in message.log, but system.log (it was late). 
-> I just went through the whole thing again.
-> Am I missing something?
-> Cheers,
-> Francois
->
-> On 03/08/12 02:12, Seth Forshee wrote:
->> On Fri, Aug 03, 2012 at 12:57:33AM +1000, Francois Rigaut wrote:
->>> Greg, Seth,
->>>
->>> Here is what the message.log shows:
->>>
->>> switching to the HD4000 (integrated):
->>>
->>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x42803c0
->>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: 
->>> CGXMuxAcknowledge: Posting glitchless acknowledge
->>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: 
->>> MPAccessSurfaceForDisplayDevice: Set up page flip mode on display 
->>> 0x042803c0 device: 0x10c678320  isBackBuffered: 0 numComp: 1 numDisp: 3
->>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x42803c0
->>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x3f003d
->>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x3f003e
->>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x3f003f
->>>
->>> switching to the nvidia (discrete):
->>>
->>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x42803c0
->>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x3f003d
->>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x3f003e
->>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x3f003f
->>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: 
->>> CGXMuxAcknowledge: Posting glitchless acknowledge
->>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: 
->>> MPAccessSurfaceForDisplayDevice: Set up page flip mode on display 
->>> 0x042803c0 device: 0x10c678320  isBackBuffered: 0 numComp: 1 numDisp: 3
->>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
->>> display connect changed for display 0x42803c0
->>>
->>> Hope that helps.
->> Thanks for trying it out, but it's not really what I was hoping for. I
->> get a bunch of messages similar to these in /var/log/kernel.log, mixed
->> in with a lot of other stuff.
->>
->>   AGC:: setMuxRegister:1666 (728, 1, 1)
->>   AGC:: setMuxRegister:1666 (710, 1, 4)
->>   AGC:: getMuxRegister:1647 (716, 1) = 1
->>
->> I don't even have message.log. You don't have a kernel.log? Do you see
->> any messages like those if you run dmesg?
->>
->> Seth
+> Go ahead and remove it.  If/when I've something else that I can't
+> push via a maintainer tree, I'll get you to add one with a more
+> appropriate name, and serve it from kernel.org instead.
 
+Done.  Thanks.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__3_Aug_2012_09_03_15_+1000_4hNOiJ9SDEeuLaFn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQGwczAAoJEECxmPOUX5FEgFIQAKNwgTsOHl+dwsnWgvwce/yb
+EgEahW/FQ3PuIUPV/9qXlC19nORkRZu/GhnE0jzpUMdjiqjQD5vJ+cmnwCReWwaP
+nnv3cjh3YK1L+un/mov+cfoRc6YX7W8PUloA5k6iQ6EFD+R0puKIV3/S7Pm+DJr2
+5U/1/jmevlfoGwgljEkfZcw2pjl+ewZ9jfZxyxvuA7D8YxcD07nhXyOGw4NKtHpi
+17MBvRWyTPPlVSTSKV7rqMhsDa7yH6RJguiEuPbCbxsqzfqvdWKO8kyt9Q1/zA7j
+VUYHper6TPdk5RRS2dja53mT2qCat+NYSMXKsrwLR3OYAiUijt/3aYgHFyFVrVLw
+NLanmFjlSQl7hoNeIecxWggsmtHIbpRzTGzwYpIq4Lq/++GcUmygXCd4o+lL3mN4
+BYqB/NgKhAe4g6wRh4juOmI5x5szMe6tjHwY8X9zCFl6oaTAccySAcm2GoRHIIff
+7vXmhla/l4BExkZa0+wnUAXyBB5E4o8F9WSHduzRKquCqvtf8vZSZtWG36uw4UMe
+p53ikqty11gaWZ4azKvLH3iEV6OWrITABwdifaPM5cQCFdjrik2UoWhkPmeo81Sh
+HDBzUIhWI51pgN3coMxJk3CMzubHvgJbQdhTD20hUGQ+Phbp4s7BjVfX1cCJgNNa
+nfsWdlSSt5bc3wdRtISz
+=RAd7
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__3_Aug_2012_09_03_15_+1000_4hNOiJ9SDEeuLaFn--
