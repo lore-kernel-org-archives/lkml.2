@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab2HBRL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:11:26 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51690 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab2HBRLY (ORCPT
+	id S1754695Ab2HBRNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:13:07 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47491 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab2HBRNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:11:24 -0400
-Message-ID: <501AB4B9.5030805@wwwdotorg.org>
-Date: Thu, 02 Aug 2012 11:11:21 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 2 Aug 2012 13:13:04 -0400
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] mfd: add MAX8907 core driver
-References: <1343854085-29663-1-git-send-email-swarren@wwwdotorg.org> <20120802161544.GE4537@opensource.wolfsonmicro.com>
-In-Reply-To: <20120802161544.GE4537@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.5a1pre
+Date: Fri, 3 Aug 2012 01:13:03 +0800
+Message-ID: <CAM16m2koNcqMNMSW9r8bjS4SLBzNzh8P03npe0f6d3qr9ifzcA@mail.gmail.com>
+Subject: In function cpu_stop_cpu_callback, BUG_ON(stopper->thread ||
+ stopper->enabled || !list_empty(&stopper->works)) is triggered while
+ restarting sometimes.
+From: chpoph <chpoph@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 10:15 AM, Mark Brown wrote:
-> On Wed, Aug 01, 2012 at 02:48:05PM -0600, Stephen Warren wrote:
->> From: Gyungoh Yoo <jack.yoo@maxim-ic.com>
->>
->> The MAX8907 is an I2C-based power-management IC containing voltage
->> regulators, a reset controller, a real-time clock, and a touch-screen
->> controller.
-> 
-> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+In function cpu_stop_cpu_callback, BUG_ON(stopper->thread ||
+stopper->enabled || !list_empty(&stopper->works)) is triggered
+sometimes.
+/* manage stopper for a cpu, mostly lifted from sched migration thread mgmt */
+static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+                                           unsigned long action, void *hcpu)
+{
+        ..................................
+        switch (action & ~CPU_TASKS_FROZEN) {
+        case CPU_UP_PREPARE:
+                BUG_ON(stopper->thread || stopper->enabled ||
+                       !list_empty(&stopper->works));
+         .................................
+}
 
-Thanks very much.
+Before actually hardware restarting, machine_restart(cmd) will be called.
 
-Samuel, please don't apply this just yet though - it looks like I need
-to make some minor changes to the header file and DT binding
-documentation to add in a definition for one more regulator. I'll repost
-the amended version along with the regulator driver later.
+void machine_restart(char *cmd)
+{
+        machine_shutdown();
+        arm_pm_restart(reboot_mode, cmd);
+        ......................
+}
+
+after machine_shutdown(), all other cpus are set offline only by
+settting the cpumask. if userspace software which regulators cpu are
+running before arm_pm_restart(), it may set set another cpu online and
+cpu_up(cpu) is called. At this situation, BUG_ON(stopper->thread ||
+stopper->enabled || !list_empty(&stopper->works)) is triggered in
+cpu_stop_cpu_callback.
+
+Is it needed to preempt disable before calling machine_shutdown()?
