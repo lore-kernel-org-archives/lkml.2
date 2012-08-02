@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab2HBKaK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 06:30:10 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60114 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab2HBKaH (ORCPT
+	id S1754371Ab2HBKak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 06:30:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54842 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab2HBKai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 06:30:07 -0400
-Date: Thu, 2 Aug 2012 11:30:02 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Meredydd Luff <meredydd@senatehouse.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] [RFC] syscalls,x86: Add execveat() system call (v2)
-Message-ID: <20120802103001.GJ6481@ZenIV.linux.org.uk>
-References: <1343859049-3632-1-git-send-email-meredydd@senatehouse.org>
- <5019B36A.4030604@zytor.com>
- <CAD=T17Esguer01OsrxMtqEcHKZ-Ovg05+MxSdF7NhXENsUubgg@mail.gmail.com>
- <5019BC0E.4010109@zytor.com>
- <20120802065557.GI6481@ZenIV.linux.org.uk>
- <CAD=T17Gkryua5TQW5h18kCu+yiViuVv6NyxtMw3C9we0RWzmKQ@mail.gmail.com>
+	Thu, 2 Aug 2012 06:30:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chao Xie <xiechao.mail@gmail.com>
+Subject: Re: [PATCH 2/5] clk: mmp: add clock definition for pxa168
+Date: Thu, 2 Aug 2012 10:30:19 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
+        s.hauer@pengutronix.de, chao.xie@marvell.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com> <201207311154.42866.arnd@arndb.de> <CADApbegvdRQ5swDrO-Y631K4AhsTigAG4=Mm82mT-smSA7XzJw@mail.gmail.com>
+In-Reply-To: <CADApbegvdRQ5swDrO-Y631K4AhsTigAG4=Mm82mT-smSA7XzJw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD=T17Gkryua5TQW5h18kCu+yiViuVv6NyxtMw3C9we0RWzmKQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208021030.19986.arnd@arndb.de>
+X-Provags-ID: V02:K0:3xZ6Ka6CWJ/gvdjVvS0lTtxDXcHLZwnNgkcQvtPmckM
+ 9ryWMr9TxeLXefAJn5hrHO30gm2vsVHiiNqukZ8aM0DNLLE3L5
+ JoMPQSvuQ9kG0XBnN1beE7BhDZpB9YFW5m8Nxb1M7uATarDbT6
+ +t4vMslTi8GFkainajLY9SlCTWGzVO4cnsCgK8ce6EF3TLYeij
+ qSUJMia9V/6GE5Xs28niSUI3r6PqkjlAo7+Bv04FTpzEIbYEuc
+ 45gI8y6zFmIEmukx4eLzUDIQu52hJ6tM2A2w+0V9Ycq3l7uP3O
+ cds8hTvHBGdDkGB9dywdJBYsUfBGVCC+sEz1zV+rNsQeoPw+KZ
+ 7wnyvYjF+bnDpJGX2cig=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 10:14:53AM +0100, Meredydd Luff wrote:
-> On Thu, Aug 2, 2012 at 7:55 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >> This means you need an x32 version of the function -- execve
-> >> unfortunately is one of the few system calls which require a special x32
-> >> version (although it's a simple wrapper around sys32_execve).  See
-> >> sys_x32_execve.
+On Thursday 02 August 2012, Chao Xie wrote:
+> > #define APBC_RTC       0x28
 > >
-> > I *really* strongly object to doing that thing before we sanitize the
-> > situation with sys_execve().
-> 
-> "That thing" = "creating an x32 entry stub", or "merging execveat() at all"?
-> 
-> (snip)
-> > The thing is, there's essentially no reason to have more than one
-> > implementation.  What they are (badly) doing is "we need to find
-> > pt_regs to pass to do_execve(), the thing we are after has to be near
-> > our stack frame, so let's try to get to it that way".
-> 
-> Hang on...it's not just sys_execve that fits that description, is it?
-> You seem to be describing every call that needs a pt_regs parameter,
-> which at a glance is anything with a stub_ or PTREGSCALL in
-> arch/x86/kernel/entry_{32,64}.S. That's: clone, fork, vfork,
-> sigaltstack, iopl, execve, sigreturn, rt_sigreturn, vm86, vm86old.
-> Most of those are handled by a common PTREGSCALL macro, but there are
-> a few that get special treatment (different set on each arch - on
-> x86-64 it's execve and rt_sigreturn ; on i386 it's just clone).
-> 
-> Is there's something special about execve in particular, or do you
-> want to overhaul all the ptregscalls?
+> > apbc_clks[rtc_clk] = mmp_clk_register_apbc(rtc_clk, clk32k, APBC_RTC, 10, APBC_POWER_CTRL, mmp_clk_lock);
+> > clk_register_clkdev(apbc_clks[rtc_clk], NULL, "sa1100-rtc");
+> >
+> >         Arnd
+> >
+> hi
+> I would like to keep the mmp_clk_register_apbc to receive the "reg
+> base" not "reg offset".
+> It will be aligned with other kind of clock register APIs.
+> To read out APBC base register from device tree can be added at the
+> clock-pxa168.c, and it can map the registers and pass to the
+> mmp_clk_register_apbc.
 
-You are looking at that from the wrong side; it's not that this
-set of syscalls on x86 has the same kind of wrapper - it's that
-on different architectures the kludges are seriously different
-and fairly brittle.  sigaltstack(), BTW, doesn't need to be
-arch-specific at all - if you check what its pt_regs argument
-is used for, we just need something like current_user_stack_pointer()
-and that's it.  It's a different patch series, anyway.
+Right, my mistake.
 
-There's a difference between "here's the syscall implementation,
-here's its hookup for x86, let other architectures update their
-syscall tables" and "here's the implementation in arch/x86 and its
-hookup for x86; let other architectures port it in whatever way
-they need".  The latter is a recipe for breakage - we'd been
-through that kind of story quite a few times.
+The above should have been something like
 
-Out of that set, vm86/vm86old/iopl are genuine x86-only syscalls.
-sigreturn and rt_sigreturn are weird, subtle and, sadly,
-unmergable - syscall restart prevention logics is different
-enough to make it not feasible at the moment.  It's a serious
-source of PITA, BTW - quite a few of those had the same bugs,
-years after they'd been discovered and fixed on a subset of
-architectures.  Been there, fixed some of those, the latest
-batch this April...  fork/vfork/clone is an interesting
-question - IIRC, there are seriously subtle issues of some
-sort on sparc, but I don't remember details right now.
+#define APBC_RTC       0x28
+apbc_clks[rtc_clk] = mmp_clk_register_apbc(rtc_clk, clk32k, clock_base + APBC_RTC, 10, APBC_POWER_CTRL, mmp_clk_lock);
+clk_register_clkdev(apbc_clks[rtc_clk], NULL, "sa1100-rtc");
 
-Really, go and grep for do_execve; most of the callers will
-be in execve(2) implementations.  Look at them carefully -
-while some get pt_regs from some wrapper, there's a bunch
-that does that manually in C.  "Ugly" doesn't even begin
-to describe what's being done...
+instead, with clock_base pointing to the __iomem token for the clock controller.
 
-FWIW, I've just pushed (completely untested) arm and alpha
-parts of what I described into signal.git#execve2; x86 is
-next.  Note that after that sys_execve() is identical on
-converted architectures and can be merged; ditto for
-kernel_execve().  After I do x86 counterpart, I'll
-take those guys to fs/exec.c under ifdef for new __ARCH_HAS_...
-(and define it on already converted ones, obviously).
-Then your patch goes there, except that implementation
-gets put into fs/exec.c, under the same ifdef.  And with
-current_pt_regs() used instead of the extra argument,
-of course.  From that point on it can be used on any converted
-architecture.  And conversion consists of
-	* providing ret_from_kernel_execve() that would
-put pt_regs where they belong and return to userland.
-	* providing current_pt_regs(), with default being
-just task_pt_regs(current).
-	* defining that new __ARCH_HAS_...
-	* removing sys_execve()/kernel_execve() implementations;
-the ones in fs/exec.c will work just fine.
-Can be done at leisure, architecture by architecture.  It's
-obviously the next cycle fodder - we have only a couple of
-days left of this merge window, anyway.
+> Now, i have talked to Haojian who is doing device tree maintainer in
+> pxa/mmp. This kind of support is not added.
+> I suggest that after device tree support in clock can be added later
+> after other functionality of the clock framework is fine.
 
-I really think that this pair of primitives is the right
-way to deal with execve mess.
+You can do device tree support as a second step, but in this first step, you
+should already start using ioremap to get the virtual address of the
+clock controller, rather than hardcoding it.
+
+	Arnd
