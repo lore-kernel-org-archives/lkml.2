@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab2HBWlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 18:41:20 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:47816 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752599Ab2HBWlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 18:41:14 -0400
-Message-ID: <1343947273.10710.4.camel@joe2Laptop>
-Subject: Re: [PATCH v2 9/9] rbtree: remove prior augmented rbtree
- implementation
-From: Joe Perches <joe@perches.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
-        aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Date: Thu, 02 Aug 2012 15:41:13 -0700
-In-Reply-To: <1343946858-8170-10-git-send-email-walken@google.com>
-References: <1343946858-8170-1-git-send-email-walken@google.com>
-	 <1343946858-8170-10-git-send-email-walken@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1753859Ab2HBWlS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 18:41:18 -0400
+Received: from mso.anu.edu.au ([150.203.89.32]:46591 "EHLO mso.anu.edu.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753217Ab2HBWlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 18:41:12 -0400
+Message-ID: <501B01ED.9080309@mso.anu.edu.au>
+Date: Fri, 03 Aug 2012 08:40:45 +1000
+From: Francois Rigaut <frigaut@mso.anu.edu.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
+Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
+References: <1343407934-459-1-git-send-email-mjg@redhat.com> <20120731223240.GD19134@kroah.com> <20120801165400.GA3042@srcf.ucam.org> <20120801232147.GA6228@kroah.com> <20120802040242.GB25933@thinkpad-t410> <20120802103423.GA1921@kroah.com> <501A955D.6030500@mso.anu.edu.au> <20120802161209.GF32395@thinkpad-t410>
+In-Reply-To: <20120802161209.GF32395@thinkpad-t410>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-02 at 15:34 -0700, Michel Lespinasse wrote:
-> convert arch/x86/mm/pat_rbtree.c to the proposed augmented rbtree api
-> and remove the old augmented rbtree implementation.
+Hi Seth,
 
-style trivia:
+Sorry for the belated response. On Oz time here.
+I don't have a /var/log/kernel.log !
+Let me make sure of something:
+This switcher code is to be run on osx, no? That's where gfxcardstatus 
+lives and where I can effect the card switch. Just to make sure.
+So I'm running osx mountain lion, and the only thing I see in the logs 
+when I switch cards (using gfxcardstatus) is what I pasted below. and 
+you're right, it was not in message.log, but system.log (it was late). I 
+just went through the whole thing again.
+Am I missing something?
+Cheers,
+Francois
 
-> +static u64 compute_subtree_max_end(struct memtype *data)
->  {
-> -	struct memtype *data;
-> -	u64 max_end, child_max_end;
-> -
-> -	if (!node)
-> -		return;
-> -
-> -	data = container_of(node, struct memtype, rb);
-> -	max_end = data->end;
-> +	u64 max_end = data->end, child_max_end;
->  
-> -	child_max_end = get_subtree_max_end(node->rb_right);
-> +	child_max_end = get_subtree_max_end(data->rb.rb_right);
-
-I think this reads better as:
-
-	u64 max_end = data->end;
-	u64 child_max_end = get_subtree_max_end(node->rb.rb_right);
-
+On 03/08/12 02:12, Seth Forshee wrote:
+> On Fri, Aug 03, 2012 at 12:57:33AM +1000, Francois Rigaut wrote:
+>> Greg, Seth,
+>>
+>> Here is what the message.log shows:
+>>
+>> switching to the HD4000 (integrated):
+>>
+>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x42803c0
+>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: CGXMuxAcknowledge: Posting glitchless acknowledge
+>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: MPAccessSurfaceForDisplayDevice: Set up page flip mode on display 0x042803c0 device: 0x10c678320  isBackBuffered: 0 numComp: 1 numDisp: 3
+>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x42803c0
+>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003d
+>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003e
+>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003f
+>>
+>> switching to the nvidia (discrete):
+>>
+>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x42803c0
+>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003d
+>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003e
+>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003f
+>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: CGXMuxAcknowledge: Posting glitchless acknowledge
+>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: MPAccessSurfaceForDisplayDevice: Set up page flip mode on display 0x042803c0 device: 0x10c678320  isBackBuffered: 0 numComp: 1 numDisp: 3
+>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x42803c0
+>>
+>> Hope that helps.
+> Thanks for trying it out, but it's not really what I was hoping for. I
+> get a bunch of messages similar to these in /var/log/kernel.log, mixed
+> in with a lot of other stuff.
+>
+>   AGC:: setMuxRegister:1666 (728, 1, 1)
+>   AGC:: setMuxRegister:1666 (710, 1, 4)
+>   AGC:: getMuxRegister:1647 (716, 1) = 1
+>
+> I don't even have message.log. You don't have a kernel.log? Do you see
+> any messages like those if you run dmesg?
+>
+> Seth
 
