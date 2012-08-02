@@ -1,71 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab2HBKVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 06:21:14 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57516 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab2HBKVN convert rfc822-to-8bit (ORCPT
+	id S1754407Ab2HBKaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 06:30:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50402 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754161Ab2HBKaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 06:21:13 -0400
-Date: Thu, 2 Aug 2012 11:25:42 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sjur =?ISO-8859-1?B?QnLmbmRlbGFuZA==?= 
-	<sjur.brandeland@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>, sjurbren@gmail.com
-Subject: Re: [RESEND PATCHv5 09/11] modem_shm: Character device for SHM
- channel access.
-Message-ID: <20120802112542.6ae3dd8f@pyramind.ukuu.org.uk>
-In-Reply-To: <1327999726-8774-10-git-send-email-sjur.brandeland@stericsson.com>
-References: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
-	<1327999726-8774-10-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Aug 2012 06:30:08 -0400
+Date: Thu, 2 Aug 2012 11:30:05 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [NEW DRIVER V1 7/7] DA9058 REGULATOR driver
+Message-ID: <20120802103005.GH29157@opensource.wolfsonmicro.com>
+References: <201208020849.q728nio0007834@latitude.olech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208020849.q728nio0007834@latitude.olech.com>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jan 2012 09:48:44 +0100
-Sjur Brændeland <sjur.brandeland@stericsson.com> wrote:
+On Thu, Aug 02, 2012 at 09:48:58AM +0100, Anthony Olech wrote:
 
-> Add a character device implementation for the SHM stream channels.
-> The character device provides asynchronous IO and ring-buffer handling.
-> The device copies data directly from the Shared Memory area into
-> user-land buffers.
+Overall the big issue here is that the driver isn't making much use of
+framework features, there should be a *lot* less code here.
 
-What is the use case for this - it seems a little odd that it's not using
-the tty layer so won't work with all the normal modem apps as anyone
-would expect and want ?
+> +static unsigned int da9058_regulator_val_to_mvolts(unsigned int val,
+> +						struct regulator_dev *rdev)
 
+regualtor_map_voltage_linear()
 
-> +static unsigned int shmchr_chrpoll(struct file *filp, poll_table *waittab)
-> +{
-> +	struct shmchr_char_dev *dev = filp->private_data;
-> +	unsigned int mask = 0;
+> +	ret = da9058_reg_read(da9058, regulator->control_register, &val);
+> +	if (ret)
+> +		return ret;
 > +
-> +	if (dev == NULL) {
-> +		mdev_dbg(dev, "private_data not set!\n");
-> +		return -EBADFD;
+> +	if (regulator->control_enable_mask&val)
+> +		return true;
+> +	else
+> +		return false;
+
+regulator_is_enabled_regmap().
+
+> +static int da9058_regulator_set_voltage(struct regulator_dev *rdev,
+> +					int min_uV, int max_uV,
+> +					unsigned *selector)
+
+Should be set_voltage_sel().
+
+> +	if (regulator->ramp_register && regulator->ramp_enable_mask)
+> +		ret =
+> +			da9058_set_bits(da9058, regulator->ramp_register,
+> +					regulator->ramp_enable_mask);
+
+What is this doing?
+
+> +	if (regulator->control_voltage_step == 0) {
+> +		if (da9058_regulator_is_enabled(rdev))
+> +			return regulator->fixed_voltage;
+> +		else
+> +			return 0;
 > +	}
 
-How can this occur. If it can't occur why check ? BUG_ON() would
-certainly be better to as you'd get a trace and it would get captured not
-silently ignored and problems never detected.
-
-An if.. dbg sequence to end users is basically "silently pretend we
-didn't break and hope", which isn't ideal at all.
-
+No, don't do stuff like this - implement a separate op (or just use the
+standard ops in this case).
 
 > +
-> +	/* I want to be alone on dev (except status and queue). */
-> +	if (mutex_lock_interruptible(&dev->mutex)) {
-> +		mdev_dbg(dev, "mutex_lock_interruptible got signalled\n");
-> +		mask |= POLLERR;
-> +		goto out_unlocked;
+> +	ret = da9058_reg_read(da9058, regulator->control_register, &val);
+> +	if (ret)
+> +		return ret;
 
-That's very odd behaviour for poll() and may confuse apps. Can the mutex
-ever be held for a long time ?
+This should just be regulator_get_voltage_sel_regmap().
 
+> +static int da9058_regulator_enable(struct regulator_dev *rdev)
+> +{
+
+regulator_enable_regmap() and similarly for all the others.
+
+> +static unsigned int da9058_regulator_get_mode(struct regulator_dev *rdev)
+> +{
+> +	return REGULATOR_MODE_NORMAL;
+> +}
+
+If you don't support modes don't implement the op.
+
+> +	regulator_pdata = cell->platform_data;
+
+> +	if (regulator_pdata == NULL) {
+> +		ret = -EINVAL;
+> +		goto exit;
+> +	}
+
+The driver should be able to start without any platform data.
+
+> +	dev_info(&pdev->dev, "Starting REGULATOR %d = %s\n",
+> +					regulator_pdata->regulator_id,
+> +					regulator_pdata->regulator_name);
+
+There's a couple of issues here.  One is that you shouldn't be logging
+anything here, log messages on driver load are only useful if you're
+saying something you've identified from the hardware - for example,
+logging the device revision on startup is very helpful.  The other is
+that you shouldn't need to supply a name and ID as platform data since
+that's exactly how the platform bus binds drivers.
+
+> +	regulator->control_voltage_step = regulator_pdata->control_voltage_step;
+> +	regulator->control_register = regulator_pdata->control_register;
+> +	regulator->control_enable_mask = regulator_pdata->control_enable_mask;
+> +	regulator->ramp_register = regulator_pdata->ramp_register;
+> +	regulator->ramp_enable_mask = regulator_pdata->ramp_enable_mask;
+> +	regulator->fixed_voltage = regulator_pdata->fixed_voltage;
+
+Your MFD didn't visibly provide any of this stuff, though I may have
+missed it, and honestly I'd expect most of this to be in the driver.
