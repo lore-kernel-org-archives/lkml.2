@@ -1,152 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab2HBRxy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:53:54 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:30174 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab2HBRxx (ORCPT
+	id S1754978Ab2HBRy2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:54:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56270 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab2HBRy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:53:53 -0400
-Message-ID: <1343929732.3010.614.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/2] x86: abort secondary CPU bring-up gracefully if
- do_boot_cpu timed out on cpu_callin_mask
-From: Toshi Kani <toshi.kani@hp.com>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, prarit@redhat.com, oleg@redhat.com,
-        rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, luto@mit.edu,
-        suresh b siddha <suresh.b.siddha@intel.com>, avi@redhat.com,
-        a p zijlstra <a.p.zijlstra@chello.nl>, johnstul@us.ibm.com,
-        a17711@motorola.com, shuahkhan@gmail.com
-Date: Thu, 02 Aug 2012 11:48:52 -0600
-In-Reply-To: <501A49A4.90107@redhat.com>
-References: <501A49A4.90107@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	Thu, 2 Aug 2012 13:54:26 -0400
+Message-ID: <501ABEE2.10007@gmail.com>
+Date: Thu, 02 Aug 2012 19:54:42 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+MIME-Version: 1.0
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+References: <50197E4A.7020408@gmail.com> <20120801202432.GE15477@google.com> <5019B0B4.1090102@gmail.com> <20120801224556.GF15477@google.com> <501A4FC1.8040907@gmail.com> <20120802103244.GA23318@leaf> <501A633B.3010509@gmail.com> <501A7AD3.7000008@gmail.com> <20120802161556.GA25572@leaf> <501AAF47.3090708@gmail.com> <20120802174457.GA6251@jtriplet-mobl1>
+In-Reply-To: <20120802174457.GA6251@jtriplet-mobl1>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-02 at 11:34 +0200, Igor Mammedov wrote:
-> Hi Toshi,
+On 08/02/2012 07:44 PM, Josh Triplett wrote:
+> On Thu, Aug 02, 2012 at 06:48:07PM +0200, Sasha Levin wrote:
+>> On 08/02/2012 06:15 PM, Josh Triplett wrote:
+>>> On Thu, Aug 02, 2012 at 03:04:19PM +0200, Sasha Levin wrote:
+>>>> On 08/02/2012 01:23 PM, Sasha Levin wrote:
+>>>>>> #define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
+>>>>> The limitation of this approach is that the struct hash_table variable must be 'static', which is a bit limiting - see for example the use of hashtable in 'struct user_namespace'.
+>>>>>
+>>>>
+>>>> What if we just use two possible decelerations? One of static structs and one for regular ones.
+>>>>
+>>>> struct hash_table {
+>>>>         size_t bits;
+>>>>         struct hlist_head buckets[];
+>>>> };
+>>>>
+>>>> #define DEFINE_HASHTABLE(name, bits)                                    \
+>>>>         union {                                                         \
+>>>>                 struct hash_table name;                                 \
+>>>>                 struct {                                                \
+>>>>                         size_t bits;                                    \
+>>>
+>>> This shouldn't use "bits", since it'll get expanded to the macro
+>>> argument.
+>>>
+>>>>                         struct hlist_head buckets[1 << bits];           \
+>>>>                 } __name;                                               \
+>>>
+>>> __##name
+>>>
+>>>>         }
+>>>>
+>>>> #define DEFINE_STATIC_HASHTABLE(name, bit)                              \
+>>>>         static struct hash_table name = { .bits = bit,                  \
+>>>>                 .buckets = { [0 ... (bit - 1)] = HLIST_HEAD_INIT } }
+>>>
+>>> You probably wanted to change that to [0 ... ((1 << bit) - 1)] , to
+>>> match DEFINE_HASHTABLE.
+>>
+>> I wrote it by hand and didn't compile test, will fix all of those.
+>>
+>>> Since your definition of DEFINE_HASHTABLE would also work fine when used
+>>> statically, why not just always use that?
+>>>
+>>> #define DEFINE_STATIC_HASHTABLE(name, bits) static DEFINE_HASHTABLE(name, bits) = { .name.bits = bits }
+>>
+>> It will get defined fine, but it will be awkward to use. We'd need to pass anonymous union to all the functions that handle this hashtable, which isn't pretty.
 > 
-> I'm sorry for delayed response, I was on vacation. Thanks for looking at 
-> the patch, my comments are below.
+> No, it'll still use the anonymous union, so you'll still have a thing of
+> type "struct hash_table" with the given name, and you can use that name
+> with the hash-table functions.
 
-Hi Igor,
+We can use 'struct hash_table' directly, but then the call will look awkward :)
 
-Welcome back!
+Consider this case (I've placed arbitrary values into size and name:
 
-> PS:
-> I'm not happy with introducing one more sync point and bitmat. Well, 
-> it's necessary to somehow notify being on-lined CPU that master CPU will 
-> wait for it, but perhaps it could be done even earlier than in this 
-> patch and less stuff should be backed-out.
-> 
-> Currently master CPU spins on cpu_callin_mask till secondary CPU sets it
-> in smp_callin(). Then master CPU leaves do_boot_cpu() and does nothing 
-> in native_cpu_up() first waiting for secondary CPU in 
-> check_tsc_sync_source() or if that is skipped then immediately spinning 
-> on 'while (!cpu_online(cpu))'.
-> Master CPU will do nothing and will not call any CPU notifiers until 
-> secondary CPU reports that it is ONLINE by setting bit in 
-> cpu_online_mask at the end of start_secondary().
-> 
-> So questions to experts are:
-> 
->   1. what is purpose of cpu_callin_mask
-> 
->   2. why master CPU spins on cpu_callin_mask but not on cpu_initialized_mask
-> 
-> In current state of code, it looks like cpu_callin_mask is not necessary 
-> and we could remove it completely and spin on cpu_initialized_mask in 
-> do_boot_cpu() instead. Then when master CPU
-> sees secondary CPU in cpu_initialized_mask it could set cpu_callout_mask 
-> to ack its intention not to cancel and wait until
-> secondary CPU is booted.
+/* I've "preprocessed" the DEFINE macro below */
+union {
+	struct hash_table table;
+	struct {
+		size_t bits;
+		struct hlist_head buckets[32];
+	}
+} my_hashtable;
 
-I agree and I'd like to know the answers as well.  This way, the master
-does not have to deal with secondary's back-back out procedure.
+void foo(struct hash_table *table)
+{
+/* Do something */
+}
 
-> PS2:
-> I wish x86 maintainers were more responsive to the topic and in 
-> discussion we could find a way to fix problem. With their expertise, 
-> It's surely easier to spot potential issues and see correct approach for 
-> the fix.
-> 
+int main(void)
+{
+	foo(my_hashtable); /* This is what the user expects to work, and won't work in this case */
 
-(snip)
-
-> > > +
-> > > +die:
-> > > +#ifdef CONFIG_HOTPLUG_CPU
-> > > +	numa_remove_cpu(cpuid);
-> >
-> > smp_callin() calls numa_add_cpu(), so it makes sense to perform this
-> > back-out from here.  However, do_boot_cpu() also calls this function
-> > in
-> > its error path.  I think we should change do_boot_cpu() to perform its
-> > back-out to the master CPU's initialization code only.  This would keep
-> > their responsibility clear and avoid any race condition.
-> Reason to keep numa_remove_cpu() in do_boot_cpu() is for the case where
-> being onlined CPU is permanently stuck on boot. In this case 
-> numa_remove_cpu() would not be called from smp_callin().
-> Anyway race is still there:
->   master CPU: numa_remove_cpu()
->    ... window with incorrect numa state
->   secondary CPU: numa_add_cpu()
->   secondary CPU: numa_remove_cpu()
-
-Right.  Another example is that the master can call numa_remove_cpu()
-after a secondary called numa_add_cpu().  If the secondary's next
-procedure relies on numa_add_cpu() be done, it causes a problem.
-
-Anyway, I like your idea of the master to wait for cpu_initialized_mask.
-This should eliminate the need of the master to perform secondary's
-back-out procedure.
-
-> > Also, it would be helpful to have a comment like /* was set by
-> > smp_store_cpu_info() */ to state this responsibility clearly.
-> I'll fix it in next version.
-> 
-> >
-> > > +	remove_siblinginfo(cpuid);
-> > > +	clear_local_APIC();
-> > > +	/* was set by cpu_init() */
-> > > +	cpumask_clear_cpu(cpuid, cpu_initialized_mask);
-> >
-> > This is also called by do_boot_cpu().  Same comment as above.
-> >
-> > > +	cpumask_clear_cpu(cpuid, cpu_callin_mask);
-> > > +	play_dead();
-> > > +#endif
-> > > +	panic("%s: Failed to online CPU%d!\n", __func__, cpuid);
-> >
-> > Why does it panic in case of !CONFIG_HOTPLUG_CPU?  Is this because user
-> > cannot online this CPU later on, so it might be better off rebooting
-> > with a panic?  Can I also assume that user can try to on-line this
-> > failed CPU if CONFIG_HOTPLUG_CPU is set?  Some comment would be helpful
-> > to clarify this behavior.
-> User isn't able to online/offline CPUs if kernel is built without 
-> CONFIG_HOTPLUG_CPU.
-> Define is here to cover failed on boot CPU for non hotplug capable 
-> kernel. A bunch of code to stop CPU is just not built for non hotplug
-> kernel so what else to do except of panicking?
-
-Another option is to simply boot-up the system with a reduced number of
-CPUs for all cases.  This way has advantage when:
-
- - If resume/suspend works without CONFIG_HOTPLUG_CPU, it avoids
-crashing the system at resume.
- - User can boot-up and uses the system with a reduced number of CPUs
-even if the error persists after a reboot.
-
-
-Thanks,
--Toshi 
-
-
-
-
+	foo(&my_hashtable.table); /* This is what he has to do, which means the user has to know about the internal structure of the union */
+}
