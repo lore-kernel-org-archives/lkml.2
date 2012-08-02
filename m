@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab2HBXSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 19:18:06 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:50780 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732Ab2HBXSB (ORCPT
+	id S1754140Ab2HBXV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 19:21:58 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59697 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754069Ab2HBXV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 19:18:01 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-b9-501b0aa7caed
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Thierry Reding'" <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002401cd708c$b3c09ed0$1b41dc70$%han@samsung.com>
- <20120802095354.GA18945@avionic-0098.adnet.avionic-design.de>
-In-reply-to: <20120802095354.GA18945@avionic-0098.adnet.avionic-design.de>
-Subject: Re: [PATCH 2/2] pwm: samsung: fix the number of PWMs
-Date: Fri, 03 Aug 2012 08:17:59 +0900
-Message-id: <001001cd7105$0e465d40$2ad317c0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1wlL4TZylWUX2wQaqBCCdr72LhNwAbc+MA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jAd3lXNIBBkdWiVlc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mzl0P2QuW8FfMuN3O2MA4naeLkYNDQsBEouG9WRcjJ5ApJnHh
-	3nq2LkYuDiGBRYwSq+/uhHJmM0n03uxkBKliE1CT+PLlMDuILSJgLrFk0V5mkEHMAi4SR6eJ
-	gISFBGolVpy9ygJicwp4SUw++J4NxBYWsJVYcfMb2BgWAVWJtddPMoPYvEDxVXvuskPYghI/
-	Jt8D62UW0JJYv/M4E4QtL7F5zVtmiJvVJR791YW4wEji4Pu1UOUiEvtevGOcwCg0C8mkWUgm
-	zUIyaRaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgoP4mdQOxpUNFocYBTgYlXh4
-	V5ZKBgixJpYVV+YeYpTgYFYS4a1aIhUgxJuSWFmVWpQfX1Sak1p8iFGag0VJnNfY+6u/kEB6
-	YklqdmpqQWoRTJaJg1OqgbH3qX+d7+fHGacnL9F4vCr1vu7XoF9PGDwNltz+dbDpTMTPWXJs
-	LLYfH29mje/6tfTl92dV3qKWtZI+f5kTe232XVSJeuSxe8vi6fPDXM2kZ9378Pyc7ZSv99oN
-	ftjO4msReTjjsA7z5p7CuwY5tz3/L56TlWQt8uI+34yHEz60r+R1P+H3p1VSiaU4I9FQi7mo
-	OBEAuVJajF4CAAA=
-X-TM-AS-MML: No
+	Thu, 2 Aug 2012 19:21:57 -0400
+Date: Thu, 02 Aug 2012 16:21:56 -0700 (PDT)
+Message-Id: <20120802.162156.1853851468137303302.davem@davemloft.net>
+To: fengguang.wu@intel.com
+Cc: netdev@vger.kernel.org, dan.carpenter@oracle.com,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        joe@perches.com, isdn@linux-pingi.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] isdnloop: fix and simplify isdnloop_init()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120802110543.GA21745@localhost>
+References: <20120802110543.GA21745@localhost>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 02, 2012 6:54 PM Thierry Reding wrote:
+From: Fengguang Wu <fengguang.wu@intel.com>
+Date: Thu, 2 Aug 2012 19:05:43 +0800
+
+> Fix a buffer overflow bug by removing the revision transform code.
 > 
-> On Thu, Aug 02, 2012 at 05:56:27PM +0900, Jingoo Han wrote:
-> > Samsung SoC can provide 4 PWMs; thus, the number of PWMs should be
-> > set as 4.
-> >
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > ---
-> >  drivers/pwm/pwm-samsung.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/pwm/pwm-samsung.c b/drivers/pwm/pwm-samsung.c
-> > index e5187c0..32562c6 100644
-> > --- a/drivers/pwm/pwm-samsung.c
-> > +++ b/drivers/pwm/pwm-samsung.c
-> > @@ -228,7 +228,7 @@ static int s3c_pwm_probe(struct platform_device *pdev)
-> >  	s3c->chip.dev = &pdev->dev;
-> >  	s3c->chip.ops = &s3c_pwm_ops;
-> >  	s3c->chip.base = -1;
-> > -	s3c->chip.npwm = 1;
-> > +	s3c->chip.npwm = 4;
+> [   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7 
+> [   22.097508] isdnloop: (loop0) virtual card added
+> [   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
+> [   22.174400] 
+> [   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
+> [   22.624071] Call Trace:
+> [   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
+> [   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
+> [   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
+> [   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
+> [   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
+> [   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
 > 
-> I don't think this is correct. The driver seems to be using the platform
-> device id as index currently, which indicates that the driver is bound
-> against 4 different platform devices, each representing a single PWM. If
-> you want to service multiple PWM devices by a single instance you need
-> to make further changes to the driver. For instance the tcon_base is
-> initialized based on the platform id. This could easily be replaced by
-> making it depend on the .hwpwm member of pwm_device.
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 
-I just want to use pwm backlight on Samsung SoC boards.
-After moving samusng pwm driver from 'arch/arm/plat-samsung/'
-to 'drivers/pwm/', pwm bakclight does not work properly.
+The reason the "$Revision ..." prefix is there is so that automated
+version control tools will change the string automatically when code
+is committed in CVS.
 
-When pwm_id is '1' and PWM backlight calls pwm_request(data->pwm_id,
-"pwm-backlight"), pwm_to_device() returns NULL.
+In the GIT era this revision style is obsolete.
 
-Then, do you mean that?
-	s3c->chip.npwm = id + 1;
-
-> 
-> You may also want to consider making the driver a proper module if that
-> works on the platforms that need it. I see that it is currently an
-> arch_initcall, but it might be cleaner to use deferred driver probe
-> instead.
-
-Sorry, I cannot understand what you say.
-
-> 
-> Thierry
-
+Therefore you might as well just delete this crap altogether.
