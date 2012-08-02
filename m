@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab2HBItv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 04:49:51 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:57128 "EHLO
+	id S1753571Ab2HBIt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 04:49:59 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:23633 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab2HBItt (ORCPT
+	with ESMTP id S1752929Ab2HBIty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 04:49:49 -0400
-Message-Id: <201208020849.q728nio0007834@latitude.olech.com>
+	Thu, 2 Aug 2012 04:49:54 -0400
+Message-Id: <201208020849.q728nhU3007824@latitude.olech.com>
 From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Thu, 2 Aug 2012 09:48:58 +0100
-Subject: [NEW DRIVER V1 7/7] DA9058 REGULATOR driver
+Date: Thu, 2 Aug 2012 09:48:57 +0100
+Subject: [NEW DRIVER V1 5/7] DA9058 GPIO driver
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the REGULATOR component driver of the Dialog DA9058 PMIC.
+This is the GPIO component driver of the Dialog DA9058 PMIC.
 This driver is just one component of the whole DA9058 PMIC driver.
 It depends on the core DA9058 MFD driver.
 
 Signed-off-by: Tony Olech (at Home) <tony@olech.com>
 ---
- drivers/regulator/Kconfig            |   11 +
- drivers/regulator/Makefile           |    1 +
- drivers/regulator/da9058-regulator.c |  336 ++++++++++++++++++++++++++++++++++
- 3 files changed, 348 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/da9058-regulator.c
+ drivers/gpio/Kconfig       |   12 ++
+ drivers/gpio/Makefile      |    1 +
+ drivers/gpio/gpio-da9058.c |  375 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 388 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/gpio-da9058.c
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index c86b886..1fc04f9 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -64,6 +64,17 @@ config REGULATOR_USERSPACE_CONSUMER
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 542f0c0..63b574a 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -86,6 +86,18 @@ config GPIO_DA9052
+ 	help
+ 	  Say yes here to enable the GPIO driver for the DA9052 chip.
  
-           If unsure, say no.
- 
-+config REGULATOR_DA9058
-+	tristate "Support regulators on Dialog Semiconductor DA9058 PMIC"
++config GPIO_DA9058
++	tristate "Dialog DA9058 GPIO"
 +	depends on MFD_DA9058
 +	help
-+	  Say y here to support the BUCKs and LDOs regulators found on
-+	  Dialog Semiconductor DA9058 PMIC.
++	  Say yes here to enable the GPIO driver for the DA9058 chip.
 +
-+	  This driver can also be built as a module. If so, the module
-+	  will be called da9058-regulator.
++	  The Dialog DA9058 PMIC chip has 2 GPIO pins that can be
++	  be controller by this driver.
++
++	  If driver is built as a module it will be called da9058-gpio.
 +
 +
- config REGULATOR_GPIO
- 	tristate "GPIO regulator support"
- 	depends on GENERIC_GPIO
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 977fd46..f4d0bff 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
- obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
- obj-$(CONFIG_REGULATOR_GPIO) += gpio-regulator.o
- obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
-+obj-$(CONFIG_REGULATOR_DA9058) += da9058-regulator.o
- obj-$(CONFIG_REGULATOR_LP3971) += lp3971.o
- obj-$(CONFIG_REGULATOR_LP3972) += lp3972.o
- obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
-diff --git a/drivers/regulator/da9058-regulator.c b/drivers/regulator/da9058-regulator.c
+ config GPIO_MAX730X
+ 	tristate
+ 
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 0f55662..209224a 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_GPIO_ADP5520)	+= gpio-adp5520.o
+ obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
+ obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
+ obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
++obj-$(CONFIG_GPIO_DA9058)	+= gpio-da9058.o
+ obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
+ obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
+ obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
+diff --git a/drivers/gpio/gpio-da9058.c b/drivers/gpio/gpio-da9058.c
 new file mode 100644
-index 0000000..842b793
+index 0000000..c0b34c5
 --- /dev/null
-+++ b/drivers/regulator/da9058-regulator.c
-@@ -0,0 +1,336 @@
++++ b/drivers/gpio/gpio-da9058.c
+@@ -0,0 +1,375 @@
 +/*
 + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
 + *
@@ -80,203 +81,280 @@ index 0000000..842b793
 + */
 +
 +#include <linux/module.h>
-+#include <linux/err.h>
++#include <linux/fs.h>
++#include <linux/uaccess.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/syscalls.h>
++#include <linux/seq_file.h>
 +#include <linux/slab.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/driver.h>
++#include <linux/interrupt.h>
 +#include <linux/mfd/core.h>
 +
 +#include <linux/mfd/da9058/version.h>
 +#include <linux/mfd/da9058/registers.h>
 +#include <linux/mfd/da9058/core.h>
-+#include <linux/mfd/da9058/regulator.h>
++#include <linux/mfd/da9058/gpio.h>
++#include <linux/mfd/da9058/irq.h>
++#include <linux/mfd/da9058/pdata.h>
 +
-+struct da9058_regulator {
++/*
++ *  There are only 2 available GPIO pins on the DA9058 PMIC
++ *
++ *  Thus this driver distinguishes them by the offset number
++ *  being zero or non-zero for simplicity
++ */
++
++struct da9058_gpio {
 +	struct da9058 *da9058;
-+	int control_voltage_step;
-+	int control_register;
-+	int control_enable_mask;
-+	int ramp_register;
-+	int ramp_enable_mask;
-+	int fixed_voltage;
 +	struct platform_device *pdev;
-+	struct regulator_dev *reg_dev;
-+	struct regulator_desc desc;
-+	struct regulator_init_data init;
++	struct gpio_chip gp;
++	struct mutex lock;
++	u8 inp_config;
++	u8 out_config;
 +};
 +
-+static unsigned int da9058_regulator_val_to_mvolts(unsigned int val,
-+						struct regulator_dev *rdev)
++static struct da9058_gpio *gpio_chip_to_da9058_gpio(struct gpio_chip *chip)
 +{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct regulation_constraints *constraints = rdev->constraints;
-+	int min_mV = constraints->min_uV / 1000;
-+
-+	return (val * regulator->control_voltage_step) + min_mV;
++	return container_of(chip, struct da9058_gpio, gp);
 +}
 +
-+static unsigned int da9058_regulator_mvolts_to_val(unsigned int mV,
-+						struct regulator_dev *rdev)
++static int da9058_gpio_get(struct gpio_chip *gc, unsigned offset)
 +{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct regulation_constraints *constraints = rdev->constraints;
-+	int min_mV = constraints->min_uV / 1000;
-+
-+	return (mV - min_mV) / regulator->control_voltage_step;
-+}
-+
-+static int da9058_regulator_is_enabled(struct regulator_dev *rdev)
-+{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct da9058 *da9058 = regulator->da9058;
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	u8 gpio_level;
 +	int ret;
-+	u8 val;
 +
-+	if (!regulator->control_register)
++	if (offset > 1)
 +		return -EINVAL;
 +
-+	ret = da9058_reg_read(da9058, regulator->control_register, &val);
-+	if (ret)
++	mutex_lock(&gpio->lock);
++	ret = da9058_reg_read(da9058, DA9058_STATUSC_REG, &gpio_level);
++	mutex_unlock(&gpio->lock);
++	if (ret < 0)
 +		return ret;
 +
-+	if (regulator->control_enable_mask&val)
-+		return true;
-+	else
-+		return false;
-+}
-+
-+static int da9058_regulator_set_voltage(struct regulator_dev *rdev,
-+					int min_uV, int max_uV,
-+					unsigned *selector)
-+{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct da9058 *da9058 = regulator->da9058;
-+	struct regulation_constraints *constraints = rdev->constraints;
-+	int mV_val, min_mV, max_mV, tmp, ret;
-+	int tmp_max_mV, tmp_min_mV;
-+	u8 val;
-+
-+	if (regulator->control_voltage_step == 0)
-+		return -EINVAL;
-+
-+	max_mV = max_uV / 1000;
-+	min_mV = min_uV / 1000;
-+	tmp_max_mV = constraints->max_uV / 1000;
-+	tmp_min_mV = constraints->min_uV / 1000;
-+
-+	if (0 == max_mV)
-+		max_mV = tmp_max_mV;
-+
-+	if (min_mV > max_mV)
-+		return -EINVAL;
-+
-+	if (min_mV < tmp_min_mV || min_mV > tmp_max_mV)
-+		return -EINVAL;
-+	if (max_mV < tmp_min_mV || max_mV > tmp_max_mV)
-+		return -EINVAL;
-+
-+	/* before we do anything check the lock bit */
-+	ret = da9058_reg_read(da9058, DA9058_SUPPLY_REG, &val);
-+	if (ret)
-+		return ret;
-+
-+	if (val & DA9058_SUPPLY_VLOCK)
-+		da9058_clear_bits(da9058, DA9058_SUPPLY_REG,
-+					DA9058_SUPPLY_VLOCK);
-+
-+	mV_val = da9058_regulator_mvolts_to_val(min_mV, rdev);
-+
-+	tmp = da9058_regulator_val_to_mvolts(mV_val, rdev);
-+	if (!tmp || (tmp > max_mV))
-+		return -EINVAL;
-+
-+	*selector = mV_val;
-+
-+	ret = da9058_reg_read(da9058, regulator->control_register, &val);
-+	if (ret)
-+		return ret;
-+	val &= ~DA9058_MAX_VSEL;
-+	ret = da9058_reg_write(da9058, regulator->control_register,
-+				(val | mV_val));
-+	if (ret)
-+		return ret;
-+	if (regulator->ramp_register && regulator->ramp_enable_mask)
-+		ret =
-+			da9058_set_bits(da9058, regulator->ramp_register,
-+					regulator->ramp_enable_mask);
-+
-+	return ret;
-+}
-+
-+static int da9058_regulator_get_voltage(struct regulator_dev *rdev)
-+{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct da9058 *da9058 = regulator->da9058;
-+	int ret = 0;
-+	u8 val;
-+
-+	if (regulator->control_voltage_step == 0) {
-+		if (da9058_regulator_is_enabled(rdev))
-+			return regulator->fixed_voltage;
++	if (offset) {
++		if (gpio_level & DA9058_STATUSC_GPI1)
++			return 1;
++		else
++			return 0;
++	} else {
++		if (gpio_level & DA9058_STATUSC_GPI0)
++			return 1;
 +		else
 +			return 0;
 +	}
++}
 +
-+	ret = da9058_reg_read(da9058, regulator->control_register, &val);
++static void da9058_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
++{
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	u8 gpio_cntrl;
++	int ret;
++
++	if (offset > 1) {
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d output=%d because illegal GPIO\n",
++			offset, value);
++		return;
++	}
++
++	mutex_lock(&gpio->lock);
++
++	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
 +	if (ret)
-+		return ret;
++		goto exit;
 +
-+	val = val & DA9058_MAX_VSEL;
-+	ret = da9058_regulator_val_to_mvolts(val, rdev) * 1000;
++	if (offset) {
++		u8 value_bits = value ? 0x80 : 0x00;
++
++		gpio->out_config &= ~0x80;
++		gpio->out_config |= value_bits;
++
++		if (!(gpio_cntrl & 0x20))
++			goto exit;
++
++		gpio_cntrl &= ~0xF0;
++		gpio_cntrl |= 0xF0 & gpio->out_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	} else {
++		u8 value_bits = value ? 0x08 : 0x00;
++
++		gpio->out_config &= ~0x08;
++		gpio->out_config |= value_bits;
++
++		if (!(gpio_cntrl & 0x02))
++			goto exit;
++
++		gpio_cntrl &= ~0x0F;
++		gpio_cntrl |= 0x0F & gpio->out_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	}
++exit:
++	mutex_unlock(&gpio->lock);
++	if (ret)
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d output=%d error=%d\n",
++			offset, value, ret);
++	return;
++}
++
++static int da9058_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
++{
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	u8 gpio_cntrl;
++	int ret;
++
++	if (offset > 1)
++		return -EINVAL;
++
++	mutex_lock(&gpio->lock);
++
++	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	if (ret)
++		goto exit;
++
++	if (offset) {
++		gpio_cntrl &= ~0xF0;
++		gpio_cntrl |= 0xF0 & gpio->inp_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	} else {
++		gpio_cntrl &= ~0x0F;
++		gpio_cntrl |= 0x0F & gpio->inp_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	}
++exit:
++	mutex_unlock(&gpio->lock);
++	if (ret)
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d to output error=%d\n",
++			offset, ret);
 +	return ret;
 +}
 +
-+static int da9058_regulator_enable(struct regulator_dev *rdev)
++static int da9058_gpio_direction_output(struct gpio_chip *gc,
++					unsigned offset, int value)
 +{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct da9058 *da9058 = regulator->da9058;
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	u8 gpio_cntrl;
++	int ret;
 +
-+	if (!regulator->control_register)
++	if (offset > 1)
 +		return -EINVAL;
 +
-+	return da9058_set_bits(da9058, regulator->control_register,
-+				regulator->control_enable_mask);
++	mutex_lock(&gpio->lock);
++
++	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	if (ret)
++		goto exit;
++
++	if (offset) {
++		gpio_cntrl &= ~0xF0;
++		gpio_cntrl |= 0xF0 & gpio->out_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	} else {
++		gpio_cntrl &= ~0x0F;
++		gpio_cntrl |= 0x0F & gpio->out_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	}
++exit:
++	mutex_unlock(&gpio->lock);
++	if (ret)
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d to input error=%d\n",
++			offset, ret);
++	return ret;
 +}
-+
-+static int da9058_regulator_disable(struct regulator_dev *rdev)
++/*
++ *  da9058_gpio_to_irq is an implementation of the GPIO Hook
++ *  @to_irq: supporting non-static gpio_to_irq() mappings
++ *  whose implementation may not sleep. This hook is called
++ *  when setting up the threaded GPIO irq handler.
++ */
++static int da9058_gpio_to_irq(struct gpio_chip *gc, u32 offset)
 +{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct da9058 *da9058 = regulator->da9058;
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
 +
-+	if (!regulator->control_register)
++	if (offset > 1)
 +		return -EINVAL;
 +
-+	return da9058_clear_bits(da9058, regulator->control_register,
-+				regulator->control_enable_mask);
++	if (offset)
++		return da9058_to_virt_irq_num(da9058, DA9058_IRQ_EGPI1);
++	else
++		return da9058_to_virt_irq_num(da9058, DA9058_IRQ_EGPI0);
 +}
 +
-+static unsigned int da9058_regulator_get_mode(struct regulator_dev *rdev)
++static int da9058_gpio_set_debounce(struct gpio_chip *gc, unsigned offset,
++				unsigned debounce)
 +{
-+	return REGULATOR_MODE_NORMAL;
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	int ret;
++	u8 gpio_cntrl;
++
++	if (offset > 1)
++		return -EINVAL;
++
++	mutex_lock(&gpio->lock);
++
++	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	if (ret)
++		goto exit;
++
++	if (offset) {
++		u8 debounce_bits = debounce ? 0x80 : 0x00;
++
++		gpio->inp_config &= ~0x80;
++		gpio->inp_config |= debounce_bits;
++
++		if (gpio_cntrl & 0x20)
++			goto exit;
++
++		gpio_cntrl &= ~0xF0;
++		gpio_cntrl |= 0xF0 & gpio->inp_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	} else {
++		u8 debounce_bits = debounce ? 0x08 : 0x00;
++
++		gpio->inp_config &= ~0x08;
++		gpio->inp_config |= debounce_bits;
++
++		if (gpio_cntrl & 0x02)
++			goto exit;
++
++		gpio_cntrl &= ~0x0F;
++		gpio_cntrl |= 0x0F & gpio->inp_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	}
++exit:
++	mutex_unlock(&gpio->lock);
++	if (ret)
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d bounce=%d error=%d\n",
++			offset, debounce, ret);
++	return ret;
 +}
 +
-+static struct regulator_ops da9058_regulator_ops = {
-+	.set_voltage = da9058_regulator_set_voltage,
-+	.get_voltage = da9058_regulator_get_voltage,
-+	.enable = da9058_regulator_enable,
-+	.disable = da9058_regulator_disable,
-+	.is_enabled = da9058_regulator_is_enabled,
-+	.get_mode = da9058_regulator_get_mode,
-+};
-+
-+static int da9058_regulator_probe(struct platform_device *pdev)
++static int __devinit da9058_gpio_probe(struct platform_device *pdev)
 +{
 +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
 +	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_regulator_pdata *regulator_pdata;
-+	struct da9058_regulator *regulator;
-+	struct regulator_dev *rdev;
-+	struct regulator_config config = { };
++	struct da9058_gpio_pdata *gpio_pdata;
++	struct da9058_gpio *gpio;
 +	int ret;
 +
 +	if (cell == NULL) {
@@ -284,127 +362,89 @@ index 0000000..842b793
 +		goto exit;
 +	}
 +
-+	regulator_pdata = cell->platform_data;
++	gpio_pdata = cell->platform_data;
 +
-+	if (regulator_pdata == NULL) {
++	if (!gpio_pdata) {
 +		ret = -EINVAL;
 +		goto exit;
 +	}
 +
-+	dev_info(&pdev->dev, "Starting REGULATOR %d = %s\n",
-+					regulator_pdata->regulator_id,
-+					regulator_pdata->regulator_name);
-+
-+	regulator = devm_kzalloc(&pdev->dev, sizeof(struct da9058_regulator),
-+				GFP_KERNEL);
-+	if (!regulator) {
++	gpio = devm_kzalloc(&pdev->dev, sizeof(struct da9058_gpio), GFP_KERNEL);
++	if (!gpio) {
 +		ret = -ENOMEM;
 +		goto exit;
 +	}
 +
-+	platform_set_drvdata(pdev, regulator);
++	gpio->da9058 = da9058;
++	gpio->pdev = pdev;
 +
-+	regulator->da9058 = da9058;
-+	regulator->pdev = pdev;
-+	regulator->control_voltage_step = regulator_pdata->control_voltage_step;
-+	regulator->control_register = regulator_pdata->control_register;
-+	regulator->control_enable_mask = regulator_pdata->control_enable_mask;
-+	regulator->ramp_register = regulator_pdata->ramp_register;
-+	regulator->ramp_enable_mask = regulator_pdata->ramp_enable_mask;
-+	regulator->fixed_voltage = regulator_pdata->fixed_voltage;
++	gpio->gp.label = "da9058-gpio";
++	gpio->gp.owner = THIS_MODULE;
++	gpio->gp.get = da9058_gpio_get;
++	gpio->gp.set = da9058_gpio_set;
++	gpio->gp.direction_input = da9058_gpio_direction_input;
++	gpio->gp.direction_output = da9058_gpio_direction_output;
++	gpio->gp.to_irq = da9058_gpio_to_irq;
++	gpio->gp.set_debounce = da9058_gpio_set_debounce;
++	gpio->gp.can_sleep = 1;
++	gpio->gp.ngpio = gpio_pdata->ngpio;
++	gpio->gp.base = gpio_pdata->gpio_base;
 +
-+	regulator->desc.name = regulator_pdata->regulator_name;
-+	regulator->desc.id = regulator_pdata->regulator_id;
-+	regulator->desc.ops = &da9058_regulator_ops;
-+	regulator->desc.type = REGULATOR_VOLTAGE;
-+	regulator->desc.n_voltages = DA9058_MAX_VSEL + 1;
-+	regulator->desc.owner = THIS_MODULE;
++	gpio->inp_config = 0x99;
++	gpio->out_config = 0x66;
 +
-+	if (regulator_pdata->control_voltage_step > 0 &&
-+					regulator_pdata->ramp_register == 0) {
-+		regulator->desc.min_uV = regulator_pdata->min_uV;
-+		regulator->desc.uV_step = regulator_pdata->control_voltage_step;
-+		regulator->desc.vsel_reg = regulator_pdata->control_register;
-+		regulator->desc.vsel_mask = DA9058_MAX_VSEL;
-+		regulator->desc.enable_reg = regulator_pdata->control_register;
-+		regulator->desc.enable_mask = regulator_pdata->ramp_enable_mask;
-+	}
++	mutex_init(&gpio->lock);
 +
-+	regulator->init.constraints.name = regulator_pdata->regulator_name;
-+	regulator->init.constraints.min_uV = regulator_pdata->min_uV;
-+	regulator->init.constraints.max_uV = regulator_pdata->max_uV;
-+	regulator->init.constraints.valid_ops_mask =
-+		regulator_pdata->valid_ops_mask;
-+	regulator->init.constraints.valid_modes_mask =
-+		regulator_pdata->valid_modes_mask;
-+	regulator->init.constraints.boot_on = regulator_pdata->boot_on;
-+	regulator->init.constraints.always_on = regulator_pdata->always_on;
-+	regulator->init.num_consumer_supplies =
-+					regulator_pdata->num_consumer_supplies;
-+	regulator->init.consumer_supplies = regulator_pdata->consumer_supplies;
-+
-+	config.dev = pdev->dev.parent;
-+	config.init_data = &regulator->init;
-+	config.driver_data = regulator;
-+	config.regmap = da9058->regmap;
-+
-+	rdev = regulator_register(&regulator->desc, &config);
-+
-+	if (IS_ERR(rdev)) {
-+		dev_err(&pdev->dev, "failed to register %s\n",
-+			regulator_pdata->regulator_name);
-+		ret = PTR_ERR(rdev);
++	ret = gpiochip_add(&gpio->gp);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
 +		goto err;
 +	}
-+	regulator->reg_dev = rdev;
-+	ret = 0;
-+	goto exit;
 +
++	platform_set_drvdata(pdev, gpio);
++
++	dev_info(&pdev->dev, "%d GPIO pins at base %d\n", gpio_pdata->ngpio,
++				gpio->gp.base);
++
++	mutex_lock(&gpio->lock);
++	ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio->inp_config);
++	mutex_unlock(&gpio->lock);
++	if (ret)
++		dev_err(da9058->dev,
++			"Failed to set GPIO0 as an output error = %d\n",
++				ret);
 +err:
-+	platform_set_drvdata(pdev, NULL);
 +exit:
 +	return ret;
 +}
 +
-+static int da9058_regulator_remove(struct platform_device *pdev)
++static int __devexit da9058_gpio_remove(struct platform_device *pdev)
 +{
-+	struct regulator_dev *rdev = platform_get_drvdata(pdev);
++	struct da9058_gpio *gpio = platform_get_drvdata(pdev);
++	int ret;
 +
-+	regulator_unregister(rdev);
++	ret = gpiochip_remove(&gpio->gp);
++	if (ret == 0)
++		kfree(gpio);
 +
-+	return 0;
++	return ret;
 +}
 +
-+static struct platform_driver da9058_regulator_driver = {
-+	.probe = da9058_regulator_probe,
-+	.remove = da9058_regulator_remove,
++static struct platform_driver da9058_gpio_driver = {
++	.probe = da9058_gpio_probe,
++	.remove = __devexit_p(da9058_gpio_remove),
 +	.driver = {
-+		.name = "da9058-regulator",
++		.name = "da9058-gpio",
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+/*
-+ *  This driver potentially needs to be started early
-+ */
-+static int __init da9058_regulator_init(void)
-+{
-+	return platform_driver_register(&da9058_regulator_driver);
-+}
++module_platform_driver(da9058_gpio_driver);
 +
-+subsys_initcall(da9058_regulator_init);
-+
-+static void __exit da9058_regulator_exit(void)
-+{
-+	platform_driver_unregister(&da9058_regulator_driver);
-+}
-+
-+module_exit(da9058_regulator_exit);
-+
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC voltage and current regulator");
++MODULE_DESCRIPTION("Dialog DA9058 PMIC General Purpose IO Driver");
 +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-regulator");
++MODULE_ALIAS("platform:da9058-gpio");
 -- 
 end-of-patch for NEW DRIVER V1
 
