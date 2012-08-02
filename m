@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab2HBHJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 03:09:22 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:16483 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab2HBHJV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 03:09:21 -0400
-Message-ID: <501A2740.3000309@huawei.com>
-Date: Thu, 2 Aug 2012 15:07:44 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1754166Ab2HBHKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 03:10:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43411 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751486Ab2HBHKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 03:10:11 -0400
+Date: Thu, 2 Aug 2012 09:10:03 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] powerpc: fix personality handling in
+ ppc64_personality()
+In-Reply-To: <m27gtitfv4.fsf@igel.home>
+Message-ID: <alpine.LNX.2.00.1208020907490.14910@pobox.suse.cz>
+References: <alpine.LNX.2.00.1208012201520.14910@pobox.suse.cz> <m27gtitfv4.fsf@igel.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: Jiang Liu <liuj97@gmail.com>, Len Brown <lenb@kernel.org>,
-        Tony Luck <tony.luch@intel.com>, Bob Moore <robert.moore@intel.com>,
-        Huang Ying <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Hanjun Guo <guohanjun@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Gaohuai Han <hangaohuai@huawei.com>
-Subject: Re: [RFC PATCH 1/3] ACPIHP: introduce a framework for ACPI based
- system device hotplug
-References: <1343475772-21345-1-git-send-email-jiang.liu@huawei.com> <1343475772-21345-2-git-send-email-jiang.liu@huawei.com> <501A271A.5030808@cn.fujitsu.com>
-In-Reply-To: <501A271A.5030808@cn.fujitsu.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-8-2 15:07, Tang Chen wrote:
-> Hi,
-> 
-> A little problem here. :)
-> 
-> On 07/28/2012 07:42 PM, Jiang Liu wrote:
->> +int acpihp_register_slot(struct acpihp_slot *slot)
->> +{
->> +	int ret;
->> +	char *name;
->> +	size_t off;
->> +
->> +	if (!slot || !slot->slot_ops)
->> +		return -EINVAL;
->> +
->> +	/* Hook top level hotplug slots under ACPI root device */
->> +	if (slot->parent)
->> +		slot->dev.parent = &slot->parent->dev;
->> +	else
->> +		slot->dev.parent = &acpi_root->dev;
->> +
->> +	ret = device_add(&slot->dev);
->> +	if (!ret) {
->> +		slot->flags |= ACPIHP_SLOT_FLAG_REGISTERED;
->> +		name = kmalloc(PAGE_SIZE, GFP_KERNEL);
->> +		if (name) {
->> +			off = acpihp_generate_link_name(slot, name, 0);
->> +			name[off - 1] = '\0';
->> +			sysfs_create_link(&acpihp_slot_kset->kobj,
->> +					  &slot->dev.kobj, name);
-> 
-> I got a compiler warning here:
->   CC      drivers/acpi/hotplug/core.o
-> drivers/acpi/hotplug/core.c: In function ‘acpihp_register_slot’:
-> drivers/acpi/hotplug/core.c:199: warning: ignoring return value of ‘sysfs_create_link’, declared with attribute warn_unused_result
-> 
-> Seems that we need to check the sysfs_create_link()'s return value here, and if it fails, 
-> shall we at least give a warning message here ?
-> 
-> Thanks. :)
-Hi Tang,
-	Thanks for your comments, will fix it in next version.
-	Regards!
-	Gerry
+Directly comparing current->personality against PER_LINUX32 doesn't work
+in cases when any of the personality flags stored in the top three bytes
+are used.
 
-> 
-> 
->> +			kfree(name);
->> +		}
->> +	}
->> +
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(acpihp_register_slot);
-> 
+Directly forcefully setting personality to PER_LINUX32 or PER_LINUX
+discards any flags stored in the top three bytes
 
+Use personality() macro to compare only PER_MASK bytes and make sure that
+we are setting only the bits that should be set, instead of
+overwriting the whole value.
 
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+
+changed since v1: fix the bit ops to reflect the fact that PER_LINUX is 
+actually 0
+
+ arch/powerpc/kernel/syscalls.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/powerpc/kernel/syscalls.c b/arch/powerpc/kernel/syscalls.c
+index f2496f2..dc1558e 100644
+--- a/arch/powerpc/kernel/syscalls.c
++++ b/arch/powerpc/kernel/syscalls.c
+@@ -107,11 +107,11 @@ long ppc64_personality(unsigned long personality)
+ 	long ret;
+ 
+ 	if (personality(current->personality) == PER_LINUX32
+-	    && personality == PER_LINUX)
+-		personality = PER_LINUX32;
++	    && personality(personality) == PER_LINUX)
++		personality |= PER_LINUX32;
+ 	ret = sys_personality(personality);
+-	if (ret == PER_LINUX32)
+-		ret = PER_LINUX;
++	if (personality(ret) == PER_LINUX32)
++		ret &= ~PER_LINUX32;
+ 	return ret;
+ }
+ #endif
+-- 
+1.7.3.1
+
+-- 
+Jiri Kosina
+SUSE Labs
