@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab2HBVrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 17:47:17 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64934 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab2HBVrP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 17:47:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1343836477-7287-27-git-send-email-jiang.liu@huawei.com>
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com> <1343836477-7287-27-git-send-email-jiang.liu@huawei.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Thu, 2 Aug 2012 14:46:54 -0700
-X-Google-Sender-Auth: 76vAif6B2fRGEg9u5ZPejVrkUWk
-Message-ID: <CAG4TOxMzOeW4PE+sZmvu7OeO15RYQbn81s=nN3mQqSMPD8JMbg@mail.gmail.com>
-Subject: Re: [PATCH v3 26/32] PCI/mthca: use PCIe capabilities access
- functions to simplify implementation
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753563Ab2HBVuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 17:50:11 -0400
+Received: from plane.gmane.org ([80.91.229.3]:40347 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753133Ab2HBVuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 17:50:09 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Aaron Scamehorn <ajscam@gmail.com>
+Subject: Re: High CPU usage of scheduler?
+Date: Thu, 2 Aug 2012 21:45:12 +0000 (UTC)
+Message-ID: <loom.20120802T221324-739@post.gmane.org>
+References: <CAAcYxUdUBgwuxNKpiXp8r9-aw7+pi7U2E35dnsoL2RD9tf47oQ@mail.gmail.com> <20120427031013.GA9131@zhy> <CAAcYxUdtdVqsGqaZzoiPxP46AX+zcxuSfYgm_D+ShdoB12cs6w@mail.gmail.com> <CAAcYxUe7RmWm9AhFpjPAiaW9zirYJbzm1wtAMJ=LUpX-kskp9w@mail.gmail.com> <CAAcYxUfLp=5Vg3RCNzNs2Q8pa0tQciUTO6WUt11-Nw5SVovf4Q@mail.gmail.com> <CAAcYxUe-26DNZHqC8t4D7RgET6c_SYA=2AFa3DgPHR8cKYzxDA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 38.98.186.242 (Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120424 Firefox/10.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Use PCIe capabilities access functions to simplify mthca driver's
-> implementation.
+Dave Johansen <davejohansen <at> gmail.com> writes:
 
-Acked-by: Roland Dreier <roland@purestorage.com>
+> 
+> Here's an updated version that measures the user and system time of
+> each thread and also outputs those results. It also has a correction
+> for how the mean and standard deviation are updated inside of the
+> outer_iterations loop.
+> 
+> The updated results are available here:
+> http://unix.stackexchange.com/questions/37391/high-cpu-usage-with-cfs
+> and here:
+> https://bugzilla.redhat.com/show_bug.cgi?id=812148
+> 
+> Any other tests I can run to help diagnose the problem?
+> 
+> Thanks,
+> Dave
+> 
+> Attachment (test_sleep.c): text/x-csrc, 11 KiB
+
+
+I tried to take a look at that bugzilla, but Redhat is saying that it is "an
+internal bugzilla, and not visible to the public."
+
+Have there been any updates on this?
+
+Thanks,
+Aaron
+
