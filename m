@@ -1,176 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2HBGaX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 02:30:23 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49491 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752773Ab2HBGaV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 02:30:21 -0400
+	id S1754116Ab2HBGhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 02:37:13 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:52860 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753082Ab2HBGhL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 02:37:11 -0400
+From: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <praveen.nadahally@stericsson.com>
+Subject: [PATCH] usb:musb:musb_host: Handle highmem in PIO mode
+Date: Thu, 2 Aug 2012 12:06:42 +0530
+Message-ID: <1343889402-7826-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
+X-Mailer: git-send-email 1.7.4.3
 MIME-Version: 1.0
-In-Reply-To: <CAAhV-H5pkm6en7oVjTdDmm2SSy1DyF7kDczPady+c+aB8eAXyA@mail.gmail.com>
-References: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
-	<1340334073-17804-12-git-send-email-chenhc@lemote.com>
-	<1340342704.1381.9.camel@tellur>
-	<CAAhV-H5pkm6en7oVjTdDmm2SSy1DyF7kDczPady+c+aB8eAXyA@mail.gmail.com>
-Date: Thu, 2 Aug 2012 14:30:19 +0800
-Message-ID: <CAAhV-H4XZCMfACTz5pL2metyPacdg3tN8q09_KLmkBcCBTbigw@mail.gmail.com>
-Subject: Re: [PATCH V3 11/16] drm/radeon: Make radeon card usable for Loongson.
-From: Huacai Chen <chenhuacai@gmail.com>
-To: Lucas Stach <dev@lynxeye.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        Zhangjin Wu <wuzhangjin@gmail.com>, Hua Yan <yanh@lemote.com>,
-        Fuxin Zhang <zhangfx@lemote.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Hongliang Tao <taohl@lemote.com>,
-        Huacai Chen <chenhc@lemote.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Lucas, sorry for so long a delay because I have a holiday for one month.
+In case of USB bulk transfer, when himem page
+is received, the usb_sg_init function sets the
+urb transfer buffer to NULL. When such URB
+transfer is handled, kernel crashes in PIO mode.
+Handle this by mapping the highmem buffer in PIO mode.
 
-I found Loongson-3 must turn on SWIOTLB if the system memory has
-addresses above 4G. As I know, there are two ways to get a DMA addr,
-the first way is use dma_alloc_coherent(), and the other one is use
-map_page()/map_sg() on an exsisting address. The first way can make
-sure DMA addr below 4G, but the second way cannot (unless the memory
-is so little that all the address space is below 4G).
+Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+---
+ drivers/usb/musb/musb_host.c |   98 +++++++++++++++++++++++++++++++++++++++--
+ include/linux/usb.h          |    2 +
+ 2 files changed, 95 insertions(+), 5 deletions(-)
 
-Take SATA driver as an example, during initialization an 'ata_device'
-struct is allocated and its address is probably above 4G (because this
-is first used by CPU, not for DMA). 'ata_device' has a member 'id' and
-'id' will be use for DMA in such a call path:
+diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+index 4bb717d..ff1af0a 100644
+--- a/drivers/usb/musb/musb_host.c
++++ b/drivers/usb/musb/musb_host.c
+@@ -813,9 +813,28 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
+ 		if (load_count) {
+ 			/* PIO to load FIFO */
+ 			qh->segsize = load_count;
+-			musb_write_fifo(hw_ep, load_count, buf);
++			if (!buf) {
++				sg_miter_start(&urb->sg_miter, urb->sg, 1,
++						SG_MITER_ATOMIC
++						| SG_MITER_FROM_SG);
++				if (!sg_miter_next(&urb->sg_miter)) {
++					dev_err(musb->controller,
++							"error: sg"
++							"list empty\n");
++					sg_miter_stop(&urb->sg_miter);
++					goto finish;
++				}
++				buf = urb->sg_miter.addr + urb->sg->offset +
++					urb->actual_length;
++				load_count = min_t(u32, load_count,
++						urb->sg_miter.length);
++				musb_write_fifo(hw_ep, load_count, buf);
++				urb->sg_miter.consumed = load_count;
++				sg_miter_stop(&urb->sg_miter);
++			} else
++				musb_write_fifo(hw_ep, load_count, buf);
+ 		}
+-
++finish:
+ 		/* re-enable interrupt */
+ 		musb_writew(mbase, MUSB_INTRTXE, int_txe);
+ 
+@@ -1116,6 +1135,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
+ 	void __iomem		*mbase = musb->mregs;
+ 	struct dma_channel	*dma;
+ 	bool			transfer_pending = false;
++	static bool use_sg;
+ 
+ 	musb_ep_select(mbase, epnum);
+ 	tx_csr = musb_readw(epio, MUSB_TXCSR);
+@@ -1163,6 +1183,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
+ 		return;
+ 	}
+ 
++done:
+ 	if (status) {
+ 		if (dma_channel_status(dma) == MUSB_DMA_STATUS_BUSY) {
+ 			dma->status = MUSB_DMA_STATUS_CORE_ABORT;
+@@ -1332,9 +1353,38 @@ void musb_host_tx(struct musb *musb, u8 epnum)
+ 		length = qh->maxpacket;
+ 	/* Unmap the buffer so that CPU can use it */
+ 	usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
+-	musb_write_fifo(hw_ep, length, urb->transfer_buffer + offset);
++
++	/*
++	 * We need to map sg if the transfer_buffer is
++	 * NULL.
++	 */
++	if (!urb->transfer_buffer)
++		use_sg = true;
++
++	if (use_sg) {
++		/* sg_miter_start is already done in musb_ep_program */
++		if (!sg_miter_next(&urb->sg_miter)) {
++			dev_err(musb->controller, "error: sg list empty\n");
++			sg_miter_stop(&urb->sg_miter);
++			status = -EINVAL;
++			goto done;
++		}
++		urb->transfer_buffer = urb->sg_miter.addr;
++		length = min_t(u32, length, urb->sg_miter.length);
++		musb_write_fifo(hw_ep, length, urb->transfer_buffer);
++		urb->sg_miter.consumed = length;
++		sg_miter_stop(&urb->sg_miter);
++	} else {
++		musb_write_fifo(hw_ep, length, urb->transfer_buffer + offset);
++	}
++
+ 	qh->segsize = length;
+ 
++	if (use_sg) {
++		if (offset + length >= urb->transfer_buffer_length)
++			use_sg = false;
++	}
++
+ 	musb_ep_select(mbase, epnum);
+ 	musb_writew(epio, MUSB_TXCSR,
+ 			MUSB_TXCSR_H_WZC_BITS | MUSB_TXCSR_TXPKTRDY);
+@@ -1442,6 +1492,8 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 	bool			done = false;
+ 	u32			status;
+ 	struct dma_channel	*dma;
++	static bool use_sg;
++	unsigned int sg_flags = SG_MITER_ATOMIC | SG_MITER_TO_SG;
+ 
+ 	musb_ep_select(mbase, epnum);
+ 
+@@ -1756,10 +1808,43 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ #endif	/* Mentor DMA */
+ 
+ 		if (!dma) {
++			unsigned int received_len;
++
+ 			/* Unmap the buffer so that CPU can use it */
+ 			usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
+-			done = musb_host_packet_rx(musb, urb,
+-					epnum, iso_err);
++
++			/*
++			 * We need to map sg if the transfer_buffer is
++			 * NULL.
++			 */
++			if (!urb->transfer_buffer) {
++				use_sg = true;
++				sg_miter_start(&urb->sg_miter, urb->sg, 1,
++						sg_flags);
++			}
++
++			if (use_sg) {
++				if (!sg_miter_next(&urb->sg_miter)) {
++					dev_err(musb->controller, "error: sg list empty\n");
++					sg_miter_stop(&urb->sg_miter);
++					status = -EINVAL;
++					done = true;
++					goto finish;
++				}
++				urb->transfer_buffer = urb->sg_miter.addr;
++				received_len = urb->actual_length;
++				qh->offset = 0x0;
++				done = musb_host_packet_rx(musb, urb, epnum,
++						iso_err);
++				/* Calculate the number of bytes received */
++				received_len = urb->actual_length -
++					received_len;
++				urb->sg_miter.consumed = received_len;
++				sg_miter_stop(&urb->sg_miter);
++			} else {
++				done = musb_host_packet_rx(musb, urb,
++						epnum, iso_err);
++			}
+ 			dev_dbg(musb->controller, "read %spacket\n", done ? "last " : "");
+ 		}
+ 	}
+@@ -1768,6 +1853,9 @@ finish:
+ 	urb->actual_length += xfer_len;
+ 	qh->offset += xfer_len;
+ 	if (done) {
++		if (use_sg)
++			use_sg = false;
++
+ 		if (urb->status == -EINPROGRESS)
+ 			urb->status = status;
+ 		musb_advance_schedule(musb, urb, hw_ep, USB_DIR_IN);
+diff --git a/include/linux/usb.h b/include/linux/usb.h
+index dea39dc..348648a 100644
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -21,6 +21,7 @@
+ #include <linux/sched.h>	/* for current && schedule_timeout */
+ #include <linux/mutex.h>	/* for struct mutex */
+ #include <linux/pm_runtime.h>	/* for runtime PM */
++#include <linux/scatterlist.h>
+ 
+ struct usb_device;
+ struct usb_driver;
+@@ -1309,6 +1310,7 @@ struct urb {
+ 	usb_complete_t complete;	/* (in) completion routine */
+ 	struct usb_iso_packet_descriptor iso_frame_desc[0];
+ 					/* (in) ISO ONLY */
++	struct sg_mapping_iter sg_miter; /* handling highmem data in PIO mode */
+ };
+ 
+ /* ----------------------------------------------------------------------- */
+-- 
+1.7.4.3
 
-ata_host_register() --> ata_scsi_add_hosts() --> async_port_probe()
---> ata_port_probe() --> ata_bus_probe() --> ata_dev_read_id() -->
-ata_exec_internal() --> ata_exec_internal_sg() --> ata_qc_issue() -->
-ata_sg_setup() --> dma_map_sg()
-
-Here,  dma_map_sg() will get a DMA addr above 4G, then SATA init failed.
-
-In OHCI driver, there are similar situations.
-
-P.S.:  With recently drm changes, I found radeon with SWIOTLB can
-already work after suspend/resume, so my next version of Loongson
-patches will not modify radeon_ttm.c.
-
-On Fri, Jun 22, 2012 at 1:59 PM, Huacai Chen <chenhuacai@gmail.com> wrote:
-> On Fri, Jun 22, 2012 at 1:25 PM, Lucas Stach <dev@lynxeye.de> wrote:
->> Hello Huacai,
->>
->> Am Freitag, den 22.06.2012, 11:01 +0800 schrieb Huacai Chen:
->>> 1, Handle io prot correctly for MIPS.
->>> 2, Define SAREA_MAX as the size of one page.
->>> 3, Don't use swiotlb on Loongson machines (Loonson need swioitlb, but
->>>    when use swiotlb, GPU reset occurs at resume from suspend).
->>>
->> I still think this is wrong. You say Loongson needs SWIOTLB, but when
->> it's actually used you ignore it in the radeon driver code.
->>
->> I looked up why you are using SWIOTLB and I don't agree with you that it
->> is needed. SWIOTLB just gives you bounce pages for DMA memory above
->> DMA32 and therefore papers over your >4GB DMA platform bug in some
->> cases, while hurting performance.
->>
->> Please fix your DMA platform code so that region DMA is an alias for
->> region DMA32. It should allow you to drop all those ugly workarounds.
->>
-> Hmm, you are probably right, I think I should have a discuss with the
-> original author of this part of code.
->
->>> Signed-off-by: Huacai Chen <chenhc@lemote.com>
->>> Signed-off-by: Hongliang Tao <taohl@lemote.com>
->>> Signed-off-by: Hua Yan <yanh@lemote.com>
->>> Reviewed-by: Michel Dänzer <michel@daenzer.net>
->>> Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
->>> Reviewed-by: Lucas Stach <dev@lynxeye.de>
->>> Reviewed-by: j.glisse <j.glisse@gmail.com>
->>
->> You should probably only stick this tag on your patches after the people
->> you are naming explicitly gave their r-b for a specific version of a
->> patch.
->>
->> Thanks,
->> Lucas
->>> Cc: dri-devel@lists.freedesktop.org
->>> ---
->>>  drivers/gpu/drm/drm_vm.c            |    2 +-
->>>  drivers/gpu/drm/radeon/radeon_ttm.c |    6 +++---
->>>  drivers/gpu/drm/ttm/ttm_bo_util.c   |    2 +-
->>>  include/drm/drm_sarea.h             |    2 ++
->>>  4 files changed, 7 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
->>> index 961ee08..3f06166 100644
->>> --- a/drivers/gpu/drm/drm_vm.c
->>> +++ b/drivers/gpu/drm/drm_vm.c
->>> @@ -62,7 +62,7 @@ static pgprot_t drm_io_prot(uint32_t map_type, struct vm_area_struct *vma)
->>>               tmp = pgprot_writecombine(tmp);
->>>       else
->>>               tmp = pgprot_noncached(tmp);
->>> -#elif defined(__sparc__) || defined(__arm__)
->>> +#elif defined(__sparc__) || defined(__arm__) || defined(__mips__)
->>>       tmp = pgprot_noncached(tmp);
->>>  #endif
->>>       return tmp;
->>> diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
->>> index c94a225..f49bdd1 100644
->>> --- a/drivers/gpu/drm/radeon/radeon_ttm.c
->>> +++ b/drivers/gpu/drm/radeon/radeon_ttm.c
->>> @@ -630,7 +630,7 @@ static int radeon_ttm_tt_populate(struct ttm_tt *ttm)
->>>       }
->>>  #endif
->>>
->>> -#ifdef CONFIG_SWIOTLB
->>> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
->>>       if (swiotlb_nr_tbl()) {
->>>               return ttm_dma_populate(&gtt->ttm, rdev->dev);
->>>       }
->>> @@ -676,7 +676,7 @@ static void radeon_ttm_tt_unpopulate(struct ttm_tt *ttm)
->>>       }
->>>  #endif
->>>
->>> -#ifdef CONFIG_SWIOTLB
->>> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
->>>       if (swiotlb_nr_tbl()) {
->>>               ttm_dma_unpopulate(&gtt->ttm, rdev->dev);
->>>               return;
->>> @@ -906,7 +906,7 @@ static int radeon_ttm_debugfs_init(struct radeon_device *rdev)
->>>       radeon_mem_types_list[i].show = &ttm_page_alloc_debugfs;
->>>       radeon_mem_types_list[i].driver_features = 0;
->>>       radeon_mem_types_list[i++].data = NULL;
->>> -#ifdef CONFIG_SWIOTLB
->>> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
->>>       if (swiotlb_nr_tbl()) {
->>>               sprintf(radeon_mem_types_names[i], "ttm_dma_page_pool");
->>>               radeon_mem_types_list[i].name = radeon_mem_types_names[i];
->>> diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
->>> index f8187ea..0df71ea 100644
->>> --- a/drivers/gpu/drm/ttm/ttm_bo_util.c
->>> +++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
->>> @@ -472,7 +472,7 @@ pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp)
->>>       else
->>>               tmp = pgprot_noncached(tmp);
->>>  #endif
->>> -#if defined(__sparc__)
->>> +#if defined(__sparc__) || defined(__mips__)
->>>       if (!(caching_flags & TTM_PL_FLAG_CACHED))
->>>               tmp = pgprot_noncached(tmp);
->>>  #endif
->>> diff --git a/include/drm/drm_sarea.h b/include/drm/drm_sarea.h
->>> index ee5389d..1d1a858 100644
->>> --- a/include/drm/drm_sarea.h
->>> +++ b/include/drm/drm_sarea.h
->>> @@ -37,6 +37,8 @@
->>>  /* SAREA area needs to be at least a page */
->>>  #if defined(__alpha__)
->>>  #define SAREA_MAX                       0x2000U
->>> +#elif defined(__mips__)
->>> +#define SAREA_MAX                       0x4000U
->>>  #elif defined(__ia64__)
->>>  #define SAREA_MAX                       0x10000U     /* 64kB */
->>>  #else
->>
->>
