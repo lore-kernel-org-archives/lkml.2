@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab2HBQQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:16:06 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52725 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab2HBQQE (ORCPT
+	id S1753217Ab2HBQTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:19:20 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:39989 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab2HBQTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:16:04 -0400
-X-Originating-IP: 217.70.178.136
-X-Originating-IP: 50.43.46.74
-Date: Thu, 2 Aug 2012 09:15:56 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-Message-ID: <20120802161556.GA25572@leaf>
-References: <50197460.8010906@gmail.com>
- <20120801182749.GD15477@google.com>
- <50197E4A.7020408@gmail.com>
- <20120801202432.GE15477@google.com>
- <5019B0B4.1090102@gmail.com>
- <20120801224556.GF15477@google.com>
- <501A4FC1.8040907@gmail.com>
- <20120802103244.GA23318@leaf>
- <501A633B.3010509@gmail.com>
- <501A7AD3.7000008@gmail.com>
+	Thu, 2 Aug 2012 12:19:19 -0400
+Date: Thu, 2 Aug 2012 18:19:17 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] sparc64: do not clobber personality flags in
+	sys_sparc64_personality()
+Message-ID: <20120802161917.GA5493@merkur.ravnborg.org>
+References: <alpine.LNX.2.00.1208012204140.14910@pobox.suse.cz> <alpine.LNX.2.00.1208020912130.14910@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <501A7AD3.7000008@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1208020912130.14910@pobox.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 03:04:19PM +0200, Sasha Levin wrote:
-> On 08/02/2012 01:23 PM, Sasha Levin wrote:
-> >> #define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
-> > The limitation of this approach is that the struct hash_table variable must be 'static', which is a bit limiting - see for example the use of hashtable in 'struct user_namespace'.
-> > 
+On Thu, Aug 02, 2012 at 09:12:46AM +0200, Jiri Kosina wrote:
+> >From 4f000eda5917ceecb03767962026cc6a390b8216 Mon Sep 17 00:00:00 2001
+> From: Jiri Kosina <jkosina@suse.cz>
+> Date: Wed, 1 Aug 2012 21:10:51 +0200
+> Subject: [PATCH 4/4] sparc64: do not clobber personality flags in sys_sparc64_personality()
 > 
-> What if we just use two possible decelerations? One of static structs and one for regular ones.
+> There are multiple errors in how sys_sparc64_personality() handles
+> personality flags stored in top three bytes.
 > 
-> struct hash_table {
->         size_t bits;
->         struct hlist_head buckets[];
-> };
+> - directly comparing current->personality against PER_LINUX32 doesn't work
+>   in cases when any of the personality flags stored in the top three bytes
+>   are used.
+> - directly forcefully setting personality to PER_LINUX32 or PER_LINUX
+>   discards any flags stored in the top three bytes
 > 
-> #define DEFINE_HASHTABLE(name, bits)                                    \
->         union {                                                         \
->                 struct hash_table name;                                 \
->                 struct {                                                \
->                         size_t bits;                                    \
+> Fix the first one by properly using personality() macro to compare only
+> PER_MASK bytes.
+> Fix the second one by setting only the bits that should be set, instead of
+> overwriting the whole value.
 
-This shouldn't use "bits", since it'll get expanded to the macro
-argument.
+Hi Jiri.
 
->                         struct hlist_head buckets[1 << bits];           \
->                 } __name;                                               \
+Can you have a quick look at this too:
+arch/sparc/include/asm/elf_32.h:#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
 
-__##name
+>From your other comments it looks wrong. But I have not digged into this.
 
->         }
-> 
-> #define DEFINE_STATIC_HASHTABLE(name, bit)                              \
->         static struct hash_table name = { .bits = bit,                  \
->                 .buckets = { [0 ... (bit - 1)] = HLIST_HEAD_INIT } }
-
-You probably wanted to change that to [0 ... ((1 << bit) - 1)] , to
-match DEFINE_HASHTABLE.
-
-Since your definition of DEFINE_HASHTABLE would also work fine when used
-statically, why not just always use that?
-
-#define DEFINE_STATIC_HASHTABLE(name, bits) static DEFINE_HASHTABLE(name, bits) = { .name.bits = bits }
-
-One downside: you can't use this to define a global non-static hash
-table, because you can't have a global non-static anonymous union.
-Using the non-union form would actually allow a global non-static hash
-table:
-
-#define DEFINE_HASHTABLE_INIT(name, bits) struct hash_table name = { .bits = bits, .buckets = { [0 ... ((1 << bits) - 1)] = HLIST_HEAD_INIT } }
-
-/* elsewhere */
-extern struct hash_table name;
-
-I don't know if that seems like a good idea or not.
-
-- Josh Triplett
+Thanks,
+	Sam
