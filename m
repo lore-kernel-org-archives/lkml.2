@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab2HBQOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:14:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44625 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751054Ab2HBQN7 (ORCPT
+	id S1753007Ab2HBQPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:15:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38365 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab2HBQPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:13:59 -0400
-Date: Thu, 2 Aug 2012 17:13:55 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [NEW DRIVER V1 4/7] DA9058 RTC driver
-Message-ID: <20120802161355.GD4537@opensource.wolfsonmicro.com>
-References: <201208020849.q728nhll007819@latitude.olech.com>
+	Thu, 2 Aug 2012 12:15:12 -0400
+Date: Thu, 2 Aug 2012 11:15:04 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 2 (drivers/platform/x86/apple-gmux.c)
+Message-ID: <20120802161504.GG32395@thinkpad-t410>
+Mail-Followup-To: Randy Dunlap <rdunlap@xenotime.net>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>,
+	Matthew Garrett <mjg@redhat.com>,
+	platform-driver-x86@vger.kernel.org
+References: <20120802141505.d30da7f7113e955679383acb@canb.auug.org.au>
+ <501AA5A8.1070607@xenotime.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201208020849.q728nhll007819@latitude.olech.com>
-X-Cookie: Is this really happening?
+In-Reply-To: <501AA5A8.1070607@xenotime.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 09:48:56AM +0100, Anthony Olech wrote:
+On Thu, Aug 02, 2012 at 09:07:04AM -0700, Randy Dunlap wrote:
+> On 08/01/2012 09:15 PM, Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Please do not add anything to linux-next included branches/series that is
+> > destined for v3.7 until after v3.6-rc1 is released.
+> > 
+> > Reminder: do not rebase your branches before asking Linus to pull them ...
+> > 
+> > Changes since 20120731:
+> > 
+> 
+> 
+> when CONFIG_ACPI is not enabled: (on i386)
+> 
+> drivers/platform/x86/apple-gmux.c: In function 'gmux_probe':
+> drivers/platform/x86/apple-gmux.c:196:2: error: implicit declaration of function 'acpi_video_dmi_promote_vendor'
+> drivers/platform/x86/apple-gmux.c: In function 'gmux_remove':
+> drivers/platform/x86/apple-gmux.c:219:2: error: implicit declaration of function 'acpi_video_dmi_demote_vendor'
+> 
+> 
+> Full randconfig file is attached.
 
-> -comment "I2C RTC drivers"
-> -	depends on I2C
-> -
-> -if I2C
-> -
->  config RTC_DRV_88PM860X
->  	tristate "Marvell 88PM860x"
->  	depends on RTC_CLASS && I2C && MFD_88PM860X
-> @@ -135,6 +130,21 @@ config RTC_DRV_88PM860X
->  	  This driver can also be built as a module. If so, the module
->  	  will be called rtc-88pm860x.
->  
-> +comment "I2C RTC drivers"
-> +	depends on I2C
-> +
-> +if I2C
-> +
+I sent Matthew a patch that should fix this [1], but he doesn't seem to
+have picked it up yet.
 
-Hrm?
+Seth
 
-> +	dev_info(dev, "Read RTC: %02x %02x %02x %02x %02x %02x\n",
-> +		rtc_time[0], rtc_time[1], rtc_time[2],
-> +		rtc_time[3], rtc_time[4], rtc_time[5]);
+[1] https://lkml.org/lkml/2012/7/2/257
 
-This is way too noisy to be doing every time you read the RTC.
-
-> +	dev_info(dev, "Setting RTC: %02x %02x %02x %02x %02x %02x\n",
-> +		rtc_time[0], rtc_time[1], rtc_time[2], rtc_time[3],
-> +		rtc_time[4], rtc_time[5]);
-
-Similarly here...
-
-> +	ret = da9058_bulk_write(da9058, DA9058_COUNTS_REG, rtc_time, 6);
-> +	if (ret) {
-> +		dev_dbg(dev, "failed %d to write to RTC\n", ret);
-
-...especially given that things like actual error messages are at debug
-level!
-
-> +static int da9058_rtc_proc(struct device *dev, struct seq_file *seq)
-> +{
-> +	seq_printf(seq, "Tony Olech was here\n");
-> +
-> +	return 0;
-> +}
-
-Perhaps the driver needs some cleanup...
