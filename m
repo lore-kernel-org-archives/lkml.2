@@ -1,232 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab2HBE4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 00:56:55 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:16594
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751361Ab2HBE4x convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 00:56:53 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VS-7(zz98dI9371I542M1432Izz1202hzz8275ch8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
-From: Liu Qiang-B32616 <B32616@freescale.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-CC: "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dan.j.williams@gmail.com" <dan.j.williams@gmail.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Tabi Timur-B04825 <B04825@freescale.com>,
-        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: RE: [PATCH v5 5/6] fsl-dma: use spin_lock_bh to instead of
- spin_lock_irqsave
-Thread-Topic: [PATCH v5 5/6] fsl-dma: use spin_lock_bh to instead of
- spin_lock_irqsave
-Thread-Index: AQHNb8YoJiv5fb8TmUGqQ/wwgwel0ZdFixmAgABrayA=
-Date: Thu, 2 Aug 2012 04:56:48 +0000
-Message-ID: <BCB48C05FCE8BC4D9E61E841ECBE6DB70D1D9D@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1343811009-25466-1-git-send-email-qiang.liu@freescale.com>
- <20120801173059.GF11359@ovro.caltech.edu>
-In-Reply-To: <20120801173059.GF11359@ovro.caltech.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.94]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751806Ab2HBE6n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 00:58:43 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:55100 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400Ab2HBE6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 00:58:42 -0400
+Date: Thu, 2 Aug 2012 10:28:31 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@redhat.com,
+        srikar@linux.vnet.ibm.com, roland@hack.frob.com
+Subject: Re: [PATCH 2/2] x86/uprobes: implement x86 specific
+	arch_uprobe_*_step
+Message-ID: <20120802045831.GA8538@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20120730141638.GA5306@redhat.com> <1343735548-18101-1-git-send-email-bigeasy@linutronix.de> <1343735548-18101-2-git-send-email-bigeasy@linutronix.de> <20120801134337.GA3923@redhat.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120801134337.GA3923@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080204-3534-0000-0000-00000B08BDE8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Ira W. Snyder [mailto:iws@ovro.caltech.edu]
-> Sent: Thursday, August 02, 2012 1:31 AM
-> To: Liu Qiang-B32616
-> Cc: linux-crypto@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; dan.j.williams@gmail.com; Vinod Koul; Tabi Timur-
-> B04825; herbert@gondor.hengli.com.au; Dan Williams; davem@davemloft.net
-> Subject: Re: [PATCH v5 5/6] fsl-dma: use spin_lock_bh to instead of
-> spin_lock_irqsave
-> 
-> On Wed, Aug 01, 2012 at 04:50:09PM +0800, qiang.liu@freescale.com wrote:
-> > From: Qiang Liu <qiang.liu@freescale.com>
-> >
-> > - use spin_lock_bh() is the right way to use async_tx api,
-> > dma_run_dependencies() should not be protected by spin_lock_irqsave();
-> > - use spin_lock_bh to instead of spin_lock_irqsave for improving
-> > performance, There is not any place to access descriptor queues in
-> > fsl-dma ISR except its tasklet, spin_lock_bh() is more proper here.
-> > Interrupts will be turned off and context will be save in irqsave,
-> there is needless to use irqsave..
-> >
-> 
-> This description is not very clear English. I understand it is not your
-> native language. Let me try to help.
-> 
-> """
-> The use of spin_lock_irqsave() is a stronger locking mechanism than is
-> required throughout the driver. The minimum locking required should be
-> used instead.
-> 
-> Change all instances of spin_lock_irqsave() to spin_lock_bh(). All
-> manipulation of protected fields is done using tasklet context or weaker,
-> which makes spin_lock_bh() the correct choice.
-> """
-I will modify the description in v6, please check later.
+On Wed, Aug 01, 2012 at 03:43:37PM +0200, Oleg Nesterov wrote:
 
-> 
-> Other than that,
-> Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
-Thanks.
+...
 
-> 
-> > Cc: Dan Williams <dan.j.williams@intel.com>
-> > Cc: Vinod Koul <vinod.koul@intel.com>
-> > Cc: Li Yang <leoli@freescale.com>
-> > Cc: Timur Tabi <timur@freescale.com>
-> > Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
-> > ---
-> >  drivers/dma/fsldma.c |   30 ++++++++++++------------------
-> >  1 files changed, 12 insertions(+), 18 deletions(-)
-> >
-> > diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c index
-> > bb883c0..e3814aa 100644
-> > --- a/drivers/dma/fsldma.c
-> > +++ b/drivers/dma/fsldma.c
-> > @@ -645,10 +645,9 @@ static dma_cookie_t fsl_dma_tx_submit(struct
-> dma_async_tx_descriptor *tx)
-> >  	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
-> >  	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
-> >  	struct fsl_desc_sw *child;
-> > -	unsigned long flags;
-> >  	dma_cookie_t cookie;
-> >
-> > -	spin_lock_irqsave(&chan->desc_lock, flags);
-> > +	spin_lock_bh(&chan->desc_lock);
-> >
-> >  	/*
-> >  	 * assign cookies to all of the software descriptors @@ -661,7
-> > +660,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct
-> dma_async_tx_descriptor *tx)
-> >  	/* put this transaction onto the tail of the pending queue */
-> >  	append_ld_queue(chan, desc);
-> >
-> > -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> > +	spin_unlock_bh(&chan->desc_lock);
-> >
-> >  	return cookie;
-> >  }
-> > @@ -770,15 +769,14 @@ static void fsldma_free_desc_list_reverse(struct
-> > fsldma_chan *chan,  static void fsl_dma_free_chan_resources(struct
-> > dma_chan *dchan)  {
-> >  	struct fsldma_chan *chan = to_fsl_chan(dchan);
-> > -	unsigned long flags;
-> >
-> >  	chan_dbg(chan, "free all channel resources\n");
-> > -	spin_lock_irqsave(&chan->desc_lock, flags);
-> > +	spin_lock_bh(&chan->desc_lock);
-> >  	fsldma_cleanup_descriptor(chan);
-> >  	fsldma_free_desc_list(chan, &chan->ld_pending);
-> >  	fsldma_free_desc_list(chan, &chan->ld_running);
-> >  	fsldma_free_desc_list(chan, &chan->ld_completed);
-> > -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> > +	spin_unlock_bh(&chan->desc_lock);
-> >
-> >  	dma_pool_destroy(chan->desc_pool);
-> >  	chan->desc_pool = NULL;
-> > @@ -997,7 +995,6 @@ static int fsl_dma_device_control(struct dma_chan
-> > *dchan,  {
-> >  	struct dma_slave_config *config;
-> >  	struct fsldma_chan *chan;
-> > -	unsigned long flags;
-> >  	int size;
-> >
-> >  	if (!dchan)
-> > @@ -1007,7 +1004,7 @@ static int fsl_dma_device_control(struct
-> > dma_chan *dchan,
-> >
-> >  	switch (cmd) {
-> >  	case DMA_TERMINATE_ALL:
-> > -		spin_lock_irqsave(&chan->desc_lock, flags);
-> > +		spin_lock_bh(&chan->desc_lock);
-> >
-> >  		/* Halt the DMA engine */
-> >  		dma_halt(chan);
-> > @@ -1017,7 +1014,7 @@ static int fsl_dma_device_control(struct dma_chan
-> *dchan,
-> >  		fsldma_free_desc_list(chan, &chan->ld_running);
-> >  		chan->idle = true;
-> >
-> > -		spin_unlock_irqrestore(&chan->desc_lock, flags);
-> > +		spin_unlock_bh(&chan->desc_lock);
-> >  		return 0;
-> >
-> >  	case DMA_SLAVE_CONFIG:
-> > @@ -1059,11 +1056,10 @@ static int fsl_dma_device_control(struct
-> > dma_chan *dchan,  static void fsl_dma_memcpy_issue_pending(struct
-> > dma_chan *dchan)  {
-> >  	struct fsldma_chan *chan = to_fsl_chan(dchan);
-> > -	unsigned long flags;
-> >
-> > -	spin_lock_irqsave(&chan->desc_lock, flags);
-> > +	spin_lock_bh(&chan->desc_lock);
-> >  	fsl_chan_xfer_ld_queue(chan);
-> > -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> > +	spin_unlock_bh(&chan->desc_lock);
-> >  }
-> >
-> >  /**
-> > @@ -1076,15 +1072,14 @@ static enum dma_status fsl_tx_status(struct
-> > dma_chan *dchan,  {
-> >  	struct fsldma_chan *chan = to_fsl_chan(dchan);
-> >  	enum dma_status ret;
-> > -	unsigned long flags;
-> >
-> >  	ret = dma_cookie_status(dchan, cookie, txstate);
-> >  	if (ret == DMA_SUCCESS)
-> >  		return ret;
-> >
-> > -	spin_lock_irqsave(&chan->desc_lock, flags);
-> > +	spin_lock_bh(&chan->desc_lock);
-> >  	fsldma_cleanup_descriptor(chan);
-> > -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> > +	spin_unlock_bh(&chan->desc_lock);
-> >
-> >  	return dma_cookie_status(dchan, cookie, txstate);  } @@ -1163,11
-> > +1158,10 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
-> > static void dma_do_tasklet(unsigned long data)  {
-> >  	struct fsldma_chan *chan = (struct fsldma_chan *)data;
-> > -	unsigned long flags;
-> >
-> >  	chan_dbg(chan, "tasklet entry\n");
-> >
-> > -	spin_lock_irqsave(&chan->desc_lock, flags);
-> > +	spin_lock_bh(&chan->desc_lock);
-> >
-> >  	/* the hardware is now idle and ready for more */
-> >  	chan->idle = true;
-> > @@ -1175,7 +1169,7 @@ static void dma_do_tasklet(unsigned long data)
-> >  	/* Run all cleanup for this descriptor */
-> >  	fsldma_cleanup_descriptor(chan);
-> >
-> > -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> > +	spin_unlock_bh(&chan->desc_lock);
-> >
-> >  	chan_dbg(chan, "tasklet exit\n");
-> >  }
-> > --
-> > 1.7.5.1
-> >
-> >
-> > _______________________________________________
-> > Linuxppc-dev mailing list
-> > Linuxppc-dev@lists.ozlabs.org
-> > https://lists.ozlabs.org/listinfo/linuxppc-dev
+> However, I am not sure we can trust it. We are in kernel mode,
+> DEBUGCTLMSR_BTF can be cleared by kprobes (Ananth, please correct me).
+> I think we need to check TIF_BLOCKSTEP.
 
+Kprobes resets DEBUGCTLMSR_BTF only if we have to single-step in
+hardware. It puts the flag back if TIF_BLOCKSTEP is set, after the
+single-step is complete; so yes, a better check is TIF_BLOCKSTEP.
+
+Ananth
 
