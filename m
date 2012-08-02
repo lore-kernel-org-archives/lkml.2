@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab2HBGBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 02:01:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62303 "EHLO song.cn.fujitsu.com"
+	id S1753519Ab2HBGBT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 02:01:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26224 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753167Ab2HBGBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 02:01:14 -0400
+	id S1753400Ab2HBGBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 02:01:13 -0400
 X-IronPort-AV: E=Sophos;i="4.77,698,1336320000"; 
-   d="scan'208";a="5534634"
+   d="scan'208";a="5534633"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, linux-doc@vger.kernel.org,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         linux-mm@kvack.org
-Subject: [RFC PATCH 15/23 V2] memory_hotplug: fix missing nodemask management
-Date: Thu, 2 Aug 2012 14:01:20 +0800
-Message-Id: <1343887288-8866-16-git-send-email-laijs@cn.fujitsu.com>
+Subject: [RFC PATCH 14/23 V2] slub, hotplug: ignore unrelated node's hot-adding and hot-removing
+Date: Thu, 2 Aug 2012 14:01:19 +0800
+Message-Id: <1343887288-8866-15-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/02 14:01:43,
+ 2012/08/02 14:01:41,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/02 14:01:43,
-	Serialize complete at 2012/08/02 14:01:43
+ 2012/08/02 14:01:42,
+	Serialize complete at 2012/08/02 14:01:42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently memory_hotplug only manages the node_states[N_HIGH_MEMORY],
-it forgot to manage node_states[N_NORMAL_MEMORY]. fix it.
+SLUB only fucus on the nodes which has normal memory, so ignore the other
+node's hot-adding and hot-removing.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- Documentation/memory-hotplug.txt |    2 +-
- mm/memory_hotplug.c              |   23 +++++++++++++++++++++--
- 2 files changed, 22 insertions(+), 3 deletions(-)
+ mm/slub.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
-index 6d0c251..89f21b2 100644
---- a/Documentation/memory-hotplug.txt
-+++ b/Documentation/memory-hotplug.txt
-@@ -382,7 +382,7 @@ struct memory_notify {
+diff --git a/mm/slub.c b/mm/slub.c
+index 8c691fa..4c5bdc0 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3577,6 +3577,9 @@ static void slab_mem_offline_callback(void *arg)
+ 	if (offline_node < 0)
+ 		return;
  
- start_pfn is start_pfn of online/offline memory.
- nr_pages is # of pages of online/offline memory.
--status_change_nid is set node id when N_HIGH_MEMORY of nodemask is (will be)
-+status_change_nid is set node id when N_MEMORY of nodemask is (will be)
- set/clear. It means a new(memoryless) node gets new memory by online and a
- node loses all memory. If this is -1, then nodemask status is not changed.
- If status_changed_nid >= 0, callback should create/discard structures for the
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 427bb29..c44b39e 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -522,8 +522,18 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
- 	init_per_zone_wmark_min();
++	if (page_zonenum(pfn_to_page(marg->start_pfn)) > ZONE_NORMAL)
++		return;
++
+ 	down_read(&slub_lock);
+ 	list_for_each_entry(s, &slab_caches, list) {
+ 		n = get_node(s, offline_node);
+@@ -3611,6 +3614,9 @@ static int slab_mem_going_online_callback(void *arg)
+ 	if (nid < 0)
+ 		return 0;
  
- 	if (onlined_pages) {
-+		enum zone_type zoneid = zone_idx(zone);
++	if (page_zonenum(pfn_to_page(marg->start_pfn)) > ZONE_NORMAL)
++		return 0;
 +
- 		kswapd_run(zone_to_nid(zone));
--		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
-+
-+		node_set_state(nid, N_MEMORY);
-+		if (zoneid <= ZONE_NORMAL && N_NORMAL_MEMORY != N_MEMORY)
-+			node_set_state(nid, N_NORMAL_MEMORY);
-+#ifdef CONFIG_HIGMEM
-+		if (zoneid <= ZONE_HIGHMEM && N_HIGH_MEMORY != N_MEMORY)
-+			node_set_state(nid, N_HIGH_MEMORY);
-+#endif
-+
- 	}
- 
- 	vm_total_pages = nr_free_pagecache_pages();
-@@ -966,7 +976,16 @@ repeat:
- 	init_per_zone_wmark_min();
- 
- 	if (!node_present_pages(node)) {
--		node_clear_state(node, N_HIGH_MEMORY);
-+		enum zone_type zoneid = zone_idx(zone);
-+
-+		node_clear_state(node, N_MEMORY);
-+		if (zoneid <= ZONE_NORMAL && N_NORMAL_MEMORY != N_MEMORY)
-+			node_clear_state(node, N_NORMAL_MEMORY);
-+#ifdef CONFIG_HIGMEM
-+		if (zoneid <= ZONE_HIGHMEM && N_HIGH_MEMORY != N_MEMORY)
-+			node_clear_state(node, N_HIGH_MEMORY);
-+#endif
-+
- 		kswapd_stop(node);
- 	}
- 
+ 	/*
+ 	 * We are bringing a node online. No memory is available yet. We must
+ 	 * allocate a kmem_cache_node structure in order to bring the node
 -- 
 1.7.1
 
