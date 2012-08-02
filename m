@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588Ab2HBOvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 10:51:39 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1752229Ab2HBOyW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 10:54:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51892 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750786Ab2HBOvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 10:51:38 -0400
-Date: Thu, 2 Aug 2012 16:51:32 +0200
-From: Richard Weinberger <richard@nod.at>
-To: artem.bityutskiy@linux.intel.com
+	id S1750773Ab2HBOyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 10:54:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="180761555"
+Message-ID: <1343919530.25013.116.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
 Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
         thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
         tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
         nyoushchenko@mvista.com
-Subject: Re: UBI fastmap updates
-Message-ID: <20120802165132.1bf1e5d7@spider.haslach.nod.at>
-In-Reply-To: <1343917741.25013.114.camel@sauron.fi.intel.com>
+Date: Thu, 02 Aug 2012 17:58:50 +0300
+In-Reply-To: <1341836323-43916-1-git-send-email-richard@nod.at>
 References: <1341836323-43916-1-git-send-email-richard@nod.at>
-	<1343916747.25013.112.camel@sauron.fi.intel.com>
-	<20120802161512.5ac7a303@spider.haslach.nod.at>
-	<1343917741.25013.114.camel@sauron.fi.intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-yvvsWJrKnXNbtDfPAbaE"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Thu, 02 Aug 2012 17:29:01 +0300
-schrieb Artem Bityutskiy <artem.bityutskiy@linux.intel.com>:
 
-> On Thu, 2012-08-02 at 16:15 +0200, Richard Weinberger wrote:
-> > > If I understand correctly, it can be only because of a bug. If I
-> > > am correct, could you please add a 'dump_stack()' to improve the
-> > > error report?
-> > > 
-> > 
-> > This can happen if all PEBs are used and fastmap is unable to find
-> > (or produce) an empty one.
-> 
-> In which situations is this possible? Could you please give an
-> example?
-> 
+--=-yvvsWJrKnXNbtDfPAbaE
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Every time fastmap writes a new fastmap to the flash it tries to get a
-new PEB and returns the old one (used for the old fastmap) back to the
-WL sub-system.
-If no free PEBs are available (E.g Volume is full or the erase worker
-is too slow) ubi_wl_get_fm_peb() returns NULL and fastmap reuses the
-currently used PEB.
-In this situation ubi_wl_get_fm_peb() may trigger such an error message.
-If think we should get rid of the message as this is not an error
-condition. It's a well known execution path.
-The only bad thing that happens in such a situation is that a PEB gets
-reused.
+On Mon, 2012-07-09 at 14:18 +0200, Richard Weinberger wrote:
+> This is the next round of UBI fastmap updates.
+> It fixes all issues pointed out by Shmulik. :-)
 
-BTW: Which version of fastmap are you testing?
+Hi Richard,
 
-Thanks,
-//richard
+when I try to attach mtdram (NOR flash), UBI fails:
+
+[ 7106.353791] UBI assert failed in ubi_io_is_bad at 623 (pid 5411)
+[ 7106.354253] Pid: 5411, comm: modprobe Not tainted 3.5.0+ #2
+[ 7106.354255] Call Trace:
+[ 7106.354264]  [<ffffffffa003c4c1>] ubi_io_is_bad+0xd1/0x100 [ubi]
+[ 7106.354271]  [<ffffffffa0042bd9>] scan_peb+0x49/0x740 [ubi]
+[ 7106.354287]  [<ffffffff8117e6e4>] ? __kmalloc+0x194/0x1e0
+[ 7106.354293]  [<ffffffffa0047b7c>] ? ubi_debugging_init_dev+0x2c/0x60 [ub=
+i]
+[ 7106.354300]  [<ffffffffa0044276>] ? ubi_attach+0x66/0x380 [ubi]
+[ 7106.354304]  [<ffffffffa00442f5>] ubi_attach+0xe5/0x380 [ubi]
+[ 7106.354310]  [<ffffffffa0035f91>] ubi_attach_mtd_dev+0xa81/0x10e0 [ubi]
+[ 7106.354316]  [<ffffffffa005c3e8>] ubi_init+0x22d/0xe45 [ubi]
+[ 7106.354321]  [<ffffffffa005c1bb>] ? ubi_mtd_param_parse+0x1bb/0x1bb [ubi=
+]
+[ 7106.354328]  [<ffffffff8100203f>] do_one_initcall+0x3f/0x170
+[ 7106.354335]  [<ffffffff810c69c6>] sys_init_module+0xa16/0x1d40
+[ 7106.354345]  [<ffffffff8132c5a0>] ? ddebug_add_module+0x100/0x100
+[ 7106.354351]  [<ffffffff815ffca9>] system_call_fastpath+0x16/0x1b
+[ 7106.354353] UBI assert failed in ubi_io_read_ec_hdr at 749 (pid 5411)
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-yvvsWJrKnXNbtDfPAbaE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQGpWqAAoJECmIfjd9wqK061MQAMyntUlCpzHDG27xEnl4Kfxq
+YMrHFlGJx+YMCyauc4oYCYE5RyATT52AjALY+/RblSKvrObJA5UUY4vd0v2bXES6
+q17uLNDhD+snXbU10L5c8LI9l5eUgMs+ProwmdigRHjP86EMnkoFEkRFDmx16Lfz
+W3jDazUWs18SfxqwU+fJH1Q1wKlVN3FRvOqlGLT5+emt4n5n/1cXkCYCrPpXQZhr
+c94s7b8XUz/nVpCyYpGf2+0qfBuMd2vrhUFfLQ8xVHrTSoZG2IPoPO4IJo/PiSBt
+QGsr0qW9z2rQgzlaW44gd7pEknjkOblLgJLuZanxGCszr5NTyqS4F5rRBITIsfWx
+G0EmBKSB7JggxG1ywuyFfv8o7IBFUeF1XpK+oIB1eHT6pUH5sEdCNqKpnWOe4AG9
+kxE1bbA3HEZtR/p/dHtHibJ8dUk60dkvUScjEbhTqpzDGp3EFj+fOoryzha3vuHD
+zgRRT611aV+WYBupltwmXRRb3kl7gGkLdV+CFyjjUDb75fdcEyDke2XgbRJhpKxO
+QxYuhkztU1OgH7JAB2anHIdTbgawuF8/ijTmz6mBXBoxe2z2tEk6cp7hHqMHBJWM
+b/HT5XBYD7lwUA77ATbrJ9W8uy4j5ikBedxC4jOHmJwrPEUXS8SxK1PyF2oOHPks
+tba+lFImwYAzHJ6DXxzc
+=2j5c
+-----END PGP SIGNATURE-----
+
+--=-yvvsWJrKnXNbtDfPAbaE--
+
