@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750822Ab2HBECF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 00:02:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60355 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750698Ab2HBECD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 00:02:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="192300549"
-Date: Thu, 2 Aug 2012 12:01:58 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
+	id S1750910Ab2HBECw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 00:02:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35679 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab2HBECu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 00:02:50 -0400
+Date: Wed, 1 Aug 2012 23:02:42 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
 To: Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: [PATCH] isdnloop: fix and simplify isdnloop_init()
-Message-ID: <20120802040158.GA11860@localhost>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
+Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
+Message-ID: <20120802040242.GB25933@thinkpad-t410>
+Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
+	linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
+References: <1343407934-459-1-git-send-email-mjg@redhat.com>
+ <20120731223240.GD19134@kroah.com>
+ <20120801165400.GA3042@srcf.ucam.org>
+ <20120801232147.GA6228@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120801232147.GA6228@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the non-sense isdnloop revision transform code, so as to fix:
+On Wed, Aug 01, 2012 at 04:21:47PM -0700, Greg KH wrote:
+> On Wed, Aug 01, 2012 at 05:54:00PM +0100, Matthew Garrett wrote:
+> > On Tue, Jul 31, 2012 at 03:32:40PM -0700, Greg KH wrote:
+> > 
+> > > With this series, does the latest MacBook work properly for the Intel
+> > > graphics driver?  Or is this to resolve some other hardware issue?
+> > 
+> > Apple only seem to provide the ROM for the radeon. Intel normally 
+> > stands a much better chance of working without a ROM - the only thing it 
+> > really uses it for is the VBT, and I'm thinking about a couple of ways 
+> > of handlng that.
+> 
+> Ok, thanks for letting me know.  For some reason, the gmux isn't working
+> on the latest MacBook Pro so I can't get the vga switched to the Intel
+> PCI device.  Rumor has it the osx tool at
+> http://codykrieger.com/gfxCardStatus will switch into the Intel chip
+> until the laptop is hard powered off, so it is possible, just need to
+> figure out how to make the hardware do the switch...
 
-[   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7 
-[   22.097508] isdnloop: (loop0) virtual card added
-[   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
-[   22.174400] 
-[   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
-[   22.624071] Call Trace:
-[   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
-[   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
-[   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
-[   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
+There's a tool that enables some verbose logging which records all the
+I/O to the gmux. It works for me with a Macbook Pro 8,2 running OS X
+Lion, so you might give it a try.
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- drivers/isdn/isdnloop/isdnloop.c |   13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
+All you need to do is clone https://github.com/ah-/switcher.git, build,
+and run switcher. If it works you'll see messages prefixed with AGC in
+dmesg. Then you can use gfxCardStatus to force some switches between the
+integrated and discrete cards. After that you'll want to grab
+/var/log/kern.log to get the full logs of everything that happened.
 
---- linux.orig/drivers/isdn/isdnloop/isdnloop.c	2012-05-24 19:03:06.748430938 +0800
-+++ linux/drivers/isdn/isdnloop/isdnloop.c	2012-08-02 11:57:16.806437909 +0800
-@@ -16,7 +16,7 @@
- #include <linux/sched.h>
- #include "isdnloop.h"
- 
--static char *revision = "$Revision: 1.11.6.7 $";
-+static char *revision = "1.11.6.7";
- static char *isdnloop_id = "loop0";
- 
- MODULE_DESCRIPTION("ISDN4Linux: Pseudo Driver that simulates an ISDN card");
-@@ -1494,16 +1494,7 @@ isdnloop_addcard(char *id1)
- static int __init
- isdnloop_init(void)
- {
--	char *p;
--	char rev[10];
--
--	if ((p = strchr(revision, ':'))) {
--		strcpy(rev, p + 1);
--		p = strchr(rev, '$');
--		*p = 0;
--	} else
--		strcpy(rev, " ??? ");
--	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev%s\n", rev);
-+	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev %s\n", revision);
- 
- 	if (isdnloop_id)
- 		return (isdnloop_addcard(isdnloop_id));
+If you try this and it works, I'd appreciate it if you could send me a
+copy of kern.log so I can apply the information towards getting graphics
+switching into apple-gmux.
+
+Seth
+
