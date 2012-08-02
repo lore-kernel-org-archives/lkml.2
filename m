@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab2HBE7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 00:59:36 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2347 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab2HBE7f convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 00:59:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 01 Aug 2012 21:58:53 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>
-CC: "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 2 Aug 2012 10:28:47 +0530
-Subject: RE: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-Thread-Topic: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-Thread-Index: Ac1wIuWWehO3wnT7QvuaDDCPf/SBugARyLPQ
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDCAC4704@BGMAIL02.nvidia.com>
-References: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
- <20120801201811.GK4701@darwin>
-In-Reply-To: <20120801201811.GK4701@darwin>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752071Ab2HBFPf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 01:15:35 -0400
+Received: from mga03.intel.com ([143.182.124.21]:5274 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751716Ab2HBFPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 01:15:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="176028221"
+Date: Thu, 2 Aug 2012 13:10:21 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Don Dutile <ddutile@redhat.com>
+Cc: <len.brown@intel.com>, <linux-acpi@vger.kernel.org>, <yinghai@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
+        <robert.moore@intel.com>, <agordeev@redhat.com>,
+        <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH v2 1/2] ACPI: Replace acpi_get_table_with_size() with
+ acpi_get_table()
+Message-ID: <20120802131021.7ee648e5@feng-i7>
+In-Reply-To: <501998BB.8060507@redhat.com>
+References: <1343803064-5389-1-git-send-email-feng.tang@intel.com>
+	<501998BB.8060507@redhat.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Matthias Kaehlcke [mailto:matthias.list@kaehlcke.net]
-> Sent: Thursday, August 02, 2012 1:48 AM
-> To: Venu Byravarasu
-> Cc: a.zummo@towertech.it; sameo@linux.intel.com;
-> broonie@opensource.wolfsonmicro.com; Laxman Dewangan;
-> kyle.manna@fuel7.com; sboyd@codeaurora.org; rtc-
-> linux@googlegroups.com; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-> 
-> hi,
-> 
-> El Wed, Aug 01, 2012 at 11:52:37AM +0530 Venu Byravarasu ha dit:
-> 
-> > TPS65910 PMIC is a MFD with RTC as one of the device.
-> > Adding RTC driver for supporting RTC device present
-> > inside TPS65910 PMIC.
+On Wed, 1 Aug 2012 16:59:39 -0400
+Don Dutile <ddutile@redhat.com> wrote:
+
+> On 08/01/2012 02:37 AM, Feng Tang wrote:
+> > This is a preparation for removing the acpi_get_table_with_size(), as this
+> > function could be well covered by acpi_get_table(), and there is no need
+> > to have both of them to exist.
 > >
-> > Only support for RTC alarm is implemented as part of this patch.
+> > v2: As reminded by Yinghai, apply the replacment to
+> > drivers/iommu/amd_iommu_init.c which is a new user of the
+> > acpi_get_table_with_size().
 > >
-> > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> > Signed-off-by: Feng Tang<feng.tang@intel.com>
 > > ---
-> 
-> ...
-> 
-> > +static irqreturn_t tps65910_rtc_interrupt(int irq, void *rtc)
-> > +{
-> > +	struct device *dev = rtc;
-> > +	unsigned long events = 0;
-> > +	struct tps65910 *tps = dev_get_drvdata(dev->parent);
-> > +	struct tps65910_rtc *tps_rtc = dev_get_drvdata(dev);
+> >   arch/x86/kernel/apic/es7000_32.c |    7 +++----
+> >   drivers/acpi/tables.c            |   21 +++++++++------------
+> >   drivers/iommu/amd_iommu_init.c   |   10 ++++------
+> >   drivers/iommu/dmar.c             |   14 +++++++-------
+> >   4 files changed, 23 insertions(+), 29 deletions(-)
 > >
-> > ...
+> > diff --git a/arch/x86/kernel/apic/es7000_32.c
+> > b/arch/x86/kernel/apic/es7000_32.c index 0874799..ae30b39 100644
+> > --- a/arch/x86/kernel/apic/es7000_32.c
+> > +++ b/arch/x86/kernel/apic/es7000_32.c
+> > @@ -242,19 +242,18 @@ static int __init find_unisys_acpi_oem_table(unsigned
+> > long *oem_addr) {
+> >   	struct acpi_table_header *header = NULL;
+> >   	struct es7000_oem_table *table;
+> > -	acpi_size tbl_size;
+> >   	acpi_status ret;
+> >   	int i = 0;
 > >
-> > +static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
-> > +{
+> >   struct acpi_table_header * __initdata dmar_tbl;
+> > -static acpi_size dmar_tbl_size;
 > >
-> > ...
+> >   static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
+> >   {
+> > @@ -285,10 +284,8 @@ static int __init dmar_table_detect(void)
+> >   	acpi_status status = AE_OK;
 > >
-> > +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-> > +		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
-> > +		"rtc-tps65910", &pdev->dev);
-> > +	if (ret < 0) {
-> > +		dev_err(&pdev->dev, "IRQ is not free.\n");
-> > +		return ret;
-> > +	}
-> > +	device_init_wakeup(&pdev->dev, 1);
-> > +
-> > +	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
-> > +		&tps65910_rtc_ops, THIS_MODULE);
-> > +	if (IS_ERR(tps_rtc->rtc)) {
-> > +		ret = PTR_ERR(tps_rtc->rtc);
-> > +		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
-> > +		return ret;
-> > +	}
-> > +
-> > +	platform_set_drvdata(pdev, tps_rtc);
-> 
-> the interrupt should be requested after this call. otherwise
-> tps65910_rtc_interrupt() could be executed before the RTC device is
-> registered and the driver data set. normally this shouldn't happen as
-> the RTC interrupts are disabled after reset, but the interrupts could
-> have been enabled for example by the bootloader
+> >   	/* if we could find DMAR table, then there are DMAR devices */
+> > -	status = acpi_get_table_with_size(ACPI_SIG_DMAR, 0,
+> > -				(struct acpi_table_header **)&dmar_tbl,
+> > -				&dmar_tbl_size);
+> > -
+> > +	status = acpi_get_table(ACPI_SIG_DMAR, 0,
+> > +				(struct acpi_table_header **)&dmar_tbl);
+> why is this cast needed if dmar_tbl is defined as struct acpi_table_header * ?
 
-Hi Matthias,
-
-Thanks for your comments.
-All pending RTC interrupts are being cleared in probe, before enabling RTC itself.
-Hence chances of stray interrupts from boot loader cannot cause any trouble here.
-
-The only possible way of getting interrupt by kernel driver is by enabling 
-tps65910_rtc_alarm_irq_enable() && setting alarm time using tps65910_rtc_set_alarm.
-However before probe gets completed as these two APIs will not get 
-called together by the client, I do not see any false interrupt getting generated.
-
-Please let me know if I miss something.
+Good catch, this is from the original code and I didn't notice that when making
+patch, will send a fix for it.
 
 Thanks,
-Venu
-> 
-> best regards
-> 
-> --
-> Matthias Kaehlcke
-> Embedded Linux Developer
-> Amsterdam
-> 
->       Anyone who has never made a mistake has never tried anything new
->                             (Albert Einstein)
->                                                                  .''`.
->     using free software / Debian GNU/Linux | http://debian.org  : :'  :
->                                                                 `. `'`
-> gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
+Feng
+
+
+
