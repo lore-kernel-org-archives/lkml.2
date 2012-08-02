@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab2HBKpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 06:45:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56930 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754375Ab2HBKo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 06:44:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="192413713"
-Date: Thu, 2 Aug 2012 18:44:56 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Karsten Keil <isdn@linux-pingi.de>, Joe Perches <joe@perches.com>,
-        "open list:ISDN SUBSYSTEM" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] isdnloop: fix and simplify isdnloop_init()
-Message-ID: <20120802104456.GA21537@localhost>
-References: <20120802040158.GA11860@localhost>
+	id S1754508Ab2HBKvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 06:51:54 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60804 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab2HBKvx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 06:51:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120802040158.GA11860@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120802103001.GJ6481@ZenIV.linux.org.uk>
+References: <1343859049-3632-1-git-send-email-meredydd@senatehouse.org>
+ <5019B36A.4030604@zytor.com> <CAD=T17Esguer01OsrxMtqEcHKZ-Ovg05+MxSdF7NhXENsUubgg@mail.gmail.com>
+ <5019BC0E.4010109@zytor.com> <20120802065557.GI6481@ZenIV.linux.org.uk>
+ <CAD=T17Gkryua5TQW5h18kCu+yiViuVv6NyxtMw3C9we0RWzmKQ@mail.gmail.com> <20120802103001.GJ6481@ZenIV.linux.org.uk>
+From: Meredydd Luff <meredydd@senatehouse.org>
+Date: Thu, 2 Aug 2012 11:51:31 +0100
+Message-ID: <CAD=T17E5kYvfW7WPGpj_kPd=TQChnSTCPjn8OWv0X7uXAo8sLg@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] syscalls,x86: Add execveat() system call (v2)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Add more CC]
+On Thu, Aug 2, 2012 at 11:30 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> FWIW, I've just pushed (completely untested) arm and alpha
+> parts of what I described into signal.git#execve2; x86 is
+> next.  Note that after that sys_execve() is identical on
+> converted architectures and can be merged; ditto for
+> kernel_execve().  After I do x86 counterpart, I'll
+> take those guys to fs/exec.c under ifdef for new __ARCH_HAS_...
+> (and define it on already converted ones, obviously).
+> Then your patch goes there, except that implementation
+> gets put into fs/exec.c, under the same ifdef.  And with
+> current_pt_regs() used instead of the extra argument,
+> of course.  From that point on it can be used on any converted
+> architecture.
 
-On Thu, Aug 02, 2012 at 12:01:58PM +0800, Fengguang Wu wrote:
-> Remove the non-sense isdnloop revision transform code, so as to fix:
-> 
-> [   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7 
-> [   22.097508] isdnloop: (loop0) virtual card added
-> [   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
-> [   22.174400] 
-> [   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
-> [   22.624071] Call Trace:
-> [   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-> [   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
-> [   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
-> [   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-> [   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
-> [   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
-> 
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->  drivers/isdn/isdnloop/isdnloop.c |   13 ++-----------
->  1 file changed, 2 insertions(+), 11 deletions(-)
-> 
-> --- linux.orig/drivers/isdn/isdnloop/isdnloop.c	2012-05-24 19:03:06.748430938 +0800
-> +++ linux/drivers/isdn/isdnloop/isdnloop.c	2012-08-02 11:57:16.806437909 +0800
-> @@ -16,7 +16,7 @@
->  #include <linux/sched.h>
->  #include "isdnloop.h"
->  
-> -static char *revision = "$Revision: 1.11.6.7 $";
-> +static char *revision = "1.11.6.7";
->  static char *isdnloop_id = "loop0";
->  
->  MODULE_DESCRIPTION("ISDN4Linux: Pseudo Driver that simulates an ISDN card");
-> @@ -1494,16 +1494,7 @@ isdnloop_addcard(char *id1)
->  static int __init
->  isdnloop_init(void)
->  {
-> -	char *p;
-> -	char rev[10];
-> -
-> -	if ((p = strchr(revision, ':'))) {
-> -		strcpy(rev, p + 1);
-> -		p = strchr(rev, '$');
-> -		*p = 0;
-> -	} else
-> -		strcpy(rev, " ??? ");
-> -	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev%s\n", rev);
-> +	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev %s\n", revision);
->  
->  	if (isdnloop_id)
->  		return (isdnloop_addcard(isdnloop_id));
+OK, that makes sense to me.
+
+What would you need from me, and when? Should I just wait for your
+#ifdef-ed sys_execve() in fs/exec.c, and re-spin the patch based on
+that?
+
+Is there anything else I can/should do in the meantime to make this
+patch acceptable?
+
+Meredydd
