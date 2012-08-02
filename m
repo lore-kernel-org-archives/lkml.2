@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab2HBUX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:23:59 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:32838 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab2HBUXz (ORCPT
+	id S1753792Ab2HBUZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:25:25 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:52455 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab2HBUZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:23:55 -0400
-Subject: Re: [GIT PULL] tcm_vhost: Initial merge of vhost level target
- fabric driver
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+	Thu, 2 Aug 2012 16:25:24 -0400
+X-Originating-IP: 217.70.178.133
+X-Originating-IP: 173.246.103.110
+Date: Thu, 2 Aug 2012 13:25:16 -0700
+From: Josh Triplett <josh@joshtriplett.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        kvm-devel <kvm@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>, Zhi Yong Wu <wuzhy@cn.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <1343697577.22538.661.camel@haakon2.linux-iscsi.org>
-References: <1343697577.22538.661.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Aug 2012 13:23:45 -0700
-Message-ID: <1343939025.21687.68.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+Message-ID: <20120802202516.GA7916@jtriplet-mobl1>
+References: <20120801224556.GF15477@google.com>
+ <501A4FC1.8040907@gmail.com>
+ <20120802103244.GA23318@leaf>
+ <501A633B.3010509@gmail.com>
+ <87txwl1dsq.fsf@xmission.com>
+ <501AAC26.6030703@gmail.com>
+ <87fw851c3d.fsf@xmission.com>
+ <CA+55aFw_dwO5ZOuaz9eDxgnTZFDGVZKSLUTm5Fn99faALxxJRQ@mail.gmail.com>
+ <20120802175904.GB6251@jtriplet-mobl1>
+ <CA+55aFwqC9hF++S-VPHJBFRrqfyNvsvqwzP=Vtzkv8qSYVqLxA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwqC9hF++S-VPHJBFRrqfyNvsvqwzP=Vtzkv8qSYVqLxA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Aug 02, 2012 at 11:08:06AM -0700, Linus Torvalds wrote:
+> On Thu, Aug 2, 2012 at 10:59 AM, Josh Triplett <josh@joshtriplett.org> wrote:
+> >
+> > You shouldn't have any extra indirection for the base, if it lives
+> > immediately after the size.
+> 
+> Umm. You *always* have the extra indirection. Because you have that allocation.
+> 
+> So you have to follow the pointer to get the base/size, because they
+> aren't compile/link-time constants.
 
-Ping on the initial tcm_vhost merge for-3.6..?  I know it's been a
-busier than usual merge window, but hopefully this one is still in your
-PULL queue..
+Sorry, I should clarify what I meant: you'll have a total of one extra
+indirection, not two.  You have to follow the pointer to get to both the
+size and the buckets.  However, I would *hope* that you'd keep that line
+in cache during any repeated activity using that hash table, which ought
+to eliminate the cost of the indirection.  Does that line really get
+evicted from cache entirely by the time you touch the dcache again?
 
-Otherwise if there is something else that you'd like to see different
-from this PULL request, please let us know.
+> The cache misses were noticeable in macro-benchmarks, and in
+> micro-benchmarks the smaller L1 hash table means that things fit much
+> better in the L2.
+>
+> It really improved performance. Seriously. Even things like "find /"
+> that had a lot of L1 misses ended up faster, because "find" is
+> apparently pretty moronic and does some things over and over. For
+> stuff that fit in the L1, it qas quite noticeable.
+> 
+> Of course, one reason for the speedup for the dcache was that I also
+> made the L1 only contain the simple cases (ie no "d_compare" thing
+> etc), so it speeded up dcache lookups in other ways too. But according
+> to the profiles, it really looked like better cache behavior was one
+> of the bigger things.
 
-Thank you!
+Seems like avoiding some of the longer paths through the dcache code
+would also improve your cache behavior.  But in any case, I can easily
+believe that the small L1 cache provides a win.
 
---nab
+> Trust me: every problem in computer science may be solved by an
+> indirection, but those indirections are *expensive*. Pointer chasing
+> is just about the most expensive thing you can do on modern CPU's.
 
-On Mon, 2012-07-30 at 18:19 -0700, Nicholas A. Bellinger wrote:
-> Hi Linus,
-> 
-> Here is the PULL request for the initial merge of tcm_vhost based on
-> RFC-v5 code with MST's ACK appended to the initial merge commit.
-> As promised, the commit is available from two different branches for you
-> to consider merging as for-3.6 code.
-> 
-> The 'for-next-merge' branch based on mainline commit 7409a6657ae using
-> 3.5-rc2 code contains two duplicates of pre-merge vhost patch
-> dependencies that have already been merged into mainline via net-next.
-> This commit is also in the 07302012 -next patchset, and available here:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next-merge
-> 
-> Or the 'for-linus' branch containing an -rc0 head @ commit bdc0077af57:
-> 
->    Merge tag 'scsi-misc' of git://git.kernel.org/../jejb/scsi)
-> 
-> rebased up to the last commit in scsi-misc required for virtio-scsi
-> client LLD scanning logic to function properly with tcm_vhost fabric
-> ports, is available here:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-linus
-> 
-> Both branches have gotten recent testing and have been running
-> over-night small block random I/O tests connected to raw block flash
-> backends.  The same diffstat below will result from pulling either
-> branch.
-> 
-> Also, the incremental patch to address MST's last round of post-merge
-> comments has been sent to the lists for feedback this afternoon.  This
-> will be included into the usual post -rc1 PULL via 3.6-rc-fixes, along
-> with any other bits that end up changing post-merge.
-> 
-> Please let us know if you have any concerns.
-> 
-> Thank you!
-> 
-> --nab
-> 
-> Nicholas Bellinger (1):
->   tcm_vhost: Initial merge for vhost level target fabric driver
-> 
->  drivers/vhost/Kconfig     |    3 +
->  drivers/vhost/Kconfig.tcm |    6 +
->  drivers/vhost/Makefile    |    2 +
->  drivers/vhost/tcm_vhost.c | 1628 +++++++++++++++++++++++++++++++++++++++++++++
->  drivers/vhost/tcm_vhost.h |  101 +++
->  5 files changed, 1740 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/vhost/Kconfig.tcm
->  create mode 100644 drivers/vhost/tcm_vhost.c
->  create mode 100644 drivers/vhost/tcm_vhost.h
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+By that argument, it might make sense to make the L1 cache a closed hash
+table and drop the chaining, to get rid of one more indirection, or
+several.
 
+Does your two-level dcache handle eviction?
 
+Mind posting the WIP patches?
+
+- Josh Triplett
