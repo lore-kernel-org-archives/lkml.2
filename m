@@ -1,78 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab2HBQyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:54:54 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1754480Ab2HBQzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:55:11 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:60149 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662Ab2HBQyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:54:52 -0400
-Date: Thu, 2 Aug 2012 18:54:47 +0200
-From: Richard Weinberger <richard@nod.at>
-To: artem.bityutskiy@linux.intel.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
-        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
-        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
-        nyoushchenko@mvista.com
-Subject: Re: UBI fastmap updates
-Message-ID: <20120802185447.35d237d9@spider.haslach.nod.at>
-In-Reply-To: <1343925930.25013.163.camel@sauron.fi.intel.com>
-References: <1341836323-43916-1-git-send-email-richard@nod.at>
-	<1343916747.25013.112.camel@sauron.fi.intel.com>
-	<20120802161512.5ac7a303@spider.haslach.nod.at>
-	<1343917741.25013.114.camel@sauron.fi.intel.com>
-	<20120802165132.1bf1e5d7@spider.haslach.nod.at>
-	<1343924267.25013.156.camel@sauron.fi.intel.com>
-	<20120802183210.7076aa48@spider.haslach.nod.at>
-	<1343925930.25013.163.camel@sauron.fi.intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754392Ab2HBQzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 12:55:03 -0400
+Date: Thu, 2 Aug 2012 22:12:25 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: Ignore unsupported instructions in uprobe_mmap
+Message-ID: <20120802164225.GA4268@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120728163157.GA22719@redhat.com>
+ <20120731064730.GB5087@linux.vnet.ibm.com>
+ <20120731124805.GA485@redhat.com>
+ <20120802100515.GC5782@linux.vnet.ibm.com>
+ <20120802135313.GA4334@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120802135313.GA4334@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080216-5930-0000-0000-00000A789634
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Thu, 02 Aug 2012 19:45:30 +0300
-schrieb Artem Bityutskiy <artem.bityutskiy@linux.intel.com>:
-
-> Richard,
+> > uprobe_mmap()->install_breakpoint() can fail if the probed insn is not
+> > supported
 > 
-> On Thu, 2012-08-02 at 18:32 +0200, Richard Weinberger wrote:
-> > > This should not happen. Fastmap should _reserve_ enough of PEBs
-> > > for it to operate. It should always find the PEB to write.
-> > 
-> > What is the benefit?
-> > IOW what is wrong with the current approach?
+> But there are other reasons why it can fail,
 > 
-> Several reasons. The main is: fastmap will start consuming PEBs
-> reserved for volumes when the amount of available PEBs is just enough
-> to map all LEBs. This will break UBI liability.
-
-Fastmap is also just a volume.
-But if you want I can reserve PEBs for it.
-
-> > Why?
-> > If everything goes wrong, fastmap makes sure that no fastmap is on
-> > flash.
-> > In case of a powercut we fall back to scanning mode.
-> > R/O mode is overkill IMHO.
+> > However failing mmap_region()/do_fork() because of a probe on an
+> > unsupported instruction is wrong.
 > 
-> So can I interpret this the following way. Not only fastmap give no
-> guarantees that it exists after an unclean reboot, it does not even
-> give guarantees that it exists after a clean reboot.
+> Srikar, I strongly, absolutely disagree. Please correct me, but..
+> 
+> Do you realize how much uprobes hooks in mmap_region/dup_mmap are broken?
+> 
+> (cough, can't resist, vma_adjust()->uprobe_mmap() is not right too, but
+>  this is another story).
+> 
+> OK, lets start with dup_mmap:
+> 
+> 		// retval == 0
+> 
+> 		if (file && uprobe_mmap(tmp))
+> 			goto out;
+> 
+> 	out:
+> 		up_write(&mm->mmap_sem);
+> 		flush_tlb_mm(oldmm);
+> 		up_write(&oldmm->mmap_sem);
+> 		return retval;
+> 
+> Given that retval == 0, what do you think dup_mmap() returns if
+> uprobe_mmap() fails? And note that we didn't copy all vmas.
+> OK, at least this can't crash (afaics), and easy to fix.
+> 
+> 
+> But mmap_region() is worse, much worse. It simply can _not_ fail
+> after uprobe_mmap (of course, I am not saying this is unfixable)
+> without the crash. And note that the crash is "delayed". And btw,
+> like dup_mmap(), mmap_region() doesn't return the error too.
 
-As I said several times before, fastmap was designed to be able to
-fall back to scanning mode.
-And yes, if there is currently no fastmap on flash (because you
-attached from an old UBI volume) and there are no free PEBs you'll
-have no fastmap on flash.
-In all other cases you'll have one. At detach time fastmap checks
-whether a fastmap is installed or not and installs one if needed.
+Oh, thats really a bad mistake from my side. I apologize.
 
-> Unless I am confused, the fastmap design is over-simplified.
+> 
+> Srikar, I strongly believe this horror must not exist. Either
+> we should teach mmap_region() and dup_mmap() (and vma_adjust!)
+> to fail correctly, or we should ignore the error code.
+> 
+> It is that simple, isn't it?
+> 
 
-KISS.
+Right.
 
-Thanks,
-//richard
+> Whatever you do with uprobe_mmap(), even if you change it to always
+> return 0, the code in mmap_region() is absolutely, absolutely broken.
+> 
+
+But uprobe_mmap() still needs to walk thro the probe list and 
+insert the other probes. Currently we just ignore the remaining probes
+and that has to be fixed within uprobe_mmap.
+
+> Do you agree?
+> 
+> And once again. I agree, in the long term we should reconsider
+> this change. But we need a simple fix for now/stable.
+> 
+
+Agree.
+
+> > Hence change uprobe_mmap() to ignore unsupported instructions.
+> 
+> OK. Now suppose that mmap_region()-> uprobe_mmap() fails because
+> the caller is SIGKILL'ed (so __get_user_pages fails). Given that
+> mmap_region() can't handle the error correctly, the kernel can
+> crash.
+> 
+
+How about having your fix + my patch to fix the uprobe_mmap()?
+
+-- 
+Thanks and Regards
+Srikar
+
