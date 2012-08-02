@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab2HBSfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 14:35:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23911 "EHLO mx1.redhat.com"
+	id S1754159Ab2HBSq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 14:46:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34697 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775Ab2HBSfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 14:35:04 -0400
-Message-ID: <1343932497.2605.1.camel@localhost>
-Subject: Re: Oops in audit_copy_inode
-From: Eric Paris <eparis@redhat.com>
-To: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Peter Moody <pmoody@google.com>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@google.com>, viro@zeniv.linux.org.uk,
-        miklos@szeredi.hu, jlayton@redhat.com, linux-fsdevel@vger.kernel.org
-Date: Thu, 02 Aug 2012 14:34:57 -0400
-In-Reply-To: <1343837499.18359.7.camel@tucsk.pomaz.szeredi.hu>
-References: <CALnj_=4r0qdrNUbXmS=q=sk11PZ-Q0z=wPO5wR_DzR4HjnMdqw@mail.gmail.com>
-	 <CALnj_=5qfAxtKN_T+eoAPCswZPrWmKmOK5HSTwCNZV0s08f_qw@mail.gmail.com>
-	 <1343837499.18359.7.camel@tucsk.pomaz.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753167Ab2HBSqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 14:46:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="180860926"
+Message-ID: <1343933454.25013.224.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
+        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
+        nyoushchenko@mvista.com
+Date: Thu, 02 Aug 2012 21:50:54 +0300
+In-Reply-To: <1341836323-43916-1-git-send-email-richard@nod.at>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-4sGk72btFe6WMSXsMC7q"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe this was already found and fixed:
 
-https://lkml.org/lkml/2012/7/25/259
+--=-4sGk72btFe6WMSXsMC7q
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Which was pulled by Linus in:
+On Mon, 2012-07-09 at 14:18 +0200, Richard Weinberger wrote:
+> This is the next round of UBI fastmap updates.
+> It fixes all issues pointed out by Shmulik. :-)
+>=20
+> If you want to test fastmap you can use my git repo:
+> git://git.kernel.org/pub/scm/linux/kernel/git/rw/ubi2.git ubi2/v17
 
-3134f37e931d75931bdf6d4eacd82a3fd26eca7c
+Richard, would you please rename the 'fm_auto' kernel parameter to
+"fastmap_auto", which is a bit more user-friendly.
 
--Eric
+Thanks!
 
-On Wed, 2012-08-01 at 18:11 +0200, Miklos Szeredi wrote:
-> Hi Peter,
-> 
-> Thanks for the report.
-> 
-> Here's a patch.  I haven't tested it but I'm pretty confident that it
-> fixes the bug.
-> 
-> Thanks,
-> Miklos
-> 
-> 
-> Subject: vfs: fix audit_inode on negative dentry
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Peter Moody reported an oops in audit_copy_inode() and bisected it to commit
-> 7157486541 (vfs: do_last(): common slow lookup).
-> 
-> The problem is that audit_inode() in do_last() is called with a negative dentry.
-> 
-> Previously the non-O_CREAT case didn't call audit_inode() here, but now both
-> O_CREAT and non-O_CREAT opens are handled by the same code.
-> 
-> I really have no idea why this audit_inode() is needed here at all but am afaid
-> to remove this for fear of breaking audit somehow.  So just fix this case by
-> checking for a negative dentry.
-> 
-> Reported-by: Peter Moody <pmoody@google.com>
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> CC: stable@vger.kernel.org
-> ---
->  fs/namei.c |   10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-> 
-> Index: linux-2.6/fs/namei.c
-> ===================================================================
-> --- linux-2.6.orig/fs/namei.c	2012-08-01 17:47:28.000000000 +0200
-> +++ linux-2.6/fs/namei.c	2012-08-01 17:49:26.000000000 +0200
-> @@ -2607,10 +2607,12 @@ static int do_last(struct nameidata *nd,
->  		goto finish_open_created;
->  	}
->  
-> -	/*
-> -	 * It already exists.
-> -	 */
-> -	audit_inode(pathname, path->dentry);
-> +	if (path->dentry->d_inode) {
-> +		/*
-> +		 * It already exists.
-> +		 */
-> +		audit_inode(pathname, path->dentry);
-> +	}
->  
->  	/*
->  	 * If atomic_open() acquired write access it is dropped now due to
-> 
-> 
+--=20
+Best Regards,
+Artem Bityutskiy
 
+--=-4sGk72btFe6WMSXsMC7q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQGswOAAoJECmIfjd9wqK0insQAI8mpnKxO8/ObwMpKUfTnyEk
+zrHgHZb+J0Fu7NNbVXqaSjK1I98MStmQQmRSx7/VmWNwqzZT/PbHsUo9ELNvtjmP
+ODE/4JLZgSQqysZ/NvUe1myO+qjUp0vTJmAgwOsHx25LCHwxJcJJIcxgLFkXJJNh
+Bk12NeAWaXJa28GJOJbYKN5tcHOfwAavDgJh11xEDtxNMUI3LfCYKoXGoatHpDMD
++PgZ9Pdu4/xYA82KhHOgSX5uiqpKBoCD81pj4X2YW/AszVfiEABmrdS50oGWVPMB
+u3j8MnNBTAzGtbm2vhWVsDitWySGWho9uWHJeHfByXRo+XzrPz+REEntG/imqs7n
+r8/hxjZyryY13F2PHirtqNBZ4ixgO3NTI17FzkBWIC0QkBa2JgmSyUdDrlRLS+28
+i4r3ojW+umldBenYPK+GrsmdxsJBbuD1XOdYtyoZgjz3UnfeM5y/Lh7llbnWSwUo
+n4UlINTLizzGkgv/K6VB4iMF/AJLLCDehNLnCNzwyr8eCdzi761KypOdysrZU9JU
+7pZiWivZARcQwi9W2LXEVEzG216tvXt8GRInPsZWQkFUn7gqWTV3oDqHmDatQjB3
+esTuOkvX6tf0K4e2fLgsJS+wqlJqO+J7/JBCavN8hmK88jm3RUBMDDiHWCTmTW2O
+dpD3LSsJjYEtNsh6WNaH
+=OUeG
+-----END PGP SIGNATURE-----
+
+--=-4sGk72btFe6WMSXsMC7q--
 
