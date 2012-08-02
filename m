@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab2HBFww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 01:52:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34299 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab2HBFwv (ORCPT
+	id S1752812Ab2HBF64 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 01:58:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57689 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab2HBF6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 01:52:51 -0400
+	Thu, 2 Aug 2012 01:58:54 -0400
+Date: Thu, 2 Aug 2012 07:58:39 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Don Dutile <ddutile@redhat.com>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, Jiang Liu <jiang.liu@huawei.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 12/32] PCI/ARM: use PCIe capabilities access functions
+ to simplify implementation
+Message-ID: <20120802055839.GA12241@avionic-0098.adnet.avionic-design.de>
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+ <1343836477-7287-13-git-send-email-jiang.liu@huawei.com>
+ <5019654D.2000408@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1208011259550.4606@router.home>
-References: <1343411703-2720-1-git-send-email-js1304@gmail.com>
- <1343411703-2720-4-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1207271550190.25434@router.home>
- <CAAmzW4MdiJOaZW_b+fz1uYyj0asTCveN=24st4xKymKEvkzdgQ@mail.gmail.com>
- <alpine.DEB.2.00.1207301425410.28838@router.home> <CAHO5Pa0wwSi3VH1ytLZsEJs99i_=5qN5ax=8y=uz1jbG+P03sw@mail.gmail.com>
- <alpine.DEB.2.00.1208011259550.4606@router.home>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Thu, 2 Aug 2012 07:52:30 +0200
-X-Google-Sender-Auth: 0GMPVN03duMAFdItb7bBeSq7Phc
-Message-ID: <CAHO5Pa2LhC2YxVtGguVc5Ppts7pGAGRD47L41OzGjJ+a9DfZaQ@mail.gmail.com>
-Subject: Re: [RESEND PATCH 4/4 v3] mm: fix possible incorrect return value of
- move_pages() syscall
-To: Christoph Lameter <cl@linux.com>
-Cc: JoonSoo Kim <js1304@gmail.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Brice Goglin <brice@myri.com>, Minchan Kim <minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
+Content-Disposition: inline
+In-Reply-To: <5019654D.2000408@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:rr/fIcK9Tb0GHrN17TCilvjjlHZmXCdn7jTwtH0Z6QL
+ D6C2aSbQ1ABlJYxLjzaLhntgXE7cvExwyl4HZecPDKR69T4ZGr
+ 3J1SmPsr2XpZuVPkY9QeA5oyDb2B6DC+vPlecnW6sXndX7rt2V
+ rsKykuUnSymNg84oXKK1rMZERI/UJuds9SXH0N1YZQnN4Gx08N
+ AA/EwgYNqZufQccvlDYr7iEib3YkuVw/uZT2GphWytphJtSG1s
+ wpg2vGSiESnVtAu/QpqNvm5J/djSnZ0G2cErvXHTW/AxYPYIk7
+ PteBPjltXD7oAAhmcIckap1sHYGSXW8qNLbgUt0tl/9e9rOVFe
+ YvTtB18QOdfB3ENS3cGYPVMB/rBxfcobHNTE1gCdaljKOygsv9
+ m2gdgW1FwTFsQQrK3moS6BPnkTX1DAE0trQD5ZWA/luy7qCGpg
+ b6U/q
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 1, 2012 at 8:00 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Wed, 1 Aug 2012, Michael Kerrisk wrote:
->
->> Is the patch below acceptable? (I've attached the complete page as well.)
->
-> Yes looks good.
 
-Thanks for checking it!
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> See you in San Diego (?),
->
-> Yup. I will be there too.
+On Wed, Aug 01, 2012 at 11:20:13AM -0600, Stephen Warren wrote:
+> On 08/01/2012 09:54 AM, Jiang Liu wrote:
+> > From: Jiang Liu <jiang.liu@huawei.com>
+> >=20
+> > Use PCIe capabilities access functions to simplify PCIe ARM implementat=
+ion.
+> >=20
+> > Signed-off-by: Jiang Liu <liuj97@gmail.com>
+>=20
+> This is probably fine from my perspective assuming the underlying PCI
+> API implementation is OKd by relevant people.
+>=20
+> Thierry, can you comment on whether this will conflict with your Tegra
+> PCIe driver series? If it doesn't, this patch can go through any
+> relevant PCI tree. If it does, we may have to take this through the
+> Tegra tree after merging the dependencies, or defer it to later.
 
-See you then!
+I haven't touched those lines. tegra_pcie_relax_enable() only uses
+generic PCI functions so I don't expect any conflicts. git blame
+confirms that those lines haven't been changed in about 2 years.
 
-Cheers,
+Thierry
 
-Michael
+--17pEHd4RhPHOinZp
+Content-Type: application/pgp-signature
 
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQGhcPAAoJEN0jrNd/PrOhusQP/08wAhZTckZwHx11iVgTk2Sy
+kZ7tEljEX3D6AX7rCacbH9FC6eYkwoX0wZfgo2kHyvzPsb/7hvXiIEjC9w/vohJj
+UYzn/i9RfNDWrzJuVcy4WTHJSWuk8xE836CTjJ310Rx3XqpvdHjm8GzABbLuA6rN
+sCidwvhh+OgjhBOAWRJpCbMLqEhiyYAttuetHByfwACmUJjNfdXd09fMptDWkFCN
+w0YJSNIBqgnyFGkZsCc7jibCkMOsy1ByxmQFrBbeSaqoHwK0zNrVjP4r9CTW8DXg
+/An61mZvLWBQCzdYOuAbCMde3Itw0OEYuQ7WgmURdqLPQbt7GQobV+0J/6PV0sT1
+cEbyEp2VkgdslJKjPf37OmKO/kP2Bdw6RlX+n3Sb2785TkAzFWa7vb+D1kOaM5fS
+gyhgRyCAkAryM2wAmf9GFLxuYv/VPPYhwtkUb0rYjtEWL0fyYPWhoq/eV684T505
+h0KV4G5AqMKe8no8B2on0ojRTk6IQ4d8UHO80lv3M1Kca/90AZrZ5qGJCVjnK843
+WiQ1XOJiPmJJ6s5nmoCcP23b5/Y0Hj5pY8u/lYqS1u8EXZ4D+KCE+wWv38LF9ULw
+gm+pJgRmMlMa0yvMrjN+mE9i8LDf0fYcnMV5NdNfjzYxmnNgDTVSSbKtk2ZjldRM
+DRknhvw3fPO58/mR7u1f
+=dPrT
+-----END PGP SIGNATURE-----
+
+--17pEHd4RhPHOinZp--
