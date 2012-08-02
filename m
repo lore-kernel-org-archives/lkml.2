@@ -1,345 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab2HBXuW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 19:50:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47947 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750746Ab2HBXuS (ORCPT
+	id S1752558Ab2HBXue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 19:50:34 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:39261 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752247Ab2HBXua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 19:50:18 -0400
-Message-ID: <1343951406.4642.120.camel@deadeye.wl.decadent.org.uk>
-Subject: Linux 3.2.25
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net
-Date: Fri, 03 Aug 2012 00:50:06 +0100
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-jxxsV87c6w/4EGDrvEey"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 2 Aug 2012 19:50:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPXgP10fJj3SwDdCa=rzfjZM8TL1GsvbSwEnfomFQ+NrW2j15w@mail.gmail.com>
+References: <1343936764-6461-1-git-send-email-vikram.pandita@ti.com> <CAPXgP10fJj3SwDdCa=rzfjZM8TL1GsvbSwEnfomFQ+NrW2j15w@mail.gmail.com>
+From: "Pandita, Vikram" <vikram.pandita@ti.com>
+Date: Thu, 2 Aug 2012 16:50:08 -0700
+Message-ID: <CAFm5wm2yof+ePMAtueBJh+gKyih-9ohdCYFC6xLTqwjeOgWWog@mail.gmail.com>
+Subject: Re: [PATCH] printk: add option to print cpu id
+To: Kay Sievers <kay@vrfy.org>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kay
 
---=-jxxsV87c6w/4EGDrvEey
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 2, 2012 at 1:08 PM, Kay Sievers <kay@vrfy.org> wrote:
+>
+> On Thu, Aug 2, 2012 at 9:46 PM, Vikram Pandita <vikram.pandita@ti.com>
+> wrote:
+> > From: Vikram Pandita <vikram.pandita@ti.com>
+> >
+> > Introduce config option to enable CPU id reporting for printk() calls.
+> >
+> > Its sometimes very useful to have printk also print the CPU Identifier
+> > that executed the call. This has helped to debug various SMP issues on
+> > shipping
+> > products.
+> >
+> > Known limitation is, if the system gets preempted between function call
+> > and
+> > actual printk, the reported cpu-id might not be accurate. But most of
+> > the
+> > times its seen to give a good feel of how the N cpu's in the system are
+> > getting loaded.
+> >
+> > Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
+> > Cc: Mike Turquette <mturquette@linaro.org>
+> > Cc: Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+> > ---
+> >  kernel/printk.c   |   20 ++++++++++++++++++++
+> >  lib/Kconfig.debug |   13 +++++++++++++
+> >  2 files changed, 33 insertions(+)
+> >
+> > diff --git a/kernel/printk.c b/kernel/printk.c
+> > index 6a76ab9..50feb82 100644
+> > --- a/kernel/printk.c
+> > +++ b/kernel/printk.c
+> > @@ -855,6 +855,25 @@ static size_t print_time(u64 ts, char *buf)
+> >                        (unsigned long)ts, rem_nsec / 1000);
+> >  }
+> >
+> > +#if defined(CONFIG_PRINTK_CPUID)
+> > +static bool printk_cpuid = 1;
+> > +#else
+> > +static bool printk_cpuid;
+> > +#endif
+> > +module_param_named(cpuid, printk_cpuid, bool, S_IRUGO | S_IWUSR);
+> > +
+> > +static size_t print_cpuid(char *buf)
+> > +{
+> > +
+> > +       if (!printk_cpuid)
+> > +               return 0;
+> > +
+> > +       if (!buf)
+> > +               return 4;
+> > +
+> > +       return sprintf(buf, "[%1d] ", smp_processor_id());
+> > +}
+> > +
+> >  static size_t print_prefix(const struct log *msg, bool syslog, char
+> > *buf)
+> >  {
+> >         size_t len = 0;
+> > @@ -874,6 +893,7 @@ static size_t print_prefix(const struct log *msg,
+> > bool syslog, char *buf)
+> >                 }
+> >         }
+> >
+> > +       len += print_cpuid(buf ? buf + len : NULL);
+> >         len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+> >         return len;
+> >  }
+>
+> How is that supposed to be useful?
+>
+> The prefix is added while exporting data from the kmsg buffer, which
+> is just the CPU that *reads* the data from the buffer, not the one
+> that has *written* the data it into it.
 
-I'm announcing the release of the 3.2.25 kernel.
+I don't think so.
+I can see the backtrace of the printk() call looks like follows:
 
-All users of the 3.2 kernel series should upgrade.
+print_cpuid
+ print_prefix
+  msg_print_text
+   console_unlock
+    vprint_emit
+     printk
 
-Like 3.0.39, this includes many fixes for mm performance problems,
-thanks to Mel Gorman.
+Now this is a synchronous path, where in the buffer is getting filled
+with cpuid and timer info from the printk() calling context.
+So you should get the right CPU id with the trace - with the exception
+that i pointed out earlier for preemption.
 
-The updated 3.2.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
-it linux-3.2.y
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git
+>
+> Do I miss anything here?
 
-Ben.
-
-------------
-
- Makefile                                     |    2 +-
- arch/powerpc/include/asm/reg.h               |    3 +-
- arch/powerpc/kernel/ftrace.c                 |   12 +-
- arch/s390/kernel/processor.c                 |    2 +
- arch/s390/kernel/smp.c                       |    3 -
- arch/x86/kernel/microcode_core.c             |   31 +++--
- arch/x86/pci/fixup.c                         |   17 +++
- block/blk-core.c                             |    6 +-
- block/blk-exec.c                             |    2 +-
- block/blk-sysfs.c                            |    4 +-
- block/blk-throttle.c                         |    4 +-
- block/blk.h                                  |    2 +-
- drivers/acpi/ac.c                            |    4 +-
- drivers/gpu/drm/nouveau/nva3_copy.fuc        |    4 +-
- drivers/gpu/drm/nouveau/nva3_copy.fuc.h      |   94 +++++++++++++-
- drivers/gpu/drm/nouveau/nvc0_copy.fuc.h      |   87 ++++++++++++-
- drivers/gpu/drm/radeon/atombios_dp.c         |   10 +-
- drivers/gpu/drm/radeon/radeon_connectors.c   |   35 ++++--
- drivers/gpu/drm/radeon/radeon_cursor.c       |    8 +-
- drivers/gpu/drm/radeon/radeon_object.c       |    3 +-
- drivers/iommu/amd_iommu.c                    |   10 +-
- drivers/media/video/cx25821/cx25821-core.c   |    3 -
- drivers/media/video/cx25821/cx25821.h        |    2 +-
- drivers/mmc/host/sdhci-pci.c                 |    1 +
- drivers/net/ethernet/realtek/r8169.c         |    1 +
- drivers/net/wireless/mwifiex/cfg80211.c      |    4 +-
- drivers/net/wireless/rt2x00/rt2800usb.c      |   23 +++-
- drivers/net/wireless/rtlwifi/rtl8192de/phy.c |    6 +-
- drivers/scsi/hosts.c                         |    7 +-
- drivers/scsi/libsas/sas_expander.c           |   47 +++----
- drivers/scsi/scsi.c                          |    8 +-
- drivers/scsi/scsi_error.c                    |   14 +++
- drivers/scsi/scsi_lib.c                      |   43 +++----
- drivers/scsi/scsi_priv.h                     |    1 -
- drivers/scsi/scsi_scan.c                     |    3 +
- drivers/scsi/scsi_sysfs.c                    |   46 ++++---
- drivers/target/iscsi/iscsi_target.c          |   22 +---
- drivers/target/iscsi/iscsi_target_core.h     |    2 -
- drivers/target/iscsi/iscsi_target_login.c    |   60 +--------
- drivers/target/target_core_cdb.c             |   43 +++++--
- drivers/target/target_core_transport.c       |   10 ++
- drivers/usb/core/devio.c                     |   10 +-
- drivers/usb/gadget/u_ether.c                 |   12 +-
- drivers/usb/serial/option.c                  |    8 +-
- fs/btrfs/async-thread.c                      |    9 +-
- fs/btrfs/disk-io.c                           |    5 +-
- fs/cifs/cifssmb.c                            |   30 +++++
- fs/ext4/balloc.c                             |    3 +-
- fs/ext4/bitmap.c                             |   12 +-
- fs/ext4/ext4.h                               |    6 +-
- fs/ext4/ialloc.c                             |    3 +-
- fs/ext4/inode.c                              |   41 ++++--
- fs/ext4/resize.c                             |    5 +
- fs/ext4/super.c                              |  174 ++++++++++++++++++----=
-----
- fs/hugetlbfs/inode.c                         |    3 +-
- fs/locks.c                                   |    6 +-
- fs/nfs/internal.h                            |    2 +-
- fs/nfs/write.c                               |    4 +-
- fs/udf/super.c                               |    2 +-
- include/linux/blkdev.h                       |    1 +
- include/linux/cpu.h                          |    5 +-
- include/linux/cpuset.h                       |   47 +++----
- include/linux/fs.h                           |   11 +-
- include/linux/init_task.h                    |    8 ++
- include/linux/migrate.h                      |   23 +++-
- include/linux/mmzone.h                       |    2 +
- include/linux/sched.h                        |    3 +-
- include/target/target_core_base.h            |    1 +
- kernel/cpuset.c                              |   43 ++-----
- kernel/fork.c                                |    3 +
- kernel/power/hibernate.c                     |    6 +
- kernel/power/suspend.c                       |    3 +
- kernel/sched.c                               |   86 +++++++++++--
- kernel/sched_fair.c                          |    2 +-
- kernel/time/tick-sched.c                     |    1 +
- kernel/workqueue.c                           |   38 +++++-
- mm/compaction.c                              |    4 +-
- mm/filemap.c                                 |   11 +-
- mm/hugetlb.c                                 |   13 +-
- mm/memory-failure.c                          |    6 +-
- mm/memory_hotplug.c                          |    2 +-
- mm/mempolicy.c                               |   30 +++--
- mm/migrate.c                                 |  171 +++++++++++++++++-----=
----
- mm/page_alloc.c                              |  118 +++++++++++------
- mm/slab.c                                    |   13 +-
- mm/slub.c                                    |   40 +++---
- mm/vmscan.c                                  |  114 ++++++++++++++---
- sound/pci/hda/patch_hdmi.c                   |   12 +-
- sound/pci/hda/patch_realtek.c                |    1 +
- sound/soc/soc-dapm.c                         |   10 +-
- 90 files changed, 1263 insertions(+), 589 deletions(-)
-
-Al Viro (1):
-      iscsi-target: Drop bogus struct file usage for iSCSI/SCTP
-
-Alan Cox (1):
-      x86: Fix boot on Twinhead H12Y
-
-Albert Pool (1):
-      rt2800usb: 2001:3c17 is an RT3370 device
-
-Amitkumar Karwar (1):
-      mwifiex: correction in mcs index check
-
-Andrew Bird (Sphere Systems) (1):
-      USB: option: Ignore ZTE (Vodafone) K3570/71 net interfaces
-
-Bart Van Assche (2):
-      Fix device removal NULL pointer dereference
-      Avoid dangling pointer in scsi_requeue_command()
-
-Ben Hutchings (1):
-      Linux 3.2.25
-
-Bj=C3=B8rn Mork (1):
-      USB: option: add ZTE MF821D
-
-Borislav Petkov (1):
-      x86, microcode: Sanitize per-cpu microcode reloading interface
-
-Brian Foster (1):
-      ext4: don't let i_reserved_meta_blocks go negative
-
-Chris Mason (1):
-      Btrfs: call the ordered free operation without any locks held
-
-Dan Williams (4):
-      fix hot unplug vs async scan race
-      fix eh wakeup (scsi_schedule_eh vs scsi_restart_operations)
-      libsas: continue revalidation
-      libsas: fix sas_discover_devices return code handling
-
-Daniel Drake (1):
-      mmc: sdhci-pci: CaFe has broken card detection
-
-David Henningsson (1):
-      ALSA: hda - Add support for Realtek ALC282
-
-Dylan Reid (1):
-      ALSA: hda - Turn on PIN_OUT from hdmi playback prepare.
-
-Ezequiel Garcia (1):
-      cx25821: Remove bad strcpy to read-only char*
-
-Forest Bond (1):
-      rtlwifi: rtl8192de: Fix phy-based version calculation
-
-Hans de Goede (1):
-      usbdevfs: Correct amount of data copied to user in processcompl_compa=
-t
-
-Heiko Carstens (1):
-      s390/idle: fix sequence handling vs cpu hotplug
-
-Hugh Dickins (1):
-      mm: test PageSwapBacked in lumpy reclaim
-
-J. Bruce Fields (1):
-      locks: fix checking of fcntl_setlease argument
-
-Jan Kara (1):
-      udf: Improve table length check to avoid possible overflow
-
-Jeff Layton (1):
-      cifs: when CONFIG_HIGHMEM is set, serialize the read/write kmaps
-
-Jerome Glisse (4):
-      drm/radeon: fix bo creation retry path
-      drm/radeon: fix non revealent error message
-      drm/radeon: fix hotplug of DP to DVI|HDMI passive adapters (v2)
-      drm/radeon: on hotplug force link training to happen (v2)
-
-Joerg Roedel (1):
-      iommu/amd: Fix hotplug with iommu=3Dpt
-
-Johannes Weiner (1):
-      mm: vmscan: convert global reclaim to per-memcg LRU lists
-
-Joonsoo Kim (1):
-      mm: fix wrong argument of migrate_huge_pages() in soft_offline_huge_p=
-age()
-
-Kevin Cernekee (1):
-      usb: gadget: Fix g_ether interface link status
-
-Konstantin Khlebnikov (3):
-      vmscan: promote shared file mapped pages
-      vmscan: activate executable pages after first usage
-      mm/hugetlb: fix warning in alloc_huge_page/dequeue_huge_page_vma
-
-Lan Tianyu (1):
-      ACPI/AC: prevent OOPS on some boxes due to missing check power_supply=
-_register() return value check
-
-Maarten Lankhorst (1):
-      nouveau: Fix alignment requirements on src and dst addresses
-
-Mark Brown (1):
-      ASoC: dapm: Fix _PRE and _POST events for DAPM performance improvemen=
-ts
-
-Mark Rustad (1):
-      Fix NULL dereferences in scsi_cmd_to_driver
-
-Mel Gorman (10):
-      mm: reduce the amount of work done when updating min_free_kbytes
-      mm: compaction: allow compaction to isolate dirty pages
-      mm: compaction: determine if dirty pages can be migrated without bloc=
-king within ->migratepage
-      mm: page allocator: do not call direct reclaim for THP allocations wh=
-ile compaction is deferred
-      mm: compaction: make isolate_lru_page() filter-aware again
-      mm: compaction: introduce sync-light migration for use by compaction
-      mm: vmscan: when reclaiming for compaction, ensure there are sufficie=
-nt free pages available
-      mm: vmscan: do not OOM if aborting reclaim to start compaction
-      mm: vmscan: check if reclaim should really abort even if compaction_r=
-eady() is true for one zone
-      cpuset: mm: reduce large amounts of memory barrier related damage v3
-
-Michel D=C3=A4nzer (1):
-      drm/radeon: Try harder to avoid HW cursor ending on a multiple of 128=
- columns.
-
-Minchan Kim (1):
-      mm/vmscan.c: consider swap space when deciding whether to continue re=
-claim
-
-Peter Zijlstra (2):
-      sched/nohz: Fix rq->cpu_load[] calculations
-      sched/nohz: Fix rq->cpu_load calculations some more
-
-Roland Dreier (5):
-      target: Add generation of LOGICAL BLOCK ADDRESS OUT OF RANGE
-      target: Add range checking to UNMAP emulation
-      target: Fix reading of data length fields for UNMAP commands
-      target: Fix possible integer underflow in UNMAP emulation
-      target: Check number of unmap descriptors against our limit
-
-Shuah Khan (1):
-      x86, microcode: microcode_core.c simple_strtoul cleanup
-
-Srivatsa S. Bhat (1):
-      ftrace: Disable function tracing during suspend/resume and hibernatio=
-n, again
-
-Tejun Heo (2):
-      workqueue: perform cpu down operations from low priority cpu_notifier=
-()
-      block: add blk_queue_dead()
-
-Theodore Ts'o (3):
-      ext4: pass a char * to ext4_count_free() instead of a buffer_head ptr
-      ext4: fix overhead calculation used by ext4_statfs()
-      ext4: undo ext4_calc_metadata_amount if we fail to claim space
-
-Tiejun Chen (1):
-      powerpc: Add "memory" attribute for mfmsr()
-
-Xose Vazquez Perez (2):
-      wireless: rt2x00: rt2800usb add more devices ids
-      wireless: rt2x00: rt2800usb more devices were identified
-
-fran=C3=A7ois romieu (1):
-      r8169: RxConfig hack for the 8168evl.
-
-roger blofeld (1):
-      powerpc/ftrace: Fix assembly trampoline register usage
+This is my understanding of the printk framework.
+At least the print_time and print_cpuid seems to be happening
+synchronously wrt printk
 
 
-
---=-jxxsV87c6w/4EGDrvEey
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUBsSLue/yOyVhhEJAQrQjA//RHx3XiILSDsiWWtpz1gRSN+eou3xmudK
-5Ajmr3xeQAPfad0CGw/tkbBtZbitBCorUNyJL2MxEvkuq9fvtYgDP40EAvMitVek
-KHm9iTUin0bgL9LkrESadVSM1kiTVxUUSbCAdrfDtimiOE2ibnlffeeer61lxVZT
-ssuTdMCqLDSLFX9SzBrR242sEJCdkMIdj8E1vI6mJBOf3+tFDdNJcGiLLuUuMo3A
-q9JYbSplu0Vprvk3Suwuvt8cLL3pz4fONJS0kfMpAMerZ2fga6mfVJ8l9LhV8F/d
-+M0rP6iE2nUiAC6vl6CHBsOBeNhjz9ApHnvmnUc9Eg1pTXwAq5bRfPd/SQFjuuML
-F2QPfMh8NeTALgnPdIXm6sLnoctbiXTlw0f9THfLfa+TkN5D6x/rvvlQC3oA69nI
-b8jVpiR8YcfWEMqkQkH+9O4FKoBbZAaZcYyHSAkoBdIW2d9yzCpvknH4MlLcWqJZ
-tdmbIFQuRDriug0fqSSYKQG8OFRACGTOaFPBqk4wYy0XYh3vMBeAaufdr0uLjBTF
-FHCvShAOfWQkUrTKWs++AV6zgIROoXzpr9rppPVd607NkIn+lMvSitqkYsG3xicV
-UGmbx/bQsY3i2yR7DKX5FmSdOAUnU0bkWcbs8m3mvD91V9mq/dNuneNchdBbdgC9
-3TCvR1K1J0w=
-=j0nq
------END PGP SIGNATURE-----
-
---=-jxxsV87c6w/4EGDrvEey--
+>
+> Thanks,
+> Kay
