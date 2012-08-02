@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab2HBOyW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 10:54:22 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51892 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750773Ab2HBOyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 10:54:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="180761555"
-Message-ID: <1343919530.25013.116.camel@sauron.fi.intel.com>
-Subject: Re: UBI fastmap updates
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
-        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
-        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
-        nyoushchenko@mvista.com
-Date: Thu, 02 Aug 2012 17:58:50 +0300
-In-Reply-To: <1341836323-43916-1-git-send-email-richard@nod.at>
-References: <1341836323-43916-1-git-send-email-richard@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-yvvsWJrKnXNbtDfPAbaE"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1751453Ab2HBO51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 10:57:27 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56690 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab2HBO50 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 10:57:26 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 2 Aug 2012 07:57:27 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Shubhrajyoti <shubhrajyoti@ti.com>
+Cc: spi-devel-general@lists.sourceforge.net,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi: omap2-mcspi: Fix the error handling in probe
+Message-ID: <20120802145727.GA19676@roeck-us.net>
+References: <1343813788-19165-1-git-send-email-shubhrajyoti@ti.com>
+ <20120801150713.GB15630@roeck-us.net>
+ <501A5151.4040207@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501A5151.4040207@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 02, 2012 at 03:37:13PM +0530, Shubhrajyoti wrote:
+> On Wednesday 01 August 2012 08:37 PM, Guenter Roeck wrote:
+> > On Wed, Aug 01, 2012 at 03:06:28PM +0530, Shubhrajyoti D wrote:
+> >> The kfree() is taken care of by the spi core (spi_master_release() function)
+> >> that is called once the last reference to the underlying struct device has
+> >> been released. So the driver need not call kfree.
+> >>
+> >> Also the put was missed in some of the error handling fix the same.
+> >> There by fixing the missing device_put in some of the error paths.
+> >>
+> >> Cc: Guenter Roeck <linux@roeck-us.net>
+> > Reported-by: may be better here.
+> My bad. I should have done.
+> >
+> >> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> > Acked-by: Guenter Roeck <linux@roeck-us.net>
+> thanks.
+> > I suspect that "spi_master_put(master);" may also be missing in
+> > omap2_mcspi_remove(), but we'll need someone to confirm that.
+> Looks unlikely.
+> 
+> spi_master_put does a 
+> ...
+>   if (master)
+>                 put_device(&master->dev);
+> ...
+> 
+> In remove I call 
+> 
+> spi_unregister_master
+> ...
+> */
+> void spi_unregister_master(struct spi_master *master)
+> {
+>         int dummy;
+> [...]
+> 
+>         dummy = device_for_each_child(&master->dev, NULL, __unregister);
+>         device_unregister(&master->dev);
+> }
+> 
+> and 
+> 
+> void device_unregister(struct device *dev)
+> {
+>     [..]
+>         device_del(dev);
+>         put_device(dev);
+> }
+> 
+> Hope my understanding is correct.
+> 
+I think it is; I checked the refcount. spi_register_master increases
+refcount from 1 to 3, and spi_unregister_master decreases it from 3 to 0.
 
---=-yvvsWJrKnXNbtDfPAbaE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Now, if _my_ understanding is correct, that means the data structure allocated
+with spi_alloc_master, and specifically the device private data structure
+(struct omap2_mcspi in your case), is freed with spi_unregister_master().
+If so, it must not be accessed after the call to spi_unregister_master().
+However, many drivers do access this data after the call to
+spi_unregister_master(). spi-tegra.c is a good example, but there are many
+others. Does that mean that those drivers access freed memory ?
 
-On Mon, 2012-07-09 at 14:18 +0200, Richard Weinberger wrote:
-> This is the next round of UBI fastmap updates.
-> It fixes all issues pointed out by Shmulik. :-)
+Also, some other drivers do call spi_master_put() after spi_unregister_master(),
+with no matching spi_master_get() (eg spi-topcliff-pch.c). Does that mean that
+those drivers call spi_master_put() on free memory ?
 
-Hi Richard,
-
-when I try to attach mtdram (NOR flash), UBI fails:
-
-[ 7106.353791] UBI assert failed in ubi_io_is_bad at 623 (pid 5411)
-[ 7106.354253] Pid: 5411, comm: modprobe Not tainted 3.5.0+ #2
-[ 7106.354255] Call Trace:
-[ 7106.354264]  [<ffffffffa003c4c1>] ubi_io_is_bad+0xd1/0x100 [ubi]
-[ 7106.354271]  [<ffffffffa0042bd9>] scan_peb+0x49/0x740 [ubi]
-[ 7106.354287]  [<ffffffff8117e6e4>] ? __kmalloc+0x194/0x1e0
-[ 7106.354293]  [<ffffffffa0047b7c>] ? ubi_debugging_init_dev+0x2c/0x60 [ub=
-i]
-[ 7106.354300]  [<ffffffffa0044276>] ? ubi_attach+0x66/0x380 [ubi]
-[ 7106.354304]  [<ffffffffa00442f5>] ubi_attach+0xe5/0x380 [ubi]
-[ 7106.354310]  [<ffffffffa0035f91>] ubi_attach_mtd_dev+0xa81/0x10e0 [ubi]
-[ 7106.354316]  [<ffffffffa005c3e8>] ubi_init+0x22d/0xe45 [ubi]
-[ 7106.354321]  [<ffffffffa005c1bb>] ? ubi_mtd_param_parse+0x1bb/0x1bb [ubi=
-]
-[ 7106.354328]  [<ffffffff8100203f>] do_one_initcall+0x3f/0x170
-[ 7106.354335]  [<ffffffff810c69c6>] sys_init_module+0xa16/0x1d40
-[ 7106.354345]  [<ffffffff8132c5a0>] ? ddebug_add_module+0x100/0x100
-[ 7106.354351]  [<ffffffff815ffca9>] system_call_fastpath+0x16/0x1b
-[ 7106.354353] UBI assert failed in ubi_io_read_ec_hdr at 749 (pid 5411)
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-yvvsWJrKnXNbtDfPAbaE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQGpWqAAoJECmIfjd9wqK061MQAMyntUlCpzHDG27xEnl4Kfxq
-YMrHFlGJx+YMCyauc4oYCYE5RyATT52AjALY+/RblSKvrObJA5UUY4vd0v2bXES6
-q17uLNDhD+snXbU10L5c8LI9l5eUgMs+ProwmdigRHjP86EMnkoFEkRFDmx16Lfz
-W3jDazUWs18SfxqwU+fJH1Q1wKlVN3FRvOqlGLT5+emt4n5n/1cXkCYCrPpXQZhr
-c94s7b8XUz/nVpCyYpGf2+0qfBuMd2vrhUFfLQ8xVHrTSoZG2IPoPO4IJo/PiSBt
-QGsr0qW9z2rQgzlaW44gd7pEknjkOblLgJLuZanxGCszr5NTyqS4F5rRBITIsfWx
-G0EmBKSB7JggxG1ywuyFfv8o7IBFUeF1XpK+oIB1eHT6pUH5sEdCNqKpnWOe4AG9
-kxE1bbA3HEZtR/p/dHtHibJ8dUk60dkvUScjEbhTqpzDGp3EFj+fOoryzha3vuHD
-zgRRT611aV+WYBupltwmXRRb3kl7gGkLdV+CFyjjUDb75fdcEyDke2XgbRJhpKxO
-QxYuhkztU1OgH7JAB2anHIdTbgawuF8/ijTmz6mBXBoxe2z2tEk6cp7hHqMHBJWM
-b/HT5XBYD7lwUA77ATbrJ9W8uy4j5ikBedxC4jOHmJwrPEUXS8SxK1PyF2oOHPks
-tba+lFImwYAzHJ6DXxzc
-=2j5c
------END PGP SIGNATURE-----
-
---=-yvvsWJrKnXNbtDfPAbaE--
-
+Thanks,
+Guenter
