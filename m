@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab2HBI6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 04:58:14 -0400
-Received: from smtpout9-vf.aruba.it ([62.149.177.243]:41901 "HELO
-	smtp01-vf.aruba.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1750772Ab2HBI6N convert rfc822-to-8bit (ORCPT
+	id S1753825Ab2HBJPS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 05:15:18 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50309 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591Ab2HBJPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 04:58:13 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Aug 2012 04:58:13 EDT
+	Thu, 2 Aug 2012 05:15:15 -0400
 MIME-Version: 1.0
-X-Mailer: AtMail PHP 5.1
-Message-ID: <58227.1343897489@ml.lt>
-Reply-To: "elte.hu" <customer-careaccountant@ml.lt>
-Content-Type: text/plain; charset="utf-8"
-X-Origin: 95.143.37.178
-Date: Thu, 2 Aug 2012 10:51:29 +0200
-Subject: =?utf-8?B?ZnJpc3PDrXTDqXNl?=
-From: "elte.hu" <customer-careaccountant@ml.lt>
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20120802065557.GI6481@ZenIV.linux.org.uk>
+References: <1343859049-3632-1-git-send-email-meredydd@senatehouse.org>
+ <5019B36A.4030604@zytor.com> <CAD=T17Esguer01OsrxMtqEcHKZ-Ovg05+MxSdF7NhXENsUubgg@mail.gmail.com>
+ <5019BC0E.4010109@zytor.com> <20120802065557.GI6481@ZenIV.linux.org.uk>
+From: Meredydd Luff <meredydd@senatehouse.org>
+Date: Thu, 2 Aug 2012 10:14:53 +0100
+Message-ID: <CAD=T17Gkryua5TQW5h18kCu+yiViuVv6NyxtMw3C9we0RWzmKQ@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] syscalls,x86: Add execveat() system call (v2)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tisztelt Felhasználó elte.hu
+On Thu, Aug 2, 2012 at 7:55 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> This means you need an x32 version of the function -- execve
+>> unfortunately is one of the few system calls which require a special x32
+>> version (although it's a simple wrapper around sys32_execve).  See
+>> sys_x32_execve.
+>
+> I *really* strongly object to doing that thing before we sanitize the
+> situation with sys_execve().
 
-HTK4S vírust fedeztek elte.hu Webmail szerver, és minden elte.hu webmail könyvelést kell azonnal frissítik, hogy 
-megakadályozza a webmail elte.hu.
+"That thing" = "creating an x32 entry stub", or "merging execveat() at all"?
 
-Ön kérte, hogy a személyazonosságát az alábbi számlára lehetővé teszi számunkra, hogy ellenőrizzék és megőrizzék a 
-számlát az új verzió HTK4S anti-virus/anti-Spam 2012. elmulasztása érdemi információt, akkor figyelembe kell 
-ideiglenesen felfüggeszteni a szolgáltatást.
+(snip)
+> The thing is, there's essentially no reason to have more than one
+> implementation.  What they are (badly) doing is "we need to find
+> pt_regs to pass to do_execve(), the thing we are after has to be near
+> our stack frame, so let's try to get to it that way".
 
-Név: ..................
-Felhasználó név ...............
-Jelszó: ............
-Születési idő: ...........
+Hang on...it's not just sys_execve that fits that description, is it?
+You seem to be describing every call that needs a pt_regs parameter,
+which at a glance is anything with a stub_ or PTREGSCALL in
+arch/x86/kernel/entry_{32,64}.S. That's: clone, fork, vfork,
+sigaltstack, iopl, execve, sigreturn, rt_sigreturn, vm86, vm86old.
+Most of those are handled by a common PTREGSCALL macro, but there are
+a few that get special treatment (different set on each arch - on
+x86-64 it's execve and rt_sigreturn ; on i386 it's just clone).
 
-Webmail Szerzői jog © elte.hu 2012 Minden jog fenntartva
+Is there's something special about execve in particular, or do you
+want to overhaul all the ptregscalls?
 
+Meredydd
