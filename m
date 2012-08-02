@@ -1,145 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab2HBHFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 03:05:51 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:41012 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab2HBHFu (ORCPT
+	id S1754073Ab2HBHHX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 03:07:23 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:62647 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab2HBHHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 03:05:50 -0400
-Message-ID: <501A2686.8000605@windriver.com>
-Date: Thu, 2 Aug 2012 15:04:38 +0800
-From: wyang1 <Wei.Yang@windriver.com>
-Reply-To: <Wei.Yang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>, <robert.richter@amd.com>
-Subject: oops in x86/oprofile/dump_stack with 3.4.6
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.190]
+	Thu, 2 Aug 2012 03:07:22 -0400
+X-AuditID: 9c930197-b7b66ae000006a2c-34-501a27274454
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Venkatraman S <svenkatr@ti.com>, Jaehoon Chung <jh80.chung@samsung.com>,
+        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kyungsik Lee <kyungsik.lee@lge.com>
+Subject: [PATCH RESEND v5] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
+Date: Thu,  2 Aug 2012 16:07:11 +0900
+Message-Id: <1343891231-3042-1-git-send-email-kyungsik.lee@lge.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+It is expected that Extended CSD register(the size of this register
+is larger than CID/CSD) will be referenced more frequently as more
+fields have been added to Extended CSD and it seems that it is not
+a good option to double the memory used.
 
-A couple of days ago I tried to use oprofile with enabling call graph in 
-a recent build of 3.4.6. this causes a OOPS
-"BUG: unable to handle kernel paging request at 636f7270".
+This patch is intended to avoid the use of bounce buffer for reading
+Extended CSD register in mmc_send_cxd_data(). It will provide a better
+performance gain by removing memcpy() overhead for a half KiB and
+a redundant bounce buffer allocated repeatedly at the cost of providing
+DMA-capable buffer from upper caller(but on-stack buffer is allowed
+with no performance gain).
 
-The oops can be often reproduced by the following steps on my board 
-based on Intel Atom.
+Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+Signed-off-by: S, Venkatraman <svenkatr@ti.com>
+---
+Changes in v2:
+- Handling on-stack buffer if it's used in caller.
 
-opcontrol --no-vmlinux
-opcontrol -c 10
-opcontrol -e BR_INST_RETIRED:8000
-opcontrl -s
+Changes in v3:
+- Remove unnecesary code.
 
-With a few seconds I get the oops.
+Changes in v4:
+- Modify codes based-on S, Venkatraman's comments.
 
-I've spent some time investigating the problem, and found it is possible 
-that the marked line in dump_strace function results in the oops as the 
-content of stack
-variable is less than CONFIG_PAGE_OFFSET(0xc000_0000).
-arch/x86/kernel/dumpstack_32.c
-int dump_stack()
-...
-for (;;) {
-         struct thread_info *context;
-         context = (struct thread_info *)
-             ((unsigned long)stack & (~(THREAD_SIZE - 1)));
-         bp = ops->walk_stack(context, stack, bp, ops, data, NULL, &graph);
+Changes in v5:
+- Modify commit log and add NOTE description.
+---
+ drivers/mmc/core/mmc_ops.c |   58 +++++++++++++++++++++++++++++++------------
+ 1 files changed, 42 insertions(+), 16 deletions(-)
 
------>  stack = (unsigned long *)context->previous_esp;
-         if (!stack)
-             break;
-         if (ops->stack(data, "IRQ") < 0)
-             break;
-         touch_nmi_watchdog();
-     }
-...
-Actually I think this scenario should not happen, because the stack 
-should be kernel stack or irq stack.
-So I changed this function by adding simplistic check to avoid this 
-scenario. It seems to work for my board.
+diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+index 0ed2cc5..acf578d 100644
+--- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -230,6 +230,10 @@ mmc_send_cxd_native(struct mmc_host *host, u32 arg, u32 *cxd, int opcode)
+ 	return 0;
+ }
+ 
++/*
++ * NOTE: void *buf, Caller for the buf is required to use DMA-capable
++ * buffer or on-stack buffer(with some overhead in callee).
++ */
+ static int
+ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ 		u32 opcode, void *buf, unsigned len)
+@@ -239,13 +243,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ 	struct mmc_data data = {0};
+ 	struct scatterlist sg;
+ 	void *data_buf;
++	int is_on_stack;
+ 
+-	/* dma onto stack is unsafe/nonportable, but callers to this
+-	 * routine normally provide temporary on-stack buffers ...
+-	 */
+-	data_buf = kmalloc(len, GFP_KERNEL);
+-	if (data_buf == NULL)
+-		return -ENOMEM;
++	is_on_stack = object_is_on_stack(buf);
++	if (is_on_stack) {
++
++		/* dma onto stack is unsafe/nonportable, but callers to this
++		 * routine normally provide temporary on-stack buffers ...
++		 */
++		data_buf = kmalloc(len, GFP_KERNEL);
++		if (data_buf == NULL)
++			return -ENOMEM;
++	} else
++		data_buf = buf;
+ 
+ 	mrq.cmd = &cmd;
+ 	mrq.data = &data;
+@@ -280,8 +290,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ 
+ 	mmc_wait_for_req(host, &mrq);
+ 
+-	memcpy(buf, data_buf, len);
+-	kfree(data_buf);
++	if (is_on_stack) {
++		memcpy(buf, data_buf, len);
++		kfree(data_buf);
++	}
+ 
+ 	if (cmd.error)
+ 		return cmd.error;
+@@ -294,24 +306,32 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ int mmc_send_csd(struct mmc_card *card, u32 *csd)
+ {
+ 	int ret, i;
++	u32 *csd_tmp;
+ 
+ 	if (!mmc_host_is_spi(card->host))
+ 		return mmc_send_cxd_native(card->host, card->rca << 16,
+ 				csd, MMC_SEND_CSD);
+ 
+-	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
++	csd_tmp = kmalloc(16, GFP_KERNEL);
++	if (!csd_tmp)
++		return -ENOMEM;
++
++	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
+ 	if (ret)
+-		return ret;
++		goto err;
+ 
+ 	for (i = 0;i < 4;i++)
+-		csd[i] = be32_to_cpu(csd[i]);
++		csd[i] = be32_to_cpu(csd_tmp[i]);
+ 
+-	return 0;
++err:
++	kfree(csd_tmp);
++	return ret;
+ }
+ 
+ int mmc_send_cid(struct mmc_host *host, u32 *cid)
+ {
+ 	int ret, i;
++	u32 *cid_tmp;
+ 
+ 	if (!mmc_host_is_spi(host)) {
+ 		if (!host->card)
+@@ -320,14 +340,20 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
+ 				cid, MMC_SEND_CID);
+ 	}
+ 
+-	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
++	cid_tmp = kmalloc(16, GFP_KERNEL);
++	if (!cid_tmp)
++		return -ENOMEM;
++
++	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
+ 	if (ret)
+-		return ret;
++		goto err;
+ 
+ 	for (i = 0;i < 4;i++)
+-		cid[i] = be32_to_cpu(cid[i]);
++		cid[i] = be32_to_cpu(cid_tmp[i]);
+ 
+-	return 0;
++err:
++	kfree(cid_tmp);
++	return ret;
+ }
+ 
+ int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
+-- 
+1.7.0.4
 
-for (;;) {
-                 struct thread_info *context;
-+               /*
-+                * Somehow stack may be less than CONFIG_PAGE_OFFSET,
-+                * So we should temporarily avoid the scenario before
-+                * figuring out the root cause.
-+                */
-+               if (stack < CONFIG_PAGE_OFFSET)
-+                       break;
-
-                 context = (struct thread_info *)
-                         ((unsigned long)stack & (~(THREAD_SIZE - 1)));
-
-
-Any suggestion for the change.
-
-Thanks
-Wei
-
-The following is the oops I encountered.
-BUG: unable to handle kernel paging request at 636f7270
-IP: [<c1005229>] print_context_stack+0x69/0x130
-*pde = 00000000
-Oops: 0000 [#1] PREEMPT SMP
-LTT NESTING LEVEL : 0
-Modules linked in:
-
-Pid: 0, comm: swapper/0 Not tainted 
-3.4.6-WR5.0+snapshot-20120801_standard #9 To be filled by O.E.M. To be 
-filled by O.E.M./To be filled by O.E.M.
-EIP: 0060:[<c1005229>] EFLAGS: 00010046 CPU: 0
-EIP is at print_context_stack+0x69/0x130
-EAX: 0000002e EBX: 636f7270 ECX: 00000000 EDX: 04010000
-ESI: ffffe000 EDI: 00000000 EBP: f680be98 ESP: f680be68
-  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-CR0: 8005003b CR2: 636f7270 CR3: 0192e000 CR4: 000007d0
-DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-DR6: ffff0ff0 DR7: 00000400
-Process swapper/0 (pid: 0, ti=f680a000 task=c183cfa0 task.ti=c1832000)
-Stack:
-  c1761c2c 636f7270 636f6000 00000000 636f7ffc 636f6000 c1833ed4 ffffe000
-  c1833ed4 636f7270 c18888dc 636f6000 f680bec8 c1004218 c18888dc f680bedc
-  00000000 f680beb4 c1833ed4 00000000 f680bec0 c1833ed4 f680bfc4 0000000a
-Call Trace:
-  [<c1004218>] dump_trace+0x68/0xf0
-  [<c1554682>] x86_backtrace+0xb2/0xc0
-  [<c1552682>] oprofile_add_sample+0xa2/0xc0
-  [<c10040df>] ? do_softirq+0x6f/0xa0
-  [<c15562c9>] ppro_check_ctrs+0x79/0x100
-  [<c1556250>] ? ppro_shutdown+0x60/0x60
-  [<c15550af>] profile_exceptions_notify+0x8f/0xb0
-  [<c1660d78>] nmi_handle.isra.0+0x48/0x70
-  [<c1660e9f>] do_nmi+0xff/0x570
-  [<c105bd75>] ? run_rebalance_domains+0x155/0x180
-  [<c105428b>] ? get_parent_ip+0xb/0x40
-  [<c102e379>] ? __local_bh_enable+0x29/0x70
-  [<c102ecd0>] ? ftrace_define_fields_irq_handler_entry+0x80/0x80
-  [<c16601c9>] nmi_stack_correct+0x28/0x2d
-  [<c102ecd0>] ? ftrace_define_fields_irq_handler_entry+0x80/0x80
-  [<c10040df>] ? do_softirq+0x6f/0xa0
-<IRQ>
-  [<c102f155>] irq_exit+0x65/0x70
-  [<c1666441>] do_IRQ+0x51/0xc0
-  [<c1666369>] common_interrupt+0x29/0x30
-  [<c102007b>] ? amd_get_subcaches+0x4b/0x90
-  [<c1330416>] ? intel_idle+0xc6/0x120
-  [<c14e4719>] cpuidle_enter+0x19/0x30
-  [<c14e4cf0>] cpuidle_idle_call+0xa0/0x320
-  [<c1009e8a>] cpu_idle+0x5a/0xc0
-  [<c163fa48>] rest_init+0x6c/0x74
-  [<c189d703>] start_kernel+0x2fe/0x305
-  [<c189d23d>] ? repair_env_string+0x51/0x51
-  [<c189d078>] i386_start_kernel+0x78/0x7d
-Code: 00 00 3b 5d dc 72 13 8b 45 f0 8d 64 24 24 5b 5e 5f 5d c3 8d b4 26 
-00 00 00 00 3b 5d ec 72 e8 81 fb ff ff ff bf 0f 86 a3 00 00 00 <8b> 33 
-89 f0 e8 ae e5 03 00 85 c0 74 1e 8b 45 f0 83 c0 04 39 c3
-EIP: [<c1005229>] print_context_stack+0x69/0x130 SS:ESP 0068:f680be68
-CR2: 00000000636f7270
----[ end trace d4af25ee5ff6fd8c ]---
