@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab2HBWmY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 18:42:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19525 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab2HBWmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 18:42:22 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=m4U3AEEn_65mWyvU2BsA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343947340.27983.102.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.2.24-rt38
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, john stultz <johnstul@us.ibm.com>
-Date: Thu, 02 Aug 2012 18:42:20 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1753985Ab2HBWzS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 18:55:18 -0400
+Received: from mso.anu.edu.au ([150.203.89.32]:46904 "EHLO mso.anu.edu.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab2HBWzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 18:55:14 -0400
+Message-ID: <501B0536.6070001@mso.anu.edu.au>
+Date: Fri, 03 Aug 2012 08:54:46 +1000
+From: Francois Rigaut <frigaut@mso.anu.edu.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
+Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
+References: <1343407934-459-1-git-send-email-mjg@redhat.com> <20120731223240.GD19134@kroah.com> <20120801165400.GA3042@srcf.ucam.org> <20120801232147.GA6228@kroah.com> <20120802040242.GB25933@thinkpad-t410> <20120802103423.GA1921@kroah.com> <501A955D.6030500@mso.anu.edu.au> <20120802161209.GF32395@thinkpad-t410> <501B01ED.9080309@mso.anu.edu.au>
+In-Reply-To: <501B01ED.9080309@mso.anu.edu.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Seth,
 
-Dear RT Folks,
+I have put the osx system.log, which is the only file where I can see 
+mux and AGC related message, at http://maumae.net/retina/system.log
+Thanks,
+Francois
 
-I'm pleased to announce the 3.2.24-rt38 stable release.
-
-Note, there were some non-trivial conflicts with leap-second backports.
-I believe I solved them correctly (and added a change to convert
-read_seqbegin to read_seqcount_begin() in ktime_get_update_offsets()).
-
-This release passed all my internal tests, but test it out anyway, and
-let me know if something fails for you.
-
-This release is an update to the new stable 3.2.24 version. Some fixes
-to the stable code (mentioned above) had to be done.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 860793bbc278575a33695cf1baa67be900f159ef
-
-
-Or to build 3.2.24-rt38 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.24.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.24-rt38.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
+On 03/08/12 08:40, Francois Rigaut wrote:
+> Hi Seth,
+>
+> Sorry for the belated response. On Oz time here.
+> I don't have a /var/log/kernel.log !
+> Let me make sure of something:
+> This switcher code is to be run on osx, no? That's where gfxcardstatus 
+> lives and where I can effect the card switch. Just to make sure.
+> So I'm running osx mountain lion, and the only thing I see in the logs 
+> when I switch cards (using gfxcardstatus) is what I pasted below. and 
+> you're right, it was not in message.log, but system.log (it was late). 
+> I just went through the whole thing again.
+> Am I missing something?
+> Cheers,
+> Francois
+>
+> On 03/08/12 02:12, Seth Forshee wrote:
+>> On Fri, Aug 03, 2012 at 12:57:33AM +1000, Francois Rigaut wrote:
+>>> Greg, Seth,
+>>>
+>>> Here is what the message.log shows:
+>>>
+>>> switching to the HD4000 (integrated):
+>>>
+>>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x42803c0
+>>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: 
+>>> CGXMuxAcknowledge: Posting glitchless acknowledge
+>>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: 
+>>> MPAccessSurfaceForDisplayDevice: Set up page flip mode on display 
+>>> 0x042803c0 device: 0x10c678320  isBackBuffered: 0 numComp: 1 numDisp: 3
+>>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x42803c0
+>>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x3f003d
+>>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x3f003e
+>>> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x3f003f
+>>>
+>>> switching to the nvidia (discrete):
+>>>
+>>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x42803c0
+>>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x3f003d
+>>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x3f003e
+>>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x3f003f
+>>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: 
+>>> CGXMuxAcknowledge: Posting glitchless acknowledge
+>>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: 
+>>> MPAccessSurfaceForDisplayDevice: Set up page flip mode on display 
+>>> 0x042803c0 device: 0x10c678320  isBackBuffered: 0 numComp: 1 numDisp: 3
+>>> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received 
+>>> display connect changed for display 0x42803c0
+>>>
+>>> Hope that helps.
+>> Thanks for trying it out, but it's not really what I was hoping for. I
+>> get a bunch of messages similar to these in /var/log/kernel.log, mixed
+>> in with a lot of other stuff.
+>>
+>>   AGC:: setMuxRegister:1666 (728, 1, 1)
+>>   AGC:: setMuxRegister:1666 (710, 1, 4)
+>>   AGC:: getMuxRegister:1647 (716, 1) = 1
+>>
+>> I don't even have message.log. You don't have a kernel.log? Do you see
+>> any messages like those if you run dmesg?
+>>
+>> Seth
 
