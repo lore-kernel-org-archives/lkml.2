@@ -1,98 +1,552 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2HBIt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 04:49:57 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:16040 "EHLO
+	id S1753562Ab2HBIuo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 04:50:44 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:44701 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337Ab2HBItw (ORCPT
+	with ESMTP id S1753385Ab2HBIt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 04:49:52 -0400
-Message-Id: <201208020849.q728nhll007819@latitude.olech.com>
+	Thu, 2 Aug 2012 04:49:56 -0400
+Message-Id: <201208020849.q728nhpW007804@latitude.olech.com>
 From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Thu, 2 Aug 2012 09:48:56 +0100
-Subject: [NEW DRIVER V1 4/7] DA9058 RTC driver
+Date: Thu, 2 Aug 2012 09:48:55 +0100
+Subject: [NEW DRIVER V1 1/7] DA9058 MFD core and ADC driver
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the RTC component driver of the Dialog DA9058 PMIC.
-This driver is just one component of the whole DA9058 PMIC driver.
-It depends on the core DA9058 MFD driver.
+This is the MFD core driver for the Dialog DA9058 PMIC.
+This driver, via MFD CELLs, causes all the component drivers to be
+loaded, if it is a module, and initialized via their probe methods.
+It also provides access to the ADC functions on the PMIC.
+All the other component drivers depend on this one.
 
 Signed-off-by: Tony Olech (at Home) <tony@olech.com>
 ---
- drivers/rtc/Kconfig      |   21 ++-
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-da9058.c |  456 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 472 insertions(+), 6 deletions(-)
- create mode 100644 drivers/rtc/rtc-da9058.c
+ drivers/mfd/Kconfig                  |   18 ++
+ drivers/mfd/Makefile                 |    3 +
+ drivers/mfd/da9058-core.c            |  320 ++++++++++++++++++++++
+ drivers/mfd/da9058-i2c.c             |  102 +++++++
+ drivers/mfd/da9058-irq.c             |   66 +++++
+ include/linux/mfd/da9058/bat.h       |   33 +++
+ include/linux/mfd/da9058/codec.h     |   21 ++
+ include/linux/mfd/da9058/core.h      |   69 +++++
+ include/linux/mfd/da9058/gpio.h      |   19 ++
+ include/linux/mfd/da9058/hwmon.h     |   20 ++
+ include/linux/mfd/da9058/irq.h       |   45 ++++
+ include/linux/mfd/da9058/onkey.h     |   17 ++
+ include/linux/mfd/da9058/pdata.h     |   28 ++
+ include/linux/mfd/da9058/registers.h |  480 ++++++++++++++++++++++++++++++++++
+ include/linux/mfd/da9058/regulator.h |   33 +++
+ include/linux/mfd/da9058/rtc.h       |   17 ++
+ 16 files changed, 1291 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/da9058-core.c
+ create mode 100644 drivers/mfd/da9058-i2c.c
+ create mode 100644 drivers/mfd/da9058-irq.c
+ create mode 100644 include/linux/mfd/da9058/bat.h
+ create mode 100644 include/linux/mfd/da9058/codec.h
+ create mode 100644 include/linux/mfd/da9058/core.h
+ create mode 100644 include/linux/mfd/da9058/gpio.h
+ create mode 100644 include/linux/mfd/da9058/hwmon.h
+ create mode 100644 include/linux/mfd/da9058/irq.h
+ create mode 100644 include/linux/mfd/da9058/onkey.h
+ create mode 100644 include/linux/mfd/da9058/pdata.h
+ create mode 100644 include/linux/mfd/da9058/registers.h
+ create mode 100644 include/linux/mfd/da9058/regulator.h
+ create mode 100644 include/linux/mfd/da9058/rtc.h
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 08cbdb9..1e0e47b 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -120,11 +120,6 @@ config RTC_DRV_TEST
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-test.
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 92144ed..3fa1a75 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -3,6 +3,7 @@
+ #
  
--comment "I2C RTC drivers"
--	depends on I2C
--
--if I2C
--
- config RTC_DRV_88PM860X
- 	tristate "Marvell 88PM860x"
- 	depends on RTC_CLASS && I2C && MFD_88PM860X
-@@ -135,6 +130,21 @@ config RTC_DRV_88PM860X
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-88pm860x.
+ if HAS_IOMEM
++
+ menu "Multifunction device drivers"
  
-+comment "I2C RTC drivers"
+ config MFD_CORE
+@@ -20,6 +21,23 @@ config MFD_88PM860X
+ 	  select individual components like voltage regulators, RTC and
+ 	  battery-charger under the corresponding menus.
+ 
++config MFD_DA9058
++	tristate "Dialog Semiconductor DA9058 PMIC Support"
 +	depends on I2C
-+
-+if I2C
-+
-+config RTC_DRV_DA9058
-+	tristate "Dialog DA9058"
-+	depends on MFD_DA9058
++	select REGMAP_I2C
++	select REGMAP_IRQ
++	select MFD_CORE
 +	help
-+	  If you say yes here you will get support for the
-+	  RTC of the Dialog DA9058 PMIC.
++	  Say yes here for support of Dialog Semiconductor DA9058. This is
++	  a Power Management IC. This driver provides common support for
++	  accessing the device as well as the I2C interface to the chip itself.
++	  Additional drivers must be enabled in order to use the functionality
++	  of the device.
 +
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-da9058.
++	  This driver can be built as a module, but since the functionality
++	  of the device includes regulators it probably should be built into
++	  the kernel. If built as a module it will be called "da9058"
 +
- config RTC_DRV_DS1307
- 	tristate "Dallas/Maxim DS1307/37/38/39/40, ST M41T00, EPSON RX-8025"
- 	help
-@@ -163,7 +173,6 @@ config RTC_DRV_DS1374
+ config MFD_SM501
+ 	tristate "Support for Silicon Motion SM501"
+ 	 ---help---
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 75f6ed6..1853278 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -86,6 +86,9 @@ obj-$(CONFIG_MFD_MAX8998)	+= max8998.o max8998-irq.o
  
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-ds1374.
--
- config RTC_DRV_DS1672
- 	tristate "Dallas/Maxim DS1672"
- 	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 2973921..b772f05 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_RTC_DRV_CMOS)	+= rtc-cmos.o
- obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
- obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
- obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
-+obj-$(CONFIG_RTC_DRV_DA9058)	+= rtc-da9058.o
- obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
- obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
- obj-$(CONFIG_RTC_DRV_DS1216)	+= rtc-ds1216.o
-diff --git a/drivers/rtc/rtc-da9058.c b/drivers/rtc/rtc-da9058.c
+ pcf50633-objs			:= pcf50633-core.o pcf50633-irq.o
+ obj-$(CONFIG_MFD_PCF50633)	+= pcf50633.o
++da9058-objs			= da9058-irq.o da9058-i2c.o da9058-core.o da9058-info.o
++obj-$(CONFIG_MFD_DA9058)		+= da9058.o
++
+ obj-$(CONFIG_PCF50633_ADC)	+= pcf50633-adc.o
+ obj-$(CONFIG_PCF50633_GPIO)	+= pcf50633-gpio.o
+ obj-$(CONFIG_ABX500_CORE)	+= abx500-core.o
+diff --git a/drivers/mfd/da9058-core.c b/drivers/mfd/da9058-core.c
 new file mode 100644
-index 0000000..30745e5
+index 0000000..370dcec
 --- /dev/null
-+++ b/drivers/rtc/rtc-da9058.c
-@@ -0,0 +1,456 @@
++++ b/drivers/mfd/da9058-core.c
+@@ -0,0 +1,320 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#include <linux/version.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/bug.h>
++#include <linux/device.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/ioport.h>
++#include <linux/gpio.h>
++#include <linux/proc_fs.h>
++#include <linux/kthread.h>
++#include <linux/mfd/core.h>
++#include <linux/regmap.h>
++
++#include <linux/mfd/da9058/core.h>
++#include <linux/mfd/da9058/registers.h>
++#include <linux/mfd/da9058/irq.h>
++#include <linux/mfd/da9058/pdata.h>
++#include <linux/mfd/da9058/conf.h>
++
++static int da9058_register_read(struct da9058 *da9058, u8 const reg, u8 *val)
++{
++	unsigned int ival;
++	int ret = regmap_read(da9058->regmap, reg, &ival);
++
++	*val = ival;
++	return ret;
++}
++
++static int da9058_register_write(struct da9058 *da9058, u8 const reg, u8 val)
++{
++	return regmap_write(da9058->regmap, reg, val);
++}
++
++static int da9058_register_raw_read(struct da9058 *da9058, u8 const reg,
++					u8 *val, size_t val_count)
++{
++	return regmap_raw_read(da9058->regmap, reg, val, val_count);
++}
++
++static int da9058_register_raw_write(struct da9058 *da9058, u8 const reg,
++					u8 *val, size_t val_count)
++{
++	return regmap_raw_write(da9058->regmap, reg, val, val_count);
++}
++
++static int da9058_register_bulk_read(struct da9058 *da9058, u8 const reg,
++					u8 *val, size_t val_count)
++{
++#if 0
++	return regmap_bulk_read(da9058->regmap, reg, val, val_count);
++#else
++	int ret = regmap_bulk_read(da9058->regmap, reg, val, val_count);
++	return ret;
++#endif
++}
++
++static int da9058_register_bulk_write(struct da9058 *da9058, u8 const reg,
++					u8 *val, size_t val_count)
++{
++	return regmap_bulk_write(da9058->regmap, reg, val, val_count);
++}
++
++static int da9058_register_update_bits(struct da9058 *da9058, u8 const reg,
++					u8 const mask, u8 const value)
++{
++	return regmap_update_bits(da9058->regmap, reg, mask, value);
++}
++
++/*
++ *  if the PMIC is in automatic ADC consersion mode we have the choice
++ *  of just getting the last (automatic) conversion or doing a manual
++ *  conversion anyway.
++ *
++ *  if the PMIC is not in automatic ADC consersion mode we have no choice
++ *  we just have to ignore the requested mode and just do a manual
++ *  ADC conversion.
++ */
++static int da9058_automatic_adc_conversion(struct da9058 *da9058,
++				const int channel, int *value)
++{
++	u8 adc_msh, adc_lsh;
++	int ret;
++
++	switch (channel) {
++	case DA9058_ADCMAN_MUXSEL_VBAT:
++		ret = da9058_register_read(da9058, DA9058_VBATRES_REG_MSB,
++						&adc_msh);
++		if (ret)
++			return ret;
++
++		ret = da9058_register_read(da9058, DA9058_AUTORES_REG_1,
++					&adc_lsh);
++		if (ret)
++			return ret;
++
++		*value = (adc_lsh & 0x0F) | (adc_msh << 4);
++
++		return 0;
++	case DA9058_ADCMAN_MUXSEL_TEMP:
++		ret = da9058_register_read(da9058, DA9058_TEMPRES_REG_MSB,
++						&adc_msh);
++		if (ret)
++			return ret;
++
++		ret = da9058_register_read(da9058, DA9058_AUTORES_REG_1,
++					&adc_lsh);
++		if (ret)
++			return ret;
++
++		*value = (adc_lsh >> 4) | (adc_msh << 4);
++
++		return 0;
++	case DA9058_ADCMAN_MUXSEL_VF:
++		ret = da9058_register_read(da9058, DA9058_VREF_REG,
++					&adc_msh);
++		if (ret)
++			return ret;
++
++		ret = da9058_register_read(da9058, DA9058_AUTORES_REG_2,
++					&adc_lsh);
++		if (ret)
++			return ret;
++
++		*value = (adc_lsh & 0x0F) | (adc_msh << 4);
++
++		return 0;
++	case DA9058_ADCMAN_MUXSEL_ADCIN:
++		ret = da9058_register_read(da9058, DA9058_ADCINRES_REG_MSB,
++					&adc_msh);
++		if (ret)
++			return ret;
++
++		ret = da9058_register_read(da9058, DA9058_AUTORES_REG_2,
++					&adc_lsh);
++		if (ret)
++			return ret;
++
++		*value = (adc_lsh >> 4) | (adc_msh << 4);
++
++		return 0;
++	case DA9058_ADCMAN_MUXSEL_TJUNC:
++		ret = da9058_register_read(da9058, DA9058_TJUNCRES_REG,
++					&adc_msh);
++		if (ret)
++			return ret;
++
++		ret = da9058_register_read(da9058, DA9058_AUTORES_REG_3,
++					&adc_lsh);
++		if (ret)
++			return ret;
++
++		*value = (adc_lsh >> 4) | (adc_msh << 4);
++
++		return 0;
++	default:
++		dev_err(da9058->dev, "ADC Channel %d is reserved\n", channel);
++		return -EIO;
++	}
++}
++
++static int da9058_manual_adc_conversion(struct da9058 *da9058,
++				const int channel, int *value)
++{
++	u8 adc_msh, adc_lsh;
++	int ret;
++
++	mutex_lock(&da9058->adc_mutex);
++
++	ret = da9058_register_write(da9058, DA9058_ADCMAN_REG,
++					DA9058_ADCMAN_MANCONV | channel);
++	if (ret < 0)
++		goto err;
++
++	if (!wait_for_completion_timeout(&da9058->adc_read_done,
++						msecs_to_jiffies(500))) {
++		dev_err(da9058->dev,
++			"timeout waiting for ADC conversion interrupt\n");
++		ret = -ETIMEDOUT;
++		goto err;
++	}
++
++	ret = da9058_register_read(da9058, DA9058_ADCRESH_REG, &adc_msh);
++	if (ret < 0)
++		goto err;
++
++	ret = da9058_register_read(da9058, DA9058_ADCRESL_REG, &adc_lsh);
++	if (ret < 0)
++		goto err;
++
++	*value = (adc_msh << 4) | (adc_lsh & 0x0F);
++
++err:
++	mutex_unlock(&da9058->adc_mutex);
++	return ret;
++}
++
++static int da9058_adc_conversion_read(struct da9058 *da9058, const int channel,
++					int automatic_mode, int *value)
++{
++	if (!value)
++		return -EINVAL;
++
++	if (automatic_mode) {
++		u8 adc_ctrl;
++		int ret;
++
++		ret = da9058_reg_read(da9058, DA9058_ADCCONT_REG, &adc_ctrl);
++		if (ret)
++			return ret;
++
++		if (adc_ctrl & DA9058_ADCCONT_AUTOADCEN)
++			return da9058_automatic_adc_conversion(da9058,
++						channel, value);
++		else
++			return da9058_manual_adc_conversion(da9058,
++						channel, value);
++	} else {
++		return da9058_manual_adc_conversion(da9058, channel, value);
++	}
++}
++
++static irqreturn_t da9058_adc_interrupt(int irq, void *data)
++{
++	struct da9058 *da9058 = data;
++
++	complete(&da9058->adc_read_done);
++
++	return IRQ_HANDLED;
++}
++
++struct da9058 *__devinit da9058_device_init(struct device *dev,
++					struct regmap *regmap, int irq,
++					struct da9058_chip_pdata *pdata)
++{
++	struct da9058 *da9058;
++	int ret;
++
++	da9058 = devm_kzalloc(dev, sizeof(struct da9058), GFP_KERNEL);
++	if (!da9058) {
++		ret = -ENOMEM;
++		goto err5;
++	}
++
++	dev_set_drvdata(dev, da9058);
++	da9058->dev = dev;
++	da9058->regmap = regmap;
++
++	if (pdata->init_board_irq) {
++		ret = pdata->init_board_irq();
++		if (ret)
++			goto err4;
++	}
++
++	mutex_init(&da9058->adc_mutex);
++	init_completion(&da9058->adc_read_done);
++
++	da9058->reg_read = da9058_register_read;
++	da9058->reg_write = da9058_register_write;
++	da9058->reg_raw_read = da9058_register_raw_read;
++	da9058->reg_raw_write = da9058_register_raw_write;
++	da9058->reg_bulk_read = da9058_register_bulk_read;
++	da9058->reg_bulk_write = da9058_register_bulk_write;
++	da9058->reg_update_bits = da9058_register_update_bits;
++	da9058->adc_read = da9058_adc_conversion_read;
++
++	da9058_set_bits(da9058, DA9058_POWERCONT_REG, DA9058_POWERCONT_nSLEEP);
++	da9058_clear_bits(da9058, DA9058_CONTROLB_REG,
++				DA9058_CONTROLB_WRITEMODE);
++
++	ret = da9058_irq_init(da9058, irq, &da9058_irq_chip);
++	if (ret)
++		goto err3;
++
++	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
++						DA9058_IRQ_EADCEOM),
++				NULL, da9058_adc_interrupt,
++				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
++				"DA9058 ADC EOM", da9058);
++	if (ret)
++		goto err2;
++
++	ret = da9058_add_mfd_devices(da9058, pdata);
++	if (ret)
++		goto err1;
++
++	return da9058;
++
++err1:
++	da9058_irq_exit(da9058);
++err2:
++err3:
++err4:
++err5:
++	dev_err(da9058->dev, "failed to initialize devices: %d\n", ret);
++	return ERR_PTR(ret);
++}
++EXPORT_SYMBOL_GPL(da9058_device_init);
++
++int da9058_device_exit(struct da9058 *da9058)
++{
++	free_irq(da9058_to_virt_irq_num(da9058, DA9058_IRQ_EADCEOM), da9058);
++
++	mfd_remove_devices(da9058->dev);
++
++	return da9058_irq_exit(da9058);
++}
++EXPORT_SYMBOL_GPL(da9058_device_exit);
+diff --git a/drivers/mfd/da9058-i2c.c b/drivers/mfd/da9058-i2c.c
+new file mode 100644
+index 0000000..dd78dd0
+--- /dev/null
++++ b/drivers/mfd/da9058-i2c.c
+@@ -0,0 +1,102 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/regmap.h>
++
++#include <linux/mfd/da9058/version.h>
++#include <linux/mfd/da9058/core.h>
++#include <linux/mfd/da9058/i2c.h>
++
++static int __devinit da9058_i2c_probe(struct i2c_client *i2c,
++					const struct i2c_device_id *id)
++{
++	struct device *dev = &i2c->dev;
++	struct regmap *regmap;
++	void *da9058;
++	int ret;
++
++	regmap = devm_regmap_init_i2c(i2c, &da9058_regmap_config);
++
++	if (IS_ERR(regmap)) {
++		ret = PTR_ERR(regmap);
++		dev_err(dev, "Failed to allocate register map: %d\n", ret);
++		goto exit;
++	}
++
++	da9058 = da9058_device_init(dev, regmap, i2c->irq,
++				i2c->dev.platform_data);
++	if (IS_ERR(da9058)) {
++		ret = PTR_ERR(da9058);
++		dev_err(dev, "Failed to initialize da9058: %d\n", ret);
++		goto exit;
++	}
++
++	i2c_set_clientdata(i2c, da9058);
++	ret = 0;
++exit:
++	return ret;
++}
++
++static int da9058_i2c_remove(struct i2c_client *i2c)
++{
++	void *da9058 = i2c_get_clientdata(i2c);
++
++	if (!da9058)
++		return -ENODEV;
++
++	return da9058_device_exit(da9058);
++}
++
++static const struct i2c_device_id da9058_i2c_id[] = {
++	{"da9058", 0},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, da9058_i2c_id);
++
++static struct i2c_driver da9058_i2c_driver = {
++	.driver = {
++		.name = "da9058",
++		.owner = THIS_MODULE,
++	},
++	.probe = da9058_i2c_probe,
++	.remove = da9058_i2c_remove,
++	.id_table = da9058_i2c_id,
++};
++
++/*
++ *  This driver is potentially initialised very early during bootup
++ */
++static int __init da9058_i2c_init(void)
++{
++	return i2c_add_driver(&da9058_i2c_driver);
++}
++
++subsys_initcall(da9058_i2c_init);
++
++static void __exit da9058_i2c_exit(void)
++{
++	i2c_del_driver(&da9058_i2c_driver);
++}
++
++module_exit(da9058_i2c_exit);
++
++MODULE_DESCRIPTION("Core/I2C support for the Dialog DA9058 PMIC");
++MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:da9058");
+diff --git a/drivers/mfd/da9058-irq.c b/drivers/mfd/da9058-irq.c
+new file mode 100644
+index 0000000..5792b35
+--- /dev/null
++++ b/drivers/mfd/da9058-irq.c
+@@ -0,0 +1,66 @@
 +/*
 + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
 + *
@@ -104,451 +558,909 @@ index 0000000..30745e5
 + */
 +
 +#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/rtc.h>
-+#include <linux/slab.h>
 +#include <linux/irq.h>
-+#include <linux/mfd/core.h>
++#include <linux/interrupt.h>
++#include <linux/regmap.h>
++#include <linux/device.h>
 +
-+#include <linux/mfd/da9058/version.h>
-+#include <linux/mfd/da9058/registers.h>
 +#include <linux/mfd/da9058/core.h>
-+#include <linux/mfd/da9058/irq.h>
-+#include <linux/mfd/da9058/rtc.h>
++#include <linux/mfd/da9058/pdata.h>
++#include <linux/mfd/da9058/conf.h>
++
++int da9058_to_virt_irq_num(struct da9058 *da9058, int irq)
++{
++	return da9058->irq_base + irq;
++}
++EXPORT_SYMBOL_GPL(da9058_to_virt_irq_num);
++
++int __devinit da9058_irq_init(struct da9058 *da9058, int irq,
++				struct regmap_irq_chip *irq_chip)
++{
++	int ret;
++
++	da9058->chip_irq = irq;
++
++	if (!da9058->chip_irq) {
++		dev_err(da9058->dev, "No IRQ configured\n");
++		return -EINVAL;
++	}
++	if (!irq_chip) {
++		dev_err(da9058->dev, "No chip interrupt data specified\n");
++		return 0;
++	}
++
++	ret = regmap_add_irq_chip(da9058->regmap, da9058->chip_irq,
++					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++					-1, irq_chip, &da9058->irq_data);
++	if (ret != 0) {
++		dev_err(da9058->dev, "Failed to register IRQ chip: %d\n", ret);
++		return ret;
++	}
++
++	da9058->irq_base = regmap_irq_chip_get_base(da9058->irq_data);
++
++	dev_info(da9058->dev, "IRQ %d mapped to virtual array based at %d\n",
++			da9058->chip_irq, da9058->irq_base);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(da9058_irq_init);
++
++int da9058_irq_exit(struct da9058 *da9058)
++{
++	regmap_del_irq_chip(da9058->chip_irq, da9058->irq_data);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(da9058_irq_exit);
+diff --git a/include/linux/mfd/da9058/bat.h b/include/linux/mfd/da9058/bat.h
+new file mode 100644
+index 0000000..71ebb56
+--- /dev/null
++++ b/include/linux/mfd/da9058/bat.h
+@@ -0,0 +1,33 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __D1982_BAT_H
++#define __D1982_BAT_H
++
++#define DA9058_LOOK_UP_TABLE_SIZE		68
++
++struct da9058_temp_capacity {
++	int temperature;
++	u32 capacity[DA9058_LOOK_UP_TABLE_SIZE][2];
++};
++
++struct da9058_power_table {
++	int temperature_points;
++	struct da9058_temp_capacity (*temp_tables)[];
++};
++
++struct da9058_power_pdata {
++	int battery_type;
++	int bat_low_limit;
++	int use_automatic_adc;
++	struct da9058_power_table *lookup_tables;
++};
++
++#endif /* __D1982_BAT_H */
+diff --git a/include/linux/mfd/da9058/codec.h b/include/linux/mfd/da9058/codec.h
+new file mode 100644
+index 0000000..4f79788
+--- /dev/null
++++ b/include/linux/mfd/da9058/codec.h
+@@ -0,0 +1,21 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __DA9058_CODEC_H
++#define __DA9058_CODEC_H
++
++struct da9058_codec_pdata {
++	int codec_irq;
++	int amplifier_initially_on;
++	int amp_control_reg;
++	int amp_enable_mask;
++};
++
++#endif /* __DA9058_CODEC_H */
+diff --git a/include/linux/mfd/da9058/core.h b/include/linux/mfd/da9058/core.h
+new file mode 100644
+index 0000000..3383ca9
+--- /dev/null
++++ b/include/linux/mfd/da9058/core.h
+@@ -0,0 +1,69 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __DA9058_CORE_H
++#define __DA9058_CORE_H
++
++#define DA9058_ADC_VBAT		0
++#define DA9058_ADC_TEMP		2
++#define DA9058_ADC_VF		4
++#define DA9058_ADC_ADCIN	5
++#define DA9058_ADC_TJUNC	8
++
++struct da9058 {
++	struct device *dev;
++	struct regmap *regmap;
++
++	int (*reg_read) (struct da9058 *da9058, u8 const reg, u8 *val);
++	int (*reg_write) (struct da9058 *da9058, u8 const reg, u8 val);
++	int (*reg_raw_read) (struct da9058 *da9058, u8 const reg,
++				u8 *val, size_t val_len);
++	int (*reg_raw_write) (struct da9058 *da9058, u8 const reg,
++				u8 *val, size_t val_len);
++	int (*reg_bulk_read) (struct da9058 *da9058, u8 const reg, u8 *val,
++				size_t val_count);
++	int (*reg_bulk_write) (struct da9058 *da9058, u8 const reg, u8 *val,
++				size_t val_count);
++	int (*reg_update_bits) (struct da9058 *da9058, u8 const reg,
++				u8 mask, u8 val);
++	int (*adc_read) (struct da9058 *da9058, int chnl, int mode, int *pval);
++
++	int chip_irq;
++	int irq_base;
++
++	struct regmap_irq_chip_data *irq_data;
++
++	struct mutex adc_mutex;
++	struct completion adc_read_done;
++};
 +
 +/*
-+ * Limit values
++ * da9058 device IO
 + */
-+#define DA9058_RTC_SECONDS_LIMIT		59
-+#define DA9058_RTC_MINUTES_LIMIT		59
-+#define DA9058_RTC_HOURS_LIMIT			23
-+#define DA9058_RTC_DAYS_LIMIT			31
-+#define DA9058_RTC_MONTHS_LIMIT			12
-+#define DA9058_RTC_YEARS_LIMIT			63
++#define da9058_set_bits(da9058, reg, mask) \
++	(da9058->reg_update_bits(da9058, reg, mask, 0xFF))
++#define da9058_clear_bits(da9058, reg, mask) \
++	(da9058->reg_update_bits(da9058, reg, mask, 0x00))
++#define da9058_update_bits(da9058, reg, mask, pval) \
++	(da9058->reg_update_bits(da9058, reg, mask, pval))
 +
-+struct da9058_rtc {
-+	struct da9058 *da9058;
-+	struct platform_device *pdev;
-+	struct rtc_device *rtc_dev;
-+	int alarm_irq;
-+	int tick_irq;
-+	int alarm_enabled;	/* used over suspend/resume */
++#define da9058_bulk_read(da9058, reg, pval, count) \
++	(da9058->reg_bulk_read(da9058, reg, pval, count))
++#define da9058_bulk_write(da9058, reg, pval, count) \
++	(da9058->reg_bulk_write(da9058, reg, pval, count))
++
++#define da9058_reg_read(da9058, reg, pval) \
++	(da9058->reg_read(da9058, reg, pval))
++#define da9058_reg_write(da9058, reg, val) \
++	(da9058->reg_write(da9058, reg, val))
++#define da9058_adc_read(da9058, chnl, mode, pval) \
++	(da9058->adc_read(da9058, chnl, mode, pval))
++
++#endif /* __DA9058_CORE_H */
+diff --git a/include/linux/mfd/da9058/gpio.h b/include/linux/mfd/da9058/gpio.h
+new file mode 100644
+index 0000000..b61eee7
+--- /dev/null
++++ b/include/linux/mfd/da9058/gpio.h
+@@ -0,0 +1,19 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __D1982_GPIO_H
++#define __D1982_GPIO_H
++
++struct da9058_gpio_pdata {
++	int ngpio;
++	int gpio_base;
 +};
 +
-+static int da9058_rtc_check_param(struct rtc_time *rtc_tm)
-+{
-+	if ((rtc_tm->tm_sec > DA9058_RTC_SECONDS_LIMIT) || (rtc_tm->tm_sec < 0))
-+		return -EIO;
-+
-+	if ((rtc_tm->tm_min > DA9058_RTC_MINUTES_LIMIT) || (rtc_tm->tm_min < 0))
-+		return -EIO;
-+
-+	if ((rtc_tm->tm_hour > DA9058_RTC_HOURS_LIMIT) || (rtc_tm->tm_hour < 0))
-+		return -EIO;
-+
-+	if (rtc_tm->tm_mday == 0)
-+		return -EIO;
-+
-+	if ((rtc_tm->tm_mon > DA9058_RTC_MONTHS_LIMIT) || (rtc_tm->tm_mon <= 0))
-+		return -EIO;
-+
-+	if ((rtc_tm->tm_year > DA9058_RTC_YEARS_LIMIT) || (rtc_tm->tm_year < 0))
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+static int da9058_rtc_readtime(struct device *dev, struct rtc_time *tm)
-+{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+	struct da9058 *da9058 = rtc->da9058;
-+	u8 rtc_time[6];
-+	int ret;
-+
-+	ret = da9058_bulk_read(da9058, DA9058_COUNTS_REG, rtc_time, 6);
-+	if (ret)
-+		return ret;
-+
-+	tm->tm_sec = rtc_time[0] & DA9058_RTC_SECS_MASK;
-+
-+	tm->tm_min = rtc_time[1] & DA9058_RTC_MINS_MASK;
-+
-+	tm->tm_hour = rtc_time[2] & DA9058_RTC_HRS_MASK;
-+
-+	tm->tm_mday = (rtc_time[3] & DA9058_RTC_DAY_MASK);
-+
-+	tm->tm_mon = (rtc_time[4] & DA9058_RTC_MTH_MASK);
-+
-+	tm->tm_year = (rtc_time[5] & DA9058_RTC_YRS_MASK);
-+
-+	ret = da9058_rtc_check_param(tm);
-+
-+	if (ret)
-+		return ret;
-+
-+	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon,
-+						tm->tm_year);
-+	tm->tm_year += 100;
-+	tm->tm_mon -= 1;
-+
-+	dev_info(dev, "Read RTC: %02x %02x %02x %02x %02x %02x\n",
-+		rtc_time[0], rtc_time[1], rtc_time[2],
-+		rtc_time[3], rtc_time[4], rtc_time[5]);
-+
-+	return 0;
-+}
-+
-+static int da9058_rtc_settime(struct device *dev, struct rtc_time *tm)
-+{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+	struct da9058 *da9058 = rtc->da9058;
-+	u8 rtc_time[6];
-+	u8 rtc_ctrl, val;
-+	int ret;
-+
-+	tm->tm_year -= 111;
-+	tm->tm_mon += 1;
-+
-+	ret = da9058_rtc_check_param(tm);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = da9058_reg_read(da9058, DA9058_COUNTS_REG, &rtc_ctrl);
-+	if (ret)
-+		return ret;
-+	rtc_ctrl &= ~DA9058_RTC_SECS_MASK;
-+
-+	rtc_time[0] = rtc_ctrl | tm->tm_sec;
-+	rtc_time[1] = tm->tm_min;
-+	rtc_time[2] = tm->tm_hour;
-+	rtc_time[3] = tm->tm_mday;
-+	rtc_time[4] = tm->tm_mon;
-+	rtc_time[5] = tm->tm_year;
-+
-+	dev_info(dev, "Setting RTC: %02x %02x %02x %02x %02x %02x\n",
-+		rtc_time[0], rtc_time[1], rtc_time[2], rtc_time[3],
-+		rtc_time[4], rtc_time[5]);
-+
-+	ret = da9058_bulk_write(da9058, DA9058_COUNTS_REG, rtc_time, 6);
-+	if (ret) {
-+		dev_dbg(dev, "failed %d to write to RTC\n", ret);
-+		return ret;
-+	}
-+	ret = da9058_reg_read(da9058, DA9058_COUNTY_REG, &val);
-+	if (ret)
-+		return ret;
-+	val &= DA9058_COUNTY_MONITOR;
-+
-+	if (val)
-+		return 0;
-+
-+	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
-+
-+	return ret;
-+}
-+
-+static int da9058_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+	struct da9058 *da9058 = rtc->da9058;
-+	struct rtc_time *tm = &alrm->time;
-+	u8 alm_time[6], val;
-+	int ret;
-+
-+	ret = da9058_bulk_read(da9058, DA9058_ALARMS_REG, alm_time, 6);
-+	if (ret)
-+		return ret;
-+
-+	tm->tm_min = alm_time[0] & DA9058_RTC_ALMSECS_MASK;
-+
-+	tm->tm_min = alm_time[1] & DA9058_RTC_ALMMINS_MASK;
-+
-+	tm->tm_hour = alm_time[2] & DA9058_RTC_ALMHRS_MASK;
-+
-+	tm->tm_mday = alm_time[3] & DA9058_RTC_ALMDAY_MASK;
-+
-+	tm->tm_mon = alm_time[4] & DA9058_RTC_ALMMTH_MASK;
-+
-+	tm->tm_year = alm_time[5] & DA9058_RTC_ALMYRS_MASK;
-+
-+	dev_info(dev, "Read ALM: %02x %02x %02x %02x %02x %02x\n",
-+			alm_time[0], alm_time[1], alm_time[2],
-+			alm_time[3], alm_time[4], alm_time[5]);
-+
-+	ret = da9058_rtc_check_param(tm);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &val);
-+	if (ret)
-+		return ret;
-+
-+	alrm->enabled = val & DA9058_ALARMY_ALARMON;
-+
-+	tm->tm_year += 100;
-+	tm->tm_mon -= 1;
-+	return 0;
-+}
-+
-+static int da9058_rtc_stop_alarm(struct da9058_rtc *rtc)
-+{
-+	return da9058_clear_bits(rtc->da9058, DA9058_ALARMY_REG,
-+						DA9058_ALARMY_ALARMON);
-+}
-+
-+static int da9058_rtc_start_alarm(struct da9058_rtc *rtc)
-+{
-+	return da9058_set_bits(rtc->da9058, DA9058_ALARMY_REG,
-+						DA9058_ALARMY_ALARMON);
-+}
-+
-+static int da9058_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+	struct da9058 *da9058 = rtc->da9058;
-+	struct rtc_time *tm = &alrm->time;
-+	u8 alm_time[6], rtc_ctrl;
-+	int ret;
-+
-+	tm->tm_year -= 100;
-+	tm->tm_mon += 1;
-+
-+	ret = da9058_rtc_check_param(tm);
-+	if (ret < 0)
-+		return ret;
-+
-+	memset(alm_time, 0, sizeof(alm_time));
-+
-+	if (tm->tm_sec != -1)
-+		alm_time[0] |= tm->tm_sec;
-+	else
-+		alm_time[0] |= DA9058_RTC_ALMSECS_MASK;
-+
-+	ret = da9058_reg_read(da9058, DA9058_ALARMMI_REG, &rtc_ctrl);
-+	if (ret)
-+		return ret;
-+	rtc_ctrl &= ~DA9058_RTC_ALMMINS_MASK;
-+
-+	if (tm->tm_min != -1)
-+		alm_time[1] = rtc_ctrl | tm->tm_min;
-+	else
-+		alm_time[1] = rtc_ctrl | DA9058_RTC_ALMMINS_MASK;
-+
-+	if (tm->tm_hour != -1)
-+		alm_time[2] |= tm->tm_hour;
-+	else
-+		alm_time[2] |= DA9058_RTC_ALMHRS_MASK;
-+
-+	if (tm->tm_mday != -1)
-+		alm_time[3] |= tm->tm_mday;
-+	else
-+		alm_time[3] |= DA9058_RTC_ALMDAY_MASK;
-+
-+	if (tm->tm_mon != -1)
-+		alm_time[4] |= tm->tm_mon;
-+	else
-+		alm_time[4] |= DA9058_RTC_ALMMTH_MASK;
-+
-+	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &rtc_ctrl);
-+	if (ret)
-+		return ret;
-+
-+	rtc_ctrl &= ~DA9058_RTC_ALMYRS_MASK;
-+
-+	if (tm->tm_year != -1)
-+		alm_time[5] = rtc_ctrl | tm->tm_year;
-+	else
-+		alm_time[5] = rtc_ctrl | DA9058_RTC_ALMYRS_MASK;
-+
-+	ret = da9058_rtc_stop_alarm(rtc);
-+	if (ret < 0)
-+		return ret;
-+
-+	dev_info(dev, "Setting ALM: %02x %02x %02x %02x %02x %02x\n",
-+		alm_time[0], alm_time[1], alm_time[2], alm_time[3],
-+		alm_time[4], alm_time[5]);
-+
-+	ret = da9058_bulk_write(da9058, DA9058_ALARMS_REG, alm_time, 6);
-+	if (ret)
-+		return ret;
-+
-+	if (alrm->enabled)
-+		ret = da9058_rtc_start_alarm(rtc);
-+
-+	return ret;
-+}
-+
-+static int da9058_rtc_alarm_irq_enable(struct device *dev,
-+						unsigned int enabled)
-+{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+
-+	if (enabled)
-+		return da9058_rtc_start_alarm(rtc);
-+	else
-+		return da9058_rtc_stop_alarm(rtc);
-+}
-+
-+static irqreturn_t da9058_rtc_timer_alarm_handler(int irq, void *data)
-+{
-+	struct da9058_rtc *rtc = data;
-+
-+	da9058_rtc_stop_alarm(rtc);
-+	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static irqreturn_t da9058_rtc_tick_alarm_handler(int irq, void *data)
-+{
-+	struct da9058_rtc *rtc = data;
-+
-+	rtc_update_irq(rtc->rtc_dev, 1, RTC_PF | RTC_IRQF);
-+
-+	return IRQ_HANDLED;
-+}
-+static int da9058_rtc_proc(struct device *dev, struct seq_file *seq)
-+{
-+	seq_printf(seq, "Tony Olech was here\n");
-+
-+	return 0;
-+}
-+
-+static const struct rtc_class_ops da9058_rtc_ops = {
-+	.read_time = da9058_rtc_readtime,
-+	.set_time = da9058_rtc_settime,
-+	.read_alarm = da9058_rtc_readalarm,
-+	.set_alarm = da9058_rtc_setalarm,
-+	.proc = da9058_rtc_proc,
-+	.alarm_irq_enable = da9058_rtc_alarm_irq_enable,
++#endif /* __D1982_GPIO_H */
+diff --git a/include/linux/mfd/da9058/hwmon.h b/include/linux/mfd/da9058/hwmon.h
+new file mode 100644
+index 0000000..a18f4b3
+--- /dev/null
++++ b/include/linux/mfd/da9058/hwmon.h
+@@ -0,0 +1,20 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __DA9058_HWMON_H
++#define __DA9058_HWMON_H
++
++struct da9058_hwmon_pdata {
++	int use_automatic_adc;
++	int temp_adc_resistance;
++	int vf_adc_resistance;
 +};
 +
-+static int da9058_rtc_probe(struct platform_device *pdev)
-+{
-+	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
-+	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_rtc_pdata *rtc_pdata;
-+	struct da9058_rtc *rtc;
-+	int ret;
++#endif /* __DA9058_HWMON_H */
+diff --git a/include/linux/mfd/da9058/irq.h b/include/linux/mfd/da9058/irq.h
+new file mode 100644
+index 0000000..6e40b87
+--- /dev/null
++++ b/include/linux/mfd/da9058/irq.h
+@@ -0,0 +1,45 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
 +
-+	if (cell == NULL) {
-+		ret = -ENODEV;
-+		goto exit;
-+	}
++#ifndef __DA9058_IRQ_H
++#define __DA9058_IRQ_H
 +
-+	rtc_pdata = cell->platform_data;
++enum {
 +
-+	if (rtc_pdata == NULL) {
-+		ret = -EINVAL;
-+		goto exit;
-+	}
++DA9058_IRQ_EALRAM,
++DA9058_IRQ_ESEQRDY,
++DA9058_IRQ_ETICK,
 +
-+	dev_info(&pdev->dev, "Starting RTC\n");
++DA9058_IRQ_ENONKEY,
++DA9058_IRQ_EADCEOM,
 +
-+	rtc = devm_kzalloc(&pdev->dev, sizeof(struct da9058_rtc), GFP_KERNEL);
-+	if (!rtc) {
-+		ret = -ENOMEM;
-+		goto exit;
-+	}
++DA9058_IRQ_EGPI0,
++DA9058_IRQ_EGPI1,
++DA9058_IRQ_EAUDIO,
 +
-+	platform_set_drvdata(pdev, rtc);
++DA9058_IRQ_EGPI2,
++DA9058_IRQ_EGPI3,
++DA9058_IRQ_EGPI4,
++DA9058_IRQ_EGPI5,
 +
-+	rtc->da9058 = da9058;
-+	rtc->pdev = pdev;
-+	ret = da9058_clear_bits(da9058, DA9058_WAITCONT_REG,
-+						DA9058_WAITCONT_RTCCLOCK);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to set RTC running: %d\n", ret);
-+		goto err0;
-+	}
-+
-+	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed No gating RTC: %d\n", ret);
-+		goto err1;
-+	}
-+
-+	device_init_wakeup(&pdev->dev, 1);
-+
-+	rtc->rtc_dev = rtc_device_register("da9058", &pdev->dev,
-+						&da9058_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(rtc->rtc_dev)) {
-+		ret = PTR_ERR(rtc->rtc_dev);
-+		dev_err(&pdev->dev, "failed to register RTC: %d\n", ret);
-+		goto err2;
-+	}
-+
-+	rtc->alarm_irq = DA9058_IRQ_EALRAM;
-+	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
-+							rtc->alarm_irq),
-+				NULL, da9058_rtc_timer_alarm_handler,
-+				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-+				"DA9058 RTC Timer Alarm", rtc);
-+
-+	if (ret != 0) {
-+		dev_err(&pdev->dev,
-+			"Failed to get rtc timer alarm IRQ %d: %d\n",
-+			rtc->alarm_irq, ret);
-+		goto err3;
-+	}
-+
-+	rtc->tick_irq = DA9058_IRQ_ETICK;
-+	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
-+							rtc->tick_irq),
-+				NULL, da9058_rtc_tick_alarm_handler,
-+				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-+				"DA9058 RTC Tick Alarm", rtc);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"Failed to get rtc timer alarm IRQ %d: %d\n",
-+			DA9058_IRQ_ETICK, ret);
-+		goto err4;
-+	}
-+
-+	dev_info(&rtc->pdev->dev, "\nRTC registered\n");
-+	ret = 0;
-+	goto exit;
-+
-+err4:
-+	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
-+err3:
-+err2:
-+	rtc_device_unregister(rtc->rtc_dev);
-+err1:
-+err0:
-+	platform_set_drvdata(pdev, NULL);
-+exit:
-+	return ret;
-+}
-+
-+static int __devexit da9058_rtc_remove(struct platform_device *pdev)
-+{
-+	struct da9058_rtc *rtc = platform_get_drvdata(pdev);
-+	struct da9058 *da9058 = rtc->da9058;
-+
-+	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
-+	free_irq(da9058_to_virt_irq_num(da9058, rtc->tick_irq), rtc);
-+
-+	rtc_device_unregister(rtc->rtc_dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver da9058_rtc_driver = {
-+	.probe = da9058_rtc_probe,
-+	.remove = __devexit_p(da9058_rtc_remove),
-+	.driver = {
-+		.name = "da9058-rtc",
-+		.owner = THIS_MODULE,
-+	},
++DA9058_NUM_IRQ
 +};
 +
-+module_platform_driver(da9058_rtc_driver);
++/*
++ *  da9058 virtual threaded interrupts
++ *  the MFD component drivers or users of those drivers
++ *  (in the case of GPIOs) will call:
++ *  request_threaded_irq() and free_irq() directly using
++ *  the actual virtual threaded IRQ number which can be
++ *  obtained from the DA9058 PMIC relative (soft) IRQ number
++ */
++int da9058_to_virt_irq_num(struct da9058 *da9058, int irq);
 +
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC Real Time Clock Driver");
-+MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-rtc");
++#endif /* __DA9058_IRQ_H */
+diff --git a/include/linux/mfd/da9058/onkey.h b/include/linux/mfd/da9058/onkey.h
+new file mode 100644
+index 0000000..8b95117
+--- /dev/null
++++ b/include/linux/mfd/da9058/onkey.h
+@@ -0,0 +1,17 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __DA9058_ONKEY_H
++#define __DA9058_ONKEY_H
++
++struct da9058_onkey_pdata {
++};
++
++#endif /* __DA9058_ONKEY_H */
+diff --git a/include/linux/mfd/da9058/pdata.h b/include/linux/mfd/da9058/pdata.h
+new file mode 100644
+index 0000000..fa54167
+--- /dev/null
++++ b/include/linux/mfd/da9058/pdata.h
+@@ -0,0 +1,28 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __DA9058_PDATA_H
++#define __DA9058_PDATA_H
++
++/*
++ *  This is the Platform Data for the DA9058 PMIC chip as a whole.
++ */
++struct da9058_chip_pdata {
++	int (*init_board_irq)(void);
++	char *platform_description;
++	int battery_type;
++	int bat_low_limit;
++	int use_automatic_adc;
++	int temp_adc_resistance;
++	int vf_adc_resistance;
++	struct da9058_power_table *lookup_tables;
++};
++
++#endif /* __DA9058_PDATA_H */
+diff --git a/include/linux/mfd/da9058/registers.h b/include/linux/mfd/da9058/registers.h
+new file mode 100644
+index 0000000..0fd6aef
+--- /dev/null
++++ b/include/linux/mfd/da9058/registers.h
+@@ -0,0 +1,480 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __DA9058_REGISTERS_H
++#define __DA9058_REGISTERS_H
++
++#define DA9058_PAGECON0_REG			0
++#define DA9058_STATUSA_REG			1
++#define DA9058_STATUSB_REG			2
++#define DA9058_STATUSC_REG			3
++#define DA9058_STATUSD_REG			4
++#define DA9058_EVENTA_REG			5
++#define DA9058_EVENTB_REG			6
++#define DA9058_EVENTC_REG			7
++#define DA9058_EVENTD_REG			8
++#define DA9058_FAULTLOG_REG			9
++#define DA9058_IRQMASKA_REG			10
++#define DA9058_IRQMASKB_REG			11
++#define DA9058_IRQMASKC_REG			12
++#define DA9058_IRQMASKD_REG			13
++#define DA9058_CONTROLA_REG			14
++#define DA9058_CONTROLB_REG			15
++#define DA9058_CONTROLC_REG			16
++#define DA9058_CONTROLD_REG			17
++#define DA9058_PDDIS_REG			18
++#define DA9058_INTERFACE_REG			19
++#define DA9058_RESET_REG			20
++#define DA9058_GPIO0001_REG			21
++
++#define DA9058_GPIO0203_REG			25
++#define DA9058_GPIO0405_REG			27
++
++#define DA9058_ID01_REG				29
++#define DA9058_ID23_REG				30
++#define DA9058_ID45_REG				31
++#define DA9058_ID67_REG				32
++#define DA9058_ID89_REG				33
++#define DA9058_ID1011_REG			34
++#define DA9058_ID1213_REG			35
++#define DA9058_ID1415_REG			36
++#define DA9058_ID1617_REG			37
++
++#define DA9058_SEQSTATUS_REG			40
++#define DA9058_SEQA_REG				41
++#define DA9058_SEQB_REG				42
++#define DA9058_SEQTIMER_REG			43
++#define DA9058_BUCKA_REG			44
++#define DA9058_BUCKB_REG			45
++#define DA9058_BUCK1_REG			46
++#define DA9058_BUCK2_REG			47
++#define DA9058_BUCK3_REG			48
++#define DA9058_BUCK4_REG			49
++#define DA9058_LDO1_REG				50
++#define DA9058_LDO2_REG				51
++#define DA9058_LDO3_REG				52
++#define DA9058_LDO4_REG				53
++#define DA9058_LDO5_REG				54
++#define DA9058_LDO6_REG				55
++#define DA9058_LDO7_REG				56
++#define DA9058_LDO8_REG				57
++#define DA9058_LDO9_REG				58
++#define DA9058_LDO10_REG			59
++#define DA9058_LDO12_REG			60
++#define DA9058_LDO13_REG			61
++#define DA9058_PULLDOWN_REG_A			62
++#define DA9058_PULLDOWN_REG_B			63
++#define DA9058_PULLDOWN_REG_C			64
++#define DA9058_LDO14_REG			65
++#define DA9058_LDO16_REG			66
++#define DA9058_LDO17_REG			67
++#define DA9058_LDO18_REG			68
++#define DA9058_LDO19_REG			69
++#define DA9058_SUPPLY_REG			70
++#define DA9058_WAITCONT_REG			71
++#define DA9058_ONKEYCONT_REG			72
++#define DA9058_POWERCONT_REG			73
++#define DA9058_AUDIO_CONF1_REG			74
++#define DA9058_AUDIO_CONF2_REG_A		75
++#define DA9058_AUDIO_CONF2_REG_B		76
++#define DA9058_BBATCONT_REG			77
++
++#define DA9058_ADCMAN_REG			81
++#define DA9058_ADCCONT_REG			82
++#define DA9058_ADCRESL_REG			83
++#define DA9058_ADCRESH_REG			84
++#define DA9058_VBATRES_REG_MSB			85
++
++#define DA9058_TEMPRES_REG_MSB			90
++
++#define DA9058_TOFFSET_REG			94
++#define DA9058_VREF_REG				95
++
++#define DA9058_ADCINRES_REG_MSB			98
++
++#define DA9058_TJUNCRES_REG			104
++#define DA9058_AUTORES_REG_1			105
++#define DA9058_AUTORES_REG_2			106
++#define DA9058_AUTORES_REG_3			107
++
++#define DA9058_COUNTS_REG			111
++#define DA9058_COUNTMI_REG			112
++#define DA9058_COUNTH_REG			113
++#define DA9058_COUNTD_REG			114
++#define DA9058_COUNTMO_REG			115
++#define DA9058_COUNTY_REG			116
++#define DA9058_ALARMS_REG			117
++#define DA9058_ALARMMI_REG			118
++#define DA9058_ALARMH_REG			119
++#define DA9058_ALARMD_REG			120
++#define DA9058_ALARMMO_REG			121
++#define DA9058_ALARMY_REG			122
++
++#define DA9058_PAGECON1_REG			128
++#define DA9058_CHIPID_REG			129
++#define DA9058_CONFIGID_REG			130
++#define DA9058_OTPCONT_REG			131
++#define DA9058_OSCTRIM_REG			132
++#define DA9058_GPID0_REG			133
++#define DA9058_GPID1_REG			134
++#define DA9058_GPID2_REG			135
++#define DA9058_GPID3_REG			136
++#define DA9058_GPID4_REG			137
++#define DA9058_GPID5_REG			138
++#define DA9058_GPID6_REG			139
++#define DA9058_GPID7_REG			140
++#define DA9058_GPID8_REG			141
++#define DA9058_GPID9_REG			142
++
++#define DA9058_PAGE0_REG_START			DA9058_STATUSA_REG
++#define DA9058_PAGE0_REG_END			DA9058_ALARMY_REG
++#define DA9058_PAGE1_REG_START			DA9058_CHIPID_REG
++#define DA9058_PAGE1_REG_END			DA9058_GPID9_REG
++#define DA9058_MAX_REGISTER_CNT			DA9058_PAGE1_REG_END
++
++/* STATUS REGISTER A */
++#define DA9058_STATUSA_NONKEY			(1<<0)
++/* STATUS REGISTER B */
++#define DA9058_STATUSB_SEQUENCING		(1<<6)
++/* STATUS REGISTER C */
++#define DA9058_STATUSC_INT_IN			(1<<2)
++#define DA9058_STATUSC_GPI1			(1<<1)
++#define DA9058_STATUSC_GPI0			(1<<0)
++/* STATUS REGISTER D */
++#define DA9058_STATUSD_GPI5			(1<<5)
++#define DA9058_STATUSD_GPI4			(1<<4)
++#define DA9058_STATUSD_GPI3			(1<<3)
++#define DA9058_STATUSD_GPI2			(1<<0)
++/* EVENT REGISTER A */
++#define DA9058_EVENTA_ETICK			(1<<7)
++#define DA9058_EVENTA_ESEQRDY			(1<<6)
++#define DA9058_EVENTA_EALRAM			(1<<5)
++/* EVENT REGISTER B */
++#define DA9058_EVENTB_EADCEOM			(1<<5)
++#define DA9058_EVENTB_ENONKEY			(1<<0)
++/* EVENT REGISTER C */
++#define DA9058_EVENTC_EAUDIO			(1<<2)
++#define DA9058_EVENTC_EGPI1			(1<<1)
++#define DA9058_EVENTC_EGPI0			(1<<0)
++/* EVENT REGISTER D */
++#define DA9058_EVENTC_EGPI5			(1<<5)
++#define DA9058_EVENTC_EGPI4			(1<<4)
++#define DA9058_EVENTC_EGPI3			(1<<3)
++#define DA9058_EVENTC_EGPI2			(1<<0)
++/* FAULT LOG REGISTER */
++#define DA9058_FAULTLOG_WAITSET			(1<<7)
++#define DA9058_FAULTLOG_KEYSHUT			(1<<5)
++#define DA9058_FAULTLOG_TEMPOVER		(1<<3)
++#define DA9058_FAULTLOG_VDDSTART		(1<<2)
++#define DA9058_FAULTLOG_VDDFAULT		(1<<1)
++#define DA9058_FAULTLOG_TWDERROR		(1<<0)
++/* IRQ_MASK REGISTER A */
++#define DA9058_IRQMASKA_MTICK			(1<<7)
++#define DA9058_IRQMASKA_MSEQRDY			(1<<6)
++#define DA9058_IRQMASKA_MALRAM			(1<<5)
++#define DA9058_IRQMASKA_BIT4			(1<<4)
++/* IRQ_MASK REGISTER B */
++#define DA9058_IRQMASKB_MADCEOM			(1<<5)
++#define DA9058_IRQMASKB_BIT4			(1<<4)
++#define DA9058_IRQMASKB_MNONKEY			(1<<0)
++/* IRQ_MASK REGISTER C */
++#define DA9058_IRQMASKC_MAUDIO			(1<<2)
++#define DA9058_IRQMASKC_MGPI1			(1<<1)
++#define DA9058_IRQMASKC_MGPI0			(1<<0)
++/* IRQ_MASK REGISTER D */
++#define DA9058_IRQMASKD_MGPI5			(1<<5)
++#define DA9058_IRQMASKD_MGPI4			(1<<4)
++#define DA9058_IRQMASKD_MGPI3			(1<<3)
++#define DA9058_IRQMASKD_MGPI2			(1<<0)
++/* CONTROL REGISTER A */
++#define DA9058_CONTROLA_GPIV			(1<<7)
++#define DA9058_CONTROLA_PMOTYPE			(1<<5)
++#define DA9058_CONTROLA_PMOPU			(1<<4)
++#define DA9058_CONTROLA_PMIV			(1<<3)
++#define DA9058_CONTROLA_PMIFV			(1<<3)
++#define DA9058_CONTROLA_PWR1EN			(1<<2)
++#define DA9058_CONTROLA_PWREN			(1<<1)
++#define DA9058_CONTROLA_SYSEN			(1<<0)
++/* CONTROL REGISTER B */
++#define DA9058_CONTROLB_SHUTDOWN		(1<<7)
++#define DA9058_CONTROLB_DEEPSLEEP		(1<<6)
++#define DA9058_CONTROLB_WRITEMODE		(1<<5)
++#define DA9058_CONTROLB_I2C1_SPEED		(1<<4)
++#define DA9058_CONTROLB_OTPREADEN		(1<<3)
++#define DA9058_CONTROLB_AUTOBOOT		(1<<2)
++/* CONTROL REGISTER C */
++#define DA9058_CONTROLC_DEBOUNCING		(7<<2)
++#define DA9058_CONTROLC_PMFBPIN			(1<<0)
++/* CONTROL REGISTER D */
++#define DA9058_CONTROLD_WATCHDOG		(1<<7)
++#define DA9058_CONTROLD_KEEPACTEN		(1<<3)
++#define DA9058_CONTROLD_TWDSCALE		(7<<0)
++/* POWER DOWN DISABLE REGISTER */
++#define DA9058_PDDIS_PMCONTPD			(1<<7)
++#define DA9058_PDDIS_OUT32KPD			(1<<6)
++#define DA9058_PDDIS_CHGBBATPD			(1<<5)
++#define DA9058_PDDIS_HSIFPD			(1<<3)
++#define DA9058_PDDIS_PMIFPD			(1<<2)
++#define DA9058_PDDIS_GPADCPD			(1<<1)
++#define DA9058_PDDIS_GPIOPD			(1<<0)
++/* INTERFACE REGISTER */
++#define DA9058_INTERFACE_IFBASEADDR		(7<<5)
++/* RESET REGISTER */
++#define DA9058_RESET_RESETEVENT			(3<<6)
++#define DA9058_RESET_RESETTIMER			(63<<0)
++/* GPIO control register for PIN 0 and 1 */
++#define DA9058_GPIO01_GPIO1MODE			(1<<7)
++#define DA9058_GPIO01_GPIO1TYPE			(1<<6)
++#define DA9058_GPIO01_GPIO1PIN			(3<<4)
++#define DA9058_GPIO01_GPIO0MODE			(1<<3)
++#define DA9058_GPIO01_GPIO0TYPE			(1<<2)
++#define DA9058_GPIO01_GPIO0PIN			(3<<0)
++/* GPIO control register for PIN 2 and 3 */
++#define DA9058_GPIO23_GPIO3MODE			(1<<7)
++#define DA9058_GPIO23_GPIO3TYPE			(1<<6)
++#define DA9058_GPIO23_GPIO3PIN			(3<<4)
++#define DA9058_GPIO23_GPIO2MODE			(1<<3)
++#define DA9058_GPIO23_GPIO2TYPE			(1<<2)
++#define DA9058_GPIO23_GPIO2PIN			(3<<0)
++/* GPIO control register for PIN 4 and 5 */
++#define DA9058_GPIO45_GPIO5MODE			(1<<7)
++#define DA9058_GPIO45_GPIO5TYPE			(1<<6)
++#define DA9058_GPIO45_GPIO5PIN			(3<<4)
++#define DA9058_GPIO45_GPIO4MODE			(1<<3)
++#define DA9058_GPIO45_GPIO4TYPE			(1<<2)
++#define DA9058_GPIO45_GPIO4PIN			(3<<0)
++/* BUCK and LDO fields */
++#define DA9058_BUCK_LDO_EN			(1<<6)
++#define DA9058_MAX_VSEL				0x3F
++/* SEQ control register for ID 0 and 1 */
++#define DA9058_ID01_LDO1STEP			(15<<4)
++#define DA9058_ID01_WAITIDALWAYS		(1<<2)
++#define DA9058_ID01_SYSPRE			(1<<2)
++#define DA9058_ID01_DEFSUPPLY			(1<<1)
++#define DA9058_ID01_nRESMODE			(1<<0)
++/* SEQ control register for ID 2 and 3 */
++#define DA9058_ID23_LDO3STEP			(15<<4)
++#define DA9058_ID23_LDO2STEP			(15<<0)
++/* SEQ control register for ID 4 and 5 */
++#define DA9058_ID45_LDO5STEP			(15<<4)
++#define DA9058_ID45_LDO4STEP			(15<<0)
++/* SEQ control register for ID 6 and 7 */
++#define DA9058_ID67_LDO7STEP			(15<<4)
++#define DA9058_ID67_LDO6STEP			(15<<0)
++/* SEQ control register for ID 8 and 9 */
++#define DA9058_ID89_LDO9STEP			(15<<4)
++#define DA9058_ID89_LDO8STEP			(15<<0)
++/* SEQ control register for ID 10 and 11 */
++#define DA9058_ID1011_PDDISSTEP			(15<<4)
++#define DA9058_ID1011_LDO10STEP			(15<<0)
++/* SEQ control register for ID 12 and 13 */
++#define DA9058_ID1213_LDO13STEP			(15<<4)
++#define DA9058_ID1213_LDO12STEP			(15<<0)
++/* SEQ control register for ID 14 and 15 */
++#define DA9058_ID1415_BUCK2			(15<<4)
++#define DA9058_ID1415_BUCK1			(15<<0)
++/* SEQ control register for ID 16 and 17 */
++#define DA9058_ID1617_BUCK4			(15<<4)
++#define DA9058_ID1617_BUCK3			(15<<0)
++/* Power SEQ Status register */
++#define DA9058_SEQSTATUS_SEQPOINTER		(15<<4)
++#define DA9058_SEQSTATUS_WAITSTEP		(15<<0)
++/* Power SEQ A register */
++#define DA9058_SEQA_POWEREND			(15<<4)
++#define DA9058_SEQA_SYSTEMEND			(15<<0)
++/* Power SEQ B register */
++#define DA9058_SEQB_PARTDOWN			(15<<4)
++#define DA9058_SEQB_MAXCOUNT			(15<<0)
++/* Power SEQ TIMER register */
++#define DA9058_SEQTIMER_SEQDUMMY		(15<<4)
++#define DA9058_SEQTIMER_SEQTIME			(15<<0)
++/* BUCK REGISTER A */
++#define DA9058_BUCKA_BUCK2ILIM			(3<<6)
++#define DA9058_BUCKA_BUCK2MODE			(3<<4)
++#define DA9058_BUCKA_BUCK1ILIM			(3<<2)
++#define DA9058_BUCKA_BUCK1MODE			(3<<0)
++/* BUCK REGISTER B */
++#define DA9058_BUCKB_BUCK4ILIM			(3<<6)
++#define DA9058_BUCKB_BUCK4IMODE			(3<<4)
++#define DA9058_BUCKB_BUCK3ILIM			(3<<2)
++#define DA9058_BUCKB_BUCK3MODE			(3<<0)
++/* SUPPLY REGISTER */
++#define DA9058_SUPPLY_VLOCK			(1<<7)
++#define DA9058_SUPPLY_LDO15BEN			(1<<6)
++#define DA9058_SUPPLY_LDO15AEN			(1<<5)
++#define DA9058_SUPPLY_BBCHGEN			(1<<4)
++#define DA9058_SUPPLY_VBUCK4GO			(1<<3)
++#define DA9058_SUPPLY_VBUCK3GO			(1<<2)
++#define DA9058_SUPPLY_VBUCK2GO			(1<<1)
++#define DA9058_SUPPLY_VBUCK1GO			(1<<0)
++/* PULLDOWN REGISTER A */
++#define DA9058_PULLDOWN_A_LDO4PDDIS		(1<<7)
++#define DA9058_PULLDOWN_A_LDO3PDDIS		(1<<6)
++#define DA9058_PULLDOWN_A_LDO2PDDIS		(1<<5)
++#define DA9058_PULLDOWN_A_LDO1PDDIS		(1<<4)
++#define DA9058_PULLDOWN_A_BUCK4PDDIS		(1<<3)
++#define DA9058_PULLDOWN_A_BUCK3PDDIS		(1<<2)
++#define DA9058_PULLDOWN_A_BUCK2PDDIS		(1<<1)
++#define DA9058_PULLDOWN_A_BUCK1PDDIS		(1<<0)
++/* PULLDOWN REGISTER B */
++#define DA9058_PULLDOWN_B_LDO13PDDIS		(1<<7)
++#define DA9058_PULLDOWN_B_LDO12PDDIS		(1<<6)
++#define DA9058_PULLDOWN_B_LDO10PDDIS		(1<<5)
++#define DA9058_PULLDOWN_B_LDO9PDDIS		(1<<4)
++#define DA9058_PULLDOWN_B_LDO8PDDIS		(1<<3)
++#define DA9058_PULLDOWN_B_LDO7PDDIS		(1<<2)
++#define DA9058_PULLDOWN_B_LDO6PDDIS		(1<<1)
++#define DA9058_PULLDOWN_B_LDO5PDDIS		(1<<0)
++/* PULLDOWN REGISTER C */
++#define DA9058_PULLDOWN_C_LDO19PDDIS		(1<<6)
++#define DA9058_PULLDOWN_C_LDO18PDDIS		(1<<5)
++#define DA9058_PULLDOWN_C_LDO17PDDIS		(1<<4)
++#define DA9058_PULLDOWN_C_LDO16PDDIS		(1<<3)
++#define DA9058_PULLDOWN_C_LDO15BPDDIS		(1<<2)
++#define DA9058_PULLDOWN_C_LDO15APDDIS		(1<<1)
++#define DA9058_PULLDOWN_C_LDO14PDDIS		(1<<0)
++/* WAIT CONTROL REGISTER */
++#define DA9058_WAITCONT_WAITDIR			(1<<7)
++#define DA9058_WAITCONT_RTCCLOCK		(1<<6)
++#define DA9058_WAITCONT_WAITMODE		(1<<5)
++#define DA9058_WAITCONT_EN32KOUT		(1<<4)
++#define DA9058_WAITCONT_DELAYTIME		(15<<0)
++/* ONKEY CONTROL REGISTER */
++#define DA9058_ONKEYCONT_PRESSTIME		(15<<0)
++/* POWER CONTROL REGISTER */
++#define DA9058_POWERCONT_nSLEEP			(1<<0)
++/* BACKUP BATTERY CONTROL REGISTER */
++#define DA9058_BBATCONT_BCHARGERISET		(15<<4)
++#define DA9058_BBATCONT_BCHARGERVSET		(15<<0)
++/* AUDIO CONF2 REGISTER */
++#define DA9058_AUDIOCONF_CLASSDEN		(1<<0)
++/* ADC MANUAL registers */
++#define DA9058_ADCMAN_MANCONV			(1<<4)
++#define DA9058_ADCMAN_MUXSEL_MASK		(0x0F)
++#define DA9058_ADCMAN_MUXSEL_VBAT		(0x0<<0)
++#define DA9058_ADCMAN_MUXSEL_TEMP		(0x2<<0)
++#define DA9058_ADCMAN_MUXSEL_VF			(0x4<<0)
++#define DA9058_ADCMAN_MUXSEL_ADCIN		(0x5<<0)
++#define DA9058_ADCMAN_MUXSEL_TJUNC		(0x8<<0)
++/* ADC CONTROL regsisters */
++#define DA9058_ADCCONT_AUTOADCEN		(1<<7)
++#define DA9058_ADCCONT_ADCMODE			(1<<6)
++#define DA9058_ADCCONT_TEMPISRCEN		(1<<5)
++#define DA9058_ADCCONT_VFISRCEN			(1<<4)
++#define DA9058_ADCCONT_AUTOAINEN		(1<<2)
++#define DA9058_ADCCONT_AUTOVFEN			(1<<1)
++#define DA9058_ADCCONT_AUTOVBATEN		(1<<0)
++/* ADC 12 BIT MANUAL CONVERSION RESULT LSB register */
++#define DA9058_ADCRESL_ADCRESLSB		(15<<0)
++#define DA9058_ADCRESL_ADCRESLSB_MASK		DA9058_ADCRESL_ADCRESLSB
++/* ADC 12 BIT MANUAL CONVERSION RESULT MSB register */
++#define DA9058_ADCRESH_ADCRESMSB			(255<<0)
++#define DA9058_ADCRESH_ADCRESMSB_MASK		DA9058_ADCRESH_ADCRESMSB
++/* VBAT 10 BIT RES MSB regsister*/
++#define DA9058_VBATRES_VBATRESMSB		(255<<0)
++#define DA9058_VBATRES_VBATRESMSB_MASK		DA9058_VBATRES_VBATRESMSB
++/* VBAT 10 BIT RES LSB regsister*/
++#define DA9058_VBATRES_VBATRESLSB		(3<<2)
++#define DA9058_VBATRES_VBATRESLSB_MASK		DA9058_VBATRES_VBATRESLSB
++/* TEMP 10 BIT RES MSB regsister*/
++#define DA9058_TEMPRES_TEMPRESMSB		(255<<0)
++#define DA9058_TEMPRES_TEMPRESMSB_MASK		DA9058_TEMPRES_TEMPRESMSB
++/* TEMP 10 BIT RES LSB regsister*/
++#define DA9058_TEMPRES_TEMPRESLSB		(3<<6)
++#define DA9058_TEMPRES_TEMPRESLSB_MASK		DA9058_TEMPRES_TEMPRESLSB
++/* T_OFFSET regsister*/
++#define DA9058_TOFFSET_TOFFSET			(255<<0)
++/* VF 10 BIT RES MSB regsister*/
++#define DA9058_VFRES_VFRESMSB			(255<<0)
++#define DA9058_VFRES_VFRESMSB_MASK		DA9058_VFRES_VFRESMSB
++/* VF 10 BIT RES LSB regsister*/
++#define DA9058_VFRES_VFRESLSB			(3<<2)
++#define DA9058_VFRES_VFRESLSB_MASK		DA9058_VFRES_VFRESLSB
++/* ADCIN 10 BIT RES MSB regsister*/
++#define DA9058_ADCINRES_ADCINRESMSB		(255<<0)
++#define DA9058_ADCINRES_ADCINRESMSB_MASK	DA9058_ADCINRES_ADCINRESMSB
++/* ADCIN 10 BIT RES LSB regsister*/
++#define DA9058_ADCINRES_ADCINRESLSB		(3<<6)
++#define DA9058_ADCINRES_ADCINRESLSB_MASK	DA9058_ADCINRES_ADCINRESLSB
++/* TJUNC 10 BIT RES MSB regsister*/
++#define DA9058_TJUNCRES_TJUNCRESMSB		(255<<0)
++#define DA9058_TJUNCRES_TJUNCRESMSB_MASK	DA9058_TJUNCRES_TJUNCRESMSB
++/* ADCIN 10 BIT RES LSB regsister*/
++#define DA9058_TJUNCRES_TJUNCRESLSB		(3<<6)
++#define DA9058_TJUNCRES_TJUNCRESLSB_MASK	DA9058_TJUNCRES_TJUNCRESLSB
++/* RTC fields */
++#define DA9058_RTC_SECS_MASK			0x3F
++#define DA9058_RTC_MINS_MASK			0x3F
++#define DA9058_RTC_HRS_MASK			0x1F
++#define DA9058_RTC_DAY_MASK			0x1F
++#define DA9058_RTC_MTH_MASK			0x0F
++#define DA9058_RTC_YRS_MASK			0x3F
++#define DA9058_RTC_ALMSECS_MASK			0x3F
++#define DA9058_RTC_ALMMINS_MASK			0x3F
++#define DA9058_RTC_ALMHRS_MASK			0x1F
++#define DA9058_RTC_ALMDAY_MASK			0x1F
++#define DA9058_RTC_ALMMTH_MASK			0x0F
++#define DA9058_RTC_ALMYRS_MASK			0x3F
++/* RTC TIMER SECONDS REGISTER */
++#define DA9058_COUNTS_COUNTSEC			(63<<0)
++/* RTC TIMER MINUTES REGISTER */
++#define DA9058_COUNTMI_COUNTMIN			(63<<0)
++/* RTC TIMER HOUR REGISTER */
++#define DA9058_COUNTH_COUNTHOUR			(31<<0)
++/* RTC TIMER DAYS REGISTER */
++#define DA9058_COUNTD_COUNTDAY			(31<<0)
++/* RTC TIMER MONTHS REGISTER */
++#define DA9058_COUNTMO_COUNTMONTH		(15<<0)
++/* RTC TIMER YEARS REGISTER */
++#define DA9058_COUNTY_MONITOR			(1<<6)
++#define DA9058_COUNTY_COUNTYEAR			(63<<0)
++/* RTC ALARM SECONDS REGISTER */
++#define DA9058_ALARMMI_COUNTSEC			(63<<0)
++/* RTC ALARM MINUTES REGISTER */
++#define DA9058_ALARMMI_TICKTYPE			(1<<7)
++#define DA9058_ALARMMI_ALARMMIN			(63<<0)
++/* RTC ALARM HOURS REGISTER */
++#define DA9058_ALARMH_ALARMHOUR			(31<<0)
++/* RTC ALARM DAYS REGISTER */
++#define DA9058_ALARMD_ALARMDAY			(31<<0)
++/* RTC ALARM MONTHS REGISTER */
++#define DA9058_ALARMMO_ALARMMONTH		(15<<0)
++/* RTC ALARM YEARS REGISTER */
++#define DA9058_ALARMY_TICKON			(1<<7)
++#define DA9058_ALARMY_ALARMON			(1<<6)
++#define DA9058_ALARMY_ALARMYEAR			(63<<0)
++/* CHIP IDENTIFICATION REGISTER */
++#define DA9058_CHIPID_MRC			(15<<4)
++#define DA9058_CHIPID_TRC			(15<<0)
++/* CONFIGURATION IDENTIFICATION REGISTER */
++#define DA9058_CONFIGID_CONFID			(7<<0)
++/* OTP CONTROL REGISTER */
++#define DA9058_OTPCONT_GPWRITEDIS		(1<<7)
++#define DA9058_OTPCONT_OTPCONFLOCK		(1<<6)
++#define DA9058_OTPCONT_OTPGPLOCK		(1<<5)
++#define DA9058_OTPCONT_OTPCONFG			(1<<3)
++#define DA9058_OTPCONT_OTPGP			(1<<2)
++#define DA9058_OTPCONT_OTPRP			(1<<1)
++#define DA9058_OTPCONT_OTPTRANSFER		(1<<0)
++/* RTC OSCILLATOR TRIM REGISTER */
++#define DA9058_OSCTRIM_TRIM32K			(255<<0)
++/* GP ID REGISTERs 0 - 9 */
++#define DA9058_GPID0_GP0			(255<<0)
++#define DA9058_GPID1_GP1			(255<<0)
++#define DA9058_GPID2_GP2			(255<<0)
++#define DA9058_GPID3_GP3			(255<<0)
++#define DA9058_GPID4_GP4			(255<<0)
++#define DA9058_GPID5_GP5			(255<<0)
++#define DA9058_GPID6_GP6			(255<<0)
++#define DA9058_GPID7_GP7			(255<<0)
++#define DA9058_GPID8_GP8			(255<<0)
++#define DA9058_GPID9_GP9			(255<<0)
++
++#endif /* __DA9058_REGISTERS_H */
+diff --git a/include/linux/mfd/da9058/regulator.h b/include/linux/mfd/da9058/regulator.h
+new file mode 100644
+index 0000000..686c607
+--- /dev/null
++++ b/include/linux/mfd/da9058/regulator.h
+@@ -0,0 +1,33 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __DA9058_REGULATOR_H
++#define __DA9058_REGULATOR_H
++
++struct da9058_regulator_pdata {
++	char *regulator_name;
++	int regulator_id;
++	int min_uV;
++	int max_uV;
++	int control_voltage_step;
++	int control_register;
++	int control_enable_mask;
++	int ramp_register;
++	int ramp_enable_mask;
++	int fixed_voltage;
++	unsigned int valid_ops_mask;
++	unsigned int valid_modes_mask;
++	unsigned int always_on:1;
++	unsigned int boot_on:1;
++	int num_consumer_supplies;
++	struct regulator_consumer_supply *consumer_supplies;
++};
++
++#endif /* __DA9058_REGULATOR_H */
+diff --git a/include/linux/mfd/da9058/rtc.h b/include/linux/mfd/da9058/rtc.h
+new file mode 100644
+index 0000000..aa597df
+--- /dev/null
++++ b/include/linux/mfd/da9058/rtc.h
+@@ -0,0 +1,17 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#ifndef __DA9058_RTC_H
++#define __DA9058_RTC_H
++
++struct da9058_rtc_pdata {
++};
++
++#endif /* __DA9058_RTC_H */
 -- 
 end-of-patch for NEW DRIVER V1
 
