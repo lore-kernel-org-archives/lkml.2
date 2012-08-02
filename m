@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab2HBQeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:34:20 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49737 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab2HBQeT (ORCPT
+	id S1754009Ab2HBQgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:36:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38500 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab2HBQgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:34:19 -0400
-Message-ID: <501AAC26.6030703@gmail.com>
-Date: Thu, 02 Aug 2012 18:34:46 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+	Thu, 2 Aug 2012 12:36:22 -0400
+Date: Thu, 2 Aug 2012 11:36:16 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 2 (drivers/platform/x86/apple-gmux.c)
+Message-ID: <20120802163616.GI32395@thinkpad-t410>
+Mail-Followup-To: Randy Dunlap <rdunlap@xenotime.net>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>,
+	Matthew Garrett <mjg@redhat.com>,
+	platform-driver-x86@vger.kernel.org
+References: <20120802141505.d30da7f7113e955679383acb@canb.auug.org.au>
+ <501AA5A8.1070607@xenotime.net>
+ <20120802161504.GG32395@thinkpad-t410>
+ <501AA892.70207@xenotime.net>
+ <20120802163154.GH32395@thinkpad-t410>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Josh Triplett <josh@joshtriplett.org>, Tejun Heo <tj@kernel.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-References: <20120731182330.GD21292@google.com> <50197348.9010101@gmail.com> <20120801182112.GC15477@google.com> <50197460.8010906@gmail.com> <20120801182749.GD15477@google.com> <50197E4A.7020408@gmail.com> <20120801202432.GE15477@google.com> <5019B0B4.1090102@gmail.com> <20120801224556.GF15477@google.com> <501A4FC1.8040907@gmail.com> <20120802103244.GA23318@leaf> <501A633B.3010509@gmail.com> <87txwl1dsq.fsf@xmission.com>
-In-Reply-To: <87txwl1dsq.fsf@xmission.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120802163154.GH32395@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 06:03 PM, Eric W. Biederman wrote:
-> Sasha Levin <levinsasha928@gmail.com> writes:
->> On 08/02/2012 12:32 PM, Josh Triplett wrote:
->>> What about using a C99 flexible array member?  Kernel style prohibits
->>> variable-length arrays, but I don't think the same rationale applies to
->>> flexible array members.
->>>
->>> struct hash_table {
->>>     size_t count;
->>>     struct hlist_head buckets[];
->>> };
->>>
->>> #define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
->>
->> The limitation of this approach is that the struct hash_table variable
->> must be 'static', which is a bit limiting - see for example the use of
->> hashtable in 'struct user_namespace'.
+On Thu, Aug 02, 2012 at 11:31:54AM -0500, Seth Forshee wrote:
+> On Thu, Aug 02, 2012 at 09:19:30AM -0700, Randy Dunlap wrote:
+> > On 08/02/2012 09:15 AM, Seth Forshee wrote:
+> > 
+> > > On Thu, Aug 02, 2012 at 09:07:04AM -0700, Randy Dunlap wrote:
+> > >> On 08/01/2012 09:15 PM, Stephen Rothwell wrote:
+> > >>
+> > >>> Hi all,
+> > >>>
+> > >>> Please do not add anything to linux-next included branches/series that is
+> > >>> destined for v3.7 until after v3.6-rc1 is released.
+> > >>>
+> > >>> Reminder: do not rebase your branches before asking Linus to pull them ...
+> > >>>
+> > >>> Changes since 20120731:
+> > >>>
+> > >>
+> > >>
+> > >> when CONFIG_ACPI is not enabled: (on i386)
+> > >>
+> > >> drivers/platform/x86/apple-gmux.c: In function 'gmux_probe':
+> > >> drivers/platform/x86/apple-gmux.c:196:2: error: implicit declaration of function 'acpi_video_dmi_promote_vendor'
+> > >> drivers/platform/x86/apple-gmux.c: In function 'gmux_remove':
+> > >> drivers/platform/x86/apple-gmux.c:219:2: error: implicit declaration of function 'acpi_video_dmi_demote_vendor'
+> > >>
+> > >>
+> > >> Full randconfig file is attached.
+> > > 
+> > > I sent Matthew a patch that should fix this [1], but he doesn't seem to
+> > > have picked it up yet.
+> > > 
+> > > Seth
+> > > 
+> > > [1] https://lkml.org/lkml/2012/7/2/257
+> > > 
+> > 
+> > 
+> > That patch does not fix this build error.
+> > There is still an implicit assumption in Kconfig and
+> > the driver source that ACPI is enabled.
 > 
-> You mean the hash table that was made static in 3.5?
-> 
-> You might want to try basing your patches on something a little more current.
-> 
-> Eric
-> 
+> The functions in question are built or not based off of ACPI_VIDEO,
+> which in turn depends on ACPI. So if ACPI=n, then ACPI_VIDEO=n and you
+> can't configure APPLE_GMUX=(m|y). Is that right, or am I missing
+> something?
 
-Heh, I've started working on it in April, and just returned to this. Didn't think about rebasing to something new.
+Nevermind, I see what I missed.
 
-will fix - Thanks!
+This is kind of messy -- maybe those declartions should be extracted
+from the #ifdef CONFIG_ACPI to avoid this kind of Kconfig madness?
+
+Seth
