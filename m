@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab2HBQgb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:36:31 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:51812 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754025Ab2HBQg2 (ORCPT
+	id S1754070Ab2HBQhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:37:54 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:44878 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753099Ab2HBQhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:36:28 -0400
-Message-ID: <501AAC42.4030103@xenotime.net>
-Date: Thu, 02 Aug 2012 09:35:14 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Thu, 2 Aug 2012 12:37:53 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: cuUUVwEVM1ky9n8UQwHkjoslORC2.IRqRyg9RivE86bulkK
+ _CjI3dDp4Dk3dA6Bu4aKQnMdLTsulz4G2oafeu2dVBY3qnO_qsIaS6Ax.kfF
+ vSPkDtTj_SMrMRLSgPGCOjXXOhje3cfwE0FPEXWJXz.ajKDYCjIPwMlCZwep
+ 5spPzyo93yrQKGQI61WoK2zvn5VUWfYEoLSsmjqubGed4Ua_iOS5MxKbOHLX
+ TiXnZpVSio5ZPGaN2dn6__rklIHJ9Ff8K65rz1gljlcfQFJ4_lcWdiuBtATX
+ AClWCY4DGyfDuIt5zxjePx0WdV14nSnp.GSh.03AINGnAwNRzoTkZumkPglj
+ HIVG5KgKArODFhRKWse2VEQBL0CsBOYqMrynLrmQKh.fuDf2IzsNRpQR02_n
+ 4ODdxZGu9.lyHWfQ4ougWlW8tZwH.GsLBBmgphJpY3dRQTmnDhA--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 2 Aug 2012 11:09:01 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
+Subject: Re: [RFC PATCH 09/23 V2] vmstat: use N_MEMORY instead
+ N_HIGH_MEMORY
+In-Reply-To: <1343887288-8866-10-git-send-email-laijs@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1208021108430.23049@router.home>
+References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com> <1343887288-8866-10-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 2 (drivers/platform/x86/apple-gmux.c)
-References: <20120802141505.d30da7f7113e955679383acb@canb.auug.org.au> <501AA5A8.1070607@xenotime.net> <20120802161504.GG32395@thinkpad-t410> <501AA892.70207@xenotime.net> <20120802163154.GH32395@thinkpad-t410>
-In-Reply-To: <20120802163154.GH32395@thinkpad-t410>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 09:31 AM, Seth Forshee wrote:
+On Thu, 2 Aug 2012, Lai Jiangshan wrote:
 
-> On Thu, Aug 02, 2012 at 09:19:30AM -0700, Randy Dunlap wrote:
->> On 08/02/2012 09:15 AM, Seth Forshee wrote:
->>
->>> On Thu, Aug 02, 2012 at 09:07:04AM -0700, Randy Dunlap wrote:
->>>> On 08/01/2012 09:15 PM, Stephen Rothwell wrote:
->>>>
->>>>> Hi all,
->>>>>
->>>>> Please do not add anything to linux-next included branches/series that is
->>>>> destined for v3.7 until after v3.6-rc1 is released.
->>>>>
->>>>> Reminder: do not rebase your branches before asking Linus to pull them ...
->>>>>
->>>>> Changes since 20120731:
->>>>>
->>>>
->>>>
->>>> when CONFIG_ACPI is not enabled: (on i386)
->>>>
->>>> drivers/platform/x86/apple-gmux.c: In function 'gmux_probe':
->>>> drivers/platform/x86/apple-gmux.c:196:2: error: implicit declaration of function 'acpi_video_dmi_promote_vendor'
->>>> drivers/platform/x86/apple-gmux.c: In function 'gmux_remove':
->>>> drivers/platform/x86/apple-gmux.c:219:2: error: implicit declaration of function 'acpi_video_dmi_demote_vendor'
->>>>
->>>>
->>>> Full randconfig file is attached.
->>>
->>> I sent Matthew a patch that should fix this [1], but he doesn't seem to
->>> have picked it up yet.
->>>
->>> Seth
->>>
->>> [1] https://lkml.org/lkml/2012/7/2/257
->>>
->>
->>
->> That patch does not fix this build error.
->> There is still an implicit assumption in Kconfig and
->> the driver source that ACPI is enabled.
-> 
-> The functions in question are built or not based off of ACPI_VIDEO,
-> which in turn depends on ACPI. So if ACPI=n, then ACPI_VIDEO=n and you
-> can't configure APPLE_GMUX=(m|y). Is that right, or am I missing
-> something?
+> The code here need to handle with the nodes which have memory, we should
+> use N_MEMORY instead.
 
-
-This?
-
-config APPLE_GMUX
-	tristate "Apple Gmux Driver"
-	depends on PNP
-	depends on BACKLIGHT_CLASS_DEVICE
-	depends on BACKLIGHT_APPLE=n || BACKLIGHT_APPLE
-	depends on ACPI_VIDEO=n || ACPI_VIDEO
-	^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-
--- 
-~Randy
+Acked-by: Christoph Lameter <cl@linux.com>
