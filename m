@@ -1,103 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab2HBRy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:54:28 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56270 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab2HBRy0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:54:26 -0400
-Message-ID: <501ABEE2.10007@gmail.com>
-Date: Thu, 02 Aug 2012 19:54:42 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
-MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-References: <50197E4A.7020408@gmail.com> <20120801202432.GE15477@google.com> <5019B0B4.1090102@gmail.com> <20120801224556.GF15477@google.com> <501A4FC1.8040907@gmail.com> <20120802103244.GA23318@leaf> <501A633B.3010509@gmail.com> <501A7AD3.7000008@gmail.com> <20120802161556.GA25572@leaf> <501AAF47.3090708@gmail.com> <20120802174457.GA6251@jtriplet-mobl1>
-In-Reply-To: <20120802174457.GA6251@jtriplet-mobl1>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754994Ab2HBRzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:55:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58357 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754767Ab2HBRzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 13:55:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="192565494"
+Message-ID: <1343930368.25013.215.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
+Cc: Tim Bird <tim.bird@am.sony.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "adrian.hunter@intel.com" <adrian.hunter@intel.com>,
+        "Heinz.Egger@linutronix.de" <Heinz.Egger@linutronix.de>,
+        "thomas.wucher@linutronix.de" <thomas.wucher@linutronix.de>,
+        "shmulik.ladkani@gmail.com" <shmulik.ladkani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Marius.Mazarel@ugal.ro" <Marius.Mazarel@ugal.ro>,
+        "nyoushchenko@mvista.com" <nyoushchenko@mvista.com>
+Date: Thu, 02 Aug 2012 20:59:28 +0300
+In-Reply-To: <20120802194538.26e2ec98@spider.haslach.nod.at>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	 <1343916747.25013.112.camel@sauron.fi.intel.com>
+	 <20120802161512.5ac7a303@spider.haslach.nod.at>
+	 <1343917741.25013.114.camel@sauron.fi.intel.com>
+	 <20120802165132.1bf1e5d7@spider.haslach.nod.at>
+	 <1343924267.25013.156.camel@sauron.fi.intel.com>
+	 <20120802183210.7076aa48@spider.haslach.nod.at>
+	 <1343925930.25013.163.camel@sauron.fi.intel.com>
+	 <501AB2C8.9010805@am.sony.com>
+	 <1343929200.25013.197.camel@sauron.fi.intel.com>
+	 <20120802194538.26e2ec98@spider.haslach.nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ULu0SFlEEDIFxZpPcglP"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 07:44 PM, Josh Triplett wrote:
-> On Thu, Aug 02, 2012 at 06:48:07PM +0200, Sasha Levin wrote:
->> On 08/02/2012 06:15 PM, Josh Triplett wrote:
->>> On Thu, Aug 02, 2012 at 03:04:19PM +0200, Sasha Levin wrote:
->>>> On 08/02/2012 01:23 PM, Sasha Levin wrote:
->>>>>> #define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
->>>>> The limitation of this approach is that the struct hash_table variable must be 'static', which is a bit limiting - see for example the use of hashtable in 'struct user_namespace'.
->>>>>
->>>>
->>>> What if we just use two possible decelerations? One of static structs and one for regular ones.
->>>>
->>>> struct hash_table {
->>>>         size_t bits;
->>>>         struct hlist_head buckets[];
->>>> };
->>>>
->>>> #define DEFINE_HASHTABLE(name, bits)                                    \
->>>>         union {                                                         \
->>>>                 struct hash_table name;                                 \
->>>>                 struct {                                                \
->>>>                         size_t bits;                                    \
->>>
->>> This shouldn't use "bits", since it'll get expanded to the macro
->>> argument.
->>>
->>>>                         struct hlist_head buckets[1 << bits];           \
->>>>                 } __name;                                               \
->>>
->>> __##name
->>>
->>>>         }
->>>>
->>>> #define DEFINE_STATIC_HASHTABLE(name, bit)                              \
->>>>         static struct hash_table name = { .bits = bit,                  \
->>>>                 .buckets = { [0 ... (bit - 1)] = HLIST_HEAD_INIT } }
->>>
->>> You probably wanted to change that to [0 ... ((1 << bit) - 1)] , to
->>> match DEFINE_HASHTABLE.
->>
->> I wrote it by hand and didn't compile test, will fix all of those.
->>
->>> Since your definition of DEFINE_HASHTABLE would also work fine when used
->>> statically, why not just always use that?
->>>
->>> #define DEFINE_STATIC_HASHTABLE(name, bits) static DEFINE_HASHTABLE(name, bits) = { .name.bits = bits }
->>
->> It will get defined fine, but it will be awkward to use. We'd need to pass anonymous union to all the functions that handle this hashtable, which isn't pretty.
-> 
-> No, it'll still use the anonymous union, so you'll still have a thing of
-> type "struct hash_table" with the given name, and you can use that name
-> with the hash-table functions.
 
-We can use 'struct hash_table' directly, but then the call will look awkward :)
+--=-ULu0SFlEEDIFxZpPcglP
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Consider this case (I've placed arbitrary values into size and name:
+On Thu, 2012-08-02 at 19:45 +0200, Richard Weinberger wrote:
+> This should be very easy task.
 
-/* I've "preprocessed" the DEFINE macro below */
-union {
-	struct hash_table table;
-	struct {
-		size_t bits;
-		struct hlist_head buckets[32];
-	}
-} my_hashtable;
+Right. But unfortunately, I had to spend a lot of time writing lengthy
+e-mails. You could hold your horses for a minute, ask specific questions
+and find out what was my concern.
 
-void foo(struct hash_table *table)
-{
-/* Do something */
-}
+> How much PEB should be reserved? 2 x sizeof(fastmap)?=20
 
-int main(void)
-{
-	foo(my_hashtable); /* This is what the user expects to work, and won't work in this case */
+Is there any reason why it cannot be the _exact_ maximum number? Not
+more and not less.
 
-	foo(&my_hashtable.table); /* This is what he has to do, which means the user has to know about the internal structure of the union */
-}
+If I understand correctly, fastmap size is a function of total PEBs
+count. You should be able to calculate the maximum size precisely.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-ULu0SFlEEDIFxZpPcglP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQGsAAAAoJECmIfjd9wqK0+swP/3I8WrWJu+FxYmrcZU7j/4S5
+f8TyWYtQUyUgnKvE0cIPiknjnfH9/rMN4r2FzntEzr8u+hqDWeIAvGB7CoOQET80
+kiQ21uzw5Mzsd9LGrp21+9I+oEdES2wSd1hNVW8THLt5hCPnip61qJjUBYittEjY
+x6/FsruOFQW2uQ2g6TXygXF7sUoNPi14kq/4iWfSbUZkl8Toqevb3+RVO/Y/Ow6z
+8MC7vmlmxDLbKyU6xD8jXlDuGOHKYuIdr4hWLlF4vZkr0mHdBYyRod4+WlSnYyDV
+1qaHGFb0zR6Y5Gf+b1fEKB2pfufBkDermWLafdTgD/dya/wBHp5/ztQEpCazZDpP
+/eF0vWI5I9wJPySU+OoajuajbTU4gvByBVSA9b8tHD/F/7yLZ5yLDT6U8t3iYG9I
+QM6vpQzWmtaOJtFRAR34S8agjL+kw34crLWiZvtRGR3tV9XHq59lzBmbBOixvWk7
+adjIhBGYK4UsSh9/jIRyJaCKjLDdTdq79KcGwjz8XXEt6ti6E6AV/s+2PW5l3kUq
+w0RuV+p1kCtMU7mvo9QQzYa0cwFdHiUTy8Cz+tQAqA7XjBeYQK7gmuzah/9F0sGI
+W1yi1AmUCcAGSDg6zaGnGYgn7XsF9BE1v9BXuI/cOq+ixwsZehKjSFeXnEl8aCr4
+PlLPHJ/Hl+oTx6zlWK0v
+=nTos
+-----END PGP SIGNATURE-----
+
+--=-ULu0SFlEEDIFxZpPcglP--
+
