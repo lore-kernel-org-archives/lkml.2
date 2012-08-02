@@ -1,173 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2HBHHX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 03:07:23 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:62647 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab2HBHHW (ORCPT
+	id S1754159Ab2HBHJW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 03:09:22 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:16483 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab2HBHJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 03:07:22 -0400
-X-AuditID: 9c930197-b7b66ae000006a2c-34-501a27274454
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Venkatraman S <svenkatr@ti.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [PATCH RESEND v5] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-Date: Thu,  2 Aug 2012 16:07:11 +0900
-Message-Id: <1343891231-3042-1-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 2 Aug 2012 03:09:21 -0400
+Message-ID: <501A2740.3000309@huawei.com>
+Date: Thu, 2 Aug 2012 15:07:44 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: Jiang Liu <liuj97@gmail.com>, Len Brown <lenb@kernel.org>,
+        Tony Luck <tony.luch@intel.com>, Bob Moore <robert.moore@intel.com>,
+        Huang Ying <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Hanjun Guo <guohanjun@huawei.com>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Gaohuai Han <hangaohuai@huawei.com>
+Subject: Re: [RFC PATCH 1/3] ACPIHP: introduce a framework for ACPI based
+ system device hotplug
+References: <1343475772-21345-1-git-send-email-jiang.liu@huawei.com> <1343475772-21345-2-git-send-email-jiang.liu@huawei.com> <501A271A.5030808@cn.fujitsu.com>
+In-Reply-To: <501A271A.5030808@cn.fujitsu.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is expected that Extended CSD register(the size of this register
-is larger than CID/CSD) will be referenced more frequently as more
-fields have been added to Extended CSD and it seems that it is not
-a good option to double the memory used.
+On 2012-8-2 15:07, Tang Chen wrote:
+> Hi,
+> 
+> A little problem here. :)
+> 
+> On 07/28/2012 07:42 PM, Jiang Liu wrote:
+>> +int acpihp_register_slot(struct acpihp_slot *slot)
+>> +{
+>> +	int ret;
+>> +	char *name;
+>> +	size_t off;
+>> +
+>> +	if (!slot || !slot->slot_ops)
+>> +		return -EINVAL;
+>> +
+>> +	/* Hook top level hotplug slots under ACPI root device */
+>> +	if (slot->parent)
+>> +		slot->dev.parent = &slot->parent->dev;
+>> +	else
+>> +		slot->dev.parent = &acpi_root->dev;
+>> +
+>> +	ret = device_add(&slot->dev);
+>> +	if (!ret) {
+>> +		slot->flags |= ACPIHP_SLOT_FLAG_REGISTERED;
+>> +		name = kmalloc(PAGE_SIZE, GFP_KERNEL);
+>> +		if (name) {
+>> +			off = acpihp_generate_link_name(slot, name, 0);
+>> +			name[off - 1] = '\0';
+>> +			sysfs_create_link(&acpihp_slot_kset->kobj,
+>> +					  &slot->dev.kobj, name);
+> 
+> I got a compiler warning here:
+>   CC      drivers/acpi/hotplug/core.o
+> drivers/acpi/hotplug/core.c: In function ‘acpihp_register_slot’:
+> drivers/acpi/hotplug/core.c:199: warning: ignoring return value of ‘sysfs_create_link’, declared with attribute warn_unused_result
+> 
+> Seems that we need to check the sysfs_create_link()'s return value here, and if it fails, 
+> shall we at least give a warning message here ?
+> 
+> Thanks. :)
+Hi Tang,
+	Thanks for your comments, will fix it in next version.
+	Regards!
+	Gerry
 
-This patch is intended to avoid the use of bounce buffer for reading
-Extended CSD register in mmc_send_cxd_data(). It will provide a better
-performance gain by removing memcpy() overhead for a half KiB and
-a redundant bounce buffer allocated repeatedly at the cost of providing
-DMA-capable buffer from upper caller(but on-stack buffer is allowed
-with no performance gain).
+> 
+> 
+>> +			kfree(name);
+>> +		}
+>> +	}
+>> +
+>> +	return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(acpihp_register_slot);
+> 
 
-Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
-Signed-off-by: S, Venkatraman <svenkatr@ti.com>
----
-Changes in v2:
-- Handling on-stack buffer if it's used in caller.
-
-Changes in v3:
-- Remove unnecesary code.
-
-Changes in v4:
-- Modify codes based-on S, Venkatraman's comments.
-
-Changes in v5:
-- Modify commit log and add NOTE description.
----
- drivers/mmc/core/mmc_ops.c |   58 +++++++++++++++++++++++++++++++------------
- 1 files changed, 42 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index 0ed2cc5..acf578d 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -230,6 +230,10 @@ mmc_send_cxd_native(struct mmc_host *host, u32 arg, u32 *cxd, int opcode)
- 	return 0;
- }
- 
-+/*
-+ * NOTE: void *buf, Caller for the buf is required to use DMA-capable
-+ * buffer or on-stack buffer(with some overhead in callee).
-+ */
- static int
- mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 		u32 opcode, void *buf, unsigned len)
-@@ -239,13 +243,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 	struct mmc_data data = {0};
- 	struct scatterlist sg;
- 	void *data_buf;
-+	int is_on_stack;
- 
--	/* dma onto stack is unsafe/nonportable, but callers to this
--	 * routine normally provide temporary on-stack buffers ...
--	 */
--	data_buf = kmalloc(len, GFP_KERNEL);
--	if (data_buf == NULL)
--		return -ENOMEM;
-+	is_on_stack = object_is_on_stack(buf);
-+	if (is_on_stack) {
-+
-+		/* dma onto stack is unsafe/nonportable, but callers to this
-+		 * routine normally provide temporary on-stack buffers ...
-+		 */
-+		data_buf = kmalloc(len, GFP_KERNEL);
-+		if (data_buf == NULL)
-+			return -ENOMEM;
-+	} else
-+		data_buf = buf;
- 
- 	mrq.cmd = &cmd;
- 	mrq.data = &data;
-@@ -280,8 +290,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 
- 	mmc_wait_for_req(host, &mrq);
- 
--	memcpy(buf, data_buf, len);
--	kfree(data_buf);
-+	if (is_on_stack) {
-+		memcpy(buf, data_buf, len);
-+		kfree(data_buf);
-+	}
- 
- 	if (cmd.error)
- 		return cmd.error;
-@@ -294,24 +306,32 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- int mmc_send_csd(struct mmc_card *card, u32 *csd)
- {
- 	int ret, i;
-+	u32 *csd_tmp;
- 
- 	if (!mmc_host_is_spi(card->host))
- 		return mmc_send_cxd_native(card->host, card->rca << 16,
- 				csd, MMC_SEND_CSD);
- 
--	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
-+	csd_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!csd_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
- 
- 	for (i = 0;i < 4;i++)
--		csd[i] = be32_to_cpu(csd[i]);
-+		csd[i] = be32_to_cpu(csd_tmp[i]);
- 
--	return 0;
-+err:
-+	kfree(csd_tmp);
-+	return ret;
- }
- 
- int mmc_send_cid(struct mmc_host *host, u32 *cid)
- {
- 	int ret, i;
-+	u32 *cid_tmp;
- 
- 	if (!mmc_host_is_spi(host)) {
- 		if (!host->card)
-@@ -320,14 +340,20 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
- 				cid, MMC_SEND_CID);
- 	}
- 
--	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
-+	cid_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!cid_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
- 
- 	for (i = 0;i < 4;i++)
--		cid[i] = be32_to_cpu(cid[i]);
-+		cid[i] = be32_to_cpu(cid_tmp[i]);
- 
--	return 0;
-+err:
-+	kfree(cid_tmp);
-+	return ret;
- }
- 
- int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
--- 
-1.7.0.4
 
