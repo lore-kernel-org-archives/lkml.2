@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab2HBSAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 14:00:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33686 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754969Ab2HBSAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 14:00:54 -0400
-Date: Thu, 2 Aug 2012 19:00:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: core: Add intermediate cast to uintptr_t
- before casting to pointer
-Message-ID: <20120802180051.GI4537@opensource.wolfsonmicro.com>
-References: <1343605633.11323.1.camel@phoenix>
- <20120730153309.GK4468@opensource.wolfsonmicro.com>
- <1343701316.7557.1.camel@phoenix>
- <20120731154153.GI4468@opensource.wolfsonmicro.com>
- <1343750888.5463.5.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1343750888.5463.5.camel@phoenix>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755105Ab2HBSDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 14:03:32 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754934Ab2HBSDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 14:03:31 -0400
+Date: Thu, 2 Aug 2012 20:03:26 +0200
+From: Richard Weinberger <richard@nod.at>
+To: artem.bityutskiy@linux.intel.com
+Cc: Tim Bird <tim.bird@am.sony.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "adrian.hunter@intel.com" <adrian.hunter@intel.com>,
+        "Heinz.Egger@linutronix.de" <Heinz.Egger@linutronix.de>,
+        "thomas.wucher@linutronix.de" <thomas.wucher@linutronix.de>,
+        "shmulik.ladkani@gmail.com" <shmulik.ladkani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Marius.Mazarel@ugal.ro" <Marius.Mazarel@ugal.ro>,
+        "nyoushchenko@mvista.com" <nyoushchenko@mvista.com>
+Subject: Re: UBI fastmap updates
+Message-ID: <20120802200326.37a2d827@spider.haslach.nod.at>
+In-Reply-To: <1343930368.25013.215.camel@sauron.fi.intel.com>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	<1343916747.25013.112.camel@sauron.fi.intel.com>
+	<20120802161512.5ac7a303@spider.haslach.nod.at>
+	<1343917741.25013.114.camel@sauron.fi.intel.com>
+	<20120802165132.1bf1e5d7@spider.haslach.nod.at>
+	<1343924267.25013.156.camel@sauron.fi.intel.com>
+	<20120802183210.7076aa48@spider.haslach.nod.at>
+	<1343925930.25013.163.camel@sauron.fi.intel.com>
+	<501AB2C8.9010805@am.sony.com>
+	<1343929200.25013.197.camel@sauron.fi.intel.com>
+	<20120802194538.26e2ec98@spider.haslach.nod.at>
+	<1343930368.25013.215.camel@sauron.fi.intel.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 12:08:08AM +0800, Axel Lin wrote:
-> 於 二，2012-07-31 於 16:41 +0100，Mark Brown 提到：
+Am Thu, 02 Aug 2012 20:59:28 +0300
+schrieb Artem Bityutskiy <artem.bityutskiy@linux.intel.com>:
+> > How much PEB should be reserved? 2 x sizeof(fastmap)? 
+> 
+> Is there any reason why it cannot be the _exact_ maximum number? Not
+> more and not less.
 
-> > So the above cast probably isn't right...  you shouldn't need a double
-> > cast here.
+The fastmap size is an exact number. 
+ 
+> If I understand correctly, fastmap size is a function of total PEBs
+> count. You should be able to calculate the maximum size precisely.
 
-> The issue of original warning is: ( I compile the kernel on x86_64 )
->         warning: cast to pointer from integer of different size
+It does.
+I was thinking of 2 x sizeof(fastmap) to have reserved PEBs for the
+currently used fastmap and PEBs for the new to be installed fastmap.
 
-> What this patch does is:
-> cast best_val to uintptr_t, which is an unsigned integer large enough to
-> hold a void* pointer.
+Thanks,
+//richard
 
-> And then cast it to (void *).
-
-> Thus I did (void *)(uintptr_t)best_val.
-
-Perhaps we need a temporary variable here.  The double cast just looks
-too horrible.
