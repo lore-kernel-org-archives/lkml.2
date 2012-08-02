@@ -1,223 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560Ab2HBUjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:39:49 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:55245
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750746Ab2HBUjs (ORCPT
+	id S1752120Ab2HBUkT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:40:19 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:43216 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750949Ab2HBUkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:39:48 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q72KdUrO006508
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Rob Landley <rob@landley.net>
-Cc: Milton Miller <miltonm@bga.com>, Borislav Petkov <bp@alien8.de>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jan Engelhardt <jengelh@inai.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening port
-In-Reply-To: <gi3946lin5.fsf@mx10.gouders.net> (Dirk Gouders's message of
-	"Wed, 01 Aug 2012 17:46:38 +0200")
-References: <gilii4nnxb.fsf@mx10.gouders.net> <kernel-nc-hints@mdm.bga.com>
-	<501937F7.2070600@landley.net> <gi3946lin5.fsf@mx10.gouders.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Thu, 02 Aug 2012 22:39:28 +0200
-Message-ID: <gisjc5hvun.fsf@mx10.gouders.net>
+	Thu, 2 Aug 2012 16:40:16 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: aAvE56wVM1kxmzipz.mLyScVDmfZYOhB15FqYAxSXHMHPgH
+ F8egLSGjfhzEq9BjKm7iN5i.6gzvNzCOwGc4jQwv28FPHbnguvN6QDH26n45
+ 5oASzi0NtxGL85pXkkY2Fk7lNEjDacf6mkYeTjKRKls9ce6BOSxs3KgKqm_4
+ 4On3f4WgtMCmgEjDqF8PzvBTtZ5R56tUvNj40c8X1ZRP5RK7caz9tHnKP.g1
+ nHmh2q68kqXaAaNTcLA8XKd.GvMHuXd4Pmge9FKf_XY_9uzTtmPi5bO_Hdgd
+ jV61ox.2qe2DlFfdIM0eCjV5ZCjXfl8E_3ZoDBEqIT_SBauNWQJouf6kWsIG
+ 2m7GATEl0mBT_9Wyyh3Kgy_aVK_1.zu0PzK9C_.FT7QXaFgViD7im0XlXvgd
+ SQGvjh285aKN3gi8wDRfAw3dgQqB0oVUabmi4HFUq62rqddoIwq0-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 2 Aug 2012 15:40:11 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/19] mm, numa: retry failed page migrations
+In-Reply-To: <20120731192809.489683051@chello.nl>
+Message-ID: <alpine.DEB.2.00.1208021538180.32229@router.home>
+References: <20120731191204.540691987@chello.nl> <20120731192809.489683051@chello.nl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Thu, 02 Aug 2012 22:39:31 +0200 (CEST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> writes:
+On Tue, 31 Jul 2012, Peter Zijlstra wrote:
 
-> Rob Landley <rob@landley.net> writes:
->
->> On 07/29/2012 03:40 AM, Milton Miller wrote:
->>> [adding Rob as Doc maintanier]
->>> 
->>> On Sat, 28 Jul 2012 about 11:08:16 -0000, Dirk Gouders wrote:
->>>> Borislav Petkov <bp@alien8.de> writes:
->>>>
->>>>> On Fri, Jul 27, 2012 at 11:24:53AM +0200, Dirk Gouders wrote:
->>>>>> Cong Wang <xiyou.wangcong@gmail.com> writes:
->>>>>>
->>>>>>> On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
->>>>>>> <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
->>>>>>>> Hi Jesse,
->>>>>>>>
->>>>>>>> I would like to ask you to check if the documentation of "nc" in
->>>>>>>> netconsole.txt is still correct.  I tried two different netcat packages
->>>>>>>> and both require "-p" to specify the listening port.  I am wondering if
->>>>>>>> that changed after the use of "nc" has been documented.
->>>>>>>
->>>>>>> On Fedora 16, `nc -u -l <port number>` works fine.
->>>>>>
->>>>>> Thanks for checking that.
->>>>>>
->>>>>> If the information I found is correct, Fedora uses OpenBSD's nc
->>>>>> codebase.  The two netcat packages I tested on a Gentoo system differ in
->>>>>> requiring the -p switch for the port specification.
->>>>>
->>>>> So say exactly that in the doc: that the *BSD's version of nc doesn't
->>>>> need the port number specified with '-p' and you're covered.
->>>> OK, I tried that in the attached patch.
->>>> I'm not sure if every exeption needs to/should be documented, though.
->>>>
->>>> >From 3cdeac3e814471053129145c5fa8391acb365fd8 Mon Sep 17 00:00:00 2001
->>>> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
->>>> Date: Sat, 28 Jul 2012 12:32:49 +0200
->>>> Subject: [PATCH] netconsole.txt: non-BSD versions of nc(1) require '-p'
->>>>  switch
->>>>
->>>> Gentoo for example uses non-BSD versions of nc(1) which require
->>>> the '-p' switch to specify the listening port.
->>>>
->>>> ---
->>>> Documentation/networking/netconsole.txt |    3 ++-
->>>>  1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> Did this ever resolve to a specific recommended patch? The one at the
->> start of the thread:
->>
->>  http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/01995.html
->>
->> Apparently isn't it...?
->
-> Sorry for the delay.
-> I tested the situation on a few distributions and am still thinking
-> about a proper way to write it in a way without netconsole.txt becoming
-> a kind of "netcat.txt".
->
-> I would be glad about comments to what I currently have -- also, because
-> I am not a native English speaker:
->
-> ------------------------------------------------------------------------
-> The remote host can run syslogd or netcat to receive the kernel
-> messages.  On distributions using a BSD-based netcat version
-> (e.g. Fedora, openSUSE and Ubuntu) the listening port must be
-> specified without the -p switch:
->
-> 'nc -u -l -p <port>' / 'nc -u -l <port>' or
-> 'netcat -u -l -p <port>' / 'netcat -u -l <port>'
-> ------------------------------------------------------------------------
->
-> At the end, I also attach what I have noted during the tests with the
-> different distributions.
->
-> Dirk
->
-> ------------------------------------------------------------------------
-> Problem on systems where the gnu-netcat package provides a symbolic
-> link /usr/bin/nc -> /usr/bin/netcat:
->
-> gnu-netcat requires -p to specify the local port but does not complain
-> if invoked as `nc -l -u <port>'; you need to use -v to see that it
-> does not do what you might expect:
->
-> # nc -l -u 4444 -v
-> Warning: Inverse name lookup failed for `0.0.17.92'
-> ------------------------------------------------------------------------
->
-> Distro		Package						needs -p
-> 		Command invocation
-> ========================================================================
-> Arch		gnu-netcat					yes
-> (Website	nc | netcat
->  documentation)
-> 		openbsd-netcat					no
-> 		nc.openbsd
-> ------------------------------------------------------------------------
-> Debian-6.0.5	netcat-openbsd					no 
-> 		nc | netcat | nc.openbsd		   
-> 		                                   
-> 		netcat / netcat-traditional (preinstalled)	yes
-> 		nc | netcat
-> 		                                   
-> 		netcat6						yes
-> 		nc | netcat | nc6
-> ------------------------------------------------------------------------
-> Fedora-17	nc (preinstalled)				no
-> 		nc
->
-> 		nc6
-> 		nc6						yes
-> ------------------------------------------------------------------------
-> Gentoo		gnu-netcat					yes
-> 		netcat
->
-> 		netcat						yes
-> 		nc
->
-> 		netcat6						yes
-> 		nc | nc6
-> ------------------------------------------------------------------------
-> OpenSUSE-12.1	netcat-openbsd					no
-> 		nc | netcat
-> ------------------------------------------------------------------------
-> Ubuntu-12.04	netcat-openbsd (preinstalled)			no 
-> Desktop		nc | netcat | nc.openbsd
-> 		                                   
-> 		netcat / netcat-traditional			yes
-> 		nc | netcat		   
-> 		                                   
-> 		netcat6						yes
-> 		nc | netcat | nc6
-> ------------------------------------------------------------------------
+> Keep track of how many NUMA page migrations succeeded and
+> failed (in a way that wants retrying later) per process.
 
-Here is a patch that also includes Jan's suggestion for socat(1).
+It would be good if we could also somehow determine if that
+migration actually made sense?
 
-The problem with the patch is that the netcat part does not cover every
-possible distribution/netcat-package situation but in my opinion it is a
-bearable compromise with respect to keeping the example section compact.
+Were there enough accesses to the page so that the effort to migrate
+the page was amortized?
 
-Dirk
-
->From d756d2750e4cf07d3c0942dc3c491d57631d4338 Mon Sep 17 00:00:00 2001
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-Date: Thu, 2 Aug 2012 22:20:16 +0200
-Subject: [PATCH] netconsole.txt: revision of examples for the receiver of kernel messages
-
-There are at least 4 implementations of netcat with the BSD-based
-being the only one that has to be used without the -p switch to
-specify the listening port.
-
-Jan Engelhardt suggested to add an example for socat(1).
----
- Documentation/networking/netconsole.txt |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/networking/netconsole.txt b/Documentation/networking/netconsole.txt
-index 8d02207..2e9e0ae2 100644
---- a/Documentation/networking/netconsole.txt
-+++ b/Documentation/networking/netconsole.txt
-@@ -51,8 +51,23 @@ Built-in netconsole starts immediately after the TCP stack is
- initialized and attempts to bring up the supplied dev at the supplied
- address.
- 
--The remote host can run either 'netcat -u -l -p <port>',
--'nc -l -u <port>' or syslogd.
-+The remote host has several options to receive the kernel messages,
-+for example:
-+
-+1) syslogd
-+
-+2) netcat
-+
-+   On distributions using a BSD-based netcat version (e.g. Fedora,
-+   openSUSE and Ubuntu) the listening port must be specified without
-+   the -p switch:
-+
-+   'nc -u -l -p <port>' / 'nc -u -l <port>' or
-+   'netcat -u -l -p <port>' / 'netcat -u -l <port>'
-+
-+3) socat
-+
-+   'socat udp-recv:<port> -'
- 
- Dynamic reconfiguration:
- ========================
--- 
-1.7.8.6
+Still skeptical on this endeavor.
 
