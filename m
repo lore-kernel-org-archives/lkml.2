@@ -1,140 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958Ab2HBRqe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:46:34 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:44508 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848Ab2HBRqc (ORCPT
+	id S1754889Ab2HBRso (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:48:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53716 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302Ab2HBRsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:46:32 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-Date: Thu, 2 Aug 2012 10:46:31 -0700
-Message-ID: <CAOesGMjc0PBLEf_Ar=z9TX4bjHEMOVeshxQSmYpp9P=3G6_D_Q@mail.gmail.com>
-Subject: [GIT PULL 3/3] ARM: arm-soc Marvell Orion device-tree updates
-From: Olof Johansson <olof@lixom.net>
+	Thu, 2 Aug 2012 13:48:43 -0400
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+From: Eric Dumazet <eric.dumazet@gmail.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com
+In-Reply-To: <CA+55aFw_dwO5ZOuaz9eDxgnTZFDGVZKSLUTm5Fn99faALxxJRQ@mail.gmail.com>
+References: <20120731182330.GD21292@google.com> <50197348.9010101@gmail.com>
+	 <20120801182112.GC15477@google.com> <50197460.8010906@gmail.com>
+	 <20120801182749.GD15477@google.com> <50197E4A.7020408@gmail.com>
+	 <20120801202432.GE15477@google.com> <5019B0B4.1090102@gmail.com>
+	 <20120801224556.GF15477@google.com> <501A4FC1.8040907@gmail.com>
+	 <20120802103244.GA23318@leaf> <501A633B.3010509@gmail.com>
+	 <87txwl1dsq.fsf@xmission.com> <501AAC26.6030703@gmail.com>
+	 <87fw851c3d.fsf@xmission.com>
+	 <CA+55aFw_dwO5ZOuaz9eDxgnTZFDGVZKSLUTm5Fn99faALxxJRQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Aug 2012 19:48:37 +0200
+Message-ID: <1343929717.9299.358.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This branch contains a set of device-tree conversions for Marvell Orion
-platforms that were staged early but took a few tries to get the branch
-into a format where it was suitable for us to pick up.
+On Thu, 2012-08-02 at 10:32 -0700, Linus Torvalds wrote:
+> On Thu, Aug 2, 2012 at 9:40 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> >
+> > For a trivial hash table I don't know if the abstraction is worth it.
+> > For a hash table that starts off small and grows as big as you need it
+> > the incent to use a hash table abstraction seems a lot stronger.
+> 
+> I'm not sure growing hash tables are worth it.
+> 
+> In the dcache layer, we have an allocated-at-boot-time sizing thing,
+> and I have been playing around with a patch that makes the hash table
+> statically sized (and pretty small). And it actually speeds things up!
 
-Given that most people working on these platforms are hobbyists with
-limited time, we were a bit more flexible with merging it even though
-it came in late.
-
-----------------------------------------------------------------
-
-The following changes since commit 4695ce021de2a3abdd593155bee291496e735cbf:
-
-  Merge tag 'pm2' into HEAD
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/dt2
-
-for you to fetch changes up to 15a1e1bafe2c924db6d370ad892d7da6c7d83598:
-
-  Merge branch 'marvell/dt' into late2/dt
-
-----------------------------------------------------------------
-
-Andrew Lunn (16):
-      Merge tag 'spi-3.6' into v3.5-rc7-dt-v3
-      Merge branch 'v3.5-rc7-fixes' into v3.5-rc7-dt-v3
-      ARM: Orion: DT support for IRQ and GPIO Controllers
-      ARM: Orion: Add arch support needed for I2C via DT.
-      ARM: Orion: DTify the watchdog timer.
-      ATA: sata_mv: Add device tree support
-      ARM: Kirkwood: Add basic device tree support for QNAP TS219.
-      ARM: Kirkwood: Use DT to configure SATA device.
-      ARM: Kirkwood: Describe DNS325 temperature sensor in DT.
-      ARM: Kirkwood: Describe IB62x0 gpio-keys in DT.
-      ARM: Kirkwood: Describe IB62x0 LEDs in DT.
-      ARM: Kirkwood: Describe iConnects temperature sensor in DT.
-      ARM: Kirkwood: Describe iConnects LEDs in DT.
-      ARM: Kirkwood: Describe Dreamplug LEDs in DT.
-      ARM: Kirkwood: Describe GoFlex Net LEDs and SATA in DT.
-      ARM: Kirkwood: Replace mrvl with marvell
-
-Jamie Lentin (3):
-      ARM: Kirkwood: Replace DNS-320/DNS-325 leds with dt bindings
-      ARM: Kirkwood: Move common portions into a kirkwood-dnskw.dtsi
-      ARM: Kirkwood: Describe DNS32? gpio-keys in DT.
-
-Josh Coombs (1):
-      ARM: Kirkwood: Initial DTS support for Kirkwood GoFlex Net
-
-Michael Walle (3):
-      ARM: kirkwood: use devicetree for orion-spi
-      ARM: kirkwood: Add LS-XHL and LS-CHLv2 support
-      ARM: kirkwood: use devicetree for SPI on dreamplug
-
-Olof Johansson (1):
-      Merge branch 'marvell/dt' into late2/dt
+By the way, anybody tried to tweak vmalloc() (or
+alloc_large_system_hash()) to use HugePages for those large hash
+tables ?
 
 
- .../devicetree/bindings/arm/mrvl/intc.txt       |  20 +++
- .../devicetree/bindings/ata/marvell.txt         |  16 ++
- .../devicetree/bindings/gpio/mrvl-gpio.txt      |  23 +++
 
- .../devicetree/bindings/watchdog/marvel.txt     |  14 ++
- arch/arm/Kconfig                                |   1 +
- arch/arm/boot/dts/kirkwood-dns320.dts           |  62 +++----
- arch/arm/boot/dts/kirkwood-dns325.dts           |  68 ++++----
- arch/arm/boot/dts/kirkwood-dnskw.dtsi           |  69 ++++++++
- arch/arm/boot/dts/kirkwood-dreamplug.dts        |  50 ++++++
- arch/arm/boot/dts/kirkwood-goflexnet.dts        |  99 +++++++++++
- arch/arm/boot/dts/kirkwood-ib62x0.dts           |  38 +++++
- arch/arm/boot/dts/kirkwood-iconnect.dts         |  42 +++++
- arch/arm/boot/dts/kirkwood-lschlv2.dts          |  20 +++
- arch/arm/boot/dts/kirkwood-lsxhl.dts            |  20 +++
- arch/arm/boot/dts/kirkwood-lsxl.dtsi            |  95 +++++++++++
- arch/arm/boot/dts/kirkwood-ts219-6281.dts       |  21 +++
- arch/arm/boot/dts/kirkwood-ts219-6282.dts       |  21 +++
- arch/arm/boot/dts/kirkwood-ts219.dtsi           |  78 +++++++++
- arch/arm/boot/dts/kirkwood.dtsi                 |  60 +++++++
- arch/arm/mach-dove/irq.c                        |  58 +++----
- arch/arm/mach-kirkwood/Kconfig                  |  29 ++++
- arch/arm/mach-kirkwood/Makefile                 |   3 +
- arch/arm/mach-kirkwood/Makefile.boot            |   4 +
- arch/arm/mach-kirkwood/board-dnskw.c            | 143 ----------------
- arch/arm/mach-kirkwood/board-dreamplug.c        |  80 ---------
- arch/arm/mach-kirkwood/board-dt.c               |  29 +++-
- arch/arm/mach-kirkwood/board-goflexnet.c        |  71 ++++++++
- arch/arm/mach-kirkwood/board-ib62x0.c           |  72 --------
- arch/arm/mach-kirkwood/board-iconnect.c         |  56 -------
- arch/arm/mach-kirkwood/board-lsxl.c             | 135 +++++++++++++++
- arch/arm/mach-kirkwood/board-ts219.c            |  82 +++++++++
- arch/arm/mach-kirkwood/common.c                 |   2 +
- arch/arm/mach-kirkwood/common.h                 |  17 ++
- arch/arm/mach-kirkwood/irq.c                    |  38 ++---
- arch/arm/mach-mv78xx0/irq.c                     |  22 +--
- arch/arm/mach-orion5x/irq.c                     |  22 +--
- arch/arm/plat-orion/common.c                    |   1 +
- arch/arm/plat-orion/gpio.c                      | 166 ++++++++++++++-----
- arch/arm/plat-orion/include/plat/gpio.h         |  16 +-
- arch/arm/plat-orion/include/plat/irq.h          |   3 +-
- arch/arm/plat-orion/irq.c                       |  40 +++++
- drivers/ata/sata_mv.c                           |  42 +++--
- drivers/watchdog/orion_wdt.c                    |   8 +
- 43 files changed, 1387 insertions(+), 569 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/marvell.txt
- create mode 100644 Documentation/devicetree/bindings/watchdog/marvel.txt
- create mode 100644 arch/arm/boot/dts/kirkwood-dnskw.dtsi
- create mode 100644 arch/arm/boot/dts/kirkwood-goflexnet.dts
- create mode 100644 arch/arm/boot/dts/kirkwood-lschlv2.dts
- create mode 100644 arch/arm/boot/dts/kirkwood-lsxhl.dts
- create mode 100644 arch/arm/boot/dts/kirkwood-lsxl.dtsi
- create mode 100644 arch/arm/boot/dts/kirkwood-ts219-6281.dts
- create mode 100644 arch/arm/boot/dts/kirkwood-ts219-6282.dts
- create mode 100644 arch/arm/boot/dts/kirkwood-ts219.dtsi
- create mode 100644 arch/arm/mach-kirkwood/board-goflexnet.c
- create mode 100644 arch/arm/mach-kirkwood/board-lsxl.c
- create mode 100644 arch/arm/mach-kirkwood/board-ts219.c
