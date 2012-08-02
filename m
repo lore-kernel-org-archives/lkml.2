@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab2HBMbl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 08:31:41 -0400
-Received: from mail.tpi.com ([70.99.223.143]:3384 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab2HBMbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 08:31:39 -0400
-Message-ID: <501A728A.2070905@canonical.com>
-Date: Thu, 02 Aug 2012 06:28:58 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1753623Ab2HBMfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 08:35:34 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:41652 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753329Ab2HBMfd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 08:35:33 -0400
+From: Virupax SADASHIVPETIMATH <virupax.sadashivpetimath@stericsson.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Praveena NADAHALLY <praveen.nadahally@stericsson.com>
+Date: Thu, 2 Aug 2012 14:35:20 +0200
+Subject: RE: [PATCH] usb:musb:musb_host: Handle highmem in PIO mode
+Thread-Topic: [PATCH] usb:musb:musb_host: Handle highmem in PIO mode
+Thread-Index: Ac1wngFrABAwD6vQRXCjNx/a8EhQlgABgaMgAAFEVtA=
+Message-ID: <A3217089E06965468FCEC60ADC3A8F925C21599AE8@EXDCVYMBSTM006.EQ1STM.local>
+References: <1343889402-7826-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
+ <20120802110010.GA5443@kroah.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
-        ben@decadent.org.uk, JBottomley@Parallels.com,
-        dan.j.williams@intel.com, divy@chelsio.com, netdev@vger.kernel.org
-Subject: Re: [PATCH] firmware: Remove obsolete Chelsio cxgb3 firmware
-References: <1343848670-31504-1-git-send-email-tim.gardner@canonical.com> <20120802.002000.2023014747210925552.davem@davemloft.net>
-In-Reply-To: <20120802.002000.2023014747210925552.davem@davemloft.net>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 01:20 AM, David Miller wrote:
+
+
+> -----Original Message-----
+> From: Virupax SADASHIVPETIMATH
+> Sent: Thursday, August 02, 2012 5:35 PM
+> To: 'Greg KH'
+> Cc: balbi@ti.com; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Praveena
+> NADAHALLY
+> Subject: RE: [PATCH] usb:musb:musb_host: Handle highmem in PIO mode
 > 
-> "git am" refuses to apply this to current 'net':
 > 
-> Applying: firmware: Remove obsolete Chelsio cxgb3 firmware
-> error: removal patch leaves file contents
-> error: firmware/cxgb3/t3fw-7.10.0.bin.ihex: patch does not apply
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Thursday, August 02, 2012 4:30 PM
+> > To: Virupax SADASHIVPETIMATH
+> > Cc: balbi@ti.com; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Praveena
+> > NADAHALLY
+> > Subject: Re: [PATCH] usb:musb:musb_host: Handle highmem in PIO mode
+> >
+> > On Thu, Aug 02, 2012 at 12:06:42PM +0530, Virupax Sadashivpetimath wrote:
+> > > In case of USB bulk transfer, when himem page
+> > > is received, the usb_sg_init function sets the
+> > > urb transfer buffer to NULL. When such URB
+> > > transfer is handled, kernel crashes in PIO mode.
+> > > Handle this by mapping the highmem buffer in PIO mode.
+> > >
+> > > Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+> >
+> > Why is this not a problem in any other host controller?
 > 
+> Problem is seen only when the RAM on the board is 1GB or more. When the urb sg is in
+> highmem.
 
-Paul Gortmaker suggested I use 'git format-patch --irreversible-delete'
-to produce shorter patches, but then even I can't reapply it.
+And also many of the host controllers are using the DMA mode for all sizes
+ of urb transfer, because of which the problem is not seen in those controllers. 
 
-How about a pull request against net-next instead ?
-
-The following changes since commit 1a9b4993b70fb1884716902774dc9025b457760d:
-
-  Merge branch 'upstream' of
-git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2012-08-01
-16:47:15 -0700)
-
-are available in the git repository at:
+Thanks 
+Virupax S 
+ 
 
 
-  git://kernel.ubuntu.com/rtg/net-next.git master
 
-for you to fetch changes up to 044b722f36a17bc5f7f472cc3246cb15a430bb0e:
 
-  firmware: Remove obsolete Chelsio cxgb3 firmware (2012-08-02 06:23:25
--0600)
-
-----------------------------------------------------------------
-Tim Gardner (1):
-      firmware: Remove obsolete Chelsio cxgb3 firmware
-
- firmware/Makefile                   |    1 -
- firmware/cxgb3/t3fw-7.10.0.bin.ihex | 1935
------------------------------------
- 2 files changed, 1936 deletions(-)
- delete mode 100644 firmware/cxgb3/t3fw-7.10.0.bin.ihex
--- 
-Tim Gardner tim.gardner@canonical.com
