@@ -1,335 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab2HBWL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 18:11:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38841 "EHLO arroyo.ext.ti.com"
+	id S1753646Ab2HBWMR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 18:12:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:5581 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175Ab2HBWLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 18:11:24 -0400
-Message-ID: <501AFB12.50703@ti.com>
-Date: Thu, 2 Aug 2012 17:11:30 -0500
-From: "Alexis R. Cortes" <alexis.cortes@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: <sarah.a.sharp@linux.intel.com>
-CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <brian.quach@ti.com>,
-        <jorge.llamas@ti.com>
-Subject: Re: FW: [PATCH] usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP
- Hardware
-References: <005e01cd70f7$e306f750$a914e5f0$@cortes@ti.com>
-In-Reply-To: <005e01cd70f7$e306f750$a914e5f0$@cortes@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753065Ab2HBWMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 18:12:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="201629791"
+Message-ID: <1343945532.2132.66.camel@jtkirshe-mobl>
+Subject: Re: [PATCH v3 17/32] PCI/igb: use PCIe capabilities access
+ functions to simplify implementation
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Date: Thu, 02 Aug 2012 15:12:12 -0700
+In-Reply-To: <1343836477-7287-18-git-send-email-jiang.liu@huawei.com>
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+	 <1343836477-7287-18-git-send-email-jiang.liu@huawei.com>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-VcqxswrRzIV8jL/06dkW"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah,
 
-I have rewritten my code following your recommendations. Could you please review it and give your comments? If everything is fine I'll proceed to generate the patch and submit it.
+--=-VcqxswrRzIV8jL/06dkW
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The description of my patch is:
----------------------------------------------------------------------------
-usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP Hardware
+On Wed, 2012-08-01 at 23:54 +0800, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
+>=20
+> Use PCIe capabilities access functions to simplify Intel ethernet
+> drivers'
+> implementation.
+>=20
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  drivers/net/ethernet/intel/e1000e/netdev.c |   27
+> ++++++++-------------------
+>  drivers/net/ethernet/intel/igb/igb_main.c  |   12 ++----------
+>  2 files changed, 10 insertions(+), 29 deletions(-)=20
 
-This patch is intended to work around a known issue on the
-SN65LVPE502CP USB3.0 re-driver that can delay the negotiation
-between a device and the host past the usual handshake timeout.
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
-If that happens on the first insertion, the host controller
-port will enter in Compliance Mode and NO port status event will
-be generated (as per xHCI Spec) making impossible to detect this
-event by software. The port will remain in compliance mode until
-a warm reset is applied to it.
+--=-VcqxswrRzIV8jL/06dkW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-As a result of this, the port will seem "dead" to the user and no 
-device connections or disconnections will be detected.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-For solving this, the patch creates a timer which polls every 2 
-seconds the link state of each host controller's port (this
-by reading the PORTSC register) and recovers the port by issuing a
-Warm reset every time Compliance mode is detected. 
+iQIcBAABCgAGBQJQGvs8AAoJEOVv75VaS+3OJrwP+wTm9Gqt5VsASxKQ/wqkAn/J
+QeSO2RZTfW/iXedLk40oEgMlveb/twbuhQ4riG4aFvzXX0ilAihH7MTNNSFL0B97
+bO6blIDqFcJlEV4xsiALSnD8yXrQec6Z0GP5FBUd7mmT9absIR80Xvth+c8ntpgM
+Z1CeLJwYy51Oeq4S5eX3k/SJ8n0bcf1sCTpeYEFLlFpp6J3r6N74Qa0jXvJ0cSbX
+rkrLOlDf/YNe3RWpEp7LTXR7p9r4S7phRx2/YXM3psfUga3h/zsq0i73Pz244I7l
++yeTNxCd418marj8qCI6UwE9oG0GdB82acOCwI4BHfCQ9lilW8B+2REpTIW1Ltl6
+2rxFq7eEjANakNA0ZDD5yeZnhMQqqwjGFhZ5mo6iH7MZINo3VoDayX7qzE8tjg10
+HM4cDy/PAcKOgEYR6g0Ii7sbm92mOB74XlFOX4KgIs7rUzqq2TgnD5gRl7gKJKFc
+16rtaAVX6sHM4/PkBksO2i4avCEuriKap7HPZS+foA0wJOwONljMUCcOPSjrJ34/
+FLFrGlilnlq+Qu9VtIVhXahZVCeIL3oaAqd5hzzfzN7yoPDt4YXHViJBur4jy3Le
+HhkU82m38y39cVh5zzfIrPAjBfCaw8gPI631BipVqf05GrVQGtGlaYlqW7iZ6lib
+AkfcKw3oQJHsNwdNffzr
+=0t/X
+-----END PGP SIGNATURE-----
 
-Since the issue is being caused by a piece of hardware, the timer 
-will be enabled ONLY on those systems that have the SN65LVPE502CP 
-installed (this patch uses DMI strings for detecting those systems)
-therefore making this patch to act as a quirk (XHCI_COMP_MODE_QUIRK
-has been added to the xhci stack).
-
-This patch applies for these systems: 
-Vendor: Hewlett-Packard. System Models: Z420, Z620 and Z820.
----------------------------------------------------------------------------
-
-The 'git diff' of my change is as follows:
-
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index 7b01094..3a3c614 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -493,11 +493,47 @@ static void xhci_hub_report_link_state(u32 *status, u32 status_reg)
-                 * when this bit is set.
-                 */
-                pls |= USB_PORT_STAT_CONNECTION;
-+       } else {
-+               /*
-+                * If CAS bit isn't set but the Port is already at
-+                * Compliance Mode, fake a connection so the USB core
-+                * notices the Compliance state and resets the port.
-+                * This resolves an issue generated by the SN65LVPE502CP
-+                * in which sometimes the port enters compliance mode
-+                * caused by a delay on the host-device negotiation.
-+                */
-+               if (pls == USB_SS_PORT_LS_COMP_MOD)
-+                       pls |= USB_PORT_STAT_CONNECTION;
-        }
-+
-        /* update status field */
-        *status |= pls;
- }
- 
-+/* Function for Compliance Mode Quirk.
-+ *
-+ * This Function verifies if all xhc USB3 ports have entered U0, if so,
-+ * the compliance mode timer is deleted. A port won't enter
-+ * compliance mode if it has previously entered U0.
-+ */
-+void xhci_del_comp_mod_timer(struct xhci_hcd *xhci, u32 status, u16 wIndex)
-+{
-+       u32 all_ports_seen_u0 = ((1 << xhci->num_usb3_ports)-1);
-+       bool port_in_u0 = ((status & PORT_PLS_MASK) == XDEV_U0);
-+
-+       if (!(xhci->quirks & XHCI_COMP_MODE_QUIRK))
-+               return;
-+
-+       if ((xhci->port_status_u0 != all_ports_seen_u0) && port_in_u0) {
-+               xhci->port_status_u0 |= 1 << wIndex;
-+               if (xhci->port_status_u0 == all_ports_seen_u0) {
-+                       del_timer_sync(&xhci->comp_mode_recovery_timer);
-+                       xhci_dbg(xhci, "All USB3 ports have entered U0 already!\n");
-+                       xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted.\n");
-+               }
-+       }
-+}
-+
- int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
-                u16 wIndex, char *buf, u16 wLength)
- {
-@@ -645,6 +681,11 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
-                /* Update Port Link State for super speed ports*/
-                if (hcd->speed == HCD_USB3) {
-                        xhci_hub_report_link_state(&status, temp);
-+                       /*
-+                        * Verify if all USB3 Ports Have entered U0 already.
-+                        * Delete Compliance Mode Timer if so.
-+                        */
-+                       xhci_del_comp_mod_timer(xhci, temp, wIndex);
-                }
-                if (bus_state->port_c_suspend & (1 << wIndex))
-                        status |= 1 << USB_PORT_FEAT_C_SUSPEND;
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index a979cd0..9c18375 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -26,6 +26,7 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/slab.h>
-+#include <linux/dmi.h>
- 
- #include "xhci.h"
- 
-@@ -397,6 +398,97 @@ static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
- 
- #endif
- 
-+static void compliance_mode_recovery(unsigned long arg)
-+{
-+       struct xhci_hcd *xhci;
-+       struct usb_hcd *hcd;
-+       u32 temp;
-+       int i;
-+
-+       xhci = (struct xhci_hcd *)arg;
-+
-+       for (i = 0; i < xhci->num_usb3_ports; i++) {
-+               temp = xhci_readl(xhci, xhci->usb3_ports[i]);
-+               if ((temp & PORT_PLS_MASK) == USB_SS_PORT_LS_COMP_MOD) {
-+                       /*
-+                        * Compliance Mode Detected. Letting USB Core
-+                        * handle the Warm Reset
-+                        */
-+                       xhci_dbg(xhci, "Compliance Mode Detected->Port %d!\n",
-+                                       i + 1);
-+                       xhci_dbg(xhci, "Attempting Recovery routine!\n");
-+                       hcd = xhci->shared_hcd;
-+
-+                       if (hcd->state == HC_STATE_SUSPENDED)
-+                               usb_hcd_resume_root_hub(hcd);
-+
-+                       usb_hcd_poll_rh_status(hcd);
-+               }
-+       }
-+
-+       if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1))
-+               mod_timer(&xhci->comp_mode_recovery_timer,
-+                       jiffies + msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
-+}
-+
-+/*
-+ * Quirk to work around issue generated by the SN65LVPE502CP USB3.0 re-driver
-+ * that causes ports behind that hardware to enter compliance mode sometimes.
-+ * The quirk creates a timer that polls every 2 seconds the link state of
-+ * each host controller's port and recovers it by issuing a Warm reset
-+ * if Compliance mode is detected, otherwise the port will become "dead" (no
-+ * device connections or disconnections will be detected anymore). Becasue no
-+ * status event is generated when entering compliance mode (per xhci spec),
-+ * this quirk is needed on systems that have the failing hardware installed.
-+ */
-+
-+static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
-+{
-+       xhci->port_status_u0 = 0;
-+       init_timer(&xhci->comp_mode_recovery_timer);
-+
-+       xhci->comp_mode_recovery_timer.data = (unsigned long) xhci;
-+       xhci->comp_mode_recovery_timer.function = compliance_mode_recovery;
-+       xhci->comp_mode_recovery_timer.expires = jiffies +
-+                       msecs_to_jiffies(COMP_MODE_RCVRY_MSECS);
-+
-+       set_timer_slack(&xhci->comp_mode_recovery_timer,
-+                       msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
-+       add_timer(&xhci->comp_mode_recovery_timer);
-+       xhci_dbg(xhci, "Compliance Mode Recovery Timer Initialized.\n");
-+}
-+
-+/*
-+ * This function identifies the systems that have installed the SN65LVPE502CP
-+ * USB3.0 re-driver and that need the Compliance Mode Quirk.
-+ * Systems:
-+ * Vendor: Hewlett-Packard -> System Models: Z420, Z620 and Z820
-+ */
-+
-+static bool compliance_mode_recovery_timer_quirk_check(void)
-+{
-+       const char *dmi_product_name, *dmi_sys_vendor;
-+
-+       dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
-+       dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
-+
-+       if (!(strstr(dmi_sys_vendor, "Hewlett-Packard")))
-+               return false;
-+
-+       if (strstr(dmi_product_name, "Z420") ||
-+                       strstr(dmi_product_name, "Z620") ||
-+                       strstr(dmi_product_name, "Z820"))
-+               return true;
-+
-+       return false;
-+}
-+
-+static int xhci_all_ports_seen_u0(struct xhci_hcd *xhci)
-+{
-+       return (xhci->port_status_u0 == ((1 << xhci->num_usb3_ports)-1));
-+}
-+
-+
- /*
-  * Initialize memory for HCD and xHC (one-time init).
-  *
-@@ -420,6 +512,12 @@ int xhci_init(struct usb_hcd *hcd)
-        retval = xhci_mem_init(xhci, GFP_KERNEL);
-        xhci_dbg(xhci, "Finished xhci_init\n");
- 
-+       /* Initializing Compliance Mode Recovery Data If Needed */
-+       if (compliance_mode_recovery_timer_quirk_check()) {
-+               xhci->quirks |= XHCI_COMP_MODE_QUIRK;
-+               compliance_mode_recovery_timer_init(xhci);
-+       }
-+
-        return retval;
- }
- 
-@@ -628,6 +726,11 @@ void xhci_stop(struct usb_hcd *hcd)
-        del_timer_sync(&xhci->event_ring_timer);
- #endif
- 
-+       /* Deleting Compliance Mode Recovery Timer */
-+       if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
-+                       (!(xhci_all_ports_seen_u0(xhci))))
-+               del_timer_sync(&xhci->comp_mode_recovery_timer);
-+
-        if (xhci->quirks & XHCI_AMD_PLL_FIX)
-                usb_amd_dev_put();
- 
-@@ -802,6 +905,16 @@ int xhci_suspend(struct xhci_hcd *xhci)
-        }
-        spin_unlock_irq(&xhci->lock);
- 
-+       /*
-+        * Deleting Compliance Mode Recovery Timer because the xHCI Host
-+        * is about to be suspended.
-+        */
-+       if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
-+                       (!(xhci_all_ports_seen_u0(xhci)))) {
-+               del_timer_sync(&xhci->comp_mode_recovery_timer);
-+               xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted!\n");
-+       }
-+
-        /* step 5: remove core well power */
-        /* synchronize irq when using MSI-X */
-        xhci_msix_sync_irqs(xhci);
-@@ -934,6 +1047,10 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
-                usb_hcd_resume_root_hub(hcd);
-                usb_hcd_resume_root_hub(xhci->shared_hcd);
-        }
-+
-+       if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
-+               compliance_mode_recovery_timer_init(xhci);
-+
-        return retval;
- }
- #endif /* CONFIG_PM */
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 55c0785..f1e7874 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1494,6 +1494,7 @@ struct xhci_hcd {
- #define XHCI_TRUST_TX_LENGTH   (1 << 10)
- #define XHCI_LPM_SUPPORT       (1 << 11)
- #define XHCI_INTEL_HOST                (1 << 12)
-+#define XHCI_COMP_MODE_QUIRK   (1 << 13)
-        unsigned int            num_active_eps;
-        unsigned int            limit_active_eps;
-        /* There are two roothubs to keep track of bus suspend info for */
-@@ -1510,6 +1511,11 @@ struct xhci_hcd {
-        unsigned                sw_lpm_support:1;
-        /* support xHCI 1.0 spec USB2 hardware LPM */
-        unsigned                hw_lpm_support:1;
-+       /* Compliance Mode Recovery Data */
-+       struct timer_list       comp_mode_recovery_timer;
-+       u32                     port_status_u0;
-+/* Compliance Mode Timer Triggered every 2 seconds */
-+#define COMP_MODE_RCVRY_MSECS 2000
- };
- 
- /* convert between an HCD pointer and the corresponding EHCI_HCD */
-(END) 
-
-Thanks and Best Regards,
-Alexis Cortes.
-
-
-> 
-> 
-> -----Original Message-----
-> From: Sarah Sharp [mailto:sarah.a.sharp@linux.intel.com] 
-> Sent: Wednesday, August 01, 2012 6:52 PM
-> To: Alexis R. Cortes
-> Cc: gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
-> linux-kernel@vger.kernel.org; brian.quach@ti.com; jorge.llamas@ti.com
-> Subject: Re: [PATCH] usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP
-> Hardware
-> Sarah Sharp
-> 
+--=-VcqxswrRzIV8jL/06dkW--
 
