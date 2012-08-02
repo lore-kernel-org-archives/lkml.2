@@ -1,44 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab2HBT5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 15:57:45 -0400
-Received: from seven.medozas.de ([5.9.24.206]:55058 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab2HBT5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 15:57:44 -0400
-Date: Thu, 2 Aug 2012 21:57:42 +0200 (CEST)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] netconsole.txt: "nc" needs "-p" to specify the
- listening port
-In-Reply-To: <gir4rxk7c2.fsf@mx10.gouders.net>
-Message-ID: <alpine.LNX.2.01.1208022156280.30631@frira.zrqbmnf.qr>
-References: <gir4rxk7c2.fsf@mx10.gouders.net>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1753417Ab2HBUBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:01:31 -0400
+Received: from a83-160-107-163.adsl.xs4all.nl ([83.160.107.163]:47182 "EHLO
+	d4rwin.no-ip.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab2HBUB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 16:01:29 -0400
+Date: Thu, 2 Aug 2012 22:00:48 +0200
+From: Matthias Kaehlcke <matthias.list@kaehlcke.net>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+Message-ID: <20120802200048.GL4701@darwin>
+Mail-Followup-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
+	Venu Byravarasu <vbyravarasu@nvidia.com>,
+	"a.zummo@towertech.it" <a.zummo@towertech.it>,
+	"sameo@linux.intel.com" <sameo@linux.intel.com>,
+	"broonie@opensource.wolfsonmicro.com" <broonie@opensource.wolfsonmicro.com>,
+	Laxman Dewangan <ldewangan@nvidia.com>,
+	"kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
+	"sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+	"rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
+ <20120801201811.GK4701@darwin>
+ <D958900912E20642BCBC71664EFECE3E6DDCAC4704@BGMAIL02.nvidia.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDCAC4704@BGMAIL02.nvidia.com>
+Organization: sindominio.net
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Venu,
 
-On Friday 2012-07-27 08:35, Dirk Gouders wrote:
->diff --git a/Documentation/networking/netconsole.txt b/Documentation/networking/netconsole.txt
->index 8d02207..ffe30a7 100644
->--- a/Documentation/networking/netconsole.txt
->+++ b/Documentation/networking/netconsole.txt
->@@ -52,7 +52,7 @@ initialized and attempts to bring up the supplied dev at the supplied
-> address.
+thanks for you reply
+
+El Thu, Aug 02, 2012 at 10:28:47AM +0530 Venu Byravarasu ha dit:
+
+> > -----Original Message-----
+> > From: Matthias Kaehlcke [mailto:matthias.list@kaehlcke.net]
+> > Sent: Thursday, August 02, 2012 1:48 AM
+> > To: Venu Byravarasu
+> > Cc: a.zummo@towertech.it; sameo@linux.intel.com;
+> > broonie@opensource.wolfsonmicro.com; Laxman Dewangan;
+> > kyle.manna@fuel7.com; sboyd@codeaurora.org; rtc-
+> > linux@googlegroups.com; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+> > 
+> > hi,
+> > 
+> > El Wed, Aug 01, 2012 at 11:52:37AM +0530 Venu Byravarasu ha dit:
+> > 
+> > > TPS65910 PMIC is a MFD with RTC as one of the device.
+> > > Adding RTC driver for supporting RTC device present
+> > > inside TPS65910 PMIC.
+> > >
+> > > Only support for RTC alarm is implemented as part of this patch.
+> > >
+> > > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> > > ---
+> > 
+> > ...
+> > 
+> > > +static irqreturn_t tps65910_rtc_interrupt(int irq, void *rtc)
+> > > +{
+> > > +	struct device *dev = rtc;
+> > > +	unsigned long events = 0;
+> > > +	struct tps65910 *tps = dev_get_drvdata(dev->parent);
+> > > +	struct tps65910_rtc *tps_rtc = dev_get_drvdata(dev);
+> > >
+> > > ...
+> > >
+> > > +static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
+> > > +{
+> > >
+> > > ...
+> > >
+> > > +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+> > > +		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
+> > > +		"rtc-tps65910", &pdev->dev);
+> > > +	if (ret < 0) {
+> > > +		dev_err(&pdev->dev, "IRQ is not free.\n");
+> > > +		return ret;
+> > > +	}
+> > > +	device_init_wakeup(&pdev->dev, 1);
+> > > +
+> > > +	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+> > > +		&tps65910_rtc_ops, THIS_MODULE);
+> > > +	if (IS_ERR(tps_rtc->rtc)) {
+> > > +		ret = PTR_ERR(tps_rtc->rtc);
+> > > +		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
+> > > +		return ret;
+> > > +	}
+> > > +
+> > > +	platform_set_drvdata(pdev, tps_rtc);
+> > 
+> > the interrupt should be requested after this call. otherwise
+> > tps65910_rtc_interrupt() could be executed before the RTC device is
+> > registered and the driver data set. normally this shouldn't happen as
+> > the RTC interrupts are disabled after reset, but the interrupts could
+> > have been enabled for example by the bootloader
 > 
-> The remote host can run either 'netcat -u -l -p <port>',
->-'nc -l -u <port>' or syslogd.
->+'nc -l -u -p <port>' or syslogd.
+> Hi Matthias,
+> 
+> Thanks for your comments.
+> All pending RTC interrupts are being cleared in probe, before enabling RTC itself.
+> Hence chances of stray interrupts from boot loader cannot cause any trouble here.
+> 
+> The only possible way of getting interrupt by kernel driver is by enabling 
+> tps65910_rtc_alarm_irq_enable() && setting alarm time using tps65910_rtc_set_alarm.
+> However before probe gets completed as these two APIs will not get 
+> called together by the client, I do not see any false interrupt getting generated.
 
-While at it, could you add
+i was thinking in the periodic interrupts, but now noticed that the
+driver only registers to the alarm interrupts, so this is not a
+problem
 
-  socat udp-recv:<port> -
+kind regards
 
-since netcat is _really_ archaic ;-)
+-- 
+Matthias Kaehlcke
+Embedded Linux Developer
+Amsterdam
 
+    El optimista tiene siempre un proyecto; el pesimista, una excusa
+                                                                 .''`.
+    using free software / Debian GNU/Linux | http://debian.org  : :'  :
+                                                                `. `'`
+gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
