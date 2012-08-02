@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab2HBQTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:19:20 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:39989 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab2HBQTT (ORCPT
+	id S1753720Ab2HBQUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:20:45 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:45690 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752397Ab2HBQUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:19:19 -0400
-Date: Thu, 2 Aug 2012 18:19:17 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sparc64: do not clobber personality flags in
-	sys_sparc64_personality()
-Message-ID: <20120802161917.GA5493@merkur.ravnborg.org>
-References: <alpine.LNX.2.00.1208012204140.14910@pobox.suse.cz> <alpine.LNX.2.00.1208020912130.14910@pobox.suse.cz>
+	Thu, 2 Aug 2012 12:20:43 -0400
+Message-ID: <501AA892.70207@xenotime.net>
+Date: Thu, 02 Aug 2012 09:19:30 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1208020912130.14910@pobox.suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 2 (drivers/platform/x86/apple-gmux.c)
+References: <20120802141505.d30da7f7113e955679383acb@canb.auug.org.au> <501AA5A8.1070607@xenotime.net> <20120802161504.GG32395@thinkpad-t410>
+In-Reply-To: <20120802161504.GG32395@thinkpad-t410>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 09:12:46AM +0200, Jiri Kosina wrote:
-> >From 4f000eda5917ceecb03767962026cc6a390b8216 Mon Sep 17 00:00:00 2001
-> From: Jiri Kosina <jkosina@suse.cz>
-> Date: Wed, 1 Aug 2012 21:10:51 +0200
-> Subject: [PATCH 4/4] sparc64: do not clobber personality flags in sys_sparc64_personality()
+On 08/02/2012 09:15 AM, Seth Forshee wrote:
+
+> On Thu, Aug 02, 2012 at 09:07:04AM -0700, Randy Dunlap wrote:
+>> On 08/01/2012 09:15 PM, Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> Please do not add anything to linux-next included branches/series that is
+>>> destined for v3.7 until after v3.6-rc1 is released.
+>>>
+>>> Reminder: do not rebase your branches before asking Linus to pull them ...
+>>>
+>>> Changes since 20120731:
+>>>
+>>
+>>
+>> when CONFIG_ACPI is not enabled: (on i386)
+>>
+>> drivers/platform/x86/apple-gmux.c: In function 'gmux_probe':
+>> drivers/platform/x86/apple-gmux.c:196:2: error: implicit declaration of function 'acpi_video_dmi_promote_vendor'
+>> drivers/platform/x86/apple-gmux.c: In function 'gmux_remove':
+>> drivers/platform/x86/apple-gmux.c:219:2: error: implicit declaration of function 'acpi_video_dmi_demote_vendor'
+>>
+>>
+>> Full randconfig file is attached.
 > 
-> There are multiple errors in how sys_sparc64_personality() handles
-> personality flags stored in top three bytes.
+> I sent Matthew a patch that should fix this [1], but he doesn't seem to
+> have picked it up yet.
 > 
-> - directly comparing current->personality against PER_LINUX32 doesn't work
->   in cases when any of the personality flags stored in the top three bytes
->   are used.
-> - directly forcefully setting personality to PER_LINUX32 or PER_LINUX
->   discards any flags stored in the top three bytes
+> Seth
 > 
-> Fix the first one by properly using personality() macro to compare only
-> PER_MASK bytes.
-> Fix the second one by setting only the bits that should be set, instead of
-> overwriting the whole value.
+> [1] https://lkml.org/lkml/2012/7/2/257
+> 
 
-Hi Jiri.
 
-Can you have a quick look at this too:
-arch/sparc/include/asm/elf_32.h:#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
+That patch does not fix this build error.
+There is still an implicit assumption in Kconfig and
+the driver source that ACPI is enabled.
 
->From your other comments it looks wrong. But I have not digged into this.
 
-Thanks,
-	Sam
+-- 
+~Randy
