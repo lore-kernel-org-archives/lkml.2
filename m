@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab2HBWlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 18:41:14 -0400
-Received: from leibniz.ffyh.unc.edu.ar ([200.16.23.1]:44211 "EHLO
-	mail.ffyh.unc.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab2HBWlM (ORCPT
+	id S1753870Ab2HBWmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 18:42:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19525 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469Ab2HBWmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 18:41:12 -0400
-X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Aug 2012 18:41:12 EDT
-Message-ID: <20120802193407.15096tbdh7zixaan@webmail.ffyh.unc.edu.ar>
-Date: Thu, 02 Aug 2012 19:34:07 -0300
-From: CAPITAL EQUALITY LOAN COMPANY <csalit@ffyh.unc.edu.ar>
-Reply-to: capitaleiqualityloancmpy@gmail.com
-To: undisclosed-recipients:;
-Subject: we offer loan
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+	Thu, 2 Aug 2012 18:42:22 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=m4U3AEEn_65mWyvU2BsA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343947340.27983.102.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.2.24-rt38
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, john stultz <johnstul@us.ibm.com>
+Date: Thu, 02 Aug 2012 18:42:20 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
-MailScanner-NULL-Check: 1344551652.34459@afl2d5woOZy8No+qZLYinA
-X-MailScanner-ID: 8204BC9C3C7.388F6
-X-FFyH-MailScanner: Found to be clean
-X-FFyH-MailScanner-From: csalit@ffyh.unc.edu.ar
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sir/Madam,
 
-This is to inform you that CAPITAL EQUALITY LOAN COMPANY is currently  
-offering a loan at 3% interest rate.
+Dear RT Folks,
 
-We offer a variety of loans to our customers. Whatever your loan needs  
-are, large or small, personal or mortgage, we are ready to talk with  
-you about how we can meet your needs. application form below
+I'm pleased to announce the 3.2.24-rt38 stable release.
 
-CAPITAL EQUALITY LOAN COMPANY
-71 Queen Victoria Street
-London, United Kingdom, EC4V 4DE
+Note, there were some non-trivial conflicts with leap-second backports.
+I believe I solved them correctly (and added a change to convert
+read_seqbegin to read_seqcount_begin() in ktime_get_update_offsets()).
 
-Application Form:
-1) Full Name:.........
-2) Country:..............
-3) Address:...
-4) Sex:..............
-5) Marital Status:......................
-6) Occupation:..............
-7) Phone Number:......
-8) Monthly income:.....................
-9) Loan Amount Needed:...............
-10) Loan Duration:..................
-11) Purpose of Loan:.................
-12) Age: ..............
+This release passed all my internal tests, but test it out anyway, and
+let me know if something fails for you.
 
-Rosmarie Neely
-Loan Officer
-E-mail:capitaleiqualityloancmpy@gmail.com
-Tell: +447035958575
-Fax:  +448447742385
+This release is an update to the new stable 3.2.24 version. Some fixes
+to the stable code (mentioned above) had to be done.
 
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 860793bbc278575a33695cf1baa67be900f159ef
+
+
+Or to build 3.2.24-rt38 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.24.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.24-rt38.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
 
 
 
