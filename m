@@ -1,74 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab2HBLXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 07:23:13 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34225 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab2HBLXM (ORCPT
+	id S1753537Ab2HBLaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 07:30:08 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7777 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab2HBLaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 07:23:12 -0400
-Message-ID: <501A633B.3010509@gmail.com>
-Date: Thu, 02 Aug 2012 13:23:39 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+	Thu, 2 Aug 2012 07:30:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 02 Aug 2012 04:25:03 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <sameo@linux.intel.com>,
+        <grant.likely@secretlab.ca>
+CC: <rob.herring@calxeda.com>, <swarren@nvidia.com>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] regulator: tps6586x: add support for SYS rail
+Date: Thu, 2 Aug 2012 16:46:33 +0530
+Message-ID: <1343906193-8309-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-References: <20120731182330.GD21292@google.com> <50197348.9010101@gmail.com> <20120801182112.GC15477@google.com> <50197460.8010906@gmail.com> <20120801182749.GD15477@google.com> <50197E4A.7020408@gmail.com> <20120801202432.GE15477@google.com> <5019B0B4.1090102@gmail.com> <20120801224556.GF15477@google.com> <501A4FC1.8040907@gmail.com> <20120802103244.GA23318@leaf>
-In-Reply-To: <20120802103244.GA23318@leaf>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 12:32 PM, Josh Triplett wrote:
-> On Thu, Aug 02, 2012 at 12:00:33PM +0200, Sasha Levin wrote:
->> On 08/02/2012 12:45 AM, Tejun Heo wrote:
->>> On Thu, Aug 02, 2012 at 12:41:56AM +0200, Sasha Levin wrote:
->>>> How would your DEFINE_HASHTABLE look like if we got for the simple
->>>> 'struct hash_table' approach?
->>>
->>> I think defining a different enclosing anonymous struct which the
->>> requested number of array entries and then aliasing the actual
->>> hash_table to that symbol should work.  It's rather horrible and I'm
->>> not sure it's worth the trouble.
->>
->> I agree that this is probably not worth the trouble.
->>
->> At the moment I see two alternatives:
->>
->> 1. Dynamically allocate the hash buckets.
->>
->> 2. Use the first bucket to store size. Something like the follows:
->>
->> 	#define HASH_TABLE(name, bits)	\
->>         	struct hlist_head name[1 << bits + 1];
->>
->> 	#define HASH_TABLE_INIT (bits) ({name[0].next = bits});
->>
->> And then have hash_{add,get} just skip the first bucket.
->>
->>
->> While it's not a pretty hack, I don't see a nice way to avoid having to dynamically allocate buckets for all cases.
-> 
-> What about using a C99 flexible array member?  Kernel style prohibits
-> variable-length arrays, but I don't think the same rationale applies to
-> flexible array members.
-> 
-> struct hash_table {
->     size_t count;
->     struct hlist_head buckets[];
-> };
-> 
-> #define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
+Device have SYS rail which is always ON. It is system
+power bus. LDO5 and LDO_RTC get powered through this rail
+internally. Add support for this rail and make the
+LDO5/LDO_RTC input supply to "sys".
+Update document accordingly.
 
-The limitation of this approach is that the struct hash_table variable must be 'static', which is a bit limiting - see for example the use of hashtable in 'struct user_namespace'.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ .../devicetree/bindings/regulator/tps6586x.txt     |   67 ++++++++++++--------
+ drivers/mfd/tps6586x.c                             |   16 +++++
+ drivers/regulator/tps6586x-regulator.c             |   43 ++++++++++++-
+ include/linux/mfd/tps6586x.h                       |    1 +
+ 4 files changed, 99 insertions(+), 28 deletions(-)
 
-> 
-> - Josh Triplett
-> 
+diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+index da80c2a..6b7300a 100644
+--- a/Documentation/devicetree/bindings/regulator/tps6586x.txt
++++ b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+@@ -8,7 +8,8 @@ Required properties:
+ - gpio-controller: mark the device as a GPIO controller
+ - regulators: list of regulators provided by this controller, must have
+   property "regulator-compatible" to match their hardware counterparts:
+-  sm[0-2], ldo[0-9] and ldo_rtc
++  sys, sm[0-2], ldo[0-9] and ldo_rtc
++- sys-supply: The input supply for SYS.
+ - vin-sm0-supply: The input supply for the SM0.
+ - vin-sm1-supply: The input supply for the SM1.
+ - vin-sm2-supply: The input supply for the SM2.
+@@ -20,6 +21,9 @@ Required properties:
+ 
+ Each regulator is defined using the standard binding for regulators.
+ 
++Note: LDO5 and LDO_RTC is supplied by SYS regulator internally and driver
++      take care of making proper parent child relationship.
++
+ Example:
+ 
+ 	pmu: tps6586x@34 {
+@@ -30,6 +34,7 @@ Example:
+ 		#gpio-cells = <2>;
+ 		gpio-controller;
+ 
++		sys-supply = <&some_reg>;
+ 		vin-sm0-supply = <&some_reg>;
+ 		vin-sm1-supply = <&some_reg>;
+ 		vin-sm2-supply = <&some_reg>;
+@@ -43,8 +48,18 @@ Example:
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 
+-			sm0_reg: regulator@0 {
++			sys_reg: regulator@0 {
+ 				reg = <0>;
++				regulator-compatible = "sys";
++				regulator-name = "vdd_sys";
++				regulator-min-microvolt = <5000000>;
++				regulator-max-microvolt = <5000000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			sm0_reg: regulator@1 {
++				reg = <1>;
+ 				regulator-compatible = "sm0";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+@@ -52,8 +67,8 @@ Example:
+ 				regulator-always-on;
+ 			};
+ 
+-			sm1_reg: regulator@1 {
+-				reg = <1>;
++			sm1_reg: regulator@2 {
++				reg = <2>;
+ 				regulator-compatible = "sm1";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+@@ -61,8 +76,8 @@ Example:
+ 				regulator-always-on;
+ 			};
+ 
+-			sm2_reg: regulator@2 {
+-				reg = <2>;
++			sm2_reg: regulator@3 {
++				reg = <3>;
+ 				regulator-compatible = "sm2";
+ 				regulator-min-microvolt = <3000000>;
+ 				regulator-max-microvolt = <4550000>;
+@@ -70,72 +85,72 @@ Example:
+ 				regulator-always-on;
+ 			};
+ 
+-			ldo0_reg: regulator@3 {
+-				reg = <3>;
++			ldo0_reg: regulator@4 {
++				reg = <4>;
+ 				regulator-compatible = "ldo0";
+ 				regulator-name = "PCIE CLK";
+ 				regulator-min-microvolt = <3300000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo1_reg: regulator@4 {
+-				reg = <4>;
++			ldo1_reg: regulator@5 {
++				reg = <5>;
+ 				regulator-compatible = "ldo1";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 			};
+ 
+-			ldo2_reg: regulator@5 {
+-				reg = <5>;
++			ldo2_reg: regulator@6 {
++				reg = <6>;
+ 				regulator-compatible = "ldo2";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 			};
+ 
+-			ldo3_reg: regulator@6 {
+-				reg = <6>;
++			ldo3_reg: regulator@7 {
++				reg = <7>;
+ 				regulator-compatible = "ldo3";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo4_reg: regulator@7 {
+-				reg = <7>;
++			ldo4_reg: regulator@8 {
++				reg = <8>;
+ 				regulator-compatible = "ldo4";
+ 				regulator-min-microvolt = <1700000>;
+ 				regulator-max-microvolt = <2475000>;
+ 			};
+ 
+-			ldo5_reg: regulator@8 {
+-				reg = <8>;
++			ldo5_reg: regulator@9 {
++				reg = <9>;
+ 				regulator-compatible = "ldo5";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo6_reg: regulator@9 {
+-				reg = <9>;
++			ldo6_reg: regulator@10 {
++				reg = <10>;
+ 				regulator-compatible = "ldo6";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo7_reg: regulator@10 {
+-				reg = <10>;
++			ldo7_reg: regulator@11 {
++				reg = <11>;
+ 				regulator-compatible = "ldo7";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo8_reg: regulator@11 {
+-				reg = <11>;
++			ldo8_reg: regulator@12 {
++				reg = <12>;
+ 				regulator-compatible = "ldo8";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo9_reg: regulator@12 {
+-				reg = <12>;
++			ldo9_reg: regulator@13 {
++				reg = <13>;
+ 				regulator-compatible = "ldo9";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index 353c348..819c6aa 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -25,6 +25,7 @@
+ #include <linux/i2c.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/of_regulator.h>
++#include <linux/regulator/machine.h>
+ 
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/tps6586x.h>
+@@ -346,6 +347,7 @@ failed:
+ 
+ #ifdef CONFIG_OF
+ static struct of_regulator_match tps6586x_matches[] = {
++	{ .name = "sys",     .driver_data = (void *)TPS6586X_ID_SYS     },
+ 	{ .name = "sm0",     .driver_data = (void *)TPS6586X_ID_SM_0    },
+ 	{ .name = "sm1",     .driver_data = (void *)TPS6586X_ID_SM_1    },
+ 	{ .name = "sm2",     .driver_data = (void *)TPS6586X_ID_SM_2    },
+@@ -369,6 +371,7 @@ static struct tps6586x_platform_data *tps6586x_parse_dt(struct i2c_client *clien
+ 	struct tps6586x_platform_data *pdata;
+ 	struct tps6586x_subdev_info *devs;
+ 	struct device_node *regs;
++	const char *sys_rail_name = NULL;
+ 	unsigned int count;
+ 	unsigned int i, j;
+ 	int err;
+@@ -391,12 +394,25 @@ static struct tps6586x_platform_data *tps6586x_parse_dt(struct i2c_client *clien
+ 		return NULL;
+ 
+ 	for (i = 0, j = 0; i < num && j < count; i++) {
++		struct regulator_init_data *reg_idata;
++
+ 		if (!tps6586x_matches[i].init_data)
+ 			continue;
+ 
++		reg_idata  = tps6586x_matches[i].init_data;
+ 		devs[j].name = "tps6586x-regulator";
+ 		devs[j].platform_data = tps6586x_matches[i].init_data;
+ 		devs[j].id = (int)tps6586x_matches[i].driver_data;
++		if (devs[j].id == TPS6586X_ID_SYS) {
++			sys_rail_name = reg_idata->constraints.name;
++			/* The SYS voltage can not be set */
++			reg_idata->constraints.apply_uV = 0;
++		}
++
++		if ((devs[j].id == TPS6586X_ID_LDO_5) ||
++			(devs[j].id == TPS6586X_ID_LDO_RTC))
++			reg_idata->supply_regulator = sys_rail_name;
++
+ 		devs[j].of_node = tps6586x_matches[i].of_node;
+ 		j++;
+ 	}
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+index 19241fc..0c15ef8 100644
+--- a/drivers/regulator/tps6586x-regulator.c
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -152,6 +152,22 @@ static int tps6586x_regulator_is_enabled(struct regulator_dev *rdev)
+ 	return !!(reg_val & (1 << ri->enable_bit[0]));
+ }
+ 
++static int tps6586x_sys_get_voltage(struct regulator_dev *rdev)
++{
++	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
++
++	return ri->desc.volt_table[0];
++}
++
++static int tps6586x_sys_list_voltage(struct regulator_dev *rdev,
++		unsigned selector)
++{
++	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
++	if (selector != 0)
++		return -EINVAL;
++	return ri->desc.volt_table[0];
++}
++
+ static struct regulator_ops tps6586x_regulator_ops = {
+ 	.list_voltage = regulator_list_voltage_table,
+ 	.get_voltage_sel = tps6586x_get_voltage_sel,
+@@ -162,6 +178,15 @@ static struct regulator_ops tps6586x_regulator_ops = {
+ 	.disable = tps6586x_regulator_disable,
+ };
+ 
++static struct regulator_ops tps6586x_sys_regulator_ops = {
++	.get_voltage = tps6586x_sys_get_voltage,
++	.list_voltage = tps6586x_sys_list_voltage,
++};
++
++static const unsigned int tps6586x_sys_voltages[] = {
++	5000000,
++};
++
+ static const unsigned int tps6586x_ldo0_voltages[] = {
+ 	1200000, 1500000, 1800000, 2500000, 2700000, 2850000, 3100000, 3300000,
+ };
+@@ -230,15 +255,29 @@ static const unsigned int tps6586x_dvm_voltages[] = {
+ 	TPS6586X_REGULATOR_DVM_GOREG(goreg, gobit)			\
+ }
+ 
++#define TPS6586X_SYS_REGULATOR()					\
++{									\
++	.desc	= {							\
++		.name	= "REG-SYS",					\
++		.ops	= &tps6586x_sys_regulator_ops,			\
++		.type	= REGULATOR_VOLTAGE,				\
++		.id	= TPS6586X_ID_SYS,				\
++		.n_voltages = ARRAY_SIZE(tps6586x_sys_voltages),	\
++		.volt_table = tps6586x_sys_voltages,			\
++		.owner	= THIS_MODULE,					\
++	},								\
++}
++
+ static struct tps6586x_regulator tps6586x_regulator[] = {
++	TPS6586X_SYS_REGULATOR(),
+ 	TPS6586X_LDO(LDO_0, "vinldo01", ldo0, SUPPLYV1, 5, 3, ENC, 0, END, 0),
+ 	TPS6586X_LDO(LDO_3, "vinldo23", ldo, SUPPLYV4, 0, 3, ENC, 2, END, 2),
+-	TPS6586X_LDO(LDO_5, NULL, ldo, SUPPLYV6, 0, 3, ENE, 6, ENE, 6),
++	TPS6586X_LDO(LDO_5, "REG-SYS", ldo, SUPPLYV6, 0, 3, ENE, 6, ENE, 6),
+ 	TPS6586X_LDO(LDO_6, "vinldo678", ldo, SUPPLYV3, 0, 3, ENC, 4, END, 4),
+ 	TPS6586X_LDO(LDO_7, "vinldo678", ldo, SUPPLYV3, 3, 3, ENC, 5, END, 5),
+ 	TPS6586X_LDO(LDO_8, "vinldo678", ldo, SUPPLYV2, 5, 3, ENC, 6, END, 6),
+ 	TPS6586X_LDO(LDO_9, "vinldo9", ldo, SUPPLYV6, 3, 3, ENE, 7, ENE, 7),
+-	TPS6586X_LDO(LDO_RTC, NULL, ldo, SUPPLYV4, 3, 3, V4, 7, V4, 7),
++	TPS6586X_LDO(LDO_RTC, "REG-SYS", ldo, SUPPLYV4, 3, 3, V4, 7, V4, 7),
+ 	TPS6586X_LDO(LDO_1, "vinldo01", dvm, SUPPLYV1, 0, 5, ENC, 1, END, 1),
+ 	TPS6586X_LDO(SM_2, "vin-sm2", sm2, SUPPLYV2, 0, 5, ENC, 7, END, 7),
+ 
+diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
+index f350fd0..9451471 100644
+--- a/include/linux/mfd/tps6586x.h
++++ b/include/linux/mfd/tps6586x.h
+@@ -14,6 +14,7 @@
+ #define TPS6586X_SLEW_RATE_MASK         0x07
+ 
+ enum {
++	TPS6586X_ID_SYS,
+ 	TPS6586X_ID_SM_0,
+ 	TPS6586X_ID_SM_1,
+ 	TPS6586X_ID_SM_2,
+-- 
+1.7.1.1
 
