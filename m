@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab2HBP04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 11:26:56 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:54532 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750786Ab2HBP0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 11:26:55 -0400
-Message-ID: <1343921213.2011.9.camel@joe2Laptop>
-Subject: [PATCH] checkpatch: Add control statement test to
- SINGLE_STATEMENT_DO_WHILE_MACRO
-From: Joe Perches <joe@perches.com>
-To: Schrober <franzschrober@yahoo.de>, Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 02 Aug 2012 08:26:53 -0700
-In-Reply-To: <20120802142053.GH2501@dm>
-References: <4204029.7cYAuJfu4T@bentobox> <20120802142053.GH2501@dm>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752724Ab2HBPw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 11:52:29 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39152 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab2HBPw2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 11:52:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342087073-3892-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1342087073-3892-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Date: Thu, 2 Aug 2012 12:52:27 -0300
+Message-ID: <CAOMZO5C0=eXYU8Vgnn0xGviXfLEjGgA0yn120NKpwL55m5rgbA@mail.gmail.com>
+Subject: Re: [PATCH 0/7] Add support for Freescale's mc34708 to mc13xxx driver
+From: Fabio Estevam <festevam@gmail.com>
+To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Samuel Ortiz <samuel.ortiz@intel.com>,
+        "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        =?UTF-8?Q?Philippe_R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
+        Marc Reilly <marc@cpdesign.com.au>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit b13edf7ff2d ("checkpatch: add checks for do {} while (0) macro misuses")
-added a test that is overly simplistic for single statement macros.
+Hi Uwe,
 
-Macros that start with control tests should be enclosed
-in a do {} while (0) loop.
+On Thu, Jul 12, 2012 at 6:57 AM, Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de> wrote:
+> Hello,
+>
+> This series was tested on a Phytec pcm038 (mc13783 on spi) using
+> traditional boot (i.e. not dt) and on a i.MX53 based machine (mc34708 on
+> i2c) using dt boot.
+>
+> Philippe's patches are already in next, they are just included here for
+> those who want to test the patches. The 'mfd/mc13xxx: drop modifying
+> driver's id_table in probe' was already sent out yesterday and is
+> included here because the last patch depends on it.
 
-Add the necessary control tests to the check.
+Would you have a git tree with all these patches applied so that I can
+easily test it on a mx53loco board?
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-On Thu, 2012-08-02 at 15:20 +0100, Andy Whitcroft wrote:
-> On Thu, Aug 02, 2012 at 10:00:04AM +0200, Schrober wrote:
-> > Hi,
+Thanks,
 
-Hello and thanks for the report.
-
-> > I think your check for SINGLE_STATEMENT_DO_WHILE_MACRO is wrong.
-
-And you are correct.
-
-> It does appear this check should not apply when a control statement is
-> included.
-
-The patch below is tested with:
-$ cat t.c
-
-#define bar_1(foo)				\
-	if (foo)				\
-		baz();				\
-
-#define bar_2(foo)				\
-do {						\
-	if (foo)				\
-		baz();				\
-} while (0)
-
-#define bar_3(foo)				\
-do {						\
-	baz();					\
-} while (0)
-
-#define bar_4(foo)				\
-do {						\
-	baz();					\
-} while (0);
-
-#define bar_5(foo)				\
-do {						\
-	while (foo)				\
-		baz();				\
-} while (0)
-
-#define bar_6(foo)				\
-do {						\
-	switch (foo) {				\
-	case 1:					\
-		baz();				\
-	}					\
-} while (0)
-
-$
-
-So perhaps...
-
- scripts/checkpatch.pl |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 913d6bd..ca05ba2 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3016,7 +3016,8 @@ sub process {
- 					$herectx .= raw_line($linenr, $n) . "\n";
- 				}
- 
--				if (($stmts =~ tr/;/;/) == 1) {
-+				if (($stmts =~ tr/;/;/) == 1 &&
-+				    $stmts !~ /^\s*(if|while|for|switch)\b/) {
- 					WARN("SINGLE_STATEMENT_DO_WHILE_MACRO",
- 					     "Single statement macros should not use a do {} while (0) loop\n" . "$herectx");
- 				}
-
-
+Fabio Estevam
