@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab2HBQng (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:43:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38548 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab2HBQne (ORCPT
+	id S1754280Ab2HBQoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:44:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39269 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab2HBQoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:43:34 -0400
-Date: Thu, 2 Aug 2012 11:43:28 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 2 (drivers/platform/x86/apple-gmux.c)
-Message-ID: <20120802164328.GJ32395@thinkpad-t410>
-Mail-Followup-To: Randy Dunlap <rdunlap@xenotime.net>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org
-References: <20120802141505.d30da7f7113e955679383acb@canb.auug.org.au>
- <501AA5A8.1070607@xenotime.net>
- <20120802161504.GG32395@thinkpad-t410>
- <501AA892.70207@xenotime.net>
- <20120802163154.GH32395@thinkpad-t410>
- <20120802163616.GI32395@thinkpad-t410>
+	Thu, 2 Aug 2012 12:44:10 -0400
+Message-ID: <501AAE55.3080504@wwwdotorg.org>
+Date: Thu, 02 Aug 2012 10:44:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120802163616.GI32395@thinkpad-t410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] regulator: tps6586x: add support for SYS rail
+References: <1343906193-8309-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1343906193-8309-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 11:36:16AM -0500, Seth Forshee wrote:
-> On Thu, Aug 02, 2012 at 11:31:54AM -0500, Seth Forshee wrote:
-> > On Thu, Aug 02, 2012 at 09:19:30AM -0700, Randy Dunlap wrote:
-> > > On 08/02/2012 09:15 AM, Seth Forshee wrote:
-> > > 
-> > > > On Thu, Aug 02, 2012 at 09:07:04AM -0700, Randy Dunlap wrote:
-> > > >> On 08/01/2012 09:15 PM, Stephen Rothwell wrote:
-> > > >>
-> > > >>> Hi all,
-> > > >>>
-> > > >>> Please do not add anything to linux-next included branches/series that is
-> > > >>> destined for v3.7 until after v3.6-rc1 is released.
-> > > >>>
-> > > >>> Reminder: do not rebase your branches before asking Linus to pull them ...
-> > > >>>
-> > > >>> Changes since 20120731:
-> > > >>>
-> > > >>
-> > > >>
-> > > >> when CONFIG_ACPI is not enabled: (on i386)
-> > > >>
-> > > >> drivers/platform/x86/apple-gmux.c: In function 'gmux_probe':
-> > > >> drivers/platform/x86/apple-gmux.c:196:2: error: implicit declaration of function 'acpi_video_dmi_promote_vendor'
-> > > >> drivers/platform/x86/apple-gmux.c: In function 'gmux_remove':
-> > > >> drivers/platform/x86/apple-gmux.c:219:2: error: implicit declaration of function 'acpi_video_dmi_demote_vendor'
-> > > >>
-> > > >>
-> > > >> Full randconfig file is attached.
-> > > > 
-> > > > I sent Matthew a patch that should fix this [1], but he doesn't seem to
-> > > > have picked it up yet.
-> > > > 
-> > > > Seth
-> > > > 
-> > > > [1] https://lkml.org/lkml/2012/7/2/257
-> > > > 
-> > > 
-> > > 
-> > > That patch does not fix this build error.
-> > > There is still an implicit assumption in Kconfig and
-> > > the driver source that ACPI is enabled.
-> > 
-> > The functions in question are built or not based off of ACPI_VIDEO,
-> > which in turn depends on ACPI. So if ACPI=n, then ACPI_VIDEO=n and you
-> > can't configure APPLE_GMUX=(m|y). Is that right, or am I missing
-> > something?
-> 
-> Nevermind, I see what I missed.
-> 
-> This is kind of messy -- maybe those declartions should be extracted
-> from the #ifdef CONFIG_ACPI to avoid this kind of Kconfig madness?
+On 08/02/2012 05:16 AM, Laxman Dewangan wrote:
+> Device have SYS rail which is always ON. It is system
+> power bus. LDO5 and LDO_RTC get powered through this rail
+> internally. Add support for this rail and make the
+> LDO5/LDO_RTC input supply to "sys".
+> Update document accordingly.
 
-Eh, the driver doesn't make any sense without ACPI anyway, so I'll
-refresh the patch with that dependency.
+I believe you need to following patch on top of this, or the sys-supply
+property is not used:
 
-Seth
+> diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+> index 0c15ef8..a0ddc9f 100644
+> --- a/drivers/regulator/tps6586x-regulator.c
+> +++ b/drivers/regulator/tps6586x-regulator.c
+> @@ -258,6 +258,7 @@ static const unsigned int tps6586x_dvm_voltages[] = {
+>  #define TPS6586X_SYS_REGULATOR()                                       \
+>  {                                                                      \
+>         .desc   = {                                                     \
+> +               .supply_name = "sys",                                   \
+>                 .name   = "REG-SYS",                                    \
+>                 .ops    = &tps6586x_sys_regulator_ops,                  \
+>                 .type   = REGULATOR_VOLTAGE,                            \
 
+BTW, this patch touches both the regulator and MFD trees. I'm not sure
+who will apply it. I think it relies on the patch to this driver Mark
+recently applied in the regulator tree (for 3.7 I think) doesn't it, at
+least for context?
