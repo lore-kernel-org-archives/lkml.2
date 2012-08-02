@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab2HBUUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:20:52 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:55032 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753727Ab2HBUUt (ORCPT
+	id S1753690Ab2HBUWL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:22:11 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:10489 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab2HBUWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:20:49 -0400
-X-Authenticated: #787645
-X-Provags-ID: V01U2FsdGVkX197tzcQyhZ7c2hwoFngy2rMJ3azTOv0RkJ28YqnYq
-	4JAldgDBFyKwEs
-Message-ID: <501AE10E.6080606@gmx.net>
-Date: Thu, 02 Aug 2012 22:20:30 +0200
-From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120623 Thunderbird/10.0.5
+	Thu, 2 Aug 2012 16:22:08 -0400
+Date: Thu, 2 Aug 2012 22:22:05 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
+        vm-crosstalk@vmware.com, cschamp@vmware.com,
+        gregkh@linuxfoundation.org
+Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
+Message-ID: <20120802202205.GA9096@merkur.ravnborg.org>
+References: <1343345980-32397-1-git-send-email-astiegmann@vmware.com> <1343345980-32397-12-git-send-email-astiegmann@vmware.com> <20120727103455.GA4639@merkur.ravnborg.org> <alpine.LNX.2.01.1208022145380.30631@frira.zrqbmnf.qr>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Borislav Petkov <bp@alien8.de>, bhelgaas@google.com, lenb@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
-References: <50158321.4030007@gmx.net> <50158FA9.7080700@gmx.net> <20120730082820.GA32745@liondog.tnic> <201208022209.16015.rjw@sisk.pl>
-In-Reply-To: <201208022209.16015.rjw@sisk.pl>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.01.1208022145380.30631@frira.zrqbmnf.qr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/12 22:09, Rafael J. Wysocki wrote:
-> On Monday, July 30, 2012, Borislav Petkov wrote:
->> On Sun, Jul 29, 2012 at 09:31:53PM +0200, Witold Szczeponik wrote:
->>> the aim is to select a PNP ACPI option where resources can be disabled
->>> (or are not needed).  E.g., the parallel port of the 600E can be used
->>> with and without IRQ lines.  The means to allow for this is to use the
->>> sysfs interface to select disabled resources (just like any other 
->>> resource value).  In https://lkml.org/lkml/2011/7/3/41, I used the 
->>> following example:
->>>
->>>   echo disable > /sys/bus/pnp/devices/$device/resources
->>>   echo clear > /sys/bus/pnp/devices/$device/resources
->>>   echo set irq disabled > /sys/bus/pnp/devices/$device/resources
->>>   echo fill > /sys/bus/pnp/devices/$device/resources
->>>   echo activate > /sys/bus/pnp/devices/$device/resources
->>>
->>> The third line is made possible by the patch series.  All other
->>> lines are already implemented.
->>
->> Shouldn't this be rather "disable_irq" or something which is a single
->> word and thus would simplify parsing a lot?
+On Thu, Aug 02, 2012 at 09:50:02PM +0200, Jan Engelhardt wrote:
 > 
-> Or just "irq", which isn't going to be confused with anything else it seems.
+> On Friday 2012-07-27 12:34, Sam Ravnborg wrote:
+> >> +#ifndef _VMCI_COMMONINT_H_
+> >> +#define _VMCI_COMMONINT_H_
+> >> +
+> >> +#include <linux/printk.h>
+> >> +#include <linux/vmw_vmci_defs.h>
+> >
+> >Use inverse chrismas tree here.
+> >Longer include lines first, and soret alphabetically when
+> >lines are of the same length.
 > 
-> Thanks,
-> Rafael
+> So that's where unreadable include lists come from.
+> Depth-first lexicographically-sorted is a lot less hassle,
+> especially when it comes to merging patches that each
+> add one different include.
+This is applied in many parts of the kernels and has some benefits:
+- easy to spot duplicates
+- clash is less likely when two commit adds includes
+- easy to do so it looks the same across different files
+
+Obviously <linux/*> comes before include <asm/*> as this is
+separate blocks of includes.
+
+net/ and arch/x86/ is two places where this is getting the norm,
+and these are trendsetters for the rest of the kernel.
+
 > 
+> >> +/*
+> >> + * Utilility function that checks whether two entities are allowed
+> >> + * to interact. If one of them is restricted, the other one must
+> >> + * be trusted.
+> >> + */
+> >> +static inline bool vmci_deny_interaction(uint32_t partOne,
+> >> +					 uint32_t partTwo)
+> >
+> >The kernel types are u32 not uint32_t - these types belongs in user-space.
+> 
+> Not really. uint32_t is the C99 type for a 32-bit quantity, and I see
+> absolutely zero reason not to use standardized things.
+Found the following somewhere on the net:
 
-Hi Rafael, 
+On Mon, 29 Nov 2004, Paul Mackerras wrote:
+>
+> uint32_t is defined to be exactly 32 bits wide, so where's the problem
+> in using it instead of __u32 in the headers that describe the
+> user/kernel interface?  (Ditto for uint{8,16,64}_t, of course.
 
-the code in "drivers/pnp/interface.c" implements a (non-trivial) interface
-which accepts the keywords "disable", "activate", "fill", "auto", "clear",
-and "get" as simple, one word commands.  The remaining "set" command is
-more complex, for it determines which resource is to be set ("io", "mem",
-"irq", "dma", and "bus"), followed by the actual value(s) of this resource
-(e.g., "0x0200-0x021f", or "7"). 
+Ok, this discussion has gone on for too long anyway, but let's make it
+easier for everybody. The kernel uses u8/u16/u32 because:
 
-The patch series allows to use the term "disabled" or "<none>" as a 
-resource value (c.f. my example above) when needed (c.f. my motivation for
-the patch series). 
+	- the kernel should not depend on, or pollute user-space naming.
+	  YOU MUST NOT USE "uint32_t" when that may not be defined, and
+	  user-space rules for when it is defined are arcane and totally
+	  arbitrary.
+...
 
-We could, of course, change the parser in "interface.c", but this would 
-change the ABI, I am afraid.  Something that I'd rather not do... 
+See http://yarchive.net/comp/linux/kernel_headers.html for additional
+rationale. (Second mail listed).
 
-I hope, this makes the scope of the patch series clear(er).  
+	Sam
 
---- Witold
+
+
