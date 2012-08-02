@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab2HBNRL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 09:17:11 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:63639 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab2HBNRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 09:17:09 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6790"; a="217520374"
-Message-ID: <340c1ff468880f247cc9377705edd6e4.squirrel@www.codeaurora.org>
-In-Reply-To: <5017FDCE.5030700@kernel.dk>
-References: <n> <1343744710-31700-2-git-send-email-merez@codeaurora.org>
-    <09c3a301ad7ca4fa396c4d00615312c1.squirrel@www.codeaurora.org>
-    <5017FDCE.5030700@kernel.dk>
-Date: Thu, 2 Aug 2012 06:16:48 -0700 (PDT)
-Subject: Re: [PATCH v5 1/3] block: Add test-iosched scheduler
-From: merez@codeaurora.org
-To: "Jens Axboe" <axboe@kernel.dk>
-Cc: merez@codeaurora.org, linux-mmc@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        "DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "open list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
+	id S1754207Ab2HBNST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 09:18:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53548 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753604Ab2HBNSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 09:18:15 -0400
+Date: Thu, 2 Aug 2012 09:52:16 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/9] KVM: define kvm_hwpoison_pfn statically
+Message-ID: <20120802125216.GB25344@amt.cnet>
+References: <5014F053.8020305@linux.vnet.ibm.com>
+ <5014F0B5.50602@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5014F0B5.50602@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 29, 2012 at 04:13:41PM +0800, Xiao Guangrong wrote:
+> Then, get_hwpoison_pfn and is_hwpoison_pfn can be removed
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c       |    2 +-
+>  include/linux/kvm_host.h |    4 ++--
+>  virt/kvm/kvm_main.c      |   13 +------------
+>  3 files changed, 4 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 19bac91..320a781 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2651,7 +2651,7 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
+>  static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gfn_t gfn, pfn_t pfn)
+>  {
+>  	kvm_release_pfn_clean(pfn);
+> -	if (is_hwpoison_pfn(pfn)) {
+> +	if (pfn == kvm_hwpoison_pfn) {
+>  		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
+>  		return 0;
+>  	}
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index 7cd6871..4de56cd 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -48,7 +48,8 @@
+>  #define KVM_MAX_MMIO_FRAGMENTS \
+>  	(KVM_MMIO_SIZE / KVM_USER_MMIO_SIZE + KVM_EXTRA_MMIO_FRAGMENTS)
+> 
+> -#define kvm_fault_pfn	(-EFAULT)
+> +#define kvm_fault_pfn		(-EFAULT)
+> +#define kvm_hwpoison_pfn	(-EHWPOISON)
 
-On Tue, July 31, 2012 8:46 am, Jens Axboe wrote:
-> On 07/31/2012 04:36 PM, merez@codeaurora.org wrote:
->> Hi Jens,
->>
->> Do you have comments on this patch?
->> Can we push it to kernel 3.6 version?
->
-> I have questions - what is this good for? In other words, explain to me
-> why this is useful code. And in particular why this cannot be done from
-> userspace with bsg and block tracing?
->
-> IOW, I'm dubious as to whether a new _io scheduler_ is the correct
-> solution to the problem you have at hand.
->
-> --
-> Jens Axboe
->
->
-
-The test scheduler allows us to control the dispatched requests and their
-order without an interfering of other requests.
-You can review the patches which depends on this patch in order to better
-understand how it is used.
-For example, in the eMMC4.5 packed commands feature, the MMC layer can
-pack read or write requests (the packed requests must be of the same
-direction). MMC layer will stop fetching the requests in case the packing
-conditions are broken.
-In order to test this feature we had to have a full control on the
-requests that the MMC layer fetches and their order, so that we will be
-able to determine if the expected behavior was actually achieved.
-The test-iosched can call specific block device callbacks, for example for
-checking the test results.
-Also, in order to be able to run out tests on the main eMMC card that runs
-in HS200, we cannot "shut down" the real FS requests, otherwise our phone
-won't come up or crash.
-The test-iosched allows us to delay the real FS requests until the end of
-the test, therefore the tests can be done on the main eMMC card.
-
-We chose not to use blocktrace due to the "real" FS requests interference
-in the middle of the test.
-
-I'm not familiar with bsg so I cannot tell if it can answer all the
-requirements I specified above.
-
-Thanks,
-Maya
-
--- 
-Sent by consultant of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+Same here as kvm_fault_pfn.
 
