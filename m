@@ -1,94 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab2HBUWL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:22:11 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:10489 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab2HBUWI (ORCPT
+	id S1753825Ab2HBUX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:23:59 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:32838 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab2HBUXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:22:08 -0400
-Date: Thu, 2 Aug 2012 22:22:05 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
-        vm-crosstalk@vmware.com, cschamp@vmware.com,
-        gregkh@linuxfoundation.org
-Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
-Message-ID: <20120802202205.GA9096@merkur.ravnborg.org>
-References: <1343345980-32397-1-git-send-email-astiegmann@vmware.com> <1343345980-32397-12-git-send-email-astiegmann@vmware.com> <20120727103455.GA4639@merkur.ravnborg.org> <alpine.LNX.2.01.1208022145380.30631@frira.zrqbmnf.qr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.01.1208022145380.30631@frira.zrqbmnf.qr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 2 Aug 2012 16:23:55 -0400
+Subject: Re: [GIT PULL] tcm_vhost: Initial merge of vhost level target
+ fabric driver
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        kvm-devel <kvm@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>, Zhi Yong Wu <wuzhy@cn.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        lf-virt <virtualization@lists.linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>
+In-Reply-To: <1343697577.22538.661.camel@haakon2.linux-iscsi.org>
+References: <1343697577.22538.661.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Aug 2012 13:23:45 -0700
+Message-ID: <1343939025.21687.68.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 09:50:02PM +0200, Jan Engelhardt wrote:
+Hi Linus,
+
+Ping on the initial tcm_vhost merge for-3.6..?  I know it's been a
+busier than usual merge window, but hopefully this one is still in your
+PULL queue..
+
+Otherwise if there is something else that you'd like to see different
+from this PULL request, please let us know.
+
+Thank you!
+
+--nab
+
+On Mon, 2012-07-30 at 18:19 -0700, Nicholas A. Bellinger wrote:
+> Hi Linus,
 > 
-> On Friday 2012-07-27 12:34, Sam Ravnborg wrote:
-> >> +#ifndef _VMCI_COMMONINT_H_
-> >> +#define _VMCI_COMMONINT_H_
-> >> +
-> >> +#include <linux/printk.h>
-> >> +#include <linux/vmw_vmci_defs.h>
-> >
-> >Use inverse chrismas tree here.
-> >Longer include lines first, and soret alphabetically when
-> >lines are of the same length.
+> Here is the PULL request for the initial merge of tcm_vhost based on
+> RFC-v5 code with MST's ACK appended to the initial merge commit.
+> As promised, the commit is available from two different branches for you
+> to consider merging as for-3.6 code.
 > 
-> So that's where unreadable include lists come from.
-> Depth-first lexicographically-sorted is a lot less hassle,
-> especially when it comes to merging patches that each
-> add one different include.
-This is applied in many parts of the kernels and has some benefits:
-- easy to spot duplicates
-- clash is less likely when two commit adds includes
-- easy to do so it looks the same across different files
-
-Obviously <linux/*> comes before include <asm/*> as this is
-separate blocks of includes.
-
-net/ and arch/x86/ is two places where this is getting the norm,
-and these are trendsetters for the rest of the kernel.
-
+> The 'for-next-merge' branch based on mainline commit 7409a6657ae using
+> 3.5-rc2 code contains two duplicates of pre-merge vhost patch
+> dependencies that have already been merged into mainline via net-next.
+> This commit is also in the 07302012 -next patchset, and available here:
 > 
-> >> +/*
-> >> + * Utilility function that checks whether two entities are allowed
-> >> + * to interact. If one of them is restricted, the other one must
-> >> + * be trusted.
-> >> + */
-> >> +static inline bool vmci_deny_interaction(uint32_t partOne,
-> >> +					 uint32_t partTwo)
-> >
-> >The kernel types are u32 not uint32_t - these types belongs in user-space.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next-merge
 > 
-> Not really. uint32_t is the C99 type for a 32-bit quantity, and I see
-> absolutely zero reason not to use standardized things.
-Found the following somewhere on the net:
-
-On Mon, 29 Nov 2004, Paul Mackerras wrote:
->
-> uint32_t is defined to be exactly 32 bits wide, so where's the problem
-> in using it instead of __u32 in the headers that describe the
-> user/kernel interface?  (Ditto for uint{8,16,64}_t, of course.
-
-Ok, this discussion has gone on for too long anyway, but let's make it
-easier for everybody. The kernel uses u8/u16/u32 because:
-
-	- the kernel should not depend on, or pollute user-space naming.
-	  YOU MUST NOT USE "uint32_t" when that may not be defined, and
-	  user-space rules for when it is defined are arcane and totally
-	  arbitrary.
-...
-
-See http://yarchive.net/comp/linux/kernel_headers.html for additional
-rationale. (Second mail listed).
-
-	Sam
-
+> Or the 'for-linus' branch containing an -rc0 head @ commit bdc0077af57:
+> 
+>    Merge tag 'scsi-misc' of git://git.kernel.org/../jejb/scsi)
+> 
+> rebased up to the last commit in scsi-misc required for virtio-scsi
+> client LLD scanning logic to function properly with tcm_vhost fabric
+> ports, is available here:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-linus
+> 
+> Both branches have gotten recent testing and have been running
+> over-night small block random I/O tests connected to raw block flash
+> backends.  The same diffstat below will result from pulling either
+> branch.
+> 
+> Also, the incremental patch to address MST's last round of post-merge
+> comments has been sent to the lists for feedback this afternoon.  This
+> will be included into the usual post -rc1 PULL via 3.6-rc-fixes, along
+> with any other bits that end up changing post-merge.
+> 
+> Please let us know if you have any concerns.
+> 
+> Thank you!
+> 
+> --nab
+> 
+> Nicholas Bellinger (1):
+>   tcm_vhost: Initial merge for vhost level target fabric driver
+> 
+>  drivers/vhost/Kconfig     |    3 +
+>  drivers/vhost/Kconfig.tcm |    6 +
+>  drivers/vhost/Makefile    |    2 +
+>  drivers/vhost/tcm_vhost.c | 1628 +++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/vhost/tcm_vhost.h |  101 +++
+>  5 files changed, 1740 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/vhost/Kconfig.tcm
+>  create mode 100644 drivers/vhost/tcm_vhost.c
+>  create mode 100644 drivers/vhost/tcm_vhost.h
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
