@@ -1,125 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534Ab2HBLLn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 07:11:43 -0400
-Received: from [65.55.88.12] ([65.55.88.12]:57885 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750737Ab2HBLLm (ORCPT
+	id S1752949Ab2HBLL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 07:11:58 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:44637 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab2HBLLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 07:11:42 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I168aJ1432Izz1202hzz8275bhz2dh2a8h668h839h944hd25hf0ah107ah)
-Date: Thu, 2 Aug 2012 19:12:24 +0800
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
-        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v8 5/7] powerpc/85xx: add sleep and deep sleep support
-Message-ID: <20120802111224.GB13777@localhost.localdomain>
-References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com>
- <1342788159-27529-6-git-send-email-chenhui.zhao@freescale.com>
- <F8FE8505-6F6A-4A4B-8302-C1CF16B48B60@kernel.crashing.org>
+	Thu, 2 Aug 2012 07:11:53 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        spender@grsecurity.net
+References: <alpine.LFD.2.02.1203231926000.2542@ionos>
+	<20120323190855.GA27213@www.outflux.net>
+	<CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
+Date: Thu, 02 Aug 2012 04:11:41 -0700
+In-Reply-To: <CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
+	(richard's message of "Thu, 2 Aug 2012 12:35:57 +0200")
+Message-ID: <87pq7935w2.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <F8FE8505-6F6A-4A4B-8302-C1CF16B48B60@kernel.crashing.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.net
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/wd0Jn2EXs6XBMto5EyOMyYi8sD0IucMA=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;richard -rw- weinberger <richard.weinberger@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 09:15:33AM -0500, Kumar Gala wrote:
-> 
-> On Jul 20, 2012, at 7:42 AM, Zhao Chenhui wrote:
-> 
-> > In sleep PM mode, the clocks of e500 core and unused IP blocks is
-> > turned off. IP blocks which are allowed to wake up the processor
-> > are still running.
-> > 
-> > Some Freescale chips like MPC8536 and P1022 has deep sleep PM mode
-> > in addtion to the sleep PM mode.
-> > 
-> > While in deep sleep PM mode, additionally, the power supply is
-> > removed from e500 core and most IP blocks. Only the blocks needed
-> > to wake up the chip out of deep sleep are ON.
-> > 
-> > This patch supports 32-bit and 36-bit address space.
-> > 
-> > The sleep mode is equal to the Standby state in Linux. The deep sleep
-> > mode is equal to the Suspend-to-RAM state of Linux Power Management.
-> > 
-> > Command to enter sleep mode.
-> >  echo standby > /sys/power/state
-> > Command to enter deep sleep mode.
-> >  echo mem > /sys/power/state
-> > 
-> > Signed-off-by: Dave Liu <daveliu@freescale.com>
-> > Signed-off-by: Li Yang <leoli@freescale.com>
-> > Signed-off-by: Jin Qing <b24347@freescale.com>
-> > Signed-off-by: Jerry Huang <Chang-Ming.Huang@freescale.com>
-> > Cc: Scott Wood <scottwood@freescale.com>
-> > Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> > ---
-> > arch/powerpc/Kconfig                  |    2 +-
-> > arch/powerpc/include/asm/cacheflush.h |    2 +
-> > arch/powerpc/kernel/Makefile          |    3 +
-> > arch/powerpc/kernel/l2cache_85xx.S    |   56 +++
-> > arch/powerpc/platforms/85xx/Makefile  |    2 +-
-> > arch/powerpc/platforms/85xx/sleep.S   |  621 +++++++++++++++++++++++++++++++++
-> > arch/powerpc/sysdev/fsl_pmc.c         |   98 +++++-
-> > arch/powerpc/sysdev/fsl_soc.h         |    5 +
-> > 8 files changed, 769 insertions(+), 20 deletions(-)
-> > create mode 100644 arch/powerpc/kernel/l2cache_85xx.S
-> > create mode 100644 arch/powerpc/platforms/85xx/sleep.S
-> > 
-> > diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> > index a7c6914..9d6de82 100644
-> > --- a/arch/powerpc/Kconfig
-> > +++ b/arch/powerpc/Kconfig
-> > @@ -665,7 +665,7 @@ config FSL_PCI
-> > config FSL_PMC
-> > 	bool
-> > 	default y
-> > -	depends on SUSPEND && (PPC_85xx || PPC_86xx)
-> > +	depends on SUSPEND && (PPC_85xx || PPC_86xx) && !PPC_E500MC
-> > 	help
-> > 	  Freescale MPC85xx/MPC86xx power management controller support
-> > 	  (suspend/resume). For MPC83xx see platforms/83xx/suspend.c
-> > diff --git a/arch/powerpc/include/asm/cacheflush.h b/arch/powerpc/include/asm/cacheflush.h
-> > index b843e35..6c5f1c2 100644
-> > --- a/arch/powerpc/include/asm/cacheflush.h
-> > +++ b/arch/powerpc/include/asm/cacheflush.h
-> > @@ -58,6 +58,8 @@ extern void flush_inval_dcache_range(unsigned long start, unsigned long stop);
-> > extern void flush_dcache_phys_range(unsigned long start, unsigned long stop);
-> > #endif
-> > 
-> > +extern void flush_dcache_L1(void);
-> > +
-> > #define copy_to_user_page(vma, page, vaddr, dst, src, len) \
-> > 	do { \
-> > 		memcpy(dst, src, len); \
-> > diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
-> > index 83afacd..0ddef24 100644
-> > --- a/arch/powerpc/kernel/Makefile
-> > +++ b/arch/powerpc/kernel/Makefile
-> > @@ -64,6 +64,9 @@ obj-$(CONFIG_FA_DUMP)		+= fadump.o
-> > ifeq ($(CONFIG_PPC32),y)
-> > obj-$(CONFIG_E500)		+= idle_e500.o
-> > endif
-> > +ifneq ($(CONFIG_PPC_E500MC),y)
-> > +obj-$(CONFIG_PPC_85xx)		+= l2cache_85xx.o
-> > +endif
-> 
-> why do we need this, beyond reduce code size on an e500mc kernel build?  If so why isn't 85xx/sleep.S doing the same thing?
-> - k
-> 
+richard -rw- weinberger <richard.weinberger@gmail.com> writes:
 
-Yes, it is a little awkward. I have an idea to put e500/e500mc/e5500/e6500 related flush cache routines
-into this file, and rename it to cache_fsl_booke.S.
+> On Fri, Mar 23, 2012 at 8:08 PM, Kees Cook <keescook@chromium.org> wrote:
+>> Notify get_robust_list users that the syscall is going away.
+>>
+>> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>
+> I'm using this system call in an application and noticed that's marked
+> as deprecated now.
+> My application collects all kind of information from crashing programs.
+> It's installed in /proc/sys/kernel/core_pattern.
+>
+> If program X is crashing it executes get_robust_list(X) to get the
+> address of the robust list
+> and reads the list from /proc/X/mem.
+>
+> Is there another way to get the robust list from another program (by it's pid)?
 
-As for 85xx/sleep.S, it is used by fsl_pmc.c. I will use CONFIG_FSL_PMC to guard it.
+The folks doing checkpoint/restart claim to not need this, so there
+might be a way either that or they just haven't hit this problem yet.
 
--Chenhui
+What you are doing sounds like a reasonable use of get_robust_list to me.
 
+Eric
