@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab2HBMpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 08:45:10 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:41629 "EHLO
-	homiemail-a80.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753720Ab2HBMpI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 08:45:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=references
-	:in-reply-to:mime-version:content-transfer-encoding:content-type
-	:message-id:cc:from:subject:date:to; q=dns; s=shealevy.com; b=ZU
-	Df1Wkln0/V/9ZxejC9488XyT67qijKP6ZJteQfF0G9B/8zGA8q4GzmCtAi3oQw+K
-	ipuGS1fQS10UyBieo6+QqTMpr8wHKKwmvQhKHxnIY0aCqfp7cqJ+Qb+TQcNBirBw
-	RiY/C8GfvaQCU4Jf9Su7Ef+TFnoB5Lqq3y4HUDMdY=
-References: <1343911365-3376-1-git-send-email-shea@shealevy.com>
-In-Reply-To: <1343911365-3376-1-git-send-email-shea@shealevy.com>
-Mime-Version: 1.0 (1.0)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <6FC304BB-1C26-4A60-A797-309CC7506626@shealevy.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPad Mail (9B206)
-From: Shea Levy <shea@shealevy.com>
-Subject: Re: [PATCH] Bluetooth: Add support for Apple MacBook Pro 9,2
-Date: Thu, 2 Aug 2012 08:45:07 -0400
-To: "shea@shealevy.com" <shea@shealevy.com>
+	id S1754247Ab2HBMph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 08:45:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41284 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab2HBMpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 08:45:36 -0400
+Message-ID: <501A766C.1060502@linaro.org>
+Date: Thu, 02 Aug 2012 13:45:32 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 18/19] Documentation: Define the MSP Driver Device Tree
+ bindings
+References: <1343741953-17828-1-git-send-email-lee.jones@linaro.org> <1343741953-17828-19-git-send-email-lee.jones@linaro.org> <20120731135539.GO4468@opensource.wolfsonmicro.com> <5017F2E2.4040100@linaro.org> <20120731151024.GA4468@opensource.wolfsonmicro.com>
+In-Reply-To: <20120731151024.GA4468@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argh, sorry, forgot the sign-off. Will resend after checkpatch passes. Sorry for the noise.
+On 31/07/12 16:10, Mark Brown wrote:
+> On Tue, Jul 31, 2012 at 03:59:46PM +0100, Lee Jones wrote:
+>> On 31/07/12 14:55, Mark Brown wrote:
+>
+>>>> +Optional properties:
+>>>> + - interrupts       : The interrupt outputs from the device.
+>
+>>> If there's more than one interrupt then how are they ordered?
+>
+>> It doesn't matter. If there are any more than one (which there
+>> aren't in this case), we usually use the interrupt-names property
+>> then request them by name in the driver.
+>
+> So the binding therefore needs to say "The interrupt output from the
+> device" as there's only one output supported.  If we were using
+> interrupt-names then we'd need to document what the supported names are.
 
-On Aug 2, 2012, at 8:42 AM, shea@shealevy.com wrote:
+Okay, I've changed 'outputs' to 'output'.
 
-> From: Shea Levy <shea@shealevy.com>
-> 
-> ---
-> drivers/bluetooth/btusb.c | 3 +++
-> 1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-> index e272214..e4ecd5e 100644
-> --- a/drivers/bluetooth/btusb.c
-> +++ b/drivers/bluetooth/btusb.c
-> @@ -73,6 +73,9 @@ static struct usb_device_id btusb_table[] = {
->    /* Apple MacBookPro8,2 */
->    { USB_DEVICE(0x05ac, 0x821a) },
-> 
-> +    /* Apple MacBookPro9,2 */
-> +    { USB_DEVICE(0x05ac, 0x821d) },
-> +
->    /* Apple MacMini5,1 */
->    { USB_DEVICE(0x05ac, 0x8281) },
-> 
-> -- 
-> 1.7.11
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
