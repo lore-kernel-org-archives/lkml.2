@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab2HBRPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:15:15 -0400
-Received: from zmail.minec.gov.mz ([212.96.25.157]:36673 "EHLO
-	mail.minec.gov.mz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab2HBRPN convert rfc822-to-8bit (ORCPT
+	id S1754757Ab2HBRPX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:15:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38689 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab2HBRPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:15:13 -0400
-Date: Thu, 2 Aug 2012 17:58:26 +0200 (CAT)
-From: =?utf-8?Q?spr=C3=A1vce_syst=C3=A9mu?= 
-	<cipriano.nhaule@minec.gov.mz>
-Reply-To: =?utf-8?Q?spr=C3=A1vce_syst=C3=A9mu?= <null@mail.minec.gov.mz>
-Message-ID: <1449093812.10889.1343923106271.JavaMail.root@mail.minec.gov.mz>
-Subject: =?utf-8?Q?spr=C3=A1vce_syst=C3=A9mu?=
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.206.11.16]
-X-Mailer: Zimbra 6.0.16_GA_2998 (zclient/6.0.16_GA_2998)
-To: undisclosed-recipients:;
+	Thu, 2 Aug 2012 13:15:20 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
+Cc: Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH] apple-gmux: Fix kconfig dependencies
+Date: Thu,  2 Aug 2012 12:15:14 -0500
+Message-Id: <1343927714-14937-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341240929-3400-1-git-send-email-seth.forshee@canonical.com>
+References: <1341240929-3400-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix the dependencies of apple-gmux to prevent it from being built-in
+when one or more of its dependencies is built as a module. Otherwise it
+can fail to build due to missing symbols.
 
+v2: Add dependency on ACPI to fix build failure when ACPI=n
 
+Reported-by: Arun Raghavan <arun.raghavan@collabora.co.uk>
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/platform/x86/Kconfig |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Vaše poštovní schránka překročila limit úložiště 2.GB který je stanoven správcem, v současné době 2.30GB, možná schopen přijímat a odesílat nové zprávy, dokud potvrďte schránku.
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 2a262f5..637074d 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -758,8 +758,11 @@ config SAMSUNG_Q10
+ 
+ config APPLE_GMUX
+ 	tristate "Apple Gmux Driver"
++	depends on ACPI
+ 	depends on PNP
+-	select BACKLIGHT_CLASS_DEVICE
++	depends on BACKLIGHT_CLASS_DEVICE
++	depends on BACKLIGHT_APPLE=n || BACKLIGHT_APPLE
++	depends on ACPI_VIDEO=n || ACPI_VIDEO
+ 	---help---
+ 	  This driver provides support for the gmux device found on many
+ 	  Apple laptops, which controls the display mux for the hybrid
+-- 
+1.7.9.5
 
-Chcete-li znovu potvrdili svou poštovní schránku. klikněte na následující odkaz:
-
-https://docs.google.com/spreadsheet/viewform?formkey=dFpDVGNDNjZyaTFvSmcybWdTQVdqOHc6MQ
-
-děkuji
-správce systému
