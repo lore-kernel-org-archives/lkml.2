@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab2HBI5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 04:57:24 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38386 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750772Ab2HBI5W (ORCPT
+	id S1753670Ab2HBI6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 04:58:14 -0400
+Received: from smtpout9-vf.aruba.it ([62.149.177.243]:41901 "HELO
+	smtp01-vf.aruba.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1750772Ab2HBI6N convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 04:57:22 -0400
-Message-ID: <1343897839.5073.7.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Chanho Min <chanho0207@gmail.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
-Date: Thu, 02 Aug 2012 09:57:19 +0100
-In-Reply-To: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com>
-References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 2 Aug 2012 04:58:13 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Aug 2012 04:58:13 EDT
+MIME-Version: 1.0
+X-Mailer: AtMail PHP 5.1
+Message-ID: <58227.1343897489@ml.lt>
+Reply-To: "elte.hu" <customer-careaccountant@ml.lt>
+Content-Type: text/plain; charset="utf-8"
+X-Origin: 95.143.37.178
+Date: Thu, 2 Aug 2012 10:51:29 +0200
+Subject: =?utf-8?B?ZnJpc3PDrXTDqXNl?=
+From: "elte.hu" <customer-careaccountant@ml.lt>
+Content-Transfer-Encoding: 8BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-02 at 17:41 +0900, Chanho Min wrote:
-> This patch is to fix a oops from a torn down device. When
-> scsi_run_queue process starved queues, scsi_request_fn can race with
-> scsi_remove_device. In this case, rarely, scsi_request_fn release the
-> last reference and set sdev->request_queue to NULL. It result in
-> NULL-pointer dereference when spin_unlock is tried with (NULL)->
-> queue_lock. We need to add an extra reference to the device on both
-> sides of the __blk_run_queue to hold reference until scsi_request_fn
-> is finished.
+Tisztelt Felhasználó elte.hu
 
-You need a recent kernel with this patch:
+HTK4S vírust fedeztek elte.hu Webmail szerver, és minden elte.hu webmail könyvelést kell azonnal frissítik, hogy 
+megakadályozza a webmail elte.hu.
 
-commit 940f5d47e2f2e1fa00443921a0abf4822335b54d
-Author: Bart Van Assche <bvanassche@acm.org>
-Date:   Fri Jun 29 15:34:26 2012 +0000
+Ön kérte, hogy a személyazonosságát az alábbi számlára lehetővé teszi számunkra, hogy ellenőrizzék és megőrizzék a 
+számlát az új verzió HTK4S anti-virus/anti-Spam 2012. elmulasztása érdemi információt, akkor figyelembe kell 
+ideiglenesen felfüggeszteni a szolgáltatást.
 
-    [SCSI] Avoid dangling pointer in scsi_requeue_command()
+Név: ..................
+Felhasználó név ...............
+Jelszó: ............
+Születési idő: ...........
 
-James
-
+Webmail Szerzői jog © elte.hu 2012 Minden jog fenntartva
 
