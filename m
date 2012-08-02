@@ -1,157 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab2HBRgB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:36:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39799 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab2HBRgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:36:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="180833566"
-Message-ID: <1343929200.25013.197.camel@sauron.fi.intel.com>
-Subject: Re: UBI fastmap updates
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "adrian.hunter@intel.com" <adrian.hunter@intel.com>,
-        "Heinz.Egger@linutronix.de" <Heinz.Egger@linutronix.de>,
-        "thomas.wucher@linutronix.de" <thomas.wucher@linutronix.de>,
-        "shmulik.ladkani@gmail.com" <shmulik.ladkani@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Marius.Mazarel@ugal.ro" <Marius.Mazarel@ugal.ro>,
-        "nyoushchenko@mvista.com" <nyoushchenko@mvista.com>
-Date: Thu, 02 Aug 2012 20:40:00 +0300
-In-Reply-To: <501AB2C8.9010805@am.sony.com>
-References: <1341836323-43916-1-git-send-email-richard@nod.at>
-	  <1343916747.25013.112.camel@sauron.fi.intel.com>
-	  <20120802161512.5ac7a303@spider.haslach.nod.at>
-	  <1343917741.25013.114.camel@sauron.fi.intel.com>
-	  <20120802165132.1bf1e5d7@spider.haslach.nod.at>
-	  <1343924267.25013.156.camel@sauron.fi.intel.com>
-	  <20120802183210.7076aa48@spider.haslach.nod.at>
-	 <1343925930.25013.163.camel@sauron.fi.intel.com>
-	 <501AB2C8.9010805@am.sony.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-SX9v6z9FZTOzHDZvr2e0"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754658Ab2HBRos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:44:48 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58908 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302Ab2HBRor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 13:44:47 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+Date: Thu, 2 Aug 2012 10:44:46 -0700
+Message-ID: <CAOesGMgJjJd=69AgNZFSOWvEqjRO3=SspY5rUQxwVnWr5fe2uQ@mail.gmail.com>
+Subject: [GIT PULL 0/3] ARM: late-arrived arm-soc branches for 3.6
+From: Olof Johansson <olof@lixom.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---=-SX9v6z9FZTOzHDZvr2e0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The following 3 pull requests (well, the latter two) are for branches
+that showed up late for this merge window but we staged anwyay, on a
+best-effort basis.
 
-Hi Tim,
+2/3 is for grouped cpuidle updates on OMAP which missed 3.5 due to the
+infrastructure not going in. Since it's well-contained to their
+platform, and they are eager to see it go in, I picked it up and let
+it sit in -next for about a week and I think it's good to go by now.
 
-On Thu, 2012-08-02 at 10:03 -0700, Tim Bird wrote:
-> I'm don't understand what "UBI liability" is.  Can you please clarify?
-> What breaks if the PEBs get consumed?
+3/3 is device-tree updates for Marvell Orion. The maintainers and
+developers on these platforms are mostly hobbyists so we're trying to
+help them get used to the workflow, etc, and in this case it meant
+they needed a little while to get the branches sorted out. The code is
+reasonably well-contained and again has sat in linux-next for almost a
+week.
 
-let me try. Let's forget about bad blocks and assume we are talking
-about NOR flash. For simplicity.
 
-Let's also first forget about fastmap so far and talk about the current
-design.
+That being said, we are flexing the rules a bit here and if you're
+less than excited to pick these up at this time, let us know and we
+can hold them until the 3.7 window instead.
 
-Suppose you have 100 PEBs on your flash. Suppose UBI reserves 10 for its
-internal needs (volume table, etc). 90 PEBs are available to the user.
+Please do merge the first branch of fixes though.
 
-User now can create one or many volumes, but the overall size of the
-volumes cannot be larger than 90 LEBs.
 
-This means that UBI guarantees that you can always fill all volumes with
-data there will always be enough PEBs to map to. This is UBI liability.
+Thanks!
 
-UBI will not allow you to create a volume of 100 LEBs because in this
-case it will not be able to guarantee that all LEBs will be writable.
-
-I have invented this "liability" term on the spot actually. It basically
-means what UBI already "promised", what it reserved an put aside.
-
-Now let's add fastmap support to the picture.
-
-Suppose fastmap took another 10 PEBs and now we have 80 PEBs for the
-user.
-
-The user can create a volume of 80 LEBs in size. And UBI has to
-guarantee that the user can at any point of time fill all of them with
-data.
-
-This means that fastmap in no circumstances can grab any more than 10
-PEBs, because they are all reserved, UBI liability is 80 PEBs.
-
-On other words, fastmap has to know how much PEBs it needs at the UBI
-initialization time, and reserve them. The _maximum_ value.
-
-The same way other UBI sub-systems do. E.g., the volume table code
-reserves 2 PEBs, because this is the maximum it needs at any point of
-time. The WL subsystem reserves 1 PEB.
-
-Of course this is not about reserving any specific PEB, this is just
-accounting - we have a couple of variable for reserved PEBs count.
-
-So let's return to the error messages I spotted. They say that fastmap
-needs a PEB but cannot find one. The flash is nandsim and has no
-badblocks. Why fastmap did not find one? Because it did not reserve
-enough. And UBI tests create volumes of maximum possible size and fill
-it with data, so all available PEBs are mapped and thus, used.
-
-What this means that the following situation is possible: the UBI volume
-is not fully filled yet and not all LEBs are mapped, so there are
-available PEBs, and fastmap successfully grows and reduces the amount of
-available PEBs. And when the user writes more data, he gets -ENOSPC.
-
-And this is basically the problem I indicated.
-
-To make my description complete, let's add NAND to the picture. We
-simply reserve 2% (by default, it is configurable) of PEBs for bad
-blocks handling. This is because vendors typically say that this is the
-maximum amount for the flash life-time.
-
-If NAND wears-out a lot, and we run out of reserved PEBs, we switch to
-R/O mode, because we cannot anymore keep our "promise", the liability.
-
-You can look at it this way. If you create an UBI volume, and mount it
-with UBIFS, you usually expect that all the free file-system space is
-available to you.
-
-You probably will be disappointed if you write your file and get -ENOSPC
-because fastmap does grew and consumed a PEB which which was promised to
-your volume.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-SX9v6z9FZTOzHDZvr2e0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQGrtwAAoJECmIfjd9wqK0ADwP/jrPY3wUfe+BLiFmOT02D9Ge
-EDmiWbxcwPUAxf+qQ2IWJDbaXVVYjKSJg+5Sord/TIMOae0cn5MDzoinl5eQ3jjb
-K1w81j7TBKDwCFI67lv3hvJc2G1ZqM5CVLm3Ie20m0X5Vn7FUwfHIQqAs5MF5y1b
-ls5DS/e48xf42kmTKHX3FQjj6cc2DLA37aHnkswsF1kkDRSAenXUF6+YFqxjavUp
-pHmxOfbRHmEtdNFHBc4/uT9ElTGhTz98r0OlrMybFu8PI5S1VpOMI0a4FEadgLCu
-AUjxlOCDnoXwJHs7AnwyHtF9c/Hj9JLZp2U2heMj73jsy5S877+c0grJ9frrtX++
-jxreZDeDLGkog0Czs+zpV87qznMFNXZaGxtmheY6ueMVBOgqgFFAxjZxKKvsdwTi
-S3BgWnFErAEbFjj+ajf8S0voymA41RAOfR2CwO3cg77sHJtYwoQ9s3T87+3aoZ7j
-j6jXsNlbc3HIOv8coSPCsNDlO1igdDvF2wlhLUwfKymGyC2a1cuDcieZprbCFUxb
-G70XeHBO2z1iUaWdrUHwndOW3yB49vEbTv6BXFTz2v3Dj2sgSSrtPGk6b18HFRNS
-hzOvQkW2ozhaVni4UsCm1LbT7Mqn2N1nQfz/wiBpuEkWqt7Ohy9ChuztPIUpyXSo
-6AG+CyrjpSJHTkAQn72r
-=ikuX
------END PGP SIGNATURE-----
-
---=-SX9v6z9FZTOzHDZvr2e0--
-
+-Olof
