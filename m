@@ -1,100 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab2HBF64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 01:58:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57689 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab2HBF6y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 01:58:54 -0400
-Date: Thu, 2 Aug 2012 07:58:39 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Don Dutile <ddutile@redhat.com>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Jiang Liu <jiang.liu@huawei.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 12/32] PCI/ARM: use PCIe capabilities access functions
- to simplify implementation
-Message-ID: <20120802055839.GA12241@avionic-0098.adnet.avionic-design.de>
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
- <1343836477-7287-13-git-send-email-jiang.liu@huawei.com>
- <5019654D.2000408@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
-Content-Disposition: inline
-In-Reply-To: <5019654D.2000408@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:rr/fIcK9Tb0GHrN17TCilvjjlHZmXCdn7jTwtH0Z6QL
- D6C2aSbQ1ABlJYxLjzaLhntgXE7cvExwyl4HZecPDKR69T4ZGr
- 3J1SmPsr2XpZuVPkY9QeA5oyDb2B6DC+vPlecnW6sXndX7rt2V
- rsKykuUnSymNg84oXKK1rMZERI/UJuds9SXH0N1YZQnN4Gx08N
- AA/EwgYNqZufQccvlDYr7iEib3YkuVw/uZT2GphWytphJtSG1s
- wpg2vGSiESnVtAu/QpqNvm5J/djSnZ0G2cErvXHTW/AxYPYIk7
- PteBPjltXD7oAAhmcIckap1sHYGSXW8qNLbgUt0tl/9e9rOVFe
- YvTtB18QOdfB3ENS3cGYPVMB/rBxfcobHNTE1gCdaljKOygsv9
- m2gdgW1FwTFsQQrK3moS6BPnkTX1DAE0trQD5ZWA/luy7qCGpg
- b6U/q
+	id S1752840Ab2HBGAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 02:00:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:4504 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751982Ab2HBGAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 02:00:46 -0400
+X-IronPort-AV: E=Sophos;i="4.77,698,1336320000"; 
+   d="scan'208";a="5534616"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [RFC PATCH 00/23 V2] memory,numa: introduce MOVABLE-dedicated node and online_movable for hotplug
+Date: Thu, 2 Aug 2012 14:01:05 +0800
+Message-Id: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/02 14:01:15,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/02 14:01:15,
+	Serialize complete at 2012/08/02 14:01:15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+	A) Introduction:
 
---17pEHd4RhPHOinZp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patchset adds MOVABLE-dedicated node and online_movable for memory-management.
 
-On Wed, Aug 01, 2012 at 11:20:13AM -0600, Stephen Warren wrote:
-> On 08/01/2012 09:54 AM, Jiang Liu wrote:
-> > From: Jiang Liu <jiang.liu@huawei.com>
-> >=20
-> > Use PCIe capabilities access functions to simplify PCIe ARM implementat=
-ion.
-> >=20
-> > Signed-off-by: Jiang Liu <liuj97@gmail.com>
->=20
-> This is probably fine from my perspective assuming the underlying PCI
-> API implementation is OKd by relevant people.
->=20
-> Thierry, can you comment on whether this will conflict with your Tegra
-> PCIe driver series? If it doesn't, this patch can go through any
-> relevant PCI tree. If it does, we may have to take this through the
-> Tegra tree after merging the dependencies, or defer it to later.
+It is used for anti-fragmentation(hugepage, big-order allocation...),
+hot-removal-of-memory(virtualization, power-conserve, move memory between systems
+to make better utilities of memories).
 
-I haven't touched those lines. tegra_pcie_relax_enable() only uses
-generic PCI functions so I don't expect any conflicts. git blame
-confirms that those lines haven't been changed in about 2 years.
+	B) changed from V1:
 
-Thierry
+The original V1 patchset of MOVABLE-dedicated node is here:
+http://comments.gmane.org/gmane.linux.kernel.mm/78122
 
---17pEHd4RhPHOinZp
-Content-Type: application/pgp-signature
+The new V2 adds N_MEMORY and a notion of "MOVABLE-dedicated node".
+And fix some related problems.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+The orignal V1 patchset of "add online_movable" is here:
+https://lkml.org/lkml/2012/7/4/145
 
-iQIcBAEBAgAGBQJQGhcPAAoJEN0jrNd/PrOhusQP/08wAhZTckZwHx11iVgTk2Sy
-kZ7tEljEX3D6AX7rCacbH9FC6eYkwoX0wZfgo2kHyvzPsb/7hvXiIEjC9w/vohJj
-UYzn/i9RfNDWrzJuVcy4WTHJSWuk8xE836CTjJ310Rx3XqpvdHjm8GzABbLuA6rN
-sCidwvhh+OgjhBOAWRJpCbMLqEhiyYAttuetHByfwACmUJjNfdXd09fMptDWkFCN
-w0YJSNIBqgnyFGkZsCc7jibCkMOsy1ByxmQFrBbeSaqoHwK0zNrVjP4r9CTW8DXg
-/An61mZvLWBQCzdYOuAbCMde3Itw0OEYuQ7WgmURdqLPQbt7GQobV+0J/6PV0sT1
-cEbyEp2VkgdslJKjPf37OmKO/kP2Bdw6RlX+n3Sb2785TkAzFWa7vb+D1kOaM5fS
-gyhgRyCAkAryM2wAmf9GFLxuYv/VPPYhwtkUb0rYjtEWL0fyYPWhoq/eV684T505
-h0KV4G5AqMKe8no8B2on0ojRTk6IQ4d8UHO80lv3M1Kca/90AZrZ5qGJCVjnK843
-WiQ1XOJiPmJJ6s5nmoCcP23b5/Y0Hj5pY8u/lYqS1u8EXZ4D+KCE+wWv38LF9ULw
-gm+pJgRmMlMa0yvMrjN+mE9i8LDf0fYcnMV5NdNfjzYxmnNgDTVSSbKtk2ZjldRM
-DRknhvw3fPO58/mR7u1f
-=dPrT
------END PGP SIGNATURE-----
+The new V2 discards the MIGRATE_HOTREMOVE approach, and use a more straight
+implementation(only 1 patch).
 
---17pEHd4RhPHOinZp--
+	C) User Interface:
+
+When users(big system manager) need config some node/memory as MOVABLE:
+	1 Use kernelcore_max_addr=XX when boot
+	2 Use movable_online hotplug action when running
+We may introduce some more convenient interface, such as
+	movable_node=NODE_LIST boot option.
+
+	D) Patches
+
+Patch1        introduce N_MEMORY
+Patch2-13     use N_MEMORY instead N_HIGH_MEMORY.
+              The patches are separated by subsystem,
+              *these conversions was(must be) checked carefully*.
+              Patch13 also changes the node_states initialization
+Patch14,15,17 Fix problems of the current code.(all related with hotplug)
+Patch18       Add config to allow MOVABLE-dedicated node
+Patch19-22    Add kernelcore_max_addr
+Patch23       Add online_movable
+
+
+Lai Jiangshan (19):
+  node_states: introduce N_MEMORY
+  cpuset: use N_MEMORY instead N_HIGH_MEMORY
+  procfs: use N_MEMORY instead N_HIGH_MEMORY
+  oom: use N_MEMORY instead N_HIGH_MEMORY
+  mm,migrate: use N_MEMORY instead N_HIGH_MEMORY
+  mempolicy: use N_MEMORY instead N_HIGH_MEMORY
+  memcontrol: use N_MEMORY instead N_HIGH_MEMORY
+  hugetlb: use N_MEMORY instead N_HIGH_MEMORY
+  vmstat: use N_MEMORY instead N_HIGH_MEMORY
+  kthread: use N_MEMORY instead N_HIGH_MEMORY
+  init: use N_MEMORY instead N_HIGH_MEMORY
+  vmscan: use N_MEMORY instead N_HIGH_MEMORY
+  page_alloc: use N_MEMORY instead N_HIGH_MEMORY and change the node_states initialization
+  slub, hotplug: ignore unrelated node's hot-adding and hot-removing
+  memory_hotplug: fix missing nodemask management
+  numa: add CONFIG_MOVABLE_NODE for movable-dedicated node
+  page_alloc.c: don't subtract unrelated memmap from zone's present pages
+  page_alloc: add kernelcore_max_addr
+  mm, memory-hotplug: add online_movable
+
+Yasuaki Ishimatsu (4):
+  x86: get pg_data_t's memory from other node
+  x86: use memblock_set_current_limit() to set memblock.current_limit
+  memblock: limit memory address from memblock
+  memblock: compare current_limit with end variable at
+    memblock_find_in_range_node()
+
+ Documentation/cgroups/cpusets.txt   |    2 +-
+ Documentation/kernel-parameters.txt |    9 +++
+ Documentation/memory-hotplug.txt    |   16 ++++-
+ arch/x86/kernel/setup.c             |    4 +-
+ arch/x86/mm/init_64.c               |    4 +-
+ arch/x86/mm/numa.c                  |    8 ++-
+ drivers/base/memory.c               |   19 +++--
+ drivers/base/node.c                 |    8 ++-
+ fs/proc/kcore.c                     |    2 +-
+ fs/proc/task_mmu.c                  |    4 +-
+ include/linux/cpuset.h              |    2 +-
+ include/linux/memblock.h            |    1 +
+ include/linux/memory_hotplug.h      |   13 +++-
+ include/linux/nodemask.h            |    5 ++
+ init/main.c                         |    2 +-
+ kernel/cpuset.c                     |   32 ++++----
+ kernel/kthread.c                    |    2 +-
+ mm/Kconfig                          |    8 ++
+ mm/hugetlb.c                        |   24 +++---
+ mm/memblock.c                       |   10 ++-
+ mm/memcontrol.c                     |   18 +++---
+ mm/memory_hotplug.c                 |  137 ++++++++++++++++++++++++++++++++---
+ mm/mempolicy.c                      |   12 ++--
+ mm/migrate.c                        |    2 +-
+ mm/oom_kill.c                       |    2 +-
+ mm/page_alloc.c                     |   96 +++++++++++++++----------
+ mm/page_cgroup.c                    |    2 +-
+ mm/slub.c                           |    6 ++
+ mm/vmscan.c                         |    4 +-
+ mm/vmstat.c                         |    4 +-
+ 30 files changed, 335 insertions(+), 123 deletions(-)
+
