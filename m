@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab2HBUIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:08:40 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53315 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab2HBUIj (ORCPT
+	id S1753405Ab2HBUSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:18:32 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57802 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab2HBUSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:08:39 -0400
+	Thu, 2 Aug 2012 16:18:31 -0400
+X-Originating-IP: 217.70.178.146
+X-Originating-IP: 83.160.107.163
+Date: Thu, 2 Aug 2012 22:17:48 +0200
+From: Matthias Kaehlcke <matthias@kaehlcke.net>
+To: Pavan Savoy <pavan_savoy@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] ti-st: Fix check for pdata->chip_awake function pointer
+Message-ID: <20120802201748.GA4358@darwin>
+Mail-Followup-To: Matthias Kaehlcke <matthias@kaehlcke.net>,
+	Pavan Savoy <pavan_savoy@ti.com>,
+	Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1343936764-6461-1-git-send-email-vikram.pandita@ti.com>
-References: <1343936764-6461-1-git-send-email-vikram.pandita@ti.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 2 Aug 2012 22:08:18 +0200
-Message-ID: <CAPXgP10fJj3SwDdCa=rzfjZM8TL1GsvbSwEnfomFQ+NrW2j15w@mail.gmail.com>
-Subject: Re: [PATCH] printk: add option to print cpu id
-To: Vikram Pandita <vikram.pandita@ti.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 2, 2012 at 9:46 PM, Vikram Pandita <vikram.pandita@ti.com> wrote:
-> From: Vikram Pandita <vikram.pandita@ti.com>
->
-> Introduce config option to enable CPU id reporting for printk() calls.
->
-> Its sometimes very useful to have printk also print the CPU Identifier
-> that executed the call. This has helped to debug various SMP issues on shipping
-> products.
->
-> Known limitation is, if the system gets preempted between function call and
-> actual printk, the reported cpu-id might not be accurate. But most of the
-> times its seen to give a good feel of how the N cpu's in the system are
-> getting loaded.
->
-> Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
-> ---
->  kernel/printk.c   |   20 ++++++++++++++++++++
->  lib/Kconfig.debug |   13 +++++++++++++
->  2 files changed, 33 insertions(+)
->
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 6a76ab9..50feb82 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -855,6 +855,25 @@ static size_t print_time(u64 ts, char *buf)
->                        (unsigned long)ts, rem_nsec / 1000);
->  }
->
-> +#if defined(CONFIG_PRINTK_CPUID)
-> +static bool printk_cpuid = 1;
-> +#else
-> +static bool printk_cpuid;
-> +#endif
-> +module_param_named(cpuid, printk_cpuid, bool, S_IRUGO | S_IWUSR);
-> +
-> +static size_t print_cpuid(char *buf)
-> +{
-> +
-> +       if (!printk_cpuid)
-> +               return 0;
-> +
-> +       if (!buf)
-> +               return 4;
-> +
-> +       return sprintf(buf, "[%1d] ", smp_processor_id());
-> +}
-> +
->  static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
->  {
->         size_t len = 0;
-> @@ -874,6 +893,7 @@ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
->                 }
->         }
->
-> +       len += print_cpuid(buf ? buf + len : NULL);
->         len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
->         return len;
->  }
+ll_device_want_to_wakeup(): Fix the NULL pointer check on pdata->chip_awake,
+which is performed on the wrong function pointer
 
-How is that supposed to be useful?
+Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
+---
+ drivers/misc/ti-st/st_ll.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The prefix is added while exporting data from the kmsg buffer, which
-is just the CPU that *reads* the data from the buffer, not the one
-that has *written* the data it into it.
+diff --git a/drivers/misc/ti-st/st_ll.c b/drivers/misc/ti-st/st_ll.c
+index 1ff460a..93b4d67 100644
+--- a/drivers/misc/ti-st/st_ll.c
++++ b/drivers/misc/ti-st/st_ll.c
+@@ -87,7 +87,7 @@ static void ll_device_want_to_wakeup(struct st_data_s *st_data)
+ 	/* communicate to platform about chip wakeup */
+ 	kim_data = st_data->kim_data;
+ 	pdata = kim_data->kim_pdev->dev.platform_data;
+-	if (pdata->chip_asleep)
++	if (pdata->chip_awake)
+ 		pdata->chip_awake(NULL);
+ }
+ 
+-- 
+1.7.10
 
-Do I miss anything here?
-
-Thanks,
-Kay
