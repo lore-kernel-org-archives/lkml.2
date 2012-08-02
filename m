@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab2HBWlS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 18:41:18 -0400
-Received: from mso.anu.edu.au ([150.203.89.32]:46591 "EHLO mso.anu.edu.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab2HBWlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753657Ab2HBWlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 18:41:14 -0400
+Received: from leibniz.ffyh.unc.edu.ar ([200.16.23.1]:44211 "EHLO
+	mail.ffyh.unc.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab2HBWlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Aug 2012 18:41:12 -0400
-Message-ID: <501B01ED.9080309@mso.anu.edu.au>
-Date: Fri, 03 Aug 2012 08:40:45 +1000
-From: Francois Rigaut <frigaut@mso.anu.edu.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Aug 2012 18:41:12 EDT
+Message-ID: <20120802193407.15096tbdh7zixaan@webmail.ffyh.unc.edu.ar>
+Date: Thu, 02 Aug 2012 19:34:07 -0300
+From: CAPITAL EQUALITY LOAN COMPANY <csalit@ffyh.unc.edu.ar>
+Reply-to: capitaleiqualityloancmpy@gmail.com
+To: undisclosed-recipients:;
+Subject: we offer loan
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
-References: <1343407934-459-1-git-send-email-mjg@redhat.com> <20120731223240.GD19134@kroah.com> <20120801165400.GA3042@srcf.ucam.org> <20120801232147.GA6228@kroah.com> <20120802040242.GB25933@thinkpad-t410> <20120802103423.GA1921@kroah.com> <501A955D.6030500@mso.anu.edu.au> <20120802161209.GF32395@thinkpad-t410>
-In-Reply-To: <20120802161209.GF32395@thinkpad-t410>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+MailScanner-NULL-Check: 1344551652.34459@afl2d5woOZy8No+qZLYinA
+X-MailScanner-ID: 8204BC9C3C7.388F6
+X-FFyH-MailScanner: Found to be clean
+X-FFyH-MailScanner-From: csalit@ffyh.unc.edu.ar
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
+Dear Sir/Madam,
 
-Sorry for the belated response. On Oz time here.
-I don't have a /var/log/kernel.log !
-Let me make sure of something:
-This switcher code is to be run on osx, no? That's where gfxcardstatus 
-lives and where I can effect the card switch. Just to make sure.
-So I'm running osx mountain lion, and the only thing I see in the logs 
-when I switch cards (using gfxcardstatus) is what I pasted below. and 
-you're right, it was not in message.log, but system.log (it was late). I 
-just went through the whole thing again.
-Am I missing something?
-Cheers,
-Francois
+This is to inform you that CAPITAL EQUALITY LOAN COMPANY is currently  
+offering a loan at 3% interest rate.
 
-On 03/08/12 02:12, Seth Forshee wrote:
-> On Fri, Aug 03, 2012 at 12:57:33AM +1000, Francois Rigaut wrote:
->> Greg, Seth,
->>
->> Here is what the message.log shows:
->>
->> switching to the HD4000 (integrated):
->>
->> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x42803c0
->> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: CGXMuxAcknowledge: Posting glitchless acknowledge
->> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: MPAccessSurfaceForDisplayDevice: Set up page flip mode on display 0x042803c0 device: 0x10c678320  isBackBuffered: 0 numComp: 1 numDisp: 3
->> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x42803c0
->> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003d
->> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003e
->> Aug  3 00:49:55 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003f
->>
->> switching to the nvidia (discrete):
->>
->> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x42803c0
->> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003d
->> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003e
->> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x3f003f
->> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: CGXMuxAcknowledge: Posting glitchless acknowledge
->> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: MPAccessSurfaceForDisplayDevice: Set up page flip mode on display 0x042803c0 device: 0x10c678320  isBackBuffered: 0 numComp: 1 numDisp: 3
->> Aug  3 00:50:35 poliahu.ctio.noao.edu WindowServer[79]: Received display connect changed for display 0x42803c0
->>
->> Hope that helps.
-> Thanks for trying it out, but it's not really what I was hoping for. I
-> get a bunch of messages similar to these in /var/log/kernel.log, mixed
-> in with a lot of other stuff.
->
->   AGC:: setMuxRegister:1666 (728, 1, 1)
->   AGC:: setMuxRegister:1666 (710, 1, 4)
->   AGC:: getMuxRegister:1647 (716, 1) = 1
->
-> I don't even have message.log. You don't have a kernel.log? Do you see
-> any messages like those if you run dmesg?
->
-> Seth
+We offer a variety of loans to our customers. Whatever your loan needs  
+are, large or small, personal or mortgage, we are ready to talk with  
+you about how we can meet your needs. application form below
+
+CAPITAL EQUALITY LOAN COMPANY
+71 Queen Victoria Street
+London, United Kingdom, EC4V 4DE
+
+Application Form:
+1) Full Name:.........
+2) Country:..............
+3) Address:...
+4) Sex:..............
+5) Marital Status:......................
+6) Occupation:..............
+7) Phone Number:......
+8) Monthly income:.....................
+9) Loan Amount Needed:...............
+10) Loan Duration:..................
+11) Purpose of Loan:.................
+12) Age: ..............
+
+Rosmarie Neely
+Loan Officer
+E-mail:capitaleiqualityloancmpy@gmail.com
+Tell: +447035958575
+Fax:  +448447742385
+
+
+
 
