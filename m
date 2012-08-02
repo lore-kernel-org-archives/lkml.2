@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab2HBQrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:47:42 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43394 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab2HBQrk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:47:40 -0400
-Message-ID: <501AAF47.3090708@gmail.com>
-Date: Thu, 02 Aug 2012 18:48:07 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+	id S1754332Ab2HBQvm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:51:42 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:60758 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753834Ab2HBQvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 12:51:41 -0400
+Message-ID: <501AB013.1090607@parallels.com>
+Date: Thu, 2 Aug 2012 20:51:31 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-References: <50197460.8010906@gmail.com> <20120801182749.GD15477@google.com> <50197E4A.7020408@gmail.com> <20120801202432.GE15477@google.com> <5019B0B4.1090102@gmail.com> <20120801224556.GF15477@google.com> <501A4FC1.8040907@gmail.com> <20120802103244.GA23318@leaf> <501A633B.3010509@gmail.com> <501A7AD3.7000008@gmail.com> <20120802161556.GA25572@leaf>
-In-Reply-To: <20120802161556.GA25572@leaf>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Christoph Lameter <cl@linux.com>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] slub: use free_page instead of put_page for freeing kmalloc
+ allocation
+References: <1343913065-14631-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1208020902390.23049@router.home> <20120802164203.GA30111@cmpxchg.org>
+In-Reply-To: <20120802164203.GA30111@cmpxchg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.1.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 06:15 PM, Josh Triplett wrote:
-> On Thu, Aug 02, 2012 at 03:04:19PM +0200, Sasha Levin wrote:
->> On 08/02/2012 01:23 PM, Sasha Levin wrote:
->>>> #define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
->>> The limitation of this approach is that the struct hash_table variable must be 'static', which is a bit limiting - see for example the use of hashtable in 'struct user_namespace'.
->>>
+On 08/02/2012 08:42 PM, Johannes Weiner wrote:
+> On Thu, Aug 02, 2012 at 09:06:41AM -0500, Christoph Lameter wrote:
+>> On Thu, 2 Aug 2012, Glauber Costa wrote:
 >>
->> What if we just use two possible decelerations? One of static structs and one for regular ones.
+>>> diff --git a/mm/slub.c b/mm/slub.c
+>>> index e517d43..9ca4e20 100644
+>>> --- a/mm/slub.c
+>>> +++ b/mm/slub.c
+>>> @@ -3453,7 +3453,7 @@ void kfree(const void *x)
+>>>  	if (unlikely(!PageSlab(page))) {
+>>>  		BUG_ON(!PageCompound(page));
+>>>  		kmemleak_free(x);
+>>> -		put_page(page);
+>>> +		__free_pages(page, compound_order(page));
 >>
->> struct hash_table {
->>         size_t bits;
->>         struct hlist_head buckets[];
->> };
+>> Hmmm... put_page would have called put_compound_page(). which would have
+>> called the dtor function. dtor is set to __free_pages() ok which does
+>> mlock checks and verifies that the page is in a proper condition for
+>> freeing. Then it calls free_one_page().
 >>
->> #define DEFINE_HASHTABLE(name, bits)                                    \
->>         union {                                                         \
->>                 struct hash_table name;                                 \
->>                 struct {                                                \
->>                         size_t bits;                                    \
-> 
-> This shouldn't use "bits", since it'll get expanded to the macro
-> argument.
-> 
->>                         struct hlist_head buckets[1 << bits];           \
->>                 } __name;                                               \
-> 
-> __##name
-> 
->>         }
+>> __free_pages() decrements the refcount and then calls __free_pages_ok().
 >>
->> #define DEFINE_STATIC_HASHTABLE(name, bit)                              \
->>         static struct hash_table name = { .bits = bit,                  \
->>                 .buckets = { [0 ... (bit - 1)] = HLIST_HEAD_INIT } }
+>> So we loose the checking and the dtor stuff with this patch. Guess that is
+>> ok?
 > 
-> You probably wanted to change that to [0 ... ((1 << bit) - 1)] , to
-> match DEFINE_HASHTABLE.
+> The changelog is not correct, however.  People DO get pages underlying
+> slab objects and even free the slab objects before returning the page.
+> See recent fix:
 
-I wrote it by hand and didn't compile test, will fix all of those.
+Well, yes, in the sense that slab objects are page-backed.
 
-> Since your definition of DEFINE_HASHTABLE would also work fine when used
-> statically, why not just always use that?
+The point is that a user of kmalloc/kfree should not treat a memory area
+as if it were a page, even if it is page-sized.
+
+If it is just the Changelog you are unhappy about, I can do another
+submission rewording it.
+
+> commit 5bf5f03c271907978489868a4c72aeb42b5127d2
+> Author: Pravin B Shelar <pshelar@nicira.com>
+> Date:   Tue May 29 15:06:49 2012 -0700
 > 
-> #define DEFINE_STATIC_HASHTABLE(name, bits) static DEFINE_HASHTABLE(name, bits) = { .name.bits = bits }
+>     mm: fix slab->page flags corruption
+>     
+>     Transparent huge pages can change page->flags (PG_compound_lock) without
+>     taking Slab lock.  Since THP can not break slab pages we can safely access
+>     compound page without taking compound lock.
+>     
+>     Specifically this patch fixes a race between compound_unlock() and slab
+>     functions which perform page-flags updates.  This can occur when
+>     get_page()/put_page() is called on a page from slab.
 
-It will get defined fine, but it will be awkward to use. We'd need to pass anonymous union to all the functions that handle this hashtable, which isn't pretty.
-
+This is just another argument not to do put_page on slab pages!
