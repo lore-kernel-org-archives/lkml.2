@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab2HBOsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 10:48:30 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59500 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752664Ab2HBOs2 (ORCPT
+	id S1752628Ab2HBOtU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 10:49:20 -0400
+Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:59329 "EHLO
+	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750822Ab2HBOtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 10:48:28 -0400
-Date: Thu, 2 Aug 2012 10:48:27 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <praveen.nadahally@stericsson.com>
-Subject: Re: [PATCH] usb:musb:musb_host: Handle highmem in PIO mode
-In-Reply-To: <1343889402-7826-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
-Message-ID: <Pine.LNX.4.44L0.1208021046280.1285-100000@iolanthe.rowland.org>
+	Thu, 2 Aug 2012 10:49:19 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1343891231-3042-1-git-send-email-kyungsik.lee@lge.com>
+References: <1343891231-3042-1-git-send-email-kyungsik.lee@lge.com>
+From: "S, Venkatraman" <svenkatr@ti.com>
+Date: Thu, 2 Aug 2012 20:18:54 +0530
+Message-ID: <CANfBPZ_pVuDU+cd_pQr+GxWd2Dsf3zjfnwW547Sm8SkDaJUuFA@mail.gmail.com>
+Subject: Re: [PATCH RESEND v5] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
+To: Kyungsik Lee <kyungsik.lee@lge.com>
+Cc: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Aug 2012, Virupax Sadashivpetimath wrote:
+On Thu, Aug 2, 2012 at 12:37 PM, Kyungsik Lee <kyungsik.lee@lge.com> wrote:
+> It is expected that Extended CSD register(the size of this register
+> is larger than CID/CSD) will be referenced more frequently as more
+> fields have been added to Extended CSD and it seems that it is not
+> a good option to double the memory used.
+>
+> This patch is intended to avoid the use of bounce buffer for reading
+> Extended CSD register in mmc_send_cxd_data(). It will provide a better
+> performance gain by removing memcpy() overhead for a half KiB and
+> a redundant bounce buffer allocated repeatedly at the cost of providing
+> DMA-capable buffer from upper caller(but on-stack buffer is allowed
+> with no performance gain).
+>
+> Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+> Signed-off-by: S, Venkatraman <svenkatr@ti.com>
 
-> In case of USB bulk transfer, when himem page
-> is received, the usb_sg_init function sets the
-> urb transfer buffer to NULL. When such URB
-> transfer is handled, kernel crashes in PIO mode.
-> Handle this by mapping the highmem buffer in PIO mode.
+I don't think my sign off is warranted. I gave just an illustration.
+You can add my
+Reviewed-by: Venkatraman S <svenkatr@ti.com>
 
-
-> --- a/include/linux/usb.h
-> +++ b/include/linux/usb.h
-> @@ -21,6 +21,7 @@
->  #include <linux/sched.h>	/* for current && schedule_timeout */
->  #include <linux/mutex.h>	/* for struct mutex */
->  #include <linux/pm_runtime.h>	/* for runtime PM */
-> +#include <linux/scatterlist.h>
->  
->  struct usb_device;
->  struct usb_driver;
-> @@ -1309,6 +1310,7 @@ struct urb {
->  	usb_complete_t complete;	/* (in) completion routine */
->  	struct usb_iso_packet_descriptor iso_frame_desc[0];
->  					/* (in) ISO ONLY */
-> +	struct sg_mapping_iter sg_miter; /* handling highmem data in PIO mode */
->  };
-
-This is unacceptable.  Fields like this should be stored in the 
-URB's hcpriv structure, not in the URB itself.
-
-Alan Stern
-
+Regards,
+Venkat.
