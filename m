@@ -1,80 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab2HBWeu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 18:34:50 -0400
+	id S1754027Ab2HBWfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 18:35:37 -0400
 Received: from mail-yx0-f174.google.com ([209.85.213.174]:62801 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab2HBWeb (ORCPT
+	with ESMTP id S1753776Ab2HBWeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 18:34:31 -0400
+	Thu, 2 Aug 2012 18:34:36 -0400
 From: Michel Lespinasse <walken@google.com>
 To: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
         aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org
-Subject: [PATCH v2 0/9] faster augmented rbtree interface
-Date: Thu,  2 Aug 2012 15:34:09 -0700
-Message-Id: <1343946858-8170-1-git-send-email-walken@google.com>
+Subject: [PATCH v2 3/9] rbtree: add __rb_change_child() helper function
+Date: Thu,  2 Aug 2012 15:34:12 -0700
+Message-Id: <1343946858-8170-4-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1343946858-8170-1-git-send-email-walken@google.com>
+References: <1343946858-8170-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are my proposed changes for a faster augmented rbtree interface.
-They are implemented on top of a previous patch series that is already
-in Andrew's -mm tree, and I feel they are ready to join it.
+Add __rb_change_child() as an inline helper function to replace code that
+would otherwise be duplicated 4 times in the source.
 
-Patch 1 is a trivial fix for a sparse warning.
+No changes to binary size or speed.
 
-Patch 2 is a small optimization I already sent as part of my previous RFC.
-Rik had ACKed it.
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ lib/rbtree.c |   46 +++++++++++++++++-----------------------------
+ 1 files changed, 17 insertions(+), 29 deletions(-)
 
-Patches 3-4 are small cleanups, mainly intended to make the code more readable.
-
-Patches 5-6 are new, based on something George Spelvin observed in my
-previous RFC. It turns out that in rb_erase(), recoloring is trivial for
-nodes that have exactly 1 child. We can shave a few cycles by handling it
-locally, and changing rb_erase_color() to only deal with the no-childs case.
-
-Patch 7 adds a performance test for the augmented rbtree support.
-
-Patch 8 introduces my proposed API for augmented rbtree support.
-rb_insert_augmented() and rb_erase_augmented() are augmented versions of
-rb_insert_color() and rb_erase(). They take an additional argument
-(struct rb_augment_callbacks) to specify callbacks to be used to maintain
-the augmented rbtree information. users have to specify 3 callbacks
-through that structure. Non-augmented rbtree support is provided by
-inlining dummy callbacks, so that the non-augmented case is not affected
-(either in speed or in compiled size) by the new augmented rbtree API.
-For augmented rbtree users, no inlining takes place at this point (I may
-propose this later, but feel this shouldn't go with the initial proposal). 
-
-Patch 9 removes the old augmented rbtree interface and converts its
-only user to the new interface.
-
-
-Overall, this series improves non-augmented rbtree speed by ~5%. For
-augmented rbtree users, the new interface is ~2.5 times faster than the old.
-
-Michel Lespinasse (9):
-  rbtree test: fix sparse warning about 64-bit constant
-  rbtree: optimize fetching of sibling node
-  rbtree: add __rb_change_child() helper function
-  rbtree: place easiest case first in rb_erase()
-  rbtree: handle 1-child recoloring in rb_erase() instead of
-    rb_erase_color()
-  rbtree: low level optimizations in rb_erase()
-  rbtree: augmented rbtree test
-  rbtree: faster augmented rbtree manipulation
-  rbtree: remove prior augmented rbtree implementation
-
- Documentation/rbtree.txt |  190 ++++++++++++++++++++----
- arch/x86/mm/pat_rbtree.c |   65 ++++++---
- include/linux/rbtree.h   |   23 ++-
- lib/rbtree.c             |  370 +++++++++++++++++++++++++---------------------
- lib/rbtree_test.c        |  135 ++++++++++++++++-
- 5 files changed, 557 insertions(+), 226 deletions(-)
-
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index 61cdd0e..de89a61 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -66,6 +66,19 @@ static inline struct rb_node *rb_red_parent(struct rb_node *red)
+ 	return (struct rb_node *)red->__rb_parent_color;
+ }
+ 
++static inline void
++__rb_change_child(struct rb_node *old, struct rb_node *new,
++		  struct rb_node *parent, struct rb_root *root)
++{
++	if (parent) {
++		if (parent->rb_left == old)
++			parent->rb_left = new;
++		else
++			parent->rb_right = new;
++	} else
++		root->rb_node = new;
++}
++
+ /*
+  * Helper function for rotations:
+  * - old's parent and color get assigned to new
+@@ -78,13 +91,7 @@ __rb_rotate_set_parents(struct rb_node *old, struct rb_node *new,
+ 	struct rb_node *parent = rb_parent(old);
+ 	new->__rb_parent_color = old->__rb_parent_color;
+ 	rb_set_parent_color(old, new, color);
+-	if (parent) {
+-		if (parent->rb_left == old)
+-			parent->rb_left = new;
+-		else
+-			parent->rb_right = new;
+-	} else
+-		root->rb_node = new;
++	__rb_change_child(old, new, parent, root);
+ }
+ 
+ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+@@ -375,13 +382,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 		while ((left = node->rb_left) != NULL)
+ 			node = left;
+ 
+-		if (rb_parent(old)) {
+-			if (rb_parent(old)->rb_left == old)
+-				rb_parent(old)->rb_left = node;
+-			else
+-				rb_parent(old)->rb_right = node;
+-		} else
+-			root->rb_node = node;
++		__rb_change_child(old, node, rb_parent(old), root);
+ 
+ 		child = node->rb_right;
+ 		parent = rb_parent(node);
+@@ -410,13 +411,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 
+ 	if (child)
+ 		rb_set_parent(child, parent);
+-	if (parent) {
+-		if (parent->rb_left == node)
+-			parent->rb_left = child;
+-		else
+-			parent->rb_right = child;
+-	} else
+-		root->rb_node = child;
++	__rb_change_child(node, child, parent, root);
+ 
+ color:
+ 	if (color == RB_BLACK)
+@@ -591,14 +586,7 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
+ 	struct rb_node *parent = rb_parent(victim);
+ 
+ 	/* Set the surrounding nodes to point to the replacement */
+-	if (parent) {
+-		if (victim == parent->rb_left)
+-			parent->rb_left = new;
+-		else
+-			parent->rb_right = new;
+-	} else {
+-		root->rb_node = new;
+-	}
++	__rb_change_child(victim, new, parent, root);
+ 	if (victim->rb_left)
+ 		rb_set_parent(victim->rb_left, new);
+ 	if (victim->rb_right)
 -- 
 1.7.7.3
 
