@@ -1,65 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab2HBJxq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 05:53:46 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:35382 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab2HBJxi (ORCPT
+	id S1754310Ab2HBJyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 05:54:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58056 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab2HBJx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 05:53:38 -0400
-Date: Thu, 2 Aug 2012 11:53:24 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: <swarren@nvidia.com>, <rob.herring@calxeda.com>,
-        <linus.walleij@linaro.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c: muxes: fix build break
-Message-ID: <20120802115324.6ed7ce52@endymion.delvare>
-In-Reply-To: <1343898737-24386-1-git-send-email-vbyravarasu@nvidia.com>
-References: <1343898737-24386-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Aug 2012 05:53:58 -0400
+Date: Thu, 2 Aug 2012 11:53:54 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] pwm: samsung: fix the number of PWMs
+Message-ID: <20120802095354.GA18945@avionic-0098.adnet.avionic-design.de>
+References: <002401cd708c$b3c09ed0$1b41dc70$%han@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
+Content-Disposition: inline
+In-Reply-To: <002401cd708c$b3c09ed0$1b41dc70$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:eIAaOW7NQDxslevFR4i25kuQwLoZ9FMA/OWfldQhWA0
+ b3e7HAL4KMuEIbL1prYKeFsI0ITsjRNBYg9IM6I/oz5tlkzxzx
+ LcyxVcnyFC8hAmZjcYkcNWjFrbq9dsiTTyx0tAKHqY5z/RZama
+ uHMSbMKJ2JZX6T4+K+jCznB/tRUKPJ5QNerQmhYLHk7uSFLckM
+ G3eKZ2gMgx4DrMLuhXoD1pBRaabkWJULgrCbUqh9e9tg7xX42u
+ N/GWIg7hhvx86II2jp1Z27lxdwzxhNLVZVZHJ+2g6T/rI7iDe5
+ MufpIu5wb8KMyssY7anWFpr2Lp4LMdTwqEnlmgI2bkI/a9bi4a
+ gjoR4JE5RirK7x3Xpx/9P7VSWjJw31IqBxUCbHrrnrQlYUwfR/
+ raYjv/M0ZoTEsMj8R74U9Se5lcxHv/4aUc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Venu,
 
-On Thu, 2 Aug 2012 14:42:17 +0530, Venu Byravarasu wrote:
-> Seems a new parameter is added to i2c_add_mux_adapter().
-> All its references, except for the one present in
-> i2c-mux-pinctrl.c, were updated.
-> As this is causing build break, pushing current patch to fix it.
+--PNTmBPCT7hxwcZjr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the heads up. When I wrote the patch adding the parameter,
-the i2c-mux-pinctrl driver wasn't upstream yet, that's why I missed it.
-
-> 
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+On Thu, Aug 02, 2012 at 05:56:27PM +0900, Jingoo Han wrote:
+> Samsung SoC can provide 4 PWMs; thus, the number of PWMs should be
+> set as 4.
+>=20
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > ---
->  drivers/i2c/muxes/i2c-mux-pinctrl.c |    2 +-
+>  drivers/pwm/pwm-samsung.c |    2 +-
 >  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/i2c/muxes/i2c-mux-pinctrl.c b/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> index 46a6697..5f097f3 100644
-> --- a/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> +++ b/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> @@ -221,7 +221,7 @@ static int __devinit i2c_mux_pinctrl_probe(struct platform_device *pdev)
->  				(mux->pdata->base_bus_num + i) : 0;
->  
->  		mux->busses[i] = i2c_add_mux_adapter(mux->parent, &pdev->dev,
-> -						     mux, bus, i,
-> +						     mux, bus, i, 0,
->  						     i2c_mux_pinctrl_select,
->  						     deselect);
->  		if (!mux->busses[i]) {
+>=20
+> diff --git a/drivers/pwm/pwm-samsung.c b/drivers/pwm/pwm-samsung.c
+> index e5187c0..32562c6 100644
+> --- a/drivers/pwm/pwm-samsung.c
+> +++ b/drivers/pwm/pwm-samsung.c
+> @@ -228,7 +228,7 @@ static int s3c_pwm_probe(struct platform_device *pdev)
+>  	s3c->chip.dev =3D &pdev->dev;
+>  	s3c->chip.ops =3D &s3c_pwm_ops;
+>  	s3c->chip.base =3D -1;
+> -	s3c->chip.npwm =3D 1;
+> +	s3c->chip.npwm =3D 4;
 
-As the problematic patch isn't upstream yet, I've simply folded the
-above into it:
-http://khali.linux-fr.org/devel/linux-3/jdelvare-i2c/i2c-mux-support-class.patch
+I don't think this is correct. The driver seems to be using the platform
+device id as index currently, which indicates that the driver is bound
+against 4 different platform devices, each representing a single PWM. If
+you want to service multiple PWM devices by a single instance you need
+to make further changes to the driver. For instance the tcon_base is
+initialized based on the platform id. This could easily be replaced by
+making it depend on the .hwpwm member of pwm_device.
 
-Thanks again,
--- 
-Jean Delvare
+You may also want to consider making the driver a proper module if that
+works on the platforms that need it. I see that it is currently an
+arch_initcall, but it might be cleaner to use deferred driver probe
+instead.
+
+Thierry
+
+--PNTmBPCT7hxwcZjr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQGk4xAAoJEN0jrNd/PrOhMUcP/3o59WtH249RzhgR4+7L3e/n
+xAQXaMzu4SXvq6vIGqShJ75h1EYFl+z107Z0xKEhgPjzjMdPEqamzLLFccgOd3d0
+YzPwXexPyHfVk9gBikSteRzeBdpkOTH10mMS38gxhgYOQ2UvHah3HdpFB6Q2u9Sd
+wz9MBs3uA2ZC6cFYPrRjcNcXSUE+v9ZGH7RSUnBSdE5+KBtt6EfTprusCC3lSgPg
+598CcEzvQ5lEE6na55z0ez/Tzr/b6LlxTgqUJ5UA/rvzEZ6rhjCF2rFg90yUJWoN
+UcN2EUkUnMYtukz0jTRijKcwEsjna5qN6zmdfSVS6adLcdzCjV+xOPOizMwHB068
+z6JAbKIgR4fIyaLiB5dJbgocq8VOMWUU80oFRv6BGMnrdyIuW9KK0XROwtR74gc+
+dNGQJ8R2uHF4cWDs0vm8faYdw0lYGTJgKLTzzARevQ8K0x3Xz/dVEQ9hYozSzGZV
+i4vmyGm2sz4gVyd5ysjMKIBrwE8UD81oRp67OQnDv2DjVb6knXPvq6oa31iUEXq/
+Jvx70pGiDJiMlGRDFs46xu6e7afO5oXZ/K+eHdMdoNXfjDXPIPW8FObQOVwPWYaW
+0KLClr/CclFcegVpdgPMcDrLp4qYAofg2FzIwzP0P3nAHYcjO0g+cKg3F/e3U5hh
+ZVbOYuuLP69wTA8auIOw
+=Y+LG
+-----END PGP SIGNATURE-----
+
+--PNTmBPCT7hxwcZjr--
