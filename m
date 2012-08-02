@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab2HBNsD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 09:48:03 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:47496 "EHLO
-	homiemail-a58.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754449Ab2HBNsC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 09:48:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=from:to:cc
-	:subject:date:message-id; q=dns; s=shealevy.com; b=GDAtHycLl4fui
-	GQN+uGSzAMwl6hPyBwwxjPQlbGKhtbZpDRJEfRbRZSsARUNOsP/bc82FHJFBQB8r
-	q+6c/lYZwatrQxrsE7OTLEdV6qtlXh4NXvi5l89vqbro3jLIb8xojzMULOIGhWkl
-	OxOdoiJUw0JOvGFwtNxEkaycmKE8Bc=
-From: shea@shealevy.com
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shea Levy <shea@shealevy.com>
-Subject: [PATCH] Bluetooth: Add support for Apple MacBook Pro 9,2
-Date: Thu,  2 Aug 2012 09:47:49 -0400
-Message-Id: <1343915269-6129-1-git-send-email-shea@shealevy.com>
-X-Mailer: git-send-email 1.7.11
+	id S1754794Ab2HBNxy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 09:53:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39260 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191Ab2HBNxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 09:53:53 -0400
+Date: Thu, 2 Aug 2012 15:53:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+Message-ID: <20120802135350.GA18084@dhcp22.suse.cz>
+References: <50181AA1.0@redhat.com>
+ <20120731200650.GB19524@tiehlicka.suse.cz>
+ <50189857.4000501@redhat.com>
+ <20120801082036.GC4436@tiehlicka.suse.cz>
+ <20120801123209.GK4436@tiehlicka.suse.cz>
+ <501945F9.2030402@redhat.com>
+ <20120802071934.GA7557@dhcp22.suse.cz>
+ <20120802073757.GC29814@suse.de>
+ <20120802123658.GA5194@dhcp22.suse.cz>
+ <20120802133310.GD29814@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120802133310.GD29814@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shea Levy <shea@shealevy.com>
+On Thu 02-08-12 14:33:10, Mel Gorman wrote:
+> On Thu, Aug 02, 2012 at 02:36:58PM +0200, Michal Hocko wrote:
+> > On Thu 02-08-12 08:37:57, Mel Gorman wrote:
+> > > On Thu, Aug 02, 2012 at 09:19:34AM +0200, Michal Hocko wrote:
+> > [...]
+> > > > On the other hand, mine is more coupled with the sharing code so it
+> > > > makes the code easier to follow and also makes the sharing more
+> > > > effective because racing processes see pmd populated when checking for
+> > > > shareable mappings.
+> > > > 
+> > > 
+> > > It could do with a small comment above huge_pmd_share() explaining that
+> > > calling pmd_alloc() under the i_mmap_mutex is necessary to prevent two
+> > > parallel faults missing a sharing opportunity with each other but it's
+> > > not mandatory.
+> > 
+> > Sure, that's a good idea. What about the following:
+> > 
+> > diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+> > index 40b2500..51839d1 100644
+> > --- a/arch/x86/mm/hugetlbpage.c
+> > +++ b/arch/x86/mm/hugetlbpage.c
+> > @@ -56,7 +56,13 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
+> >  }
+> >  
+> >  /*
+> > - * search for a shareable pmd page for hugetlb.
+> > + * search for a shareable pmd page for hugetlb. In any case calls
+> > + * pmd_alloc and returns the corresponding pte. While this not necessary
+> > + * for the !shared pmd case because we can allocate the pmd later as
+> > + * well it makes the code much cleaner. pmd allocation is essential for
+> > + * the shared case though because pud has to be populated inside the
+> > + * same i_mmap_mutex section otherwise racing tasks could either miss
+> > + * the sharing (see huge_pte_offset) or selected a bad pmd for sharing.
+> >   */
+> >  static pte_t*
+> >  huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+> > 
+> 
+> Looks reasonable to me.
 
-$ usb-devices
-<snip>
-T:  Bus=04 Lev=04 Prnt=04 Port=02 Cnt=01 Dev#=  9 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=05ac ProdID=821d Rev=00.86
-S:  Manufacturer=Apple Inc.
-S:  Product=Bluetooth USB Host Controller
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-<snip>
+OK, added to the patch. I will send it to Andrew now.
 
-Signed-off-by: Shea Levy <shea@shealevy.com>
----
- drivers/bluetooth/btusb.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index e272214..e4ecd5e 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -73,6 +73,9 @@ static struct usb_device_id btusb_table[] = {
- 	/* Apple MacBookPro8,2 */
- 	{ USB_DEVICE(0x05ac, 0x821a) },
- 
-+	/* Apple MacBookPro9,2 */
-+	{ USB_DEVICE(0x05ac, 0x821d) },
-+
- 	/* Apple MacMini5,1 */
- 	{ USB_DEVICE(0x05ac, 0x8281) },
- 
+Thanks a lot!
 -- 
-1.7.11
-
+Michal Hocko
+SUSE Labs
