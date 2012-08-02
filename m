@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab2HBLpX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 07:45:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59027 "EHLO mx2.suse.de"
+	id S1754670Ab2HBLyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 07:54:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59502 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752890Ab2HBLpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 07:45:22 -0400
-Date: Thu, 2 Aug 2012 13:45:12 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] parisc: fix personality flag check in copy_thread()
-In-Reply-To: <1343897272.5073.5.camel@dabdike.int.hansenpartnership.com>
-Message-ID: <alpine.LNX.2.00.1208021342120.4820@pobox.suse.cz>
-References: <alpine.LNX.2.00.1208012155330.14910@pobox.suse.cz>  <alpine.LNX.2.00.1208020911300.14910@pobox.suse.cz> <1343897272.5073.5.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753830Ab2HBLyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 07:54:08 -0400
+From: Ludwig Nussel <ludwig.nussel@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Ludwig Nussel <ludwig.nussel@suse.de>, linux-fsdevel@vger.kernel.org,
+        Jan Kara <jack@suse.cz> (maintainer:EXT2 FILE SYSTEM),
+        Rob Landley <rob@landley.net> (maintainer:DOCUMENTATION),
+        Andrew Morton <akpm@linux-foundation.org> (maintainer:EXT3 FILE
+	SYSTEM),
+        Andreas Dilger <adilger.kernel@dilger.ca> (maintainer:EXT3 FILE
+	SYSTEM),
+        "Theodore Ts'o" <tytso@mit.edu> (maintainer:EXT4 FILE SYSTEM),
+        linux-ext4@vger.kernel.org (open list:EXT2 FILE SYSTEM),
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
+Subject: =?UTF-8?q?=5BPATCH=200/3=5D=20implement=20uid=20and=20gid=20mount=20options=20for=20ext2=2C=20ext3=20and=20ext4?=
+Date: Thu,  2 Aug 2012 13:54:00 +0200
+Message-Id: <1343908443-17369-1-git-send-email-ludwig.nussel@suse.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Aug 2012, James Bottomley wrote:
+When using 'real' file systems on removable storage devices such as
+hard disks or usb sticks people quickly face the problem that their
+Linux users have different uids on different machines. Therefore one
+cannot modify or even read files created on a different machine
+without running chown as root or storing everything with mode 777.
+Simple file systems such as vfat don't have that problem as they
+don't store file ownership information and one can pass the uid
+files should belong to as mount option.
 
-> > Directly comparing task_struct->personality against PER_* is not fully
-> > correct, as it doesn't take flags potentially stored in top three bytes
-> > into account.
-> > 
-> > Analogically, directly forcefully setting personality to PER_LINUX32 or
-> > PER_LINUX discards any flags stored in the top three bytes.
-> > 
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> > ---
-> > 
-> > changed since v1: fix the bit ops to reflect the fact that PER_LINUX is 
-> > actually 0
-> 
-> Tell me what you're trying to achieve (or what problem you're trying to
-> solve), because personality is notoriously tricky.
+The following three patches implement the uid (and gid) mount option
+for ext2, ext3 and ext4 to make them actually useful on removable
+media. If a file system is mounted with the uid option all files
+appear to be owned by the specified uid. Only newly created files
+actually end up with that uid as owner on disk though. Ownership of
+existing files cannot be changed permanently if the uid option was
+specified.
+Optionally a second uid (diskuid) can be specified. This one is actually
+written to the file system then. Useful if the filesytem is also used on a
+system that does not support the uid option.
 
-Long story short -- I was debugging a problem where 'setarch --uname-2.6' 
-would not work on s390 on (older) 3.x kernel. Turned out to be a 
-corruption of top bytes of personality across exec() on s390.
+The feature can be used in two ways. Firstly via fstab by having the
+admin add 'uid=useruid' in the fs_mntops column in addition to the
+'user' or 'users' option. Secondly via e.g. udisks which would
+automatically pass the uid of the calling user as option.
 
-I was doing quite some over-the-tree grepping during this, and found out 
-that at least parisc, powerpc and sparc64 (davem already queued my patch 
-for this) would under some silently ignore discard the top bytes of 
-personality flags passed to sys_personality().
+Ludwig Nussel (3):
+  implement uid and gid mount options for ext2
+  implement uid and gid mount options for ext3
+  implement uid and gid mount options for ext4
 
-In case of parsic, let's take a process with current->personality == 
-PER_LINUX32 callling personality(PER_LINUX | UNAME26). The
-
-        if (personality(current->personality) == PER_LINUX32
-            && personality == PER_LINUX)
-                personality = PER_LINUX32;
-
-would that have no effect, and sys_personality() would be called with 
-(PER_LINUX | UNAME26) instead of PER_LINUX32, just because of UNAME26 
-being set as well. That doesn't seem really correct. Is it?
+ Documentation/filesystems/ext2.txt |    9 ++++
+ Documentation/filesystems/ext3.txt |    9 ++++
+ Documentation/filesystems/ext4.txt |    9 ++++
+ fs/ext2/ext2.h                     |    8 +++
+ fs/ext2/inode.c                    |   48 +++++++++++++-----
+ fs/ext2/super.c                    |   95 +++++++++++++++++++++++++++++++++++-
+ fs/ext3/ext3.h                     |    8 +++
+ fs/ext3/inode.c                    |   54 ++++++++++++++------
+ fs/ext3/super.c                    |   95 +++++++++++++++++++++++++++++++++++-
+ fs/ext4/ext4.h                     |    4 ++
+ fs/ext4/inode.c                    |   52 ++++++++++++++------
+ fs/ext4/super.c                    |   87 ++++++++++++++++++++++++++++++++-
+ 12 Dateien geändert, 433 Zeilen hinzugefügt(+), 45 Zeilen entfernt(-)
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.10.4
+
