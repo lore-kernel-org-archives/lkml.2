@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097Ab2HBHfg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 03:35:36 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51041 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab2HBHff (ORCPT
+	id S1753523Ab2HBHgE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 03:36:04 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:25474 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab2HBHfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 03:35:35 -0400
-Date: Thu, 2 Aug 2012 09:35:30 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH] pwm: Add missing static storage class specifiers in
- core.c file
-Message-ID: <20120802073530.GA7143@avionic-0098.adnet.avionic-design.de>
-References: <1343890962-25467-1-git-send-email-sachin.kamat@linaro.org>
+	Thu, 2 Aug 2012 03:35:53 -0400
+X-IronPort-AV: E=Sophos;i="4.77,699,1336348800"; 
+   d="scan'208";a="13815371"
+Message-ID: <1343892951.7571.50.camel@dagon.hellion.org.uk>
+Subject: Re: [PATCH 01/24] arm: initial Xen support
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 2 Aug 2012 08:35:51 +0100
+In-Reply-To: <50197527.3070007@gmail.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
+	 <1343316846-25860-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <50197527.3070007@gmail.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
-Content-Disposition: inline
-In-Reply-To: <1343890962-25467-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:auNAv8tG4mFNgYT+rCiCYUFN5bLrk0QYlH1YL+h9X4r
- nwDBD3USmTjT7c07jqBCyEkHv8jIBcFVn/evoJ1dWsNXdDuqsq
- 3LGvTGCRvqeYQy9Mi+g+oCe+34uSP45sYxBrrc16mbBGgoGZF4
- 3zd+Ee4SyETKitNyk8SNxgCs2LDNe2SWSvOSI3iEfOSxndFnZQ
- Aw/SnQ59uBimvjNQR93RU15Fhg7PWgsD1CUs7whyEod2EL5mxo
- tAP34LPjw8tVt9g5YAkqGxKSXmRJFe456Br6gLy8/WCjQp78Zj
- /NGt//hPac0x/LRNEuJBaRCdJqBguOU9DW4ePRGeB9X7Obnaej
- 87pTrpJ/yn4iCky5Pjgv5pKOCcY9Ti9nGgzEVTHpzNCCrK6+uj
- zurBrZF+/jy41SwP9QGCEnfx4HLvTlXP+A=
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-08-01 at 19:27 +0100, Rob Herring wrote:
+> On 07/26/2012 10:33 AM, Stefano Stabellini wrote:
+> > - Basic hypervisor.h and interface.h definitions.
+> > - Skelethon enlighten.c, set xen_start_info to an empty struct.
+> > - Do not limit xen_initial_domain to PV guests.
+> > 
+> > The new code only compiles when CONFIG_XEN is set, that is going to be
+> > added to arch/arm/Kconfig in a later patch.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/arm/Makefile                     |    1 +
+> >  arch/arm/include/asm/hypervisor.h     |    6 +++
+> >  arch/arm/include/asm/xen/hypervisor.h |   19 ++++++++++
+> >  arch/arm/include/asm/xen/interface.h  |   64 +++++++++++++++++++++++++++++++++
+> 
+> These headers don't seem particularly ARM specific. Could they be moved
+> to asm-generic or include/linux?
 
---FL5UXtIhxfXey3p5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Or perhaps include/xen.
 
-On Thu, Aug 02, 2012 at 12:32:42PM +0530, Sachin Kamat wrote:
-> Fixes the following sparse warnings:
-> drivers/pwm/core.c:152:6: warning:
-> symbol 'of_pwmchip_add' was not declared. Should it be static?
-> drivers/pwm/core.c:165:6: warning:
-> symbol 'of_pwmchip_remove' was not declared. Should it be static?
->=20
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+A bunch of it also looks like x86 specific stuff which has crept in.
+e.g. PARAVIRT_LAZY_FOO and paravirt_get_lazy_mode() are arch/x86
+specific and shouldn't be called from common code (and aren't, AFAICT).
 
-Applied, thanks.
 
-Thierry
 
---FL5UXtIhxfXey3p5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQGi3CAAoJEN0jrNd/PrOhfDoP/iv1YBrGZpSjmJz/M+nLvX7e
-n2CZ1U9K5+gN1RJUfjSx9p1h4j5fJD9Zv6+Py4c6+Osz3j/3SyfKWBn+DBsc6pdh
-QpL2TUhuw+Q5rLmyFbAKYsAeMMd8sgKckLjbC5Hl94GdzL2/5ta02CdFWRJA3YbD
-N2Kj5YYdQQsAV23YDkl6I29Re6eGrl2xHoQCt1OFPOOPoit/ev9gsLzp0JD8Uc34
-V4YeF36VQvOXgv371rA1jqz32TCvNZ+B9tGjWf8m4q72SSz/h0Mgx6eThjUFiUqq
-ozEVKWdsIolRN8PZculQzH63iab5WafGZ9Gng+VT0cG45umm+pugTy+OueLbRLwG
-Shq4Rvxo/Ff3YAFcvpjJmtNk6BZ+NIsEPS9VbqRHWmK4eczeEWuq8RoTfGEUFovf
-AYGJT1VSWY/VYrqPEkWCZb+85Zu839daJtrIhKUci0nw1BERA+npSOxybHsS9sVW
-EkQQUCMgsGhLFyWI3sr15r7dRj4kEm3sF7gv4zT9NQgrIqZ+8sjv2KrOJtgssORL
-efJZ6mwKueM3Q4HCv7QmZELgUXd8o162OIk/cni0etd95i6dzcROzkXLcqdEOCPi
-3Ua1OkWZoX1AWZ4tE0uOzh3ffky/fWYAreW1KXhmNUR4pm9Vrh+uSzSwsqiWdF3z
-N8bnCXS2DgSt4HjMVKz3
-=nwgt
------END PGP SIGNATURE-----
-
---FL5UXtIhxfXey3p5--
