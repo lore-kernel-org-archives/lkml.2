@@ -1,476 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab2HBIva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 04:51:30 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:7572 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab2HBItt (ORCPT
+	id S1753483Ab2HBIz5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 04:55:57 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:51647 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab2HBIz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 04:49:49 -0400
-Message-Id: <201208020849.q728nhDc007814@latitude.olech.com>
-From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Thu, 2 Aug 2012 09:48:56 +0100
-Subject: [NEW DRIVER V1 3/7] DA9058 POWER driver
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
+	Thu, 2 Aug 2012 04:55:56 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-02-501a409abe0a
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Thierry Reding'" <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/2] pwm: samsung: add missing device pointer to struct pwm_chip
+Date: Thu, 02 Aug 2012 17:55:54 +0900
+Message-id: <002301cd708c$a01a1a50$e04e4ef0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1wjKAGF046k3JfQ567Unl4xOWs9w==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t9jQd3ZDlIBBnO4LC7vmsPmwOjxeZNc
+	AGMUl01Kak5mWWqRvl0CV8bnkyeZCx6xVrzes4CxgfEGSxcjJ4eEgInEh7Z1TBC2mMSFe+vZ
+	uhi5OIQEpjNKzN7YzwrhzGaSeDz1HlgHm4CaxJcvh9lBbBEBc4kli/YydzFycDALuEgcnSYC
+	EhYWCJA4/20tI4jNIqAqsWvzLXaQEl4BW4nHFw1BwrwCghI/JkNMZBbQkli/8zgThC0vsXnN
+	W7CJEgLqEo/+6kIs0pO4OWEmVLmIxL4X7xgnMArMQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILi
+	pPRcQ73ixNzi0rx0veT83E2M4JB8JrWDcWWDxSFGAQ5GJR7elaWSAUKsiWXFlbmHGCU4mJVE
+	eO9ISAUI8aYkVlalFuXHF5XmpBYfYpTmYFES5zX2/uovJJCeWJKanZpakFoEk2Xi4JRqYNyS
+	qBdhwTybccKrXXluv2belBN9+6Lep3hxzMG9yformZjePjXRK/ylkFLuwLFhmdD3fyzhtrYJ
+	08qvcRyWFEz2Ny/bNLVzM0fHdcttZen20qzv5qvWqG35OGt9seVu3S/bfILDVAwWP8n9o3jz
+	9PnP/df0jlueiLtXZ7XLVuTWUbkE6SUvs5VYijMSDbWYi4oTAYU5gYpFAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the POWER component driver of the Dialog DA9058 PMIC.
-This driver is just one component of the whole DA9058 PMIC driver.
-It depends on the core DA9058 MFD driver.
+This patch adds missing device pointer to struct pwm_chip. If the
+device pointer is NULL, pwmchip_add() will return error.
 
-Signed-off-by: Tony Olech (at Home) <tony@olech.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/power/Kconfig        |   10 +
- drivers/power/Makefile       |    1 +
- drivers/power/da9058_power.c |  403 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 414 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/da9058_power.c
+ drivers/pwm/pwm-samsung.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index e3a3b49..e0b4d34 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -8,6 +8,16 @@ menuconfig POWER_SUPPLY
+diff --git a/drivers/pwm/pwm-samsung.c b/drivers/pwm/pwm-samsung.c
+index d103865..e5187c0 100644
+--- a/drivers/pwm/pwm-samsung.c
++++ b/drivers/pwm/pwm-samsung.c
+@@ -225,6 +225,7 @@ static int s3c_pwm_probe(struct platform_device *pdev)
  
- if POWER_SUPPLY
- 
-+config BATTERY_DA9058
-+	tristate "DA9058 battery charger support"
-+	depends on MFD_DA9058
-+	help
-+	  Say Y here to enable support for the battery charger in the Dialog
-+	  DA9058 PMIC.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called da9058_power.
-+
- config POWER_SUPPLY_DEBUG
- 	bool "Power supply debug"
- 	help
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index b6b2434..8a4a049 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -14,6 +14,7 @@ obj-$(CONFIG_WM831X_POWER)	+= wm831x_power.o
- obj-$(CONFIG_WM8350_POWER)	+= wm8350_power.o
- obj-$(CONFIG_TEST_POWER)	+= test_power.o
- 
-+obj-$(CONFIG_BATTERY_DA9058)	+= da9058_power.o
- obj-$(CONFIG_BATTERY_DS2760)	+= ds2760_battery.o
- obj-$(CONFIG_BATTERY_DS2780)	+= ds2780_battery.o
- obj-$(CONFIG_BATTERY_DS2781)	+= ds2781_battery.o
-diff --git a/drivers/power/da9058_power.c b/drivers/power/da9058_power.c
-new file mode 100644
-index 0000000..5adfe07
---- /dev/null
-+++ b/drivers/power/da9058_power.c
-@@ -0,0 +1,403 @@
-+/*
-+ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/delay.h>
-+#include <linux/interrupt.h>
-+#include <linux/power_supply.h>
-+#include <linux/slab.h>
-+#include <linux/mfd/core.h>
-+
-+#include <linux/mfd/da9058/version.h>
-+#include <linux/mfd/da9058/registers.h>
-+#include <linux/mfd/da9058/core.h>
-+#include <linux/mfd/da9058/irq.h>
-+#include <linux/mfd/da9058/bat.h>
-+
-+struct da9058_power {
-+	struct da9058 *da9058;
-+	struct platform_device *pdev;
-+	struct power_supply battery;
-+
-+	int battery_type;
-+	u8 illegalbattery;
-+	u8 health;
-+	u16 bat_temp;
-+	u16 bat_voltage;
-+	u8 cal_capacity;
-+	int bat_low_limit;
-+	int use_automatic_adc;
-+	int temperature_points;
-+	struct da9058_temp_capacity (*temp_tables)[];
-+};
-+
-+static inline u8 bat_temp_reg_to_C(u16 value)
-+{
-+	return 55 - value;
-+}
-+
-+static inline u8 bat_mV_to_reg(u16 value)
-+{
-+	return ((value - 4100) / 100) << 4;
-+}
-+
-+static inline u8 bat_drop_mV_to_reg(u16 value)
-+{
-+	return ((value - 100) / 100) << 6;
-+}
-+
-+static inline u16 bat_reg_to_mV(u8 value)
-+{
-+	return (value * 100) + 4100;
-+}
-+
-+static inline u16 bat_drop_reg_to_mV(u8 value)
-+{
-+	return (value * 100) + 100;
-+}
-+
-+static inline u8 vbat_thr_mV_to_reg(u16 value)
-+{
-+	return (value - 2500) / 8;
-+}
-+
-+static inline u16 vddout_reg_to_mV(u8 value)
-+{
-+	return (value * 8) + 2500;
-+}
-+
-+static inline u16 volt_bit_reg_to_mV(u16 value)
-+{
-+	return (value * 2) + 2500;
-+}
-+
-+static inline u16 volt_reg_to_mV(u16 value)
-+{
-+	return (((value * 610 * 100) / 115) + 2400000) / 1000;
-+}
-+
-+static inline u16 volt_10bit_reg_to_mV(u16 value)
-+{
-+	return (((value * 1510 * 100) / 75) + 2400000) / 1000;
-+}
-+
-+static inline u8 bit8_mV_to_reg(u16 value)
-+{
-+	return (value * 2500) / 256000;
-+}
-+
-+/*
-+ *  to convert the ADC reading to milliVolts:
-+ *  0000MMMMMMMMLL00 for automatic conversion
-+ *  0000MMMMMMMMLLLL for manual conversion
-+ *  2.5Volts == 0x0000 --> 2500
-+ *  4.5Volts == 0x0FFF --> 4500
-+ */
-+static int da9058_read_battery_millivolts(struct da9058_power *power)
-+{
-+	struct da9058 *da9058 = power->da9058;
-+	int vbat;
-+	int ret;
-+
-+	ret = da9058_adc_read(da9058, DA9058_ADCMAN_MUXSEL_VBAT,
-+				power->use_automatic_adc, &vbat);
-+
-+	if (ret)
-+		return ret;
-+
-+	power->bat_voltage = (2500*0x0FFF + vbat*2000)/0x0FFF;
-+
-+	return 0;
-+}
-+
-+static int da9058_battery_temperature_tbat(struct da9058_power *power)
-+{
-+	struct da9058 *da9058 = power->da9058;
-+	int temp;
-+	int ret;
-+
-+	ret = da9058_adc_read(da9058, DA9058_ADCMAN_MUXSEL_TEMP,
-+				power->use_automatic_adc, &temp);
-+
-+	if (ret)
-+		return ret;
-+
-+	power->bat_temp = temp;
-+
-+	return 0;
-+}
-+
-+static u32 interpolated(u32 vbat_lower, u32 vbat_upper, u32 level_lower,
-+			u32 level_upper, u32 vbat)
-+{
-+	s32 temp;
-+
-+	/*apply formula y= yk + (x <96> xk) * (yk+1 <96> yk)/(xk+1 - xk) */
-+
-+	temp = ((level_upper - level_lower) * 1000)/(vbat_upper - vbat_lower);
-+	temp = level_lower + (((vbat - vbat_lower) * temp) / 1000);
-+
-+	return temp;
-+}
-+
-+static int da9058_get_bat_level(struct da9058_power *power)
-+{
-+	int ret;
-+
-+	u16 tbat;
-+	u16 vbat;
-+	u32 vbat_lower = 0, vbat_upper = 0, level_upper =
-+		0, level_lower, level = 0;
-+	u8 access_index = 0, index = 0, flag = 0;
-+
-+	ret = da9058_read_battery_millivolts(power);
-+	if (ret)
-+		return ret;
-+
-+	vbat = power->bat_voltage;
-+
-+	ret = da9058_battery_temperature_tbat(power);
-+	if (ret)
-+		return ret;
-+
-+	tbat = power->bat_temp;
-+
-+	do {
-+		if ((tbat + tbat) <=
-+			((*power->temp_tables)[access_index].temperature +
-+			(*power->temp_tables)[access_index + 1].temperature))
-+			break;
-+
-+	} while (++access_index < (power->temperature_points - 1));
-+
-+	if (vbat >= (*power->temp_tables)[access_index].capacity[0][0]) {
-+		power->cal_capacity = 100;
-+		return 0;
-+	}
-+	if (vbat <=
-+		(*power->temp_tables)[access_index].
-+		capacity[DA9058_LOOK_UP_TABLE_SIZE - 1][0]) {
-+		power->cal_capacity = 0;
-+		return 0;
-+	}
-+	flag = 0;
-+
-+	for (index = 0; index < (DA9058_LOOK_UP_TABLE_SIZE - 1); index++) {
-+		struct da9058_temp_capacity *t =
-+					&(*power->temp_tables)[access_index];
-+
-+		if ((vbat <= t->capacity[index][0])
-+			&& (vbat >= t->capacity[index + 1][0])) {
-+			vbat_upper = t->capacity[index][0];
-+			vbat_lower = t->capacity[index + 1][0];
-+			level_upper = t->capacity[index][1];
-+			level_lower = t->capacity[index + 1][1];
-+			flag = 1;
-+			break;
-+		}
-+	}
-+	if (!flag)
-+		return -EIO;
-+
-+	level = interpolated(vbat_lower, vbat_upper, level_lower, level_upper,
-+				vbat);
-+	power->cal_capacity = level;
-+	return 0;
-+}
-+
-+static int da9058_bat_check_health(struct da9058_power *power)
-+{
-+	int ret;
-+
-+	ret = da9058_read_battery_millivolts(power);
-+	if (ret) {
-+		power->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+		goto exit;
-+	}
-+
-+	if (power->bat_voltage < 2850) {
-+		power->health = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
-+		goto exit;
-+	}
-+
-+	ret = da9058_get_bat_level(power);
-+	if (ret) {
-+		power->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+		goto exit;
-+	}
-+
-+	if (power->health != POWER_SUPPLY_HEALTH_OVERHEAT) {
-+		if (power->illegalbattery)
-+			power->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+		else if (power->cal_capacity < power->bat_low_limit)
-+			power->health = POWER_SUPPLY_HEALTH_DEAD;
-+		else
-+			power->health = POWER_SUPPLY_HEALTH_GOOD;
-+	}
-+exit:
-+	return ret;
-+}
-+
-+static int da9058_bat_get_property(struct power_supply *psy,
-+					enum power_supply_property psp,
-+					union power_supply_propval *val)
-+{
-+	struct da9058_power *power = dev_get_drvdata(psy->dev->parent);
-+	int ret;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		ret = 0;
-+		if (power->illegalbattery)
-+			val->intval = 0;
-+		else
-+			val->intval = 1;
-+		break;
-+	case POWER_SUPPLY_PROP_TECHNOLOGY:
-+		ret = 0;
-+		val->intval = power->battery_type;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+		ret = da9058_read_battery_millivolts(power);
-+		val->intval = power->bat_voltage;
-+		break;
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		ret = da9058_bat_check_health(power);
-+		val->intval = power->health;
-+		break;
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		ret = da9058_get_bat_level(power);
-+		val->intval = power->cal_capacity;
-+		break;
-+	case POWER_SUPPLY_PROP_TEMP:
-+		ret = da9058_battery_temperature_tbat(power);
-+		val->intval = power->bat_temp;
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+static enum power_supply_property da9058_bat_props[] = {
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_TEMP,
-+};
-+
-+static __devinit int da9058_power_probe(struct platform_device *pdev)
-+{
-+	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
-+	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_power_pdata *power_pdata;
-+	struct da9058_power *power;
-+	struct power_supply *battery;
-+	int ret = 0;
-+
-+	if (cell == NULL) {
-+		ret = -ENODEV;
-+		goto exit;
-+	}
-+
-+	power_pdata = cell->platform_data;
-+
-+	if (power_pdata == NULL) {
-+		ret = -EINVAL;
-+		goto exit;
-+	}
-+
-+	dev_info(&pdev->dev, "BAT type=%d monitored by %s ADC conversion",
-+					power_pdata->battery_type,
-+		power_pdata->use_automatic_adc ? "automatic" : "manual");
-+
-+	power = devm_kzalloc(&pdev->dev, sizeof(struct da9058_power),
-+				GFP_KERNEL);
-+	if (!power) {
-+		ret = -ENOMEM;
-+		goto exit;
-+	}
-+
-+	platform_set_drvdata(pdev, power);
-+
-+	power->da9058 = da9058;
-+	power->pdev = pdev;
-+	power->battery_type = power_pdata->battery_type;
-+	power->bat_low_limit = power_pdata->bat_low_limit;
-+	power->use_automatic_adc = power_pdata->use_automatic_adc;
-+	power->temperature_points =
-+		power_pdata->lookup_tables->temperature_points;
-+	power->temp_tables = power_pdata->lookup_tables->temp_tables;
-+
-+	battery = &power->battery;
-+
-+	battery->name = "da9058-battery";
-+	battery->properties = da9058_bat_props;
-+	battery->num_properties = ARRAY_SIZE(da9058_bat_props);
-+	battery->get_property = da9058_bat_get_property;
-+	battery->use_for_apm = 1;
-+
-+	if (!power_pdata->use_automatic_adc) {
-+		u8 adc_ctrl;
-+		ret = da9058_reg_read(da9058, DA9058_ADCCONT_REG, &adc_ctrl);
-+		if (ret)
-+			goto err;
-+
-+		if (!(adc_ctrl & DA9058_ADCCONT_TEMPISRCEN)) {
-+			dev_err(&power->pdev->dev,
-+				"TEMP ADC must be a resistance\n");
-+			goto err;
-+		}
-+	}
-+
-+	ret = power_supply_register(&pdev->dev, battery);
-+	if (ret) {
-+		dev_err(&power->pdev->dev,
-+			"failed to register da9058-power driver: %d\n", ret);
-+		goto err;
-+	}
-+
-+	power->illegalbattery = 0;
-+
-+	goto exit;
-+
-+err:
-+	platform_set_drvdata(pdev, NULL);
-+exit:
-+	return ret;
-+}
-+
-+static __devexit int da9058_power_remove(struct platform_device *pdev)
-+{
-+	struct da9058_power *power = platform_get_drvdata(pdev);
-+
-+	power_supply_unregister(&power->battery);
-+	return 0;
-+}
-+
-+static struct platform_driver da9058_power_driver = {
-+	.probe = da9058_power_probe,
-+	.remove = __devexit_p(da9058_power_remove),
-+	.driver = {
-+		.name = "da9058-power",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+module_platform_driver(da9058_power_driver);
-+
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC Battery Driver");
-+MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-power");
+ 	/* calculate base of control bits in TCON */
+ 	s3c->tcon_base = id == 0 ? 0 : (id * 4) + 4;
++	s3c->chip.dev = &pdev->dev;
+ 	s3c->chip.ops = &s3c_pwm_ops;
+ 	s3c->chip.base = -1;
+ 	s3c->chip.npwm = 1;
 -- 
-end-of-patch for NEW DRIVER V1
+1.7.1
+
 
