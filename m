@@ -1,44 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab2HBE6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 00:58:43 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:55100 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400Ab2HBE6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 00:58:42 -0400
-Date: Thu, 2 Aug 2012 10:28:31 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@redhat.com,
-        srikar@linux.vnet.ibm.com, roland@hack.frob.com
-Subject: Re: [PATCH 2/2] x86/uprobes: implement x86 specific
-	arch_uprobe_*_step
-Message-ID: <20120802045831.GA8538@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20120730141638.GA5306@redhat.com> <1343735548-18101-1-git-send-email-bigeasy@linutronix.de> <1343735548-18101-2-git-send-email-bigeasy@linutronix.de> <20120801134337.GA3923@redhat.com>
+	id S1751910Ab2HBE7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 00:59:36 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2347 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab2HBE7f convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 00:59:35 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 01 Aug 2012 21:58:53 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Matthias Kaehlcke <matthias.list@kaehlcke.net>
+CC: "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 2 Aug 2012 10:28:47 +0530
+Subject: RE: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+Thread-Topic: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+Thread-Index: Ac1wIuWWehO3wnT7QvuaDDCPf/SBugARyLPQ
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDCAC4704@BGMAIL02.nvidia.com>
+References: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
+ <20120801201811.GK4701@darwin>
+In-Reply-To: <20120801201811.GK4701@darwin>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120801134337.GA3923@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080204-3534-0000-0000-00000B08BDE8
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 03:43:37PM +0200, Oleg Nesterov wrote:
+> -----Original Message-----
+> From: Matthias Kaehlcke [mailto:matthias.list@kaehlcke.net]
+> Sent: Thursday, August 02, 2012 1:48 AM
+> To: Venu Byravarasu
+> Cc: a.zummo@towertech.it; sameo@linux.intel.com;
+> broonie@opensource.wolfsonmicro.com; Laxman Dewangan;
+> kyle.manna@fuel7.com; sboyd@codeaurora.org; rtc-
+> linux@googlegroups.com; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+> 
+> hi,
+> 
+> El Wed, Aug 01, 2012 at 11:52:37AM +0530 Venu Byravarasu ha dit:
+> 
+> > TPS65910 PMIC is a MFD with RTC as one of the device.
+> > Adding RTC driver for supporting RTC device present
+> > inside TPS65910 PMIC.
+> >
+> > Only support for RTC alarm is implemented as part of this patch.
+> >
+> > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> > ---
+> 
+> ...
+> 
+> > +static irqreturn_t tps65910_rtc_interrupt(int irq, void *rtc)
+> > +{
+> > +	struct device *dev = rtc;
+> > +	unsigned long events = 0;
+> > +	struct tps65910 *tps = dev_get_drvdata(dev->parent);
+> > +	struct tps65910_rtc *tps_rtc = dev_get_drvdata(dev);
+> >
+> > ...
+> >
+> > +static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
+> > +{
+> >
+> > ...
+> >
+> > +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+> > +		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
+> > +		"rtc-tps65910", &pdev->dev);
+> > +	if (ret < 0) {
+> > +		dev_err(&pdev->dev, "IRQ is not free.\n");
+> > +		return ret;
+> > +	}
+> > +	device_init_wakeup(&pdev->dev, 1);
+> > +
+> > +	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+> > +		&tps65910_rtc_ops, THIS_MODULE);
+> > +	if (IS_ERR(tps_rtc->rtc)) {
+> > +		ret = PTR_ERR(tps_rtc->rtc);
+> > +		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
+> > +		return ret;
+> > +	}
+> > +
+> > +	platform_set_drvdata(pdev, tps_rtc);
+> 
+> the interrupt should be requested after this call. otherwise
+> tps65910_rtc_interrupt() could be executed before the RTC device is
+> registered and the driver data set. normally this shouldn't happen as
+> the RTC interrupts are disabled after reset, but the interrupts could
+> have been enabled for example by the bootloader
 
-...
+Hi Matthias,
 
-> However, I am not sure we can trust it. We are in kernel mode,
-> DEBUGCTLMSR_BTF can be cleared by kprobes (Ananth, please correct me).
-> I think we need to check TIF_BLOCKSTEP.
+Thanks for your comments.
+All pending RTC interrupts are being cleared in probe, before enabling RTC itself.
+Hence chances of stray interrupts from boot loader cannot cause any trouble here.
 
-Kprobes resets DEBUGCTLMSR_BTF only if we have to single-step in
-hardware. It puts the flag back if TIF_BLOCKSTEP is set, after the
-single-step is complete; so yes, a better check is TIF_BLOCKSTEP.
+The only possible way of getting interrupt by kernel driver is by enabling 
+tps65910_rtc_alarm_irq_enable() && setting alarm time using tps65910_rtc_set_alarm.
+However before probe gets completed as these two APIs will not get 
+called together by the client, I do not see any false interrupt getting generated.
 
-Ananth
+Please let me know if I miss something.
 
+Thanks,
+Venu
+> 
+> best regards
+> 
+> --
+> Matthias Kaehlcke
+> Embedded Linux Developer
+> Amsterdam
+> 
+>       Anyone who has never made a mistake has never tried anything new
+>                             (Albert Einstein)
+>                                                                  .''`.
+>     using free software / Debian GNU/Linux | http://debian.org  : :'  :
+>                                                                 `. `'`
+> gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
