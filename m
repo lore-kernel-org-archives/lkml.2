@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab2HBWQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 18:16:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39926 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab2HBWQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 18:16:30 -0400
-Date: Fri, 3 Aug 2012 00:16:22 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sparc64: do not clobber personality flags in
- sys_sparc64_personality()
-In-Reply-To: <20120802161917.GA5493@merkur.ravnborg.org>
-Message-ID: <alpine.LNX.2.00.1208030014410.4820@pobox.suse.cz>
-References: <alpine.LNX.2.00.1208012204140.14910@pobox.suse.cz> <alpine.LNX.2.00.1208020912130.14910@pobox.suse.cz> <20120802161917.GA5493@merkur.ravnborg.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753700Ab2HBWUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 18:20:32 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:53863 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab2HBWU2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 18:20:28 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.DEB.2.00.1208020150240.4177@utopia.booyaka.com>
+References: <1342466485-1050-1-git-send-email-omar.luna@linaro.org>
+	<1342466485-1050-3-git-send-email-omar.luna@linaro.org>
+	<alpine.DEB.2.00.1208020150240.4177@utopia.booyaka.com>
+Date: Thu, 2 Aug 2012 17:20:27 -0500
+Message-ID: <CALLhW=6-b+kjfG-u3+uXiD64UwoNEdufjJKu0Mx-sGWp6n9csg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: OMAP: hwmod: revise deassert sequence
+From: Omar Ramirez Luna <omar.luna@linaro.org>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Kevin Hilman <khilman@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Aug 2012, Sam Ravnborg wrote:
+Hi.
 
-> > >From 4f000eda5917ceecb03767962026cc6a390b8216 Mon Sep 17 00:00:00 2001
-> > From: Jiri Kosina <jkosina@suse.cz>
-> > Date: Wed, 1 Aug 2012 21:10:51 +0200
-> > Subject: [PATCH 4/4] sparc64: do not clobber personality flags in sys_sparc64_personality()
-> > 
-> > There are multiple errors in how sys_sparc64_personality() handles
-> > personality flags stored in top three bytes.
-> > 
-> > - directly comparing current->personality against PER_LINUX32 doesn't work
-> >   in cases when any of the personality flags stored in the top three bytes
-> >   are used.
-> > - directly forcefully setting personality to PER_LINUX32 or PER_LINUX
-> >   discards any flags stored in the top three bytes
-> > 
-> > Fix the first one by properly using personality() macro to compare only
-> > PER_MASK bytes.
-> > Fix the second one by setting only the bits that should be set, instead of
-> > overwriting the whole value.
-> 
-> Hi Jiri.
-> 
-> Can you have a quick look at this too:
-> arch/sparc/include/asm/elf_32.h:#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> 
-> From your other comments it looks wrong. But I have not digged into 
-> this.
+On 2 August 2012 02:52, Paul Walmsley <paul@pwsan.com> wrote:
+> On Mon, 16 Jul 2012, Omar Ramirez Luna wrote:
+>
+>> For a reset sequence to complete cleanly, a module needs its
+>> associated clocks to be enabled, otherwise the timeout check
+>> in prcm code can print a false failure (failed to hardreset)
+>> that occurs because the clocks aren't powered ON and the status
+>> bit checked can't transition without them.
+>>
+>> Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
+>
+> Is enabling the clocks sufficient?
 
-It actually seems like much more architectures than just sparc are 
-clobbering upper bytes of personality upon exec(). Thanks for pointing 
-that out, it'd be worthwile to go over those and fix them up. I am adding 
-that to my TODO.
+During my testing it seemed enough, besides it looks clk framework is
+doing the same as _omap4_enable_module.
 
-Thanks,
+> Or do we also need to enable the
+> IP block, e.g. by calling
+>
+>         if (soc_ops.enable_module)
+>                 soc_ops.enable_module(oh);
+>
+> as we do on OMAP4+ in _enable() ?
 
--- 
-Jiri Kosina
-SUSE Labs
+Basically this is a call to _omap4_enable_module, and the latter will
+"Enable the modulemode inside CLKCTRL".
+
+However, _enable_clocks path which ends calling omap2_dflt_clk_enable
+does the same thing with its clk->enable_reg field.
+
+So in _enable:
+
+        _enable_clocks(oh);
+        if (soc_ops.enable_module)
+                soc_ops.enable_module(oh);
+
+The enable_module part seems redundant to me, since the module should
+be already enabled by the first call to _enable_clocks.
+
+Regards,
+
+Omar
