@@ -1,118 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab2HBKaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 06:30:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50402 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754161Ab2HBKaI (ORCPT
+	id S1754364Ab2HBKaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 06:30:10 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60114 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754069Ab2HBKaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 06:30:08 -0400
-Date: Thu, 2 Aug 2012 11:30:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [NEW DRIVER V1 7/7] DA9058 REGULATOR driver
-Message-ID: <20120802103005.GH29157@opensource.wolfsonmicro.com>
-References: <201208020849.q728nio0007834@latitude.olech.com>
+	Thu, 2 Aug 2012 06:30:07 -0400
+Date: Thu, 2 Aug 2012 11:30:02 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Meredydd Luff <meredydd@senatehouse.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Subject: Re: [PATCH] [RFC] syscalls,x86: Add execveat() system call (v2)
+Message-ID: <20120802103001.GJ6481@ZenIV.linux.org.uk>
+References: <1343859049-3632-1-git-send-email-meredydd@senatehouse.org>
+ <5019B36A.4030604@zytor.com>
+ <CAD=T17Esguer01OsrxMtqEcHKZ-Ovg05+MxSdF7NhXENsUubgg@mail.gmail.com>
+ <5019BC0E.4010109@zytor.com>
+ <20120802065557.GI6481@ZenIV.linux.org.uk>
+ <CAD=T17Gkryua5TQW5h18kCu+yiViuVv6NyxtMw3C9we0RWzmKQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201208020849.q728nio0007834@latitude.olech.com>
-X-Cookie: Your step will soil many countries.
+In-Reply-To: <CAD=T17Gkryua5TQW5h18kCu+yiViuVv6NyxtMw3C9we0RWzmKQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 09:48:58AM +0100, Anthony Olech wrote:
+On Thu, Aug 02, 2012 at 10:14:53AM +0100, Meredydd Luff wrote:
+> On Thu, Aug 2, 2012 at 7:55 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >> This means you need an x32 version of the function -- execve
+> >> unfortunately is one of the few system calls which require a special x32
+> >> version (although it's a simple wrapper around sys32_execve).  See
+> >> sys_x32_execve.
+> >
+> > I *really* strongly object to doing that thing before we sanitize the
+> > situation with sys_execve().
+> 
+> "That thing" = "creating an x32 entry stub", or "merging execveat() at all"?
+> 
+> (snip)
+> > The thing is, there's essentially no reason to have more than one
+> > implementation.  What they are (badly) doing is "we need to find
+> > pt_regs to pass to do_execve(), the thing we are after has to be near
+> > our stack frame, so let's try to get to it that way".
+> 
+> Hang on...it's not just sys_execve that fits that description, is it?
+> You seem to be describing every call that needs a pt_regs parameter,
+> which at a glance is anything with a stub_ or PTREGSCALL in
+> arch/x86/kernel/entry_{32,64}.S. That's: clone, fork, vfork,
+> sigaltstack, iopl, execve, sigreturn, rt_sigreturn, vm86, vm86old.
+> Most of those are handled by a common PTREGSCALL macro, but there are
+> a few that get special treatment (different set on each arch - on
+> x86-64 it's execve and rt_sigreturn ; on i386 it's just clone).
+> 
+> Is there's something special about execve in particular, or do you
+> want to overhaul all the ptregscalls?
 
-Overall the big issue here is that the driver isn't making much use of
-framework features, there should be a *lot* less code here.
+You are looking at that from the wrong side; it's not that this
+set of syscalls on x86 has the same kind of wrapper - it's that
+on different architectures the kludges are seriously different
+and fairly brittle.  sigaltstack(), BTW, doesn't need to be
+arch-specific at all - if you check what its pt_regs argument
+is used for, we just need something like current_user_stack_pointer()
+and that's it.  It's a different patch series, anyway.
 
-> +static unsigned int da9058_regulator_val_to_mvolts(unsigned int val,
-> +						struct regulator_dev *rdev)
+There's a difference between "here's the syscall implementation,
+here's its hookup for x86, let other architectures update their
+syscall tables" and "here's the implementation in arch/x86 and its
+hookup for x86; let other architectures port it in whatever way
+they need".  The latter is a recipe for breakage - we'd been
+through that kind of story quite a few times.
 
-regualtor_map_voltage_linear()
+Out of that set, vm86/vm86old/iopl are genuine x86-only syscalls.
+sigreturn and rt_sigreturn are weird, subtle and, sadly,
+unmergable - syscall restart prevention logics is different
+enough to make it not feasible at the moment.  It's a serious
+source of PITA, BTW - quite a few of those had the same bugs,
+years after they'd been discovered and fixed on a subset of
+architectures.  Been there, fixed some of those, the latest
+batch this April...  fork/vfork/clone is an interesting
+question - IIRC, there are seriously subtle issues of some
+sort on sparc, but I don't remember details right now.
 
-> +	ret = da9058_reg_read(da9058, regulator->control_register, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (regulator->control_enable_mask&val)
-> +		return true;
-> +	else
-> +		return false;
+Really, go and grep for do_execve; most of the callers will
+be in execve(2) implementations.  Look at them carefully -
+while some get pt_regs from some wrapper, there's a bunch
+that does that manually in C.  "Ugly" doesn't even begin
+to describe what's being done...
 
-regulator_is_enabled_regmap().
+FWIW, I've just pushed (completely untested) arm and alpha
+parts of what I described into signal.git#execve2; x86 is
+next.  Note that after that sys_execve() is identical on
+converted architectures and can be merged; ditto for
+kernel_execve().  After I do x86 counterpart, I'll
+take those guys to fs/exec.c under ifdef for new __ARCH_HAS_...
+(and define it on already converted ones, obviously).
+Then your patch goes there, except that implementation
+gets put into fs/exec.c, under the same ifdef.  And with
+current_pt_regs() used instead of the extra argument,
+of course.  From that point on it can be used on any converted
+architecture.  And conversion consists of
+	* providing ret_from_kernel_execve() that would
+put pt_regs where they belong and return to userland.
+	* providing current_pt_regs(), with default being
+just task_pt_regs(current).
+	* defining that new __ARCH_HAS_...
+	* removing sys_execve()/kernel_execve() implementations;
+the ones in fs/exec.c will work just fine.
+Can be done at leisure, architecture by architecture.  It's
+obviously the next cycle fodder - we have only a couple of
+days left of this merge window, anyway.
 
-> +static int da9058_regulator_set_voltage(struct regulator_dev *rdev,
-> +					int min_uV, int max_uV,
-> +					unsigned *selector)
-
-Should be set_voltage_sel().
-
-> +	if (regulator->ramp_register && regulator->ramp_enable_mask)
-> +		ret =
-> +			da9058_set_bits(da9058, regulator->ramp_register,
-> +					regulator->ramp_enable_mask);
-
-What is this doing?
-
-> +	if (regulator->control_voltage_step == 0) {
-> +		if (da9058_regulator_is_enabled(rdev))
-> +			return regulator->fixed_voltage;
-> +		else
-> +			return 0;
-> +	}
-
-No, don't do stuff like this - implement a separate op (or just use the
-standard ops in this case).
-
-> +
-> +	ret = da9058_reg_read(da9058, regulator->control_register, &val);
-> +	if (ret)
-> +		return ret;
-
-This should just be regulator_get_voltage_sel_regmap().
-
-> +static int da9058_regulator_enable(struct regulator_dev *rdev)
-> +{
-
-regulator_enable_regmap() and similarly for all the others.
-
-> +static unsigned int da9058_regulator_get_mode(struct regulator_dev *rdev)
-> +{
-> +	return REGULATOR_MODE_NORMAL;
-> +}
-
-If you don't support modes don't implement the op.
-
-> +	regulator_pdata = cell->platform_data;
-
-> +	if (regulator_pdata == NULL) {
-> +		ret = -EINVAL;
-> +		goto exit;
-> +	}
-
-The driver should be able to start without any platform data.
-
-> +	dev_info(&pdev->dev, "Starting REGULATOR %d = %s\n",
-> +					regulator_pdata->regulator_id,
-> +					regulator_pdata->regulator_name);
-
-There's a couple of issues here.  One is that you shouldn't be logging
-anything here, log messages on driver load are only useful if you're
-saying something you've identified from the hardware - for example,
-logging the device revision on startup is very helpful.  The other is
-that you shouldn't need to supply a name and ID as platform data since
-that's exactly how the platform bus binds drivers.
-
-> +	regulator->control_voltage_step = regulator_pdata->control_voltage_step;
-> +	regulator->control_register = regulator_pdata->control_register;
-> +	regulator->control_enable_mask = regulator_pdata->control_enable_mask;
-> +	regulator->ramp_register = regulator_pdata->ramp_register;
-> +	regulator->ramp_enable_mask = regulator_pdata->ramp_enable_mask;
-> +	regulator->fixed_voltage = regulator_pdata->fixed_voltage;
-
-Your MFD didn't visibly provide any of this stuff, though I may have
-missed it, and honestly I'd expect most of this to be in the driver.
+I really think that this pair of primitives is the right
+way to deal with execve mess.
