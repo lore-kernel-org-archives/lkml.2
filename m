@@ -1,66 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab2HBRcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:32:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52743 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab2HBRcf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:32:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <87fw851c3d.fsf@xmission.com>
-References: <20120731182330.GD21292@google.com> <50197348.9010101@gmail.com>
- <20120801182112.GC15477@google.com> <50197460.8010906@gmail.com>
- <20120801182749.GD15477@google.com> <50197E4A.7020408@gmail.com>
- <20120801202432.GE15477@google.com> <5019B0B4.1090102@gmail.com>
- <20120801224556.GF15477@google.com> <501A4FC1.8040907@gmail.com>
- <20120802103244.GA23318@leaf> <501A633B.3010509@gmail.com>
- <87txwl1dsq.fsf@xmission.com> <501AAC26.6030703@gmail.com> <87fw851c3d.fsf@xmission.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 2 Aug 2012 10:32:13 -0700
-X-Google-Sender-Auth: 5fzXt7yObuOw3LMQBOrcY2141V8
-Message-ID: <CA+55aFw_dwO5ZOuaz9eDxgnTZFDGVZKSLUTm5Fn99faALxxJRQ@mail.gmail.com>
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753374Ab2HBRgB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:36:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39799 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115Ab2HBRgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 13:36:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="180833566"
+Message-ID: <1343929200.25013.197.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "adrian.hunter@intel.com" <adrian.hunter@intel.com>,
+        "Heinz.Egger@linutronix.de" <Heinz.Egger@linutronix.de>,
+        "thomas.wucher@linutronix.de" <thomas.wucher@linutronix.de>,
+        "shmulik.ladkani@gmail.com" <shmulik.ladkani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Marius.Mazarel@ugal.ro" <Marius.Mazarel@ugal.ro>,
+        "nyoushchenko@mvista.com" <nyoushchenko@mvista.com>
+Date: Thu, 02 Aug 2012 20:40:00 +0300
+In-Reply-To: <501AB2C8.9010805@am.sony.com>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	  <1343916747.25013.112.camel@sauron.fi.intel.com>
+	  <20120802161512.5ac7a303@spider.haslach.nod.at>
+	  <1343917741.25013.114.camel@sauron.fi.intel.com>
+	  <20120802165132.1bf1e5d7@spider.haslach.nod.at>
+	  <1343924267.25013.156.camel@sauron.fi.intel.com>
+	  <20120802183210.7076aa48@spider.haslach.nod.at>
+	 <1343925930.25013.163.camel@sauron.fi.intel.com>
+	 <501AB2C8.9010805@am.sony.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-SX9v6z9FZTOzHDZvr2e0"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 2, 2012 at 9:40 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->
-> For a trivial hash table I don't know if the abstraction is worth it.
-> For a hash table that starts off small and grows as big as you need it
-> the incent to use a hash table abstraction seems a lot stronger.
 
-I'm not sure growing hash tables are worth it.
+--=-SX9v6z9FZTOzHDZvr2e0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-In the dcache layer, we have an allocated-at-boot-time sizing thing,
-and I have been playing around with a patch that makes the hash table
-statically sized (and pretty small). And it actually speeds things up!
+Hi Tim,
 
-A statically allocated hash-table with a fixed size is quite
-noticeably faster, because you don't have those extra indirect reads
-of the base/size that are in the critical path to the actual lookup.
-So for the dentry code I tried a small(ish) direct-mapped fixed-size
-"L1 hash" table that then falls back to the old dynamically sized one
-when it misses ("main memory"), and it really does seem to work really
-well.
+On Thu, 2012-08-02 at 10:03 -0700, Tim Bird wrote:
+> I'm don't understand what "UBI liability" is.  Can you please clarify?
+> What breaks if the PEBs get consumed?
 
-The reason it's not committed in my tree is that the filling of the
-small L1 hash is racy for me right now (I don't want to take any locks
-for filling the small one, and I haven't figured out how to fill it
-racelessly without having to add the sequence number to the hash table
-itself, which would make it annoyingly bigger).
+let me try. Let's forget about bad blocks and assume we are talking
+about NOR flash. For simplicity.
 
-Anyway, what I really wanted to bring up was the fact that static hash
-tables of a fixed size are really quite noticeably faster. So I would
-say that Sasha's patch to make *that* case easy actually sounds nice,
-rather than making some more complicated case that is fundamentally
-slower and more complicated.
+Let's also first forget about fastmap so far and talk about the current
+design.
 
-                      Linus
+Suppose you have 100 PEBs on your flash. Suppose UBI reserves 10 for its
+internal needs (volume table, etc). 90 PEBs are available to the user.
+
+User now can create one or many volumes, but the overall size of the
+volumes cannot be larger than 90 LEBs.
+
+This means that UBI guarantees that you can always fill all volumes with
+data there will always be enough PEBs to map to. This is UBI liability.
+
+UBI will not allow you to create a volume of 100 LEBs because in this
+case it will not be able to guarantee that all LEBs will be writable.
+
+I have invented this "liability" term on the spot actually. It basically
+means what UBI already "promised", what it reserved an put aside.
+
+Now let's add fastmap support to the picture.
+
+Suppose fastmap took another 10 PEBs and now we have 80 PEBs for the
+user.
+
+The user can create a volume of 80 LEBs in size. And UBI has to
+guarantee that the user can at any point of time fill all of them with
+data.
+
+This means that fastmap in no circumstances can grab any more than 10
+PEBs, because they are all reserved, UBI liability is 80 PEBs.
+
+On other words, fastmap has to know how much PEBs it needs at the UBI
+initialization time, and reserve them. The _maximum_ value.
+
+The same way other UBI sub-systems do. E.g., the volume table code
+reserves 2 PEBs, because this is the maximum it needs at any point of
+time. The WL subsystem reserves 1 PEB.
+
+Of course this is not about reserving any specific PEB, this is just
+accounting - we have a couple of variable for reserved PEBs count.
+
+So let's return to the error messages I spotted. They say that fastmap
+needs a PEB but cannot find one. The flash is nandsim and has no
+badblocks. Why fastmap did not find one? Because it did not reserve
+enough. And UBI tests create volumes of maximum possible size and fill
+it with data, so all available PEBs are mapped and thus, used.
+
+What this means that the following situation is possible: the UBI volume
+is not fully filled yet and not all LEBs are mapped, so there are
+available PEBs, and fastmap successfully grows and reduces the amount of
+available PEBs. And when the user writes more data, he gets -ENOSPC.
+
+And this is basically the problem I indicated.
+
+To make my description complete, let's add NAND to the picture. We
+simply reserve 2% (by default, it is configurable) of PEBs for bad
+blocks handling. This is because vendors typically say that this is the
+maximum amount for the flash life-time.
+
+If NAND wears-out a lot, and we run out of reserved PEBs, we switch to
+R/O mode, because we cannot anymore keep our "promise", the liability.
+
+You can look at it this way. If you create an UBI volume, and mount it
+with UBIFS, you usually expect that all the free file-system space is
+available to you.
+
+You probably will be disappointed if you write your file and get -ENOSPC
+because fastmap does grew and consumed a PEB which which was promised to
+your volume.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-SX9v6z9FZTOzHDZvr2e0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQGrtwAAoJECmIfjd9wqK0ADwP/jrPY3wUfe+BLiFmOT02D9Ge
+EDmiWbxcwPUAxf+qQ2IWJDbaXVVYjKSJg+5Sord/TIMOae0cn5MDzoinl5eQ3jjb
+K1w81j7TBKDwCFI67lv3hvJc2G1ZqM5CVLm3Ie20m0X5Vn7FUwfHIQqAs5MF5y1b
+ls5DS/e48xf42kmTKHX3FQjj6cc2DLA37aHnkswsF1kkDRSAenXUF6+YFqxjavUp
+pHmxOfbRHmEtdNFHBc4/uT9ElTGhTz98r0OlrMybFu8PI5S1VpOMI0a4FEadgLCu
+AUjxlOCDnoXwJHs7AnwyHtF9c/Hj9JLZp2U2heMj73jsy5S877+c0grJ9frrtX++
+jxreZDeDLGkog0Czs+zpV87qznMFNXZaGxtmheY6ueMVBOgqgFFAxjZxKKvsdwTi
+S3BgWnFErAEbFjj+ajf8S0voymA41RAOfR2CwO3cg77sHJtYwoQ9s3T87+3aoZ7j
+j6jXsNlbc3HIOv8coSPCsNDlO1igdDvF2wlhLUwfKymGyC2a1cuDcieZprbCFUxb
+G70XeHBO2z1iUaWdrUHwndOW3yB49vEbTv6BXFTz2v3Dj2sgSSrtPGk6b18HFRNS
+hzOvQkW2ozhaVni4UsCm1LbT7Mqn2N1nQfz/wiBpuEkWqt7Ohy9ChuztPIUpyXSo
+6AG+CyrjpSJHTkAQn72r
+=ikuX
+-----END PGP SIGNATURE-----
+
+--=-SX9v6z9FZTOzHDZvr2e0--
+
