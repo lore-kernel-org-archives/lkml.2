@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab2HBQiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:38:00 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:39268 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab2HBQh6 (ORCPT
+	id S1754117Ab2HBQjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:39:04 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:45016 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753099Ab2HBQjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:37:58 -0400
-Date: Thu, 2 Aug 2012 17:37:52 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 2 (drivers/platform/x86/apple-gmux.c)
-Message-ID: <20120802163752.GA29701@srcf.ucam.org>
-References: <20120802141505.d30da7f7113e955679383acb@canb.auug.org.au>
- <501AA5A8.1070607@xenotime.net>
- <20120802161504.GG32395@thinkpad-t410>
- <501AA892.70207@xenotime.net>
- <20120802163154.GH32395@thinkpad-t410>
+	Thu, 2 Aug 2012 12:39:02 -0400
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Date: Thu, 02 Aug 2012 18:38:58 +0200
+From: "Witold Szczeponik" <Witold.Szczeponik@gmx.net>
+In-Reply-To: <20120802163225.6330@gmx.net>
+Message-ID: <20120802163858.19140@gmx.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120802163154.GH32395@thinkpad-t410>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+References: <20120802163225.6330@gmx.net>
+Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
+To: bhelgaas@google.com, lenb@kernel.org
+X-Authenticated: #787645
+X-Flags: 0001
+X-Mailer: WWW-Mail 6100 (Global Message Exchange)
+X-Priority: 3
+X-Provags-ID: V01U2FsdGVkX1+f3olm6Yifal1XzzKOt9dW1wI8p9UGrMnr3Gga6s
+ yyg9qyoTiK89cWwDsXBcR6HmVzW0r6KNJnNw== 
+Content-Transfer-Encoding: 8bit
+X-GMX-UID: dchocB5meSEqM9xnZ3QhA2t+IGRvbwDX
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 11:31:54AM -0500, Seth Forshee wrote:
+Hi all, 
 
-> The functions in question are built or not based off of ACPI_VIDEO,
-> which in turn depends on ACPI. So if ACPI=n, then ACPI_VIDEO=n and you
-> can't configure APPLE_GMUX=(m|y). Is that right, or am I missing
-> something?
+the original mail should have been sent out as a reply to 
+https://lkml.org/lkml/2012/7/29/85, but it seems as if I clicked the
+wrong button.  
 
-https://lkml.org/lkml/2012/7/2/257 has 
+Apologies for any inconvenience. 
 
-depends on ACPI_VIDEO=n || ACPI_VIDEO
-
-which means apple_gmux can be built if ACPI_VIDEO is n.
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+--- Witold
