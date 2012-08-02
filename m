@@ -1,232 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab2HBUlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:41:09 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:47379 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750949Ab2HBUlG (ORCPT
+	id S1751793Ab2HBUmI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:42:08 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45419 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab2HBUmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:41:06 -0400
-Date: Thu, 2 Aug 2012 13:41:55 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-Cc: Rob Landley <rob@landley.net>, Milton Miller <miltonm@bga.com>,
-        Borislav Petkov <bp@alien8.de>, Cong Wang <xiyou.wangcong@gmail.com>,
-        Jan Engelhardt <jengelh@inai.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening
- port
-Message-ID: <20120802134155.791cfcce@jbarnes-desktop>
-In-Reply-To: <gisjc5hvun.fsf@mx10.gouders.net>
-References: <gilii4nnxb.fsf@mx10.gouders.net>
-	<kernel-nc-hints@mdm.bga.com>
-	<501937F7.2070600@landley.net>
-	<gi3946lin5.fsf@mx10.gouders.net>
-	<gisjc5hvun.fsf@mx10.gouders.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Thu, 2 Aug 2012 16:42:04 -0400
+X-Originating-IP: 217.70.178.143
+X-Originating-IP: 173.246.103.110
+Date: Thu, 2 Aug 2012 13:41:57 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+Message-ID: <20120802204157.GB7916@jtriplet-mobl1>
+References: <5019B0B4.1090102@gmail.com>
+ <20120801224556.GF15477@google.com>
+ <501A4FC1.8040907@gmail.com>
+ <20120802103244.GA23318@leaf>
+ <501A633B.3010509@gmail.com>
+ <501A7AD3.7000008@gmail.com>
+ <20120802161556.GA25572@leaf>
+ <501AAF47.3090708@gmail.com>
+ <20120802174457.GA6251@jtriplet-mobl1>
+ <501ABEE2.10007@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501ABEE2.10007@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 02 Aug 2012 22:39:28 +0200
-Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
-
-> Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> writes:
-> 
-> > Rob Landley <rob@landley.net> writes:
-> >
-> >> On 07/29/2012 03:40 AM, Milton Miller wrote:
-> >>> [adding Rob as Doc maintanier]
-> >>> 
-> >>> On Sat, 28 Jul 2012 about 11:08:16 -0000, Dirk Gouders wrote:
-> >>>> Borislav Petkov <bp@alien8.de> writes:
-> >>>>
-> >>>>> On Fri, Jul 27, 2012 at 11:24:53AM +0200, Dirk Gouders wrote:
-> >>>>>> Cong Wang <xiyou.wangcong@gmail.com> writes:
-> >>>>>>
-> >>>>>>> On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
-> >>>>>>> <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
-> >>>>>>>> Hi Jesse,
-> >>>>>>>>
-> >>>>>>>> I would like to ask you to check if the documentation of "nc" in
-> >>>>>>>> netconsole.txt is still correct.  I tried two different netcat packages
-> >>>>>>>> and both require "-p" to specify the listening port.  I am wondering if
-> >>>>>>>> that changed after the use of "nc" has been documented.
-> >>>>>>>
-> >>>>>>> On Fedora 16, `nc -u -l <port number>` works fine.
-> >>>>>>
-> >>>>>> Thanks for checking that.
-> >>>>>>
-> >>>>>> If the information I found is correct, Fedora uses OpenBSD's nc
-> >>>>>> codebase.  The two netcat packages I tested on a Gentoo system differ in
-> >>>>>> requiring the -p switch for the port specification.
+On Thu, Aug 02, 2012 at 07:54:42PM +0200, Sasha Levin wrote:
+> On 08/02/2012 07:44 PM, Josh Triplett wrote:
+> > On Thu, Aug 02, 2012 at 06:48:07PM +0200, Sasha Levin wrote:
+> >> On 08/02/2012 06:15 PM, Josh Triplett wrote:
+> >>> On Thu, Aug 02, 2012 at 03:04:19PM +0200, Sasha Levin wrote:
+> >>>> On 08/02/2012 01:23 PM, Sasha Levin wrote:
+> >>>>>> #define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
+> >>>>> The limitation of this approach is that the struct hash_table variable must be 'static', which is a bit limiting - see for example the use of hashtable in 'struct user_namespace'.
 > >>>>>
-> >>>>> So say exactly that in the doc: that the *BSD's version of nc doesn't
-> >>>>> need the port number specified with '-p' and you're covered.
-> >>>> OK, I tried that in the attached patch.
-> >>>> I'm not sure if every exeption needs to/should be documented, though.
 > >>>>
-> >>>> >From 3cdeac3e814471053129145c5fa8391acb365fd8 Mon Sep 17 00:00:00 2001
-> >>>> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-> >>>> Date: Sat, 28 Jul 2012 12:32:49 +0200
-> >>>> Subject: [PATCH] netconsole.txt: non-BSD versions of nc(1) require '-p'
-> >>>>  switch
+> >>>> What if we just use two possible decelerations? One of static structs and one for regular ones.
 > >>>>
-> >>>> Gentoo for example uses non-BSD versions of nc(1) which require
-> >>>> the '-p' switch to specify the listening port.
+> >>>> struct hash_table {
+> >>>>         size_t bits;
+> >>>>         struct hlist_head buckets[];
+> >>>> };
 > >>>>
-> >>>> ---
-> >>>> Documentation/networking/netconsole.txt |    3 ++-
-> >>>>  1 files changed, 2 insertions(+), 1 deletions(-)
+> >>>> #define DEFINE_HASHTABLE(name, bits)                                    \
+> >>>>         union {                                                         \
+> >>>>                 struct hash_table name;                                 \
+> >>>>                 struct {                                                \
+> >>>>                         size_t bits;                                    \
+> >>>
+> >>> This shouldn't use "bits", since it'll get expanded to the macro
+> >>> argument.
+> >>>
+> >>>>                         struct hlist_head buckets[1 << bits];           \
+> >>>>                 } __name;                                               \
+> >>>
+> >>> __##name
+> >>>
+> >>>>         }
+> >>>>
+> >>>> #define DEFINE_STATIC_HASHTABLE(name, bit)                              \
+> >>>>         static struct hash_table name = { .bits = bit,                  \
+> >>>>                 .buckets = { [0 ... (bit - 1)] = HLIST_HEAD_INIT } }
+> >>>
+> >>> You probably wanted to change that to [0 ... ((1 << bit) - 1)] , to
+> >>> match DEFINE_HASHTABLE.
 > >>
-> >> Did this ever resolve to a specific recommended patch? The one at the
-> >> start of the thread:
+> >> I wrote it by hand and didn't compile test, will fix all of those.
 > >>
-> >>  http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/01995.html
+> >>> Since your definition of DEFINE_HASHTABLE would also work fine when used
+> >>> statically, why not just always use that?
+> >>>
+> >>> #define DEFINE_STATIC_HASHTABLE(name, bits) static DEFINE_HASHTABLE(name, bits) = { .name.bits = bits }
 > >>
-> >> Apparently isn't it...?
-> >
-> > Sorry for the delay.
-> > I tested the situation on a few distributions and am still thinking
-> > about a proper way to write it in a way without netconsole.txt becoming
-> > a kind of "netcat.txt".
-> >
-> > I would be glad about comments to what I currently have -- also, because
-> > I am not a native English speaker:
-> >
-> > ------------------------------------------------------------------------
-> > The remote host can run syslogd or netcat to receive the kernel
-> > messages.  On distributions using a BSD-based netcat version
-> > (e.g. Fedora, openSUSE and Ubuntu) the listening port must be
-> > specified without the -p switch:
-> >
-> > 'nc -u -l -p <port>' / 'nc -u -l <port>' or
-> > 'netcat -u -l -p <port>' / 'netcat -u -l <port>'
-> > ------------------------------------------------------------------------
-> >
-> > At the end, I also attach what I have noted during the tests with the
-> > different distributions.
-> >
-> > Dirk
-> >
-> > ------------------------------------------------------------------------
-> > Problem on systems where the gnu-netcat package provides a symbolic
-> > link /usr/bin/nc -> /usr/bin/netcat:
-> >
-> > gnu-netcat requires -p to specify the local port but does not complain
-> > if invoked as `nc -l -u <port>'; you need to use -v to see that it
-> > does not do what you might expect:
-> >
-> > # nc -l -u 4444 -v
-> > Warning: Inverse name lookup failed for `0.0.17.92'
-> > ------------------------------------------------------------------------
-> >
-> > Distro		Package						needs -p
-> > 		Command invocation
-> > ========================================================================
-> > Arch		gnu-netcat					yes
-> > (Website	nc | netcat
-> >  documentation)
-> > 		openbsd-netcat					no
-> > 		nc.openbsd
-> > ------------------------------------------------------------------------
-> > Debian-6.0.5	netcat-openbsd					no 
-> > 		nc | netcat | nc.openbsd		   
-> > 		                                   
-> > 		netcat / netcat-traditional (preinstalled)	yes
-> > 		nc | netcat
-> > 		                                   
-> > 		netcat6						yes
-> > 		nc | netcat | nc6
-> > ------------------------------------------------------------------------
-> > Fedora-17	nc (preinstalled)				no
-> > 		nc
-> >
-> > 		nc6
-> > 		nc6						yes
-> > ------------------------------------------------------------------------
-> > Gentoo		gnu-netcat					yes
-> > 		netcat
-> >
-> > 		netcat						yes
-> > 		nc
-> >
-> > 		netcat6						yes
-> > 		nc | nc6
-> > ------------------------------------------------------------------------
-> > OpenSUSE-12.1	netcat-openbsd					no
-> > 		nc | netcat
-> > ------------------------------------------------------------------------
-> > Ubuntu-12.04	netcat-openbsd (preinstalled)			no 
-> > Desktop		nc | netcat | nc.openbsd
-> > 		                                   
-> > 		netcat / netcat-traditional			yes
-> > 		nc | netcat		   
-> > 		                                   
-> > 		netcat6						yes
-> > 		nc | netcat | nc6
-> > ------------------------------------------------------------------------
+> >> It will get defined fine, but it will be awkward to use. We'd need to pass anonymous union to all the functions that handle this hashtable, which isn't pretty.
+> > 
+> > No, it'll still use the anonymous union, so you'll still have a thing of
+> > type "struct hash_table" with the given name, and you can use that name
+> > with the hash-table functions.
 > 
-> Here is a patch that also includes Jan's suggestion for socat(1).
+> We can use 'struct hash_table' directly, but then the call will look awkward :)
 > 
-> The problem with the patch is that the netcat part does not cover every
-> possible distribution/netcat-package situation but in my opinion it is a
-> bearable compromise with respect to keeping the example section compact.
+> Consider this case (I've placed arbitrary values into size and name:
 > 
-> Dirk
-> 
-> From d756d2750e4cf07d3c0942dc3c491d57631d4338 Mon Sep 17 00:00:00 2001
-> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-> Date: Thu, 2 Aug 2012 22:20:16 +0200
-> Subject: [PATCH] netconsole.txt: revision of examples for the receiver of kernel messages
-> 
-> There are at least 4 implementations of netcat with the BSD-based
-> being the only one that has to be used without the -p switch to
-> specify the listening port.
-> 
-> Jan Engelhardt suggested to add an example for socat(1).
-> ---
->  Documentation/networking/netconsole.txt |   19 +++++++++++++++++--
->  1 files changed, 17 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/networking/netconsole.txt b/Documentation/networking/netconsole.txt
-> index 8d02207..2e9e0ae2 100644
-> --- a/Documentation/networking/netconsole.txt
-> +++ b/Documentation/networking/netconsole.txt
-> @@ -51,8 +51,23 @@ Built-in netconsole starts immediately after the TCP stack is
->  initialized and attempts to bring up the supplied dev at the supplied
->  address.
->  
-> -The remote host can run either 'netcat -u -l -p <port>',
-> -'nc -l -u <port>' or syslogd.
-> +The remote host has several options to receive the kernel messages,
-> +for example:
-> +
-> +1) syslogd
-> +
-> +2) netcat
-> +
-> +   On distributions using a BSD-based netcat version (e.g. Fedora,
-> +   openSUSE and Ubuntu) the listening port must be specified without
-> +   the -p switch:
-> +
-> +   'nc -u -l -p <port>' / 'nc -u -l <port>' or
-> +   'netcat -u -l -p <port>' / 'netcat -u -l <port>'
-> +
-> +3) socat
-> +
-> +   'socat udp-recv:<port> -'
->  
->  Dynamic reconfiguration:
->  ========================
+> /* I've "preprocessed" the DEFINE macro below */
+> union {
+> 	struct hash_table table;
+> 	struct {
+> 		size_t bits;
+> 		struct hlist_head buckets[32];
+> 	}
+> } my_hashtable;
 
-Looks good to me, thanks Dirk.
+That expansion doesn't match the macros.  Using the most recent
+definitions of DEFINE_HASHTABLE and DEFINE_STATIC_HASHTABLE from above,
+the definition would look something like this:
 
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+static union {
+	struct hash_table my_hashtable;
+	struct {
+		size_t bits;
+		struct hlist_head buckets[1 << 5];
+	} __my_hashtable;
+} = { .my_hashtable.bits = 5 };
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> void foo(struct hash_table *table)
+> {
+> /* Do something */
+> }
+> 
+> int main(void)
+> {
+> 	foo(my_hashtable); /* This is what the user expects to work, and won't work in this case */
+> 
+> 	foo(&my_hashtable.table); /* This is what he has to do, which means the user has to know about the internal structure of the union */
+> }
+
+Given the expansion above, you can just write this as
+foo(&my_hashtable), which seems sensible to me.
+
+- Josh Triplett
