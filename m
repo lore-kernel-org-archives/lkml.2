@@ -1,38 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab2HBQPt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:15:49 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44645 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751591Ab2HBQPs (ORCPT
+	id S1753577Ab2HBQQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:16:06 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52725 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab2HBQQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:15:48 -0400
-Date: Thu, 2 Aug 2012 17:15:44 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] mfd: add MAX8907 core driver
-Message-ID: <20120802161544.GE4537@opensource.wolfsonmicro.com>
-References: <1343854085-29663-1-git-send-email-swarren@wwwdotorg.org>
+	Thu, 2 Aug 2012 12:16:04 -0400
+X-Originating-IP: 217.70.178.136
+X-Originating-IP: 50.43.46.74
+Date: Thu, 2 Aug 2012 09:15:56 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+Message-ID: <20120802161556.GA25572@leaf>
+References: <50197460.8010906@gmail.com>
+ <20120801182749.GD15477@google.com>
+ <50197E4A.7020408@gmail.com>
+ <20120801202432.GE15477@google.com>
+ <5019B0B4.1090102@gmail.com>
+ <20120801224556.GF15477@google.com>
+ <501A4FC1.8040907@gmail.com>
+ <20120802103244.GA23318@leaf>
+ <501A633B.3010509@gmail.com>
+ <501A7AD3.7000008@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343854085-29663-1-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: Is this really happening?
+In-Reply-To: <501A7AD3.7000008@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 02:48:05PM -0600, Stephen Warren wrote:
-> From: Gyungoh Yoo <jack.yoo@maxim-ic.com>
+On Thu, Aug 02, 2012 at 03:04:19PM +0200, Sasha Levin wrote:
+> On 08/02/2012 01:23 PM, Sasha Levin wrote:
+> >> #define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
+> > The limitation of this approach is that the struct hash_table variable must be 'static', which is a bit limiting - see for example the use of hashtable in 'struct user_namespace'.
+> > 
 > 
-> The MAX8907 is an I2C-based power-management IC containing voltage
-> regulators, a reset controller, a real-time clock, and a touch-screen
-> controller.
+> What if we just use two possible decelerations? One of static structs and one for regular ones.
+> 
+> struct hash_table {
+>         size_t bits;
+>         struct hlist_head buckets[];
+> };
+> 
+> #define DEFINE_HASHTABLE(name, bits)                                    \
+>         union {                                                         \
+>                 struct hash_table name;                                 \
+>                 struct {                                                \
+>                         size_t bits;                                    \
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This shouldn't use "bits", since it'll get expanded to the macro
+argument.
+
+>                         struct hlist_head buckets[1 << bits];           \
+>                 } __name;                                               \
+
+__##name
+
+>         }
+> 
+> #define DEFINE_STATIC_HASHTABLE(name, bit)                              \
+>         static struct hash_table name = { .bits = bit,                  \
+>                 .buckets = { [0 ... (bit - 1)] = HLIST_HEAD_INIT } }
+
+You probably wanted to change that to [0 ... ((1 << bit) - 1)] , to
+match DEFINE_HASHTABLE.
+
+Since your definition of DEFINE_HASHTABLE would also work fine when used
+statically, why not just always use that?
+
+#define DEFINE_STATIC_HASHTABLE(name, bits) static DEFINE_HASHTABLE(name, bits) = { .name.bits = bits }
+
+One downside: you can't use this to define a global non-static hash
+table, because you can't have a global non-static anonymous union.
+Using the non-union form would actually allow a global non-static hash
+table:
+
+#define DEFINE_HASHTABLE_INIT(name, bits) struct hash_table name = { .bits = bits, .buckets = { [0 ... ((1 << bits) - 1)] = HLIST_HEAD_INIT } }
+
+/* elsewhere */
+extern struct hash_table name;
+
+I don't know if that seems like a good idea or not.
+
+- Josh Triplett
