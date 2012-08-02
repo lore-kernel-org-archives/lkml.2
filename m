@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab2HBQUp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:20:45 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:45690 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752397Ab2HBQUn (ORCPT
+	id S1753751Ab2HBQX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:23:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38409 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab2HBQX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:20:43 -0400
-Message-ID: <501AA892.70207@xenotime.net>
-Date: Thu, 02 Aug 2012 09:19:30 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Thu, 2 Aug 2012 12:23:26 -0400
+Date: Thu, 2 Aug 2012 17:23:22 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Joe Perches <joe@perches.com>
+Cc: Schrober <franzschrober@yahoo.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: Add control statement test to
+ SINGLE_STATEMENT_DO_WHILE_MACRO
+Message-ID: <20120802162322.GI2501@dm>
+References: <4204029.7cYAuJfu4T@bentobox>
+ <20120802142053.GH2501@dm>
+ <1343921213.2011.9.camel@joe2Laptop>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 2 (drivers/platform/x86/apple-gmux.c)
-References: <20120802141505.d30da7f7113e955679383acb@canb.auug.org.au> <501AA5A8.1070607@xenotime.net> <20120802161504.GG32395@thinkpad-t410>
-In-Reply-To: <20120802161504.GG32395@thinkpad-t410>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343921213.2011.9.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 09:15 AM, Seth Forshee wrote:
+On Thu, Aug 02, 2012 at 08:26:53AM -0700, Joe Perches wrote:
 
-> On Thu, Aug 02, 2012 at 09:07:04AM -0700, Randy Dunlap wrote:
->> On 08/01/2012 09:15 PM, Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> Please do not add anything to linux-next included branches/series that is
->>> destined for v3.7 until after v3.6-rc1 is released.
->>>
->>> Reminder: do not rebase your branches before asking Linus to pull them ...
->>>
->>> Changes since 20120731:
->>>
->>
->>
->> when CONFIG_ACPI is not enabled: (on i386)
->>
->> drivers/platform/x86/apple-gmux.c: In function 'gmux_probe':
->> drivers/platform/x86/apple-gmux.c:196:2: error: implicit declaration of function 'acpi_video_dmi_promote_vendor'
->> drivers/platform/x86/apple-gmux.c: In function 'gmux_remove':
->> drivers/platform/x86/apple-gmux.c:219:2: error: implicit declaration of function 'acpi_video_dmi_demote_vendor'
->>
->>
->> Full randconfig file is attached.
+> The patch below is tested with:
+> $ cat t.c
 > 
-> I sent Matthew a patch that should fix this [1], but he doesn't seem to
-> have picked it up yet.
+> #define bar_1(foo)				\
+> 	if (foo)				\
+> 		baz();				\
 > 
-> Seth
+> #define bar_2(foo)				\
+> do {						\
+> 	if (foo)				\
+> 		baz();				\
+> } while (0)
 > 
-> [1] https://lkml.org/lkml/2012/7/2/257
+> #define bar_3(foo)				\
+> do {						\
+> 	baz();					\
+> } while (0)
+> 
+> #define bar_4(foo)				\
+> do {						\
+> 	baz();					\
+> } while (0);
+> 
+> #define bar_5(foo)				\
+> do {						\
+> 	while (foo)				\
+> 		baz();				\
+> } while (0)
+> 
+> #define bar_6(foo)				\
+> do {						\
+> 	switch (foo) {				\
+> 	case 1:					\
+> 		baz();				\
+> 	}					\
+> } while (0)
+> 
+> $
+> 
+> So perhaps...
+> 
+>  scripts/checkpatch.pl |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 913d6bd..ca05ba2 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3016,7 +3016,8 @@ sub process {
+>  					$herectx .= raw_line($linenr, $n) . "\n";
+>  				}
+>  
+> -				if (($stmts =~ tr/;/;/) == 1) {
+> +				if (($stmts =~ tr/;/;/) == 1 &&
+> +				    $stmts !~ /^\s*(if|while|for|switch)\b/) {
+>  					WARN("SINGLE_STATEMENT_DO_WHILE_MACRO",
+>  					     "Single statement macros should not use a do {} while (0) loop\n" . "$herectx");
+>  				}
+> 
 > 
 
+Looks reasonable enough.
 
-That patch does not fix this build error.
-There is still an implicit assumption in Kconfig and
-the driver source that ACPI is enabled.
+Acked-by: Andy Whitcroft <apw@canonical.com>
 
-
--- 
-~Randy
+-apw
