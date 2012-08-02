@@ -1,84 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab2HBG3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 02:29:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32538 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752890Ab2HBG3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 02:29:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="176047179"
-Message-ID: <1343889215.25013.14.camel@sauron.fi.intel.com>
-Subject: Re: [patch v2] UBIFS: add key state map data structure and accessors
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 02 Aug 2012 09:33:35 +0300
-In-Reply-To: <alpine.DEB.2.00.1207081928190.12575@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1206090016010.14953@eristoteles.iwoars.net>
-	 <1340016236.2420.23.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1207081928190.12575@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-lIo4UTj4bt1zr5QRQ9g5"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1753970Ab2HBGaX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 02:30:23 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49491 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752773Ab2HBGaV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 02:30:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAhV-H5pkm6en7oVjTdDmm2SSy1DyF7kDczPady+c+aB8eAXyA@mail.gmail.com>
+References: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
+	<1340334073-17804-12-git-send-email-chenhc@lemote.com>
+	<1340342704.1381.9.camel@tellur>
+	<CAAhV-H5pkm6en7oVjTdDmm2SSy1DyF7kDczPady+c+aB8eAXyA@mail.gmail.com>
+Date: Thu, 2 Aug 2012 14:30:19 +0800
+Message-ID: <CAAhV-H4XZCMfACTz5pL2metyPacdg3tN8q09_KLmkBcCBTbigw@mail.gmail.com>
+Subject: Re: [PATCH V3 11/16] drm/radeon: Make radeon card usable for Loongson.
+From: Huacai Chen <chenhuacai@gmail.com>
+To: Lucas Stach <dev@lynxeye.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Hua Yan <yanh@lemote.com>,
+        Fuxin Zhang <zhangfx@lemote.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Hongliang Tao <taohl@lemote.com>,
+        Huacai Chen <chenhc@lemote.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Lucas, sorry for so long a delay because I have a holiday for one month.
 
---=-lIo4UTj4bt1zr5QRQ9g5
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I found Loongson-3 must turn on SWIOTLB if the system memory has
+addresses above 4G. As I know, there are two ways to get a DMA addr,
+the first way is use dma_alloc_coherent(), and the other one is use
+map_page()/map_sg() on an exsisting address. The first way can make
+sure DMA addr below 4G, but the second way cannot (unless the memory
+is so little that all the address space is below 4G).
 
-On Sun, 2012-07-08 at 19:30 +0200, Joel Reardon wrote:
-> This patch adds the key state map to keymap, a structure that holds the s=
-tate
-> of all keys in the KSA. The states are defined in an enum, and a get/set
-> accessor is added. These accessors are static only: the external interfac=
-e
-> will simply be "mark used" or "mark deleted" and range checking, along wi=
-th
-> locking the mutex for the state object, will be done there.
->=20
-> The memory is allocated in keymap_init() and keymap_free()
-> is added to deallocate the memory. Init is called when mounting is perfor=
-med,
-> and free is called mounting failed or when unmounting. This was tested us=
-ing
-> integck along with unit tests for get/set sanity.
+Take SATA driver as an example, during initialization an 'ata_device'
+struct is allocated and its address is probably above 4G (because this
+is first used by CPU, not for DMA). 'ata_device' has a member 'id' and
+'id' will be use for DMA in such a call path:
 
-Pushed to the joel branch, thanks. I did some amendments on top and
-pushed as a separate commit.
+ata_host_register() --> ata_scsi_add_hosts() --> async_port_probe()
+--> ata_port_probe() --> ata_bus_probe() --> ata_dev_read_id() -->
+ata_exec_internal() --> ata_exec_internal_sg() --> ata_qc_issue() -->
+ata_sg_setup() --> dma_map_sg()
 
---=20
-Best Regards,
-Artem Bityutskiy
+Here,  dma_map_sg() will get a DMA addr above 4G, then SATA init failed.
 
---=-lIo4UTj4bt1zr5QRQ9g5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+In OHCI driver, there are similar situations.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+P.S.:  With recently drm changes, I found radeon with SWIOTLB can
+already work after suspend/resume, so my next version of Loongson
+patches will not modify radeon_ttm.c.
 
-iQIcBAABAgAGBQJQGh8/AAoJECmIfjd9wqK0uHoP/ifTH6gA3KygFNZPxWR5GfO7
-VPLcaF/JSlzV7MApZWN1V61dqtqVrf1OOxvQObJuclIM7s/5T7tHKA/7WOXpT1VT
-vzgnn+It5SibSIipg+dRxHXRQRxzNbuI8aE54G9EH+YCNH0kdJUvsf4/1/e/WJr2
-YVLYZgqJQ2w1Cxp97QvECOfGEL8dVuKncb+3T016+FqrWce5rlGEv1nu2ZJ8VBR5
-hmy0+KiflUC+Za3B/5Apk2+DVaE/upokawaQxqOMAly7ZI2ntGBPkFjuzeFpvlWv
-azd/y+wps3BCi249Kg7eO/1FvTOfESxFZAiclzIvDgU1AkNmux68fbtk87tuaONp
-g4GcQV8sGyBapSevyjF+MaKnC4ripDUyIexm7jLuEOEwGFi74cu4vKnR1xkPxDTH
-eEN/yCd6o93YNj1qpCkrWqrIVxmksrEcYpMBzypiXrFfrxAy3EAKlSr7zev4SXLP
-j0aX+mjW2PC+F80WBPaYng0VK5Vp+SXCFyTJHGH722FN2XObMU2HPIv9MHCb/Ip+
-GDZIAcuOSncbDbb/5G/sF8lK91TjnJAJPbcZbVkmvBTY8rbYVy6E9kr3KGchcfau
-jfVI3dGfxnDBUXKhqSGWlAM+f2p7QpJgzwb676xTImgda3S/ny6CZ0Pr131lPcok
-x2u73oCoMhRY6Sqjr+/w
-=Ng+L
------END PGP SIGNATURE-----
-
---=-lIo4UTj4bt1zr5QRQ9g5--
-
+On Fri, Jun 22, 2012 at 1:59 PM, Huacai Chen <chenhuacai@gmail.com> wrote:
+> On Fri, Jun 22, 2012 at 1:25 PM, Lucas Stach <dev@lynxeye.de> wrote:
+>> Hello Huacai,
+>>
+>> Am Freitag, den 22.06.2012, 11:01 +0800 schrieb Huacai Chen:
+>>> 1, Handle io prot correctly for MIPS.
+>>> 2, Define SAREA_MAX as the size of one page.
+>>> 3, Don't use swiotlb on Loongson machines (Loonson need swioitlb, but
+>>>    when use swiotlb, GPU reset occurs at resume from suspend).
+>>>
+>> I still think this is wrong. You say Loongson needs SWIOTLB, but when
+>> it's actually used you ignore it in the radeon driver code.
+>>
+>> I looked up why you are using SWIOTLB and I don't agree with you that it
+>> is needed. SWIOTLB just gives you bounce pages for DMA memory above
+>> DMA32 and therefore papers over your >4GB DMA platform bug in some
+>> cases, while hurting performance.
+>>
+>> Please fix your DMA platform code so that region DMA is an alias for
+>> region DMA32. It should allow you to drop all those ugly workarounds.
+>>
+> Hmm, you are probably right, I think I should have a discuss with the
+> original author of this part of code.
+>
+>>> Signed-off-by: Huacai Chen <chenhc@lemote.com>
+>>> Signed-off-by: Hongliang Tao <taohl@lemote.com>
+>>> Signed-off-by: Hua Yan <yanh@lemote.com>
+>>> Reviewed-by: Michel Dänzer <michel@daenzer.net>
+>>> Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
+>>> Reviewed-by: Lucas Stach <dev@lynxeye.de>
+>>> Reviewed-by: j.glisse <j.glisse@gmail.com>
+>>
+>> You should probably only stick this tag on your patches after the people
+>> you are naming explicitly gave their r-b for a specific version of a
+>> patch.
+>>
+>> Thanks,
+>> Lucas
+>>> Cc: dri-devel@lists.freedesktop.org
+>>> ---
+>>>  drivers/gpu/drm/drm_vm.c            |    2 +-
+>>>  drivers/gpu/drm/radeon/radeon_ttm.c |    6 +++---
+>>>  drivers/gpu/drm/ttm/ttm_bo_util.c   |    2 +-
+>>>  include/drm/drm_sarea.h             |    2 ++
+>>>  4 files changed, 7 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
+>>> index 961ee08..3f06166 100644
+>>> --- a/drivers/gpu/drm/drm_vm.c
+>>> +++ b/drivers/gpu/drm/drm_vm.c
+>>> @@ -62,7 +62,7 @@ static pgprot_t drm_io_prot(uint32_t map_type, struct vm_area_struct *vma)
+>>>               tmp = pgprot_writecombine(tmp);
+>>>       else
+>>>               tmp = pgprot_noncached(tmp);
+>>> -#elif defined(__sparc__) || defined(__arm__)
+>>> +#elif defined(__sparc__) || defined(__arm__) || defined(__mips__)
+>>>       tmp = pgprot_noncached(tmp);
+>>>  #endif
+>>>       return tmp;
+>>> diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+>>> index c94a225..f49bdd1 100644
+>>> --- a/drivers/gpu/drm/radeon/radeon_ttm.c
+>>> +++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+>>> @@ -630,7 +630,7 @@ static int radeon_ttm_tt_populate(struct ttm_tt *ttm)
+>>>       }
+>>>  #endif
+>>>
+>>> -#ifdef CONFIG_SWIOTLB
+>>> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
+>>>       if (swiotlb_nr_tbl()) {
+>>>               return ttm_dma_populate(&gtt->ttm, rdev->dev);
+>>>       }
+>>> @@ -676,7 +676,7 @@ static void radeon_ttm_tt_unpopulate(struct ttm_tt *ttm)
+>>>       }
+>>>  #endif
+>>>
+>>> -#ifdef CONFIG_SWIOTLB
+>>> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
+>>>       if (swiotlb_nr_tbl()) {
+>>>               ttm_dma_unpopulate(&gtt->ttm, rdev->dev);
+>>>               return;
+>>> @@ -906,7 +906,7 @@ static int radeon_ttm_debugfs_init(struct radeon_device *rdev)
+>>>       radeon_mem_types_list[i].show = &ttm_page_alloc_debugfs;
+>>>       radeon_mem_types_list[i].driver_features = 0;
+>>>       radeon_mem_types_list[i++].data = NULL;
+>>> -#ifdef CONFIG_SWIOTLB
+>>> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
+>>>       if (swiotlb_nr_tbl()) {
+>>>               sprintf(radeon_mem_types_names[i], "ttm_dma_page_pool");
+>>>               radeon_mem_types_list[i].name = radeon_mem_types_names[i];
+>>> diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
+>>> index f8187ea..0df71ea 100644
+>>> --- a/drivers/gpu/drm/ttm/ttm_bo_util.c
+>>> +++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
+>>> @@ -472,7 +472,7 @@ pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp)
+>>>       else
+>>>               tmp = pgprot_noncached(tmp);
+>>>  #endif
+>>> -#if defined(__sparc__)
+>>> +#if defined(__sparc__) || defined(__mips__)
+>>>       if (!(caching_flags & TTM_PL_FLAG_CACHED))
+>>>               tmp = pgprot_noncached(tmp);
+>>>  #endif
+>>> diff --git a/include/drm/drm_sarea.h b/include/drm/drm_sarea.h
+>>> index ee5389d..1d1a858 100644
+>>> --- a/include/drm/drm_sarea.h
+>>> +++ b/include/drm/drm_sarea.h
+>>> @@ -37,6 +37,8 @@
+>>>  /* SAREA area needs to be at least a page */
+>>>  #if defined(__alpha__)
+>>>  #define SAREA_MAX                       0x2000U
+>>> +#elif defined(__mips__)
+>>> +#define SAREA_MAX                       0x4000U
+>>>  #elif defined(__ia64__)
+>>>  #define SAREA_MAX                       0x10000U     /* 64kB */
+>>>  #else
+>>
+>>
