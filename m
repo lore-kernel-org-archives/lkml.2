@@ -1,143 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab2HBUBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:01:31 -0400
-Received: from a83-160-107-163.adsl.xs4all.nl ([83.160.107.163]:47182 "EHLO
-	d4rwin.no-ip.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab2HBUB3 (ORCPT
+	id S1753590Ab2HBUCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:02:53 -0400
+Received: from keetweej.vanheusden.com ([80.101.105.103]:35750 "EHLO
+	keetweej.vanheusden.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab2HBUCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:01:29 -0400
-Date: Thu, 2 Aug 2012 22:00:48 +0200
-From: Matthias Kaehlcke <matthias.list@kaehlcke.net>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-Message-ID: <20120802200048.GL4701@darwin>
-Mail-Followup-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
-	Venu Byravarasu <vbyravarasu@nvidia.com>,
-	"a.zummo@towertech.it" <a.zummo@towertech.it>,
-	"sameo@linux.intel.com" <sameo@linux.intel.com>,
-	"broonie@opensource.wolfsonmicro.com" <broonie@opensource.wolfsonmicro.com>,
-	Laxman Dewangan <ldewangan@nvidia.com>,
-	"kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
-	"sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-	"rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1343802157-13600-1-git-send-email-vbyravarasu@nvidia.com>
- <20120801201811.GK4701@darwin>
- <D958900912E20642BCBC71664EFECE3E6DDCAC4704@BGMAIL02.nvidia.com>
+	Thu, 2 Aug 2012 16:02:49 -0400
+Date: Thu, 2 Aug 2012 22:02:47 +0200
+From: folkert <folkert@vanheusden.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: problem with baycom driver - bisect help requested
+Message-ID: <20120802200246.GB10211@belle.intranet.vanheusden.com>
+References: <20120728213832.GQ7638@belle.intranet.vanheusden.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDCAC4704@BGMAIL02.nvidia.com>
-Organization: sindominio.net
+In-Reply-To: <20120728213832.GQ7638@belle.intranet.vanheusden.com>
+Organization: www.unixexpert.nl
+X-Chameleon-Return-To: folkert@vanheusden.com
+X-Xfmail-Return-To: folkert@vanheusden.com
+X-Phonenumber: +31-6-41278122
+X-URL: http://www.vanheusden.com/
+X-PGP-KeyID: 1F28D8AE
+X-GPG-fingerprint: AC89 09CE 41F2 00B4 FCF2  B174 3019 0E8C 1F28 D8AE
+X-Key: http://pgp.surfnet.nl:11371/pks/lookup?op=get&search=0x1F28D8AE
+Read-Receipt-To: <folkert@vanheusden.com>
+Reply-By: Fri Aug  3 13:00:19 CEST 2012
+X-Message-Flag: PGP key-id: 0x1f28d8ae - consider encrypting your e-mail to
+ me with PGP!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Venu,
+> It seems the baycom driver (for ham radio) needs some attention.
 
-thanks for you reply
+I'm trying to bisect this problem.
+The problem now is, that the 3.1.0-rc9 crashes just after it loads the
+initramfs. Well, it says it is doing that and then all fans speed-up and
+the system locks up.
+What to do now?
 
-El Thu, Aug 02, 2012 at 10:28:47AM +0530 Venu Byravarasu ha dit:
 
-> > -----Original Message-----
-> > From: Matthias Kaehlcke [mailto:matthias.list@kaehlcke.net]
-> > Sent: Thursday, August 02, 2012 1:48 AM
-> > To: Venu Byravarasu
-> > Cc: a.zummo@towertech.it; sameo@linux.intel.com;
-> > broonie@opensource.wolfsonmicro.com; Laxman Dewangan;
-> > kyle.manna@fuel7.com; sboyd@codeaurora.org; rtc-
-> > linux@googlegroups.com; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH v2] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-> > 
-> > hi,
-> > 
-> > El Wed, Aug 01, 2012 at 11:52:37AM +0530 Venu Byravarasu ha dit:
-> > 
-> > > TPS65910 PMIC is a MFD with RTC as one of the device.
-> > > Adding RTC driver for supporting RTC device present
-> > > inside TPS65910 PMIC.
-> > >
-> > > Only support for RTC alarm is implemented as part of this patch.
-> > >
-> > > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> > > ---
-> > 
-> > ...
-> > 
-> > > +static irqreturn_t tps65910_rtc_interrupt(int irq, void *rtc)
-> > > +{
-> > > +	struct device *dev = rtc;
-> > > +	unsigned long events = 0;
-> > > +	struct tps65910 *tps = dev_get_drvdata(dev->parent);
-> > > +	struct tps65910_rtc *tps_rtc = dev_get_drvdata(dev);
-> > >
-> > > ...
-> > >
-> > > +static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
-> > > +{
-> > >
-> > > ...
-> > >
-> > > +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-> > > +		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
-> > > +		"rtc-tps65910", &pdev->dev);
-> > > +	if (ret < 0) {
-> > > +		dev_err(&pdev->dev, "IRQ is not free.\n");
-> > > +		return ret;
-> > > +	}
-> > > +	device_init_wakeup(&pdev->dev, 1);
-> > > +
-> > > +	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
-> > > +		&tps65910_rtc_ops, THIS_MODULE);
-> > > +	if (IS_ERR(tps_rtc->rtc)) {
-> > > +		ret = PTR_ERR(tps_rtc->rtc);
-> > > +		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
-> > > +		return ret;
-> > > +	}
-> > > +
-> > > +	platform_set_drvdata(pdev, tps_rtc);
-> > 
-> > the interrupt should be requested after this call. otherwise
-> > tps65910_rtc_interrupt() could be executed before the RTC device is
-> > registered and the driver data set. normally this shouldn't happen as
-> > the RTC interrupts are disabled after reset, but the interrupts could
-> > have been enabled for example by the bootloader
-> 
-> Hi Matthias,
-> 
-> Thanks for your comments.
-> All pending RTC interrupts are being cleared in probe, before enabling RTC itself.
-> Hence chances of stray interrupts from boot loader cannot cause any trouble here.
-> 
-> The only possible way of getting interrupt by kernel driver is by enabling 
-> tps65910_rtc_alarm_irq_enable() && setting alarm time using tps65910_rtc_set_alarm.
-> However before probe gets completed as these two APIs will not get 
-> called together by the client, I do not see any false interrupt getting generated.
-
-i was thinking in the periodic interrupts, but now noticed that the
-driver only registers to the alarm interrupts, so this is not a
-problem
-
-kind regards
+Folkert van Heusden
 
 -- 
-Matthias Kaehlcke
-Embedded Linux Developer
-Amsterdam
-
-    El optimista tiene siempre un proyecto; el pesimista, una excusa
-                                                                 .''`.
-    using free software / Debian GNU/Linux | http://debian.org  : :'  :
-                                                                `. `'`
-gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
+----------------------------------------------------------------------
+Phone: +31-6-41278122, PGP-key: 1F28D8AE, www.vanheusden.com
