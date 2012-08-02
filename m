@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab2HBOXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 10:23:04 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20534 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500Ab2HBOXB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 10:23:01 -0400
-Date: Thu, 2 Aug 2012 10:13:41 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 01/24] arm: initial Xen support
-Message-ID: <20120802141341.GE16749@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <50197527.3070007@gmail.com>
- <1343892951.7571.50.camel@dagon.hellion.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343892951.7571.50.camel@dagon.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1754866Ab2HBOYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 10:24:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49344 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753444Ab2HBOYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 10:24:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="201438755"
+Message-ID: <1343917741.25013.114.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
+        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
+        nyoushchenko@mvista.com
+Date: Thu, 02 Aug 2012 17:29:01 +0300
+In-Reply-To: <20120802161512.5ac7a303@spider.haslach.nod.at>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	 <1343916747.25013.112.camel@sauron.fi.intel.com>
+	 <20120802161512.5ac7a303@spider.haslach.nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-zFZ0cpCnnzv+p7vvpNDO"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 08:35:51AM +0100, Ian Campbell wrote:
-> On Wed, 2012-08-01 at 19:27 +0100, Rob Herring wrote:
-> > On 07/26/2012 10:33 AM, Stefano Stabellini wrote:
-> > > - Basic hypervisor.h and interface.h definitions.
-> > > - Skelethon enlighten.c, set xen_start_info to an empty struct.
-> > > - Do not limit xen_initial_domain to PV guests.
-> > > 
-> > > The new code only compiles when CONFIG_XEN is set, that is going to be
-> > > added to arch/arm/Kconfig in a later patch.
-> > > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > ---
-> > >  arch/arm/Makefile                     |    1 +
-> > >  arch/arm/include/asm/hypervisor.h     |    6 +++
-> > >  arch/arm/include/asm/xen/hypervisor.h |   19 ++++++++++
-> > >  arch/arm/include/asm/xen/interface.h  |   64 +++++++++++++++++++++++++++++++++
-> > 
-> > These headers don't seem particularly ARM specific. Could they be moved
-> > to asm-generic or include/linux?
-> 
-> Or perhaps include/xen.
-> 
-> A bunch of it also looks like x86 specific stuff which has crept in.
-> e.g. PARAVIRT_LAZY_FOO and paravirt_get_lazy_mode() are arch/x86
-> specific and shouldn't be called from common code (and aren't, AFAICT).
 
-The could be moved out..
+--=-zFZ0cpCnnzv+p7vvpNDO
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, 2012-08-02 at 16:15 +0200, Richard Weinberger wrote:
+> > If I understand correctly, it can be only because of a bug. If I am
+> > correct, could you please add a 'dump_stack()' to improve the error
+> > report?
+> >=20
+>=20
+> This can happen if all PEBs are used and fastmap is unable to find (or
+> produce) an empty one.
+
+In which situations is this possible? Could you please give an example?
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-zFZ0cpCnnzv+p7vvpNDO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQGo6tAAoJECmIfjd9wqK0RbEP/jVp8rNpWIbN4O6iC00xyMpU
+m77m7dr75m36ASgqLwGemFVL7ewQqp4OJRH6cPF++i2YGIlq3PDf87e3tMYPLml1
+S/IDCMBNKxbrGUl6rCK4fGYBLcx/g2JflmqJ3TG3UMtcQDRTZx8lE9Hk5gCzZ2KS
+eY+Mcwbb0Q8WgObFpp9bx8S5LFQk/tiguUkKfIOrL+18w/pwC0NQSqBm2G0ZjVYO
+A94QGQS2V7yb+OSbmTDXhUlYaejE3hT0ZSz8XirZK1g+AkGXdyTSnl3db2Mep8dl
+X+HaaFivSklCLy9L3P8ceOFq/eFhg/86S1svO4LcY7umVZGqV3L4xOEhhqLEtpl1
+qnrlzG/IBWn0uPqGZLtx9lgXNuVbT6zlmmlOp72xy6/IhEEkSkkYxwc0Ct4p8GNl
+0NSO8VEAmnudesa6p78LMwnCkifV6nJkgtbkNg0mf8scsJuLE6qstuNoBFJpKBGF
+q3xl44+F5clRqBArKTaEqANBBFeD4wJ4QcTWr+esDWX12MKKtw7VJ4Q+WBrzsmKM
+TfcUd9q+tssUw3sd9Kt3vvJsNvGJEfsHYMb8X49nBzAl03/NaWeKBhoBZeosH9yY
+9kXtXhVw60Am9K0/k4g2zh17LLhQXpcbPbcHzbDj1XHtOnee4jGE03N60bNRCRQ4
+YROhtJvgOT9Gs4kOETCC
+=xFMj
+-----END PGP SIGNATURE-----
+
+--=-zFZ0cpCnnzv+p7vvpNDO--
+
