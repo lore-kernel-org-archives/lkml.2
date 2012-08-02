@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab2HBQcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:32:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38473 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab2HBQcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:32:00 -0400
-Date: Thu, 2 Aug 2012 11:31:54 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 2 (drivers/platform/x86/apple-gmux.c)
-Message-ID: <20120802163154.GH32395@thinkpad-t410>
-Mail-Followup-To: Randy Dunlap <rdunlap@xenotime.net>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org
-References: <20120802141505.d30da7f7113e955679383acb@canb.auug.org.au>
- <501AA5A8.1070607@xenotime.net>
- <20120802161504.GG32395@thinkpad-t410>
- <501AA892.70207@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501AA892.70207@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753683Ab2HBQcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:32:17 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab2HBQcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 12:32:15 -0400
+Date: Thu, 2 Aug 2012 18:32:10 +0200
+From: Richard Weinberger <richard@nod.at>
+To: artem.bityutskiy@linux.intel.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
+        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
+        nyoushchenko@mvista.com
+Subject: Re: UBI fastmap updates
+Message-ID: <20120802183210.7076aa48@spider.haslach.nod.at>
+In-Reply-To: <1343924267.25013.156.camel@sauron.fi.intel.com>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	<1343916747.25013.112.camel@sauron.fi.intel.com>
+	<20120802161512.5ac7a303@spider.haslach.nod.at>
+	<1343917741.25013.114.camel@sauron.fi.intel.com>
+	<20120802165132.1bf1e5d7@spider.haslach.nod.at>
+	<1343924267.25013.156.camel@sauron.fi.intel.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 09:19:30AM -0700, Randy Dunlap wrote:
-> On 08/02/2012 09:15 AM, Seth Forshee wrote:
-> 
-> > On Thu, Aug 02, 2012 at 09:07:04AM -0700, Randy Dunlap wrote:
-> >> On 08/01/2012 09:15 PM, Stephen Rothwell wrote:
-> >>
-> >>> Hi all,
-> >>>
-> >>> Please do not add anything to linux-next included branches/series that is
-> >>> destined for v3.7 until after v3.6-rc1 is released.
-> >>>
-> >>> Reminder: do not rebase your branches before asking Linus to pull them ...
-> >>>
-> >>> Changes since 20120731:
-> >>>
-> >>
-> >>
-> >> when CONFIG_ACPI is not enabled: (on i386)
-> >>
-> >> drivers/platform/x86/apple-gmux.c: In function 'gmux_probe':
-> >> drivers/platform/x86/apple-gmux.c:196:2: error: implicit declaration of function 'acpi_video_dmi_promote_vendor'
-> >> drivers/platform/x86/apple-gmux.c: In function 'gmux_remove':
-> >> drivers/platform/x86/apple-gmux.c:219:2: error: implicit declaration of function 'acpi_video_dmi_demote_vendor'
-> >>
-> >>
-> >> Full randconfig file is attached.
-> > 
-> > I sent Matthew a patch that should fix this [1], but he doesn't seem to
-> > have picked it up yet.
-> > 
-> > Seth
-> > 
-> > [1] https://lkml.org/lkml/2012/7/2/257
-> > 
-> 
-> 
-> That patch does not fix this build error.
-> There is still an implicit assumption in Kconfig and
-> the driver source that ACPI is enabled.
+Am Thu, 02 Aug 2012 19:17:47 +0300
+schrieb Artem Bityutskiy <artem.bityutskiy@linux.intel.com>:
 
-The functions in question are built or not based off of ACPI_VIDEO,
-which in turn depends on ACPI. So if ACPI=n, then ACPI_VIDEO=n and you
-can't configure APPLE_GMUX=(m|y). Is that right, or am I missing
-something?
+> On Thu, 2012-08-02 at 16:51 +0200, Richard Weinberger wrote:
+> > Every time fastmap writes a new fastmap to the flash it tries to
+> > get a new PEB and returns the old one (used for the old fastmap)
+> > back to the WL sub-system.
+> 
+> OK.
+> 
+> > If no free PEBs are available (E.g Volume is full or the erase
+> > worker is too slow) ubi_wl_get_fm_peb() returns NULL and fastmap
+> > reuses the currently used PEB.
+> 
+> This should not happen. Fastmap should _reserve_ enough of PEBs for it
+> to operate. It should always find the PEB to write.
+
+What is the benefit?
+IOW what is wrong with the current approach?
+
+> Just like if you create a volume maximum possible size, we guarantee
+> that you can fill it with data, and UBI will find enough PEBs for
+> that.
+> 
+> Just like we always have enough PEBs for the volume table.
+> 
+> The above things are UBI's liabilities.
+> 
+> In the situation when a lot of PEBs became bad, UBI will switch to R/O
+> mode with a scary message if it notices that it does not have enough
+> PEBs to satisfy all the liabilities.
+> 
+> And this is why we reserve 2% of PEBs for bad PEBs handling.
+
+Of course fastmap could also do something like that, but I don't really
+see a benefit in this.
+
+> > In this situation ubi_wl_get_fm_peb() may trigger such an error
+> > message. If think we should get rid of the message as this is not
+> > an error condition. It's a well known execution path.
+> 
+> Unless I am confused, this should lead to switching to R/O mode
+> instead, just like we do when we write to an LEB and do not find a
+> PEB to map to.
+
+Why?
+If everything goes wrong, fastmap makes sure that no fastmap is on
+flash.
+In case of a powercut we fall back to scanning mode.
+R/O mode is overkill IMHO.
+
+Thanks,
+//richard
 
