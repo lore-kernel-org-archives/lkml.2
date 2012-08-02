@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab2HBN4c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 09:56:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972Ab2HBN4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 09:56:31 -0400
-Date: Thu, 2 Aug 2012 15:53:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Ignore unsupported instructions in uprobe_mmap
-Message-ID: <20120802135313.GA4334@redhat.com>
-References: <20120728163157.GA22719@redhat.com> <20120731064730.GB5087@linux.vnet.ibm.com> <20120731124805.GA485@redhat.com> <20120802100515.GC5782@linux.vnet.ibm.com>
+	id S1754821Ab2HBOGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 10:06:46 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:46064 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753500Ab2HBOGp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 10:06:45 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 0xb4QDoVM1mkf_LHT9v7Ou8fWc5kh.g2M_W3bFfLza3Iqi9
+ 5Ffi_tkoQTdlGbIss0JLyg9b8Iv3nuh.uImxT6qows0uRpDk.YqmrXW7nIRL
+ SgwsgDSdStp3LysL2iddWCI.I3swDDllUv0DtpFSshyABTRVzbPZoj29HIWv
+ ejmpkqbRV6wUSO3xufvftUX2.xSakEIv99J69gMFxAQE5PUVtb2BPe5igWcT
+ z2_sgcr4EzJI6KjkYNzzTqDYMmg_lgD7WYcXI.o4ftgtgzRws4T_4XqwiExD
+ lewNbp9U2pHVU_W2jg3Rk.tDAI_AA57LJnSPswCZc7a647VX7ZbQwFbeurFA
+ DvhS7DgVmuYfXmQwtsaSKjNsvxEjXrb.9cvWgrqMrSDnB6lNwa8tgQxo8wtj
+ 2xkx9nEOQV446HBxtZZrCOA2V4xVPJ7JXdHXdYI9XS9Hmr33_aao-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 2 Aug 2012 09:06:41 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] slub: use free_page instead of put_page for freeing
+ kmalloc allocation
+In-Reply-To: <1343913065-14631-1-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1208020902390.23049@router.home>
+References: <1343913065-14631-1-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120802100515.GC5782@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02, Srikar Dronamraju wrote:
->
-> uprobe_mmap()->install_breakpoint() can fail if the probed insn is not
-> supported
+On Thu, 2 Aug 2012, Glauber Costa wrote:
 
-But there are other reasons why it can fail,
+> diff --git a/mm/slub.c b/mm/slub.c
+> index e517d43..9ca4e20 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -3453,7 +3453,7 @@ void kfree(const void *x)
+>  	if (unlikely(!PageSlab(page))) {
+>  		BUG_ON(!PageCompound(page));
+>  		kmemleak_free(x);
+> -		put_page(page);
+> +		__free_pages(page, compound_order(page));
 
-> However failing mmap_region()/do_fork() because of a probe on an
-> unsupported instruction is wrong.
+Hmmm... put_page would have called put_compound_page(). which would have
+called the dtor function. dtor is set to __free_pages() ok which does
+mlock checks and verifies that the page is in a proper condition for
+freeing. Then it calls free_one_page().
 
-Srikar, I strongly, absolutely disagree. Please correct me, but..
+__free_pages() decrements the refcount and then calls __free_pages_ok().
 
-Do you realize how much uprobes hooks in mmap_region/dup_mmap are broken?
+So we loose the checking and the dtor stuff with this patch. Guess that is
+ok?
 
-(cough, can't resist, vma_adjust()->uprobe_mmap() is not right too, but
- this is another story).
-
-OK, lets start with dup_mmap:
-
-		// retval == 0
-
-		if (file && uprobe_mmap(tmp))
-			goto out;
-
-	out:
-		up_write(&mm->mmap_sem);
-		flush_tlb_mm(oldmm);
-		up_write(&oldmm->mmap_sem);
-		return retval;
-
-Given that retval == 0, what do you think dup_mmap() returns if
-uprobe_mmap() fails? And note that we didn't copy all vmas.
-OK, at least this can't crash (afaics), and easy to fix.
-
-
-But mmap_region() is worse, much worse. It simply can _not_ fail
-after uprobe_mmap (of course, I am not saying this is unfixable)
-without the crash. And note that the crash is "delayed". And btw,
-like dup_mmap(), mmap_region() doesn't return the error too.
-
-Srikar, I strongly believe this horror must not exist. Either
-we should teach mmap_region() and dup_mmap() (and vma_adjust!)
-to fail correctly, or we should ignore the error code.
-
-It is that simple, isn't it?
-
-Whatever you do with uprobe_mmap(), even if you change it to always
-return 0, the code in mmap_region() is absolutely, absolutely broken.
-
-Do you agree?
-
-And once again. I agree, in the long term we should reconsider
-this change. But we need a simple fix for now/stable.
-
-> Hence change uprobe_mmap() to ignore unsupported instructions.
-
-OK. Now suppose that mmap_region()-> uprobe_mmap() fails because
-the caller is SIGKILL'ed (so __get_user_pages fails). Given that
-mmap_region() can't handle the error correctly, the kernel can
-crash.
-
-Oleg.
+Acked-by: Christoph Lameter <cl@linux.com>
 
