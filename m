@@ -1,38 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab2HBHiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 03:38:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57320 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab2HBHiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 03:38:10 -0400
-Date: Thu, 2 Aug 2012 08:41:50 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Orion Poplawski <orion@cora.nwra.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Need help debugging crazy kernel memory issue
-Message-ID: <20120802084150.7fe1f50d@pyramind.ukuu.org.uk>
-In-Reply-To: <5019ACC6.1040501@cora.nwra.com>
-References: <5019ACC6.1040501@cora.nwra.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754209Ab2HBHid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 03:38:33 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28537 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750807Ab2HBHib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 03:38:31 -0400
+Date: Thu, 2 Aug 2012 11:38:26 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: "acme@redhat.com" <acme@redhat.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "mingo@elte.hu" <mingo@elte.hu>, "paulus@samba.org" <paulus@samba.org>,
+        "cjashfor@linux.vnet.ibm.com" <cjashfor@linux.vnet.ibm.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "eranian@google.com" <eranian@google.com>,
+        "gorcunov@openvz.org" <gorcunov@openvz.org>,
+        "tzanussi@gmail.com" <tzanussi@gmail.com>,
+        "mhiramat@redhat.com" <mhiramat@redhat.com>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        "fche@redhat.com" <fche@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
+        "drepper@gmail.com" <drepper@gmail.com>,
+        "asharma@fb.com" <asharma@fb.com>,
+        "benjamin.redelings@nescent.org" <benjamin.redelings@nescent.org>,
+        Andrew Vagin <avagin@openvz.org>
+Subject: Re: [PATCH 07/13] perf: Add attribute to filter out callchains
+Message-ID: <20120802073826.GA6847@avaginn.sw.ru>
+References: <1343815865-5511-1-git-send-email-jolsa@redhat.com>
+ <1343815865-5511-8-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <1343815865-5511-8-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> kernel-2.6.32-220.17.1.el6.x86_64
-> kernel-2.6.32-220.23.1.el6.x86_64
-> kernel-2.6.32-279.1.1.el6.x86_64
+On Wed, Aug 01, 2012 at 02:10:59PM +0400, Jiri Olsa wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com> 
+> 
+> Introducing following bits to the the perf_event_attr struct:
+>   - exclude_callchain_kernel to filter out kernel callchain
+>     from the sample dump
+>   - exclude_callchain_user to filter out user callchain
+>     from the sample dump
+> 
+> We need to be able to disable standard user callchain dump
+> when we use the dwarf cfi callchain mode, because frame
+> pointer based user callchains are useless in this mode.
+> 
+> Implementing also exclude_callchain_kernel to have complete
+> set of options.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> [ Added kernel callchains filtering ]
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> CC: Andrew Vagin <avagin@openvz.org>
 
-You need to contact your vendor for RHEL based kernels - they are
-sufficiently different to upstream and from a long time back (with
-backports).
+Acked-by: Andrew Vagin <avagin@openvz.org>
 
-This is the wrong place unless you can duplicate it with an upstream 3.2,
-3.4 or similar kernel.
 
-Alan
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index c4582bb..0902d4a 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -4130,8 +4130,12 @@ void perf_prepare_sample(struct perf_event_header *header,
+>  
+>  	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+>  		int size = 1;
+> +		int kernel = !event->attr.exclude_callchain_kernel;
+> +		int user   = !event->attr.exclude_callchain_user;
+>  
+> -		data->callchain = perf_callchain(event, regs);
+> +		if (kernel || user)
+> +			data->callchain = perf_callchain(event, regs,
+> +							 kernel, user);
+I am not sure, that we need two arguments kernel and user here,
+we can get them from event inside perf_callchain...
+>  
+>  		if (data->callchain)
+>  			size += data->callchain->nr;
+> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+> index ce7bdfc..95d0215 100644
+> --- a/kernel/events/internal.h
+> +++ b/kernel/events/internal.h
+> @@ -126,7 +126,8 @@ DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
+>  
+>  /* Callchain handling */
+>  extern struct perf_callchain_entry *
+> -perf_callchain(struct perf_event *event, struct pt_regs *regs);
+> +perf_callchain(struct perf_event *event, struct pt_regs *regs,
+> +	       int kernel, int user);
+>  extern int get_callchain_buffers(void);
+>  extern void put_callchain_buffers(void);
+>  
+> -- 
+> 1.7.7.6
+> 
