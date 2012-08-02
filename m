@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab2HBUSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:18:32 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57802 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547Ab2HBUSb (ORCPT
+	id S1753625Ab2HBUUf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:20:35 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:52474 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753079Ab2HBUUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:18:31 -0400
-X-Originating-IP: 217.70.178.146
-X-Originating-IP: 83.160.107.163
-Date: Thu, 2 Aug 2012 22:17:48 +0200
-From: Matthias Kaehlcke <matthias@kaehlcke.net>
-To: Pavan Savoy <pavan_savoy@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] ti-st: Fix check for pdata->chip_awake function pointer
-Message-ID: <20120802201748.GA4358@darwin>
-Mail-Followup-To: Matthias Kaehlcke <matthias@kaehlcke.net>,
-	Pavan Savoy <pavan_savoy@ti.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+	Thu, 2 Aug 2012 16:20:34 -0400
+Message-ID: <501AE0C9.1060402@xenotime.net>
+Date: Thu, 02 Aug 2012 13:19:21 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seth Forshee <seth.forshee@canonical.com>
+CC: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apple-gmux: Fix kconfig dependencies
+References: <1341240929-3400-1-git-send-email-seth.forshee@canonical.com> <1343927714-14937-1-git-send-email-seth.forshee@canonical.com>
+In-Reply-To: <1343927714-14937-1-git-send-email-seth.forshee@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ll_device_want_to_wakeup(): Fix the NULL pointer check on pdata->chip_awake,
-which is performed on the wrong function pointer
+On 08/02/2012 10:15 AM, Seth Forshee wrote:
 
-Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
----
- drivers/misc/ti-st/st_ll.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Fix the dependencies of apple-gmux to prevent it from being built-in
+> when one or more of its dependencies is built as a module. Otherwise it
+> can fail to build due to missing symbols.
+> 
+> v2: Add dependency on ACPI to fix build failure when ACPI=n
+> 
+> Reported-by: Arun Raghavan <arun.raghavan@collabora.co.uk>
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 
-diff --git a/drivers/misc/ti-st/st_ll.c b/drivers/misc/ti-st/st_ll.c
-index 1ff460a..93b4d67 100644
---- a/drivers/misc/ti-st/st_ll.c
-+++ b/drivers/misc/ti-st/st_ll.c
-@@ -87,7 +87,7 @@ static void ll_device_want_to_wakeup(struct st_data_s *st_data)
- 	/* communicate to platform about chip wakeup */
- 	kim_data = st_data->kim_data;
- 	pdata = kim_data->kim_pdev->dev.platform_data;
--	if (pdata->chip_asleep)
-+	if (pdata->chip_awake)
- 		pdata->chip_awake(NULL);
- }
- 
+
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+Thanks.
+
+> ---
+>  drivers/platform/x86/Kconfig |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> index 2a262f5..637074d 100644
+> --- a/drivers/platform/x86/Kconfig
+> +++ b/drivers/platform/x86/Kconfig
+> @@ -758,8 +758,11 @@ config SAMSUNG_Q10
+>  
+>  config APPLE_GMUX
+>  	tristate "Apple Gmux Driver"
+> +	depends on ACPI
+>  	depends on PNP
+> -	select BACKLIGHT_CLASS_DEVICE
+> +	depends on BACKLIGHT_CLASS_DEVICE
+> +	depends on BACKLIGHT_APPLE=n || BACKLIGHT_APPLE
+> +	depends on ACPI_VIDEO=n || ACPI_VIDEO
+>  	---help---
+>  	  This driver provides support for the gmux device found on many
+>  	  Apple laptops, which controls the display mux for the hybrid
+
+
+
 -- 
-1.7.10
-
+~Randy
