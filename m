@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab2HBWMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 18:12:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5581 "EHLO mga01.intel.com"
+	id S1753669Ab2HBWQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 18:16:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39926 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065Ab2HBWMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 18:12:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="201629791"
-Message-ID: <1343945532.2132.66.camel@jtkirshe-mobl>
-Subject: Re: [PATCH v3 17/32] PCI/igb: use PCIe capabilities access
- functions to simplify implementation
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Date: Thu, 02 Aug 2012 15:12:12 -0700
-In-Reply-To: <1343836477-7287-18-git-send-email-jiang.liu@huawei.com>
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
-	 <1343836477-7287-18-git-send-email-jiang.liu@huawei.com>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-VcqxswrRzIV8jL/06dkW"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
-Mime-Version: 1.0
+	id S1751997Ab2HBWQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 18:16:30 -0400
+Date: Fri, 3 Aug 2012 00:16:22 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] sparc64: do not clobber personality flags in
+ sys_sparc64_personality()
+In-Reply-To: <20120802161917.GA5493@merkur.ravnborg.org>
+Message-ID: <alpine.LNX.2.00.1208030014410.4820@pobox.suse.cz>
+References: <alpine.LNX.2.00.1208012204140.14910@pobox.suse.cz> <alpine.LNX.2.00.1208020912130.14910@pobox.suse.cz> <20120802161917.GA5493@merkur.ravnborg.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2 Aug 2012, Sam Ravnborg wrote:
 
---=-VcqxswrRzIV8jL/06dkW
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > >From 4f000eda5917ceecb03767962026cc6a390b8216 Mon Sep 17 00:00:00 2001
+> > From: Jiri Kosina <jkosina@suse.cz>
+> > Date: Wed, 1 Aug 2012 21:10:51 +0200
+> > Subject: [PATCH 4/4] sparc64: do not clobber personality flags in sys_sparc64_personality()
+> > 
+> > There are multiple errors in how sys_sparc64_personality() handles
+> > personality flags stored in top three bytes.
+> > 
+> > - directly comparing current->personality against PER_LINUX32 doesn't work
+> >   in cases when any of the personality flags stored in the top three bytes
+> >   are used.
+> > - directly forcefully setting personality to PER_LINUX32 or PER_LINUX
+> >   discards any flags stored in the top three bytes
+> > 
+> > Fix the first one by properly using personality() macro to compare only
+> > PER_MASK bytes.
+> > Fix the second one by setting only the bits that should be set, instead of
+> > overwriting the whole value.
+> 
+> Hi Jiri.
+> 
+> Can you have a quick look at this too:
+> arch/sparc/include/asm/elf_32.h:#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
+> 
+> From your other comments it looks wrong. But I have not digged into 
+> this.
 
-On Wed, 2012-08-01 at 23:54 +0800, Jiang Liu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
->=20
-> Use PCIe capabilities access functions to simplify Intel ethernet
-> drivers'
-> implementation.
->=20
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  drivers/net/ethernet/intel/e1000e/netdev.c |   27
-> ++++++++-------------------
->  drivers/net/ethernet/intel/igb/igb_main.c  |   12 ++----------
->  2 files changed, 10 insertions(+), 29 deletions(-)=20
+It actually seems like much more architectures than just sparc are 
+clobbering upper bytes of personality upon exec(). Thanks for pointing 
+that out, it'd be worthwile to go over those and fix them up. I am adding 
+that to my TODO.
 
-Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Thanks,
 
---=-VcqxswrRzIV8jL/06dkW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCgAGBQJQGvs8AAoJEOVv75VaS+3OJrwP+wTm9Gqt5VsASxKQ/wqkAn/J
-QeSO2RZTfW/iXedLk40oEgMlveb/twbuhQ4riG4aFvzXX0ilAihH7MTNNSFL0B97
-bO6blIDqFcJlEV4xsiALSnD8yXrQec6Z0GP5FBUd7mmT9absIR80Xvth+c8ntpgM
-Z1CeLJwYy51Oeq4S5eX3k/SJ8n0bcf1sCTpeYEFLlFpp6J3r6N74Qa0jXvJ0cSbX
-rkrLOlDf/YNe3RWpEp7LTXR7p9r4S7phRx2/YXM3psfUga3h/zsq0i73Pz244I7l
-+yeTNxCd418marj8qCI6UwE9oG0GdB82acOCwI4BHfCQ9lilW8B+2REpTIW1Ltl6
-2rxFq7eEjANakNA0ZDD5yeZnhMQqqwjGFhZ5mo6iH7MZINo3VoDayX7qzE8tjg10
-HM4cDy/PAcKOgEYR6g0Ii7sbm92mOB74XlFOX4KgIs7rUzqq2TgnD5gRl7gKJKFc
-16rtaAVX6sHM4/PkBksO2i4avCEuriKap7HPZS+foA0wJOwONljMUCcOPSjrJ34/
-FLFrGlilnlq+Qu9VtIVhXahZVCeIL3oaAqd5hzzfzN7yoPDt4YXHViJBur4jy3Le
-HhkU82m38y39cVh5zzfIrPAjBfCaw8gPI631BipVqf05GrVQGtGlaYlqW7iZ6lib
-AkfcKw3oQJHsNwdNffzr
-=0t/X
------END PGP SIGNATURE-----
-
---=-VcqxswrRzIV8jL/06dkW--
-
+-- 
+Jiri Kosina
+SUSE Labs
