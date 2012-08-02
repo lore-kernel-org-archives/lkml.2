@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab2HBOGq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 10:06:46 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:46064 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753500Ab2HBOGp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 10:06:45 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 0xb4QDoVM1mkf_LHT9v7Ou8fWc5kh.g2M_W3bFfLza3Iqi9
- 5Ffi_tkoQTdlGbIss0JLyg9b8Iv3nuh.uImxT6qows0uRpDk.YqmrXW7nIRL
- SgwsgDSdStp3LysL2iddWCI.I3swDDllUv0DtpFSshyABTRVzbPZoj29HIWv
- ejmpkqbRV6wUSO3xufvftUX2.xSakEIv99J69gMFxAQE5PUVtb2BPe5igWcT
- z2_sgcr4EzJI6KjkYNzzTqDYMmg_lgD7WYcXI.o4ftgtgzRws4T_4XqwiExD
- lewNbp9U2pHVU_W2jg3Rk.tDAI_AA57LJnSPswCZc7a647VX7ZbQwFbeurFA
- DvhS7DgVmuYfXmQwtsaSKjNsvxEjXrb.9cvWgrqMrSDnB6lNwa8tgQxo8wtj
- 2xkx9nEOQV446HBxtZZrCOA2V4xVPJ7JXdHXdYI9XS9Hmr33_aao-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 2 Aug 2012 09:06:41 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH] slub: use free_page instead of put_page for freeing
- kmalloc allocation
-In-Reply-To: <1343913065-14631-1-git-send-email-glommer@parallels.com>
-Message-ID: <alpine.DEB.2.00.1208020902390.23049@router.home>
-References: <1343913065-14631-1-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754831Ab2HBOH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 10:07:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44975 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753500Ab2HBOH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 10:07:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="201431705"
+Message-ID: <1343916747.25013.112.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
+        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
+        nyoushchenko@mvista.com
+Date: Thu, 02 Aug 2012 17:12:27 +0300
+In-Reply-To: <1341836323-43916-1-git-send-email-richard@nod.at>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-BdUaR9c9eJlI6Q8EUu6K"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Aug 2012, Glauber Costa wrote:
 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index e517d43..9ca4e20 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -3453,7 +3453,7 @@ void kfree(const void *x)
->  	if (unlikely(!PageSlab(page))) {
->  		BUG_ON(!PageCompound(page));
->  		kmemleak_free(x);
-> -		put_page(page);
-> +		__free_pages(page, compound_order(page));
+--=-BdUaR9c9eJlI6Q8EUu6K
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Hmmm... put_page would have called put_compound_page(). which would have
-called the dtor function. dtor is set to __free_pages() ok which does
-mlock checks and verifies that the page is in a proper condition for
-freeing. Then it calls free_one_page().
+On Mon, 2012-07-09 at 14:18 +0200, Richard Weinberger wrote:
+> This is the next round of UBI fastmap updates.
+> It fixes all issues pointed out by Shmulik. :-)
 
-__free_pages() decrements the refcount and then calls __free_pages_ok().
+I see the following errors when rung UBI tests on nandsim:
 
-So we loose the checking and the dtor stuff with this patch. Guess that is
-ok?
+[ 3698.041511] UBI error: __wl_get_peb: no free eraseblocks
+[ 3698.041781] UBI error: ubi_wl_get_fm_peb: no free eraseblocks
+[ 3714.773064] UBI error: __wl_get_peb: no free eraseblocks
+[ 3714.773336] UBI error: ubi_wl_get_fm_peb: no free eraseblocks
 
-Acked-by: Christoph Lameter <cl@linux.com>
+How can this happen? I do not have any bad blocks.
+
+If I understand correctly, it can be only because of a bug. If I am
+correct, could you please add a 'dump_stack()' to improve the error
+report?
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-BdUaR9c9eJlI6Q8EUu6K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQGorLAAoJECmIfjd9wqK0OGYQAIi3uQ/7A7BKAXb6ZpWVfdDu
+V728o5vakOWhu5sC69QmawokMTQ1j1EnhEhNoSFliB3RsCOU4DnAUNkQ2vACdxCo
+j6DAwc1v4uh4YqOW5f0Y25db9V78u7Hv4mauKieuQbSt2vFJwLYn8q4kzmvnyak4
+pUR0CCt9gKFuMeW2sfe3pDFIEWl+C3Adfyu8IX9YMlShh1BbgKNKXRJO3LqlVaiW
+evf+YXbFHkP5A5V4+m4yn1oaB6QIEkXWCxdHlhiy1G02OncVdjv97Yw84X8SgEJV
+Hgto4DxtTzkNKuOal9x6NBC4Qe7hbyDD7RAkcBkD6NWV/tzY+uxe7K/cxvDglxzZ
+zhvdBcXASqSlqXt3Flrga1oPu/jhQBVNYXGRIDu8K37yXryl2gi12RlsXVeG1HO0
+BUNV5r5LS6j4Sr7nObTDMA+CIp+bvFXnGtv1w2oyaprOuIS9AeHWKNDqtwZUOx8B
+yP7zQ+pq3EyNsLHXKyR71ktZo29cKM7tAoJkUL2Hav3NkokTelnD1sDOzyWE6hZY
+wCDhdpVa/ajo11kUdd8ddF2sJ1kP7QMfWKHnG/Nb3ABoZqxViS3CyPAtiOrWUUlz
+1jhHJeCOkhOice+Izocxn8BSdx9Hg1IiZXv7hvjzt2/mlPm31UWzlE+Kvqk3foiA
+TtbPevzzPzSPbACArA7T
+=Yupu
+-----END PGP SIGNATURE-----
+
+--=-BdUaR9c9eJlI6Q8EUu6K--
 
