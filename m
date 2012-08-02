@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab2HBOQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 10:16:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40658 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753334Ab2HBOQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 10:16:09 -0400
-Date: Thu, 2 Aug 2012 16:16:03 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Yann Cantin <yann.cantin@laposte.net>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC ebeam PATCH v2 0/3] new USB eBeam input driver
-In-Reply-To: <1343912397-18353-1-git-send-email-yann.cantin@laposte.net>
-Message-ID: <alpine.LRH.2.00.1208021602250.15211@twin.jikos.cz>
-References: <1343912397-18353-1-git-send-email-yann.cantin@laposte.net>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753026Ab2HBOQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 10:16:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52184 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab2HBOQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 10:16:22 -0400
+Message-ID: <501A8BD0.1000603@gmail.com>
+Date: Thu, 02 Aug 2012 16:16:48 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, tglx@linutronix.de,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: tasklist_lock lockdep warnings on 3.6
+References: <500F954B.4010206@gmail.com> <CA+1xoqc86YFLOdBKPGjsb_moxjSdwoT_2Z6in8Co5YtEfKgNfw@mail.gmail.com> <20120802132605.GA27474@redhat.com>
+In-Reply-To: <20120802132605.GA27474@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Aug 2012, Yann Cantin wrote:
-
-> Second test-drive for a new USB input driver for eBeam
-> devices.
+On 08/02/2012 03:26 PM, Dave Jones wrote:
+> On Mon, Jul 30, 2012 at 04:50:46PM +0200, Sasha Levin wrote:
+>  > ping?
+>  > 
+>  > I'm still seeing this on linux-next.
 > 
-> Following Dmitry's advice, i've remove device specific infrastructure.
+> Likewise, except I'm seeing it in Linus' tree since shortly after this merge window
+> began. (https://lkml.org/lkml/2012/7/24/443).
 > 
-> Currently, only the Luidia eBeam classic projection model is supported.
+> I've spent all of this last week doing multiple attempts at bisecting this without success.
+> (It doesn't always show up, and even after running the test for over an hour before
+> marking a build 'good')
 > 
-> Patch 1 and 2 are here to let the ebeam driver be choose to handle
-> the device instead of the generic-usb hid one (totally useless).
+> Anyone ?
+> 
+> 	Dave
 
-Just merge 1 and 2 together, not necessary to have two commits because of 
-that.
+I've been able to hit this issue pretty much every time by hitting sysrq-t after about 10 seconds of fuzzing. It shows up in the middle of the sysrq-t spew.
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
-
+Unfortunately I didn't have time yet to try and bisect it.
