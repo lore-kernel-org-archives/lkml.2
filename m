@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab2HBQlD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:41:03 -0400
-Received: from mga14.intel.com ([143.182.124.37]:39361 "EHLO mga14.intel.com"
+	id S1754185Ab2HBQmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:42:13 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55171 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099Ab2HBQlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:41:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="176249980"
-Message-ID: <1343925930.25013.163.camel@sauron.fi.intel.com>
-Subject: Re: UBI fastmap updates
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
-        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
-        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
-        nyoushchenko@mvista.com
-Date: Thu, 02 Aug 2012 19:45:30 +0300
-In-Reply-To: <20120802183210.7076aa48@spider.haslach.nod.at>
-References: <1341836323-43916-1-git-send-email-richard@nod.at>
-	 <1343916747.25013.112.camel@sauron.fi.intel.com>
-	 <20120802161512.5ac7a303@spider.haslach.nod.at>
-	 <1343917741.25013.114.camel@sauron.fi.intel.com>
-	 <20120802165132.1bf1e5d7@spider.haslach.nod.at>
-	 <1343924267.25013.156.camel@sauron.fi.intel.com>
-	 <20120802183210.7076aa48@spider.haslach.nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-IhLBQdzXFe/FmfaN8Tue"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1753099Ab2HBQmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 12:42:12 -0400
+Date: Thu, 2 Aug 2012 18:42:03 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] slub: use free_page instead of put_page for freeing
+ kmalloc allocation
+Message-ID: <20120802164203.GA30111@cmpxchg.org>
+References: <1343913065-14631-1-git-send-email-glommer@parallels.com>
+ <alpine.DEB.2.00.1208020902390.23049@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1208020902390.23049@router.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 02, 2012 at 09:06:41AM -0500, Christoph Lameter wrote:
+> On Thu, 2 Aug 2012, Glauber Costa wrote:
+> 
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index e517d43..9ca4e20 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -3453,7 +3453,7 @@ void kfree(const void *x)
+> >  	if (unlikely(!PageSlab(page))) {
+> >  		BUG_ON(!PageCompound(page));
+> >  		kmemleak_free(x);
+> > -		put_page(page);
+> > +		__free_pages(page, compound_order(page));
+> 
+> Hmmm... put_page would have called put_compound_page(). which would have
+> called the dtor function. dtor is set to __free_pages() ok which does
+> mlock checks and verifies that the page is in a proper condition for
+> freeing. Then it calls free_one_page().
+> 
+> __free_pages() decrements the refcount and then calls __free_pages_ok().
+> 
+> So we loose the checking and the dtor stuff with this patch. Guess that is
+> ok?
 
---=-IhLBQdzXFe/FmfaN8Tue
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The changelog is not correct, however.  People DO get pages underlying
+slab objects and even free the slab objects before returning the page.
+See recent fix:
 
-Richard,
+commit 5bf5f03c271907978489868a4c72aeb42b5127d2
+Author: Pravin B Shelar <pshelar@nicira.com>
+Date:   Tue May 29 15:06:49 2012 -0700
 
-On Thu, 2012-08-02 at 18:32 +0200, Richard Weinberger wrote:
-> > This should not happen. Fastmap should _reserve_ enough of PEBs for it
-> > to operate. It should always find the PEB to write.
->=20
-> What is the benefit?
-> IOW what is wrong with the current approach?
-
-Several reasons. The main is: fastmap will start consuming PEBs reserved
-for volumes when the amount of available PEBs is just enough to map all
-LEBs. This will break UBI liability.
-
-> Why?
-> If everything goes wrong, fastmap makes sure that no fastmap is on
-> flash.
-> In case of a powercut we fall back to scanning mode.
-> R/O mode is overkill IMHO.
-
-So can I interpret this the following way. Not only fastmap give no
-guarantees that it exists after an unclean reboot, it does not even give
-guarantees that it exists after a clean reboot.
-
-Unless I am confused, the fastmap design is over-simplified.
-
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-IhLBQdzXFe/FmfaN8Tue
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQGq6qAAoJECmIfjd9wqK0w5sP/R0Lhh2KGl2j6ictpIiDn4pU
-lxLBsBEyUYmKGEX0etKFPI/e431PzU+ifzRQUH2OTUz7SiCFjjr6u7YSp3feczY2
-FmVomzLXH1L4R5xEJyCc6zhuUiIe9BpLCJqNJkkiA++ufjdvv44RCsMjItwgRLQj
-XTgjiAH2snOYwnNgMdmbbtkzynMuKvZmFp/BR2gXfyIVcwXqpw6T6zeH7AzTAbf8
-uqTxuHXpCuLIo0f2wNvUBFe3fDo5l/+sRjF4mKWYl26E+QuUfLw/JuPW/oULP0rT
-H1dVH9d98FEEkDTTW5R2Ea/hz9aORhIdXjOefyP6hrW+C7je4NeplG6Pu2IY39KG
-MUNt0U8ERmJQ7BpxG8Zj0KxteylHNI1ZJwmqvacXVTxMOzqROzNphAqn7bwFAq7l
-xdyBOj/g6opIxxLxArUwt1e8I41rrLhM5Wj4kA6uNQnsHgHibbRTOwykTzypna1k
-AQv8bC44BbMBEOVFDiti6un/o9ub9AUav698JpC/rbwm6W7+cKu3BYXAklB0k2t6
-60kzOTwtL7KI3Dg/wyyUGef24AElNigF70NVfPLxHa0CW5zbMcblHNod1WUSyX4i
-PxW67tCUC+HTe3Drv2svPpT5QpVI+oZD10xzzRZHLC7xtNl8hJQTWl+dp1ocBIcD
-vRFa/Ehk+BmirkKuCja2
-=rhGe
------END PGP SIGNATURE-----
-
---=-IhLBQdzXFe/FmfaN8Tue--
-
+    mm: fix slab->page flags corruption
+    
+    Transparent huge pages can change page->flags (PG_compound_lock) without
+    taking Slab lock.  Since THP can not break slab pages we can safely access
+    compound page without taking compound lock.
+    
+    Specifically this patch fixes a race between compound_unlock() and slab
+    functions which perform page-flags updates.  This can occur when
+    get_page()/put_page() is called on a page from slab.
