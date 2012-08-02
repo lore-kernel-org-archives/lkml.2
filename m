@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab2HBUD1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:03:27 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:40000 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569Ab2HBUDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:03:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
-Date: Thu, 2 Aug 2012 22:09:15 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Witold Szczeponik <Witold.Szczeponik@gmx.net>, bhelgaas@google.com,
-        lenb@kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-References: <50158321.4030007@gmx.net> <50158FA9.7080700@gmx.net> <20120730082820.GA32745@liondog.tnic>
-In-Reply-To: <20120730082820.GA32745@liondog.tnic>
+	id S1752901Ab2HBUIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:08:40 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:53315 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab2HBUIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 16:08:39 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208022209.16015.rjw@sisk.pl>
+In-Reply-To: <1343936764-6461-1-git-send-email-vikram.pandita@ti.com>
+References: <1343936764-6461-1-git-send-email-vikram.pandita@ti.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Thu, 2 Aug 2012 22:08:18 +0200
+Message-ID: <CAPXgP10fJj3SwDdCa=rzfjZM8TL1GsvbSwEnfomFQ+NrW2j15w@mail.gmail.com>
+Subject: Re: [PATCH] printk: add option to print cpu id
+To: Vikram Pandita <vikram.pandita@ti.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 30, 2012, Borislav Petkov wrote:
-> On Sun, Jul 29, 2012 at 09:31:53PM +0200, Witold Szczeponik wrote:
-> > the aim is to select a PNP ACPI option where resources can be disabled
-> > (or are not needed).  E.g., the parallel port of the 600E can be used
-> > with and without IRQ lines.  The means to allow for this is to use the
-> > sysfs interface to select disabled resources (just like any other 
-> > resource value).  In https://lkml.org/lkml/2011/7/3/41, I used the 
-> > following example:
-> > 
-> >   echo disable > /sys/bus/pnp/devices/$device/resources
-> >   echo clear > /sys/bus/pnp/devices/$device/resources
-> >   echo set irq disabled > /sys/bus/pnp/devices/$device/resources
-> >   echo fill > /sys/bus/pnp/devices/$device/resources
-> >   echo activate > /sys/bus/pnp/devices/$device/resources
-> > 
-> > The third line is made possible by the patch series.  All other
-> > lines are already implemented.
-> 
-> Shouldn't this be rather "disable_irq" or something which is a single
-> word and thus would simplify parsing a lot?
+On Thu, Aug 2, 2012 at 9:46 PM, Vikram Pandita <vikram.pandita@ti.com> wrote:
+> From: Vikram Pandita <vikram.pandita@ti.com>
+>
+> Introduce config option to enable CPU id reporting for printk() calls.
+>
+> Its sometimes very useful to have printk also print the CPU Identifier
+> that executed the call. This has helped to debug various SMP issues on shipping
+> products.
+>
+> Known limitation is, if the system gets preempted between function call and
+> actual printk, the reported cpu-id might not be accurate. But most of the
+> times its seen to give a good feel of how the N cpu's in the system are
+> getting loaded.
+>
+> Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+> ---
+>  kernel/printk.c   |   20 ++++++++++++++++++++
+>  lib/Kconfig.debug |   13 +++++++++++++
+>  2 files changed, 33 insertions(+)
+>
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 6a76ab9..50feb82 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -855,6 +855,25 @@ static size_t print_time(u64 ts, char *buf)
+>                        (unsigned long)ts, rem_nsec / 1000);
+>  }
+>
+> +#if defined(CONFIG_PRINTK_CPUID)
+> +static bool printk_cpuid = 1;
+> +#else
+> +static bool printk_cpuid;
+> +#endif
+> +module_param_named(cpuid, printk_cpuid, bool, S_IRUGO | S_IWUSR);
+> +
+> +static size_t print_cpuid(char *buf)
+> +{
+> +
+> +       if (!printk_cpuid)
+> +               return 0;
+> +
+> +       if (!buf)
+> +               return 4;
+> +
+> +       return sprintf(buf, "[%1d] ", smp_processor_id());
+> +}
+> +
+>  static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
+>  {
+>         size_t len = 0;
+> @@ -874,6 +893,7 @@ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
+>                 }
+>         }
+>
+> +       len += print_cpuid(buf ? buf + len : NULL);
+>         len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+>         return len;
+>  }
 
-Or just "irq", which isn't going to be confused with anything else it seems.
+How is that supposed to be useful?
+
+The prefix is added while exporting data from the kmsg buffer, which
+is just the CPU that *reads* the data from the buffer, not the one
+that has *written* the data it into it.
+
+Do I miss anything here?
 
 Thanks,
-Rafael
+Kay
