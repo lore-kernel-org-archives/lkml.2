@@ -1,37 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab2HBLkv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 07:40:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60203 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753704Ab2HBLkt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 07:40:49 -0400
-Date: Thu, 2 Aug 2012 12:40:46 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        swarren@nvidia.com, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] regulator: tps6586x: add support for SYS rail
-Message-ID: <20120802114046.GK29157@opensource.wolfsonmicro.com>
-References: <1343906193-8309-1-git-send-email-ldewangan@nvidia.com>
+	id S1754083Ab2HBLpX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 07:45:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59027 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752890Ab2HBLpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 07:45:22 -0400
+Date: Thu, 2 Aug 2012 13:45:12 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] parisc: fix personality flag check in copy_thread()
+In-Reply-To: <1343897272.5073.5.camel@dabdike.int.hansenpartnership.com>
+Message-ID: <alpine.LNX.2.00.1208021342120.4820@pobox.suse.cz>
+References: <alpine.LNX.2.00.1208012155330.14910@pobox.suse.cz>  <alpine.LNX.2.00.1208020911300.14910@pobox.suse.cz> <1343897272.5073.5.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343906193-8309-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 04:46:33PM +0530, Laxman Dewangan wrote:
+On Thu, 2 Aug 2012, James Bottomley wrote:
 
-> +static const unsigned int tps6586x_sys_voltages[] = {
-> +	5000000,
-> +};
+> > Directly comparing task_struct->personality against PER_* is not fully
+> > correct, as it doesn't take flags potentially stored in top three bytes
+> > into account.
+> > 
+> > Analogically, directly forcefully setting personality to PER_LINUX32 or
+> > PER_LINUX discards any flags stored in the top three bytes.
+> > 
+> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> > ---
+> > 
+> > changed since v1: fix the bit ops to reflect the fact that PER_LINUX is 
+> > actually 0
+> 
+> Tell me what you're trying to achieve (or what problem you're trying to
+> solve), because personality is notoriously tricky.
 
-Is the system rail actually regulated or is it just a nominal 5V?
-Normally it's just the raw, unregulated input switched in with FETs or
-whatever.
+Long story short -- I was debugging a problem where 'setarch --uname-2.6' 
+would not work on s390 on (older) 3.x kernel. Turned out to be a 
+corruption of top bytes of personality across exec() on s390.
+
+I was doing quite some over-the-tree grepping during this, and found out 
+that at least parisc, powerpc and sparc64 (davem already queued my patch 
+for this) would under some silently ignore discard the top bytes of 
+personality flags passed to sys_personality().
+
+In case of parsic, let's take a process with current->personality == 
+PER_LINUX32 callling personality(PER_LINUX | UNAME26). The
+
+        if (personality(current->personality) == PER_LINUX32
+            && personality == PER_LINUX)
+                personality = PER_LINUX32;
+
+would that have no effect, and sys_personality() would be called with 
+(PER_LINUX | UNAME26) instead of PER_LINUX32, just because of UNAME26 
+being set as well. That doesn't seem really correct. Is it?
+
+-- 
+Jiri Kosina
+SUSE Labs
