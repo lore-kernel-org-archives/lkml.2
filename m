@@ -1,142 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab2HBM0D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 08:26:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55337 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750772Ab2HBM0C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 08:26:02 -0400
-Date: Thu, 2 Aug 2012 13:25:50 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH] kbuild: kvm: make export of linux/kvm_para.h
- unconditional
-Message-ID: <20120802122550.GD9838@mudshark.cambridge.arm.com>
-References: <1343310254-7493-1-git-send-email-will.deacon@arm.com>
+	id S1753482Ab2HBMbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 08:31:41 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3384 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab2HBMbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 08:31:39 -0400
+Message-ID: <501A728A.2070905@canonical.com>
+Date: Thu, 02 Aug 2012 06:28:58 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343310254-7493-1-git-send-email-will.deacon@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        ben@decadent.org.uk, JBottomley@Parallels.com,
+        dan.j.williams@intel.com, divy@chelsio.com, netdev@vger.kernel.org
+Subject: Re: [PATCH] firmware: Remove obsolete Chelsio cxgb3 firmware
+References: <1343848670-31504-1-git-send-email-tim.gardner@canonical.com> <20120802.002000.2023014747210925552.davem@davemloft.net>
+In-Reply-To: <20120802.002000.2023014747210925552.davem@davemloft.net>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 02:44:14PM +0100, Will Deacon wrote:
-> The asm-generic version of kvm_para.h is always exported, confusing the
-> Kbuild wildcarding that tries to detect whether the source architecture
-> is exporting the header, since asm-* matches the generic version.
+On 08/02/2012 01:20 AM, David Miller wrote:
 > 
-> This patch unconditionally exports linux/kvm_para.h and fixes the few
-> remaining architectures without asm/kvm_para.h to use the generic
-> version. I also took the liberty of removing some dead lines from the
-> wildcarding which was searcing for asm-$(SRCARCH) directores under
-> $(srctree).
+> "git am" refuses to apply this to current 'net':
 > 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Avi Kivity <avi@redhat.com>
-> Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
-
-Any further comments on this? It fixes header generation for me, so it would
-be nice to see it merged.
-
-Cheers,
-
-Will
-
->  arch/cris/include/asm/Kbuild   |    2 ++
->  arch/m32r/include/asm/Kbuild   |    2 ++
->  include/asm-generic/Kbuild.asm |   12 +++---------
->  include/linux/Kbuild           |    8 +-------
->  4 files changed, 8 insertions(+), 16 deletions(-)
+> Applying: firmware: Remove obsolete Chelsio cxgb3 firmware
+> error: removal patch leaves file contents
+> error: firmware/cxgb3/t3fw-7.10.0.bin.ihex: patch does not apply
 > 
-> diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
-> index 04d02a5..2fde49c 100644
-> --- a/arch/cris/include/asm/Kbuild
-> +++ b/arch/cris/include/asm/Kbuild
-> @@ -7,3 +7,5 @@ header-y += ethernet.h
->  header-y += etraxgpio.h
->  header-y += rs485.h
->  header-y += sync_serial.h
-> +
-> +generic-y += kvm_para.h
-> diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
-> index c68e168..78c505e 100644
-> --- a/arch/m32r/include/asm/Kbuild
-> +++ b/arch/m32r/include/asm/Kbuild
-> @@ -1 +1,3 @@
->  include include/asm-generic/Kbuild.asm
-> +
-> +generic-y += kvm_para.h
-> diff --git a/include/asm-generic/Kbuild.asm b/include/asm-generic/Kbuild.asm
-> index c5d2e5d..f180c99 100644
-> --- a/include/asm-generic/Kbuild.asm
-> +++ b/include/asm-generic/Kbuild.asm
-> @@ -1,15 +1,8 @@
-> -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
-> -		  $(srctree)/include/asm-$(SRCARCH)/kvm.h),)
-> +ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h),)
->  header-y  += kvm.h
->  endif
->  
-> -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
-> -		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
-> -header-y  += kvm_para.h
-> -endif
-> -
-> -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
-> -		  $(srctree)/include/asm-$(SRCARCH)/a.out.h),)
-> +ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h),)
->  header-y += a.out.h
->  endif
->  
-> @@ -21,6 +14,7 @@ header-y += fcntl.h
->  header-y += ioctl.h
->  header-y += ioctls.h
->  header-y += ipcbuf.h
-> +header-y += kvm_para.h
->  header-y += mman.h
->  header-y += msgbuf.h
->  header-y += param.h
-> diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-> index 8760be3..048abc6 100644
-> --- a/include/linux/Kbuild
-> +++ b/include/linux/Kbuild
-> @@ -23,20 +23,13 @@ header-y += wimax/
->  objhdr-y += version.h
->  
->  ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
-> -		  $(srctree)/include/asm-$(SRCARCH)/a.out.h \
->  		  $(INSTALL_HDR_PATH)/include/asm-*/a.out.h),)
->  header-y += a.out.h
->  endif
->  ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
-> -		  $(srctree)/include/asm-$(SRCARCH)/kvm.h \
->  		  $(INSTALL_HDR_PATH)/include/asm-*/kvm.h),)
->  header-y += kvm.h
->  endif
-> -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
-> -		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h \
-> -		  $(INSTALL_HDR_PATH)/include/asm-*/kvm_para.h),)
-> -header-y += kvm_para.h
-> -endif
->  
->  header-y += acct.h
->  header-y += adb.h
-> @@ -229,6 +222,7 @@ header-y += kernel-page-flags.h
->  header-y += kexec.h
->  header-y += keyboard.h
->  header-y += keyctl.h
-> +header-y += kvm_para.h
->  header-y += l2tp.h
->  header-y += limits.h
->  header-y += llc.h
-> -- 
-> 1.7.4.1
-> 
+
+Paul Gortmaker suggested I use 'git format-patch --irreversible-delete'
+to produce shorter patches, but then even I can't reapply it.
+
+How about a pull request against net-next instead ?
+
+The following changes since commit 1a9b4993b70fb1884716902774dc9025b457760d:
+
+  Merge branch 'upstream' of
+git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2012-08-01
+16:47:15 -0700)
+
+are available in the git repository at:
+
+
+  git://kernel.ubuntu.com/rtg/net-next.git master
+
+for you to fetch changes up to 044b722f36a17bc5f7f472cc3246cb15a430bb0e:
+
+  firmware: Remove obsolete Chelsio cxgb3 firmware (2012-08-02 06:23:25
+-0600)
+
+----------------------------------------------------------------
+Tim Gardner (1):
+      firmware: Remove obsolete Chelsio cxgb3 firmware
+
+ firmware/Makefile                   |    1 -
+ firmware/cxgb3/t3fw-7.10.0.bin.ihex | 1935
+-----------------------------------
+ 2 files changed, 1936 deletions(-)
+ delete mode 100644 firmware/cxgb3/t3fw-7.10.0.bin.ihex
+-- 
+Tim Gardner tim.gardner@canonical.com
