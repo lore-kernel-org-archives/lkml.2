@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2HBRPX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:15:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38689 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab2HBRPU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:15:20 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
-Cc: Arun Raghavan <arun.raghavan@collabora.co.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH] apple-gmux: Fix kconfig dependencies
-Date: Thu,  2 Aug 2012 12:15:14 -0500
-Message-Id: <1343927714-14937-1-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1341240929-3400-1-git-send-email-seth.forshee@canonical.com>
-References: <1341240929-3400-1-git-send-email-seth.forshee@canonical.com>
+	id S1754728Ab2HBRYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:24:34 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:34766 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754493Ab2HBRYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 13:24:33 -0400
+Message-ID: <501AB7C5.9010206@parallels.com>
+Date: Thu, 2 Aug 2012 21:24:21 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Christoph Lameter <cl@linux.com>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] slub: use free_page instead of put_page for freeing kmalloc
+ allocation
+References: <1343913065-14631-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1208020902390.23049@router.home> <20120802164203.GA30111@cmpxchg.org> <501AB013.1090607@parallels.com> <20120802171019.GA1239@cmpxchg.org>
+In-Reply-To: <20120802171019.GA1239@cmpxchg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.1.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the dependencies of apple-gmux to prevent it from being built-in
-when one or more of its dependencies is built as a module. Otherwise it
-can fail to build due to missing symbols.
+On 08/02/2012 09:10 PM, Johannes Weiner wrote:
+> On Thu, Aug 02, 2012 at 08:51:31PM +0400, Glauber Costa wrote:
+>> On 08/02/2012 08:42 PM, Johannes Weiner wrote:
+>>> On Thu, Aug 02, 2012 at 09:06:41AM -0500, Christoph Lameter wrote:
+>>>> On Thu, 2 Aug 2012, Glauber Costa wrote:
+>>>>
+>>>>> diff --git a/mm/slub.c b/mm/slub.c
+>>>>> index e517d43..9ca4e20 100644
+>>>>> --- a/mm/slub.c
+>>>>> +++ b/mm/slub.c
+>>>>> @@ -3453,7 +3453,7 @@ void kfree(const void *x)
+>>>>>  	if (unlikely(!PageSlab(page))) {
+>>>>>  		BUG_ON(!PageCompound(page));
+>>>>>  		kmemleak_free(x);
+>>>>> -		put_page(page);
+>>>>> +		__free_pages(page, compound_order(page));
+>>>>
+>>>> Hmmm... put_page would have called put_compound_page(). which would have
+>>>> called the dtor function. dtor is set to __free_pages() ok which does
+>>>> mlock checks and verifies that the page is in a proper condition for
+>>>> freeing. Then it calls free_one_page().
+>>>>
+>>>> __free_pages() decrements the refcount and then calls __free_pages_ok().
+>>>>
+>>>> So we loose the checking and the dtor stuff with this patch. Guess that is
+>>>> ok?
+>>>
+>>> The changelog is not correct, however.  People DO get pages underlying
+>>> slab objects and even free the slab objects before returning the page.
+>>> See recent fix:
+>>
+>> Well, yes, in the sense that slab objects are page-backed.
+>>
+>> The point is that a user of kmalloc/kfree should not treat a memory area
+>> as if it were a page, even if it is page-sized.
+> 
+> I whole-heartedly agree.  But it's hard to verify there aren't any
+> doing that.  And even though it's ugly to do, it's technically
+> working, no?  No longer supporting it would be a regression.
 
-v2: Add dependency on ACPI to fix build failure when ACPI=n
+I've done an extensive audit per Christoph's request, and although of
+course this is not enough to guarantee it 100 %, it should at least be
+enough to sustain a belief that it should be reasonably safe.
 
-Reported-by: Arun Raghavan <arun.raghavan@collabora.co.uk>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- drivers/platform/x86/Kconfig |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+About regressions, yes, it is working. But as you know, this area is
+under undergoing change by myself. For kmemcg to work, we need to
+explicitly mark instances of __free_pages that are accounted. With this
+patch, this is trivial. Without this patch, I need to come up with a
+quite ugly hack to mark put_pages as well, that would exist for no
+reason aside from "avoid touching this".
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 2a262f5..637074d 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -758,8 +758,11 @@ config SAMSUNG_Q10
- 
- config APPLE_GMUX
- 	tristate "Apple Gmux Driver"
-+	depends on ACPI
- 	depends on PNP
--	select BACKLIGHT_CLASS_DEVICE
-+	depends on BACKLIGHT_CLASS_DEVICE
-+	depends on BACKLIGHT_APPLE=n || BACKLIGHT_APPLE
-+	depends on ACPI_VIDEO=n || ACPI_VIDEO
- 	---help---
- 	  This driver provides support for the gmux device found on many
- 	  Apple laptops, which controls the display mux for the hybrid
--- 
-1.7.9.5
+I could of course just bundle this is my series, but since this is an
+independent change, it is better to send it separate so it get better
+review, testing and validation.
+
+>> If it is just the Changelog you are unhappy about, I can do another
+>> submission rewording it.
+> 
+> __free_pages still respects the refcount, so I think the Changelog is
+> not actually appropriate for the change you're making.  You're just
+> changing what Christoph outlined above, the compound page handling.
+
+I can update the Changelog, no problem.
+
 
