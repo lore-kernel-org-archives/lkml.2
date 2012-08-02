@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2HBNxy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 09:53:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39260 "EHLO mx2.suse.de"
+	id S1752930Ab2HBN4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 09:56:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23694 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191Ab2HBNxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 09:53:53 -0400
-Date: Thu, 2 Aug 2012 15:53:50 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-Message-ID: <20120802135350.GA18084@dhcp22.suse.cz>
-References: <50181AA1.0@redhat.com>
- <20120731200650.GB19524@tiehlicka.suse.cz>
- <50189857.4000501@redhat.com>
- <20120801082036.GC4436@tiehlicka.suse.cz>
- <20120801123209.GK4436@tiehlicka.suse.cz>
- <501945F9.2030402@redhat.com>
- <20120802071934.GA7557@dhcp22.suse.cz>
- <20120802073757.GC29814@suse.de>
- <20120802123658.GA5194@dhcp22.suse.cz>
- <20120802133310.GD29814@suse.de>
+	id S1750972Ab2HBN4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 09:56:31 -0400
+Date: Thu, 2 Aug 2012 15:53:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: Ignore unsupported instructions in uprobe_mmap
+Message-ID: <20120802135313.GA4334@redhat.com>
+References: <20120728163157.GA22719@redhat.com> <20120731064730.GB5087@linux.vnet.ibm.com> <20120731124805.GA485@redhat.com> <20120802100515.GC5782@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120802133310.GD29814@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120802100515.GC5782@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 02-08-12 14:33:10, Mel Gorman wrote:
-> On Thu, Aug 02, 2012 at 02:36:58PM +0200, Michal Hocko wrote:
-> > On Thu 02-08-12 08:37:57, Mel Gorman wrote:
-> > > On Thu, Aug 02, 2012 at 09:19:34AM +0200, Michal Hocko wrote:
-> > [...]
-> > > > On the other hand, mine is more coupled with the sharing code so it
-> > > > makes the code easier to follow and also makes the sharing more
-> > > > effective because racing processes see pmd populated when checking for
-> > > > shareable mappings.
-> > > > 
-> > > 
-> > > It could do with a small comment above huge_pmd_share() explaining that
-> > > calling pmd_alloc() under the i_mmap_mutex is necessary to prevent two
-> > > parallel faults missing a sharing opportunity with each other but it's
-> > > not mandatory.
-> > 
-> > Sure, that's a good idea. What about the following:
-> > 
-> > diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-> > index 40b2500..51839d1 100644
-> > --- a/arch/x86/mm/hugetlbpage.c
-> > +++ b/arch/x86/mm/hugetlbpage.c
-> > @@ -56,7 +56,13 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
-> >  }
-> >  
-> >  /*
-> > - * search for a shareable pmd page for hugetlb.
-> > + * search for a shareable pmd page for hugetlb. In any case calls
-> > + * pmd_alloc and returns the corresponding pte. While this not necessary
-> > + * for the !shared pmd case because we can allocate the pmd later as
-> > + * well it makes the code much cleaner. pmd allocation is essential for
-> > + * the shared case though because pud has to be populated inside the
-> > + * same i_mmap_mutex section otherwise racing tasks could either miss
-> > + * the sharing (see huge_pte_offset) or selected a bad pmd for sharing.
-> >   */
-> >  static pte_t*
-> >  huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
-> > 
-> 
-> Looks reasonable to me.
+On 08/02, Srikar Dronamraju wrote:
+>
+> uprobe_mmap()->install_breakpoint() can fail if the probed insn is not
+> supported
 
-OK, added to the patch. I will send it to Andrew now.
+But there are other reasons why it can fail,
 
-Thanks a lot!
--- 
-Michal Hocko
-SUSE Labs
+> However failing mmap_region()/do_fork() because of a probe on an
+> unsupported instruction is wrong.
+
+Srikar, I strongly, absolutely disagree. Please correct me, but..
+
+Do you realize how much uprobes hooks in mmap_region/dup_mmap are broken?
+
+(cough, can't resist, vma_adjust()->uprobe_mmap() is not right too, but
+ this is another story).
+
+OK, lets start with dup_mmap:
+
+		// retval == 0
+
+		if (file && uprobe_mmap(tmp))
+			goto out;
+
+	out:
+		up_write(&mm->mmap_sem);
+		flush_tlb_mm(oldmm);
+		up_write(&oldmm->mmap_sem);
+		return retval;
+
+Given that retval == 0, what do you think dup_mmap() returns if
+uprobe_mmap() fails? And note that we didn't copy all vmas.
+OK, at least this can't crash (afaics), and easy to fix.
+
+
+But mmap_region() is worse, much worse. It simply can _not_ fail
+after uprobe_mmap (of course, I am not saying this is unfixable)
+without the crash. And note that the crash is "delayed". And btw,
+like dup_mmap(), mmap_region() doesn't return the error too.
+
+Srikar, I strongly believe this horror must not exist. Either
+we should teach mmap_region() and dup_mmap() (and vma_adjust!)
+to fail correctly, or we should ignore the error code.
+
+It is that simple, isn't it?
+
+Whatever you do with uprobe_mmap(), even if you change it to always
+return 0, the code in mmap_region() is absolutely, absolutely broken.
+
+Do you agree?
+
+And once again. I agree, in the long term we should reconsider
+this change. But we need a simple fix for now/stable.
+
+> Hence change uprobe_mmap() to ignore unsupported instructions.
+
+OK. Now suppose that mmap_region()-> uprobe_mmap() fails because
+the caller is SIGKILL'ed (so __get_user_pages fails). Given that
+mmap_region() can't handle the error correctly, the kernel can
+crash.
+
+Oleg.
+
