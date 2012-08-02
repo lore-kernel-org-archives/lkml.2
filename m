@@ -1,98 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab2HBJyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 05:54:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58056 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab2HBJx6 (ORCPT
+	id S1754346Ab2HBJyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 05:54:12 -0400
+Received: from smtpout9-vf.aruba.it ([62.149.177.243]:50239 "HELO
+	smtp01-vf.aruba.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1754316Ab2HBJyI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 05:53:58 -0400
-Date: Thu, 2 Aug 2012 11:53:54 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] pwm: samsung: fix the number of PWMs
-Message-ID: <20120802095354.GA18945@avionic-0098.adnet.avionic-design.de>
-References: <002401cd708c$b3c09ed0$1b41dc70$%han@samsung.com>
+	Thu, 2 Aug 2012 05:54:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
-Content-Disposition: inline
-In-Reply-To: <002401cd708c$b3c09ed0$1b41dc70$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:eIAaOW7NQDxslevFR4i25kuQwLoZ9FMA/OWfldQhWA0
- b3e7HAL4KMuEIbL1prYKeFsI0ITsjRNBYg9IM6I/oz5tlkzxzx
- LcyxVcnyFC8hAmZjcYkcNWjFrbq9dsiTTyx0tAKHqY5z/RZama
- uHMSbMKJ2JZX6T4+K+jCznB/tRUKPJ5QNerQmhYLHk7uSFLckM
- G3eKZ2gMgx4DrMLuhXoD1pBRaabkWJULgrCbUqh9e9tg7xX42u
- N/GWIg7hhvx86II2jp1Z27lxdwzxhNLVZVZHJ+2g6T/rI7iDe5
- MufpIu5wb8KMyssY7anWFpr2Lp4LMdTwqEnlmgI2bkI/a9bi4a
- gjoR4JE5RirK7x3Xpx/9P7VSWjJw31IqBxUCbHrrnrQlYUwfR/
- raYjv/M0ZoTEsMj8R74U9Se5lcxHv/4aUc=
+X-Mailer: AtMail PHP 5.1
+Message-ID: <43898.1343901243@ml.lt>
+Reply-To: "feec.vutbr.cz" <customer-careaccountant@ml.lt>
+Content-Type: text/plain; charset="utf-8"
+X-Origin: 95.143.37.178
+Date: Thu, 2 Aug 2012 11:54:03 +0200
+Subject: aktualizace
+From: "feec.vutbr.cz" <customer-careaccountant@ml.lt>
+Content-Transfer-Encoding: 8BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Vážený uživateli feec.vutbr.cz
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+HTK4S virus byl zjištěn u feec.vutbr.cz serveru Webmail, a všechny feec.vutbr.cz webmail účetní závěrka musí být 
+aktualizován okamžitě, aby se zabránilo poškození webmail feec.vutbr.cz.
 
-On Thu, Aug 02, 2012 at 05:56:27PM +0900, Jingoo Han wrote:
-> Samsung SoC can provide 4 PWMs; thus, the number of PWMs should be
-> set as 4.
->=20
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/pwm/pwm-samsung.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/pwm/pwm-samsung.c b/drivers/pwm/pwm-samsung.c
-> index e5187c0..32562c6 100644
-> --- a/drivers/pwm/pwm-samsung.c
-> +++ b/drivers/pwm/pwm-samsung.c
-> @@ -228,7 +228,7 @@ static int s3c_pwm_probe(struct platform_device *pdev)
->  	s3c->chip.dev =3D &pdev->dev;
->  	s3c->chip.ops =3D &s3c_pwm_ops;
->  	s3c->chip.base =3D -1;
-> -	s3c->chip.npwm =3D 1;
-> +	s3c->chip.npwm =3D 4;
+Budete vyzváni k poskytnutí identity účtu uvedené níže, abychom mohli kontrolovat a udržovat svůj účet s novou 
+verzí HTK4S anti-virus/anti-Spam 2012. neposkytnutí platné informace, bude váš účet dočasně pozastaven z našich 
+služeb.
 
-I don't think this is correct. The driver seems to be using the platform
-device id as index currently, which indicates that the driver is bound
-against 4 different platform devices, each representing a single PWM. If
-you want to service multiple PWM devices by a single instance you need
-to make further changes to the driver. For instance the tcon_base is
-initialized based on the platform id. This could easily be replaced by
-making it depend on the .hwpwm member of pwm_device.
+Jméno: ..................
+Uživatelské jméno ...............
+Heslo: ............
+Datum narození: ...........
 
-You may also want to consider making the driver a proper module if that
-works on the platforms that need it. I see that it is currently an
-arch_initcall, but it might be cleaner to use deferred driver probe
-instead.
+Webmail Copyright © feec.vutbr.cz 2012 Všechna práva vyhrazena
 
-Thierry
-
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQGk4xAAoJEN0jrNd/PrOhMUcP/3o59WtH249RzhgR4+7L3e/n
-xAQXaMzu4SXvq6vIGqShJ75h1EYFl+z107Z0xKEhgPjzjMdPEqamzLLFccgOd3d0
-YzPwXexPyHfVk9gBikSteRzeBdpkOTH10mMS38gxhgYOQ2UvHah3HdpFB6Q2u9Sd
-wz9MBs3uA2ZC6cFYPrRjcNcXSUE+v9ZGH7RSUnBSdE5+KBtt6EfTprusCC3lSgPg
-598CcEzvQ5lEE6na55z0ez/Tzr/b6LlxTgqUJ5UA/rvzEZ6rhjCF2rFg90yUJWoN
-UcN2EUkUnMYtukz0jTRijKcwEsjna5qN6zmdfSVS6adLcdzCjV+xOPOizMwHB068
-z6JAbKIgR4fIyaLiB5dJbgocq8VOMWUU80oFRv6BGMnrdyIuW9KK0XROwtR74gc+
-dNGQJ8R2uHF4cWDs0vm8faYdw0lYGTJgKLTzzARevQ8K0x3Xz/dVEQ9hYozSzGZV
-i4vmyGm2sz4gVyd5ysjMKIBrwE8UD81oRp67OQnDv2DjVb6knXPvq6oa31iUEXq/
-Jvx70pGiDJiMlGRDFs46xu6e7afO5oXZ/K+eHdMdoNXfjDXPIPW8FObQOVwPWYaW
-0KLClr/CclFcegVpdgPMcDrLp4qYAofg2FzIwzP0P3nAHYcjO0g+cKg3F/e3U5hh
-ZVbOYuuLP69wTA8auIOw
-=Y+LG
------END PGP SIGNATURE-----
-
---PNTmBPCT7hxwcZjr--
