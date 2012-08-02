@@ -1,80 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab2HBUmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 16:42:12 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:58121 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab2HBUmK (ORCPT
+	id S1752335Ab2HBUqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 16:46:24 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:54657 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751312Ab2HBUqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 16:42:10 -0400
-Message-ID: <501AE5D9.7000805@windriver.com>
-Date: Thu, 2 Aug 2012 16:40:57 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 2 Aug 2012 16:46:22 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/rGNE0YNvrZO3rQyOoIbqIrInhLZdFNQQnB3phDa
+	s0NO3oxeWIHWNF
+Message-ID: <501AE71A.80903@gmx.de>
+Date: Thu, 02 Aug 2012 20:46:18 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <ben@decadent.org.uk>, <JBottomley@parallels.com>,
-        <dan.j.williams@intel.com>, <divy@chelsio.com>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH] firmware: Remove obsolete Chelsio cxgb3 firmware
-References: <1343848670-31504-1-git-send-email-tim.gardner@canonical.com> <20120802.002000.2023014747210925552.davem@davemloft.net> <501A728A.2070905@canonical.com>
-In-Reply-To: <501A728A.2070905@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: viafb on Clevo M5x0V laptop (+VT1631L)
+References: <201208022003.28404.linux@rainbow-software.org>
+In-Reply-To: <201208022003.28404.linux@rainbow-software.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-08-02 08:28 AM, Tim Gardner wrote:
-> On 08/02/2012 01:20 AM, David Miller wrote:
->>
->> "git am" refuses to apply this to current 'net':
->>
->> Applying: firmware: Remove obsolete Chelsio cxgb3 firmware
->> error: removal patch leaves file contents
->> error: firmware/cxgb3/t3fw-7.10.0.bin.ihex: patch does not apply
->>
-> 
-> Paul Gortmaker suggested I use 'git format-patch --irreversible-delete'
-> to produce shorter patches, but then even I can't reapply it.
+Hi Ondrej,
 
-The git folks originally designed it that way on purpose, (i.e. used
-for review only) but it doesn't really need to be limited like that,
-so I've proposed a fix and we'll see what the git folks have to say.
+On 08/02/2012 06:03 PM, Ondrej Zary wrote:
+> Hello,
+> I've got a Clevo M5x0V laptop which has VIA PM800 chipset (1106:3118) and 
+> 1280x768 LCD panel connected using VT1631L LVDS transmitter. There's a 
+> schematic of this laptop available on the web which shows that VT1631L's I2C 
+> port is not connected anywhere...
+> 
+> viafb does not work properly - LCD panel (and backlight) is turned off upon 
+> module load and there's 640x480 signal on VGA connector (even when monitor 
+> was not connected during module load).
 
-   http://marc.info/?l=git&m=134394003916648&w=2
+Yes, that's the default (640x480-60 on the VGA output) that VIA selected
+when they wrote the module. I tried to add some auto detect mechanism,
+but I guess in your case it wouldn't help, even if it were complete. The
+traditional way to use viafb is via module parameters as described in
+Documentation/fb/viafb.txt
+In your case something like this might work:
+viafb_mode=1280x768 viafb_lcd_panel_id=3 viafb_active_dev=LCD
+Additionally it might be required to add viafb_lcd_port with any of
+DVP0, DVP1, DFP_HIGHLOW, DFP_HIGH, DFP_LOW.
 
-Paul.
---
+> Looking at the code, there's almost nothing for VT1631. What needs to be done 
+> in order for the LCD to work? Xorg seems to work using openchrome (but it is 
+> not able to restore the card on resume from S3):
+> (II) CHROME(0): Unable to get panel size from EDID. Return code: 0
+> (II) CHROME(0): ViaPanelGetNativeModeFromScratchPad
+> (II) CHROME(0): Native Panel Resolution is 1280x768
+
+Interesting that they get the panel resolution from the scratch pad. The
+official documentation does not contain any useful information about it
+(and openchrome didn't work on any of my LCD devices that I tested,
+hence I didn't care whether they did have any code in that area)
+Maybe the above module parameters will help you, otherwise more
+investigation will be required.
+
+
+Best regards,
+
+Florian Tobias Schandinat
+
 
 > 
-> How about a pull request against net-next instead ?
 > 
-> The following changes since commit 1a9b4993b70fb1884716902774dc9025b457760d:
+> This is from kernel 3.5 with VIAFB_DEBUG and VIAFB_WARN enabled:
 > 
->   Merge branch 'upstream' of
-> git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2012-08-01
-> 16:47:15 -0700)
+> [  153.051061] VIA Graphics Integration Chipset framebuffer 2.4 initializing
+> [  153.051765] viafb 0000:01:00.0: power state changed by ACPI to D0
+> [  153.051773] viafb 0000:01:00.0: power state changed by ACPI to D0
+> [  153.053535] Device ID = 3259
+> [  153.053553] FB Size = 4000
+> [  153.059984] VIAFB PCI Probe!!
+> [  153.060044] viafb: Probing I2C bus 0x26
+> [  153.092761] viafb: Probing I2C bus 0x31
+> [  155.588019] viafb: Probing I2C bus 0x2C
+> [  155.619016] viafb: Finished I2C bus probing
+> [  155.619021] parse_lcd_port: viafb_lcd_port:,interface:0
+> [  155.619023] parse_dvi_port: viafb_dvi_port:,interface:0
+> [  155.713224] TMDS Chip = 0
+> [  155.713227] viafb_init_dvi_size()
+> [  155.713229] viafb_dvi_sense!!
+> [  155.714415] viafb_dvi_query_EDID!!
+> [  155.716820] viafb_dvi_query_EDID!!
+> [  155.719179] viafb_lvds_identify_vt1636.
+> [  155.812018] viafb_lvds_identify_vt1636.
+> [  155.814383] viafb_init_lcd_size()
+> [  155.814384] fp_get_panel_id()
+> [  155.814387] LVDS Chip = 0
+> [  155.814389] LVDS1 output_interface = 6
+> [  155.814391] LVDS2 output_interface = 6
+> [  155.814405] viafb_check_var!
+> [  155.815250] fbcon: Via (fb0) is primary device
+> [  155.815257] viafb_open!
+> [  155.818608] viafb_set_par!
+> [  155.818720] via_set_primary_pitch(0x00000A00)
+> [  155.818723] via_set_secondary_pitch(0x00000A00)
+> [  155.818727] via_set_primary_color_depth(24)
+> [  155.818730] via_set_secondary_color_depth(24)
+> [  155.818788] viafb_pan_display, address = 0
+> [  155.818789] via_set_primary_address(0x00000000)
+> [  155.818793] via_set_secondary_address(0x00000000)
+> [  155.819020] viafb_pan_display, address = 0
+> [  155.819021] via_set_primary_address(0x00000000)
+> [  155.819025] via_set_secondary_address(0x00000000)
+> [  155.819044] viafb 2D engine: imageblit
+> ...many imageblits...
+> [  155.826516] Console: switching to colour frame buffer device 80x30
+> [  155.826522] viafb_pan_display, address = 0
+> [  155.826523] via_set_primary_address(0x00000000)
+> [  155.826527] via_set_secondary_address(0x00000000)
+> ...many imageblits...
+> [  155.833889] fb0: Via frame buffer device 640x480-32bpp
 > 
-> are available in the git repository at:
 > 
-> 
->   git://kernel.ubuntu.com/rtg/net-next.git master
-> 
-> for you to fetch changes up to 044b722f36a17bc5f7f472cc3246cb15a430bb0e:
-> 
->   firmware: Remove obsolete Chelsio cxgb3 firmware (2012-08-02 06:23:25
-> -0600)
-> 
-> ----------------------------------------------------------------
-> Tim Gardner (1):
->       firmware: Remove obsolete Chelsio cxgb3 firmware
-> 
->  firmware/Makefile                   |    1 -
->  firmware/cxgb3/t3fw-7.10.0.bin.ihex | 1935
-> -----------------------------------
->  2 files changed, 1936 deletions(-)
->  delete mode 100644 firmware/cxgb3/t3fw-7.10.0.bin.ihex
-> 
+
