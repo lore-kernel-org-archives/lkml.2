@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab2HBKak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 06:30:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54842 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab2HBKai (ORCPT
+	id S1753225Ab2HBKcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 06:32:52 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48587 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab2HBKcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 06:30:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chao Xie <xiechao.mail@gmail.com>
-Subject: Re: [PATCH 2/5] clk: mmp: add clock definition for pxa168
-Date: Thu, 2 Aug 2012 10:30:19 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
-        s.hauer@pengutronix.de, chao.xie@marvell.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1343716792-10399-1-git-send-email-xiechao.mail@gmail.com> <201207311154.42866.arnd@arndb.de> <CADApbegvdRQ5swDrO-Y631K4AhsTigAG4=Mm82mT-smSA7XzJw@mail.gmail.com>
-In-Reply-To: <CADApbegvdRQ5swDrO-Y631K4AhsTigAG4=Mm82mT-smSA7XzJw@mail.gmail.com>
+	Thu, 2 Aug 2012 06:32:51 -0400
+X-Originating-IP: 217.70.178.136
+X-Originating-IP: 50.43.46.74
+Date: Thu, 2 Aug 2012 03:32:44 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com
+Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
+Message-ID: <20120802103244.GA23318@leaf>
+References: <20120731182330.GD21292@google.com>
+ <50197348.9010101@gmail.com>
+ <20120801182112.GC15477@google.com>
+ <50197460.8010906@gmail.com>
+ <20120801182749.GD15477@google.com>
+ <50197E4A.7020408@gmail.com>
+ <20120801202432.GE15477@google.com>
+ <5019B0B4.1090102@gmail.com>
+ <20120801224556.GF15477@google.com>
+ <501A4FC1.8040907@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208021030.19986.arnd@arndb.de>
-X-Provags-ID: V02:K0:3xZ6Ka6CWJ/gvdjVvS0lTtxDXcHLZwnNgkcQvtPmckM
- 9ryWMr9TxeLXefAJn5hrHO30gm2vsVHiiNqukZ8aM0DNLLE3L5
- JoMPQSvuQ9kG0XBnN1beE7BhDZpB9YFW5m8Nxb1M7uATarDbT6
- +t4vMslTi8GFkainajLY9SlCTWGzVO4cnsCgK8ce6EF3TLYeij
- qSUJMia9V/6GE5Xs28niSUI3r6PqkjlAo7+Bv04FTpzEIbYEuc
- 45gI8y6zFmIEmukx4eLzUDIQu52hJ6tM2A2w+0V9Ycq3l7uP3O
- cds8hTvHBGdDkGB9dywdJBYsUfBGVCC+sEz1zV+rNsQeoPw+KZ
- 7wnyvYjF+bnDpJGX2cig=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501A4FC1.8040907@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 August 2012, Chao Xie wrote:
-> > #define APBC_RTC       0x28
-> >
-> > apbc_clks[rtc_clk] = mmp_clk_register_apbc(rtc_clk, clk32k, APBC_RTC, 10, APBC_POWER_CTRL, mmp_clk_lock);
-> > clk_register_clkdev(apbc_clks[rtc_clk], NULL, "sa1100-rtc");
-> >
-> >         Arnd
-> >
-> hi
-> I would like to keep the mmp_clk_register_apbc to receive the "reg
-> base" not "reg offset".
-> It will be aligned with other kind of clock register APIs.
-> To read out APBC base register from device tree can be added at the
-> clock-pxa168.c, and it can map the registers and pass to the
-> mmp_clk_register_apbc.
+On Thu, Aug 02, 2012 at 12:00:33PM +0200, Sasha Levin wrote:
+> On 08/02/2012 12:45 AM, Tejun Heo wrote:
+> > On Thu, Aug 02, 2012 at 12:41:56AM +0200, Sasha Levin wrote:
+> >> How would your DEFINE_HASHTABLE look like if we got for the simple
+> >> 'struct hash_table' approach?
+> > 
+> > I think defining a different enclosing anonymous struct which the
+> > requested number of array entries and then aliasing the actual
+> > hash_table to that symbol should work.  It's rather horrible and I'm
+> > not sure it's worth the trouble.
+> 
+> I agree that this is probably not worth the trouble.
+> 
+> At the moment I see two alternatives:
+> 
+> 1. Dynamically allocate the hash buckets.
+> 
+> 2. Use the first bucket to store size. Something like the follows:
+> 
+> 	#define HASH_TABLE(name, bits)	\
+>         	struct hlist_head name[1 << bits + 1];
+> 
+> 	#define HASH_TABLE_INIT (bits) ({name[0].next = bits});
+> 
+> And then have hash_{add,get} just skip the first bucket.
+> 
+> 
+> While it's not a pretty hack, I don't see a nice way to avoid having to dynamically allocate buckets for all cases.
 
-Right, my mistake.
+What about using a C99 flexible array member?  Kernel style prohibits
+variable-length arrays, but I don't think the same rationale applies to
+flexible array members.
 
-The above should have been something like
+struct hash_table {
+    size_t count;
+    struct hlist_head buckets[];
+};
 
-#define APBC_RTC       0x28
-apbc_clks[rtc_clk] = mmp_clk_register_apbc(rtc_clk, clk32k, clock_base + APBC_RTC, 10, APBC_POWER_CTRL, mmp_clk_lock);
-clk_register_clkdev(apbc_clks[rtc_clk], NULL, "sa1100-rtc");
+#define DEFINE_HASH_TABLE(name, length) struct hash_table name = { .count = length, .buckets = { [0 ... (length - 1)] = HLIST_HEAD_INIT } }
 
-instead, with clock_base pointing to the __iomem token for the clock controller.
-
-> Now, i have talked to Haojian who is doing device tree maintainer in
-> pxa/mmp. This kind of support is not added.
-> I suggest that after device tree support in clock can be added later
-> after other functionality of the clock framework is fine.
-
-You can do device tree support as a second step, but in this first step, you
-should already start using ioremap to get the virtual address of the
-clock controller, rather than hardcoding it.
-
-	Arnd
+- Josh Triplett
