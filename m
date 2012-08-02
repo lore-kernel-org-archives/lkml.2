@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab2HBMLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 08:11:08 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51472 "EHLO
+	id S1753242Ab2HBMND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 08:13:03 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38333 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab2HBMLG (ORCPT
+	with ESMTP id S1751265Ab2HBMNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 08:11:06 -0400
+	Thu, 2 Aug 2012 08:13:01 -0400
+Date: Thu, 2 Aug 2012 13:12:56 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 17/19] Documentation: Define the MOP500 Audio Machine
+ Driver Device Tree bindings
+Message-ID: <20120802121255.GA22201@gmail.com>
+References: <1343741953-17828-1-git-send-email-lee.jones@linaro.org>
+ <1343741953-17828-18-git-send-email-lee.jones@linaro.org>
+ <20120731135337.GM4468@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <20120802112542.6ae3dd8f@pyramind.ukuu.org.uk>
-References: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
-	<1327999726-8774-10-git-send-email-sjur.brandeland@stericsson.com>
-	<20120802112542.6ae3dd8f@pyramind.ukuu.org.uk>
-Date: Thu, 2 Aug 2012 14:11:05 +0200
-Message-ID: <CAJK669YEbAq7xue9rAK9ikiUNm_ZVQZ4CaPhSr22xU56a_2B0g@mail.gmail.com>
-Subject: Re: [RESEND PATCHv5 09/11] modem_shm: Character device for SHM
- channel access.
-From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731135337.GM4468@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Thu, Aug 2, 2012 at 12:25 PM,
->Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Add a character device implementation for the SHM stream channels.
->> The character device provides asynchronous IO and ring-buffer handling.
->> The device copies data directly from the Shared Memory area into
->> user-land buffers.
->
-> What is the use case for this - it seems a little odd that it's not using
-> the tty layer so won't work with all the normal modem apps as anyone
-> would expect and want ?
+From: Lee Jones <lee.jones@linaro.org>
+Date: Tue, 31 Jul 2012 11:56:51 +0100
+Subject: [PATCH 1/1] Documentation: Define the MOP500 Audio Machine Driver
+ Device Tree bindings
 
-Hi Alan,
+Here we add the required documentation for the new Device Tree
+bindings pertaining to the MOP500 Audio Machine driver.
 
-Thank you for reviewing this patch.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ .../devicetree/bindings/sound/ux500-mop500.txt     |   39 ++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/ux500-mop500.txt
 
-I am working on a re-spin of the entire patch-set for Modem-SHM using
-the RemoteProc framework from Ohad Ben Cohen and using Virtio as
-transport mechanism between modem and host. I hope to be able to
-use Virtio Console for the tty.The use-case tty/char device is for
-transfering boot images to the modem and fetch crash logs.
-
-For normal operation of the modem the CAIF protocol is used. I'm writing
-on a new CAIF-Virtio driver for this that works with the RemoteProc
-framework.
-
-Regards,
-Sjur
+diff --git a/Documentation/devicetree/bindings/sound/ux500-mop500.txt b/Documentation/devicetree/bindings/sound/ux500-mop500.txt
+new file mode 100644
+index 0000000..48e071c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/ux500-mop500.txt
+@@ -0,0 +1,39 @@
++* MOP500 Audio Machine Driver
++
++This node is responsible for linking together all ux500 Audio Driver components.
++
++Required properties:
++ - compatible              : "stericsson,snd-soc-mop500"
++
++Non-standard properties:
++ - stericsson,cpu-dai      : Phandle to the CPU-side DAI
++ - stericsson,audio-codec  : Phandle to the Audio CODEC
++ - stericsson,card-name    : Over-ride default card name
++
++Example:
++
++	sound {
++		compatible = "stericsson,snd-soc-mop500";
++
++		stericsson,cpu-dai = <&msp1 &msp3>;
++		stericsson,audio-codec = <&codec>;
++	};
++
++	msp1: msp@80124000 {
++		compatible = "stericsson,ux500-msp-i2s";
++		reg = <0x80124000 0x1000>;
++		interrupts = <0 62 0x4>;
++		v-ape-supply = <&db8500_vape_reg>;
++	};
++
++	msp3: msp@80125000 {
++		compatible = "stericsson,ux500-msp-i2s";
++		reg = <0x80125000 0x1000>;
++		interrupts = <0 62 0x4>;
++		v-ape-supply = <&db8500_vape_reg>;
++	};
++
++	codec: ab8500-codec {
++		compatible = "stericsson,ab8500-codec";
++		stericsson,earpeice-cmv = <950>; /* Units in mV. */
++	};
+-- 
+1.7.9.5
