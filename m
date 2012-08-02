@@ -1,115 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab2HBRqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 13:46:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29401 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754796Ab2HBRqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 13:46:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="180837983"
-Message-ID: <1343929829.25013.207.camel@sauron.fi.intel.com>
-Subject: Re: UBI fastmap updates
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "adrian.hunter@intel.com" <adrian.hunter@intel.com>,
-        "Heinz.Egger@linutronix.de" <Heinz.Egger@linutronix.de>,
-        "thomas.wucher@linutronix.de" <thomas.wucher@linutronix.de>,
-        "shmulik.ladkani@gmail.com" <shmulik.ladkani@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Marius.Mazarel@ugal.ro" <Marius.Mazarel@ugal.ro>,
-        "nyoushchenko@mvista.com" <nyoushchenko@mvista.com>
-Date: Thu, 02 Aug 2012 20:50:29 +0300
-In-Reply-To: <501AB2C8.9010805@am.sony.com>
-References: <1341836323-43916-1-git-send-email-richard@nod.at>
-	  <1343916747.25013.112.camel@sauron.fi.intel.com>
-	  <20120802161512.5ac7a303@spider.haslach.nod.at>
-	  <1343917741.25013.114.camel@sauron.fi.intel.com>
-	  <20120802165132.1bf1e5d7@spider.haslach.nod.at>
-	  <1343924267.25013.156.camel@sauron.fi.intel.com>
-	  <20120802183210.7076aa48@spider.haslach.nod.at>
-	 <1343925930.25013.163.camel@sauron.fi.intel.com>
-	 <501AB2C8.9010805@am.sony.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-B4d5JcB7BaIO4wQ3BTkE"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754958Ab2HBRqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 13:46:34 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:44508 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754848Ab2HBRqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 13:46:32 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+Date: Thu, 2 Aug 2012 10:46:31 -0700
+Message-ID: <CAOesGMjc0PBLEf_Ar=z9TX4bjHEMOVeshxQSmYpp9P=3G6_D_Q@mail.gmail.com>
+Subject: [GIT PULL 3/3] ARM: arm-soc Marvell Orion device-tree updates
+From: Olof Johansson <olof@lixom.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This branch contains a set of device-tree conversions for Marvell Orion
+platforms that were staged early but took a few tries to get the branch
+into a format where it was suitable for us to pick up.
 
---=-B4d5JcB7BaIO4wQ3BTkE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Given that most people working on these platforms are hobbyists with
+limited time, we were a bit more flexible with merging it even though
+it came in late.
 
-On Thu, 2012-08-02 at 10:03 -0700, Tim Bird wrote:
-> > So can I interpret this the following way. Not only fastmap give no
-> > guarantees that it exists after an unclean reboot, it does not even giv=
-e
-> > guarantees that it exists after a clean reboot.
-> >=20
-> > Unless I am confused, the fastmap design is over-simplified.
->=20
-> Fastmap is an optimization.  Maybe I'm missing something, but
-> I'm not sure why, if the optimization stopped working, you
-> would want to reduce the functionality of the file system.
+----------------------------------------------------------------
 
-Fastmap gives huge improvement in attach time. So big that it becomes
-not just optimization, but a selling feature. Or very important
-optimization.
+The following changes since commit 4695ce021de2a3abdd593155bee291496e735cbf:
 
-If you design a system which requires 1s startup time, you probably want
-to always guarantee 1s startup time. E.g., if we are talking about a car
-system.
+  Merge tag 'pm2' into HEAD
 
-You probably may get away with the fact that in case of power cut your
-system starts up 10 seconds at the first boot (no fastmap).
+are available in the git repository at:
 
-But you probably would be disappointed if I say that even if you do
-_not_ have power cuts, your system may still startup 10 seconds,
-although most of the times it will take 1s.
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/dt2
 
-Does this description help to accept my POW that while we cannot
-simplify fastmap and give no improvement for the power cut cases, it is
-quite important to guarantee that in normal cases fastmap is always
-there, and UBI will always be fast.
+for you to fetch changes up to 15a1e1bafe2c924db6d370ad892d7da6c7d83598:
 
-If I buy a car which runs 200Km/h on the asphalt, I am OK if it cannot
-do this on the cross-country trails, but I am not OK if it sometimes
-cannot do 200Km/h even on the asphalt, when the moon is blue.
+  Merge branch 'marvell/dt' into late2/dt
 
---=20
-Best Regards,
-Artem Bityutskiy
+----------------------------------------------------------------
 
---=-B4d5JcB7BaIO4wQ3BTkE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Andrew Lunn (16):
+      Merge tag 'spi-3.6' into v3.5-rc7-dt-v3
+      Merge branch 'v3.5-rc7-fixes' into v3.5-rc7-dt-v3
+      ARM: Orion: DT support for IRQ and GPIO Controllers
+      ARM: Orion: Add arch support needed for I2C via DT.
+      ARM: Orion: DTify the watchdog timer.
+      ATA: sata_mv: Add device tree support
+      ARM: Kirkwood: Add basic device tree support for QNAP TS219.
+      ARM: Kirkwood: Use DT to configure SATA device.
+      ARM: Kirkwood: Describe DNS325 temperature sensor in DT.
+      ARM: Kirkwood: Describe IB62x0 gpio-keys in DT.
+      ARM: Kirkwood: Describe IB62x0 LEDs in DT.
+      ARM: Kirkwood: Describe iConnects temperature sensor in DT.
+      ARM: Kirkwood: Describe iConnects LEDs in DT.
+      ARM: Kirkwood: Describe Dreamplug LEDs in DT.
+      ARM: Kirkwood: Describe GoFlex Net LEDs and SATA in DT.
+      ARM: Kirkwood: Replace mrvl with marvell
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Jamie Lentin (3):
+      ARM: Kirkwood: Replace DNS-320/DNS-325 leds with dt bindings
+      ARM: Kirkwood: Move common portions into a kirkwood-dnskw.dtsi
+      ARM: Kirkwood: Describe DNS32? gpio-keys in DT.
 
-iQIcBAABAgAGBQJQGr3lAAoJECmIfjd9wqK0LWYP/RESE+0GIliWW89cAuCzr5Sa
-yEXs26ORMu0wOTFzA7cEIRu8+IpS9OLTkuLl+TmLfYtzEenDc+qSp87SxBYJ+Zh9
-cuQ7yvAdczXOxLUSaYdjVYUXWbr8DTrTlpOYZBx32rjENYF928ZzUm/qfYLLO/i1
-lMmjUNX3hGhfRaJocNT+2HHHsVsczOn0+GRNLrZyKAWDjbNJD/gdcSVVsbPbx50q
-mRzp4fVxmV4TXFyxgZavPoMIE5hXhyrxrz7FbgC7BlBSAWeAFV18+R7U8egnibaC
-0xfBADU05B3W8EPrHT3wAtWxsKrJN9/Ao/sGwiTHttgW57TmCh/Nojr9ZnhSPRzs
-F7w7J24ac6KX+wRoelD8y0fqo5BwtyunFzUnjtZn6jj65zAjql2kqG0A2fPJRj4m
-hCi2Dw8+116An/M/BcJlQSExAcdzNd/ySdYmaJrwJe3ogha5QStJDp4WGCfM4Wtr
-IGtr2VdaqI/iPpwJNHxp9pHt/sraJTEoTTgSiybDZMPcxh5Lx270OZsPX2nwb+0e
-x9OlObCnR4bJgsmTc+V7MH/FIWB25Tbe1dkga+/kwgfuNNszE+87BSwVKhiZiDGX
-QK/9zfAzNVyXD9jrbXVqILawgWVuuHtv1+52FVDed8EwoaBubmq71lJ0ooRLDmsd
-E6obqsP4DNKsfseYeL2t
-=N+jG
------END PGP SIGNATURE-----
+Josh Coombs (1):
+      ARM: Kirkwood: Initial DTS support for Kirkwood GoFlex Net
 
---=-B4d5JcB7BaIO4wQ3BTkE--
+Michael Walle (3):
+      ARM: kirkwood: use devicetree for orion-spi
+      ARM: kirkwood: Add LS-XHL and LS-CHLv2 support
+      ARM: kirkwood: use devicetree for SPI on dreamplug
 
+Olof Johansson (1):
+      Merge branch 'marvell/dt' into late2/dt
+
+
+ .../devicetree/bindings/arm/mrvl/intc.txt       |  20 +++
+ .../devicetree/bindings/ata/marvell.txt         |  16 ++
+ .../devicetree/bindings/gpio/mrvl-gpio.txt      |  23 +++
+
+ .../devicetree/bindings/watchdog/marvel.txt     |  14 ++
+ arch/arm/Kconfig                                |   1 +
+ arch/arm/boot/dts/kirkwood-dns320.dts           |  62 +++----
+ arch/arm/boot/dts/kirkwood-dns325.dts           |  68 ++++----
+ arch/arm/boot/dts/kirkwood-dnskw.dtsi           |  69 ++++++++
+ arch/arm/boot/dts/kirkwood-dreamplug.dts        |  50 ++++++
+ arch/arm/boot/dts/kirkwood-goflexnet.dts        |  99 +++++++++++
+ arch/arm/boot/dts/kirkwood-ib62x0.dts           |  38 +++++
+ arch/arm/boot/dts/kirkwood-iconnect.dts         |  42 +++++
+ arch/arm/boot/dts/kirkwood-lschlv2.dts          |  20 +++
+ arch/arm/boot/dts/kirkwood-lsxhl.dts            |  20 +++
+ arch/arm/boot/dts/kirkwood-lsxl.dtsi            |  95 +++++++++++
+ arch/arm/boot/dts/kirkwood-ts219-6281.dts       |  21 +++
+ arch/arm/boot/dts/kirkwood-ts219-6282.dts       |  21 +++
+ arch/arm/boot/dts/kirkwood-ts219.dtsi           |  78 +++++++++
+ arch/arm/boot/dts/kirkwood.dtsi                 |  60 +++++++
+ arch/arm/mach-dove/irq.c                        |  58 +++----
+ arch/arm/mach-kirkwood/Kconfig                  |  29 ++++
+ arch/arm/mach-kirkwood/Makefile                 |   3 +
+ arch/arm/mach-kirkwood/Makefile.boot            |   4 +
+ arch/arm/mach-kirkwood/board-dnskw.c            | 143 ----------------
+ arch/arm/mach-kirkwood/board-dreamplug.c        |  80 ---------
+ arch/arm/mach-kirkwood/board-dt.c               |  29 +++-
+ arch/arm/mach-kirkwood/board-goflexnet.c        |  71 ++++++++
+ arch/arm/mach-kirkwood/board-ib62x0.c           |  72 --------
+ arch/arm/mach-kirkwood/board-iconnect.c         |  56 -------
+ arch/arm/mach-kirkwood/board-lsxl.c             | 135 +++++++++++++++
+ arch/arm/mach-kirkwood/board-ts219.c            |  82 +++++++++
+ arch/arm/mach-kirkwood/common.c                 |   2 +
+ arch/arm/mach-kirkwood/common.h                 |  17 ++
+ arch/arm/mach-kirkwood/irq.c                    |  38 ++---
+ arch/arm/mach-mv78xx0/irq.c                     |  22 +--
+ arch/arm/mach-orion5x/irq.c                     |  22 +--
+ arch/arm/plat-orion/common.c                    |   1 +
+ arch/arm/plat-orion/gpio.c                      | 166 ++++++++++++++-----
+ arch/arm/plat-orion/include/plat/gpio.h         |  16 +-
+ arch/arm/plat-orion/include/plat/irq.h          |   3 +-
+ arch/arm/plat-orion/irq.c                       |  40 +++++
+ drivers/ata/sata_mv.c                           |  42 +++--
+ drivers/watchdog/orion_wdt.c                    |   8 +
+ 43 files changed, 1387 insertions(+), 569 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/marvell.txt
+ create mode 100644 Documentation/devicetree/bindings/watchdog/marvel.txt
+ create mode 100644 arch/arm/boot/dts/kirkwood-dnskw.dtsi
+ create mode 100644 arch/arm/boot/dts/kirkwood-goflexnet.dts
+ create mode 100644 arch/arm/boot/dts/kirkwood-lschlv2.dts
+ create mode 100644 arch/arm/boot/dts/kirkwood-lsxhl.dts
+ create mode 100644 arch/arm/boot/dts/kirkwood-lsxl.dtsi
+ create mode 100644 arch/arm/boot/dts/kirkwood-ts219-6281.dts
+ create mode 100644 arch/arm/boot/dts/kirkwood-ts219-6282.dts
+ create mode 100644 arch/arm/boot/dts/kirkwood-ts219.dtsi
+ create mode 100644 arch/arm/mach-kirkwood/board-goflexnet.c
+ create mode 100644 arch/arm/mach-kirkwood/board-lsxl.c
+ create mode 100644 arch/arm/mach-kirkwood/board-ts219.c
