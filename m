@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab2HBQkv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 12:40:51 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:48186 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab2HBQkt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 12:40:49 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, Tejun Heo <tj@kernel.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com
-References: <20120731182330.GD21292@google.com> <50197348.9010101@gmail.com>
-	<20120801182112.GC15477@google.com> <50197460.8010906@gmail.com>
-	<20120801182749.GD15477@google.com> <50197E4A.7020408@gmail.com>
-	<20120801202432.GE15477@google.com> <5019B0B4.1090102@gmail.com>
-	<20120801224556.GF15477@google.com> <501A4FC1.8040907@gmail.com>
-	<20120802103244.GA23318@leaf> <501A633B.3010509@gmail.com>
-	<87txwl1dsq.fsf@xmission.com> <501AAC26.6030703@gmail.com>
-Date: Thu, 02 Aug 2012 09:40:38 -0700
-In-Reply-To: <501AAC26.6030703@gmail.com> (Sasha Levin's message of "Thu, 02
-	Aug 2012 18:34:46 +0200")
-Message-ID: <87fw851c3d.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+4CkyO8r7wQlaBiMCNu00yVgrLUTNyoZ8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0004]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Sasha Levin <levinsasha928@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC 1/4] hashtable: introduce a small and naive hashtable
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1754227Ab2HBQlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 12:41:03 -0400
+Received: from mga14.intel.com ([143.182.124.37]:39361 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753099Ab2HBQlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 12:41:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="176249980"
+Message-ID: <1343925930.25013.163.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
+        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
+        nyoushchenko@mvista.com
+Date: Thu, 02 Aug 2012 19:45:30 +0300
+In-Reply-To: <20120802183210.7076aa48@spider.haslach.nod.at>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	 <1343916747.25013.112.camel@sauron.fi.intel.com>
+	 <20120802161512.5ac7a303@spider.haslach.nod.at>
+	 <1343917741.25013.114.camel@sauron.fi.intel.com>
+	 <20120802165132.1bf1e5d7@spider.haslach.nod.at>
+	 <1343924267.25013.156.camel@sauron.fi.intel.com>
+	 <20120802183210.7076aa48@spider.haslach.nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-IhLBQdzXFe/FmfaN8Tue"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <levinsasha928@gmail.com> writes:
 
-> Heh, I've started working on it in April, and just returned to this. Didn't think about rebasing to something new.
->
-> will fix - Thanks!
+--=-IhLBQdzXFe/FmfaN8Tue
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-You might want to look at some of the work that Eric Dumazet has done in
-the networking stack with rcu hashtables that can be resized.
+Richard,
 
-For a trivial hash table I don't know if the abstraction is worth it.
-For a hash table that starts off small and grows as big as you need it
-the incent to use a hash table abstraction seems a lot stronger.
+On Thu, 2012-08-02 at 18:32 +0200, Richard Weinberger wrote:
+> > This should not happen. Fastmap should _reserve_ enough of PEBs for it
+> > to operate. It should always find the PEB to write.
+>=20
+> What is the benefit?
+> IOW what is wrong with the current approach?
 
-Eric
+Several reasons. The main is: fastmap will start consuming PEBs reserved
+for volumes when the amount of available PEBs is just enough to map all
+LEBs. This will break UBI liability.
+
+> Why?
+> If everything goes wrong, fastmap makes sure that no fastmap is on
+> flash.
+> In case of a powercut we fall back to scanning mode.
+> R/O mode is overkill IMHO.
+
+So can I interpret this the following way. Not only fastmap give no
+guarantees that it exists after an unclean reboot, it does not even give
+guarantees that it exists after a clean reboot.
+
+Unless I am confused, the fastmap design is over-simplified.
+
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-IhLBQdzXFe/FmfaN8Tue
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQGq6qAAoJECmIfjd9wqK0w5sP/R0Lhh2KGl2j6ictpIiDn4pU
+lxLBsBEyUYmKGEX0etKFPI/e431PzU+ifzRQUH2OTUz7SiCFjjr6u7YSp3feczY2
+FmVomzLXH1L4R5xEJyCc6zhuUiIe9BpLCJqNJkkiA++ufjdvv44RCsMjItwgRLQj
+XTgjiAH2snOYwnNgMdmbbtkzynMuKvZmFp/BR2gXfyIVcwXqpw6T6zeH7AzTAbf8
+uqTxuHXpCuLIo0f2wNvUBFe3fDo5l/+sRjF4mKWYl26E+QuUfLw/JuPW/oULP0rT
+H1dVH9d98FEEkDTTW5R2Ea/hz9aORhIdXjOefyP6hrW+C7je4NeplG6Pu2IY39KG
+MUNt0U8ERmJQ7BpxG8Zj0KxteylHNI1ZJwmqvacXVTxMOzqROzNphAqn7bwFAq7l
+xdyBOj/g6opIxxLxArUwt1e8I41rrLhM5Wj4kA6uNQnsHgHibbRTOwykTzypna1k
+AQv8bC44BbMBEOVFDiti6un/o9ub9AUav698JpC/rbwm6W7+cKu3BYXAklB0k2t6
+60kzOTwtL7KI3Dg/wyyUGef24AElNigF70NVfPLxHa0CW5zbMcblHNod1WUSyX4i
+PxW67tCUC+HTe3Drv2svPpT5QpVI+oZD10xzzRZHLC7xtNl8hJQTWl+dp1ocBIcD
+vRFa/Ehk+BmirkKuCja2
+=rhGe
+-----END PGP SIGNATURE-----
+
+--=-IhLBQdzXFe/FmfaN8Tue--
+
