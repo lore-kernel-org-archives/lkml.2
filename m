@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab2HBJPS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 05:15:18 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:50309 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab2HBJPP (ORCPT
+	id S1753850Ab2HBJSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 05:18:04 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18961 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab2HBJSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 05:15:15 -0400
+	Thu, 2 Aug 2012 05:18:02 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 02 Aug 2012 02:18:01 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <swarren@nvidia.com>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>
+CC: <vbyravarasu@nvidia.com>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] i2c: muxes: fix build break
+Date: Thu, 2 Aug 2012 14:42:17 +0530
+Message-ID: <1343898737-24386-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-In-Reply-To: <20120802065557.GI6481@ZenIV.linux.org.uk>
-References: <1343859049-3632-1-git-send-email-meredydd@senatehouse.org>
- <5019B36A.4030604@zytor.com> <CAD=T17Esguer01OsrxMtqEcHKZ-Ovg05+MxSdF7NhXENsUubgg@mail.gmail.com>
- <5019BC0E.4010109@zytor.com> <20120802065557.GI6481@ZenIV.linux.org.uk>
-From: Meredydd Luff <meredydd@senatehouse.org>
-Date: Thu, 2 Aug 2012 10:14:53 +0100
-Message-ID: <CAD=T17Gkryua5TQW5h18kCu+yiViuVv6NyxtMw3C9we0RWzmKQ@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] syscalls,x86: Add execveat() system call (v2)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 2, 2012 at 7:55 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> This means you need an x32 version of the function -- execve
->> unfortunately is one of the few system calls which require a special x32
->> version (although it's a simple wrapper around sys32_execve).  See
->> sys_x32_execve.
->
-> I *really* strongly object to doing that thing before we sanitize the
-> situation with sys_execve().
+Seems a new parameter is added to i2c_add_mux_adapter().
+All its references, except for the one present in
+i2c-mux-pinctrl.c, were updated.
+As this is causing build break, pushing current patch to fix it.
 
-"That thing" = "creating an x32 entry stub", or "merging execveat() at all"?
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ drivers/i2c/muxes/i2c-mux-pinctrl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-(snip)
-> The thing is, there's essentially no reason to have more than one
-> implementation.  What they are (badly) doing is "we need to find
-> pt_regs to pass to do_execve(), the thing we are after has to be near
-> our stack frame, so let's try to get to it that way".
+diff --git a/drivers/i2c/muxes/i2c-mux-pinctrl.c b/drivers/i2c/muxes/i2c-mux-pinctrl.c
+index 46a6697..5f097f3 100644
+--- a/drivers/i2c/muxes/i2c-mux-pinctrl.c
++++ b/drivers/i2c/muxes/i2c-mux-pinctrl.c
+@@ -221,7 +221,7 @@ static int __devinit i2c_mux_pinctrl_probe(struct platform_device *pdev)
+ 				(mux->pdata->base_bus_num + i) : 0;
+ 
+ 		mux->busses[i] = i2c_add_mux_adapter(mux->parent, &pdev->dev,
+-						     mux, bus, i,
++						     mux, bus, i, 0,
+ 						     i2c_mux_pinctrl_select,
+ 						     deselect);
+ 		if (!mux->busses[i]) {
+-- 
+1.7.1.1
 
-Hang on...it's not just sys_execve that fits that description, is it?
-You seem to be describing every call that needs a pt_regs parameter,
-which at a glance is anything with a stub_ or PTREGSCALL in
-arch/x86/kernel/entry_{32,64}.S. That's: clone, fork, vfork,
-sigaltstack, iopl, execve, sigreturn, rt_sigreturn, vm86, vm86old.
-Most of those are handled by a common PTREGSCALL macro, but there are
-a few that get special treatment (different set on each arch - on
-x86-64 it's execve and rt_sigreturn ; on i386 it's just clone).
-
-Is there's something special about execve in particular, or do you
-want to overhaul all the ptregscalls?
-
-Meredydd
