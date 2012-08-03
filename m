@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab2HCOZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:25:21 -0400
+	id S1753807Ab2HCOZx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:25:53 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:35880 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab2HCOXS (ORCPT
+	with ESMTP id S1753275Ab2HCOXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:23:18 -0400
+	Fri, 3 Aug 2012 10:23:13 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
         aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [RFC v2 3/7] mm,ksm: use new hashtable implementation
-Date: Fri,  3 Aug 2012 16:23:04 +0200
-Message-Id: <1344003788-1417-4-git-send-email-levinsasha928@gmail.com>
+Subject: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
+Date: Fri,  3 Aug 2012 16:23:02 +0200
+Message-Id: <1344003788-1417-2-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
 References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
@@ -24,95 +24,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch ksm to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the ksm module.
+This hashtable implementation is using hlist buckets to provide a simple
+hashtable to prevent it from getting reimplemented all over the kernel.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- mm/ksm.c |   29 +++++++++--------------------
- 1 files changed, 9 insertions(+), 20 deletions(-)
+ include/linux/hashtable.h |   75 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 75 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/hashtable.h
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 47c8853..72d062a 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -33,7 +33,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/swap.h>
- #include <linux/ksm.h>
--#include <linux/hash.h>
-+#include <linux/hashtable.h>
- #include <linux/freezer.h>
- #include <linux/oom.h>
- 
-@@ -157,8 +157,8 @@ static struct rb_root root_stable_tree = RB_ROOT;
- static struct rb_root root_unstable_tree = RB_ROOT;
- 
- #define MM_SLOTS_HASH_SHIFT 10
--#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
--static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
-+#define mm_hash_cmp(slot, key) ((slot)->mm == (key))
-+DEFINE_STATIC_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_SHIFT);
- 
- static struct mm_slot ksm_mm_head = {
- 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
-@@ -275,26 +275,15 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
- 
- static struct mm_slot *get_mm_slot(struct mm_struct *mm)
- {
--	struct mm_slot *mm_slot;
--	struct hlist_head *bucket;
--	struct hlist_node *node;
--
--	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
--	hlist_for_each_entry(mm_slot, node, bucket, link) {
--		if (mm == mm_slot->mm)
--			return mm_slot;
--	}
--	return NULL;
-+	return hash_get(&mm_slots_hash, mm, struct mm_slot,
-+				link, mm_hash_cmp);
- }
- 
- static void insert_to_mm_slots_hash(struct mm_struct *mm,
- 				    struct mm_slot *mm_slot)
- {
--	struct hlist_head *bucket;
--
--	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
- 	mm_slot->mm = mm;
--	hlist_add_head(&mm_slot->link, bucket);
-+	hash_add(&mm_slots_hash, &mm_slot->link, (long)mm);
- }
- 
- static inline int in_stable_tree(struct rmap_item *rmap_item)
-@@ -647,7 +636,7 @@ static int unmerge_and_remove_all_rmap_items(void)
- 		ksm_scan.mm_slot = list_entry(mm_slot->mm_list.next,
- 						struct mm_slot, mm_list);
- 		if (ksm_test_exit(mm)) {
--			hlist_del(&mm_slot->link);
-+			hash_del(&mm_slot->link);
- 			list_del(&mm_slot->mm_list);
- 			spin_unlock(&ksm_mmlist_lock);
- 
-@@ -1385,7 +1374,7 @@ next_mm:
- 		 * or when all VM_MERGEABLE areas have been unmapped (and
- 		 * mmap_sem then protects against race with MADV_MERGEABLE).
- 		 */
--		hlist_del(&slot->link);
-+		hash_del(&slot->link);
- 		list_del(&slot->mm_list);
- 		spin_unlock(&ksm_mmlist_lock);
- 
-@@ -1548,7 +1537,7 @@ void __ksm_exit(struct mm_struct *mm)
- 	mm_slot = get_mm_slot(mm);
- 	if (mm_slot && ksm_scan.mm_slot != mm_slot) {
- 		if (!mm_slot->rmap_list) {
--			hlist_del(&mm_slot->link);
-+			hash_del(&mm_slot->link);
- 			list_del(&mm_slot->mm_list);
- 			easy_to_free = 1;
- 		} else {
+diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
+new file mode 100644
+index 0000000..b004cf7
+--- /dev/null
++++ b/include/linux/hashtable.h
+@@ -0,0 +1,75 @@
++#ifndef _LINUX_HASHTABLE_H
++#define _LINUX_HASHTABLE_H
++
++#include <linux/list.h>
++#include <linux/types.h>
++#include <linux/kernel.h>
++#include <linux/hash.h>
++
++struct hash_table {
++	size_t bits;
++	struct hlist_head buckets[];
++};
++
++#define DEFINE_STATIC_HASHTABLE(n, b)					\
++	static struct hash_table n = { .bits = (b),			\
++		.buckets = { [0 ... ((1 << (b)) - 1)] = HLIST_HEAD_INIT } }
++
++#define DEFINE_HASHTABLE(n, b)						\
++	union {								\
++		struct hash_table n;					\
++		struct {						\
++			size_t bits;					\
++			struct hlist_head buckets[1 << (b)];		\
++		} __##n ;						\
++	};
++
++#define HASH_BITS(name) ((name)->bits)
++#define HASH_SIZE(name) (1 << (HASH_BITS(name)))
++
++__attribute__ ((unused))
++static void hash_init(struct hash_table *ht, size_t bits)
++{
++	size_t i;
++
++	ht->bits = bits;
++	for (i = 0; i < (1 << bits); i++)
++		INIT_HLIST_HEAD(&ht->buckets[i]);
++}
++
++static void hash_add(struct hash_table *ht, struct hlist_node *node, long key)
++{
++	hlist_add_head(node,
++		&ht->buckets[hash_long((unsigned long)key, HASH_BITS(ht))]);
++}
++
++
++#define hash_get(name, key, type, member, cmp_fn)			\
++({									\
++	struct hlist_node *__node;					\
++	typeof(key) __key = key;					\
++	type *__obj = NULL;						\
++	hlist_for_each_entry(__obj, __node, &(name)->buckets[		\
++			hash_long((unsigned long) __key,		\
++			HASH_BITS(name))], member)			\
++		if (cmp_fn(__obj, __key))				\
++			break;						\
++	__obj;								\
++})
++
++__attribute__ ((unused))
++static void hash_del(struct hlist_node *node)
++{
++	hlist_del_init(node);
++}
++
++#define hash_for_each(bkt, node, name, obj, member)			\
++	for (bkt = 0; bkt < HASH_SIZE(name); bkt++)			\
++		hlist_for_each_entry(obj, node, &(name)->buckets[i], member)
++
++#define hash_for_each_possible(name, node, obj, member, key)		\
++	hlist_for_each_entry(obj, node,					\
++		&(name)->buckets[hash_long((unsigned long) key,		\
++			HASH_BITS(name))], member)
++
++#endif
 -- 
 1.7.8.6
 
