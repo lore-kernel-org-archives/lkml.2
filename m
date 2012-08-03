@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab2HCTBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 15:01:15 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:47347 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab2HCTBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 15:01:12 -0400
-Subject: Re: Linux 3.6-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>
-In-Reply-To: <CA+55aFy4vnD5-8SWF_WDC3oTGotzkDg2_4=YHXd6qMiJ=OKekw@mail.gmail.com>
-References: <CA+55aFy4vnD5-8SWF_WDC3oTGotzkDg2_4=YHXd6qMiJ=OKekw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Aug 2012 12:01:01 -0700
-Message-ID: <1344020461.6210.20.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753448Ab2HCTQs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 15:16:48 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:48882
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752981Ab2HCTQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 15:16:46 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: [PATCH net-next,1/1] hyperv: Move wait completion msg code into rndis_filter_halt_device()
+Date: Fri,  3 Aug 2012 12:32:18 -0700
+Message-Id: <1344022338-3010-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good afternoon Linus!
+We need to wait for send_completion msg before put_rndis_request() at
+the end of rndis_filter_halt_device(). Otherwise, netvsc_send_completion()
+may reference freed memory which is overwritten, and cause panic.
 
-On Thu, 2012-08-02 at 18:17 -0700, Linus Torvalds wrote:
-> I do have two more pull requests that are at least tentatively
-> pending: there's the uapi header file disintegration from David
-> Howells and the tcm_vhost merge from Nicholas Bellinger, both of which
-> came in in time. So I'll take another look at those later. 
+Reported-by: Long Li <longli@microsoft.com>
+Reported-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/net/hyperv/netvsc.c       |    7 -------
+ drivers/net/hyperv/rndis_filter.c |   11 +++++++++++
+ 2 files changed, 11 insertions(+), 7 deletions(-)
 
-Thanks for considering to let tcm_vhost fall under the new driver merge
-exception rule for post -rc1 code.
-
-Everything is still ready to go on our side for an initial merge, and I
-just doubled checked that target-pending/for-linus is still merging
-cleanly w/ the same diffstat into a local HEAD at refs/tags/v3.6-rc1.
-
-As usual, please let us know if you have any concerns.
-
-Thank you,
-
---nab
-
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 6cee291..4a1a5f5 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -383,13 +383,6 @@ int netvsc_device_remove(struct hv_device *device)
+ 	unsigned long flags;
  
-
-
-
-
-
-
-
-
-
-
-
+ 	net_device = hv_get_drvdata(device);
+-	spin_lock_irqsave(&device->channel->inbound_lock, flags);
+-	net_device->destroy = true;
+-	spin_unlock_irqrestore(&device->channel->inbound_lock, flags);
+-
+-	/* Wait for all send completions */
+-	wait_event(net_device->wait_drain,
+-		   atomic_read(&net_device->num_outstanding_sends) == 0);
+ 
+ 	netvsc_disconnect_vsp(net_device);
+ 
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index e5d6146..1e88a10 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -718,6 +718,9 @@ static void rndis_filter_halt_device(struct rndis_device *dev)
+ {
+ 	struct rndis_request *request;
+ 	struct rndis_halt_request *halt;
++	struct netvsc_device *nvdev = dev->net_dev;
++	struct hv_device *hdev = nvdev->dev;
++	ulong flags;
+ 
+ 	/* Attempt to do a rndis device halt */
+ 	request = get_rndis_request(dev, RNDIS_MSG_HALT,
+@@ -735,6 +738,14 @@ static void rndis_filter_halt_device(struct rndis_device *dev)
+ 	dev->state = RNDIS_DEV_UNINITIALIZED;
+ 
+ cleanup:
++	spin_lock_irqsave(&hdev->channel->inbound_lock, flags);
++	nvdev->destroy = true;
++	spin_unlock_irqrestore(&hdev->channel->inbound_lock, flags);
++
++	/* Wait for all send completions */
++	wait_event(nvdev->wait_drain,
++		atomic_read(&nvdev->num_outstanding_sends) == 0);
++
+ 	if (request)
+ 		put_rndis_request(dev, request);
+ 	return;
+-- 
+1.7.4.1
 
