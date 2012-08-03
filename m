@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab2HCQH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:07:58 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:45832 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab2HCQHz convert rfc822-to-8bit (ORCPT
+	id S1752631Ab2HCQJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:09:25 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:8029 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab2HCQJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:07:55 -0400
-Date: Fri, 3 Aug 2012 18:07:12 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Amaury =?UTF-8?B?RGVjcsOqbWU=?= <amaury.decreme@gmail.com>
-Cc: ben-linux@fluff.org, w.sang@pengutronix.de, rob@landley.net,
-        jeffrey.t.kirsher@intel.com, akpm@linux-foundation.org,
-        davem@davemloft.net, gregkh@linuxfoundation.org, joe@perches.com,
-        ralf@linux-mips.org, dirk.brandewie@gmail.com,
-        jayachandranc@netlogicmicro.com, linux-i2c@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] I2C: SIS964: Bus driver
-Message-ID: <20120803180712.1e768042@endymion.delvare>
-In-Reply-To: <1344008145-14579-1-git-send-email-amaury.decreme@gmail.com>
-References: <1344008145-14579-1-git-send-email-amaury.decreme@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	Fri, 3 Aug 2012 12:09:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=message-id:from;
+	b=rZgOsxURPmfOTd5dzXsESsTEEOIZyuLG+jkDuL38uDow9PeYa/0u2vwUkg8K
+	oFmkFmd5YIzuoKrD63t24QKr4HKzhUHwvyqnJ+q8A9UC/XWYLmaiZ+ftB
+	YOfLNPzsDVhu1CjjQAAmV48jHQIfkuOd1UNJuJJ2EQH+J3wrMRl7+s=;
+X-Spam-Processed: mail.digidescorp.com, Fri, 03 Aug 2012 11:09:22 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1562e4c178=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Message-ID: <1344010161.2474.4.camel@iscandar.digidescorp.com>
+Subject: Re: [PATCH] fat: Refactor shortname parsing
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org
+Date: Fri, 03 Aug 2012 11:09:21 -0500
+In-Reply-To: <alpine.LNX.2.01.1208031734550.7170@frira.zrqbmnf.qr>
+References: <1341314074-2867-1-git-send-email-steve@digidescorp.com>
+	 <alpine.LNX.2.01.1208031650580.3676@frira.zrqbmnf.qr>
+	 <87lihw10cs.fsf@devron.myhome.or.jp>
+	 <alpine.LNX.2.01.1208031734550.7170@frira.zrqbmnf.qr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Amaury,
-
-On Fri,  3 Aug 2012 17:35:43 +0200, Amaury Decrême wrote:
-> This series of patches are a I2C bus driver for the SIS964.
+On Fri, 2012-08-03 at 17:58 +0200, Jan Engelhardt wrote: 
+> On Friday 2012-08-03 17:06, OGAWA Hirofumi wrote:
+> >>>+static inline unsigned char fat_tolower(unsigned char c)
+> >>>+{
+> >>>+	return ((c >= 'A') && (c <= 'Z')) ? c+32 : c;
+> >>>+}
+> >>>+
+> >>
+> >> The kernel already has a tolower() function, can that not be used?
+> >
+> >tolower() is not exactly same, right? e.g. tolower(0xc0). Otherwise,
+> >tolower() is fine.
 > 
+> Yes, but you can still
 > 
-> The SIS964 is nearly the same as SIS630 for the SMBUS :
-> 	- Most of the SMBus registers (Status, Enable, Control,
-> 	  Host Control, etc.) are at the same adresses + 0x60
-> 	- The register count is 21 instead of 20
-> 
-> The SIS964 name is ambiguous as this chip isn't part of the SIS96X
-> family and behaves differently.
-> 
-> The datasheets have been used to develop the driver based on the
-> exsiting driver for I2C SIS630 . 
+> 	return (c >= 'A' && c <= 'Z') ? tolower(c) : c;
 
-What is the rationale for not adding support for the new chip to
-i2c-sis630 then? That would probably be a lot easier to review.
+But now it's less efficient because tolower() does an unnecessary lookup
+to see if it's supposed to change the value. _tolower() wouldn't have
+that issue, but it's marked "Do not use in your code". 
 
-> Content of the patches:
-> 	- 1/2 The driver itself
-> 	- 2/2 Documentation, Kconfig, Makefile, Maintainers
+------------------------------------------------------------------------
+Steven J. Magnani               "I claim this network for MARS!
+www.digidescorp.com              Earthling, return my space modulator!"
 
-This split makes little sense. Integration should come with the driver,
-otherwise even build-testing is impossible.
+#include <standard.disclaimer>
 
 
--- 
-Jean Delvare
