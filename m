@@ -1,75 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2HCNvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 09:51:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25567 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab2HCNve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 09:51:34 -0400
-Date: Fri, 3 Aug 2012 15:47:58 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Ignore unsupported instructions in uprobe_mmap
-Message-ID: <20120803134758.GB2131@redhat.com>
-References: <20120728163157.GA22719@redhat.com> <20120731064730.GB5087@linux.vnet.ibm.com> <20120731124805.GA485@redhat.com> <20120802100515.GC5782@linux.vnet.ibm.com> <20120802141757.GA5064@redhat.com> <20120802165452.GB4268@linux.vnet.ibm.com> <20120802175312.GB11933@redhat.com> <20120803012004.GA3565@linux.vnet.ibm.com>
+	id S1753488Ab2HCNxd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 09:53:33 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:38798 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab2HCNxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 09:53:31 -0400
+Date: Fri, 3 Aug 2012 15:53:25 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: [git pull] m68k updates for 3.6
+Message-ID: <alpine.DEB.2.00.1208031537150.17150@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120803012004.GA3565@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03, Srikar Dronamraju wrote:
->
-> * Oleg Nesterov <oleg@redhat.com> [2012-08-02 19:53:12]:
->
-> > On 08/02, Srikar Dronamraju wrote:
-> > >
-> > > This is case where the uprobe_mmap() and uprobe_unregister() raced, and
-> > > by the time install_breakpoint() was called by uprobe_mmap(), there were
-> > > no consumers.
-> >
-> > Yes, exactly, and this case doesn't look 100% right too,
-> >
-> > > i.e there are no uprobe->consumers and the underlying
-> > > instruction is still not a breakpoint instruction.
-> >
-> > Yes, but what if it _IS_ "int3" ?
->
-> for int3, install_breakpoint returns -ENOTSUPP as install_breakpoint
-> does an explicit check if the instruction is breakpoint instruction
-> and x86 analyse_insn() also returns -ENOTSUPP.
+	Hi Linus,
 
-install_breakpoint() checks ->consumers first and returns EEXIST.
+The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+  Linus Torvalds (1):
+        Linux 3.5
 
-OK. Suppose that the probed insn is int3, and nobody mmaps it.
+are available in the git repository at:
 
-	1. uprobe_register() succeeds
+  ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
-	2. uprobe_unregister() is called, it does consumer_del(),
-	   but before it calls delete_uprobe()...
+Andreas Schwab (1):
+      m68k: Make sys_atomic_cmpxchg_32 work on classic m68k
 
-	3. uprobe_mmap() finds this uprobe and install_breakpoint()
-	   returns -EEXIST.
+Geert Uytterhoeven (14):
+      m68k: Use Kbuild logic to import asm-generic headers
+      m68k: Use asm-generic version of <asm/types.h>
+      m68knommu: Clean up printing of sections
+      m68k: Remove duplicate FPU config option
+      m68k: Move CPU_HAS_* config options
+      m68k: delay, muldi3 - Use CONFIG_CPU_HAS_NO_MULDIV64
+      m68k: Introduce config option CPU_HAS_NO_UNALIGNED
+      m68k: CPU32 does not support unaligned accesses
+      mtd/uclinux: Use generic __bss_stop instead of _ebss
+      m68k: Replace m68k-specific _[se]bss by generic __bss_{start,stop}
+      m68k: Use asm-generic version of <asm/sections.h>
+      m68k/sun3: Remove unselectable code in prom_init()
+      zorro: Remove unused zorro_bus.devices
+      m68k/apollo: Rename "timer" to "apollo_timer"
 
-We could fix this particular problem (and other similar), but I think
-this is pointless. This all is broken. Please give me some time to try
-to make a patch which removes this all.
+Greg Ungerer (1):
+      m68knommu: Allow ColdFire CPUs to use unaligned accesses
 
-> > Yet another reason to move arch_uprobe_analyze_insn/etc to _register.
-> >
->
-> I am for moving the stuff to _register that avoids us from looking at
-> these cases.
+Paul Bolle (2):
+      m68k: Remove five unused headers
+      m68k: Remove never used asm/shm.h
 
-Yes. Lets try to do this step-by-step, after we fix the pending/discussed
-problems.
+All of these (except for the top commit) have been in linux-next for at
+least 2 weeks, and were ready at the 3.5 timeframe, but I didn't want to
+send a pull request the night I left for vacation.
 
-Oleg.
+The top commit is a recent fix by Andreas (also destined for stable) that
+required one more linux-next cycle, so I had to delay my pull request to
+today.
 
+The "mtd/uclinux" change is not really an MTD change, but an architecture
+change, and has been acked by the relevant architecture maintainers (for
+blackfin, microblaze, and sh).
+
+Thanks for pulling!
+
+ arch/blackfin/kernel/setup.c              |    1 -
+ arch/m68k/Kconfig                         |   12 --
+ arch/m68k/Kconfig.cpu                     |   14 ++
+ arch/m68k/apollo/config.c                 |   16 +-
+ arch/m68k/include/asm/Kbuild              |   25 +++
+ arch/m68k/include/asm/MC68332.h           |  152 ------------------
+ arch/m68k/include/asm/apollodma.h         |  248 -----------------------------
+ arch/m68k/include/asm/apollohw.h          |    2 +-
+ arch/m68k/include/asm/bitsperlong.h       |    1 -
+ arch/m68k/include/asm/cputime.h           |    6 -
+ arch/m68k/include/asm/delay.h             |    2 +-
+ arch/m68k/include/asm/device.h            |    7 -
+ arch/m68k/include/asm/emergency-restart.h |    6 -
+ arch/m68k/include/asm/errno.h             |    6 -
+ arch/m68k/include/asm/futex.h             |    6 -
+ arch/m68k/include/asm/ioctl.h             |    1 -
+ arch/m68k/include/asm/ipcbuf.h            |    1 -
+ arch/m68k/include/asm/irq_regs.h          |    1 -
+ arch/m68k/include/asm/kdebug.h            |    1 -
+ arch/m68k/include/asm/kmap_types.h        |    6 -
+ arch/m68k/include/asm/kvm_para.h          |    1 -
+ arch/m68k/include/asm/local.h             |    6 -
+ arch/m68k/include/asm/local64.h           |    1 -
+ arch/m68k/include/asm/mac_mouse.h         |   23 ---
+ arch/m68k/include/asm/mcfmbus.h           |   77 ---------
+ arch/m68k/include/asm/mman.h              |    1 -
+ arch/m68k/include/asm/mutex.h             |    9 -
+ arch/m68k/include/asm/percpu.h            |    6 -
+ arch/m68k/include/asm/resource.h          |    6 -
+ arch/m68k/include/asm/sbus.h              |   45 -----
+ arch/m68k/include/asm/scatterlist.h       |    6 -
+ arch/m68k/include/asm/sections.h          |    8 -
+ arch/m68k/include/asm/shm.h               |   31 ----
+ arch/m68k/include/asm/siginfo.h           |    6 -
+ arch/m68k/include/asm/statfs.h            |    6 -
+ arch/m68k/include/asm/topology.h          |    6 -
+ arch/m68k/include/asm/types.h             |   22 ---
+ arch/m68k/include/asm/unaligned.h         |    4 +-
+ arch/m68k/include/asm/xor.h               |    1 -
+ arch/m68k/kernel/setup_no.c               |   11 +-
+ arch/m68k/kernel/sys_m68k.c               |    8 +-
+ arch/m68k/kernel/vmlinux-nommu.lds        |    2 -
+ arch/m68k/kernel/vmlinux-std.lds          |    2 -
+ arch/m68k/kernel/vmlinux-sun3.lds         |    2 -
+ arch/m68k/lib/muldi3.c                    |    2 +-
+ arch/m68k/mm/init_mm.c                    |    2 +-
+ arch/m68k/mm/init_no.c                    |    2 +-
+ arch/m68k/platform/68328/head-de2.S       |    8 +-
+ arch/m68k/platform/68328/head-pilot.S     |   10 +-
+ arch/m68k/platform/68328/head-ram.S       |    4 +-
+ arch/m68k/platform/68328/head-rom.S       |    6 +-
+ arch/m68k/platform/68360/head-ram.S       |    6 +-
+ arch/m68k/platform/68360/head-rom.S       |    8 +-
+ arch/m68k/platform/coldfire/head.S        |   10 +-
+ arch/m68k/sun3/prom/init.c                |   48 +------
+ arch/microblaze/include/asm/sections.h    |    4 -
+ arch/microblaze/kernel/microblaze_ksyms.c |    3 -
+ arch/microblaze/kernel/setup.c            |    4 +-
+ arch/microblaze/kernel/vmlinux.lds.S      |    1 -
+ arch/sh/include/asm/sections.h            |    1 -
+ arch/sh/kernel/setup.c                    |    2 +-
+ arch/sh/kernel/sh_ksyms_32.c              |    1 -
+ arch/sh/kernel/vmlinux.lds.S              |    1 -
+ arch/sh/lib/mcount.S                      |    8 +-
+ drivers/mtd/maps/uclinux.c                |    5 +-
+ drivers/zorro/zorro.c                     |    2 -
+ 66 files changed, 100 insertions(+), 842 deletions(-)
+ delete mode 100644 arch/m68k/include/asm/MC68332.h
+ delete mode 100644 arch/m68k/include/asm/apollodma.h
+ delete mode 100644 arch/m68k/include/asm/bitsperlong.h
+ delete mode 100644 arch/m68k/include/asm/cputime.h
+ delete mode 100644 arch/m68k/include/asm/device.h
+ delete mode 100644 arch/m68k/include/asm/emergency-restart.h
+ delete mode 100644 arch/m68k/include/asm/errno.h
+ delete mode 100644 arch/m68k/include/asm/futex.h
+ delete mode 100644 arch/m68k/include/asm/ioctl.h
+ delete mode 100644 arch/m68k/include/asm/ipcbuf.h
+ delete mode 100644 arch/m68k/include/asm/irq_regs.h
+ delete mode 100644 arch/m68k/include/asm/kdebug.h
+ delete mode 100644 arch/m68k/include/asm/kmap_types.h
+ delete mode 100644 arch/m68k/include/asm/kvm_para.h
+ delete mode 100644 arch/m68k/include/asm/local.h
+ delete mode 100644 arch/m68k/include/asm/local64.h
+ delete mode 100644 arch/m68k/include/asm/mac_mouse.h
+ delete mode 100644 arch/m68k/include/asm/mcfmbus.h
+ delete mode 100644 arch/m68k/include/asm/mman.h
+ delete mode 100644 arch/m68k/include/asm/mutex.h
+ delete mode 100644 arch/m68k/include/asm/percpu.h
+ delete mode 100644 arch/m68k/include/asm/resource.h
+ delete mode 100644 arch/m68k/include/asm/sbus.h
+ delete mode 100644 arch/m68k/include/asm/scatterlist.h
+ delete mode 100644 arch/m68k/include/asm/sections.h
+ delete mode 100644 arch/m68k/include/asm/shm.h
+ delete mode 100644 arch/m68k/include/asm/siginfo.h
+ delete mode 100644 arch/m68k/include/asm/statfs.h
+ delete mode 100644 arch/m68k/include/asm/topology.h
+ delete mode 100644 arch/m68k/include/asm/types.h
+ delete mode 100644 arch/m68k/include/asm/xor.h
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
