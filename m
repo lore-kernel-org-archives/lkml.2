@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab2HCKRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 06:17:47 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42045 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab2HCKRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 06:17:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <87pq7935w2.fsf@xmission.com>
-References: <alpine.LFD.2.02.1203231926000.2542@ionos>
-	<20120323190855.GA27213@www.outflux.net>
-	<CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
-	<87pq7935w2.fsf@xmission.com>
-Date: Fri, 3 Aug 2012 12:17:43 +0200
-Message-ID: <CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com>
-Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Kees Cook <keescook@chromium.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        spender@grsecurity.net, Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753302Ab2HCKUG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 06:20:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752746Ab2HCKUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 06:20:03 -0400
+Subject: Re: GFS2: Pull request (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <CA+55aFwNGwh2DYsPzBfYWktgeKe1Z-K8u9qZ8Ab00Dd=m888Ew@mail.gmail.com>
+References: <1343055592.2703.41.camel@menhir>
+	 <CA+55aFwNGwh2DYsPzBfYWktgeKe1Z-K8u9qZ8Ab00Dd=m888Ew@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 03 Aug 2012 11:18:22 +0100
+Message-ID: <1343989102.2712.10.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 2, 2012 at 1:11 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> richard -rw- weinberger <richard.weinberger@gmail.com> writes:
->
->> On Fri, Mar 23, 2012 at 8:08 PM, Kees Cook <keescook@chromium.org> wrote:
->>> Notify get_robust_list users that the syscall is going away.
->>>
->>> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
->>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>> ---
->>
->> I'm using this system call in an application and noticed that's marked
->> as deprecated now.
->> My application collects all kind of information from crashing programs.
->> It's installed in /proc/sys/kernel/core_pattern.
->>
->> If program X is crashing it executes get_robust_list(X) to get the
->> address of the robust list
->> and reads the list from /proc/X/mem.
->>
->> Is there another way to get the robust list from another program (by it's pid)?
->
-> The folks doing checkpoint/restart claim to not need this, so there
-> might be a way either that or they just haven't hit this problem yet.
->
-> What you are doing sounds like a reasonable use of get_robust_list to me.
->
+Hi,
 
-CRIU folks, how do you deal with futex robust lists?
+On Thu, 2012-08-02 at 18:22 -0700, Linus Torvalds wrote:
+> [ For some reason this didn't go out, and was in my "drafts" folder.
+> Better late than never, I guess ]
+> 
+> On Mon, Jul 23, 2012 at 7:59 AM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+> >
+> > Please consider pulling the following patches. There have been no changes since
+> > they were posted for review,
+> 
+> It would be lovely to get a short overview of what the changes you ask
+> me to pull actually do, so that I can populate the merge message with
+> relevant information.
+> 
+> (Not just a message for you, this is true in general. Although I'm
+> very pleased with the merge window so far - I think most pull requests
+> have had at least *some* general overview in tags and/or emails)
+> 
+>                 Linus
 
--- 
-Thanks,
-//richard
+I've been writing summaries when I send out the "pre-pull patch posting"
+so I could just copy & paste from that if it thats the kind of thing
+that you are after?
+
+https://lkml.org/lkml/2012/7/23/59
+
+
+Steve.
+
+
+
