@@ -1,294 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab2HCQvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:51:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38435 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2HCQvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:51:50 -0400
-Date: Fri, 3 Aug 2012 18:51:43 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20120803165143.GA2266@gmail.com>
+	id S1753480Ab2HCQ44 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:56:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34604 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470Ab2HCQ4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 12:56:54 -0400
+From: Vikram Pandita <vikram.pandita@ti.com>
+To: <gregkh@linuxfoundation.org>, <kay@vrfy.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Vikram Pandita <vikram.pandita@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Subject: [PATCH v3] printk: add option to print cpu id
+Date: Fri, 3 Aug 2012 09:56:44 -0700
+Message-ID: <1344013004-32211-1-git-send-email-vikram.pandita@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+From: Vikram Pandita <vikram.pandita@ti.com>
 
-Please pull the latest x86-urgent-for-linus git tree from:
+Introduce config option to enable CPU id reporting for printk() calls.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+Example logs with this option enabled look like:
+[   0] [    0.063232] Mount-cache hash table entries: 512
+[   0] [    0.068054] CPU: Testing write buffer coherency: ok
+[   0] [    0.068939] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+[   0] [    0.069305] Setting up static identity map for 0x8046dc90 - 0x8046dd00
+[   0] [    0.069366] L310 cache controller enabled
+[   0] [    0.069396] l2x0: 16 ways, CACHE_ID 0x410000c7, AUX_CTRL 0x7e470000
+[   1] [    0.073211] CPU1: Booted secondary processor
+[   1] [    0.100463] CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
+[   1] [    0.100555] CPU1: Unknown IPI message 0x0
+[   0] [    0.101348] Brought up 2 CPUs
 
-   HEAD: eaf4ce6c5fed6b4c55f7efcd5fc3477435cab5e9 x86-64, kcmp: The kcmp system call can be common
+Its sometimes very useful to have printk also print the CPU Identifier
+that executed the call. This has helped to debug various SMP issues on shipping
+products.
 
-Various fixes.
+Known limitation is if the system gets preempted between function call and
+actual printk, the reported cpu-id might not be accurate. But most of the
+times its seen to give a good feel of how the N cpu's in the system are
+getting loaded.
 
- Thanks,
+Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
+---
+v1: initial version - had wrong cpuid logging mechanism
+v2: fixed as per review comments from Kay Sievers
+v3: allow cpuid to be u16 to support multi-core systems with 1000+ cores
 
-	Ingo
+ kernel/printk.c   |   51 +++++++++++++++++++++++++++++++++++++++++----------
+ lib/Kconfig.debug |   13 +++++++++++++
+ 2 files changed, 54 insertions(+), 10 deletions(-)
 
------------------->
-Alan Cox (1):
-      x86, nops: Missing break resulting in incorrect selection on Intel
-
-H. Peter Anvin (1):
-      x86-64, kcmp: The kcmp system call can be common
-
-Jean Delvare (1):
-      x86: CONFIG_CC_STACKPROTECTOR=y is no longer experimental
-
-Julia Lawall (1):
-      arch/x86/kernel/kdebugfs.c: Ensure a consistent return value in error case
-
-Tomoki Sekiyama (1):
-      x86/ioapic: Fix NULL pointer dereference on CPU hotplug after disabling irqs
-
-Tony Luck (2):
-      x86/mce: Move MCACOD defines from mce-severity.c to <asm/mce.h>
-      x86/mce: Add quirk for instruction recovery on Sandy Bridge processors
-
-
- arch/x86/Kconfig                          |    2 +-
- arch/x86/include/asm/mce.h                |    8 ++++++
- arch/x86/kernel/alternative.c             |    2 +-
- arch/x86/kernel/apic/io_apic.c            |    4 +--
- arch/x86/kernel/cpu/mcheck/mce-severity.c |    7 -----
- arch/x86/kernel/cpu/mcheck/mce.c          |   43 +++++++++++++++++++++++++++--
- arch/x86/kernel/irq.c                     |    1 +
- arch/x86/kernel/kdebugfs.c                |    6 ++--
- arch/x86/syscalls/syscall_64.tbl          |    2 +-
- 9 files changed, 58 insertions(+), 17 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c70684f..b03fe17 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1525,7 +1525,7 @@ config SECCOMP
- 	  If unsure, say Y. Only embedded should say N here.
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 6a76ab9..90d49b2 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -208,6 +208,7 @@ struct log {
+ 	u8 facility;		/* syslog facility */
+ 	u8 flags:5;		/* internal record flags */
+ 	u8 level:3;		/* syslog level */
++	u16 cpuid;		/* cpu invoking the log */
+ };
  
- config CC_STACKPROTECTOR
--	bool "Enable -fstack-protector buffer overflow detection (EXPERIMENTAL)"
-+	bool "Enable -fstack-protector buffer overflow detection"
- 	---help---
- 	  This option turns on the -fstack-protector GCC feature. This
- 	  feature puts, at the beginning of functions, a canary value on
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index 441520e..a3ac52b 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -33,6 +33,14 @@
- #define MCI_STATUS_PCC   (1ULL<<57)  /* processor context corrupt */
- #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
- #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
-+#define MCACOD		  0xffff     /* MCA Error Code */
-+
-+/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
-+#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
-+#define MCACOD_SCRUBMSK	0xfff0
-+#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
-+#define MCACOD_DATA	0x0134	/* Data Load */
-+#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
- 
- /* MCi_MISC register defines */
- #define MCI_MISC_ADDR_LSB(m)	((m) & 0x3f)
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index 931280f..afb7ff7 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -224,7 +224,7 @@ void __init arch_init_ideal_nops(void)
- 			ideal_nops = intel_nops;
- #endif
- 		}
--
-+		break;
- 	default:
- #ifdef CONFIG_X86_64
- 		ideal_nops = k8_nops;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 406eee7..a6c64aa 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1204,7 +1204,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
- 	BUG_ON(!cfg->vector);
- 
- 	vector = cfg->vector;
--	for_each_cpu(cpu, cfg->domain)
-+	for_each_cpu_and(cpu, cfg->domain, cpu_online_mask)
- 		per_cpu(vector_irq, cpu)[vector] = -1;
- 
- 	cfg->vector = 0;
-@@ -1212,7 +1212,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
- 
- 	if (likely(!cfg->move_in_progress))
- 		return;
--	for_each_cpu(cpu, cfg->old_domain) {
-+	for_each_cpu_and(cpu, cfg->old_domain, cpu_online_mask) {
- 		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
- 								vector++) {
- 			if (per_cpu(vector_irq, cpu)[vector] != irq)
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-index 413c2ce..1301762 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -55,13 +55,6 @@ static struct severity {
- #define MCI_UC_S (MCI_STATUS_UC|MCI_STATUS_S)
- #define MCI_UC_SAR (MCI_STATUS_UC|MCI_STATUS_S|MCI_STATUS_AR)
- #define	MCI_ADDR (MCI_STATUS_ADDRV|MCI_STATUS_MISCV)
--#define MCACOD 0xffff
--/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
--#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
--#define MCACOD_SCRUBMSK	0xfff0
--#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
--#define MCACOD_DATA	0x0134	/* Data Load */
--#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
- 
- 	MCESEV(
- 		NO, "Invalid",
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 5a5a5dc..8cf60e2 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -105,6 +105,8 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
- 
- static DEFINE_PER_CPU(struct work_struct, mce_work);
- 
-+static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
-+
  /*
-  * CPU/chipset specific EDAC code can register a notifier call here to print
-  * MCE errors in a human-readable form.
-@@ -652,14 +654,18 @@ EXPORT_SYMBOL_GPL(machine_check_poll);
-  * Do a quick check if any of the events requires a panic.
-  * This decides if we keep the events around or clear them.
-  */
--static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp)
-+static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
-+			  struct pt_regs *regs)
+@@ -305,7 +306,8 @@ static u32 log_next(u32 idx)
+ static void log_store(int facility, int level,
+ 		      enum log_flags flags, u64 ts_nsec,
+ 		      const char *dict, u16 dict_len,
+-		      const char *text, u16 text_len)
++		      const char *text, u16 text_len,
++		      const u16 cpuid)
  {
- 	int i, ret = 0;
+ 	struct log *msg;
+ 	u32 size, pad_len;
+@@ -356,6 +358,7 @@ static void log_store(int facility, int level,
+ 		msg->ts_nsec = local_clock();
+ 	memset(log_dict(msg) + dict_len, 0, pad_len);
+ 	msg->len = sizeof(struct log) + text_len + dict_len + pad_len;
++	msg->cpuid = cpuid;
  
- 	for (i = 0; i < banks; i++) {
- 		m->status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
--		if (m->status & MCI_STATUS_VAL)
-+		if (m->status & MCI_STATUS_VAL) {
- 			__set_bit(i, validp);
-+			if (quirk_no_way_out)
-+				quirk_no_way_out(i, m, regs);
-+		}
- 		if (mce_severity(m, tolerant, msg) >= MCE_PANIC_SEVERITY)
- 			ret = 1;
- 	}
-@@ -1042,7 +1048,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	*final = m;
- 
- 	memset(valid_banks, 0, sizeof(valid_banks));
--	no_way_out = mce_no_way_out(&m, &msg, valid_banks);
-+	no_way_out = mce_no_way_out(&m, &msg, valid_banks, regs);
- 
- 	barrier();
- 
-@@ -1418,6 +1424,34 @@ static void __mcheck_cpu_init_generic(void)
- 	}
+ 	/* insert message */
+ 	log_next_idx += msg->len;
+@@ -855,6 +858,25 @@ static size_t print_time(u64 ts, char *buf)
+ 		       (unsigned long)ts, rem_nsec / 1000);
  }
  
-+/*
-+ * During IFU recovery Sandy Bridge -EP4S processors set the RIPV and
-+ * EIPV bits in MCG_STATUS to zero on the affected logical processor (SDM
-+ * Vol 3B Table 15-20). But this confuses both the code that determines
-+ * whether the machine check occurred in kernel or user mode, and also
-+ * the severity assessment code. Pretend that EIPV was set, and take the
-+ * ip/cs values from the pt_regs that mce_gather_info() ignored earlier.
-+ */
-+static void quirk_sandybridge_ifu(int bank, struct mce *m, struct pt_regs *regs)
-+{
-+	if (bank != 0)
-+		return;
-+	if ((m->mcgstatus & (MCG_STATUS_EIPV|MCG_STATUS_RIPV)) != 0)
-+		return;
-+	if ((m->status & (MCI_STATUS_OVER|MCI_STATUS_UC|
-+		          MCI_STATUS_EN|MCI_STATUS_MISCV|MCI_STATUS_ADDRV|
-+			  MCI_STATUS_PCC|MCI_STATUS_S|MCI_STATUS_AR|
-+			  MCACOD)) !=
-+			 (MCI_STATUS_UC|MCI_STATUS_EN|
-+			  MCI_STATUS_MISCV|MCI_STATUS_ADDRV|MCI_STATUS_S|
-+			  MCI_STATUS_AR|MCACOD_INSTR))
-+		return;
++#if defined(CONFIG_PRINTK_CPUID)
++static bool printk_cpuid = 1;
++#else
++static bool printk_cpuid;
++#endif
++module_param_named(cpuid, printk_cpuid, bool, S_IRUGO | S_IWUSR);
 +
-+	m->mcgstatus |= MCG_STATUS_EIPV;
-+	m->ip = regs->ip;
-+	m->cs = regs->cs;
++static size_t print_cpuid(u16 cpuid, char *buf)
++{
++
++	if (!printk_cpuid)
++		return 0;
++
++	if (!buf)
++		return 7;
++
++	return sprintf(buf, "[%4d] ", cpuid);
 +}
 +
- /* Add per CPU specific workarounds here */
- static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
+ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
  {
-@@ -1515,6 +1549,9 @@ static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
- 		 */
- 		if (c->x86 == 6 && c->x86_model <= 13 && mce_bootlog < 0)
- 			mce_bootlog = 0;
-+
-+		if (c->x86 == 6 && c->x86_model == 45)
-+			quirk_no_way_out = quirk_sandybridge_ifu;
- 	}
- 	if (monarch_timeout < 0)
- 		monarch_timeout = 0;
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 1f5f1d5..7ad683d 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -328,6 +328,7 @@ void fixup_irqs(void)
- 				chip->irq_retrigger(data);
- 			raw_spin_unlock(&desc->lock);
+ 	size_t len = 0;
+@@ -874,6 +896,7 @@ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
  		}
-+		__this_cpu_write(vector_irq[vector], -1);
+ 	}
+ 
++	len += print_cpuid(msg->cpuid, buf ? buf + len : NULL);
+ 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+ 	return len;
+ }
+@@ -1387,6 +1410,7 @@ static struct cont {
+ 	u64 ts_nsec;			/* time of first print */
+ 	u8 level;			/* log level of first message */
+ 	u8 facility;			/* log level of first message */
++	u16 cpuid;			/* cpu invoking the logging request */
+ 	enum log_flags flags;		/* prefix, newline flags */
+ 	bool flushed:1;			/* buffer sealed and committed */
+ } cont;
+@@ -1405,7 +1429,8 @@ static void cont_flush(enum log_flags flags)
+ 		 * line. LOG_NOCONS suppresses a duplicated output.
+ 		 */
+ 		log_store(cont.facility, cont.level, flags | LOG_NOCONS,
+-			  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
++			  cont.ts_nsec, NULL, 0, cont.buf, cont.len,
++			  cont.cpuid);
+ 		cont.flags = flags;
+ 		cont.flushed = true;
+ 	} else {
+@@ -1414,12 +1439,14 @@ static void cont_flush(enum log_flags flags)
+ 		 * just submit it to the store and free the buffer.
+ 		 */
+ 		log_store(cont.facility, cont.level, flags, 0,
+-			  NULL, 0, cont.buf, cont.len);
++			  NULL, 0, cont.buf, cont.len,
++			  cont.cpuid);
+ 		cont.len = 0;
  	}
  }
- #endif
-diff --git a/arch/x86/kernel/kdebugfs.c b/arch/x86/kernel/kdebugfs.c
-index 1d5d31e..dc1404b 100644
---- a/arch/x86/kernel/kdebugfs.c
-+++ b/arch/x86/kernel/kdebugfs.c
-@@ -107,7 +107,7 @@ static int __init create_setup_data_nodes(struct dentry *parent)
+ 
+-static bool cont_add(int facility, int level, const char *text, size_t len)
++static bool cont_add(int facility, int level, const char *text, size_t len,
++			const u16 cpuid)
  {
- 	struct setup_data_node *node;
- 	struct setup_data *data;
--	int error = -ENOMEM;
-+	int error;
- 	struct dentry *d;
- 	struct page *pg;
- 	u64 pa_data;
-@@ -121,8 +121,10 @@ static int __init create_setup_data_nodes(struct dentry *parent)
+ 	if (cont.len && cont.flushed)
+ 		return false;
+@@ -1442,6 +1469,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
  
- 	while (pa_data) {
- 		node = kmalloc(sizeof(*node), GFP_KERNEL);
--		if (!node)
-+		if (!node) {
-+			error = -ENOMEM;
- 			goto err_dir;
-+		}
+ 	memcpy(cont.buf + cont.len, text, len);
+ 	cont.len += len;
++	cont.cpuid = cpuid;
  
- 		pg = pfn_to_page((pa_data+sizeof(*data)-1) >> PAGE_SHIFT);
- 		if (PageHighMem(pg)) {
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 51171ae..29aed7a 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -318,7 +318,7 @@
- 309	common	getcpu			sys_getcpu
- 310	64	process_vm_readv	sys_process_vm_readv
- 311	64	process_vm_writev	sys_process_vm_writev
--312	64	kcmp			sys_kcmp
-+312	common	kcmp			sys_kcmp
+ 	if (cont.len > (sizeof(cont.buf) * 80) / 100)
+ 		cont_flush(LOG_CONT);
+@@ -1455,7 +1483,8 @@ static size_t cont_print_text(char *text, size_t size)
+ 	size_t len;
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
+ 	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
+-		textlen += print_time(cont.ts_nsec, text);
++		textlen += print_cpuid(cont.cpuid, text);
++		textlen += print_time(cont.ts_nsec, text + textlen);
+ 		size -= textlen;
+ 	}
+ 
+@@ -1527,7 +1556,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		printed_len += strlen(recursion_msg);
+ 		/* emit KERN_CRIT message */
+ 		log_store(0, 2, LOG_PREFIX|LOG_NEWLINE, 0,
+-			  NULL, 0, recursion_msg, printed_len);
++			  NULL, 0, recursion_msg, printed_len, this_cpu);
+ 	}
+ 
+ 	/*
+@@ -1577,9 +1606,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 			cont_flush(LOG_NEWLINE);
+ 
+ 		/* buffer line if possible, otherwise store it right away */
+-		if (!cont_add(facility, level, text, text_len))
++		if (!cont_add(facility, level, text, text_len, this_cpu))
+ 			log_store(facility, level, lflags | LOG_CONT, 0,
+-				  dict, dictlen, text, text_len);
++				  dict, dictlen, text, text_len, this_cpu);
+ 	} else {
+ 		bool stored = false;
+ 
+@@ -1591,13 +1620,15 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 */
+ 		if (cont.len && cont.owner == current) {
+ 			if (!(lflags & LOG_PREFIX))
+-				stored = cont_add(facility, level, text, text_len);
++				stored = cont_add(facility, level, text, text_len,
++						this_cpu);
+ 			cont_flush(LOG_NEWLINE);
+ 		}
+ 
+ 		if (!stored)
+ 			log_store(facility, level, lflags, 0,
+-				  dict, dictlen, text, text_len);
++				  dict, dictlen, text, text_len,
++				  this_cpu);
+ 	}
+ 	printed_len += text_len;
+ 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 2403a63..139b2b1 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -14,6 +14,19 @@ config PRINTK_TIME
+ 	  The behavior is also controlled by the kernel command line
+ 	  parameter printk.time=1. See Documentation/kernel-parameters.txt
+ 
++config PRINTK_CPUID
++	bool "Show cpu id information on printks"
++	depends on PRINTK
++	help
++	  Selecting this option causes cpu identifier to be added to the
++	  output of the syslog() system call and at the console.
++
++	  This flag just specifies if the cpu-id should
++	  be included.
++
++	  The behavior is also controlled by the kernel command line
++	  parameter printk.cpuid=1.
++
+ config DEFAULT_MESSAGE_LOGLEVEL
+ 	int "Default message log level (1-7)"
+ 	range 1 7
+-- 
+1.7.9.5
+
