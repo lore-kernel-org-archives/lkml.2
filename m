@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab2HCLCz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 07:02:55 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34851 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753375Ab2HCLCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 07:02:52 -0400
-Date: Fri, 3 Aug 2012 15:02:47 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        spender@grsecurity.net
-Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
-Message-ID: <20120803110247.GB11952@moon>
-References: <alpine.LFD.2.02.1203231926000.2542@ionos>
- <20120323190855.GA27213@www.outflux.net>
- <CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
- <87pq7935w2.fsf@xmission.com>
- <CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com>
+	id S1753493Ab2HCLNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 07:13:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53085 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753375Ab2HCLN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 07:13:26 -0400
+Date: Fri, 3 Aug 2012 13:12:55 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 03/17] perf, x86: Add copy_from_user_nmi_nochk for best
+ effort copy
+Message-ID: <20120803111255.GB937@krava.brq.redhat.com>
+References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
+ <1342959280-5361-4-git-send-email-jolsa@redhat.com>
+ <501ACB42.6060201@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com>
+In-Reply-To: <501ACB42.6060201@amacapital.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 12:17:43PM +0200, richard -rw- weinberger wrote:
-> On Thu, Aug 2, 2012 at 1:11 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> > richard -rw- weinberger <richard.weinberger@gmail.com> writes:
-> >
-> >> On Fri, Mar 23, 2012 at 8:08 PM, Kees Cook <keescook@chromium.org> wrote:
-> >>> Notify get_robust_list users that the syscall is going away.
-> >>>
-> >>> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-> >>> Signed-off-by: Kees Cook <keescook@chromium.org>
-> >>> ---
-> >>
-> >> I'm using this system call in an application and noticed that's marked
-> >> as deprecated now.
-> >> My application collects all kind of information from crashing programs.
-> >> It's installed in /proc/sys/kernel/core_pattern.
-> >>
-> >> If program X is crashing it executes get_robust_list(X) to get the
-> >> address of the robust list
-> >> and reads the list from /proc/X/mem.
-> >>
-> >> Is there another way to get the robust list from another program (by it's pid)?
-> >
-> > The folks doing checkpoint/restart claim to not need this, so there
-> > might be a way either that or they just haven't hit this problem yet.
-> >
-> > What you are doing sounds like a reasonable use of get_robust_list to me.
-> >
+On Thu, Aug 02, 2012 at 11:47:30AM -0700, Andy Lutomirski wrote:
+> On 07/22/2012 05:14 AM, Jiri Olsa wrote:
+> > Adding copy_from_user_nmi_nochk that provides the best effort
+> > copy regardless the requesting size crossing the task boundary.
+> > 
+> > This is going to be useful for stack dump we need in post
+> > DWARF CFI based unwind, where we have predefined size of
+> > the user stack to dump, and we need to store the most of
+> > the requested dump size, regardless this size is crossing
+> > the task boundary.
 > 
-> CRIU folks, how do you deal with futex robust lists?
+> Huh?  This is a TASK_SIZE check, which makes sure that the request
+> doesn't cross into kernel land.  Otherwise userspace could presumably
+> read kernel memory by setting bogus values of sp.
 
-Well, I believe we were over-optimistic in claiming that we don't need this
-syscall (to be fair I think we simply yet not faced the problem Eric points).
-So we need some way to fetch this address and set it back. If get_robust_list
-get deprecated maybe we could print it out in /proc/pid/stat or something?
+haven't realized that..  new version won't have this
 
-	Cyrill
+thanks,
+jirka
