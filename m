@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab2HCOE7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:04:59 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:49847 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab2HCOEz (ORCPT
+	id S1753577Ab2HCOEI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:04:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45787 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab2HCOBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:04:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120803133438.GE11952@moon>
-References: <1344000593-18794-1-git-send-email-richard@nod.at>
-	<20120803133438.GE11952@moon>
-Date: Fri, 3 Aug 2012 16:04:52 +0200
-Message-ID: <CAFLxGvzbsisUxNCsQmWJ0epPt9pXRM_AjdTdW8NjiU6B2Ce=zg@mail.gmail.com>
-Subject: Re: [PATCH] Revert "futex: Mark get_robust_list as deprecated"
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, dvhart@linux.intel.com,
-        paul.gortmaker@windriver.com, jkosina@suse.cz, rob@landley.net,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        kernel-hardening@lists.openwall.com, spender@grsecurity.net,
-        keescook@chromium.org, tglx@linutronix.de, xemul@parallels.com,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 Aug 2012 10:01:25 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 11/18] perf top: Error handling for counter creation should parallel perf-record
+Date: Fri,  3 Aug 2012 11:01:03 -0300
+Message-Id: <1344002470-5965-12-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1344002470-5965-1-git-send-email-acme@infradead.org>
+References: <1344002470-5965-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 3:34 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> On Fri, Aug 03, 2012 at 03:29:53PM +0200, Richard Weinberger wrote:
->> get_robust_list has at least two valid use cases.
->> 1. checkpoint/restore in userspace
->> 2. post mortem analysis
->>
->> Cc: Randy Dunlap <rdunlap@xenotime.net>
->> Cc: Darren Hart <dvhart@linux.intel.com>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: Jiri Kosina <jkosina@suse.cz>
->> Cc: Eric W. Biederman <ebiederm@xmission.com>
->> Cc: David Howells <dhowells@redhat.com>
->> Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
->> Cc: kernel-hardening@lists.openwall.com
->> Cc: spender@grsecurity.net
->> Cc: keescook@chromium.org
->> Cc: tglx@linutronix.de
->> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
->> Cc: xemul@parallels.com
->> Cc: <stable@vger.kernel.org> # 3.4.x
->> Cc: <stable@vger.kernel.org> # 3.5.x
->> Link: http://lkml.kernel.org/r/CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw%20%28%29%20mail%20!%20gmail%20!%20com
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->
-> Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
->
-> Thanks, Richard!
+From: David Ahern <dsahern@gmail.com>
 
-Looks like the patch itself did made into through vger.
-Will resend later.
+5a7ed29 fixed up perf-record but not perf-top. Similar argument holds
+for it -- fallback to PMU only if it does not exist and handle invalid
+attributes separately.
 
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>
+Link: http://lkml.kernel.org/r/1343616783-6360-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-top.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 40264ea..3409627 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -943,8 +943,10 @@ try_again:
+ 			 * based cpu-clock-tick sw counter, which
+ 			 * is always available even if no PMU support:
+ 			 */
+-			if (attr->type == PERF_TYPE_HARDWARE &&
+-			    attr->config == PERF_COUNT_HW_CPU_CYCLES) {
++			if ((err == ENOENT || err == ENXIO) &&
++			    (attr->type == PERF_TYPE_HARDWARE) &&
++			    (attr->config == PERF_COUNT_HW_CPU_CYCLES)) {
++
+ 				if (verbose)
+ 					ui__warning("Cycles event not supported,\n"
+ 						    "trying to fall back to cpu-clock-ticks\n");
 -- 
-Thanks,
-//richard
+1.7.1
+
