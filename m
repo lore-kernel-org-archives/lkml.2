@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab2HCViQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 17:38:16 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:36932 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753107Ab2HCViO (ORCPT
+	id S1753600Ab2HCVlL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 17:41:11 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:35031 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab2HCVlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 17:38:14 -0400
-Message-ID: <501C4479.4030306@xenotime.net>
-Date: Fri, 03 Aug 2012 14:36:57 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Fri, 3 Aug 2012 17:41:09 -0400
+Message-ID: <501C458E.7050000@gmail.com>
+Date: Fri, 03 Aug 2012 23:41:34 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mark Studebaker <mdsxyz123@yahoo.com>, linux-i2c@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 3 (drivers/i2c/busses/i2c-i801.c)
-References: <20120803135110.0ba0e51758021b6a4ed9d1e9@canb.auug.org.au>	<501C0952.5050609@xenotime.net> <20120803215717.31376eb7@endymion.delvare>
-In-Reply-To: <20120803215717.31376eb7@endymion.delvare>
+To: Tejun Heo <tj@kernel.org>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org
+Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
+References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com> <1344003788-1417-2-git-send-email-levinsasha928@gmail.com> <20120803171515.GH15477@google.com> <501C407D.9080900@gmail.com> <20120803213017.GK15477@google.com>
+In-Reply-To: <20120803213017.GK15477@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 12:57 PM, Jean Delvare wrote:
-
-> Hi Randy,
+On 08/03/2012 11:30 PM, Tejun Heo wrote:
+> Hello,
 > 
-> On Fri, 03 Aug 2012 10:24:34 -0700, Randy Dunlap wrote:
->> on x86_64:
+> On Fri, Aug 03, 2012 at 11:19:57PM +0200, Sasha Levin wrote:
+>>> Is this supposed to be embedded in struct definition?  If so, the name
+>>> is rather misleading as DEFINE_* is supposed to define and initialize
+>>> stand-alone constructs.  Also, for struct members, simply putting hash
+>>> entries after struct hash_table should work.
 >>
->> when CONFIG_GPIOLIB is not enabled:
->>
->> drivers/i2c/busses/i2c-i801.c: In function 'match_gpio_chip_by_label':
->> drivers/i2c/busses/i2c-i801.c:1011:21: error: dereferencing pointer to incomplete type
->> drivers/i2c/busses/i2c-i801.c: In function 'i801_add_mux':
->> drivers/i2c/busses/i2c-i801.c:1028:2: error: implicit declaration of function 'gpiochip_find'
->> drivers/i2c/busses/i2c-i801.c:1028:7: warning: assignment makes pointer from integer without a cast
->> drivers/i2c/busses/i2c-i801.c:1047:27: error: dereferencing pointer to incomplete type
->> drivers/i2c/busses/i2c-i801.c: In function 'match_gpio_chip_by_label':
->> drivers/i2c/busses/i2c-i801.c:1012:1: warning: control reaches end of non-void function
+>> It would work, but I didn't want to just put them in the union since
+>> I feel it's safer to keep them in a separate struct so they won't be
+>> used by mistake,
 > 
-> Good catch, thanks for reporting. I'll fold the following in the
-> offending patch, that should fix it:
+> Just use ugly enough pre/postfixes.  If the user still accesses that,
+> it's the user's fault.
 
-Ack, it does.
-Thanks.
+I forgot to comment on that one, sorry.
 
-> --- linux-3.6-rc0.orig/drivers/i2c/busses/Kconfig	2012-08-03 21:51:51.000000000 +0200
-> +++ linux-3.6-rc0/drivers/i2c/busses/Kconfig	2012-08-03 21:52:18.090537018 +0200
-> @@ -80,6 +80,7 @@ config I2C_I801
->  	tristate "Intel 82801 (ICH/PCH)"
->  	depends on PCI
->  	select CHECK_SIGNATURE if X86 && DMI
-> +	select GPIOLIB if I2C_MUX
->  	help
->  	  If you say yes to this option, support will be included for the Intel
->  	  801 family of mainboard I2C interfaces.  Specifically, the following
-> 
-> 
-
-
-
--- 
-~Randy
+If we put hash entries after struct hash_table we don't take the bits field size into account, or did I miss something?
