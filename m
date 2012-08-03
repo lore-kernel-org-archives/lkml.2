@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab2HCJKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 05:10:11 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47017 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361Ab2HCJKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 05:10:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="192824348"
-Date: Fri, 3 Aug 2012 17:10:01 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, dan.carpenter@oracle.com,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        joe@perches.com, isdn@linux-pingi.de, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] isdnloop: fix and simplify isdnloop_init()
-Message-ID: <20120803091001.GA15772@localhost>
-References: <20120802110543.GA21745@localhost>
- <20120802.162156.1853851468137303302.davem@davemloft.net>
- <20120803073240.GA12723@localhost>
- <20120803.015126.198679260163049459.davem@davemloft.net>
+	id S1753052Ab2HCJPm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 05:15:42 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:39562 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751987Ab2HCJPk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 05:15:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120803.015126.198679260163049459.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFm5wm3w_QXzuScz7qOQpUabNS1tRcH_fJmR0rmqAvXzCSJxzA@mail.gmail.com>
+References: <1343936764-6461-1-git-send-email-vikram.pandita@ti.com>
+ <CAPXgP10fJj3SwDdCa=rzfjZM8TL1GsvbSwEnfomFQ+NrW2j15w@mail.gmail.com>
+ <CAFm5wm2yof+ePMAtueBJh+gKyih-9ohdCYFC6xLTqwjeOgWWog@mail.gmail.com>
+ <CAPXgP11x9UYm7QReMjqZHtv8ZVoMRzNsREe-bdNwNSoSA6TRfw@mail.gmail.com> <CAFm5wm3w_QXzuScz7qOQpUabNS1tRcH_fJmR0rmqAvXzCSJxzA@mail.gmail.com>
+From: "Pandita, Vikram" <vikram.pandita@ti.com>
+Date: Fri, 3 Aug 2012 02:15:19 -0700
+Message-ID: <CAFm5wm3JnwJpa2rqnNc9_n0-h1JfSDNvj+JO95k8UUgjnCHm_w@mail.gmail.com>
+Subject: Re: [PATCH] printk: add option to print cpu id
+To: Kay Sievers <kay@vrfy.org>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a buffer overflow bug by removing the revision and printk.
+Kay
 
-[   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7 
-[   22.097508] isdnloop: (loop0) virtual card added
-[   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
-[   22.174400] 
-[   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
-[   22.624071] Call Trace:
-[   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
-[   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
-[   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
-[   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
+On Thu, Aug 2, 2012 at 7:19 PM, Pandita, Vikram <vikram.pandita@ti.com> wrote:
+> Kay
+>
+> On Thu, Aug 2, 2012 at 5:06 PM, Kay Sievers <kay@vrfy.org> wrote:
+>> On Fri, Aug 3, 2012 at 1:50 AM, Pandita, Vikram <vikram.pandita@ti.com> wrote:
+>>> On Thu, Aug 2, 2012 at 1:08 PM, Kay Sievers <kay@vrfy.org> wrote:
+>>
+>>>> How is that supposed to be useful?
+>>>>
+>>>> The prefix is added while exporting data from the kmsg buffer, which
+>>>> is just the CPU that *reads* the data from the buffer, not the one
+>>>> that has *written* the data it into it.
+>>>
+>>> I don't think so.
+>>> I can see the backtrace of the printk() call looks like follows:
+>>>
+>>> print_cpuid
+>>>  print_prefix
+>>>   msg_print_text
+>>>    console_unlock
+>>>     vprint_emit
+>>>      printk
+>>>
+>>> Now this is a synchronous path, where in the buffer is getting filled
+>>> with cpuid and timer info from the printk() calling context.
+>>> So you should get the right CPU id with the trace - with the exception
+>>> that i pointed out earlier for preemption.
+>>>
+>>>>
+>>>> Do I miss anything here?
+>>>
+>>> This is my understanding of the printk framework.
+>>> At least the print_time and print_cpuid seems to be happening
+>>> synchronously wrt printk
+>>
+>> Printk is a store-and-forward-model, and it always was. There is no
+>> guarantee at all, that the data is immediately flushed to the console
+>> by the same CPU, it just happens to be in most cases. It's pretty
+>> common though, that a different task is doing that work when it gets
+>> the console lock, and that is not a matter of preemption, it's normal
+>> and expected operation. The data which CPU has emitted the text is
+>> just not available. It would need to be stored in the records, for
+>> this to work.
+>>
+>> Your patch just prints the CPU that writes to the console, not
+>> necessarily the one that has stored the data. I think the second one
+>> is which is what you are looking for, but that is not what the patch
+>> does.
+>>
+>
+> I did not understand well the complexity of the console layer. Thanks
+> for enlightenment :-)
+> Would be nice if you have any suggestion to get this done the right way.
+>
+> First look i could guess this would do, but need to study further:
+>
+> @@ -1550,6 +1550,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+>                           NULL, 0, recursion_msg, printed_len);
+>         }
+>
+> +       text_len = print_cpuid(text);
+> +       text += text_len;
+> +
+>         /*
+>          * The printf needs to come first; we need the syslog
+>          * prefix which might be passed-in as a parameter.
+> @@ -1582,6 +1585,13 @@ asmlinkage int vprintk_emit(int facility, int level,
+>                 }
+>         }
+>
+> +       /* Adjust for cpu-id string */
+> +       if (printk_cpuid) {
+> +               strncpy(text - 4, textbuf, 4);
+> +               text -= 4;
+> +               text_len += 4;
+> +       }
+> +
+>         if (level == -1)
+>                 level = default_message_loglevel;
+>
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- drivers/isdn/isdnloop/isdnloop.c |   12 ------------
- 1 file changed, 12 deletions(-)
+Understand somewhat better now the logging mechanism.
+The proposal above does not seem to be correct or complete.
 
---- linux.orig/drivers/isdn/isdnloop/isdnloop.c	2012-08-03 16:39:08.543650310 +0800
-+++ linux/drivers/isdn/isdnloop/isdnloop.c	2012-08-03 17:08:07.515691639 +0800
-@@ -16,7 +16,6 @@
- #include <linux/sched.h>
- #include "isdnloop.h"
- 
--static char *revision = "$Revision: 1.11.6.7 $";
- static char *isdnloop_id = "loop0";
- 
- MODULE_DESCRIPTION("ISDN4Linux: Pseudo Driver that simulates an ISDN card");
-@@ -1494,17 +1493,6 @@ isdnloop_addcard(char *id1)
- static int __init
- isdnloop_init(void)
- {
--	char *p;
--	char rev[10];
--
--	if ((p = strchr(revision, ':'))) {
--		strcpy(rev, p + 1);
--		p = strchr(rev, '$');
--		*p = 0;
--	} else
--		strcpy(rev, " ??? ");
--	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev%s\n", rev);
--
- 	if (isdnloop_id)
- 		return (isdnloop_addcard(isdnloop_id));
- 
+Will post v2 patch, hopefully fixing now.
+
+>
+>
+>> Also dmesg and syslog uses the same logic and would put-out all
+>> entirely wrong CPU information with it, because the original
+>> information is long gone.
+>>
+>> Kay
