@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab2HCWg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 18:36:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63394 "EHLO
+	id S1754041Ab2HCWgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 18:36:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51957 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab2HCWg1 (ORCPT
+	with ESMTP id S1753907Ab2HCWgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 18:36:27 -0400
-Date: Fri, 3 Aug 2012 15:36:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Pandita, Vikram" <vikram.pandita@ti.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Andi Kleen <andi@firstfloor.org>,
-        kay@vrfy.org, linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
-Subject: Re: [PATCH v3] printk: add option to print cpu id
-Message-ID: <20120803223623.GB6156@kroah.com>
-References: <1344013004-32211-1-git-send-email-vikram.pandita@ti.com>
- <m2628z6euk.fsf@firstfloor.org>
- <CAFm5wm3ScpUU5wa=ei3TY0zjU4kVbOgJMmE5_QDpwy7B-TJa+A@mail.gmail.com>
- <20120803200822.GC731@harshnoise.musicnaut.iki.fi>
- <CAFm5wm2sf9LnZNj9_BDYTF9G7XH32fOL3x5n=kZ-1ih0Cek2DQ@mail.gmail.com>
- <20120803215954.GA4489@kroah.com>
- <CAFm5wm1_-JP0xjDdBvAcqqpZPQvxJPsmNtUOFQyaNw=6H_JJcg@mail.gmail.com>
- <20120803221327.GA5102@kroah.com>
- <CAFm5wm3ayofPD7oF1=z_jwE_wuqBxBHicAs=KOhjcUr7Jo0wDQ@mail.gmail.com>
+	Fri, 3 Aug 2012 18:36:39 -0400
+Date: Fri, 3 Aug 2012 15:36:34 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org
+Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
+Message-ID: <20120803223634.GO15477@google.com>
+References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
+ <1344003788-1417-2-git-send-email-levinsasha928@gmail.com>
+ <20120803171515.GH15477@google.com>
+ <501C407D.9080900@gmail.com>
+ <20120803213017.GK15477@google.com>
+ <501C458E.7050000@gmail.com>
+ <20120803214806.GM15477@google.com>
+ <501C4E92.1070801@gmail.com>
+ <20120803222339.GN15477@google.com>
+ <CA+55aFyOst4c3WHbPVbYkSBdBmLJUui5OvoVOh5AuPMnigwnEA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFm5wm3ayofPD7oF1=z_jwE_wuqBxBHicAs=KOhjcUr7Jo0wDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyOst4c3WHbPVbYkSBdBmLJUui5OvoVOh5AuPMnigwnEA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 03:25:17PM -0700, Pandita, Vikram wrote:
-> >> This was something that got used internally and helped at times.
+On Fri, Aug 03, 2012 at 03:29:10PM -0700, Linus Torvalds wrote:
+> On Fri, Aug 3, 2012 at 3:23 PM, Tejun Heo <tj@kernel.org> wrote:
 > >
-> > Could you have used the trace point instead?
+> > I actually meant an enclosing struct.  When you're defining a struct
+> > member, simply putting the storage after a struct with var array
+> > should be good enough.  If that doesn't work, quite a few things in
+> > the kernel will break.
 > 
-> As i understood the trace_prink(), one would need to modify existing
-> printk -> trace_printk. Is my understanding correct?
+> The unsigned member of a struct has to be the last one, so your struct
+> won't work.
 
-No, you should just be able to watch the tracepoint, right?
+I suppose you mean unsized.  I remember this working.  Maybe I'm
+confusing it with zero-sized array.  Hmm... gcc doesn't complain about
+the following.  --std=c99 seems happy too.
 
-> Most of the times the problem exhibits as a random hang, without having a clue
-> which code to modify. That time one generic defconfig global switch is
-> your first tool.
-> 
-> Other issue i found, using this patch, that on multi-core ARM systems,
-> almost 99% of times, IRQ's are handled by CPU0,
-> even if CPU0 was really busy and other CPU's were free. I am yet to
-> understand a good reason why.
+  #include <stdio.h>
 
-Can't you see that from /proc/interrupts today?
+  struct A {
+	  int i;
+	  long ar[];
+  };
 
-> this patch also helped in other areas as mentioned in the thread
-> http://marc.info/?l=linux-omap&m=134401269106619&w=2
+  struct B {
+	  struct A a;
+	  long ar_storage[32];
+  };
 
-I still don't understand how adding the cpu number to printk enabled you
-to find any problem like this.  Can't you just add the cpu number to the
-printk messages you care about for your specific hardware?
+  int main(void)
+  {
+	  printf("sizeof(A)=%zd sizeof(B)=%zd\n", sizeof(struct A), sizeof(struct B));
+	  return 0;
+  }
 
-greg k-h
+$ ./a.out
+sizeof(A)=8 sizeof(B)=264
+
+-- 
+tejun
