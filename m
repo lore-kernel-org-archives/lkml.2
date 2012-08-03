@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab2HCHjo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 03:39:44 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54821 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab2HCHjn (ORCPT
+	id S1752658Ab2HCHkW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 03:40:22 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:43079 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505Ab2HCHkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 03:39:43 -0400
-Message-ID: <501B8027.4060100@linux.vnet.ibm.com>
-Date: Fri, 03 Aug 2012 15:39:19 +0800
+	Fri, 3 Aug 2012 03:40:20 -0400
+Message-ID: <501B804F.4040205@linux.vnet.ibm.com>
+Date: Fri, 03 Aug 2012 15:39:59 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 04/10] KVM: introduce KVM_PFN_ERR_BAD
+Subject: [PATCH v2 05/10] KVM: inline is_*_pfn functions
 References: <501B7F94.7090308@linux.vnet.ibm.com>
 In-Reply-To: <501B7F94.7090308@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12080307-5816-0000-0000-000003D7D551
+x-cbid: 12080307-3864-0000-0000-0000040703CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Then, remove get_bad_pfn
+These functions are exported and can not inline, move them
+to kvm_host.h to eliminate the overload of function call
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- include/linux/kvm_host.h |    1 +
- virt/kvm/kvm_main.c      |    7 +------
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ include/linux/kvm_host.h |   19 ++++++++++++++++---
+ virt/kvm/kvm_main.c      |   18 ------------------
+ 2 files changed, 16 insertions(+), 21 deletions(-)
 
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index cbd5af8..ba8b222 100644
+index ba8b222..f604d1d 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
-@@ -50,6 +50,7 @@
+@@ -21,6 +21,7 @@
+ #include <linux/slab.h>
+ #include <linux/rcupdate.h>
+ #include <linux/ratelimit.h>
++#include <linux/err.h>
+ #include <asm/signal.h>
 
- #define KVM_PFN_ERR_FAULT	(-EFAULT)
+ #include <linux/kvm.h>
+@@ -52,6 +53,21 @@
  #define KVM_PFN_ERR_HWPOISON	(-EHWPOISON)
-+#define KVM_PFN_ERR_BAD		(-ENOENT)
+ #define KVM_PFN_ERR_BAD		(-ENOENT)
 
++static inline int is_error_pfn(pfn_t pfn)
++{
++	return IS_ERR_VALUE(pfn);
++}
++
++static inline int is_noslot_pfn(pfn_t pfn)
++{
++	return pfn == -ENOENT;
++}
++
++static inline int is_invalid_pfn(pfn_t pfn)
++{
++	return !is_noslot_pfn(pfn) && is_error_pfn(pfn);
++}
++
  /*
   * vcpu->requests bit members
+  */
+@@ -397,9 +413,6 @@ id_to_memslot(struct kvm_memslots *slots, int id)
+ extern struct page *bad_page;
+
+ int is_error_page(struct page *page);
+-int is_error_pfn(pfn_t pfn);
+-int is_noslot_pfn(pfn_t pfn);
+-int is_invalid_pfn(pfn_t pfn);
+ int kvm_is_error_hva(unsigned long addr);
+ int kvm_set_memory_region(struct kvm *kvm,
+ 			  struct kvm_userspace_memory_region *mem,
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index f17ce44..75d3c76 100644
+index 75d3c76..08b600b 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -943,11 +943,6 @@ int is_error_pfn(pfn_t pfn)
+@@ -937,24 +937,6 @@ int is_error_page(struct page *page)
  }
- EXPORT_SYMBOL_GPL(is_error_pfn);
+ EXPORT_SYMBOL_GPL(is_error_page);
 
--static pfn_t get_bad_pfn(void)
+-int is_error_pfn(pfn_t pfn)
 -{
--	return -ENOENT;
+-	return IS_ERR_VALUE(pfn);
 -}
+-EXPORT_SYMBOL_GPL(is_error_pfn);
 -
- int is_noslot_pfn(pfn_t pfn)
+-int is_noslot_pfn(pfn_t pfn)
+-{
+-	return pfn == -ENOENT;
+-}
+-EXPORT_SYMBOL_GPL(is_noslot_pfn);
+-
+-int is_invalid_pfn(pfn_t pfn)
+-{
+-	return !is_noslot_pfn(pfn) && is_error_pfn(pfn);
+-}
+-EXPORT_SYMBOL_GPL(is_invalid_pfn);
+-
+ struct page *get_bad_page(void)
  {
- 	return pfn == -ENOENT;
-@@ -1152,7 +1147,7 @@ static pfn_t __gfn_to_pfn(struct kvm *kvm, gfn_t gfn, bool atomic, bool *async,
-
- 	addr = gfn_to_hva(kvm, gfn);
- 	if (kvm_is_error_hva(addr))
--		return get_bad_pfn();
-+		return KVM_PFN_ERR_BAD;
-
- 	return hva_to_pfn(addr, atomic, async, write_fault, writable);
- }
+ 	return ERR_PTR(-ENOENT);
 -- 
 1.7.7.6
 
