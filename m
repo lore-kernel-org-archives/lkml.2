@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab2HCJgx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 05:36:53 -0400
-Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:56085 "EHLO
-	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751277Ab2HCJgw (ORCPT
+	id S1752448Ab2HCJh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 05:37:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46901 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab2HCJh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 05:36:52 -0400
+	Fri, 3 Aug 2012 05:37:57 -0400
+Message-ID: <501B9BF1.2050006@suse.cz>
+Date: Fri, 03 Aug 2012 11:37:53 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120718 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDCAC49AE@BGMAIL02.nvidia.com>
-References: <1343985378-22330-1-git-send-email-vikram.pandita@ti.com>
- <D958900912E20642BCBC71664EFECE3E6DDCAC49AB@BGMAIL02.nvidia.com> <D958900912E20642BCBC71664EFECE3E6DDCAC49AE@BGMAIL02.nvidia.com>
-From: "Pandita, Vikram" <vikram.pandita@ti.com>
-Date: Fri, 3 Aug 2012 02:36:30 -0700
-Message-ID: <CAFm5wm2Z+FyVqG5oMWiEmZ8Je88hJ-cyDXmJw0wp4mqA-X9eYg@mail.gmail.com>
-Subject: Re: [PATCH v2] printk: add option to print cpu id
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kay@vrfy.org" <kay@vrfy.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Alan Cox <alan@linux.intel.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: uart_startup: GFP_KERNEL allocation with IRQs disabled
+References: <20120803014600.GA7886@localhost>
+In-Reply-To: <20120803014600.GA7886@localhost>
+X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Venu
+On 08/03/2012 03:46 AM, Fengguang Wu wrote:
+> Hi all,
 
-On Fri, Aug 3, 2012 at 2:32 AM, Venu Byravarasu <vbyravarasu@nvidia.com> wrote:
->
->> -----Original Message-----
->> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->> owner@vger.kernel.org] On Behalf Of Venu Byravarasu
->> Sent: Friday, August 03, 2012 2:58 PM
->> To: Vikram Pandita; gregkh@linuxfoundation.org; kay@vrfy.org
->> Cc: linux-kernel@vger.kernel.org; Mike Turquette; Vimarsh Zutshi
->> Subject: RE: [PATCH v2] printk: add option to print cpu id
->>
->> > -----Original Message-----
->> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->> > owner@vger.kernel.org] On Behalf Of Vikram Pandita
->> > Sent: Friday, August 03, 2012 2:46 PM
->> > To: gregkh@linuxfoundation.org; kay@vrfy.org
->> > Cc: linux-kernel@vger.kernel.org; Vikram Pandita; Mike Turquette; Vimarsh
->> > Zutshi
->> > Subject: [PATCH v2] printk: add option to print cpu id
->> >
->> > From: Vikram Pandita <vikram.pandita@ti.com>
->> >
->> > Introduce config option to enable CPU id reporting for printk() calls.
->> >
->> > Example logs with this option enabled look like:
->> >  [1] [    2.328613] usbcore: registered new interface driver libusual
->> >  [1] [    2.335418] usbcore: registered new interface driver usbtest
->> >  [1] [    2.342803] mousedev: PS/2 mouse device common for all mice
->> >  [0] [    2.352600] twl_rtc twl_rtc: Power up reset detected.
->> >  [0] [    2.359191] twl_rtc twl_rtc: Enabling TWL-RTC
->> >  [1] [    2.367797] twl_rtc twl_rtc: rtc core: registered twl_rtc as rtc0
->> >  [1] [    2.375274] i2c /dev entries driver
->> >  [1] [    2.382324] Driver for 1-wire Dallas network protocol.
->> >
->> > Its sometimes very useful to have printk also print the CPU Identifier
->> > that executed the call. This has helped to debug various SMP issues on
->> > shipping
->> > products.
->>
->
-> As having Macro locally in the file of interest would serve the purpose,
-> Why to change the printk code?
+Hi,
 
-As stated, the logic followed is exactly similar to well proven and
-approved way to handle printk time stamp: CONFIG_PRINTK_TIME
-Its an overhead on the system that enables the config option:
-CONFIG_PRINTK_CPUID
-Otherwise the system remains as is.
+> The IRQ should be disabled somewhere in the path walk, which makes
+> the GFP_KERNEL allocation in uart_startup() no longer valid..
+> 
+> [    0.499537] kworker/u:1 (29) used greatest stack depth: 7156 bytes left
+> [    0.500947] ------------[ cut here ]------------
+> [    0.501445] WARNING: at /c/kernel-tests/src/stable/kernel/lockdep.c:2739 lockdep_trace_alloc+0x86/0xb2()
+> [    0.502413] Modules linked in:
+> [    0.502766] Pid: 1, comm: init Not tainted 3.5.0-01258-g1ade992 #182
+> [    0.503419] Call Trace:
+...
+> [    0.504381]  [<c1079e7d>] get_zeroed_page+0xd/0xf
+> [    0.504381]  [<c10f976f>] uart_startup.part.8+0x46/0x152
+> [    0.504381]  [<c10f745f>] ? tty_port_tty_set+0x37/0x3c
+> [    0.504381]  [<c10fa175>] uart_open+0xc9/0x10b
+> [    0.504381]  [<c10fa0ac>] ? uart_suspend_port+0x229/0x229
+> [    0.504381]  [<c10f1bc2>] tty_open+0x26b/0x3d3
+> [    0.504381]  [<c109872a>] chrdev_open+0xf7/0x117
 
-To gain insight on SMP system logging behavior, the price to pay is
-the extra 4 chars per printk line,
-just like printk-time adds 15 chars to each line. Both options can be
-disabled as desired.
+This does not make sense to me. I would not blame TTY/serial for this.
+There is somebody who forgot to enable interrupts somewhere. Could you
+enable DEBUG_ATOMIC_SLEEP? It might trigger earlier revealing us the
+culprit.
 
-So i am not sure what kind of option you are proposing?
-Do u imply PRINTK_TIME is not right then?
-
-
->
->> Is it not better to have macros which will have wrapper to printk with
->> required
->> debug info added? E.g. cpu# in your case.
->> If by default we add cupid, is it not over head in each message getting
->> printed with printk?
->>
->> >
->> > Known limitation is if the system gets preempted between function call and
->> > actual printk, the reported cpu-id might not be accurate. But most of the
->> > times its seen to give a good feel of how the N cpu's in the system are
->> > getting loaded.
->> >
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+thanks,
+-- 
+js
+suse labs
