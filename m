@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab2HCLZH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 07:25:07 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62549 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab2HCLZE (ORCPT
+	id S1753503Ab2HCL1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 07:27:52 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38412 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751272Ab2HCL1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 07:25:04 -0400
+	Fri, 3 Aug 2012 07:27:50 -0400
+Date: Fri, 3 Aug 2012 15:27:45 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        spender@grsecurity.net
+Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
+Message-ID: <20120803112745.GC11952@moon>
+References: <alpine.LFD.2.02.1203231926000.2542@ionos>
+ <20120323190855.GA27213@www.outflux.net>
+ <CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
+ <87pq7935w2.fsf@xmission.com>
+ <CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com>
+ <20120803110247.GB11952@moon>
+ <CAFLxGvw4j-pyinjywxaL2gQ-Akp9grDysNv7dfOJkaQ3EyDKLw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1343991184-3619-1-git-send-email-berrange@redhat.com>
-References: <1343991184-3619-1-git-send-email-berrange@redhat.com>
-Date: Fri, 3 Aug 2012 13:25:02 +0200
-Message-ID: <CAFLxGvxTAchQuSfNy=aWQqfw3QwSr=JwUG=F3gj+HOuEbp64SQ@mail.gmail.com>
-Subject: Re: [PATCH] Forbid invocation of kexec_load() outside initial PID namespace
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "Daniel P. Berrange" <berrange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvw4j-pyinjywxaL2gQ-Akp9grDysNv7dfOJkaQ3EyDKLw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 12:53 PM, Daniel P. Berrange <berrange@redhat.com> wrote:
-> From: "Daniel P. Berrange" <berrange@redhat.com>
->
-> The following commit
->
->     commit cf3f89214ef6a33fad60856bc5ffd7bb2fc4709b
->     Author: Daniel Lezcano <daniel.lezcano@free.fr>
->     Date:   Wed Mar 28 14:42:51 2012 -0700
->
->     pidns: add reboot_pid_ns() to handle the reboot syscall
->
-> introduced custom handling of the reboot() syscall when invoked
-> from a non-initial PID namespace. The intent was that a process
-> in a container can be allowed to keep CAP_SYS_BOOT and execute
-> reboot() to shutdown/reboot just their private container, rather
-> than the host.
->
-> Unfortunately the kexec_load() syscall also relies on the
-> CAP_SYS_BOOT capability. So by allowing a container to keep
-> this capability to safely invoke reboot(), they mistakenly
-> also gain the ability to use kexec_load(). The solution is
-> to make kexec_load() return -EPERM if invoked from a PID
-> namespace that is not the initial namespace
->
-> Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Cc: Daniel Lezcano <daniel.lezcano@free.fr>
-> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
+On Fri, Aug 03, 2012 at 01:19:24PM +0200, richard -rw- weinberger wrote:
+> >>
+> >> CRIU folks, how do you deal with futex robust lists?
+> >
+> > Well, I believe we were over-optimistic in claiming that we don't need this
+> > syscall (to be fair I think we simply yet not faced the problem Eric points).
+> > So we need some way to fetch this address and set it back. If get_robust_list
+> > get deprecated maybe we could print it out in /proc/pid/stat or something?
+> 
+> Kees, you said get_robust_list() can be used to bypass ASLR.
+> How? What makes it worse than /proc/pid/maps?
+> 
+> If the robust list address itself is bad, removing get_robust_list()
+> and putting the information into /proc is useless.
 
-Why is this commit not marked for -stable?
+Look, the /proc entry might check for some CAP and do not allow
+a regular user to fetch this address.
 
--- 
-Thanks,
-//richard
+	Cyrill
