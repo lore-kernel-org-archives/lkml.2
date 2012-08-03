@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab2HCFGb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 01:06:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46214 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab2HCFGa (ORCPT
+	id S1751703Ab2HCFHP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 01:07:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40431 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab2HCFHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 01:06:30 -0400
-Date: Fri, 3 Aug 2012 13:07:45 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: axboe <axboe@kernel.dk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] block: Don't use static to define "void *p" in show_partition_start().
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.91[en]
-Mime-Version: 1.0
-Message-ID: <201208031307389214790@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Fri, 3 Aug 2012 01:07:13 -0400
+Date: Fri, 3 Aug 2012 00:07:06 -0500 (CDT)
+From: Manoj Iyer <manoj.iyer@canonical.com>
+X-X-Sender: manjo@lazy
+To: manoj.iyer@canonical.com
+cc: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, mjg@redhat.com,
+        ibm-acpi@hmh.eng.br
+Subject: Re: [PATCH] thinkpad-acpi: recognize latest V-Series using
+ DMI_BIOS_VENDOR
+In-Reply-To: <1343968187-20930-1-git-send-email-manoj.iyer@canonical.com>
+Message-ID: <alpine.DEB.2.02.1208030005470.3041@lazy>
+References: <1343968187-20930-1-git-send-email-manoj.iyer@canonical.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7356bp6025506
 
-I met a odd prblem:read /proc/partitions may return zero.
 
-I wrote a file test.c:
-int main()
-{
-	char buff[4096];
-	int ret;
-	int fd;
-	printf("pid=%d\n",getpid());
-	while (1) {
-		fd = open("/proc/partitions", O_RDONLY);
-		if (fd < 0) {
-			printf("open error %s\n", strerror(errno));
-			return 0;
-		}
-		ret = read(fd, buff, 4096);
-		if (ret <= 0)
-			printf("ret=%d, %s, %ld\n", ret,
-				strerror(errno), lseek(fd,0,SEEK_CUR));
-		close(fd);
-	}
-	exit(0);
-}
+Oops! This is embarrassing! my logic is flawed. Please ignore this patch, 
+I will resend it
 
-You can reproduce by:
-1:while true;do cat /proc/partitions > /dev/null ;done
-2:./test
+NACK
 
-I reviewed the code and found:
->>static void *show_partition_start(struct seq_file *seqf, loff_t *pos)
->>{
->>	static void *p;
 
->>	p = disk_seqf_start(seqf, pos);
->>	if (!IS_ERR_OR_NULL(p) && !*pos)
->>		seq_puts(seqf, "major minor  #blocks  name\n\n");
->>	return p;
->>}
-		test								cat /proc/partitions
-	p = disk_seqf_start()(Not NULL)
-									p = disk_seqf_start()(NULL because pos)
-	if (!IS_ERR_OR_NULL(p) && !*pos)
+On Thu, 2 Aug 2012, manoj.iyer@canonical.com wrote:
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- block/genhd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> From: Manoj Iyer <manoj.iyer@canonical.com>
+>
+> In the latest V-series bios DMI_PRODUCT_VERSION does not contain
+> the string Lenovo or Thinkpad, but is set to the model number, this
+> causes the thinkpad_acpi module to fail to load. Recognize laptop
+> as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
+>
+> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+> ---
+> drivers/platform/x86/thinkpad_acpi.c |    3 ++-
+> 1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+> index e7f7328..eec0b65 100644
+> --- a/drivers/platform/x86/thinkpad_acpi.c
+> +++ b/drivers/platform/x86/thinkpad_acpi.c
+> @@ -8657,7 +8657,8 @@ static int __must_check __init get_thinkpad_model_data(
+> 		}
+> 	}
+>
+> -	s = dmi_get_system_info(DMI_PRODUCT_VERSION);
+> +	s = dmi_get_system_info(DMI_PRODUCT_VERSION) ?
+> +		dmi_get_system_info(DMI_BIOS_VENDOR) : NULL;
+> 	if (s && !(strnicmp(s, "ThinkPad", 8) && strnicmp(s, "Lenovo", 6))) {
+> 		tp->model_str = kstrdup(s, GFP_KERNEL);
+> 		if (!tp->model_str)
+> -- 
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-diff --git a/block/genhd.c b/block/genhd.c
-index cac7366..d839723 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -835,7 +835,7 @@ static void disk_seqf_stop(struct seq_file *seqf, void *v)
- 
- static void *show_partition_start(struct seq_file *seqf, loff_t *pos)
- {
--	static void *p;
-+	void *p;
- 
- 	p = disk_seqf_start(seqf, pos);
- 	if (!IS_ERR_OR_NULL(p) && !*pos)
--- 
-1.7.9.5
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--
+====================
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
+====================
