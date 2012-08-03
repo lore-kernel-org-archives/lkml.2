@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab2HCKUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 06:20:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752746Ab2HCKUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 06:20:03 -0400
-Subject: Re: GFS2: Pull request (merge window)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <CA+55aFwNGwh2DYsPzBfYWktgeKe1Z-K8u9qZ8Ab00Dd=m888Ew@mail.gmail.com>
-References: <1343055592.2703.41.camel@menhir>
-	 <CA+55aFwNGwh2DYsPzBfYWktgeKe1Z-K8u9qZ8Ab00Dd=m888Ew@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 03 Aug 2012 11:18:22 +0100
-Message-ID: <1343989102.2712.10.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753343Ab2HCKXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 06:23:08 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35241 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab2HCKXF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 06:23:05 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: eparis@redhat.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] audit: don't free_chunk() after fsnotify_add_mark()
+References: <87eho8rsjs.fsf@tucsk.pomaz.szeredi.hu>
+Date: Fri, 03 Aug 2012 12:24:25 +0200
+In-Reply-To: <87eho8rsjs.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
+	of "Thu, 19 Jul 2012 11:47:35 +0200")
+Message-ID: <87obmsnuhy.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Miklos Szeredi <miklos@szeredi.hu> writes:
 
-On Thu, 2012-08-02 at 18:22 -0700, Linus Torvalds wrote:
-> [ For some reason this didn't go out, and was in my "drafts" folder.
-> Better late than never, I guess ]
-> 
-> On Mon, Jul 23, 2012 at 7:59 AM, Steven Whitehouse <swhiteho@redhat.com> wrote:
-> >
-> > Please consider pulling the following patches. There have been no changes since
-> > they were posted for review,
-> 
-> It would be lovely to get a short overview of what the changes you ask
-> me to pull actually do, so that I can populate the merge message with
-> relevant information.
-> 
-> (Not just a message for you, this is true in general. Although I'm
-> very pleased with the merge window so far - I think most pull requests
-> have had at least *some* general overview in tags and/or emails)
-> 
->                 Linus
+> Al, your are the co-maintainer of audit, right?  Can you please apply
+> these patches as Eric is on vaction.
 
-I've been writing summaries when I send out the "pre-pull patch posting"
-so I could just copy & paste from that if it thats the kind of thing
-that you are after?
+Eric, Al,
 
-https://lkml.org/lkml/2012/7/23/59
+Can you please apply these two bugfix patches for audit?
+
+Thanks,
+Miklos
 
 
-Steve.
-
-
-
+> From: Miklos Szeredi <mszeredi@suse.cz>
+>
+> Don't do free_chunk() after fsnotify_add_mark().  That one does a delayed unref
+> via the destroy list and this results in use-after-free.
+>
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> Acked-by: Eric Paris <eparis@redhat.com>
+> CC: stable@vger.kernel.org
+> ---
+>  kernel/audit_tree.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> Index: linux-2.6/kernel/audit_tree.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/audit_tree.c	2011-10-26 14:26:24.000000000 +0200
+> +++ linux-2.6/kernel/audit_tree.c	2012-05-30 16:56:04.000000000 +0200
+> @@ -259,7 +259,7 @@ static void untag_chunk(struct node *p)
+>  
+>  	fsnotify_duplicate_mark(&new->mark, entry);
+>  	if (fsnotify_add_mark(&new->mark, new->mark.group, new->mark.i.inode, NULL, 1)) {
+> -		free_chunk(new);
+> +		fsnotify_put_mark(&new->mark);
+>  		goto Fallback;
+>  	}
+>  
+> @@ -322,7 +322,7 @@ static int create_chunk(struct inode *in
+>  
+>  	entry = &chunk->mark;
+>  	if (fsnotify_add_mark(entry, audit_tree_group, inode, NULL, 0)) {
+> -		free_chunk(chunk);
+> +		fsnotify_put_mark(entry);
+>  		return -ENOSPC;
+>  	}
+>  
+> @@ -396,7 +396,7 @@ static int tag_chunk(struct inode *inode
+>  	fsnotify_duplicate_mark(chunk_entry, old_entry);
+>  	if (fsnotify_add_mark(chunk_entry, chunk_entry->group, chunk_entry->i.inode, NULL, 1)) {
+>  		spin_unlock(&old_entry->lock);
+> -		free_chunk(chunk);
+> +		fsnotify_put_mark(chunk_entry);
+>  		fsnotify_put_mark(old_entry);
+>  		return -ENOSPC;
+>  	}
