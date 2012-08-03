@@ -1,51 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab2HCHJG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 03:09:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50980 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753005Ab2HCHI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 03:08:58 -0400
-Message-ID: <501B7989.2080903@redhat.com>
-Date: Fri, 03 Aug 2012 15:11:05 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
-        Tejun Heo <tj@kernel.org>, Shaohua Li <shli@kernel.org>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH V5 3/4] virtio-blk: Add bio-based IO path for virtio-blk
-References: <1343888757-25723-1-git-send-email-asias@redhat.com> <1343888757-25723-4-git-send-email-asias@redhat.com> <20120802222814.GA5854@redhat.com>
-In-Reply-To: <20120802222814.GA5854@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753026Ab2HCHJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 03:09:34 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56557 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919Ab2HCHHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 03:07:25 -0400
+From: Huacai Chen <chenhuacai@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>
+Subject: [PATCH V4 10/16] MIPS: Loongson: Add Loongson-3 Kconfig options.
+Date: Fri,  3 Aug 2012 15:06:05 +0800
+Message-Id: <1343977571-2292-11-git-send-email-chenhc@lemote.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1343977571-2292-1-git-send-email-chenhc@lemote.com>
+References: <1343977571-2292-1-git-send-email-chenhc@lemote.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 06:28 AM, Michael S. Tsirkin wrote:
-> On Thu, Aug 02, 2012 at 02:25:55PM +0800, Asias He wrote:
->> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
->> index c0bbeb4..95cfeed 100644
->> --- a/drivers/block/virtio_blk.c
->> +++ b/drivers/block/virtio_blk.c
->> @@ -14,6 +14,9 @@
->>
->>   #define PART_BITS 4
->>
->> +static bool use_bio;
->> +module_param(use_bio, bool, S_IRUGO);
->> +
->>   static int major;
->>   static DEFINE_IDA(vd_index_ida);
->>
->
-> OK, but eventually, you plan to make this use a feature bit, yes?
+Added Kconfig options include: Loongson-3 CPU and machine definition,
+UEFI-like firmware interface, HT-linked PCI, big memory support, etc.
 
-Yes, I think so.
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Hongliang Tao <taohl@lemote.com>
+Signed-off-by: Hua Yan <yanh@lemote.com>
+---
+ arch/mips/Kconfig          |   22 ++++++++++++++++++
+ arch/mips/loongson/Kconfig |   52 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 74 insertions(+), 0 deletions(-)
 
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 331d574..9e8e86c 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -1571,6 +1571,16 @@ config CPU_LOONGSON2
+ 	select CPU_SUPPORTS_64BIT_KERNEL
+ 	select CPU_SUPPORTS_HIGHMEM
+ 
++config CPU_LOONGSON3
++	bool "Loongson 3 CPU"
++	depends on SYS_HAS_CPU_LOONGSON3
++	select CPU_SUPPORTS_32BIT_KERNEL
++	select CPU_SUPPORTS_64BIT_KERNEL
++	select CPU_SUPPORTS_HIGHMEM
++	help
++		The Loongson 3 processor implements the MIPS III instruction set
++		with many extensions.
++
+ config CPU_LOONGSON1
+ 	bool
+ 	select CPU_MIPS32
+@@ -1597,6 +1607,9 @@ config SYS_HAS_CPU_LOONGSON2F
+ 	select CPU_SUPPORTS_ADDRWINCFG if 64BIT
+ 	select CPU_SUPPORTS_UNCACHED_ACCELERATED
+ 
++config SYS_HAS_CPU_LOONGSON3
++	bool
++
+ config SYS_HAS_CPU_LOONGSON1B
+ 	bool
+ 
+@@ -2399,6 +2412,15 @@ config PCI
+ 	  your box. Other bus systems are ISA, EISA, or VESA. If you have PCI,
+ 	  say Y, otherwise N.
+ 
++config HT_PCI
++	bool "Support for HT-linked PCI"
++	select PCI_DOMAINS
++	help
++	  Loongson family machines use Hyper-Transport bus for inter-core
++	  connection and device connection. The PCI bus is a subordinate
++	  linked at HT. Choose Y unless you are using Loongson 2E/2F based
++	  machines.
++
+ config PCI_DOMAINS
+ 	bool
+ 
+diff --git a/arch/mips/loongson/Kconfig b/arch/mips/loongson/Kconfig
+index 263beb9..dd951b8 100644
+--- a/arch/mips/loongson/Kconfig
++++ b/arch/mips/loongson/Kconfig
+@@ -59,6 +59,33 @@ config LEMOTE_MACH2F
+ 
+ 	  These family machines include fuloong2f mini PC, yeeloong2f notebook,
+ 	  LingLoong allinone PC and so forth.
++
++config LEMOTE_MACH3A
++	bool "Lemote Loongson 3A family machines"
++	select ARCH_SPARSEMEM_ENABLE
++	select GENERIC_ISA_DMA_SUPPORT_BROKEN
++	select GENERIC_HARDIRQS_NO__DO_IRQ
++	select BOOT_ELF32
++	select BOARD_SCACHE
++	select CSRC_R4K
++	select CEVT_R4K
++	select CPU_HAS_WB
++	select HW_HAS_PCI
++	select ISA
++	select I8259
++	select IRQ_CPU
++	select SYS_HAS_CPU_LOONGSON3
++	select SYS_HAS_EARLY_PRINTK
++	select SYS_SUPPORTS_SMP
++	select SYS_SUPPORTS_32BIT_KERNEL
++	select SYS_SUPPORTS_64BIT_KERNEL
++	select SYS_SUPPORTS_HIGHMEM
++	select SYS_SUPPORTS_LITTLE_ENDIAN
++	select LOONGSON_MC146818
++	select UEFI_FIRMWARE_INTERFACE
++	help
++		Lemote Loongson 3A family machines utilize the 3A revision of
++		Loongson processor and RS780/SBX00 chipset.
+ endchoice
+ 
+ config CS5536
+@@ -86,8 +113,33 @@ config LOONGSON_UART_BASE
+ 	default y
+ 	depends on EARLY_PRINTK || SERIAL_8250
+ 
++config LOONGSON_BIGMEM
++	bool "Soft IOMMU Support for Big Memory (>4GB)"
++	depends on CPU_LOONGSON3
++	select SWIOTLB
++	select ZONE_DMA32
++
++config IOMMU_HELPER
++	bool
++
++config NEED_SG_DMA_LENGTH
++	bool
++
++config SWIOTLB
++	bool
++	select IOMMU_HELPER
++	select NEED_SG_DMA_LENGTH
++	select NEED_DMA_MAP_STATE
++
+ config LOONGSON_MC146818
+ 	bool
+ 	default n
+ 
++config ARCH_SPARSEMEM_ENABLE
++	bool
++	select SPARSEMEM_STATIC
++
++config UEFI_FIRMWARE_INTERFACE
++	bool
++
+ endif # MACH_LOONGSON
 -- 
-Asias
+1.7.7.3
+
