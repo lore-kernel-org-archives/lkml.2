@@ -1,80 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab2HCO1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:27:12 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:54391 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab2HCO1I (ORCPT
+	id S1753502Ab2HCObe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:31:34 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49915 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab2HCObc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:27:08 -0400
-Date: Fri, 3 Aug 2012 16:26:59 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] iommu: Include linux/notifier.h
-Message-ID: <20120803142659.GB12268@avionic-0098.mockup.avionic-design.de>
-References: <1343226290-32511-1-git-send-email-thierry.reding@avionic-design.de>
- <1343226290-32511-2-git-send-email-thierry.reding@avionic-design.de>
- <20120803140826.GF1996@amd.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qcHopEYAB45HaUaB"
-Content-Disposition: inline
-In-Reply-To: <20120803140826.GF1996@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:YdsHiUclqjdRfXgCd7GoV+atqA1RCfs6CCwzSK+TOxo
- kmZr34irlts8p7GqSJLcAaw6XXQqZ87zp+nbhYc/jua+7ud9a/
- gJgdi+3R7d5bbyfU5vop7Vytl9YPm7RFhts24m0e4xbmNNfjN6
- Wnj+bIsaVbXYF1VEnQ+oBNkInyXkExT1Y6zaUUOYlSL33lecgH
- YjlWJw79zJ035uqwqa3Mhk+5lzISkGcdEqc4LZwZQPNUWYkZeF
- wUNTiJiBxa+JwbEJkloW06B8MJueHd1gUKy+CXzmA+TXsF7vJa
- QPd9oxT5/CdomNEb48pyD8QK9gkYavvEVOfBxfJfTdlQa0ONLY
- 5M9sOTupLkJORV6Zo1jhUfLGLOMYNApmET3R5fWH2HOlCNFuxt
- AXI90Hh9AYmlma9yG+g0SAL0CG6ap98xB3VmYkVDA31FD3G+UI
- qtAjz
+	Fri, 3 Aug 2012 10:31:32 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, trivial@kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] dma: Fix typo various drivers in dma
+Date: Fri,  3 Aug 2012 23:31:56 +0900
+Message-Id: <1344004316-12204-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.12.rc1.16.g05a20c8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Correct spelling typo in drivers/dma.
 
---qcHopEYAB45HaUaB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/dma/at_hdmac.c           | 8 ++++----
+ drivers/dma/ep93xx_dma.c         | 2 +-
+ drivers/dma/fsldma.c             | 2 +-
+ drivers/dma/imx-dma.c            | 2 +-
+ drivers/dma/intel_mid_dma_regs.h | 4 ++--
+ drivers/dma/pl330.c              | 2 +-
+ drivers/dma/ppc4xx/adma.c        | 2 +-
+ drivers/dma/ste_dma40_ll.h       | 2 +-
+ 8 files changed, 12 insertions(+), 12 deletions(-)
 
-On Fri, Aug 03, 2012 at 04:08:26PM +0200, Joerg Roedel wrote:
-> On Wed, Jul 25, 2012 at 04:24:50PM +0200, Thierry Reding wrote:
-> > The linux/iommu.h header uses types defined in linux/notifier.h but
-> > doesn't include it.
-> >=20
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->=20
-> Better than adding the header-file is to add a forward declaration for
-> struct notifier_block. I added a patch to iommu/fixes for this.
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 7292aa8..b2d87da 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -169,9 +169,9 @@ static void atc_desc_put(struct at_dma_chan *atchan, struct at_desc *desc)
+ }
+ 
+ /**
+- * atc_desc_chain - build chain adding a descripor
+- * @first: address of first descripor of the chain
+- * @prev: address of previous descripor of the chain
++ * atc_desc_chain - build chain adding a descriptor
++ * @first: address of first descripotr of the chain
++ * @prev: address of previous descripotr of the chain
+  * @desc: descriptor to queue
+  *
+  * Called from prep_* functions
+@@ -786,7 +786,7 @@ err_out:
+ }
+ 
+ /**
+- * atc_dma_cyclic_fill_desc - Fill one period decriptor
++ * atc_dma_cyclic_fill_desc - Fill one period descriptor
+  */
+ static int
+ atc_dma_cyclic_fill_desc(struct dma_chan *chan, struct at_desc *desc,
+diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+index c64917e..bb02fd9 100644
+--- a/drivers/dma/ep93xx_dma.c
++++ b/drivers/dma/ep93xx_dma.c
+@@ -1118,7 +1118,7 @@ fail:
+  * @chan: channel
+  * @dma_addr: DMA mapped address of the buffer
+  * @buf_len: length of the buffer (in bytes)
+- * @period_len: lenght of a single period
++ * @period_len: length of a single period
+  * @dir: direction of the operation
+  * @context: operation context (ignored)
+  *
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 8f84761..094437b 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1015,7 +1015,7 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
+ 	/*
+ 	 * Programming Error
+ 	 * The DMA_INTERRUPT async_tx is a NULL transfer, which will
+-	 * triger a PE interrupt.
++	 * trigger a PE interrupt.
+ 	 */
+ 	if (stat & FSL_DMA_SR_PE) {
+ 		chan_dbg(chan, "irq: Programming Error INT\n");
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index fcfeb3c..db8b9aa 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -572,7 +572,7 @@ static void imxdma_tasklet(unsigned long data)
+ 		desc->desc.callback(desc->desc.callback_param);
+ 
+ 	/* If we are dealing with a cyclic descriptor keep it on ld_active
+-	 * and dont mark the descripor as complete.
++	 * and dont mark the descriptor as complete.
+ 	 * Only in non-cyclic cases it would be marked as complete
+ 	 */
+ 	if (imxdma_chan_is_doing_cyclic(imxdmac))
+diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
+index 1bfa926..0ef9597 100644
+--- a/drivers/dma/intel_mid_dma_regs.h
++++ b/drivers/dma/intel_mid_dma_regs.h
+@@ -168,9 +168,9 @@ union intel_mid_dma_cfg_hi {
+  * @active_list: current active descriptors
+  * @queue: current queued up descriptors
+  * @free_list: current free descriptors
+- * @slave: dma slave struture
++ * @slave: dma slave structure
+  * @descs_allocated: total number of decsiptors allocated
+- * @dma: dma device struture pointer
++ * @dma: dma device structure pointer
+  * @busy: bool representing if ch is busy (active txn) or not
+  * @in_use: bool representing if ch is in use or not
+  * @raw_tfr: raw trf interrupt received
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 3ce7d55..71f9e96 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -522,7 +522,7 @@ enum desc_status {
+ 	/* In the DMAC pool */
+ 	FREE,
+ 	/*
+-	 * Allocted to some channel during prep_xxx
++	 * Allocated to some channel during prep_xxx
+ 	 * Also may be sitting on the work_list.
+ 	 */
+ 	PREP,
+diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+index ced9882..f72348d 100644
+--- a/drivers/dma/ppc4xx/adma.c
++++ b/drivers/dma/ppc4xx/adma.c
+@@ -4446,7 +4446,7 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev)
+ 		ret = -ENOMEM;
+ 		goto err_dma_alloc;
+ 	}
+-	dev_dbg(&ofdev->dev, "allocted descriptor pool virt 0x%p phys 0x%llx\n",
++	dev_dbg(&ofdev->dev, "allocated descriptor pool virt 0x%p phys 0x%llx\n",
+ 		adev->dma_desc_pool_virt, (u64)adev->dma_desc_pool);
+ 
+ 	regs = ioremap(res.start, resource_size(&res));
+diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
+index 51e8e53..6d47373 100644
+--- a/drivers/dma/ste_dma40_ll.h
++++ b/drivers/dma/ste_dma40_ll.h
+@@ -202,7 +202,7 @@
+ /* LLI related structures */
+ 
+ /**
+- * struct d40_phy_lli - The basic configration register for each physical
++ * struct d40_phy_lli - The basic configuration register for each physical
+  * channel.
+  *
+  * @reg_cfg: The configuration register.
+-- 
+1.7.12.rc1.16.g05a20c8
 
-Yes, that would also work.
-
-Thierry
-
---qcHopEYAB45HaUaB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQG9+zAAoJEN0jrNd/PrOhmVkP/1lDXxoFJvg97e4yBpc/P7j1
-BfmGWa2bUciZ/pQfipPzg4wbSwX/Q/ca1eWfVI0k7Rh5GXohA8/Cm1pe/bQ84h3Q
-XiPzm4gXweQteQZ56R52NbjHK0MLIgevcsh1ES+HEToIsZ05ZbwkZxQfUbPmDGkt
-tN8n0VIgUkCnlKjucMxD6GoXuPtL3N0/uQrjVEy6fuXN8gt7t6JOpzzvLLNU+mXh
-KD1TdWoSWw0mxlXJF0F2N6XJDaeLUgylOixl5PkPbCwpyf15A7tMtevfuPiQ1ObC
-5OAxbxSmv5Ixe+l2BTTP6YP7MmomSE2Iz5lhIr9UGZUivie0KapiRdbl8sJCq+us
-3SkO6veL4lVpnnwKltsZIIJlRvbeb6qR0FeNCaTB88x6ZqTAANKLda7YBT4jwjfp
-+OGSh7gR9Y7agf0sgBgUrixu/nO0Lp4jYbPmbGMtKMUSZORimJDZvJpi27rwzprO
-t3ivLSVn+3sRHzNMgx5ZSH3QNYXbcl2F8ifZlPv5E3KsyQlPbhfq030C2R9XfdRc
-6HdJ3VrjLdGmWkKDmMBa9ySoJGRu9+OOI284tMEj2db+rspMwRsswZM6gzGlmstx
-Nypv3NfAXc6u0JF2ZecqkJjCajGOoTLu3uGWRMbWi4kJZXb7nSiigdTxB7UPgZjx
-DvwbmTEQnvRRDjwZTX3+
-=phih
------END PGP SIGNATURE-----
-
---qcHopEYAB45HaUaB--
