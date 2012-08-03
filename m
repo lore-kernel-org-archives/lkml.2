@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab2HCPwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 11:52:13 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:53240 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2HCPwK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 11:52:10 -0400
+	id S1753602Ab2HCP6o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 11:58:44 -0400
+Received: from seven.medozas.de ([5.9.24.206]:34505 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753126Ab2HCP6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 11:58:39 -0400
+Date: Fri, 3 Aug 2012 17:58:38 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+cc: "Steven J. Magnani" <steve@digidescorp.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fat: Refactor shortname parsing
+In-Reply-To: <87lihw10cs.fsf@devron.myhome.or.jp>
+Message-ID: <alpine.LNX.2.01.1208031734550.7170@frira.zrqbmnf.qr>
+References: <1341314074-2867-1-git-send-email-steve@digidescorp.com> <alpine.LNX.2.01.1208031650580.3676@frira.zrqbmnf.qr> <87lihw10cs.fsf@devron.myhome.or.jp>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <501B609F.9030403@ti.com>
-References: <1342466485-1050-1-git-send-email-omar.luna@linaro.org>
-	<1342466485-1050-3-git-send-email-omar.luna@linaro.org>
-	<alpine.DEB.2.00.1208020150240.4177@utopia.booyaka.com>
-	<CALLhW=6-b+kjfG-u3+uXiD64UwoNEdufjJKu0Mx-sGWp6n9csg@mail.gmail.com>
-	<501B609F.9030403@ti.com>
-Date: Fri, 3 Aug 2012 10:52:09 -0500
-Message-ID: <CALLhW=7yJTq_cfB=KGY5VT8fNO1u_hrY118ysihFuQA+gVFRuQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] ARM: OMAP: hwmod: revise deassert sequence
-From: Omar Ramirez Luna <omar.luna@linaro.org>
-To: Vaibhav Hiremath <hvaibhav@ti.com>, Paul Walmsley <paul@pwsan.com>
-Cc: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Kevin Hilman <khilman@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 August 2012 00:24, Vaibhav Hiremath <hvaibhav@ti.com> wrote:
-> On 8/3/2012 3:50 AM, Omar Ramirez Luna wrote:
->> So in _enable:
+
+On Friday 2012-08-03 17:06, OGAWA Hirofumi wrote:
+>>>+static inline unsigned char fat_tolower(unsigned char c)
+>>>+{
+>>>+	return ((c >= 'A') && (c <= 'Z')) ? c+32 : c;
+>>>+}
+>>>+
 >>
->>         _enable_clocks(oh);
->>         if (soc_ops.enable_module)
->>                 soc_ops.enable_module(oh);
->>
->> The enable_module part seems redundant to me, since the module should
->> be already enabled by the first call to _enable_clocks.
+>> The kernel already has a tolower() function, can that not be used?
 >
-> Yes they do same thing, I believe the plan is to get rid of all clock
-> leaf-nodes in the near future, and let hwmod handle module
-> enable/disable part.
+>tolower() is not exactly same, right? e.g. tolower(0xc0). Otherwise,
+>tolower() is fine.
 
-If this is the case then an enable_module call is needed in my patch
-for when these changes are made. The original works fine but only
-because currently clock framework does what enable_module is doing.
+Yes, but you can still
 
-Paul,
-
-Please let me know if you want me to resend with this change.
-
-Regards,
-
-Omar
+	return (c >= 'A' && c <= 'Z') ? tolower(c) : c;
