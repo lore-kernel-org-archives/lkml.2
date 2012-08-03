@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab2HCNAd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 09:00:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62969 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab2HCNAb (ORCPT
+	id S1753400Ab2HCNCd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 09:02:33 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:54827 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919Ab2HCNCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 09:00:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <e80f32ef-d6cf-48cc-9ddb-75d95bc9581e@email.android.com>
-References: <alpine.LFD.2.02.1203231926000.2542@ionos>
-	<20120323190855.GA27213@www.outflux.net>
-	<CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
-	<87pq7935w2.fsf@xmission.com>
-	<CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com>
-	<20120803110247.GB11952@moon>
-	<501BC62A.4090308@parallels.com>
-	<e80f32ef-d6cf-48cc-9ddb-75d95bc9581e@email.android.com>
-Date: Fri, 3 Aug 2012 15:00:30 +0200
-Message-ID: <CAFLxGvwnEC7O3Lf6PcU5qQO1H4NFeSRCWiy-u3mxmHCcPq==1A@mail.gmail.com>
-Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	Fri, 3 Aug 2012 09:02:32 -0400
+Date: Fri, 3 Aug 2012 15:02:30 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Avi Kivity <avi@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "spender@grsecurity.net" <spender@grsecurity.net>
-Content-Type: text/plain; charset=ISO-8859-1
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] kbuild: kvm: make export of linux/kvm_para.h
+	unconditional
+Message-ID: <20120803130230.GA9812@merkur.ravnborg.org>
+References: <1343310254-7493-1-git-send-email-will.deacon@arm.com> <20120802122550.GD9838@mudshark.cambridge.arm.com> <501A8C68.9030001@redhat.com> <20120802202911.GA9108@merkur.ravnborg.org> <20120803125144.GD26925@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120803125144.GD26925@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 2:58 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> The permissions on the syscall were fixed them withR ptrace_may_access.
->
-> We have identified two legitimate use cases.
->
-> It looks like it is time for someone to generate the path to remove the depreciation.
->
-> Who is up for writing and testing that patch?
+On Fri, Aug 03, 2012 at 01:51:44PM +0100, Will Deacon wrote:
+> On Thu, Aug 02, 2012 at 09:29:11PM +0100, Sam Ravnborg wrote:
+> > On Thu, Aug 02, 2012 at 05:19:20PM +0300, Avi Kivity wrote:
+> > > Can you get it reviewed by someone who is familiar with this?  This is
+> > > probably the third fix for the this issue.
+> > 
+> > IMO the patch is wrong.
+> > Any use of wildcards in include/asm-generic/Kbuild.asm is wrong.
+> 
+> I agree that the wildcard stuff is horrible but that's not something
+> introduced by this patch. In fact, I'm removing those where there is an
+> asm-generic header that can be used instead.
+> 
+> > IMO include/asm-generic/Kbuild.asm is for generic header files
+> > that ALL archs can use.
+> > 
+> > If not ALL archs can use it, then the individual arch shall
+> > specify the file explicit.
+> 
+> In which case, we should probably fix the rules for kvm.h and a.out.h as
+> well. Neither of these headers have asm-generic versions and I doubt this
+> is possible, so the header-y lines should be done for each architecture
+> exporting such a header, no?
+> 
+> > I know we here hit a bad thing with the generic-y support,
+> > where we miss a good way to add a file to a lot of archs
+> > without editing a lot of files.
+> 
+> If there isn't a generic version of the header, then yes, I guess you have
+> to modify the architectures that want to export it.
+> 
+> I'm happy to post an extra patch sorting out kvm.h and a.out.h if that's
+> what's required to get headers building again.
 
-I'll send a patch.
+IMO this is required to sort this out for good.
+I will be happy to review your patches.
 
--- 
-Thanks,
-//richard
+	Sam
