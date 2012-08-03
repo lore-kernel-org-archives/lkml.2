@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab2HCJh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 05:37:59 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46901 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab2HCJh5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 05:37:57 -0400
-Message-ID: <501B9BF1.2050006@suse.cz>
-Date: Fri, 03 Aug 2012 11:37:53 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120718 Thunderbird/15.0
+	id S1752619Ab2HCJn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 05:43:26 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:46095 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752037Ab2HCJnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 05:43:25 -0400
+Date: Fri, 3 Aug 2012 11:43:14 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Sven Joachim <svenjoac@gmx.de>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [ 33/73] x86, microcode: Sanitize per-cpu microcode reloading
+ interface
+Message-ID: <20120803094314.GB31792@aftab.osrc.amd.com>
+References: <20120731044310.013763753@decadent.org.uk>
+ <20120731044316.585695559@decadent.org.uk>
+ <87y5lw73eh.fsf@turtle.gmx.de>
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Alan Cox <alan@linux.intel.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: uart_startup: GFP_KERNEL allocation with IRQs disabled
-References: <20120803014600.GA7886@localhost>
-In-Reply-To: <20120803014600.GA7886@localhost>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87y5lw73eh.fsf@turtle.gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 03:46 AM, Fengguang Wu wrote:
-> Hi all,
-
-Hi,
-
-> The IRQ should be disabled somewhere in the path walk, which makes
-> the GFP_KERNEL allocation in uart_startup() no longer valid..
+On Fri, Aug 03, 2012 at 11:04:06AM +0200, Sven Joachim wrote:
+> On 2012-07-31 06:43 +0200, Ben Hutchings wrote:
 > 
-> [    0.499537] kworker/u:1 (29) used greatest stack depth: 7156 bytes left
-> [    0.500947] ------------[ cut here ]------------
-> [    0.501445] WARNING: at /c/kernel-tests/src/stable/kernel/lockdep.c:2739 lockdep_trace_alloc+0x86/0xb2()
-> [    0.502413] Modules linked in:
-> [    0.502766] Pid: 1, comm: init Not tainted 3.5.0-01258-g1ade992 #182
-> [    0.503419] Call Trace:
+> > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> Alas, this does not build if CONFIG_SMP is unset:
+> 
+> ,----
+> | arch/x86/kernel/microcode_core.c: In function 'reload_store':
+> | arch/x86/kernel/microcode_core.c:304:19: error: 'struct cpuinfo_x86' has no member named 'cpu_index'
+> `----
+
+Crap. :-(
+
+3.2 still has this:
+
+<arch/x86/include/asm/processor.h>:
 ...
-> [    0.504381]  [<c1079e7d>] get_zeroed_page+0xd/0xf
-> [    0.504381]  [<c10f976f>] uart_startup.part.8+0x46/0x152
-> [    0.504381]  [<c10f745f>] ? tty_port_tty_set+0x37/0x3c
-> [    0.504381]  [<c10fa175>] uart_open+0xc9/0x10b
-> [    0.504381]  [<c10fa0ac>] ? uart_suspend_port+0x229/0x229
-> [    0.504381]  [<c10f1bc2>] tty_open+0x26b/0x3d3
-> [    0.504381]  [<c109872a>] chrdev_open+0xf7/0x117
+#ifdef CONFIG_SMP
+        /* number of cores as seen by the OS: */
+        u16                     booted_cores;
+        /* Physical processor id: */
+        u16                     phys_proc_id;
+        /* Core id: */
+        u16                     cpu_core_id;
+        /* Compute unit id */
+        u8                      compute_unit_id;
+        /* Index into per_cpu list: */
+        u16                     cpu_index;
+#endif
+        u32                     microcode;
+} __attribute__((__aligned__(SMP_CACHE_BYTES)));
+---
 
-This does not make sense to me. I would not blame TTY/serial for this.
-There is somebody who forgot to enable interrupts somewhere. Could you
-enable DEBUG_ATOMIC_SLEEP? It might trigger earlier revealing us the
-culprit.
+which got removed by
 
-thanks,
+commit 141168c36cdee3ff23d9c7700b0edc47cb65479f
+Author: Kevin Winchester <kjwinchester@gmail.com>
+Date:   Tue Dec 20 20:52:22 2011 -0400
+
+    x86: Simplify code by removing a !SMP #ifdefs from 'struct cpuinfo_x86'
+
+Ben, you might want to backport this one too... I'll run a couple of 3.2
+builds with it ontop of 3.2 to verify nothing else breaks.
+
+Thanks.
+
 -- 
-js
-suse labs
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
