@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab2HCOKk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:10:40 -0400
-Received: from [216.32.181.185] ([216.32.181.185]:30435 "EHLO
-	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752921Ab2HCOKi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:10:38 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dIc89bh1432Izz1202hzz8275dh15d4Iz2dh668h839h93fhd25he5bhf0ah)
-X-WSS-ID: 0M86NCE-02-1FK-02
-X-M-MSG: 
-Date: Fri, 3 Aug 2012 16:09:55 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <kgene.kim@samsung.com>,
-        <pullip.cho@samsung.com>, <patches@linaro.org>
-Subject: Re: [PATCH] iommu/exynos: Fix build error
-Message-ID: <20120803140955.GH1996@amd.com>
-References: <1343811917-24054-1-git-send-email-sachin.kamat@linaro.org>
+	id S1753839Ab2HCOLM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:11:12 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:8815 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752797Ab2HCOLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 10:11:10 -0400
+X-Authority-Analysis: v=2.0 cv=Dp/UCRD+ c=1 sm=0 a=YPDeGStqRoQnMAluW+pq4Q==:17 a=65KWcu232dMA:10 a=sgO5gNtQRqEA:10 a=wkBGhNO-IO0A:10 a=05ChyHeVI94A:10 a=8nJEP1OIZ-IA:10 a=ayC55rCoAAAA:8 a=2D1OvHveRNJ-jve2AggA:9 a=wPNLvfGTeEIA:10 a=YPDeGStqRoQnMAluW+pq4Q==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 50.89.247.146
+Message-ID: <501BDBEE.60305@cfl.rr.com>
+Date: Fri, 03 Aug 2012 10:10:54 -0400
+From: Mark Hounschell <dmarkh@cfl.rr.com>
+Reply-To: dmarkh@cfl.rr.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1343811917-24054-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Chris Friesen <chris.friesen@genband.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: MODULE_LICENSE("GPL")??
+References: <50199E91.5040308@cfl.rr.com> <20120801224342.5b90747f@pyramind.ukuu.org.uk> <501A704E.2000301@cfl.rr.com> <501B5D51.5030307@genband.com> <501BBE45.8060309@cfl.rr.com> <20120803142923.311c70b6@pyramind.ukuu.org.uk>
+In-Reply-To: <20120803142923.311c70b6@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 02:35:17PM +0530, Sachin Kamat wrote:
-> Fixes the following build error introduced by commit 3177bb76a8
-> ("iommu/exynos: Implement DOMAIN_ATTR_GEOMETRY attribute"):
-> 
-> drivers/iommu/exynos-iommu.c: In function ‘exynos_iommu_domain_init’:
-> drivers/iommu/exynos-iommu.c:735:2: error: ‘dom’ undeclared
-> (first use in this function)
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+On 08/03/2012 09:29 AM, Alan Cox wrote:
+>> assumption that that actually meant they were NOT using GPL symbols.
+>
+> All symbols in the Linux kernel are to GPL code and all linking dynamic
+> or otherwise is subject to the GPL licence. That is you need to be able
+> to show anything non-free linked with it such as a kernel module is not a
+> derivative work.
 
-Applied to iommu/fixes, thanks Sachin.
+Why then is there EXPORT_SYMBOL_GPL and EXPORT_SYMBOL? As long as you have 
+them both, one can and will, assume that what you say above is not the intent.
 
--- 
-AMD Operating System Research Center
+Again, our Linux kernel drivers are and always were GPL and at least partly 
+so because of EXPORT_SYMBOL_GPL.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Mark
+
+
+
 
