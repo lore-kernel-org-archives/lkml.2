@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab2HCQnb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:43:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34177 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab2HCQn0 (ORCPT
+	id S1753927Ab2HCQng (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:43:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43529 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab2HCQnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:43:26 -0400
-Message-ID: <501BFF95.8040202@linutronix.de>
-Date: Fri, 03 Aug 2012 18:43:01 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Fri, 3 Aug 2012 12:43:32 -0400
+Message-ID: <501BFFAC.2010705@canonical.com>
+Date: Fri, 03 Aug 2012 12:43:24 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ptrace: fix set_task_blockstep()->update_debugctlmsr()
- logic
-References: <20120803162954.GA19806@redhat.com>
-In-Reply-To: <20120803162954.GA19806@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: wey-yi.w.guy@intel.com, ilw@linux.intel.com, linville@tuxdriver.com,
+        emmanuel.grumbach@intel.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION][v3.5] iwlwifi: include rssi as part of decision
+ making for reduce txpower
+References: <501BFB29.7010801@canonical.com>  (sfid-20120803_182456_195468_6BBC5170) <1344011416.4482.11.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1344011416.4482.11.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 06:29 PM, Oleg Nesterov wrote:
-> diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
-> index afa60db..636402e 100644
-> --- a/arch/x86/kernel/step.c
-> +++ b/arch/x86/kernel/step.c
-> @@ -166,12 +166,18 @@ static void set_task_blockstep(struct task_struct *task, bool on)
->   	else
->   		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
+On 08/03/2012 12:30 PM, Johannes Berg wrote:
+> On Fri, 2012-08-03 at 12:24 -0400, Joseph Salisbury wrote:
 >
-> +	if (task != current)
-> +		return;
-> +
-> +	/* ensure irq/preemption can't change debugctl in between */
-> +	local_irq_disable();
->   	debugctl = get_debugctlmsr();
->   	if (on)
->   		debugctl |= DEBUGCTLMSR_BTF;
->   	else
->   		debugctl&= ~DEBUGCTLMSR_BTF;
->   	update_debugctlmsr(debugctl);
-> +	local_irq_enable();
-
-wouldn't preempt_disable() be enough?
-
->   }
+>> A test kernel was created with this commit reverted, which stopped the
+>> kernel panic from occurring.
+>>
+>> A bugzilla bug[1] has been opened.
+>> [0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1029547
+>> [1] https://bugzilla.kernel.org/show_bug.cgi?id=45491
+> This is a duplicate of https://bugzilla.kernel.org/show_bug.cgi?id=45481
+> which I've already commented on with the correct fix. I've also sent the
+> fix to stable:
 >
->   /*
-
-Sebastian
+> http://www.mail-archive.com/stable@vger.kernel.org/msg12286.html
+>
+> Thanks,
+> johannes
+>
+Great!  Thanks for the feedback, Johannes.
