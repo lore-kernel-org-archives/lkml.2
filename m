@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab2HCURb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 16:17:31 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:57395 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab2HCUR2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 16:17:28 -0400
-X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Aug 2012 16:17:27 EDT
-Date: Fri, 3 Aug 2012 23:08:22 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: "Pandita, Vikram" <vikram.pandita@ti.com>
-Cc: Andi Kleen <andi@firstfloor.org>, gregkh@linuxfoundation.org, kay@vrfy.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
-Subject: Re: [PATCH v3] printk: add option to print cpu id
-Message-ID: <20120803200822.GC731@harshnoise.musicnaut.iki.fi>
-References: <1344013004-32211-1-git-send-email-vikram.pandita@ti.com>
- <m2628z6euk.fsf@firstfloor.org>
- <CAFm5wm3ScpUU5wa=ei3TY0zjU4kVbOgJMmE5_QDpwy7B-TJa+A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFm5wm3ScpUU5wa=ei3TY0zjU4kVbOgJMmE5_QDpwy7B-TJa+A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753968Ab2HCUVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 16:21:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50233 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753469Ab2HCUVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 16:21:17 -0400
+Message-ID: <1344025273.8003.40.camel@ul30vt>
+Subject: Re: oops in pci_acs_path_enabled
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 03 Aug 2012 14:21:13 -0600
+In-Reply-To: <501C0CDF.7010804@gmail.com>
+References: <501C0CDF.7010804@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, Aug 03, 2012 at 11:25:37AM -0700, Pandita, Vikram wrote:
-> > And really: Wasting 1/3 of the 80 character line is too much.
+On Fri, 2012-08-03 at 11:39 -0600, David Ahern wrote:
+> Hi Alex:
 > 
-> You _WASTE_ 4 chars only if you are interested in this info by
-> enabling: CONFIG_PRINTK_CPUID
+> Hitting an oops with 3.6-rc1. Backtrace from console attached. git blame 
+> for the top function points to ad805758.
 
-I guess you waste 4 + 3 chars? You could optimize the length by checking
-CONFIG_NR_CPUS?
+Hey David,
 
-A.
+Hmm, what's special about your system?  I've got an 82576 here and the
+same path works fine.  Any way you can get the top of the oops message?
+Thanks,
+
+Alex
+
