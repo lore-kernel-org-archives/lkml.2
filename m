@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab2HCRBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 13:01:15 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51224 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab2HCRBM (ORCPT
+	id S1753848Ab2HCRBb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 13:01:31 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:36981 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482Ab2HCRBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 13:01:12 -0400
+	Fri, 3 Aug 2012 13:01:30 -0400
+Date: Fri, 3 Aug 2012 19:01:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] core kernel fixes
+Message-ID: <20120803170124.GA2773@gmail.com>
+References: <20120803163145.GA1549@gmail.com>
+ <501C0273.2060603@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1208031425530.25196@tundra.namei.org>
-References: <1343262548-21743-1-git-send-email-keescook@chromium.org>
-	<1343262548-21743-2-git-send-email-keescook@chromium.org>
-	<alpine.LRH.2.02.1208031425530.25196@tundra.namei.org>
-Date: Fri, 3 Aug 2012 10:01:10 -0700
-X-Google-Sender-Auth: Y2JnSLwYoBzJmFd_3GHYGdQEuHs
-Message-ID: <CAGXu5jKFm3uxwF3hhhzkUJcxJ0zOH89_bAgQGLCEf=g3CpXuHw@mail.gmail.com>
-Subject: Re: [kernel-hardening] [PATCH 1/2] fs: add link restrictions
-From: Kees Cook <keescook@chromium.org>
-To: James Morris <jmorris@namei.org>
-Cc: kernel-hardening@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Doug Ledford <dledford@redhat.com>, Joe Korty <joe.korty@ccur.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501C0273.2060603@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 2, 2012 at 9:26 PM, James Morris <jmorris@namei.org> wrote:
-> On Wed, 25 Jul 2012, Kees Cook wrote:
->
->> This adds symlink and hardlink restrictions to the Linux VFS.
->
-> Is Al happy with this now?
 
-Looks like it; thanks for checking. It's in mainline now:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=800179c9b8a1e796e441674776d11cd4c05d61d7
+* Darren Hart <dvhart@linux.intel.com> wrote:
 
--Kees
+> On 08/03/2012 09:31 AM, Ingo Molnar wrote:
+> > Linus,
+> > 
+> > Please pull the latest core-urgent-for-linus git tree from:
+> > 
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
+> > 
+> >    HEAD: 6f7b0a2a5c0fb03be7c25bd1745baa50582348ef futex: Forbid uaddr == uaddr2 in futex_wait_requeue_pi()
+> > 
+> > Various futex fixes for bugs Darren Hart found via his 
+> > testsuite.
+> > 
+> 
+> Minor correction. I fixed two bugs reported by Dave Jones 
+> (found with his trinity test) and Dan Carpenter through static 
+> analysis. The other I found while debugging the first two. 
+> Credit where credit is due.
 
--- 
-Kees Cook
-Chrome OS Security
+Hm, from the wording of the changelogs I thought you were 
+running those tests. Please put such bug reporting info into the 
+changelog and/or add a Reported-by tag next time around - 
+testers are our most valuable contributors.
+
+Thanks,
+
+	Ingo
