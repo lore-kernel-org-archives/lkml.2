@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab2HCRXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 13:23:04 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:27905 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751290Ab2HCRXB (ORCPT
+	id S1753082Ab2HCRX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 13:23:58 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45295 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab2HCRX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 13:23:01 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av8EAN4HHFBXQCed/2dsb2JhbABFuSqBCIIgAQEEAScvIgEFCwsUBAkWDwkDAgECASceBg0BBQIBAYgDCr0Qi0gVhm8DmyWKMoJhgVU
-Message-ID: <501C0877.7010303@computer.org>
-Date: Fri, 03 Aug 2012 19:20:55 +0200
-From: Jan Ceuleers <jan.ceuleers@computer.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 3 Aug 2012 13:23:56 -0400
+Message-ID: <501C08CB.3060701@mvista.com>
+Date: Fri, 03 Aug 2012 21:22:19 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Piotr Gluszenia Slawinski <curious@bwv190.internetdsl.tpnet.pl>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        David Miller <davem@davemloft.net>
-Subject: Re: bootmem code - reboots after 'uncompressing linux' on old computers
-References: <Pine.LNX.4.64.1208030324320.9164@bwv190.internetdsl.tpnet.pl>
-In-Reply-To: <Pine.LNX.4.64.1208030324320.9164@bwv190.internetdsl.tpnet.pl>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH 1/4] arm/dts: omap5-evm: Add I2C support
+References: <1343997486-710-1-git-send-email-sourav.poddar@ti.com> <1343997486-710-2-git-send-email-sourav.poddar@ti.com>
+In-Reply-To: <1343997486-710-2-git-send-email-sourav.poddar@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 03:37 AM, Piotr Gluszenia Slawinski wrote:
-> Hello.
-> while bisecting old pcmcia bug i've noticed kernels ~2.6.36
-> and up do not boot on 586 machines with small amounts of ram (16M)
+Hello.
 
-Copying David Miller.
+On 08/03/2012 04:38 PM, Sourav Poddar wrote:
 
-Not trimming the rest of the message for David's benefit; no further comments from me.
+> Add I2C data node in omap5 device tree file.
 
-> suprisingly 3.5 kernel booted fine.
-> 
-> i've bisected the problem and found fix :
-> 
-> solidstate linux # git bisect good
-> 4e1c2b284461fd8aa8d7b295a1e911fc4390755b is the first bad commit
-> commit 4e1c2b284461fd8aa8d7b295a1e911fc4390755b
-> Author: David Miller <davem@davemloft.net>
-> Date:   Wed Apr 25 16:10:50 2012 -0400
-> 
->     mm: nobootmem: Correct alloc_bootmem semantics.
-> 
->     The comments above __alloc_bootmem_node() claim that the code will
->     first try the allocation using 'goal' and if that fails it will
->     try again but with the 'goal' requirement dropped.
-> 
->     Unfortunately, this is not what the code does, so fix it to do so.
-> 
->     This is important for nobootmem conversions to architectures such
->     as sparc where MAX_DMA_ADDRESS is infinity.
-> 
->     On such architectures all of the allocations done by generic spots,
->     such as the sparse-vmemmap implementation, will pass in:
-> 
->         __pa(MAX_DMA_ADDRESS)
-> 
->     as the goal, and with the limit given as "-1" this will always fail
->     unless we add the appropriate fallback logic here.
-> 
->     Signed-off-by: David S. Miller <davem@davemloft.net>
->     Acked-by: Yinghai Lu <yinghai@kernel.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> :040000 040000 5c42bbd13a81426248901205b051968bab14e6ff 3e7fad8afb42036c6bbb1fcf5fcf12c87bbba9e2 M      mm
-> 
-> 
-> kernels before 3.6.39 do not have nobootmem.c , but they still have same bug!
-> 
-> this patch fixes the problem for them (useful for bisecting, etc, imho should be merged into 2.6.35-stable branch) :
-> 
-> 
-> diff --git a/mm/bootmem.c b/mm/bootmem.c
-> index 13b0caa..b0ccada 100644
-> --- a/mm/bootmem.c
-> +++ b/mm/bootmem.c
-> @@ -848,6 +848,7 @@ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
->                 return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
-> 
->  #ifdef CONFIG_NO_BOOTMEM
-> +again:
->         ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
->                                          goal, -1ULL);
->         if (ptr)
-> @@ -859,6 +860,10 @@ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
->         ptr = ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
->  #endif
-> 
-> +       if (!ptr && goal) {
-> +               goal = 0;
-> +               goto again;
-> +       }
->         return ptr;
->  }
-> 
-> 
+> Tested on omap5430 sdp.
+
+> Cc: Benoit Cousson <b-cousson@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> ---
+>  arch/arm/boot/dts/omap5.dtsi |   35 +++++++++++++++++++++++++++++++++++
+>  1 files changed, 35 insertions(+), 0 deletions(-)
+
+> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+> index 57e5270..6b68dfe 100644
+> --- a/arch/arm/boot/dts/omap5.dtsi
+> +++ b/arch/arm/boot/dts/omap5.dtsi
+> @@ -145,6 +145,41 @@
+>  			#interrupt-cells = <1>;
+>  		};
+>  
+> +		i2c1: i2c@48070000 {
+> +			compatible = "ti,omap4-i2c";
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			ti,hwmods = "i2c1";
+
+   Address postfix in the node name and no "reg" property?
+
+WBR, Sergei
 
