@@ -1,98 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab2HCN45 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 09:56:57 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:5268 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2HCN44 (ORCPT
+	id S1753304Ab2HCOB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:01:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45778 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab2HCOBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 09:56:56 -0400
-Date: Fri, 3 Aug 2012 15:56:40 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Silas Boyd-Wickizer <sbw@mit.edu>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Harald Welte <laforge@openezx.org>, x86@kernel.org
-Subject: Re: [PATCH 3/3] Use get_online_cpus to avoid races involving 
- for_each_online_cpu
-Message-ID: <20120803155640.7e2356fb@endymion.delvare>
-In-Reply-To: <20120803000708.GD3443@mit.edu>
-References: <20120803000708.GD3443@mit.edu>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Aug 2012 10:01:23 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 16/18] perf tools: Introduce intlist
+Date: Fri,  3 Aug 2012 11:01:08 -0300
+Message-Id: <1344002470-5965-17-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1344002470-5965-1-git-send-email-acme@infradead.org>
+References: <1344002470-5965-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Silas,
+From: David Ahern <dsahern@gmail.com>
 
-On Thu, 2 Aug 2012 17:07:08 -0700, Silas Boyd-Wickizer wrote:
-> via_cputemp_init in drivers/hwmon/via-cputemp.c loops with
-> for_each_online_cpu, adding platform_devices, then calls
-> register_hotcpu_notifier.  If a CPU is offlined between the loop and
-> register_hotcpu_notifier, then later onlined, via_cputemp_device_add
-> will attempt to platform devices with the same ID.
+Built on rblist - like strlist. Used in the next patch.
 
-Missing word in this last sentence.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1343709095-7089-4-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile       |    2 +
+ tools/perf/util/intlist.c |  101 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/intlist.h |   75 +++++++++++++++++++++++++++++++++
+ 3 files changed, 178 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/util/intlist.c
+ create mode 100644 tools/perf/util/intlist.h
 
-> 
-> This fix surrounds for_each_online_cpu and register_hotcpu_notifier
-> with get_online_cpus+put_online_cpus.
-> 
-> Build tested.
-
-Thanks for reporting and for the fix. Two questions:
-
-What about via_cputemp_exit()? While less obvious, I suspect it is racy
-too. The notifier is unregistered first. If a CPU gets offline before
-the devices are removed, we will have a device pointing to a
-non-existent CPU for a short time. I think we should play it safe and
-use get/put_online_cpus() there too, as I seem to understand it
-guarantees CPUs can't go offline when we wouldn't handle that event
-properly. Alternatively, unregistering the platform driver first might
-close the race.
-
-Secondly, drivers/hwmon/coretemp.c is very similar to via-cputemp.c, so
-I think it needs the exact same fix(es).
-
-> 
-> Signed-off-by: Silas Boyd-Wickizer <sbw@mit.edu>
-> ---
->  drivers/hwmon/via-cputemp.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/hwmon/via-cputemp.c b/drivers/hwmon/via-cputemp.c
-> index 8689664..9ad07c3 100644
-> --- a/drivers/hwmon/via-cputemp.c
-> +++ b/drivers/hwmon/via-cputemp.c
-> @@ -328,6 +328,7 @@ static int __init via_cputemp_init(void)
->  	if (err)
->  		goto exit;
->  
-> +	get_online_cpus();
->  	for_each_online_cpu(i) {
->  		struct cpuinfo_x86 *c = &cpu_data(i);
->  
-> @@ -347,12 +348,14 @@ static int __init via_cputemp_init(void)
->  
->  #ifndef CONFIG_HOTPLUG_CPU
->  	if (list_empty(&pdev_list)) {
-> +		put_online_cpus();
->  		err = -ENODEV;
->  		goto exit_driver_unreg;
->  	}
->  #endif
->  
->  	register_hotcpu_notifier(&via_cputemp_cpu_notifier);
-> +	put_online_cpus();
->  	return 0;
->  
->  #ifndef CONFIG_HOTPLUG_CPU
-
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 285f700..32912af 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -320,6 +320,7 @@ LIB_H += util/cgroup.h
+ LIB_H += $(TRACE_EVENT_DIR)event-parse.h
+ LIB_H += util/target.h
+ LIB_H += util/rblist.h
++LIB_H += util/intlist.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -385,6 +386,7 @@ LIB_OBJS += $(OUTPUT)util/cpumap.o
+ LIB_OBJS += $(OUTPUT)util/cgroup.o
+ LIB_OBJS += $(OUTPUT)util/target.o
+ LIB_OBJS += $(OUTPUT)util/rblist.o
++LIB_OBJS += $(OUTPUT)util/intlist.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ 
+diff --git a/tools/perf/util/intlist.c b/tools/perf/util/intlist.c
+new file mode 100644
+index 0000000..fd530dc
+--- /dev/null
++++ b/tools/perf/util/intlist.c
+@@ -0,0 +1,101 @@
++/*
++ * Based on intlist.c by:
++ * (c) 2009 Arnaldo Carvalho de Melo <acme@redhat.com>
++ *
++ * Licensed under the GPLv2.
++ */
++
++#include <errno.h>
++#include <stdlib.h>
++#include <linux/compiler.h>
++
++#include "intlist.h"
++
++static struct rb_node *intlist__node_new(struct rblist *rblist __used,
++					 const void *entry)
++{
++	int i = (int)((long)entry);
++	struct rb_node *rc = NULL;
++	struct int_node *node = malloc(sizeof(*node));
++
++	if (node != NULL) {
++		node->i = i;
++		rc = &node->rb_node;
++	}
++
++	return rc;
++}
++
++static void int_node__delete(struct int_node *ilist)
++{
++	free(ilist);
++}
++
++static void intlist__node_delete(struct rblist *rblist __used,
++				 struct rb_node *rb_node)
++{
++	struct int_node *node = container_of(rb_node, struct int_node, rb_node);
++
++	int_node__delete(node);
++}
++
++static int intlist__node_cmp(struct rb_node *rb_node, const void *entry)
++{
++	int i = (int)((long)entry);
++	struct int_node *node = container_of(rb_node, struct int_node, rb_node);
++
++	return node->i - i;
++}
++
++int intlist__add(struct intlist *ilist, int i)
++{
++	return rblist__add_node(&ilist->rblist, (void *)((long)i));
++}
++
++void intlist__remove(struct intlist *ilist __used, struct int_node *node)
++{
++	int_node__delete(node);
++}
++
++struct int_node *intlist__find(struct intlist *ilist, int i)
++{
++	struct int_node *node = NULL;
++	struct rb_node *rb_node = rblist__find(&ilist->rblist, (void *)((long)i));
++
++	if (rb_node)
++		node = container_of(rb_node, struct int_node, rb_node);
++
++	return node;
++}
++
++struct intlist *intlist__new(void)
++{
++	struct intlist *ilist = malloc(sizeof(*ilist));
++
++	if (ilist != NULL) {
++		rblist__init(&ilist->rblist);
++		ilist->rblist.node_cmp    = intlist__node_cmp;
++		ilist->rblist.node_new    = intlist__node_new;
++		ilist->rblist.node_delete = intlist__node_delete;
++	}
++
++	return ilist;
++}
++
++void intlist__delete(struct intlist *ilist)
++{
++	if (ilist != NULL)
++		rblist__delete(&ilist->rblist);
++}
++
++struct int_node *intlist__entry(const struct intlist *ilist, unsigned int idx)
++{
++	struct int_node *node = NULL;
++	struct rb_node *rb_node;
++
++	rb_node = rblist__entry(&ilist->rblist, idx);
++	if (rb_node)
++		node = container_of(rb_node, struct int_node, rb_node);
++
++	return node;
++}
+diff --git a/tools/perf/util/intlist.h b/tools/perf/util/intlist.h
+new file mode 100644
+index 0000000..6d63ab9
+--- /dev/null
++++ b/tools/perf/util/intlist.h
+@@ -0,0 +1,75 @@
++#ifndef __PERF_INTLIST_H
++#define __PERF_INTLIST_H
++
++#include <linux/rbtree.h>
++#include <stdbool.h>
++
++#include "rblist.h"
++
++struct int_node {
++	struct rb_node rb_node;
++	int i;
++};
++
++struct intlist {
++	struct rblist rblist;
++};
++
++struct intlist *intlist__new(void);
++void intlist__delete(struct intlist *ilist);
++
++void intlist__remove(struct intlist *ilist, struct int_node *in);
++int intlist__add(struct intlist *ilist, int i);
++
++struct int_node *intlist__entry(const struct intlist *ilist, unsigned int idx);
++struct int_node *intlist__find(struct intlist *ilist, int i);
++
++static inline bool intlist__has_entry(struct intlist *ilist, int i)
++{
++	return intlist__find(ilist, i) != NULL;
++}
++
++static inline bool intlist__empty(const struct intlist *ilist)
++{
++	return rblist__empty(&ilist->rblist);
++}
++
++static inline unsigned int intlist__nr_entries(const struct intlist *ilist)
++{
++	return rblist__nr_entries(&ilist->rblist);
++}
++
++/* For intlist iteration */
++static inline struct int_node *intlist__first(struct intlist *ilist)
++{
++	struct rb_node *rn = rb_first(&ilist->rblist.entries);
++	return rn ? rb_entry(rn, struct int_node, rb_node) : NULL;
++}
++static inline struct int_node *intlist__next(struct int_node *in)
++{
++	struct rb_node *rn;
++	if (!in)
++		return NULL;
++	rn = rb_next(&in->rb_node);
++	return rn ? rb_entry(rn, struct int_node, rb_node) : NULL;
++}
++
++/**
++ * intlist_for_each      - iterate over a intlist
++ * @pos:	the &struct int_node to use as a loop cursor.
++ * @ilist:	the &struct intlist for loop.
++ */
++#define intlist__for_each(pos, ilist)	\
++	for (pos = intlist__first(ilist); pos; pos = intlist__next(pos))
++
++/**
++ * intlist_for_each_safe - iterate over a intlist safe against removal of
++ *                         int_node
++ * @pos:	the &struct int_node to use as a loop cursor.
++ * @n:		another &struct int_node to use as temporary storage.
++ * @ilist:	the &struct intlist for loop.
++ */
++#define intlist__for_each_safe(pos, n, ilist)	\
++	for (pos = intlist__first(ilist), n = intlist__next(pos); pos;\
++	     pos = n, n = intlist__next(n))
++#endif /* __PERF_INTLIST_H */
 -- 
-Jean Delvare
+1.7.1
+
