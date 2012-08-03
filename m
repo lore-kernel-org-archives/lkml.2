@@ -1,258 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab2HCRrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 13:47:32 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:34680 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab2HCRoI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 13:44:08 -0400
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        padovan@profusion.mobi, marcel@holtmann.org, peterz@infradead.org,
-        mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
-        ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com,
-        tomi.valkeinen@ti.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/14] workqueue: reorder queueing functions so that _on() variants are on top
-Date: Fri,  3 Aug 2012 10:43:46 -0700
-Message-Id: <1344015839-21800-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1344015839-21800-1-git-send-email-tj@kernel.org>
-References: <1344015839-21800-1-git-send-email-tj@kernel.org>
+	id S1753545Ab2HCRrx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 13:47:53 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39858 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752275Ab2HCRrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 13:47:51 -0400
+Date: Fri, 3 Aug 2012 23:16:56 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: mmap_region() corrupts mm->mm_rb if
+ uprobe_mmap() fails
+Message-ID: <20120803174656.GA3651@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120728163157.GA22719@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120728163157.GA22719@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080317-5806-0000-0000-000017FF4581
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, queue/schedule[_delayed]_work_on() are located below the
-counterpart without the _on postifx even though the latter is usually
-implemented using the former.  Swap them.
+* Oleg Nesterov <oleg@redhat.com> [2012-07-28 18:31:57]:
 
-This is cleanup and doesn't cause any functional difference.
+> https://bugzilla.redhat.com/show_bug.cgi?id=843640
+> 
+> If mmap_region()->uprobe_mmap() fails, unmap_and_free_vma path
+> does unmap_region() but does not remove the soon-to-be-freed vma
+> from rb tree (actually there are more problems).
+> 
+> Perhaps we could do do_munmap() + return in this case, but in fact
+> it is simply wrong to abort if uprobe_mmap() fails. Until at least
+> we move the !UPROBE_COPY_INSN code from install_breakpoint() to
+> uprobe_register().
+> 
+> For example, uprobe_mmap()->install_breakpoint() can fail if the
+> probed insn is not supported (remember, uprobe_register() succeeds
+> if nobody mmaps inode/offset), mmap() should not fail in this case.
+> 
+> dup_mmap()->uprobe_mmap() is wrong too by the same reason, fork()
+> can race with uprobe_register() and fail for no reason if it wins
+> the race and does install_breakpoint() first.
+> 
+> Change mmap_region() and dup_mmap() to ignore the error code from
+> uprobe_mmap().
+> 
+> Reported-by: William Cohen <wcohen@redhat.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: <stable@vger.kernel.org> # v3.5
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/workqueue.h |   13 +++--
- kernel/workqueue.c        |  124 ++++++++++++++++++++++----------------------
- 2 files changed, 69 insertions(+), 68 deletions(-)
+After discussions with Oleg, its very clear that this apt fix for now.
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index af15545..5970342 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -365,23 +365,24 @@ __alloc_workqueue_key(const char *fmt, unsigned int flags, int max_active,
- 
- extern void destroy_workqueue(struct workqueue_struct *wq);
- 
--extern int queue_work(struct workqueue_struct *wq, struct work_struct *work);
- extern int queue_work_on(int cpu, struct workqueue_struct *wq,
- 			struct work_struct *work);
--extern int queue_delayed_work(struct workqueue_struct *wq,
--			struct delayed_work *work, unsigned long delay);
-+extern int queue_work(struct workqueue_struct *wq, struct work_struct *work);
- extern int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
- 			struct delayed_work *work, unsigned long delay);
-+extern int queue_delayed_work(struct workqueue_struct *wq,
-+			struct delayed_work *work, unsigned long delay);
- 
- extern void flush_workqueue(struct workqueue_struct *wq);
- extern void drain_workqueue(struct workqueue_struct *wq);
- extern void flush_scheduled_work(void);
- 
--extern int schedule_work(struct work_struct *work);
- extern int schedule_work_on(int cpu, struct work_struct *work);
--extern int schedule_delayed_work(struct delayed_work *work, unsigned long delay);
-+extern int schedule_work(struct work_struct *work);
- extern int schedule_delayed_work_on(int cpu, struct delayed_work *work,
--					unsigned long delay);
-+				    unsigned long delay);
-+extern int schedule_delayed_work(struct delayed_work *work,
-+				 unsigned long delay);
- extern int schedule_on_each_cpu(work_func_t func);
- extern int keventd_up(void);
- 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 692d976..07d309e 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1053,27 +1053,6 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
- }
- 
- /**
-- * queue_work - queue work on a workqueue
-- * @wq: workqueue to use
-- * @work: work to queue
-- *
-- * Returns 0 if @work was already on a queue, non-zero otherwise.
-- *
-- * We queue the work to the CPU on which it was submitted, but if the CPU dies
-- * it can be processed by another CPU.
-- */
--int queue_work(struct workqueue_struct *wq, struct work_struct *work)
--{
--	int ret;
--
--	ret = queue_work_on(get_cpu(), wq, work);
--	put_cpu();
--
--	return ret;
--}
--EXPORT_SYMBOL_GPL(queue_work);
--
--/**
-  * queue_work_on - queue work on specific cpu
-  * @cpu: CPU number to execute work on
-  * @wq: workqueue to use
-@@ -1097,31 +1076,34 @@ queue_work_on(int cpu, struct workqueue_struct *wq, struct work_struct *work)
- }
- EXPORT_SYMBOL_GPL(queue_work_on);
- 
--static void delayed_work_timer_fn(unsigned long __data)
--{
--	struct delayed_work *dwork = (struct delayed_work *)__data;
--	struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
--
--	__queue_work(smp_processor_id(), cwq->wq, &dwork->work);
--}
--
- /**
-- * queue_delayed_work - queue work on a workqueue after delay
-+ * queue_work - queue work on a workqueue
-  * @wq: workqueue to use
-- * @dwork: delayable work to queue
-- * @delay: number of jiffies to wait before queueing
-+ * @work: work to queue
-  *
-  * Returns 0 if @work was already on a queue, non-zero otherwise.
-+ *
-+ * We queue the work to the CPU on which it was submitted, but if the CPU dies
-+ * it can be processed by another CPU.
-  */
--int queue_delayed_work(struct workqueue_struct *wq,
--			struct delayed_work *dwork, unsigned long delay)
-+int queue_work(struct workqueue_struct *wq, struct work_struct *work)
- {
--	if (delay == 0)
--		return queue_work(wq, &dwork->work);
-+	int ret;
- 
--	return queue_delayed_work_on(-1, wq, dwork, delay);
-+	ret = queue_work_on(get_cpu(), wq, work);
-+	put_cpu();
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(queue_work);
-+
-+static void delayed_work_timer_fn(unsigned long __data)
-+{
-+	struct delayed_work *dwork = (struct delayed_work *)__data;
-+	struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
-+
-+	__queue_work(smp_processor_id(), cwq->wq, &dwork->work);
- }
--EXPORT_SYMBOL_GPL(queue_delayed_work);
- 
- /**
-  * queue_delayed_work_on - queue work on specific CPU after delay
-@@ -1179,6 +1161,24 @@ int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
- EXPORT_SYMBOL_GPL(queue_delayed_work_on);
- 
- /**
-+ * queue_delayed_work - queue work on a workqueue after delay
-+ * @wq: workqueue to use
-+ * @dwork: delayable work to queue
-+ * @delay: number of jiffies to wait before queueing
-+ *
-+ * Returns 0 if @work was already on a queue, non-zero otherwise.
-+ */
-+int queue_delayed_work(struct workqueue_struct *wq,
-+			struct delayed_work *dwork, unsigned long delay)
-+{
-+	if (delay == 0)
-+		return queue_work(wq, &dwork->work);
-+
-+	return queue_delayed_work_on(-1, wq, dwork, delay);
-+}
-+EXPORT_SYMBOL_GPL(queue_delayed_work);
-+
-+/**
-  * worker_enter_idle - enter idle state
-  * @worker: worker which is entering idle state
-  *
-@@ -2877,6 +2877,19 @@ bool cancel_delayed_work_sync(struct delayed_work *dwork)
- }
- EXPORT_SYMBOL(cancel_delayed_work_sync);
- 
-+/*
-+ * schedule_work_on - put work task on a specific cpu
-+ * @cpu: cpu to put the work task on
-+ * @work: job to be done
-+ *
-+ * This puts a job on a specific cpu
-+ */
-+int schedule_work_on(int cpu, struct work_struct *work)
-+{
-+	return queue_work_on(cpu, system_wq, work);
-+}
-+EXPORT_SYMBOL(schedule_work_on);
-+
- /**
-  * schedule_work - put work task in global workqueue
-  * @work: job to be done
-@@ -2894,18 +2907,21 @@ int schedule_work(struct work_struct *work)
- }
- EXPORT_SYMBOL(schedule_work);
- 
--/*
-- * schedule_work_on - put work task on a specific cpu
-- * @cpu: cpu to put the work task on
-- * @work: job to be done
-+/**
-+ * schedule_delayed_work_on - queue work in global workqueue on CPU after delay
-+ * @cpu: cpu to use
-+ * @dwork: job to be done
-+ * @delay: number of jiffies to wait
-  *
-- * This puts a job on a specific cpu
-+ * After waiting for a given time this puts a job in the kernel-global
-+ * workqueue on the specified CPU.
-  */
--int schedule_work_on(int cpu, struct work_struct *work)
-+int schedule_delayed_work_on(int cpu,
-+			struct delayed_work *dwork, unsigned long delay)
- {
--	return queue_work_on(cpu, system_wq, work);
-+	return queue_delayed_work_on(cpu, system_wq, dwork, delay);
- }
--EXPORT_SYMBOL(schedule_work_on);
-+EXPORT_SYMBOL(schedule_delayed_work_on);
- 
- /**
-  * schedule_delayed_work - put work task in global workqueue after delay
-@@ -2923,22 +2939,6 @@ int schedule_delayed_work(struct delayed_work *dwork,
- EXPORT_SYMBOL(schedule_delayed_work);
- 
- /**
-- * schedule_delayed_work_on - queue work in global workqueue on CPU after delay
-- * @cpu: cpu to use
-- * @dwork: job to be done
-- * @delay: number of jiffies to wait
-- *
-- * After waiting for a given time this puts a job in the kernel-global
-- * workqueue on the specified CPU.
-- */
--int schedule_delayed_work_on(int cpu,
--			struct delayed_work *dwork, unsigned long delay)
--{
--	return queue_delayed_work_on(cpu, system_wq, dwork, delay);
--}
--EXPORT_SYMBOL(schedule_delayed_work_on);
--
--/**
-  * schedule_on_each_cpu - execute a function synchronously on each online CPU
-  * @func: the function to call
-  *
--- 
-1.7.7.3
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  kernel/fork.c |    4 ++--
+>  mm/mmap.c     |    5 ++---
+>  2 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index ab5211b..54bb88a 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -454,8 +454,8 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+>  		if (retval)
+>  			goto out;
+> 
+> -		if (file && uprobe_mmap(tmp))
+> -			goto out;
+> +		if (file)
+> +			uprobe_mmap(tmp);
+>  	}
+>  	/* a new mm has just been created */
+>  	arch_dup_mmap(oldmm, mm);
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 4fe2697..f25fd3f 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1355,9 +1355,8 @@ out:
+>  	} else if ((flags & MAP_POPULATE) && !(flags & MAP_NONBLOCK))
+>  		make_pages_present(addr, addr + len);
+> 
+> -	if (file && uprobe_mmap(vma))
+> -		/* matching probes but cannot insert */
+> -		goto unmap_and_free_vma;
+> +	if (file)
+> +		uprobe_mmap(vma);
+> 
+>  	return addr;
+> 
+> -- 
+> 1.5.5.1
+> 
+> 
 
