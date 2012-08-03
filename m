@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab2HCQDi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:03:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43258 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab2HCQC3 (ORCPT
+	id S1752847Ab2HCQH6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:07:58 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:45832 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2HCQHz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:02:29 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: dri-devel@lists.freedesktop.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Andreas Heider <andreas@meetr.de>
-Subject: [RFC PATCH 1/5] drm/i915: Add support for vga_switcheroo reprobe
-Date: Fri,  3 Aug 2012 11:02:17 -0500
-Message-Id: <1344009741-14248-2-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
-References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
+	Fri, 3 Aug 2012 12:07:55 -0400
+Date: Fri, 3 Aug 2012 18:07:12 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Amaury =?UTF-8?B?RGVjcsOqbWU=?= <amaury.decreme@gmail.com>
+Cc: ben-linux@fluff.org, w.sang@pengutronix.de, rob@landley.net,
+        jeffrey.t.kirsher@intel.com, akpm@linux-foundation.org,
+        davem@davemloft.net, gregkh@linuxfoundation.org, joe@perches.com,
+        ralf@linux-mips.org, dirk.brandewie@gmail.com,
+        jayachandranc@netlogicmicro.com, linux-i2c@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] I2C: SIS964: Bus driver
+Message-ID: <20120803180712.1e768042@endymion.delvare>
+In-Reply-To: <1344008145-14579-1-git-send-email-amaury.decreme@gmail.com>
+References: <1344008145-14579-1-git-send-email-amaury.decreme@gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Heider <andreas@meetr.de>
+Hi Amaury,
 
-Signed-off-by: Andreas Heider <andreas@meetr.de>
----
- drivers/gpu/drm/i915/i915_dma.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+On Fri,  3 Aug 2012 17:35:43 +0200, Amaury Decrême wrote:
+> This series of patches are a I2C bus driver for the SIS964.
+> 
+> 
+> The SIS964 is nearly the same as SIS630 for the SMBUS :
+> 	- Most of the SMBus registers (Status, Enable, Control,
+> 	  Host Control, etc.) are at the same adresses + 0x60
+> 	- The register count is 21 instead of 20
+> 
+> The SIS964 name is ambiguous as this chip isn't part of the SIS96X
+> family and behaves differently.
+> 
+> The datasheets have been used to develop the driver based on the
+> exsiting driver for I2C SIS630 . 
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 9cf7dfe..5b5176d 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1263,6 +1263,12 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
- 	}
- }
- 
-+static void i915_switcheroo_reprobe(struct pci_dev *pdev)
-+{
-+	struct drm_device *dev = pci_get_drvdata(pdev);
-+	intel_fb_output_poll_changed(dev);
-+}
-+
- static bool i915_switcheroo_can_switch(struct pci_dev *pdev)
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
-@@ -1276,7 +1282,7 @@ static bool i915_switcheroo_can_switch(struct pci_dev *pdev)
- 
- static const struct vga_switcheroo_client_ops i915_switcheroo_ops = {
- 	.set_gpu_state = i915_switcheroo_set_state,
--	.reprobe = NULL,
-+	.reprobe = i915_switcheroo_reprobe,
- 	.can_switch = i915_switcheroo_can_switch,
- };
- 
+What is the rationale for not adding support for the new chip to
+i2c-sis630 then? That would probably be a lot easier to review.
+
+> Content of the patches:
+> 	- 1/2 The driver itself
+> 	- 2/2 Documentation, Kconfig, Makefile, Maintainers
+
+This split makes little sense. Integration should come with the driver,
+otherwise even build-testing is impossible.
+
+
 -- 
-1.7.9.5
-
+Jean Delvare
