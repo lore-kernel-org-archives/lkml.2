@@ -1,37 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab2HCABP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 20:01:15 -0400
-Received: from ozlabs.org ([203.10.76.45]:48776 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203Ab2HCABN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 20:01:13 -0400
-Date: Fri, 3 Aug 2012 10:01:25 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 4/9] KVM: define kvm_bad_pfn statically
-Message-ID: <20120803000125.GB12559@bloggs.ozlabs.ibm.com>
-References: <5014F053.8020305@linux.vnet.ibm.com>
- <5014F0E1.4010909@linux.vnet.ibm.com>
- <20120802131527.GE25344@amt.cnet>
+	id S1752553Ab2HCAGb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 20:06:31 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60282 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab2HCAGa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 20:06:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120802131527.GE25344@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFm5wm2yof+ePMAtueBJh+gKyih-9ohdCYFC6xLTqwjeOgWWog@mail.gmail.com>
+References: <1343936764-6461-1-git-send-email-vikram.pandita@ti.com>
+ <CAPXgP10fJj3SwDdCa=rzfjZM8TL1GsvbSwEnfomFQ+NrW2j15w@mail.gmail.com> <CAFm5wm2yof+ePMAtueBJh+gKyih-9ohdCYFC6xLTqwjeOgWWog@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Fri, 3 Aug 2012 02:06:09 +0200
+Message-ID: <CAPXgP11x9UYm7QReMjqZHtv8ZVoMRzNsREe-bdNwNSoSA6TRfw@mail.gmail.com>
+Subject: Re: [PATCH] printk: add option to print cpu id
+To: "Pandita, Vikram" <vikram.pandita@ti.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 10:15:27AM -0300, Marcelo Tosatti wrote:
+On Fri, Aug 3, 2012 at 1:50 AM, Pandita, Vikram <vikram.pandita@ti.com> wrote:
+> On Thu, Aug 2, 2012 at 1:08 PM, Kay Sievers <kay@vrfy.org> wrote:
 
-> Remind me what is the guarantee that -Exxx does not clash with
-> a valid pfn number?
+>> How is that supposed to be useful?
+>>
+>> The prefix is added while exporting data from the kmsg buffer, which
+>> is just the CPU that *reads* the data from the buffer, not the one
+>> that has *written* the data it into it.
+>
+> I don't think so.
+> I can see the backtrace of the printk() call looks like follows:
+>
+> print_cpuid
+>  print_prefix
+>   msg_print_text
+>    console_unlock
+>     vprint_emit
+>      printk
+>
+> Now this is a synchronous path, where in the buffer is getting filled
+> with cpuid and timer info from the printk() calling context.
+> So you should get the right CPU id with the trace - with the exception
+> that i pointed out earlier for preemption.
+>
+>>
+>> Do I miss anything here?
+>
+> This is my understanding of the printk framework.
+> At least the print_time and print_cpuid seems to be happening
+> synchronously wrt printk
 
-A pfn number is an address >> PAGE_SHIFT, so it will have the top 12
-(at least) bits clear, whereas -Exxx will have the top bit set.
+Printk is a store-and-forward-model, and it always was. There is no
+guarantee at all, that the data is immediately flushed to the console
+by the same CPU, it just happens to be in most cases. It's pretty
+common though, that a different task is doing that work when it gets
+the console lock, and that is not a matter of preemption, it's normal
+and expected operation. The data which CPU has emitted the text is
+just not available. It would need to be stored in the records, for
+this to work.
 
-Paul.
+Your patch just prints the CPU that writes to the console, not
+necessarily the one that has stored the data. I think the second one
+is which is what you are looking for, but that is not what the patch
+does.
+
+Also dmesg and syslog uses the same logic and would put-out all
+entirely wrong CPU information with it, because the original
+information is long gone.
+
+Kay
