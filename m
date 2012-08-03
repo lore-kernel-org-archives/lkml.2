@@ -1,119 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab2HCOZx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:25:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35880 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab2HCOXN (ORCPT
+	id S1753580Ab2HCO1H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:27:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57361 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753272Ab2HCO1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:23:13 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
-Date: Fri,  3 Aug 2012 16:23:02 +0200
-Message-Id: <1344003788-1417-2-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
-References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
+	Fri, 3 Aug 2012 10:27:05 -0400
+Date: Fri, 3 Aug 2012 16:26:52 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Torben Hohn <torbenh@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Philippe =?iso-8859-15?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm imx31: add a few pinmux settings the tt01 needs
+Message-ID: <20120803142652.GY1451@pengutronix.de>
+References: <1342616305-24722-1-git-send-email-torbenh@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342616305-24722-1-git-send-email-torbenh@linutronix.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:26:44 up 41 days,  5:38, 39 users,  load average: 12.25, 8.84,
+ 7.25
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This hashtable implementation is using hlist buckets to provide a simple
-hashtable to prevent it from getting reimplemented all over the kernel.
+On Wed, Jul 18, 2012 at 02:58:25PM +0200, Torben Hohn wrote:
+> These are the Pinmux Settings for the PP4 SSI Port multiplexible
+> onto the first UART Pins.
+> 
+> Signed-off-by: Torben Hohn <torbenh@linutronix.de>
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- include/linux/hashtable.h |   75 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 75 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/hashtable.h
+Applied, thanks
 
-diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
-new file mode 100644
-index 0000000..b004cf7
---- /dev/null
-+++ b/include/linux/hashtable.h
-@@ -0,0 +1,75 @@
-+#ifndef _LINUX_HASHTABLE_H
-+#define _LINUX_HASHTABLE_H
-+
-+#include <linux/list.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/hash.h>
-+
-+struct hash_table {
-+	size_t bits;
-+	struct hlist_head buckets[];
-+};
-+
-+#define DEFINE_STATIC_HASHTABLE(n, b)					\
-+	static struct hash_table n = { .bits = (b),			\
-+		.buckets = { [0 ... ((1 << (b)) - 1)] = HLIST_HEAD_INIT } }
-+
-+#define DEFINE_HASHTABLE(n, b)						\
-+	union {								\
-+		struct hash_table n;					\
-+		struct {						\
-+			size_t bits;					\
-+			struct hlist_head buckets[1 << (b)];		\
-+		} __##n ;						\
-+	};
-+
-+#define HASH_BITS(name) ((name)->bits)
-+#define HASH_SIZE(name) (1 << (HASH_BITS(name)))
-+
-+__attribute__ ((unused))
-+static void hash_init(struct hash_table *ht, size_t bits)
-+{
-+	size_t i;
-+
-+	ht->bits = bits;
-+	for (i = 0; i < (1 << bits); i++)
-+		INIT_HLIST_HEAD(&ht->buckets[i]);
-+}
-+
-+static void hash_add(struct hash_table *ht, struct hlist_node *node, long key)
-+{
-+	hlist_add_head(node,
-+		&ht->buckets[hash_long((unsigned long)key, HASH_BITS(ht))]);
-+}
-+
-+
-+#define hash_get(name, key, type, member, cmp_fn)			\
-+({									\
-+	struct hlist_node *__node;					\
-+	typeof(key) __key = key;					\
-+	type *__obj = NULL;						\
-+	hlist_for_each_entry(__obj, __node, &(name)->buckets[		\
-+			hash_long((unsigned long) __key,		\
-+			HASH_BITS(name))], member)			\
-+		if (cmp_fn(__obj, __key))				\
-+			break;						\
-+	__obj;								\
-+})
-+
-+__attribute__ ((unused))
-+static void hash_del(struct hlist_node *node)
-+{
-+	hlist_del_init(node);
-+}
-+
-+#define hash_for_each(bkt, node, name, obj, member)			\
-+	for (bkt = 0; bkt < HASH_SIZE(name); bkt++)			\
-+		hlist_for_each_entry(obj, node, &(name)->buckets[i], member)
-+
-+#define hash_for_each_possible(name, node, obj, member, key)		\
-+	hlist_for_each_entry(obj, node,					\
-+		&(name)->buckets[hash_long((unsigned long) key,		\
-+			HASH_BITS(name))], member)
-+
-+#endif
+Sascha
+
+> ---
+>  arch/arm/plat-mxc/include/mach/iomux-mx3.h |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx3.h b/arch/arm/plat-mxc/include/mach/iomux-mx3.h
+> index 63f22a0..019b0a0 100644
+> --- a/arch/arm/plat-mxc/include/mach/iomux-mx3.h
+> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx3.h
+> @@ -515,12 +515,16 @@ enum iomux_pins {
+>  #define MX31_PIN_CSPI3_SPI_RDY__CTS3	IOMUX_MODE(MX31_PIN_CSPI3_SPI_RDY, IOMUX_CONFIG_ALT1)
+>  #define MX31_PIN_CTS1__CTS1		IOMUX_MODE(MX31_PIN_CTS1, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_RTS1__RTS1		IOMUX_MODE(MX31_PIN_RTS1, IOMUX_CONFIG_FUNC)
+> +#define MX31_PIN_RTS1__SFS		IOMUX_MODE(MX31_PIN_RTS1, IOMUX_CONFIG_ALT2)
+>  #define MX31_PIN_TXD1__TXD1		IOMUX_MODE(MX31_PIN_TXD1, IOMUX_CONFIG_FUNC)
+> +#define MX31_PIN_TXD1__SCK		IOMUX_MODE(MX31_PIN_TXD1, IOMUX_CONFIG_ALT2)
+>  #define MX31_PIN_RXD1__RXD1		IOMUX_MODE(MX31_PIN_RXD1, IOMUX_CONFIG_FUNC)
+> +#define MX31_PIN_RXD1__STXDA		IOMUX_MODE(MX31_PIN_RXD1, IOMUX_CONFIG_ALT2)
+>  #define MX31_PIN_DCD_DCE1__DCD_DCE1	IOMUX_MODE(MX31_PIN_DCD_DCE1, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_RI_DCE1__RI_DCE1	IOMUX_MODE(MX31_PIN_RI_DCE1, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_DSR_DCE1__DSR_DCE1	IOMUX_MODE(MX31_PIN_DSR_DCE1, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_DTR_DCE1__DTR_DCE1	IOMUX_MODE(MX31_PIN_DTR_DCE1, IOMUX_CONFIG_FUNC)
+> +#define MX31_PIN_DTR_DCE1__SRXDA	IOMUX_MODE(MX31_PIN_DTR_DCE1, IOMUX_CONFIG_ALT2)
+>  #define MX31_PIN_CTS2__CTS2		IOMUX_MODE(MX31_PIN_CTS2, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_RTS2__RTS2		IOMUX_MODE(MX31_PIN_RTS2, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_TXD2__TXD2		IOMUX_MODE(MX31_PIN_TXD2, IOMUX_CONFIG_FUNC)
+> @@ -724,6 +728,7 @@ enum iomux_pins {
+>  #define MX31_PIN_KEY_ROW2_KEY_ROW2	IOMUX_MODE(MX31_PIN_KEY_ROW2, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_KEY_ROW3_KEY_ROW3	IOMUX_MODE(MX31_PIN_KEY_ROW3, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_KEY_ROW4_KEY_ROW4	IOMUX_MODE(MX31_PIN_KEY_ROW4, IOMUX_CONFIG_FUNC)
+> +#define MX31_PIN_KEY_ROW4_GPIO		IOMUX_MODE(MX31_PIN_KEY_ROW4, IOMUX_CONFIG_GPIO)
+>  #define MX31_PIN_KEY_ROW5_KEY_ROW5	IOMUX_MODE(MX31_PIN_KEY_ROW5, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_KEY_ROW6_KEY_ROW6	IOMUX_MODE(MX31_PIN_KEY_ROW6, IOMUX_CONFIG_FUNC)
+>  #define MX31_PIN_KEY_ROW7_KEY_ROW7	IOMUX_MODE(MX31_PIN_KEY_ROW7, IOMUX_CONFIG_FUNC)
+> -- 
+> 1.7.10
+> 
+> 
+
 -- 
-1.7.8.6
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
