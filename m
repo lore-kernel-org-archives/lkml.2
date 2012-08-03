@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab2HCQYX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:24:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43418 "EHLO
+	id S1753623Ab2HCQZA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:25:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43430 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398Ab2HCQYT (ORCPT
+	with ESMTP id S1752188Ab2HCQY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:24:19 -0400
-Message-ID: <501BFB29.7010801@canonical.com>
-Date: Fri, 03 Aug 2012 12:24:09 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Fri, 3 Aug 2012 12:24:59 -0400
+Date: Fri, 3 Aug 2012 11:24:51 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: dri-devel@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        Andreas Heider <andreas@meetr.de>
+Subject: Re: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we
+ can't get a panel mode
+Message-ID: <20120803162451.GF8165@thinkpad-t410>
+Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
+	dri-devel@lists.freedesktop.org,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+	Andreas Heider <andreas@meetr.de>
+References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
+ <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
+ <20120803161416.GA22563@srcf.ucam.org>
 MIME-Version: 1.0
-To: wey-yi.w.guy@intel.com, johannes.berg@intel.com, ilw@linux.intel.com,
-        linville@tuxdriver.com, emmanuel.grumbach@intel.com
-CC: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [REGRESSION][v3.5] iwlwifi: include rssi as part of decision making
- for reduce txpower
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120803161416.GA22563@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Aug 03, 2012 at 05:14:16PM +0100, Matthew Garrett wrote:
+> On Fri, Aug 03, 2012 at 11:02:19AM -0500, Seth Forshee wrote:
+> > Some Apple hybrid graphics machines do not have the LVDS panel connected
+> > to the integrated GPU at boot and also do not supply a VBT. The LVDS
+> > connector is not registered as a result, making it impossible to support
+> > graphics switching.
+> > 
+> > This patch changes intel_lvds_init() to register the connector even if
+> > we can't find any panel modes. This makes it necessary to always check
+> > intel_lvds->fixed_mode before use, as it could now be NULL.
+> 
+> This one kind of sucks. I think adding a quirk for this situation would 
+> be justifiable, rather than doing it for all devices.
 
-A bug[0] was reported against Ubuntu that reports a kernel panic when 
-using the hotkey to disable then re-enable wifi on a Dell XPS 14z.  A 
-kernel bisect was performed, which indicated the following commit as the 
-source of the regression:
+This is one of the things I wasn't so sure about. There are various
+checks in intel_lvds_init() that can cause it to bail out before we try
+to get the EDID, and I don't fully understand all of them. If non-laptop
+machines are expected to bail out before the EDID check then the
+approach I've taken seems reasonable. Otherwise adding a quirk probably
+is a good idea.
 
+Seth
 
-commit dd551ab7b47ace14753b0d73f79437cc35adcf6b
-Author: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Date:   Thu May 3 14:22:01 2012 -0700
-
-     iwlwifi: include rssi as part of decision making for reduce txpower
-
-     In bt coex, consider the average rssi as part of decision making 
-process
-
-     Change-Id: I8d11d7f177a6875e2a9d08f7539d42253226fd7a
-     Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-     Reviewed-on: http://git-mwg.jer.intel.com/gerrit/1945
-     Tested-by: Jenkins
-     Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-     Signed-off-by: John W. Linville <linville@tuxdriver.com>
-
-A test kernel was created with this commit reverted, which stopped the 
-kernel panic from occurring.
-
-A bugzilla bug[1] has been opened.
-
-Thanks,
-
-Joe
-
-
-[0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1029547
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=45491
