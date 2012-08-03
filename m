@@ -1,186 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab2HCHm0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 03:42:26 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56389 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab2HCHmX (ORCPT
+	id S1752692Ab2HCHna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 03:43:30 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:42002 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991Ab2HCHn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 03:42:23 -0400
-Message-ID: <501B80D2.7010309@linux.vnet.ibm.com>
-Date: Fri, 03 Aug 2012 15:42:10 +0800
+	Fri, 3 Aug 2012 03:43:27 -0400
+Message-ID: <501B80FC.2010304@linux.vnet.ibm.com>
+Date: Fri, 03 Aug 2012 15:42:52 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 08/10] KVM: do not release the error pfn
+Subject: [PATCH v2 09/10] KVM: do not release the error page
 References: <501B7F94.7090308@linux.vnet.ibm.com>
 In-Reply-To: <501B7F94.7090308@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12080307-8878-0000-0000-0000037B8C83
+x-cbid: 12080307-2000-0000-0000-00000895C03C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit a2766325cf9f9, the error pfn is replaced by the
+After commit a2766325cf9f9, the error page is replaced by the
 error code, it need not be released anymore
 
 [ The patch has been compiling tested for powerpc ]
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/powerpc/kvm/e500_tlb.c |    1 -
- arch/x86/kvm/mmu.c          |    7 +++----
- arch/x86/kvm/mmu_audit.c    |    4 +---
- arch/x86/kvm/paging_tmpl.h  |    8 ++------
- virt/kvm/iommu.c            |    1 -
- virt/kvm/kvm_main.c         |   14 ++++++++------
- 6 files changed, 14 insertions(+), 21 deletions(-)
+ arch/powerpc/kvm/44x_tlb.c   |    1 -
+ arch/powerpc/kvm/book3s_pr.c |    4 +---
+ arch/x86/kvm/svm.c           |    1 -
+ arch/x86/kvm/vmx.c           |    5 ++---
+ arch/x86/kvm/x86.c           |    9 +++------
+ include/linux/kvm_host.h     |    2 +-
+ virt/kvm/async_pf.c          |    4 ++--
+ virt/kvm/kvm_main.c          |    5 +++--
+ 8 files changed, 12 insertions(+), 19 deletions(-)
 
-diff --git a/arch/powerpc/kvm/e500_tlb.c b/arch/powerpc/kvm/e500_tlb.c
-index c8f6c58..09ce5ac 100644
---- a/arch/powerpc/kvm/e500_tlb.c
-+++ b/arch/powerpc/kvm/e500_tlb.c
-@@ -524,7 +524,6 @@ static inline void kvmppc_e500_shadow_map(struct kvmppc_vcpu_e500 *vcpu_e500,
- 		if (is_error_pfn(pfn)) {
- 			printk(KERN_ERR "Couldn't get real page for gfn %lx!\n",
- 					(long)gfn);
--			kvm_release_pfn_clean(pfn);
- 			return;
- 		}
-
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 924b4e8..d68223f 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2498,7 +2498,9 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 				rmap_recycle(vcpu, sptep, gfn);
- 		}
+diff --git a/arch/powerpc/kvm/44x_tlb.c b/arch/powerpc/kvm/44x_tlb.c
+index 33aa715..5dd3ab4 100644
+--- a/arch/powerpc/kvm/44x_tlb.c
++++ b/arch/powerpc/kvm/44x_tlb.c
+@@ -319,7 +319,6 @@ void kvmppc_mmu_map(struct kvm_vcpu *vcpu, u64 gvaddr, gpa_t gpaddr,
+ 	if (is_error_page(new_page)) {
+ 		printk(KERN_ERR "Couldn't get guest page for gfn %llx!\n",
+ 			(unsigned long long)gfn);
+-		kvm_release_page_clean(new_page);
+ 		return;
  	}
--	kvm_release_pfn_clean(pfn);
+ 	hpaddr = page_to_phys(new_page);
+diff --git a/arch/powerpc/kvm/book3s_pr.c b/arch/powerpc/kvm/book3s_pr.c
+index a1baec3..05c28f5 100644
+--- a/arch/powerpc/kvm/book3s_pr.c
++++ b/arch/powerpc/kvm/book3s_pr.c
+@@ -242,10 +242,8 @@ static void kvmppc_patch_dcbz(struct kvm_vcpu *vcpu, struct kvmppc_pte *pte)
+ 	int i;
+
+ 	hpage = gfn_to_page(vcpu->kvm, pte->raddr >> PAGE_SHIFT);
+-	if (is_error_page(hpage)) {
+-		kvm_release_page_clean(hpage);
++	if (is_error_page(hpage))
+ 		return;
+-	}
+
+ 	hpage_offset = pte->raddr & ~PAGE_MASK;
+ 	hpage_offset &= ~0xFFFULL;
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 687d0c3..31be4a5 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -2105,7 +2105,6 @@ static void *nested_svm_map(struct vcpu_svm *svm, u64 gpa, struct page **_page)
+ 	return kmap(page);
+
+ error:
+-	kvm_release_page_clean(page);
+ 	kvm_inject_gp(&svm->vcpu, 0);
+
+ 	return NULL;
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 2300e53..4b6e809 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -596,10 +596,9 @@ static inline struct vmcs12 *get_vmcs12(struct kvm_vcpu *vcpu)
+ static struct page *nested_get_page(struct kvm_vcpu *vcpu, gpa_t addr)
+ {
+ 	struct page *page = gfn_to_page(vcpu->kvm, addr >> PAGE_SHIFT);
+-	if (is_error_page(page)) {
+-		kvm_release_page_clean(page);
++	if (is_error_page(page))
+ 		return NULL;
+-	}
 +
-+	if (!is_error_pfn(pfn))
-+		kvm_release_pfn_clean(pfn);
+ 	return page;
  }
 
- static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
-@@ -2650,7 +2652,6 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index b6379e5..3c94d80 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1635,10 +1635,9 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 		vcpu->arch.time_page =
+ 				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
 
- static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gfn_t gfn, pfn_t pfn)
- {
--	kvm_release_pfn_clean(pfn);
- 	if (pfn == KVM_PFN_ERR_HWPOISON) {
- 		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
- 		return 0;
-@@ -3275,8 +3276,6 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, bool prefault, gfn_t gfn,
- 	if (!async)
- 		return false; /* *pfn has correct page already */
-
--	kvm_release_pfn_clean(*pfn);
--
- 	if (!prefault && can_do_async_pf(vcpu)) {
- 		trace_kvm_try_async_get_page(gva, gfn);
- 		if (kvm_find_async_pf_gfn(vcpu, gfn)) {
-diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
-index 7d7d0b9..bac5fa4 100644
---- a/arch/x86/kvm/mmu_audit.c
-+++ b/arch/x86/kvm/mmu_audit.c
-@@ -116,10 +116,8 @@ static void audit_mappings(struct kvm_vcpu *vcpu, u64 *sptep, int level)
- 	gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
- 	pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
-
--	if (is_error_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
-+	if (is_error_pfn(pfn))
- 		return;
--	}
-
- 	hpa =  pfn << PAGE_SHIFT;
- 	if ((*sptep & PT64_BASE_ADDR_MASK) != hpa)
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index bb7cf01..bf8c42b 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -370,10 +370,8 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
- 	pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte, true);
- 	pfn = gfn_to_pfn_atomic(vcpu->kvm, gpte_to_gfn(gpte));
--	if (mmu_invalid_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
-+	if (mmu_invalid_pfn(pfn))
- 		return;
--	}
-
- 	/*
- 	 * we call mmu_set_spte() with host_writable = true because that
-@@ -448,10 +446,8 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
- 		gfn = gpte_to_gfn(gpte);
- 		pfn = pte_prefetch_gfn_to_pfn(vcpu, gfn,
- 				      pte_access & ACC_WRITE_MASK);
--		if (mmu_invalid_pfn(pfn)) {
--			kvm_release_pfn_clean(pfn);
-+		if (mmu_invalid_pfn(pfn))
- 			break;
+-		if (is_error_page(vcpu->arch.time_page)) {
+-			kvm_release_page_clean(vcpu->arch.time_page);
++		if (is_error_page(vcpu->arch.time_page))
+ 			vcpu->arch.time_page = NULL;
 -		}
++
+ 		break;
+ 	}
+ 	case MSR_KVM_ASYNC_PF_EN:
+@@ -3941,10 +3940,8 @@ static int emulator_cmpxchg_emulated(struct x86_emulate_ctxt *ctxt,
+ 		goto emul_write;
 
- 		mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
- 			     NULL, PT_PAGE_TABLE_LEVEL, gfn,
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index 6a67bea..037cb67 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -107,7 +107,6 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		 */
- 		pfn = kvm_pin_pages(slot, gfn, page_size);
- 		if (is_error_pfn(pfn)) {
--			kvm_release_pfn_clean(pfn);
- 			gfn += 1;
- 			continue;
- 		}
+ 	page = gfn_to_page(vcpu->kvm, gpa >> PAGE_SHIFT);
+-	if (is_error_page(page)) {
+-		kvm_release_page_clean(page);
++	if (is_error_page(page))
+ 		goto emul_write;
+-	}
+
+ 	kaddr = kmap_atomic(page);
+ 	kaddr += offset_in_page(gpa);
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 0aebe7a..a8989fc 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -458,7 +458,7 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn_prot(struct kvm *kvm, gfn_t gfn, bool write_fault,
+ 		      bool *writable);
+ pfn_t gfn_to_pfn_memslot(struct kvm_memory_slot *slot, gfn_t gfn);
+-void kvm_release_pfn_dirty(pfn_t);
++void kvm_release_pfn_dirty(pfn_t pfn);
+ void kvm_release_pfn_clean(pfn_t pfn);
+ void kvm_set_pfn_dirty(pfn_t pfn);
+ void kvm_set_pfn_accessed(pfn_t pfn);
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index 56f5533..ea475cd 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -111,7 +111,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+ 			list_entry(vcpu->async_pf.done.next,
+ 				   typeof(*work), link);
+ 		list_del(&work->link);
+-		if (work->page)
++		if (!is_error_page(work->page))
+ 			kvm_release_page_clean(work->page);
+ 		kmem_cache_free(async_pf_cache, work);
+ 	}
+@@ -138,7 +138,7 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+
+ 		list_del(&work->queue);
+ 		vcpu->async_pf.queued--;
+-		if (work->page)
++		if (!is_error_page(work->page))
+ 			kvm_release_page_clean(work->page);
+ 		kmem_cache_free(async_pf_cache, work);
+ 	}
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 5873031..bd175f7 100644
+index bd175f7..798ba5a 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -102,9 +102,6 @@ static bool largepages_enabled = true;
+@@ -1195,8 +1195,9 @@ EXPORT_SYMBOL_GPL(gfn_to_page);
 
- bool kvm_is_mmio_pfn(pfn_t pfn)
+ void kvm_release_page_clean(struct page *page)
  {
--	if (is_error_pfn(pfn))
--		return false;
--
- 	if (pfn_valid(pfn)) {
- 		int reserved;
- 		struct page *tail = pfn_to_page(pfn);
-@@ -1174,10 +1171,13 @@ EXPORT_SYMBOL_GPL(gfn_to_page_many_atomic);
-
- static struct page *kvm_pfn_to_page(pfn_t pfn)
- {
--	WARN_ON(kvm_is_mmio_pfn(pfn));
-+	if (is_error_pfn(pfn))
-+		return KVM_ERR_PTR_BAD_PAGE;
-
--	if (is_error_pfn(pfn) || kvm_is_mmio_pfn(pfn))
-+	if (kvm_is_mmio_pfn(pfn)) {
-+		WARN_ON(1);
- 		return KVM_ERR_PTR_BAD_PAGE;
-+	}
-
- 	return pfn_to_page(pfn);
- }
-@@ -1202,7 +1202,9 @@ EXPORT_SYMBOL_GPL(kvm_release_page_clean);
-
- void kvm_release_pfn_clean(pfn_t pfn)
- {
--	if (!is_error_pfn(pfn) && !kvm_is_mmio_pfn(pfn))
-+	WARN_ON(is_error_pfn(pfn));
+-	if (!is_error_page(page))
+-		kvm_release_pfn_clean(page_to_pfn(page));
++	WARN_ON(is_error_page(page));
 +
-+	if (!kvm_is_mmio_pfn(pfn))
- 		put_page(pfn_to_page(pfn));
++	kvm_release_pfn_clean(page_to_pfn(page));
  }
- EXPORT_SYMBOL_GPL(kvm_release_pfn_clean);
+ EXPORT_SYMBOL_GPL(kvm_release_page_clean);
+
 -- 
 1.7.7.6
 
