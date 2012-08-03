@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab2HCUih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 16:38:37 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:43322 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753852Ab2HCUie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 16:38:34 -0400
-Date: Fri, 3 Aug 2012 15:38:36 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Peter Huewe <peter.huewe@infineon.com>
-Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, Bryan Freed <bfreed@chromium.org>,
-        David Safford <safford@linux.vnet.ibm.com>, hpa@linux.intel.com
-Subject: Re: [PATCH] char/tpm: Fix compile error if CONFIG_PM is not set in
- tpm_i2c_infineon
-Message-ID: <20120803203836.GA11918@linux.vnet.ibm.com>
-References: <alpine.LRH.2.02.1208031444100.25196@tundra.namei.org>
- <1344005476-8004-1-git-send-email-peter.huewe@infineon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344005476-8004-1-git-send-email-peter.huewe@infineon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080320-5806-0000-0000-000018010A76
+	id S1753981Ab2HCUjx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 16:39:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48517 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab2HCUjw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 16:39:52 -0400
+Message-ID: <1344026355.27828.10.camel@twins>
+Subject: Re: [patch] sched: fix migration thread runtime bogosity
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 03 Aug 2012 22:39:15 +0200
+In-Reply-To: <1344001354.17084.28.camel@marge.simpson.net>
+References: <1344001354.17084.28.camel@marge.simpson.net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Fri, 2012-08-03 at 15:42 +0200, Mike Galbraith wrote:
+> Greetings,
+> 
+> I have two bug reports of absurd migration thread CPU usage, one of them
+> with a link to a bisection..
+> 
+>      https://bugs.gentoo.org/show_bug.cgi?id=394487
+> 
+> ..fingering d670ec13 - posix-cpu-timers: Cure SMP wobbles
+> 
+> I reproduced with my -rt kernel and 3.4, but didn't manage to reproduce
+> with the 3.0 NOPREEMPT kernel it was reported against.
 
-On Fri, Aug 03, 2012 at 04:51:16PM +0200, Peter Huewe wrote:
-> If CONFIG_PM was not set the compiler aborted with the following message:
-> tpm_i2c_infineon.c:740:12: error: lvalue required as unary '&' operand
-> 
-> This patch fixes this error by not defining tpm_tis_i2c_ops as NULL if
-> CONFIG_PM is not set, but only setting the suspend and resume function
-> pointer as NULL
+Ah, I've seen similar reports, never managed to reproduce though.
 
-  Lets try to sync up with the work Rafael Wysocki is doing for PM.
-Please take a look at these commits:
 
-035e2ce8eb7412dbcb8522c19676a1dd52f3c024
-8324be05380be044df8b70cb4bfb0c0b50eec3e5
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 82ad284..82a78a6 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -974,6 +974,13 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
+>  		sched_setscheduler_nocheck(stop, SCHED_FIFO, &param);
+>  
+>  		stop->sched_class = &stop_sched_class;
+> +
+> +		/* Zero stale values for our non-accountable thread. */
+> +		stop->se.exec_start = 0;
+> +		stop->se.sum_exec_runtime = 0;
+> +		stop->se.prev_sum_exec_runtime = 0;
+> +		stop->stime = stop->stimescaled = 0;
+> +		stop->nvcsw = stop->nivcsw = 0;
+>  	}
+>  
+>  	cpu_rq(cpu)->stop = stop;
 
-Thanks,
-Kent
 
-> Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
-> ---
-> Sorry for the inconvenience - now tested with and without CONFIG_PM. Sorry.
-> 
->  drivers/char/tpm/tpm_i2c_infineon.c |    9 ++++-----
->  1 files changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-> index 1794a09..114e1a1 100644
-> --- a/drivers/char/tpm/tpm_i2c_infineon.c
-> +++ b/drivers/char/tpm/tpm_i2c_infineon.c
-> @@ -674,16 +674,15 @@ static int tpm_tis_i2c_resume(struct device *dev)
->  {
->  	return tpm_pm_resume(dev);
->  }
-> +#else
-> +#define tpm_tis_i2c_suspend NULL
-> +#define tpm_tis_i2c_resume NULL
-> +#endif
-> 
->  static const struct dev_pm_ops tpm_tis_i2c_ops = {
->  	.suspend = tpm_tis_i2c_suspend,
->  	.resume = tpm_tis_i2c_resume,
->  };
-> -#else
-> -#define tpm_tis_i2c_suspend NULL
-> -#define tpm_tis_i2c_resume NULL
-> -#define tpm_tis_i2c_ops NULL
-> -#endif
-> 
->  static int __devinit tpm_tis_i2c_probe(struct i2c_client *client,
->  			     const struct i2c_device_id *id)
-> -- 
-> 1.7.6.msysgit.0
-> 
+Now the question is, how did that stop thing get any time to begin with?
+Are we hotplugging or somesuch sillyness?
+
+
+Anyway, I think I like B best, could you re-submit as a proper patch so
+I can press the magic button that queues stuff?
+
 
