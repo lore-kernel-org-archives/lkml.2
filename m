@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab2HCMwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 08:52:00 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41725 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751636Ab2HCMv4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 08:51:56 -0400
-Date: Fri, 3 Aug 2012 13:51:44 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] kbuild: kvm: make export of linux/kvm_para.h
- unconditional
-Message-ID: <20120803125144.GD26925@mudshark.cambridge.arm.com>
-References: <1343310254-7493-1-git-send-email-will.deacon@arm.com>
- <20120802122550.GD9838@mudshark.cambridge.arm.com>
- <501A8C68.9030001@redhat.com>
- <20120802202911.GA9108@merkur.ravnborg.org>
+	id S1753243Ab2HCMwW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 08:52:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58066 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751994Ab2HCMwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 08:52:21 -0400
+Date: Fri, 3 Aug 2012 13:52:10 +0100
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] Forbid invocation of kexec_load() outside initial PID
+ namespace
+Message-ID: <20120803125210.GD12870@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <1343991184-3619-1-git-send-email-berrange@redhat.com>
+ <cfa2e2c9-db52-40cd-979b-7a6084427190@email.android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120802202911.GA9108@merkur.ravnborg.org>
+In-Reply-To: <cfa2e2c9-db52-40cd-979b-7a6084427190@email.android.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 09:29:11PM +0100, Sam Ravnborg wrote:
-> On Thu, Aug 02, 2012 at 05:19:20PM +0300, Avi Kivity wrote:
-> > Can you get it reviewed by someone who is familiar with this?  This is
-> > probably the third fix for the this issue.
+On Fri, Aug 03, 2012 at 05:45:40AM -0700, Eric W. Biederman wrote:
+> The solution is to use user namespaces and to only test ns_capable on the magic reboot path.
 > 
-> IMO the patch is wrong.
-> Any use of wildcards in include/asm-generic/Kbuild.asm is wrong.
+> For the 3.7 timeframe that should be a realistic solution.
 
-I agree that the wildcard stuff is horrible but that's not something
-introduced by this patch. In fact, I'm removing those where there is an
-asm-generic header that can be used instead.
+Hmm, that would imply that if LXC wants to allow reboot()/CAP_SYS_BOOT
+they will be forced to use CLONE_NEWUSER. I was rather looking for a way
+to allow the container to keep CAP_SYS_BOOT, without also mandating use
+of user namespaces.
 
-> IMO include/asm-generic/Kbuild.asm is for generic header files
-> that ALL archs can use.
-> 
-> If not ALL archs can use it, then the individual arch shall
-> specify the file explicit.
-
-In which case, we should probably fix the rules for kvm.h and a.out.h as
-well. Neither of these headers have asm-generic versions and I doubt this
-is possible, so the header-y lines should be done for each architecture
-exporting such a header, no?
-
-> I know we here hit a bad thing with the generic-y support,
-> where we miss a good way to add a file to a lot of archs
-> without editing a lot of files.
-
-If there isn't a generic version of the header, then yes, I guess you have
-to modify the architectures that want to export it.
-
-I'm happy to post an extra patch sorting out kvm.h and a.out.h if that's
-what's required to get headers building again.
-
-Will
+Regards,
+Daniel
+-- 
+|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
+|: http://libvirt.org              -o-             http://virt-manager.org :|
+|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
+|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
