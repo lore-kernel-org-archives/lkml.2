@@ -1,80 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab2HCNlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 09:41:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22288 "EHLO mx1.redhat.com"
+	id S1753518Ab2HCNml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 09:42:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40774 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303Ab2HCNlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 09:41:42 -0400
-Date: Fri, 3 Aug 2012 15:38:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Ignore unsupported instructions in uprobe_mmap
-Message-ID: <20120803133825.GA2131@redhat.com>
-References: <20120728163157.GA22719@redhat.com> <20120731064730.GB5087@linux.vnet.ibm.com> <20120731124805.GA485@redhat.com> <20120802100515.GC5782@linux.vnet.ibm.com> <20120802135313.GA4334@redhat.com> <20120803121342.GD3748@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120803121342.GD3748@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751303Ab2HCNmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 09:42:40 -0400
+Message-ID: <1344001354.17084.28.camel@marge.simpson.net>
+Subject: [patch] sched: fix migration thread runtime bogosity
+From: Mike Galbraith <mgalbraith@suse.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri, 03 Aug 2012 15:42:34 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03, Srikar Dronamraju wrote:
->
-> > But mmap_region() is worse, much worse. It simply can _not_ fail
-> > after uprobe_mmap (of course, I am not saying this is unfixable)
-> > without the crash. And note that the crash is "delayed". And btw,
-> > like dup_mmap(), mmap_region() doesn't return the error too.
-> >
-> > Srikar, I strongly believe this horror must not exist. Either
-> > we should teach mmap_region() and dup_mmap() (and vma_adjust!)
-> > to fail correctly, or we should ignore the error code.
-> >
-> > It is that simple, isn't it?
->
-> I think you would have thought of this approach already but just wanted
-> to check if below is fine with you.
->
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1355,9 +1355,12 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
->  	} else if ((flags & MAP_POPULATE) && !(flags & MAP_NONBLOCK))
->  		make_pages_present(addr, addr + len);
->
-> -	if (file && uprobe_mmap(vma))
-> +	if (file) {
-> +		error = uprobe_mmap(vma)
->  		/* matching probes but cannot insert */
-> -		goto unmap_and_free_vma;
-> +		if (error)
-> +			goto unmap_and_free_vma;
+Greetings,
 
-No, this is wrong.
+I have two bug reports of absurd migration thread CPU usage, one of them
+with a link to a bisection..
 
-Please look at the code under unmap_and_free_vma. The main part is
-unmap_region(), but this does NOT remove vma from mm->mm_rb and then
-this vma is kmem_cache_free'ed. IOW, this leaves the freed object
-in rb tree.
+     https://bugs.gentoo.org/show_bug.cgi?id=394487
 
-Afaics, there are other things this error path doesn't do but this
-is how William noticed the bug (kernel hang). I don't think the fix
-is suitable for stable.
+..fingering d670ec13 - posix-cpu-timers: Cure SMP wobbles
 
-Srikar, can't we make these fixes on top of my simple patch which
-fixes the easy-to-trigger kernel crashes/hangs?
+I reproduced with my -rt kernel and 3.4, but didn't manage to reproduce
+with the 3.0 NOPREEMPT kernel it was reported against.
 
-If yes, may be you can ack that patch for Ingo?
+Three options below, two tested in my -rt kernel.
+
+A [ ] stop class doesn't do bean counting
+B [ ] stop class counts beans like everybody else
+C [ ] none of the above (not appended for brevity:)
+
+I prefer B, elite class tasks eat beans.
+
+A: sched: fix migration thread runtime bogosity
+
+stop class threads don't do bean counting.  Wipe the evidence of their
+lowly birth, and don't try to use exec_start which is never updated.
+
+vogelweide:/:[0]# ps l 824
+F   UID    PID   PPID PRI  NI    VSZ   RSS WCHAN  STAT TTY        TIME COMMAND
+1     0    824      2 -100  -      0     0 cpu_st S    ?        2799:06 [migration/57]
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 82ad284..82a78a6 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -974,6 +974,13 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
+ 		sched_setscheduler_nocheck(stop, SCHED_FIFO, &param);
+ 
+ 		stop->sched_class = &stop_sched_class;
++
++		/* Zero stale values for our non-accountable thread. */
++		stop->se.exec_start = 0;
++		stop->se.sum_exec_runtime = 0;
++		stop->se.prev_sum_exec_runtime = 0;
++		stop->stime = stop->stimescaled = 0;
++		stop->nvcsw = stop->nivcsw = 0;
+ 	}
+ 
+ 	cpu_rq(cpu)->stop = stop;
+@@ -2803,7 +2810,8 @@ unsigned long long task_sched_runtime(struct task_struct *p)
+ 	u64 ns = 0;
+ 
+ 	rq = task_rq_lock(p, &flags);
+-	ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
++	if (likely(p != rq->stop)
++		ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
+ 	task_rq_unlock(rq, p, &flags);
+ 
+ 	return ns;
 
 
-And yes, uprobe_mmap() needs changes too. But can't we do this a
-bit later? Currently uprobes_state.count is very wrong, it simply
-does not count uprobes correctly even in the very simple cases.
+B: sched: fix migration thread runtime bogosity
 
-Oleg.
+stop class threads need to do bean counting lest the below happen.
+
+vogelweide:/:[0]# ps l 824
+F   UID    PID   PPID PRI  NI    VSZ   RSS WCHAN  STAT TTY        TIME COMMAND
+1     0    824      2 -100  -      0     0 cpu_st S    ?        2799:06 [migration/57]
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index 7b386e8..da5eb5b 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -27,8 +27,10 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
+ {
+ 	struct task_struct *stop = rq->stop;
+ 
+-	if (stop && stop->on_rq)
++	if (stop && stop->on_rq) {
++		stop->se.exec_start = rq->clock_task;
+ 		return stop;
++	}
+ 
+ 	return NULL;
+ }
+@@ -52,6 +54,21 @@ static void yield_task_stop(struct rq *rq)
+ 
+ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ {
++	struct task_struct *curr = rq->curr;
++	u64 delta_exec;
++
++	delta_exec = rq->clock_task - curr->se.exec_start;
++	if (unlikely((s64)delta_exec < 0))
++		delta_exec = 0;
++
++	schedstat_set(curr->se.statistics.exec_max,
++			max(curr->se.statistics.exec_max, delta_exec));
++
++	curr->se.sum_exec_runtime += delta_exec;
++	account_group_exec_runtime(curr, delta_exec);
++
++	curr->se.exec_start = rq->clock_task;
++	cpuacct_charge(curr, delta_exec);
+ }
+ 
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+@@ -60,6 +77,9 @@ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+ 
+ static void set_curr_task_stop(struct rq *rq)
+ {
++	struct task_struct *stop = rq->stop;
++
++	stop->se.exec_start = rq->clock_task;
+ }
+ 
+ static void switched_to_stop(struct rq *rq, struct task_struct *p)
+
 
