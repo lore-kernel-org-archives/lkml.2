@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab2HCOER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:04:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48773 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab2HCOBY (ORCPT
+	id S1753639Ab2HCOE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:04:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45784 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab2HCOBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Aug 2012 10:01:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -14,14 +14,14 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/18] perf kvm: Use strtol for walking guestmount directory
-Date: Fri,  3 Aug 2012 11:01:05 -0300
-Message-Id: <1344002470-5965-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 17/18] perf kvm top: Limit guest kernel info message to once
+Date: Fri,  3 Aug 2012 11:01:09 -0300
+Message-Id: <1344002470-5965-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344002470-5965-1-git-send-email-acme@infradead.org>
 References: <1344002470-5965-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,14 +29,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-Only want to process directories under the guestmnount directory that
-have a pid as a name (ie, all digits). Other entries in the guestmount
-directory should be ignored.  There is already a check that requires the
-first character of each entry to be a digit, but atoi is used to convert
-the directory name to a pid. For example if guestmount contains a
-directory with the name 1foo, atoi converts it to a pid of 1 and a
-machine is created with a pid of 1. This is wrong; this directory really
-should be ignored. Use strtol to do that.
+'perf kvm top' shows a continual flurry of:
+    Can't find guest [5201]'s kernel information
+
+if it can't find the guest info and with a lot of VMs running a user has no
+chance of reading them all. Limit message to once per guest.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -44,40 +41,43 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1343616875-6455-1-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1343709095-7089-5-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ tools/perf/builtin-top.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index fe86612..8b63b67 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2875,6 +2875,7 @@ int machines__create_guest_kernel_maps(struct rb_root *machines)
- 	int i, items = 0;
- 	char path[PATH_MAX];
- 	pid_t pid;
-+	char *endp;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 3409627..68cd61e 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -38,6 +38,7 @@
+ #include "util/cpumap.h"
+ #include "util/xyarray.h"
+ #include "util/sort.h"
++#include "util/intlist.h"
  
- 	if (symbol_conf.default_guest_vmlinux_name ||
- 	    symbol_conf.default_guest_modules ||
-@@ -2891,7 +2892,14 @@ int machines__create_guest_kernel_maps(struct rb_root *machines)
- 				/* Filter out . and .. */
- 				continue;
- 			}
--			pid = atoi(namelist[i]->d_name);
-+			pid = (pid_t)strtol(namelist[i]->d_name, &endp, 10);
-+			if ((*endp != '\0') ||
-+			    (endp == namelist[i]->d_name) ||
-+			    (errno == ERANGE)) {
-+				pr_debug("invalid directory (%s). Skipping.\n",
-+					 namelist[i]->d_name);
-+				continue;
-+			}
- 			sprintf(path, "%s/%s/proc/kallsyms",
- 				symbol_conf.guestmount,
- 				namelist[i]->d_name);
+ #include "util/debug.h"
+ 
+@@ -706,8 +707,16 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 	int err;
+ 
+ 	if (!machine && perf_guest) {
+-		pr_err("Can't find guest [%d]'s kernel information\n",
+-			event->ip.pid);
++		static struct intlist *seen;
++
++		if (!seen)
++			seen = intlist__new();
++
++		if (!intlist__has_entry(seen, event->ip.pid)) {
++			pr_err("Can't find guest [%d]'s kernel information\n",
++				event->ip.pid);
++			intlist__add(seen, event->ip.pid);
++		}
+ 		return;
+ 	}
+ 
 -- 
 1.7.1
 
