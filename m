@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab2HCPCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 11:02:49 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:61497 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab2HCPCm (ORCPT
+	id S1754230Ab2HCPC6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 11:02:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60310 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab2HCPCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 11:02:42 -0400
+	Fri, 3 Aug 2012 11:02:52 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,9 +24,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 1/5] code_domain: New code domain tracking susbsystem
-Date: Fri,  3 Aug 2012 17:02:21 +0200
-Message-Id: <1344006145-26115-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/5] cputime: Allow dynamic switch between tick/virtual based cputime accounting
+Date: Fri,  3 Aug 2012 17:02:23 +0200
+Message-Id: <1344006145-26115-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1344006145-26115-1-git-send-email-fweisbec@gmail.com>
 References: <1344006145-26115-1-git-send-email-fweisbec@gmail.com>
@@ -34,17 +34,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a new subsystem that handles the probing on kernel
-boundaries to keep track of the transitions between code domains
-with two basic initial domains: user or kernel.
+Allow to dynamically switch between tick and virtual based cputime accounting.
+This way we can provide a kind of "on-demand" virtual based cputime
+accounting. In this mode, the kernel will rely on the user hooks
+subsystem to dynamically hook on kernel boundaries.
 
-This is an abstraction of some RCU code that use it to implement
-its userspace extended quiescent state.
+This is in preparation for beeing able to stop the timer tick further
+idle. Doing so will depend on CONFIG_VIRT_CPU_ACCOUNTING which makes
+it possible to account the cputime without the tick by hooking on
+kernel/user boundaries.
 
-We need to pull this up from RCU into this new level of indirection
-because this probing is also going to be used to implement an "on
-demand" generic virtual cputime accounting. A necessary step to
-shutdown the tick while still accounting the cputime.
+Depending whether the tick is stopped or not, we can switch between
+tick and vtime based accounting anytime in order to minimize the
+overhead associated to user hooks.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -66,481 +68,307 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/Kconfig                                  |   12 +++---
- arch/x86/Kconfig                              |    2 +-
- arch/x86/include/asm/{rcu.h => code_domain.h} |   12 +++---
- arch/x86/kernel/ptrace.c                      |    6 +-
- arch/x86/kernel/signal.c                      |    5 +-
- arch/x86/kernel/traps.c                       |    2 +-
- arch/x86/mm/fault.c                           |    2 +-
- include/linux/code_domain.h                   |   18 ++++++++
- include/linux/rcupdate.h                      |    2 -
- include/linux/sched.h                         |    8 ---
- init/Kconfig                                  |   24 ++++++----
- kernel/Makefile                               |    1 +
- kernel/code_domain_tracking.c                 |   59 +++++++++++++++++++++++++
- kernel/rcutree.c                              |   42 +-----------------
- kernel/sched/core.c                           |    9 ++--
- 15 files changed, 121 insertions(+), 83 deletions(-)
- rename arch/x86/include/asm/{rcu.h => code_domain.h} (53%)
- create mode 100644 include/linux/code_domain.h
- create mode 100644 kernel/code_domain_tracking.c
+ arch/ia64/include/asm/cputime.h    |    5 ++++
+ arch/ia64/kernel/time.c            |    2 +-
+ arch/powerpc/include/asm/cputime.h |    5 ++++
+ arch/powerpc/kernel/time.c         |    2 +-
+ arch/s390/include/asm/cputime.h    |    5 ++++
+ arch/s390/kernel/vtime.c           |    2 +-
+ include/asm-generic/cputime.h      |    5 ++++
+ include/linux/kernel_stat.h        |    3 ++
+ include/linux/sched.h              |    5 +---
+ kernel/fork.c                      |    3 +-
+ kernel/sched/cputime.c             |   39 +++++++++++++++--------------------
+ kernel/time/tick-sched.c           |   28 ++++++++++++-------------
+ 12 files changed, 58 insertions(+), 46 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index d891c62..2ce2a2f 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -277,14 +277,14 @@ config SECCOMP_FILTER
- config HAVE_VIRT_CPU_ACCOUNTING
- 	bool
+diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
+index 3deac95..9532b9c 100644
+--- a/arch/ia64/include/asm/cputime.h
++++ b/arch/ia64/include/asm/cputime.h
+@@ -103,5 +103,10 @@ static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
+ #define cputime64_to_clock_t(__ct)	\
+ 	cputime_to_clock_t((__force cputime_t)__ct)
  
--config HAVE_RCU_USER_QS
-+config HAVE_CODE_DOMAIN_TRACKING
- 	bool
- 	help
--	  Provide kernel entry/exit hooks necessary for userspace
-+	  Provide kernel boundaries probing necessary for userspace
- 	  RCU extended quiescent state. Syscalls need to be wrapped inside
--	  rcu_user_exit()-rcu_user_enter() through the slow path using
--	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
--	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
--	  preemption or signal handling on irq exit still need to be protected.
-+	  user_exit()-user_enter() through the slow path using TIF_NOHZ flag.
-+	  Exceptions handlers must be wrapped as well. Irqs are already
-+	  protected inside rcu_irq_enter/rcu_irq_exit() but preemption or
-+	  signal handling on irq exit still need to be protected.
- 
- source "kernel/gcov/Kconfig"
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 38dfcc2..cc9bf3e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -95,7 +95,7 @@ config X86
- 	select KTIME_SCALAR if X86_32
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
--	select HAVE_RCU_USER_QS if X86_64
-+	select HAVE_CODE_DOMAIN_TRACKING if X86_64
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-diff --git a/arch/x86/include/asm/rcu.h b/arch/x86/include/asm/code_domain.h
-similarity index 53%
-rename from arch/x86/include/asm/rcu.h
-rename to arch/x86/include/asm/code_domain.h
-index 439815b..e245152 100644
---- a/arch/x86/include/asm/rcu.h
-+++ b/arch/x86/include/asm/code_domain.h
-@@ -1,19 +1,19 @@
--#ifndef _ASM_X86_RCU_H
--#define _ASM_X86_RCU_H
-+#ifndef _ASM_X86_CODE_DOMAIN_H
-+#define _ASM_X86_CODE_DOMAIN_H
- 
--#include <linux/rcupdate.h>
-+#include <linux/code_domain.h>
- #include <asm/ptrace.h>
- 
- static inline void exception_enter(struct pt_regs *regs)
++static inline bool accounting_vtime(void)
++{
++	return true;
++}
++
+ #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
+ #endif /* __IA64_CPUTIME_H */
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index 6247197..7afcf93 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -144,7 +144,7 @@ EXPORT_SYMBOL_GPL(account_system_vtime);
+  * Called from the timer interrupt handler to charge accumulated user time
+  * to the current process.  Must be called with interrupts disabled.
+  */
+-void account_process_tick(struct task_struct *p, int user_tick)
++void account_process_tick_vtime(struct task_struct *p, int user_tick)
  {
--	rcu_user_exit();
-+	user_exit();
+ 	struct thread_info *ti = task_thread_info(p);
+ 	cputime_t delta_utime;
+diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
+index 487d46f..901e0ac 100644
+--- a/arch/powerpc/include/asm/cputime.h
++++ b/arch/powerpc/include/asm/cputime.h
+@@ -228,6 +228,11 @@ static inline cputime_t clock_t_to_cputime(const unsigned long clk)
+ 
+ #define cputime64_to_clock_t(ct)	cputime_to_clock_t((cputime_t)(ct))
+ 
++static inline bool accounting_vtime(void)
++{
++	return true;
++}
++
+ #endif /* __KERNEL__ */
+ #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
+ #endif /* __POWERPC_CPUTIME_H */
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index 49da7f0..3f1918a 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -354,7 +354,7 @@ EXPORT_SYMBOL_GPL(account_system_vtime);
+  * (i.e. since the last entry from usermode) so that
+  * get_paca()->user_time_scaled is up to date.
+  */
+-void account_process_tick(struct task_struct *tsk, int user_tick)
++void account_process_tick_vtime(struct task_struct *tsk, int user_tick)
+ {
+ 	cputime_t utime, utimescaled;
+ 
+diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
+index 718374d..05ffda7 100644
+--- a/arch/s390/include/asm/cputime.h
++++ b/arch/s390/include/asm/cputime.h
+@@ -188,4 +188,9 @@ static inline int s390_nohz_delay(int cpu)
+ 
+ #define arch_needs_cpu(cpu) s390_nohz_delay(cpu)
+ 
++static inline bool accounting_vtime(void)
++{
++	return true;
++}
++
+ #endif /* _S390_CPUTIME_H */
+diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
+index 506e9bd..29f20fc 100644
+--- a/arch/s390/kernel/vtime.c
++++ b/arch/s390/kernel/vtime.c
+@@ -99,7 +99,7 @@ void account_switch_vtime(struct task_struct *prev)
+ 	S390_lowcore.system_timer = ti->system_timer;
  }
  
- static inline void exception_exit(struct pt_regs *regs)
+-void account_process_tick(struct task_struct *tsk, int user_tick)
++void account_process_tick_vtime(struct task_struct *tsk, int user_tick)
  {
--#ifdef CONFIG_RCU_USER_QS
-+#ifdef CONFIG_CODE_DOMAIN_TRACKING
- 	if (user_mode(regs))
--		rcu_user_enter();
-+		user_enter();
+ 	do_account_vtime(tsk, HARDIRQ_OFFSET);
+ }
+diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
+index 9a62937..212c8bb 100644
+--- a/include/asm-generic/cputime.h
++++ b/include/asm-generic/cputime.h
+@@ -66,4 +66,9 @@ typedef u64 __nocast cputime64_t;
+ #define cputime64_to_clock_t(__ct)	\
+ 	jiffies_64_to_clock_t(cputime64_to_jiffies64(__ct))
+ 
++static inline bool accounting_vtime(void)
++{
++	return false;
++}
++
  #endif
- }
+diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+index bbe5d15..1270b86 100644
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -132,8 +132,11 @@ extern void account_idle_ticks(unsigned long ticks);
  
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 9f94f8e..5bc2e50 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -21,7 +21,7 @@
- #include <linux/signal.h>
- #include <linux/perf_event.h>
- #include <linux/hw_breakpoint.h>
--#include <linux/rcupdate.h>
-+#include <linux/code_domain.h>
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
-@@ -1464,7 +1464,7 @@ long syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
--	rcu_user_exit();
-+	user_exit();
- 
- 	/*
- 	 * If we stepped into a sysenter/syscall insn, it trapped in
-@@ -1530,5 +1530,5 @@ void syscall_trace_leave(struct pt_regs *regs)
- 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall_exit(regs, step);
- 
--	rcu_user_enter();
-+	user_enter();
- }
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 5cc2579..fc3e12c 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -19,6 +19,7 @@
- #include <linux/uaccess.h>
- #include <linux/user-return-notifier.h>
- #include <linux/uprobes.h>
-+#include <linux/code_domain.h>
- 
- #include <asm/processor.h>
- #include <asm/ucontext.h>
-@@ -776,7 +777,7 @@ static void do_signal(struct pt_regs *regs)
- void
- do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
- {
--	rcu_user_exit();
-+	user_exit();
- 
- #ifdef CONFIG_X86_MCE
- 	/* notify userspace of pending MCEs */
-@@ -804,7 +805,7 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
- 	clear_thread_flag(TIF_IRET);
- #endif /* CONFIG_X86_32 */
- 
--	rcu_user_enter();
-+	user_enter();
- }
- 
- void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 9b8195b..2d1fe02 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -52,7 +52,7 @@
- #include <asm/i387.h>
- #include <asm/fpu-internal.h>
- #include <asm/mce.h>
--#include <asm/rcu.h>
-+#include <asm/code_domain.h>
- 
- #include <asm/mach_traps.h>
- 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 7dde46d..be026ea 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -18,7 +18,7 @@
- #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
- #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
- #include <asm/fixmap.h>			/* VSYSCALL_START		*/
--#include <asm/rcu.h>			/* exception_enter(), ...	*/
-+#include <asm/code_domain.h>		/* exception_enter(), ...	*/
- 
- /*
-  * Page fault error code bits:
-diff --git a/include/linux/code_domain.h b/include/linux/code_domain.h
-new file mode 100644
-index 0000000..5d4513d
---- /dev/null
-+++ b/include/linux/code_domain.h
-@@ -0,0 +1,18 @@
-+#ifndef _LINUX_CODE_DOMAIN_TRACKING_H
-+#define _LINUX_CODE_DOMAIN_TRACKING_H
-+
-+#ifdef CONFIG_CODE_DOMAIN_TRACKING
-+#include <linux/sched.h>
-+
-+extern void user_enter(void);
-+extern void user_exit(void);
-+extern void code_domain_task_switch(struct task_struct *prev,
-+				    struct task_struct *next);
-+#else
-+static inline void user_enter(void) { }
-+static inline void user_exit(void) { }
-+static inline void code_domain_task_switch(struct task_struct *prev,
-+					   struct task_struct *next) { }
-+#endif /* !CONFIG_CODE_DOMAIN_TRACKING */
-+
-+#endif
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 1fc0a0e..e411117 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -197,8 +197,6 @@ extern void rcu_user_enter(void);
- extern void rcu_user_exit(void);
- extern void rcu_user_enter_irq(void);
- extern void rcu_user_exit_irq(void);
--extern void rcu_user_hooks_switch(struct task_struct *prev,
--				  struct task_struct *next);
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING
+ extern void account_switch_vtime(struct task_struct *prev);
++extern bool account_process_tick_vtime(struct task_struct *p, int user_tick);
  #else
- static inline void rcu_user_enter(void) { }
- static inline void rcu_user_exit(void) { }
+ static inline void account_switch_vtime(struct task_struct *prev) { }
++static inline void account_process_tick_vtime(struct task_struct *p,
++					      int user_tick) { }
+ #endif
+ 
+ #endif /* _LINUX_KERNEL_STAT_H */
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 30105f4..7b7a438 100644
+index 7b7a438..6209682 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1899,14 +1899,6 @@ static inline void rcu_copy_process(struct task_struct *p)
+@@ -612,9 +612,7 @@ struct signal_struct {
+ 	cputime_t utime, stime, cutime, cstime;
+ 	cputime_t gtime;
+ 	cputime_t cgtime;
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	cputime_t prev_utime, prev_stime;
+-#endif
+ 	unsigned long nvcsw, nivcsw, cnvcsw, cnivcsw;
+ 	unsigned long min_flt, maj_flt, cmin_flt, cmaj_flt;
+ 	unsigned long inblock, oublock, cinblock, coublock;
+@@ -1363,9 +1361,8 @@ struct task_struct {
  
+ 	cputime_t utime, stime, utimescaled, stimescaled;
+ 	cputime_t gtime;
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	cputime_t prev_utime, prev_stime;
+-#endif
++
+ 	unsigned long nvcsw, nivcsw; /* context switch counts */
+ 	struct timespec start_time; 		/* monotonic time */
+ 	struct timespec real_start_time;	/* boot based time */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 3e2ed43..b19dd02 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1245,9 +1245,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 
+ 	p->utime = p->stime = p->gtime = 0;
+ 	p->utimescaled = p->stimescaled = 0;
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	p->prev_utime = p->prev_stime = 0;
+-#endif
++
+ #if defined(SPLIT_RSS_COUNTING)
+ 	memset(&p->rss_stat, 0, sizeof(p->rss_stat));
  #endif
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index fd5bd01..ff525ca 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -287,8 +287,6 @@ static __always_inline bool steal_account_process_tick(void)
+ 	return false;
+ }
  
--static inline void rcu_switch(struct task_struct *prev,
--			      struct task_struct *next)
--{
--#ifdef CONFIG_RCU_USER_QS
--	rcu_user_hooks_switch(prev, next);
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+-
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ /*
+  * Account a tick to a process and cpustat
+@@ -368,6 +366,11 @@ void account_process_tick(struct task_struct *p, int user_tick)
+ 	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+ 	struct rq *rq = this_rq();
+ 
++	if (accounting_vtime()) {
++		account_process_tick_vtime(p, user_tick);
++		return;
++	}
++
+ 	if (sched_clock_irqtime) {
+ 		irqtime_account_process_tick(p, user_tick, rq);
+ 		return;
+@@ -410,29 +413,10 @@ void account_idle_ticks(unsigned long ticks)
+ 	account_idle_time(jiffies_to_cputime(ticks));
+ }
+ 
 -#endif
--}
--
- #ifdef CONFIG_SMP
- extern void do_set_cpus_allowed(struct task_struct *p,
- 			       const struct cpumask *new_mask);
-diff --git a/init/Kconfig b/init/Kconfig
-index cc1d581..e2854a0 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -404,6 +404,19 @@ config AUDIT_LOGINUID_IMMUTABLE
- source "kernel/irq/Kconfig"
- source "kernel/time/Kconfig"
- 
-+config CODE_DOMAIN_TRACKING
-+       bool
-+
-+config CODE_DOMAIN_TRACKING_FORCE
-+	bool "Force kernel boundaries probing"
-+	depends on CODE_DOMAIN_TRACKING
-+	help
-+	  Set the probes in user/kernel boundaries by default in order to
-+	  test the features that rely on it such as userspace RCU extended
-+	  quiescent states.
-+	  This test is there for debugging until we have a real user like a
-+	  full adaptive nohz option.
-+
- menu "RCU Subsystem"
- 
- choice
-@@ -456,7 +469,8 @@ config PREEMPT_RCU
- 
- config RCU_USER_QS
- 	bool "Consider userspace as in RCU extended quiescent state"
--	depends on HAVE_RCU_USER_QS && SMP
-+	depends on HAVE_CODE_DOMAIN_TRACKING && SMP
-+	select CODE_DOMAIN_TRACKING
- 	help
- 	  This option sets hooks on kernel / userspace boundaries and
- 	  puts RCU in extended quiescent state when the CPU runs in
-@@ -464,14 +478,6 @@ config RCU_USER_QS
- 	  excluded from the global RCU state machine and thus doesn't
- 	  to keep the timer tick on for RCU.
- 
--config RCU_USER_QS_FORCE
--	bool "Force userspace extended QS by default"
--	depends on RCU_USER_QS
--	help
--	  Set the hooks in user/kernel boundaries by default in order to
--	  test this feature that treats userspace as an extended quiescent
--	  state until we have a real user like a full adaptive nohz option.
--
- config RCU_FANOUT
- 	int "Tree-based hierarchical RCU fanout value"
- 	range 2 64 if 64BIT
-diff --git a/kernel/Makefile b/kernel/Makefile
-index c0cc67a..86bc293 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -110,6 +110,7 @@ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
- obj-$(CONFIG_PADATA) += padata.o
- obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
- obj-$(CONFIG_JUMP_LABEL) += jump_label.o
-+obj-$(CONFIG_CODE_DOMAIN_TRACKING) += code_domain_tracking.o
- 
- $(obj)/configs.o: $(obj)/config_data.h
- 
-diff --git a/kernel/code_domain_tracking.c b/kernel/code_domain_tracking.c
-new file mode 100644
-index 0000000..8332c76
---- /dev/null
-+++ b/kernel/code_domain_tracking.c
-@@ -0,0 +1,59 @@
-+#include <linux/code_domain.h>
-+#include <linux/rcupdate.h>
-+#include <linux/sched.h>
-+#include <linux/percpu.h>
-+
-+struct code_domain_tracking {
-+	/*
-+	 * When tracking_active is false, hooks are not
-+	 * set to minimize overhead: TIF flags are cleared
-+	 * and calls to user_enter/exit are ignored. This
-+	 * may be further optimized using static keys.
-+	 */
-+	bool tracking_active;
-+	enum {
-+		IN_KERNEL = 0,
-+		IN_USER,
-+	} state;
-+};
-+
-+DEFINE_PER_CPU(struct code_domain_tracking, code_domain) = {
-+#ifdef CONFIG_CODE_DOMAIN_TRACKING_FORCE
-+	.tracking_active = true,
-+#endif
-+};
-+
-+void user_enter(void)
-+{
-+	unsigned long flags;
-+
-+	WARN_ON_ONCE(!current->mm);
-+	local_irq_save(flags);
-+	if (__this_cpu_read(code_domain.tracking_active) &&
-+	    __this_cpu_read(code_domain.state) != IN_USER) {
-+		__this_cpu_write(code_domain.state, IN_USER);
-+		rcu_user_enter();
-+	}
-+	local_irq_restore(flags);
-+}
-+
-+void user_exit(void)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	if (__this_cpu_read(code_domain.state) == IN_USER) {
-+		__this_cpu_write(code_domain.state, IN_KERNEL);
-+		rcu_user_exit();
-+	}
-+	local_irq_restore(flags);
-+}
-+
-+void code_domain_task_switch(struct task_struct *prev,
-+			     struct task_struct *next)
-+{
-+	if (__this_cpu_read(code_domain.tracking_active)) {
-+		clear_tsk_thread_flag(prev, TIF_NOHZ);
-+		set_tsk_thread_flag(next, TIF_NOHZ);
-+	}
-+}
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 318d00e..f6a24cb 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -212,9 +212,6 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
- DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
- 	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
- 	.dynticks = ATOMIC_INIT(1),
--#if defined(CONFIG_RCU_USER_QS) && !defined(CONFIG_RCU_USER_QS_FORCE)
--	.ignore_user_qs = true,
--#endif
- };
- 
- static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
-@@ -448,18 +445,7 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
-  */
- void rcu_user_enter(void)
- {
--	unsigned long flags;
--	struct rcu_dynticks *rdtp;
--
--	WARN_ON_ONCE(!current->mm);
--
--	local_irq_save(flags);
--	rdtp = &__get_cpu_var(rcu_dynticks);
--	if (!rdtp->ignore_user_qs && !rdtp->in_user) {
--		rdtp->in_user = true;
--		rcu_eqs_enter(1);
--	}
--	local_irq_restore(flags);
-+	rcu_eqs_enter(1);
- }
- EXPORT_SYMBOL_GPL(rcu_user_enter);
- 
-@@ -597,16 +583,7 @@ EXPORT_SYMBOL_GPL(rcu_idle_exit);
-  */
- void rcu_user_exit(void)
- {
--	unsigned long flags;
--	struct rcu_dynticks *rdtp;
--
--	local_irq_save(flags);
--	rdtp = &__get_cpu_var(rcu_dynticks);
--	if (rdtp->in_user) {
--		rdtp->in_user = false;
--		rcu_eqs_exit(1);
--	}
--	local_irq_restore(flags);
-+	rcu_eqs_exit(1);
- }
- EXPORT_SYMBOL_GPL(rcu_user_exit);
- 
-@@ -730,21 +707,6 @@ int rcu_is_cpu_idle(void)
- }
- EXPORT_SYMBOL(rcu_is_cpu_idle);
- 
--#ifdef CONFIG_RCU_USER_QS
--void rcu_user_hooks_switch(struct task_struct *prev,
--			   struct task_struct *next)
--{
--	struct rcu_dynticks *rdtp;
--
--	/* Interrupts are disabled in context switch */
--	rdtp = &__get_cpu_var(rcu_dynticks);
--	if (!rdtp->ignore_user_qs) {
--		clear_tsk_thread_flag(prev, TIF_NOHZ);
--		set_tsk_thread_flag(next, TIF_NOHZ);
--	}
--}
--#endif /* #ifdef CONFIG_RCU_USER_QS */
--
- #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU)
  
  /*
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 94a4894..64bb370 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -72,6 +72,7 @@
- #include <linux/slab.h>
- #include <linux/init_task.h>
- #include <linux/binfmts.h>
-+#include <linux/code_domain.h>
- 
- #include <asm/switch_to.h>
- #include <asm/tlb.h>
-@@ -1925,8 +1926,8 @@ context_switch(struct rq *rq, struct task_struct *prev,
- 	spin_release(&rq->lock.dep_map, 1, _THIS_IP_);
+  * Use precise platform statistics if available:
+  */
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
+-void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	*ut = p->utime;
+-	*st = p->stime;
+-}
+-
+-void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	struct task_cputime cputime;
+-
+-	thread_group_cputime(p, &cputime);
+-
+-	*ut = cputime.utime;
+-	*st = cputime.stime;
+-}
+-#else
+-
+ #ifndef nsecs_to_cputime
+ # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
  #endif
- 
-+	code_domain_task_switch(prev, next);
- 	/* Here we just switch the register state and the stack. */
--	rcu_switch(prev, next);
- 	switch_to(prev, next, prev);
- 
- 	barrier();
-@@ -2920,9 +2921,9 @@ EXPORT_SYMBOL(schedule);
- 
- asmlinkage void __sched schedule_user(void)
+@@ -441,6 +425,12 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
  {
--	rcu_user_exit();
-+	user_exit();
- 	schedule();
--	rcu_user_enter();
-+	user_enter();
+ 	cputime_t rtime, utime = p->utime, total = utime + p->stime;
+ 
++	if (accounting_vtime()) {
++		*ut = p->utime;
++		*st = p->stime;
++		return;
++	}
++
+ 	/*
+ 	 * Use CFS's precise accounting:
+ 	 */
+@@ -476,6 +466,12 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 
+ 	thread_group_cputime(p, &cputime);
+ 
++	if (accounting_vtime()) {
++		*ut = cputime.utime;
++		*st = cputime.stime;
++		return;
++	}
++
+ 	total = cputime.utime + cputime.stime;
+ 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
+ 
+@@ -494,4 +490,3 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	*ut = sig->prev_utime;
+ 	*st = sig->prev_stime;
  }
+-#endif
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 45b17ae..76dc22b 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -557,9 +557,7 @@ void tick_nohz_idle_exit(void)
+ {
+ 	int cpu = smp_processor_id();
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	unsigned long ticks;
+-#endif
+ 	ktime_t now;
  
- /**
-@@ -3026,7 +3027,7 @@ asmlinkage void __sched preempt_schedule_irq(void)
- 	/* Catch callers which need to be fixed */
- 	BUG_ON(ti->preempt_count || !irqs_disabled());
+ 	local_irq_disable();
+@@ -584,19 +582,19 @@ void tick_nohz_idle_exit(void)
+ 	tick_do_update_jiffies64(now);
+ 	update_cpu_load_nohz();
  
--	rcu_user_exit();
-+	user_exit();
- 	do {
- 		add_preempt_count(PREEMPT_ACTIVE);
- 		local_irq_enable();
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+-	/*
+-	 * We stopped the tick in idle. Update process times would miss the
+-	 * time we slept as update_process_times does only a 1 tick
+-	 * accounting. Enforce that this is accounted to idle !
+-	 */
+-	ticks = jiffies - ts->idle_jiffies;
+-	/*
+-	 * We might be one off. Do not randomly account a huge number of ticks!
+-	 */
+-	if (ticks && ticks < LONG_MAX)
+-		account_idle_ticks(ticks);
+-#endif
++	if (!accounting_vtime()) {
++		/*
++		 * We stopped the tick in idle. Update process times would miss the
++		 * time we slept as update_process_times does only a 1 tick
++		 * accounting. Enforce that this is accounted to idle !
++		 */
++		ticks = jiffies - ts->idle_jiffies;
++		/*
++		 * We might be one off. Do not randomly account a huge number of ticks!
++		 */
++		if (ticks && ticks < LONG_MAX)
++			account_idle_ticks(ticks);
++	}
+ 
+ 	calc_load_exit_idle();
+ 	touch_softlockup_watchdog();
 -- 
 1.7.5.4
 
