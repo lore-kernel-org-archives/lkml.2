@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab2HCTqx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 15:46:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56386 "EHLO bear.ext.ti.com"
+	id S1754177Ab2HCTqy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 15:46:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42044 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753867Ab2HCTqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753865Ab2HCTqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Aug 2012 15:46:24 -0400
 From: <pavan_savoy@ti.com>
 To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
 CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH v2 1/6] drivers/misc/ti-st: remove gpio handling
-Date: Fri, 3 Aug 2012 14:46:12 -0500
-Message-ID: <1344023177-21167-2-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH v2 2/6] drivers/misc/ti-st: remove sparse warnings
+Date: Fri, 3 Aug 2012 14:46:13 -0500
+Message-ID: <1344023177-21167-3-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1344023177-21167-1-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1344023177-21167-2-git-send-email-pavan_savoy@ti.com>
 References: <1344023177-21167-1-git-send-email-pavan_savoy@ti.com>
+ <1344023177-21167-2-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,98 +24,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-A platform hook to enable/disable the chip was introduced to perform specific
-activities to power-up and power-down the WL chip.
-Moving the power-up/down sequence also there makes more sense, since different
-platforms have begun to have their own ways to power-up/down the chip.
-This patch removes all of the gpio handling done by the driver in
-st_kim_start/st_kim_stop & any of the gpio request done in the probe function.
+remove sparse warnings by assigning right storage specifiers to functions and
+also clean-up the declarations in the include/linux/ti_wilink_st.h
 
+Change-Id: I459a8faf759339c63ec9497d28651d64ccfea534
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/misc/ti-st/st_kim.c |   37 +------------------------------------
- 1 files changed, 1 insertions(+), 36 deletions(-)
+ drivers/misc/ti-st/st_core.c |   12 +++++++-----
+ drivers/misc/ti-st/st_kim.c  |   12 ++++++------
+ include/linux/ti_wilink_st.h |    3 ++-
+ 3 files changed, 15 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+index acfaeeb..46937b1 100644
+--- a/drivers/misc/ti-st/st_core.c
++++ b/drivers/misc/ti-st/st_core.c
+@@ -30,11 +30,13 @@
+ 
+ #include <linux/ti_wilink_st.h>
+ 
++extern void st_kim_recv(void *, const unsigned char *, long);
++void st_int_recv(void *, const unsigned char *, long);
+ /* function pointer pointing to either,
+  * st_kim_recv during registration to receive fw download responses
+  * st_int_recv after registration to receive proto stack responses
+  */
+-void (*st_recv) (void*, const unsigned char*, long);
++static void (*st_recv) (void *, const unsigned char *, long);
+ 
+ /********************************************************************/
+ static void add_channel_to_table(struct st_data_s *st_gdata,
+@@ -100,7 +102,7 @@ int st_int_write(struct st_data_s *st_gdata,
+  * push the skb received to relevant
+  * protocol stacks
+  */
+-void st_send_frame(unsigned char chnl_id, struct st_data_s *st_gdata)
++static void st_send_frame(unsigned char chnl_id, struct st_data_s *st_gdata)
+ {
+ 	pr_debug(" %s(prot:%d) ", __func__, chnl_id);
+ 
+@@ -140,7 +142,7 @@ void st_send_frame(unsigned char chnl_id, struct st_data_s *st_gdata)
+  * This function is being called with spin lock held, protocol drivers are
+  * only expected to complete their waits and do nothing more than that.
+  */
+-void st_reg_complete(struct st_data_s *st_gdata, char err)
++static void st_reg_complete(struct st_data_s *st_gdata, char err)
+ {
+ 	unsigned char i = 0;
+ 	pr_info(" %s ", __func__);
+@@ -379,7 +381,7 @@ done:
+  *	completely, return that skb which has the pending data.
+  *	In normal cases, return top of txq.
+  */
+-struct sk_buff *st_int_dequeue(struct st_data_s *st_gdata)
++static struct sk_buff *st_int_dequeue(struct st_data_s *st_gdata)
+ {
+ 	struct sk_buff *returning_skb;
+ 
+@@ -401,7 +403,7 @@ struct sk_buff *st_int_dequeue(struct st_data_s *st_gdata)
+  *	txq and waitq needs protection since the other contexts
+  *	may be sending data, waking up chip.
+  */
+-void st_int_enqueue(struct st_data_s *st_gdata, struct sk_buff *skb)
++static void st_int_enqueue(struct st_data_s *st_gdata, struct sk_buff *skb)
+ {
+ 	unsigned long flags = 0;
+ 
 diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index 7c14f8f..5c99995 100644
+index 5c99995..847406a 100644
 --- a/drivers/misc/ti-st/st_kim.c
 +++ b/drivers/misc/ti-st/st_kim.c
-@@ -454,11 +454,6 @@ long st_kim_start(void *kim_data)
- 		if (pdata->chip_enable)
- 			pdata->chip_enable(kim_gdata);
- 
--		/* Configure BT nShutdown to HIGH state */
--		gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
--		mdelay(5);	/* FIXME: a proper toggle */
--		gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
--		mdelay(100);
- 		/* re-initialize the completion */
- 		INIT_COMPLETION(kim_gdata->ldisc_installed);
- 		/* send notification to UIM */
-@@ -500,8 +495,7 @@ long st_kim_start(void *kim_data)
-  *	(b) upon failure to either install ldisc or download firmware.
-  *	The function is responsible to (a) notify UIM about un-installation,
-  *	(b) flush UART if the ldisc was installed.
-- *	(c) reset BT_EN - pull down nshutdown at the end.
-- *	(d) invoke platform's chip disabling routine.
-+ *	(c) invoke platform's chip disabling routine.
+@@ -63,7 +63,7 @@ static struct platform_device *st_get_plat_device(int id)
+  *	in case of error don't complete so that waiting for proper
+  *	response times out
   */
- long st_kim_stop(void *kim_data)
+-void validate_firmware_response(struct kim_data_s *kim_gdata)
++static void validate_firmware_response(struct kim_data_s *kim_gdata)
  {
-@@ -533,13 +527,6 @@ long st_kim_stop(void *kim_data)
- 		return -ETIMEDOUT;
- 	}
- 
--	/* By default configure BT nShutdown to LOW state */
--	gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
--	mdelay(1);
--	gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
--	mdelay(1);
--	gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
--
- 	/* platform specific disable */
- 	if (pdata->chip_disable)
- 		pdata->chip_disable(kim_gdata);
-@@ -731,20 +718,6 @@ static int kim_probe(struct platform_device *pdev)
- 	/* refer to itself */
- 	kim_gdata->core_data->kim_data = kim_gdata;
- 
--	/* Claim the chip enable nShutdown gpio from the system */
--	kim_gdata->nshutdown = pdata->nshutdown_gpio;
--	status = gpio_request(kim_gdata->nshutdown, "kim");
--	if (unlikely(status)) {
--		pr_err(" gpio %ld request failed ", kim_gdata->nshutdown);
--		return status;
--	}
--
--	/* Configure nShutdown GPIO as output=0 */
--	status = gpio_direction_output(kim_gdata->nshutdown, 0);
--	if (unlikely(status)) {
--		pr_err(" unable to configure gpio %ld", kim_gdata->nshutdown);
--		return status;
--	}
- 	/* get reference of pdev for request_firmware
- 	 */
- 	kim_gdata->kim_pdev = pdev;
-@@ -780,18 +753,10 @@ static int kim_probe(struct platform_device *pdev)
- 
- static int kim_remove(struct platform_device *pdev)
+ 	struct sk_buff *skb = kim_gdata->rx_skb;
+ 	if (unlikely(skb->data[5] != 0)) {
+@@ -119,7 +119,7 @@ static inline int kim_check_data_len(struct kim_data_s *kim_gdata, int len)
+  *	have been observed to come in bursts of different
+  *	tty_receive and hence the logic
+  */
+-void kim_int_recv(struct kim_data_s *kim_gdata,
++static void kim_int_recv(struct kim_data_s *kim_gdata,
+ 	const unsigned char *data, long count)
  {
--	/* free the GPIOs requested */
--	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
- 	struct kim_data_s	*kim_gdata;
+ 	const unsigned char *ptr;
+@@ -236,7 +236,7 @@ static long read_local_version(struct kim_data_s *kim_gdata, char *bts_scr_name)
+ 	return 0;
+ }
  
- 	kim_gdata = dev_get_drvdata(&pdev->dev);
+-void skip_change_remote_baud(unsigned char **ptr, long *len)
++static void skip_change_remote_baud(unsigned char **ptr, long *len)
+ {
+ 	unsigned char *nxt_action, *cur_action;
+ 	cur_action = *ptr;
+@@ -688,7 +688,7 @@ static const struct file_operations list_debugfs_fops = {
+  * board-*.c file
+  */
  
--	/* Free the Bluetooth/FM/GPIO
--	 * nShutdown gpio from the system
--	 */
--	gpio_free(pdata->nshutdown_gpio);
--	pr_info("nshutdown GPIO Freed");
--
- 	debugfs_remove_recursive(kim_debugfs_dir);
- 	sysfs_remove_group(&pdev->dev.kobj, &uim_attr_grp);
- 	pr_info("sysfs entries removed");
+-struct dentry *kim_debugfs_dir;
++static struct dentry *kim_debugfs_dir;
+ static int kim_probe(struct platform_device *pdev)
+ {
+ 	long status;
+@@ -769,7 +769,7 @@ static int kim_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-int kim_suspend(struct platform_device *pdev, pm_message_t state)
++static int kim_suspend(struct platform_device *pdev, pm_message_t state)
+ {
+ 	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
+ 
+@@ -779,7 +779,7 @@ int kim_suspend(struct platform_device *pdev, pm_message_t state)
+ 	return -EOPNOTSUPP;
+ }
+ 
+-int kim_resume(struct platform_device *pdev)
++static int kim_resume(struct platform_device *pdev)
+ {
+ 	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
+ 
+diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
+index 3ca0269..932b763 100644
+--- a/include/linux/ti_wilink_st.h
++++ b/include/linux/ti_wilink_st.h
+@@ -281,9 +281,10 @@ struct kim_data_s {
+ long st_kim_start(void *);
+ long st_kim_stop(void *);
+ 
+-void st_kim_recv(void *, const unsigned char *, long count);
+ void st_kim_complete(void *);
+ void kim_st_list_protocols(struct st_data_s *, void *);
++void st_kim_recv(void *, const unsigned char *, long);
++
+ 
+ /*
+  * BTS headers
 -- 
 1.7.4.1
 
