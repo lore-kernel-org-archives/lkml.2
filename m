@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab2HCDB5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 23:01:57 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:37285 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751638Ab2HCDB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 23:01:56 -0400
-Message-ID: <501B3F16.3090308@cs.wisc.edu>
-Date: Thu, 02 Aug 2012 22:01:42 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Chanho Min <chanho0207@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
-References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com>  <1343897839.5073.7.camel@dabdike.int.hansenpartnership.com>  <CAOAMb1C=fk_Ejm6TwOhoNLhP1TyRJ+QVi93VaqUmxoHsM1iXtQ@mail.gmail.com> <1343900093.5073.15.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1343900093.5073.15.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753178Ab2HCDrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 23:47:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3192 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab2HCDrT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 23:47:19 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=svT8oVtb-BJygmX5wYQA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343965637.27983.107.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.4.7-rt15
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, john stultz <johnstul@us.ibm.com>
+Date: Thu, 02 Aug 2012 23:47:17 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 04:34 AM, James Bottomley wrote:
-> On Thu, 2012-08-02 at 18:28 +0900, Chanho Min wrote:
->> On Thu, Aug 2, 2012 at 5:57 PM, James Bottomley
->> <James.Bottomley@hansenpartnership.com> wrote:
->>> On Thu, 2012-08-02 at 17:41 +0900, Chanho Min wrote:
->>>> This patch is to fix a oops from a torn down device. When
->>>> scsi_run_queue process starved queues, scsi_request_fn can race with
->>>> scsi_remove_device. In this case, rarely, scsi_request_fn release the
->>>> last reference and set sdev->request_queue to NULL. It result in
->>>> NULL-pointer dereference when spin_unlock is tried with (NULL)->
->>>> queue_lock. We need to add an extra reference to the device on both
->>>> sides of the __blk_run_queue to hold reference until scsi_request_fn
->>>> is finished.
->>>
->>> You need a recent kernel with this patch:
->>>
->>> commit 940f5d47e2f2e1fa00443921a0abf4822335b54d
->>> Author: Bart Van Assche <bvanassche@acm.org>
->>> Date:   Fri Jun 29 15:34:26 2012 +0000
->>>
->>>     [SCSI] Avoid dangling pointer in scsi_requeue_command()
->>>
->>> James
->> It is different from my case. This is occured inside scsi_run_queue
->> and on processing starved_list.
->> Another sdev is obtained from starved_list.
-> 
-> Does it occur with that patch applied?
-> 
-> If it does, the likely fix would be to take a copy of the queue ... but
-> I'd like to understand why first.  An active command has an automatic
-> reference to the sdev_gendev, so it shouldn't be the normal case.  This
-> was broken by unprep because it releases the command from the queue and
-> drops the reference.  We may have another case like unjprep, but in that
-> case, we need to find it ... trying to add extra get/put_device() calls
-> will paper over the problem.
-> 
 
-I think the problem is that __scsi_remove_device will now wait for
-commands to get dequeued and run, before proceeding but we do not take a
-device off the starved list until scsi_device_dev_release_usercontext is
-run, or maybe thinking about it another way scsi_kill_request does not
-remove sdevs from the starved list if the device is being removed.
+Dear RT Folks,
 
-So lets say we hit the not_ready path in scsi_request_fn and put the
-sdev on the starved list. Then we remove the device. We could end up
-putting the device in SDEV_DEL, and then calling scsi_request_fn via
-blk_cleanup_queue's drain queue call. scsi_request_fn would hit the
-scsi_device_online check and fail the IO, but we never took the sdev off
-the starved list from what I can tell.
+I'm pleased to announce the 3.4.7-rt15 stable release.
 
-Now, there is no IO in the queue and so __scsi_remove_device continues.
-It then calls scsi_device_dev_release_usercontext at the same time some
-other thread is calling scsi_run_queue. We then race. scsi_run_queue
-splices the starved list with the sdev we are trying to remove and
-deletes the list entry from the list and drops the host lock. But then
-scsi_device_dev_release_usercontext grabs the host lock and ends up
-running the entire function and freeing the queue. Then scsi_run_queue
-tries to access the sdev and queue so it can grab the queue lock that
-was just freed and kablewy.
+Like the 3.2-rt kernel this one also had issues with the backport of the
+leap second. Please test to make 
+
+This release is an update to the new stable 3.4.7 version. Some fixes
+to the stable code (mentioned above) had to be done.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: e6d156ace34fccca669e2e1c786af2f373cad1a1
+
+
+Or to build 3.4.7-rt15 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.7.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.7-rt15.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
 
