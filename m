@@ -1,360 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab2HCRV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 13:21:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12519 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab2HCRV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 13:21:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="201982639"
-Date: Fri, 3 Aug 2012 10:21:54 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: "Alexis R. Cortes" <alexis.cortes@ti.com>
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, brian.quach@ti.com, jorge.llamas@ti.com
-Subject: Re: FW: [PATCH] usb: host: xhci: Fix Compliance Mode on
- SN65LVPE502CP Hardware
-Message-ID: <20120803172154.GA8015@xanatos>
-References: <005e01cd70f7$e306f750$a914e5f0$@cortes@ti.com>
- <501AFB12.50703@ti.com>
+	id S1752601Ab2HCRXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 13:23:04 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:27905 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751290Ab2HCRXB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 13:23:01 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EAN4HHFBXQCed/2dsb2JhbABFuSqBCIIgAQEEAScvIgEFCwsUBAkWDwkDAgECASceBg0BBQIBAYgDCr0Qi0gVhm8DmyWKMoJhgVU
+Message-ID: <501C0877.7010303@computer.org>
+Date: Fri, 03 Aug 2012 19:20:55 +0200
+From: Jan Ceuleers <jan.ceuleers@computer.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501AFB12.50703@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Piotr Gluszenia Slawinski <curious@bwv190.internetdsl.tpnet.pl>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        David Miller <davem@davemloft.net>
+Subject: Re: bootmem code - reboots after 'uncompressing linux' on old computers
+References: <Pine.LNX.4.64.1208030324320.9164@bwv190.internetdsl.tpnet.pl>
+In-Reply-To: <Pine.LNX.4.64.1208030324320.9164@bwv190.internetdsl.tpnet.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 02, 2012 at 05:11:30PM -0500, Alexis R. Cortes wrote:
-> Hi Sarah,
-> 
-> I have rewritten my code following your recommendations. Could you please review it and give your comments? If everything is fine I'll proceed to generate the patch and submit it.
+On 08/03/2012 03:37 AM, Piotr Gluszenia Slawinski wrote:
+> Hello.
+> while bisecting old pcmcia bug i've noticed kernels ~2.6.36
+> and up do not boot on 586 machines with small amounts of ram (16M)
 
-I have a couple style comments and one potential code behavior issue.
+Copying David Miller.
 
-> The description of my patch is:
-> ---------------------------------------------------------------------------
-> usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP Hardware
-> 
-> This patch is intended to work around a known issue on the
-> SN65LVPE502CP USB3.0 re-driver that can delay the negotiation
-> between a device and the host past the usual handshake timeout.
-> 
-> If that happens on the first insertion, the host controller
-> port will enter in Compliance Mode and NO port status event will
-> be generated (as per xHCI Spec) making impossible to detect this
-> event by software. The port will remain in compliance mode until
-> a warm reset is applied to it.
-> 
-> As a result of this, the port will seem "dead" to the user and no 
-> device connections or disconnections will be detected.
-> 
-> For solving this, the patch creates a timer which polls every 2 
-> seconds the link state of each host controller's port (this
-> by reading the PORTSC register) and recovers the port by issuing a
-> Warm reset every time Compliance mode is detected. 
-> 
-> Since the issue is being caused by a piece of hardware, the timer 
-> will be enabled ONLY on those systems that have the SN65LVPE502CP 
-> installed (this patch uses DMI strings for detecting those systems)
-> therefore making this patch to act as a quirk (XHCI_COMP_MODE_QUIRK
-> has been added to the xhci stack).
-> 
-> This patch applies for these systems: 
-> Vendor: Hewlett-Packard. System Models: Z420, Z620 and Z820.
-> ---------------------------------------------------------------------------
-> 
-> The 'git diff' of my change is as follows:
-> 
-> diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-> index 7b01094..3a3c614 100644
-> --- a/drivers/usb/host/xhci-hub.c
-> +++ b/drivers/usb/host/xhci-hub.c
-> @@ -493,11 +493,47 @@ static void xhci_hub_report_link_state(u32 *status, u32 status_reg)
->                  * when this bit is set.
->                  */
->                 pls |= USB_PORT_STAT_CONNECTION;
-> +       } else {
-> +               /*
-> +                * If CAS bit isn't set but the Port is already at
-> +                * Compliance Mode, fake a connection so the USB core
-> +                * notices the Compliance state and resets the port.
-> +                * This resolves an issue generated by the SN65LVPE502CP
-> +                * in which sometimes the port enters compliance mode
-> +                * caused by a delay on the host-device negotiation.
-> +                */
-> +               if (pls == USB_SS_PORT_LS_COMP_MOD)
-> +                       pls |= USB_PORT_STAT_CONNECTION;
->         }
-> +
->         /* update status field */
->         *status |= pls;
->  }
->  
+Not trimming the rest of the message for David's benefit; no further comments from me.
 
-Function comments need a blank line at the top, like so:
-
-/*
- * Function comment.
- */
-void xhci_del_comp_mod_timer(struct xhci_hcd *xhci, u32 status, u16 wIndex)
-
-
-> +/* Function for Compliance Mode Quirk.
-> + *
-> + * This Function verifies if all xhc USB3 ports have entered U0, if so,
-> + * the compliance mode timer is deleted. A port won't enter
-> + * compliance mode if it has previously entered U0.
-> + */
-> +void xhci_del_comp_mod_timer(struct xhci_hcd *xhci, u32 status, u16 wIndex)
-> +{
-> +       u32 all_ports_seen_u0 = ((1 << xhci->num_usb3_ports)-1);
-> +       bool port_in_u0 = ((status & PORT_PLS_MASK) == XDEV_U0);
-> +
-> +       if (!(xhci->quirks & XHCI_COMP_MODE_QUIRK))
-> +               return;
-> +
-> +       if ((xhci->port_status_u0 != all_ports_seen_u0) && port_in_u0) {
-> +               xhci->port_status_u0 |= 1 << wIndex;
-> +               if (xhci->port_status_u0 == all_ports_seen_u0) {
-> +                       del_timer_sync(&xhci->comp_mode_recovery_timer);
-> +                       xhci_dbg(xhci, "All USB3 ports have entered U0 already!\n");
-> +                       xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted.\n");
-> +               }
-> +       }
-> +}
-> +
->  int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
->                 u16 wIndex, char *buf, u16 wLength)
->  {
-> @@ -645,6 +681,11 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
->                 /* Update Port Link State for super speed ports*/
->                 if (hcd->speed == HCD_USB3) {
->                         xhci_hub_report_link_state(&status, temp);
-> +                       /*
-> +                        * Verify if all USB3 Ports Have entered U0 already.
-> +                        * Delete Compliance Mode Timer if so.
-> +                        */
-> +                       xhci_del_comp_mod_timer(xhci, temp, wIndex);
->                 }
->                 if (bus_state->port_c_suspend & (1 << wIndex))
->                         status |= 1 << USB_PORT_FEAT_C_SUSPEND;
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index a979cd0..9c18375 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -26,6 +26,7 @@
->  #include <linux/module.h>
->  #include <linux/moduleparam.h>
->  #include <linux/slab.h>
-> +#include <linux/dmi.h>
->  
->  #include "xhci.h"
->  
-> @@ -397,6 +398,97 @@ static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
->  
+> suprisingly 3.5 kernel booted fine.
+> 
+> i've bisected the problem and found fix :
+> 
+> solidstate linux # git bisect good
+> 4e1c2b284461fd8aa8d7b295a1e911fc4390755b is the first bad commit
+> commit 4e1c2b284461fd8aa8d7b295a1e911fc4390755b
+> Author: David Miller <davem@davemloft.net>
+> Date:   Wed Apr 25 16:10:50 2012 -0400
+> 
+>     mm: nobootmem: Correct alloc_bootmem semantics.
+> 
+>     The comments above __alloc_bootmem_node() claim that the code will
+>     first try the allocation using 'goal' and if that fails it will
+>     try again but with the 'goal' requirement dropped.
+> 
+>     Unfortunately, this is not what the code does, so fix it to do so.
+> 
+>     This is important for nobootmem conversions to architectures such
+>     as sparc where MAX_DMA_ADDRESS is infinity.
+> 
+>     On such architectures all of the allocations done by generic spots,
+>     such as the sparse-vmemmap implementation, will pass in:
+> 
+>         __pa(MAX_DMA_ADDRESS)
+> 
+>     as the goal, and with the limit given as "-1" this will always fail
+>     unless we add the appropriate fallback logic here.
+> 
+>     Signed-off-by: David S. Miller <davem@davemloft.net>
+>     Acked-by: Yinghai Lu <yinghai@kernel.org>
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+> :040000 040000 5c42bbd13a81426248901205b051968bab14e6ff 3e7fad8afb42036c6bbb1fcf5fcf12c87bbba9e2 M      mm
+> 
+> 
+> kernels before 3.6.39 do not have nobootmem.c , but they still have same bug!
+> 
+> this patch fixes the problem for them (useful for bisecting, etc, imho should be merged into 2.6.35-stable branch) :
+> 
+> 
+> diff --git a/mm/bootmem.c b/mm/bootmem.c
+> index 13b0caa..b0ccada 100644
+> --- a/mm/bootmem.c
+> +++ b/mm/bootmem.c
+> @@ -848,6 +848,7 @@ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+>                 return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+> 
+>  #ifdef CONFIG_NO_BOOTMEM
+> +again:
+>         ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
+>                                          goal, -1ULL);
+>         if (ptr)
+> @@ -859,6 +860,10 @@ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+>         ptr = ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
 >  #endif
->  
-> +static void compliance_mode_recovery(unsigned long arg)
-> +{
-> +       struct xhci_hcd *xhci;
-> +       struct usb_hcd *hcd;
-> +       u32 temp;
-> +       int i;
-> +
-> +       xhci = (struct xhci_hcd *)arg;
-> +
-> +       for (i = 0; i < xhci->num_usb3_ports; i++) {
-> +               temp = xhci_readl(xhci, xhci->usb3_ports[i]);
-> +               if ((temp & PORT_PLS_MASK) == USB_SS_PORT_LS_COMP_MOD) {
-> +                       /*
-> +                        * Compliance Mode Detected. Letting USB Core
-> +                        * handle the Warm Reset
-> +                        */
-> +                       xhci_dbg(xhci, "Compliance Mode Detected->Port %d!\n",
-> +                                       i + 1);
-> +                       xhci_dbg(xhci, "Attempting Recovery routine!\n");
-> +                       hcd = xhci->shared_hcd;
-> +
-> +                       if (hcd->state == HC_STATE_SUSPENDED)
-> +                               usb_hcd_resume_root_hub(hcd);
-> +
-> +                       usb_hcd_poll_rh_status(hcd);
-> +               }
+> 
+> +       if (!ptr && goal) {
+> +               goal = 0;
+> +               goto again;
 > +       }
-> +
-> +       if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1))
-> +               mod_timer(&xhci->comp_mode_recovery_timer,
-> +                       jiffies + msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
-> +}
-> +
-> +/*
-> + * Quirk to work around issue generated by the SN65LVPE502CP USB3.0 re-driver
-> + * that causes ports behind that hardware to enter compliance mode sometimes.
-> + * The quirk creates a timer that polls every 2 seconds the link state of
-> + * each host controller's port and recovers it by issuing a Warm reset
-> + * if Compliance mode is detected, otherwise the port will become "dead" (no
-> + * device connections or disconnections will be detected anymore). Becasue no
-> + * status event is generated when entering compliance mode (per xhci spec),
-> + * this quirk is needed on systems that have the failing hardware installed.
-> + */
-> +
-
-Don't put a newline between the comment and the function.  If someone
-converts the function comment to kernel doc style, I don't think the
-tools will pick up the comment properly.
-
-> +static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
-> +{
-> +       xhci->port_status_u0 = 0;
-> +       init_timer(&xhci->comp_mode_recovery_timer);
-> +
-> +       xhci->comp_mode_recovery_timer.data = (unsigned long) xhci;
-> +       xhci->comp_mode_recovery_timer.function = compliance_mode_recovery;
-> +       xhci->comp_mode_recovery_timer.expires = jiffies +
-> +                       msecs_to_jiffies(COMP_MODE_RCVRY_MSECS);
-> +
-> +       set_timer_slack(&xhci->comp_mode_recovery_timer,
-> +                       msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
-> +       add_timer(&xhci->comp_mode_recovery_timer);
-> +       xhci_dbg(xhci, "Compliance Mode Recovery Timer Initialized.\n");
-> +}
-> +
-> +/*
-> + * This function identifies the systems that have installed the SN65LVPE502CP
-> + * USB3.0 re-driver and that need the Compliance Mode Quirk.
-> + * Systems:
-> + * Vendor: Hewlett-Packard -> System Models: Z420, Z620 and Z820
-> + */
-> +
-
-No newline here either, please.
-
-> +static bool compliance_mode_recovery_timer_quirk_check(void)
-> +{
-> +       const char *dmi_product_name, *dmi_sys_vendor;
-> +
-> +       dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
-> +       dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
-> +
-> +       if (!(strstr(dmi_sys_vendor, "Hewlett-Packard")))
-> +               return false;
-> +
-> +       if (strstr(dmi_product_name, "Z420") ||
-> +                       strstr(dmi_product_name, "Z620") ||
-> +                       strstr(dmi_product_name, "Z820"))
-> +               return true;
-> +
-> +       return false;
-> +}
-> +
-> +static int xhci_all_ports_seen_u0(struct xhci_hcd *xhci)
-> +{
-> +       return (xhci->port_status_u0 == ((1 << xhci->num_usb3_ports)-1));
-> +}
-> +
-> +
->  /*
->   * Initialize memory for HCD and xHC (one-time init).
->   *
-> @@ -420,6 +512,12 @@ int xhci_init(struct usb_hcd *hcd)
->         retval = xhci_mem_init(xhci, GFP_KERNEL);
->         xhci_dbg(xhci, "Finished xhci_init\n");
->  
-> +       /* Initializing Compliance Mode Recovery Data If Needed */
-> +       if (compliance_mode_recovery_timer_quirk_check()) {
-> +               xhci->quirks |= XHCI_COMP_MODE_QUIRK;
-> +               compliance_mode_recovery_timer_init(xhci);
-> +       }
-> +
->         return retval;
+>         return ptr;
 >  }
->  
-> @@ -628,6 +726,11 @@ void xhci_stop(struct usb_hcd *hcd)
->         del_timer_sync(&xhci->event_ring_timer);
->  #endif
->  
-> +       /* Deleting Compliance Mode Recovery Timer */
-> +       if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
-> +                       (!(xhci_all_ports_seen_u0(xhci))))
-> +               del_timer_sync(&xhci->comp_mode_recovery_timer);
-> +
->         if (xhci->quirks & XHCI_AMD_PLL_FIX)
->                 usb_amd_dev_put();
->  
-> @@ -802,6 +905,16 @@ int xhci_suspend(struct xhci_hcd *xhci)
->         }
->         spin_unlock_irq(&xhci->lock);
->  
-> +       /*
-> +        * Deleting Compliance Mode Recovery Timer because the xHCI Host
-> +        * is about to be suspended.
-> +        */
-> +       if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
-> +                       (!(xhci_all_ports_seen_u0(xhci)))) {
-> +               del_timer_sync(&xhci->comp_mode_recovery_timer);
-> +               xhci_dbg(xhci, "Compliance Mode Recovery Timer Deleted!\n");
-> +       }
-> +
+> 
+> 
 
-So you conditionally delete the compliance mode timer here, if there's
-still a port that hasn't seen U0 (meaning there is a compliance timer
-running), but...
-
->         /* step 5: remove core well power */
->         /* synchronize irq when using MSI-X */
->         xhci_msix_sync_irqs(xhci);
-> @@ -934,6 +1047,10 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
->                 usb_hcd_resume_root_hub(hcd);
->                 usb_hcd_resume_root_hub(xhci->shared_hcd);
->         }
-> +
-> +       if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
-> +               compliance_mode_recovery_timer_init(xhci);
-> +
-
-..you unconditionally re-initialize it here.  That means on resume, the
-timer will always get re-started.  I think you want to only
-reinitialize it if there are ports that haven't seen U0.
-
-Or was that part of the workaround?  Do you have to re-start the timer
-after resume from suspend or hibernate?  If ports need to see U0 after
-resume or they might go into compliance mode, wouldn't you want to reset
-the xhci->port_state to zero?
-
-If you do need to re-initialize the timer unconditionally, please add a
-comment here, and in the description.
-
->         return retval;
->  }
->  #endif /* CONFIG_PM */
-> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-> index 55c0785..f1e7874 100644
-> --- a/drivers/usb/host/xhci.h
-> +++ b/drivers/usb/host/xhci.h
-> @@ -1494,6 +1494,7 @@ struct xhci_hcd {
->  #define XHCI_TRUST_TX_LENGTH   (1 << 10)
->  #define XHCI_LPM_SUPPORT       (1 << 11)
->  #define XHCI_INTEL_HOST                (1 << 12)
-> +#define XHCI_COMP_MODE_QUIRK   (1 << 13)
->         unsigned int            num_active_eps;
->         unsigned int            limit_active_eps;
->         /* There are two roothubs to keep track of bus suspend info for */
-> @@ -1510,6 +1511,11 @@ struct xhci_hcd {
->         unsigned                sw_lpm_support:1;
->         /* support xHCI 1.0 spec USB2 hardware LPM */
->         unsigned                hw_lpm_support:1;
-> +       /* Compliance Mode Recovery Data */
-> +       struct timer_list       comp_mode_recovery_timer;
-> +       u32                     port_status_u0;
-> +/* Compliance Mode Timer Triggered every 2 seconds */
-> +#define COMP_MODE_RCVRY_MSECS 2000
->  };
->  
->  /* convert between an HCD pointer and the corresponding EHCI_HCD */
-> (END) 
-
-Sarah Sharp
