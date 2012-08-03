@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab2HCO1H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:27:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57361 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753272Ab2HCO1F (ORCPT
+	id S1753887Ab2HCO1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:27:12 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:54391 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab2HCO1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:27:05 -0400
-Date: Fri, 3 Aug 2012 16:26:52 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Torben Hohn <torbenh@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Philippe =?iso-8859-15?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm imx31: add a few pinmux settings the tt01 needs
-Message-ID: <20120803142652.GY1451@pengutronix.de>
-References: <1342616305-24722-1-git-send-email-torbenh@linutronix.de>
+	Fri, 3 Aug 2012 10:27:08 -0400
+Date: Fri, 3 Aug 2012 16:26:59 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] iommu: Include linux/notifier.h
+Message-ID: <20120803142659.GB12268@avionic-0098.mockup.avionic-design.de>
+References: <1343226290-32511-1-git-send-email-thierry.reding@avionic-design.de>
+ <1343226290-32511-2-git-send-email-thierry.reding@avionic-design.de>
+ <20120803140826.GF1996@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qcHopEYAB45HaUaB"
 Content-Disposition: inline
-In-Reply-To: <1342616305-24722-1-git-send-email-torbenh@linutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:26:44 up 41 days,  5:38, 39 users,  load average: 12.25, 8.84,
- 7.25
+In-Reply-To: <20120803140826.GF1996@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Provags-ID: V02:K0:YdsHiUclqjdRfXgCd7GoV+atqA1RCfs6CCwzSK+TOxo
+ kmZr34irlts8p7GqSJLcAaw6XXQqZ87zp+nbhYc/jua+7ud9a/
+ gJgdi+3R7d5bbyfU5vop7Vytl9YPm7RFhts24m0e4xbmNNfjN6
+ Wnj+bIsaVbXYF1VEnQ+oBNkInyXkExT1Y6zaUUOYlSL33lecgH
+ YjlWJw79zJ035uqwqa3Mhk+5lzISkGcdEqc4LZwZQPNUWYkZeF
+ wUNTiJiBxa+JwbEJkloW06B8MJueHd1gUKy+CXzmA+TXsF7vJa
+ QPd9oxT5/CdomNEb48pyD8QK9gkYavvEVOfBxfJfTdlQa0ONLY
+ 5M9sOTupLkJORV6Zo1jhUfLGLOMYNApmET3R5fWH2HOlCNFuxt
+ AXI90Hh9AYmlma9yG+g0SAL0CG6ap98xB3VmYkVDA31FD3G+UI
+ qtAjz
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 02:58:25PM +0200, Torben Hohn wrote:
-> These are the Pinmux Settings for the PP4 SSI Port multiplexible
-> onto the first UART Pins.
-> 
-> Signed-off-by: Torben Hohn <torbenh@linutronix.de>
 
-Applied, thanks
+--qcHopEYAB45HaUaB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sascha
+On Fri, Aug 03, 2012 at 04:08:26PM +0200, Joerg Roedel wrote:
+> On Wed, Jul 25, 2012 at 04:24:50PM +0200, Thierry Reding wrote:
+> > The linux/iommu.h header uses types defined in linux/notifier.h but
+> > doesn't include it.
+> >=20
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>=20
+> Better than adding the header-file is to add a forward declaration for
+> struct notifier_block. I added a patch to iommu/fixes for this.
 
-> ---
->  arch/arm/plat-mxc/include/mach/iomux-mx3.h |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx3.h b/arch/arm/plat-mxc/include/mach/iomux-mx3.h
-> index 63f22a0..019b0a0 100644
-> --- a/arch/arm/plat-mxc/include/mach/iomux-mx3.h
-> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx3.h
-> @@ -515,12 +515,16 @@ enum iomux_pins {
->  #define MX31_PIN_CSPI3_SPI_RDY__CTS3	IOMUX_MODE(MX31_PIN_CSPI3_SPI_RDY, IOMUX_CONFIG_ALT1)
->  #define MX31_PIN_CTS1__CTS1		IOMUX_MODE(MX31_PIN_CTS1, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_RTS1__RTS1		IOMUX_MODE(MX31_PIN_RTS1, IOMUX_CONFIG_FUNC)
-> +#define MX31_PIN_RTS1__SFS		IOMUX_MODE(MX31_PIN_RTS1, IOMUX_CONFIG_ALT2)
->  #define MX31_PIN_TXD1__TXD1		IOMUX_MODE(MX31_PIN_TXD1, IOMUX_CONFIG_FUNC)
-> +#define MX31_PIN_TXD1__SCK		IOMUX_MODE(MX31_PIN_TXD1, IOMUX_CONFIG_ALT2)
->  #define MX31_PIN_RXD1__RXD1		IOMUX_MODE(MX31_PIN_RXD1, IOMUX_CONFIG_FUNC)
-> +#define MX31_PIN_RXD1__STXDA		IOMUX_MODE(MX31_PIN_RXD1, IOMUX_CONFIG_ALT2)
->  #define MX31_PIN_DCD_DCE1__DCD_DCE1	IOMUX_MODE(MX31_PIN_DCD_DCE1, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_RI_DCE1__RI_DCE1	IOMUX_MODE(MX31_PIN_RI_DCE1, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_DSR_DCE1__DSR_DCE1	IOMUX_MODE(MX31_PIN_DSR_DCE1, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_DTR_DCE1__DTR_DCE1	IOMUX_MODE(MX31_PIN_DTR_DCE1, IOMUX_CONFIG_FUNC)
-> +#define MX31_PIN_DTR_DCE1__SRXDA	IOMUX_MODE(MX31_PIN_DTR_DCE1, IOMUX_CONFIG_ALT2)
->  #define MX31_PIN_CTS2__CTS2		IOMUX_MODE(MX31_PIN_CTS2, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_RTS2__RTS2		IOMUX_MODE(MX31_PIN_RTS2, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_TXD2__TXD2		IOMUX_MODE(MX31_PIN_TXD2, IOMUX_CONFIG_FUNC)
-> @@ -724,6 +728,7 @@ enum iomux_pins {
->  #define MX31_PIN_KEY_ROW2_KEY_ROW2	IOMUX_MODE(MX31_PIN_KEY_ROW2, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_KEY_ROW3_KEY_ROW3	IOMUX_MODE(MX31_PIN_KEY_ROW3, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_KEY_ROW4_KEY_ROW4	IOMUX_MODE(MX31_PIN_KEY_ROW4, IOMUX_CONFIG_FUNC)
-> +#define MX31_PIN_KEY_ROW4_GPIO		IOMUX_MODE(MX31_PIN_KEY_ROW4, IOMUX_CONFIG_GPIO)
->  #define MX31_PIN_KEY_ROW5_KEY_ROW5	IOMUX_MODE(MX31_PIN_KEY_ROW5, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_KEY_ROW6_KEY_ROW6	IOMUX_MODE(MX31_PIN_KEY_ROW6, IOMUX_CONFIG_FUNC)
->  #define MX31_PIN_KEY_ROW7_KEY_ROW7	IOMUX_MODE(MX31_PIN_KEY_ROW7, IOMUX_CONFIG_FUNC)
-> -- 
-> 1.7.10
-> 
-> 
+Yes, that would also work.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Thierry
+
+--qcHopEYAB45HaUaB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQG9+zAAoJEN0jrNd/PrOhmVkP/1lDXxoFJvg97e4yBpc/P7j1
+BfmGWa2bUciZ/pQfipPzg4wbSwX/Q/ca1eWfVI0k7Rh5GXohA8/Cm1pe/bQ84h3Q
+XiPzm4gXweQteQZ56R52NbjHK0MLIgevcsh1ES+HEToIsZ05ZbwkZxQfUbPmDGkt
+tN8n0VIgUkCnlKjucMxD6GoXuPtL3N0/uQrjVEy6fuXN8gt7t6JOpzzvLLNU+mXh
+KD1TdWoSWw0mxlXJF0F2N6XJDaeLUgylOixl5PkPbCwpyf15A7tMtevfuPiQ1ObC
+5OAxbxSmv5Ixe+l2BTTP6YP7MmomSE2Iz5lhIr9UGZUivie0KapiRdbl8sJCq+us
+3SkO6veL4lVpnnwKltsZIIJlRvbeb6qR0FeNCaTB88x6ZqTAANKLda7YBT4jwjfp
++OGSh7gR9Y7agf0sgBgUrixu/nO0Lp4jYbPmbGMtKMUSZORimJDZvJpi27rwzprO
+t3ivLSVn+3sRHzNMgx5ZSH3QNYXbcl2F8ifZlPv5E3KsyQlPbhfq030C2R9XfdRc
+6HdJ3VrjLdGmWkKDmMBa9ySoJGRu9+OOI284tMEj2db+rspMwRsswZM6gzGlmstx
+Nypv3NfAXc6u0JF2ZecqkJjCajGOoTLu3uGWRMbWi4kJZXb7nSiigdTxB7UPgZjx
+DvwbmTEQnvRRDjwZTX3+
+=phih
+-----END PGP SIGNATURE-----
+
+--qcHopEYAB45HaUaB--
