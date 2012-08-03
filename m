@@ -1,123 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab2HCJPm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 05:15:42 -0400
-Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:39562 "EHLO
-	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751987Ab2HCJPk (ORCPT
+	id S1753001Ab2HCJQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 05:16:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54186 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab2HCJQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 05:15:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFm5wm3w_QXzuScz7qOQpUabNS1tRcH_fJmR0rmqAvXzCSJxzA@mail.gmail.com>
-References: <1343936764-6461-1-git-send-email-vikram.pandita@ti.com>
- <CAPXgP10fJj3SwDdCa=rzfjZM8TL1GsvbSwEnfomFQ+NrW2j15w@mail.gmail.com>
- <CAFm5wm2yof+ePMAtueBJh+gKyih-9ohdCYFC6xLTqwjeOgWWog@mail.gmail.com>
- <CAPXgP11x9UYm7QReMjqZHtv8ZVoMRzNsREe-bdNwNSoSA6TRfw@mail.gmail.com> <CAFm5wm3w_QXzuScz7qOQpUabNS1tRcH_fJmR0rmqAvXzCSJxzA@mail.gmail.com>
-From: "Pandita, Vikram" <vikram.pandita@ti.com>
-Date: Fri, 3 Aug 2012 02:15:19 -0700
-Message-ID: <CAFm5wm3JnwJpa2rqnNc9_n0-h1JfSDNvj+JO95k8UUgjnCHm_w@mail.gmail.com>
-Subject: Re: [PATCH] printk: add option to print cpu id
-To: Kay Sievers <kay@vrfy.org>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+	Fri, 3 Aug 2012 05:16:24 -0400
+From: Vikram Pandita <vikram.pandita@ti.com>
+To: <gregkh@linuxfoundation.org>, <kay@vrfy.org>
+CC: <linux-kernel@vger.kernel.org>, Vikram Pandita <vikram.pandita@ti.com>,
         Mike Turquette <mturquette@linaro.org>,
         Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: [PATCH v2] printk: add option to print cpu id
+Date: Fri, 3 Aug 2012 02:16:18 -0700
+Message-ID: <1343985378-22330-1-git-send-email-vikram.pandita@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kay
+From: Vikram Pandita <vikram.pandita@ti.com>
 
-On Thu, Aug 2, 2012 at 7:19 PM, Pandita, Vikram <vikram.pandita@ti.com> wrote:
-> Kay
->
-> On Thu, Aug 2, 2012 at 5:06 PM, Kay Sievers <kay@vrfy.org> wrote:
->> On Fri, Aug 3, 2012 at 1:50 AM, Pandita, Vikram <vikram.pandita@ti.com> wrote:
->>> On Thu, Aug 2, 2012 at 1:08 PM, Kay Sievers <kay@vrfy.org> wrote:
->>
->>>> How is that supposed to be useful?
->>>>
->>>> The prefix is added while exporting data from the kmsg buffer, which
->>>> is just the CPU that *reads* the data from the buffer, not the one
->>>> that has *written* the data it into it.
->>>
->>> I don't think so.
->>> I can see the backtrace of the printk() call looks like follows:
->>>
->>> print_cpuid
->>>  print_prefix
->>>   msg_print_text
->>>    console_unlock
->>>     vprint_emit
->>>      printk
->>>
->>> Now this is a synchronous path, where in the buffer is getting filled
->>> with cpuid and timer info from the printk() calling context.
->>> So you should get the right CPU id with the trace - with the exception
->>> that i pointed out earlier for preemption.
->>>
->>>>
->>>> Do I miss anything here?
->>>
->>> This is my understanding of the printk framework.
->>> At least the print_time and print_cpuid seems to be happening
->>> synchronously wrt printk
->>
->> Printk is a store-and-forward-model, and it always was. There is no
->> guarantee at all, that the data is immediately flushed to the console
->> by the same CPU, it just happens to be in most cases. It's pretty
->> common though, that a different task is doing that work when it gets
->> the console lock, and that is not a matter of preemption, it's normal
->> and expected operation. The data which CPU has emitted the text is
->> just not available. It would need to be stored in the records, for
->> this to work.
->>
->> Your patch just prints the CPU that writes to the console, not
->> necessarily the one that has stored the data. I think the second one
->> is which is what you are looking for, but that is not what the patch
->> does.
->>
->
-> I did not understand well the complexity of the console layer. Thanks
-> for enlightenment :-)
-> Would be nice if you have any suggestion to get this done the right way.
->
-> First look i could guess this would do, but need to study further:
->
-> @@ -1550,6 +1550,9 @@ asmlinkage int vprintk_emit(int facility, int level,
->                           NULL, 0, recursion_msg, printed_len);
->         }
->
-> +       text_len = print_cpuid(text);
-> +       text += text_len;
-> +
->         /*
->          * The printf needs to come first; we need the syslog
->          * prefix which might be passed-in as a parameter.
-> @@ -1582,6 +1585,13 @@ asmlinkage int vprintk_emit(int facility, int level,
->                 }
->         }
->
-> +       /* Adjust for cpu-id string */
-> +       if (printk_cpuid) {
-> +               strncpy(text - 4, textbuf, 4);
-> +               text -= 4;
-> +               text_len += 4;
-> +       }
-> +
->         if (level == -1)
->                 level = default_message_loglevel;
->
+Introduce config option to enable CPU id reporting for printk() calls.
 
-Understand somewhat better now the logging mechanism.
-The proposal above does not seem to be correct or complete.
+Example logs with this option enabled look like:
+ [1] [    2.328613] usbcore: registered new interface driver libusual
+ [1] [    2.335418] usbcore: registered new interface driver usbtest
+ [1] [    2.342803] mousedev: PS/2 mouse device common for all mice
+ [0] [    2.352600] twl_rtc twl_rtc: Power up reset detected.
+ [0] [    2.359191] twl_rtc twl_rtc: Enabling TWL-RTC
+ [1] [    2.367797] twl_rtc twl_rtc: rtc core: registered twl_rtc as rtc0
+ [1] [    2.375274] i2c /dev entries driver
+ [1] [    2.382324] Driver for 1-wire Dallas network protocol.
 
-Will post v2 patch, hopefully fixing now.
+Its sometimes very useful to have printk also print the CPU Identifier
+that executed the call. This has helped to debug various SMP issues on shipping
+products.
 
->
->
->> Also dmesg and syslog uses the same logic and would put-out all
->> entirely wrong CPU information with it, because the original
->> information is long gone.
->>
->> Kay
+Known limitation is if the system gets preempted between function call and
+actual printk, the reported cpu-id might not be accurate. But most of the
+times its seen to give a good feel of how the N cpu's in the system are
+getting loaded.
+
+Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+---
+v1: initial version - had wrong cpuid logging mechanism
+v2: fixed as per review comments from Kay Sievers
+
+ kernel/printk.c   |   51 +++++++++++++++++++++++++++++++++++++++++----------
+ lib/Kconfig.debug |   13 +++++++++++++
+ 2 files changed, 54 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 6a76ab9..64f4a1b 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -208,6 +208,7 @@ struct log {
+ 	u8 facility;		/* syslog facility */
+ 	u8 flags:5;		/* internal record flags */
+ 	u8 level:3;		/* syslog level */
++	u8 cpuid;		/* cpu invoking the log */
+ };
+ 
+ /*
+@@ -305,7 +306,8 @@ static u32 log_next(u32 idx)
+ static void log_store(int facility, int level,
+ 		      enum log_flags flags, u64 ts_nsec,
+ 		      const char *dict, u16 dict_len,
+-		      const char *text, u16 text_len)
++		      const char *text, u16 text_len,
++		      const u8 cpuid)
+ {
+ 	struct log *msg;
+ 	u32 size, pad_len;
+@@ -356,6 +358,7 @@ static void log_store(int facility, int level,
+ 		msg->ts_nsec = local_clock();
+ 	memset(log_dict(msg) + dict_len, 0, pad_len);
+ 	msg->len = sizeof(struct log) + text_len + dict_len + pad_len;
++	msg->cpuid = cpuid;
+ 
+ 	/* insert message */
+ 	log_next_idx += msg->len;
+@@ -855,6 +858,25 @@ static size_t print_time(u64 ts, char *buf)
+ 		       (unsigned long)ts, rem_nsec / 1000);
+ }
+ 
++#if defined(CONFIG_PRINTK_CPUID)
++static bool printk_cpuid = 1;
++#else
++static bool printk_cpuid;
++#endif
++module_param_named(cpuid, printk_cpuid, bool, S_IRUGO | S_IWUSR);
++
++static size_t print_cpuid(u8 cpuid, char *buf)
++{
++
++	if (!printk_cpuid)
++		return 0;
++
++	if (!buf)
++		return 4;
++
++	return sprintf(buf, "[%1d] ", cpuid);
++}
++
+ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
+ {
+ 	size_t len = 0;
+@@ -874,6 +896,7 @@ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
+ 		}
+ 	}
+ 
++	len += print_cpuid(msg->cpuid, buf ? buf + len : NULL);
+ 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+ 	return len;
+ }
+@@ -1387,6 +1410,7 @@ static struct cont {
+ 	u64 ts_nsec;			/* time of first print */
+ 	u8 level;			/* log level of first message */
+ 	u8 facility;			/* log level of first message */
++	u8 cpuid;			/* cpu invoking the logging request */
+ 	enum log_flags flags;		/* prefix, newline flags */
+ 	bool flushed:1;			/* buffer sealed and committed */
+ } cont;
+@@ -1405,7 +1429,8 @@ static void cont_flush(enum log_flags flags)
+ 		 * line. LOG_NOCONS suppresses a duplicated output.
+ 		 */
+ 		log_store(cont.facility, cont.level, flags | LOG_NOCONS,
+-			  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
++			  cont.ts_nsec, NULL, 0, cont.buf, cont.len,
++			  cont.cpuid);
+ 		cont.flags = flags;
+ 		cont.flushed = true;
+ 	} else {
+@@ -1414,12 +1439,14 @@ static void cont_flush(enum log_flags flags)
+ 		 * just submit it to the store and free the buffer.
+ 		 */
+ 		log_store(cont.facility, cont.level, flags, 0,
+-			  NULL, 0, cont.buf, cont.len);
++			  NULL, 0, cont.buf, cont.len,
++			  cont.cpuid);
+ 		cont.len = 0;
+ 	}
+ }
+ 
+-static bool cont_add(int facility, int level, const char *text, size_t len)
++static bool cont_add(int facility, int level, const char *text, size_t len,
++			const u8 cpuid)
+ {
+ 	if (cont.len && cont.flushed)
+ 		return false;
+@@ -1442,6 +1469,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 
+ 	memcpy(cont.buf + cont.len, text, len);
+ 	cont.len += len;
++	cont.cpuid = cpuid;
+ 
+ 	if (cont.len > (sizeof(cont.buf) * 80) / 100)
+ 		cont_flush(LOG_CONT);
+@@ -1455,7 +1483,8 @@ static size_t cont_print_text(char *text, size_t size)
+ 	size_t len;
+ 
+ 	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
+-		textlen += print_time(cont.ts_nsec, text);
++		textlen += print_cpuid(cont.cpuid, text);
++		textlen += print_time(cont.ts_nsec, text + textlen);
+ 		size -= textlen;
+ 	}
+ 
+@@ -1527,7 +1556,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		printed_len += strlen(recursion_msg);
+ 		/* emit KERN_CRIT message */
+ 		log_store(0, 2, LOG_PREFIX|LOG_NEWLINE, 0,
+-			  NULL, 0, recursion_msg, printed_len);
++			  NULL, 0, recursion_msg, printed_len, this_cpu);
+ 	}
+ 
+ 	/*
+@@ -1577,9 +1606,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 			cont_flush(LOG_NEWLINE);
+ 
+ 		/* buffer line if possible, otherwise store it right away */
+-		if (!cont_add(facility, level, text, text_len))
++		if (!cont_add(facility, level, text, text_len, this_cpu))
+ 			log_store(facility, level, lflags | LOG_CONT, 0,
+-				  dict, dictlen, text, text_len);
++				  dict, dictlen, text, text_len, this_cpu);
+ 	} else {
+ 		bool stored = false;
+ 
+@@ -1591,13 +1620,15 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 */
+ 		if (cont.len && cont.owner == current) {
+ 			if (!(lflags & LOG_PREFIX))
+-				stored = cont_add(facility, level, text, text_len);
++				stored = cont_add(facility, level, text, text_len,
++						this_cpu);
+ 			cont_flush(LOG_NEWLINE);
+ 		}
+ 
+ 		if (!stored)
+ 			log_store(facility, level, lflags, 0,
+-				  dict, dictlen, text, text_len);
++				  dict, dictlen, text, text_len,
++				  this_cpu);
+ 	}
+ 	printed_len += text_len;
+ 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 2403a63..139b2b1 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -14,6 +14,19 @@ config PRINTK_TIME
+ 	  The behavior is also controlled by the kernel command line
+ 	  parameter printk.time=1. See Documentation/kernel-parameters.txt
+ 
++config PRINTK_CPUID
++	bool "Show cpu id information on printks"
++	depends on PRINTK
++	help
++	  Selecting this option causes cpu identifier to be added to the
++	  output of the syslog() system call and at the console.
++
++	  This flag just specifies if the cpu-id should
++	  be included.
++
++	  The behavior is also controlled by the kernel command line
++	  parameter printk.cpuid=1.
++
+ config DEFAULT_MESSAGE_LOGLEVEL
+ 	int "Default message log level (1-7)"
+ 	range 1 7
+-- 
+1.7.9.5
+
