@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab2HCODE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:03:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45792 "EHLO
+	id S1753880Ab2HCOCx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:02:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45794 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab2HCOB0 (ORCPT
+	with ESMTP id S1753110Ab2HCOB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Aug 2012 10:01:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 08/18] perf evlist: Introduce perf_evlist__parse_sample
-Date: Fri,  3 Aug 2012 11:01:00 -0300
-Message-Id: <1344002470-5965-9-git-send-email-acme@infradead.org>
+Subject: [PATCH 05/18] perf session: Use perf_evlist__sample_type more extensively
+Date: Fri,  3 Aug 2012 11:00:57 -0300
+Message-Id: <1344002470-5965-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344002470-5965-1-git-send-email-acme@infradead.org>
 References: <1344002470-5965-1-git-send-email-acme@infradead.org>
@@ -31,8 +31,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-That is a more compact form of perf_session__parse_sample and to support
-multiple evlists per perf_session is the way to go anyway.
+Removing perf_session->sample_type, as it can be obtained from the
+evsel/evlist.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -42,171 +42,203 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vkxx3j5qktoj11bvcwmfjj13@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-mnt1zwlik7sp7z6ljc9kyefg@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-test.c |    8 ++------
- tools/perf/builtin-top.c  |    2 +-
- tools/perf/util/evlist.c  |    9 +++++++++
- tools/perf/util/evlist.h  |    4 ++++
- tools/perf/util/python.c  |    6 +-----
- tools/perf/util/session.c |   19 ++++---------------
- tools/perf/util/session.h |    4 ----
- 7 files changed, 21 insertions(+), 31 deletions(-)
+ tools/perf/builtin-report.c |    5 +++--
+ tools/perf/builtin-test.c   |   10 ++--------
+ tools/perf/util/session.c   |   31 ++++++++++++++++++++++---------
+ tools/perf/util/session.h   |   11 +++--------
+ 4 files changed, 30 insertions(+), 27 deletions(-)
 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 69b1c11..7c88a24 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -249,8 +249,9 @@ static int process_read_event(struct perf_tool *tool,
+ static int perf_report__setup_sample_type(struct perf_report *rep)
+ {
+ 	struct perf_session *self = rep->session;
++	u64 sample_type = perf_evlist__sample_type(self->evlist);
+ 
+-	if (!self->fd_pipe && !(self->sample_type & PERF_SAMPLE_CALLCHAIN)) {
++	if (!self->fd_pipe && !(sample_type & PERF_SAMPLE_CALLCHAIN)) {
+ 		if (sort__has_parent) {
+ 			ui__error("Selected --sort parent, but no "
+ 				    "callchain data. Did you call "
+@@ -274,7 +275,7 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
+ 
+ 	if (sort__branch_mode == 1) {
+ 		if (!self->fd_pipe &&
+-		    !(self->sample_type & PERF_SAMPLE_BRANCH_STACK)) {
++		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
+ 			ui__error("Selected -b but no branch data. "
+ 				  "Did you call perf record without -b?\n");
+ 			return -1;
 diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index e5032ed..1d592f5 100644
+index 2ea5fe4..e5032ed 100644
 --- a/tools/perf/builtin-test.c
 +++ b/tools/perf/builtin-test.c
-@@ -562,9 +562,7 @@ static int test__basic_mmap(void)
- 			goto out_munmap;
- 		}
+@@ -661,7 +661,7 @@ static int test__PERF_RECORD(void)
+ 	const char *cmd = "sleep";
+ 	const char *argv[] = { cmd, "1", NULL, };
+ 	char *bname;
+-	u64 sample_type, prev_time = 0;
++	u64 prev_time = 0;
+ 	bool found_cmd_mmap = false,
+ 	     found_libc_mmap = false,
+ 	     found_vdso_mmap = false,
+@@ -757,12 +757,6 @@ static int test__PERF_RECORD(void)
+ 	}
  
--		err = perf_event__parse_sample(event, attr.sample_type,
--					       evsels[0]->sample_size,
--					       false, &sample, false);
-+		err = perf_evlist__parse_sample(evlist, event, &sample, false);
- 		if (err) {
- 			pr_err("Can't parse sample, err = %d\n", err);
- 			goto out_munmap;
-@@ -781,9 +779,7 @@ static int test__PERF_RECORD(void)
+ 	/*
+-	 * We'll need these two to parse the PERF_SAMPLE_* fields in each
+-	 * event.
+-	 */
+-	sample_type = perf_evlist__sample_type(evlist);
+-
+-	/*
+ 	 * Now that all is properly set up, enable the events, they will
+ 	 * count just on workload.pid, which will start...
+ 	 */
+@@ -787,7 +781,7 @@ static int test__PERF_RECORD(void)
  				if (type < PERF_RECORD_MAX)
  					nr_events[type]++;
  
--				err = perf_event__parse_sample(event, evsel->attr.sample_type,
--							       evsel->sample_size, true,
--							       &sample, false);
-+				err = perf_evlist__parse_sample(evlist, event, &sample, false);
+-				err = perf_event__parse_sample(event, sample_type,
++				err = perf_event__parse_sample(event, evsel->attr.sample_type,
+ 							       evsel->sample_size, true,
+ 							       &sample, false);
  				if (err < 0) {
- 					if (verbose)
- 						perf_event__fprintf(event, stderr);
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 520e425..40264ea 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -811,7 +811,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 	int ret;
- 
- 	while ((event = perf_evlist__mmap_read(top->evlist, idx)) != NULL) {
--		ret = perf_session__parse_sample(session, event, &sample);
-+		ret = perf_evlist__parse_sample(top->evlist, event, &sample, false);
- 		if (ret) {
- 			pr_err("Can't parse sample, err = %d\n", ret);
- 			continue;
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 3edfd34..1a560e0 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -881,3 +881,12 @@ int perf_evlist__start_workload(struct perf_evlist *evlist)
- 
- 	return 0;
- }
-+
-+int perf_evlist__parse_sample(struct perf_evlist *evlist,
-+			      const union perf_event *event,
-+			      struct perf_sample *sample, bool swapped)
-+{
-+	struct perf_evsel *e = list_entry(evlist->entries.next, struct perf_evsel, node);
-+	return perf_event__parse_sample(event, e->attr.sample_type, e->sample_size,
-+					e->attr.sample_id_all, sample, swapped);
-+}
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 40d4d3c..a5a4911 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -122,6 +122,10 @@ u64 perf_evlist__sample_type(const struct perf_evlist *evlist);
- bool perf_evlist__sample_id_all(const const struct perf_evlist *evlist);
- u16 perf_evlist__id_hdr_size(const struct perf_evlist *evlist);
- 
-+int perf_evlist__parse_sample(struct perf_evlist *evlist,
-+			      const union perf_event *event,
-+			      struct perf_sample *sample, bool swapped);
-+
- bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist);
- bool perf_evlist__valid_sample_id_all(const struct perf_evlist *evlist);
- 
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index b0d6f85..0688bfb 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -797,17 +797,13 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
- 
- 	event = perf_evlist__mmap_read(evlist, cpu);
- 	if (event != NULL) {
--		struct perf_evsel *first;
- 		PyObject *pyevent = pyrf_event__new(event);
- 		struct pyrf_event *pevent = (struct pyrf_event *)pyevent;
- 
- 		if (pyevent == NULL)
- 			return PyErr_NoMemory();
- 
--		first = list_entry(evlist->entries.next, struct perf_evsel, node);
--		err = perf_event__parse_sample(event, first->attr.sample_type,
--					       first->sample_size,
--					       sample_id_all, &pevent->sample, false);
-+		err = perf_evlist__parse_sample(evlist, event, &pevent->sample, false);
- 		if (err)
- 			return PyErr_Format(PyExc_OSError,
- 					    "perf: can't parse sample, err=%d", err);
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 5b8601d..7d07324 100644
+index b8da60d..00e180e 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -16,19 +16,6 @@
- #include "cpumap.h"
- #include "event-parse.h"
+@@ -23,12 +23,20 @@ int perf_session__parse_sample(struct perf_session *session,
+ 	struct perf_evsel *first;
+ 	first = list_entry(session->evlist->entries.next, struct perf_evsel, node);
  
--int perf_session__parse_sample(struct perf_session *session,
--			       const union perf_event *event,
--			       struct perf_sample *sample)
--{
--	struct perf_evsel *first;
--	first = list_entry(session->evlist->entries.next, struct perf_evsel, node);
--
--	return perf_event__parse_sample(event, first->attr.sample_type,
--					first->sample_size,
--					first->attr.sample_id_all, sample,
--					session->header.needs_swap);
--}
--
- int perf_session__synthesize_sample(struct perf_session *session,
- 				    union perf_event *event,
- 				    const struct perf_sample *sample)
-@@ -692,7 +679,8 @@ static void flush_sample_queue(struct perf_session *s,
- 		if (iter->timestamp > limit)
- 			break;
+-	return perf_event__parse_sample(event, session->sample_type,
++	return perf_event__parse_sample(event, first->attr.sample_type,
+ 					first->sample_size,
+ 					session->sample_id_all, sample,
+ 					session->header.needs_swap);
+ }
  
--		ret = perf_session__parse_sample(s, iter->event, &sample);
-+		ret = perf_evlist__parse_sample(s->evlist, iter->event, &sample,
-+						s->header.needs_swap);
- 		if (ret)
- 			pr_err("Can't parse sample, err = %d\n", ret);
- 		else
-@@ -1103,7 +1091,8 @@ static int perf_session__process_event(struct perf_session *session,
- 	/*
- 	 * For all kernel events we get the sample data
- 	 */
--	ret = perf_session__parse_sample(session, event, &sample);
-+	ret = perf_evlist__parse_sample(session->evlist, event, &sample,
-+					session->header.needs_swap);
- 	if (ret)
- 		return ret;
++int perf_session__synthesize_sample(struct perf_session *session,
++				    union perf_event *event,
++				    const struct perf_sample *sample)
++{
++	return perf_event__synthesize_sample(event, perf_evlist__sample_type(session->evlist),
++					     sample, session->header.needs_swap);
++}
++
+ static int perf_session__open(struct perf_session *self, bool force)
+ {
+ 	struct stat input_stat;
+@@ -95,7 +103,6 @@ out_close:
  
+ void perf_session__update_sample_type(struct perf_session *self)
+ {
+-	self->sample_type = perf_evlist__sample_type(self->evlist);
+ 	self->sample_id_all = perf_evlist__sample_id_all(self->evlist);
+ 	self->id_hdr_size = perf_evlist__id_hdr_size(self->evlist);
+ 	self->host_machine.id_hdr_size = self->id_hdr_size;
+@@ -877,16 +884,18 @@ static void perf_session__print_tstamp(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_sample *sample)
+ {
++	u64 sample_type = perf_evlist__sample_type(session->evlist);
++
+ 	if (event->header.type != PERF_RECORD_SAMPLE &&
+ 	    !session->sample_id_all) {
+ 		fputs("-1 -1 ", stdout);
+ 		return;
+ 	}
+ 
+-	if ((session->sample_type & PERF_SAMPLE_CPU))
++	if ((sample_type & PERF_SAMPLE_CPU))
+ 		printf("%u ", sample->cpu);
+ 
+-	if (session->sample_type & PERF_SAMPLE_TIME)
++	if (sample_type & PERF_SAMPLE_TIME)
+ 		printf("%" PRIu64 " ", sample->time);
+ }
+ 
+@@ -911,6 +920,8 @@ static void dump_event(struct perf_session *session, union perf_event *event,
+ static void dump_sample(struct perf_session *session, union perf_event *event,
+ 			struct perf_sample *sample)
+ {
++	u64 sample_type;
++
+ 	if (!dump_trace)
+ 		return;
+ 
+@@ -918,10 +929,12 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
+ 	       event->header.misc, sample->pid, sample->tid, sample->ip,
+ 	       sample->period, sample->addr);
+ 
+-	if (session->sample_type & PERF_SAMPLE_CALLCHAIN)
++	sample_type = perf_evlist__sample_type(session->evlist);
++
++	if (sample_type & PERF_SAMPLE_CALLCHAIN)
+ 		callchain__printf(sample);
+ 
+-	if (session->sample_type & PERF_SAMPLE_BRANCH_STACK)
++	if (sample_type & PERF_SAMPLE_BRANCH_STACK)
+ 		branch_stack__printf(sample);
+ }
+ 
+@@ -1018,7 +1031,7 @@ static int perf_session__preprocess_sample(struct perf_session *session,
+ 					   union perf_event *event, struct perf_sample *sample)
+ {
+ 	if (event->header.type != PERF_RECORD_SAMPLE ||
+-	    !(session->sample_type & PERF_SAMPLE_CALLCHAIN))
++	    !(perf_evlist__sample_type(session->evlist) & PERF_SAMPLE_CALLCHAIN))
+ 		return 0;
+ 
+ 	if (!ip_callchain__valid(sample->callchain, event)) {
+@@ -1401,9 +1414,9 @@ int perf_session__process_events(struct perf_session *self,
+ 	return err;
+ }
+ 
+-bool perf_session__has_traces(struct perf_session *self, const char *msg)
++bool perf_session__has_traces(struct perf_session *session, const char *msg)
+ {
+-	if (!(self->sample_type & PERF_SAMPLE_RAW)) {
++	if (!(perf_evlist__sample_type(session->evlist) & PERF_SAMPLE_RAW)) {
+ 		pr_err("No trace sample to read. Did you call 'perf %s'?\n", msg);
+ 		return false;
+ 	}
 diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index e2a1a4b..7389fb1 100644
+index 4d549e2..c45ce43 100644
 --- a/tools/perf/util/session.h
 +++ b/tools/perf/util/session.h
-@@ -126,10 +126,6 @@ size_t perf_session__fprintf_dsos_buildid(struct perf_session *self,
+@@ -41,7 +41,6 @@ struct perf_session {
+ 	 *	  perf.data file.
+ 	 */
+ 	struct hists		hists;
+-	u64			sample_type;
+ 	int			fd;
+ 	bool			fd_pipe;
+ 	bool			repipe;
+@@ -133,13 +132,9 @@ int perf_session__parse_sample(struct perf_session *session,
+ 			       const union perf_event *event,
+ 			       struct perf_sample *sample);
  
- size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp);
+-static inline int perf_session__synthesize_sample(struct perf_session *session,
+-						  union perf_event *event,
+-						  const struct perf_sample *sample)
+-{
+-	return perf_event__synthesize_sample(event, session->sample_type,
+-					     sample, session->header.needs_swap);
+-}
++int perf_session__synthesize_sample(struct perf_session *session,
++				    union perf_event *event,
++				    const struct perf_sample *sample);
  
--int perf_session__parse_sample(struct perf_session *session,
--			       const union perf_event *event,
--			       struct perf_sample *sample);
--
- int perf_session__synthesize_sample(struct perf_session *session,
- 				    union perf_event *event,
- 				    const struct perf_sample *sample);
+ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ 					    unsigned int type);
 -- 
 1.7.1
 
