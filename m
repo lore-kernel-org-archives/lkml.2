@@ -1,41 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab2HCPiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 11:38:00 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45947 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab2HCPh7 (ORCPT
+	id S1753849Ab2HCPi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 11:38:29 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:46315 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab2HCPi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 11:37:59 -0400
-Message-ID: <501BF054.5050803@wwwdotorg.org>
-Date: Fri, 03 Aug 2012 09:37:56 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 3 Aug 2012 11:38:27 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>
+Subject: [GIT PULL] KGDB/KDB/dbgp fixes for 3.6-rc1
+Date: Fri, 3 Aug 2012 10:38:07 -0500
+Message-ID: <1344008287-2453-1-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Philip Avinash <avinashphilip@ti.com>
-Subject: Re: [PATCH] pwm: Remove a redundant error message when devm_request_and_ioremap
- fails
-References: <1344001434.25906.5.camel@phoenix>
-In-Reply-To: <1344001434.25906.5.camel@phoenix>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 07:43 AM, Axel Lin wrote:
-> The implementation in devm_request_and_ioremap() already shows error message,
-> so no need to show dev_err again if devm_request_and_ioremap() fails.
+This was ready to go in time for the 3.6 merge window, but the pull
+request had not been sent prior to the merge window closing, as it was
+waiting on some final regression testing which has since passed
+correctly.
 
-I don't have any issue with this patch, but a general comment:
+There are no new features, those will be delayed to the 3.7
+window. There are only fixes/cleanup against the usual kernel churn
+and at least we are removing more lines than we add. :-)
 
-It sure would be nice if there was some way to easily tell which
-functions did already print an error message. In some drivers I've
-written, I've made sure that every failure path prints an error message
-so it's easy to track down failures. However, if some functions already
-do this and some don't, only some call sites in the driver will have
-error prints, so it'll look inconsistent, as if some error messages were
-forgotten:-(
+Thanks,
+Jason.
+
+
+The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+
+  Linux 3.5 (2012-07-21 13:58:29 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/kgdb.git tags/for_linux-3.6-rc1
+
+for you to fetch changes up to f96a4216e85050c0a9d41a41ecb0ae9d8e39b509:
+
+  USB: echi-dbgp: increase the controller wait time to come out of halt. (2012-07-31 08:16:43 -0500)
+
+----------------------------------------------------------------
+KGDB/KDB/usb-dbgp fixes and cleanups
+   usb-dbgp - increase the controller wait time to come out of halt.
+   kdb - Remove unused KDB_FLAG_ONLY_DO_DUMP code and cpu in more prompt
+   debug core - pass NMI type on archs that provide NMI types
+
+----------------------------------------------------------------
+Anton Vorontsov (1):
+      kernel/debug: Make use of KGDB_REASON_NMI
+
+Colin Ian King (1):
+      USB: echi-dbgp: increase the controller wait time to come out of halt.
+
+Jason Wessel (2):
+      kdb: Remove unused KDB_FLAG_ONLY_DO_DUMP
+      kdb: Remove cpu from the more prompt
+
+ drivers/usb/early/ehci-dbgp.c   |    2 +-
+ include/linux/kdb.h             |    2 --
+ kernel/debug/kdb/kdb_debugger.c |    4 ++++
+ kernel/debug/kdb/kdb_io.c       |   11 -----------
+ kernel/debug/kdb/kdb_main.c     |   15 +--------------
+ 5 files changed, 6 insertions(+), 28 deletions(-)
