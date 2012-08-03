@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab2HCIOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 04:14:11 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:38886 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab2HCIOG (ORCPT
+	id S1752936Ab2HCI1J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 04:27:09 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:35269 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab2HCI1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 04:14:06 -0400
-Message-ID: <501B8842.9040109@linux.vnet.ibm.com>
-Date: Fri, 03 Aug 2012 16:13:54 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 4/9] KVM: define kvm_bad_pfn statically
-References: <5014F053.8020305@linux.vnet.ibm.com> <5014F0E1.4010909@linux.vnet.ibm.com> <20120802131527.GE25344@amt.cnet> <20120803000125.GB12559@bloggs.ozlabs.ibm.com>
-In-Reply-To: <20120803000125.GB12559@bloggs.ozlabs.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12080308-9574-0000-0000-000003D34037
+	Fri, 3 Aug 2012 04:27:04 -0400
+From: Devendra Naga <develkernel412222@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Brownell <david-b@pacbell.net>, <justin.waters@timesys.com>,
+        <a.zummo@towertech.it>, Andrew Morton <akpm@linux-foundation.org>,
+        Devendra Naga <develkernel412222@gmail.com>
+Subject: [PATCH] rtc/at91sam9: use module_platform_driver macro
+Date: Fri,  3 Aug 2012 14:11:40 +0545
+Message-Id: <1343982400-17245-1-git-send-email-develkernel412222@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marcelo, Paul,
+This driver does seems to do only platform_driver_register in the
+init function and platform_driver_unregister in the exit function,
 
-Thanks for your review!
+so replace all this code including the module_init and module_exit with
+module_platform_driver macro...
 
-On 08/03/2012 08:01 AM, Paul Mackerras wrote:
-> On Thu, Aug 02, 2012 at 10:15:27AM -0300, Marcelo Tosatti wrote:
-> 
->> Remind me what is the guarantee that -Exxx does not clash with
->> a valid pfn number?
-> 
-> A pfn number is an address >> PAGE_SHIFT, so it will have the top 12
-> (at least) bits clear, whereas -Exxx will have the top bit set.
-> 
+Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
+---
+ drivers/rtc/rtc-at91sam9.c |   13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-Yes.
-
-As this way is hard to understand and it will break huge memory support
-on PAE 32bit cpu, i have used a new way in the v2:
-
-http://marc.info/?l=linux-kernel&m=134398012027025&w=2
-
-Please review the new version.
-
-
+diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+index 8318689..1063ea1 100644
+--- a/drivers/rtc/rtc-at91sam9.c
++++ b/drivers/rtc/rtc-at91sam9.c
+@@ -465,18 +465,7 @@ static struct platform_driver at91_rtc_driver = {
+ 	},
+ };
+ 
+-static int __init at91_rtc_init(void)
+-{
+-	return platform_driver_register(&at91_rtc_driver);
+-}
+-module_init(at91_rtc_init);
+-
+-static void __exit at91_rtc_exit(void)
+-{
+-	platform_driver_unregister(&at91_rtc_driver);
+-}
+-module_exit(at91_rtc_exit);
+-
++module_platform_driver(at91_rtc_driver);
+ 
+ MODULE_AUTHOR("Michel Benoit");
+ MODULE_DESCRIPTION("RTC driver for Atmel AT91SAM9x");
+-- 
+1.7.9.5
 
