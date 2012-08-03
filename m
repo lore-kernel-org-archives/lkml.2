@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab2HCOB1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:01:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45778 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2HCOBX (ORCPT
+	id S1753455Ab2HCOBb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:01:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48765 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab2HCOBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:01:23 -0400
+	Fri, 3 Aug 2012 10:01:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+        Namhyung Kim <namhyung@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/18] perf tools: Introduce intlist
-Date: Fri,  3 Aug 2012 11:01:08 -0300
-Message-Id: <1344002470-5965-17-git-send-email-acme@infradead.org>
+Subject: [PATCH 12/18] perf tool: Save cmdline from user in file header vs what is passed to record
+Date: Fri,  3 Aug 2012 11:01:04 -0300
+Message-Id: <1344002470-5965-13-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344002470-5965-1-git-send-email-acme@infradead.org>
 References: <1344002470-5965-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,232 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-Built on rblist - like strlist. Used in the next patch.
+A number of builtin commands process some user args and then pass the rest to
+cmd_record. cmd_record then saves argc/argv that it receives into the header of
+the perf data file. But this loses the arguments handled by the first command
+-- ie., the real command line from the user. This patch saves the command line
+as typed by the user rather than what was passed to cmd_record.
+
+As an example consider the command:
+$ perf kvm --guest --host --guestmount=/tmp/guest-mount record
+    -fo /tmp/perf.data -ag -- sleep 10
+
+Currently the command saved to the header is:
+    cmdline : /tmp/p3.5/perf record -o perf.data.kvm -fo /tmp/perf.data -ag -- sleep 1
+
+(ignore the duplicated -o -- the first would be yet another bug with perf-kvm).
+
+With this patch the command line saved to the header is:
+cmdline : /tmp/p3.5/perf kvm --guest --host --guestmount=/tmp/guest-mount
+    record -fo /tmp/perf.data -ag -- sleep 1
+
+v2: simplified to saving the command in parse_options per Stephane's suggestion
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1343709095-7089-4-git-send-email-dsahern@gmail.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1343616831-6408-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile       |    2 +
- tools/perf/util/intlist.c |  101 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/intlist.h |   75 +++++++++++++++++++++++++++++++++
- 3 files changed, 178 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/util/intlist.c
- create mode 100644 tools/perf/util/intlist.h
+ tools/perf/builtin-record.c     |    2 --
+ tools/perf/util/header.c        |    9 +++++++++
+ tools/perf/util/parse-options.c |    3 +++
+ 3 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 285f700..32912af 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -320,6 +320,7 @@ LIB_H += util/cgroup.h
- LIB_H += $(TRACE_EVENT_DIR)event-parse.h
- LIB_H += util/target.h
- LIB_H += util/rblist.h
-+LIB_H += util/intlist.h
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index dc2b625..4db6e1b 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -844,8 +844,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 	struct perf_record *rec = &record;
+ 	char errbuf[BUFSIZ];
  
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -385,6 +386,7 @@ LIB_OBJS += $(OUTPUT)util/cpumap.o
- LIB_OBJS += $(OUTPUT)util/cgroup.o
- LIB_OBJS += $(OUTPUT)util/target.o
- LIB_OBJS += $(OUTPUT)util/rblist.o
-+LIB_OBJS += $(OUTPUT)util/intlist.o
+-	perf_header__set_cmdline(argc, argv);
+-
+ 	evsel_list = perf_evlist__new(NULL, NULL);
+ 	if (evsel_list == NULL)
+ 		return -ENOMEM;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 3a6d204..74ea3c2 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -174,6 +174,15 @@ perf_header__set_cmdline(int argc, const char **argv)
+ {
+ 	int i;
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
++	/*
++	 * If header_argv has already been set, do not override it.
++	 * This allows a command to set the cmdline, parse args and
++	 * then call another builtin function that implements a
++	 * command -- e.g, cmd_kvm calling cmd_record.
++	 */
++	if (header_argv)
++		return 0;
++
+ 	header_argc = (u32)argc;
  
-diff --git a/tools/perf/util/intlist.c b/tools/perf/util/intlist.c
-new file mode 100644
-index 0000000..fd530dc
---- /dev/null
-+++ b/tools/perf/util/intlist.c
-@@ -0,0 +1,101 @@
-+/*
-+ * Based on intlist.c by:
-+ * (c) 2009 Arnaldo Carvalho de Melo <acme@redhat.com>
-+ *
-+ * Licensed under the GPLv2.
-+ */
+ 	/* do not include NULL termination */
+diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+index 99d02aa..594f8fa 100644
+--- a/tools/perf/util/parse-options.c
++++ b/tools/perf/util/parse-options.c
+@@ -1,6 +1,7 @@
+ #include "util.h"
+ #include "parse-options.h"
+ #include "cache.h"
++#include "header.h"
+ 
+ #define OPT_SHORT 1
+ #define OPT_UNSET 2
+@@ -413,6 +414,8 @@ int parse_options(int argc, const char **argv, const struct option *options,
+ {
+ 	struct parse_opt_ctx_t ctx;
+ 
++	perf_header__set_cmdline(argc, argv);
 +
-+#include <errno.h>
-+#include <stdlib.h>
-+#include <linux/compiler.h>
-+
-+#include "intlist.h"
-+
-+static struct rb_node *intlist__node_new(struct rblist *rblist __used,
-+					 const void *entry)
-+{
-+	int i = (int)((long)entry);
-+	struct rb_node *rc = NULL;
-+	struct int_node *node = malloc(sizeof(*node));
-+
-+	if (node != NULL) {
-+		node->i = i;
-+		rc = &node->rb_node;
-+	}
-+
-+	return rc;
-+}
-+
-+static void int_node__delete(struct int_node *ilist)
-+{
-+	free(ilist);
-+}
-+
-+static void intlist__node_delete(struct rblist *rblist __used,
-+				 struct rb_node *rb_node)
-+{
-+	struct int_node *node = container_of(rb_node, struct int_node, rb_node);
-+
-+	int_node__delete(node);
-+}
-+
-+static int intlist__node_cmp(struct rb_node *rb_node, const void *entry)
-+{
-+	int i = (int)((long)entry);
-+	struct int_node *node = container_of(rb_node, struct int_node, rb_node);
-+
-+	return node->i - i;
-+}
-+
-+int intlist__add(struct intlist *ilist, int i)
-+{
-+	return rblist__add_node(&ilist->rblist, (void *)((long)i));
-+}
-+
-+void intlist__remove(struct intlist *ilist __used, struct int_node *node)
-+{
-+	int_node__delete(node);
-+}
-+
-+struct int_node *intlist__find(struct intlist *ilist, int i)
-+{
-+	struct int_node *node = NULL;
-+	struct rb_node *rb_node = rblist__find(&ilist->rblist, (void *)((long)i));
-+
-+	if (rb_node)
-+		node = container_of(rb_node, struct int_node, rb_node);
-+
-+	return node;
-+}
-+
-+struct intlist *intlist__new(void)
-+{
-+	struct intlist *ilist = malloc(sizeof(*ilist));
-+
-+	if (ilist != NULL) {
-+		rblist__init(&ilist->rblist);
-+		ilist->rblist.node_cmp    = intlist__node_cmp;
-+		ilist->rblist.node_new    = intlist__node_new;
-+		ilist->rblist.node_delete = intlist__node_delete;
-+	}
-+
-+	return ilist;
-+}
-+
-+void intlist__delete(struct intlist *ilist)
-+{
-+	if (ilist != NULL)
-+		rblist__delete(&ilist->rblist);
-+}
-+
-+struct int_node *intlist__entry(const struct intlist *ilist, unsigned int idx)
-+{
-+	struct int_node *node = NULL;
-+	struct rb_node *rb_node;
-+
-+	rb_node = rblist__entry(&ilist->rblist, idx);
-+	if (rb_node)
-+		node = container_of(rb_node, struct int_node, rb_node);
-+
-+	return node;
-+}
-diff --git a/tools/perf/util/intlist.h b/tools/perf/util/intlist.h
-new file mode 100644
-index 0000000..6d63ab9
---- /dev/null
-+++ b/tools/perf/util/intlist.h
-@@ -0,0 +1,75 @@
-+#ifndef __PERF_INTLIST_H
-+#define __PERF_INTLIST_H
-+
-+#include <linux/rbtree.h>
-+#include <stdbool.h>
-+
-+#include "rblist.h"
-+
-+struct int_node {
-+	struct rb_node rb_node;
-+	int i;
-+};
-+
-+struct intlist {
-+	struct rblist rblist;
-+};
-+
-+struct intlist *intlist__new(void);
-+void intlist__delete(struct intlist *ilist);
-+
-+void intlist__remove(struct intlist *ilist, struct int_node *in);
-+int intlist__add(struct intlist *ilist, int i);
-+
-+struct int_node *intlist__entry(const struct intlist *ilist, unsigned int idx);
-+struct int_node *intlist__find(struct intlist *ilist, int i);
-+
-+static inline bool intlist__has_entry(struct intlist *ilist, int i)
-+{
-+	return intlist__find(ilist, i) != NULL;
-+}
-+
-+static inline bool intlist__empty(const struct intlist *ilist)
-+{
-+	return rblist__empty(&ilist->rblist);
-+}
-+
-+static inline unsigned int intlist__nr_entries(const struct intlist *ilist)
-+{
-+	return rblist__nr_entries(&ilist->rblist);
-+}
-+
-+/* For intlist iteration */
-+static inline struct int_node *intlist__first(struct intlist *ilist)
-+{
-+	struct rb_node *rn = rb_first(&ilist->rblist.entries);
-+	return rn ? rb_entry(rn, struct int_node, rb_node) : NULL;
-+}
-+static inline struct int_node *intlist__next(struct int_node *in)
-+{
-+	struct rb_node *rn;
-+	if (!in)
-+		return NULL;
-+	rn = rb_next(&in->rb_node);
-+	return rn ? rb_entry(rn, struct int_node, rb_node) : NULL;
-+}
-+
-+/**
-+ * intlist_for_each      - iterate over a intlist
-+ * @pos:	the &struct int_node to use as a loop cursor.
-+ * @ilist:	the &struct intlist for loop.
-+ */
-+#define intlist__for_each(pos, ilist)	\
-+	for (pos = intlist__first(ilist); pos; pos = intlist__next(pos))
-+
-+/**
-+ * intlist_for_each_safe - iterate over a intlist safe against removal of
-+ *                         int_node
-+ * @pos:	the &struct int_node to use as a loop cursor.
-+ * @n:		another &struct int_node to use as temporary storage.
-+ * @ilist:	the &struct intlist for loop.
-+ */
-+#define intlist__for_each_safe(pos, n, ilist)	\
-+	for (pos = intlist__first(ilist), n = intlist__next(pos); pos;\
-+	     pos = n, n = intlist__next(n))
-+#endif /* __PERF_INTLIST_H */
+ 	parse_options_start(&ctx, argc, argv, flags);
+ 	switch (parse_options_step(&ctx, options, usagestr)) {
+ 	case PARSE_OPT_HELP:
 -- 
 1.7.1
 
