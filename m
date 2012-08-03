@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab2HCWI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 18:08:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65003 "EHLO
+	id S1753834Ab2HCWKh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 18:10:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49390 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab2HCWIO (ORCPT
+	with ESMTP id S1753450Ab2HCWKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 18:08:14 -0400
-Message-ID: <501C4BCA.1080804@gmail.com>
-Date: Fri, 03 Aug 2012 16:08:10 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Fri, 3 Aug 2012 18:10:35 -0400
+Date: Fri, 3 Aug 2012 15:10:31 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Akhilesh Kumar <akhilesh.lxr@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [Debug ] fs : export debugfs_file_operations symbol
+Message-ID: <20120803221031.GA4925@kroah.com>
+References: <CADArhcAJzp-t0EaEuqjXP-w85MjPLXTXfhAYtCdue9drtt=HMw@mail.gmail.com>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: oops in pci_acs_path_enabled
-References: <501C0CDF.7010804@gmail.com> <1344025273.8003.40.camel@ul30vt>  <501C3EB7.4000900@gmail.com> <1344030733.8003.43.camel@ul30vt>
-In-Reply-To: <1344030733.8003.43.camel@ul30vt>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADArhcAJzp-t0EaEuqjXP-w85MjPLXTXfhAYtCdue9drtt=HMw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/3/12 3:52 PM, Alex Williamson wrote:
-> Is this the chunk that's causing the oops?
+On Sat, Aug 04, 2012 at 03:30:44AM +0530, Akhilesh Kumar wrote:
+> Hi Hartman
+> 
+> This patch just exports debugfs_file_operations which improve debugfs
+> interface .
+> Please review below patch for main line and share your review comments.
+> 
+> Thanks,
+> Akhilesh
+> 
+> 
+> 
+> 
+> From fd68900cd32f220beee70b55c20b3c74a38d7df8 Mon Sep 17 00:00:00 2001
+> From: Akhilesh Kumar <akhilesh.lxr@gmail.com>
+> Date: Tue, 31 Jul 2012 17:17:12 +0530
+> Subject:[Debug ] fs : export debugfs_file_operations symbol
+>  
+>  debugfs_file_operations is usefull for file system
+>  debugging debugfs_file_operations is not an exported
+>  symbol.
+> 
+> Any kernel module (http://lwn.net/Articles/371208/) using
+> 
+> debugfs_file_operations will result in build failures
+> because of this.
+> 
+> This patch just exports debugfs_file_operations to fix such problems in
+> future
+> 
+> Signed-off-by: Akhilesh Kumar <akhilesh.lxr@gmail.com>
+> ---
+>  fs/debugfs/file.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+> index 2340f69..a5150d8 100644
+> --- a/fs/debugfs/file.c
+> +++ b/fs/debugfs/file.c
+> @@ -40,6 +40,7 @@ const struct file_operations debugfs_file_operations = {
+>   .open = simple_open,
+>   .llseek = noop_llseek,
+>  };
+> +EXPORT_SYMBOL(debugfs_file_operations);
 
-Yes. And taking it out fixes passthrough as well.
+I fail to understand how this will help you out at all.  You should not
+be using this symbol, why would you?
 
-David
+Please show the in-kernel code that needs it, and I will be glad to
+reconsider this patch, after it it fixed to use EXPORT_SYMBOL_GPL() as
+well, to be consistant with the other debugfs symbols.
 
-
->
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index 7469b53..27d8c97 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -4133,6 +4133,7 @@ static int intel_iommu_add_device(struct device *dev)
->                                            PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
->                                            0)));
->
-> +#if 0
->          while (!pci_is_root_bus(dma_pdev->bus)) {
->                  if (pci_acs_path_enabled(dma_pdev->bus->self,
->                                           NULL, REQ_ACS_FLAGS))
-> @@ -4140,6 +4141,7 @@ static int intel_iommu_add_device(struct device *dev)
->
->                  swap_pci_ref(&dma_pdev, pci_dev_get(dma_pdev->bus->self));
->          }
-> +#endif
->
->          group = iommu_group_get(&dma_pdev->dev);
->          pci_dev_put(dma_pdev);
->
->
-
+greg k-h
