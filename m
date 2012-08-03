@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab2HCRqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 13:46:24 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:34680 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab2HCRoY (ORCPT
+	id S1754026Ab2HCRqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 13:46:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41087 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753518Ab2HCRoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 13:44:24 -0400
+	Fri, 3 Aug 2012 13:44:23 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
@@ -14,9 +14,9 @@ Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
         ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com,
         tomi.valkeinen@ti.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/14] workqueue: introduce WORK_OFFQ_FLAG_*
-Date: Fri,  3 Aug 2012 10:43:54 -0700
-Message-Id: <1344015839-21800-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/14] workqueue: move try_to_grab_pending() upwards
+Date: Fri,  3 Aug 2012 10:43:53 -0700
+Message-Id: <1344015839-21800-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1344015839-21800-1-git-send-email-tj@kernel.org>
 References: <1344015839-21800-1-git-send-email-tj@kernel.org>
@@ -24,103 +24,328 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Low WORK_STRUCT_FLAG_BITS bits of work_struct->data contain
-WORK_STRUCT_FLAG_* and flush color.  If the work item is queued, the
-rest point to the cpu_workqueue with WORK_STRUCT_CWQ set; otherwise,
-WORK_STRUCT_CWQ is clear and the bits contain the last CPU number -
-either a real CPU number or one of WORK_CPU_*.
+try_to_grab_pending() will be used by to-be-implemented
+mod_delayed_work[_on]().  Move try_to_grab_pending() and related
+functions above queueing functions.
 
-Scheduled addition of mod_delayed_work[_on]() requires an additional
-flag, which is used only while a work item is off queue.  There are
-more than enough bits to represent off-queue CPU number on both 32 and
-64bits.  This patch introduces WORK_OFFQ_FLAG_* which occupy the lower
-part of the @work->data high bits while off queue.  This patch doesn't
-define any actual OFFQ flag yet.
-
-Off-queue CPU number is now shifted by WORK_OFFQ_CPU_SHIFT, which adds
-the number of bits used by OFFQ flags to WORK_STRUCT_FLAG_SHIFT, to
-make room for OFFQ flags.
-
-To avoid shift width warning with large WORK_OFFQ_FLAG_BITS, ulong
-cast is added to WORK_STRUCT_NO_CPU and, just in case, BUILD_BUG_ON()
-to check that there are enough bits to accomodate off-queue CPU number
-is added.
-
-This patch doesn't make any functional difference.
+This patch only moves functions around.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/workqueue.h |    8 +++++++-
- kernel/workqueue.c        |   14 +++++++++-----
- 2 files changed, 16 insertions(+), 6 deletions(-)
+ kernel/workqueue.c |  286 ++++++++++++++++++++++++++--------------------------
+ 1 files changed, 143 insertions(+), 143 deletions(-)
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index ab95fef..f562674 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -68,9 +68,15 @@ enum {
- 	WORK_STRUCT_FLAG_BITS	= WORK_STRUCT_COLOR_SHIFT +
- 				  WORK_STRUCT_COLOR_BITS,
- 
-+	/* data contains off-queue information when !WORK_STRUCT_CWQ */
-+	WORK_OFFQ_FLAG_BASE	= WORK_STRUCT_FLAG_BITS,
-+	WORK_OFFQ_FLAG_BITS	= 0,
-+	WORK_OFFQ_CPU_SHIFT	= WORK_OFFQ_FLAG_BASE + WORK_OFFQ_FLAG_BITS,
-+
-+	/* convenience constants */
- 	WORK_STRUCT_FLAG_MASK	= (1UL << WORK_STRUCT_FLAG_BITS) - 1,
- 	WORK_STRUCT_WQ_DATA_MASK = ~WORK_STRUCT_FLAG_MASK,
--	WORK_STRUCT_NO_CPU	= WORK_CPU_NONE << WORK_STRUCT_FLAG_BITS,
-+	WORK_STRUCT_NO_CPU	= (unsigned long)WORK_CPU_NONE << WORK_OFFQ_CPU_SHIFT,
- 
- 	/* bit mask for work_busy() return values */
- 	WORK_BUSY_PENDING	= 1 << 0,
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 0f50f40..eeae770 100644
+index 6cbdc22..0f50f40 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -533,9 +533,9 @@ static int work_next_color(int color)
+@@ -904,6 +904,149 @@ static struct worker *find_worker_executing_work(struct global_cwq *gcwq,
  }
  
- /*
-- * A work's data points to the cwq with WORK_STRUCT_CWQ set while the
-- * work is on queue.  Once execution starts, WORK_STRUCT_CWQ is
-- * cleared and the work data contains the cpu number it was last on.
-+ * While queued, %WORK_STRUCT_CWQ is set and non flag bits of a work's data
-+ * contain the pointer to the queued cwq.  Once execution starts, the flag
-+ * is cleared and the high bits contain OFFQ flags and CPU number.
-  *
-  * set_work_cwq(), set_work_cpu_and_clear_pending() and clear_work_data()
-  * can be used to set the cwq, cpu or clear work->data.  These functions
-@@ -565,7 +565,7 @@ static void set_work_cwq(struct work_struct *work,
- static void set_work_cpu_and_clear_pending(struct work_struct *work,
- 					   unsigned int cpu)
- {
--	set_work_data(work, cpu << WORK_STRUCT_FLAG_BITS, 0);
-+	set_work_data(work, (unsigned long)cpu << WORK_OFFQ_CPU_SHIFT, 0);
- }
- 
- static void clear_work_data(struct work_struct *work)
-@@ -592,7 +592,7 @@ static struct global_cwq *get_work_gcwq(struct work_struct *work)
- 		return ((struct cpu_workqueue_struct *)
- 			(data & WORK_STRUCT_WQ_DATA_MASK))->pool->gcwq;
- 
--	cpu = data >> WORK_STRUCT_FLAG_BITS;
-+	cpu = data >> WORK_OFFQ_CPU_SHIFT;
- 	if (cpu == WORK_CPU_NONE)
- 		return NULL;
- 
-@@ -3724,6 +3724,10 @@ static int __init init_workqueues(void)
- 	unsigned int cpu;
- 	int i;
- 
-+	/* make sure we have enough bits for OFFQ CPU number */
-+	BUILD_BUG_ON((1LU << (BITS_PER_LONG - WORK_OFFQ_CPU_SHIFT)) <
-+		     WORK_CPU_LAST);
+ /**
++ * move_linked_works - move linked works to a list
++ * @work: start of series of works to be scheduled
++ * @head: target list to append @work to
++ * @nextp: out paramter for nested worklist walking
++ *
++ * Schedule linked works starting from @work to @head.  Work series to
++ * be scheduled starts at @work and includes any consecutive work with
++ * WORK_STRUCT_LINKED set in its predecessor.
++ *
++ * If @nextp is not NULL, it's updated to point to the next work of
++ * the last scheduled work.  This allows move_linked_works() to be
++ * nested inside outer list_for_each_entry_safe().
++ *
++ * CONTEXT:
++ * spin_lock_irq(gcwq->lock).
++ */
++static void move_linked_works(struct work_struct *work, struct list_head *head,
++			      struct work_struct **nextp)
++{
++	struct work_struct *n;
 +
- 	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
- 	cpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
++	/*
++	 * Linked worklist will always end before the end of the list,
++	 * use NULL for list head.
++	 */
++	list_for_each_entry_safe_from(work, n, NULL, entry) {
++		list_move_tail(&work->entry, head);
++		if (!(*work_data_bits(work) & WORK_STRUCT_LINKED))
++			break;
++	}
++
++	/*
++	 * If we're already inside safe list traversal and have moved
++	 * multiple works to the scheduled queue, the next position
++	 * needs to be updated.
++	 */
++	if (nextp)
++		*nextp = n;
++}
++
++static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
++{
++	struct work_struct *work = list_first_entry(&cwq->delayed_works,
++						    struct work_struct, entry);
++
++	trace_workqueue_activate_work(work);
++	move_linked_works(work, &cwq->pool->worklist, NULL);
++	__clear_bit(WORK_STRUCT_DELAYED_BIT, work_data_bits(work));
++	cwq->nr_active++;
++}
++
++/**
++ * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
++ * @cwq: cwq of interest
++ * @color: color of work which left the queue
++ * @delayed: for a delayed work
++ *
++ * A work either has completed or is removed from pending queue,
++ * decrement nr_in_flight of its cwq and handle workqueue flushing.
++ *
++ * CONTEXT:
++ * spin_lock_irq(gcwq->lock).
++ */
++static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color,
++				 bool delayed)
++{
++	/* ignore uncolored works */
++	if (color == WORK_NO_COLOR)
++		return;
++
++	cwq->nr_in_flight[color]--;
++
++	if (!delayed) {
++		cwq->nr_active--;
++		if (!list_empty(&cwq->delayed_works)) {
++			/* one down, submit a delayed one */
++			if (cwq->nr_active < cwq->max_active)
++				cwq_activate_first_delayed(cwq);
++		}
++	}
++
++	/* is flush in progress and are we at the flushing tip? */
++	if (likely(cwq->flush_color != color))
++		return;
++
++	/* are there still in-flight works? */
++	if (cwq->nr_in_flight[color])
++		return;
++
++	/* this cwq is done, clear flush_color */
++	cwq->flush_color = -1;
++
++	/*
++	 * If this was the last cwq, wake up the first flusher.  It
++	 * will handle the rest.
++	 */
++	if (atomic_dec_and_test(&cwq->wq->nr_cwqs_to_flush))
++		complete(&cwq->wq->first_flusher->done);
++}
++
++/*
++ * Upon a successful return (>= 0), the caller "owns" WORK_STRUCT_PENDING bit,
++ * so this work can't be re-armed in any way.
++ */
++static int try_to_grab_pending(struct work_struct *work)
++{
++	struct global_cwq *gcwq;
++	int ret = -1;
++
++	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work)))
++		return 0;
++
++	/*
++	 * The queueing is in progress, or it is already queued. Try to
++	 * steal it from ->worklist without clearing WORK_STRUCT_PENDING.
++	 */
++	gcwq = get_work_gcwq(work);
++	if (!gcwq)
++		return ret;
++
++	spin_lock_irq(&gcwq->lock);
++	if (!list_empty(&work->entry)) {
++		/*
++		 * This work is queued, but perhaps we locked the wrong gcwq.
++		 * In that case we must see the new value after rmb(), see
++		 * insert_work()->wmb().
++		 */
++		smp_rmb();
++		if (gcwq == get_work_gcwq(work)) {
++			debug_work_deactivate(work);
++			list_del_init(&work->entry);
++			cwq_dec_nr_in_flight(get_work_cwq(work),
++				get_work_color(work),
++				*work_data_bits(work) & WORK_STRUCT_DELAYED);
++			ret = 1;
++		}
++	}
++	spin_unlock_irq(&gcwq->lock);
++
++	return ret;
++}
++
++/**
+  * insert_work - insert a work into gcwq
+  * @cwq: cwq @work belongs to
+  * @work: work to insert
+@@ -1832,107 +1975,6 @@ static bool manage_workers(struct worker *worker)
+ }
  
+ /**
+- * move_linked_works - move linked works to a list
+- * @work: start of series of works to be scheduled
+- * @head: target list to append @work to
+- * @nextp: out paramter for nested worklist walking
+- *
+- * Schedule linked works starting from @work to @head.  Work series to
+- * be scheduled starts at @work and includes any consecutive work with
+- * WORK_STRUCT_LINKED set in its predecessor.
+- *
+- * If @nextp is not NULL, it's updated to point to the next work of
+- * the last scheduled work.  This allows move_linked_works() to be
+- * nested inside outer list_for_each_entry_safe().
+- *
+- * CONTEXT:
+- * spin_lock_irq(gcwq->lock).
+- */
+-static void move_linked_works(struct work_struct *work, struct list_head *head,
+-			      struct work_struct **nextp)
+-{
+-	struct work_struct *n;
+-
+-	/*
+-	 * Linked worklist will always end before the end of the list,
+-	 * use NULL for list head.
+-	 */
+-	list_for_each_entry_safe_from(work, n, NULL, entry) {
+-		list_move_tail(&work->entry, head);
+-		if (!(*work_data_bits(work) & WORK_STRUCT_LINKED))
+-			break;
+-	}
+-
+-	/*
+-	 * If we're already inside safe list traversal and have moved
+-	 * multiple works to the scheduled queue, the next position
+-	 * needs to be updated.
+-	 */
+-	if (nextp)
+-		*nextp = n;
+-}
+-
+-static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
+-{
+-	struct work_struct *work = list_first_entry(&cwq->delayed_works,
+-						    struct work_struct, entry);
+-
+-	trace_workqueue_activate_work(work);
+-	move_linked_works(work, &cwq->pool->worklist, NULL);
+-	__clear_bit(WORK_STRUCT_DELAYED_BIT, work_data_bits(work));
+-	cwq->nr_active++;
+-}
+-
+-/**
+- * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
+- * @cwq: cwq of interest
+- * @color: color of work which left the queue
+- * @delayed: for a delayed work
+- *
+- * A work either has completed or is removed from pending queue,
+- * decrement nr_in_flight of its cwq and handle workqueue flushing.
+- *
+- * CONTEXT:
+- * spin_lock_irq(gcwq->lock).
+- */
+-static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color,
+-				 bool delayed)
+-{
+-	/* ignore uncolored works */
+-	if (color == WORK_NO_COLOR)
+-		return;
+-
+-	cwq->nr_in_flight[color]--;
+-
+-	if (!delayed) {
+-		cwq->nr_active--;
+-		if (!list_empty(&cwq->delayed_works)) {
+-			/* one down, submit a delayed one */
+-			if (cwq->nr_active < cwq->max_active)
+-				cwq_activate_first_delayed(cwq);
+-		}
+-	}
+-
+-	/* is flush in progress and are we at the flushing tip? */
+-	if (likely(cwq->flush_color != color))
+-		return;
+-
+-	/* are there still in-flight works? */
+-	if (cwq->nr_in_flight[color])
+-		return;
+-
+-	/* this cwq is done, clear flush_color */
+-	cwq->flush_color = -1;
+-
+-	/*
+-	 * If this was the last cwq, wake up the first flusher.  It
+-	 * will handle the rest.
+-	 */
+-	if (atomic_dec_and_test(&cwq->wq->nr_cwqs_to_flush))
+-		complete(&cwq->wq->first_flusher->done);
+-}
+-
+-/**
+  * process_one_work - process single work
+  * @worker: self
+  * @work: work to process
+@@ -2767,48 +2809,6 @@ bool flush_work_sync(struct work_struct *work)
+ }
+ EXPORT_SYMBOL_GPL(flush_work_sync);
+ 
+-/*
+- * Upon a successful return (>= 0), the caller "owns" WORK_STRUCT_PENDING bit,
+- * so this work can't be re-armed in any way.
+- */
+-static int try_to_grab_pending(struct work_struct *work)
+-{
+-	struct global_cwq *gcwq;
+-	int ret = -1;
+-
+-	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work)))
+-		return 0;
+-
+-	/*
+-	 * The queueing is in progress, or it is already queued. Try to
+-	 * steal it from ->worklist without clearing WORK_STRUCT_PENDING.
+-	 */
+-	gcwq = get_work_gcwq(work);
+-	if (!gcwq)
+-		return ret;
+-
+-	spin_lock_irq(&gcwq->lock);
+-	if (!list_empty(&work->entry)) {
+-		/*
+-		 * This work is queued, but perhaps we locked the wrong gcwq.
+-		 * In that case we must see the new value after rmb(), see
+-		 * insert_work()->wmb().
+-		 */
+-		smp_rmb();
+-		if (gcwq == get_work_gcwq(work)) {
+-			debug_work_deactivate(work);
+-			list_del_init(&work->entry);
+-			cwq_dec_nr_in_flight(get_work_cwq(work),
+-				get_work_color(work),
+-				*work_data_bits(work) & WORK_STRUCT_DELAYED);
+-			ret = 1;
+-		}
+-	}
+-	spin_unlock_irq(&gcwq->lock);
+-
+-	return ret;
+-}
+-
+ static bool __cancel_work_timer(struct work_struct *work,
+ 				struct timer_list* timer)
+ {
 -- 
 1.7.7.3
 
