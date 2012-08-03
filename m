@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab2HCMjh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 08:39:37 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:4319 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753652Ab2HCMjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 08:39:31 -0400
-Message-ID: <501BC62A.4090308@parallels.com>
-Date: Fri, 03 Aug 2012 16:38:02 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1753936Ab2HCMpw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 08:45:52 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:57334 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829Ab2HCMpv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 08:45:51 -0400
+References: <1343991184-3619-1-git-send-email-berrange@redhat.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1343991184-3619-1-git-send-email-berrange@redhat.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "spender@grsecurity.net" <spender@grsecurity.net>
-Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
-References: <alpine.LFD.2.02.1203231926000.2542@ionos> <20120323190855.GA27213@www.outflux.net> <CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com> <87pq7935w2.fsf@xmission.com> <CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com> <20120803110247.GB11952@moon>
-In-Reply-To: <20120803110247.GB11952@moon>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Fri, 03 Aug 2012 05:45:40 -0700
+To: "Daniel P. Berrange" <berrange@redhat.com>, linux-kernel@vger.kernel.org
+CC: containers@lists.linux-foundation.org,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Message-ID: <cfa2e2c9-db52-40cd-979b-7a6084427190@email.android.com>
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19/YpsuFb4R46d4nzYc+mOUIRMaxsevWjY=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3629]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Daniel P. Berrange" <berrange@redhat.com>,
+	linux-kernel@vger.kernel.org
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] Forbid invocation of kexec_load() outside initial PID namespace
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 03:02 PM, Cyrill Gorcunov wrote:
-> On Fri, Aug 03, 2012 at 12:17:43PM +0200, richard -rw- weinberger wrote:
->> On Thu, Aug 2, 2012 at 1:11 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>> richard -rw- weinberger <richard.weinberger@gmail.com> writes:
->>>
->>>> On Fri, Mar 23, 2012 at 8:08 PM, Kees Cook <keescook@chromium.org> wrote:
->>>>> Notify get_robust_list users that the syscall is going away.
->>>>>
->>>>> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
->>>>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>>>> ---
->>>>
->>>> I'm using this system call in an application and noticed that's marked
->>>> as deprecated now.
->>>> My application collects all kind of information from crashing programs.
->>>> It's installed in /proc/sys/kernel/core_pattern.
->>>>
->>>> If program X is crashing it executes get_robust_list(X) to get the
->>>> address of the robust list
->>>> and reads the list from /proc/X/mem.
->>>>
->>>> Is there another way to get the robust list from another program (by it's pid)?
->>>
->>> The folks doing checkpoint/restart claim to not need this, so there
->>> might be a way either that or they just haven't hit this problem yet.
->>>
->>> What you are doing sounds like a reasonable use of get_robust_list to me.
->>>
->>
->> CRIU folks, how do you deal with futex robust lists?
-> 
-> Well, I believe we were over-optimistic in claiming that we don't need this
-> syscall (to be fair I think we simply yet not faced the problem Eric points).
-> So we need some way to fetch this address and set it back. If get_robust_list
-> get deprecated maybe we could print it out in /proc/pid/stat or something?
+The solution is to use user namespaces and to only test ns_capable on the magic reboot path.
 
-I agree with Cyrill, sorry for the confusion last time. We do need some way 
-to get the list location. The exact API is not critical, we can work with
-either of the mentioned above.
+For the 3.7 timeframe that should be a realistic solution.
 
-> 	Cyrill
-> .
-> 
+Eric
