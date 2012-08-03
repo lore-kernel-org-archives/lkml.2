@@ -1,91 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab2HCHoD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 03:44:03 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56673 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab2HCHn7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 03:43:59 -0400
-Message-ID: <501B8137.1090002@linux.vnet.ibm.com>
-Date: Fri, 03 Aug 2012 15:43:51 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 10/10] KVM: let the error pfn not depend on error code
-References: <501B7F94.7090308@linux.vnet.ibm.com>
-In-Reply-To: <501B7F94.7090308@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12080307-8878-0000-0000-0000037B8D4C
+	id S1752884Ab2HCHo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 03:44:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31138 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750843Ab2HCHoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 03:44:20 -0400
+X-IronPort-AV: E=Sophos;i="4.77,705,1336320000"; 
+   d="scan'208";a="5544412"
+From: wency@cn.fujitsu.com
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
+Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: [RFC PATCH V6 00/19] memory-hotplug: hot-remove physical memory
+Date: Fri, 3 Aug 2012 15:49:02 +0800
+Message-Id: <1343980161-14254-1-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/03 15:44:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/03 15:44:46,
+	Serialize complete at 2012/08/03 15:44:46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we use the error code as error pfn to indicat the error
-condition, it is not straightforward and it will not work on PAE
-32-bit cpu with huge memory, since the valid physical address
-can be at most 52 bits
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-For the normal pfn, the highest 12 bits should be zero, so we can
-mask these bits to indicate the error.
+This patch series aims to support physical memory hot-remove.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- include/linux/kvm_host.h |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
+The patches can free/remove following things:
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index a8989fc..2aaff6e 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -49,28 +49,34 @@
- #define KVM_MAX_MMIO_FRAGMENTS \
- 	(KVM_MMIO_SIZE / KVM_USER_MMIO_SIZE + KVM_EXTRA_MMIO_FRAGMENTS)
+  - acpi_memory_info                          : [RFC PATCH 4/19]
+  - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 8/19]
+  - iomem_resource                            : [RFC PATCH 9/19]
+  - mem_section and related sysfs files       : [RFC PATCH 10-11, 13-16/19]
+  - page table of removed memory              : [RFC PATCH 12/19]
+  - node and related sysfs files              : [RFC PATCH 18-19/19]
 
--#define KVM_PFN_ERR_FAULT	(-EFAULT)
--#define KVM_PFN_ERR_HWPOISON	(-EHWPOISON)
--#define KVM_PFN_ERR_BAD		(-ENOENT)
-+/*
-+ * For the normal pfn, the highest 12 bits should be zero,
-+ * so we can mask these bits to indicate the error.
-+ */
-+#define KVM_PFN_ERR_MASK	(0xfffULL << 52)
-+
-+#define KVM_PFN_ERR_FAULT	(KVM_PFN_ERR_MASK)
-+#define KVM_PFN_ERR_HWPOISON	(KVM_PFN_ERR_MASK + 1)
-+#define KVM_PFN_ERR_BAD		(KVM_PFN_ERR_MASK + 2)
+If you find lack of function for physical memory hot-remove, please let me
+know.
 
--static inline int is_error_pfn(pfn_t pfn)
-+static inline bool is_error_pfn(pfn_t pfn)
- {
--	return IS_ERR_VALUE(pfn);
-+	return !!(pfn & KVM_PFN_ERR_MASK);
- }
+change log of v6:
+ [RFC PATCH v5 12/19]
+   * fix building error on other archtitectures than x86
 
--static inline int is_noslot_pfn(pfn_t pfn)
-+static inline bool is_noslot_pfn(pfn_t pfn)
- {
--	return pfn == -ENOENT;
-+	return pfn == KVM_PFN_ERR_BAD;
- }
+ [RFC PATCH v5 15-16/19]
+   * fix building error on other archtitectures than x86
 
--static inline int is_invalid_pfn(pfn_t pfn)
-+static inline bool is_invalid_pfn(pfn_t pfn)
- {
- 	return !is_noslot_pfn(pfn) && is_error_pfn(pfn);
- }
+change log of v5:
+ * merge the patchset to clear page table and the patchset to hot remove
+   memory(from ishimatsu) to one big patchset.
 
- #define KVM_ERR_PTR_BAD_PAGE	(ERR_PTR(-ENOENT))
+ [RFC PATCH v5 1/19]
+   * rename remove_memory() to offline_memory()/offline_pages()
 
--static inline int is_error_page(struct page *page)
-+static inline bool is_error_page(struct page *page)
- {
- 	return IS_ERR(page);
- }
--- 
-1.7.7.6
+ [RFC PATCH v5 2/19]
+   * new patch: implement offline_memory(). This function offlines pages,
+     update memory block's state, and notify the userspace that the memory
+     block's state is changed.
+
+ [RFC PATCH v5 4/19]
+   * offline and remove memory in acpi_memory_disable_device() too.
+
+ [RFC PATCH v5 17/19]
+   * new patch: add a new function __remove_zone() to revert the things done
+     in the function __add_zone().
+
+ [RFC PATCH v5 18/19]
+   * flush work befor reseting node device.
+
+change log of v4:
+ * remove "memory-hotplug : unify argument of firmware_map_add_early/hotplug"
+   from the patch series, since the patch is a bugfix. It is being disccussed
+   on other thread. But for testing the patch series, the patch is needed.
+   So I added the patch as [PATCH 0/13].
+
+ [RFC PATCH v4 2/13]
+   * check memory is online or not at remove_memory()
+   * add memory_add_physaddr_to_nid() to acpi_memory_device_remove() for
+     getting node id
+ 
+ [RFC PATCH v4 3/13]
+   * create new patch : check memory is online or not at online_pages()
+
+ [RFC PATCH v4 4/13]
+   * add __ref section to remove_memory()
+   * call firmware_map_remove_entry() before remove_sysfs_fw_map_entry()
+
+ [RFC PATCH v4 11/13]
+   * rewrite register_page_bootmem_memmap() for removing page used as PT/PMD
+
+change log of v3:
+ * rebase to 3.5.0-rc6
+
+ [RFC PATCH v2 2/13]
+   * remove extra kobject_put()
+
+   * The patch was commented by Wen. Wen's comment is
+     "acpi_memory_device_remove() should ignore a return value of
+     remove_memory() since caller does not care the return value".
+     But I did not change it since I think caller should care the
+     return value. And I am trying to fix it as follow:
+
+     https://lkml.org/lkml/2012/7/5/624
+
+ [RFC PATCH v2 4/13]
+   * remove a firmware_memmap_entry allocated by kzmalloc()
+
+change log of v2:
+ [RFC PATCH v2 2/13]
+   * check whether memory block is offline or not before calling offline_memory()
+   * check whether section is valid or not in is_memblk_offline()
+   * call kobject_put() for each memory_block in is_memblk_offline()
+
+ [RFC PATCH v2 3/13]
+   * unify the end argument of firmware_map_add_early/hotplug
+
+ [RFC PATCH v2 4/13]
+   * add release_firmware_map_entry() for freeing firmware_map_entry
+
+ [RFC PATCH v2 6/13]
+  * add release_memory_block() for freeing memory_block
+
+ [RFC PATCH v2 11/13]
+  * fix wrong arguments of free_pages()
+
+Wen Congyang (6):
+  memory-hotplug: implement offline_memory()
+  memory-hotplug: store the node id in acpi_memory_device
+  memory-hotplug: export the function acpi_bus_remove()
+  memory-hotplug: call acpi_bus_remove() to remove memory device
+  memory-hotplug: introduce new function arch_remove_memory()
+  memory-hotplug: free memmap of sparse-vmemmap
+
+Yasuaki Ishimatsu (13):
+  memory-hotplug: rename remove_memory() to
+    offline_memory()/offline_pages()
+  memory-hotplug: offline and remove memory when removing the memory
+    device
+  memory-hotplug: check whether memory is present or not
+  memory-hotplug: remove /sys/firmware/memmap/X sysfs
+  memory-hotplug: does not release memory region in PAGES_PER_SECTION
+    chunks
+  memory-hotplug: add memory_block_release
+  memory-hotplug: remove_memory calls __remove_pages
+  memory-hotplug: check page type in get_page_bootmem
+  memory-hotplug: move register_page_bootmem_info_node and
+    put_page_bootmem for sparse-vmemmap
+  memory-hotplug: implement register_page_bootmem_info_section of
+    sparse-vmemmap
+  memory_hotplug: clear zone when the memory is removed
+  memory-hotplug: add node_device_release
+  memory-hotplug: remove sysfs file of node
+
+ arch/ia64/mm/discontig.c                        |   14 +
+ arch/ia64/mm/init.c                             |   16 +
+ arch/powerpc/mm/init_64.c                       |   14 +
+ arch/powerpc/mm/mem.c                           |   14 +
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   16 +-
+ arch/s390/mm/init.c                             |   12 +
+ arch/s390/mm/vmem.c                             |   14 +
+ arch/sh/mm/init.c                               |   15 +
+ arch/sparc/mm/init_64.c                         |   14 +
+ arch/tile/mm/init.c                             |    8 +
+ arch/x86/include/asm/pgtable_types.h            |    1 +
+ arch/x86/mm/init_32.c                           |   10 +
+ arch/x86/mm/init_64.c                           |  331 ++++++++++++++++++++++
+ arch/x86/mm/pageattr.c                          |   47 ++--
+ drivers/acpi/acpi_memhotplug.c                  |   51 +++-
+ drivers/acpi/scan.c                             |    3 +-
+ drivers/base/memory.c                           |   90 ++++++-
+ drivers/base/node.c                             |    8 +
+ drivers/firmware/memmap.c                       |   78 +++++-
+ include/acpi/acpi_bus.h                         |    1 +
+ include/linux/firmware-map.h                    |    6 +
+ include/linux/memory.h                          |    5 +
+ include/linux/memory_hotplug.h                  |   25 +-
+ include/linux/mm.h                              |    5 +-
+ include/linux/mmzone.h                          |   19 ++
+ mm/memory_hotplug.c                             |  337 +++++++++++++++++++++--
+ mm/sparse.c                                     |    5 +-
+ 27 files changed, 1068 insertions(+), 91 deletions(-)
 
