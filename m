@@ -1,63 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab2HCSMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 14:12:15 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:47269 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2HCSMN (ORCPT
+	id S1753223Ab2HCSPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 14:15:47 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51107 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062Ab2HCSPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 14:12:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1208031728120.9164@bwv190.internetdsl.tpnet.pl>
-References: <Pine.LNX.4.64.1208031728120.9164@bwv190.internetdsl.tpnet.pl>
-Date: Fri, 3 Aug 2012 11:12:11 -0700
-X-Google-Sender-Auth: jTMYi4QJVjlqDLVVKcB-a3eLXQ8
-Message-ID: <CAE9FiQXzyxSNiPW96mqcN-Ki2RYZeKyYMJ39R50yjkgHnLMnYQ@mail.gmail.com>
-Subject: Re: bisected pcmcia bug - unable to map card memory on old laptops
-From: Yinghai Lu <yinghai@kernel.org>
-To: Piotr Gluszenia Slawinski <curious@bwv190.internetdsl.tpnet.pl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 Aug 2012 14:15:45 -0400
+From: julian.pidancet@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: maze@google.com, ycheng@google.com, edumazet@google.com,
+        davem@davemloft.net, xen-devel@lists.xen.org,
+        Julian Pidancet <julian.pidancet@citrix.com>
+Subject: [RFC PATCH] Introduce V4V socket family for inter-virtual machines communication
+Date: Fri,  3 Aug 2012 19:26:38 +0100
+Message-Id: <cf6ab1bc6ccb8e997a4665b59f4dcac374764f96.1344018162.git.julian.pidancet@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 8:32 AM, Piotr Gluszenia Slawinski
-<curious@bwv190.internetdsl.tpnet.pl> wrote:
-> Hello. I've bisected bug which makes old laptops fail to detect (any) pcmcia
-> cards with message 'unable to map card memory!' .
-> commit in question is :
->
-> 30919b0bf356a8ee0ef4f7d38ca8ad99b96820b2 is the first bad commit
-> commit 30919b0bf356a8ee0ef4f7d38ca8ad99b96820b2
-> Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> Date:   Thu Dec 16 10:38:51 2010 -0700
->
->     x86: avoid low BIOS area when allocating address space
->
->     This implements arch_remove_reservations() so allocate_resource() can
->     avoid any arch-specific reserved areas.  This currently just avoids the
->     BIOS area (the first 1MB), but could be used for E820 reserved areas if
->     that turns out to be necessary.
->
->     We previously avoided this area in pcibios_align_resource().  This patch
->     moves the test from that PCI-specific path to a generic path, so *all*
->     resource allocations will avoid this area.
->
->     Acked-by: H. Peter Anvin <hpa@zytor.com>
->     Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
->     Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
->
-> :040000 040000 58cf7334131f8ad10bc814e56ef6538781b01add
-> 2434a5e5da4eabf3e413ac694c0cdeef91e17680 M      arch
->
-> bug is present in all kernels since late 2.6.36
+From: Julian Pidancet <julian.pidancet@citrix.com>
 
-can you send the boot log with working and not working kernel?
-Please make sure you have PCI_DEBUG set in your config.
+V4V is an hypervisor based inter domain-communication system beeing
+developed for the Xen hypervisor.
 
-Thanks
+I am currently working on a kernel socket family implementation of this
+protocol and realized that socket family numbers were allocated
+statically. It basically makes it impossible to create a new socket
+family without having to modify the include/linux/socket.h and bump the
+AF_MAX definition beforehand. (Any attempt to call sock_register() with
+a family value greater than or equal to AF_MAX will fail).
 
-Yinghai
+Therefore I am submitting this RFC patch to find out wether it would be
+acceptable to add a new socket family in the AF list without breaking
+compatibility.
+
+The socket family introduced in this patch is called AF_V4V, which
+implies that the family would be Xen specific. But we can also consider
+adding a more generic, hypervisor agnostic socket family, which enables
+inter-VM communication.
+
+Signed-off-by: Julian Pidancet <julian.pidancet@citrix.com>
+---
+ include/linux/socket.h |    4 +++-
+ include/linux/v4v.h    |   27 +++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/v4v.h
+
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index ba7b2e8..5e879d0 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -195,7 +195,8 @@ struct ucred {
+ #define AF_CAIF		37	/* CAIF sockets			*/
+ #define AF_ALG		38	/* Algorithm sockets		*/
+ #define AF_NFC		39	/* NFC sockets			*/
+-#define AF_MAX		40	/* For now.. */
++#define AF_V4V		40	/* Inter virtual domain sockets */
++#define AF_MAX		41	/* For now.. */
+ 
+ /* Protocol families, same as address families. */
+ #define PF_UNSPEC	AF_UNSPEC
+@@ -238,6 +239,7 @@ struct ucred {
+ #define PF_CAIF		AF_CAIF
+ #define PF_ALG		AF_ALG
+ #define PF_NFC		AF_NFC
++#define PF_V4V		AF_V4V
+ #define PF_MAX		AF_MAX
+ 
+ /* Maximum queue length specifiable by listen.  */
+diff --git a/include/linux/v4v.h b/include/linux/v4v.h
+new file mode 100644
+index 0000000..172f67f
+--- /dev/null
++++ b/include/linux/v4v.h
+@@ -0,0 +1,27 @@
++/*
++ * linux/v4v.h
++ *
++ * Definitions for V4V network layer
++ *
++ * Authors: Julian Pidancet <julian.pidancet@citrix.com>
++ * Copyright (c) 2012 Citrix Systems
++ * All rights reserved.
++ *
++ */
++#ifndef V4V_KERNEL_H
++#define V4V_KERNEL_H
++
++#include <linux/types.h>
++#include <linux/socket.h>
++
++typedef struct {
++        __u32                   port;
++        __u16                   domain;
++} v4v_address;
++
++struct sockaddr_v4v {
++        __kernel_sa_family_t    sv4v_family;
++        v4v_address             sv4v_addr;
++};
++
++#endif /* V4V_KERNEL_H */
+-- 
+Julian Pidancet
+
