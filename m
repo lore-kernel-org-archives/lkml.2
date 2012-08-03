@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab2HCWNe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 18:13:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53769 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab2HCWNb (ORCPT
+	id S1753952Ab2HCWON (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 18:14:13 -0400
+Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3633 "EHLO
+	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab2HCWOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 18:13:31 -0400
-Date: Fri, 3 Aug 2012 15:13:27 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Pandita, Vikram" <vikram.pandita@ti.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Andi Kleen <andi@firstfloor.org>,
-        kay@vrfy.org, linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
-Subject: Re: [PATCH v3] printk: add option to print cpu id
-Message-ID: <20120803221327.GA5102@kroah.com>
-References: <1344013004-32211-1-git-send-email-vikram.pandita@ti.com>
- <m2628z6euk.fsf@firstfloor.org>
- <CAFm5wm3ScpUU5wa=ei3TY0zjU4kVbOgJMmE5_QDpwy7B-TJa+A@mail.gmail.com>
- <20120803200822.GC731@harshnoise.musicnaut.iki.fi>
- <CAFm5wm2sf9LnZNj9_BDYTF9G7XH32fOL3x5n=kZ-1ih0Cek2DQ@mail.gmail.com>
- <20120803215954.GA4489@kroah.com>
- <CAFm5wm1_-JP0xjDdBvAcqqpZPQvxJPsmNtUOFQyaNw=6H_JJcg@mail.gmail.com>
+	Fri, 3 Aug 2012 18:14:07 -0400
+Message-ID: <501C4CCE.8020806@spin.net.au>
+Date: Sat, 04 Aug 2012 08:12:30 +1000
+From: Chris Jones <chrisjones@spin.net.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFm5wm1_-JP0xjDdBvAcqqpZPQvxJPsmNtUOFQyaNw=6H_JJcg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: Gaming and the kernel
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-comcen-MailScanner-Information: Please contact the ISP for more information
+X-comcen-MailScanner: Found to be clean
+X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.246, required 4, AWL 0.25, BAYES_00 -2.60, RDNS_NONE 0.10)
+X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 03:07:39PM -0700, Pandita, Vikram wrote:
-> On Fri, Aug 3, 2012 at 2:59 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Fri, Aug 03, 2012 at 02:24:20PM -0700, Pandita, Vikram wrote:
-> >> Aaro
-> >>
-> >> On Fri, Aug 3, 2012 at 1:08 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
-> >> > Hi,
-> >> >
-> >> > On Fri, Aug 03, 2012 at 11:25:37AM -0700, Pandita, Vikram wrote:
-> >> >> > And really: Wasting 1/3 of the 80 character line is too much.
-> >> >>
-> >> >> You _WASTE_ 4 chars only if you are interested in this info by
-> >> >> enabling: CONFIG_PRINTK_CPUID
-> >> >
-> >> > I guess you waste 4 + 3 chars? You could optimize the length by checking
-> >> > CONFIG_NR_CPUS?
-> >>
-> >> Good point.
-> >> Looks there is a variable 'nr_cpu_ids' that could be used as well.
-> >>
-> >> If there is general consensus that the patch can help the arm
-> >> community, and others in general,
-> >> this optimization should be easy to implement - saving few chars space
-> >> in each line of console output.
-> >>
-> >> For now i will stick to this v3 version of path, unless you think otherwise.
-> >
-> > I don't think is is something that anyone needs, and if you do, as
-> > pointed out, you can use the trace function to make it happen.
-> >
-> 
-> This was something that got used internally and helped at times.
+There's a lot of attention at the moment focused toward Linux and the 
+future of gaming support on the platform. And it got me thinking, is 
+there any particular improvements that are planned to improve the kernel 
+from better support for gaming?
 
-Could you have used the trace point instead?
 
-greg k-h
+Regards
+
+-- 
+         Chris Jones @ kernel.devproject@gmail.com
+also on oracle.kerneldev@gmail.com and netbsd.kerneldev@gmail.com
+
+Ubuntu 12.04 (PC)|Android (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
+Linux kernel developer|Solaris kernel developer|BSD kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
+Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
+Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
+
