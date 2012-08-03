@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab2HCPDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 11:03:42 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60310 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab2HCPCq (ORCPT
+	id S1754202Ab2HCPGe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 11:06:34 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:52497 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab2HCPGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 11:02:46 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/5] cputime: Don't allow virtual and irq finegrained cputime accounting simultaneously
-Date: Fri,  3 Aug 2012 17:02:22 +0200
-Message-Id: <1344006145-26115-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1344006145-26115-1-git-send-email-fweisbec@gmail.com>
-References: <1344006145-26115-1-git-send-email-fweisbec@gmail.com>
+	Fri, 3 Aug 2012 11:06:31 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: "Steven J. Magnani" <steve@digidescorp.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fat: Refactor shortname parsing
+References: <1341314074-2867-1-git-send-email-steve@digidescorp.com>
+	<alpine.LNX.2.01.1208031650580.3676@frira.zrqbmnf.qr>
+Date: Sat, 04 Aug 2012 00:06:27 +0900
+In-Reply-To: <alpine.LNX.2.01.1208031650580.3676@frira.zrqbmnf.qr> (Jan
+	Engelhardt's message of "Fri, 3 Aug 2012 16:52:03 +0200 (CEST)")
+Message-ID: <87lihw10cs.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We may soon be able to run both at the same time. But we need
-to rework a bit the irq finegrained accounting before that.
-Just do a mutual exclusion for now.
+Jan Engelhardt <jengelh@inai.de> writes:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Max Krasnyansky <maxk@qualcomm.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- init/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On Tuesday 2012-07-03 13:14, Steven J. Magnani wrote:
+>
+>>Nearly identical shortname parsing is performed in fat_search_long()
+>>and __fat_readdir(). Extract this code into a function that may be
+>>called by both.
+>>
+>>v2: Attempt to clarify difference between vfat and msdos parsing.
+>>    Remove decision-making from fat_tolower() for clarity.
+>>
+>>Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+>>---
+>>diff -uprN linux-3.5-rc4/fs/fat/dir.c new/fs/fat/dir.c
+>>--- linux-3.5-rc4/fs/fat/dir.c	2012-06-29 11:20:12.766348728 -0500
+>>+++ new/fs/fat/dir.c	2012-07-03 06:10:36.066283411 -0500
+>>@@ -35,6 +35,11 @@
+>> #define FAT_MAX_UNI_CHARS	((MSDOS_SLOTS - 1) * 13 + 1)
+>> #define FAT_MAX_UNI_SIZE	(FAT_MAX_UNI_CHARS * sizeof(wchar_t))
+>> 
+>>+static inline unsigned char fat_tolower(unsigned char c)
+>>+{
+>>+	return ((c >= 'A') && (c <= 'Z')) ? c+32 : c;
+>>+}
+>>+
+>
+> The kernel already has a tolower() function, can that not be used?
 
-diff --git a/init/Kconfig b/init/Kconfig
-index e2854a0..cf5e86e 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -269,7 +269,7 @@ config POSIX_MQUEUE_SYSCTL
- 
- config VIRT_CPU_ACCOUNTING
- 	bool "Deterministic task and CPU time accounting"
--	depends on HAVE_VIRT_CPU_ACCOUNTING
-+	depends on HAVE_VIRT_CPU_ACCOUNTING && !IRQ_TIME_ACCOUNTING
- 	default y if PPC64
- 	help
- 	  Select this option to enable more accurate task and CPU time
+tolower() is not exactly same, right? e.g. tolower(0xc0). Otherwise,
+tolower() is fine.
 -- 
-1.7.5.4
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
