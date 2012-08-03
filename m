@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab2HCOPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:15:54 -0400
-Received: from shutemov.name ([176.9.204.213]:44374 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752689Ab2HCOPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:15:53 -0400
-Date: Fri, 3 Aug 2012 17:17:03 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ulrich Drepper <drepper@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 03/18] perf target: Fix check on buffer size
-Message-ID: <20120803141703.GA19736@shutemov.name>
-References: <1344002470-5965-1-git-send-email-acme@infradead.org>
- <1344002470-5965-4-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344002470-5965-4-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753333Ab2HCOQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:16:34 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59081 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689Ab2HCOQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 10:16:31 -0400
+Date: Fri, 3 Aug 2012 15:20:50 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: dmarkh@cfl.rr.com
+Cc: Chris Friesen <chris.friesen@genband.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: MODULE_LICENSE("GPL")??
+Message-ID: <20120803152050.509ee884@pyramind.ukuu.org.uk>
+In-Reply-To: <501BDBEE.60305@cfl.rr.com>
+References: <50199E91.5040308@cfl.rr.com>
+	<20120801224342.5b90747f@pyramind.ukuu.org.uk>
+	<501A704E.2000301@cfl.rr.com>
+	<501B5D51.5030307@genband.com>
+	<501BBE45.8060309@cfl.rr.com>
+	<20120803142923.311c70b6@pyramind.ukuu.org.uk>
+	<501BDBEE.60305@cfl.rr.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 11:00:55AM -0300, Arnaldo Carvalho de Melo wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> It was a mistake just replace assert to BUG_ON since its condition
-> should be negated. Fix it.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> Cc: "Kirill A. Shutemov" <kirill@shutemov.name>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Kirill A. Shutemov <kirill@shutemov.name>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ulrich Drepper <drepper@gmail.com>
-> Link: http://lkml.kernel.org/r/1343267410-7758-1-git-send-email-namhyung@kernel.org
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Why then is there EXPORT_SYMBOL_GPL and EXPORT_SYMBOL? As long as you have 
+> them both, one can and will, assume that what you say above is not the intent
 
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Then I would look back at the list and previous statements where the
+intent has repeatedly been made clear by several developers.
 
--- 
- Kirill A. Shutemov
+EXPORT_SYMBOL_GPL was intended to mark internal symbols that absolutely
+couldn't be used by something non derivative.
+
+Alan
