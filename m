@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab2HCUjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 16:39:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48517 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753458Ab2HCUjw convert rfc822-to-8bit (ORCPT
+	id S1753333Ab2HCVET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 17:04:19 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43147 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab2HCVES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 16:39:52 -0400
-Message-ID: <1344026355.27828.10.camel@twins>
-Subject: Re: [patch] sched: fix migration thread runtime bogosity
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <mgalbraith@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 03 Aug 2012 22:39:15 +0200
-In-Reply-To: <1344001354.17084.28.camel@marge.simpson.net>
-References: <1344001354.17084.28.camel@marge.simpson.net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 3 Aug 2012 17:04:18 -0400
+Date: Fri, 3 Aug 2012 23:04:10 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/5] code_domain: New code domain tracking susbsystem
+Message-ID: <20120803210407.GB1894@somewhere.redhat.com>
+References: <1344006145-26115-1-git-send-email-fweisbec@gmail.com>
+ <1344006145-26115-2-git-send-email-fweisbec@gmail.com>
+ <20120803194536.GA2974@gmail.com>
+ <1344024579.27983.115.camel@gandalf.stny.rr.com>
+ <20120803203144.GJ2474@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120803203144.GJ2474@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-03 at 15:42 +0200, Mike Galbraith wrote:
-> Greetings,
+On Fri, Aug 03, 2012 at 01:31:44PM -0700, Paul E. McKenney wrote:
+> On Fri, Aug 03, 2012 at 04:09:39PM -0400, Steven Rostedt wrote:
+> > On Fri, 2012-08-03 at 21:45 +0200, Ingo Molnar wrote:
+> > > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > 
+> > > > Create a new subsystem that handles the probing on kernel 
+> > > > boundaries to keep track of the transitions between code 
+> > > > domains with two basic initial domains: user or kernel.
+> > > 
+> > > To do a bit more bike shed painting, I'd call it "context 
+> > > tracking" - user mode, kernel mode (guest mode, etc.).
+> > > 
+> > > The term 'code domain' would bring up blank stares from most 
+> > > kernel developers, me thinks.
+> > 
+> > Heh, that would be a second new term I heard this week for context.
+> > Earlier, I noticed that Paul McKenney called it 'levels'. So now there's
+> > four names:
+> > 
+> > user/kernel context
+> > user/kernel state
+> > user/kernel level
+> > user/kernel domain
+> > 
+> > And we could probably add a fifth:
+> > 
+> > user/kernel mode
 > 
-> I have two bug reports of absurd migration thread CPU usage, one of them
-> with a link to a bisection..
+> Plus:
 > 
->      https://bugs.gentoo.org/show_bug.cgi?id=394487
+> user/kernel space
 > 
-> ..fingering d670ec13 - posix-cpu-timers: Cure SMP wobbles
+> > ;-)
 > 
-> I reproduced with my -rt kernel and 3.4, but didn't manage to reproduce
-> with the 3.0 NOPREEMPT kernel it was reported against.
+> Then there is "supervisor", "system", "privileged", and who knows what
+> all else for "kernel".  And "application" and "problem" and probably
+> others for "user".
 
-Ah, I've seen similar reports, never managed to reproduce though.
+Hehe.
 
+Ok I agree that domain already has a biased meaning in the kernel.
 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 82ad284..82a78a6 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -974,6 +974,13 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
->  		sched_setscheduler_nocheck(stop, SCHED_FIFO, &param);
->  
->  		stop->sched_class = &stop_sched_class;
-> +
-> +		/* Zero stale values for our non-accountable thread. */
-> +		stop->se.exec_start = 0;
-> +		stop->se.sum_exec_runtime = 0;
-> +		stop->se.prev_sum_exec_runtime = 0;
-> +		stop->stime = stop->stimescaled = 0;
-> +		stop->nvcsw = stop->nivcsw = 0;
->  	}
->  
->  	cpu_rq(cpu)->stop = stop;
+So I'm going to respin with code_context_tracking.
 
-
-Now the question is, how did that stop thing get any time to begin with?
-Are we hotplugging or somesuch sillyness?
-
-
-Anyway, I think I like B best, could you re-submit as a proper patch so
-I can press the magic button that queues stuff?
-
-
+If anybody oppose, please raise your hand.
