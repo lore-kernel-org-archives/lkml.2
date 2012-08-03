@@ -1,58 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab2HCSdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 14:33:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40240 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752997Ab2HCSdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 14:33:09 -0400
-Message-ID: <501C1953.8020807@zytor.com>
-Date: Fri, 03 Aug 2012 11:32:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754136Ab2HCSdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 14:33:18 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:39314 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997Ab2HCSdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 14:33:14 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-10.tower-127.messagelabs.com!1344018789!6426682!12
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: update adl_pci7296 driver
+Date: Fri, 3 Aug 2012 11:33:01 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Alex Shi <alex.shi@intel.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 2/4] x86, CPU: Extend TLB size detection for AMD
-References: <1344011869-21868-1-git-send-email-bp@amd64.org> <1344011869-21868-3-git-send-email-bp@amd64.org>
-In-Reply-To: <1344011869-21868-3-git-send-email-bp@amd64.org>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201208031133.02047.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 09:37 AM, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> TLB characteristics on AMD are in the extended CPUID level, leafs
-> 0x8000000{5,6} so we need to check those before doing the detection.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/kernel/cpu/common.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index d239977f361f..ebab0e77e691 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -940,7 +940,8 @@ void __init identify_boot_cpu(void)
->  #else
->  	vgetcpu_set_mode();
->  #endif
-> -	if (boot_cpu_data.cpuid_level >= 2)
-> +	if (boot_cpu_data.cpuid_level >= 2 ||
-> +	    boot_cpu_data.extended_cpuid_level >= 0x80000006)
->  		cpu_detect_tlb(&boot_cpu_data);
->  }
->  
+Currently this driver only supports the 96-channel PCI-7296.
+The 24 and 48 channel PCI-7224 and PCI-7248 boards share the
+same register map and just have less 8255 devices providing
+the i/o channels.
 
-This really belongs in cpu_detect_tlb() itself (or rather, in the
-subfunctions called by it.)  Can we just lose the general test here, please?
+This adds the PCI PnP support for the other boards in the
+ADLink PCI-72xx series.
 
-	-hpa
+Also, remove the legacy attach using the comedi_config utility.
+This driver now supports the comedi PCI auto config attach
+mechanism and the legacy attach is not supported or required
+by this driver.
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/Kconfig               |   6 +-
+ drivers/staging/comedi/drivers/adl_pci7296.c | 220 +++++++++++++++------------
+ 2 files changed, 123 insertions(+), 103 deletions(-)
+
+diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+index 159de1d..d36486e 100644
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -688,10 +688,12 @@ config COMEDI_ADL_PCI7X3X
+ 	  called adl_pci7x3x.
+ 
+ config COMEDI_ADL_PCI7296
+-	tristate "ADLink PCI-7296 96 ch. digital io board support"
++	tristate "ADLink PCI-72xx opto-22 compatible digital i/o board support"
+ 	select COMEDI_8255
+ 	---help---
+-	  Enable support for ADlink PCI-7296 96 ch. digital io board support
++	  Enable support for ADlink PCI-72xx opto-22 compatible digital i/o
++	  boards. Supported boards include the 24-channel PCI-7224, 48-channel
++	  PCI-7248, and 96-channel PCI-7296.
+ 
+ 	  To compile this driver as a module, choose M here: the module will be
+ 	  called adl_pci7296.
+diff --git a/drivers/staging/comedi/drivers/adl_pci7296.c b/drivers/staging/comedi/drivers/adl_pci7296.c
+index 19b47af..1b9ea54 100644
+--- a/drivers/staging/comedi/drivers/adl_pci7296.c
++++ b/drivers/staging/comedi/drivers/adl_pci7296.c
+@@ -1,148 +1,163 @@
+ /*
+-    comedi/drivers/adl_pci7296.c
++ * COMEDI driver for the ADLINK PCI-72xx series boards.
++ *
++ * COMEDI - Linux Control and Measurement Device Interface
++ * Copyright (C) 2000 David A. Schleef <ds@schleef.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
+ 
+-    COMEDI - Linux Control and Measurement Device Interface
+-    Copyright (C) 2000 David A. Schleef <ds@schleef.org>
+-
+-    This program is free software; you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation; either version 2 of the License, or
+-    (at your option) any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    GNU General Public License for more details.
+-
+-    You should have received a copy of the GNU General Public License
+-    along with this program; if not, write to the Free Software
+-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+-
+-*/
+ /*
+ Driver: adl_pci7296
+-Description: Driver for the Adlink PCI-7296 96 ch. digital io board
+-Devices: [ADLink] PCI-7296 (adl_pci7296)
++Description: 24/48/96-Channel Opto-22 Compatible Digital I/O Boards
++Devices: (ADLink) PCI-7224 [adl_pci7224] - 24 channels
++	 (ADLink) PCI-7248 [adl_pci7248] - 48 channels
++	 (ADLink) PCI-7296 [adl_pci7296] - 96 channels
+ Author: Jon Grierson <jd@renko.co.uk>
+ Updated: Mon, 14 Apr 2008 15:05:56 +0100
+ Status: testing
+ 
+-Configuration Options:
+-  [0] - PCI bus of device (optional)
+-  [1] - PCI slot of device (optional)
+-  If bus/slot is not specified, the first supported
+-  PCI device found will be used.
++This driver only attaches using the PCI PnP auto config support
++in the comedi core. The module parameter 'comedi_autoconfig'
++must be 1 (default) to enable this feature. The COMEDI_DEVCONFIG
++ioctl, used by the comedi_config utility, is not supported by
++this driver.
++
++These boards also have an 8254 programmable timer/counter chip.
++This chip is not currently supported by this driver.
++
++Interrupt support for these boards is also not currently supported.
++
++Configuration Options: not applicable
+ */
+ 
+ #include "../comedidev.h"
+-#include <linux/kernel.h>
+ 
+ #include "8255.h"
+-/* #include "8253.h" */
+ 
+-#define PORT1A 0
+-#define PORT2A 4
+-#define PORT3A 8
+-#define PORT4A 12
++/*
++ * PCI Device ID's supported by this driver
++ */
++#define PCI_DEVICE_ID_PCI7224	0x7224
++#define PCI_DEVICE_ID_PCI7248	0x7248
++#define PCI_DEVICE_ID_PCI7296	0x7296
++
++struct adl_pci7296_boardinfo {
++	const char *name;
++	unsigned short device;
++	int nsubdevs;
++};
+ 
+-#define PCI_DEVICE_ID_PCI7296 0x7296
++static const struct adl_pci7296_boardinfo adl_pci7296_boards[] = {
++	{
++		.name		= "adl_pci7224",
++		.device		= PCI_DEVICE_ID_PCI7224,
++		.nsubdevs	= 1,
++	}, {
++		.name		= "adl_pci7248",
++		.device		= PCI_DEVICE_ID_PCI7248,
++		.nsubdevs	= 2,
++	}, {
++		.name		= "adl_pci7296",
++		.device		= PCI_DEVICE_ID_PCI7296,
++		.nsubdevs	= 4,
++	},
++};
+ 
+-static struct pci_dev *adl_pci7296_find_pci(struct comedi_device *dev,
+-					    struct comedi_devconfig *it)
++static const void *adl_pci7296_find_boardinfo(struct comedi_device *dev,
++					      struct pci_dev *pcidev)
+ {
+-	struct pci_dev *pcidev = NULL;
+-	int bus = it->options[0];
+-	int slot = it->options[1];
+-
+-	for_each_pci_dev(pcidev) {
+-		if (pcidev->vendor != PCI_VENDOR_ID_ADLINK ||
+-		    pcidev->device != PCI_DEVICE_ID_PCI7296)
+-			continue;
+-		if (bus || slot) {
+-			/* requested particular bus/slot */
+-			if (pcidev->bus->number != bus ||
+-			    PCI_SLOT(pcidev->devfn) != slot)
+-				continue;
+-		}
+-		return pcidev;
++	const struct adl_pci7296_boardinfo *board;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(adl_pci7296_boards); i++) {
++		board = &adl_pci7296_boards[i];
++		if (pcidev->device == board->device)
++			return board;
+ 	}
+-	printk(KERN_ERR
+-		"comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
+-	       dev->minor, bus, slot);
+ 	return NULL;
+ }
+ 
+-static int adl_pci7296_attach(struct comedi_device *dev,
+-			      struct comedi_devconfig *it)
++static int adl_pci7296_attach_pci(struct comedi_device *dev,
++				  struct pci_dev *pcidev)
+ {
+-	struct pci_dev *pcidev;
++	const struct adl_pci7296_boardinfo *board;
+ 	struct comedi_subdevice *s;
+ 	int ret;
++	int i;
+ 
+-	printk(KERN_INFO "comedi%d: attach adl_pci7432\n", dev->minor);
++	comedi_set_hw_dev(dev, &pcidev->dev);
+ 
+-	dev->board_name = "pci7432";
++	board = adl_pci7296_find_boardinfo(dev, pcidev);
++	if (!board)
++		return -ENODEV;
++	dev->board_ptr = board;
++	dev->board_name = board->name;
+ 
+-	ret = comedi_alloc_subdevices(dev, 4);
++	ret = comedi_pci_enable(pcidev, dev->board_name);
+ 	if (ret)
+ 		return ret;
+-
+-	pcidev = adl_pci7296_find_pci(dev, it);
+-	if (!pcidev)
+-		return -EIO;
+-	comedi_set_hw_dev(dev, &pcidev->dev);
+-
+-	if (comedi_pci_enable(pcidev, "adl_pci7296") < 0) {
+-		printk(KERN_ERR
+-			"comedi%d: Failed to enable PCI device and request regions\n",
+-			dev->minor);
+-		return -EIO;
+-	}
+-
+ 	dev->iobase = pci_resource_start(pcidev, 2);
+-	printk(KERN_INFO "comedi: base addr %4lx\n", dev->iobase);
+-
+-	/*  four 8255 digital io subdevices */
+-	s = dev->subdevices + 0;
+-	subdev_8255_init(dev, s, NULL, (unsigned long)(dev->iobase));
+ 
+-	s = dev->subdevices + 1;
+-	ret = subdev_8255_init(dev, s, NULL,
+-				(unsigned long)(dev->iobase + PORT2A));
+-	if (ret < 0)
+-		return ret;
+-
+-	s = dev->subdevices + 2;
+-	ret = subdev_8255_init(dev, s, NULL,
+-				(unsigned long)(dev->iobase + PORT3A));
+-	if (ret < 0)
++	/*
++	 * One, two, or four subdevices are setup by this driver depending
++	 * on the number of channels provided by the board. Each subdevice
++	 * has 24 channels supported by the 8255 module.
++	 */
++	ret = comedi_alloc_subdevices(dev, board->nsubdevs);
++	if (ret)
+ 		return ret;
+ 
+-	s = dev->subdevices + 3;
+-	ret = subdev_8255_init(dev, s, NULL,
+-				(unsigned long)(dev->iobase + PORT4A));
+-	if (ret < 0)
+-		return ret;
++	for (i = 0; i < board->nsubdevs; i++) {
++		s = dev->subdevices + i;
++		ret = subdev_8255_init(dev, s, NULL, dev->iobase + (i * 4));
++		if (ret)
++			return ret;
++	}
+ 
+-	printk(KERN_DEBUG "comedi%d: adl_pci7432 attached\n", dev->minor);
++	dev_info(dev->class_dev, "%s attached (%d digital i/o channels)\n",
++		dev->board_name, board->nsubdevs * 24);
+ 
+ 	return 0;
+ }
+ 
++static int adl_pci7296_attach(struct comedi_device *dev,
++			      struct comedi_devconfig *it)
++{
++	dev_warn(dev->class_dev,
++		"This driver does not support attach using comedi_config\n");
++
++	return -ENOSYS;
++}
++
+ static void adl_pci7296_detach(struct comedi_device *dev)
+ {
+ 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
++	const struct adl_pci7296_boardinfo *board = comedi_board(dev);
++	struct comedi_subdevice *s;
++	int i;
+ 
++	if (dev->subdevices) {
++		for (i = 0; i < board->nsubdevs; i++) {
++			s = dev->subdevices + i;
++			subdev_8255_cleanup(dev, s);
++		}
++	}
+ 	if (pcidev) {
+ 		if (dev->iobase)
+ 			comedi_pci_disable(pcidev);
+-		pci_dev_put(pcidev);
+-	}
+-	if (dev->subdevices) {
+-		subdev_8255_cleanup(dev, dev->subdevices + 0);
+-		subdev_8255_cleanup(dev, dev->subdevices + 1);
+-		subdev_8255_cleanup(dev, dev->subdevices + 2);
+-		subdev_8255_cleanup(dev, dev->subdevices + 3);
+ 	}
+ }
+ 
+@@ -150,6 +165,7 @@ static struct comedi_driver adl_pci7296_driver = {
+ 	.driver_name	= "adl_pci7296",
+ 	.module		= THIS_MODULE,
+ 	.attach		= adl_pci7296_attach,
++	.attach_pci	= adl_pci7296_attach_pci,
+ 	.detach		= adl_pci7296_detach,
+ };
+ 
+@@ -165,6 +181,8 @@ static void __devexit adl_pci7296_pci_remove(struct pci_dev *dev)
+ }
+ 
+ static DEFINE_PCI_DEVICE_TABLE(adl_pci7296_pci_table) = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7224) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7248) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7296) },
+ 	{ 0 }
+ };
+@@ -178,6 +196,6 @@ static struct pci_driver adl_pci7296_pci_driver = {
+ };
+ module_comedi_pci_driver(adl_pci7296_driver, adl_pci7296_pci_driver);
+ 
++MODULE_DESCRIPTION("ADLINK PCI-72xx Opto-22 Compatible Digital I/O Boards");
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
+-MODULE_DESCRIPTION("Comedi low-level driver");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.11
 
