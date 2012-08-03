@@ -1,125 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab2HCMOQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 08:14:16 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:45439 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab2HCMON (ORCPT
+	id S1753723Ab2HCMOZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 08:14:25 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:46829 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557Ab2HCMOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 08:14:13 -0400
-Date: Fri, 3 Aug 2012 17:43:42 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Ignore unsupported instructions in uprobe_mmap
-Message-ID: <20120803121342.GD3748@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120728163157.GA22719@redhat.com>
- <20120731064730.GB5087@linux.vnet.ibm.com>
- <20120731124805.GA485@redhat.com>
- <20120802100515.GC5782@linux.vnet.ibm.com>
- <20120802135313.GA4334@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120802135313.GA4334@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080312-7606-0000-0000-00000283FC63
+	Fri, 3 Aug 2012 08:14:15 -0400
+From: microcai <microcai@fedoraproject.org>
+To: linux-kernel@vger.kernel.org
+Cc: kernel@vger.linux-kernel.cn, microcai <microcai@fedoraproject.org>
+Subject: [PATCH] [ipc/shm] make shmget with IPC_PRIVATE initially created with SHM_DEST
+Date: Fri,  3 Aug 2012 20:13:10 +0800
+Message-Id: <1343995990-1358-1-git-send-email-microcai@fedoraproject.org>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> OK, lets start with dup_mmap:
-> 
-> 		// retval == 0
-> 
-> 		if (file && uprobe_mmap(tmp))
-> 			goto out;
-> 
-> 	out:
-> 		up_write(&mm->mmap_sem);
-> 		flush_tlb_mm(oldmm);
-> 		up_write(&oldmm->mmap_sem);
-> 		return retval;
-> 
-> Given that retval == 0, what do you think dup_mmap() returns if
-> uprobe_mmap() fails? And note that we didn't copy all vmas.
-> OK, at least this can't crash (afaics), and easy to fix.
-> 
-> 
-> But mmap_region() is worse, much worse. It simply can _not_ fail
-> after uprobe_mmap (of course, I am not saying this is unfixable)
-> without the crash. And note that the crash is "delayed". And btw,
-> like dup_mmap(), mmap_region() doesn't return the error too.
-> 
-> Srikar, I strongly believe this horror must not exist. Either
-> we should teach mmap_region() and dup_mmap() (and vma_adjust!)
-> to fail correctly, or we should ignore the error code.
-> 
-> It is that simple, isn't it?
+The problem is SysV SHM is that , it will cause kernel resource leak.
+Initailly set shm  mode to SHM_DEST when create with key_t IPC_PRIVATE,
+then the resource leak is fixed.
 
-I think you would have thought of this approach already but just wanted
-to check if below is fine with you.
+If program want the shmid live longer, they will probably use non
+IPC_PRIVATE nor call shmctl that remove SHM_DEST bit.
+---
+ ipc/shm.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index f00e319..78bfd94 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -456,10 +456,10 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 		if (tmp->vm_ops && tmp->vm_ops->open)
- 			tmp->vm_ops->open(tmp);
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 41c1285..1abc031 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -480,6 +480,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
  
--		if (retval)
--			goto out;
-+		if (!retval && file)
-+			retval = uprobe_mmap(tmp);
+ 	shp->shm_perm.key = key;
+ 	shp->shm_perm.mode = (shmflg & S_IRWXUGO);
++	if(key == IPC_PRIVATE)
++		shp->shm_perm.mode |= SHM_DEST;
+ 	shp->mlock_user = NULL;
  
--		if (file && uprobe_mmap(tmp))
-+		if (retval)
- 			goto out;
- 	}
- 	/* a new mm has just been created */
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 4fe2697..91d36fb 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1355,9 +1355,12 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
- 	} else if ((flags & MAP_POPULATE) && !(flags & MAP_NONBLOCK))
- 		make_pages_present(addr, addr + len);
- 
--	if (file && uprobe_mmap(vma))
-+	if (file) {
-+		error = uprobe_mmap(vma)
- 		/* matching probes but cannot insert */
--		goto unmap_and_free_vma;
-+		if (error)
-+			goto unmap_and_free_vma;
-+	}
- 
- 	return addr;
- 
-Basically, I am setting the return value of uprobe_mmap() so that
-mmap_region and do_fork() fail.  This still needs the fix in
-uprobe_mmap() to ignore unsupported instructions.
-
-I am completely _okay_ with not setting the return values as proposed by you. 
-Just that setting return values and the fix in uprobe_mmap() might help
-in minor issues
-
-- We either probe all probes where possible or intimate to the user that
-  the requested operation wasnt successful.
-
-- If valid probes follow a probe with invalid instruction, we still
-  allow valid probes.
-
-- If get_user_pages()/set_swbp() fail because of genuine reasons like
-  ENOMEM, then we dont retry to place probes on the subsequent vmas.
-
+ 	shp->shm_perm.security = NULL;
 -- 
-thanks and regards
-Srikar
+1.7.8.6
 
