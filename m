@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab2HCPkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 11:40:42 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:43437 "EHLO
+	id S1754091Ab2HCPkk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 11:40:40 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:21921 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753525Ab2HCPk2 (ORCPT
+	by vger.kernel.org with ESMTP id S1753910Ab2HCPkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 11:40:28 -0400
+	Fri, 3 Aug 2012 11:40:32 -0400
 X-IronPort-AV: E=Sophos;i="4.77,706,1336341600"; 
-   d="scan'208";a="169023106"
+   d="scan'208";a="169023108"
 From: Damien Cassou <damien.cassou@lifl.fr>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+To: David Brown <davidb@codeaurora.org>
+Cc: kernel-janitors@vger.kernel.org, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-arm-msm@vger.kernel.org, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] drivers/video/jz4740_fb.c: use devm_ functions
-Date: Fri,  3 Aug 2012 17:40:11 +0200
-Message-Id: <1344008414-2894-3-git-send-email-damien.cassou@lifl.fr>
+Subject: [PATCH 5/5] drivers/video/msm/mddi_client_nt35399.c: use devm_ functions
+Date: Fri,  3 Aug 2012 17:40:13 +0200
+Message-Id: <1344008414-2894-5-git-send-email-damien.cassou@lifl.fr>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr>
 References: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr>
@@ -26,87 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Damien Cassou <damien.cassou@lifl.fr>
 
 The various devm_ functions allocate memory that is released when a driver
-detaches. This patch uses these functions for data that is allocated in the
-probe function of a platform device and is only freed in the remove function.
+detaches. This patch replaces the use of kzalloc by devm_kzalloc.
+
+Additionally, this patch fixes a memory leak: some memory was allocated for
+'panel' but not released when the subsequent call to setup_vsync fails.
 
 Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
 
 ---
- drivers/video/jz4740_fb.c |   22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
+ drivers/video/msm/mddi_client_nt35399.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/video/jz4740_fb.c b/drivers/video/jz4740_fb.c
-index de36693..7669770 100644
---- a/drivers/video/jz4740_fb.c
-+++ b/drivers/video/jz4740_fb.c
-@@ -659,25 +659,25 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
- 	jzfb->pdata = pdata;
- 	jzfb->mem = mem;
+diff --git a/drivers/video/msm/mddi_client_nt35399.c b/drivers/video/msm/mddi_client_nt35399.c
+index 7fcd67e..66b314e 100644
+--- a/drivers/video/msm/mddi_client_nt35399.c
++++ b/drivers/video/msm/mddi_client_nt35399.c
+@@ -189,8 +189,9 @@ static int mddi_nt35399_probe(struct platform_device *pdev)
 
--	jzfb->ldclk = clk_get(&pdev->dev, "lcd");
-+	jzfb->ldclk = devm_clk_get(&pdev->dev, "lcd");
- 	if (IS_ERR(jzfb->ldclk)) {
- 		ret = PTR_ERR(jzfb->ldclk);
- 		dev_err(&pdev->dev, "Failed to get lcd clock: %d\n", ret);
- 		goto err_framebuffer_release;
- 	}
+ 	int ret;
 
--	jzfb->lpclk = clk_get(&pdev->dev, "lcd_pclk");
-+	jzfb->lpclk = devm_clk_get(&pdev->dev, "lcd_pclk");
- 	if (IS_ERR(jzfb->lpclk)) {
- 		ret = PTR_ERR(jzfb->lpclk);
- 		dev_err(&pdev->dev, "Failed to get lcd pixel clock: %d\n", ret);
--		goto err_put_ldclk;
-+		goto err_framebuffer_release;
- 	}
+-	struct panel_info *panel = kzalloc(sizeof(struct panel_info),
+-					   GFP_KERNEL);
++	struct panel_info *panel = devm_kzalloc(&pdev->dev,
++						sizeof(struct panel_info),
++						GFP_KERNEL);
 
--	jzfb->base = ioremap(mem->start, resource_size(mem));
-+	jzfb->base = devm_ioremap(&pdev->dev, mem->start, resource_size(mem));
- 	if (!jzfb->base) {
- 		dev_err(&pdev->dev, "Failed to ioremap register memory region\n");
- 		ret = -EBUSY;
--		goto err_put_lpclk;
-+		goto err_framebuffer_release;
- 	}
+ 	printk(KERN_DEBUG "%s: enter.\n", __func__);
 
- 	platform_set_drvdata(pdev, jzfb);
-@@ -693,7 +693,7 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
- 	ret = jzfb_alloc_devmem(jzfb);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to allocate video memory\n");
--		goto err_iounmap;
-+		goto err_framebuffer_release;
- 	}
+@@ -233,7 +234,6 @@ static int mddi_nt35399_remove(struct platform_device *pdev)
+ 	struct panel_info *panel = platform_get_drvdata(pdev);
 
- 	fb->fix = jzfb_fix;
-@@ -734,12 +734,6 @@ err_free_devmem:
-
- 	fb_dealloc_cmap(&fb->cmap);
- 	jzfb_free_devmem(jzfb);
--err_iounmap:
--	iounmap(jzfb->base);
--err_put_lpclk:
--	clk_put(jzfb->lpclk);
--err_put_ldclk:
--	clk_put(jzfb->ldclk);
- err_framebuffer_release:
- 	framebuffer_release(fb);
- err_release_mem_region:
-@@ -756,7 +750,6 @@ static int __devexit jzfb_remove(struct platform_device *pdev)
- 	jz_gpio_bulk_free(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
- 	jz_gpio_bulk_free(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
-
--	iounmap(jzfb->base);
- 	release_mem_region(jzfb->mem->start, resource_size(jzfb->mem));
-
- 	fb_dealloc_cmap(&jzfb->fb->cmap);
-@@ -764,9 +757,6 @@ static int __devexit jzfb_remove(struct platform_device *pdev)
-
- 	platform_set_drvdata(pdev, NULL);
-
--	clk_put(jzfb->lpclk);
--	clk_put(jzfb->ldclk);
--
- 	framebuffer_release(jzfb->fb);
-
+ 	setup_vsync(panel, 0);
+-	kfree(panel);
  	return 0;
+ }
