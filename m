@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689Ab2HCJcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 05:32:32 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1908 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2HCJcb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 05:32:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 03 Aug 2012 02:32:30 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Vikram Pandita <vikram.pandita@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kay@vrfy.org" <kay@vrfy.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
-Date: Fri, 3 Aug 2012 15:02:26 +0530
-Subject: RE: [PATCH v2] printk: add option to print cpu id
-Thread-Topic: [PATCH v2] printk: add option to print cpu id
-Thread-Index: Ac1xWMtvTs8UoHTwQBiUNqGfW2tFVwAALGNQAABG9iA=
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDCAC49AE@BGMAIL02.nvidia.com>
-References: <1343985378-22330-1-git-send-email-vikram.pandita@ti.com>
- <D958900912E20642BCBC71664EFECE3E6DDCAC49AB@BGMAIL02.nvidia.com>
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDCAC49AB@BGMAIL02.nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752126Ab2HCJfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 05:35:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18001 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192Ab2HCJfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 05:35:11 -0400
+Message-ID: <1343986487.20871.2.camel@cr0>
+Subject: Re: [PATCH 1/7] netpoll: use GFP_ATOMIC in slave_enable_netpoll()
+ and __netpoll_setup()
+From: Cong Wang <amwang@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Joe Perches <joe@perches.com>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
+Date: Fri, 03 Aug 2012 17:34:47 +0800
+In-Reply-To: <1343985428.9299.868.camel@edumazet-glaptop>
+References: <1343403484-29347-1-git-send-email-amwang@redhat.com>
+	 <1343403484-29347-2-git-send-email-amwang@redhat.com>
+	 <1343985428.9299.868.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-08-03 at 11:17 +0200, Eric Dumazet wrote:
+> On Fri, 2012-07-27 at 23:37 +0800, Cong Wang wrote:
+> > slave_enable_netpoll() and __netpoll_setup() may be called
+> > with read_lock() held, so should use GFP_ATOMIC to allocate
+> > memory.
+> > 
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > Signed-off-by: Cong Wang <amwang@redhat.com>
+> > ---
+> >  drivers/net/bonding/bond_main.c |    2 +-
+> >  net/core/netpoll.c              |    2 +-
+> >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> > index 6fae5f3..ab773d4 100644
+> > --- a/drivers/net/bonding/bond_main.c
+> > +++ b/drivers/net/bonding/bond_main.c
+> > @@ -1235,7 +1235,7 @@ static inline int slave_enable_netpoll(struct slave *slave)
+> >  	struct netpoll *np;
+> >  	int err = 0;
+> >  
+> > -	np = kzalloc(sizeof(*np), GFP_KERNEL);
+> > +	np = kzalloc(sizeof(*np), GFP_ATOMIC);
+> >  	err = -ENOMEM;
+> >  	if (!np)
+> >  		goto out;
+> > diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+> > index b4c90e4..c78a966 100644
+> > --- a/net/core/netpoll.c
+> > +++ b/net/core/netpoll.c
+> > @@ -734,7 +734,7 @@ int __netpoll_setup(struct netpoll *np, struct net_device *ndev)
+> >  	}
+> >  
+> >  	if (!ndev->npinfo) {
+> > -		npinfo = kmalloc(sizeof(*npinfo), GFP_KERNEL);
+> > +		npinfo = kmalloc(sizeof(*npinfo), GFP_ATOMIC);
+> >  		if (!npinfo) {
+> >  			err = -ENOMEM;
+> >  			goto out;
+> 
+> Yes this works, but maybe you instead could pass/add a gfp_t flags
+> argument to __netpoll_setup() ?
+> 
+> Management tasks should allow GFP_KERNEL allocations to have less
+> failure risks.
+> 
+> Its sad bonding uses the rwlock here instead of a mutex
+> 
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Venu Byravarasu
-> Sent: Friday, August 03, 2012 2:58 PM
-> To: Vikram Pandita; gregkh@linuxfoundation.org; kay@vrfy.org
-> Cc: linux-kernel@vger.kernel.org; Mike Turquette; Vimarsh Zutshi
-> Subject: RE: [PATCH v2] printk: add option to print cpu id
-> 
-> > -----Original Message-----
-> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> > owner@vger.kernel.org] On Behalf Of Vikram Pandita
-> > Sent: Friday, August 03, 2012 2:46 PM
-> > To: gregkh@linuxfoundation.org; kay@vrfy.org
-> > Cc: linux-kernel@vger.kernel.org; Vikram Pandita; Mike Turquette; Vimarsh
-> > Zutshi
-> > Subject: [PATCH v2] printk: add option to print cpu id
-> >
-> > From: Vikram Pandita <vikram.pandita@ti.com>
-> >
-> > Introduce config option to enable CPU id reporting for printk() calls.
-> >
-> > Example logs with this option enabled look like:
-> >  [1] [    2.328613] usbcore: registered new interface driver libusual
-> >  [1] [    2.335418] usbcore: registered new interface driver usbtest
-> >  [1] [    2.342803] mousedev: PS/2 mouse device common for all mice
-> >  [0] [    2.352600] twl_rtc twl_rtc: Power up reset detected.
-> >  [0] [    2.359191] twl_rtc twl_rtc: Enabling TWL-RTC
-> >  [1] [    2.367797] twl_rtc twl_rtc: rtc core: registered twl_rtc as rtc0
-> >  [1] [    2.375274] i2c /dev entries driver
-> >  [1] [    2.382324] Driver for 1-wire Dallas network protocol.
-> >
-> > Its sometimes very useful to have printk also print the CPU Identifier
-> > that executed the call. This has helped to debug various SMP issues on
-> > shipping
-> > products.
-> 
+Yup, that is a good idea. I will update this patch.
 
-As having Macro locally in the file of interest would serve the purpose,
-Why to change the printk code?
- 
-> Is it not better to have macros which will have wrapper to printk with
-> required
-> debug info added? E.g. cpu# in your case.
-> If by default we add cupid, is it not over head in each message getting
-> printed with printk?
-> 
-> >
-> > Known limitation is if the system gets preempted between function call and
-> > actual printk, the reported cpu-id might not be accurate. But most of the
-> > times its seen to give a good feel of how the N cpu's in the system are
-> > getting loaded.
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks!
+
