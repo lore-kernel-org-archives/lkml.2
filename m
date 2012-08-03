@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab2HCPbT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 11:31:19 -0400
-Received: from bwv190.internetdsl.tpnet.pl ([83.18.229.190]:56546 "EHLO
-	bwv190.internetdsl.tpnet.pl" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752976Ab2HCPbS (ORCPT
+	id S1753599Ab2HCPgf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 11:36:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59786 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab2HCPgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 11:31:18 -0400
-Date: Fri, 3 Aug 2012 17:32:56 +0200 (CEST)
-From: Piotr Gluszenia Slawinski <curious@bwv190.internetdsl.tpnet.pl>
-To: linux-kernel@vger.kernel.org
-cc: linux-pcmcia@lists.infradead.org
-Subject: bisected pcmcia bug - unable to map card memory on old laptops
-Message-ID: <Pine.LNX.4.64.1208031728120.9164@bwv190.internetdsl.tpnet.pl>
+	Fri, 3 Aug 2012 11:36:33 -0400
+From: =?UTF-8?q?Amaury=20Decr=C3=AAme?= <amaury.decreme@gmail.com>
+To: khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
+        rob@landley.net
+Cc: jeffrey.t.kirsher@intel.com, akpm@linux-foundation.org,
+        davem@davemloft.net, gregkh@linuxfoundation.org, joe@perches.com,
+        ralf@linux-mips.org, dirk.brandewie@gmail.com,
+        jayachandranc@netlogicmicro.com, linux-i2c@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Amaury=20Decr=C3=AAme?= <amaury.decreme@gmail.com>
+Subject: [PATCH v2 0/2] I2C: SIS964: Bus driver 
+Date: Fri,  3 Aug 2012 17:35:43 +0200
+Message-Id: <1344008145-14579-1-git-send-email-amaury.decreme@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello. I've bisected bug which makes old laptops fail to detect 
-(any) pcmcia cards with message 'unable to map card memory!' .
-commit in question is :
+This series of patches are a I2C bus driver for the SIS964.
 
-30919b0bf356a8ee0ef4f7d38ca8ad99b96820b2 is the first bad commit
-commit 30919b0bf356a8ee0ef4f7d38ca8ad99b96820b2
-Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Date:   Thu Dec 16 10:38:51 2010 -0700
 
-     x86: avoid low BIOS area when allocating address space
+The SIS964 is nearly the same as SIS630 for the SMBUS :
+	- Most of the SMBus registers (Status, Enable, Control,
+	  Host Control, etc.) are at the same adresses + 0x60
+	- The register count is 21 instead of 20
 
-     This implements arch_remove_reservations() so allocate_resource() can
-     avoid any arch-specific reserved areas.  This currently just avoids 
-the
-     BIOS area (the first 1MB), but could be used for E820 reserved areas 
-if
-     that turns out to be necessary.
+The SIS964 name is ambiguous as this chip isn't part of the SIS96X
+family and behaves differently.
 
-     We previously avoided this area in pcibios_align_resource().  This 
-patch
-     moves the test from that PCI-specific path to a generic path, so *all*
-     resource allocations will avoid this area.
+The datasheets have been used to develop the driver based on the
+exsiting driver for I2C SIS630 . 
 
-     Acked-by: H. Peter Anvin <hpa@zytor.com>
-     Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-     Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-:040000 040000 58cf7334131f8ad10bc814e56ef6538781b01add 
-2434a5e5da4eabf3e413ac694c0cdeef91e17680 M      arch
+Content of the patches:
+	- 1/2 The driver itself
+	- 2/2 Documentation, Kconfig, Makefile, Maintainers
 
-bug is present in all kernels since late 2.6.36
+
+Changes:
+	V2
+	- Remove of the insertion on include/linux/pci_ids.h
+	and no quirk needed
+	- Cosmetics on the source code + patch split
+
+Amaury Decrême (2):
+  I2C: SIS964: Bus driver - Driver
+  I2C: SIS964: Bus driver - other files
+
+ Documentation/i2c/busses/i2c-sis964 |   36 +++
+ MAINTAINERS                         |    7 +
+ drivers/i2c/busses/Kconfig          |   12 +-
+ drivers/i2c/busses/Makefile         |    1 +
+ drivers/i2c/busses/i2c-sis964.c     |  578 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 633 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/i2c/busses/i2c-sis964
+ create mode 100644 drivers/i2c/busses/i2c-sis964.c
 
 -- 
+1.7.8.6
+
