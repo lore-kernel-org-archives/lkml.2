@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028Ab2HCBXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 21:23:18 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:11953 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab2HCBXR (ORCPT
+	id S1752603Ab2HCB2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 21:28:51 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34534 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab2HCB2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 21:23:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6791"; a="218098483"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: Fix XIP build due to PHYS_OFFSET definition moving
-Date: Thu,  2 Aug 2012 18:23:14 -0700
-Message-Id: <1343956994-27513-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.12.rc1.16.g05a20c8
+	Thu, 2 Aug 2012 21:28:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMbhsRQg4pETrM7cx+aSBzGn3S1LV_x7vo8X3A300vCWTjkFng@mail.gmail.com>
+References: <1343184588-20239-1-git-send-email-ccross@android.com>
+	<CACRpkdZv4p+QT3Y+=-xh5iJ=sr1_aahroxQ535QpzVD9e_ESJA@mail.gmail.com>
+	<20120727233829.GB14835@n2100.arm.linux.org.uk>
+	<CAMbhsRSGYmu=eyqik23cECsJPfpo6rUqZUa853nkY35XRo4Q_w@mail.gmail.com>
+	<CAMbhsRQg4pETrM7cx+aSBzGn3S1LV_x7vo8X3A300vCWTjkFng@mail.gmail.com>
+Date: Thu, 2 Aug 2012 18:28:47 -0700
+X-Google-Sender-Auth: BLzjf1cEVtuZ_qCNB5F0l7PC9aM
+Message-ID: <CAMbhsRSboLABOD8eX4czk8FsG3QmT60RTr+znVCqwWR6ZGhgaw@mail.gmail.com>
+Subject: Re: [RFC v2] ARM: sched_clock: update epoch_cyc on resume
+From: Colin Cross <ccross@android.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Barry Song <21cnbao@gmail.com>,
+        Vaibhav Bedia <vaibhav.bedia@ti.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Nicolas Pitre <nico@linaro.org>, Marc Zyngier <marc.zyngier@arm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the p2v changes, the PHYS_OFFSET #define moved into a
-!__ASSEMBLY__ section. This causes a XIP build to fail with
+On Fri, Jul 27, 2012 at 8:30 PM, Colin Cross <ccross@android.com> wrote:
+> On Fri, Jul 27, 2012 at 6:15 PM, Colin Cross <ccross@android.com> wrote:
+>> That patch was merged in 3.4, and my patch is on top of it.  Your
+>> patch updates epoch_cyc and epoch_ns in suspend, but if the first call
+>> to cyc_to_sched_clock after resume gets cyc = 0, cyc - epoch_cyc can
+>> be negative, although it will be cast back to a large positive number.
+>>
+>> With my patch, epoch_cyc is updated in resume to whatever
+>> read_sched_clock() returns, and epoch_ns is still set to the suspend
+>> value, so it appears that sched_clock has not changed between
+>> sched_clock_suspend and sched_clock_resume.  It will work with any
+>> timer behavior (reset to 0, reset to random value, or continuing
+>> counting).  The old setup_sched_clock function maintains the old
+>> behavior to appease those who like their 32kHz sched clock to continue
+>> ticking in suspend, although I think it is more correct for all sched
+>> clocks to be faster than 32 kHz (when possible) and stop in suspend.
+>
+> I think the existing code can cause sched_clock to go backwards if the
+> register read by the read function resets to 0 in suspend:
+>
+> In sched_clock_suspend epoch_cyc is updated to 0x00002000.
+>
+> The first sched_clock call after resume gets cyc = 0, returning
+> epoch_ns + cyc_to_ns(0xffffe000)
+>
+> Later, sched_clock gets cyc = 0x5000, returning epoch_ns +
+> cyc_to_ns(0x3000), which will be much smaller than the previous
+> sched_clock value.
 
- arch/arm/kernel/head.o: In function 'stext':
- arch/arm/kernel/head.S:146: undefined reference to 'PHYS_OFFSET'
-
-Momentarily leave the #ifndef __ASSEMBLY__ section so we can
-define PHYS_OFFSET for all compilation units.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
-
-I don't know if it's worth stable, seems that nobody has compiled XIP for
-a year (back to 2.6.39 days?).
-
- arch/arm/include/asm/memory.h | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index fcb5757..3299b2d 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -187,6 +187,7 @@ static inline unsigned long __phys_to_virt(unsigned long x)
- #define __phys_to_virt(x)	((x) - PHYS_OFFSET + PAGE_OFFSET)
- #endif
- #endif
-+#endif /* __ASSEMBLY__ */
- 
- #ifndef PHYS_OFFSET
- #ifdef PLAT_PHYS_OFFSET
-@@ -196,6 +197,8 @@ static inline unsigned long __phys_to_virt(unsigned long x)
- #endif
- #endif
- 
-+#ifndef __ASSEMBLY__
-+
- /*
-  * PFNs are used to describe any physical page; this means
-  * PFN 0 == physical address 0.
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Russell, any update on this?  Should sched_clock.c handle read
+functions that go backwards in suspend, or should I modify the read
+function to track an offset in suspend and always return a
+monotonically increasing value across suspend?
