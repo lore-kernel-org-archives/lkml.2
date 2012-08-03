@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab2HCLN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 07:13:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753418Ab2HCLN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 07:13:58 -0400
-Date: Fri, 3 Aug 2012 08:13:09 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Rafael Aquini <aquini@linux.com>
-Subject: Re: [PATCH v4 1/3] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120803111309.GA1848@t510.redhat.com>
-References: <cover.1342485774.git.aquini@redhat.com>
- <49f828a9331c9b729fcf77226006921ec5bc52fa.1342485774.git.aquini@redhat.com>
- <20120718054824.GA32341@bbox>
- <20120720194858.GA16249@t510.redhat.com>
- <20120723023332.GA6832@bbox>
- <20120723181952.GA27373@t510.redhat.com>
- <5019975B.6010708@redhat.com>
+	id S1753481Ab2HCLT3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 07:19:29 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:49116 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409Ab2HCLTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 07:19:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5019975B.6010708@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120803110247.GB11952@moon>
+References: <alpine.LFD.2.02.1203231926000.2542@ionos>
+	<20120323190855.GA27213@www.outflux.net>
+	<CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
+	<87pq7935w2.fsf@xmission.com>
+	<CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com>
+	<20120803110247.GB11952@moon>
+Date: Fri, 3 Aug 2012 13:19:24 +0200
+Message-ID: <CAFLxGvw4j-pyinjywxaL2gQ-Akp9grDysNv7dfOJkaQ3EyDKLw@mail.gmail.com>
+Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        spender@grsecurity.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 04:53:47PM -0400, Rik van Riel wrote:
-> On 07/23/2012 02:19 PM, Rafael Aquini wrote:
-> 
-> >In a glance, I believe this whole dance you're suggesting might just be too much
-> >of an overcomplication, and the best approach would be simply teaching the
-> >hotplug bits about the ballooned corner case just like it's being done to
-> >compaction/migration. However, I'll look at it carefully before making any other
-> >adjustments/propositions over here.
-> 
-> Compaction and hotplug do essentially the same thing
-> here: "collect all the movable pages from a page block,
-> and move them elsewhere".
-> 
-> Whether or not it is easier for them to share code, or
-> to duplicate a few lines of code, is something that can
-> be looked into later.
+On Fri, Aug 3, 2012 at 1:02 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+>> >> I'm using this system call in an application and noticed that's marked
+>> >> as deprecated now.
+>> >> My application collects all kind of information from crashing programs.
+>> >> It's installed in /proc/sys/kernel/core_pattern.
+>> >>
+>> >> If program X is crashing it executes get_robust_list(X) to get the
+>> >> address of the robust list
+>> >> and reads the list from /proc/X/mem.
+>> >>
+>> >> Is there another way to get the robust list from another program (by it's pid)?
+>> >
+>> > The folks doing checkpoint/restart claim to not need this, so there
+>> > might be a way either that or they just haven't hit this problem yet.
+>> >
+>> > What you are doing sounds like a reasonable use of get_robust_list to me.
+>> >
+>>
+>> CRIU folks, how do you deal with futex robust lists?
+>
+> Well, I believe we were over-optimistic in claiming that we don't need this
+> syscall (to be fair I think we simply yet not faced the problem Eric points).
+> So we need some way to fetch this address and set it back. If get_robust_list
+> get deprecated maybe we could print it out in /proc/pid/stat or something?
 
-I'm 100% in agreement with your thoughts here.
+Kees, you said get_robust_list() can be used to bypass ASLR.
+How? What makes it worse than /proc/pid/maps?
 
+If the robust list address itself is bad, removing get_robust_list()
+and putting the
+information into /proc is useless.
+
+-- 
+Thanks,
+//richard
