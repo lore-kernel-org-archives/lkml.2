@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab2HCPi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 11:38:29 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:46315 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab2HCPi1 (ORCPT
+	id S1753853Ab2HCPk3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 11:40:29 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:32801 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753334Ab2HCPk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 11:38:27 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>
-Subject: [GIT PULL] KGDB/KDB/dbgp fixes for 3.6-rc1
-Date: Fri, 3 Aug 2012 10:38:07 -0500
-Message-ID: <1344008287-2453-1-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 3 Aug 2012 11:40:26 -0400
+X-IronPort-AV: E=Sophos;i="4.77,706,1336341600"; 
+   d="scan'208";a="169023105"
+From: Damien Cassou <damien.cassou@lifl.fr>
+To: Christopher Hoover <ch@murgatroid.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] drivers/video/epson1355fb.c: use devm_ functions
+Date: Fri,  3 Aug 2012 17:40:10 +0200
+Message-Id: <1344008414-2894-2-git-send-email-damien.cassou@lifl.fr>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr>
+References: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was ready to go in time for the 3.6 merge window, but the pull
-request had not been sent prior to the merge window closing, as it was
-waiting on some final regression testing which has since passed
-correctly.
+From: Damien Cassou <damien.cassou@lifl.fr>
 
-There are no new features, those will be delayed to the 3.7
-window. There are only fixes/cleanup against the usual kernel churn
-and at least we are removing more lines than we add. :-)
+The various devm_ functions allocate memory that is released when a driver
+detaches. This patch uses these functions for data that is allocated in the
+probe function of a platform device and is only freed in the remove function.
 
-Thanks,
-Jason.
+Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
 
+---
+ drivers/video/epson1355fb.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+diff --git a/drivers/video/epson1355fb.c b/drivers/video/epson1355fb.c
+index 68b9b51..246da1e 100644
+--- a/drivers/video/epson1355fb.c
++++ b/drivers/video/epson1355fb.c
+@@ -592,12 +592,8 @@ static int epson1355fb_remove(struct platform_device *dev)
 
-  Linux 3.5 (2012-07-21 13:58:29 -0700)
+ 	if (info) {
+ 		fb_dealloc_cmap(&info->cmap);
+-		if (info->screen_base)
+-			iounmap(info->screen_base);
+ 		framebuffer_release(info);
+ 	}
+-	release_mem_region(EPSON1355FB_FB_PHYS, EPSON1355FB_FB_LEN);
+-	release_mem_region(EPSON1355FB_REGS_PHYS, EPSON1355FB_REGS_LEN);
+ 	return 0;
+ }
 
-are available in the git repository at:
+@@ -608,15 +604,18 @@ static int __devinit epson1355fb_probe(struct platform_device *dev)
+ 	u8 revision;
+ 	int rc = 0;
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/kgdb.git tags/for_linux-3.6-rc1
+-	if (!request_mem_region(EPSON1355FB_REGS_PHYS, EPSON1355FB_REGS_LEN, "S1D13505 registers")) {
++	if (!devm_request_mem_region(&dev->dev, EPSON1355FB_REGS_PHYS,
++				     EPSON1355FB_REGS_LEN,
++				     "S1D13505 registers")) {
+ 		printk(KERN_ERR "epson1355fb: unable to reserve "
+ 		       "registers at 0x%0x\n", EPSON1355FB_REGS_PHYS);
+ 		rc = -EBUSY;
+ 		goto bail;
+ 	}
 
-for you to fetch changes up to f96a4216e85050c0a9d41a41ecb0ae9d8e39b509:
+-	if (!request_mem_region(EPSON1355FB_FB_PHYS, EPSON1355FB_FB_LEN,
+-				"S1D13505 framebuffer")) {
++	if (!devm_request_mem_region(&dev->dev, EPSON1355FB_FB_PHYS,
++				     EPSON1355FB_FB_LEN,
++				     "S1D13505 framebuffer")) {
+ 		printk(KERN_ERR "epson1355fb: unable to reserve "
+ 		       "framebuffer at 0x%0x\n", EPSON1355FB_FB_PHYS);
+ 		rc = -EBUSY;
+@@ -638,7 +637,8 @@ static int __devinit epson1355fb_probe(struct platform_device *dev)
+ 	}
+ 	info->pseudo_palette = default_par->pseudo_palette;
 
-  USB: echi-dbgp: increase the controller wait time to come out of halt. (2012-07-31 08:16:43 -0500)
-
-----------------------------------------------------------------
-KGDB/KDB/usb-dbgp fixes and cleanups
-   usb-dbgp - increase the controller wait time to come out of halt.
-   kdb - Remove unused KDB_FLAG_ONLY_DO_DUMP code and cpu in more prompt
-   debug core - pass NMI type on archs that provide NMI types
-
-----------------------------------------------------------------
-Anton Vorontsov (1):
-      kernel/debug: Make use of KGDB_REASON_NMI
-
-Colin Ian King (1):
-      USB: echi-dbgp: increase the controller wait time to come out of halt.
-
-Jason Wessel (2):
-      kdb: Remove unused KDB_FLAG_ONLY_DO_DUMP
-      kdb: Remove cpu from the more prompt
-
- drivers/usb/early/ehci-dbgp.c   |    2 +-
- include/linux/kdb.h             |    2 --
- kernel/debug/kdb/kdb_debugger.c |    4 ++++
- kernel/debug/kdb/kdb_io.c       |   11 -----------
- kernel/debug/kdb/kdb_main.c     |   15 +--------------
- 5 files changed, 6 insertions(+), 28 deletions(-)
+-	info->screen_base = ioremap(EPSON1355FB_FB_PHYS, EPSON1355FB_FB_LEN);
++	info->screen_base = devm_ioremap(&dev->dev, EPSON1355FB_FB_PHYS,
++					 EPSON1355FB_FB_LEN);
+ 	if (!info->screen_base) {
+ 		printk(KERN_ERR "epson1355fb: unable to map framebuffer\n");
+ 		rc = -ENOMEM;
