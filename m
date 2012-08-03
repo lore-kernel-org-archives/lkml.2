@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab2HCPk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 11:40:29 -0400
+	id S1754187Ab2HCPks (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 11:40:48 -0400
 Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:32801 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753334Ab2HCPk0 (ORCPT
+	by vger.kernel.org with ESMTP id S1753900Ab2HCPkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 11:40:26 -0400
+	Fri, 3 Aug 2012 11:40:31 -0400
 X-IronPort-AV: E=Sophos;i="4.77,706,1336341600"; 
-   d="scan'208";a="169023105"
+   d="scan'208";a="169023107"
 From: Damien Cassou <damien.cassou@lifl.fr>
-To: Christopher Hoover <ch@murgatroid.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] drivers/video/epson1355fb.c: use devm_ functions
-Date: Fri,  3 Aug 2012 17:40:10 +0200
-Message-Id: <1344008414-2894-2-git-send-email-damien.cassou@lifl.fr>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] drivers/video/bf54x-lq043fb.c: use devm_ functions
+Date: Fri,  3 Aug 2012 17:40:12 +0200
+Message-Id: <1344008414-2894-4-git-send-email-damien.cassou@lifl.fr>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr>
 References: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr>
@@ -27,61 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Damien Cassou <damien.cassou@lifl.fr>
 
 The various devm_ functions allocate memory that is released when a driver
-detaches. This patch uses these functions for data that is allocated in the
-probe function of a platform device and is only freed in the remove function.
+detaches. This patch replaces the use of kzalloc by devm_kzalloc.
 
 Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
 
 ---
- drivers/video/epson1355fb.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/video/bf54x-lq043fb.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/epson1355fb.c b/drivers/video/epson1355fb.c
-index 68b9b51..246da1e 100644
---- a/drivers/video/epson1355fb.c
-+++ b/drivers/video/epson1355fb.c
-@@ -592,12 +592,8 @@ static int epson1355fb_remove(struct platform_device *dev)
+diff --git a/drivers/video/bf54x-lq043fb.c b/drivers/video/bf54x-lq043fb.c
+index dc2f004..47702ee 100644
+--- a/drivers/video/bf54x-lq043fb.c
++++ b/drivers/video/bf54x-lq043fb.c
+@@ -601,7 +601,8 @@ static int __devinit bfin_bf54x_probe(struct platform_device *pdev)
 
- 	if (info) {
- 		fb_dealloc_cmap(&info->cmap);
--		if (info->screen_base)
--			iounmap(info->screen_base);
- 		framebuffer_release(info);
- 	}
--	release_mem_region(EPSON1355FB_FB_PHYS, EPSON1355FB_FB_LEN);
--	release_mem_region(EPSON1355FB_REGS_PHYS, EPSON1355FB_REGS_LEN);
- 	return 0;
- }
+ 	fbinfo->fbops = &bfin_bf54x_fb_ops;
 
-@@ -608,15 +604,18 @@ static int __devinit epson1355fb_probe(struct platform_device *dev)
- 	u8 revision;
- 	int rc = 0;
-
--	if (!request_mem_region(EPSON1355FB_REGS_PHYS, EPSON1355FB_REGS_LEN, "S1D13505 registers")) {
-+	if (!devm_request_mem_region(&dev->dev, EPSON1355FB_REGS_PHYS,
-+				     EPSON1355FB_REGS_LEN,
-+				     "S1D13505 registers")) {
- 		printk(KERN_ERR "epson1355fb: unable to reserve "
- 		       "registers at 0x%0x\n", EPSON1355FB_REGS_PHYS);
- 		rc = -EBUSY;
- 		goto bail;
+-	fbinfo->pseudo_palette = kzalloc(sizeof(u32) * 16, GFP_KERNEL);
++	fbinfo->pseudo_palette = devm_kzalloc(&pdev->dev, sizeof(u32) * 16,
++					      GFP_KERNEL);
+ 	if (!fbinfo->pseudo_palette) {
+ 		printk(KERN_ERR DRIVER_NAME
+ 		       "Fail to allocate pseudo_palette\n");
+@@ -616,7 +617,7 @@ static int __devinit bfin_bf54x_probe(struct platform_device *pdev)
+ 		       "Fail to allocate colormap (%d entries)\n",
+ 		       BFIN_LCD_NBR_PALETTE_ENTRIES);
+ 		ret = -EFAULT;
+-		goto out5;
++		goto out4;
  	}
 
--	if (!request_mem_region(EPSON1355FB_FB_PHYS, EPSON1355FB_FB_LEN,
--				"S1D13505 framebuffer")) {
-+	if (!devm_request_mem_region(&dev->dev, EPSON1355FB_FB_PHYS,
-+				     EPSON1355FB_FB_LEN,
-+				     "S1D13505 framebuffer")) {
- 		printk(KERN_ERR "epson1355fb: unable to reserve "
- 		       "framebuffer at 0x%0x\n", EPSON1355FB_FB_PHYS);
- 		rc = -EBUSY;
-@@ -638,7 +637,8 @@ static int __devinit epson1355fb_probe(struct platform_device *dev)
- 	}
- 	info->pseudo_palette = default_par->pseudo_palette;
+ 	if (request_ports(info)) {
+@@ -671,8 +672,6 @@ out7:
+ 	free_ports(info);
+ out6:
+ 	fb_dealloc_cmap(&fbinfo->cmap);
+-out5:
+-	kfree(fbinfo->pseudo_palette);
+ out4:
+ 	dma_free_coherent(NULL, fbinfo->fix.smem_len, info->fb_buffer,
+ 			  info->dma_handle);
+@@ -699,7 +698,6 @@ static int __devexit bfin_bf54x_remove(struct platform_device *pdev)
+ 		dma_free_coherent(NULL, fbinfo->fix.smem_len, info->fb_buffer,
+ 				  info->dma_handle);
 
--	info->screen_base = ioremap(EPSON1355FB_FB_PHYS, EPSON1355FB_FB_LEN);
-+	info->screen_base = devm_ioremap(&dev->dev, EPSON1355FB_FB_PHYS,
-+					 EPSON1355FB_FB_LEN);
- 	if (!info->screen_base) {
- 		printk(KERN_ERR "epson1355fb: unable to map framebuffer\n");
- 		rc = -ENOMEM;
+-	kfree(fbinfo->pseudo_palette);
+ 	fb_dealloc_cmap(&fbinfo->cmap);
+
+ #ifndef NO_BL_SUPPORT
