@@ -1,67 +1,564 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab2HCSrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 14:47:51 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:53119 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2HCSru (ORCPT
+	id S1753054Ab2HCSwg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 14:52:36 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:37127 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab2HCSwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 14:47:50 -0400
-X-Originating-IP: 217.70.178.139
-X-Originating-IP: 173.246.103.110
-Date: Fri, 3 Aug 2012 11:47:44 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: Alex Kelly <alex.page.kelly@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/get_maintainer.pl: Default to --no-rolestats
- when output not a terminal
-Message-ID: <20120803184743.GA4660@jtriplet-mobl1>
-References: <20120803182706.GA4637@jtriplet-mobl1>
- <1344018801.10710.17.camel@joe2Laptop>
+	Fri, 3 Aug 2012 14:52:33 -0400
+Date: Fri, 3 Aug 2012 11:51:46 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/5] code_domain: New code domain tracking susbsystem
+Message-ID: <20120803185146.GE2474@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1344006145-26115-1-git-send-email-fweisbec@gmail.com>
+ <1344006145-26115-2-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344018801.10710.17.camel@joe2Laptop>
+In-Reply-To: <1344006145-26115-2-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080318-5518-0000-0000-000006911515
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 11:33:21AM -0700, Joe Perches wrote:
-> On Fri, 2012-08-03 at 11:27 -0700, Josh Triplett wrote:
-> > scripts/get_maintainer.pl defaults to showing --rolestats, which
-> > provides annotations explaining why each person or list might want to
-> > know about a patch.  This works well for interactive use, but breaks
-> > when used with git send-email's --to-cmd or --cc-cmd, resulting in
-> > malformed email headers and mails sent to some but not all recipients.
-> > 
-> > To avoid the need to explicitly pass --no-rolestats for batch use,
-> > enable --rolestats by default only when outputting to a terminal.
+On Fri, Aug 03, 2012 at 05:02:21PM +0200, Frederic Weisbecker wrote:
+> Create a new subsystem that handles the probing on kernel
+> boundaries to keep track of the transitions between code domains
+> with two basic initial domains: user or kernel.
 > 
-> Hi Josh.
+> This is an abstraction of some RCU code that use it to implement
+> its userspace extended quiescent state.
 > 
-> I think it's preferable to add --no-rolestats
-> to the uses that need them.
+> We need to pull this up from RCU into this new level of indirection
+> because this probing is also going to be used to implement an "on
+> demand" generic virtual cputime accounting. A necessary step to
+> shutdown the tick while still accounting the cputime.
 
-Why?
+>From an RCU viewpoint:
 
-> I have different scripts that I use for git send-email
-> options --to-cmd and --cc-cmd
-[...snip scripts...]
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-You've submitted enough patches that you've automated as much of the
-process as you can; I don't think that makes the defaults less
-error-prone.  Given that you've had to explicitly add --no-rolestats to
-your scripts, that seems like evidence in *favor* of making this change.
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Alessio Igor Bogani <abogani@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Geoff Levand <geoff@infradead.org>
+> Cc: Gilad Ben Yossef <gilad@benyossef.com>
+> Cc: Hakan Akkan <hakanakkan@gmail.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: Max Krasnyansky <maxk@qualcomm.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephen Hemminger <shemminger@vyatta.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  arch/Kconfig                                  |   12 +++---
+>  arch/x86/Kconfig                              |    2 +-
+>  arch/x86/include/asm/{rcu.h => code_domain.h} |   12 +++---
+>  arch/x86/kernel/ptrace.c                      |    6 +-
+>  arch/x86/kernel/signal.c                      |    5 +-
+>  arch/x86/kernel/traps.c                       |    2 +-
+>  arch/x86/mm/fault.c                           |    2 +-
+>  include/linux/code_domain.h                   |   18 ++++++++
+>  include/linux/rcupdate.h                      |    2 -
+>  include/linux/sched.h                         |    8 ---
+>  init/Kconfig                                  |   24 ++++++----
+>  kernel/Makefile                               |    1 +
+>  kernel/code_domain_tracking.c                 |   59 +++++++++++++++++++++++++
+>  kernel/rcutree.c                              |   42 +-----------------
+>  kernel/sched/core.c                           |    9 ++--
+>  15 files changed, 121 insertions(+), 83 deletions(-)
+>  rename arch/x86/include/asm/{rcu.h => code_domain.h} (53%)
+>  create mode 100644 include/linux/code_domain.h
+>  create mode 100644 kernel/code_domain_tracking.c
+> 
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index d891c62..2ce2a2f 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -277,14 +277,14 @@ config SECCOMP_FILTER
+>  config HAVE_VIRT_CPU_ACCOUNTING
+>  	bool
+> 
+> -config HAVE_RCU_USER_QS
+> +config HAVE_CODE_DOMAIN_TRACKING
+>  	bool
+>  	help
+> -	  Provide kernel entry/exit hooks necessary for userspace
+> +	  Provide kernel boundaries probing necessary for userspace
+>  	  RCU extended quiescent state. Syscalls need to be wrapped inside
+> -	  rcu_user_exit()-rcu_user_enter() through the slow path using
+> -	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
+> -	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
+> -	  preemption or signal handling on irq exit still need to be protected.
+> +	  user_exit()-user_enter() through the slow path using TIF_NOHZ flag.
+> +	  Exceptions handlers must be wrapped as well. Irqs are already
+> +	  protected inside rcu_irq_enter/rcu_irq_exit() but preemption or
+> +	  signal handling on irq exit still need to be protected.
+> 
+>  source "kernel/gcov/Kconfig"
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 38dfcc2..cc9bf3e 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -95,7 +95,7 @@ config X86
+>  	select KTIME_SCALAR if X86_32
+>  	select GENERIC_STRNCPY_FROM_USER
+>  	select GENERIC_STRNLEN_USER
+> -	select HAVE_RCU_USER_QS if X86_64
+> +	select HAVE_CODE_DOMAIN_TRACKING if X86_64
+> 
+>  config INSTRUCTION_DECODER
+>  	def_bool (KPROBES || PERF_EVENTS || UPROBES)
+> diff --git a/arch/x86/include/asm/rcu.h b/arch/x86/include/asm/code_domain.h
+> similarity index 53%
+> rename from arch/x86/include/asm/rcu.h
+> rename to arch/x86/include/asm/code_domain.h
+> index 439815b..e245152 100644
+> --- a/arch/x86/include/asm/rcu.h
+> +++ b/arch/x86/include/asm/code_domain.h
+> @@ -1,19 +1,19 @@
+> -#ifndef _ASM_X86_RCU_H
+> -#define _ASM_X86_RCU_H
+> +#ifndef _ASM_X86_CODE_DOMAIN_H
+> +#define _ASM_X86_CODE_DOMAIN_H
+> 
+> -#include <linux/rcupdate.h>
+> +#include <linux/code_domain.h>
+>  #include <asm/ptrace.h>
+> 
+>  static inline void exception_enter(struct pt_regs *regs)
+>  {
+> -	rcu_user_exit();
+> +	user_exit();
+>  }
+> 
+>  static inline void exception_exit(struct pt_regs *regs)
+>  {
+> -#ifdef CONFIG_RCU_USER_QS
+> +#ifdef CONFIG_CODE_DOMAIN_TRACKING
+>  	if (user_mode(regs))
+> -		rcu_user_enter();
+> +		user_enter();
+>  #endif
+>  }
+> 
+> diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+> index 9f94f8e..5bc2e50 100644
+> --- a/arch/x86/kernel/ptrace.c
+> +++ b/arch/x86/kernel/ptrace.c
+> @@ -21,7 +21,7 @@
+>  #include <linux/signal.h>
+>  #include <linux/perf_event.h>
+>  #include <linux/hw_breakpoint.h>
+> -#include <linux/rcupdate.h>
+> +#include <linux/code_domain.h>
+> 
+>  #include <asm/uaccess.h>
+>  #include <asm/pgtable.h>
+> @@ -1464,7 +1464,7 @@ long syscall_trace_enter(struct pt_regs *regs)
+>  {
+>  	long ret = 0;
+> 
+> -	rcu_user_exit();
+> +	user_exit();
+> 
+>  	/*
+>  	 * If we stepped into a sysenter/syscall insn, it trapped in
+> @@ -1530,5 +1530,5 @@ void syscall_trace_leave(struct pt_regs *regs)
+>  	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
+>  		tracehook_report_syscall_exit(regs, step);
+> 
+> -	rcu_user_enter();
+> +	user_enter();
+>  }
+> diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+> index 5cc2579..fc3e12c 100644
+> --- a/arch/x86/kernel/signal.c
+> +++ b/arch/x86/kernel/signal.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/uaccess.h>
+>  #include <linux/user-return-notifier.h>
+>  #include <linux/uprobes.h>
+> +#include <linux/code_domain.h>
+> 
+>  #include <asm/processor.h>
+>  #include <asm/ucontext.h>
+> @@ -776,7 +777,7 @@ static void do_signal(struct pt_regs *regs)
+>  void
+>  do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+>  {
+> -	rcu_user_exit();
+> +	user_exit();
+> 
+>  #ifdef CONFIG_X86_MCE
+>  	/* notify userspace of pending MCEs */
+> @@ -804,7 +805,7 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+>  	clear_thread_flag(TIF_IRET);
+>  #endif /* CONFIG_X86_32 */
+> 
+> -	rcu_user_enter();
+> +	user_enter();
+>  }
+> 
+>  void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index 9b8195b..2d1fe02 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -52,7 +52,7 @@
+>  #include <asm/i387.h>
+>  #include <asm/fpu-internal.h>
+>  #include <asm/mce.h>
+> -#include <asm/rcu.h>
+> +#include <asm/code_domain.h>
+> 
+>  #include <asm/mach_traps.h>
+> 
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 7dde46d..be026ea 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -18,7 +18,7 @@
+>  #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+>  #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
+>  #include <asm/fixmap.h>			/* VSYSCALL_START		*/
+> -#include <asm/rcu.h>			/* exception_enter(), ...	*/
+> +#include <asm/code_domain.h>		/* exception_enter(), ...	*/
+> 
+>  /*
+>   * Page fault error code bits:
+> diff --git a/include/linux/code_domain.h b/include/linux/code_domain.h
+> new file mode 100644
+> index 0000000..5d4513d
+> --- /dev/null
+> +++ b/include/linux/code_domain.h
+> @@ -0,0 +1,18 @@
+> +#ifndef _LINUX_CODE_DOMAIN_TRACKING_H
+> +#define _LINUX_CODE_DOMAIN_TRACKING_H
+> +
+> +#ifdef CONFIG_CODE_DOMAIN_TRACKING
+> +#include <linux/sched.h>
+> +
+> +extern void user_enter(void);
+> +extern void user_exit(void);
+> +extern void code_domain_task_switch(struct task_struct *prev,
+> +				    struct task_struct *next);
+> +#else
+> +static inline void user_enter(void) { }
+> +static inline void user_exit(void) { }
+> +static inline void code_domain_task_switch(struct task_struct *prev,
+> +					   struct task_struct *next) { }
+> +#endif /* !CONFIG_CODE_DOMAIN_TRACKING */
+> +
+> +#endif
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 1fc0a0e..e411117 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -197,8 +197,6 @@ extern void rcu_user_enter(void);
+>  extern void rcu_user_exit(void);
+>  extern void rcu_user_enter_irq(void);
+>  extern void rcu_user_exit_irq(void);
+> -extern void rcu_user_hooks_switch(struct task_struct *prev,
+> -				  struct task_struct *next);
+>  #else
+>  static inline void rcu_user_enter(void) { }
+>  static inline void rcu_user_exit(void) { }
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 30105f4..7b7a438 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1899,14 +1899,6 @@ static inline void rcu_copy_process(struct task_struct *p)
+> 
+>  #endif
+> 
+> -static inline void rcu_switch(struct task_struct *prev,
+> -			      struct task_struct *next)
+> -{
+> -#ifdef CONFIG_RCU_USER_QS
+> -	rcu_user_hooks_switch(prev, next);
+> -#endif
+> -}
+> -
+>  #ifdef CONFIG_SMP
+>  extern void do_set_cpus_allowed(struct task_struct *p,
+>  			       const struct cpumask *new_mask);
+> diff --git a/init/Kconfig b/init/Kconfig
+> index cc1d581..e2854a0 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -404,6 +404,19 @@ config AUDIT_LOGINUID_IMMUTABLE
+>  source "kernel/irq/Kconfig"
+>  source "kernel/time/Kconfig"
+> 
+> +config CODE_DOMAIN_TRACKING
+> +       bool
+> +
+> +config CODE_DOMAIN_TRACKING_FORCE
+> +	bool "Force kernel boundaries probing"
+> +	depends on CODE_DOMAIN_TRACKING
+> +	help
+> +	  Set the probes in user/kernel boundaries by default in order to
+> +	  test the features that rely on it such as userspace RCU extended
+> +	  quiescent states.
+> +	  This test is there for debugging until we have a real user like a
+> +	  full adaptive nohz option.
+> +
+>  menu "RCU Subsystem"
+> 
+>  choice
+> @@ -456,7 +469,8 @@ config PREEMPT_RCU
+> 
+>  config RCU_USER_QS
+>  	bool "Consider userspace as in RCU extended quiescent state"
+> -	depends on HAVE_RCU_USER_QS && SMP
+> +	depends on HAVE_CODE_DOMAIN_TRACKING && SMP
+> +	select CODE_DOMAIN_TRACKING
+>  	help
+>  	  This option sets hooks on kernel / userspace boundaries and
+>  	  puts RCU in extended quiescent state when the CPU runs in
+> @@ -464,14 +478,6 @@ config RCU_USER_QS
+>  	  excluded from the global RCU state machine and thus doesn't
+>  	  to keep the timer tick on for RCU.
+> 
+> -config RCU_USER_QS_FORCE
+> -	bool "Force userspace extended QS by default"
+> -	depends on RCU_USER_QS
+> -	help
+> -	  Set the hooks in user/kernel boundaries by default in order to
+> -	  test this feature that treats userspace as an extended quiescent
+> -	  state until we have a real user like a full adaptive nohz option.
+> -
+>  config RCU_FANOUT
+>  	int "Tree-based hierarchical RCU fanout value"
+>  	range 2 64 if 64BIT
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index c0cc67a..86bc293 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -110,6 +110,7 @@ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+>  obj-$(CONFIG_PADATA) += padata.o
+>  obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
+>  obj-$(CONFIG_JUMP_LABEL) += jump_label.o
+> +obj-$(CONFIG_CODE_DOMAIN_TRACKING) += code_domain_tracking.o
+> 
+>  $(obj)/configs.o: $(obj)/config_data.h
+> 
+> diff --git a/kernel/code_domain_tracking.c b/kernel/code_domain_tracking.c
+> new file mode 100644
+> index 0000000..8332c76
+> --- /dev/null
+> +++ b/kernel/code_domain_tracking.c
+> @@ -0,0 +1,59 @@
+> +#include <linux/code_domain.h>
+> +#include <linux/rcupdate.h>
+> +#include <linux/sched.h>
+> +#include <linux/percpu.h>
+> +
+> +struct code_domain_tracking {
+> +	/*
+> +	 * When tracking_active is false, hooks are not
+> +	 * set to minimize overhead: TIF flags are cleared
+> +	 * and calls to user_enter/exit are ignored. This
+> +	 * may be further optimized using static keys.
+> +	 */
+> +	bool tracking_active;
+> +	enum {
+> +		IN_KERNEL = 0,
+> +		IN_USER,
+> +	} state;
+> +};
+> +
+> +DEFINE_PER_CPU(struct code_domain_tracking, code_domain) = {
+> +#ifdef CONFIG_CODE_DOMAIN_TRACKING_FORCE
+> +	.tracking_active = true,
+> +#endif
+> +};
+> +
+> +void user_enter(void)
+> +{
+> +	unsigned long flags;
+> +
+> +	WARN_ON_ONCE(!current->mm);
+> +	local_irq_save(flags);
+> +	if (__this_cpu_read(code_domain.tracking_active) &&
+> +	    __this_cpu_read(code_domain.state) != IN_USER) {
+> +		__this_cpu_write(code_domain.state, IN_USER);
+> +		rcu_user_enter();
+> +	}
+> +	local_irq_restore(flags);
+> +}
+> +
+> +void user_exit(void)
+> +{
+> +	unsigned long flags;
+> +
+> +	local_irq_save(flags);
+> +	if (__this_cpu_read(code_domain.state) == IN_USER) {
+> +		__this_cpu_write(code_domain.state, IN_KERNEL);
+> +		rcu_user_exit();
+> +	}
+> +	local_irq_restore(flags);
+> +}
+> +
+> +void code_domain_task_switch(struct task_struct *prev,
+> +			     struct task_struct *next)
+> +{
+> +	if (__this_cpu_read(code_domain.tracking_active)) {
+> +		clear_tsk_thread_flag(prev, TIF_NOHZ);
+> +		set_tsk_thread_flag(next, TIF_NOHZ);
+> +	}
+> +}
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 318d00e..f6a24cb 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -212,9 +212,6 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+>  DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+>  	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
+>  	.dynticks = ATOMIC_INIT(1),
+> -#if defined(CONFIG_RCU_USER_QS) && !defined(CONFIG_RCU_USER_QS_FORCE)
+> -	.ignore_user_qs = true,
+> -#endif
+>  };
+> 
+>  static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
+> @@ -448,18 +445,7 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+>   */
+>  void rcu_user_enter(void)
+>  {
+> -	unsigned long flags;
+> -	struct rcu_dynticks *rdtp;
+> -
+> -	WARN_ON_ONCE(!current->mm);
+> -
+> -	local_irq_save(flags);
+> -	rdtp = &__get_cpu_var(rcu_dynticks);
+> -	if (!rdtp->ignore_user_qs && !rdtp->in_user) {
+> -		rdtp->in_user = true;
+> -		rcu_eqs_enter(1);
+> -	}
+> -	local_irq_restore(flags);
+> +	rcu_eqs_enter(1);
+>  }
+>  EXPORT_SYMBOL_GPL(rcu_user_enter);
+> 
+> @@ -597,16 +583,7 @@ EXPORT_SYMBOL_GPL(rcu_idle_exit);
+>   */
+>  void rcu_user_exit(void)
+>  {
+> -	unsigned long flags;
+> -	struct rcu_dynticks *rdtp;
+> -
+> -	local_irq_save(flags);
+> -	rdtp = &__get_cpu_var(rcu_dynticks);
+> -	if (rdtp->in_user) {
+> -		rdtp->in_user = false;
+> -		rcu_eqs_exit(1);
+> -	}
+> -	local_irq_restore(flags);
+> +	rcu_eqs_exit(1);
+>  }
+>  EXPORT_SYMBOL_GPL(rcu_user_exit);
+> 
+> @@ -730,21 +707,6 @@ int rcu_is_cpu_idle(void)
+>  }
+>  EXPORT_SYMBOL(rcu_is_cpu_idle);
+> 
+> -#ifdef CONFIG_RCU_USER_QS
+> -void rcu_user_hooks_switch(struct task_struct *prev,
+> -			   struct task_struct *next)
+> -{
+> -	struct rcu_dynticks *rdtp;
+> -
+> -	/* Interrupts are disabled in context switch */
+> -	rdtp = &__get_cpu_var(rcu_dynticks);
+> -	if (!rdtp->ignore_user_qs) {
+> -		clear_tsk_thread_flag(prev, TIF_NOHZ);
+> -		set_tsk_thread_flag(next, TIF_NOHZ);
+> -	}
+> -}
+> -#endif /* #ifdef CONFIG_RCU_USER_QS */
+> -
+>  #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU)
+> 
+>  /*
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 94a4894..64bb370 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -72,6 +72,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/init_task.h>
+>  #include <linux/binfmts.h>
+> +#include <linux/code_domain.h>
+> 
+>  #include <asm/switch_to.h>
+>  #include <asm/tlb.h>
+> @@ -1925,8 +1926,8 @@ context_switch(struct rq *rq, struct task_struct *prev,
+>  	spin_release(&rq->lock.dep_map, 1, _THIS_IP_);
+>  #endif
+> 
+> +	code_domain_task_switch(prev, next);
+>  	/* Here we just switch the register state and the stack. */
+> -	rcu_switch(prev, next);
+>  	switch_to(prev, next, prev);
+> 
+>  	barrier();
+> @@ -2920,9 +2921,9 @@ EXPORT_SYMBOL(schedule);
+> 
+>  asmlinkage void __sched schedule_user(void)
+>  {
+> -	rcu_user_exit();
+> +	user_exit();
+>  	schedule();
+> -	rcu_user_enter();
+> +	user_enter();
+>  }
+> 
+>  /**
+> @@ -3026,7 +3027,7 @@ asmlinkage void __sched preempt_schedule_irq(void)
+>  	/* Catch callers which need to be fixed */
+>  	BUG_ON(ti->preempt_count || !irqs_disabled());
+> 
+> -	rcu_user_exit();
+> +	user_exit();
+>  	do {
+>  		add_preempt_count(PREEMPT_ACTIVE);
+>  		local_irq_enable();
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-As it stands now, the current default of --rolestats makes the obvious
-command line of
-git send-email --to-cmd='scripts/get_maintainer.pl' *.patch
-send broken emails that go to some maintainers but not all.  I think it
-makes sense to change the default so that the obvious usage becomes the
-correct one.
-
-- Josh Triplett
