@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab2HCQJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:09:25 -0400
-Received: from mail.digidescorp.com ([50.73.98.161]:8029 "EHLO
-	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab2HCQJY (ORCPT
+	id S1752787Ab2HCQO2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:14:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:53041 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab2HCQO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:09:24 -0400
-DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
-	c=simple; q=dns; h=message-id:from;
-	b=rZgOsxURPmfOTd5dzXsESsTEEOIZyuLG+jkDuL38uDow9PeYa/0u2vwUkg8K
-	oFmkFmd5YIzuoKrD63t24QKr4HKzhUHwvyqnJ+q8A9UC/XWYLmaiZ+ftB
-	YOfLNPzsDVhu1CjjQAAmV48jHQIfkuOd1UNJuJJ2EQH+J3wrMRl7+s=;
-X-Spam-Processed: mail.digidescorp.com, Fri, 03 Aug 2012 11:09:22 -0500
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=1562e4c178=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Message-ID: <1344010161.2474.4.camel@iscandar.digidescorp.com>
-Subject: Re: [PATCH] fat: Refactor shortname parsing
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org
-Date: Fri, 03 Aug 2012 11:09:21 -0500
-In-Reply-To: <alpine.LNX.2.01.1208031734550.7170@frira.zrqbmnf.qr>
-References: <1341314074-2867-1-git-send-email-steve@digidescorp.com>
-	 <alpine.LNX.2.01.1208031650580.3676@frira.zrqbmnf.qr>
-	 <87lihw10cs.fsf@devron.myhome.or.jp>
-	 <alpine.LNX.2.01.1208031734550.7170@frira.zrqbmnf.qr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Aug 2012 12:14:27 -0400
+Date: Fri, 3 Aug 2012 17:14:16 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: dri-devel@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        Andreas Heider <andreas@meetr.de>
+Subject: Re: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we
+ can't get a panel mode
+Message-ID: <20120803161416.GA22563@srcf.ucam.org>
+References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
+ <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-03 at 17:58 +0200, Jan Engelhardt wrote: 
-> On Friday 2012-08-03 17:06, OGAWA Hirofumi wrote:
-> >>>+static inline unsigned char fat_tolower(unsigned char c)
-> >>>+{
-> >>>+	return ((c >= 'A') && (c <= 'Z')) ? c+32 : c;
-> >>>+}
-> >>>+
-> >>
-> >> The kernel already has a tolower() function, can that not be used?
-> >
-> >tolower() is not exactly same, right? e.g. tolower(0xc0). Otherwise,
-> >tolower() is fine.
+On Fri, Aug 03, 2012 at 11:02:19AM -0500, Seth Forshee wrote:
+> Some Apple hybrid graphics machines do not have the LVDS panel connected
+> to the integrated GPU at boot and also do not supply a VBT. The LVDS
+> connector is not registered as a result, making it impossible to support
+> graphics switching.
 > 
-> Yes, but you can still
-> 
-> 	return (c >= 'A' && c <= 'Z') ? tolower(c) : c;
+> This patch changes intel_lvds_init() to register the connector even if
+> we can't find any panel modes. This makes it necessary to always check
+> intel_lvds->fixed_mode before use, as it could now be NULL.
 
-But now it's less efficient because tolower() does an unnecessary lookup
-to see if it's supposed to change the value. _tolower() wouldn't have
-that issue, but it's marked "Do not use in your code". 
+This one kind of sucks. I think adding a quirk for this situation would 
+be justifiable, rather than doing it for all devices.
 
-------------------------------------------------------------------------
-Steven J. Magnani               "I claim this network for MARS!
-www.digidescorp.com              Earthling, return my space modulator!"
-
-#include <standard.disclaimer>
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
