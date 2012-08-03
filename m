@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab2HCUNA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 16:13:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17989 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752496Ab2HCUM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 16:12:59 -0400
-Date: Fri, 3 Aug 2012 16:17:30 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 01/10] KVM: iommu: fix releasing unmapped page
-Message-ID: <20120803191730.GA25688@amt.cnet>
-References: <501B7F94.7090308@linux.vnet.ibm.com>
+	id S1753945Ab2HCURb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 16:17:31 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:57395 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab2HCUR2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 16:17:28 -0400
+X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Aug 2012 16:17:27 EDT
+Date: Fri, 3 Aug 2012 23:08:22 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: "Pandita, Vikram" <vikram.pandita@ti.com>
+Cc: Andi Kleen <andi@firstfloor.org>, gregkh@linuxfoundation.org, kay@vrfy.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Subject: Re: [PATCH v3] printk: add option to print cpu id
+Message-ID: <20120803200822.GC731@harshnoise.musicnaut.iki.fi>
+References: <1344013004-32211-1-git-send-email-vikram.pandita@ti.com>
+ <m2628z6euk.fsf@firstfloor.org>
+ <CAFm5wm3ScpUU5wa=ei3TY0zjU4kVbOgJMmE5_QDpwy7B-TJa+A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <501B7F94.7090308@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFm5wm3ScpUU5wa=ei3TY0zjU4kVbOgJMmE5_QDpwy7B-TJa+A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 03:36:52PM +0800, Xiao Guangrong wrote:
-> There are two bugs:
-> - the 'error page' is forgot to be released
->   [ it is unneeded after commit a2766325cf9f9, for backport, we
->     still do kvm_release_pfn_clean for the error pfn ]
-> 
-> - guest pages are always released regardless of the unmapped page
->   (e,g, caused by hwpoison)
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Hi,
 
-Looks good.
+On Fri, Aug 03, 2012 at 11:25:37AM -0700, Pandita, Vikram wrote:
+> > And really: Wasting 1/3 of the 80 character line is too much.
+> 
+> You _WASTE_ 4 chars only if you are interested in this info by
+> enabling: CONFIG_PRINTK_CPUID
 
+I guess you waste 4 + 3 chars? You could optimize the length by checking
+CONFIG_NR_CPUS?
+
+A.
