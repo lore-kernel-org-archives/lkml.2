@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab2HCQDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:03:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43277 "EHLO
+	id S1753760Ab2HCQDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:03:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43258 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab2HCQCg (ORCPT
+	with ESMTP id S1751045Ab2HCQC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:02:36 -0400
+	Fri, 3 Aug 2012 12:02:29 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: dri-devel@lists.freedesktop.org
 Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
         linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
         Andreas Heider <andreas@meetr.de>
-Subject: [RFC PATCH 4/5] drm/i915: make intel_lvds_get_edid() more robust
-Date: Fri,  3 Aug 2012 11:02:20 -0500
-Message-Id: <1344009741-14248-5-git-send-email-seth.forshee@canonical.com>
+Subject: [RFC PATCH 1/5] drm/i915: Add support for vga_switcheroo reprobe
+Date: Fri,  3 Aug 2012 11:02:17 -0500
+Message-Id: <1344009741-14248-2-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
 References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
@@ -22,53 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-intel_lvds_get_edid() needs to be called when switching GPUs, but it's
-currently making assumptions that it will only be called once and that
-there's always an LVDS connector present when it's called. Fix these
-assumptions.
+From: Andreas Heider <andreas@meetr.de>
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Andreas Heider <andreas@meetr.de>
 ---
- drivers/gpu/drm/i915/intel_lvds.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_dma.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index c1ab632..9d05a90 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -906,9 +906,18 @@ static bool intel_lvds_get_edid(struct drm_device *dev)
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 9cf7dfe..5b5176d 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1263,6 +1263,12 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
+ 	}
+ }
+ 
++static void i915_switcheroo_reprobe(struct pci_dev *pdev)
++{
++	struct drm_device *dev = pci_get_drvdata(pdev);
++	intel_fb_output_poll_changed(dev);
++}
++
+ static bool i915_switcheroo_can_switch(struct pci_dev *pdev)
  {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct drm_connector *connector = dev_priv->int_lvds_connector;
--	struct intel_lvds *intel_lvds = intel_attached_lvds(connector);
-+	struct intel_lvds *intel_lvds;
- 	struct drm_display_mode *scan; /* *modes, *bios_mode; */
+ 	struct drm_device *dev = pci_get_drvdata(pdev);
+@@ -1276,7 +1282,7 @@ static bool i915_switcheroo_can_switch(struct pci_dev *pdev)
  
-+	if (!connector)
-+		return false;
-+
-+	intel_lvds = intel_attached_lvds(connector);
-+
-+	/* If we already have an EDID, no need to check again */
-+	if (intel_lvds->edid)
-+		return true;
-+
- 	/*
- 	 * Attempt to get the fixed panel mode from DDC.  Assume that the
- 	 * preferred mode is the right one.
-@@ -939,6 +948,12 @@ static bool intel_lvds_get_edid(struct drm_device *dev)
+ static const struct vga_switcheroo_client_ops i915_switcheroo_ops = {
+ 	.set_gpu_state = i915_switcheroo_set_state,
+-	.reprobe = NULL,
++	.reprobe = i915_switcheroo_reprobe,
+ 	.can_switch = i915_switcheroo_can_switch,
+ };
  
- 	list_for_each_entry(scan, &connector->probed_modes, head) {
- 		if (scan->type & DRM_MODE_TYPE_PREFERRED) {
-+			/*
-+			 * If we already have a preferred mode from another
-+			 * source, prefer the one from the EDID.
-+			 */
-+			if (intel_lvds->fixed_mode)
-+				drm_mode_destroy(dev, intel_lvds->fixed_mode);
- 			intel_lvds->fixed_mode =
- 				drm_mode_duplicate(dev, scan);
- 			intel_find_lvds_downclock(dev,
 -- 
 1.7.9.5
 
