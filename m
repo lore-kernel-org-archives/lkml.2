@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab2HCNCd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 09:02:33 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:54827 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab2HCNCc (ORCPT
+	id S1753483Ab2HCNGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 09:06:08 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:52784 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752037Ab2HCNGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 09:02:32 -0400
-Date: Fri, 3 Aug 2012 15:02:30 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] kbuild: kvm: make export of linux/kvm_para.h
-	unconditional
-Message-ID: <20120803130230.GA9812@merkur.ravnborg.org>
-References: <1343310254-7493-1-git-send-email-will.deacon@arm.com> <20120802122550.GD9838@mudshark.cambridge.arm.com> <501A8C68.9030001@redhat.com> <20120802202911.GA9108@merkur.ravnborg.org> <20120803125144.GD26925@mudshark.cambridge.arm.com>
+	Fri, 3 Aug 2012 09:06:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120803125144.GD26925@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <D32DBB77-844C-400A-9E3F-3F779431D1C7@dominion.thruhere.net>
+References: <1343997486-710-1-git-send-email-sourav.poddar@ti.com>
+	<1343997486-710-4-git-send-email-sourav.poddar@ti.com>
+	<D32DBB77-844C-400A-9E3F-3F779431D1C7@dominion.thruhere.net>
+Date: Fri, 3 Aug 2012 18:36:04 +0530
+Message-ID: <CAKdam54HpC33Bk8gDjRRcB+9=O8Dh4UAKhY4mpHBdvk_uEj9uQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] arm/dts: omap5-evm: Add keypad data
+From: "Poddar, Sourav" <sourav.poddar@ti.com>
+To: Koen Kooi <koen@dominion.thruhere.net>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 01:51:44PM +0100, Will Deacon wrote:
-> On Thu, Aug 02, 2012 at 09:29:11PM +0100, Sam Ravnborg wrote:
-> > On Thu, Aug 02, 2012 at 05:19:20PM +0300, Avi Kivity wrote:
-> > > Can you get it reviewed by someone who is familiar with this?  This is
-> > > probably the third fix for the this issue.
-> > 
-> > IMO the patch is wrong.
-> > Any use of wildcards in include/asm-generic/Kbuild.asm is wrong.
-> 
-> I agree that the wildcard stuff is horrible but that's not something
-> introduced by this patch. In fact, I'm removing those where there is an
-> asm-generic header that can be used instead.
-> 
-> > IMO include/asm-generic/Kbuild.asm is for generic header files
-> > that ALL archs can use.
-> > 
-> > If not ALL archs can use it, then the individual arch shall
-> > specify the file explicit.
-> 
-> In which case, we should probably fix the rules for kvm.h and a.out.h as
-> well. Neither of these headers have asm-generic versions and I doubt this
-> is possible, so the header-y lines should be done for each architecture
-> exporting such a header, no?
-> 
-> > I know we here hit a bad thing with the generic-y support,
-> > where we miss a good way to add a file to a lot of archs
-> > without editing a lot of files.
-> 
-> If there isn't a generic version of the header, then yes, I guess you have
-> to modify the architectures that want to export it.
-> 
-> I'm happy to post an extra patch sorting out kvm.h and a.out.h if that's
-> what's required to get headers building again.
+Hi,
 
-IMO this is required to sort this out for good.
-I will be happy to review your patches.
+On Fri, Aug 3, 2012 at 6:20 PM, Koen Kooi <koen@dominion.thruhere.net> wrote:
+>
+> Op 3 aug. 2012, om 14:38 heeft Sourav Poddar <sourav.poddar@ti.com> het volgende geschreven:
+>
+>> Add keypad data node in omap5 device tree file.
+>> Also fill the device tree binding parameters
+>> with the required value in "omap5-evm" dts file.
+>>
+>> Tested on omap5430 evm with 3.5 custom kernel.
+>>
+>> Cc: Benoit Cousson <b-cousson@ti.com>
+>> Cc: Felipe Balbi <balbi@ti.com>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Acked-by: Felipe Balbi <balbi@ti.com>
+>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+>> ---
+>> arch/arm/boot/dts/omap5-evm.dts |   12 ++++++++++++
+>> arch/arm/boot/dts/omap5.dtsi    |    5 +++++
+>> 2 files changed, 17 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
+>> index 45a8aeb..09fe941 100644
+>> --- a/arch/arm/boot/dts/omap5-evm.dts
+>> +++ b/arch/arm/boot/dts/omap5-evm.dts
+>> @@ -17,6 +17,18 @@
+>>               device_type = "memory";
+>>               reg = <0x80000000 0x40000000>; /* 1 GB */
+>>       };
+>> +
+>> +     keypad {
+>> +             keypad,num-rows = <8>;
+>> +             keypad,num-columns = <8>;
+>> +             linux,keymap = < 0x02020073
+>> +                     0x02030072
+>> +                     0x020400e7
+>> +                     0x02050066
+>> +                     0x0206006b
+>> +                     0x020700d9 >;
+>> +             linux,input-no-autorepeat;
+>> +     };
+>
+> This not a criticism on your patch, but a generic question about DT: Is there no way to have nice constants for keys like we have in the kernel, like KEY_POWER, KEY_UP, etc?
+There is way, something like this ..
+               key_C {
+                       keypad,row = <2>;
+                       keypad,column = <1>;
+                       linux,code = <46>;
+               };
+But its not the preferred approach mainly because of the fact that
+it is too big. So suppose, if we have 100 key codes, we will have
+400 -500 lines of code in our dts file for the mapping only.
+ If no, does DT allow comments so I can look at a dts and see which
+keycodes are mapped instead of having to dig up the sources?
+Yes, comments are allowed and seems to be better option to do.
 
-	Sam
+~Sourav
+>
+> regards,
+>
+> Koen
