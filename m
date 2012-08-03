@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab2HCOXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:23:19 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35880 "EHLO
+	id S1753967Ab2HCOXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:23:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58633 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab2HCOXQ (ORCPT
+	with ESMTP id S1753675Ab2HCOXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:23:16 -0400
+	Fri, 3 Aug 2012 10:23:23 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
         aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [RFC v2 2/7] user_ns: use new hashtable implementation
-Date: Fri,  3 Aug 2012 16:23:03 +0200
-Message-Id: <1344003788-1417-3-git-send-email-levinsasha928@gmail.com>
+Subject: [RFC v2 5/7] mm/huge_memory: use new hashtable implementation
+Date: Fri,  3 Aug 2012 16:23:06 +0200
+Message-Id: <1344003788-1417-6-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
 References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
@@ -24,141 +24,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch user_ns to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in user_ns.
+Switch hugemem to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in the hugemem.
+
+This also removes the dymanic allocation of the hash table. The size of the table is
+constant so there's no point in paying the price of an extra dereference when accessing
+it.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- kernel/user.c |   53 ++++++++++++++++++-----------------------------------
- 1 files changed, 18 insertions(+), 35 deletions(-)
+ mm/huge_memory.c |   56 ++++++++++-------------------------------------------
+ 1 files changed, 11 insertions(+), 45 deletions(-)
 
-diff --git a/kernel/user.c b/kernel/user.c
-index b815fef..555c71a 100644
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -16,6 +16,7 @@
- #include <linux/interrupt.h>
- #include <linux/export.h>
- #include <linux/user_namespace.h>
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 57c4b93..7b2cad5 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -17,6 +17,7 @@
+ #include <linux/khugepaged.h>
+ #include <linux/freezer.h>
+ #include <linux/mman.h>
 +#include <linux/hashtable.h>
+ #include <asm/tlb.h>
+ #include <asm/pgalloc.h>
+ #include "internal.h"
+@@ -57,12 +58,13 @@ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
+ static unsigned int khugepaged_max_ptes_none __read_mostly = HPAGE_PMD_NR-1;
  
- /*
-  * userns count is 1 for root user, 1 for init_uts_ns,
-@@ -50,15 +51,14 @@ EXPORT_SYMBOL_GPL(init_user_ns);
-  * UID task count cache, to get fast user lookup in "alloc_uid"
-  * when changing user ID's (ie setuid() and friends).
-  */
--
--#define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 7)
--#define UIDHASH_SZ	(1 << UIDHASH_BITS)
--#define UIDHASH_MASK		(UIDHASH_SZ - 1)
--#define __uidhashfn(uid)	(((uid >> UIDHASH_BITS) + uid) & UIDHASH_MASK)
--#define uidhashentry(uid)	(uidhash_table + __uidhashfn((__kuid_val(uid))))
-+#define UIDHASH_BITS		(CONFIG_BASE_SMALL ? 3 : 7)
-+#define UIDHASH_CMP(obj, key) 	((obj)->uid == (key))
-+#define uidhash_entry(key)	(hash_get(&uidhash_table, key,		\
-+				struct user_struct, uidhash_node,	\
-+				UIDHASH_CMP))
+ static int khugepaged(void *none);
+-static int mm_slots_hash_init(void);
+ static int khugepaged_slab_init(void);
+ static void khugepaged_slab_free(void);
  
- static struct kmem_cache *uid_cachep;
--struct hlist_head uidhash_table[UIDHASH_SZ];
-+DEFINE_STATIC_HASHTABLE(uidhash_table, UIDHASH_BITS);
+-#define MM_SLOTS_HASH_HEADS 1024
+-static struct hlist_head *mm_slots_hash __read_mostly;
++#define MM_SLOTS_HASH_BITS 10
++#define MM_SLOTS_HASH_CMP(mm_slot, obj) ((mm_slot)->mm == (obj))
++DEFINE_STATIC_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
++
+ static struct kmem_cache *mm_slot_cache __read_mostly;
  
- /*
-  * The uidhash_lock is mostly taken from process context, but it is
-@@ -84,29 +84,14 @@ struct user_struct root_user = {
- /*
-  * These routines must be called with the uidhash spinlock held!
-  */
--static void uid_hash_insert(struct user_struct *up, struct hlist_head *hashent)
-+static void uid_hash_insert(struct user_struct *up)
- {
--	hlist_add_head(&up->uidhash_node, hashent);
-+	hash_add(&uidhash_table, &up->uidhash_node, up->uid);
- }
+ /**
+@@ -140,7 +142,7 @@ static int start_khugepaged(void)
+ 	int err = 0;
+ 	if (khugepaged_enabled()) {
+ 		int wakeup;
+-		if (unlikely(!mm_slot_cache || !mm_slots_hash)) {
++		if (unlikely(!mm_slot_cache)) {
+ 			err = -ENOMEM;
+ 			goto out;
+ 		}
+@@ -554,12 +556,6 @@ static int __init hugepage_init(void)
+ 	if (err)
+ 		goto out;
  
- static void uid_hash_remove(struct user_struct *up)
- {
--	hlist_del_init(&up->uidhash_node);
--}
--
--static struct user_struct *uid_hash_find(kuid_t uid, struct hlist_head *hashent)
--{
--	struct user_struct *user;
--	struct hlist_node *h;
--
--	hlist_for_each_entry(user, h, hashent, uidhash_node) {
--		if (uid_eq(user->uid, uid)) {
--			atomic_inc(&user->__count);
--			return user;
--		}
+-	err = mm_slots_hash_init();
+-	if (err) {
+-		khugepaged_slab_free();
+-		goto out;
 -	}
 -
--	return NULL;
-+	hash_del(&up->uidhash_node);
+ 	/*
+ 	 * By default disable transparent hugepages on smaller systems,
+ 	 * where the extra memory used could hurt more than TLB overhead
+@@ -1562,47 +1558,17 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
+ 	kmem_cache_free(mm_slot_cache, mm_slot);
  }
  
- /* IRQs are disabled and uidhash_lock is held upon function entry.
-@@ -135,7 +120,9 @@ struct user_struct *find_user(kuid_t uid)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&uidhash_lock, flags);
--	ret = uid_hash_find(uid, uidhashentry(uid));
-+	ret = uidhash_entry(uid);
-+	if (ret)
-+		atomic_inc(&ret->__count);
- 	spin_unlock_irqrestore(&uidhash_lock, flags);
- 	return ret;
- }
-@@ -156,11 +143,10 @@ void free_uid(struct user_struct *up)
- 
- struct user_struct *alloc_uid(kuid_t uid)
- {
--	struct hlist_head *hashent = uidhashentry(uid);
- 	struct user_struct *up, *new;
- 
- 	spin_lock_irq(&uidhash_lock);
--	up = uid_hash_find(uid, hashent);
-+	up = uidhash_entry(uid);
- 	spin_unlock_irq(&uidhash_lock);
- 
- 	if (!up) {
-@@ -176,13 +162,13 @@ struct user_struct *alloc_uid(kuid_t uid)
- 		 * on adding the same user already..
- 		 */
- 		spin_lock_irq(&uidhash_lock);
--		up = uid_hash_find(uid, hashent);
-+		up = uidhash_entry(uid);
- 		if (up) {
- 			key_put(new->uid_keyring);
- 			key_put(new->session_keyring);
- 			kmem_cache_free(uid_cachep, new);
- 		} else {
--			uid_hash_insert(new, hashent);
-+			uid_hash_insert(new);
- 			up = new;
- 		}
- 		spin_unlock_irq(&uidhash_lock);
-@@ -196,17 +182,14 @@ out_unlock:
- 
- static int __init uid_cache_init(void)
- {
--	int n;
+-static int __init mm_slots_hash_init(void)
+-{
+-	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
+-				GFP_KERNEL);
+-	if (!mm_slots_hash)
+-		return -ENOMEM;
+-	return 0;
+-}
 -
- 	uid_cachep = kmem_cache_create("uid_cache", sizeof(struct user_struct),
- 			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
+-#if 0
+-static void __init mm_slots_hash_free(void)
+-{
+-	kfree(mm_slots_hash);
+-	mm_slots_hash = NULL;
+-}
+-#endif
+-
+ static struct mm_slot *get_mm_slot(struct mm_struct *mm)
+ {
+-	struct mm_slot *mm_slot;
+-	struct hlist_head *bucket;
+-	struct hlist_node *node;
+-
+-	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
+-				% MM_SLOTS_HASH_HEADS];
+-	hlist_for_each_entry(mm_slot, node, bucket, hash) {
+-		if (mm == mm_slot->mm)
+-			return mm_slot;
+-	}
+-	return NULL;
++	return hash_get(&mm_slots_hash, mm, struct mm_slot,
++		hash, MM_SLOTS_HASH_CMP); 
+ }
  
--	for(n = 0; n < UIDHASH_SZ; ++n)
--		INIT_HLIST_HEAD(uidhash_table + n);
-+	hash_init(&uidhash_table, UIDHASH_BITS);
+ static void insert_to_mm_slots_hash(struct mm_struct *mm,
+ 				    struct mm_slot *mm_slot)
+ {
+-	struct hlist_head *bucket;
+-
+-	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
+-				% MM_SLOTS_HASH_HEADS];
+ 	mm_slot->mm = mm;
+-	hlist_add_head(&mm_slot->hash, bucket);
++	hash_add(&mm_slots_hash, &mm_slot->hash, (long)mm);
+ }
  
- 	/* Insert the root user immediately (init already runs as root) */
- 	spin_lock_irq(&uidhash_lock);
--	uid_hash_insert(&root_user, uidhashentry(GLOBAL_ROOT_UID));
-+	uid_hash_insert(&root_user);
- 	spin_unlock_irq(&uidhash_lock);
+ static inline int khugepaged_test_exit(struct mm_struct *mm)
+@@ -1675,7 +1641,7 @@ void __khugepaged_exit(struct mm_struct *mm)
+ 	spin_lock(&khugepaged_mm_lock);
+ 	mm_slot = get_mm_slot(mm);
+ 	if (mm_slot && khugepaged_scan.mm_slot != mm_slot) {
+-		hlist_del(&mm_slot->hash);
++		hash_del(&mm_slot->hash);
+ 		list_del(&mm_slot->mm_node);
+ 		free = 1;
+ 	}
+@@ -2089,7 +2055,7 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
  
- 	return 0;
+ 	if (khugepaged_test_exit(mm)) {
+ 		/* free mm_slot */
+-		hlist_del(&mm_slot->hash);
++		hash_del(&mm_slot->hash);
+ 		list_del(&mm_slot->mm_node);
+ 
+ 		/*
 -- 
 1.7.8.6
 
