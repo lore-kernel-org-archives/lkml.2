@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab2HCXlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 19:41:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41618 "EHLO
+	id S1754082Ab2HCXns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 19:43:48 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41638 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab2HCXld (ORCPT
+	with ESMTP id S1753985Ab2HCXnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 19:41:33 -0400
-Date: Fri, 03 Aug 2012 16:41:32 -0700 (PDT)
-Message-Id: <20120803.164132.585376006722562454.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2012-08-03
+	Fri, 3 Aug 2012 19:43:47 -0400
+Date: Fri, 03 Aug 2012 16:43:44 -0700 (PDT)
+Message-Id: <20120803.164344.1572110415832988122.davem@davemloft.net>
+To: standby24x7@gmail.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        sathya.perla@emulex.com, subbu.seetharaman@emulex.com,
+        ajit.khaparde@emulex.com
+Subject: Re: [PATCH] emulex: benet: Add a missing CR in the end of message
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120803145604.GA6372@tuxdriver.com>
-References: <20120803145604.GA6372@tuxdriver.com>
+In-Reply-To: <1343997411-10465-1-git-send-email-standby24x7@gmail.com>
+References: <1343997411-10465-1-git-send-email-standby24x7@gmail.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -24,9 +25,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Fri, 3 Aug 2012 10:56:04 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+Date: Fri,  3 Aug 2012 21:36:51 +0900
 
-> This request covers a batch of fixes intended for the 3.6 stream.
+> Missing a CR in printk causes 2 messages printed in one line.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-Pulled, thanks John.
+Applied, thanks.
