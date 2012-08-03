@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab2HCXvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 19:51:23 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:63355 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab2HCXvV (ORCPT
+	id S1754125Ab2HCXwO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 19:52:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41689 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985Ab2HCXwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 19:51:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1208032349500.9164@bwv190.internetdsl.tpnet.pl>
-References: <Pine.LNX.4.64.1208031728120.9164@bwv190.internetdsl.tpnet.pl>
-	<CAE9FiQXzyxSNiPW96mqcN-Ki2RYZeKyYMJ39R50yjkgHnLMnYQ@mail.gmail.com>
-	<Pine.LNX.4.64.1208032349500.9164@bwv190.internetdsl.tpnet.pl>
-Date: Fri, 3 Aug 2012 16:51:20 -0700
-X-Google-Sender-Auth: AKyqufhcCMS-JActXduYuBulPQg
-Message-ID: <CAE9FiQVhDbW1_58BZ3fHcmMq6nCdUJ_9yKV=w077fG2JENRdZw@mail.gmail.com>
-Subject: Re: bisected pcmcia bug - unable to map card memory on old laptops
-From: Yinghai Lu <yinghai@kernel.org>
-To: Piotr Gluszenia Slawinski <curious@bwv190.internetdsl.tpnet.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 Aug 2012 19:52:13 -0400
+Date: Fri, 03 Aug 2012 16:52:12 -0700 (PDT)
+Message-Id: <20120803.165212.106382119661240198.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next,1/1] hyperv: Move wait completion msg code
+ into rndis_filter_halt_device()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1344022338-3010-1-git-send-email-haiyangz@microsoft.com>
+References: <1344022338-3010-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 2:53 PM, Piotr Gluszenia Slawinski
-<curious@bwv190.internetdsl.tpnet.pl> wrote:
->>> bug is present in all kernels since late 2.6.36
->>
->>
->> can you send the boot log with working and not working kernel?
->> Please make sure you have PCI_DEBUG set in your config.
->
->
-> system is ISA based :) but i've enabled it for sake of clarity.
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Fri,  3 Aug 2012 12:32:18 -0700
 
-Good.
+> We need to wait for send_completion msg before put_rndis_request() at
+> the end of rndis_filter_halt_device(). Otherwise, netvsc_send_completion()
+> may reference freed memory which is overwritten, and cause panic.
+> 
+> Reported-by: Long Li <longli@microsoft.com>
+> Reported-by: Jason Wang <jasowang@redhat.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 
->
-> logs are attached both systems are 3.5 kernel, working is one where i've
-> simply commented out the code preventing low mem allocation in resource.c
->
-> btw. note that if i would enable pci support in older kernels
-> bug would most likely resurface even there.
+This is a bug fix, so applied to 'net'.  Please target your patches
+properly.
 
-pcmcia :: nonstatic_find_mem_region
-do try to allocate mem under 1M.
+Don't just be afraid that I'll reject the patch if you target it
+at 'net', and therefore just target everything at 'net-next'.  That
+is certainly worse.
 
-should replace
-arch_remove_reservations()
 
-with reserve resource in iomem resource tree if needed for some platform.
-
-current arch_remove_reservations keep clip the with e820 table.
-
-also there are two local resource_clip have different meaning. one is
-"include" and another one is "exclude"
-
-Yinghai
