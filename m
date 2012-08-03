@@ -1,66 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2HCB2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 21:28:51 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34534 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab2HCB2s (ORCPT
+	id S1751750Ab2HCBhk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 21:37:40 -0400
+Received: from exprod6og107.obsmtp.com ([64.18.1.208]:36089 "EHLO
+	exprod6og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab2HCBhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 21:28:48 -0400
+	Thu, 2 Aug 2012 21:37:37 -0400
+Message-ID: <6.2.5.6.2.20120802174226.04afdcd0@adobe.com>
+X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
+Date: Thu, 2 Aug 2012 18:37:06 -0700
+To: Christof Meerwald <cmeerw@cmeerw.org>
+From: "Paton J. Lewis" <palewis@adobe.com>
+Subject: Re: [PATCH] epoll: Improved support for multi-threaded clients
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jason Baron <jbaron@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>
+In-Reply-To: <6.2.5.6.2.20120629140909.04bb0a40@adobe.com>
+References: <F044A95E1307394EBA6055B1B7144CD2010CFB1B748F@NAMBX02.corp.adobe.com>
+ <20120616184707.GA22656@edge.cmeerw.net>
+ <6.2.5.6.2.20120618161807.031eb6c8@adobe.com>
+ <20120619181711.GE1281@edge.cmeerw.net>
+ <6.2.5.6.2.20120629140909.04bb0a40@adobe.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMbhsRQg4pETrM7cx+aSBzGn3S1LV_x7vo8X3A300vCWTjkFng@mail.gmail.com>
-References: <1343184588-20239-1-git-send-email-ccross@android.com>
-	<CACRpkdZv4p+QT3Y+=-xh5iJ=sr1_aahroxQ535QpzVD9e_ESJA@mail.gmail.com>
-	<20120727233829.GB14835@n2100.arm.linux.org.uk>
-	<CAMbhsRSGYmu=eyqik23cECsJPfpo6rUqZUa853nkY35XRo4Q_w@mail.gmail.com>
-	<CAMbhsRQg4pETrM7cx+aSBzGn3S1LV_x7vo8X3A300vCWTjkFng@mail.gmail.com>
-Date: Thu, 2 Aug 2012 18:28:47 -0700
-X-Google-Sender-Auth: BLzjf1cEVtuZ_qCNB5F0l7PC9aM
-Message-ID: <CAMbhsRSboLABOD8eX4czk8FsG3QmT60RTr+znVCqwWR6ZGhgaw@mail.gmail.com>
-Subject: Re: [RFC v2] ARM: sched_clock: update epoch_cyc on resume
-From: Colin Cross <ccross@android.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Barry Song <21cnbao@gmail.com>,
-        Vaibhav Bedia <vaibhav.bedia@ti.com>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Nicolas Pitre <nico@linaro.org>, Marc Zyngier <marc.zyngier@arm.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset="us-ascii"; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 8:30 PM, Colin Cross <ccross@android.com> wrote:
-> On Fri, Jul 27, 2012 at 6:15 PM, Colin Cross <ccross@android.com> wrote:
->> That patch was merged in 3.4, and my patch is on top of it.  Your
->> patch updates epoch_cyc and epoch_ns in suspend, but if the first call
->> to cyc_to_sched_clock after resume gets cyc = 0, cyc - epoch_cyc can
->> be negative, although it will be cast back to a large positive number.
->>
->> With my patch, epoch_cyc is updated in resume to whatever
->> read_sched_clock() returns, and epoch_ns is still set to the suspend
->> value, so it appears that sched_clock has not changed between
->> sched_clock_suspend and sched_clock_resume.  It will work with any
->> timer behavior (reset to 0, reset to random value, or continuing
->> counting).  The old setup_sched_clock function maintains the old
->> behavior to appease those who like their 32kHz sched clock to continue
->> ticking in suspend, although I think it is more correct for all sched
->> clocks to be faster than 32 kHz (when possible) and stop in suspend.
->
-> I think the existing code can cause sched_clock to go backwards if the
-> register read by the read function resets to 0 in suspend:
->
-> In sched_clock_suspend epoch_cyc is updated to 0x00002000.
->
-> The first sched_clock call after resume gets cyc = 0, returning
-> epoch_ns + cyc_to_ns(0xffffe000)
->
-> Later, sched_clock gets cyc = 0x5000, returning epoch_ns +
-> cyc_to_ns(0x3000), which will be much smaller than the previous
-> sched_clock value.
+Christof,
 
-Russell, any update on this?  Should sched_clock.c handle read
-functions that go backwards in suspend, or should I modify the read
-function to track an offset in suspend and always return a
-monotonically increasing value across suspend?
+I notice that Windows (via I/O Completion Ports) and both BSD and 
+OS/X (via kqueue) all appear to have support for both of the concepts 
+we have been discussing: 1) the ability to disable epoll items, and 
+2) the ability to send custom events. This suggests that either 
+solution may be acceptable to a broader community.
+
+I implemented and tested the method of using a new custom epoll event 
+as a way to signal that an epoll item should be deleted. Although 
+this alternative technique works, the approach has several drawbacks 
+that I feel make it less desirable than the original proposal.
+
+My first concern is about code clarity. Using a custom event to 
+delete an event type (either EPOLLIN or EPOLLOUT) from an epoll item 
+requires that functionality to be split across two areas of code: the 
+code that requests the deletion (via the call to epoll_ctl), and the 
+code that responds to it (via epoll_wait).
+
+However, my main concern is about performance. Handling a custom 
+event means that each return from epoll_wait requires the responding 
+thread to check for possible custom events, which in the case of 
+deletion is going to be relatively rare. Thus code which was once 
+purely concerned with responding to I/O events must now spend a 
+fraction of its time testing for exceptional conditions. In addition, 
+handling deletion in this manner now requires a thread or context switch.
+
+Given the drawbacks listed above, and the kernel design philosophy of 
+only implementing what is actually needed, I would argue for sticking 
+with the original EPOLL_CTL_DISABLE proposal for now.
+
+Pat
+
+At 6/29/2012 02:43 PM, Paton J. Lewis wrote:
+>At 6/19/2012 11:17 AM, Christof Meerwald wrote:
+>>Hi Paton,
+>>
+>>On Mon, Jun 18, 2012 at 04:24:35PM -0700, Paton J. Lewis wrote:
+>> > We believe that EPOLLONESHOT is required in order to make any
+>> > sensible use of calling epoll_wait on a single epoll set
+>> > concurrently in multiple threads.
+>>
+>>I guess we have to disagree here - though it might be more difficult.
+>>
+>>
+>> > >On Mon, 11 Jun 2012 15:34:49 -0700, Paton Lewis wrote:
+>> > >> This patch introduces the new epoll_ctl command 
+>> EPOLL_CTL_DISABLE, which
+>> > >> disables the associated epoll item and returns -EBUSY if the
+>> > >epoll item is not
+>> > >> currently in the epoll ready queue. This allows multiple 
+>> threads to use a
+>> > >> mutex to determine when it is safe to delete an epoll item and
+>> > >its associated
+>> > >> resources. This allows epoll items to be deleted and closed 
+>> efficiently and
+>> > >> without error.
+>>
+>>Maybe I am missing something here (as I am not really familiar with
+>>the kernel internals), but I don't really understand the logic behind
+>>your patch. Isn't the "expected" case that the item is not on the
+>>ready list and no I/O is being processed for that item?
+>
+>Consider the case where we want to have a set of threads waiting for 
+>'write' events on a set of pipes or sockets. We have no control over 
+>when code on the other side of a pipe or socket might write into it, 
+>and so have no control over when one of the threads calling 
+>epoll_wait will receive events relative to the timing of the thread 
+>that is attempting to cancel the pending read operation.
+>
+>I believe there is no "expected" case, because the probability for 
+>an item to be on the ready list is a complex function of the number 
+>of file descriptors being monitored, the frequency at which those 
+>descriptors receive events, the number of threads calling 
+>epoll_wait, and the complexity of the code responding to events.
+>
+>Therefore for some clients of epoll it will be the case that items 
+>will often be on the ready list, and for others it will not.
+>
+>>So I think instead of checking for the item being on the ready list,
+>>checking for the event mask would make more sense for me, e.g.
+>>
+>>   if (!(epi->event.events & ~EP_PRIVATE_BITS))
+>
+>I think that would be fine. However, the inlined function 
+>ep_is_linked boils down to a call to the inline function list_empty, 
+>which is just a single comparison. I haven't compared the 
+>disassembly, but I would expect the two methods to be roughly 
+>equivalent in terms of performance. Given that the operation of 
+>deleting an epoll item is likely to be an exceptional circumstance 
+>and therefore not performance-critical, would it be better to test 
+>against ep_is_linked for clarity's sake in the code?
+>
+>However, I believe these discussions are rendered moot by your 
+>suggestion below:
+>
+>
+>>But, taking one step back - wouldn't an alternative approach be to add
+>>some mechanism to allow a thread to post a user-event for an fd? So in
+>>delete_epoll_item you would post a user event (e.g. EPOLLUSER) for the
+>>fd which you can then handle in your epoll_wait processing thread -
+>>with no additional synchronisation necessary.
+>
+>I think this is an excellent suggestion, and in fact your proposal 
+>is more similar to what Windows provides when solving this problem. 
+>I'll test this idea out with our code and get back to you. Is there 
+>an existing kernel technique that you would recommend for posting a 
+>user event for an fd, or should I explore using epoll_ctl with EPOLL_CTL_MOD?
+>
+>I apologize in advance for any delay in responding to you; our 
+>office is closed next week.
+>
+>Thank you,
+>Pat
+>
+>>However, this would still require EPOLLONESHOT to be useful for memory
+>>management.
+>>
+>>
+>>Christof
+>>
+>>--
+>>
+>>http://cmeerw.org                             sip:cmeerw at cmeerw.org
+>>mailto:cmeerw at cmeerw.org                   xmpp:cmeerw at cmeerw.org
+
