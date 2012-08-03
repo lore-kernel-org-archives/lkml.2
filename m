@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab2HCNcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 09:32:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40284 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689Ab2HCNci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 09:32:38 -0400
-Date: Fri, 3 Aug 2012 15:32:35 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
-Message-ID: <20120803133235.GA8434@dhcp22.suse.cz>
-References: <CAJd=RBB=jKD+9JcuBmBGC8R8pAQ-QoWHexMNMsXpb9zV548h5g@mail.gmail.com>
+	id S1753513Ab2HCNcs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 09:32:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62504 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab2HCNcq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 09:32:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBB=jKD+9JcuBmBGC8R8pAQ-QoWHexMNMsXpb9zV548h5g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <501A2A6F.4030502@t-online.de>
+References: <501A2A6F.4030502@t-online.de>
+Date: Fri, 3 Aug 2012 09:32:44 -0400
+Message-ID: <CADnq5_OVmCds-xaPB7VsOhLd-4QSVwq9nHHarvmy9mQ8T_sNpg@mail.gmail.com>
+Subject: Re: [PATCH] drm: ignore disconnected <-> unknown status changes
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 03-08-12 20:56:45, Hillf Danton wrote:
-> The computation of page offset index is open coded, and incorrect, to
-> be used in scanning prio tree, as huge page offset is required, and is
-> fixed with the well defined routine.
+On Thu, Aug 2, 2012 at 3:21 AM, Knut Petersen <Knut_Petersen@t-online.de> wrote:
+> On an AOpen i915GMm-hfs the hotplug events generated
+> by transitions between connector_status_unknown and
+> connector_status_disconnected cause screen distortions.
+>
+> The attached patch cures the problem by disabling the
+> generation of hotplug events in those cases. That should
+> be safe for everybody as the only relevant changes are
+> those from / to connector_status_connected.
 
-I guess that nobody reported this because if someone really wants to
-share he will use aligned address for mmap/shmat and so the index is 0.
-Anyway it is worth fixing. Thanks for pointing out!
+Seems reasonable to me.  We should just drop unknown.
 
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> 
-> --- a/arch/x86/mm/hugetlbpage.c	Fri Aug  3 20:34:58 2012
-> +++ b/arch/x86/mm/hugetlbpage.c	Fri Aug  3 20:40:16 2012
-> @@ -72,12 +72,15 @@ static void huge_pmd_share(struct mm_str
->  	if (!vma_shareable(vma, addr))
->  		return;
-> 
-> +	idx = linear_page_index(vma, addr);
-> +
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 
-You can use linear_hugepage_index directly and remove the idx
-initialization as well.
-
->  	mutex_lock(&mapping->i_mmap_mutex);
->  	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
->  		if (svma == vma)
->  			continue;
-> 
-> -		saddr = page_table_shareable(svma, vma, addr, idx);
-> +		saddr = page_table_shareable(svma, vma, addr,
-> +						idx * (PMD_SIZE/PAGE_SIZE));
-
-Why not just fixing page_table_shareable as well rather than playing
-tricks like this?
-
->  		if (saddr) {
->  			spte = huge_pte_offset(svma->vm_mm, saddr);
->  			if (spte) {
-> --
-
--- 
-Michal Hocko
-SUSE Labs
+>
+> cu,
+>  Knut
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
