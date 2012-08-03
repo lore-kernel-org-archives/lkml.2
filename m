@@ -1,112 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2HCVTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 17:19:35 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36161 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab2HCVTb (ORCPT
+	id S1753486Ab2HCVVb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 17:21:31 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:38727 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab2HCVV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 17:19:31 -0400
-Message-ID: <501C407D.9080900@gmail.com>
-Date: Fri, 03 Aug 2012 23:19:57 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org
-Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
-References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com> <1344003788-1417-2-git-send-email-levinsasha928@gmail.com> <20120803171515.GH15477@google.com>
-In-Reply-To: <20120803171515.GH15477@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Aug 2012 17:21:27 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: stable@vger.kernel.org
+Cc: Ben Hutchings <bhutchings@solarflare.com>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mikael Pettersson <mikpe@it.uu.se>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k: Correct the Atari ALLOWINT definition
+Date: Fri,  3 Aug 2012 23:21:17 +0200
+Message-Id: <1344028877-18838-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 07:15 PM, Tejun Heo wrote:
-> Hello, Sasha.
-> 
-> On Fri, Aug 03, 2012 at 04:23:02PM +0200, Sasha Levin wrote:
->> +#define DEFINE_STATIC_HASHTABLE(n, b)					\
->> +	static struct hash_table n = { .bits = (b),			\
->> +		.buckets = { [0 ... ((1 << (b)) - 1)] = HLIST_HEAD_INIT } }
-> 
-> What does this "static" mean?
-> 
->> +#define DEFINE_HASHTABLE(n, b)						\
->> +	union {								\
->> +		struct hash_table n;					\
->> +		struct {						\
->> +			size_t bits;					\
->> +			struct hlist_head buckets[1 << (b)];		\
->> +		} __##n ;						\
->> +	};
-> 
-> Is this supposed to be embedded in struct definition?  If so, the name
-> is rather misleading as DEFINE_* is supposed to define and initialize
-> stand-alone constructs.  Also, for struct members, simply putting hash
-> entries after struct hash_table should work.
+From: Mikael Pettersson <mikpe@it.uu.se>
 
-It would work, but I didn't want to just put them in the union since I feel it's safer to keep them in a separate struct so they won't be used by mistake,
+commit c663600584a596b5e66258cc10716fb781a5c2c9 upstream.
 
-> Wouldn't using DEFINE_HASHTABLE() for the first macro and
-> DEFINE_HASHTABLE_MEMBER() for the latter be better?
+Booting a 3.2, 3.3, or 3.4-rc4 kernel on an Atari using the
+`nfeth' ethernet device triggers a WARN_ONCE() in generic irq
+handling code on the first irq for that device:
 
-Indeed that sounds better, will fix.
+WARNING: at kernel/irq/handle.c:146 handle_irq_event_percpu+0x134/0x142()
+irq 3 handler nfeth_interrupt+0x0/0x194 enabled interrupts
+Modules linked in:
+Call Trace: [<000299b2>] warn_slowpath_common+0x48/0x6a
+ [<000299c0>] warn_slowpath_common+0x56/0x6a
+ [<00029a4c>] warn_slowpath_fmt+0x2a/0x32
+ [<0005b34c>] handle_irq_event_percpu+0x134/0x142
+ [<0005b34c>] handle_irq_event_percpu+0x134/0x142
+ [<0000a584>] nfeth_interrupt+0x0/0x194
+ [<001ba0a8>] schedule_preempt_disabled+0x0/0xc
+ [<0005b37a>] handle_irq_event+0x20/0x2c
+ [<0005add4>] generic_handle_irq+0x2c/0x3a
+ [<00002ab6>] do_IRQ+0x20/0x32
+ [<0000289e>] auto_irqhandler_fixup+0x4/0x6
+ [<00003144>] cpu_idle+0x22/0x2e
+ [<001b8a78>] printk+0x0/0x18
+ [<0024d112>] start_kernel+0x37a/0x386
+ [<0003021d>] __do_proc_dointvec+0xb1/0x366
+ [<0003021d>] __do_proc_dointvec+0xb1/0x366
+ [<0024c31e>] _sinittext+0x31e/0x9c0
 
->> +#define HASH_BITS(name) ((name)->bits)
->> +#define HASH_SIZE(name) (1 << (HASH_BITS(name)))
->> +
->> +__attribute__ ((unused))
-> 
-> Are we using __attribute__((unused)) for functions defined in headers
-> instead of static inline now?  If so, why? 
-> 
->> +static void hash_init(struct hash_table *ht, size_t bits)
->> +{
->> +	size_t i;
-> 
-> I would prefer int here but no biggie.
+After invoking the irq's handler the kernel sees !irqs_disabled()
+and concludes that the handler erroneously enabled interrupts.
 
-Just wondering, is there a particular reason behind it?
+However, debugging shows that !irqs_disabled() is true even before
+the handler is invoked, which indicates a problem in the platform
+code rather than the specific driver.
 
->> +	ht->bits = bits;
->> +	for (i = 0; i < (1 << bits); i++)
->> +		INIT_HLIST_HEAD(&ht->buckets[i]);
->> +}
->> +
->> +static void hash_add(struct hash_table *ht, struct hlist_node *node, long key)
->> +{
->> +	hlist_add_head(node,
->> +		&ht->buckets[hash_long((unsigned long)key, HASH_BITS(ht))]);
->> +}
->> +
->> +
->> +#define hash_get(name, key, type, member, cmp_fn)			\
->> +({									\
->> +	struct hlist_node *__node;					\
->> +	typeof(key) __key = key;					\
->> +	type *__obj = NULL;						\
->> +	hlist_for_each_entry(__obj, __node, &(name)->buckets[		\
->> +			hash_long((unsigned long) __key,		\
->> +			HASH_BITS(name))], member)			\
->> +		if (cmp_fn(__obj, __key))				\
->> +			break;						\
->> +	__obj;								\
->> +})
-> 
-> As opposed to using hash_for_each_possible(), how much difference does
-> this make?  Is it really worthwhile?
+The warning does not occur in 3.1 or older kernels.
 
-Most of the places I've switched to using this hashtable so far (4 out of 6) are using hash_get(). I think that the code looks cleaner when you an just provide a comparison function instead of implementing the iteration itself.
+It turns out that the ALLOWINT definition for Atari is incorrect.
 
-I think hash_for_for_each_possible() is useful if the comparison condition is more complex than a simple comparison of one of the object members with the key - there's no need to force it on all the users.
+The Atari definition of ALLOWINT is ~0x400, the stated purpose of
+that is to avoid taking HSYNC interrupts.  irqs_disabled() returns
+true if the 3-bit ipl & 4 is non-zero.  The nfeth interrupt runs at
+ipl 3 (it's autovector 3), but 3 & 4 is zero so irqs_disabled() is
+false, and the warning above is generated.
 
-> 
-> Thanks.
-> 
+When interrupts are explicitly disabled, ipl is set to 7.  When they
+are enabled, ipl is masked with ALLOWINT.  On Atari this will result
+in ipl = 3, which blocks interrupts at ipl 3 and below.  So how come
+nfeth interrupts at ipl 3 are received at all?  That's because ipl
+is reset to 2 by Atari-specific code in default_idle(), again with
+the stated purpose of blocking HSYNC interrupts.  This discrepancy
+means that ipl 3 can remain blocked for longer than intended.
+
+Both default_idle() and falcon_hblhandler() identify HSYNC with
+ipl 2, and the "Atari ST/.../F030 Hardware Register Listing" agrees,
+but ALLOWINT is defined as if HSYNC was ipl 3.
+
+[As an experiment I modified default_idle() to reset ipl to 3, and
+as expected that resulted in all nfeth interrupts being blocked.]
+
+The fix is simple: define ALLOWINT as ~0x500 instead.  This makes
+arch_local_irq_enable() consistent with default_idle(), and prevents
+the !irqs_disabled() problems for ipl 3 interrupts.
+
+Tested on Atari running in an Aranym VM.
+
+Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+Tested-by: Michael Schmitz <schmitzmic@googlemail.com> (on Falcon/CT60)
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+This version applies to v3.2..v3.4.
+For v2.6.29..v3.1, it should be applied to arch/m68k/include/asm/entry_mm.h
+instead
+
+ arch/m68k/include/asm/entry.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/m68k/include/asm/entry.h b/arch/m68k/include/asm/entry.h
+index c3c5a86..8798ebc 100644
+--- a/arch/m68k/include/asm/entry.h
++++ b/arch/m68k/include/asm/entry.h
+@@ -33,8 +33,8 @@
+ 
+ /* the following macro is used when enabling interrupts */
+ #if defined(MACH_ATARI_ONLY)
+-	/* block out HSYNC on the atari */
+-#define ALLOWINT	(~0x400)
++	/* block out HSYNC = ipl 2 on the atari */
++#define ALLOWINT	(~0x500)
+ #define	MAX_NOINT_IPL	3
+ #else
+ 	/* portable version */
+-- 
+1.7.0.4
 
