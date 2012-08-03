@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab2HCT5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 15:57:35 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:26317 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab2HCT5e (ORCPT
+	id S1753902Ab2HCUJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 16:09:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2875 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab2HCUJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 15:57:34 -0400
-Date: Fri, 3 Aug 2012 21:57:17 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	Fri, 3 Aug 2012 16:09:42 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=WuP7blGMd1gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=pGLkceISAAAA:8 a=oCbVhmq1XZeMNOJaOzAA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344024579.27983.115.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 1/5] code_domain: New code domain tracking susbsystem
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Mark Studebaker <mdsxyz123@yahoo.com>, linux-i2c@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 3 (drivers/i2c/busses/i2c-i801.c)
-Message-ID: <20120803215717.31376eb7@endymion.delvare>
-In-Reply-To: <501C0952.5050609@xenotime.net>
-References: <20120803135110.0ba0e51758021b6a4ed9d1e9@canb.auug.org.au>
-	<501C0952.5050609@xenotime.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 03 Aug 2012 16:09:39 -0400
+In-Reply-To: <20120803194536.GA2974@gmail.com>
+References: <1344006145-26115-1-git-send-email-fweisbec@gmail.com>
+	 <1344006145-26115-2-git-send-email-fweisbec@gmail.com>
+	 <20120803194536.GA2974@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
-
-On Fri, 03 Aug 2012 10:24:34 -0700, Randy Dunlap wrote:
-> on x86_64:
+On Fri, 2012-08-03 at 21:45 +0200, Ingo Molnar wrote:
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> when CONFIG_GPIOLIB is not enabled:
+> > Create a new subsystem that handles the probing on kernel 
+> > boundaries to keep track of the transitions between code 
+> > domains with two basic initial domains: user or kernel.
 > 
-> drivers/i2c/busses/i2c-i801.c: In function 'match_gpio_chip_by_label':
-> drivers/i2c/busses/i2c-i801.c:1011:21: error: dereferencing pointer to incomplete type
-> drivers/i2c/busses/i2c-i801.c: In function 'i801_add_mux':
-> drivers/i2c/busses/i2c-i801.c:1028:2: error: implicit declaration of function 'gpiochip_find'
-> drivers/i2c/busses/i2c-i801.c:1028:7: warning: assignment makes pointer from integer without a cast
-> drivers/i2c/busses/i2c-i801.c:1047:27: error: dereferencing pointer to incomplete type
-> drivers/i2c/busses/i2c-i801.c: In function 'match_gpio_chip_by_label':
-> drivers/i2c/busses/i2c-i801.c:1012:1: warning: control reaches end of non-void function
+> To do a bit more bike shed painting, I'd call it "context 
+> tracking" - user mode, kernel mode (guest mode, etc.).
+> 
+> The term 'code domain' would bring up blank stares from most 
+> kernel developers, me thinks.
 
-Good catch, thanks for reporting. I'll fold the following in the
-offending patch, that should fix it:
+Heh, that would be a second new term I heard this week for context.
+Earlier, I noticed that Paul McKenney called it 'levels'. So now there's
+four names:
 
---- linux-3.6-rc0.orig/drivers/i2c/busses/Kconfig	2012-08-03 21:51:51.000000000 +0200
-+++ linux-3.6-rc0/drivers/i2c/busses/Kconfig	2012-08-03 21:52:18.090537018 +0200
-@@ -80,6 +80,7 @@ config I2C_I801
- 	tristate "Intel 82801 (ICH/PCH)"
- 	depends on PCI
- 	select CHECK_SIGNATURE if X86 && DMI
-+	select GPIOLIB if I2C_MUX
- 	help
- 	  If you say yes to this option, support will be included for the Intel
- 	  801 family of mainboard I2C interfaces.  Specifically, the following
+user/kernel context
+user/kernel state
+user/kernel level
+user/kernel domain
+
+And we could probably add a fifth:
+
+user/kernel mode
+
+;-)
+
+-- Steve
 
 
--- 
-Jean Delvare
