@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab2HCRK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 13:10:57 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:22971 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2HCRKz (ORCPT
+	id S1753220Ab2HCRLs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 13:11:48 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:44448 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab2HCRLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 13:10:55 -0400
+	Fri, 3 Aug 2012 13:11:47 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-132.messagelabs.com!1344013839!10474750!36
+X-Msg-Ref: server-2.tower-160.messagelabs.com!1344013903!7217476!6
 X-Originating-IP: [216.166.12.32]
 X-StarScan-Received: 
 X-StarScan-Version: 6.6.1.2; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] staging: comedi: new adl_pci7x3x driver
-Date: Fri, 3 Aug 2012 10:10:41 -0700
+Subject: [PATCH 2/2] staging: comedi: remove adl_pci7230 and adl_pci7432 drivers
+Date: Fri, 3 Aug 2012 10:11:30 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -24,416 +24,426 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201208031010.42002.hartleys@visionengravers.com>
+Message-ID: <201208031011.31314.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the ADLink PCI-7230 and PCI-7432 Isolated Digital
-I/O Boards are supported using two drivers (adl_pci7230 and
-adl_pci7432). These drivers are very similar and only differ
-in the total number of di/do channels provided.
-
-This combines the support for both boards into one common driver.
-In addition, it adds PCI PnP support for the other boards in the
-ADLink PCI-723x and PCI-743x series.
-
-This driver only supports the comedi PCI auto config attach
-mechanism. The legacy attach using the comedi_config utility
-is not supported or required by this driver.
+The boards supported by these drivers are now handled by the
+adl_pci7x3x driver.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/Kconfig               |  11 +
- drivers/staging/comedi/drivers/Makefile      |   1 +
- drivers/staging/comedi/drivers/adl_pci7x3x.c | 342 +++++++++++++++++++++++++++
- 3 files changed, 354 insertions(+)
- create mode 100644 drivers/staging/comedi/drivers/adl_pci7x3x.c
+ drivers/staging/comedi/drivers/adl_pci7230.c | 190 -------------------------
+ drivers/staging/comedi/drivers/adl_pci7432.c | 200 ---------------------------
+ 2 files changed, 390 deletions(-)
+ delete mode 100644 drivers/staging/comedi/drivers/adl_pci7230.c
+ delete mode 100644 drivers/staging/comedi/drivers/adl_pci7432.c
 
-diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-index 6cee785..d8b0065 100644
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -676,6 +676,17 @@ config COMEDI_ADL_PCI6208
- 	  To compile this driver as a module, choose M here: the module will be
- 	  called adl_pci6208.
- 
-+config COMEDI_ADL_PCI7X3X
-+	tristate "ADLink PCI-723X/743X isolated digital i/o board support"
-+	---help---
-+	  Enable support for ADlink PCI-723X/743X isolated digital i/o boards.
-+	  Supported boards include the 32-channel PCI-7230 (16 in/16 out),
-+	  PCI-7233 (32 in), and PCI-7234 (32 out) as well as the 64-channel
-+	  PCI-7432 (32 in/32 out), PCI-7433 (64 in), and PCI-7434 (64 out).
-+
-+	  To compile this driver as a module, choose M here: the module will be
-+	  called adl_pci7x3x.
-+
- config COMEDI_ADL_PCI7230
- 	tristate "ADLink PCI-7230 digital io board support"
- 	---help---
-diff --git a/drivers/staging/comedi/drivers/Makefile b/drivers/staging/comedi/drivers/Makefile
-index 57b19e4..d13d5a9 100644
---- a/drivers/staging/comedi/drivers/Makefile
-+++ b/drivers/staging/comedi/drivers/Makefile
-@@ -69,6 +69,7 @@ obj-$(CONFIG_COMEDI_ADDI_APCI_3120)	+= addi_apci_3120.o
- obj-$(CONFIG_COMEDI_ADDI_APCI_3501)	+= addi_apci_3501.o
- obj-$(CONFIG_COMEDI_ADDI_APCI_3XXX)	+= addi_apci_3xxx.o
- obj-$(CONFIG_COMEDI_ADL_PCI6208)	+= adl_pci6208.o
-+obj-$(CONFIG_COMEDI_ADL_PCI7X3X)	+= adl_pci7x3x.o
- obj-$(CONFIG_COMEDI_ADL_PCI7230)	+= adl_pci7230.o
- obj-$(CONFIG_COMEDI_ADL_PCI7296)	+= adl_pci7296.o
- obj-$(CONFIG_COMEDI_ADL_PCI7432)	+= adl_pci7432.o
-diff --git a/drivers/staging/comedi/drivers/adl_pci7x3x.c b/drivers/staging/comedi/drivers/adl_pci7x3x.c
-new file mode 100644
-index 0000000..990670a
---- /dev/null
-+++ b/drivers/staging/comedi/drivers/adl_pci7x3x.c
-@@ -0,0 +1,342 @@
-+/*
-+ * COMEDI driver for the ADLINK PCI-723x/743x series boards.
-+ * Copyright (C) 2012 H Hartley Sweeten <hsweeten@visionengravers.com>
-+ *
-+ * Based on the adl_pci7230 driver written by:
-+ *	David Fernandez <dfcastelao@gmail.com>
-+ * and the adl_pci7432 driver written by:
-+ *	Michel Lachaine <mike@mikelachaine.ca>
-+ *
-+ * COMEDI - Linux Control and Measurement Device Interface
-+ * Copyright (C) 2000 David A. Schleef <ds@schleef.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+/*
-+Driver: adl_pci7x3x
-+Description: 32/64-Channel Isolated Digital I/O Boards
-+Devices: (ADLink) PCI-7230 [adl_pci7230] - 16 input / 16 output
-+	 (ADLink) PCI-7233 [adl_pci7233] - 32 input
-+	 (ADLink) PCI-7234 [adl_pci7234] - 32 output
-+	 (ADLink) PCI-7432 [adl_pci7432] - 32 input / 32 output
-+	 (ADLink) PCI-7433 [adl_pci7433] - 64 input
-+	 (ADLink) PCI-7434 [adl_pci7434] - 64 output
-+Author: H Hartley Sweeten <hsweeten@visionengravers.com>
-+Updated: Thu, 02 Aug 2012 14:27:46 -0700
-+Status: untested
-+
-+This driver only attaches using the PCI PnP auto config support
-+in the comedi core. The module parameter 'comedi_autoconfig'
-+must be 1 (default) to enable this feature. The COMEDI_DEVCONFIG
-+ioctl, used by the comedi_config utility, is not supported by
-+this driver.
-+
-+The PCI-7230, PCI-7432 and PCI-7433 boards also support external
-+interrupt signals on digital input channels 0 and 1. The PCI-7233
-+has dual-interrupt sources for change-of-state (COS) on any 16
-+digital input channels of LSB and for COS on any 16 digital input
-+lines of MSB. Interrupts are not currently supported by this
-+driver.
-+
-+Configuration Options: not applicable
-+*/
-+
-+#include "../comedidev.h"
-+
-+/*
-+ * PCI Device ID's supported by this driver
-+ */
-+#define PCI_DEVICE_ID_PCI7230	0x7230
-+#define PCI_DEVICE_ID_PCI7233	0x7233
-+#define PCI_DEVICE_ID_PCI7234	0x7234
-+#define PCI_DEVICE_ID_PCI7432	0x7432
-+#define PCI_DEVICE_ID_PCI7433	0x7433
-+#define PCI_DEVICE_ID_PCI7434	0x7434
-+
-+/*
-+ * Register I/O map (32-bit access only)
-+ */
-+#define PCI7X3X_DIO_REG		0x00
-+#define PCI743X_DIO_REG		0x04
-+
-+struct adl_pci7x3x_boardinfo {
-+	const char *name;
-+	unsigned short device;
-+	int nsubdevs;
-+	int di_nchan;
-+	int do_nchan;
-+};
-+
-+static const struct adl_pci7x3x_boardinfo adl_pci7x3x_boards[] = {
-+	{
-+		.name		= "adl_pci7230",
-+		.device		= PCI_DEVICE_ID_PCI7230,
-+		.nsubdevs	= 2,
-+		.di_nchan	= 16,
-+		.do_nchan	= 16,
-+	}, {
-+		.name		= "adl_pci7233",
-+		.device		= PCI_DEVICE_ID_PCI7233,
-+		.nsubdevs	= 1,
-+		.di_nchan	= 32,
-+	}, {
-+		.name		= "adl_pci7234",
-+		.device		= PCI_DEVICE_ID_PCI7234,
-+		.nsubdevs	= 1,
-+		.do_nchan	= 32,
-+	}, {
-+		.name		= "adl_pci7432",
-+		.device		= PCI_DEVICE_ID_PCI7432,
-+		.nsubdevs	= 2,
-+		.di_nchan	= 32,
-+		.do_nchan	= 32,
-+	}, {
-+		.name		= "adl_pci7433",
-+		.device		= PCI_DEVICE_ID_PCI7433,
-+		.nsubdevs	= 2,
-+		.di_nchan	= 64,
-+	}, {
-+		.name		= "adl_pci7434",
-+		.device		= PCI_DEVICE_ID_PCI7434,
-+		.nsubdevs	= 2,
-+		.do_nchan	= 64,
-+	}
-+};
-+
-+static int adl_pci7x3x_do_insn_bits(struct comedi_device *dev,
-+				    struct comedi_subdevice *s,
-+				    struct comedi_insn *insn,
-+				    unsigned int *data)
-+{
-+	unsigned int reg = (unsigned int)s->private;
-+	unsigned int mask = data[0];
-+	unsigned int bits = data[1];
-+
-+	if (mask) {
-+		s->state &= ~mask;
-+		s->state |= (bits & mask);
-+
-+		outl(s->state, dev->iobase + reg);
-+	}
-+
-+	/*
-+	 * NOTE: The output register is not readable.
-+	 * This returned state will not be correct until all the
-+	 * outputs have been updated.
-+	 */
-+	data[1] = s->state;
-+
-+	return insn->n;
-+}
-+
-+static int adl_pci7x3x_di_insn_bits(struct comedi_device *dev,
-+				    struct comedi_subdevice *s,
-+				    struct comedi_insn *insn,
-+				    unsigned int *data)
-+{
-+	unsigned int reg = (unsigned int)s->private;
-+
-+	data[1] = inl(dev->iobase + reg);
-+
-+	return insn->n;
-+}
-+
-+static const void *adl_pci7x3x_find_boardinfo(struct comedi_device *dev,
-+					      struct pci_dev *pcidev)
-+{
-+	const struct adl_pci7x3x_boardinfo *board;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(adl_pci7x3x_boards); i++) {
-+		board = &adl_pci7x3x_boards[i];
-+		if (pcidev->device == board->device)
-+			return board;
-+	}
-+	return NULL;
-+}
-+
-+static int adl_pci7x3x_attach_pci(struct comedi_device *dev,
-+				  struct pci_dev *pcidev)
-+{
-+	const struct adl_pci7x3x_boardinfo *board;
-+	struct comedi_subdevice *s;
-+	int subdev;
-+	int nchan;
-+	int ret;
-+
-+	comedi_set_hw_dev(dev, &pcidev->dev);
-+
-+	board = adl_pci7x3x_find_boardinfo(dev, pcidev);
-+	if (!board)
-+		return -ENODEV;
-+	dev->board_ptr = board;
-+	dev->board_name = board->name;
-+
-+	ret = comedi_pci_enable(pcidev, dev->board_name);
-+	if (ret)
-+		return ret;
-+	dev->iobase = pci_resource_start(pcidev, 2);
-+
-+	/*
-+	 * One or two subdevices are setup by this driver depending on
-+	 * the number of digital inputs and/or outputs provided by the
-+	 * board. Each subdevice has a maximum of 32 channels.
-+	 *
-+	 *	PCI-7230 - 2 subdevices: 0 - 16 input, 1 - 16 output
-+	 *	PCI-7233 - 1 subdevice: 0 - 32 input
-+	 *	PCI-7234 - 1 subdevice: 0 - 32 output
-+	 *	PCI-7432 - 2 subdevices: 0 - 32 input, 1 - 32 output
-+	 *	PCI-7433 - 2 subdevices: 0 - 32 input, 1 - 32 input
-+	 *	PCI-7434 - 2 subdevices: 0 - 32 output, 1 - 32 output
-+	 */
-+	ret = comedi_alloc_subdevices(dev, board->nsubdevs);
-+	if (ret)
-+		return ret;
-+
-+	subdev = 0;
-+
-+	if (board->di_nchan) {
-+		nchan = min(board->di_nchan, 32);
-+
-+		s = dev->subdevices + subdev;
-+		/* Isolated digital inputs 0 to 15/31 */
-+		s->type		= COMEDI_SUBD_DI;
-+		s->subdev_flags	= SDF_READABLE;
-+		s->n_chan	= nchan;
-+		s->maxdata	= 1;
-+		s->insn_bits	= adl_pci7x3x_di_insn_bits;
-+		s->range_table	= &range_digital;
-+
-+		s->private	= (void *)PCI7X3X_DIO_REG;
-+
-+		subdev++;
-+
-+		nchan = board->di_nchan - nchan;
-+		if (nchan) {
-+			s = dev->subdevices + subdev;
-+			/* Isolated digital inputs 32 to 63 */
-+			s->type		= COMEDI_SUBD_DI;
-+			s->subdev_flags	= SDF_READABLE;
-+			s->n_chan	= nchan;
-+			s->maxdata	= 1;
-+			s->insn_bits	= adl_pci7x3x_di_insn_bits;
-+			s->range_table	= &range_digital;
-+
-+			s->private	= (void *)PCI743X_DIO_REG;
-+
-+			subdev++;
-+		}
-+	}
-+
-+	if (board->do_nchan) {
-+		nchan = min(board->do_nchan, 32);
-+
-+		s = dev->subdevices + subdev;
-+		/* Isolated digital outputs 0 to 15/31 */
-+		s->type		= COMEDI_SUBD_DO;
-+		s->subdev_flags	= SDF_WRITABLE;
-+		s->n_chan	= nchan;
-+		s->maxdata	= 1;
-+		s->insn_bits	= adl_pci7x3x_do_insn_bits;
-+		s->range_table	= &range_digital;
-+
-+		s->private	= (void *)PCI7X3X_DIO_REG;
-+
-+		subdev++;
-+
-+		nchan = board->do_nchan - nchan;
-+		if (nchan) {
-+			s = dev->subdevices + subdev;
-+			/* Isolated digital outputs 32 to 63 */
-+			s->type		= COMEDI_SUBD_DO;
-+			s->subdev_flags	= SDF_WRITABLE;
-+			s->n_chan	= nchan;
-+			s->maxdata	= 1;
-+			s->insn_bits	= adl_pci7x3x_do_insn_bits;
-+			s->range_table	= &range_digital;
-+
-+			s->private	= (void *)PCI743X_DIO_REG;
-+
-+			subdev++;
-+		}
-+	}
-+
-+	dev_info(dev->class_dev, "%s attached (%d inputs/%d outputs)\n",
-+		dev->board_name, board->di_nchan, board->do_nchan);
-+
-+	return 0;
-+}
-+
-+static int adl_pci7x3x_attach(struct comedi_device *dev,
-+			      struct comedi_devconfig *it)
-+{
-+	dev_warn(dev->class_dev,
-+		"This driver does not support attach using comedi_config\n");
-+
-+	return -ENOSYS;
-+}
-+
-+static void adl_pci7x3x_detach(struct comedi_device *dev)
-+{
-+	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
-+
-+	if (pcidev) {
-+		if (dev->iobase)
-+			comedi_pci_disable(pcidev);
-+	}
-+}
-+
-+static struct comedi_driver adl_pci7x3x_driver = {
-+	.driver_name	= "adl_pci7x3x",
-+	.module		= THIS_MODULE,
-+	.attach		= adl_pci7x3x_attach,
-+	.attach_pci	= adl_pci7x3x_attach_pci,
-+	.detach		= adl_pci7x3x_detach,
-+};
-+
-+static int __devinit adl_pci7x3x_pci_probe(struct pci_dev *dev,
-+					   const struct pci_device_id *ent)
-+{
-+	return comedi_pci_auto_config(dev, &adl_pci7x3x_driver);
-+}
-+
-+static void __devexit adl_pci7x3x_pci_remove(struct pci_dev *dev)
-+{
-+	comedi_pci_auto_unconfig(dev);
-+}
-+
-+static DEFINE_PCI_DEVICE_TABLE(adl_pci7x3x_pci_table) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7230) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7233) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7234) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7432) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7433) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7434) },
-+	{ 0 }
-+};
-+MODULE_DEVICE_TABLE(pci, adl_pci7x3x_pci_table);
-+
-+static struct pci_driver adl_pci7x3x_pci_driver = {
-+	.name		= "adl_pci7x3x",
-+	.id_table	= adl_pci7x3x_pci_table,
-+	.probe		= adl_pci7x3x_pci_probe,
-+	.remove		= __devexit_p(adl_pci7x3x_pci_remove),
-+};
-+module_comedi_pci_driver(adl_pci7x3x_driver, adl_pci7x3x_pci_driver);
-+
-+MODULE_DESCRIPTION("ADLINK PCI-723x/743x Isolated Digital I/O boards");
-+MODULE_AUTHOR("H Hartley Sweeten <hsweeten@visionengravers.com>");
-+MODULE_LICENSE("GPL");
+diff --git a/drivers/staging/comedi/drivers/adl_pci7230.c b/drivers/staging/comedi/drivers/adl_pci7230.c
+deleted file mode 100644
+index 7df4c96..0000000
+--- a/drivers/staging/comedi/drivers/adl_pci7230.c
++++ /dev/null
+@@ -1,190 +0,0 @@
+-/*
+-    comedi/drivers/adl_pci7230.c
+-
+-    Hardware comedi driver fot PCI7230 Adlink card
+-    Copyright (C) 2010 David Fernandez <dfcastelao@gmail.com>
+-
+-    This program is free software; you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation; either version 2 of the License, or
+-    (at your option) any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    GNU General Public License for more details.
+-
+-    You should have received a copy of the GNU General Public License
+-    along with this program; if not, write to the Free Software
+-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+-
+-*/
+-/*
+-Driver: adl_pci7230
+-Description: Driver for the Adlink PCI-7230 32 ch. isolated digital io board
+-Devices: [ADLink] PCI-7230 (adl_pci7230)
+-Author: David Fernandez <dfcastelao@gmail.com>
+-Status: experimental
+-Updated: Mon, 14 Apr 2008 15:08:14 +0100
+-
+-Configuration Options:
+-  [0] - PCI bus of device (optional)
+-  [1] - PCI slot of device (optional)
+-  If bus/slot is not specified, the first supported
+-  PCI device found will be used.
+-*/
+-
+-#include "../comedidev.h"
+-#include <linux/kernel.h>
+-
+-#define PCI7230_DI      0x00
+-#define PCI7230_DO	    0x00
+-
+-#define PCI_DEVICE_ID_PCI7230 0x7230
+-
+-static int adl_pci7230_do_insn_bits(struct comedi_device *dev,
+-	struct comedi_subdevice *s,
+-	struct comedi_insn *insn,
+-	unsigned int *data)
+-{
+-	if (data[0]) {
+-		s->state &= ~data[0];
+-		s->state |= (data[0] & data[1]);
+-
+-		outl((s->state  << 16) & 0xffffffff, dev->iobase + PCI7230_DO);
+-	}
+-
+-	return insn->n;
+-}
+-
+-static int adl_pci7230_di_insn_bits(struct comedi_device *dev,
+-	struct comedi_subdevice *s,
+-	struct comedi_insn *insn,
+-	unsigned int *data)
+-{
+-	data[1] = inl(dev->iobase + PCI7230_DI) & 0xffffffff;
+-
+-	return insn->n;
+-}
+-
+-static struct pci_dev *adl_pci7230_find_pci(struct comedi_device *dev,
+-	struct comedi_devconfig *it)
+-{
+-	struct pci_dev *pcidev = NULL;
+-	int bus = it->options[0];
+-	int slot = it->options[1];
+-
+-	for_each_pci_dev(pcidev) {
+-		if (pcidev->vendor != PCI_VENDOR_ID_ADLINK ||
+-		    pcidev->device != PCI_DEVICE_ID_PCI7230)
+-			continue;
+-		if (bus || slot) {
+-			/* requested particular bus/slot */
+-			if (pcidev->bus->number != bus ||
+-			    PCI_SLOT(pcidev->devfn) != slot)
+-				continue;
+-		}
+-		return pcidev;
+-	}
+-	printk(KERN_ERR "comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
+-		dev->minor, bus, slot);
+-	return NULL;
+-}
+-
+-static int adl_pci7230_attach(struct comedi_device *dev,
+-	struct comedi_devconfig *it)
+-{
+-	struct comedi_subdevice *s;
+-	struct pci_dev *pcidev;
+-	int ret;
+-
+-	printk(KERN_INFO "comedi%d: adl_pci7230\n", dev->minor);
+-
+-	dev->board_name = "pci7230";
+-
+-	ret = comedi_alloc_subdevices(dev, 2);
+-	if (ret)
+-		return ret;
+-
+-	pcidev = adl_pci7230_find_pci(dev, it);
+-	if (!pcidev)
+-		return -EIO;
+-	comedi_set_hw_dev(dev, &pcidev->dev);
+-
+-	if (comedi_pci_enable(pcidev, "adl_pci7230") < 0) {
+-		printk(KERN_ERR "comedi%d: Failed to enable PCI device and request regions\n",
+-			dev->minor);
+-		return -EIO;
+-	}
+-	dev->iobase = pci_resource_start(pcidev, 2);
+-	printk(KERN_DEBUG "comedi: base addr %4lx\n", dev->iobase);
+-
+-	s = dev->subdevices + 0;
+-	/* Isolated do */
+-	s->type = COMEDI_SUBD_DO;
+-	s->subdev_flags = SDF_WRITABLE | SDF_GROUND | SDF_COMMON;
+-	s->n_chan = 16;
+-	s->maxdata = 1;
+-	s->range_table = &range_digital;
+-	s->insn_bits = adl_pci7230_do_insn_bits;
+-
+-	s = dev->subdevices + 1;
+-	/* Isolated di */
+-	s->type = COMEDI_SUBD_DI;
+-	s->subdev_flags = SDF_READABLE | SDF_GROUND | SDF_COMMON;
+-	s->n_chan = 16;
+-	s->maxdata = 1;
+-	s->range_table = &range_digital;
+-	s->insn_bits = adl_pci7230_di_insn_bits;
+-
+-	printk(KERN_DEBUG "comedi: attached\n");
+-
+-	return 1;
+-}
+-
+-static void adl_pci7230_detach(struct comedi_device *dev)
+-{
+-	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
+-
+-	if (pcidev) {
+-		if (dev->iobase)
+-			comedi_pci_disable(pcidev);
+-		pci_dev_put(pcidev);
+-	}
+-}
+-
+-static struct comedi_driver adl_pci7230_driver = {
+-	.driver_name	= "adl_pci7230",
+-	.module		= THIS_MODULE,
+-	.attach		= adl_pci7230_attach,
+-	.detach		= adl_pci7230_detach,
+-};
+-
+-static int __devinit adl_pci7230_pci_probe(struct pci_dev *dev,
+-					   const struct pci_device_id *ent)
+-{
+-	return comedi_pci_auto_config(dev, &adl_pci7230_driver);
+-}
+-
+-static void __devexit adl_pci7230_pci_remove(struct pci_dev *dev)
+-{
+-	comedi_pci_auto_unconfig(dev);
+-}
+-
+-static DEFINE_PCI_DEVICE_TABLE(adl_pci7230_pci_table) = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7230) },
+-	{ 0 }
+-};
+-MODULE_DEVICE_TABLE(pci, adl_pci7230_pci_table);
+-
+-static struct pci_driver adl_pci7230_pci_driver = {
+-	.name		= "adl_pci7230",
+-	.id_table	= adl_pci7230_pci_table,
+-	.probe		= adl_pci7230_pci_probe,
+-	.remove		= __devexit_p(adl_pci7230_pci_remove),
+-};
+-module_comedi_pci_driver(adl_pci7230_driver, adl_pci7230_pci_driver);
+-
+-MODULE_AUTHOR("Comedi http://www.comedi.org");
+-MODULE_DESCRIPTION("Comedi low-level driver");
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/staging/comedi/drivers/adl_pci7432.c b/drivers/staging/comedi/drivers/adl_pci7432.c
+deleted file mode 100644
+index 6b8d940..0000000
+--- a/drivers/staging/comedi/drivers/adl_pci7432.c
++++ /dev/null
+@@ -1,200 +0,0 @@
+-/*
+-    comedi/drivers/adl_pci7432.c
+-
+-    Hardware comedi driver fot PCI7432 Adlink card
+-    Copyright (C) 2004 Michel Lachine <mike@mikelachaine.ca>
+-
+-    This program is free software; you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation; either version 2 of the License, or
+-    (at your option) any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    GNU General Public License for more details.
+-
+-    You should have received a copy of the GNU General Public License
+-    along with this program; if not, write to the Free Software
+-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+-
+-*/
+-/*
+-Driver: adl_pci7432
+-Description: Driver for the Adlink PCI-7432 64 ch. isolated digital io board
+-Devices: [ADLink] PCI-7432 (adl_pci7432)
+-Author: Michel Lachaine <mike@mikelachaine.ca>
+-Status: experimental
+-Updated: Mon, 14 Apr 2008 15:08:14 +0100
+-
+-Configuration Options:
+-  [0] - PCI bus of device (optional)
+-  [1] - PCI slot of device (optional)
+-  If bus/slot is not specified, the first supported
+-  PCI device found will be used.
+-*/
+-
+-#include "../comedidev.h"
+-#include <linux/kernel.h>
+-
+-#define PCI7432_DI      0x00
+-#define PCI7432_DO	    0x00
+-
+-#define PCI_DEVICE_ID_PCI7432 0x7432
+-
+-static int adl_pci7432_do_insn_bits(struct comedi_device *dev,
+-				    struct comedi_subdevice *s,
+-				    struct comedi_insn *insn,
+-				    unsigned int *data)
+-{
+-	printk(KERN_DEBUG "comedi: pci7432_do_insn_bits called\n");
+-	printk(KERN_DEBUG "comedi: data0: %8x data1: %8x\n", data[0], data[1]);
+-
+-	if (data[0]) {
+-		s->state &= ~data[0];
+-		s->state |= (data[0] & data[1]);
+-
+-		printk(KERN_DEBUG "comedi: out: %8x on iobase %4lx\n", s->state,
+-		       dev->iobase + PCI7432_DO);
+-		outl(s->state & 0xffffffff, dev->iobase + PCI7432_DO);
+-	}
+-	return insn->n;
+-}
+-
+-static int adl_pci7432_di_insn_bits(struct comedi_device *dev,
+-				    struct comedi_subdevice *s,
+-				    struct comedi_insn *insn,
+-				    unsigned int *data)
+-{
+-	printk(KERN_DEBUG "comedi: pci7432_di_insn_bits called\n");
+-	printk(KERN_DEBUG "comedi: data0: %8x data1: %8x\n", data[0], data[1]);
+-
+-	data[1] = inl(dev->iobase + PCI7432_DI) & 0xffffffff;
+-	printk(KERN_DEBUG "comedi: data1 %8x\n", data[1]);
+-
+-	return insn->n;
+-}
+-
+-static struct pci_dev *adl_pci7432_find_pci(struct comedi_device *dev,
+-					    struct comedi_devconfig *it)
+-{
+-	struct pci_dev *pcidev = NULL;
+-	int bus = it->options[0];
+-	int slot = it->options[1];
+-
+-	for_each_pci_dev(pcidev) {
+-		if (pcidev->vendor != PCI_VENDOR_ID_ADLINK ||
+-		    pcidev->device != PCI_DEVICE_ID_PCI7432)
+-			continue;
+-		if (bus || slot) {
+-			/* requested particular bus/slot */
+-			if (pcidev->bus->number != bus ||
+-			    PCI_SLOT(pcidev->devfn) != slot)
+-				continue;
+-		}
+-		return pcidev;
+-	}
+-	printk(KERN_ERR
+-		"comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
+-	       dev->minor, bus, slot);
+-	return NULL;
+-}
+-
+-static int adl_pci7432_attach(struct comedi_device *dev,
+-			      struct comedi_devconfig *it)
+-{
+-	struct pci_dev *pcidev;
+-	struct comedi_subdevice *s;
+-	int ret;
+-
+-	printk(KERN_INFO "comedi%d: attach adl_pci7432\n", dev->minor);
+-
+-	dev->board_name = "pci7432";
+-
+-	ret = comedi_alloc_subdevices(dev, 2);
+-	if (ret)
+-		return ret;
+-
+-	pcidev = adl_pci7432_find_pci(dev, it);
+-	if (!pcidev)
+-		return -EIO;
+-	comedi_set_hw_dev(dev, &pcidev->dev);
+-
+-	if (comedi_pci_enable(pcidev, "adl_pci7432") < 0) {
+-		printk(KERN_ERR "comedi%d: Failed to enable PCI device and request regions\n",
+-			dev->minor);
+-		return -EIO;
+-	}
+-	dev->iobase = pci_resource_start(pcidev, 2);
+-	printk(KERN_INFO "comedi: base addr %4lx\n", dev->iobase);
+-
+-	s = dev->subdevices + 0;
+-	s->type = COMEDI_SUBD_DI;
+-	s->subdev_flags = SDF_READABLE | SDF_GROUND | SDF_COMMON;
+-	s->n_chan = 32;
+-	s->maxdata = 1;
+-	s->len_chanlist = 32;
+-	s->io_bits = 0x00000000;
+-	s->range_table = &range_digital;
+-	s->insn_bits = adl_pci7432_di_insn_bits;
+-
+-	s = dev->subdevices + 1;
+-	s->type = COMEDI_SUBD_DO;
+-	s->subdev_flags = SDF_WRITABLE | SDF_GROUND | SDF_COMMON;
+-	s->n_chan = 32;
+-	s->maxdata = 1;
+-	s->len_chanlist = 32;
+-	s->io_bits = 0xffffffff;
+-	s->range_table = &range_digital;
+-	s->insn_bits = adl_pci7432_do_insn_bits;
+-
+-	printk(KERN_DEBUG "comedi%d: adl_pci7432 attached\n", dev->minor);
+-	return 0;
+-}
+-
+-static void adl_pci7432_detach(struct comedi_device *dev)
+-{
+-	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
+-
+-	if (pcidev) {
+-		if (dev->iobase)
+-			comedi_pci_disable(pcidev);
+-		pci_dev_put(pcidev);
+-	}
+-}
+-
+-static struct comedi_driver adl_pci7432_driver = {
+-	.driver_name	= "adl_pci7432",
+-	.module		= THIS_MODULE,
+-	.attach		= adl_pci7432_attach,
+-	.detach		= adl_pci7432_detach,
+-};
+-
+-static int __devinit adl_pci7432_pci_probe(struct pci_dev *dev,
+-					   const struct pci_device_id *ent)
+-{
+-	return comedi_pci_auto_config(dev, &adl_pci7432_driver);
+-}
+-
+-static void __devexit adl_pci7432_pci_remove(struct pci_dev *dev)
+-{
+-	comedi_pci_auto_unconfig(dev);
+-}
+-
+-static DEFINE_PCI_DEVICE_TABLE(adl_pci7432_pci_table) = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7432) },
+-	{ 0 }
+-};
+-MODULE_DEVICE_TABLE(pci, adl_pci7432_pci_table);
+-
+-static struct pci_driver adl_pci7432_pci_driver = {
+-	.name		= "adl_pci7432",
+-	.id_table	= adl_pci7432_pci_table,
+-	.probe		= adl_pci7432_pci_probe,
+-	.remove		= __devexit_p(adl_pci7432_pci_remove),
+-};
+-module_comedi_pci_driver(adl_pci7432_driver, adl_pci7432_pci_driver);
+-
+-MODULE_AUTHOR("Comedi http://www.comedi.org");
+-MODULE_DESCRIPTION("Comedi low-level driver");
+-MODULE_LICENSE("GPL");
 -- 
 1.7.11
 
