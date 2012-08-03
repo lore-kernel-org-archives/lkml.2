@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab2HCWIF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 18:08:05 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:32885 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753110Ab2HCWIA (ORCPT
+	id S1753887Ab2HCWI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 18:08:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65003 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab2HCWIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 18:08:00 -0400
+	Fri, 3 Aug 2012 18:08:14 -0400
+Message-ID: <501C4BCA.1080804@gmail.com>
+Date: Fri, 03 Aug 2012 16:08:10 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120803215954.GA4489@kroah.com>
-References: <1344013004-32211-1-git-send-email-vikram.pandita@ti.com>
- <m2628z6euk.fsf@firstfloor.org> <CAFm5wm3ScpUU5wa=ei3TY0zjU4kVbOgJMmE5_QDpwy7B-TJa+A@mail.gmail.com>
- <20120803200822.GC731@harshnoise.musicnaut.iki.fi> <CAFm5wm2sf9LnZNj9_BDYTF9G7XH32fOL3x5n=kZ-1ih0Cek2DQ@mail.gmail.com>
- <20120803215954.GA4489@kroah.com>
-From: "Pandita, Vikram" <vikram.pandita@ti.com>
-Date: Fri, 3 Aug 2012 15:07:39 -0700
-Message-ID: <CAFm5wm1_-JP0xjDdBvAcqqpZPQvxJPsmNtUOFQyaNw=6H_JJcg@mail.gmail.com>
-Subject: Re: [PATCH v3] printk: add option to print cpu id
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Andi Kleen <andi@firstfloor.org>,
-        kay@vrfy.org, linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: oops in pci_acs_path_enabled
+References: <501C0CDF.7010804@gmail.com> <1344025273.8003.40.camel@ul30vt>  <501C3EB7.4000900@gmail.com> <1344030733.8003.43.camel@ul30vt>
+In-Reply-To: <1344030733.8003.43.camel@ul30vt>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 2:59 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Aug 03, 2012 at 02:24:20PM -0700, Pandita, Vikram wrote:
->> Aaro
->>
->> On Fri, Aug 3, 2012 at 1:08 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
->> > Hi,
->> >
->> > On Fri, Aug 03, 2012 at 11:25:37AM -0700, Pandita, Vikram wrote:
->> >> > And really: Wasting 1/3 of the 80 character line is too much.
->> >>
->> >> You _WASTE_ 4 chars only if you are interested in this info by
->> >> enabling: CONFIG_PRINTK_CPUID
->> >
->> > I guess you waste 4 + 3 chars? You could optimize the length by checking
->> > CONFIG_NR_CPUS?
->>
->> Good point.
->> Looks there is a variable 'nr_cpu_ids' that could be used as well.
->>
->> If there is general consensus that the patch can help the arm
->> community, and others in general,
->> this optimization should be easy to implement - saving few chars space
->> in each line of console output.
->>
->> For now i will stick to this v3 version of path, unless you think otherwise.
->
-> I don't think is is something that anyone needs, and if you do, as
-> pointed out, you can use the trace function to make it happen.
->
+On 8/3/12 3:52 PM, Alex Williamson wrote:
+> Is this the chunk that's causing the oops?
 
-This was something that got used internally and helped at times.
-This attempt to give back to community, but i understand the rationale to go
-with larger consensus.
+Yes. And taking it out fixes passthrough as well.
 
-At least the patch is out there in public for anyone to make use of.
+David
 
-> Adding features are not "free", someone has to maintain them and all of
-> the other work involved with it.  So don't just think that because it is
-> hidden behind a config option, that it doesn't affect people.
-
-At least the v3 patch is a complete working implementation wrt
-kernel/printk.c file
-as it exists on linus tree master today.
-
-Understand long term this does have maintenance overhead just like
-printk_time does.
 
 >
-> greg k-h
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> index 7469b53..27d8c97 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -4133,6 +4133,7 @@ static int intel_iommu_add_device(struct device *dev)
+>                                            PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
+>                                            0)));
+>
+> +#if 0
+>          while (!pci_is_root_bus(dma_pdev->bus)) {
+>                  if (pci_acs_path_enabled(dma_pdev->bus->self,
+>                                           NULL, REQ_ACS_FLAGS))
+> @@ -4140,6 +4141,7 @@ static int intel_iommu_add_device(struct device *dev)
+>
+>                  swap_pci_ref(&dma_pdev, pci_dev_get(dma_pdev->bus->self));
+>          }
+> +#endif
+>
+>          group = iommu_group_get(&dma_pdev->dev);
+>          pci_dev_put(dma_pdev);
+>
+>
+
