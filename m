@@ -1,184 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2HCHna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 03:43:30 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:42002 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991Ab2HCHn1 (ORCPT
+	id S1752798Ab2HCHoD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 03:44:03 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56673 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab2HCHn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 03:43:27 -0400
-Message-ID: <501B80FC.2010304@linux.vnet.ibm.com>
-Date: Fri, 03 Aug 2012 15:42:52 +0800
+	Fri, 3 Aug 2012 03:43:59 -0400
+Message-ID: <501B8137.1090002@linux.vnet.ibm.com>
+Date: Fri, 03 Aug 2012 15:43:51 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 09/10] KVM: do not release the error page
+Subject: [PATCH v2 10/10] KVM: let the error pfn not depend on error code
 References: <501B7F94.7090308@linux.vnet.ibm.com>
 In-Reply-To: <501B7F94.7090308@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12080307-2000-0000-0000-00000895C03C
+x-cbid: 12080307-8878-0000-0000-0000037B8D4C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit a2766325cf9f9, the error page is replaced by the
-error code, it need not be released anymore
+Currently, we use the error code as error pfn to indicat the error
+condition, it is not straightforward and it will not work on PAE
+32-bit cpu with huge memory, since the valid physical address
+can be at most 52 bits
 
-[ The patch has been compiling tested for powerpc ]
+For the normal pfn, the highest 12 bits should be zero, so we can
+mask these bits to indicate the error.
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/powerpc/kvm/44x_tlb.c   |    1 -
- arch/powerpc/kvm/book3s_pr.c |    4 +---
- arch/x86/kvm/svm.c           |    1 -
- arch/x86/kvm/vmx.c           |    5 ++---
- arch/x86/kvm/x86.c           |    9 +++------
- include/linux/kvm_host.h     |    2 +-
- virt/kvm/async_pf.c          |    4 ++--
- virt/kvm/kvm_main.c          |    5 +++--
- 8 files changed, 12 insertions(+), 19 deletions(-)
+ include/linux/kvm_host.h |   24 +++++++++++++++---------
+ 1 files changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/arch/powerpc/kvm/44x_tlb.c b/arch/powerpc/kvm/44x_tlb.c
-index 33aa715..5dd3ab4 100644
---- a/arch/powerpc/kvm/44x_tlb.c
-+++ b/arch/powerpc/kvm/44x_tlb.c
-@@ -319,7 +319,6 @@ void kvmppc_mmu_map(struct kvm_vcpu *vcpu, u64 gvaddr, gpa_t gpaddr,
- 	if (is_error_page(new_page)) {
- 		printk(KERN_ERR "Couldn't get guest page for gfn %llx!\n",
- 			(unsigned long long)gfn);
--		kvm_release_page_clean(new_page);
- 		return;
- 	}
- 	hpaddr = page_to_phys(new_page);
-diff --git a/arch/powerpc/kvm/book3s_pr.c b/arch/powerpc/kvm/book3s_pr.c
-index a1baec3..05c28f5 100644
---- a/arch/powerpc/kvm/book3s_pr.c
-+++ b/arch/powerpc/kvm/book3s_pr.c
-@@ -242,10 +242,8 @@ static void kvmppc_patch_dcbz(struct kvm_vcpu *vcpu, struct kvmppc_pte *pte)
- 	int i;
-
- 	hpage = gfn_to_page(vcpu->kvm, pte->raddr >> PAGE_SHIFT);
--	if (is_error_page(hpage)) {
--		kvm_release_page_clean(hpage);
-+	if (is_error_page(hpage))
- 		return;
--	}
-
- 	hpage_offset = pte->raddr & ~PAGE_MASK;
- 	hpage_offset &= ~0xFFFULL;
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 687d0c3..31be4a5 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -2105,7 +2105,6 @@ static void *nested_svm_map(struct vcpu_svm *svm, u64 gpa, struct page **_page)
- 	return kmap(page);
-
- error:
--	kvm_release_page_clean(page);
- 	kvm_inject_gp(&svm->vcpu, 0);
-
- 	return NULL;
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 2300e53..4b6e809 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -596,10 +596,9 @@ static inline struct vmcs12 *get_vmcs12(struct kvm_vcpu *vcpu)
- static struct page *nested_get_page(struct kvm_vcpu *vcpu, gpa_t addr)
- {
- 	struct page *page = gfn_to_page(vcpu->kvm, addr >> PAGE_SHIFT);
--	if (is_error_page(page)) {
--		kvm_release_page_clean(page);
-+	if (is_error_page(page))
- 		return NULL;
--	}
-+
- 	return page;
- }
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index b6379e5..3c94d80 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1635,10 +1635,9 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 		vcpu->arch.time_page =
- 				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
-
--		if (is_error_page(vcpu->arch.time_page)) {
--			kvm_release_page_clean(vcpu->arch.time_page);
-+		if (is_error_page(vcpu->arch.time_page))
- 			vcpu->arch.time_page = NULL;
--		}
-+
- 		break;
- 	}
- 	case MSR_KVM_ASYNC_PF_EN:
-@@ -3941,10 +3940,8 @@ static int emulator_cmpxchg_emulated(struct x86_emulate_ctxt *ctxt,
- 		goto emul_write;
-
- 	page = gfn_to_page(vcpu->kvm, gpa >> PAGE_SHIFT);
--	if (is_error_page(page)) {
--		kvm_release_page_clean(page);
-+	if (is_error_page(page))
- 		goto emul_write;
--	}
-
- 	kaddr = kmap_atomic(page);
- 	kaddr += offset_in_page(gpa);
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 0aebe7a..a8989fc 100644
+index a8989fc..2aaff6e 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
-@@ -458,7 +458,7 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
- pfn_t gfn_to_pfn_prot(struct kvm *kvm, gfn_t gfn, bool write_fault,
- 		      bool *writable);
- pfn_t gfn_to_pfn_memslot(struct kvm_memory_slot *slot, gfn_t gfn);
--void kvm_release_pfn_dirty(pfn_t);
-+void kvm_release_pfn_dirty(pfn_t pfn);
- void kvm_release_pfn_clean(pfn_t pfn);
- void kvm_set_pfn_dirty(pfn_t pfn);
- void kvm_set_pfn_accessed(pfn_t pfn);
-diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-index 56f5533..ea475cd 100644
---- a/virt/kvm/async_pf.c
-+++ b/virt/kvm/async_pf.c
-@@ -111,7 +111,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
- 			list_entry(vcpu->async_pf.done.next,
- 				   typeof(*work), link);
- 		list_del(&work->link);
--		if (work->page)
-+		if (!is_error_page(work->page))
- 			kvm_release_page_clean(work->page);
- 		kmem_cache_free(async_pf_cache, work);
- 	}
-@@ -138,7 +138,7 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+@@ -49,28 +49,34 @@
+ #define KVM_MAX_MMIO_FRAGMENTS \
+ 	(KVM_MMIO_SIZE / KVM_USER_MMIO_SIZE + KVM_EXTRA_MMIO_FRAGMENTS)
 
- 		list_del(&work->queue);
- 		vcpu->async_pf.queued--;
--		if (work->page)
-+		if (!is_error_page(work->page))
- 			kvm_release_page_clean(work->page);
- 		kmem_cache_free(async_pf_cache, work);
- 	}
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index bd175f7..798ba5a 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1195,8 +1195,9 @@ EXPORT_SYMBOL_GPL(gfn_to_page);
-
- void kvm_release_page_clean(struct page *page)
- {
--	if (!is_error_page(page))
--		kvm_release_pfn_clean(page_to_pfn(page));
-+	WARN_ON(is_error_page(page));
+-#define KVM_PFN_ERR_FAULT	(-EFAULT)
+-#define KVM_PFN_ERR_HWPOISON	(-EHWPOISON)
+-#define KVM_PFN_ERR_BAD		(-ENOENT)
++/*
++ * For the normal pfn, the highest 12 bits should be zero,
++ * so we can mask these bits to indicate the error.
++ */
++#define KVM_PFN_ERR_MASK	(0xfffULL << 52)
 +
-+	kvm_release_pfn_clean(page_to_pfn(page));
- }
- EXPORT_SYMBOL_GPL(kvm_release_page_clean);
++#define KVM_PFN_ERR_FAULT	(KVM_PFN_ERR_MASK)
++#define KVM_PFN_ERR_HWPOISON	(KVM_PFN_ERR_MASK + 1)
++#define KVM_PFN_ERR_BAD		(KVM_PFN_ERR_MASK + 2)
 
+-static inline int is_error_pfn(pfn_t pfn)
++static inline bool is_error_pfn(pfn_t pfn)
+ {
+-	return IS_ERR_VALUE(pfn);
++	return !!(pfn & KVM_PFN_ERR_MASK);
+ }
+
+-static inline int is_noslot_pfn(pfn_t pfn)
++static inline bool is_noslot_pfn(pfn_t pfn)
+ {
+-	return pfn == -ENOENT;
++	return pfn == KVM_PFN_ERR_BAD;
+ }
+
+-static inline int is_invalid_pfn(pfn_t pfn)
++static inline bool is_invalid_pfn(pfn_t pfn)
+ {
+ 	return !is_noslot_pfn(pfn) && is_error_pfn(pfn);
+ }
+
+ #define KVM_ERR_PTR_BAD_PAGE	(ERR_PTR(-ENOENT))
+
+-static inline int is_error_page(struct page *page)
++static inline bool is_error_page(struct page *page)
+ {
+ 	return IS_ERR(page);
+ }
 -- 
 1.7.7.6
 
