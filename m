@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab2HCGb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 02:31:27 -0400
+	id S1752126Ab2HCGbX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 02:31:23 -0400
 Received: from mga01.intel.com ([192.55.52.88]:48832 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751199Ab2HCGak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 02:30:40 -0400
+	id S1751375Ab2HCGal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 02:30:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="192770850"
+   d="scan'208";a="192770854"
 From: Huang Ying <ying.huang@intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Huang Ying <ying.huang@intel.com>
-Subject: [BUGFIX 1/4] PCI/PM: enable D3/D3cold by default for most devices
-Date: Fri,  3 Aug 2012 14:30:32 +0800
-Message-Id: <1343975435-25469-2-git-send-email-ying.huang@intel.com>
+Subject: [BUGFIX 2/4] PCI/PM: Keep parent bridge active when probing device
+Date: Fri,  3 Aug 2012 14:30:33 +0800
+Message-Id: <1343975435-25469-3-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1343975435-25469-1-git-send-email-ying.huang@intel.com>
 References: <1343975435-25469-1-git-send-email-ying.huang@intel.com>
@@ -26,51 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch fixes the following bug:
 
-http://marc.info/?l=linux-usb&m=134318961120825&w=2
+http://marc.info/?l=linux-pci&m=134329923124234&w=2
 
-Originally, device lower power states include D1, D2, D3.  After that,
-D3 is further divided into D3hot and D3cold.  To support both scenario
-safely, original D3 is mapped to D3cold.
+The root cause of the bug is as follow.
 
-When adding D3cold support, because worry about some device may have
-broken D3cold support, D3cold is disabled by default.  This disable D3
-on original platform too.  But some original platform may only have
-working D3, but no working D1, D2.  The root cause of the above bug is
-it too.
+If a device is not bound with the corresponding driver, the device
+runtime PM will be disabled and the device will be put into suspended
+state.  So that, the bridge/PCIe port connected to it may be put into
+suspended and low power state.  When do probing for the device later,
+because the bridge/PCIe port connected to it is in low power state,
+the IO access to device may fail.
 
-To deal with this, this patch enables D3/D3cold by default for most
-devices.  This restores the original behavior.  For some devices that
-suspected to have broken D3cold support, such as PCIe port, D3cold is
-disabled by default.
+To solve the issue, the bridge/PCIe port connected to the device is
+put into active state before probing.
 
 Reported-by: Bjorn Mork <bjorn@mork.no>
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- drivers/pci/pci.c              |    1 +
- drivers/pci/pcie/portdrv_pci.c |    5 +++++
- 2 files changed, 6 insertions(+)
+ drivers/pci/pci-driver.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1941,6 +1941,7 @@ void pci_pm_init(struct pci_dev *dev)
- 	dev->pm_cap = pm;
- 	dev->d3_delay = PCI_PM_D3_WAIT;
- 	dev->d3cold_delay = PCI_PM_D3COLD_WAIT;
-+	dev->d3cold_allowed = true;
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -280,8 +280,12 @@ static long local_pci_probe(void *_ddi)
+ {
+ 	struct drv_dev_and_id *ddi = _ddi;
+ 	struct device *dev = &ddi->dev->dev;
++	struct device *parent = dev->parent;
+ 	int rc;
  
- 	dev->d1_support = false;
- 	dev->d2_support = false;
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -200,6 +200,11 @@ static int __devinit pcie_portdrv_probe(
- 		return status;
- 
- 	pci_save_state(dev);
-+	/*
-+	 * D3cold may not work properly on some PCIe port, so disable
-+	 * it by default.
-+	 */
-+	dev->d3cold_allowed = false;
- 	if (!pci_match_id(port_runtime_pm_black_list, dev))
- 		pm_runtime_put_noidle(&dev->dev);
++	/* The parent bridge must be in active state when probing */
++	if (parent)
++		pm_runtime_get_sync(parent);
+ 	/* Unbound PCI devices are always set to disabled and suspended.
+ 	 * During probe, the device is set to enabled and active and the
+ 	 * usage count is incremented.  If the driver supports runtime PM,
+@@ -298,6 +302,8 @@ static long local_pci_probe(void *_ddi)
+ 		pm_runtime_set_suspended(dev);
+ 		pm_runtime_put_noidle(dev);
+ 	}
++	if (parent)
++		pm_runtime_put(parent);
+ 	return rc;
+ }
  
