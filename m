@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab2HCQdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:33:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64899 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753475Ab2HCQdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:33:17 -0400
-Date: Fri, 3 Aug 2012 18:29:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ptrace: fix set_task_blockstep()->update_debugctlmsr()
-	logic
-Message-ID: <20120803162954.GA19806@redhat.com>
+	id S1753945Ab2HCQhW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:37:22 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:57679 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823Ab2HCQhR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 12:37:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120803162912.GA19767@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120803180712.1e768042@endymion.delvare>
+References: <1344008145-14579-1-git-send-email-amaury.decreme@gmail.com> <20120803180712.1e768042@endymion.delvare>
+From: =?UTF-8?Q?Amaury_Decr=C3=AAme?= <amaury.decreme@gmail.com>
+Date: Fri, 3 Aug 2012 18:36:36 +0200
+Message-ID: <CAPXEm73QX7haU5p7HU+=+qo5wnivt6j+WH5bQGZ0ZK0Ek2Cuyw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] I2C: SIS964: Bus driver
+To: Jean Delvare <khali@linux-fr.org>
+Cc: ben-linux@fluff.org, w.sang@pengutronix.de, rob@landley.net,
+        jeffrey.t.kirsher@intel.com, akpm@linux-foundation.org,
+        davem@davemloft.net, gregkh@linuxfoundation.org, joe@perches.com,
+        ralf@linux-mips.org, dirk.brandewie@gmail.com,
+        jayachandranc@netlogicmicro.com, linux-i2c@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Afaics the usage of update_debugctlmsr() in step.c was always
-very wrong.
+Hi Jean,
 
-1. update_debugctlmsr() was simply unneeded. The child sleeps
-   TASK_TRACED, __switch_to_xtra(next_p => child) should notice
-   TIF_BLOCKSTEP and set/clear DEBUGCTLMSR_BTF after resume if
-   needed.
+>
+> What is the rationale for not adding support for the new chip to
+> i2c-sis630 then? That would probably be a lot easier to review.
+>
 
-2. It is wrong. The state of DEBUGCTLMSR_BTF bit in CPU register
-   should always match the state of current's TIF_BLOCKSTEP bit.
+I was afraid that adding SIS964 support to i2c-sis630 would lead
+to confusion.
 
-3. Even get_debugctlmsr() + update_debugctlmsr() itself does not
-   look right. Irq can change other bits in MSR_IA32_DEBUGCTLMSR
-   register or the caller can be preempted in between.
+I can try to submit a patch for i2c-sis630. In this case, do you think
+we should keep the 630 name or change it to something else to
+avoid misunderstanding ?
 
-However, now that uprobes uses user_enable_single_step(current)
-we can't simply remove update_debugctlmsr(). So this patch adds
-the additional "task == current" check and disables irqs to avoid
-the race with interrupts/preemption.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/step.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+>
+> This split makes little sense. Integration should come with the driver,
+> otherwise even build-testing is impossible.
+>
 
-diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
-index afa60db..636402e 100644
---- a/arch/x86/kernel/step.c
-+++ b/arch/x86/kernel/step.c
-@@ -166,12 +166,18 @@ static void set_task_blockstep(struct task_struct *task, bool on)
- 	else
- 		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
- 
-+	if (task != current)
-+		return;
-+
-+	/* ensure irq/preemption can't change debugctl in between */
-+	local_irq_disable();
- 	debugctl = get_debugctlmsr();
- 	if (on)
- 		debugctl |= DEBUGCTLMSR_BTF;
- 	else
- 		debugctl &= ~DEBUGCTLMSR_BTF;
- 	update_debugctlmsr(debugctl);
-+	local_irq_enable();
- }
- 
- /*
--- 
-1.5.5.1
+Sorry for that. As the patch V1 was rather big, I was hesitating for
+the same reason but posted it split. I'll "unsplit" for the V3 (unless
+i2c-sis630 patch).
 
+
+Amaury Decrême
