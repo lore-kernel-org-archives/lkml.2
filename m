@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab2HCW3v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 18:29:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40841 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753110Ab2HCW3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 18:29:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="181361205"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: bp@amd64.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH 0/5 V2] x86: mce: Bugfixes, cleanups and a new
- CMCI poll version
-In-Reply-To: <20120801005610.GA23536@gchen.bj.intel.com>
-Date: Fri, 03 Aug 2012 15:29:50 -0700
-Message-Id: <501c50de151302d0d7@agluck-desktop.sc.intel.com>
+	id S1753874Ab2HCWg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 18:36:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63394 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab2HCWg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 18:36:27 -0400
+Date: Fri, 3 Aug 2012 15:36:23 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Pandita, Vikram" <vikram.pandita@ti.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Andi Kleen <andi@firstfloor.org>,
+        kay@vrfy.org, linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Subject: Re: [PATCH v3] printk: add option to print cpu id
+Message-ID: <20120803223623.GB6156@kroah.com>
+References: <1344013004-32211-1-git-send-email-vikram.pandita@ti.com>
+ <m2628z6euk.fsf@firstfloor.org>
+ <CAFm5wm3ScpUU5wa=ei3TY0zjU4kVbOgJMmE5_QDpwy7B-TJa+A@mail.gmail.com>
+ <20120803200822.GC731@harshnoise.musicnaut.iki.fi>
+ <CAFm5wm2sf9LnZNj9_BDYTF9G7XH32fOL3x5n=kZ-1ih0Cek2DQ@mail.gmail.com>
+ <20120803215954.GA4489@kroah.com>
+ <CAFm5wm1_-JP0xjDdBvAcqqpZPQvxJPsmNtUOFQyaNw=6H_JJcg@mail.gmail.com>
+ <20120803221327.GA5102@kroah.com>
+ <CAFm5wm3ayofPD7oF1=z_jwE_wuqBxBHicAs=KOhjcUr7Jo0wDQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFm5wm3ayofPD7oF1=z_jwE_wuqBxBHicAs=KOhjcUr7Jo0wDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I applied this series on top of v3.6-rc1 and took it for
-a test drive with a little storm of 20 corrected interrupts.
+On Fri, Aug 03, 2012 at 03:25:17PM -0700, Pandita, Vikram wrote:
+> >> This was something that got used internally and helped at times.
+> >
+> > Could you have used the trace point instead?
+> 
+> As i understood the trace_prink(), one would need to modify existing
+> printk -> trace_printk. Is my understanding correct?
 
-The series worked ... but the console log was entirely unhelpful
-in letting me know what had just happened to my system.  All I saw
-was:
+No, you should just be able to watch the tracepoint, right?
 
-mce: [Hardware Error]: Machine check events logged
-mce: [Hardware Error]: Machine check events logged
-    ... several seconds pass ...
-CPU 35 MCA banks CMCI:0 CMCI:1 CMCI:3 CMCI:5 CMCI:6 CMCI:7 CMCI:8 CMCI:9 CMCI:10 CMCI:11
-mce_notify_irq: 3 callbacks suppressed
-CPU 1 MCA banks CMCI:0 CMCI:1 CMCI:3
-CPU 39 MCA banks CMCI:0 CMCI:1 CMCI:3
-CPU 38 MCA banks CMCI:0 CMCI:1 CMCI:3
-CPU 32 MCA banks CMCI:0 CMCI:1 CMCI:3
-CPU 37 MCA banks CMCI:0 CMCI:1 CMCI:3
-CPU 36 MCA banks CMCI:0 CMCI:1 CMCI:3
-CPU 34 MCA banks CMCI:0 CMCI:1 CMCI:3
-mce: [Hardware Error]: Machine check events logged
+> Most of the times the problem exhibits as a random hang, without having a clue
+> which code to modify. That time one generic defconfig global switch is
+> your first tool.
+> 
+> Other issue i found, using this patch, that on multi-core ARM systems,
+> almost 99% of times, IRQ's are handled by CPU0,
+> even if CPU0 was really busy and other CPU's were free. I am yet to
+> understand a good reason why.
 
-No mention of the storm, no mention that we switched to polling
-mode (and so missed some of the reports). Just the cryptic output
-as the kernel re-established the CMCI on processors that had been
-affected by the storm.
+Can't you see that from /proc/interrupts today?
 
-I tried the patch below to log the start/end of the storm. But I
-may be doing something wrong with printk_timed_ratelimit() because
-I saw two "storm detected" and two "storm subsided" messages.
+> this patch also helped in other areas as mentioned in the thread
+> http://marc.info/?l=linux-omap&m=134401269106619&w=2
 
-It would also be nice to avoid all the "CPU 1 MCA banks CMCI:0 CMCI:1 CMCI:3"
-messages.
+I still don't understand how adding the cpu number to printk enabled you
+to find any problem like this.  Can't you just add the cpu number to the
+printk messages you care about for your specific hardware?
 
--Tony
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 693bc7d..236f60e 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -87,6 +87,8 @@ void mce_intel_hcpu_update(unsigned long cpu)
- 
- unsigned long mce_intel_adjust_timer(unsigned long interval)
- {
-+	static unsigned long jiffie_state;
-+
- 	if (interval < CMCI_POLL_INTERVAL)
- 		return interval;
- 
-@@ -108,6 +110,8 @@ unsigned long mce_intel_adjust_timer(unsigned long interval)
- 		 */
- 		if (!atomic_read(&cmci_storm_on_cpus)) {
- 			__this_cpu_write(cmci_storm_state, CMCI_STORM_NONE);
-+			if (printk_timed_ratelimit(&jiffie_state, CMCI_STORM_INTERVAL/HZ*1000))
-+				pr_notice("CMCI storm subsided, switching to interrupt mode\n");
- 			cmci_reenable();
- 			cmci_recheck();
- 		}
-@@ -126,6 +130,7 @@ static bool cmci_storm_detect(void)
- 	unsigned int cnt = __this_cpu_read(cmci_storm_cnt);
- 	unsigned long ts = __this_cpu_read(cmci_time_stamp);
- 	unsigned long now = jiffies;
-+	static unsigned long jiffie_state;
- 
- 	if (__this_cpu_read(cmci_storm_state) != CMCI_STORM_NONE)
- 		return true;
-@@ -145,6 +150,9 @@ static bool cmci_storm_detect(void)
- 	__this_cpu_write(cmci_storm_state, CMCI_STORM_ACTIVE);
- 	atomic_inc(&cmci_storm_on_cpus);
- 	mce_timer_kick(CMCI_POLL_INTERVAL);
-+
-+	if (printk_timed_ratelimit(&jiffie_state, CMCI_STORM_INTERVAL/HZ*1000))
-+		pr_notice("CMCI storm detected, switching to poll mode\n");
- 	return true;
- }
- 
+greg k-h
