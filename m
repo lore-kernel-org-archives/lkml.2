@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab2HCLMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 07:12:55 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:41785 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab2HCLMt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 07:12:49 -0400
+	id S1753502Ab2HCLN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 07:13:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11690 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753418Ab2HCLN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 07:13:58 -0400
+Date: Fri, 3 Aug 2012 08:13:09 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Rafael Aquini <aquini@linux.com>
+Subject: Re: [PATCH v4 1/3] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120803111309.GA1848@t510.redhat.com>
+References: <cover.1342485774.git.aquini@redhat.com>
+ <49f828a9331c9b729fcf77226006921ec5bc52fa.1342485774.git.aquini@redhat.com>
+ <20120718054824.GA32341@bbox>
+ <20120720194858.GA16249@t510.redhat.com>
+ <20120723023332.GA6832@bbox>
+ <20120723181952.GA27373@t510.redhat.com>
+ <5019975B.6010708@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120709175053.GE8185@somewhere.redhat.com>
-References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
-	<20120709175053.GE8185@somewhere.redhat.com>
-Date: Fri, 3 Aug 2012 13:12:47 +0200
-Message-ID: <CAFTL4hzT-ZENm=DTTnPGOHJ5qGKEU=gh2y=9ksDehi7rFawxaQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] cputime: Virtual cputime accounting small cleanups
- and consolidation
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5019975B.6010708@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/9 Frederic Weisbecker <fweisbec@gmail.com>:
-> On Tue, Jun 19, 2012 at 03:43:07PM +0200, Frederic Weisbecker wrote:
->> Not sure to which tree this should go. The scheduler one may be.
->> Anyway if you're fine with it, it is pullable at:
->>
->> git://github.com/fweisbec/linux-dynticks.git
->>       virt-cputime
->
-> Ping. Are you guys fine with the patchset?
+On Wed, Aug 01, 2012 at 04:53:47PM -0400, Rik van Riel wrote:
+> On 07/23/2012 02:19 PM, Rafael Aquini wrote:
+> 
+> >In a glance, I believe this whole dance you're suggesting might just be too much
+> >of an overcomplication, and the best approach would be simply teaching the
+> >hotplug bits about the ballooned corner case just like it's being done to
+> >compaction/migration. However, I'll look at it carefully before making any other
+> >adjustments/propositions over here.
+> 
+> Compaction and hotplug do essentially the same thing
+> here: "collect all the movable pages from a page block,
+> and move them elsewhere".
+> 
+> Whether or not it is easier for them to share code, or
+> to duplicate a few lines of code, is something that can
+> be looked into later.
 
-Re-ping :)
+I'm 100% in agreement with your thoughts here.
+
