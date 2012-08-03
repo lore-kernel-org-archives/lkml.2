@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2HCMtH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 08:49:07 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46790 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876Ab2HCMtF (ORCPT
+	id S1752430Ab2HCMuT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 08:50:19 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39334 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab2HCMuO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 08:49:05 -0400
-Message-ID: <501BC8BE.6000405@jp.fujitsu.com>
-Date: Fri, 03 Aug 2012 21:49:02 +0900
-From: Seiichi Ikarashi <s.ikarashi@jp.fujitsu.com>
-Organization: Fujitsu Limited
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120420 Thunderbird/12.0
-MIME-Version: 1.0
-To: manfred@colorfullife.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] ipc/sem.c: prevent ENOMEM in semop() w/ SEM_UNDO flag
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Aug 2012 08:50:14 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.0 \(1485\))
+Subject: Re: [PATCH 3/4] arm/dts: omap5-evm: Add keypad data
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <1343997486-710-4-git-send-email-sourav.poddar@ti.com>
+Date: Fri, 3 Aug 2012 14:50:22 +0200
+Cc: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D32DBB77-844C-400A-9E3F-3F779431D1C7@dominion.thruhere.net>
+References: <1343997486-710-1-git-send-email-sourav.poddar@ti.com> <1343997486-710-4-git-send-email-sourav.poddar@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+X-Mailer: Apple Mail (2.1485)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-semop() with SEM_UNDO sem_flg can result in ENOMEM even after
-succeeding semget() with large nsems. This is because
-semop() uses kzalloc() via find_alloc_undo() though
-semget() uses vmalloc() via ipc_rcu_alloc().
-This patch makes semop() be able to use vmalloc() via ipc_alloc().
 
-Signed-off-by: Seiichi Ikarashi <s.ikarashi@jp.fujitsu.com>
+Op 3 aug. 2012, om 14:38 heeft Sourav Poddar <sourav.poddar@ti.com> het volgende geschreven:
 
---- a/ipc/sem.c	2012-08-03 16:52:01.000000000 +0900
-+++ b/ipc/sem.c	2012-08-03 20:40:57.000000000 +0900
-@@ -1258,11 +1258,12 @@ static struct sem_undo *find_alloc_undo(
- 	sem_getref_and_unlock(sma);
- 
- 	/* step 2: allocate new undo structure */
--	new = kzalloc(sizeof(struct sem_undo) + sizeof(short)*nsems, GFP_KERNEL);
-+	new = ipc_alloc(sizeof(struct sem_undo) + sizeof(short)*nsems, GFP_KERNEL);
- 	if (!new) {
- 		sem_putref(sma);
- 		return ERR_PTR(-ENOMEM);
- 	}
-+	memset(new, 0, sizeof(struct sem_undo) + sizeof(short)*nsems);
- 
- 	/* step 3: Acquire the lock on semaphore array */
- 	sem_lock_and_putref(sma);
-@@ -1348,7 +1349,7 @@ SYSCALL_DEFINE4(semtimedop, int, semid, 
- 	if (nsops > ns->sc_semopm)
- 		return -E2BIG;
- 	if(nsops > SEMOPM_FAST) {
--		sops = kmalloc(sizeof(*sops)*nsops,GFP_KERNEL);
-+		sops = ipc_alloc(sizeof(*sops)*nsops,GFP_KERNEL);
- 		if(sops==NULL)
- 			return -ENOMEM;
- 	}
+> Add keypad data node in omap5 device tree file.
+> Also fill the device tree binding parameters
+> with the required value in "omap5-evm" dts file.
+> 
+> Tested on omap5430 evm with 3.5 custom kernel.
+> 
+> Cc: Benoit Cousson <b-cousson@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> ---
+> arch/arm/boot/dts/omap5-evm.dts |   12 ++++++++++++
+> arch/arm/boot/dts/omap5.dtsi    |    5 +++++
+> 2 files changed, 17 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
+> index 45a8aeb..09fe941 100644
+> --- a/arch/arm/boot/dts/omap5-evm.dts
+> +++ b/arch/arm/boot/dts/omap5-evm.dts
+> @@ -17,6 +17,18 @@
+> 		device_type = "memory";
+> 		reg = <0x80000000 0x40000000>; /* 1 GB */
+> 	};
+> +
+> +	keypad {
+> +		keypad,num-rows = <8>;
+> +		keypad,num-columns = <8>;
+> +		linux,keymap = < 0x02020073
+> +			0x02030072
+> +			0x020400e7
+> +			0x02050066
+> +			0x0206006b
+> +			0x020700d9 >;
+> +		linux,input-no-autorepeat;
+> +	};
+
+This not a criticism on your patch, but a generic question about DT: Is there no way to have nice constants for keys like we have in the kernel, like KEY_POWER, KEY_UP, etc? If no, does DT allow comments so I can look at a dts and see which keycodes are mapped instead of having to dig up the sources?
+
+regards,
+
+Koen
