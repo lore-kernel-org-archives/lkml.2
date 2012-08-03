@@ -1,178 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab2HCA6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 20:58:14 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60959 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab2HCA6L (ORCPT
+	id S1752609Ab2HCBN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 21:13:58 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14245 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab2HCBN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 20:58:11 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-f0-501b222165be
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Venkatraman S <svenkatr@ti.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Adrian Hunter <ext-adrian.hunter@nokia.com>,
-        Philip Rakity <prakity@marvell.com>, raphael.andy.lee@gmail.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [PATCH RESEND v6] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-Date: Fri,  3 Aug 2012 09:58:03 +0900
-Message-Id: <1343955483-6917-1-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 2 Aug 2012 21:13:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 02 Aug 2012 18:13:55 -0700
+Message-ID: <501B2642.4080805@nvidia.com>
+Date: Fri, 3 Aug 2012 10:15:46 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <50170EA0.1010408@wwwdotorg.org> <501A338D.7080105@nvidia.com> <20120802082157.GA14866@avionic-0098.adnet.avionic-design.de> <20120802181111.GM4537@opensource.wolfsonmicro.com>
+In-Reply-To: <20120802181111.GM4537@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is expected that Extended CSD register(the size of this register
-is larger than CID/CSD) will be referenced more frequently as more
-fields have been added to Extended CSD and it seems that it is not
-a good option to double the memory used.
+On Fri 03 Aug 2012 03:11:12 AM JST, Mark Brown wrote:
+> On Thu, Aug 02, 2012 at 10:21:57AM +0200, Thierry Reding wrote:
+>> On Thu, Aug 02, 2012 at 05:00:13PM +0900, Alex Courbot wrote:
+>
+>>> The problem is, how do we turn these phandles into the resource of
+>>> interest. The type of the resource can be infered by the name of the
+>>> property. The hard part is resolving the resource from the phandle -
+>>> it seems like the API just does not allow to do this. GPIO has
+>>> of_get_named_gpio, but AFAIK there are no equivalent for regulator
+>>> consumer and PWM: the only way to use the DT with them is through
+>>> get_regulator and get_pwm which work at the device level.
+>
+>>> Or is there a way that I overlooked?
+>
+>> No, you are right. Perhaps we should add exported functions that do the
+>> equivalent of of_pwm_request() or the regulator_dev_lookup() and
+>> of_get_regulator() pair.
+>
+> I missed some of the earlier bits of the thread here but why can't we do
+> device based lookups?
 
-This patch is intended to avoid the use of bounce buffer for reading
-Extended CSD register in mmc_send_cxd_data(). It will provide a better
-performance gain by removing memcpy() overhead for a half KiB and
-a redundant bounce buffer allocated repeatedly at the cost of providing
-DMA-capable buffer from upper caller(but on-stack buffer is allowed
-with no performance gain).
+That is because the phandles would not be properties of the device node 
+but rather of its sub-nodes:
 
-Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
-Reviewed-by: Venkatraman S <svenkatr@ti.com>
----
-Changes in v2:
-- Handling on-stack buffer if it's used in caller.
+backlight {
+     compatible = "pwm-backlight";
+     ...
+     power-on-sequence {
+         step@0 {
+             regulator = <&backlight_reg>;
+             enable;
+         };
 
-Changes in v3:
-- Remove unnecesary code.
 
-Changes in v4:
-- Modify codes based-on S, Venkatraman's comments.
+So here simply using regulator_get on the backlight device would not work.
 
-Changes in v5:
-- Modify commit log and add NOTE description.
-
-Changes in v6:
-- Modify commit log.
----
- drivers/mmc/core/mmc_ops.c |   58 +++++++++++++++++++++++++++++++------------
- 1 files changed, 42 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index 0ed2cc5..acf578d 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -230,6 +230,10 @@ mmc_send_cxd_native(struct mmc_host *host, u32 arg, u32 *cxd, int opcode)
- 	return 0;
- }
- 
-+/*
-+ * NOTE: void *buf, Caller for the buf is required to use DMA-capable
-+ * buffer or on-stack buffer(with some overhead in callee).
-+ */
- static int
- mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 		u32 opcode, void *buf, unsigned len)
-@@ -239,13 +243,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 	struct mmc_data data = {0};
- 	struct scatterlist sg;
- 	void *data_buf;
-+	int is_on_stack;
- 
--	/* dma onto stack is unsafe/nonportable, but callers to this
--	 * routine normally provide temporary on-stack buffers ...
--	 */
--	data_buf = kmalloc(len, GFP_KERNEL);
--	if (data_buf == NULL)
--		return -ENOMEM;
-+	is_on_stack = object_is_on_stack(buf);
-+	if (is_on_stack) {
-+
-+		/* dma onto stack is unsafe/nonportable, but callers to this
-+		 * routine normally provide temporary on-stack buffers ...
-+		 */
-+		data_buf = kmalloc(len, GFP_KERNEL);
-+		if (data_buf == NULL)
-+			return -ENOMEM;
-+	} else
-+		data_buf = buf;
- 
- 	mrq.cmd = &cmd;
- 	mrq.data = &data;
-@@ -280,8 +290,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 
- 	mmc_wait_for_req(host, &mrq);
- 
--	memcpy(buf, data_buf, len);
--	kfree(data_buf);
-+	if (is_on_stack) {
-+		memcpy(buf, data_buf, len);
-+		kfree(data_buf);
-+	}
- 
- 	if (cmd.error)
- 		return cmd.error;
-@@ -294,24 +306,32 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- int mmc_send_csd(struct mmc_card *card, u32 *csd)
- {
- 	int ret, i;
-+	u32 *csd_tmp;
- 
- 	if (!mmc_host_is_spi(card->host))
- 		return mmc_send_cxd_native(card->host, card->rca << 16,
- 				csd, MMC_SEND_CSD);
- 
--	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
-+	csd_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!csd_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
- 
- 	for (i = 0;i < 4;i++)
--		csd[i] = be32_to_cpu(csd[i]);
-+		csd[i] = be32_to_cpu(csd_tmp[i]);
- 
--	return 0;
-+err:
-+	kfree(csd_tmp);
-+	return ret;
- }
- 
- int mmc_send_cid(struct mmc_host *host, u32 *cid)
- {
- 	int ret, i;
-+	u32 *cid_tmp;
- 
- 	if (!mmc_host_is_spi(host)) {
- 		if (!host->card)
-@@ -320,14 +340,20 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
- 				cid, MMC_SEND_CID);
- 	}
- 
--	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
-+	cid_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!cid_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
- 
- 	for (i = 0;i < 4;i++)
--		cid[i] = be32_to_cpu(cid[i]);
-+		cid[i] = be32_to_cpu(cid_tmp[i]);
- 
--	return 0;
-+err:
-+	kfree(cid_tmp);
-+	return ret;
- }
- 
- int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
--- 
-1.7.0.4
-
+Alex.
