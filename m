@@ -1,47 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab2HCFaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 01:30:22 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:39382 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab2HCFaT (ORCPT
+	id S1751277Ab2HCFnO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 01:43:14 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:62496 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab2HCFnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 01:30:19 -0400
+	Fri, 3 Aug 2012 01:43:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <gisjc5hvun.fsf@mx10.gouders.net>
-References: <gilii4nnxb.fsf@mx10.gouders.net>
-	<kernel-nc-hints@mdm.bga.com>
-	<501937F7.2070600@landley.net>
-	<gi3946lin5.fsf@mx10.gouders.net>
-	<gisjc5hvun.fsf@mx10.gouders.net>
-Date: Fri, 3 Aug 2012 13:30:19 +0800
-Message-ID: <CAM_iQpWoKGJTUjohn9_guktpBNbOazKY1_eUQozz_O6ZkRmyPg@mail.gmail.com>
-Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening port
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-Cc: Rob Landley <rob@landley.net>, Milton Miller <miltonm@bga.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jan Engelhardt <jengelh@inai.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Date: Fri, 3 Aug 2012 13:43:08 +0800
+Message-ID: <CAPoh-nbx6pxhV2kXhnOmWzAGp6-jAkwQPcwGRtdXZEFoBB-iBw@mail.gmail.com>
+Subject: kernel panic when called usb_control_msg()
+From: y b <ycbzzjlby@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 4:39 AM, Dirk Gouders
-<gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
->
-> From d756d2750e4cf07d3c0942dc3c491d57631d4338 Mon Sep 17 00:00:00 2001
-> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-> Date: Thu, 2 Aug 2012 22:20:16 +0200
-> Subject: [PATCH] netconsole.txt: revision of examples for the receiver of kernel messages
->
-> There are at least 4 implementations of netcat with the BSD-based
-> being the only one that has to be used without the -p switch to
-> specify the listening port.
->
-> Jan Engelhardt suggested to add an example for socat(1).
+Hi,
+kernel panic when called usb_control_msg(), like this:
+   usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
+XR_SET_REG, USB_DIR_OUT | USB_TYPE_VENDOR, value, regnum | (block <<
+8), NULL, 0, 5000)
+The kernel's version is 2.6.33_rc4, but I think it will happen in
+lastest statable version too.
 
+# uname -a
+Linux (none) 2.6.33-rc4 #268 PREEMPT Fri Aug 3 05:28:27 EDT 2012
+armv5tejl unknown
 
-Looks good, but you missed your SOB.
+Unable to handle kernel NULL pointer dereference at virtual address 0000003c
+pgd = c7134000
+[0000003c] *pgd=c711e031, *pte=00000000, *ppte=00000000
+Internal error: Oops: 17 [#1] PREEMPT
+last sysfs file:
+Modules linked in:
+CPU: 0    Not tainted  (2.6.33-rc4 #287)
+PC is at musb_start_urb+0x58/0x760
+LR is at musb_urb_enqueue+0x658/0x768
+pc : [<c0235c98>]    lr : [<c02373bc>]    psr: 60000093
+sp : c7005aa8  ip : c7849948  fp : c7005b24
+r10: 00000000  r9 : c7849800  r8 : c789c038
+r7 : c701c480  r6 : c78498dc  r5 : 00000001  r4 : c7c6f7c0
+r3 : c7c6f7c0  r2 : 00000000  r1 : fee00400  r0 : 00000000
+Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 0005317f  Table: c7134000  DAC: 00000015
+Process COM3 (pid: 1022, stack limit = 0xc7004270)
+Stack: (0xc7005aa8 to 0xc7006000)
+5aa0:                   00000001 c0027b6c c7004000 00000010 c7005adc c7005ac8
+5ac0: c02c7c28 c00353c8 ffffffff febfd000 c7005b7c c7c6f7c0 00000000 00000000
+5ae0: fee00400 c789c038 c7849948 00000010 c7005b14 c7005b00 c02c75e4 c7c6f7c0
+5b00: 00000001 c7849948 c701c480 c789c038 c7849800 00000010 c7005b7c c7005b28
+5b20: c02373bc c0235c50 376c0f73 c03ed1ac c7849800 c7c6f7cc 00000000 c78498dc
+5b40: 00000000 c7005b50 00000000 60000013 c7005b7c c7c8f920 00000010 00000000
+5b60: c701c480 00000000 c7849800 00000000 c7005c34 c7005b80 c021e6a8 c0236d74
+5b80: 00000000 00200000 00000003 00000001 c04e7140 c03c2420 c7005bc4 c7005ba8
+5ba0: c0097140 c00353c8 c04e7140 c700ae00 c03c240c c021f3ac c7005be4 c7005bc8
+5bc0: c0099b00 c00353c8 c03c240c c04e7140 c05001a0 00000001 c7005c04 c7005be8
+5be0: c00984b8 c00353c8 c05001a0 00000000 c03c240c c04e7398 c7005c44 c7005c08
+5c00: c0099564 c00353c8 c7005c2c c789c038 c789c000 00000000 00000010 c7005c9c
+5c20: 00000000 00000000 c7005c54 c7005c38 c021ede4 c021dec4 c7005c58 00000000
+5c40: c701c480 00000000 c7005c8c c7005c58 c02202e8 c021eb70 00000001 c7005c5c
+5c60: c7005c5c 00000000 c7005c8c 00000000 c7c8f920 00000000 04120000 00000040
+5c80: c7005ccc c7005c90 c0220550 c02202b0 80000600 c789c000 c7005cd4 00000000
+5ca0: c009a07c 00000000 00000002 00000002 c72f7f00 c7020400 c7c8cea0 c7c8cecc
+5cc0: c7005cfc c7005cd0 c02322b4 c0220484 00000000 00000412 00000000 00000000
+5ce0: 00000000 00000000 c7005d0c c71f1c00 c7005d14 c7005d00 c0232300 c023226c
+5d00: 00000cbd c71f1c00 c7005d3c c7005d18 c02324b4 c02322cc c71f1c00 c7020400
+5d20: c7005d78 00000000 c7020400 c7c8cea0 c7005d5c c7005d40 c022ed8c c0232484
+5d40: 00000cbd 00008a20 c7c8cedf 00000000 c7005dfc c7005d60 c01bfea8 c022ed24
+5d60: c01a6c34 00000000 000000c9 00000000 c7020424 00000000 00000500 00000005
+5d80: 00000cbd 00008a3b 7f1c0300 01000415 1a131100 170f1200 00000016 00002580
+5da0: 00002580 00000500 00000004 00000cbd 00008a20 7f1c0300 01000415 1a131100
+5dc0: 170f1200 00000016 00002580 00002580 c7005e0c c7020400 c7020400 41ca6544
+5de0: c7c8fb60 41ca6544 c7004000 c700a900 c7005e74 c7005e00 c01c0168 c01bfa84
+5e00: c7005e3c c7005e10 c00373f4 c00353c8 00000004 c7005e20 c005017c c7304400
+5e20: c7304400 c7304000 00000001 c7004000 c7005e54 c7005e40 c71f1c00 c7020400
+5e40: c7005e64 c7005e50 c022e7f0 c0230d64 00005409 00000000 c7020400 00005402
+5e60: 41ca6544 c7c8fb60 c7005e94 c7005e78 c01c04f4 c01bff20 00005402 fffffdfd
+5e80: 41ca6544 c7c8fb60 c7005eb4 c7005e98 c01bd5dc c01c0384 00005402 fffffdfd
+5ea0: c7020400 c7c8fb60 c7005eec c7005eb8 c01bb980 c01bd508 c00373f4 c00353c8
+5ec0: a0000013 c03fbf00 c700a900 00005402 41ca6544 c700a900 41ca6544 00000000
+5ee0: c7005f0c c7005ef0 c00aabd4 c01bb04c c7420528 c700a900 00000065 c700a900
+5f00: c7005f7c c7005f10 c00ab2c4 c00aabb0 c01bd5e4 c71b92a0 5019c987 00000000
+5f20: c7028000 c7c76800 40020000 c7005f70 00000039 40020000 c7004000 00000964
+5f40: c7005f6c c7005f50 c009db60 c01ba9e8 c7005f7c 00000065 41ca6544 00005402
+5f60: c700a900 c00280a4 c7004000 00000000 c7005fa4 c7005f80 c00ab360 c00aad5c
+5f80: 00000005 00000001 41ca6544 00008a20 00000000 00000036 00000000 c7005fa8
+5fa0: c0027f20 c00ab330 41ca6544 00008a20 00000065 00005402 41ca6544 170f1200
+5fc0: 41ca6544 00008a20 00000000 00000036 00000065 41caa678 00000000 41caa64c
+5fe0: 41ca6568 41ca6540 402be080 402be094 60000010 00000065 9f3c1ae4 5d574b3c
+Backtrace:
+[<c0235c40>] (musb_start_urb+0x0/0x760) from [<c02373bc>]
+(musb_urb_enqueue+0x658/0x768)
+[<c0236d64>] (musb_urb_enqueue+0x0/0x768) from [<c021e6a8>]
+(usb_hcd_submit_urb+0x7f4/0x8fc)
+[<c021deb4>] (usb_hcd_submit_urb+0x0/0x8fc) from [<c021ede4>]
+(usb_submit_urb+0x284/0x2a0)
+[<c021eb60>] (usb_submit_urb+0x0/0x2a0) from [<c02202e8>]
+(usb_start_wait_urb+0x48/0xb4)
+ r7:00000000 r6:c701c480 r5:00000000 r4:c7005c58
+[<c02202a0>] (usb_start_wait_urb+0x0/0xb4) from [<c0220550>]
+(usb_control_msg+0xdc/0x100)
+ r8:00000040 r7:04120000 r6:00000000 r5:c7c8f920 r4:00000000
+[<c0220474>] (usb_control_msg+0x0/0x100) from [<c02322b4>]
+(vizzini_set_reg+0x58/0x60)
+[<c023225c>] (vizzini_set_reg+0x0/0x60) from [<c0232300>]
+(vizzini_disable+0x44/0x48)
+ r4:c71f1c00
+[<c02322bc>] (vizzini_disable+0x0/0x48) from [<c02324b4>]
+(vizzini_set_termios+0x40/0x1a4)
+ r5:c71f1c00 r4:00000cbd
+[<c0232474>] (vizzini_set_termios+0x0/0x1a4) from [<c022ed8c>]
+(serial_set_termios+0x78/0x9c)
+ r9:c7c8cea0 r8:c7020400 r7:00000000 r6:c7005d78 r5:c7020400
+r4:c71f1c00
+[<c022ed14>] (serial_set_termios+0x0/0x9c) from [<c01bfea8>]
+(set_termios+0x434/0x49c)
+ r7:00000000 r6:c7c8cedf r5:00008a20 r4:00000cbd
+[<c01bfa74>] (set_termios+0x0/0x49c) from [<c01c0168>]
+(tty_mode_ioctl+0x258/0x464)
+[<c01bff10>] (tty_mode_ioctl+0x0/0x464) from [<c01c04f4>]
+(n_tty_ioctl_helper+0x180/0x194)
+ r7:c7c8fb60 r6:41ca6544 r5:00005402 r4:c7020400
+[<c01c0374>] (n_tty_ioctl_helper+0x0/0x194) from [<c01bd5dc>]
+(n_tty_ioctl+0xe4/0xec)
+ r7:c7c8fb60 r6:41ca6544 r5:fffffdfd r4:00005402
+[<c01bd4f8>] (n_tty_ioctl+0x0/0xec) from [<c01bb980>] (tty_ioctl+0x944/0x99c)
+ r7:c7c8fb60 r6:c7020400 r5:fffffdfd r4:00005402
+[<c01bb03c>] (tty_ioctl+0x0/0x99c) from [<c00aabd4>] (vfs_ioctl+0x34/0xb4)
+[<c00aaba0>] (vfs_ioctl+0x0/0xb4) from [<c00ab2c4>] (do_vfs_ioctl+0x578/0x5d4)
+ r7:c700a900 r6:00000065 r5:c700a900 r4:c7420528
+[<c00aad4c>] (do_vfs_ioctl+0x0/0x5d4) from [<c00ab360>] (sys_ioctl+0x40/0x64)
+[<c00ab320>] (sys_ioctl+0x0/0x64) from [<c0027f20>] (ret_fast_syscall+0x0/0x28)
+ r7:00000036 r6:00000000 r5:00008a20 r4:41ca6544
+Code: e3a00000 e593c008 e5d32026 e50bc03c (e59ae03c)
+---[ end trace e0362d174a16f94d ]---
+
+If two or more urbs for an endpoint called musb_urb_enqueue() at a
+same time and they all link to endpoint after called
+usb_hcd_link_urb_to_ep() function,
+that maybe cause a panic, like this:
+spin_lock_irqsave()
+ret = usb_hcd_link_urb_to_ep()
+spin_unlock_irqrestore()
+-------------------------------------- (second urb)   spin_lock_irqsave()
+-------------------------------------- (second urb)   ret =
+usb_hcd_link_urb_to_ep()
+-------------------------------------- (second urb)   spin_unlock_irqrestore()
+spin_lock_irqsave()
+musb_schedule()
+spin_unlock_irqrestore()
+musb_interrupt()
+--musb_h_ep0_irq()
+----musb_advance_schedule()
+------musb_giveback()
+--------usb_hcd_unlink_urb_from_ep()
+    unlink the first urb of the endpoint.
+------musb_start_urb()
+musb_interrupt()
+--musb_h_ep0_irq()
+----musb_advance_schedule()
+------musb_giveback()
+--------usb_hcd_unlink_urb_from_ep()
+    unlink the second urb of the endpoint. and &qh->hep->urb_list is empty
+----if &qh->hep->urb_list is empty, set qh->hep->hcpriv = NULL
+
+-------------------------------------- (second urb)   spin_lock_irqsave()
+-------------------------------------- (second urb)   musb_schedule()
+-------------------------------------- (second urb)   --musb_start_urb()
+-------------------------------------- (second urb)   ----next_urb()
+-------------------------------------- (second urb)       because
+&qh->hep->urb_list is empty, it return null
+-------------------------------------- (second urb)
+------urb->transfer_buffer because urb is a null, will cause a panic
+-------------------------------------- (second urb)   spin_unlock_irqrestore()
+
+I fixed it like this:
+
+diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+index 4bb717d..b043f27 100644
+--- a/drivers/usb/musb/musb_host.c
++++ b/drivers/usb/musb/musb_host.c
+@@ -2056,9 +2056,15 @@ static int musb_urb_enqueue(
+        kfree(qh);
+        qh = NULL;
+        ret = 0;
+-   } else
+-       ret = musb_schedule(musb, qh,
+-               epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK);
++   } else {
++       if (!next_urb(qh)) {
++           kfree(qh);
++           qh = NULL;
++           ret = 0;
++       } else
++           ret = musb_schedule(musb, qh,
++                   epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK);
++   }
+
+    if (ret == 0) {
+        urb->hcpriv = qh;
