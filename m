@@ -1,51 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2HCA2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 20:28:54 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:54420 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab2HCA2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 20:28:51 -0400
-Message-ID: <501B1B38.3060808@linaro.org>
-Date: Thu, 02 Aug 2012 17:28:40 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752430Ab2HCAaT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 20:30:19 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50843 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab2HCAaQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Aug 2012 20:30:16 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xensource.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] Was: Re: [GIT PULL] timer changes for v3.6, Is: Regression
- introduced by 1e75fa8be9fb61e1af46b5b3b176347a4c958ca1
-References: <20120722133441.GA6874@gmail.com> <20120723144917.GF793@phenom.dumpdata.com> <500D8CDD.3060309@linaro.org> <20120723182431.GD21870@phenom.dumpdata.com> <500D9EBC.204@linaro.org> <20120723195144.GA3454@phenom.dumpdata.com> <500DB2E2.6070703@linaro.org> <CA+55aFwK8y2p=m7fEQxiHj0L8BKEpiHDX=cKX80XgAT9DLs6Sg@mail.gmail.com>
-In-Reply-To: <CA+55aFwK8y2p=m7fEQxiHj0L8BKEpiHDX=cKX80XgAT9DLs6Sg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080300-5930-0000-0000-00000A7B715D
+In-Reply-To: <1343846069-2698-1-git-send-email-anatol.pomozov@gmail.com>
+References: <1343845147-21394-1-git-send-email-anatol.pomozov@gmail.com>
+	<1343846069-2698-1-git-send-email-anatol.pomozov@gmail.com>
+Date: Thu, 2 Aug 2012 17:30:14 -0700
+Message-ID: <CAOMFOmXsv9XQfQdAUcXCDKJ0vmj2uOi-qB7xP_pG=U4L8o9Upg@mail.gmail.com>
+Subject: Re: [PATCH] fs: Preserve error code in get_empty_filp()
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: viro@zeniv.linux.org.uk, tytso@mit.edu,
+        Anatol Pomozov <anatol.pomozov@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 04:52 PM, Linus Torvalds wrote:
-> On Mon, Jul 23, 2012 at 1:24 PM, John Stultz <john.stultz@linaro.org> wrote:
->> Great! Thanks again so much for the testing and quick reporting!
-> Hmm. I'm just cutting 3.6-rc1, and noticing that apparently this patch
-> never reached me. So now -rc1 is broken on 32 bit under Xen.
+Hi
+
+Current HEAD contains conflicting changes in fs/pipe.c. I am going to
+rebase my patch and resend it.
+
+On Wed, Aug 1, 2012 at 11:34 AM,  <anatol.pomozov@gmail.com> wrote:
+> From: Anatol Pomazau <anatol@google.com>
 >
-> I'm not going to delay rc1 for this, but I thought I'd point this out
-> in the hope that we get it fixed soon. I'll be around for small fixes
-> for another day and a half before I'm traveling for vacation.
-
-Yea, the fix has been sitting in tip/timers/urgent.  I heard Thomas was 
-on vacation, so maybe that's why he's not sent the pull request?
-
-Ingo, could you make the pull request?  Sorry if the commit log didn't 
-make it clear this was more urgent.
-
-thanks
--john
-
-
+> Allocating a file structure in function get_empty_filp() might fail because
+> of several reasons:
+>  - not enough memory for file structures
+>  - operation is not allowed
+>  - user is over its limit
+>
+> Currently the function returns NULL in all cases and we loose the exact
+> reason of the error. All callers of get_empty_filp() assume that the function
+> can fail with ENFILE only.
+>
+> Return error through pointer. Change all callers to preserve this error code.
+>
+> Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+> Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+> ---
+>  arch/ia64/kernel/perfmon.c |  4 ++--
+>  fs/anon_inodes.c           |  5 +++--
+>  fs/file_table.c            | 22 ++++++++++++++--------
+>  fs/hugetlbfs/inode.c       |  5 +++--
+>  fs/namei.c                 |  4 ++--
+>  fs/open.c                  |  5 ++---
+>  fs/pipe.c                  |  9 +++++----
+>  ipc/shm.c                  |  4 +++-
+>  mm/shmem.c                 |  5 +++--
+>  net/socket.c               |  4 ++--
+>  10 files changed, 39 insertions(+), 28 deletions(-)
+>
+> diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+> index 3fa4bc5..da2dcce 100644
+> --- a/arch/ia64/kernel/perfmon.c
+> +++ b/arch/ia64/kernel/perfmon.c
+> @@ -2221,9 +2221,9 @@ pfm_alloc_file(pfm_context_t *ctx)
+>         d_add(path.dentry, inode);
+>
+>         file = alloc_file(&path, FMODE_READ, &pfm_file_ops);
+> -       if (!file) {
+> +       if (IS_ERR(file)) {
+>                 path_put(&path);
+> -               return ERR_PTR(-ENFILE);
+> +               return file;
+>         }
+>
+>         file->f_flags = O_RDONLY;
+> diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+> index 28d39fb..73536e3 100644
+> --- a/fs/anon_inodes.c
+> +++ b/fs/anon_inodes.c
+> @@ -160,10 +160,11 @@ struct file *anon_inode_getfile(const char *name,
+>
+>         d_instantiate(path.dentry, anon_inode_inode);
+>
+> -       error = -ENFILE;
+>         file = alloc_file(&path, OPEN_FMODE(flags), fops);
+> -       if (!file)
+> +       if (IS_ERR(file)) {
+> +               error = PTR_ERR(file);
+>                 goto err_dput;
+> +       }
+>         file->f_mapping = anon_inode_inode->i_mapping;
+>
+>         file->f_pos = 0;
+> diff --git a/fs/file_table.c b/fs/file_table.c
+> index b3fc4d6..88e8c64 100644
+> --- a/fs/file_table.c
+> +++ b/fs/file_table.c
+> @@ -94,8 +94,8 @@ int proc_nr_files(ctl_table *table, int write,
+>  #endif
+>
+>  /* Find an unused file structure and return a pointer to it.
+> - * Returns NULL, if there are no more free file structures or
+> - * we run out of memory.
+> + * Returns error pointer if some error happend e.g. we over file
+> + * structures limit, run out of memory or operation is not permitted.
+>   *
+>   * Be very careful using this.  You are responsible for
+>   * getting write access to any mount that you might assign
+> @@ -108,6 +108,7 @@ struct file *get_empty_filp(void)
+>         const struct cred *cred = current_cred();
+>         static long old_max;
+>         struct file * f;
+> +       int error;
+>
+>         /*
+>          * Privileged users can go above max_files
+> @@ -117,17 +118,22 @@ struct file *get_empty_filp(void)
+>                  * percpu_counters are inaccurate.  Do an expensive check before
+>                  * we go and fail.
+>                  */
+> -               if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files)
+> +               if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files) {
+> +                       error = -ENFILE;
+>                         goto over;
+> +               }
+>         }
+>
+>         f = kmem_cache_zalloc(filp_cachep, GFP_KERNEL);
+> -       if (f == NULL)
+> +       if (f == NULL) {
+> +               error = -ENOMEM;
+>                 goto fail;
+> +       }
+>
+>         percpu_counter_inc(&nr_files);
+>         f->f_cred = get_cred(cred);
+> -       if (security_file_alloc(f))
+> +       error = security_file_alloc(f);
+> +       if (error)
+>                 goto fail_sec;
+>
+>         INIT_LIST_HEAD(&f->f_u.fu_list);
+> @@ -149,7 +155,7 @@ over:
+>  fail_sec:
+>         file_free(f);
+>  fail:
+> -       return NULL;
+> +       return ERR_PTR(error);
+>  }
+>
+>  /**
+> @@ -173,8 +179,8 @@ struct file *alloc_file(struct path *path, fmode_t mode,
+>         struct file *file;
+>
+>         file = get_empty_filp();
+> -       if (!file)
+> -               return NULL;
+> +       if (IS_ERR(file))
+> +               return file;
+>
+>         file->f_path = *path;
+>         file->f_mapping = path->dentry->d_inode->i_mapping;
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index 8349a89..5ec849b 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -984,11 +984,12 @@ struct file *hugetlb_file_setup(const char *name, unsigned long addr,
+>         inode->i_size = size;
+>         clear_nlink(inode);
+>
+> -       error = -ENFILE;
+>         file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
+>                         &hugetlbfs_file_operations);
+> -       if (!file)
+> +       if (IS_ERR(file)) {
+> +               error = PTR_ERR(file);
+>                 goto out_dentry; /* inode is already attached */
+> +       }
+>
+>         return file;
+>
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 2ccc35c..b77bdca 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -2753,8 +2753,8 @@ static struct file *path_openat(int dfd, const char *pathname,
+>         int error;
+>
+>         file = get_empty_filp();
+> -       if (!file)
+> -               return ERR_PTR(-ENFILE);
+> +       if (IS_ERR(file))
+> +               return file;
+>
+>         file->f_flags = op->open_flag;
+>
+> diff --git a/fs/open.c b/fs/open.c
+> index 1e914b3..195bdab 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -777,10 +777,9 @@ struct file *dentry_open(const struct path *path, int flags,
+>         /* We must always pass in a valid mount pointer. */
+>         BUG_ON(!path->mnt);
+>
+> -       error = -ENFILE;
+>         f = get_empty_filp();
+> -       if (f == NULL)
+> -               return ERR_PTR(error);
+> +       if (IS_ERR(f))
+> +               return f;
+>
+>         f->f_flags = flags;
+>         f->f_path = *path;
+> diff --git a/fs/pipe.c b/fs/pipe.c
+> index 95cbd6b..429f2db 100644
+> --- a/fs/pipe.c
+> +++ b/fs/pipe.c
+> @@ -1037,10 +1037,11 @@ struct file *create_write_pipe(int flags)
+>
+>         d_instantiate(path.dentry, inode);
+>
+> -       err = -ENFILE;
+>         f = alloc_file(&path, FMODE_WRITE, &write_pipefifo_fops);
+> -       if (!f)
+> +       if (IS_ERR(f)) {
+> +               err = PTR_ERR(f);
+>                 goto err_dentry;
+> +       }
+>         f->f_mapping = inode->i_mapping;
+>
+>         f->f_flags = O_WRONLY | (flags & (O_NONBLOCK | O_DIRECT));
+> @@ -1072,8 +1073,8 @@ struct file *create_read_pipe(struct file *wrf, int flags)
+>         /* Grab pipe from the writer */
+>         struct file *f = alloc_file(&wrf->f_path, FMODE_READ,
+>                                     &read_pipefifo_fops);
+> -       if (!f)
+> -               return ERR_PTR(-ENFILE);
+> +       if (IS_ERR(f))
+> +               return f;
+>
+>         path_get(&wrf->f_path);
+>         f->f_flags = O_RDONLY | (flags & O_NONBLOCK);
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 00faa05..c8eee21 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -1039,8 +1039,10 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+>                           is_file_hugepages(shp->shm_file) ?
+>                                 &shm_file_operations_huge :
+>                                 &shm_file_operations);
+> -       if (!file)
+> +       if (IS_ERR(file)) {
+> +               err = PTR_ERR(file);
+>                 goto out_free;
+> +       }
+>
+>         file->private_data = sfd;
+>         file->f_mapping = shp->shm_file->f_mapping;
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index d4e184e..cd814ee 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -2948,11 +2948,12 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
+>                 goto put_dentry;
+>  #endif
+>
+> -       error = -ENFILE;
+>         file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
+>                   &shmem_file_operations);
+> -       if (!file)
+> +       if (IS_ERR(file)) {
+> +               error = PTR_ERR(file);
+>                 goto put_dentry;
+> +       }
+>
+>         return file;
+>
+> diff --git a/net/socket.c b/net/socket.c
+> index dfe5b66..e80eb83 100644
+> --- a/net/socket.c
+> +++ b/net/socket.c
+> @@ -369,12 +369,12 @@ static int sock_alloc_file(struct socket *sock, struct file **f, int flags)
+>
+>         file = alloc_file(&path, FMODE_READ | FMODE_WRITE,
+>                   &socket_file_ops);
+> -       if (unlikely(!file)) {
+> +       if (unlikely(IS_ERR(file))) {
+>                 /* drop dentry, keep inode */
+>                 ihold(path.dentry->d_inode);
+>                 path_put(&path);
+>                 put_unused_fd(fd);
+> -               return -ENFILE;
+> +               return PTR_ERR(file);
+>         }
+>
+>         sock->file = file;
+> --
+> 1.7.11.3
+>
