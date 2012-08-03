@@ -1,234 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab2HCCPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 22:15:40 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:64896 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab2HCCPh (ORCPT
+	id S1752648Ab2HCCTy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 22:19:54 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:46535 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751296Ab2HCCTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 22:15:37 -0400
-Message-ID: <501B3643.5000605@windriver.com>
-Date: Fri, 3 Aug 2012 10:24:03 +0800
-From: xufeng zhang <xufeng.zhang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
+	Thu, 2 Aug 2012 22:19:53 -0400
 MIME-Version: 1.0
-To: Vlad Yasevich <vyasevich@gmail.com>
-CC: Xufeng Zhang <xufengzhang.main@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, <sri@us.ibm.com>,
-        <davem@davemloft.net>, <linux-sctp@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
- SACK when bundling
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>	<75bdd73e-1c47-4fd6-bc29-5b86ee6da69a@email.android.com>	<CA+=dFzg=Bpsv5bMzECoAXYVcbD95eYy6xDAzL6fwiHrunfq-tg@mail.gmail.com>	<e7f8a685-9635-4aa9-bd67-1044e0720b29@email.android.com>	<CA+=dFzifKwbiXmw=pu0+rWmz72+4jsbv6bXOBHyL0LmxaL9byg@mail.gmail.com>	<CA+=dFzgXq3Sx-Ny+6oDZ3BEdsMQCgswNEVPVnhmhedHFvazzWw@mail.gmail.com>	<50100A29.8010705@gmail.com>	<CA+=dFzj11c9K0TS0T7D1aBVz+ppdFK91ZzBbevLV23FrWJNzmw@mail.gmail.com>	<CA+=dFziK09TVcK29x1SLg+JanOj6o__bJKf8yohw6dTYCUCF5A@mail.gmail.com>	<8ea83e51-81d1-407a-be06-98d2c99c876d@email.android.com>	<CA+=dFzguqjjnnqHO53Mx859VB6NU=4MaPWAUzGQB2qtZGfdAUg@mail.gmail.com>	<5013069F.3080306@gmail.com>	<CA+=dFzh4dFatOy42FydbVvoXB8=5CvLu5AwPvUA16h+kymq0Lw@mail.gmail.com>	<CA+=dFzh1wQx2rBs_2RAwrXsz79WS3njnO8=2ntQZUbB5So69gg@mail.gmail.com> <CA+=dFzhXY9aJ6_Yu-4a3g+6RyN5_mxXY=U3HnzKdi8TH-rqWcA@mail.gmail.com> <50178061.4010709@windriver.com> <501AEE5E.8090303@gmail.com>
-In-Reply-To: <501AEE5E.8090303@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAPXgP11x9UYm7QReMjqZHtv8ZVoMRzNsREe-bdNwNSoSA6TRfw@mail.gmail.com>
+References: <1343936764-6461-1-git-send-email-vikram.pandita@ti.com>
+ <CAPXgP10fJj3SwDdCa=rzfjZM8TL1GsvbSwEnfomFQ+NrW2j15w@mail.gmail.com>
+ <CAFm5wm2yof+ePMAtueBJh+gKyih-9ohdCYFC6xLTqwjeOgWWog@mail.gmail.com> <CAPXgP11x9UYm7QReMjqZHtv8ZVoMRzNsREe-bdNwNSoSA6TRfw@mail.gmail.com>
+From: "Pandita, Vikram" <vikram.pandita@ti.com>
+Date: Thu, 2 Aug 2012 19:19:31 -0700
+Message-ID: <CAFm5wm3w_QXzuScz7qOQpUabNS1tRcH_fJmR0rmqAvXzCSJxzA@mail.gmail.com>
+Subject: Re: [PATCH] printk: add option to print cpu id
+To: Kay Sievers <kay@vrfy.org>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 05:17 AM, Vlad Yasevich wrote:
-> On 07/31/2012 02:51 AM, xufeng zhang wrote:
->> Sorry, please ignore the above patch, there was an paste error.
->> Please check the following patch.
->> ============================================
->> I'm wondering if the below solution is fine to you which is based on
->> your changes.
->> BTW, I have verified this patch and it works ok for all the situation,
->> but only one problem persists:
->> there is a potential that commands will exceeds SCTP_MAX_NUM_COMMANDS
->> which happens during sending lots of small error DATA chunks.
->>
->
-> I started thinking along the same vein, but was thinking that maybe it 
-> makes sense to make error list more generic. I need to check the spec 
-> on the ordering of ERROR chunks.  If they are always after other 
-> control chunks, then maybe make an error list and queue all errors 
-> there.  Then when sending control chunks, drain the control queue 
-> first, then the error queue, and finally the data queue.
+Kay
 
-I didn't find the explicitly bundling order description in spec for 
-other ERROR chunks,
-but it's reasonable to do this.
-Anyway, I'll wait for your final solution.
-
-
-Thanks,
-Xufeng Zhang
+On Thu, Aug 2, 2012 at 5:06 PM, Kay Sievers <kay@vrfy.org> wrote:
+> On Fri, Aug 3, 2012 at 1:50 AM, Pandita, Vikram <vikram.pandita@ti.com> wrote:
+>> On Thu, Aug 2, 2012 at 1:08 PM, Kay Sievers <kay@vrfy.org> wrote:
 >
-> BTW, the patch below doesn't include the code to queue the error chunk 
-> onto the new error queue.
+>>> How is that supposed to be useful?
+>>>
+>>> The prefix is added while exporting data from the kmsg buffer, which
+>>> is just the CPU that *reads* the data from the buffer, not the one
+>>> that has *written* the data it into it.
+>>
+>> I don't think so.
+>> I can see the backtrace of the printk() call looks like follows:
+>>
+>> print_cpuid
+>>  print_prefix
+>>   msg_print_text
+>>    console_unlock
+>>     vprint_emit
+>>      printk
+>>
+>> Now this is a synchronous path, where in the buffer is getting filled
+>> with cpuid and timer info from the printk() calling context.
+>> So you should get the right CPU id with the trace - with the exception
+>> that i pointed out earlier for preemption.
+>>
+>>>
+>>> Do I miss anything here?
+>>
+>> This is my understanding of the printk framework.
+>> At least the print_time and print_cpuid seems to be happening
+>> synchronously wrt printk
 >
-> -vlad
+> Printk is a store-and-forward-model, and it always was. There is no
+> guarantee at all, that the data is immediately flushed to the console
+> by the same CPU, it just happens to be in most cases. It's pretty
+> common though, that a different task is doing that work when it gets
+> the console lock, and that is not a matter of preemption, it's normal
+> and expected operation. The data which CPU has emitted the text is
+> just not available. It would need to be stored in the records, for
+> this to work.
 >
->> Thanks,
->> Xufeng Zhang
->>
->> ---
->>   include/net/sctp/command.h |    1 +
->>   include/net/sctp/structs.h |    3 +++
->>   net/sctp/outqueue.c        |    7 +++++++
->>   net/sctp/sm_sideeffect.c   |   16 ++++++++++++++++
->>   net/sctp/sm_statefuns.c    |   17 ++++++++++++++---
->>   5 files changed, 41 insertions(+), 3 deletions(-)
->>
->> diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
->> index 712b3be..62c34f5 100644
->> --- a/include/net/sctp/command.h
->> +++ b/include/net/sctp/command.h
->> @@ -110,6 +110,7 @@ typedef enum {
->>          SCTP_CMD_SEND_NEXT_ASCONF, /* Send the next ASCONF after ACK */
->>          SCTP_CMD_PURGE_ASCONF_QUEUE, /* Purge all asconf queues.*/
->>          SCTP_CMD_SET_ASOC,       /* Restore association context */
->> +       SCTP_CMD_GEN_BAD_STREAM, /* Invalid Stream errors happened
->> command */
->>          SCTP_CMD_LAST
->>   } sctp_verb_t;
->>
->> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
->> index fc5e600..3d218e0 100644
->> --- a/include/net/sctp/structs.h
->> +++ b/include/net/sctp/structs.h
->> @@ -1183,6 +1183,9 @@ struct sctp_outq {
->>           */
->>          struct list_head abandoned;
->>
->> +       /* Put Invalid Stream error chunks on this list */
->> +       struct list_head bad_stream_err;
->> +
->>          /* How many unackd bytes do we have in-flight?  */
->>          __u32 outstanding_bytes;
->>
->> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
->> index e7aa177..1e87b0b 100644
->> --- a/net/sctp/outqueue.c
->> +++ b/net/sctp/outqueue.c
->> @@ -211,6 +211,7 @@ void sctp_outq_init(struct sctp_association *asoc,
->> struct sctp_outq *q)
->>          INIT_LIST_HEAD(&q->retransmit);
->>          INIT_LIST_HEAD(&q->sacked);
->>          INIT_LIST_HEAD(&q->abandoned);
->> +       INIT_LIST_HEAD(&q->bad_stream_err);
->>
->>          q->fast_rtx = 0;
->>          q->outstanding_bytes = 0;
->> @@ -283,6 +284,12 @@ void sctp_outq_teardown(struct sctp_outq *q)
->>                  list_del_init(&chunk->list);
->>                  sctp_chunk_free(chunk);
->>          }
->> +
->> +       /* Throw away any pending Invalid Stream error chunks */
->> +       list_for_each_entry_safe(chunk, tmp,&q->bad_stream_err, list) {
->> +               list_del_init(&chunk->list);
->> +               sctp_chunk_free(chunk);
->> +       }
->>   }
->>
->>   /* Free the outqueue structure and any related pending chunks.  */
->> diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
->> index fe99628..4698593 100644
->> --- a/net/sctp/sm_sideeffect.c
->> +++ b/net/sctp/sm_sideeffect.c
->> @@ -1060,6 +1060,18 @@ static void sctp_cmd_send_asconf(struct
->> sctp_association *asoc)
->>          }
->>   }
->>
->> +static void sctp_cmd_make_inv_stream_err(sctp_cmd_seq_t *commands,
->> +               struct sctp_association *asoc)
->> +{
->> +       struct sctp_chunk *err, *tmp;
->> +       struct sctp_outq *q =&asoc->outqueue;
->> +
->> +       list_for_each_entry_safe(err, tmp,&q->bad_stream_err, list) {
->> +               list_del_init(&err->list);
->> +               sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
->> +                               SCTP_CHUNK(err));
->> +       }
->> +}
->>
->>   /* These three macros allow us to pull the debugging code out of the
->>    * main flow of sctp_do_sm() to keep attention focused on the real
->> @@ -1724,6 +1736,10 @@ static int sctp_cmd_interpreter(sctp_event_t
->> event_type,
->>                          asoc = cmd->obj.asoc;
->>                          break;
->>
->> +               case SCTP_CMD_GEN_BAD_STREAM:
->> +                       sctp_cmd_make_inv_stream_err(commands, asoc);
->> +                       break;
->> +
->>                  default:
->>                          pr_warn("Impossible command: %u, %p\n",
->>                                  cmd->verb, cmd->obj.ptr);
->> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
->> index 9fca103..1c1bcd9 100644
->> --- a/net/sctp/sm_statefuns.c
->> +++ b/net/sctp/sm_statefuns.c
->> @@ -2967,8 +2967,14 @@ discard_force:
->>          return SCTP_DISPOSITION_DISCARD;
->>
->>   discard_noforce:
->> -       if (chunk->end_of_packet)
->> +       if (chunk->end_of_packet) {
->> +               struct sctp_outq *q =&asoc->outqueue;
->>                  sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, force);
->> +               /* Queue the INVALID STREAM error after the SACK if one
->> is needed. */
->> +               if (!list_empty(&q->bad_stream_err))
->> +                       sctp_add_cmd_sf(commands, 
->> SCTP_CMD_GEN_BAD_STREAM,
->> +                                       SCTP_NULL());
->> +       }
->>
->>          return SCTP_DISPOSITION_DISCARD;
->>   consume:
->> @@ -3037,11 +3043,16 @@ sctp_disposition_t
->> sctp_sf_eat_data_fast_4_4(const struct sctp_endpoint *ep,
->>           * with a SACK, a SHUTDOWN chunk, and restart the T2-shutdown
->> timer
->>           */
->>          if (chunk->end_of_packet) {
->> +               struct sctp_outq *q =&asoc->outqueue;
->>                  /* We must delay the chunk creation since the 
->> cumulative
->>                   * TSN has not been updated yet.
->>                   */
->>                  sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SHUTDOWN,
->> SCTP_NULL());
->>                  sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK,
->> SCTP_FORCE());
->> +               /* Queue the INVALID STREAM error after the SACK if one
->> is needed. */
->> +               if (!list_empty(&q->bad_stream_err))
->> +                       sctp_add_cmd_sf(commands, 
->> SCTP_CMD_GEN_BAD_STREAM,
->> +                                       SCTP_NULL());
->>                  sctp_add_cmd_sf(commands, SCTP_CMD_TIMER_RESTART,
->>                                  
->> SCTP_TO(SCTP_EVENT_TIMEOUT_T2_SHUTDOWN));
->>          }
->> @@ -6136,6 +6147,7 @@ static int sctp_eat_data(const struct
->> sctp_association *asoc,
->>           */
->>          sid = ntohs(data_hdr->stream);
->>          if (sid>= asoc->c.sinit_max_instreams) {
->> +               struct sctp_outq *q =&asoc->outqueue;
->>                  /* Mark tsn as received even though we drop it */
->>                  sctp_add_cmd_sf(commands, SCTP_CMD_REPORT_TSN,
->> SCTP_U32(tsn));
->>
->> @@ -6144,8 +6156,7 @@ static int sctp_eat_data(const struct
->> sctp_association *asoc,
->>                                           sizeof(data_hdr->stream),
->>                                           sizeof(u16));
->>                  if (err)
->> -                       sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
->> -                                       SCTP_CHUNK(err));
->> +                       list_add_tail(&err->list,&q->bad_stream_err);
->>                  return SCTP_IERROR_BAD_STREAM;
->>          }
->>
->
+> Your patch just prints the CPU that writes to the console, not
+> necessarily the one that has stored the data. I think the second one
+> is which is what you are looking for, but that is not what the patch
+> does.
 >
 
+I did not understand well the complexity of the console layer. Thanks
+for enlightenment :-)
+Would be nice if you have any suggestion to get this done the right way.
+
+First look i could guess this would do, but need to study further:
+
+@@ -1550,6 +1550,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+                          NULL, 0, recursion_msg, printed_len);
+        }
+
++       text_len = print_cpuid(text);
++       text += text_len;
++
+        /*
+         * The printf needs to come first; we need the syslog
+         * prefix which might be passed-in as a parameter.
+@@ -1582,6 +1585,13 @@ asmlinkage int vprintk_emit(int facility, int level,
+                }
+        }
+
++       /* Adjust for cpu-id string */
++       if (printk_cpuid) {
++               strncpy(text - 4, textbuf, 4);
++               text -= 4;
++               text_len += 4;
++       }
++
+        if (level == -1)
+                level = default_message_loglevel;
+
+
+
+> Also dmesg and syslog uses the same logic and would put-out all
+> entirely wrong CPU information with it, because the original
+> information is long gone.
+>
+> Kay
