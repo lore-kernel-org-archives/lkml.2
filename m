@@ -1,125 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab2HCOBb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:01:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48765 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab2HCOBY (ORCPT
+	id S1753537Ab2HCOBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:01:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45801 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab2HCOB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:01:24 -0400
+	Fri, 3 Aug 2012 10:01:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Palmer Cox <p@lmercox.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>,
+        Ulrich Drepper <drepper@gmail.com>, arnaldo.melo@gmail.com,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/18] perf tool: Save cmdline from user in file header vs what is passed to record
-Date: Fri,  3 Aug 2012 11:01:04 -0300
-Message-Id: <1344002470-5965-13-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 00/18] perf/core fixes and improvements
+Date: Fri,  3 Aug 2012 11:00:52 -0300
+Message-Id: <1344002470-5965-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1344002470-5965-1-git-send-email-acme@infradead.org>
-References: <1344002470-5965-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+Hi Ingo,
 
-A number of builtin commands process some user args and then pass the rest to
-cmd_record. cmd_record then saves argc/argv that it receives into the header of
-the perf data file. But this loses the arguments handled by the first command
--- ie., the real command line from the user. This patch saves the command line
-as typed by the user rather than what was passed to cmd_record.
+	Please consider pulling,
 
-As an example consider the command:
-$ perf kvm --guest --host --guestmount=/tmp/guest-mount record
-    -fo /tmp/perf.data -ag -- sleep 10
+- Arnaldo
 
-Currently the command saved to the header is:
-    cmdline : /tmp/p3.5/perf record -o perf.data.kvm -fo /tmp/perf.data -ag -- sleep 1
+The following changes since commit 194f8dcbe9629d8e9346cf96345a9c0bbf0e67ae:
 
-(ignore the duplicated -o -- the first would be yet another bug with perf-kvm).
+  uprobes: __replace_page() needs munlock_vma_page() (2012-07-30 11:27:25 +0200)
 
-With this patch the command line saved to the header is:
-cmdline : /tmp/p3.5/perf kvm --guest --host --guestmount=/tmp/guest-mount
-    record -fo /tmp/perf.data -ag -- sleep 1
+are available in the git repository at:
 
-v2: simplified to saving the command in parse_options per Stephane's suggestion
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1343616831-6408-1-git-send-email-dsahern@gmail.com
+for you to fetch changes up to 7f309ed6453926a81e2a97d274f67f1e48f0d74c:
+
+  perf tools: Remove brace expansion from clean target (2012-08-03 10:46:32 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes
+
+. Prep work for the DWARF CFI post unwinder, so that it doesn't
+  uses perf_session in lots of places, just evlist/evsel is enough.
+
+. Make clean brace expansion fix for some shells, from Palmer Cox
+
+. Warn user just once per guest kernel when not finding kernel info,
+  from David Ahern
+
+. perf test fix from Jiri Olsa
+
+. Fix error handling on event creation in perf top, from David Ahern
+
+. Fix check on perf_target__strnerror, from Namhyung Kim
+
+. Save the whole cmdline, from David Ahern
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c     |    2 --
- tools/perf/util/header.c        |    9 +++++++++
- tools/perf/util/parse-options.c |    3 +++
- 3 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index dc2b625..4db6e1b 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -844,8 +844,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 	struct perf_record *rec = &record;
- 	char errbuf[BUFSIZ];
- 
--	perf_header__set_cmdline(argc, argv);
--
- 	evsel_list = perf_evlist__new(NULL, NULL);
- 	if (evsel_list == NULL)
- 		return -ENOMEM;
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 3a6d204..74ea3c2 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -174,6 +174,15 @@ perf_header__set_cmdline(int argc, const char **argv)
- {
- 	int i;
- 
-+	/*
-+	 * If header_argv has already been set, do not override it.
-+	 * This allows a command to set the cmdline, parse args and
-+	 * then call another builtin function that implements a
-+	 * command -- e.g, cmd_kvm calling cmd_record.
-+	 */
-+	if (header_argv)
-+		return 0;
-+
- 	header_argc = (u32)argc;
- 
- 	/* do not include NULL termination */
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index 99d02aa..594f8fa 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -1,6 +1,7 @@
- #include "util.h"
- #include "parse-options.h"
- #include "cache.h"
-+#include "header.h"
- 
- #define OPT_SHORT 1
- #define OPT_UNSET 2
-@@ -413,6 +414,8 @@ int parse_options(int argc, const char **argv, const struct option *options,
- {
- 	struct parse_opt_ctx_t ctx;
- 
-+	perf_header__set_cmdline(argc, argv);
-+
- 	parse_options_start(&ctx, argc, argv, flags);
- 	switch (parse_options_step(&ctx, options, usagestr)) {
- 	case PARSE_OPT_HELP:
--- 
-1.7.1
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (7):
+      perf evsel: Precalculate the sample size
+      perf session: Use perf_evlist__sample_type more extensively
+      perf session: Use perf_evlist__sample_id_all more extensively
+      perf session: Use perf_evlist__id_hdr_size more extensively
+      perf evlist: Introduce perf_evlist__parse_sample
+      perf evsel: Adopt parse_sample method from perf_event
+      perf session: Remove no longer used synthesize_sample method
 
+David Ahern (7):
+      perf top: Error handling for counter creation should parallel perf-record
+      perf tool: Save cmdline from user in file header vs what is passed to record
+      perf kvm: Use strtol for walking guestmount directory
+      perf tools: Introducing rblist
+      perf tools: Change strlist to use the new rblist
+      perf tools: Introduce intlist
+      perf kvm top: Limit guest kernel info message to once
+
+Jiri Olsa (2):
+      perf test: Fix parse events automated tests
+      perf symbols: Fix array sizes for binary types arrays
+
+Namhyung Kim (1):
+      perf target: Fix check on buffer size
+
+Palmer Cox (1):
+      perf tools: Remove brace expansion from clean target
+
+ tools/perf/Makefile                 |    7 +-
+ tools/perf/builtin-record.c         |    4 +-
+ tools/perf/builtin-report.c         |    5 +-
+ tools/perf/builtin-test.c           |   19 ++---
+ tools/perf/builtin-top.c            |   23 +++++--
+ tools/perf/util/event.h             |    3 -
+ tools/perf/util/evlist.c            |    7 ++
+ tools/perf/util/evlist.h            |    3 +
+ tools/perf/util/evsel.c             |   15 ++--
+ tools/perf/util/evsel.h             |   10 +--
+ tools/perf/util/header.c            |    9 +++
+ tools/perf/util/intlist.c           |  101 +++++++++++++++++++++++++++
+ tools/perf/util/intlist.h           |   75 ++++++++++++++++++++
+ tools/perf/util/parse-events-test.c |   12 ++--
+ tools/perf/util/parse-options.c     |    3 +
+ tools/perf/util/python.c            |    6 +-
+ tools/perf/util/rblist.c            |  107 ++++++++++++++++++++++++++++
+ tools/perf/util/rblist.h            |   47 +++++++++++++
+ tools/perf/util/session.c           |   48 +++++++------
+ tools/perf/util/session.h           |   24 +------
+ tools/perf/util/strlist.c           |  130 ++++++++++++++---------------------
+ tools/perf/util/strlist.h           |   11 +--
+ tools/perf/util/symbol.c            |   14 +++-
+ tools/perf/util/target.c            |    2 +-
+ 24 files changed, 498 insertions(+), 187 deletions(-)
+ create mode 100644 tools/perf/util/intlist.c
+ create mode 100644 tools/perf/util/intlist.h
+ create mode 100644 tools/perf/util/rblist.c
+ create mode 100644 tools/perf/util/rblist.h
