@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab2HCMuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 08:50:19 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39334 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab2HCMuO convert rfc822-to-8bit (ORCPT
+	id S1752798Ab2HCMwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 08:52:00 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41725 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751636Ab2HCMv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 08:50:14 -0400
+	Fri, 3 Aug 2012 08:51:56 -0400
+Date: Fri, 3 Aug 2012 13:51:44 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] kbuild: kvm: make export of linux/kvm_para.h
+ unconditional
+Message-ID: <20120803125144.GD26925@mudshark.cambridge.arm.com>
+References: <1343310254-7493-1-git-send-email-will.deacon@arm.com>
+ <20120802122550.GD9838@mudshark.cambridge.arm.com>
+ <501A8C68.9030001@redhat.com>
+ <20120802202911.GA9108@merkur.ravnborg.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.0 \(1485\))
-Subject: Re: [PATCH 3/4] arm/dts: omap5-evm: Add keypad data
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <1343997486-710-4-git-send-email-sourav.poddar@ti.com>
-Date: Fri, 3 Aug 2012 14:50:22 +0200
-Cc: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D32DBB77-844C-400A-9E3F-3F779431D1C7@dominion.thruhere.net>
-References: <1343997486-710-1-git-send-email-sourav.poddar@ti.com> <1343997486-710-4-git-send-email-sourav.poddar@ti.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-X-Mailer: Apple Mail (2.1485)
+Content-Disposition: inline
+In-Reply-To: <20120802202911.GA9108@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Op 3 aug. 2012, om 14:38 heeft Sourav Poddar <sourav.poddar@ti.com> het volgende geschreven:
-
-> Add keypad data node in omap5 device tree file.
-> Also fill the device tree binding parameters
-> with the required value in "omap5-evm" dts file.
+On Thu, Aug 02, 2012 at 09:29:11PM +0100, Sam Ravnborg wrote:
+> On Thu, Aug 02, 2012 at 05:19:20PM +0300, Avi Kivity wrote:
+> > Can you get it reviewed by someone who is familiar with this?  This is
+> > probably the third fix for the this issue.
 > 
-> Tested on omap5430 evm with 3.5 custom kernel.
+> IMO the patch is wrong.
+> Any use of wildcards in include/asm-generic/Kbuild.asm is wrong.
+
+I agree that the wildcard stuff is horrible but that's not something
+introduced by this patch. In fact, I'm removing those where there is an
+asm-generic header that can be used instead.
+
+> IMO include/asm-generic/Kbuild.asm is for generic header files
+> that ALL archs can use.
 > 
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Acked-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
-> arch/arm/boot/dts/omap5-evm.dts |   12 ++++++++++++
-> arch/arm/boot/dts/omap5.dtsi    |    5 +++++
-> 2 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
-> index 45a8aeb..09fe941 100644
-> --- a/arch/arm/boot/dts/omap5-evm.dts
-> +++ b/arch/arm/boot/dts/omap5-evm.dts
-> @@ -17,6 +17,18 @@
-> 		device_type = "memory";
-> 		reg = <0x80000000 0x40000000>; /* 1 GB */
-> 	};
-> +
-> +	keypad {
-> +		keypad,num-rows = <8>;
-> +		keypad,num-columns = <8>;
-> +		linux,keymap = < 0x02020073
-> +			0x02030072
-> +			0x020400e7
-> +			0x02050066
-> +			0x0206006b
-> +			0x020700d9 >;
-> +		linux,input-no-autorepeat;
-> +	};
+> If not ALL archs can use it, then the individual arch shall
+> specify the file explicit.
 
-This not a criticism on your patch, but a generic question about DT: Is there no way to have nice constants for keys like we have in the kernel, like KEY_POWER, KEY_UP, etc? If no, does DT allow comments so I can look at a dts and see which keycodes are mapped instead of having to dig up the sources?
+In which case, we should probably fix the rules for kvm.h and a.out.h as
+well. Neither of these headers have asm-generic versions and I doubt this
+is possible, so the header-y lines should be done for each architecture
+exporting such a header, no?
 
-regards,
+> I know we here hit a bad thing with the generic-y support,
+> where we miss a good way to add a file to a lot of archs
+> without editing a lot of files.
 
-Koen
+If there isn't a generic version of the header, then yes, I guess you have
+to modify the architectures that want to export it.
+
+I'm happy to post an extra patch sorting out kvm.h and a.out.h if that's
+what's required to get headers building again.
+
+Will
