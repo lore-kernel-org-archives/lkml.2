@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab2HCQCi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:02:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43265 "EHLO
+	id S1753243Ab2HCQCm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:02:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43283 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab2HCQCb (ORCPT
+	with ESMTP id S1752588Ab2HCQCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:02:31 -0400
+	Fri, 3 Aug 2012 12:02:38 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: dri-devel@lists.freedesktop.org
 Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
         linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
         Andreas Heider <andreas@meetr.de>
-Subject: [RFC PATCH 2/5] drm/i915: separate out code to get EDID from LVDS panel
-Date: Fri,  3 Aug 2012 11:02:18 -0500
-Message-Id: <1344009741-14248-3-git-send-email-seth.forshee@canonical.com>
+Subject: [RFC PATCH 5/5] drm/i915: check LVDS for EDID on GPU switches
+Date: Fri,  3 Aug 2012 11:02:21 -0500
+Message-Id: <1344009741-14248-6-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
 References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
@@ -22,173 +22,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code will be reused to support hybrid graphics on some Apple
-machines that can't get a mode for the LVDS panel at boot, so move it
-into a new function named intel_lvds_get_edid().
+If the LVDS panel wasn't connected at boot then we won't have an EDID
+for it. To fix this, call intel_lvds_get_edid() from the vga_switcheroo
+reprobe callback.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_lvds.c |   95 +++++++++++++++++++++----------------
- 1 file changed, 55 insertions(+), 40 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c   |    1 +
+ drivers/gpu/drm/i915/intel_drv.h  |    1 +
+ drivers/gpu/drm/i915/intel_lvds.c |    2 +-
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 5b5176d..c9c942e 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1266,6 +1266,7 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
+ static void i915_switcheroo_reprobe(struct pci_dev *pdev)
+ {
+ 	struct drm_device *dev = pci_get_drvdata(pdev);
++	intel_lvds_get_edid(dev);
+ 	intel_fb_output_poll_changed(dev);
+ }
+ 
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 8435355..bcc14f9 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -356,6 +356,7 @@ extern void intel_dvo_init(struct drm_device *dev);
+ extern void intel_tv_init(struct drm_device *dev);
+ extern void intel_mark_busy(struct drm_device *dev,
+ 			    struct drm_i915_gem_object *obj);
++extern bool intel_lvds_get_edid(struct drm_device *dev);
+ extern bool intel_lvds_init(struct drm_device *dev);
+ extern void intel_dp_init(struct drm_device *dev, int dp_reg);
+ void
 diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index e05c0d3..5069137 100644
+index 9d05a90..39dbefc 100644
 --- a/drivers/gpu/drm/i915/intel_lvds.c
 +++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -46,6 +46,7 @@ struct intel_lvds {
- 
- 	struct edid *edid;
- 
-+	u8 i2c_pin;
- 	int fitting_mode;
- 	u32 pfit_control;
- 	u32 pfit_pgm_ratios;
-@@ -897,6 +898,54 @@ static bool intel_lvds_supported(struct drm_device *dev)
+@@ -902,7 +902,7 @@ static bool intel_lvds_supported(struct drm_device *dev)
  	return IS_MOBILE(dev) && !IS_I830(dev);
  }
  
-+static bool intel_lvds_get_edid(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	struct drm_connector *connector = dev_priv->int_lvds_connector;
-+	struct intel_lvds *intel_lvds = intel_attached_lvds(connector);
-+	struct drm_display_mode *scan; /* *modes, *bios_mode; */
-+
-+	/*
-+	 * Attempt to get the fixed panel mode from DDC.  Assume that the
-+	 * preferred mode is the right one.
-+	 */
-+	intel_lvds->edid = drm_get_edid(connector,
-+					intel_gmbus_get_adapter(dev_priv,
-+								intel_lvds->i2c_pin));
-+	if (intel_lvds->edid) {
-+		if (drm_add_edid_modes(connector,
-+				       intel_lvds->edid)) {
-+			drm_mode_connector_update_edid_property(connector,
-+								intel_lvds->edid);
-+		} else {
-+			kfree(intel_lvds->edid);
-+			intel_lvds->edid = NULL;
-+		}
-+	}
-+	if (!intel_lvds->edid) {
-+		/* Didn't get an EDID, so
-+		 * Set wide sync ranges so we get all modes
-+		 * handed to valid_mode for checking
-+		 */
-+		connector->display_info.min_vfreq = 0;
-+		connector->display_info.max_vfreq = 200;
-+		connector->display_info.min_hfreq = 0;
-+		connector->display_info.max_hfreq = 200;
-+	}
-+
-+	list_for_each_entry(scan, &connector->probed_modes, head) {
-+		if (scan->type & DRM_MODE_TYPE_PREFERRED) {
-+			intel_lvds->fixed_mode =
-+				drm_mode_duplicate(dev, scan);
-+			intel_find_lvds_downclock(dev,
-+						  intel_lvds->fixed_mode,
-+						  connector);
-+			return true;
-+		}
-+	}
-+	return false;
-+}
-+
- /**
-  * intel_lvds_init - setup LVDS connectors on this device
-  * @dev: drm device
-@@ -912,7 +961,6 @@ bool intel_lvds_init(struct drm_device *dev)
- 	struct intel_connector *intel_connector;
- 	struct drm_connector *connector;
- 	struct drm_encoder *encoder;
--	struct drm_display_mode *scan; /* *modes, *bios_mode; */
- 	struct drm_crtc *crtc;
- 	u32 lvds;
- 	int pipe;
-@@ -955,9 +1003,11 @@ bool intel_lvds_init(struct drm_device *dev)
- 		intel_lvds->pfit_control = I915_READ(PFIT_CONTROL);
- 	}
- 
-+	intel_lvds->i2c_pin = pin;
- 	intel_encoder = &intel_lvds->base;
- 	encoder = &intel_encoder->base;
- 	connector = &intel_connector->base;
-+	dev_priv->int_lvds_connector = connector;
- 	drm_connector_init(dev, &intel_connector->base, &intel_lvds_connector_funcs,
- 			   DRM_MODE_CONNECTOR_LVDS);
- 
-@@ -991,6 +1041,7 @@ bool intel_lvds_init(struct drm_device *dev)
- 				      dev->mode_config.scaling_mode_property,
- 				      DRM_MODE_SCALE_ASPECT);
- 	intel_lvds->fitting_mode = DRM_MODE_SCALE_ASPECT;
-+
- 	/*
- 	 * LVDS discovery:
- 	 * 1) check for EDID on DDC
-@@ -1001,44 +1052,8 @@ bool intel_lvds_init(struct drm_device *dev)
- 	 *    if closed, act like it's not there for now
- 	 */
- 
--	/*
--	 * Attempt to get the fixed panel mode from DDC.  Assume that the
--	 * preferred mode is the right one.
--	 */
--	intel_lvds->edid = drm_get_edid(connector,
--					intel_gmbus_get_adapter(dev_priv,
--								pin));
--	if (intel_lvds->edid) {
--		if (drm_add_edid_modes(connector,
--				       intel_lvds->edid)) {
--			drm_mode_connector_update_edid_property(connector,
--								intel_lvds->edid);
--		} else {
--			kfree(intel_lvds->edid);
--			intel_lvds->edid = NULL;
--		}
--	}
--	if (!intel_lvds->edid) {
--		/* Didn't get an EDID, so
--		 * Set wide sync ranges so we get all modes
--		 * handed to valid_mode for checking
--		 */
--		connector->display_info.min_vfreq = 0;
--		connector->display_info.max_vfreq = 200;
--		connector->display_info.min_hfreq = 0;
--		connector->display_info.max_hfreq = 200;
--	}
--
--	list_for_each_entry(scan, &connector->probed_modes, head) {
--		if (scan->type & DRM_MODE_TYPE_PREFERRED) {
--			intel_lvds->fixed_mode =
--				drm_mode_duplicate(dev, scan);
--			intel_find_lvds_downclock(dev,
--						  intel_lvds->fixed_mode,
--						  connector);
--			goto out;
--		}
--	}
-+	if (intel_lvds_get_edid(dev))
-+		goto out;
- 
- 	/* Failed to get EDID, what about VBT? */
- 	if (dev_priv->lfp_lvds_vbt_mode) {
-@@ -1096,7 +1111,6 @@ out:
- 		dev_priv->lid_notifier.notifier_call = NULL;
- 	}
- 	/* keep the LVDS connector */
--	dev_priv->int_lvds_connector = connector;
- 	drm_sysfs_connector_add(connector);
- 
- 	intel_panel_setup_backlight(dev);
-@@ -1105,6 +1119,7 @@ out:
- 
- failed:
- 	DRM_DEBUG_KMS("No LVDS modes found, disabling.\n");
-+	dev_priv->int_lvds_connector = NULL;
- 	drm_connector_cleanup(connector);
- 	drm_encoder_cleanup(encoder);
- 	kfree(intel_lvds);
+-static bool intel_lvds_get_edid(struct drm_device *dev)
++bool intel_lvds_get_edid(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_connector *connector = dev_priv->int_lvds_connector;
 -- 
 1.7.9.5
 
