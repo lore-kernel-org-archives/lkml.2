@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2HCS1Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 14:27:16 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39604 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab2HCS1P (ORCPT
+	id S1753505Ab2HCS2j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 14:28:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34605 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab2HCS2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 14:27:15 -0400
-X-Originating-IP: 217.70.178.133
-X-Originating-IP: 173.246.103.110
-Date: Fri, 3 Aug 2012 11:27:08 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Alex Kelly <alex.page.kelly@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: [PATCH] scripts/get_maintainer.pl: Default to --no-rolestats when
- output not a terminal
-Message-ID: <20120803182706.GA4637@jtriplet-mobl1>
+	Fri, 3 Aug 2012 14:28:37 -0400
+Message-ID: <501C183E.5000303@linutronix.de>
+Date: Fri, 03 Aug 2012 20:28:14 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ptrace: fix set_task_blockstep()->update_debugctlmsr()
+ logic
+References: <20120803162954.GA19806@redhat.com> <501BFF95.8040202@linutronix.de> <20120803173830.GA22687@redhat.com>
+In-Reply-To: <20120803173830.GA22687@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scripts/get_maintainer.pl defaults to showing --rolestats, which
-provides annotations explaining why each person or list might want to
-know about a patch.  This works well for interactive use, but breaks
-when used with git send-email's --to-cmd or --cc-cmd, resulting in
-malformed email headers and mails sent to some but not all recipients.
+On 08/03/2012 07:38 PM, Oleg Nesterov wrote:
+>>>    	update_debugctlmsr(debugctl);
+>>> +	local_irq_enable();
+>>
+>> wouldn't preempt_disable() be enough?
+>
+> preempt_disable() can't help if interrupt handler changes
+> other bits in between?
 
-To avoid the need to explicitly pass --no-rolestats for batch use,
-enable --rolestats by default only when outputting to a terminal.
+So perf() uses this register as well. Since perf() uses the raw
+primitives (raw_spin_lock()) shouldn't you do the same? If I recall
+correctly (but it is Friday and late) local_irq_enable() wouldn't
+disable irqs on RT and perf takes the raw lock so the irqs there should
+be really disabled.
 
-Reported-by: Alex Kelly <alex.page.kelly@gmail.com>
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- scripts/get_maintainer.pl |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+>
+> Oleg.
 
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 8b673dd..dcb0748 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -40,7 +40,8 @@ my $email_use_mailmap = 1;
- my $output_multiline = 1;
- my $output_separator = ", ";
- my $output_roles = 0;
--my $output_rolestats = 1;
-+my $output_rolestats = 0;
-+$output_rolestats = 1 if -t STDOUT;
- my $scm = 0;
- my $web = 0;
- my $subsystem = 0;
-@@ -768,7 +769,8 @@ Other options:
- 
- Default options:
-   [--email --nogit --git-fallback --m --n --l --multiline -pattern-depth=0
--   --remove-duplicates --rolestats]
-+   --remove-duplicates]
-+  When outputting to a terminal, --rolestats defaults to enabled.
- 
- Notes:
-   Using "-f directory" may give unexpected results:
-@@ -781,9 +783,10 @@ Notes:
-       Used with "--git-blame", does not iterate all files in directory
-   Using "--git-blame" is slow and may add old committers and authors
-       that are no longer active maintainers to the output.
--  Using "--roles" or "--rolestats" with git send-email --cc-cmd or any
--      other automated tools that expect only ["name"] <email address>
--      may not work because of additional output after <email address>.
-+  Using "--roles" or "--rolestats" with git send-email --to-cmd or --cc-cmd, or
-+      any other automated tools that expect only ["name"] <email address> may
-+      not work because of additional output after <email address>.  These
-+      options default to disabled when not outputting to a terminal.
-   Using "--rolestats" and "--git-blame" shows the #/total=% commits,
-       not the percentage of the entire file authored.  # of commits is
-       not a good measure of amount of code authored.  1 major commit may
--- 
-1.7.10.4
-
+Sebastian
