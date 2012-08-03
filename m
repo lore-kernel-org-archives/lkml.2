@@ -1,288 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab2HCAri (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 20:47:38 -0400
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:40696 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab2HCArg (ORCPT
+	id S1752949Ab2HCA6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 20:58:14 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60959 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab2HCA6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 20:47:36 -0400
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: viro@ZenIV.linux.org.uk, tytso@mit.edu,
-        Anatol Pomozov <anatol.pomozov@gmail.com>
-Subject: [PATCH] fs: Preserve error code in get_empty_filp()
-Date: Thu,  2 Aug 2012 17:47:13 -0700
-Message-Id: <1343954833-17719-1-git-send-email-anatol.pomozov@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1343845147-21394-1-git-send-email-anatol.pomozov@gmail.com>
-References: <1343845147-21394-1-git-send-email-anatol.pomozov@gmail.com>
+	Thu, 2 Aug 2012 20:58:11 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-f0-501b222165be
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Venkatraman S <svenkatr@ti.com>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Adrian Hunter <ext-adrian.hunter@nokia.com>,
+        Philip Rakity <prakity@marvell.com>, raphael.andy.lee@gmail.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungsik Lee <kyungsik.lee@lge.com>
+Subject: [PATCH RESEND v6] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
+Date: Fri,  3 Aug 2012 09:58:03 +0900
+Message-Id: <1343955483-6917-1-git-send-email-kyungsik.lee@lge.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocating a file structure in function get_empty_filp() might fail because
-of several reasons:
- - not enough memory for file structures
- - operation is not allowed
- - user is over its limit
+It is expected that Extended CSD register(the size of this register
+is larger than CID/CSD) will be referenced more frequently as more
+fields have been added to Extended CSD and it seems that it is not
+a good option to double the memory used.
 
-Currently the function returns NULL in all cases and we loose the exact
-reason of the error. All callers of get_empty_filp() assume that the function
-can fail with ENFILE only.
+This patch is intended to avoid the use of bounce buffer for reading
+Extended CSD register in mmc_send_cxd_data(). It will provide a better
+performance gain by removing memcpy() overhead for a half KiB and
+a redundant bounce buffer allocated repeatedly at the cost of providing
+DMA-capable buffer from upper caller(but on-stack buffer is allowed
+with no performance gain).
 
-Return error through pointer. Change all callers to preserve this error code.
-
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+Reviewed-by: Venkatraman S <svenkatr@ti.com>
 ---
- arch/ia64/kernel/perfmon.c |  4 ++--
- fs/anon_inodes.c           |  5 +++--
- fs/file_table.c            | 22 ++++++++++++++--------
- fs/hugetlbfs/inode.c       |  5 +++--
- fs/namei.c                 |  4 ++--
- fs/open.c                  |  5 ++---
- fs/pipe.c                  |  9 ++++++---
- ipc/shm.c                  |  4 +++-
- mm/shmem.c                 |  5 +++--
- net/socket.c               |  4 ++--
- 10 files changed, 40 insertions(+), 27 deletions(-)
+Changes in v2:
+- Handling on-stack buffer if it's used in caller.
 
-diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
-index 3fa4bc5..da2dcce 100644
---- a/arch/ia64/kernel/perfmon.c
-+++ b/arch/ia64/kernel/perfmon.c
-@@ -2221,9 +2221,9 @@ pfm_alloc_file(pfm_context_t *ctx)
- 	d_add(path.dentry, inode);
- 
- 	file = alloc_file(&path, FMODE_READ, &pfm_file_ops);
--	if (!file) {
-+	if (IS_ERR(file)) {
- 		path_put(&path);
--		return ERR_PTR(-ENFILE);
-+		return file;
- 	}
- 
- 	file->f_flags = O_RDONLY;
-diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
-index 28d39fb..73536e3 100644
---- a/fs/anon_inodes.c
-+++ b/fs/anon_inodes.c
-@@ -160,10 +160,11 @@ struct file *anon_inode_getfile(const char *name,
- 
- 	d_instantiate(path.dentry, anon_inode_inode);
- 
--	error = -ENFILE;
- 	file = alloc_file(&path, OPEN_FMODE(flags), fops);
--	if (!file)
-+	if (IS_ERR(file)) {
-+		error = PTR_ERR(file);
- 		goto err_dput;
-+	}
- 	file->f_mapping = anon_inode_inode->i_mapping;
- 
- 	file->f_pos = 0;
-diff --git a/fs/file_table.c b/fs/file_table.c
-index 701985e..3b3f4d7 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -94,8 +94,8 @@ int proc_nr_files(ctl_table *table, int write,
- #endif
- 
- /* Find an unused file structure and return a pointer to it.
-- * Returns NULL, if there are no more free file structures or
-- * we run out of memory.
-+ * Returns an error pointer if some error happend e.g. we over file
-+ * structures limit, run out of memory or operation is not permitted.
-  *
-  * Be very careful using this.  You are responsible for
-  * getting write access to any mount that you might assign
-@@ -108,6 +108,7 @@ struct file *get_empty_filp(void)
- 	const struct cred *cred = current_cred();
- 	static long old_max;
- 	struct file * f;
-+	int error;
- 
- 	/*
- 	 * Privileged users can go above max_files
-@@ -117,17 +118,22 @@ struct file *get_empty_filp(void)
- 		 * percpu_counters are inaccurate.  Do an expensive check before
- 		 * we go and fail.
- 		 */
--		if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files)
-+		if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files) {
-+			error = -ENFILE;
- 			goto over;
-+		}
- 	}
- 
- 	f = kmem_cache_zalloc(filp_cachep, GFP_KERNEL);
--	if (f == NULL)
-+	if (f == NULL) {
-+		error = -ENOMEM;
- 		goto fail;
-+	}
- 
- 	percpu_counter_inc(&nr_files);
- 	f->f_cred = get_cred(cred);
--	if (security_file_alloc(f))
-+	error = security_file_alloc(f);
-+	if (error)
- 		goto fail_sec;
- 
- 	INIT_LIST_HEAD(&f->f_u.fu_list);
-@@ -149,7 +155,7 @@ over:
- fail_sec:
- 	file_free(f);
- fail:
--	return NULL;
-+	return ERR_PTR(error);
+Changes in v3:
+- Remove unnecesary code.
+
+Changes in v4:
+- Modify codes based-on S, Venkatraman's comments.
+
+Changes in v5:
+- Modify commit log and add NOTE description.
+
+Changes in v6:
+- Modify commit log.
+---
+ drivers/mmc/core/mmc_ops.c |   58 +++++++++++++++++++++++++++++++------------
+ 1 files changed, 42 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+index 0ed2cc5..acf578d 100644
+--- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -230,6 +230,10 @@ mmc_send_cxd_native(struct mmc_host *host, u32 arg, u32 *cxd, int opcode)
+ 	return 0;
  }
  
- /**
-@@ -173,8 +179,8 @@ struct file *alloc_file(struct path *path, fmode_t mode,
- 	struct file *file;
++/*
++ * NOTE: void *buf, Caller for the buf is required to use DMA-capable
++ * buffer or on-stack buffer(with some overhead in callee).
++ */
+ static int
+ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ 		u32 opcode, void *buf, unsigned len)
+@@ -239,13 +243,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ 	struct mmc_data data = {0};
+ 	struct scatterlist sg;
+ 	void *data_buf;
++	int is_on_stack;
  
- 	file = get_empty_filp();
--	if (!file)
--		return NULL;
-+	if (IS_ERR(file))
-+		return file;
+-	/* dma onto stack is unsafe/nonportable, but callers to this
+-	 * routine normally provide temporary on-stack buffers ...
+-	 */
+-	data_buf = kmalloc(len, GFP_KERNEL);
+-	if (data_buf == NULL)
+-		return -ENOMEM;
++	is_on_stack = object_is_on_stack(buf);
++	if (is_on_stack) {
++
++		/* dma onto stack is unsafe/nonportable, but callers to this
++		 * routine normally provide temporary on-stack buffers ...
++		 */
++		data_buf = kmalloc(len, GFP_KERNEL);
++		if (data_buf == NULL)
++			return -ENOMEM;
++	} else
++		data_buf = buf;
  
- 	file->f_path = *path;
- 	file->f_mapping = path->dentry->d_inode->i_mapping;
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 8349a89..5ec849b 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -984,11 +984,12 @@ struct file *hugetlb_file_setup(const char *name, unsigned long addr,
- 	inode->i_size = size;
- 	clear_nlink(inode);
+ 	mrq.cmd = &cmd;
+ 	mrq.data = &data;
+@@ -280,8 +290,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
  
--	error = -ENFILE;
- 	file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
- 			&hugetlbfs_file_operations);
--	if (!file)
-+	if (IS_ERR(file)) {
-+		error = PTR_ERR(file);
- 		goto out_dentry; /* inode is already attached */
+ 	mmc_wait_for_req(host, &mrq);
+ 
+-	memcpy(buf, data_buf, len);
+-	kfree(data_buf);
++	if (is_on_stack) {
++		memcpy(buf, data_buf, len);
++		kfree(data_buf);
 +	}
  
- 	return file;
+ 	if (cmd.error)
+ 		return cmd.error;
+@@ -294,24 +306,32 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ int mmc_send_csd(struct mmc_card *card, u32 *csd)
+ {
+ 	int ret, i;
++	u32 *csd_tmp;
  
-diff --git a/fs/namei.c b/fs/namei.c
-index 1b46439..85544e9 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2879,8 +2879,8 @@ static struct file *path_openat(int dfd, const char *pathname,
- 	int error;
+ 	if (!mmc_host_is_spi(card->host))
+ 		return mmc_send_cxd_native(card->host, card->rca << 16,
+ 				csd, MMC_SEND_CSD);
  
- 	file = get_empty_filp();
--	if (!file)
--		return ERR_PTR(-ENFILE);
-+	if (IS_ERR(file))
-+		return file;
+-	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
++	csd_tmp = kmalloc(16, GFP_KERNEL);
++	if (!csd_tmp)
++		return -ENOMEM;
++
++	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
+ 	if (ret)
+-		return ret;
++		goto err;
  
- 	file->f_flags = op->open_flag;
+ 	for (i = 0;i < 4;i++)
+-		csd[i] = be32_to_cpu(csd[i]);
++		csd[i] = be32_to_cpu(csd_tmp[i]);
  
-diff --git a/fs/open.c b/fs/open.c
-index f3d96e7..1587b2d 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -781,10 +781,9 @@ struct file *dentry_open(const struct path *path, int flags,
- 	/* We must always pass in a valid mount pointer. */
- 	BUG_ON(!path->mnt);
+-	return 0;
++err:
++	kfree(csd_tmp);
++	return ret;
+ }
  
--	error = -ENFILE;
- 	f = get_empty_filp();
--	if (f == NULL)
--		return ERR_PTR(error);
-+	if (IS_ERR(f))
-+		return f;
+ int mmc_send_cid(struct mmc_host *host, u32 *cid)
+ {
+ 	int ret, i;
++	u32 *cid_tmp;
  
- 	f->f_flags = flags;
- 	f->f_path = *path;
-diff --git a/fs/pipe.c b/fs/pipe.c
-index 8d85d70..e420908 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -1035,16 +1035,19 @@ int create_pipe_files(struct file **res, int flags)
- 
- 	d_instantiate(path.dentry, inode);
- 
--	err = -ENFILE;
- 	f = alloc_file(&path, FMODE_WRITE, &write_pipefifo_fops);
--	if (!f)
-+	if (IS_ERR(f)) {
-+		err = PTR_ERR(f);
- 		goto err_dentry;
-+	}
- 
- 	f->f_flags = O_WRONLY | (flags & (O_NONBLOCK | O_DIRECT));
- 
- 	res[0] = alloc_file(&path, FMODE_READ, &read_pipefifo_fops);
--	if (!res[0])
-+	if (IS_ERR(res[0])) {
-+		err = PTR_ERR(res[0]);
- 		goto err_file;
-+	}
- 
- 	path_get(&path);
- 	res[0]->f_flags = O_RDONLY | (flags & O_NONBLOCK);
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 00faa05..c8eee21 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -1039,8 +1039,10 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
- 			  is_file_hugepages(shp->shm_file) ?
- 				&shm_file_operations_huge :
- 				&shm_file_operations);
--	if (!file)
-+	if (IS_ERR(file)) {
-+		err = PTR_ERR(file);
- 		goto out_free;
-+	}
- 
- 	file->private_data = sfd;
- 	file->f_mapping = shp->shm_file->f_mapping;
-diff --git a/mm/shmem.c b/mm/shmem.c
-index d4e184e..cd814ee 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2948,11 +2948,12 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
- 		goto put_dentry;
- #endif
- 
--	error = -ENFILE;
- 	file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
- 		  &shmem_file_operations);
--	if (!file)
-+	if (IS_ERR(file)) {
-+		error = PTR_ERR(file);
- 		goto put_dentry;
-+	}
- 
- 	return file;
- 
-diff --git a/net/socket.c b/net/socket.c
-index dfe5b66..e80eb83 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -369,12 +369,12 @@ static int sock_alloc_file(struct socket *sock, struct file **f, int flags)
- 
- 	file = alloc_file(&path, FMODE_READ | FMODE_WRITE,
- 		  &socket_file_ops);
--	if (unlikely(!file)) {
-+	if (unlikely(IS_ERR(file))) {
- 		/* drop dentry, keep inode */
- 		ihold(path.dentry->d_inode);
- 		path_put(&path);
- 		put_unused_fd(fd);
--		return -ENFILE;
-+		return PTR_ERR(file);
+ 	if (!mmc_host_is_spi(host)) {
+ 		if (!host->card)
+@@ -320,14 +340,20 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
+ 				cid, MMC_SEND_CID);
  	}
  
- 	sock->file = file;
+-	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
++	cid_tmp = kmalloc(16, GFP_KERNEL);
++	if (!cid_tmp)
++		return -ENOMEM;
++
++	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
+ 	if (ret)
+-		return ret;
++		goto err;
+ 
+ 	for (i = 0;i < 4;i++)
+-		cid[i] = be32_to_cpu(cid[i]);
++		cid[i] = be32_to_cpu(cid_tmp[i]);
+ 
+-	return 0;
++err:
++	kfree(cid_tmp);
++	return ret;
+ }
+ 
+ int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
 -- 
-1.7.11.4
+1.7.0.4
 
