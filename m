@@ -1,35 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab2HCRQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 13:16:42 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61662 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab2HCRQk (ORCPT
+	id S1753513Ab2HCRQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 13:16:54 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38599 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab2HCRQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 13:16:40 -0400
-Date: Fri, 3 Aug 2012 10:16:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org
-Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
-Message-ID: <20120803171635.GI15477@google.com>
-References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
- <1344003788-1417-2-git-send-email-levinsasha928@gmail.com>
- <20120803171515.GH15477@google.com>
+	Fri, 3 Aug 2012 13:16:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120803171515.GH15477@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <e80f32ef-d6cf-48cc-9ddb-75d95bc9581e@email.android.com>
+References: <alpine.LFD.2.02.1203231926000.2542@ionos>
+	<20120323190855.GA27213@www.outflux.net>
+	<CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
+	<87pq7935w2.fsf@xmission.com>
+	<CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com>
+	<20120803110247.GB11952@moon>
+	<501BC62A.4090308@parallels.com>
+	<e80f32ef-d6cf-48cc-9ddb-75d95bc9581e@email.android.com>
+Date: Fri, 3 Aug 2012 10:16:50 -0700
+X-Google-Sender-Auth: AJJpFnLv3WESWG6OrY6tB2JPD34
+Message-ID: <CAGXu5j+Cfhs8TqG59uJHf-4WFG8BD2i9EJDvSsTrpPyLUNTMzw@mail.gmail.com>
+Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
+From: Kees Cook <keescook@chromium.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "spender@grsecurity.net" <spender@grsecurity.net>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ooh, one more thing.  Comments please.
+Right, I'm satisfied with the ptrace_may_access check that was added.
+The deprecation was suggested as an additional change. I'm okay
+keeping the syscall if someone actually needs it. :)
+
+-Kees
+
+On Fri, Aug 3, 2012 at 5:58 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> The permissions on the syscall were fixed them withR ptrace_may_access.
+>
+> We have identified two legitimate use cases.
+>
+> It looks like it is time for someone to generate the path to remove the depreciation.
+>
+> Who is up for writing and testing that patch?
+>
+> Eric
+>
+
+
 
 -- 
-tejun
+Kees Cook
+Chrome OS Security
