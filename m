@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab2HCHH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 03:07:29 -0400
+	id S1753049Ab2HCHHv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 03:07:51 -0400
 Received: from mail-gg0-f174.google.com ([209.85.161.174]:49510 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab2HCHHV (ORCPT
+	with ESMTP id S1752826Ab2HCHHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 03:07:21 -0400
+	Fri, 3 Aug 2012 03:07:45 -0400
 From: Huacai Chen <chenhuacai@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
         Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
         Hua Yan <yanh@lemote.com>
-Subject: [PATCH V4 09/16] MIPS: Loongson: Add swiotlb to support big memory (>4GB).
-Date: Fri,  3 Aug 2012 15:06:04 +0800
-Message-Id: <1343977571-2292-10-git-send-email-chenhc@lemote.com>
+Subject: [PATCH V4 14/16] MIPS: Loongson 3: Add CPU hotplug support.
+Date: Fri,  3 Aug 2012 15:06:09 +0800
+Message-Id: <1343977571-2292-15-git-send-email-chenhc@lemote.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1343977571-2292-1-git-send-email-chenhc@lemote.com>
 References: <1343977571-2292-1-git-send-email-chenhc@lemote.com>
@@ -23,331 +23,334 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is probably a workaround because Loongson doesn't support DMA
-address above 4GB. If memory is more than 4GB, CONFIG_SWIOTLB and
-ZONE_DMA32 should be selected. In this way, DMA pages are allocated
-below 4GB preferably.
-
-However, CONFIG_SWIOTLB+ZONE_DMA32 is not enough, so, we provide a
-platform-specific dma_map_ops::set_dma_mask() to make sure each
-driver's dma_mask and coherent_dma_mask is below 32-bit.
+Tips of Loongson's CPU hotplug:
+1, To fully shutdown a core in Loongson 3, the target core should go to
+   CKSEG1 and flush all L2 cache entries at first. Then, another core
+   (usually Core 0) can safely disable the clock of the target core. So
+   play_dead() call loongson3_play_dead() via CKSEG1 (both uncached and
+   unmmaped).
+2, The default clocksource of Loongson is MIPS. Since clock source is a
+   global device, timekeeping need the CP0' Count registers of each core
+   be synchronous. Thus, when a core is up, we use a SMP_ASK_C0COUNT IPI
+   to ask Core-0's Count.
 
 Signed-off-by: Huacai Chen <chenhc@lemote.com>
 Signed-off-by: Hongliang Tao <taohl@lemote.com>
 Signed-off-by: Hua Yan <yanh@lemote.com>
 ---
- arch/mips/include/asm/dma-mapping.h                |    5 +
- .../mips/include/asm/mach-loongson/dma-coherence.h |   25 +++-
- arch/mips/loongson/common/Makefile                 |    5 +
- arch/mips/loongson/common/dma-swiotlb.c            |  159 ++++++++++++++++++++
- arch/mips/mm/dma-default.c                         |   13 ++-
- 5 files changed, 202 insertions(+), 5 deletions(-)
- create mode 100644 arch/mips/loongson/common/dma-swiotlb.c
+ arch/mips/Kconfig                              |    1 +
+ arch/mips/include/asm/mach-loongson/loongson.h |    6 +-
+ arch/mips/include/asm/smp.h                    |    1 +
+ arch/mips/loongson/loongson-3/irq.c            |   10 ++
+ arch/mips/loongson/loongson-3/smp.c            |  177 +++++++++++++++++++++++-
+ 5 files changed, 189 insertions(+), 6 deletions(-)
 
-diff --git a/arch/mips/include/asm/dma-mapping.h b/arch/mips/include/asm/dma-mapping.h
-index be39a12..35f91bc 100644
---- a/arch/mips/include/asm/dma-mapping.h
-+++ b/arch/mips/include/asm/dma-mapping.h
-@@ -46,9 +46,14 @@ static inline int dma_mapping_error(struct device *dev, u64 mask)
- static inline int
- dma_set_mask(struct device *dev, u64 mask)
- {
-+	struct dma_map_ops *ops = get_dma_ops(dev);
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 9e8e86c..6c18566 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -261,6 +261,7 @@ config LASAT
+ config MACH_LOONGSON
+ 	bool "Loongson family of machines"
+ 	select SYS_SUPPORTS_ZBOOT
++	select SYS_SUPPORTS_HOTPLUG_CPU
+ 	help
+ 	  This enables the support of Loongson family of machines.
+ 
+diff --git a/arch/mips/include/asm/mach-loongson/loongson.h b/arch/mips/include/asm/mach-loongson/loongson.h
+index f573e47..573eed8 100644
+--- a/arch/mips/include/asm/mach-loongson/loongson.h
++++ b/arch/mips/include/asm/mach-loongson/loongson.h
+@@ -247,6 +247,9 @@ static inline void do_perfcnt_IRQ(void)
+ #define LOONGSON_PXARB_CFG		LOONGSON_REG(LOONGSON_REGBASE + 0x68)
+ #define LOONGSON_PXARB_STATUS		LOONGSON_REG(LOONGSON_REGBASE + 0x6c)
+ 
++/* Chip Config */
++#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
 +
- 	if(!dev->dma_mask || !dma_supported(dev, mask))
- 		return -EIO;
+ /* pcimap */
  
-+	if (ops->set_dma_mask)
-+		return ops->set_dma_mask(dev, mask);
+ #define LOONGSON_PCIMAP_PCIMAP_LO0	0x0000003f
+@@ -262,9 +265,6 @@ static inline void do_perfcnt_IRQ(void)
+ #ifdef CONFIG_CPU_SUPPORTS_CPUFREQ
+ #include <linux/cpufreq.h>
+ extern struct cpufreq_frequency_table loongson2_clockmod_table[];
+-
+-/* Chip Config */
+-#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
+ #endif
+ 
+ /*
+diff --git a/arch/mips/include/asm/smp.h b/arch/mips/include/asm/smp.h
+index d4fb4d8..a6edbbf 100644
+--- a/arch/mips/include/asm/smp.h
++++ b/arch/mips/include/asm/smp.h
+@@ -40,6 +40,7 @@ extern int __cpu_logical_map[NR_CPUS];
+ #define SMP_CALL_FUNCTION	0x2
+ /* Octeon - Tell another core to flush its icache */
+ #define SMP_ICACHE_FLUSH	0x4
++#define SMP_ASK_C0COUNT		0x8
+ 
+ extern volatile cpumask_t cpu_callin_map;
+ 
+diff --git a/arch/mips/loongson/loongson-3/irq.c b/arch/mips/loongson/loongson-3/irq.c
+index 27aef31..83f84e6 100644
+--- a/arch/mips/loongson/loongson-3/irq.c
++++ b/arch/mips/loongson/loongson-3/irq.c
+@@ -85,3 +85,13 @@ void __init mach_init_irq(void)
+ 
+ 	set_c0_status(STATUSF_IP2 | STATUSF_IP6);
+ }
 +
- 	*dev->dma_mask = mask;
- 
- 	return 0;
-diff --git a/arch/mips/include/asm/mach-loongson/dma-coherence.h b/arch/mips/include/asm/mach-loongson/dma-coherence.h
-index e143305..b1dc286 100644
---- a/arch/mips/include/asm/mach-loongson/dma-coherence.h
-+++ b/arch/mips/include/asm/mach-loongson/dma-coherence.h
-@@ -13,26 +13,43 @@
- 
- struct device;
- 
-+extern dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr);
-+extern phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr);
- static inline dma_addr_t plat_map_dma_mem(struct device *dev, void *addr,
- 					  size_t size)
- {
-+#ifdef CONFIG_CPU_LOONGSON3
-+	return virt_to_phys(addr) < 0x10000000 ?
-+			(virt_to_phys(addr) | 0x0000000080000000) : virt_to_phys(addr);
-+#else
- 	return virt_to_phys(addr) | 0x80000000;
++#ifdef CONFIG_HOTPLUG_CPU
++
++void fixup_irqs(void)
++{
++	irq_cpu_offline();
++	clear_c0_status(ST0_IM);
++}
++
 +#endif
+diff --git a/arch/mips/loongson/loongson-3/smp.c b/arch/mips/loongson/loongson-3/smp.c
+index 30e7cb4..71edadf 100644
+--- a/arch/mips/loongson/loongson-3/smp.c
++++ b/arch/mips/loongson/loongson-3/smp.c
+@@ -30,6 +30,9 @@
+ 
+ #include "smp.h"
+ 
++DEFINE_PER_CPU(int, cpu_state);
++DEFINE_PER_CPU(uint32_t, core0_c0count);
++
+ /* write a 64bit value to ipi register */
+ void loongson3_ipi_write64(uint64_t action, void * addr)
+ {
+@@ -167,8 +170,8 @@ static void loongson3_send_ipi_mask(const struct cpumask *mask, unsigned int act
+ 
+ void loongson3_ipi_interrupt(struct pt_regs *regs)
+ {
+-	int cpu = smp_processor_id();
+-	unsigned int action;
++	int i, cpu = smp_processor_id();
++	unsigned int action, c0count;
+ 
+ 	/* Load the ipi register to figure out what we're supposed to do */
+ 	action = loongson3_ipi_read32(ipi_status_regs0[cpu]);
+@@ -183,14 +186,24 @@ void loongson3_ipi_interrupt(struct pt_regs *regs)
+ 	if (action & SMP_CALL_FUNCTION) {
+ 		smp_call_function_interrupt();
+ 	}
++
++	if (action & SMP_ASK_C0COUNT) {
++		BUG_ON(cpu != 0);
++		c0count = read_c0_count();
++		for (i=1; i<NR_CPUS; i++)
++			per_cpu(core0_c0count, i) = c0count;
++	}
  }
  
- static inline dma_addr_t plat_map_dma_mem_page(struct device *dev,
- 					       struct page *page)
++#define MAX_LOOPS 1250
+ /*
+  * SMP init and finish on secondary CPUs
+  */
+ void __cpuinit loongson3_init_secondary(void)
  {
-+#ifdef CONFIG_CPU_LOONGSON3
-+	return page_to_phys(page) < 0x10000000 ?
-+			(page_to_phys(page) | 0x0000000080000000) : page_to_phys(page);
-+#else
- 	return page_to_phys(page) | 0x80000000;
-+#endif
+ 	int i;
++	uint32_t initcount;
++	unsigned int cpu = smp_processor_id();
+ 	unsigned int imask = STATUSF_IP7 | STATUSF_IP6 | STATUSF_IP5 |
+ 			     STATUSF_IP4 | STATUSF_IP3 | STATUSF_IP2;
+ 
+@@ -200,11 +213,24 @@ void __cpuinit loongson3_init_secondary(void)
+ 	for (i = 0; i < NR_CPUS; i++) {
+ 		loongson3_ipi_write32(0xffffffff, ipi_en0_regs[i]);
+ 	}
++
++	per_cpu(cpu_state, cpu) = CPU_ONLINE;
++
++	i = 0;
++	__get_cpu_var(core0_c0count) = 0;
++	loongson3_send_ipi_single(0, SMP_ASK_C0COUNT);
++	while (!__get_cpu_var(core0_c0count))
++		i++;
++
++	if (i > MAX_LOOPS)
++		i = MAX_LOOPS;
++	initcount = __get_cpu_var(core0_c0count) + i;
++	write_c0_count(initcount);
++	write_c0_compare(initcount + mips_hpt_frequency/HZ);
  }
  
- static inline unsigned long plat_dma_addr_to_phys(struct device *dev,
- 	dma_addr_t dma_addr)
+ void __cpuinit loongson3_smp_finish(void)
  {
--#if defined(CONFIG_CPU_LOONGSON2F) && defined(CONFIG_64BIT)
-+#if defined(CONFIG_64BIT)
-+#if defined(CONFIG_CPU_LOONGSON3)
-+	return (dma_addr < 0x90000000 && dma_addr >= 0x80000000) ?
-+			(dma_addr & 0x0fffffff) : dma_addr;
-+#elif defined(CONFIG_CPU_LOONGSON2F)
- 	return (dma_addr > 0x8fffffff) ? dma_addr : (dma_addr & 0x0fffffff);
-+#endif /* CONFIG_CPU_LOONGSON3 */
- #else
- 	return dma_addr & 0x7fffffff;
--#endif
-+#endif /* CONFIG_64BIT */
+-	write_c0_compare(read_c0_count() + mips_hpt_frequency/HZ);
+ 	local_irq_enable();
+ 	loongson3_ipi_write64(0, (void *)(ipi_mailbox_buf[smp_processor_id()]+0x0));
+ 	printk(KERN_INFO "CPU#%d finished, CP0_ST=%x\n",
+@@ -233,6 +259,8 @@ void __init loongson3_smp_setup(void)
+ 
+ void __init loongson3_prepare_cpus(unsigned int max_cpus)
+ {
++	init_cpu_present(cpu_possible_mask);
++	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
  }
  
- static inline void plat_unmap_dma_mem(struct device *dev, dma_addr_t dma_addr,
-@@ -65,7 +82,11 @@ static inline int plat_dma_mapping_error(struct device *dev,
- 
- static inline int plat_device_is_coherent(struct device *dev)
+ /*
+@@ -266,6 +294,145 @@ void __init loongson3_cpus_done(void)
  {
-+#ifdef CONFIG_DMA_NONCOHERENT
- 	return 0;
-+#else
-+	return 1;
-+#endif /* CONFIG_DMA_NONCOHERENT */
  }
  
- #endif /* __ASM_MACH_LOONGSON_DMA_COHERENCE_H */
-diff --git a/arch/mips/loongson/common/Makefile b/arch/mips/loongson/common/Makefile
-index e526488..3a26109 100644
---- a/arch/mips/loongson/common/Makefile
-+++ b/arch/mips/loongson/common/Makefile
-@@ -25,3 +25,8 @@ obj-$(CONFIG_CS5536) += cs5536/
- #
- 
- obj-$(CONFIG_LOONGSON_SUSPEND) += pm.o
++#ifdef CONFIG_HOTPLUG_CPU
 +
-+#
-+# Big Memory Support
-+#
-+obj-$(CONFIG_LOONGSON_BIGMEM) += dma-swiotlb.o
-diff --git a/arch/mips/loongson/common/dma-swiotlb.c b/arch/mips/loongson/common/dma-swiotlb.c
-new file mode 100644
-index 0000000..b87a21e
---- /dev/null
-+++ b/arch/mips/loongson/common/dma-swiotlb.c
-@@ -0,0 +1,159 @@
-+#include <linux/mm.h>
-+#include <linux/init.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/scatterlist.h>
-+#include <linux/swiotlb.h>
-+#include <linux/bootmem.h>
++extern void fixup_irqs(void);
 +
-+#include <asm/bootinfo.h>
-+#include <dma-coherence.h>
-+
-+static void *loongson_dma_alloc_coherent(struct device *dev, size_t size,
-+				dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
++static int loongson3_cpu_disable(void)
 +{
-+	void *ret;
++	extern void (*flush_cache_all)(void);
++	unsigned int cpu = smp_processor_id();
 +
-+	if (dma_alloc_from_coherent(dev, size, dma_handle, &ret))
-+		return ret;
++	if (cpu == 0)
++		return -EBUSY;
 +
-+	/* ignore region specifiers */
-+	gfp &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
-+
-+#ifdef CONFIG_ZONE_DMA
-+	if (dev == NULL)
-+		gfp |= __GFP_DMA;
-+	else if (dev->coherent_dma_mask <= DMA_BIT_MASK(24))
-+		gfp |= __GFP_DMA;
-+	else
-+#endif
-+#ifdef CONFIG_ZONE_DMA32
-+	if (dev->coherent_dma_mask <= DMA_BIT_MASK(32))
-+		gfp |= __GFP_DMA32;
-+	else
-+#endif
-+	;
-+	gfp |= __GFP_NORETRY;
-+
-+	ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
-+	mb();
-+	return ret;
-+}
-+
-+static void loongson_dma_free_coherent(struct device *dev, size_t size,
-+				void *vaddr, dma_addr_t dma_handle, struct dma_attrs *attrs)
-+{
-+	int order = get_order(size);
-+
-+	if (dma_release_from_coherent(dev, order, vaddr))
-+		return;
-+
-+	swiotlb_free_coherent(dev, size, vaddr, dma_handle);
-+}
-+
-+static dma_addr_t loongson_dma_map_page(struct device *dev, struct page *page,
-+				unsigned long offset, size_t size,
-+				enum dma_data_direction dir,
-+				struct dma_attrs *attrs)
-+{
-+	dma_addr_t daddr = swiotlb_map_page(dev, page, offset, size,
-+					dir, attrs);
-+	mb();
-+	return daddr;
-+}
-+
-+static int loongson_dma_map_sg(struct device *dev, struct scatterlist *sg,
-+				int nents, enum dma_data_direction dir,
-+				struct dma_attrs *attrs)
-+{
-+	int r = swiotlb_map_sg_attrs(dev, sg, nents, dir, NULL);
-+	mb();
-+
-+	return r;
-+}
-+
-+static void loongson_dma_sync_single_for_device(struct device *dev,
-+				dma_addr_t dma_handle, size_t size,
-+				enum dma_data_direction dir)
-+{
-+	swiotlb_sync_single_for_device(dev, dma_handle, size, dir);
-+	mb();
-+}
-+
-+static void loongson_dma_sync_sg_for_device(struct device *dev,
-+				struct scatterlist *sg, int nents,
-+				enum dma_data_direction dir)
-+{
-+	swiotlb_sync_sg_for_device(dev, sg, nents, dir);
-+	mb();
-+}
-+
-+static dma_addr_t loongson_unity_phys_to_dma(struct device *dev, phys_addr_t paddr)
-+{
-+	return (paddr < 0x10000000) ?
-+			(paddr | 0x0000000080000000) : paddr;
-+}
-+
-+static phys_addr_t loongson_unity_dma_to_phys(struct device *dev, dma_addr_t daddr)
-+{
-+	return (daddr < 0x90000000 && daddr >= 0x80000000) ?
-+			(daddr & 0x0fffffff) : daddr;
-+}
-+
-+struct loongson_dma_map_ops {
-+	struct dma_map_ops dma_map_ops;
-+	dma_addr_t (*phys_to_dma)(struct device *dev, phys_addr_t paddr);
-+	phys_addr_t (*dma_to_phys)(struct device *dev, dma_addr_t daddr);
-+};
-+
-+dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-+{
-+	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
-+					struct loongson_dma_map_ops, dma_map_ops);
-+
-+	return ops->phys_to_dma(dev, paddr);
-+}
-+
-+phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
-+{
-+	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
-+					struct loongson_dma_map_ops, dma_map_ops);
-+
-+	return ops->dma_to_phys(dev, daddr);
-+}
-+
-+static int loongson_dma_set_mask(struct device *dev, u64 mask)
-+{
-+	/* Loongson doesn't support DMA above 32-bit */
-+	if (mask > DMA_BIT_MASK(32))
-+		return -EIO;
-+
-+	*dev->dma_mask = mask;
++	set_cpu_online(cpu, false);
++	cpu_clear(cpu, cpu_callin_map);
++	local_irq_disable();
++	fixup_irqs();
++	local_irq_enable();
++	flush_cache_all();
++	local_flush_tlb_all();
 +
 +	return 0;
 +}
 +
-+static struct loongson_dma_map_ops loongson_linear_dma_map_ops = {
-+	.dma_map_ops = {
-+		.alloc = loongson_dma_alloc_coherent,
-+		.free = loongson_dma_free_coherent,
-+		.map_page = loongson_dma_map_page,
-+		.unmap_page = swiotlb_unmap_page,
-+		.map_sg = loongson_dma_map_sg,
-+		.unmap_sg = swiotlb_unmap_sg_attrs,
-+		.sync_single_for_cpu = swiotlb_sync_single_for_cpu,
-+		.sync_single_for_device = loongson_dma_sync_single_for_device,
-+		.sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
-+		.sync_sg_for_device = loongson_dma_sync_sg_for_device,
-+		.mapping_error = swiotlb_dma_mapping_error,
-+		.dma_supported = swiotlb_dma_supported,
-+		.set_dma_mask = loongson_dma_set_mask
-+	},
-+	.phys_to_dma = loongson_unity_phys_to_dma,
-+	.dma_to_phys = loongson_unity_dma_to_phys
-+};
 +
-+void __init plat_swiotlb_setup(void)
++static void loongson3_cpu_die(unsigned int cpu)
 +{
-+	swiotlb_init(1);
-+	mips_dma_map_ops = &loongson_linear_dma_map_ops.dma_map_ops;
-+}
-diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
-index 3fab204..122f4f8 100644
---- a/arch/mips/mm/dma-default.c
-+++ b/arch/mips/mm/dma-default.c
-@@ -42,6 +42,13 @@ static inline int cpu_is_noncoherent_r10000(struct device *dev)
- 	       current_cpu_type() == CPU_R12000);
- }
- 
-+static inline int cpu_is_noncoherent_loongson(struct device *dev)
-+{
-+	return !plat_device_is_coherent(dev) &&
-+			(current_cpu_type() == CPU_LOONGSON2 ||
-+			 current_cpu_type() == CPU_LOONGSON3);
++	while (per_cpu(cpu_state, cpu) != CPU_DEAD)
++		cpu_relax();
++
++	mb();
 +}
 +
- static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
- {
- 	gfp_t dma_flag;
-@@ -209,7 +216,7 @@ static inline void __dma_sync(struct page *page,
- static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
- 	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
- {
--	if (cpu_is_noncoherent_r10000(dev))
-+	if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
- 		__dma_sync(dma_addr_to_page(dev, dma_addr),
- 			   dma_addr & ~PAGE_MASK, size, direction);
- 
-@@ -260,7 +267,7 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
- static void mips_dma_sync_single_for_cpu(struct device *dev,
- 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
- {
--	if (cpu_is_noncoherent_r10000(dev))
-+	if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
- 		__dma_sync(dma_addr_to_page(dev, dma_handle),
- 			   dma_handle & ~PAGE_MASK, size, direction);
- }
-@@ -281,7 +288,7 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
- 
- 	/* Make sure that gcc doesn't leave the empty loop body.  */
- 	for (i = 0; i < nelems; i++, sg++) {
--		if (cpu_is_noncoherent_r10000(dev))
-+		if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
- 			__dma_sync(sg_page(sg), sg->offset, sg->length,
- 				   direction);
- 	}
++/* To shutdown a core in Loongson 3, the target core should go to CKSEG1 and
++ * flush all L2 entries at first. Then, another core (usually Core 0) can
++ * safely disable the clock of the target core. loongson3_play_dead() is
++ * called via CKSEG1 (uncached and unmmaped) */
++void loongson3_play_dead(int *state_addr)
++{
++	__asm__ __volatile__(
++		"      .set push                         \n"
++		"      .set noreorder                    \n"
++		"      li $t0, 0x80000000                \n" /* KSEG0 */
++		"      li $t1, 512                       \n" /* num of L2 entries */
++		"flush_loop:                             \n" /* flush L2 */
++		"      cache 0, 0($t0)                   \n" /* ICache */
++		"      cache 0, 1($t0)                   \n"
++		"      cache 0, 2($t0)                   \n"
++		"      cache 0, 3($t0)                   \n"
++		"      cache 1, 0($t0)                   \n" /* DCache */
++		"      cache 1, 1($t0)                   \n"
++		"      cache 1, 2($t0)                   \n"
++		"      cache 1, 3($t0)                   \n"
++		"      addiu $t0, $t0, 0x20              \n"
++		"      bnez  $t1, flush_loop             \n"
++		"      addiu $t1, $t1, -1                \n"
++		"      li    $t0, 0x7                    \n" /* *state_addr = CPU_DEAD; */
++		"      sw    $t0, 0($a0)                 \n"
++		"      sync                              \n"
++		"      cache 21, 0($a0)                  \n" /* flush entry of *state_addr */
++		"      .set pop                          \n");
++
++	__asm__ __volatile__(
++		"      .set push                         \n"
++		"      .set noreorder                    \n"
++		"      .set mips64                       \n"
++		"      mfc0  $t2, $15, 1                 \n"
++		"      andi  $t2, 0x3ff                  \n"
++		"      .set mips3                        \n"
++		"      dli   $t0, 0x900000003ff01000     \n"
++		"      andi  $t3, $t2, 0x3               \n"
++		"      sll   $t3, 8                      \n"  /* get cpu id */
++		"      or    $t0, $t0, $t3               \n"
++		"      andi  $t1, $t2, 0xc               \n"
++		"      dsll  $t1, 42                     \n"  /* get node id */
++		"      or    $t0, $t0, $t1               \n"
++		"wait_for_init:                          \n"
++		"      li    $a0, 0x100                  \n"
++		"idle_loop:                              \n"
++		"      bnez  $a0, idle_loop              \n"
++		"      addiu $a0, -1                     \n"
++		"      lw    $v0, 0x20($t0)              \n"  /* get PC via mailbox */
++		"      nop                               \n"
++		"      beqz  $v0, wait_for_init          \n"
++		"      nop                               \n"
++		"      ld    $sp, 0x28($t0)              \n"  /* get SP via mailbox */
++		"      nop                               \n"
++		"      ld    $gp, 0x30($t0)              \n"  /* get GP via mailbox */
++		"      nop                               \n"
++		"      ld    $a1, 0x38($t0)              \n"
++		"      nop                               \n"
++		"      jr  $v0                           \n"  /* jump to initial PC */
++		"      nop                               \n"
++		"      .set pop                          \n");
++}
++
++void play_dead(void)
++{
++	int *state_addr;
++	unsigned int cpu = smp_processor_id();
++	void (*play_dead_at_ckseg1)(int *);
++
++	idle_task_exit();
++	play_dead_at_ckseg1 = (void *)CKSEG1ADDR((unsigned long)loongson3_play_dead);
++	state_addr = &per_cpu(cpu_state, cpu);
++	mb();
++	play_dead_at_ckseg1(state_addr);
++}
++
++#define CPU_POST_DEAD_FROZEN	(CPU_POST_DEAD | CPU_TASKS_FROZEN)
++static int __cpuinit loongson3_cpu_callback(struct notifier_block *nfb,
++	unsigned long action, void *hcpu)
++{
++	unsigned int cpu = (unsigned long)hcpu;
++
++	switch (action) {
++	case CPU_POST_DEAD:
++	case CPU_POST_DEAD_FROZEN:
++		printk(KERN_INFO "Disable clock for CPU#%d\n", cpu);
++		LOONGSON_CHIPCFG0 &= ~(1 << (12 + cpu));
++		break;
++	case CPU_UP_PREPARE:
++	case CPU_UP_PREPARE_FROZEN:
++		printk(KERN_INFO "Enable clock for CPU#%d\n", cpu);
++		LOONGSON_CHIPCFG0 |= 1 << (12 + cpu);
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static int __cpuinit register_loongson3_notifier(void)
++{
++	hotcpu_notifier(loongson3_cpu_callback, 0);
++	return 0;
++}
++early_initcall(register_loongson3_notifier);
++
++#endif
++
+ struct plat_smp_ops loongson3_smp_ops = {
+ 	.send_ipi_single = loongson3_send_ipi_single,
+ 	.send_ipi_mask = loongson3_send_ipi_mask,
+@@ -275,4 +442,8 @@ struct plat_smp_ops loongson3_smp_ops = {
+ 	.boot_secondary = loongson3_boot_secondary,
+ 	.smp_setup = loongson3_smp_setup,
+ 	.prepare_cpus = loongson3_prepare_cpus,
++#ifdef CONFIG_HOTPLUG_CPU
++	.cpu_disable = loongson3_cpu_disable,
++	.cpu_die = loongson3_cpu_die,
++#endif
+ };
 -- 
 1.7.7.3
 
