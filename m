@@ -1,97 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab2HCBWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Aug 2012 21:22:19 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:48573 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab2HCBWS (ORCPT
+	id S1753115Ab2HCBWb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Aug 2012 21:22:31 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61265 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab2HCBWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Aug 2012 21:22:18 -0400
-Date: Fri, 3 Aug 2012 06:50:04 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Ignore unsupported instructions in uprobe_mmap
-Message-ID: <20120803012004.GA3565@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120728163157.GA22719@redhat.com>
- <20120731064730.GB5087@linux.vnet.ibm.com>
- <20120731124805.GA485@redhat.com>
- <20120802100515.GC5782@linux.vnet.ibm.com>
- <20120802141757.GA5064@redhat.com>
- <20120802165452.GB4268@linux.vnet.ibm.com>
- <20120802175312.GB11933@redhat.com>
+	Thu, 2 Aug 2012 21:22:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120802175312.GB11933@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080301-7282-0000-0000-00000B990CA6
+In-Reply-To: <1343055592.2703.41.camel@menhir>
+References: <1343055592.2703.41.camel@menhir>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 2 Aug 2012 18:22:04 -0700
+X-Google-Sender-Auth: tt7D1ozaq1AINPDDyhbDfKf80Gk
+Message-ID: <CA+55aFwNGwh2DYsPzBfYWktgeKe1Z-K8u9qZ8Ab00Dd=m888Ew@mail.gmail.com>
+Subject: Re: GFS2: Pull request (merge window)
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-08-02 19:53:12]:
+[ For some reason this didn't go out, and was in my "drafts" folder.
+Better late than never, I guess ]
 
-> On 08/02, Srikar Dronamraju wrote:
-> >
-> > * Oleg Nesterov <oleg@redhat.com> [2012-08-02 16:17:57]:
-> >
-> > > Forgot to mention...
-> > >
-> > > On 08/02, Srikar Dronamraju wrote:
-> > > >
-> > > > While at it, add a missing put_uprobe() in the path where uprobe_mmap()
-> > > > races with uprobe_unregister().
-> > > > ...
-> > > > @@ -1051,8 +1051,10 @@ int uprobe_mmap(struct vm_area_struct *vma)
-> > > >  			if (ret == -EEXIST) {
-> > > >  				ret = 0;
-> > > >
-> > > > -				if (!is_swbp_at_addr(vma->vm_mm, vaddr))
-> > > > +				if (!is_swbp_at_addr(vma->vm_mm, vaddr)) {
-> > > > +					put_uprobe(uprobe);
-> > > >  					continue;
-> > > > +				}
-> > >
-> > > Yes, this part looks correct.
-> > >
-> > > In fact, I think this is not really correct anyway (wrt counter)
-> > > but we are going to kill it.
-> > >
-> > >
-> >
-> > Are you expecting the counter to be decreased/increased here?
-> 
-> uprobes_state.count is very wrong, afaics. I'll try to send the fixes
-> "soon", after we solve the pending problems (this one + stepping).
-> 
-> > This is case where the uprobe_mmap() and uprobe_unregister() raced, and
-> > by the time install_breakpoint() was called by uprobe_mmap(), there were
-> > no consumers.
-> 
-> Yes, exactly, and this case doesn't look 100% right too,
-> 
-> > i.e there are no uprobe->consumers and the underlying
-> > instruction is still not a breakpoint instruction.
-> 
-> Yes, but what if it _IS_ "int3" ?
+On Mon, Jul 23, 2012 at 7:59 AM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+>
+> Please consider pulling the following patches. There have been no changes since
+> they were posted for review,
 
-for int3, install_breakpoint returns -ENOTSUPP as install_breakpoint
-does an explicit check if the instruction is breakpoint instruction 
-and x86 analyse_insn() also returns -ENOTSUPP.
+It would be lovely to get a short overview of what the changes you ask
+me to pull actually do, so that I can populate the merge message with
+relevant information.
 
-> 
-> Yet another reason to move arch_uprobe_analyze_insn/etc to _register.
-> 
+(Not just a message for you, this is true in general. Although I'm
+very pleased with the merge window so far - I think most pull requests
+have had at least *some* general overview in tags and/or emails)
 
-I am for moving the stuff to _register that avoids us from looking at
-these cases.
-
--- 
-Thanks and Regards
-
+                Linus
