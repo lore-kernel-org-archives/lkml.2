@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab2HCQO2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:14:28 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53041 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab2HCQO1 (ORCPT
+	id S1753139Ab2HCQRJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:17:09 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47439 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab2HCQRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:14:27 -0400
-Date: Fri, 3 Aug 2012 17:14:16 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: dri-devel@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        Andreas Heider <andreas@meetr.de>
-Subject: Re: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we
- can't get a panel mode
-Message-ID: <20120803161416.GA22563@srcf.ucam.org>
-References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
- <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
+	Fri, 3 Aug 2012 12:17:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1343989102.2712.10.camel@menhir>
+References: <1343055592.2703.41.camel@menhir> <CA+55aFwNGwh2DYsPzBfYWktgeKe1Z-K8u9qZ8Ab00Dd=m888Ew@mail.gmail.com>
+ <1343989102.2712.10.camel@menhir>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 3 Aug 2012 09:16:44 -0700
+X-Google-Sender-Auth: MB80H9m0AHDuCwV0su-Rvg6KTI8
+Message-ID: <CA+55aFy0z-5AmvBgZ7T+uyn==aKWUHBU2z_8bAdLVa0TfK=StQ@mail.gmail.com>
+Subject: Re: GFS2: Pull request (merge window)
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 11:02:19AM -0500, Seth Forshee wrote:
-> Some Apple hybrid graphics machines do not have the LVDS panel connected
-> to the integrated GPU at boot and also do not supply a VBT. The LVDS
-> connector is not registered as a result, making it impossible to support
-> graphics switching.
-> 
-> This patch changes intel_lvds_init() to register the connector even if
-> we can't find any panel modes. This makes it necessary to always check
-> intel_lvds->fixed_mode before use, as it could now be NULL.
+On Fri, Aug 3, 2012 at 3:18 AM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+>
+> I've been writing summaries when I send out the "pre-pull patch posting"
+> so I could just copy & paste from that if it thats the kind of thing
+> that you are after?
+>
+> https://lkml.org/lkml/2012/7/23/59
 
-This one kind of sucks. I think adding a quirk for this situation would 
-be justifiable, rather than doing it for all devices.
+Yup, exactly something like that. And then depending on whether there
+are any new and interesting things, please elaborate..
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+  Thanks,
+                 Linus
