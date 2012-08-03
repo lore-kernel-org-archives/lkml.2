@@ -1,61 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab2HCODA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:03:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48800 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072Ab2HCOB0 (ORCPT
+	id S1754042Ab2HCODE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:03:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45792 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab2HCOB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Aug 2012 10:01:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Palmer Cox <p@lmercox.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/18] perf tools: Remove brace expansion from clean target
-Date: Fri,  3 Aug 2012 11:01:10 -0300
-Message-Id: <1344002470-5965-19-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 08/18] perf evlist: Introduce perf_evlist__parse_sample
+Date: Fri,  3 Aug 2012 11:01:00 -0300
+Message-Id: <1344002470-5965-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344002470-5965-1-git-send-email-acme@infradead.org>
 References: <1344002470-5965-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Palmer Cox <p@lmercox.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The clean target uses brace expansion to remove some generated files. However,
-the default shells on many systems do not support this feature resulting in
-some generated files not being removed by clean.
+That is a more compact form of perf_session__parse_sample and to support
+multiple evlists per perf_session is the way to go anyway.
 
-Signed-off-by: Palmer Cox <p@lmercox.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1343598883-17907-1-git-send-email-p@lmercox.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-vkxx3j5qktoj11bvcwmfjj13@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ tools/perf/builtin-test.c |    8 ++------
+ tools/perf/builtin-top.c  |    2 +-
+ tools/perf/util/evlist.c  |    9 +++++++++
+ tools/perf/util/evlist.h  |    4 ++++
+ tools/perf/util/python.c  |    6 +-----
+ tools/perf/util/session.c |   19 ++++---------------
+ tools/perf/util/session.h |    4 ----
+ 7 files changed, 21 insertions(+), 31 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 32912af..35655c3 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -987,7 +987,8 @@ clean:
- 	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
- 	$(MAKE) -C Documentation/ clean
- 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
--	$(RM) $(OUTPUT)util/*-{bison,flex}*
-+	$(RM) $(OUTPUT)util/*-bison*
-+	$(RM) $(OUTPUT)util/*-flex*
- 	$(python-clean)
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index e5032ed..1d592f5 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -562,9 +562,7 @@ static int test__basic_mmap(void)
+ 			goto out_munmap;
+ 		}
  
- .PHONY: all install clean strip $(LIBTRACEEVENT)
+-		err = perf_event__parse_sample(event, attr.sample_type,
+-					       evsels[0]->sample_size,
+-					       false, &sample, false);
++		err = perf_evlist__parse_sample(evlist, event, &sample, false);
+ 		if (err) {
+ 			pr_err("Can't parse sample, err = %d\n", err);
+ 			goto out_munmap;
+@@ -781,9 +779,7 @@ static int test__PERF_RECORD(void)
+ 				if (type < PERF_RECORD_MAX)
+ 					nr_events[type]++;
+ 
+-				err = perf_event__parse_sample(event, evsel->attr.sample_type,
+-							       evsel->sample_size, true,
+-							       &sample, false);
++				err = perf_evlist__parse_sample(evlist, event, &sample, false);
+ 				if (err < 0) {
+ 					if (verbose)
+ 						perf_event__fprintf(event, stderr);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 520e425..40264ea 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -811,7 +811,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 	int ret;
+ 
+ 	while ((event = perf_evlist__mmap_read(top->evlist, idx)) != NULL) {
+-		ret = perf_session__parse_sample(session, event, &sample);
++		ret = perf_evlist__parse_sample(top->evlist, event, &sample, false);
+ 		if (ret) {
+ 			pr_err("Can't parse sample, err = %d\n", ret);
+ 			continue;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 3edfd34..1a560e0 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -881,3 +881,12 @@ int perf_evlist__start_workload(struct perf_evlist *evlist)
+ 
+ 	return 0;
+ }
++
++int perf_evlist__parse_sample(struct perf_evlist *evlist,
++			      const union perf_event *event,
++			      struct perf_sample *sample, bool swapped)
++{
++	struct perf_evsel *e = list_entry(evlist->entries.next, struct perf_evsel, node);
++	return perf_event__parse_sample(event, e->attr.sample_type, e->sample_size,
++					e->attr.sample_id_all, sample, swapped);
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 40d4d3c..a5a4911 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -122,6 +122,10 @@ u64 perf_evlist__sample_type(const struct perf_evlist *evlist);
+ bool perf_evlist__sample_id_all(const const struct perf_evlist *evlist);
+ u16 perf_evlist__id_hdr_size(const struct perf_evlist *evlist);
+ 
++int perf_evlist__parse_sample(struct perf_evlist *evlist,
++			      const union perf_event *event,
++			      struct perf_sample *sample, bool swapped);
++
+ bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist);
+ bool perf_evlist__valid_sample_id_all(const struct perf_evlist *evlist);
+ 
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index b0d6f85..0688bfb 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -797,17 +797,13 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
+ 
+ 	event = perf_evlist__mmap_read(evlist, cpu);
+ 	if (event != NULL) {
+-		struct perf_evsel *first;
+ 		PyObject *pyevent = pyrf_event__new(event);
+ 		struct pyrf_event *pevent = (struct pyrf_event *)pyevent;
+ 
+ 		if (pyevent == NULL)
+ 			return PyErr_NoMemory();
+ 
+-		first = list_entry(evlist->entries.next, struct perf_evsel, node);
+-		err = perf_event__parse_sample(event, first->attr.sample_type,
+-					       first->sample_size,
+-					       sample_id_all, &pevent->sample, false);
++		err = perf_evlist__parse_sample(evlist, event, &pevent->sample, false);
+ 		if (err)
+ 			return PyErr_Format(PyExc_OSError,
+ 					    "perf: can't parse sample, err=%d", err);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 5b8601d..7d07324 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -16,19 +16,6 @@
+ #include "cpumap.h"
+ #include "event-parse.h"
+ 
+-int perf_session__parse_sample(struct perf_session *session,
+-			       const union perf_event *event,
+-			       struct perf_sample *sample)
+-{
+-	struct perf_evsel *first;
+-	first = list_entry(session->evlist->entries.next, struct perf_evsel, node);
+-
+-	return perf_event__parse_sample(event, first->attr.sample_type,
+-					first->sample_size,
+-					first->attr.sample_id_all, sample,
+-					session->header.needs_swap);
+-}
+-
+ int perf_session__synthesize_sample(struct perf_session *session,
+ 				    union perf_event *event,
+ 				    const struct perf_sample *sample)
+@@ -692,7 +679,8 @@ static void flush_sample_queue(struct perf_session *s,
+ 		if (iter->timestamp > limit)
+ 			break;
+ 
+-		ret = perf_session__parse_sample(s, iter->event, &sample);
++		ret = perf_evlist__parse_sample(s->evlist, iter->event, &sample,
++						s->header.needs_swap);
+ 		if (ret)
+ 			pr_err("Can't parse sample, err = %d\n", ret);
+ 		else
+@@ -1103,7 +1091,8 @@ static int perf_session__process_event(struct perf_session *session,
+ 	/*
+ 	 * For all kernel events we get the sample data
+ 	 */
+-	ret = perf_session__parse_sample(session, event, &sample);
++	ret = perf_evlist__parse_sample(session->evlist, event, &sample,
++					session->header.needs_swap);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index e2a1a4b..7389fb1 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -126,10 +126,6 @@ size_t perf_session__fprintf_dsos_buildid(struct perf_session *self,
+ 
+ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp);
+ 
+-int perf_session__parse_sample(struct perf_session *session,
+-			       const union perf_event *event,
+-			       struct perf_sample *sample);
+-
+ int perf_session__synthesize_sample(struct perf_session *session,
+ 				    union perf_event *event,
+ 				    const struct perf_sample *sample);
 -- 
 1.7.1
 
