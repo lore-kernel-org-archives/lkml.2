@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2HCOY4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:24:56 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58633 "EHLO
+	id S1753985Ab2HCOZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:25:21 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35880 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab2HCOX1 (ORCPT
+	with ESMTP id S1753189Ab2HCOXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:23:27 -0400
+	Fri, 3 Aug 2012 10:23:18 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
         aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [RFC v2 7/7] net,9p: use new hashtable implementation
-Date: Fri,  3 Aug 2012 16:23:08 +0200
-Message-Id: <1344003788-1417-8-git-send-email-levinsasha928@gmail.com>
+Subject: [RFC v2 3/7] mm,ksm: use new hashtable implementation
+Date: Fri,  3 Aug 2012 16:23:04 +0200
+Message-Id: <1344003788-1417-4-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
 References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
@@ -24,68 +24,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch 9p error table to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in 9p.
+Switch ksm to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in the ksm module.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- net/9p/error.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+ mm/ksm.c |   29 +++++++++--------------------
+ 1 files changed, 9 insertions(+), 20 deletions(-)
 
-diff --git a/net/9p/error.c b/net/9p/error.c
-index 2ab2de7..f1037db 100644
---- a/net/9p/error.c
-+++ b/net/9p/error.c
-@@ -34,7 +34,7 @@
- #include <linux/jhash.h>
- #include <linux/errno.h>
- #include <net/9p/9p.h>
--
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 47c8853..72d062a 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -33,7 +33,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/swap.h>
+ #include <linux/ksm.h>
+-#include <linux/hash.h>
 +#include <linux/hashtable.h>
- /**
-  * struct errormap - map string errors from Plan 9 to Linux numeric ids
-  * @name: string sent over 9P
-@@ -50,8 +50,8 @@ struct errormap {
- 	struct hlist_node list;
- };
+ #include <linux/freezer.h>
+ #include <linux/oom.h>
  
--#define ERRHASHSZ		32
--static struct hlist_head hash_errmap[ERRHASHSZ];
-+#define ERRHASHSZ 5
-+DEFINE_STATIC_HASHTABLE(hash_errmap, ERRHASHSZ);
+@@ -157,8 +157,8 @@ static struct rb_root root_stable_tree = RB_ROOT;
+ static struct rb_root root_unstable_tree = RB_ROOT;
  
- /* FixMe - reduce to a reasonable size */
- static struct errormap errmap[] = {
-@@ -196,15 +196,14 @@ int p9_error_init(void)
- 	int bucket;
+ #define MM_SLOTS_HASH_SHIFT 10
+-#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
+-static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
++#define mm_hash_cmp(slot, key) ((slot)->mm == (key))
++DEFINE_STATIC_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_SHIFT);
  
- 	/* initialize hash table */
--	for (bucket = 0; bucket < ERRHASHSZ; bucket++)
--		INIT_HLIST_HEAD(&hash_errmap[bucket]);
-+	hash_init(&hash_errmap, ERRHASHSZ);
+ static struct mm_slot ksm_mm_head = {
+ 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
+@@ -275,26 +275,15 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
  
- 	/* load initial error map into hash table */
- 	for (c = errmap; c->name != NULL; c++) {
- 		c->namelen = strlen(c->name);
--		bucket = jhash(c->name, c->namelen, 0) % ERRHASHSZ;
-+		bucket = jhash(c->name, c->namelen, 0);
- 		INIT_HLIST_NODE(&c->list);
--		hlist_add_head(&c->list, &hash_errmap[bucket]);
-+		hash_add(&hash_errmap, &c->list, bucket);
- 	}
+ static struct mm_slot *get_mm_slot(struct mm_struct *mm)
+ {
+-	struct mm_slot *mm_slot;
+-	struct hlist_head *bucket;
+-	struct hlist_node *node;
+-
+-	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+-	hlist_for_each_entry(mm_slot, node, bucket, link) {
+-		if (mm == mm_slot->mm)
+-			return mm_slot;
+-	}
+-	return NULL;
++	return hash_get(&mm_slots_hash, mm, struct mm_slot,
++				link, mm_hash_cmp);
+ }
  
- 	return 1;
-@@ -228,8 +227,8 @@ int p9_errstr2errno(char *errstr, int len)
- 	errno = 0;
- 	p = NULL;
- 	c = NULL;
--	bucket = jhash(errstr, len, 0) % ERRHASHSZ;
--	hlist_for_each_entry(c, p, &hash_errmap[bucket], list) {
-+	bucket = jhash(errstr, len, 0);
-+	hash_for_each_possible(&hash_errmap, p, c, list, bucket) {
- 		if (c->namelen == len && !memcmp(c->name, errstr, len)) {
- 			errno = c->val;
- 			break;
+ static void insert_to_mm_slots_hash(struct mm_struct *mm,
+ 				    struct mm_slot *mm_slot)
+ {
+-	struct hlist_head *bucket;
+-
+-	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+ 	mm_slot->mm = mm;
+-	hlist_add_head(&mm_slot->link, bucket);
++	hash_add(&mm_slots_hash, &mm_slot->link, (long)mm);
+ }
+ 
+ static inline int in_stable_tree(struct rmap_item *rmap_item)
+@@ -647,7 +636,7 @@ static int unmerge_and_remove_all_rmap_items(void)
+ 		ksm_scan.mm_slot = list_entry(mm_slot->mm_list.next,
+ 						struct mm_slot, mm_list);
+ 		if (ksm_test_exit(mm)) {
+-			hlist_del(&mm_slot->link);
++			hash_del(&mm_slot->link);
+ 			list_del(&mm_slot->mm_list);
+ 			spin_unlock(&ksm_mmlist_lock);
+ 
+@@ -1385,7 +1374,7 @@ next_mm:
+ 		 * or when all VM_MERGEABLE areas have been unmapped (and
+ 		 * mmap_sem then protects against race with MADV_MERGEABLE).
+ 		 */
+-		hlist_del(&slot->link);
++		hash_del(&slot->link);
+ 		list_del(&slot->mm_list);
+ 		spin_unlock(&ksm_mmlist_lock);
+ 
+@@ -1548,7 +1537,7 @@ void __ksm_exit(struct mm_struct *mm)
+ 	mm_slot = get_mm_slot(mm);
+ 	if (mm_slot && ksm_scan.mm_slot != mm_slot) {
+ 		if (!mm_slot->rmap_list) {
+-			hlist_del(&mm_slot->link);
++			hash_del(&mm_slot->link);
+ 			list_del(&mm_slot->mm_list);
+ 			easy_to_free = 1;
+ 		} else {
 -- 
 1.7.8.6
 
