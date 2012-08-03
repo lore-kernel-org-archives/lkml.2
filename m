@@ -1,44 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab2HCIjp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 04:39:45 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:38858 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab2HCIjm (ORCPT
+	id S1753388Ab2HCIlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 04:41:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33999 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab2HCIlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 04:39:42 -0400
-Date: Fri, 3 Aug 2012 09:24:30 +0200
-From: Harald Welte <laforge@gnumonks.org>
-To: Silas Boyd-Wickizer <sbw@mit.edu>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Harald Welte <laforge@openezx.org>, x86@kernel.org
-Subject: Re: [PATCH 3/3] Use get_online_cpus to avoid races involving
- for_each_online_cpu
-Message-ID: <20120803072430.GL16661@prithivi.gnumonks.org>
-References: <20120803000708.GD3443@mit.edu>
+	Fri, 3 Aug 2012 04:41:46 -0400
+Message-ID: <501B8EBE.5040006@kernel.dk>
+Date: Fri, 03 Aug 2012 10:41:34 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120803000708.GD3443@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: majianpeng <majianpeng@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: Don't use static to define "void *p" in show_partition_start().
+References: <201208031307389214790@gmail.com>
+In-Reply-To: <201208031307389214790@gmail.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Silas,
+On 08/03/2012 07:07 AM, majianpeng wrote:
+> I met a odd prblem:read /proc/partitions may return zero.
+> 
+> I wrote a file test.c:
+> int main()
+> {
+> 	char buff[4096];
+> 	int ret;
+> 	int fd;
+> 	printf("pid=%d\n",getpid());
+> 	while (1) {
+> 		fd = open("/proc/partitions", O_RDONLY);
+> 		if (fd < 0) {
+> 			printf("open error %s\n", strerror(errno));
+> 			return 0;
+> 		}
+> 		ret = read(fd, buff, 4096);
+> 		if (ret <= 0)
+> 			printf("ret=%d, %s, %ld\n", ret,
+> 				strerror(errno), lseek(fd,0,SEEK_CUR));
+> 		close(fd);
+> 	}
+> 	exit(0);
+> }
+> 
+> You can reproduce by:
+> 1:while true;do cat /proc/partitions > /dev/null ;done
+> 2:./test
+> 
+> I reviewed the code and found:
+>>> static void *show_partition_start(struct seq_file *seqf, loff_t *pos)
+>>> {
+>>> 	static void *p;
+> 
+>>> 	p = disk_seqf_start(seqf, pos);
+>>> 	if (!IS_ERR_OR_NULL(p) && !*pos)
+>>> 		seq_puts(seqf, "major minor  #blocks  name\n\n");
+>>> 	return p;
+>>> }
+> 		test								cat /proc/partitions
+> 	p = disk_seqf_start()(Not NULL)
+> 									p = disk_seqf_start()(NULL because pos)
+> 	if (!IS_ERR_OR_NULL(p) && !*pos)
+> 
+> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+> ---
+>  block/genhd.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/block/genhd.c b/block/genhd.c
+> index cac7366..d839723 100644
+> --- a/block/genhd.c
+> +++ b/block/genhd.c
+> @@ -835,7 +835,7 @@ static void disk_seqf_stop(struct seq_file *seqf, void *v)
+>  
+>  static void *show_partition_start(struct seq_file *seqf, loff_t *pos)
+>  {
+> -	static void *p;
+> +	void *p;
+>  
+>  	p = disk_seqf_start(seqf, pos);
+>  	if (!IS_ERR_OR_NULL(p) && !*pos)
 
-thanks a lot for the finding and addressing the issue.
-
-On Thu, Aug 02, 2012 at 05:07:08PM -0700, Silas Boyd-Wickizer wrote:
-> Signed-off-by: Silas Boyd-Wickizer <sbw@mit.edu>
-
-Acked-by: Harald Welte <laforge@gnumonks.org>
+Huh, that looks like a clear bug. I've applied it, thanks.
 
 -- 
-- Harald Welte <laforge@gnumonks.org>           http://laforge.gnumonks.org/
-============================================================================
-"Privacy in residential applications is a desirable marketing option."
-                                                  (ETSI EN 300 175-7 Ch. A6)
+Jens Axboe
+
