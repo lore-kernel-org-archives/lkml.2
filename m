@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab2HCOSE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:18:04 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48582 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab2HCOSD (ORCPT
+	id S1753133Ab2HCOXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:23:16 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35880 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189Ab2HCOXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:18:03 -0400
-From: Sachidananda Urs <sacchi@gmail.com>
-To: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Sachidananda Urs <sacchi@gmail.com>
-Subject: [PATCH] Documentation/filesystems/porting: Update documentation.
-Date: Fri,  3 Aug 2012 19:47:30 +0530
-Message-Id: <1344003450-4245-1-git-send-email-sacchi@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 3 Aug 2012 10:23:12 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [RFC v2 0/7] generic hashtable implementation
+Date: Fri,  3 Aug 2012 16:23:01 +0200
+Message-Id: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-->get_sb() is no longer used, update documentation to use ->mount(). Also added
-  a example for struct file_system_type.
+There are quite a few places in the kernel which implement a hashtable
+in a very similar way. Instead of having implementations of a hashtable
+all over the kernel, we can re-use the code.
 
-Signed-off-by: Sachidananda Urs <sacchi@gmail.com>
----
- Documentation/filesystems/porting |   20 +++++++++++++-------
- 1 files changed, 13 insertions(+), 7 deletions(-)
+This patch series introduces a very simple hashtable implementation, and
+modifies three (random) modules to use it. I've limited it to 3 only
+so that it would be easy to review and modify, and to show that even
+at this number we already eliminate a big amount of duplicated code.
 
-diff --git a/Documentation/filesystems/porting b/Documentation/filesystems/porting
-index 2bef2b3..d6d53fb 100644
---- a/Documentation/filesystems/porting
-+++ b/Documentation/filesystems/porting
-@@ -42,26 +42,32 @@ At some point that will become mandatory.
- ---
- [mandatory]
- 
--Change of file_system_type method (->read_super to ->get_sb)
-+Change of file_system_type method (->read_super to ->get_sb to ->mount)
- 
--->read_super() is no more.  Ditto for DECLARE_FSTYPE and DECLARE_FSTYPE_DEV.
-+->read_super() is no more and so is ->get_sb.  Ditto for DECLARE_FSTYPE and
-+  DECLARE_FSTYPE_DEV.
- 
- Turn your foo_read_super() into a function that would return 0 in case of
- success and negative number in case of error (-EINVAL unless you have more
- informative error value to report).  Call it foo_fill_super().  Now declare
- 
--int foo_get_sb(struct file_system_type *fs_type,
--	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
-+static struct dentry *foo_mount(struct file_system_type *fs_type, int flags,
-+                                const char *dev_name, void *data)
- {
--	return get_sb_bdev(fs_type, flags, dev_name, data, foo_fill_super,
--			   mnt);
-+        return mount_bdev(fs_type, flags, dev_name, data, foo_fill_super);
- }
- 
- (or similar with s/bdev/nodev/ or s/bdev/single/, depending on the kind of
- filesystem).
- 
- Replace DECLARE_FSTYPE... with explicit initializer and have ->get_sb set as
--foo_get_sb.
-+foo_mount. For example:
-+
-+static struct file_system_type foo_fs_type = {
-+        .owner  = THIS_MODOULE,
-+        .name   = "foo",
-+        .mount  = foo_mount,
-+};
- 
- ---
- [mandatory]
+If this basic hashtable looks ok, future code will include:
+
+ - RCU support
+ - Self locking (list_bl?)
+ - Converting more code to use the hashtable
+
+
+Changes in V2:
+
+ - Address review comments by Tejun Heo, Josh Triplett and Eric Beiderman (Thanks all!).
+ - Rebase on top of latest master.
+ - Convert more places to use the hashtable. Hopefully it will trigger more reviews by
+ touching more subsystems.
+
+Sasha Levin (7):
+  hashtable: introduce a small and naive hashtable
+  user_ns: use new hashtable implementation
+  mm,ksm: use new hashtable implementation
+  workqueue: use new hashtable implementation
+  mm/huge_memory: use new hashtable implementation
+  tracepoint: use new hashtable implementation
+  net,9p: use new hashtable implementation
+
+ include/linux/hashtable.h |   75 ++++++++++++++++++++++++++++++++++++
+ kernel/tracepoint.c       |   26 ++++--------
+ kernel/user.c             |   53 +++++++++-----------------
+ kernel/workqueue.c        |   93 +++++++--------------------------------------
+ mm/huge_memory.c          |   56 +++++----------------------
+ mm/ksm.c                  |   29 ++++----------
+ net/9p/error.c            |   17 ++++----
+ 7 files changed, 144 insertions(+), 205 deletions(-)
+ create mode 100644 include/linux/hashtable.h
+
 -- 
-1.7.7.6
+1.7.8.6
 
