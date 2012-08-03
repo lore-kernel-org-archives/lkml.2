@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab2HCOEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:04:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48768 "EHLO
+	id S1754028Ab2HCOEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:04:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48772 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab2HCOBY (ORCPT
+	with ESMTP id S1752542Ab2HCOBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Aug 2012 10:01:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/18] perf test: Fix parse events automated tests
-Date: Fri,  3 Aug 2012 11:00:53 -0300
-Message-Id: <1344002470-5965-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 15/18] perf tools: Change strlist to use the new rblist
+Date: Fri,  3 Aug 2012 11:01:07 -0300
+Message-Id: <1344002470-5965-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344002470-5965-1-git-send-email-acme@infradead.org>
 References: <1344002470-5965-1-git-send-email-acme@infradead.org>
@@ -27,73 +27,261 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: David Ahern <dsahern@gmail.com>
 
-Parse events tests got broken after following commit:
+Replaces the direct use of rbtree code with the rblist API. In the end
+the patch is a no-op on strlist functionality; the API for strlist is
+not changed, only its implementaton.
 
-  perf tools: Fix trace events storms due to weight demux
-  commit 0983cc0dbca45250cbb5984bec7c303ac265b8e5
-  Author: Frederic Weisbecker <fweisbec@gmail.com>
-
-that added PERF_SAMPLE_PERIOD sample type for tracepoints.
-
-Updating related tests.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1343825338-10618-1-git-send-email-jolsa@redhat.com
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1343709095-7089-3-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events-test.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ tools/perf/util/strlist.c |  130 ++++++++++++++++++---------------------------
+ tools/perf/util/strlist.h |   11 ++--
+ 2 files changed, 57 insertions(+), 84 deletions(-)
 
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index 1b997d2..127d648 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -13,6 +13,9 @@ do { \
- 	} \
- } while (0)
+diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
+index 6783a20..95856ff 100644
+--- a/tools/perf/util/strlist.c
++++ b/tools/perf/util/strlist.c
+@@ -10,23 +10,28 @@
+ #include <stdlib.h>
+ #include <string.h>
  
-+#define PERF_TP_SAMPLE_TYPE (PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | \
-+			     PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD)
-+
- static int test__checkevent_tracepoint(struct perf_evlist *evlist)
+-static struct str_node *str_node__new(const char *s, bool dupstr)
++static
++struct rb_node *strlist__node_new(struct rblist *rblist, const void *entry)
  {
- 	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-@@ -21,8 +24,7 @@ static int test__checkevent_tracepoint(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
- 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong sample_type",
--		(PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | PERF_SAMPLE_CPU) ==
--		evsel->attr.sample_type);
-+		PERF_TP_SAMPLE_TYPE == evsel->attr.sample_type);
- 	TEST_ASSERT_VAL("wrong sample_period", 1 == evsel->attr.sample_period);
- 	return 0;
- }
-@@ -37,8 +39,7 @@ static int test__checkevent_tracepoint_multi(struct perf_evlist *evlist)
- 		TEST_ASSERT_VAL("wrong type",
- 			PERF_TYPE_TRACEPOINT == evsel->attr.type);
- 		TEST_ASSERT_VAL("wrong sample_type",
--			(PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | PERF_SAMPLE_CPU)
--			== evsel->attr.sample_type);
-+			PERF_TP_SAMPLE_TYPE == evsel->attr.sample_type);
- 		TEST_ASSERT_VAL("wrong sample_period",
- 			1 == evsel->attr.sample_period);
+-	struct str_node *self = malloc(sizeof(*self));
++	const char *s = entry;
++	struct rb_node *rc = NULL;
++	struct strlist *strlist = container_of(rblist, struct strlist, rblist);
++	struct str_node *snode = malloc(sizeof(*snode));
+ 
+-	if (self != NULL) {
+-		if (dupstr) {
++	if (snode != NULL) {
++		if (strlist->dupstr) {
+ 			s = strdup(s);
+ 			if (s == NULL)
+ 				goto out_delete;
+ 		}
+-		self->s = s;
++		snode->s = s;
++		rc = &snode->rb_node;
  	}
-@@ -428,8 +429,7 @@ static int test__checkevent_list(struct perf_evlist *evlist)
- 	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
- 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong sample_type",
--		(PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | PERF_SAMPLE_CPU) ==
--		evsel->attr.sample_type);
-+		PERF_TP_SAMPLE_TYPE == evsel->attr.sample_type);
- 	TEST_ASSERT_VAL("wrong sample_period", 1 == evsel->attr.sample_period);
- 	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
- 	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
+ 
+-	return self;
++	return rc;
+ 
+ out_delete:
+-	free(self);
++	free(snode);
+ 	return NULL;
+ }
+ 
+@@ -37,36 +42,26 @@ static void str_node__delete(struct str_node *self, bool dupstr)
+ 	free(self);
+ }
+ 
+-int strlist__add(struct strlist *self, const char *new_entry)
++static
++void strlist__node_delete(struct rblist *rblist, struct rb_node *rb_node)
+ {
+-	struct rb_node **p = &self->entries.rb_node;
+-	struct rb_node *parent = NULL;
+-	struct str_node *sn;
+-
+-	while (*p != NULL) {
+-		int rc;
+-
+-		parent = *p;
+-		sn = rb_entry(parent, struct str_node, rb_node);
+-		rc = strcmp(sn->s, new_entry);
+-
+-		if (rc > 0)
+-			p = &(*p)->rb_left;
+-		else if (rc < 0)
+-			p = &(*p)->rb_right;
+-		else
+-			return -EEXIST;
+-	}
++	struct strlist *slist = container_of(rblist, struct strlist, rblist);
++	struct str_node *snode = container_of(rb_node, struct str_node, rb_node);
+ 
+-	sn = str_node__new(new_entry, self->dupstr);
+-	if (sn == NULL)
+-		return -ENOMEM;
++	str_node__delete(snode, slist->dupstr);
++}
+ 
+-	rb_link_node(&sn->rb_node, parent, p);
+-	rb_insert_color(&sn->rb_node, &self->entries);
+-	++self->nr_entries;
++static int strlist__node_cmp(struct rb_node *rb_node, const void *entry)
++{
++	const char *str = entry;
++	struct str_node *snode = container_of(rb_node, struct str_node, rb_node);
++
++	return strcmp(snode->s, str);
++}
+ 
+-	return 0;
++int strlist__add(struct strlist *self, const char *new_entry)
++{
++	return rblist__add_node(&self->rblist, new_entry);
+ }
+ 
+ int strlist__load(struct strlist *self, const char *filename)
+@@ -96,34 +91,20 @@ out:
+ 	return err;
+ }
+ 
+-void strlist__remove(struct strlist *self, struct str_node *sn)
++void strlist__remove(struct strlist *slist, struct str_node *snode)
+ {
+-	rb_erase(&sn->rb_node, &self->entries);
+-	str_node__delete(sn, self->dupstr);
++	str_node__delete(snode, slist->dupstr);
+ }
+ 
+-struct str_node *strlist__find(struct strlist *self, const char *entry)
++struct str_node *strlist__find(struct strlist *slist, const char *entry)
+ {
+-	struct rb_node **p = &self->entries.rb_node;
+-	struct rb_node *parent = NULL;
+-
+-	while (*p != NULL) {
+-		struct str_node *sn;
+-		int rc;
+-
+-		parent = *p;
+-		sn = rb_entry(parent, struct str_node, rb_node);
+-		rc = strcmp(sn->s, entry);
+-
+-		if (rc > 0)
+-			p = &(*p)->rb_left;
+-		else if (rc < 0)
+-			p = &(*p)->rb_right;
+-		else
+-			return sn;
+-	}
++	struct str_node *snode = NULL;
++	struct rb_node *rb_node = rblist__find(&slist->rblist, entry);
+ 
+-	return NULL;
++	if (rb_node)
++		snode = container_of(rb_node, struct str_node, rb_node);
++
++	return snode;
+ }
+ 
+ static int strlist__parse_list_entry(struct strlist *self, const char *s)
+@@ -156,9 +137,12 @@ struct strlist *strlist__new(bool dupstr, const char *slist)
+ 	struct strlist *self = malloc(sizeof(*self));
+ 
+ 	if (self != NULL) {
+-		self->entries	 = RB_ROOT;
++		rblist__init(&self->rblist);
++		self->rblist.node_cmp    = strlist__node_cmp;
++		self->rblist.node_new    = strlist__node_new;
++		self->rblist.node_delete = strlist__node_delete;
++
+ 		self->dupstr	 = dupstr;
+-		self->nr_entries = 0;
+ 		if (slist && strlist__parse_list(self, slist) != 0)
+ 			goto out_error;
+ 	}
+@@ -171,30 +155,18 @@ out_error:
+ 
+ void strlist__delete(struct strlist *self)
+ {
+-	if (self != NULL) {
+-		struct str_node *pos;
+-		struct rb_node *next = rb_first(&self->entries);
+-
+-		while (next) {
+-			pos = rb_entry(next, struct str_node, rb_node);
+-			next = rb_next(&pos->rb_node);
+-			strlist__remove(self, pos);
+-		}
+-		self->entries = RB_ROOT;
+-		free(self);
+-	}
++	if (self != NULL)
++		rblist__delete(&self->rblist);
+ }
+ 
+-struct str_node *strlist__entry(const struct strlist *self, unsigned int idx)
++struct str_node *strlist__entry(const struct strlist *slist, unsigned int idx)
+ {
+-	struct rb_node *nd;
++	struct str_node *snode = NULL;
++	struct rb_node *rb_node;
+ 
+-	for (nd = rb_first(&self->entries); nd; nd = rb_next(nd)) {
+-		struct str_node *pos = rb_entry(nd, struct str_node, rb_node);
++	rb_node = rblist__entry(&slist->rblist, idx);
++	if (rb_node)
++		snode = container_of(rb_node, struct str_node, rb_node);
+ 
+-		if (!idx--)
+-			return pos;
+-	}
+-
+-	return NULL;
++	return snode;
+ }
+diff --git a/tools/perf/util/strlist.h b/tools/perf/util/strlist.h
+index 3ba8390..dd9f922 100644
+--- a/tools/perf/util/strlist.h
++++ b/tools/perf/util/strlist.h
+@@ -4,14 +4,15 @@
+ #include <linux/rbtree.h>
+ #include <stdbool.h>
+ 
++#include "rblist.h"
++
+ struct str_node {
+ 	struct rb_node rb_node;
+ 	const char     *s;
+ };
+ 
+ struct strlist {
+-	struct rb_root entries;
+-	unsigned int   nr_entries;
++	struct rblist rblist;
+ 	bool	       dupstr;
+ };
+ 
+@@ -32,18 +33,18 @@ static inline bool strlist__has_entry(struct strlist *self, const char *entry)
+ 
+ static inline bool strlist__empty(const struct strlist *self)
+ {
+-	return self->nr_entries == 0;
++	return rblist__empty(&self->rblist);
+ }
+ 
+ static inline unsigned int strlist__nr_entries(const struct strlist *self)
+ {
+-	return self->nr_entries;
++	return rblist__nr_entries(&self->rblist);
+ }
+ 
+ /* For strlist iteration */
+ static inline struct str_node *strlist__first(struct strlist *self)
+ {
+-	struct rb_node *rn = rb_first(&self->entries);
++	struct rb_node *rn = rb_first(&self->rblist.entries);
+ 	return rn ? rb_entry(rn, struct str_node, rb_node) : NULL;
+ }
+ static inline struct str_node *strlist__next(struct str_node *sn)
 -- 
 1.7.1
 
