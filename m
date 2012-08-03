@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab2HCIj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 04:39:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55152 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751987Ab2HCIjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 04:39:25 -0400
-Date: Fri, 3 Aug 2012 10:39:11 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-2022-JP?Q?=1B$BN-2E=3DY=1B=28J?= <scott.liu@emc.com.tw>
-Cc: "'benjamin.tissoires'" <benjamin.tissoires@gmail.com>,
-        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1]hid:hid-multitouch:  add mt_resume for ELAN's
- production
-In-Reply-To: <C8EA045ABE09420E976A1F1D4294E737@elan.corp>
-Message-ID: <alpine.LNX.2.00.1208031034320.21188@pobox.suse.cz>
-References: <C8EA045ABE09420E976A1F1D4294E737@elan.corp>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753264Ab2HCIjp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 04:39:45 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:38858 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab2HCIjm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 04:39:42 -0400
+Date: Fri, 3 Aug 2012 09:24:30 +0200
+From: Harald Welte <laforge@gnumonks.org>
+To: Silas Boyd-Wickizer <sbw@mit.edu>
+Cc: linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Harald Welte <laforge@openezx.org>, x86@kernel.org
+Subject: Re: [PATCH 3/3] Use get_online_cpus to avoid races involving
+ for_each_online_cpu
+Message-ID: <20120803072430.GL16661@prithivi.gnumonks.org>
+References: <20120803000708.GD3443@mit.edu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-2022-JP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120803000708.GD3443@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Aug 2012, 劉嘉駿 wrote:
+Hi Silas,
 
-> Some of ELAN’s production need to issue set_idle when resume.
+thanks a lot for the finding and addressing the issue.
 
-Scott,
+On Thu, Aug 02, 2012 at 05:07:08PM -0700, Silas Boyd-Wickizer wrote:
+> Signed-off-by: Silas Boyd-Wickizer <sbw@mit.edu>
 
-your e-mail client broke the patch in a way that it's not only impossible 
-to apply it using standard tools, but it's also unreadable by eyes (a lot 
-of whitespaces, broken lines, every second line is blank, etc).
-
-Could you please fix that up and resend?
+Acked-by: Harald Welte <laforge@gnumonks.org>
 
 -- 
-Jiri Kosina
-SUSE Labs
+- Harald Welte <laforge@gnumonks.org>           http://laforge.gnumonks.org/
+============================================================================
+"Privacy in residential applications is a desirable marketing option."
+                                                  (ETSI EN 300 175-7 Ch. A6)
