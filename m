@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab2HCRIf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 13:08:35 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:36346 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab2HCRIe convert rfc822-to-8bit (ORCPT
+	id S1753799Ab2HCRIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 13:08:53 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:50309 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab2HCRIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 13:08:34 -0400
-Date: Fri, 3 Aug 2012 19:07:58 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Amaury =?UTF-8?B?RGVjcsOqbWU=?= <amaury.decreme@gmail.com>
-Cc: ben-linux@fluff.org, w.sang@pengutronix.de, rob@landley.net,
-        jeffrey.t.kirsher@intel.com, akpm@linux-foundation.org,
-        davem@davemloft.net, gregkh@linuxfoundation.org, joe@perches.com,
-        ralf@linux-mips.org, dirk.brandewie@gmail.com,
-        jayachandranc@netlogicmicro.com, linux-i2c@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] I2C: SIS964: Bus driver
-Message-ID: <20120803190758.34e67b1e@endymion.delvare>
-In-Reply-To: <CAPXEm73QX7haU5p7HU+=+qo5wnivt6j+WH5bQGZ0ZK0Ek2Cuyw@mail.gmail.com>
-References: <1344008145-14579-1-git-send-email-amaury.decreme@gmail.com>
-	<20120803180712.1e768042@endymion.delvare>
-	<CAPXEm73QX7haU5p7HU+=+qo5wnivt6j+WH5bQGZ0ZK0Ek2Cuyw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 3 Aug 2012 13:08:51 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-209.messagelabs.com!1344013646!6343211!43
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] staging: comedi: combine adl_pci7230 and adl_pci7432 drivers
+Date: Fri, 3 Aug 2012 10:08:25 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201208031008.25345.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Aug 2012 18:36:36 +0200, Amaury Decrême wrote:
-> > What is the rationale for not adding support for the new chip to
-> > i2c-sis630 then? That would probably be a lot easier to review.
-> >
-> 
-> I was afraid that adding SIS964 support to i2c-sis630 would lead
-> to confusion.
+These drivers are very similar and only differ in the total number
+of di/do channels provided. Combine them into one common driver to
+make it more maintainable.
 
-There's nothing confusing, drivers supporting several devices are
-legion. If the devices are really almost compatible, reusing an
-existing driver is the way to go.
+H Hartley Sweeten (2):
+  staging: comedi: new adl_pci7x3x driver
+  staging: comedi: remove adl_pci7230 and adl_pci7432 drivers
 
-> I can try to submit a patch for i2c-sis630. In this case, do you think
-> we should keep the 630 name or change it to something else to
-> avoid misunderstanding ?
-
-Keep the name. It is very common to name drivers by the name of the
-first supported device, and changing a driver name is always a source
-of trouble.
+ drivers/staging/comedi/Kconfig               |  11 +
+ drivers/staging/comedi/drivers/Makefile      |   1 +
+ drivers/staging/comedi/drivers/adl_pci7230.c | 190 ---------------
+ drivers/staging/comedi/drivers/adl_pci7432.c | 200 ----------------
+ drivers/staging/comedi/drivers/adl_pci7x3x.c | 342 +++++++++++++++++++++++++++
+ 5 files changed, 354 insertions(+), 390 deletions(-)
+ delete mode 100644 drivers/staging/comedi/drivers/adl_pci7230.c
+ delete mode 100644 drivers/staging/comedi/drivers/adl_pci7432.c
+ create mode 100644 drivers/staging/comedi/drivers/adl_pci7x3x.c
 
 -- 
-Jean Delvare
+1.7.11
+
