@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751290Ab2HCEpQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 00:45:16 -0400
-Received: from tundra.namei.org ([65.99.196.166]:57150 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744Ab2HCEpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 00:45:14 -0400
-Date: Fri, 3 Aug 2012 14:45:03 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net,
-        Peter Huewe <peter.huewe@infineon.com>,
-        Bryan Freed <bfreed@chromium.org>,
-        David Safford <safford@linux.vnet.ibm.com>, hpa@linux.intel.com
-Subject: Re: New TPM driver, hwrng driver and fixes (2)
-In-Reply-To: <alpine.LRH.2.02.1208031440210.25196@tundra.namei.org>
-Message-ID: <alpine.LRH.2.02.1208031444100.25196@tundra.namei.org>
-References: <20120730210522.GA23790@linux.vnet.ibm.com> <alpine.LRH.2.02.1208031440210.25196@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751463Ab2HCEx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 00:53:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40406 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab2HCExY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 00:53:24 -0400
+Date: Thu, 2 Aug 2012 23:53:12 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Francois Rigaut <frigaut@mso.anu.edu.au>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
+Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
+Message-ID: <20120803045312.GB2446@thinkpad-t410>
+Mail-Followup-To: Francois Rigaut <frigaut@mso.anu.edu.au>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
+	linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
+References: <1343407934-459-1-git-send-email-mjg@redhat.com>
+ <20120731223240.GD19134@kroah.com>
+ <20120801165400.GA3042@srcf.ucam.org>
+ <20120801232147.GA6228@kroah.com>
+ <20120802040242.GB25933@thinkpad-t410>
+ <20120802103423.GA1921@kroah.com>
+ <501A955D.6030500@mso.anu.edu.au>
+ <20120802161209.GF32395@thinkpad-t410>
+ <501B01ED.9080309@mso.anu.edu.au>
+ <501B0536.6070001@mso.anu.edu.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501B0536.6070001@mso.anu.edu.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Aug 2012, James Morris wrote:
-
-> On Mon, 30 Jul 2012, Kent Yoder wrote:
+On Fri, Aug 03, 2012 at 08:54:46AM +1000, Francois Rigaut wrote:
+> Seth,
 > 
-> > Hi James,
-> > 
-> > The following changes since commit 663728418e3494f8e4a82f5d1b2f23c22d11be35:
+> I have put the osx system.log, which is the only file where I can
+> see mux and AGC related message, at
+> http://maumae.net/retina/system.log
+
+That does seem to contain the kernel log messages, but unfortunately I'm
+not seeing what I'm looking for there.
+
+> Thanks,
+> Francois
 > 
-> Pulled to 
-> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
+> On 03/08/12 08:40, Francois Rigaut wrote:
+> >Hi Seth,
+> >
+> >Sorry for the belated response. On Oz time here.
+> >I don't have a /var/log/kernel.log !
+> >Let me make sure of something:
+> >This switcher code is to be run on osx, no? That's where
+> >gfxcardstatus lives and where I can effect the card switch. Just
+> >to make sure.
+> >So I'm running osx mountain lion, and the only thing I see in the
+> >logs when I switch cards (using gfxcardstatus) is what I pasted
+> >below. and you're right, it was not in message.log, but system.log
+> >(it was late). I just went through the whole thing again.
+> >Am I missing something?
 
-Reverted:
-  CC [M]  drivers/char/tpm/tpm_i2c_infineon.o
-drivers/char/tpm/tpm_i2c_infineon.c:740: error: lvalue required as unary & operand
-make[1]: *** [drivers/char/tpm/tpm_i2c_infineon.o] Error 1
+Yes, it's to be run on OS X. So apparently something has changed and
+this technique no longer works for getting a log of the gmux I/O.
 
+We've got one of these machines on order, so I'll see if I can turn
+anything up when I get a chance to play with it.
 
-Was this code tested?
+Thanks,
+Seth
 
--- 
-James Morris
-<jmorris@namei.org>
