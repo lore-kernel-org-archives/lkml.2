@@ -1,184 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2HCNxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 09:53:33 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:38798 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab2HCNxb (ORCPT
+	id S1752651Ab2HCN45 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 09:56:57 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:5268 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab2HCN44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 09:53:31 -0400
-Date: Fri, 3 Aug 2012 15:53:25 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: [git pull] m68k updates for 3.6
-Message-ID: <alpine.DEB.2.00.1208031537150.17150@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 3 Aug 2012 09:56:56 -0400
+Date: Fri, 3 Aug 2012 15:56:40 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Silas Boyd-Wickizer <sbw@mit.edu>
+Cc: linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Harald Welte <laforge@openezx.org>, x86@kernel.org
+Subject: Re: [PATCH 3/3] Use get_online_cpus to avoid races involving 
+ for_each_online_cpu
+Message-ID: <20120803155640.7e2356fb@endymion.delvare>
+In-Reply-To: <20120803000708.GD3443@mit.edu>
+References: <20120803000708.GD3443@mit.edu>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+Hi Silas,
 
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
-  Linus Torvalds (1):
-        Linux 3.5
+On Thu, 2 Aug 2012 17:07:08 -0700, Silas Boyd-Wickizer wrote:
+> via_cputemp_init in drivers/hwmon/via-cputemp.c loops with
+> for_each_online_cpu, adding platform_devices, then calls
+> register_hotcpu_notifier.  If a CPU is offlined between the loop and
+> register_hotcpu_notifier, then later onlined, via_cputemp_device_add
+> will attempt to platform devices with the same ID.
 
-are available in the git repository at:
+Missing word in this last sentence.
 
-  ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+> 
+> This fix surrounds for_each_online_cpu and register_hotcpu_notifier
+> with get_online_cpus+put_online_cpus.
+> 
+> Build tested.
 
-Andreas Schwab (1):
-      m68k: Make sys_atomic_cmpxchg_32 work on classic m68k
+Thanks for reporting and for the fix. Two questions:
 
-Geert Uytterhoeven (14):
-      m68k: Use Kbuild logic to import asm-generic headers
-      m68k: Use asm-generic version of <asm/types.h>
-      m68knommu: Clean up printing of sections
-      m68k: Remove duplicate FPU config option
-      m68k: Move CPU_HAS_* config options
-      m68k: delay, muldi3 - Use CONFIG_CPU_HAS_NO_MULDIV64
-      m68k: Introduce config option CPU_HAS_NO_UNALIGNED
-      m68k: CPU32 does not support unaligned accesses
-      mtd/uclinux: Use generic __bss_stop instead of _ebss
-      m68k: Replace m68k-specific _[se]bss by generic __bss_{start,stop}
-      m68k: Use asm-generic version of <asm/sections.h>
-      m68k/sun3: Remove unselectable code in prom_init()
-      zorro: Remove unused zorro_bus.devices
-      m68k/apollo: Rename "timer" to "apollo_timer"
+What about via_cputemp_exit()? While less obvious, I suspect it is racy
+too. The notifier is unregistered first. If a CPU gets offline before
+the devices are removed, we will have a device pointing to a
+non-existent CPU for a short time. I think we should play it safe and
+use get/put_online_cpus() there too, as I seem to understand it
+guarantees CPUs can't go offline when we wouldn't handle that event
+properly. Alternatively, unregistering the platform driver first might
+close the race.
 
-Greg Ungerer (1):
-      m68knommu: Allow ColdFire CPUs to use unaligned accesses
+Secondly, drivers/hwmon/coretemp.c is very similar to via-cputemp.c, so
+I think it needs the exact same fix(es).
 
-Paul Bolle (2):
-      m68k: Remove five unused headers
-      m68k: Remove never used asm/shm.h
+> 
+> Signed-off-by: Silas Boyd-Wickizer <sbw@mit.edu>
+> ---
+>  drivers/hwmon/via-cputemp.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/hwmon/via-cputemp.c b/drivers/hwmon/via-cputemp.c
+> index 8689664..9ad07c3 100644
+> --- a/drivers/hwmon/via-cputemp.c
+> +++ b/drivers/hwmon/via-cputemp.c
+> @@ -328,6 +328,7 @@ static int __init via_cputemp_init(void)
+>  	if (err)
+>  		goto exit;
+>  
+> +	get_online_cpus();
+>  	for_each_online_cpu(i) {
+>  		struct cpuinfo_x86 *c = &cpu_data(i);
+>  
+> @@ -347,12 +348,14 @@ static int __init via_cputemp_init(void)
+>  
+>  #ifndef CONFIG_HOTPLUG_CPU
+>  	if (list_empty(&pdev_list)) {
+> +		put_online_cpus();
+>  		err = -ENODEV;
+>  		goto exit_driver_unreg;
+>  	}
+>  #endif
+>  
+>  	register_hotcpu_notifier(&via_cputemp_cpu_notifier);
+> +	put_online_cpus();
+>  	return 0;
+>  
+>  #ifndef CONFIG_HOTPLUG_CPU
 
-All of these (except for the top commit) have been in linux-next for at
-least 2 weeks, and were ready at the 3.5 timeframe, but I didn't want to
-send a pull request the night I left for vacation.
 
-The top commit is a recent fix by Andreas (also destined for stable) that
-required one more linux-next cycle, so I had to delay my pull request to
-today.
-
-The "mtd/uclinux" change is not really an MTD change, but an architecture
-change, and has been acked by the relevant architecture maintainers (for
-blackfin, microblaze, and sh).
-
-Thanks for pulling!
-
- arch/blackfin/kernel/setup.c              |    1 -
- arch/m68k/Kconfig                         |   12 --
- arch/m68k/Kconfig.cpu                     |   14 ++
- arch/m68k/apollo/config.c                 |   16 +-
- arch/m68k/include/asm/Kbuild              |   25 +++
- arch/m68k/include/asm/MC68332.h           |  152 ------------------
- arch/m68k/include/asm/apollodma.h         |  248 -----------------------------
- arch/m68k/include/asm/apollohw.h          |    2 +-
- arch/m68k/include/asm/bitsperlong.h       |    1 -
- arch/m68k/include/asm/cputime.h           |    6 -
- arch/m68k/include/asm/delay.h             |    2 +-
- arch/m68k/include/asm/device.h            |    7 -
- arch/m68k/include/asm/emergency-restart.h |    6 -
- arch/m68k/include/asm/errno.h             |    6 -
- arch/m68k/include/asm/futex.h             |    6 -
- arch/m68k/include/asm/ioctl.h             |    1 -
- arch/m68k/include/asm/ipcbuf.h            |    1 -
- arch/m68k/include/asm/irq_regs.h          |    1 -
- arch/m68k/include/asm/kdebug.h            |    1 -
- arch/m68k/include/asm/kmap_types.h        |    6 -
- arch/m68k/include/asm/kvm_para.h          |    1 -
- arch/m68k/include/asm/local.h             |    6 -
- arch/m68k/include/asm/local64.h           |    1 -
- arch/m68k/include/asm/mac_mouse.h         |   23 ---
- arch/m68k/include/asm/mcfmbus.h           |   77 ---------
- arch/m68k/include/asm/mman.h              |    1 -
- arch/m68k/include/asm/mutex.h             |    9 -
- arch/m68k/include/asm/percpu.h            |    6 -
- arch/m68k/include/asm/resource.h          |    6 -
- arch/m68k/include/asm/sbus.h              |   45 -----
- arch/m68k/include/asm/scatterlist.h       |    6 -
- arch/m68k/include/asm/sections.h          |    8 -
- arch/m68k/include/asm/shm.h               |   31 ----
- arch/m68k/include/asm/siginfo.h           |    6 -
- arch/m68k/include/asm/statfs.h            |    6 -
- arch/m68k/include/asm/topology.h          |    6 -
- arch/m68k/include/asm/types.h             |   22 ---
- arch/m68k/include/asm/unaligned.h         |    4 +-
- arch/m68k/include/asm/xor.h               |    1 -
- arch/m68k/kernel/setup_no.c               |   11 +-
- arch/m68k/kernel/sys_m68k.c               |    8 +-
- arch/m68k/kernel/vmlinux-nommu.lds        |    2 -
- arch/m68k/kernel/vmlinux-std.lds          |    2 -
- arch/m68k/kernel/vmlinux-sun3.lds         |    2 -
- arch/m68k/lib/muldi3.c                    |    2 +-
- arch/m68k/mm/init_mm.c                    |    2 +-
- arch/m68k/mm/init_no.c                    |    2 +-
- arch/m68k/platform/68328/head-de2.S       |    8 +-
- arch/m68k/platform/68328/head-pilot.S     |   10 +-
- arch/m68k/platform/68328/head-ram.S       |    4 +-
- arch/m68k/platform/68328/head-rom.S       |    6 +-
- arch/m68k/platform/68360/head-ram.S       |    6 +-
- arch/m68k/platform/68360/head-rom.S       |    8 +-
- arch/m68k/platform/coldfire/head.S        |   10 +-
- arch/m68k/sun3/prom/init.c                |   48 +------
- arch/microblaze/include/asm/sections.h    |    4 -
- arch/microblaze/kernel/microblaze_ksyms.c |    3 -
- arch/microblaze/kernel/setup.c            |    4 +-
- arch/microblaze/kernel/vmlinux.lds.S      |    1 -
- arch/sh/include/asm/sections.h            |    1 -
- arch/sh/kernel/setup.c                    |    2 +-
- arch/sh/kernel/sh_ksyms_32.c              |    1 -
- arch/sh/kernel/vmlinux.lds.S              |    1 -
- arch/sh/lib/mcount.S                      |    8 +-
- drivers/mtd/maps/uclinux.c                |    5 +-
- drivers/zorro/zorro.c                     |    2 -
- 66 files changed, 100 insertions(+), 842 deletions(-)
- delete mode 100644 arch/m68k/include/asm/MC68332.h
- delete mode 100644 arch/m68k/include/asm/apollodma.h
- delete mode 100644 arch/m68k/include/asm/bitsperlong.h
- delete mode 100644 arch/m68k/include/asm/cputime.h
- delete mode 100644 arch/m68k/include/asm/device.h
- delete mode 100644 arch/m68k/include/asm/emergency-restart.h
- delete mode 100644 arch/m68k/include/asm/errno.h
- delete mode 100644 arch/m68k/include/asm/futex.h
- delete mode 100644 arch/m68k/include/asm/ioctl.h
- delete mode 100644 arch/m68k/include/asm/ipcbuf.h
- delete mode 100644 arch/m68k/include/asm/irq_regs.h
- delete mode 100644 arch/m68k/include/asm/kdebug.h
- delete mode 100644 arch/m68k/include/asm/kmap_types.h
- delete mode 100644 arch/m68k/include/asm/kvm_para.h
- delete mode 100644 arch/m68k/include/asm/local.h
- delete mode 100644 arch/m68k/include/asm/local64.h
- delete mode 100644 arch/m68k/include/asm/mac_mouse.h
- delete mode 100644 arch/m68k/include/asm/mcfmbus.h
- delete mode 100644 arch/m68k/include/asm/mman.h
- delete mode 100644 arch/m68k/include/asm/mutex.h
- delete mode 100644 arch/m68k/include/asm/percpu.h
- delete mode 100644 arch/m68k/include/asm/resource.h
- delete mode 100644 arch/m68k/include/asm/sbus.h
- delete mode 100644 arch/m68k/include/asm/scatterlist.h
- delete mode 100644 arch/m68k/include/asm/sections.h
- delete mode 100644 arch/m68k/include/asm/shm.h
- delete mode 100644 arch/m68k/include/asm/siginfo.h
- delete mode 100644 arch/m68k/include/asm/statfs.h
- delete mode 100644 arch/m68k/include/asm/topology.h
- delete mode 100644 arch/m68k/include/asm/types.h
- delete mode 100644 arch/m68k/include/asm/xor.h
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+-- 
+Jean Delvare
