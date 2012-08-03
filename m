@@ -1,61 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab2HCVsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 17:48:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38494 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab2HCVsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 17:48:11 -0400
-Date: Fri, 3 Aug 2012 14:48:06 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org
-Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
-Message-ID: <20120803214806.GM15477@google.com>
-References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
- <1344003788-1417-2-git-send-email-levinsasha928@gmail.com>
- <20120803171515.GH15477@google.com>
- <501C407D.9080900@gmail.com>
- <20120803213017.GK15477@google.com>
- <501C458E.7050000@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501C458E.7050000@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753646Ab2HCVwQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 17:52:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2380 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752377Ab2HCVwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 17:52:15 -0400
+Message-ID: <1344030733.8003.43.camel@ul30vt>
+Subject: Re: oops in pci_acs_path_enabled
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 03 Aug 2012 15:52:13 -0600
+In-Reply-To: <501C3EB7.4000900@gmail.com>
+References: <501C0CDF.7010804@gmail.com> <1344025273.8003.40.camel@ul30vt>
+	 <501C3EB7.4000900@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Aug 03, 2012 at 11:41:34PM +0200, Sasha Levin wrote:
-> I forgot to comment on that one, sorry.
+On Fri, 2012-08-03 at 15:12 -0600, David Ahern wrote:
+> On 8/3/12 2:21 PM, Alex Williamson wrote:
+> > On Fri, 2012-08-03 at 11:39 -0600, David Ahern wrote:
+> >> Hi Alex:
+> >>
+> >> Hitting an oops with 3.6-rc1. Backtrace from console attached. git blame
+> >> for the top function points to ad805758.
+> >
+> > Hey David,
+> >
+> > Hmm, what's special about your system?  I've got an 82576 here and the
+> > same path works fine.  Any way you can get the top of the oops message?
+> > Thanks,
+> >
+> > Alex
+> >
 > 
-> If we put hash entries after struct hash_table we don't take the
-> bits field size into account, or did I miss something?
+> Dell R410 I believe. pair of 5620 processors. 3 overlapping screen shots 
+> attached. objdump on pci.o suggests the pdev is NULL:
+> 
+> /opt/sw/ahern/kernels/kernel.git/drivers/pci/pci.c:2454
+> 
+>          ret = pci_dev_specific_acs_enabled(pdev, acs_flags);
+>          if (ret >= 0)
+>                  return ret > 0;
+> 
+>          if (!pci_is_pcie(pdev))
+>      408a:       41 80 7c 24 4a 00       cmpb   $0x0,0x4a(%r12)
+>      4090:       74 e8                   je     407a <pci_acs_enabled+0x2a>
+> 
+> 
+> Perhaps this bug explains the larger the issue which is that device 
+> passthrough in 3.6-rc1 (0d7614f) is broken for me -- config field for 
+> the PCI device does not exist. e.g.,
+> 
+> pcilib: Cannot open /sys/bus/pci/devices/0000:06:10.0/config
+> lspci: Unable to read the standard configuration space header of device 
+> 0000:06:10.0
+> pcilib: Cannot open /sys/bus/pci/devices/0000:06:10.0/config
+> lspci: Unable to read the standard configuration space header of device 
+> 0000:06:10.0
+> failed to find vendor-product id for PCI id "06:10.0"
+> Failed to claim PCI device 06:10.0
+> 
+> git bisect points to:
+> 
+> 783f157bc5a7fa30ee17b4099b27146bd1b68af4 is the first bad commit
+> commit 783f157bc5a7fa30ee17b4099b27146bd1b68af4
+> Author: Alex Williamson <alex.williamson@redhat.com>
+> Date:   Wed May 30 14:19:43 2012 -0600
+> 
+>      intel-iommu: Make use of DMA quirks and ACS checks in IOMMU groups
+> 
+>      Work around broken devices and adhere to ACS support when determining
+>      IOMMU grouping.
+> 
+>      Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+>      Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> 
+> :040000 040000 83890398dabbf225fd0f5b3c8c3713a75b3fb5e1 
+> b674ce2ecb315393a8c6c1ac98b3796d5ba09708 M	drivers
+> 
+> I triggered the oops in a number of the bisect points as well -- in 
+> those cases the machine had to be power cycled.
 
-So, if you do the following,
+Is this the chunk that's causing the oops?
 
-	struct {
-		struct {
-			int i;
-			long ar[];
-		} B;
-		long __ar_storage[32];
-	} A;
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 7469b53..27d8c97 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4133,6 +4133,7 @@ static int intel_iommu_add_device(struct device *dev)
+                                          PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
+                                          0)));
+ 
++#if 0
+        while (!pci_is_root_bus(dma_pdev->bus)) {
+                if (pci_acs_path_enabled(dma_pdev->bus->self,
+                                         NULL, REQ_ACS_FLAGS))
+@@ -4140,6 +4141,7 @@ static int intel_iommu_add_device(struct device *dev)
+ 
+                swap_pci_ref(&dma_pdev, pci_dev_get(dma_pdev->bus->self));
+        }
++#endif
+ 
+        group = iommu_group_get(&dma_pdev->dev);
+        pci_dev_put(dma_pdev);
 
-It should always be safe to dereference A.B.ar[31].  I'm not sure
-whether this is something guaranteed by C tho.  Maybe compilers are
-allowed to put members in reverse order but I think we already depend
-on the above.
 
-Thanks.
-
--- 
-tejun
