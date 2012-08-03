@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab2HCFHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 01:07:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40431 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2HCFHN (ORCPT
+	id S1751730Ab2HCFL0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 01:11:26 -0400
+Received: from exprod7og113.obsmtp.com ([64.18.2.179]:38256 "EHLO
+	exprod7og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2HCFLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 01:07:13 -0400
-Date: Fri, 3 Aug 2012 00:07:06 -0500 (CDT)
-From: Manoj Iyer <manoj.iyer@canonical.com>
-X-X-Sender: manjo@lazy
-To: manoj.iyer@canonical.com
-cc: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, mjg@redhat.com,
-        ibm-acpi@hmh.eng.br
-Subject: Re: [PATCH] thinkpad-acpi: recognize latest V-Series using
- DMI_BIOS_VENDOR
-In-Reply-To: <1343968187-20930-1-git-send-email-manoj.iyer@canonical.com>
-Message-ID: <alpine.DEB.2.02.1208030005470.3041@lazy>
-References: <1343968187-20930-1-git-send-email-manoj.iyer@canonical.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 3 Aug 2012 01:11:23 -0400
+Message-ID: <501B5D51.5030307@genband.com>
+Date: Thu, 02 Aug 2012 23:10:41 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: dmarkh@cfl.rr.com
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: MODULE_LICENSE("GPL")??
+References: <50199E91.5040308@cfl.rr.com> <20120801224342.5b90747f@pyramind.ukuu.org.uk> <501A704E.2000301@cfl.rr.com>
+In-Reply-To: <501A704E.2000301@cfl.rr.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Aug 2012 05:10:43.0212 (UTC) FILETIME=[550424C0:01CD7136]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19082.002
+X-TM-AS-Result: No--8.355700-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/02/2012 06:19 AM, Mark Hounschell wrote:
+>
+> This particular driver  does in fact build cleanly after changing the 
+> GPL to PROPRIETARY. I haven't actually purchased the product yet so am 
+> unable to load it, but can I assume that if I don't have a build issue 
+> when specifying PROPRIETARY, that they are in fact NOT using GPL 
+> symbols and maybe they just thought they needed to specify GPL for 
+> some reason or another?
 
-Oops! This is embarrassing! my logic is flawed. Please ignore this patch, 
-I will resend it
+Why not just ask the authors?
 
-NACK
-
-
-On Thu, 2 Aug 2012, manoj.iyer@canonical.com wrote:
-
-> From: Manoj Iyer <manoj.iyer@canonical.com>
->
-> In the latest V-series bios DMI_PRODUCT_VERSION does not contain
-> the string Lenovo or Thinkpad, but is set to the model number, this
-> causes the thinkpad_acpi module to fail to load. Recognize laptop
-> as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
->
-> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-> ---
-> drivers/platform/x86/thinkpad_acpi.c |    3 ++-
-> 1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-> index e7f7328..eec0b65 100644
-> --- a/drivers/platform/x86/thinkpad_acpi.c
-> +++ b/drivers/platform/x86/thinkpad_acpi.c
-> @@ -8657,7 +8657,8 @@ static int __must_check __init get_thinkpad_model_data(
-> 		}
-> 	}
->
-> -	s = dmi_get_system_info(DMI_PRODUCT_VERSION);
-> +	s = dmi_get_system_info(DMI_PRODUCT_VERSION) ?
-> +		dmi_get_system_info(DMI_BIOS_VENDOR) : NULL;
-> 	if (s && !(strnicmp(s, "ThinkPad", 8) && strnicmp(s, "Lenovo", 6))) {
-> 		tp->model_str = kstrdup(s, GFP_KERNEL);
-> 		if (!tp->model_str)
-> -- 
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
-
---
-====================
-Manoj Iyer
-Ubuntu/Canonical
-Hardware Enablement
-====================
+Chris
