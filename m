@@ -1,61 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab2HCL1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 07:27:52 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38412 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751272Ab2HCL1u (ORCPT
+	id S1753518Ab2HCL2o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 07:28:44 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51577 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab2HCL2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 07:27:50 -0400
-Date: Fri, 3 Aug 2012 15:27:45 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        spender@grsecurity.net
-Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
-Message-ID: <20120803112745.GC11952@moon>
-References: <alpine.LFD.2.02.1203231926000.2542@ionos>
- <20120323190855.GA27213@www.outflux.net>
- <CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
- <87pq7935w2.fsf@xmission.com>
- <CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com>
- <20120803110247.GB11952@moon>
- <CAFLxGvw4j-pyinjywxaL2gQ-Akp9grDysNv7dfOJkaQ3EyDKLw@mail.gmail.com>
+	Fri, 3 Aug 2012 07:28:43 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <501BB4EF.7080909@jp.fujitsu.com>
+Date: Fri, 03 Aug 2012 20:24:31 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvw4j-pyinjywxaL2gQ-Akp9grDysNv7dfOJkaQ3EyDKLw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+CC: bhelgaas@google.com, vgoyal@redhat.com, hbabu@us.ibm.com,
+        ishii.hironobu@jp.fujitsu.com, martin.wilck@ts.fujitsu.com
+Subject: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump with
+ iommu
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 01:19:24PM +0200, richard -rw- weinberger wrote:
-> >>
-> >> CRIU folks, how do you deal with futex robust lists?
-> >
-> > Well, I believe we were over-optimistic in claiming that we don't need this
-> > syscall (to be fair I think we simply yet not faced the problem Eric points).
-> > So we need some way to fetch this address and set it back. If get_robust_list
-> > get deprecated maybe we could print it out in /proc/pid/stat or something?
-> 
-> Kees, you said get_robust_list() can be used to bypass ASLR.
-> How? What makes it worse than /proc/pid/maps?
-> 
-> If the robust list address itself is bad, removing get_robust_list()
-> and putting the information into /proc is useless.
+Hi all,
 
-Look, the /proc entry might check for some CAP and do not allow
-a regular user to fetch this address.
+This patch adds kernel parameter "reset_pcie_devices" which resets PCIe
+devices at boot time to address DMA problem on kdump with iommu. When
+this parameter is specified, a hot reset is triggered on each PCIe root
+port and downstream port to reset its downstream endpoint.
 
-	Cyrill
+Background:
+A kdump problem about DMA has been discussed for a long time. That is,
+when a kernel is switched to the kdump kernel DMA derived from first
+kernel affects second kernel. Recently this problem surfaces when iommu
+is used for PCI passthrough on KVM guest. In the case of the machine I
+use, when intel_iommu=on is specified, DMAR error is detected in kdump
+kernel and PCI SERR is also detected. Finally kdump fails because some
+devices does not work correctly.
+
+The root cause is that ongoing DMA from first kernel causes DMAR fault
+because page table of DMAR is initialized while kdump kernel is booting
+up. Therefore to address this problem DMA needs to be stopped before DMAR
+is initialized at kdump kernel boot time. By this patch, PCIe devices
+are reset by hot reset and its DMA is stopped when reset_pcie_devices is
+specified. One problem of this solution is that VGA is reset and the
+monitor blacks out when the link between the port and VGA controller was
+reset. So this patch does not reset the port whose child endpoint is VGA
+device.
+
+Any comments would be appreciated.
+
+Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+---
+ Documentation/kernel-parameters.txt |    4 +
+ drivers/pci/quirks.c                |   59 ++++++++++++++++++++++++++
+ 2 files changed, 63 insertions(+)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index e714a02..e694e9f 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2489,6 +2489,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	reset_devices	[KNL] Force drivers to reset the underlying device
+ 			during initialization.
+ 
++	reset_pcie_devices
++			[PCIE] Reset PCIe endpoint at boot time by sending a
++			hot reset to root port and downstream port
++
+ 	resume=		[SWSUSP]
+ 			Specify the partition device for software suspend
+ 			Format:
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 5155317..7f7fc02 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -32,6 +32,65 @@
+ #include "pci.h"
+ 
+ /*
++ * Reset PCIe endpoint by sending a hot reset to root port and downstream port
++ */
++unsigned int reset_pcie_devices;
++EXPORT_SYMBOL(reset_pcie_devices);
++static int __init set_reset_pcie_devices(char *str)
++{
++	reset_pcie_devices = 1;
++	return 1;
++}
++__setup("reset_pcie_devices", set_reset_pcie_devices);
++
++static void __devinit quirk_pcie_device_reset(struct pci_dev *dev)
++{
++	struct pci_bus *subordinate;
++	struct pci_dev *child;
++	u16 ctrl;
++
++	if (!reset_pcie_devices || !pci_is_pcie(dev) || !dev->subordinate ||
++	    ((dev->pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
++	     (dev->pcie_type != PCI_EXP_TYPE_DOWNSTREAM)))
++		return;
++
++	subordinate = dev->subordinate;
++	list_for_each_entry(child, &subordinate->devices, bus_list) {
++		if ((child->pcie_type == PCI_EXP_TYPE_UPSTREAM) ||
++		    (child->pcie_type == PCI_EXP_TYPE_PCI_BRIDGE) ||
++		    ((child->class >> 16) == PCI_BASE_CLASS_DISPLAY))
++		/* Don't reset switch, bridge, VGA device */
++		return;
++	}
++
++	dev_info(&dev->dev, "Reset Secondary bus\n");
++
++	list_for_each_entry(child, &subordinate->devices, bus_list) {
++		dev_info(&child->dev, "save state\n");
++		pci_save_state(child);
++	}
++
++	/* Assert Secondary Bus Reset */
++	pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &ctrl);
++	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
++	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
++
++	msleep(2);
++
++	/* De-assert Secondary Bus Reset */
++	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
++	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
++
++	msleep(200);
++
++	list_for_each_entry(child, &subordinate->devices, bus_list) {
++		dev_info(&child->dev, "restore state\n");
++		pci_restore_state(child);
++	}
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_pcie_device_reset);
++
++/*
+  * Decoding should be disabled for a PCI device during BAR sizing to avoid
+  * conflict. But doing so may cause problems on host bridge and perhaps other
+  * key system devices. For devices that need to have mmio decoding always-on,
+
