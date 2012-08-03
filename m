@@ -1,47 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2HCQng (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:43:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43529 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab2HCQnc (ORCPT
+	id S1754088Ab2HCQn2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:43:28 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45999 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab2HCQnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:43:32 -0400
-Message-ID: <501BFFAC.2010705@canonical.com>
-Date: Fri, 03 Aug 2012 12:43:24 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Fri, 3 Aug 2012 12:43:25 -0400
+Date: Fri, 3 Aug 2012 18:43:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] scheduler fixes
+Message-ID: <20120803164319.GA1984@gmail.com>
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: wey-yi.w.guy@intel.com, ilw@linux.intel.com, linville@tuxdriver.com,
-        emmanuel.grumbach@intel.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION][v3.5] iwlwifi: include rssi as part of decision
- making for reduce txpower
-References: <501BFB29.7010801@canonical.com>  (sfid-20120803_182456_195468_6BBC5170) <1344011416.4482.11.camel@jlt3.sipsolutions.net>
-In-Reply-To: <1344011416.4482.11.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 12:30 PM, Johannes Berg wrote:
-> On Fri, 2012-08-03 at 12:24 -0400, Joseph Salisbury wrote:
->
->> A test kernel was created with this commit reverted, which stopped the
->> kernel panic from occurring.
->>
->> A bugzilla bug[1] has been opened.
->> [0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1029547
->> [1] https://bugzilla.kernel.org/show_bug.cgi?id=45491
-> This is a duplicate of https://bugzilla.kernel.org/show_bug.cgi?id=45481
-> which I've already commented on with the correct fix. I've also sent the
-> fix to stable:
->
-> http://www.mail-archive.com/stable@vger.kernel.org/msg12286.html
->
-> Thanks,
-> johannes
->
-Great!  Thanks for the feedback, Johannes.
+Linus,
+
+Please pull the latest sched-urgent-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
+
+   HEAD: b9403130a5350fca59a50ed11c198cb8c7e54119 sched/cleanups: Add load balance cpumask pointer to 'struct lb_env'
+
+Fixes and two late cleanups.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Alex Shi (1):
+      sched/numa: Add SD_PERFER_SIBLING to CPU domain
+
+Michael Wang (1):
+      sched/cleanups: Add load balance cpumask pointer to 'struct lb_env'
+
+Namhyung Kim (1):
+      sched: Use task_rq_unlock() in __sched_setscheduler()
+
+Srivatsa S. Bhat (1):
+      sched: Fix comment about PREEMPT_ACTIVE bit location
+
+Ying Xue (1):
+      sched: Fix minor code style issues
+
+
+ include/linux/hardirq.h  |    2 +-
+ include/linux/topology.h |    1 +
+ kernel/sched/core.c      |    4 +---
+ kernel/sched/cpupri.c    |   10 +++++-----
+ kernel/sched/fair.c      |   29 ++++++++++++++---------------
+ 5 files changed, 22 insertions(+), 24 deletions(-)
+
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index bb7f309..305f23c 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -22,7 +22,7 @@
+  *
+  * - bits 16-25 are the hardirq count (max # of nested hardirqs: 1024)
+  * - bit 26 is the NMI_MASK
+- * - bit 28 is the PREEMPT_ACTIVE flag
++ * - bit 27 is the PREEMPT_ACTIVE flag
+  *
+  * PREEMPT_MASK: 0x000000ff
+  * SOFTIRQ_MASK: 0x0000ff00
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index e91cd43..fec12d6 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -164,6 +164,7 @@ int arch_update_cpu_topology(void);
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
++				| 1*SD_PREFER_SIBLING			\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5d011ef..2cb4e77 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4340,9 +4340,7 @@ recheck:
+ 	 */
+ 	if (unlikely(policy == p->policy && (!rt_policy(policy) ||
+ 			param->sched_priority == p->rt_priority))) {
+-
+-		__task_rq_unlock(rq);
+-		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
++		task_rq_unlock(rq, p, &flags);
+ 		return 0;
+ 	}
+ 
+diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
+index d72586f..23aa789 100644
+--- a/kernel/sched/cpupri.c
++++ b/kernel/sched/cpupri.c
+@@ -65,8 +65,8 @@ static int convert_prio(int prio)
+ int cpupri_find(struct cpupri *cp, struct task_struct *p,
+ 		struct cpumask *lowest_mask)
+ {
+-	int                  idx      = 0;
+-	int                  task_pri = convert_prio(p->prio);
++	int idx = 0;
++	int task_pri = convert_prio(p->prio);
+ 
+ 	if (task_pri >= MAX_RT_PRIO)
+ 		return 0;
+@@ -137,9 +137,9 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
+  */
+ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
+ {
+-	int                 *currpri = &cp->cpu_to_pri[cpu];
+-	int                  oldpri  = *currpri;
+-	int                  do_mb = 0;
++	int *currpri = &cp->cpu_to_pri[cpu];
++	int oldpri = *currpri;
++	int do_mb = 0;
+ 
+ 	newpri = convert_prio(newpri);
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 22321db..d0cc03b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3069,6 +3069,9 @@ struct lb_env {
+ 	int			new_dst_cpu;
+ 	enum cpu_idle_type	idle;
+ 	long			imbalance;
++	/* The set of CPUs under consideration for load-balancing */
++	struct cpumask		*cpus;
++
+ 	unsigned int		flags;
+ 
+ 	unsigned int		loop;
+@@ -3653,8 +3656,7 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+  */
+ static inline void update_sg_lb_stats(struct lb_env *env,
+ 			struct sched_group *group, int load_idx,
+-			int local_group, const struct cpumask *cpus,
+-			int *balance, struct sg_lb_stats *sgs)
++			int local_group, int *balance, struct sg_lb_stats *sgs)
+ {
+ 	unsigned long nr_running, max_nr_running, min_nr_running;
+ 	unsigned long load, max_cpu_load, min_cpu_load;
+@@ -3671,7 +3673,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 	max_nr_running = 0;
+ 	min_nr_running = ~0UL;
+ 
+-	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
++	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+ 		struct rq *rq = cpu_rq(i);
+ 
+ 		nr_running = rq->nr_running;
+@@ -3800,8 +3802,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+  * @sds: variable to hold the statistics for this sched_domain.
+  */
+ static inline void update_sd_lb_stats(struct lb_env *env,
+-				      const struct cpumask *cpus,
+-				      int *balance, struct sd_lb_stats *sds)
++					int *balance, struct sd_lb_stats *sds)
+ {
+ 	struct sched_domain *child = env->sd->child;
+ 	struct sched_group *sg = env->sd->groups;
+@@ -3818,8 +3819,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+ 
+ 		local_group = cpumask_test_cpu(env->dst_cpu, sched_group_cpus(sg));
+ 		memset(&sgs, 0, sizeof(sgs));
+-		update_sg_lb_stats(env, sg, load_idx, local_group,
+-				   cpus, balance, &sgs);
++		update_sg_lb_stats(env, sg, load_idx, local_group, balance, &sgs);
+ 
+ 		if (local_group && !(*balance))
+ 			return;
+@@ -4055,7 +4055,6 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+  * to restore balance.
+  *
+  * @env: The load balancing environment.
+- * @cpus: The set of CPUs under consideration for load-balancing.
+  * @balance: Pointer to a variable indicating if this_cpu
+  *	is the appropriate cpu to perform load balancing at this_level.
+  *
+@@ -4065,7 +4064,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+  *		   put to idle by rebalancing its tasks onto our group.
+  */
+ static struct sched_group *
+-find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
++find_busiest_group(struct lb_env *env, int *balance)
+ {
+ 	struct sd_lb_stats sds;
+ 
+@@ -4075,7 +4074,7 @@ find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
+ 	 * Compute the various statistics relavent for load balancing at
+ 	 * this level.
+ 	 */
+-	update_sd_lb_stats(env, cpus, balance, &sds);
++	update_sd_lb_stats(env, balance, &sds);
+ 
+ 	/*
+ 	 * this_cpu is not the appropriate cpu to perform load balancing at
+@@ -4155,8 +4154,7 @@ ret:
+  * find_busiest_queue - find the busiest runqueue among the cpus in group.
+  */
+ static struct rq *find_busiest_queue(struct lb_env *env,
+-				     struct sched_group *group,
+-				     const struct cpumask *cpus)
++				     struct sched_group *group)
+ {
+ 	struct rq *busiest = NULL, *rq;
+ 	unsigned long max_load = 0;
+@@ -4171,7 +4169,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
+ 		if (!capacity)
+ 			capacity = fix_small_capacity(env->sd, group);
+ 
+-		if (!cpumask_test_cpu(i, cpus))
++		if (!cpumask_test_cpu(i, env->cpus))
+ 			continue;
+ 
+ 		rq = cpu_rq(i);
+@@ -4252,6 +4250,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		.dst_grpmask    = sched_group_cpus(sd->groups),
+ 		.idle		= idle,
+ 		.loop_break	= sched_nr_migrate_break,
++		.cpus		= cpus,
+ 	};
+ 
+ 	cpumask_copy(cpus, cpu_active_mask);
+@@ -4260,7 +4259,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 	schedstat_inc(sd, lb_count[idle]);
+ 
+ redo:
+-	group = find_busiest_group(&env, cpus, balance);
++	group = find_busiest_group(&env, balance);
+ 
+ 	if (*balance == 0)
+ 		goto out_balanced;
+@@ -4270,7 +4269,7 @@ redo:
+ 		goto out_balanced;
+ 	}
+ 
+-	busiest = find_busiest_queue(&env, group, cpus);
++	busiest = find_busiest_queue(&env, group);
+ 	if (!busiest) {
+ 		schedstat_inc(sd, lb_nobusyq[idle]);
+ 		goto out_balanced;
