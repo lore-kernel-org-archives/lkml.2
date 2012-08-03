@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab2HCPGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 11:06:34 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:52497 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab2HCPGb (ORCPT
+	id S1754179Ab2HCPKa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 11:10:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60503 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730Ab2HCPK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 11:06:31 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: "Steven J. Magnani" <steve@digidescorp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fat: Refactor shortname parsing
-References: <1341314074-2867-1-git-send-email-steve@digidescorp.com>
-	<alpine.LNX.2.01.1208031650580.3676@frira.zrqbmnf.qr>
-Date: Sat, 04 Aug 2012 00:06:27 +0900
-In-Reply-To: <alpine.LNX.2.01.1208031650580.3676@frira.zrqbmnf.qr> (Jan
-	Engelhardt's message of "Fri, 3 Aug 2012 16:52:03 +0200 (CEST)")
-Message-ID: <87lihw10cs.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	Fri, 3 Aug 2012 11:10:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20120731064053.GW30009@pengutronix.de>
+References: <1343407672-27185-1-git-send-email-fabio.estevam@freescale.com>
+	<20120731064053.GW30009@pengutronix.de>
+Date: Fri, 3 Aug 2012 12:10:28 -0300
+Message-ID: <CAOMZO5BSi7sfK+4mjPUn9j89CssyGBJkLXY_0aDekA5SRrXD-w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] hw_random: mxc-rnga: Adapt clocks to new i.mx
+ clock framework
+From: Fabio Estevam <festevam@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Engelhardt <jengelh@inai.de> writes:
+Hi Herbert,
 
-> On Tuesday 2012-07-03 13:14, Steven J. Magnani wrote:
->
->>Nearly identical shortname parsing is performed in fat_search_long()
->>and __fat_readdir(). Extract this code into a function that may be
->>called by both.
+On Tue, Jul 31, 2012 at 3:40 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Fri, Jul 27, 2012 at 01:47:51PM -0300, Fabio Estevam wrote:
+>> Adapt clocks to the new i.mx clock framework and fix the following warning:
 >>
->>v2: Attempt to clarify difference between vfat and msdos parsing.
->>    Remove decision-making from fat_tolower() for clarity.
->>
->>Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
->>---
->>diff -uprN linux-3.5-rc4/fs/fat/dir.c new/fs/fat/dir.c
->>--- linux-3.5-rc4/fs/fat/dir.c	2012-06-29 11:20:12.766348728 -0500
->>+++ new/fs/fat/dir.c	2012-07-03 06:10:36.066283411 -0500
->>@@ -35,6 +35,11 @@
->> #define FAT_MAX_UNI_CHARS	((MSDOS_SLOTS - 1) * 13 + 1)
->> #define FAT_MAX_UNI_SIZE	(FAT_MAX_UNI_CHARS * sizeof(wchar_t))
->> 
->>+static inline unsigned char fat_tolower(unsigned char c)
->>+{
->>+	return ((c >= 'A') && (c <= 'Z')) ? c+32 : c;
->>+}
->>+
+>> Cc: Theodore Ts'o <tytso@mit.edu>
+>> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+>> Cc: <linux-kernel@vger.kernel.org>
+>> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 >
-> The kernel already has a tolower() function, can that not be used?
+> Both:
+>
+> Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-tolower() is not exactly same, right? e.g. tolower(0xc0). Otherwise,
-tolower() is fine.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Looks like git did not Cc'ed you in these patches.
+
+Would it be OK to apply these two patches?
+
+Thanks,
+
+Fabio Estevam
