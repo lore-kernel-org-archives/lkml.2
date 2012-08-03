@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab2HCEx0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 00:53:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40406 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab2HCExY (ORCPT
+	id S1751802Ab2HCExl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 00:53:41 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:63475 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab2HCExZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 00:53:24 -0400
-Date: Thu, 2 Aug 2012 23:53:12 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Francois Rigaut <frigaut@mso.anu.edu.au>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
-Message-ID: <20120803045312.GB2446@thinkpad-t410>
-Mail-Followup-To: Francois Rigaut <frigaut@mso.anu.edu.au>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
-	linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
-References: <1343407934-459-1-git-send-email-mjg@redhat.com>
- <20120731223240.GD19134@kroah.com>
- <20120801165400.GA3042@srcf.ucam.org>
- <20120801232147.GA6228@kroah.com>
- <20120802040242.GB25933@thinkpad-t410>
- <20120802103423.GA1921@kroah.com>
- <501A955D.6030500@mso.anu.edu.au>
- <20120802161209.GF32395@thinkpad-t410>
- <501B01ED.9080309@mso.anu.edu.au>
- <501B0536.6070001@mso.anu.edu.au>
+	Fri, 3 Aug 2012 00:53:25 -0400
+Message-ID: <501B5941.4070200@kernel.org>
+Date: Fri, 03 Aug 2012 00:53:21 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501B0536.6070001@mso.anu.edu.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-acpi <linux-acpi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] ACPI & Power Management Patches for Linux-3.6-rc1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 08:54:46AM +1000, Francois Rigaut wrote:
-> Seth,
-> 
-> I have put the osx system.log, which is the only file where I can
-> see mux and AGC related message, at
-> http://maumae.net/retina/system.log
+Hi Linus,
 
-That does seem to contain the kernel log messages, but unfortunately I'm
-not seeing what I'm looking for there.
+Please pull these ACPI & Power Management patches.
 
-> Thanks,
-> Francois
-> 
-> On 03/08/12 08:40, Francois Rigaut wrote:
-> >Hi Seth,
-> >
-> >Sorry for the belated response. On Oz time here.
-> >I don't have a /var/log/kernel.log !
-> >Let me make sure of something:
-> >This switcher code is to be run on osx, no? That's where
-> >gfxcardstatus lives and where I can effect the card switch. Just
-> >to make sure.
-> >So I'm running osx mountain lion, and the only thing I see in the
-> >logs when I switch cards (using gfxcardstatus) is what I pasted
-> >below. and you're right, it was not in message.log, but system.log
-> >(it was late). I just went through the whole thing again.
-> >Am I missing something?
+A 3.3 sleep regression fixed, numa bugfix, plus some minor cleanups.
 
-Yes, it's to be run on OS X. So apparently something has changed and
-this technique no longer works for getting a log of the gmux I/O.
+thanks!
+Len Brown, Intel Open Source Technology Center
 
-We've got one of these machines on order, so I'll see if I can turn
-anything up when I get a chance to play with it.
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
-Thanks,
-Seth
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
+
+for you to fetch changes up to 9d0b01a1bbb7a4ad23000240b67bca33c4235fcf:
+
+  Merge branches 'delete-gts-bfs', 'misc', 'novell-bugzilla-757888-numa' and 'osc-pcie' into base (2012-08-03 00:31:23 -0400)
+
+----------------------------------------------------------------
+
+Feng Tang (1):
+      ACPI processor: Fix tick_broadcast_mask online/offline regression
+
+Len Brown (4):
+      ACPI: replace strlen("string") with sizeof("string") -1
+      ACPI/x86: revert 'x86, acpi: Call acpi_enter_sleep_state via an asmlinkage C function from assembler'
+      ACPI: delete _GTS/_BFS support
+      Merge branches 'delete-gts-bfs', 'misc', 'novell-bugzilla-757888-numa' and 'osc-pcie' into base
+
+Rafael J. Wysocki (2):
+      ACPI / PM: Fix build warning in sleep.c for CONFIG_ACPI_SLEEP unset
+      ACPI / PCI: Do not try to acquire _OSC control if that is hopeless
+
+Thomas Renninger (2):
+      ACPI: Untangle a return statement for better readability
+      ACPI: Only count valid srat memory structures
+
+ arch/ia64/kernel/acpi.c          |  5 +--
+ arch/x86/kernel/acpi/sleep.c     |  4 ---
+ arch/x86/kernel/acpi/sleep.h     |  2 --
+ arch/x86/kernel/acpi/wakeup_32.S |  4 ++-
+ arch/x86/kernel/acpi/wakeup_64.S |  4 ++-
+ arch/x86/mm/srat.c               | 15 ++++----
+ drivers/acpi/acpica/achware.h    | 12 +++----
+ drivers/acpi/acpica/hwesleep.c   | 19 ++--------
+ drivers/acpi/acpica/hwsleep.c    | 20 ++---------
+ drivers/acpi/acpica/hwxfsleep.c  | 22 ++++++------
+ drivers/acpi/numa.c              | 12 ++++---
+ drivers/acpi/pci_root.c          | 11 ++++--
+ drivers/acpi/processor_driver.c  |  2 +-
+ drivers/acpi/sleep.c             | 75 ++++++----------------------------------
+ drivers/acpi/sysfs.c             |  4 +--
+ include/acpi/acpixf.h            |  4 +--
+ include/acpi/actypes.h           |  2 +-
+ include/linux/acpi.h             |  2 +-
+ 18 files changed, 73 insertions(+), 146 deletions(-)
+[lenb@x980 lenb (next)]$ 
