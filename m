@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab2HCHgl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 03:36:41 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47172 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab2HCHgi (ORCPT
+	id S1752281Ab2HCHhE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 03:37:04 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:36754 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab2HCHhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 03:36:38 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Eric Paris <eparis@redhat.com>
-Cc: Peter Moody <pmoody@google.com>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@google.com>, viro@zeniv.linux.org.uk,
-        jlayton@redhat.com, linux-fsdevel@vger.kernel.org
-Subject: Re: Oops in audit_copy_inode
-References: <CALnj_=4r0qdrNUbXmS=q=sk11PZ-Q0z=wPO5wR_DzR4HjnMdqw@mail.gmail.com>
-	<CALnj_=5qfAxtKN_T+eoAPCswZPrWmKmOK5HSTwCNZV0s08f_qw@mail.gmail.com>
-	<1343837499.18359.7.camel@tucsk.pomaz.szeredi.hu>
-	<1343932497.2605.1.camel@localhost>
-Date: Fri, 03 Aug 2012 09:37:57 +0200
-In-Reply-To: <1343932497.2605.1.camel@localhost> (Eric Paris's message of
-	"Thu, 02 Aug 2012 14:34:57 -0400")
-Message-ID: <87a9yczaqy.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 3 Aug 2012 03:37:00 -0400
+Message-ID: <501B7F94.7090308@linux.vnet.ibm.com>
+Date: Fri, 03 Aug 2012 15:36:52 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 01/10] KVM: iommu: fix releasing unmapped page
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12080307-2674-0000-0000-000005791EF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Paris <eparis@redhat.com> writes:
+There are two bugs:
+- the 'error page' is forgot to be released
+  [ it is unneeded after commit a2766325cf9f9, for backport, we
+    still do kvm_release_pfn_clean for the error pfn ]
 
-> I believe this was already found and fixed:
->
-> https://lkml.org/lkml/2012/7/25/259
->
-> Which was pulled by Linus in:
->
-> 3134f37e931d75931bdf6d4eacd82a3fd26eca7c
+- guest pages are always released regardless of the unmapped page
+  (e,g, caused by hwpoison)
 
-Okay, yes.  I was actually CC-d on that, but missed the email.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ virt/kvm/iommu.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Thanks,
-Miklos
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index c03f1fb..6a67bea 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -107,6 +107,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ 		 */
+ 		pfn = kvm_pin_pages(slot, gfn, page_size);
+ 		if (is_error_pfn(pfn)) {
++			kvm_release_pfn_clean(pfn);
+ 			gfn += 1;
+ 			continue;
+ 		}
+@@ -300,6 +301,12 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
+
+ 		/* Get physical address */
+ 		phys = iommu_iova_to_phys(domain, gfn_to_gpa(gfn));
++
++		if (!phys) {
++			gfn++;
++			continue;
++		}
++
+ 		pfn  = phys >> PAGE_SHIFT;
+
+ 		/* Unmap address from IO address space */
+-- 
+1.7.7.6
+
