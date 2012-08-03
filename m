@@ -1,81 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751290Ab2HCF4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 01:56:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50105 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750794Ab2HCF4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 01:56:07 -0400
-Date: Fri, 3 Aug 2012 15:55:52 +1000
-From: NeilBrown <neilb@suse.de>
-To: Chris Ball <cjb@laptop.org>
-Cc: "werner" <w.landgraf@ru.ru>, linux-kernel@vger.kernel.org
-Subject: Re: 3.6-rc1:     twl4030  don't compile   :(
-Message-ID: <20120803155552.486622d7@notabene.brown>
-In-Reply-To: <87hask8sph.fsf@octavius.laptop.org>
-References: <web-777065796@zbackend1.aha.ru>
-	<87hask8sph.fsf@octavius.laptop.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/IHC9DlCc5eedhDVkM5.wOAF"; protocol="application/pgp-signature"
+	id S1751636Ab2HCF4X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 01:56:23 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:38811 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab2HCF4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 01:56:15 -0400
+Message-ID: <501B67F4.3030308@linux.vnet.ibm.com>
+Date: Fri, 03 Aug 2012 11:26:04 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Len Brown <lenb@kernel.org>
+CC: Feng Tang <feng.tang@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+        Thomas Renninger <trenn@suse.de>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] ACPI processor: Fix a typo error in commit 99b725084
+References: <1343709883-16801-1-git-send-email-feng.tang@intel.com> <501B51F1.7090503@kernel.org>
+In-Reply-To: <501B51F1.7090503@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12080305-2000-0000-0000-000008957ADC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/IHC9DlCc5eedhDVkM5.wOAF
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 08/03/2012 09:52 AM, Len Brown wrote:
+> Applied.
+> 
+> thanks for the refresh.
+> 
 
-On Fri, 03 Aug 2012 01:12:10 -0400 Chris Ball <cjb@laptop.org> wrote:
+This patch needs to be CC'ed to stable also right?
+ 
+Regards,
+Srivatsa S. Bhat
 
-> Hi,
->=20
-> On Fri, Aug 03 2012, werner wrote:
-> >   CC      drivers/power/twl4030_charger.o
-> > drivers/power/twl4030_charger.c:248:12: error: invalid suffix "b1100"
-> > on integer constant
->=20
-> drivers/power/twl4030_charger.c:
-> #define TWL4030_BBSEL_3V0       0b0100
-> #define TWL4030_BBSEL_3V1       0b1000
-> #define TWL4030_BBSEL_3V2       0b1100
->=20
-> Werner, your gcc version is too old to support the 0b-prefixed binary
-> constant syntax.  It was introduced in gcc-4.3.  The kernel compiles
-> fine here, on gcc-4.7.
->=20
-> Neil Brown added this use of the 0b prefix in 210d4bc8a3128e3e61ac3b
-> ("twl4030_charger: Add backup-battery charging").  Neil, I don't think
-> we can use this syntax yet -- Documentation/Changes says that we still
-> support from gcc-3.2 onwards.
-
-I didn't realise that 0b... wasn't universal.
-I'll submit a patch.
-
-Thanks,
-NeilBrown
-
---Sig_/IHC9DlCc5eedhDVkM5.wOAF
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUBtn6Dnsnt1WYoG5AQIiYg/+LdTNjR9Y6xG6vq9QxiC3YFOqOAzfnRws
-aStryt6WHFNad/tjyJQ+WQj+nA2Y6VzmZ5323adC36kiWZo6gNbjptExU+Pxah/E
-/KLwAo4T3uSPmX36sa+cxC5MkXFVHyex5A+ekhyCN4Tm/NucdzNVBqZfChMwwVR/
-QPs1butxeA4ZdhPJgdKk46fsMEGsTgD5kGu0SoBKyrUUNZ34odkbJYtxDJL667rV
-6+B4WBs6VH25ggEWovex2uqjTwni58DWRrbf/wLtqLv3oPa75xhl8WVScFK33T00
-Z8EHYMyyjw2XkEij+xsZnKwC6mBqYOIQ4ic9t1y7VPR/Kqwmn6DzfK5c+oWdj7i3
-xEEfIZyKHJUNFNkW9pvcsRAJb0wEywp7H0pS/hI56InAJ1NyYTfd6gv+5rtbY7MU
-PwPYEuB2OOX5gIcJ2odty5cChFxIIFXz2fPgf/A1w92PV7YXO1Wc2N3S15S8Rmgu
-f/E+2MuMaqsFKy36YKeAxGWRlSSRx1OZiCvlu8bCGxwuYoI52N2hYDBFkIeXO6BK
-jA0lGcNAb2vZVmtl8Rj7O5zzUywxpuf3HLeeQ051Lr8QP6t8VjIkoQhYGZaVMHKJ
-6ewnob1HI1BS+duFp2oW2h1LqPj7/djxyu9kWEWrgjFuLVrj3cniWYes0I3FEfdW
-rzapix8UHBU=
-=Fe7E
------END PGP SIGNATURE-----
-
---Sig_/IHC9DlCc5eedhDVkM5.wOAF--
