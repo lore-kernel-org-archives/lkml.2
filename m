@@ -1,868 +1,392 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab2HCMZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 08:25:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37082 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753683Ab2HCMZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 08:25:21 -0400
-Date: Fri, 3 Aug 2012 14:25:15 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Yann Cantin <yann.cantin@laposte.net>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC ebeam PATCH v2 3/3] input: misc: New USB eBeam input
- driver.
-In-Reply-To: <1343912397-18353-4-git-send-email-yann.cantin@laposte.net>
-Message-ID: <alpine.LRH.2.00.1208031424250.15211@twin.jikos.cz>
-References: <1343912397-18353-1-git-send-email-yann.cantin@laposte.net> <1343912397-18353-4-git-send-email-yann.cantin@laposte.net>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753769Ab2HCM1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 08:27:41 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:46624 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752922Ab2HCM1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 08:27:38 -0400
+Date: Fri, 3 Aug 2012 14:27:27 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Sven Joachim <svenjoac@gmx.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Kevin Winchester <kjwinchester@gmail.com>
+Subject: Re: [ 33/73] x86, microcode: Sanitize per-cpu microcode reloading
+ interface
+Message-ID: <20120803122727.GA32299@aftab.osrc.amd.com>
+References: <20120731044310.013763753@decadent.org.uk>
+ <20120731044316.585695559@decadent.org.uk>
+ <87y5lw73eh.fsf@turtle.gmx.de>
+ <20120803094314.GB31792@aftab.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120803094314.GB31792@aftab.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Aug 2012, Yann Cantin wrote:
-
-> Signed-off-by: Yann Cantin <yann.cantin@laposte.net>
+On Fri, Aug 03, 2012 at 11:43:14AM +0200, Borislav Petkov wrote:
+> On Fri, Aug 03, 2012 at 11:04:06AM +0200, Sven Joachim wrote:
+> > On 2012-07-31 06:43 +0200, Ben Hutchings wrote:
+> > 
+> > > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > Alas, this does not build if CONFIG_SMP is unset:
+> > 
+> > ,----
+> > | arch/x86/kernel/microcode_core.c: In function 'reload_store':
+> > | arch/x86/kernel/microcode_core.c:304:19: error: 'struct cpuinfo_x86' has no member named 'cpu_index'
+> > `----
+> 
+> Crap. :-(
+> 
+> 3.2 still has this:
+> 
+> <arch/x86/include/asm/processor.h>:
+> ...
+> #ifdef CONFIG_SMP
+>         /* number of cores as seen by the OS: */
+>         u16                     booted_cores;
+>         /* Physical processor id: */
+>         u16                     phys_proc_id;
+>         /* Core id: */
+>         u16                     cpu_core_id;
+>         /* Compute unit id */
+>         u8                      compute_unit_id;
+>         /* Index into per_cpu list: */
+>         u16                     cpu_index;
+> #endif
+>         u32                     microcode;
+> } __attribute__((__aligned__(SMP_CACHE_BYTES)));
 > ---
->  drivers/input/misc/Kconfig  |   16 +
->  drivers/input/misc/Makefile |    1 +
->  drivers/input/misc/ebeam.c  |  760 +++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 777 insertions(+)
->  create mode 100644 drivers/input/misc/ebeam.c
 > 
-> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-> index 7c0f1ec..1e575e4 100644
-> --- a/drivers/input/misc/Kconfig
-> +++ b/drivers/input/misc/Kconfig
-> @@ -83,6 +83,22 @@ config INPUT_BMA150
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called bma150.
->  
-> +config INPUT_EBEAM_USB
-> +	tristate "USB eBeam driver"
-> +	depends on USB_ARCH_HAS_HCD
-> +	select USB
-> +	help
-> +	  Say Y here if you have a USB eBeam pointing device and want to
-> +	  use it without any proprietary user space tools.
-> +
-> +	  Have a look at <http://sourceforge.net/projects/ebeam/> for
-> +	  a usage description and the required user-space tools.
-> +
-> +	  Currently, only the Classic Projection model is supported.
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called ebeam.
-> +
->  config INPUT_PCSPKR
->  	tristate "PC Speaker support"
->  	depends on PCSPKR_PLATFORM
-> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-> index 83fe6f5..2aa9813 100644
-> --- a/drivers/input/misc/Makefile
-> +++ b/drivers/input/misc/Makefile
-> @@ -24,6 +24,7 @@ obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
->  obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
->  obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
->  obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
-> +obj-$(CONFIG_INPUT_EBEAM_USB)		+= ebeam.o
->  obj-$(CONFIG_INPUT_GP2A)		+= gp2ap002a00f.o
->  obj-$(CONFIG_INPUT_GPIO_TILT_POLLED)	+= gpio_tilt_polled.o
->  obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
-> diff --git a/drivers/input/misc/ebeam.c b/drivers/input/misc/ebeam.c
-> new file mode 100644
-> index 0000000..9c698a3
-> --- /dev/null
-> +++ b/drivers/input/misc/ebeam.c
-> @@ -0,0 +1,760 @@
-> +/******************************************************************************
-> + *
-> + * eBeam driver
-> + *
-> + * Copyright (C) 2012 Yann Cantin (yann.cantin@laposte.net)
-> + *
-> + *	This program is free software; you can redistribute it and/or
-> + *	modify it under the terms of the GNU General Public License as
-> + *	published by the Free Software Foundation; either version 2 of the
-> + *	License, or (at your option) any later version.
-> + *
-> + *  based on
-> + *
-> + *	usbtouchscreen.c by Daniel Ritz <daniel.ritz@gmx.ch>
-> + *	aiptek.c (sysfs/settings) by Chris Atenasio <chris@crud.net>
-> + *				     Bryan W. Headley <bwheadley@earthlink.net>
-> + *
-> + *****************************************************************************/
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/input.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/usb.h>
-> +#include <linux/usb/input.h>
-> +#include <linux/hid.h>
-
-As this driver is not a HID bus driver, why do you need this include?
-
-> +
-> +#define DRIVER_VERSION	"v0.7"
-
-I don't think we need to be tracking driver versions for newly submitted 
-drivers, git is much better at tracking changes.
-
-> +#define DRIVER_AUTHOR	"Yann Cantin <yann.cantin@laposte.net>"
-> +#define DRIVER_DESC	"USB eBeam Driver"
-> +
-> +/* Common values for eBeam devices */
-> +#define REPT_SIZE	8	/* packet size		  */
-> +#define MIN_X	0		/* raw coordinates ranges */
-> +#define MAX_X	0xFFFF
-> +#define MIN_Y	0
-> +#define MAX_Y	0xFFFF
-> +
-> +
-> +#define USB_VENDOR_ID_EFI	   0x2650   /* Electronics For Imaging, Inc   */
-> +#define USB_DEVICE_ID_EFI_CLASSIC  0x1311   /* Classic projection "La banane" */
-> +
-> +#define EBEAM_BTN_TIP	0x1      /* tip    */
-> +#define EBEAM_BTN_LIT	0x2      /* little */
-> +#define EBEAM_BTN_BIG	0x4      /* big    */
-> +
-> +/* ebeam settings */
-> +struct ebeam_settings {
-> +	int min_x;
-> +	int max_x;
-> +	int min_y;
-> +	int max_y;
-> +
-> +	/* H matrix */
-> +	s64 h1;
-> +	s64 h2;
-> +	s64 h3;
-> +	s64 h4;
-> +	s64 h5;
-> +	s64 h6;
-> +	s64 h7;
-> +	s64 h8;
-> +	s64 h9;
-> +};
-> +
-> +/* ebeam device */
-> +struct ebeam_device {
-> +	unsigned char		 *data;
-> +	dma_addr_t		 data_dma;
-> +	unsigned char		 *buffer;
-> +	int			 buf_len;
-> +	struct urb		 *irq;
-> +	struct usb_interface	 *interface;
-> +	struct input_dev	 *input;
-> +	char			 name[128];
-> +	char			 phys[64];
-> +	void			 *priv;
-> +
-> +	struct ebeam_settings	 cursetting;	/* device's current settings */
-> +	struct ebeam_settings	 newsetting;	/* ... and new ones	     */
-> +
-> +	bool			 calibrated;	/* false : send raw	     */
-> +						/* true  : send computed     */
-> +
-> +	u16			 X, Y;		/* raw coordinates	     */
-> +	int			 x, y;		/* computed coordinates      */
-
-X,x being different fields seems confusing to me. How about, let's say, x, 
-raw_x?
-
-> +	int			 btn_map;	/* internal buttons map      */
-> +};
-> +
-> +
-> +/* device types */
-> +enum {
-> +	DEVTYPE_CLASSIC,
-> +};
-> +
-> +static const struct usb_device_id ebeam_devices[] = {
-> +	{USB_DEVICE(USB_VENDOR_ID_EFI, USB_DEVICE_ID_EFI_CLASSIC),
-> +			.driver_info = DEVTYPE_CLASSIC},
-> +	{}
-> +};
-> +
-> +static void ebeam_init_settings(struct ebeam_device *ebeam)
-> +{
-> +	ebeam->calibrated = false;
-> +
-> +	/* Init (x,y) min/max to raw ones */
-> +	ebeam->cursetting.min_x = ebeam->newsetting.min_x = MIN_X;
-> +	ebeam->cursetting.max_x = ebeam->newsetting.max_x = MAX_X;
-> +	ebeam->cursetting.min_y = ebeam->newsetting.min_y = MIN_Y;
-> +	ebeam->cursetting.max_y = ebeam->newsetting.max_y = MAX_Y;
-> +
-> +	/* Safe values for the H matrix (Identity) */
-> +	ebeam->cursetting.h1 = ebeam->newsetting.h1 = 1;
-> +	ebeam->cursetting.h2 = ebeam->newsetting.h2 = 0;
-> +	ebeam->cursetting.h3 = ebeam->newsetting.h3 = 0;
-> +
-> +	ebeam->cursetting.h4 = ebeam->newsetting.h4 = 0;
-> +	ebeam->cursetting.h5 = ebeam->newsetting.h5 = 1;
-> +	ebeam->cursetting.h6 = ebeam->newsetting.h6 = 0;
-> +
-> +	ebeam->cursetting.h7 = ebeam->newsetting.h7 = 0;
-> +	ebeam->cursetting.h8 = ebeam->newsetting.h8 = 0;
-> +	ebeam->cursetting.h9 = ebeam->newsetting.h9 = 1;
-> +}
-> +
-> +static void ebeam_setup_input(struct ebeam_device *ebeam,
-> +			      struct input_dev *input_dev)
-> +{
-> +	unsigned long flags;
-> +
-> +	/* Take event lock while modifying parameters */
-> +	spin_lock_irqsave(&input_dev->event_lock, flags);
-> +
-> +	/* Properties */
-> +	set_bit(INPUT_PROP_DIRECT,  input_dev->propbit);
-> +
-> +	/* Events generated */
-> +	set_bit(EV_KEY, input_dev->evbit);
-> +	set_bit(EV_ABS, input_dev->evbit);
-> +
-> +	/* Keys */
-> +	set_bit(BTN_LEFT,   input_dev->keybit);
-> +	set_bit(BTN_MIDDLE, input_dev->keybit);
-> +	set_bit(BTN_RIGHT,  input_dev->keybit);
-> +
-> +	/* Axis */
-> +	if (!ebeam->calibrated) {
-> +		ebeam->cursetting.min_x = MIN_X;
-> +		ebeam->cursetting.max_x = MAX_X;
-> +		ebeam->cursetting.min_y = MIN_Y;
-> +		ebeam->cursetting.max_y = MAX_Y;
-> +	}
-> +
-> +	input_set_abs_params(input_dev, ABS_X,
-> +			     ebeam->cursetting.min_x, ebeam->cursetting.max_x,
-> +			     0, 0);
-> +	input_set_abs_params(input_dev, ABS_Y,
-> +			     ebeam->cursetting.min_y, ebeam->cursetting.max_y,
-> +			     0, 0);
-> +
-> +	spin_unlock_irqrestore(&input_dev->event_lock, flags);
-> +}
-> +
-> +/*******************************************************************************
-> + * sysfs part
-> + */
-> +
-> +/*
-> + * screen min/max and H matrix coefs
-> + * _get return *current* value
-> + * _set set new value
-> + */
-> +#define DEVICE_MINMAX_ATTR(MM)						       \
-> +static ssize_t ebeam_##MM##_get(struct device *dev,			       \
-> +				struct device_attribute *attr,		       \
-> +				char *buf)				       \
-> +{									       \
-> +	struct ebeam_device *ebeam = dev_get_drvdata(dev);		       \
-> +									       \
-> +	return snprintf(buf, PAGE_SIZE, "%d\n", ebeam->cursetting.MM);	       \
-> +}									       \
-> +static ssize_t ebeam_##MM##_set(struct device *dev,			       \
-> +				struct device_attribute *attr,		       \
-> +				const char *buf,			       \
-> +				size_t count)				       \
-> +{									       \
-> +	struct ebeam_device *ebeam = dev_get_drvdata(dev);		       \
-> +	int err, MM;							       \
-> +									       \
-> +	err = kstrtoint(buf, 10, &MM);					       \
-> +	if (err)							       \
-> +		return err;						       \
-> +									       \
-> +	ebeam->newsetting.MM = MM;					       \
-> +	return count;							       \
-> +}									       \
-> +static DEVICE_ATTR(MM, S_IRUGO | S_IWUGO,				       \
-> +		   ebeam_##MM##_get,					       \
-> +		   ebeam_##MM##_set)
-> +
-> +DEVICE_MINMAX_ATTR(min_x);
-> +DEVICE_MINMAX_ATTR(max_x);
-> +DEVICE_MINMAX_ATTR(min_y);
-> +DEVICE_MINMAX_ATTR(max_y);
-> +
-> +#define DEVICE_H_ATTR(SET_ID)						       \
-> +static ssize_t ebeam_h##SET_ID##_get(struct device *dev,		       \
-> +				     struct device_attribute *attr,	       \
-> +				     char *buf)				       \
-> +{									       \
-> +	struct ebeam_device *ebeam = dev_get_drvdata(dev);		       \
-> +									       \
-> +	return snprintf(buf, PAGE_SIZE, "%lld\n", ebeam->cursetting.h##SET_ID);\
-> +}									       \
-> +static ssize_t ebeam_h##SET_ID##_set(struct device *dev,		       \
-> +				     struct device_attribute *attr,	       \
-> +				     const char *buf,			       \
-> +				     size_t count)			       \
-> +{									       \
-> +	struct ebeam_device *ebeam = dev_get_drvdata(dev);		       \
-> +	int err;							       \
-> +	u64 h;								       \
-> +									       \
-> +	err = kstrtoll(buf, 10, &h);					       \
-> +	if (err)							       \
-> +		return err;						       \
-> +									       \
-> +	ebeam->newsetting.h##SET_ID = h;				       \
-> +	return count;							       \
-> +}									       \
-> +static DEVICE_ATTR(h##SET_ID, S_IRUGO | S_IWUGO,			       \
-> +		   ebeam_h##SET_ID##_get,				       \
-> +		   ebeam_h##SET_ID##_set)
-> +
-> +DEVICE_H_ATTR(1);
-> +DEVICE_H_ATTR(2);
-> +DEVICE_H_ATTR(3);
-> +DEVICE_H_ATTR(4);
-> +DEVICE_H_ATTR(5);
-> +DEVICE_H_ATTR(6);
-> +DEVICE_H_ATTR(7);
-> +DEVICE_H_ATTR(8);
-> +DEVICE_H_ATTR(9);
-
-You are adding a number of sysfs files. If they are really necessary, 
-you'll probably need to document those in Documentation/ABI.
-
-> +
-> +/*
-> + * sysfs calibrated
-> + * Once H matrix coefs are set, writing 1 to this file triggers
-> + * coordinates mapping.
-> + * Anything else reset the device to un-calibrated mode,
-> + * storing cursetting in newsetting.
-> +*/
-> +static ssize_t ebeam_calibrated_get(struct device *dev,
-> +				    struct device_attribute *attr,
-> +				    char *buf)
-> +{
-> +	struct ebeam_device *ebeam = dev_get_drvdata(dev);
-> +
-> +	return snprintf(buf, PAGE_SIZE, "%d\n", ebeam->calibrated);
-> +}
-> +
-> +static ssize_t ebeam_calibrated_set(struct device *dev,
-> +				    struct device_attribute *attr,
-> +				    const char *buf,
-> +				    size_t count)
-> +{
-> +	struct ebeam_device *ebeam = dev_get_drvdata(dev);
-> +	int err, c;
-> +
-> +	err = kstrtoint(buf, 10, &c);
-> +	if (err)
-> +		return err;
-> +
-> +	if (c == 1) {
-> +		memcpy(&ebeam->cursetting, &ebeam->newsetting,
-> +		       sizeof(struct ebeam_settings));
-> +		ebeam->calibrated = true;
-> +		ebeam_setup_input(ebeam, ebeam->input);
-> +	} else {
-> +		memcpy(&ebeam->newsetting, &ebeam->cursetting,
-> +		       sizeof(struct ebeam_settings));
-> +		ebeam->calibrated = false;
-> +		ebeam_setup_input(ebeam, ebeam->input);
-> +	}
-> +
-> +	return count;
-> +}
-> +
-> +static DEVICE_ATTR(calibrated, S_IRUGO | S_IWUGO,
-> +		   ebeam_calibrated_get, ebeam_calibrated_set);
-> +
-> +static struct attribute *ebeam_attrs[] = {
-> +	&dev_attr_min_x.attr,
-> +	&dev_attr_min_y.attr,
-> +	&dev_attr_max_x.attr,
-> +	&dev_attr_max_y.attr,
-> +	&dev_attr_h1.attr,
-> +	&dev_attr_h2.attr,
-> +	&dev_attr_h3.attr,
-> +	&dev_attr_h4.attr,
-> +	&dev_attr_h5.attr,
-> +	&dev_attr_h6.attr,
-> +	&dev_attr_h7.attr,
-> +	&dev_attr_h8.attr,
-> +	&dev_attr_h9.attr,
-> +	&dev_attr_calibrated.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group ebeam_attr_group = {
-> +	.attrs = ebeam_attrs,
-> +};
-> +
-> +/* IRQ */
-> +static int ebeam_read_data(struct ebeam_device *ebeam, unsigned char *pkt)
-> +{
-> +
-> +/*
-> + * Packet description : 8 bytes
-> + *
-> + *  nop packet : FF FF FF FF FF FF FF FF
-> + *
-> + *  pkt[0] : Sensors
-> + *	bit 1 : ultrasound signal (guessed)
-> + *	bit 2 : IR signal (tested with a remote...) ;
-> + *	readings OK : 0x03 (anything else is a show-stopper)
-> + *
-> + *  pkt[1] : X low
-> + *  pkt[2] : X high
-> + *
-> + *  pkt[3] : Y low
-> + *  pkt[4] : Y high
-> + *
-> + *  pkt[5] : fiability ?
-> + *	often 0xC0
-> + *	> 0x80 : OK
-> + *
-> + *  pkt[6] :
-> + *	buttons state (low 4 bits)
-> + *		0x1 = no buttons
-> + *		bit 0 : tip (WARNING inversed : 0=pressed)
-> + *		bit 1 : ? (always 0 during tests)
-> + *		bit 2 : little (1=pressed)
-> + *		bit 3 : big (1=pressed)
-> + *
-> + *	pointer ID : (hight 4 bits)
-> + *		Tested  : 0x6=wand ;
-> + *		Guessed : 0x1=red ; 0x2=blue ; 0x3=green ; 0x4=black ;
-> + *			  0x5=eraser
-> + *		bit 4 : pointer ID
-> + *		bit 5 : pointer ID
-> + *		bit 6 : pointer ID
-> + *		bit 7 : pointer ID
-> + *
-> + *
-> + *  pkt[7] : fiability ?
-> + *	often 0xFF
-> + *
-> + */
-> +
-> +	/* Filtering bad/nop packet */
-> +	if (pkt[0] != 0x03)
-> +		return 0;
-> +
-> +	ebeam->X = (pkt[2] << 8) | pkt[1];
-> +	ebeam->Y = (pkt[4] << 8) | pkt[3];
-> +
-> +	ebeam->btn_map = (!(pkt[6] & 0x1))	|
-> +			 ((pkt[6] & 0x4) >> 1)	|
-> +			 ((pkt[6] & 0x8) >> 1);
-> +
-> +	return 1;
-> +}
-> +
-> +/* IRQ */
-> +static void ebeam_report_input(struct ebeam_device *ebeam)
-> +{
-> +	input_report_key(ebeam->input, BTN_LEFT,
-> +			 (ebeam->btn_map & EBEAM_BTN_TIP));
-> +	input_report_key(ebeam->input, BTN_MIDDLE,
-> +			 (ebeam->btn_map & EBEAM_BTN_LIT));
-> +	input_report_key(ebeam->input, BTN_RIGHT,
-> +			 (ebeam->btn_map & EBEAM_BTN_BIG));
-> +
-> +	input_report_abs(ebeam->input, ABS_X, ebeam->x);
-> +	input_report_abs(ebeam->input, ABS_Y, ebeam->y);
-> +
-> +	input_sync(ebeam->input);
-> +}
-> +
-> +/*
-> + * IRQ
-> + * compute screen coordinates from raw
-> + * Overflow and negative values are user space's problem
-> + */
-> +static bool ebeam_calculate_xy(struct ebeam_device *ebeam)
-> +{
-> +	/* TODO : check if u64 division is available on all plateform */
-> +
-> +	s64 scale;
-> +
-> +	if (!ebeam->calibrated) {
-> +		ebeam->x = ebeam->X;
-> +		ebeam->y = ebeam->Y;
-> +	} else {
-> +		scale = ebeam->cursetting.h7 * ebeam->X +
-> +			ebeam->cursetting.h8 * ebeam->Y +
-> +			ebeam->cursetting.h9;
-> +
-> +		/* Who want a division by zero in kernel ? */
-> +		if (scale == 0) {
-> +			dev_err(&(ebeam->interface)->dev,
-> +				"%s - Division by zero, wrong calibration.\n",
-> +				__func__);
-> +			dev_err(&(ebeam->interface)->dev,
-> +				"%s - Resetting to un-calibrated mode.\n",
-> +				__func__);
-> +			ebeam->calibrated = false;
-> +			return 0;
-> +		}
-> +
-> +		/*
-> +		 * We *must* round the result, but not with (int) (v1/v2 + 0.5)
-> +		 *
-> +		 * (int) (v1/v2 + 0.5) <=> (int) ( (2*v1 + v2)/(2*v2) )
-> +		 */
-> +		ebeam->x = (int) ((((ebeam->cursetting.h1 * ebeam->X +
-> +				     ebeam->cursetting.h2 * ebeam->Y +
-> +				     ebeam->cursetting.h3) << 1) + scale) /
-> +				     (scale << 1));
-> +		ebeam->y = (int) ((((ebeam->cursetting.h4 * ebeam->X +
-> +				     ebeam->cursetting.h5 * ebeam->Y +
-> +				     ebeam->cursetting.h6) << 1) + scale) /
-> +				     (scale << 1));
-> +	}
-> +
-> +	return 1;
-> +}
-> +
-> +/* IRQ */
-> +static void ebeam_process_pkt(struct ebeam_device *ebeam,
-> +			      unsigned char *pkt, int len)
-> +{
-> +	if (!ebeam_read_data(ebeam, pkt))
-> +		return;
-> +
-> +	if (!ebeam_calculate_xy(ebeam))
-> +		return;
-> +
-> +	ebeam_report_input(ebeam);
-> +}
-> +
-> +/* IRQ
-> + * handler */
-> +static void ebeam_irq(struct urb *urb)
-> +{
-> +	struct ebeam_device *ebeam = urb->context;
-> +	struct device *dev = &ebeam->interface->dev;
-> +	int retval;
-> +
-> +	switch (urb->status) {
-> +	case 0:
-> +		/* success */
-> +		break;
-> +	case -ETIME:
-> +		/* this urb is timing out */
-> +		dev_dbg(dev,
-> +			"%s - urb timed out - was the device unplugged?\n",
-> +			__func__);
-> +		return;
-> +	case -ECONNRESET:
-> +	case -ENOENT:
-> +	case -ESHUTDOWN:
-> +	case -EPIPE:
-> +		/* this urb is terminated, clean up */
-> +		dev_dbg(dev, "%s - urb shutting down with status: %d\n",
-> +			__func__, urb->status);
-> +		return;
-> +	default:
-> +		dev_dbg(dev, "%s - nonzero urb status received: %d\n",
-> +			__func__, urb->status);
-> +		goto exit;
-> +	}
-> +
-> +	ebeam_process_pkt(ebeam, ebeam->data, urb->actual_length);
-> +
-> +exit:
-> +	usb_mark_last_busy(interface_to_usbdev(ebeam->interface));
-> +	retval = usb_submit_urb(urb, GFP_ATOMIC);
-> +	if (retval)
-> +		dev_err(dev, "%s - usb_submit_urb failed with result: %d\n",
-> +			__func__, retval);
-> +}
-> +
-> +static int ebeam_open(struct input_dev *input)
-> +{
-> +	struct ebeam_device *ebeam = input_get_drvdata(input);
-> +	int r;
-> +
-> +	ebeam->irq->dev = interface_to_usbdev(ebeam->interface);
-> +
-> +	r = usb_autopm_get_interface(ebeam->interface) ? -EIO : 0;
-> +	if (r < 0)
-> +		goto out;
-> +
-> +	if (usb_submit_urb(ebeam->irq, GFP_KERNEL)) {
-> +		r = -EIO;
-> +		goto out_put;
-> +	}
-> +
-> +	ebeam->interface->needs_remote_wakeup = 1;
-> +out_put:
-> +	usb_autopm_put_interface(ebeam->interface);
-> +out:
-> +	return r;
-> +}
-> +
-> +static void ebeam_close(struct input_dev *input)
-> +{
-> +	struct ebeam_device *ebeam = input_get_drvdata(input);
-> +	int r;
-> +
-> +	usb_kill_urb(ebeam->irq);
-> +
-> +	r = usb_autopm_get_interface(ebeam->interface);
-> +	ebeam->interface->needs_remote_wakeup = 0;
-> +
-> +	if (!r)
-> +		usb_autopm_put_interface(ebeam->interface);
-> +}
-> +
-> +static int ebeam_suspend(struct usb_interface *intf, pm_message_t message)
-> +{
-> +	struct ebeam_device *ebeam = usb_get_intfdata(intf);
-> +
-> +	usb_kill_urb(ebeam->irq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int ebeam_resume(struct usb_interface *intf)
-> +{
-> +	struct ebeam_device *ebeam = usb_get_intfdata(intf);
-> +	struct input_dev *input = ebeam->input;
-> +	int result = 0;
-> +
-> +	mutex_lock(&input->mutex);
-> +	if (input->users)
-> +		result = usb_submit_urb(ebeam->irq, GFP_NOIO);
-> +	mutex_unlock(&input->mutex);
-> +
-> +	return result;
-> +}
-> +
-> +static int ebeam_reset_resume(struct usb_interface *intf)
-> +{
-> +	struct ebeam_device *ebeam = usb_get_intfdata(intf);
-> +	struct input_dev *input = ebeam->input;
-> +	int err = 0;
-> +
-> +	/* restart IO if needed */
-> +	mutex_lock(&input->mutex);
-> +	if (input->users)
-> +		err = usb_submit_urb(ebeam->irq, GFP_NOIO);
-> +	mutex_unlock(&input->mutex);
-> +
-> +	return err;
-> +}
-> +
-> +static void ebeam_free_buffers(struct usb_device *udev,
-> +			       struct ebeam_device *ebeam)
-> +{
-> +	usb_free_coherent(udev, REPT_SIZE,
-> +			  ebeam->data, ebeam->data_dma);
-> +	kfree(ebeam->buffer);
-> +}
-> +
-> +static struct usb_endpoint_descriptor *
-> +ebeam_get_input_endpoint(struct usb_host_interface *interface)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < interface->desc.bNumEndpoints; i++)
-> +		if (usb_endpoint_dir_in(&interface->endpoint[i].desc))
-> +			return &interface->endpoint[i].desc;
-> +
-> +	return NULL;
-> +}
-> +
-> +static int ebeam_probe(struct usb_interface *intf,
-> +		       const struct usb_device_id *id)
-> +{
-> +	struct ebeam_device *ebeam;
-> +	struct input_dev *input_dev;
-> +	struct usb_endpoint_descriptor *endpoint;
-> +	struct usb_device *udev = interface_to_usbdev(intf);
-> +	int err = -ENOMEM;
-> +
-> +	endpoint = ebeam_get_input_endpoint(intf->cur_altsetting);
-> +	if (!endpoint)
-> +		return -ENXIO;
-> +
-> +	ebeam = kzalloc(sizeof(struct ebeam_device), GFP_KERNEL);
-> +	input_dev = input_allocate_device();
-> +	if (!ebeam || !input_dev)
-> +		goto out_free;
-> +
-> +	ebeam_init_settings(ebeam);
-> +
-> +	ebeam->data = usb_alloc_coherent(udev, REPT_SIZE,
-> +					 GFP_KERNEL, &ebeam->data_dma);
-> +	if (!ebeam->data)
-> +		goto out_free;
-> +
-> +	ebeam->irq = usb_alloc_urb(0, GFP_KERNEL);
-> +	if (!ebeam->irq) {
-> +		dev_dbg(&intf->dev,
-> +			"%s - usb_alloc_urb failed: ebeam->irq\n", __func__);
-> +		goto out_free_buffers;
-> +	}
-> +
-> +	ebeam->interface = intf;
-> +	ebeam->input = input_dev;
-> +
-> +	/* setup name */
-> +	snprintf(ebeam->name, sizeof(ebeam->name),
-> +		 "USB eBeam %04x:%04x",
-> +		 le16_to_cpu(udev->descriptor.idVendor),
-> +		 le16_to_cpu(udev->descriptor.idProduct));
-> +
-> +	if (udev->manufacturer || udev->product) {
-> +		strlcat(ebeam->name,
-> +			" (",
-> +			sizeof(ebeam->name));
-> +
-> +		if (udev->manufacturer)
-> +			strlcat(ebeam->name,
-> +				udev->manufacturer,
-> +				sizeof(ebeam->name));
-> +
-> +		if (udev->product) {
-> +			if (udev->manufacturer)
-> +				strlcat(ebeam->name,
-> +					" ",
-> +					sizeof(ebeam->name));
-> +			strlcat(ebeam->name,
-> +				udev->product,
-> +				sizeof(ebeam->name));
-> +		}
-> +
-> +		strlcat(ebeam->name, ")", sizeof(ebeam->name));
-> +	}
-
-I'd suggest checking the length, making sure that you don't overflow the 
-->name buffer.
-
-> +
-> +	/* usb tree */
-> +	usb_make_path(udev, ebeam->phys, sizeof(ebeam->phys));
-> +	strlcat(ebeam->phys, "/input0", sizeof(ebeam->phys));
-> +
-> +	/* input setup */
-> +	input_dev->name = ebeam->name;
-> +	input_dev->phys = ebeam->phys;
-> +	usb_to_input_id(udev, &input_dev->id);
-> +	input_dev->dev.parent = &intf->dev;
-> +
-> +	input_set_drvdata(input_dev, ebeam);
-> +
-> +	input_dev->open = ebeam_open;
-> +	input_dev->close = ebeam_close;
-> +
-> +	/* usb urb setup */
-> +	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
-> +		usb_fill_int_urb(ebeam->irq, udev,
-> +			usb_rcvintpipe(udev, endpoint->bEndpointAddress),
-> +			ebeam->data, REPT_SIZE,
-> +			ebeam_irq, ebeam, endpoint->bInterval);
-> +	else
-> +		usb_fill_bulk_urb(ebeam->irq, udev,
-> +			usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
-> +			ebeam->data, REPT_SIZE,
-> +			ebeam_irq, ebeam);
-> +
-> +	ebeam->irq->dev = udev;
-> +	ebeam->irq->transfer_dma = ebeam->data_dma;
-> +	ebeam->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
-> +
-> +	/* input final setup */
-> +	err = input_register_device(ebeam->input);
-> +	if (err) {
-> +		dev_dbg(&intf->dev,
-> +			"%s - input_register_device failed, err: %d\n",
-> +			__func__, err);
-> +		goto out_free_urb;
-> +	}
-> +
-> +	ebeam_setup_input(ebeam, input_dev);
-> +
-> +	/* usb final setup */
-> +	usb_set_intfdata(intf, ebeam);
-> +
-> +	/* sysfs setup */
-> +	err = sysfs_create_group(&intf->dev.kobj, &ebeam_attr_group);
-> +	if (err) {
-> +		dev_dbg(&intf->dev,
-> +			"%s - cannot create sysfs group, err: %d\n",
-> +			__func__, err);
-> +		goto out_unregister_input;
-> +	}
-> +
-> +	return 0;
-> +
-> +out_unregister_input:
-> +	input_unregister_device(input_dev);
-> +	input_dev = NULL;
-> +out_free_urb:
-> +	usb_free_urb(ebeam->irq);
-> +out_free_buffers:
-> +	ebeam_free_buffers(udev, ebeam);
-> +out_free:
-> +	input_free_device(input_dev);
-> +	kfree(ebeam);
-> +	return err;
-> +}
-> +
-> +static void ebeam_disconnect(struct usb_interface *intf)
-> +{
-> +	struct ebeam_device *ebeam = usb_get_intfdata(intf);
-> +
-> +	if (!ebeam)
-> +		return;
-> +
-> +	dev_dbg(&intf->dev,
-> +		"%s - ebeam is initialized, cleaning up\n", __func__);
-> +
-> +	usb_set_intfdata(intf, NULL);
-> +	/* this will stop IO via close */
-> +	input_unregister_device(ebeam->input);
-> +	sysfs_remove_group(&intf->dev.kobj, &ebeam_attr_group);
-> +	usb_free_urb(ebeam->irq);
-> +	ebeam_free_buffers(interface_to_usbdev(intf), ebeam);
-> +	kfree(ebeam);
-> +}
-> +
-> +MODULE_DEVICE_TABLE(usb, ebeam_devices);
-> +
-> +static struct usb_driver ebeam_driver = {
-> +	.name			= "ebeam",
-> +	.probe			= ebeam_probe,
-> +	.disconnect		= ebeam_disconnect,
-> +	.suspend		= ebeam_suspend,
-> +	.resume			= ebeam_resume,
-> +	.reset_resume		= ebeam_reset_resume,
-> +	.id_table		= ebeam_devices,
-> +	.supports_autosuspend	= 1,
-> +};
-> +
-> +module_usb_driver(ebeam_driver);
-> +
-> +MODULE_AUTHOR(DRIVER_AUTHOR);
-> +MODULE_DESCRIPTION(DRIVER_DESC);
-> +MODULE_LICENSE("GPL");
-> +
+> which got removed by
 > 
+> commit 141168c36cdee3ff23d9c7700b0edc47cb65479f
+> Author: Kevin Winchester <kjwinchester@gmail.com>
+> Date:   Tue Dec 20 20:52:22 2011 -0400
+> 
+>     x86: Simplify code by removing a !SMP #ifdefs from 'struct cpuinfo_x86'
+> 
+> Ben, you might want to backport this one too... I'll run a couple of 3.2
+> builds with it ontop of 3.2 to verify nothing else breaks.
+
+Ok, 141168c36cdee3ff23d9c7700b0edc47cb65479f doesn't apply cleanly to
+3.2-stable, as expected. I've attached a partly backported version. Why
+partly? Well, it broke an UP build in mainline which got fixed later by
+
+commit 3f806e50981825fa56a7f1938f24c0680816be45
+Author: Borislav Petkov <bp@alien8.de>
+Date:   Fri Feb 3 20:18:01 2012 +0100
+
+    x86/mce/AMD: Fix UP build error
+    
+    141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs
+    from 'struct cpuinfo_x86'") removed a bunch of CONFIG_SMP ifdefs
+    around code touching struct cpuinfo_x86 members but also caused
+    the following build error with Randy's randconfigs:
+    
+    mce_amd.c:(.cpuinit.text+0x4723): undefined reference to `cpu_llc_shared_map'
+---
+
+which reverted what the original patch removed.
+
+So I've taken out the parts that introduce the breakage from the
+backport.
+
+And the attached version survives a bunch of smoke tests like
+all{yes,no,mod}config builds on 32 and 64-bit.
+
+@Sven: it should fix the issue on your box too.
+
+HTH.
+
+--
+>From 5e2fe6b301f5f969f25e4404a6b9d069957b8aeb Mon Sep 17 00:00:00 2001
+From: Kevin Winchester <kjwinchester@gmail.com>
+Date: Tue, 20 Dec 2011 20:52:22 -0400
+Subject: [PATCH] x86: Simplify code by removing a !SMP #ifdefs from 'struct
+ cpuinfo_x86'
+
+Upstream commit: 141168c36cdee3ff23d9c7700b0edc47cb65479f
+
+Several fields in struct cpuinfo_x86 were not defined for the
+!SMP case, likely to save space.  However, those fields still
+have some meaning for UP, and keeping them allows some #ifdef
+removal from other files.  The additional size of the UP kernel
+from this change is not significant enough to worry about
+keeping up the distinction:
+
+	   text    data     bss     dec     hex filename
+	4737168	 506459	 972040	6215667	 5ed7f3	vmlinux.o.before
+	4737444	 506459	 972040	6215943	 5ed907	vmlinux.o.after
+
+for a difference of 276 bytes for an example UP config.
+
+If someone wants those 276 bytes back badly then it should
+be implemented in a cleaner way.
+
+Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+Cc: Steffen Persvold <sp@numascale.com>
+Link: http://lkml.kernel.org/r/1324428742-12498-1-git-send-email-kjwinchester@gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/include/asm/processor.h     | 2 --
+ arch/x86/kernel/amd_nb.c             | 8 ++------
+ arch/x86/kernel/cpu/amd.c            | 2 --
+ arch/x86/kernel/cpu/common.c         | 5 -----
+ arch/x86/kernel/cpu/intel.c          | 2 --
+ arch/x86/kernel/cpu/mcheck/mce.c     | 2 --
+ arch/x86/kernel/cpu/mcheck/mce_amd.c | 5 +----
+ arch/x86/kernel/cpu/proc.c           | 4 +---
+ drivers/edac/sb_edac.c               | 2 --
+ drivers/hwmon/coretemp.c             | 7 +++----
+ 10 files changed, 7 insertions(+), 32 deletions(-)
+
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index bb3ee3629a0f..f7c89e231c6c 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -99,7 +99,6 @@ struct cpuinfo_x86 {
+ 	u16			apicid;
+ 	u16			initial_apicid;
+ 	u16			x86_clflush_size;
+-#ifdef CONFIG_SMP
+ 	/* number of cores as seen by the OS: */
+ 	u16			booted_cores;
+ 	/* Physical processor id: */
+@@ -110,7 +109,6 @@ struct cpuinfo_x86 {
+ 	u8			compute_unit_id;
+ 	/* Index into per_cpu list: */
+ 	u16			cpu_index;
+-#endif
+ 	u32			microcode;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+ 
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index bae1efe6d515..be16854591cc 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -154,16 +154,14 @@ int amd_get_subcaches(int cpu)
+ {
+ 	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
+ 	unsigned int mask;
+-	int cuid = 0;
++	int cuid;
+ 
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+ 		return 0;
+ 
+ 	pci_read_config_dword(link, 0x1d4, &mask);
+ 
+-#ifdef CONFIG_SMP
+ 	cuid = cpu_data(cpu).compute_unit_id;
+-#endif
+ 	return (mask >> (4 * cuid)) & 0xf;
+ }
+ 
+@@ -172,7 +170,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 	static unsigned int reset, ban;
+ 	struct amd_northbridge *nb = node_to_amd_nb(amd_get_nb_id(cpu));
+ 	unsigned int reg;
+-	int cuid = 0;
++	int cuid;
+ 
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING) || mask > 0xf)
+ 		return -EINVAL;
+@@ -190,9 +188,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 		pci_write_config_dword(nb->misc, 0x1b8, reg & ~0x180000);
+ 	}
+ 
+-#ifdef CONFIG_SMP
+ 	cuid = cpu_data(cpu).compute_unit_id;
+-#endif
+ 	mask <<= 4 * cuid;
+ 	mask |= (0xf ^ (1 << cuid)) << 26;
+ 
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 3524e1f5e960..ff8557e2e101 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -148,7 +148,6 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
+ 
+ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -192,7 +191,6 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ 
+ valid_k7:
+ 	;
+-#endif
+ }
+ 
+ static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index aa003b13a831..ca93cc79fbc6 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -676,9 +676,7 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+ 	if (this_cpu->c_early_init)
+ 		this_cpu->c_early_init(c);
+ 
+-#ifdef CONFIG_SMP
+ 	c->cpu_index = 0;
+-#endif
+ 	filter_cpuid_features(c, false);
+ 
+ 	setup_smep(c);
+@@ -764,10 +762,7 @@ static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
+ 		c->apicid = c->initial_apicid;
+ # endif
+ #endif
+-
+-#ifdef CONFIG_X86_HT
+ 		c->phys_proc_id = c->initial_apicid;
+-#endif
+ 	}
+ 
+ 	setup_smep(c);
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 523131213f08..3e6ff6cbf42a 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -181,7 +181,6 @@ static void __cpuinit trap_init_f00f_bug(void)
+ 
+ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -198,7 +197,6 @@ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ 		WARN_ONCE(1, "WARNING: SMP operation may be unreliable"
+ 				    "with B stepping processors.\n");
+ 	}
+-#endif
+ }
+ 
+ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index b0f1271e3138..3b678770dba5 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -119,9 +119,7 @@ void mce_setup(struct mce *m)
+ 	m->time = get_seconds();
+ 	m->cpuvendor = boot_cpu_data.x86_vendor;
+ 	m->cpuid = cpuid_eax(1);
+-#ifdef CONFIG_SMP
+ 	m->socketid = cpu_data(m->extcpu).phys_proc_id;
+-#endif
+ 	m->apicid = cpu_data(m->extcpu).initial_apicid;
+ 	rdmsrl(MSR_IA32_MCG_CAP, m->mcgcap);
+ }
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index 445a61c39dff..d4444be98912 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -65,11 +65,9 @@ struct threshold_bank {
+ };
+ static DEFINE_PER_CPU(struct threshold_bank * [NR_BANKS], threshold_banks);
+ 
+-#ifdef CONFIG_SMP
+ static unsigned char shared_bank[NR_BANKS] = {
+ 	0, 0, 0, 0, 1
+ };
+-#endif
+ 
+ static DEFINE_PER_CPU(unsigned char, bank_map);	/* see which banks are on */
+ 
+@@ -227,10 +225,9 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+ 
+ 			if (!block)
+ 				per_cpu(bank_map, cpu) |= (1 << bank);
+-#ifdef CONFIG_SMP
++
+ 			if (shared_bank[bank] && c->cpu_core_id)
+ 				break;
+-#endif
+ 
+ 			memset(&b, 0, sizeof(b));
+ 			b.cpu			= cpu;
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 14b23140e81f..8022c6681485 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -64,12 +64,10 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ static int show_cpuinfo(struct seq_file *m, void *v)
+ {
+ 	struct cpuinfo_x86 *c = v;
+-	unsigned int cpu = 0;
++	unsigned int cpu;
+ 	int i;
+ 
+-#ifdef CONFIG_SMP
+ 	cpu = c->cpu_index;
+-#endif
+ 	seq_printf(m, "processor\t: %u\n"
+ 		   "vendor_id\t: %s\n"
+ 		   "cpu family\t: %d\n"
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index 18a129391c0f..0db57b594c62 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -1609,11 +1609,9 @@ static int sbridge_mce_check_error(struct notifier_block *nb, unsigned long val,
+ 		mce->cpuvendor, mce->cpuid, mce->time,
+ 		mce->socketid, mce->apicid);
+ 
+-#ifdef CONFIG_SMP
+ 	/* Only handle if it is the right mc controller */
+ 	if (cpu_data(mce->cpu).phys_proc_id != pvt->sbridge_dev->mc)
+ 		return NOTIFY_DONE;
+-#endif
+ 
+ 	smp_rmb();
+ 	if ((pvt->mce_out + 1) % MCE_LOG_LEN == pvt->mce_in) {
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 0790c98e294e..19b4412ed534 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -57,16 +57,15 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
+ #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
+ #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+ 
+-#ifdef CONFIG_SMP
+ #define TO_PHYS_ID(cpu)		cpu_data(cpu).phys_proc_id
+ #define TO_CORE_ID(cpu)		cpu_data(cpu).cpu_core_id
++#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
++
++#ifdef CONFIG_SMP
+ #define for_each_sibling(i, cpu)	for_each_cpu(i, cpu_sibling_mask(cpu))
+ #else
+-#define TO_PHYS_ID(cpu)		(cpu)
+-#define TO_CORE_ID(cpu)		(cpu)
+ #define for_each_sibling(i, cpu)	for (i = 0; false; )
+ #endif
+-#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
+ 
+ /*
+  * Per-Core Temperature Data
+-- 
+1.7.11.rc1
+
 
 -- 
-Jiri Kosina
-SUSE Labs
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
