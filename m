@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab2HCNbM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 09:31:12 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:49668 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753238Ab2HCNbK (ORCPT
+	id S1753286Ab2HCNch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 09:32:37 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:37288 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750835Ab2HCNcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 09:31:10 -0400
-Date: Fri, 3 Aug 2012 16:27:39 +0300
+	Fri, 3 Aug 2012 09:32:35 -0400
+Date: Fri, 3 Aug 2012 16:28:53 +0300
 From: Felipe Balbi <balbi@ti.com>
 To: Kishon Vijay Abraham I <kishon@ti.com>
 Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
@@ -16,83 +16,68 @@ Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, balbi@ti.com,
         linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v6 02/11] arm/dts: omap: Add omap-usb2 dt data
-Message-ID: <20120803132737.GD8269@arwen.pp.htv.fi>
+Subject: Re: [PATCH v6 03/11] drivers: usb: otg: make twl6030_usb as a
+ comparator driver to omap_usb2
+Message-ID: <20120803132852.GE8269@arwen.pp.htv.fi>
 Reply-To: balbi@ti.com
 References: <1343639400-28725-1-git-send-email-kishon@ti.com>
- <1343639400-28725-3-git-send-email-kishon@ti.com>
+ <1343639400-28725-4-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SFyWQ0h3ruR435lw"
+	protocol="application/pgp-signature"; boundary="hwvH6HDNit2nSK4j"
 Content-Disposition: inline
-In-Reply-To: <1343639400-28725-3-git-send-email-kishon@ti.com>
+In-Reply-To: <1343639400-28725-4-git-send-email-kishon@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---SFyWQ0h3ruR435lw
+--hwvH6HDNit2nSK4j
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 30, 2012 at 02:39:51PM +0530, Kishon Vijay Abraham I wrote:
-> Add omap-usb2 data node in omap4 device tree file.
+Hi,
+
+On Mon, Jul 30, 2012 at 02:39:52PM +0530, Kishon Vijay Abraham I wrote:
+> All the PHY configuration other than VBUS, ID GND and OTG SRP are removed
+> from twl6030. The phy configurations are taken care by the dedicated
+> usb2 phy driver. So twl6030 is made as comparator driver for VBUS and
+> ID detection.
+>=20
+> Writing to control module which is now handled in omap2430.c should be
+> removed once a driver for control module is in place.
 >=20
 > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-looks good:
-
-Acked-by: Felipe Balbi <balbi@ti.com>
-
-> ---
->  arch/arm/boot/dts/omap4.dtsi |    5 +++++
->  1 file changed, 5 insertions(+)
->=20
-> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-> index 29c6243..15f1890 100644
-> --- a/arch/arm/boot/dts/omap4.dtsi
-> +++ b/arch/arm/boot/dts/omap4.dtsi
-> @@ -279,6 +279,11 @@
->  			#size-cells =3D <1>;
->  			ranges;
->  			ti,hwmods =3D "ocp2scp_usb_phy";
-> +			usb2phy@4a0ad080 {
-> +				compatible =3D "ti,omap-usb2";
-> +				reg =3D <0x4a0ad080 0x58>,
-> +				      <0x4a002300 0x1>;
-> +			};
->  		};
->  	};
->  };
-> --=20
-> 1.7.9.5
->=20
+This looks good for the time being. Do you think it has any hard
+dependencies on your new phy drivers, or can I apply this without those
+other patches ??
 
 --=20
 balbi
 
---SFyWQ0h3ruR435lw
+--hwvH6HDNit2nSK4j
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQG9HJAAoJEIaOsuA1yqRESGkP/REMA5WtMDzVYW6C1ClDk5vo
-1b/CJUghZPEHdWbpNwGHUNEK02OPg50pjSKIDuMKyNXn6pBWR8dPjCY/2dKeOE8G
-XTTYfMsB6xdsZvjioiWA4WyA5qJtXSagqXeDC5FEHsNWrDEUivx3ufybXJ+YY9Jc
-K9Za4I6LmLjoVpohXM9qsiPLITIoC7VvQpErmErc2mlROdToxIMok5w9XMi6B+Kq
-OkFzaDGoVl9vsmn0CRt3P14RrBnvWb/ptX0Sm/6ZFjLk/fVYBranExAT+LT+FEIn
-UV5F509hkOAH1aTi6iaHESWugp4uPixjtnDhfjmpjm3GX2Dt88HjexmetnLhqUSd
-b+1EqJiShs/n3aQNGZR2xzKREvRI11NRfiFgA/y6oI/mw5fdZEirItC3GpJedXnZ
-sapQ5w1MzfOpcWMYb+u24wXP6EhFJMzHpu3C4Oj/0xZyKDcI3m4Ds9hIyGXRc7Ko
-7jXmF60nN6PS/OnJhYK9v7LyrQHTQ5xkI+FeuJ+xjF7oODi0MnD0y9KNEFoUSRW1
-IQ+6ItxWaHgJzfDwdUuUrQzKyi9Tp99m8Rp5rk0OIvA97hoAuhhNDLWo4IV8zpKb
-uskrp6KsuLI0Q2nURpLEq1QAVsjNWGVj9CvNyZUbGJS5jAdmgL84axNmOfl1UhCc
-YlNxUAXB1RMQhZbdgEZy
-=YYxz
+iQIcBAEBAgAGBQJQG9IUAAoJEIaOsuA1yqREsCkP/2rDy2Re7qFXgQ3oNSuVf9V9
+VudMHTfo+AfMHKRl+TeD9RH9H2Cr7agrfhMy1G0WOznh43bmqkDkYO8If1y6fojc
+wIo7Bril2heOaywIF3v3oQPDqnKMIFFZJncBYttKGY5kzozTySmCgxusBLN7dugr
++sT0v7Gqb06tz3wYvGlGXzC4ueOqmu78YfSD8FMAZeOSNtwiWoG7/O03Mg4dvFdy
+tuA/WQNMkvKZPFQNYUPHsYLQlyWMc8ANbFfQyKO8xxTWGiu8NPpjCcqodLRQWnDk
+kbKYGWHPomvKL8W21TWirl91FDCB7KGuDA9Hw8U5KxP3cJ3QP0+AzDi3T0IhPbTP
+MSRWt/tj+m5aDC0H1EMACTQ8uaGN8HknzxR50YWUARIBce5awZnj71US55Jzd1ne
+xHnxwP1ito+xUrDHNpI08Ckxk0yAv8cNOKDytuijeqkLzSl+wLZPAgcm8afVN203
+A1Psf8iTVo5jFajWNUoIP53YZ/Do7cmWnE0lxLRxUJtca6/Ged4TLj3d1ma98PBT
+rscJ2nziKS8qUjdwEOcw5H6Q9QiCS348IdakypxSWRoaix9da1xBjJUZB2iQfbG8
+naSouQdN/Q2Cc32/qwV6pogkNlqWX7XioZPxbfL+rH9kEkBsmz58TNFsQpvBx2sG
+p12olqejxY9wHO6og6sx
+=JDjb
 -----END PGP SIGNATURE-----
 
---SFyWQ0h3ruR435lw--
+--hwvH6HDNit2nSK4j--
