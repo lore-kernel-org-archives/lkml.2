@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab2HCHHv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 03:07:51 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:49510 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab2HCHHp (ORCPT
+	id S1753121Ab2HCHIA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 03:08:00 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56557 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab2HCHHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 03:07:45 -0400
+	Fri, 3 Aug 2012 03:07:54 -0400
 From: Huacai Chen <chenhuacai@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
         Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
         Hua Yan <yanh@lemote.com>
-Subject: [PATCH V4 14/16] MIPS: Loongson 3: Add CPU hotplug support.
-Date: Fri,  3 Aug 2012 15:06:09 +0800
-Message-Id: <1343977571-2292-15-git-send-email-chenhc@lemote.com>
+Subject: [PATCH V4 16/16] MIPS: Loongson: Add a Loongson-3 default config file.
+Date: Fri,  3 Aug 2012 15:06:11 +0800
+Message-Id: <1343977571-2292-17-git-send-email-chenhc@lemote.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1343977571-2292-1-git-send-email-chenhc@lemote.com>
 References: <1343977571-2292-1-git-send-email-chenhc@lemote.com>
@@ -23,334 +23,303 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tips of Loongson's CPU hotplug:
-1, To fully shutdown a core in Loongson 3, the target core should go to
-   CKSEG1 and flush all L2 cache entries at first. Then, another core
-   (usually Core 0) can safely disable the clock of the target core. So
-   play_dead() call loongson3_play_dead() via CKSEG1 (both uncached and
-   unmmaped).
-2, The default clocksource of Loongson is MIPS. Since clock source is a
-   global device, timekeeping need the CP0' Count registers of each core
-   be synchronous. Thus, when a core is up, we use a SMP_ASK_C0COUNT IPI
-   to ask Core-0's Count.
-
 Signed-off-by: Huacai Chen <chenhc@lemote.com>
 Signed-off-by: Hongliang Tao <taohl@lemote.com>
 Signed-off-by: Hua Yan <yanh@lemote.com>
 ---
- arch/mips/Kconfig                              |    1 +
- arch/mips/include/asm/mach-loongson/loongson.h |    6 +-
- arch/mips/include/asm/smp.h                    |    1 +
- arch/mips/loongson/loongson-3/irq.c            |   10 ++
- arch/mips/loongson/loongson-3/smp.c            |  177 +++++++++++++++++++++++-
- 5 files changed, 189 insertions(+), 6 deletions(-)
+ arch/mips/configs/loongson3_defconfig |  283 +++++++++++++++++++++++++++++++++
+ 1 files changed, 283 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/configs/loongson3_defconfig
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 9e8e86c..6c18566 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -261,6 +261,7 @@ config LASAT
- config MACH_LOONGSON
- 	bool "Loongson family of machines"
- 	select SYS_SUPPORTS_ZBOOT
-+	select SYS_SUPPORTS_HOTPLUG_CPU
- 	help
- 	  This enables the support of Loongson family of machines.
- 
-diff --git a/arch/mips/include/asm/mach-loongson/loongson.h b/arch/mips/include/asm/mach-loongson/loongson.h
-index f573e47..573eed8 100644
---- a/arch/mips/include/asm/mach-loongson/loongson.h
-+++ b/arch/mips/include/asm/mach-loongson/loongson.h
-@@ -247,6 +247,9 @@ static inline void do_perfcnt_IRQ(void)
- #define LOONGSON_PXARB_CFG		LOONGSON_REG(LOONGSON_REGBASE + 0x68)
- #define LOONGSON_PXARB_STATUS		LOONGSON_REG(LOONGSON_REGBASE + 0x6c)
- 
-+/* Chip Config */
-+#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
-+
- /* pcimap */
- 
- #define LOONGSON_PCIMAP_PCIMAP_LO0	0x0000003f
-@@ -262,9 +265,6 @@ static inline void do_perfcnt_IRQ(void)
- #ifdef CONFIG_CPU_SUPPORTS_CPUFREQ
- #include <linux/cpufreq.h>
- extern struct cpufreq_frequency_table loongson2_clockmod_table[];
--
--/* Chip Config */
--#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
- #endif
- 
- /*
-diff --git a/arch/mips/include/asm/smp.h b/arch/mips/include/asm/smp.h
-index d4fb4d8..a6edbbf 100644
---- a/arch/mips/include/asm/smp.h
-+++ b/arch/mips/include/asm/smp.h
-@@ -40,6 +40,7 @@ extern int __cpu_logical_map[NR_CPUS];
- #define SMP_CALL_FUNCTION	0x2
- /* Octeon - Tell another core to flush its icache */
- #define SMP_ICACHE_FLUSH	0x4
-+#define SMP_ASK_C0COUNT		0x8
- 
- extern volatile cpumask_t cpu_callin_map;
- 
-diff --git a/arch/mips/loongson/loongson-3/irq.c b/arch/mips/loongson/loongson-3/irq.c
-index 27aef31..83f84e6 100644
---- a/arch/mips/loongson/loongson-3/irq.c
-+++ b/arch/mips/loongson/loongson-3/irq.c
-@@ -85,3 +85,13 @@ void __init mach_init_irq(void)
- 
- 	set_c0_status(STATUSF_IP2 | STATUSF_IP6);
- }
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+
-+void fixup_irqs(void)
-+{
-+	irq_cpu_offline();
-+	clear_c0_status(ST0_IM);
-+}
-+
-+#endif
-diff --git a/arch/mips/loongson/loongson-3/smp.c b/arch/mips/loongson/loongson-3/smp.c
-index 30e7cb4..71edadf 100644
---- a/arch/mips/loongson/loongson-3/smp.c
-+++ b/arch/mips/loongson/loongson-3/smp.c
-@@ -30,6 +30,9 @@
- 
- #include "smp.h"
- 
-+DEFINE_PER_CPU(int, cpu_state);
-+DEFINE_PER_CPU(uint32_t, core0_c0count);
-+
- /* write a 64bit value to ipi register */
- void loongson3_ipi_write64(uint64_t action, void * addr)
- {
-@@ -167,8 +170,8 @@ static void loongson3_send_ipi_mask(const struct cpumask *mask, unsigned int act
- 
- void loongson3_ipi_interrupt(struct pt_regs *regs)
- {
--	int cpu = smp_processor_id();
--	unsigned int action;
-+	int i, cpu = smp_processor_id();
-+	unsigned int action, c0count;
- 
- 	/* Load the ipi register to figure out what we're supposed to do */
- 	action = loongson3_ipi_read32(ipi_status_regs0[cpu]);
-@@ -183,14 +186,24 @@ void loongson3_ipi_interrupt(struct pt_regs *regs)
- 	if (action & SMP_CALL_FUNCTION) {
- 		smp_call_function_interrupt();
- 	}
-+
-+	if (action & SMP_ASK_C0COUNT) {
-+		BUG_ON(cpu != 0);
-+		c0count = read_c0_count();
-+		for (i=1; i<NR_CPUS; i++)
-+			per_cpu(core0_c0count, i) = c0count;
-+	}
- }
- 
-+#define MAX_LOOPS 1250
- /*
-  * SMP init and finish on secondary CPUs
-  */
- void __cpuinit loongson3_init_secondary(void)
- {
- 	int i;
-+	uint32_t initcount;
-+	unsigned int cpu = smp_processor_id();
- 	unsigned int imask = STATUSF_IP7 | STATUSF_IP6 | STATUSF_IP5 |
- 			     STATUSF_IP4 | STATUSF_IP3 | STATUSF_IP2;
- 
-@@ -200,11 +213,24 @@ void __cpuinit loongson3_init_secondary(void)
- 	for (i = 0; i < NR_CPUS; i++) {
- 		loongson3_ipi_write32(0xffffffff, ipi_en0_regs[i]);
- 	}
-+
-+	per_cpu(cpu_state, cpu) = CPU_ONLINE;
-+
-+	i = 0;
-+	__get_cpu_var(core0_c0count) = 0;
-+	loongson3_send_ipi_single(0, SMP_ASK_C0COUNT);
-+	while (!__get_cpu_var(core0_c0count))
-+		i++;
-+
-+	if (i > MAX_LOOPS)
-+		i = MAX_LOOPS;
-+	initcount = __get_cpu_var(core0_c0count) + i;
-+	write_c0_count(initcount);
-+	write_c0_compare(initcount + mips_hpt_frequency/HZ);
- }
- 
- void __cpuinit loongson3_smp_finish(void)
- {
--	write_c0_compare(read_c0_count() + mips_hpt_frequency/HZ);
- 	local_irq_enable();
- 	loongson3_ipi_write64(0, (void *)(ipi_mailbox_buf[smp_processor_id()]+0x0));
- 	printk(KERN_INFO "CPU#%d finished, CP0_ST=%x\n",
-@@ -233,6 +259,8 @@ void __init loongson3_smp_setup(void)
- 
- void __init loongson3_prepare_cpus(unsigned int max_cpus)
- {
-+	init_cpu_present(cpu_possible_mask);
-+	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
- }
- 
- /*
-@@ -266,6 +294,145 @@ void __init loongson3_cpus_done(void)
- {
- }
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+
-+extern void fixup_irqs(void);
-+
-+static int loongson3_cpu_disable(void)
-+{
-+	extern void (*flush_cache_all)(void);
-+	unsigned int cpu = smp_processor_id();
-+
-+	if (cpu == 0)
-+		return -EBUSY;
-+
-+	set_cpu_online(cpu, false);
-+	cpu_clear(cpu, cpu_callin_map);
-+	local_irq_disable();
-+	fixup_irqs();
-+	local_irq_enable();
-+	flush_cache_all();
-+	local_flush_tlb_all();
-+
-+	return 0;
-+}
-+
-+
-+static void loongson3_cpu_die(unsigned int cpu)
-+{
-+	while (per_cpu(cpu_state, cpu) != CPU_DEAD)
-+		cpu_relax();
-+
-+	mb();
-+}
-+
-+/* To shutdown a core in Loongson 3, the target core should go to CKSEG1 and
-+ * flush all L2 entries at first. Then, another core (usually Core 0) can
-+ * safely disable the clock of the target core. loongson3_play_dead() is
-+ * called via CKSEG1 (uncached and unmmaped) */
-+void loongson3_play_dead(int *state_addr)
-+{
-+	__asm__ __volatile__(
-+		"      .set push                         \n"
-+		"      .set noreorder                    \n"
-+		"      li $t0, 0x80000000                \n" /* KSEG0 */
-+		"      li $t1, 512                       \n" /* num of L2 entries */
-+		"flush_loop:                             \n" /* flush L2 */
-+		"      cache 0, 0($t0)                   \n" /* ICache */
-+		"      cache 0, 1($t0)                   \n"
-+		"      cache 0, 2($t0)                   \n"
-+		"      cache 0, 3($t0)                   \n"
-+		"      cache 1, 0($t0)                   \n" /* DCache */
-+		"      cache 1, 1($t0)                   \n"
-+		"      cache 1, 2($t0)                   \n"
-+		"      cache 1, 3($t0)                   \n"
-+		"      addiu $t0, $t0, 0x20              \n"
-+		"      bnez  $t1, flush_loop             \n"
-+		"      addiu $t1, $t1, -1                \n"
-+		"      li    $t0, 0x7                    \n" /* *state_addr = CPU_DEAD; */
-+		"      sw    $t0, 0($a0)                 \n"
-+		"      sync                              \n"
-+		"      cache 21, 0($a0)                  \n" /* flush entry of *state_addr */
-+		"      .set pop                          \n");
-+
-+	__asm__ __volatile__(
-+		"      .set push                         \n"
-+		"      .set noreorder                    \n"
-+		"      .set mips64                       \n"
-+		"      mfc0  $t2, $15, 1                 \n"
-+		"      andi  $t2, 0x3ff                  \n"
-+		"      .set mips3                        \n"
-+		"      dli   $t0, 0x900000003ff01000     \n"
-+		"      andi  $t3, $t2, 0x3               \n"
-+		"      sll   $t3, 8                      \n"  /* get cpu id */
-+		"      or    $t0, $t0, $t3               \n"
-+		"      andi  $t1, $t2, 0xc               \n"
-+		"      dsll  $t1, 42                     \n"  /* get node id */
-+		"      or    $t0, $t0, $t1               \n"
-+		"wait_for_init:                          \n"
-+		"      li    $a0, 0x100                  \n"
-+		"idle_loop:                              \n"
-+		"      bnez  $a0, idle_loop              \n"
-+		"      addiu $a0, -1                     \n"
-+		"      lw    $v0, 0x20($t0)              \n"  /* get PC via mailbox */
-+		"      nop                               \n"
-+		"      beqz  $v0, wait_for_init          \n"
-+		"      nop                               \n"
-+		"      ld    $sp, 0x28($t0)              \n"  /* get SP via mailbox */
-+		"      nop                               \n"
-+		"      ld    $gp, 0x30($t0)              \n"  /* get GP via mailbox */
-+		"      nop                               \n"
-+		"      ld    $a1, 0x38($t0)              \n"
-+		"      nop                               \n"
-+		"      jr  $v0                           \n"  /* jump to initial PC */
-+		"      nop                               \n"
-+		"      .set pop                          \n");
-+}
-+
-+void play_dead(void)
-+{
-+	int *state_addr;
-+	unsigned int cpu = smp_processor_id();
-+	void (*play_dead_at_ckseg1)(int *);
-+
-+	idle_task_exit();
-+	play_dead_at_ckseg1 = (void *)CKSEG1ADDR((unsigned long)loongson3_play_dead);
-+	state_addr = &per_cpu(cpu_state, cpu);
-+	mb();
-+	play_dead_at_ckseg1(state_addr);
-+}
-+
-+#define CPU_POST_DEAD_FROZEN	(CPU_POST_DEAD | CPU_TASKS_FROZEN)
-+static int __cpuinit loongson3_cpu_callback(struct notifier_block *nfb,
-+	unsigned long action, void *hcpu)
-+{
-+	unsigned int cpu = (unsigned long)hcpu;
-+
-+	switch (action) {
-+	case CPU_POST_DEAD:
-+	case CPU_POST_DEAD_FROZEN:
-+		printk(KERN_INFO "Disable clock for CPU#%d\n", cpu);
-+		LOONGSON_CHIPCFG0 &= ~(1 << (12 + cpu));
-+		break;
-+	case CPU_UP_PREPARE:
-+	case CPU_UP_PREPARE_FROZEN:
-+		printk(KERN_INFO "Enable clock for CPU#%d\n", cpu);
-+		LOONGSON_CHIPCFG0 |= 1 << (12 + cpu);
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static int __cpuinit register_loongson3_notifier(void)
-+{
-+	hotcpu_notifier(loongson3_cpu_callback, 0);
-+	return 0;
-+}
-+early_initcall(register_loongson3_notifier);
-+
-+#endif
-+
- struct plat_smp_ops loongson3_smp_ops = {
- 	.send_ipi_single = loongson3_send_ipi_single,
- 	.send_ipi_mask = loongson3_send_ipi_mask,
-@@ -275,4 +442,8 @@ struct plat_smp_ops loongson3_smp_ops = {
- 	.boot_secondary = loongson3_boot_secondary,
- 	.smp_setup = loongson3_smp_setup,
- 	.prepare_cpus = loongson3_prepare_cpus,
-+#ifdef CONFIG_HOTPLUG_CPU
-+	.cpu_disable = loongson3_cpu_disable,
-+	.cpu_die = loongson3_cpu_die,
-+#endif
- };
+diff --git a/arch/mips/configs/loongson3_defconfig b/arch/mips/configs/loongson3_defconfig
+new file mode 100644
+index 0000000..4a0722f
+--- /dev/null
++++ b/arch/mips/configs/loongson3_defconfig
+@@ -0,0 +1,283 @@
++CONFIG_MACH_LOONGSON=y
++CONFIG_LEMOTE_MACH3A=y
++CONFIG_LOONGSON_BIGMEM=y
++CONFIG_CPU_LOONGSON3=y
++CONFIG_64BIT=y
++CONFIG_PAGE_SIZE_16KB=y
++CONFIG_SPARSEMEM_MANUAL=y
++CONFIG_KSM=y
++CONFIG_SMP=y
++CONFIG_NR_CPUS=4
++CONFIG_HZ_256=y
++CONFIG_PREEMPT=y
++CONFIG_KEXEC=y
++CONFIG_EXPERIMENTAL=y
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_AUDIT=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_LOG_BUF_SHIFT=14
++CONFIG_CPUSETS=y
++CONFIG_RESOURCE_COUNTERS=y
++CONFIG_CGROUP_MEM_RES_CTLR=y
++CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
++CONFIG_BLK_CGROUP=y
++CONFIG_SCHED_AUTOGROUP=y
++CONFIG_SYSFS_DEPRECATED=y
++CONFIG_RELAY=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_CC_OPTIMIZE_FOR_SIZE=y
++CONFIG_SYSCTL_SYSCALL=y
++CONFIG_EMBEDDED=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODULE_FORCE_UNLOAD=y
++CONFIG_PARTITION_ADVANCED=y
++CONFIG_CFQ_GROUP_IOSCHED=y
++CONFIG_PCI=y
++CONFIG_HT_PCI=y
++CONFIG_HOTPLUG_PCI=y
++CONFIG_HOTPLUG_PCI_SHPC=m
++CONFIG_MIPS32_COMPAT=y
++CONFIG_MIPS32_O32=y
++CONFIG_MIPS32_N32=y
++CONFIG_PM_RUNTIME=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_ADVANCED_ROUTER=y
++CONFIG_IP_MULTIPLE_TABLES=y
++CONFIG_IP_ROUTE_MULTIPATH=y
++CONFIG_IP_ROUTE_VERBOSE=y
++CONFIG_NETFILTER=y
++CONFIG_NETFILTER_NETLINK_LOG=m
++CONFIG_NETFILTER_XT_TARGET_CLASSIFY=m
++CONFIG_NETFILTER_XT_TARGET_MARK=m
++CONFIG_NETFILTER_XT_TARGET_NFQUEUE=m
++CONFIG_NETFILTER_XT_MATCH_COMMENT=m
++CONFIG_NETFILTER_XT_MATCH_DCCP=m
++CONFIG_NETFILTER_XT_MATCH_ESP=m
++CONFIG_NETFILTER_XT_MATCH_LENGTH=m
++CONFIG_NETFILTER_XT_MATCH_LIMIT=m
++CONFIG_NETFILTER_XT_MATCH_MAC=m
++CONFIG_NETFILTER_XT_MATCH_MARK=m
++CONFIG_NETFILTER_XT_MATCH_MULTIPORT=m
++CONFIG_NETFILTER_XT_MATCH_PKTTYPE=m
++CONFIG_NETFILTER_XT_MATCH_QUOTA=m
++CONFIG_NETFILTER_XT_MATCH_REALM=m
++CONFIG_NETFILTER_XT_MATCH_SCTP=m
++CONFIG_NETFILTER_XT_MATCH_STATISTIC=m
++CONFIG_NETFILTER_XT_MATCH_STRING=m
++CONFIG_NETFILTER_XT_MATCH_TCPMSS=m
++CONFIG_IP_NF_QUEUE=m
++CONFIG_IP_NF_IPTABLES=m
++CONFIG_IP_NF_MATCH_AH=m
++CONFIG_IP_NF_MATCH_ECN=m
++CONFIG_IP_NF_MATCH_TTL=m
++CONFIG_IP_NF_FILTER=m
++CONFIG_IP_NF_TARGET_REJECT=m
++CONFIG_IP_NF_TARGET_ULOG=m
++CONFIG_IP_NF_MANGLE=m
++CONFIG_IP_NF_TARGET_ECN=m
++CONFIG_IP_NF_TARGET_TTL=m
++CONFIG_IP_NF_RAW=m
++CONFIG_IP_NF_ARPTABLES=m
++CONFIG_IP_NF_ARPFILTER=m
++CONFIG_IP_NF_ARP_MANGLE=m
++CONFIG_CFG80211=y
++CONFIG_LIB80211=y
++CONFIG_MAC80211=y
++CONFIG_RFKILL=y
++CONFIG_RFKILL_INPUT=y
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++CONFIG_MTD=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_CRYPTOLOOP=y
++CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_SIZE=8192
++CONFIG_RAID_ATTRS=m
++CONFIG_SCSI_TGT=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_CHR_DEV_SG=y
++CONFIG_CHR_DEV_SCH=m
++CONFIG_SCSI_MULTI_LUN=y
++CONFIG_SCSI_CONSTANTS=y
++CONFIG_SCSI_LOGGING=y
++CONFIG_SCSI_SPI_ATTRS=m
++CONFIG_SCSI_FC_ATTRS=m
++CONFIG_SCSI_ISCSI_ATTRS=m
++CONFIG_ATA=y
++CONFIG_SATA_AHCI=y
++CONFIG_MD=y
++CONFIG_BLK_DEV_DM=y
++CONFIG_DM_CRYPT=y
++CONFIG_DM_SNAPSHOT=y
++CONFIG_DM_MIRROR=y
++CONFIG_DM_ZERO=y
++CONFIG_NETDEVICES=y
++CONFIG_R8169=y
++CONFIG_ATH_COMMON=y
++CONFIG_ATH9K=y
++CONFIG_INPUT_POLLDEV=m
++CONFIG_INPUT_SPARSEKMAP=y
++CONFIG_INPUT_EVDEV=y
++CONFIG_KEYBOARD_XTKBD=m
++CONFIG_MOUSE_PS2_SENTELIC=y
++CONFIG_MOUSE_SERIAL=m
++CONFIG_INPUT_MISC=y
++CONFIG_INPUT_UINPUT=m
++CONFIG_SERIO_SERPORT=m
++CONFIG_SERIO_RAW=m
++CONFIG_LEGACY_PTY_COUNT=16
++CONFIG_SERIAL_NONSTANDARD=y
++CONFIG_N_HDLC=m
++CONFIG_STALDRV=y
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_SERIAL_8250_NR_UARTS=16
++CONFIG_SERIAL_8250_EXTENDED=y
++CONFIG_SERIAL_8250_MANY_PORTS=y
++CONFIG_SERIAL_8250_SHARE_IRQ=y
++CONFIG_SERIAL_8250_RSA=y
++CONFIG_IPMI_HANDLER=m
++CONFIG_IPMI_DEVICE_INTERFACE=m
++CONFIG_IPMI_SI=m
++CONFIG_IPMI_WATCHDOG=m
++CONFIG_IPMI_POWEROFF=m
++CONFIG_HW_RANDOM=y
++CONFIG_R3964=m
++CONFIG_RAW_DRIVER=m
++CONFIG_I2C_CHARDEV=y
++CONFIG_I2C_PIIX4=y
++CONFIG_SPI=y
++CONFIG_SPI_BITBANG=m
++CONFIG_SENSORS_ADM1021=m
++CONFIG_SENSORS_ADM1025=m
++CONFIG_SENSORS_ADM1026=m
++CONFIG_SENSORS_ADM1031=m
++CONFIG_SENSORS_ADM9240=m
++CONFIG_SENSORS_ATXP1=m
++CONFIG_SENSORS_DS1621=m
++CONFIG_SENSORS_GL518SM=m
++CONFIG_SENSORS_GL520SM=m
++CONFIG_SENSORS_IT87=m
++CONFIG_SENSORS_LM63=m
++CONFIG_SENSORS_LM70=m
++CONFIG_SENSORS_LM75=m
++CONFIG_SENSORS_LM77=m
++CONFIG_SENSORS_LM78=m
++CONFIG_SENSORS_LM80=m
++CONFIG_SENSORS_LM83=m
++CONFIG_SENSORS_LM85=m
++CONFIG_SENSORS_LM87=m
++CONFIG_SENSORS_LM90=m
++CONFIG_SENSORS_LM92=m
++CONFIG_SENSORS_MAX1619=m
++CONFIG_SENSORS_PC87360=m
++CONFIG_SENSORS_SMSC47M1=m
++CONFIG_SENSORS_SMSC47M192=m
++CONFIG_SENSORS_SMSC47B397=m
++CONFIG_SENSORS_W83781D=m
++CONFIG_SENSORS_W83791D=m
++CONFIG_SENSORS_W83792D=m
++CONFIG_SENSORS_W83793=m
++CONFIG_SENSORS_W83L785TS=m
++CONFIG_SENSORS_W83627HF=m
++CONFIG_SENSORS_W83627EHF=m
++CONFIG_DRM=y
++CONFIG_DRM_RADEON=y
++CONFIG_DRM_RADEON_KMS=y
++CONFIG_VIDEO_OUTPUT_CONTROL=y
++CONFIG_FB_RADEON=y
++CONFIG_FB_ATY128=y
++CONFIG_FB_ATY=y
++CONFIG_FB_ATY_CT=y
++CONFIG_FB_ATY_GENERIC_LCD=y
++CONFIG_FB_ATY_GX=y
++CONFIG_LCD_CLASS_DEVICE=y
++# CONFIG_VGA_CONSOLE is not set
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
++CONFIG_LOGO=y
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_SEQUENCER=m
++CONFIG_SND_SEQ_DUMMY=m
++CONFIG_SND_DUMMY=y
++CONFIG_SND_ALOOP=y
++CONFIG_SND_HDA_INTEL=y
++CONFIG_SND_HDA_PATCH_LOADER=y
++CONFIG_HID_A4TECH=m
++CONFIG_USB=y
++CONFIG_USB_MON=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_ROOT_HUB_TT=y
++CONFIG_USB_OHCI_HCD=y
++CONFIG_USB_UHCI_HCD=m
++CONFIG_USB_STORAGE=m
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_CMOS=y
++CONFIG_DMADEVICES=y
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT2_FS_POSIX_ACL=y
++CONFIG_EXT2_FS_SECURITY=y
++CONFIG_EXT3_FS=y
++CONFIG_EXT3_FS_POSIX_ACL=y
++CONFIG_EXT3_FS_SECURITY=y
++CONFIG_EXT4_FS=y
++CONFIG_EXT4_FS_POSIX_ACL=y
++CONFIG_EXT4_FS_SECURITY=y
++CONFIG_QUOTA=y
++CONFIG_AUTOFS4_FS=y
++CONFIG_FUSE_FS=m
++CONFIG_ISO9660_FS=m
++CONFIG_JOLIET=y
++CONFIG_MSDOS_FS=m
++CONFIG_VFAT_FS=m
++CONFIG_FAT_DEFAULT_CODEPAGE=936
++CONFIG_FAT_DEFAULT_IOCHARSET="gb2312"
++CONFIG_PROC_KCORE=y
++CONFIG_TMPFS=y
++CONFIG_NFS_FS=m
++CONFIG_NFS_V3_ACL=y
++CONFIG_NFS_V4=y
++CONFIG_NFSD=m
++CONFIG_NFSD_V3_ACL=y
++CONFIG_NFSD_V4=y
++CONFIG_CIFS=m
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_CODEPAGE_936=y
++CONFIG_NLS_UTF8=y
++CONFIG_PRINTK_TIME=y
++CONFIG_FRAME_WARN=1024
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_STRIP_ASM_SYMS=y
++CONFIG_DEBUG_SECTION_MISMATCH=y
++CONFIG_CRYPTO_AUTHENC=m
++CONFIG_CRYPTO_HMAC=y
++CONFIG_CRYPTO_MD5=y
++CONFIG_CRYPTO_MICHAEL_MIC=m
++CONFIG_CRYPTO_SHA1=m
++CONFIG_CRYPTO_SHA256=m
++CONFIG_CRYPTO_SHA512=m
++CONFIG_CRYPTO_TGR192=m
++CONFIG_CRYPTO_WP512=m
++CONFIG_CRYPTO_ANUBIS=m
++CONFIG_CRYPTO_BLOWFISH=m
++CONFIG_CRYPTO_CAST5=m
++CONFIG_CRYPTO_CAST6=m
++CONFIG_CRYPTO_KHAZAD=m
++CONFIG_CRYPTO_SERPENT=m
++CONFIG_CRYPTO_TEA=m
++CONFIG_CRYPTO_TWOFISH=m
++CONFIG_CRYPTO_DEFLATE=m
++CONFIG_CRC_T10DIF=m
++CONFIG_LIBCRC32C=m
 -- 
 1.7.7.3
 
