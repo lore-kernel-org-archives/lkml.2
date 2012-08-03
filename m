@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab2HCFVW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 01:21:22 -0400
-Received: from science.horizon.com ([71.41.210.146]:14849 "HELO
+	id S1752261Ab2HCFVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 01:21:20 -0400
+Received: from science.horizon.com ([71.41.210.146]:14834 "HELO
 	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751354Ab2HCFVN (ORCPT
+	with SMTP id S1751334Ab2HCFVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Aug 2012 01:21:13 -0400
 From: George Spelvin <linux@horizon.com>
 To: vda.linux@googlemail.com, mina86@mina86.com
 Cc: hughd@google.com, linux-kernel@vger.kernel.org, linux@horizon.com
-Subject: [PATCH 4/4] lib: vsprintf: Fix broken comments
-Date: Fri,  3 Aug 2012 01:21:11 -0400
-Message-Id: <1343971271-13355-4-git-send-email-linux@horizon.com>
+Subject: [PATCH 1/4] lib: vsprintf: Optimize division by 10 for small integers.
+Date: Fri,  3 Aug 2012 01:21:08 -0400
+Message-Id: <1343971271-13355-1-git-send-email-linux@horizon.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1343971271-13355-1-git-send-email-linux@horizon.com>
-References: <1343971271-13355-1-git-send-email-linux@horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Numbering the 8 potential digits 2 though 9 never did make a lot of sense.
+Shrink the reciprocal approximations used in put_dec_full4
+based on the comments in put_dec_full9.
 
 Signed-off-by: George Spelvin <linux@horizon.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
 ---
- lib/vsprintf.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ lib/vsprintf.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+I was looking over the code and noticed that the constants could be smaller.
 
 diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 3ca77b8..692e61b 100644
+index c3f36d41..2f32fe8 100644
 --- a/lib/vsprintf.c
 +++ b/lib/vsprintf.c
-@@ -182,19 +182,19 @@ char *put_dec_trunc8(char *buf, unsigned r)
+@@ -243,13 +243,14 @@ char *put_dec(char *buf, unsigned long long n)
  
- 	if (r == 0)
- 		return buf;
+ /* Second algorithm: valid only for 64-bit long longs */
+ 
++/* See comment in put_dec_full9 for choice of constants */
+ static noinline_for_stack
+ char *put_dec_full4(char *buf, unsigned q)
+ {
+ 	unsigned r;
+-	r      = (q * 0xcccd) >> 19;
++	r      = (q * 0xccd) >> 15;
+ 	*buf++ = (q - 10 * r) + '0';
 -	q      = (r * 0x199a) >> 16;
--	*buf++ = (r - 10 * q)  + '0'; /* 6 */
-+	q      = (r * 0x199a) >> 16;	/* r <= 9999 */
-+	*buf++ = (r - 10 * q)  + '0';
- 	if (q == 0)
- 		return buf;
--	r      = (q * 0xcd) >> 11;
--	*buf++ = (q - 10 * r)  + '0'; /* 7 */
-+	r      = (q * 0xcd) >> 11;	/* q <= 999 */
-+	*buf++ = (q - 10 * r)  + '0';
- 	if (r == 0)
- 		return buf;
--	q      = (r * 0xcd) >> 11;
--	*buf++ = (r - 10 * q) + '0'; /* 8 */
-+	q      = (r * 0xcd) >> 11;	/* r <= 99 */
-+	*buf++ = (r - 10 * q) + '0';
- 	if (q == 0)
- 		return buf;
--	*buf++ = q + '0'; /* 9 */
-+	*buf++ = q + '0';		/* q <= 9 */
- 	return buf;
- }
- 
++	q      = (r * 0xcd) >> 11;
+ 	*buf++ = (r - 10 * q)  + '0';
+ 	r      = (q * 0xcd) >> 11;
+ 	*buf++ = (q - 10 * r)  + '0';
 -- 
 1.7.10.4
 
