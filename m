@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab2HCLT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 07:19:29 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:49116 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab2HCLTZ (ORCPT
+	id S1753509Ab2HCLZH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 07:25:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62549 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab2HCLZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 07:19:25 -0400
+	Fri, 3 Aug 2012 07:25:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120803110247.GB11952@moon>
-References: <alpine.LFD.2.02.1203231926000.2542@ionos>
-	<20120323190855.GA27213@www.outflux.net>
-	<CAFLxGvzPVPyXPwjay4a01q1vx4K4Ht56bHjzswYrr1wvB_1dYw@mail.gmail.com>
-	<87pq7935w2.fsf@xmission.com>
-	<CAFLxGvz0reQS=zfWeTz4a4xZVFeeu80VnP-efy7zCiPZVWzH-g@mail.gmail.com>
-	<20120803110247.GB11952@moon>
-Date: Fri, 3 Aug 2012 13:19:24 +0200
-Message-ID: <CAFLxGvw4j-pyinjywxaL2gQ-Akp9grDysNv7dfOJkaQ3EyDKLw@mail.gmail.com>
-Subject: Re: [PATCH v2] futex: mark get_robust_list as deprecated
+In-Reply-To: <1343991184-3619-1-git-send-email-berrange@redhat.com>
+References: <1343991184-3619-1-git-send-email-berrange@redhat.com>
+Date: Fri, 3 Aug 2012 13:25:02 +0200
+Message-ID: <CAFLxGvxTAchQuSfNy=aWQqfw3QwSr=JwUG=F3gj+HOuEbp64SQ@mail.gmail.com>
+Subject: Re: [PATCH] Forbid invocation of kexec_load() outside initial PID namespace
 From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        spender@grsecurity.net
+To: "Daniel P. Berrange" <berrange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 1:02 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
->> >> I'm using this system call in an application and noticed that's marked
->> >> as deprecated now.
->> >> My application collects all kind of information from crashing programs.
->> >> It's installed in /proc/sys/kernel/core_pattern.
->> >>
->> >> If program X is crashing it executes get_robust_list(X) to get the
->> >> address of the robust list
->> >> and reads the list from /proc/X/mem.
->> >>
->> >> Is there another way to get the robust list from another program (by it's pid)?
->> >
->> > The folks doing checkpoint/restart claim to not need this, so there
->> > might be a way either that or they just haven't hit this problem yet.
->> >
->> > What you are doing sounds like a reasonable use of get_robust_list to me.
->> >
->>
->> CRIU folks, how do you deal with futex robust lists?
+On Fri, Aug 3, 2012 at 12:53 PM, Daniel P. Berrange <berrange@redhat.com> wrote:
+> From: "Daniel P. Berrange" <berrange@redhat.com>
 >
-> Well, I believe we were over-optimistic in claiming that we don't need this
-> syscall (to be fair I think we simply yet not faced the problem Eric points).
-> So we need some way to fetch this address and set it back. If get_robust_list
-> get deprecated maybe we could print it out in /proc/pid/stat or something?
+> The following commit
+>
+>     commit cf3f89214ef6a33fad60856bc5ffd7bb2fc4709b
+>     Author: Daniel Lezcano <daniel.lezcano@free.fr>
+>     Date:   Wed Mar 28 14:42:51 2012 -0700
+>
+>     pidns: add reboot_pid_ns() to handle the reboot syscall
+>
+> introduced custom handling of the reboot() syscall when invoked
+> from a non-initial PID namespace. The intent was that a process
+> in a container can be allowed to keep CAP_SYS_BOOT and execute
+> reboot() to shutdown/reboot just their private container, rather
+> than the host.
+>
+> Unfortunately the kexec_load() syscall also relies on the
+> CAP_SYS_BOOT capability. So by allowing a container to keep
+> this capability to safely invoke reboot(), they mistakenly
+> also gain the ability to use kexec_load(). The solution is
+> to make kexec_load() return -EPERM if invoked from a PID
+> namespace that is not the initial namespace
+>
+> Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Cc: Daniel Lezcano <daniel.lezcano@free.fr>
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
 
-Kees, you said get_robust_list() can be used to bypass ASLR.
-How? What makes it worse than /proc/pid/maps?
-
-If the robust list address itself is bad, removing get_robust_list()
-and putting the
-information into /proc is useless.
+Why is this commit not marked for -stable?
 
 -- 
 Thanks,
