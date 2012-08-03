@@ -1,43 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab2HCW3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 18:29:35 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49873 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753541Ab2HCW3c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 18:29:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120803222339.GN15477@google.com>
-References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com>
- <1344003788-1417-2-git-send-email-levinsasha928@gmail.com>
- <20120803171515.GH15477@google.com> <501C407D.9080900@gmail.com>
- <20120803213017.GK15477@google.com> <501C458E.7050000@gmail.com>
- <20120803214806.GM15477@google.com> <501C4E92.1070801@gmail.com> <20120803222339.GN15477@google.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 3 Aug 2012 15:29:10 -0700
-X-Google-Sender-Auth: S_cIE84LaFYc7wz-oS-Lx7-x3Qc
-Message-ID: <CA+55aFyOst4c3WHbPVbYkSBdBmLJUui5OvoVOh5AuPMnigwnEA@mail.gmail.com>
-Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
-To: Tejun Heo <tj@kernel.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754040Ab2HCW3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 18:29:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40841 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753110Ab2HCW3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 18:29:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="181361205"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Chen Gong <gong.chen@linux.intel.com>
+Cc: bp@amd64.org, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH 0/5 V2] x86: mce: Bugfixes, cleanups and a new
+ CMCI poll version
+In-Reply-To: <20120801005610.GA23536@gchen.bj.intel.com>
+Date: Fri, 03 Aug 2012 15:29:50 -0700
+Message-Id: <501c50de151302d0d7@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 3:23 PM, Tejun Heo <tj@kernel.org> wrote:
->
-> I actually meant an enclosing struct.  When you're defining a struct
-> member, simply putting the storage after a struct with var array
-> should be good enough.  If that doesn't work, quite a few things in
-> the kernel will break.
+I applied this series on top of v3.6-rc1 and took it for
+a test drive with a little storm of 20 corrected interrupts.
 
-The unsigned member of a struct has to be the last one, so your struct
-won't work.
+The series worked ... but the console log was entirely unhelpful
+in letting me know what had just happened to my system.  All I saw
+was:
 
-            Linus
+mce: [Hardware Error]: Machine check events logged
+mce: [Hardware Error]: Machine check events logged
+    ... several seconds pass ...
+CPU 35 MCA banks CMCI:0 CMCI:1 CMCI:3 CMCI:5 CMCI:6 CMCI:7 CMCI:8 CMCI:9 CMCI:10 CMCI:11
+mce_notify_irq: 3 callbacks suppressed
+CPU 1 MCA banks CMCI:0 CMCI:1 CMCI:3
+CPU 39 MCA banks CMCI:0 CMCI:1 CMCI:3
+CPU 38 MCA banks CMCI:0 CMCI:1 CMCI:3
+CPU 32 MCA banks CMCI:0 CMCI:1 CMCI:3
+CPU 37 MCA banks CMCI:0 CMCI:1 CMCI:3
+CPU 36 MCA banks CMCI:0 CMCI:1 CMCI:3
+CPU 34 MCA banks CMCI:0 CMCI:1 CMCI:3
+mce: [Hardware Error]: Machine check events logged
+
+No mention of the storm, no mention that we switched to polling
+mode (and so missed some of the reports). Just the cryptic output
+as the kernel re-established the CMCI on processors that had been
+affected by the storm.
+
+I tried the patch below to log the start/end of the storm. But I
+may be doing something wrong with printk_timed_ratelimit() because
+I saw two "storm detected" and two "storm subsided" messages.
+
+It would also be nice to avoid all the "CPU 1 MCA banks CMCI:0 CMCI:1 CMCI:3"
+messages.
+
+-Tony
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+index 693bc7d..236f60e 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -87,6 +87,8 @@ void mce_intel_hcpu_update(unsigned long cpu)
+ 
+ unsigned long mce_intel_adjust_timer(unsigned long interval)
+ {
++	static unsigned long jiffie_state;
++
+ 	if (interval < CMCI_POLL_INTERVAL)
+ 		return interval;
+ 
+@@ -108,6 +110,8 @@ unsigned long mce_intel_adjust_timer(unsigned long interval)
+ 		 */
+ 		if (!atomic_read(&cmci_storm_on_cpus)) {
+ 			__this_cpu_write(cmci_storm_state, CMCI_STORM_NONE);
++			if (printk_timed_ratelimit(&jiffie_state, CMCI_STORM_INTERVAL/HZ*1000))
++				pr_notice("CMCI storm subsided, switching to interrupt mode\n");
+ 			cmci_reenable();
+ 			cmci_recheck();
+ 		}
+@@ -126,6 +130,7 @@ static bool cmci_storm_detect(void)
+ 	unsigned int cnt = __this_cpu_read(cmci_storm_cnt);
+ 	unsigned long ts = __this_cpu_read(cmci_time_stamp);
+ 	unsigned long now = jiffies;
++	static unsigned long jiffie_state;
+ 
+ 	if (__this_cpu_read(cmci_storm_state) != CMCI_STORM_NONE)
+ 		return true;
+@@ -145,6 +150,9 @@ static bool cmci_storm_detect(void)
+ 	__this_cpu_write(cmci_storm_state, CMCI_STORM_ACTIVE);
+ 	atomic_inc(&cmci_storm_on_cpus);
+ 	mce_timer_kick(CMCI_POLL_INTERVAL);
++
++	if (printk_timed_ratelimit(&jiffie_state, CMCI_STORM_INTERVAL/HZ*1000))
++		pr_notice("CMCI storm detected, switching to poll mode\n");
+ 	return true;
+ }
+ 
