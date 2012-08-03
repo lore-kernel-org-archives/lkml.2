@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab2HCOLM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:11:12 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:8815 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab2HCOLK (ORCPT
+	id S1754034Ab2HCOL0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:11:26 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:60768 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910Ab2HCOLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:11:10 -0400
-X-Authority-Analysis: v=2.0 cv=Dp/UCRD+ c=1 sm=0 a=YPDeGStqRoQnMAluW+pq4Q==:17 a=65KWcu232dMA:10 a=sgO5gNtQRqEA:10 a=wkBGhNO-IO0A:10 a=05ChyHeVI94A:10 a=8nJEP1OIZ-IA:10 a=ayC55rCoAAAA:8 a=2D1OvHveRNJ-jve2AggA:9 a=wPNLvfGTeEIA:10 a=YPDeGStqRoQnMAluW+pq4Q==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 50.89.247.146
-Message-ID: <501BDBEE.60305@cfl.rr.com>
-Date: Fri, 03 Aug 2012 10:10:54 -0400
-From: Mark Hounschell <dmarkh@cfl.rr.com>
-Reply-To: dmarkh@cfl.rr.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Fri, 3 Aug 2012 10:11:24 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Chris Friesen <chris.friesen@genband.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: MODULE_LICENSE("GPL")??
-References: <50199E91.5040308@cfl.rr.com> <20120801224342.5b90747f@pyramind.ukuu.org.uk> <501A704E.2000301@cfl.rr.com> <501B5D51.5030307@genband.com> <501BBE45.8060309@cfl.rr.com> <20120803142923.311c70b6@pyramind.ukuu.org.uk>
-In-Reply-To: <20120803142923.311c70b6@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1344002771-21072-1-git-send-email-geert@linux-m68k.org>
+References: <1344002771-21072-1-git-send-email-geert@linux-m68k.org>
+Date: Fri, 3 Aug 2012 16:11:23 +0200
+X-Google-Sender-Auth: tv27P-ExaZ6P3CbIhhXS12uf7XQ
+Message-ID: <CAMuHMdXsWkXaGPoMDBEkvwWPWvYzPhn8rtbmuQZumWtWe5WGxQ@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.5
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 09:29 AM, Alan Cox wrote:
->> assumption that that actually meant they were NOT using GPL symbols.
->
-> All symbols in the Linux kernel are to GPL code and all linking dynamic
-> or otherwise is subject to the GPL licence. That is you need to be able
-> to show anything non-free linked with it such as a kernel module is not a
-> derivative work.
+On Fri, Aug 3, 2012 at 4:06 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.5 to v3.5-rc7[3], the summaries are:
+>   - build errors: +6/-9
+>   - build warnings: +105/-5443
 
-Why then is there EXPORT_SYMBOL_GPL and EXPORT_SYMBOL? As long as you have 
-them both, one can and will, assume that what you say above is not the intent.
+  + drivers/staging/ccg/../../usb/gadget/f_mass_storage.c: error:
+implicit declaration of function 'get_ds'
+[-Werror=implicit-function-declaration]:  => 2624:2
+  + drivers/staging/ccg/../../usb/gadget/f_mass_storage.c: error:
+implicit declaration of function 'set_fs'
+[-Werror=implicit-function-declaration]:  => 2624:2
+  + drivers/staging/ccg/../../usb/gadget/storage_common.c: error:
+implicit declaration of function 'bdev_logical_block_size'
+[-Werror=implicit-function-declaration]:  => 686:3
+  + drivers/staging/ccg/../../usb/gadget/storage_common.c: error:
+implicit declaration of function 'blksize_bits'
+[-Werror=implicit-function-declaration]:  => 687:3
 
-Again, our Linux kernel drivers are and always were GPL and at least partly 
-so because of EXPORT_SYMBOL_GPL.
+i386-randconfig, staging drivers including USB core sources?
 
-Mark
+  + error: No rule to make target
+/scratch/kisskb/build/linus_sh-randconfig_sh4/usr/include/linux/kvm_para.h:
+ => N/A
 
+Known issue with kvm_para.h header export.
 
+  + error: No rule to make target include/config/auto.conf:  => N/A
 
+x86_64-randconfig
 
+> [1] http://kisskb.ellerman.id.au/kisskb/head/5266/ (all 116 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
