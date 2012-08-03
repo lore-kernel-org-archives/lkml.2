@@ -1,145 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab2HCTrk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 15:47:40 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:51319 "EHLO relay.sgi.com"
+	id S1753958Ab2HCTqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 15:46:32 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56384 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754039Ab2HCTqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 15:46:42 -0400
-Date: Fri, 3 Aug 2012 14:46:29 -0500
-From: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Robin Holt <holt@sgi.com>
-Subject: [PATCH] SGI XPC fails to load when cpu 0 is out of IRQ resources.
-Message-ID: <20120803194628.GN3093@sgi.com>
+	id S1753852Ab2HCTqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 15:46:24 -0400
+From: <pavan_savoy@ti.com>
+To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH v2 4/6] drivers/misc/ti-st: use cpu friendly completions
+Date: Fri, 3 Aug 2012 14:46:15 -0500
+Message-ID: <1344023177-21167-5-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1344023177-21167-4-git-send-email-pavan_savoy@ti.com>
+References: <1344023177-21167-1-git-send-email-pavan_savoy@ti.com>
+ <1344023177-21167-2-git-send-email-pavan_savoy@ti.com>
+ <1344023177-21167-3-git-send-email-pavan_savoy@ti.com>
+ <1344023177-21167-4-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On many of our larger systems, CPU 0 has had all of its IRQ resources
-consumed before XPC loads.  Worse cases on machines with multiple
-10 GigE cards and multiple IB cards have depleted the entire first
-socket of IRQs.  That patch makes selecting the node upon which
-IRQs are allocated (as well as all the other GRU Message Queue
-structures) specifiable as a module load param and has a default
-behavior of searching all nodes/cpus for an available resource.
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-Signed-off-by: Robin Holt <holt@sgi.com>
+Be nice to CPU and don't hog the resources, use a nice wait_for_interruptible
+timeout for completions instead of wait_for_timeout which is
+non-interruptible.
+
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/misc/sgi-xp/xpc_uv.c |   66 ++++++++++++++++++++++++++++++++---------
- 1 files changed, 51 insertions(+), 15 deletions(-)
+ drivers/misc/ti-st/st_kim.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
-index 87b251a..f4398bb 100644
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -59,6 +59,8 @@ static struct xpc_heartbeat_uv *xpc_heartbeat_uv;
- 					 XPC_NOTIFY_MSG_SIZE_UV)
- #define XPC_NOTIFY_IRQ_NAME		"xpc_notify"
- 
-+static int xpc_mq_node = -1;
-+
- static struct xpc_gru_mq_uv *xpc_activate_mq_uv;
- static struct xpc_gru_mq_uv *xpc_notify_mq_uv;
- 
-@@ -110,8 +112,6 @@ xpc_get_gru_mq_irq_uv(struct xpc_gru_mq_uv *mq, int cpu, char *irq_name)
- 	mq->irq = uv_setup_irq(irq_name, cpu, mq->mmr_blade, mq->mmr_offset,
- 			UV_AFFINITY_CPU);
- 	if (mq->irq < 0) {
--		dev_err(xpc_part, "uv_setup_irq() returned error=%d\n",
--			-mq->irq);
- 		return mq->irq;
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 54ff644..0f36db3 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -207,8 +207,8 @@ static long read_local_version(struct kim_data_s *kim_gdata, char *bts_scr_name)
+ 		return -EIO;
  	}
  
-@@ -1731,9 +1731,42 @@ static struct xpc_arch_operations xpc_arch_ops_uv = {
- 	.notify_senders_of_disconnect = xpc_notify_senders_of_disconnect_uv,
- };
- 
-+static int
-+xpc_init_mq_node(int nid)
-+{
-+	int cpu;
-+
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_activate_mq_uv = xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, nid,
-+							  XPC_ACTIVATE_IRQ_NAME,
-+							  xpc_handle_activate_IRQ_uv);
-+		if (!IS_ERR(xpc_activate_mq_uv))
-+			break;
-+	}
-+	if (IS_ERR(xpc_activate_mq_uv))
-+		return PTR_ERR(xpc_activate_mq_uv);
-+
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_notify_mq_uv = xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, nid,
-+							XPC_NOTIFY_IRQ_NAME,
-+							xpc_handle_notify_IRQ_uv);
-+		if (!IS_ERR(xpc_notify_mq_uv))
-+			break;
-+	}
-+	if (IS_ERR(xpc_notify_mq_uv)) {
-+		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
-+		return PTR_ERR(xpc_notify_mq_uv);
-+	}
-+
-+	return 0;
-+}
-+
- int
- xpc_init_uv(void)
- {
-+	int nid;
-+	int ret = 0;
-+
- 	xpc_arch_ops = xpc_arch_ops_uv;
- 
- 	if (sizeof(struct xpc_notify_mq_msghdr_uv) > XPC_MSG_HDR_MAX_SIZE) {
-@@ -1742,21 +1775,21 @@ xpc_init_uv(void)
- 		return -E2BIG;
+-	if (!wait_for_completion_timeout
+-	    (&kim_gdata->kim_rcvd, msecs_to_jiffies(CMD_RESP_TIME))) {
++	if (!wait_for_completion_interruptible_timeout(
++		&kim_gdata->kim_rcvd, msecs_to_jiffies(CMD_RESP_TIME))) {
+ 		pr_err(" waiting for ver info- timed out ");
+ 		return -ETIMEDOUT;
  	}
+@@ -370,9 +370,9 @@ static long download_firmware(struct kim_data_s *kim_gdata)
+ 			break;
+ 		case ACTION_WAIT_EVENT:  /* wait */
+ 			pr_debug("W");
+-			if (!wait_for_completion_timeout
+-					(&kim_gdata->kim_rcvd,
+-					 msecs_to_jiffies(CMD_RESP_TIME))) {
++			if (!wait_for_completion_interruptible_timeout(
++					&kim_gdata->kim_rcvd,
++					msecs_to_jiffies(CMD_RESP_TIME))) {
+ 				pr_err("response timeout during fw download ");
+ 				/* timed out */
+ 				release_firmware(kim_gdata->fw_entry);
+@@ -462,8 +462,8 @@ long st_kim_start(void *kim_data)
+ 		sysfs_notify(&kim_gdata->kim_pdev->dev.kobj,
+ 				NULL, "install");
+ 		/* wait for ldisc to be installed */
+-		err = wait_for_completion_timeout(&kim_gdata->ldisc_installed,
+-				msecs_to_jiffies(LDISC_TIME));
++		err = wait_for_completion_interruptible_timeout(
++			&kim_gdata->ldisc_installed, msecs_to_jiffies(LDISC_TIME));
+ 		if (!err) {
+ 			/* ldisc installation timeout,
+ 			 * flush uart, power cycle BT_EN */
+@@ -520,8 +520,8 @@ long st_kim_stop(void *kim_data)
+ 	sysfs_notify(&kim_gdata->kim_pdev->dev.kobj, NULL, "install");
  
--	xpc_activate_mq_uv = xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, 0,
--						  XPC_ACTIVATE_IRQ_NAME,
--						  xpc_handle_activate_IRQ_uv);
--	if (IS_ERR(xpc_activate_mq_uv))
--		return PTR_ERR(xpc_activate_mq_uv);
-+	if (xpc_mq_node < 0)
-+		for_each_online_node(nid) {
-+			ret = xpc_init_mq_node(nid);
- 
--	xpc_notify_mq_uv = xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, 0,
--						XPC_NOTIFY_IRQ_NAME,
--						xpc_handle_notify_IRQ_uv);
--	if (IS_ERR(xpc_notify_mq_uv)) {
--		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
--		return PTR_ERR(xpc_notify_mq_uv);
--	}
-+			if (!ret)
-+				break;
-+		}
-+	else
-+		ret = xpc_init_mq_node(xpc_mq_node);
- 
--	return 0;
-+	if (ret < 0)
-+		dev_err(xpc_part, "xpc_init_mq_node() returned error=%d\n",
-+			-ret);
-+
-+	return ret;
- }
- 
- void
-@@ -1765,3 +1798,6 @@ xpc_exit_uv(void)
- 	xpc_destroy_gru_mq_uv(xpc_notify_mq_uv);
- 	xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
- }
-+
-+module_param(xpc_mq_node, int, 0);
-+MODULE_PARM_DESC(xpc_mq_node, "Node number on which to allocate message queues.");
+ 	/* wait for ldisc to be un-installed */
+-	err = wait_for_completion_timeout(&kim_gdata->ldisc_installed,
+-			msecs_to_jiffies(LDISC_TIME));
++	err = wait_for_completion_interruptible_timeout(
++		&kim_gdata->ldisc_installed, msecs_to_jiffies(LDISC_TIME));
+ 	if (!err) {		/* timeout */
+ 		pr_err(" timed out waiting for ldisc to be un-installed");
+ 		err = -ETIMEDOUT;
 -- 
-1.7.6.1
+1.7.4.1
 
