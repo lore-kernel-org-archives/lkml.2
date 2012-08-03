@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab2HCQCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:02:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43283 "EHLO
+	id S1752979Ab2HCQCk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:02:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43270 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab2HCQCi (ORCPT
+	with ESMTP id S1752037Ab2HCQCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:02:38 -0400
+	Fri, 3 Aug 2012 12:02:34 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: dri-devel@lists.freedesktop.org
 Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
         linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
         Andreas Heider <andreas@meetr.de>
-Subject: [RFC PATCH 5/5] drm/i915: check LVDS for EDID on GPU switches
-Date: Fri,  3 Aug 2012 11:02:21 -0500
-Message-Id: <1344009741-14248-6-git-send-email-seth.forshee@canonical.com>
+Subject: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we can't get a panel mode
+Date: Fri,  3 Aug 2012 11:02:19 -0500
+Message-Id: <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
 References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
@@ -22,54 +22,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the LVDS panel wasn't connected at boot then we won't have an EDID
-for it. To fix this, call intel_lvds_get_edid() from the vga_switcheroo
-reprobe callback.
+Some Apple hybrid graphics machines do not have the LVDS panel connected
+to the integrated GPU at boot and also do not supply a VBT. The LVDS
+connector is not registered as a result, making it impossible to support
+graphics switching.
+
+This patch changes intel_lvds_init() to register the connector even if
+we can't find any panel modes. This makes it necessary to always check
+intel_lvds->fixed_mode before use, as it could now be NULL.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_dma.c   |    1 +
- drivers/gpu/drm/i915/intel_drv.h  |    1 +
- drivers/gpu/drm/i915/intel_lvds.c |    2 +-
- 3 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_lvds.c |   48 +++++++++++++++----------------------
+ 1 file changed, 19 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 5b5176d..c9c942e 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1266,6 +1266,7 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
- static void i915_switcheroo_reprobe(struct pci_dev *pdev)
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
-+	intel_lvds_get_edid(dev);
- 	intel_fb_output_poll_changed(dev);
- }
- 
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index 8435355..bcc14f9 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -356,6 +356,7 @@ extern void intel_dvo_init(struct drm_device *dev);
- extern void intel_tv_init(struct drm_device *dev);
- extern void intel_mark_busy(struct drm_device *dev,
- 			    struct drm_i915_gem_object *obj);
-+extern bool intel_lvds_get_edid(struct drm_device *dev);
- extern bool intel_lvds_init(struct drm_device *dev);
- extern void intel_dp_init(struct drm_device *dev, int dp_reg);
- void
 diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 9d05a90..39dbefc 100644
+index 5069137..c1ab632 100644
 --- a/drivers/gpu/drm/i915/intel_lvds.c
 +++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -902,7 +902,7 @@ static bool intel_lvds_supported(struct drm_device *dev)
- 	return IS_MOBILE(dev) && !IS_I830(dev);
- }
+@@ -161,6 +161,8 @@ static int intel_lvds_mode_valid(struct drm_connector *connector,
+ 	struct intel_lvds *intel_lvds = intel_attached_lvds(connector);
+ 	struct drm_display_mode *fixed_mode = intel_lvds->fixed_mode;
  
--static bool intel_lvds_get_edid(struct drm_device *dev)
-+bool intel_lvds_get_edid(struct drm_device *dev)
++	if (!fixed_mode)
++		return MODE_PANEL;
+ 	if (mode->hdisplay > fixed_mode->hdisplay)
+ 		return MODE_PANEL;
+ 	if (mode->vdisplay > fixed_mode->vdisplay)
+@@ -262,7 +264,8 @@ static bool intel_lvds_mode_fixup(struct drm_encoder *encoder,
+ 	 * with the panel scaling set up to source from the H/VDisplay
+ 	 * of the original mode.
+ 	 */
+-	intel_fixed_panel_mode(intel_lvds->fixed_mode, adjusted_mode);
++	if (intel_lvds->fixed_mode)
++		intel_fixed_panel_mode(intel_lvds->fixed_mode, adjusted_mode);
+ 
+ 	if (HAS_PCH_SPLIT(dev)) {
+ 		intel_pch_panel_fitting(dev, intel_lvds->fitting_mode,
+@@ -461,12 +464,13 @@ static int intel_lvds_get_modes(struct drm_connector *connector)
  {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct drm_connector *connector = dev_priv->int_lvds_connector;
+ 	struct intel_lvds *intel_lvds = intel_attached_lvds(connector);
+ 	struct drm_device *dev = connector->dev;
+-	struct drm_display_mode *mode;
++	struct drm_display_mode *mode = NULL;
+ 
+ 	if (intel_lvds->edid)
+ 		return drm_add_edid_modes(connector, intel_lvds->edid);
+ 
+-	mode = drm_mode_duplicate(dev, intel_lvds->fixed_mode);
++	if (intel_lvds->fixed_mode)
++		mode = drm_mode_duplicate(dev, intel_lvds->fixed_mode);
+ 	if (mode == NULL)
+ 		return 0;
+ 
+@@ -1073,26 +1077,21 @@ bool intel_lvds_init(struct drm_device *dev)
+ 	 */
+ 
+ 	/* Ironlake: FIXME if still fail, not try pipe mode now */
+-	if (HAS_PCH_SPLIT(dev))
+-		goto failed;
+-
+-	lvds = I915_READ(LVDS);
+-	pipe = (lvds & LVDS_PIPEB_SELECT) ? 1 : 0;
+-	crtc = intel_get_crtc_for_pipe(dev, pipe);
+-
+-	if (crtc && (lvds & LVDS_PORT_EN)) {
+-		intel_lvds->fixed_mode = intel_crtc_mode_get(dev, crtc);
+-		if (intel_lvds->fixed_mode) {
+-			intel_lvds->fixed_mode->type |=
+-				DRM_MODE_TYPE_PREFERRED;
+-			goto out;
++	if (!HAS_PCH_SPLIT(dev)) {
++		lvds = I915_READ(LVDS);
++		pipe = (lvds & LVDS_PIPEB_SELECT) ? 1 : 0;
++		crtc = intel_get_crtc_for_pipe(dev, pipe);
++
++		if (crtc && (lvds & LVDS_PORT_EN)) {
++			intel_lvds->fixed_mode = intel_crtc_mode_get(dev, crtc);
++			if (intel_lvds->fixed_mode) {
++				intel_lvds->fixed_mode->type |=
++					DRM_MODE_TYPE_PREFERRED;
++				goto out;
++			}
+ 		}
+ 	}
+ 
+-	/* If we still don't have a mode after all that, give up. */
+-	if (!intel_lvds->fixed_mode)
+-		goto failed;
+-
+ out:
+ 	/*
+ 	 * Unlock registers and just
+@@ -1116,13 +1115,4 @@ out:
+ 	intel_panel_setup_backlight(dev);
+ 
+ 	return true;
+-
+-failed:
+-	DRM_DEBUG_KMS("No LVDS modes found, disabling.\n");
+-	dev_priv->int_lvds_connector = NULL;
+-	drm_connector_cleanup(connector);
+-	drm_encoder_cleanup(encoder);
+-	kfree(intel_lvds);
+-	kfree(intel_connector);
+-	return false;
+ }
 -- 
 1.7.9.5
 
