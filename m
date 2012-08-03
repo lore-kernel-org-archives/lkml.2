@@ -1,88 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab2HCJn0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 05:43:26 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:46095 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037Ab2HCJnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 05:43:25 -0400
-Date: Fri, 3 Aug 2012 11:43:14 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [ 33/73] x86, microcode: Sanitize per-cpu microcode reloading
- interface
-Message-ID: <20120803094314.GB31792@aftab.osrc.amd.com>
-References: <20120731044310.013763753@decadent.org.uk>
- <20120731044316.585695559@decadent.org.uk>
- <87y5lw73eh.fsf@turtle.gmx.de>
+	id S1752575Ab2HCJoW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 05:44:22 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:38057 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab2HCJoV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 05:44:21 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Vikram Pandita <vikram.pandita@ti.com>, gregkh@linuxfoundation.org,
+        kay@vrfy.org
+Cc: linux-kernel@vger.kernel.org, Vikram Pandita <vikram.pandita@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Subject: Re: [PATCH v2] printk: add option to print cpu id
+In-Reply-To: <1343985378-22330-1-git-send-email-vikram.pandita@ti.com>
+References: <1343985378-22330-1-git-send-email-vikram.pandita@ti.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Fri, 03 Aug 2012 15:13:16 +0530
+Message-ID: <87wr1g5n0r.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5lw73eh.fsf@turtle.gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+x-cbid: 12080309-6102-0000-0000-000001FE00A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 11:04:06AM +0200, Sven Joachim wrote:
-> On 2012-07-31 06:43 +0200, Ben Hutchings wrote:
+On Fri, 3 Aug 2012 02:16:18 -0700, Vikram Pandita <vikram.pandita@ti.com> wrote:
+> From: Vikram Pandita <vikram.pandita@ti.com>
 > 
-> > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> Introduce config option to enable CPU id reporting for printk() calls.
 > 
-> Alas, this does not build if CONFIG_SMP is unset:
+> Example logs with this option enabled look like:
+>  [1] [    2.328613] usbcore: registered new interface driver libusual
+>  [1] [    2.335418] usbcore: registered new interface driver usbtest
+>  [1] [    2.342803] mousedev: PS/2 mouse device common for all mice
+>  [0] [    2.352600] twl_rtc twl_rtc: Power up reset detected.
+>  [0] [    2.359191] twl_rtc twl_rtc: Enabling TWL-RTC
+>  [1] [    2.367797] twl_rtc twl_rtc: rtc core: registered twl_rtc as rtc0
+>  [1] [    2.375274] i2c /dev entries driver
+>  [1] [    2.382324] Driver for 1-wire Dallas network protocol.
 > 
-> ,----
-> | arch/x86/kernel/microcode_core.c: In function 'reload_store':
-> | arch/x86/kernel/microcode_core.c:304:19: error: 'struct cpuinfo_x86' has no member named 'cpu_index'
-> `----
+> Its sometimes very useful to have printk also print the CPU Identifier
+> that executed the call. This has helped to debug various SMP issues on shipping
+> products.
+> 
+> Known limitation is if the system gets preempted between function call and
+> actual printk, the reported cpu-id might not be accurate. But most of the
+> times its seen to give a good feel of how the N cpu's in the system are
+> getting loaded.
+> 
+> Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+> ---
+> v1: initial version - had wrong cpuid logging mechanism
+> v2: fixed as per review comments from Kay Sievers
+> 
+>  kernel/printk.c   |   51 +++++++++++++++++++++++++++++++++++++++++----------
+>  lib/Kconfig.debug |   13 +++++++++++++
+>  2 files changed, 54 insertions(+), 10 deletions(-)
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 6a76ab9..64f4a1b 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -208,6 +208,7 @@ struct log {
+>  	u8 facility;		/* syslog facility */
+>  	u8 flags:5;		/* internal record flags */
+>  	u8 level:3;		/* syslog level */
+> +	u8 cpuid;		/* cpu invoking the log */
+>  };
 
-Crap. :-(
+That would be sufficient for only 256 cpus. Is that what you intend?
 
-3.2 still has this:
+There are systems which will have much higher numbers than this limit.
 
-<arch/x86/include/asm/processor.h>:
-...
-#ifdef CONFIG_SMP
-        /* number of cores as seen by the OS: */
-        u16                     booted_cores;
-        /* Physical processor id: */
-        u16                     phys_proc_id;
-        /* Core id: */
-        u16                     cpu_core_id;
-        /* Compute unit id */
-        u8                      compute_unit_id;
-        /* Index into per_cpu list: */
-        u16                     cpu_index;
-#endif
-        u32                     microcode;
-} __attribute__((__aligned__(SMP_CACHE_BYTES)));
----
+>  /*
+> @@ -305,7 +306,8 @@ static u32 log_next(u32 idx)
+>  static void log_store(int facility, int level,
+>  		      enum log_flags flags, u64 ts_nsec,
+>  		      const char *dict, u16 dict_len,
+> -		      const char *text, u16 text_len)
+> +		      const char *text, u16 text_len,
+> +		      const u8 cpuid)
+>  {
+>  	struct log *msg;
+>  	u32 size, pad_len;
+> @@ -356,6 +358,7 @@ static void log_store(int facility, int level,
+>  		msg->ts_nsec = local_clock();
+>  	memset(log_dict(msg) + dict_len, 0, pad_len);
+>  	msg->len = sizeof(struct log) + text_len + dict_len + pad_len;
+> +	msg->cpuid = cpuid;
+> 
+>  	/* insert message */
+>  	log_next_idx += msg->len;
+> @@ -855,6 +858,25 @@ static size_t print_time(u64 ts, char *buf)
+>  		       (unsigned long)ts, rem_nsec / 1000);
+>  }
+> 
+> +#if defined(CONFIG_PRINTK_CPUID)
+> +static bool printk_cpuid = 1;
+> +#else
+> +static bool printk_cpuid;
+> +#endif
+> +module_param_named(cpuid, printk_cpuid, bool, S_IRUGO | S_IWUSR);
+> +
+> +static size_t print_cpuid(u8 cpuid, char *buf)
+> +{
+> +
+> +	if (!printk_cpuid)
+> +		return 0;
+> +
+> +	if (!buf)
+> +		return 4;
+> +
+Firstly, why this magic number?
+Secondly, if buf is NULL, why should you increment?
 
-which got removed by
+> +	return sprintf(buf, "[%1d] ", cpuid);
+> +}
+> +
+>  static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
+>  {
+>  	size_t len = 0;
 
-commit 141168c36cdee3ff23d9c7700b0edc47cb65479f
-Author: Kevin Winchester <kjwinchester@gmail.com>
-Date:   Tue Dec 20 20:52:22 2011 -0400
+Regards
+Nikunj
 
-    x86: Simplify code by removing a !SMP #ifdefs from 'struct cpuinfo_x86'
-
-Ben, you might want to backport this one too... I'll run a couple of 3.2
-builds with it ontop of 3.2 to verify nothing else breaks.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
