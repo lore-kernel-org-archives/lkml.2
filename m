@@ -1,120 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab2HCFVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 01:21:16 -0400
-Received: from science.horizon.com ([71.41.210.146]:14839 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751122Ab2HCFVN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 01:21:13 -0400
-From: George Spelvin <linux@horizon.com>
-To: vda.linux@googlemail.com, mina86@mina86.com
-Cc: hughd@google.com, linux-kernel@vger.kernel.org, linux@horizon.com
-Subject: [PATCH 2/4] lib: vsprintf: Optimize division by 10000
-Date: Fri,  3 Aug 2012 01:21:09 -0400
-Message-Id: <1343971271-13355-2-git-send-email-linux@horizon.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1343971271-13355-1-git-send-email-linux@horizon.com>
-References: <1343971271-13355-1-git-send-email-linux@horizon.com>
+	id S1751994Ab2HCFZL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 01:25:11 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56908 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751454Ab2HCFZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 01:25:08 -0400
+Message-ID: <501B609F.9030403@ti.com>
+Date: Fri, 3 Aug 2012 10:54:47 +0530
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Omar Ramirez Luna <omar.luna@linaro.org>
+CC: Paul Walmsley <paul@pwsan.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Kevin Hilman <khilman@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ARM: OMAP: hwmod: revise deassert sequence
+References: <1342466485-1050-1-git-send-email-omar.luna@linaro.org> <1342466485-1050-3-git-send-email-omar.luna@linaro.org> <alpine.DEB.2.00.1208020150240.4177@utopia.booyaka.com> <CALLhW=6-b+kjfG-u3+uXiD64UwoNEdufjJKu0Mx-sGWp6n9csg@mail.gmail.com>
+In-Reply-To: <CALLhW=6-b+kjfG-u3+uXiD64UwoNEdufjJKu0Mx-sGWp6n9csg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same multiply-by-inverse technique can be used to
-convert division by 10000 to a 32x32->64-bit multiply.
 
-Signed-off-by: George Spelvin <linux@horizon.com>
----
- lib/vsprintf.c |   60 +++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 33 insertions(+), 27 deletions(-)
 
-This is something of an RFC, I haven't benchmarked the helper
-function.  But it sure cleans up the code!
+On 8/3/2012 3:50 AM, Omar Ramirez Luna wrote:
+> Hi.
+> 
+> On 2 August 2012 02:52, Paul Walmsley <paul@pwsan.com> wrote:
+>> On Mon, 16 Jul 2012, Omar Ramirez Luna wrote:
+>>
+>>> For a reset sequence to complete cleanly, a module needs its
+>>> associated clocks to be enabled, otherwise the timeout check
+>>> in prcm code can print a false failure (failed to hardreset)
+>>> that occurs because the clocks aren't powered ON and the status
+>>> bit checked can't transition without them.
+>>>
+>>> Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
+>>
+>> Is enabling the clocks sufficient?
+> 
+> During my testing it seemed enough, besides it looks clk framework is
+> doing the same as _omap4_enable_module.
+> 
+>> Or do we also need to enable the
+>> IP block, e.g. by calling
+>>
+>>         if (soc_ops.enable_module)
+>>                 soc_ops.enable_module(oh);
+>>
+>> as we do on OMAP4+ in _enable() ?
+> 
+> Basically this is a call to _omap4_enable_module, and the latter will
+> "Enable the modulemode inside CLKCTRL".
+> 
+> However, _enable_clocks path which ends calling omap2_dflt_clk_enable
+> does the same thing with its clk->enable_reg field.
+> 
+> So in _enable:
+> 
+>         _enable_clocks(oh);
+>         if (soc_ops.enable_module)
+>                 soc_ops.enable_module(oh);
+> 
+> The enable_module part seems redundant to me, since the module should
+> be already enabled by the first call to _enable_clocks.
+> 
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 2f32fe8..a8e7392 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -245,17 +245,32 @@ char *put_dec(char *buf, unsigned long long n)
- 
- /* See comment in put_dec_full9 for choice of constants */
- static noinline_for_stack
--char *put_dec_full4(char *buf, unsigned q)
-+void put_dec_full4(char *buf, unsigned q)
- {
- 	unsigned r;
- 	r      = (q * 0xccd) >> 15;
--	*buf++ = (q - 10 * r) + '0';
-+	buf[0] = (q - 10 * r) + '0';
- 	q      = (r * 0xcd) >> 11;
--	*buf++ = (r - 10 * q)  + '0';
-+	buf[1] = (r - 10 * q)  + '0';
- 	r      = (q * 0xcd) >> 11;
--	*buf++ = (q - 10 * r)  + '0';
--	*buf++ = r + '0';
--	return buf;
-+	buf[2] = (q - 10 * r)  + '0';
-+	buf[3] = r + '0';
-+}
-+
-+/*
-+ * Call put_dec_full4 on x % 10000, return x / 10000.
-+ * The approximation x/10000 == (x * 0x346DC5D7) >> 43
-+ * holds for all x < 1,128,869,999.  The largest value this
-+ * helper will ever be asked to convert is 1,125,520,955.
-+ * (d1 in the put_dec code, assuming n is all-ones).
-+ */
-+static
-+unsigned put_dec_helper4(char *buf, unsigned x)
-+{
-+        uint32_t q = (x * (uint64_t)0x346DC5D7) >> 43;
-+
-+        put_dec_full4(buf, x - q * 10000);
-+        return q;
- }
- 
- /* Based on code by Douglas W. Jones found at
-@@ -277,28 +292,19 @@ char *put_dec(char *buf, unsigned long long n)
- 	d3  = (h >> 16); /* implicit "& 0xffff" */
- 
- 	q   = 656 * d3 + 7296 * d2 + 5536 * d1 + ((uint32_t)n & 0xffff);
-+	q = put_dec_helper4(buf, q);
-+
-+	q += 7671 * d3 + 9496 * d2 + 6 * d1;
-+	q = put_dec_helper4(buf+4, q);
-+
-+	q += 4749 * d3 + 42 * d2;
-+	q = put_dec_helper4(buf+8, q);
- 
--	buf = put_dec_full4(buf, q % 10000);
--	q   = q / 10000;
--
--	d1  = q + 7671 * d3 + 9496 * d2 + 6 * d1;
--	buf = put_dec_full4(buf, d1 % 10000);
--	q   = d1 / 10000;
--
--	d2  = q + 4749 * d3 + 42 * d2;
--	buf = put_dec_full4(buf, d2 % 10000);
--	q   = d2 / 10000;
--
--	d3  = q + 281 * d3;
--	if (!d3)
--		goto done;
--	buf = put_dec_full4(buf, d3 % 10000);
--	q   = d3 / 10000;
--	if (!q)
--		goto done;
--	buf = put_dec_full4(buf, q);
-- done:
--	while (buf[-1] == '0')
-+	q += 281 * d3;
-+	buf += 12;
-+	if (q)
-+		buf = put_dec_trunc8(buf, q);
-+	else while (buf[-1] == '0')
- 		--buf;
- 
- 	return buf;
--- 
-1.7.10.4
+Yes they do same thing, I believe the plan is to get rid of all clock
+leaf-nodes in the near future, and let hwmod handle module
+enable/disable part.
 
+Thanks,
+Vaibhav
+
+> Regards,
+> 
+> Omar
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
