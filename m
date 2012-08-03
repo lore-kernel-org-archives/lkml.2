@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2HCQiK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:38:10 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:47862 "EHLO mail.x86-64.org"
+	id S1754055Ab2HCQiI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:38:08 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:47867 "EHLO mail.x86-64.org"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753912Ab2HCQiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753910Ab2HCQiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Aug 2012 12:38:03 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Alex Shi <alex.shi@intel.com>, X86-ML <x86@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 1/4] x86, CPU: Fixup tlb_flushall_shift formatting
-Date: Fri,  3 Aug 2012 18:37:46 +0200
-Message-Id: <1344011869-21868-2-git-send-email-bp@amd64.org>
+Subject: [PATCH 3/4] x86, CPU: Add AMD TLB size detection
+Date: Fri,  3 Aug 2012 18:37:48 +0200
+Message-Id: <1344011869-21868-4-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.11.rc1
 In-Reply-To: <1344011869-21868-1-git-send-email-bp@amd64.org>
 References: <1344011869-21868-1-git-send-email-bp@amd64.org>
@@ -23,37 +23,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-The TLB characteristics appeared like this in dmesg:
-
-[    0.065817] Last level iTLB entries: 4KB 512, 2MB 1024, 4MB 512
-[    0.065817] Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 512
-[    0.065817] tlb_flushall_shift is 0xffffffff
-
-where tlb_flushall_shift is actually -1 but dumped as a hex number.
-However, the Kconfig option CONFIG_DEBUG_TLBFLUSH and the rest of the
-code treats this as a signed decimal and states "If you set it to -1,
-the code flushes the whole TLB unconditionally."
-
-So, fix its formatting in accordance with the other references to it.
+Read I- and DTLB entries count from CPUID on AMD. Handle all the
+different family-specific cases.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/kernel/cpu/common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/amd.c | 51 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 46d8786d655e..d239977f361f 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -474,7 +474,7 @@ void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 9d92e19039f0..48e9d33245d9 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -737,6 +737,56 @@ static unsigned int __cpuinit amd_size_cache(struct cpuinfo_x86 *c,
+ }
+ #endif
  
- 	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
- 		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n"	     \
--		"tlb_flushall_shift is 0x%x\n",
-+		"tlb_flushall_shift: %d\n",
- 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
- 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
- 		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
++static void __cpuinit cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
++{
++	u32 ebx, eax, ecx, edx;
++	u16 mask = 0xfff;
++
++	if (c->x86 < 0xf)
++		return;
++
++	cpuid(0x80000006, &eax, &ebx, &ecx, &edx);
++
++	tlb_lld_4k[ENTRIES] = (ebx >> 16) & mask;
++	tlb_lli_4k[ENTRIES] = ebx & mask;
++
++	/*
++	 * K8 doesn't have 2M/4M entries in the L2 TLB so read out the L1 TLB
++	 * characteristics from the CPUID function 0x80000005 instead.
++	 */
++	if (c->x86 == 0xf) {
++		cpuid(0x80000005, &eax, &ebx, &ecx, &edx);
++		mask = 0xff;
++	}
++
++	/* Handle DTLB 2M and 4M sizes, fall back to L1 if L2 is disabled */
++	if (!((eax >> 16) & mask)) {
++		u32 a, b, c, d;
++
++		cpuid(0x80000005, &a, &b, &c, &d);
++		tlb_lld_2m[ENTRIES] = (a >> 16) & 0xff;
++	} else {
++		tlb_lld_2m[ENTRIES] = (eax >> 16) & mask;
++	}
++
++	/* a 4M entry uses two 2M entries */
++	tlb_lld_4m[ENTRIES] = tlb_lld_2m[ENTRIES] >> 1;
++
++	/* Handle ITLB 2M and 4M sizes, fall back to L1 if L2 is disabled */
++	if (!(eax & mask)) {
++		/* Erratum 658 */
++		if (c->x86 == 0x15 && c->x86_model <= 0x1f) {
++			tlb_lli_2m[ENTRIES] = 1024;
++		} else {
++			cpuid(0x80000005, &eax, &ebx, &ecx, &edx);
++			tlb_lli_2m[ENTRIES] = eax & 0xff;
++		}
++	} else
++		tlb_lli_2m[ENTRIES] = eax & mask;
++
++	tlb_lli_4m[ENTRIES] = tlb_lli_2m[ENTRIES] >> 1;
++}
++
+ static const struct cpu_dev __cpuinitconst amd_cpu_dev = {
+ 	.c_vendor	= "AMD",
+ 	.c_ident	= { "AuthenticAMD" },
+@@ -756,6 +806,7 @@ static const struct cpu_dev __cpuinitconst amd_cpu_dev = {
+ 	.c_size_cache	= amd_size_cache,
+ #endif
+ 	.c_early_init   = early_init_amd,
++	.c_detect_tlb	= cpu_detect_tlb_amd,
+ 	.c_bsp_init	= bsp_init_amd,
+ 	.c_init		= init_amd,
+ 	.c_x86_vendor	= X86_VENDOR_AMD,
 -- 
 1.7.11.rc1
 
