@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab2HCOhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:37:54 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:51434 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752575Ab2HCOhw (ORCPT
+	id S1754046Ab2HCOjs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:39:48 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:56960 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753409Ab2HCOjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:37:52 -0400
+	Fri, 3 Aug 2012 10:39:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120803132945.GF8269@arwen.pp.htv.fi>
+In-Reply-To: <20120803133122.GG8269@arwen.pp.htv.fi>
 References: <1343639400-28725-1-git-send-email-kishon@ti.com>
-	<1343639400-28725-5-git-send-email-kishon@ti.com>
-	<20120803132945.GF8269@arwen.pp.htv.fi>
-Date: Fri, 3 Aug 2012 20:07:49 +0530
-Message-ID: <CAAe_U6Lm3v-g64QmWzJJs_mZ-Qy4_YK5WKnt_B-P7sbRDNq=Jg@mail.gmail.com>
-Subject: Re: [PATCH v6 04/11] arm: omap: hwmod: add a new addr space in otg
- for writing to control module
+	<1343639400-28725-6-git-send-email-kishon@ti.com>
+	<20120803133122.GG8269@arwen.pp.htv.fi>
+Date: Fri, 3 Aug 2012 20:09:43 +0530
+Message-ID: <CAAe_U6JVcyiugeLtsK_15jTf5c7edCjAUZ=N1hoJJffpFr2_MQ@mail.gmail.com>
+Subject: Re: [PATCH v6 05/11] drivers: usb: twl6030: Add dt support for
+ twl6030 usb
 From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
 To: balbi@ti.com
 Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
@@ -31,23 +31,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Fri, Aug 3, 2012 at 6:59 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Mon, Jul 30, 2012 at 02:39:53PM +0530, Kishon Vijay Abraham I wrote:
->> The mailbox register for usb otg in omap is present in control module.
->> On detection of any events VBUS or ID, this register should be written
->> to send the notification to musb core.
->>
->> Till we have a separate control module driver to write to control module,
->> omap2430 will handle the register writes to control module by itself. So
->> a new address space to represent this control module register is added
->> to usb_otg_hs.
+On Fri, Aug 3, 2012 at 7:01 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Mon, Jul 30, 2012 at 02:39:54PM +0530, Kishon Vijay Abraham I wrote:
+>> Add device tree support for twl6030 usb driver.
+>> Update the Documentation with device tree binding information.
 >>
 >> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 >
-> this should come before previous patch, right ? Otherwise we will try to
-> ioremap a resource which isn't passed down to driver. No ?
+> This looks great too. I can take this without any dependencies on the
+> rest of the series, I believe. Right ??
 
-right. Will change the order in my next series.
+I think it might not apply cleanly without [PATCH v6 03/11] drivers:
+usb: otg: make twl6030_usb as a comparator driver to omap_usb2.
 
 Thanks
 Kishon
