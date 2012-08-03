@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab2HCOB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 10:01:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48828 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab2HCOB1 (ORCPT
+	id S1753982Ab2HCOC5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 10:02:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45796 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115Ab2HCOB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 10:01:27 -0400
+	Fri, 3 Aug 2012 10:01:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,20 +16,23 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 10/18] perf session: Remove no longer used synthesize_sample method
-Date: Fri,  3 Aug 2012 11:01:02 -0300
-Message-Id: <1344002470-5965-11-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/18] perf session: Use perf_evlist__id_hdr_size more extensively
+Date: Fri,  3 Aug 2012 11:00:59 -0300
+Message-Id: <1344002470-5965-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344002470-5965-1-git-send-email-acme@infradead.org>
 References: <1344002470-5965-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+Removing perf_session->id_hdr_size, as it can be obtained from the
+evsel/evlist.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -39,47 +42,101 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-jd8tqbx8o8bs4t4g50vyhoc2@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-1nwc2kslu7gsfblu98xbqbll@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c |    8 --------
- tools/perf/util/session.h |    4 ----
- 2 files changed, 0 insertions(+), 12 deletions(-)
+ tools/perf/builtin-record.c |    2 +-
+ tools/perf/builtin-top.c    |    2 +-
+ tools/perf/util/session.c   |   13 +++++++------
+ tools/perf/util/session.h   |    3 +--
+ 4 files changed, 10 insertions(+), 10 deletions(-)
 
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f5a6452..dc2b625 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -313,7 +313,7 @@ try_again:
+ 		}
+  	}
+ 
+-	perf_session__update_sample_type(session);
++	perf_session__set_id_hdr_size(session);
+ }
+ 
+ static int process_buildids(struct perf_record *rec)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 35e86c6..520e425 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1032,7 +1032,7 @@ static int __cmd_top(struct perf_top *top)
+ 					       &top->session->host_machine);
+ 	perf_top__start_counters(top);
+ 	top->session->evlist = top->evlist;
+-	perf_session__update_sample_type(top->session);
++	perf_session__set_id_hdr_size(top->session);
+ 
+ 	/* Wait for a minimal set of events before starting the snapshot */
+ 	poll(top->evlist->pollfd, top->evlist->nr_fds, 100);
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 7d07324..2437fb0 100644
+index 348cc11..5b8601d 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -16,14 +16,6 @@
- #include "cpumap.h"
- #include "event-parse.h"
+@@ -101,11 +101,12 @@ out_close:
+ 	return -1;
+ }
  
--int perf_session__synthesize_sample(struct perf_session *session,
--				    union perf_event *event,
--				    const struct perf_sample *sample)
--{
--	return perf_event__synthesize_sample(event, perf_evlist__sample_type(session->evlist),
--					     sample, session->header.needs_swap);
--}
--
- static int perf_session__open(struct perf_session *self, bool force)
+-void perf_session__update_sample_type(struct perf_session *self)
++void perf_session__set_id_hdr_size(struct perf_session *session)
  {
- 	struct stat input_stat;
+-	self->id_hdr_size = perf_evlist__id_hdr_size(self->evlist);
+-	self->host_machine.id_hdr_size = self->id_hdr_size;
+-	machines__set_id_hdr_size(&self->machines, self->id_hdr_size);
++	u16 id_hdr_size = perf_evlist__id_hdr_size(session->evlist);
++
++	session->host_machine.id_hdr_size = id_hdr_size;
++	machines__set_id_hdr_size(&session->machines, id_hdr_size);
+ }
+ 
+ int perf_session__create_kernel_maps(struct perf_session *self)
+@@ -165,7 +166,7 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 	if (mode == O_RDONLY) {
+ 		if (perf_session__open(self, force) < 0)
+ 			goto out_delete;
+-		perf_session__update_sample_type(self);
++		perf_session__set_id_hdr_size(self);
+ 	} else if (mode == O_WRONLY) {
+ 		/*
+ 		 * In O_RDONLY mode this will be performed when reading the
+@@ -1054,7 +1055,7 @@ static int perf_session__process_user_event(struct perf_session *session, union
+ 	case PERF_RECORD_HEADER_ATTR:
+ 		err = tool->attr(event, &session->evlist);
+ 		if (err == 0)
+-			perf_session__update_sample_type(session);
++			perf_session__set_id_hdr_size(session);
+ 		return err;
+ 	case PERF_RECORD_HEADER_EVENT_TYPE:
+ 		return tool->event_type(tool, event);
 diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 7389fb1..1f7ec87 100644
+index a2c3ce9..e2a1a4b 100644
 --- a/tools/perf/util/session.h
 +++ b/tools/perf/util/session.h
-@@ -126,10 +126,6 @@ size_t perf_session__fprintf_dsos_buildid(struct perf_session *self,
+@@ -44,7 +44,6 @@ struct perf_session {
+ 	int			fd;
+ 	bool			fd_pipe;
+ 	bool			repipe;
+-	u16			id_hdr_size;
+ 	int			cwdlen;
+ 	char			*cwd;
+ 	struct ordered_samples	ordered_samples;
+@@ -83,7 +82,7 @@ void perf_event__attr_swap(struct perf_event_attr *attr);
  
- size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp);
+ int perf_session__create_kernel_maps(struct perf_session *self);
  
--int perf_session__synthesize_sample(struct perf_session *session,
--				    union perf_event *event,
--				    const struct perf_sample *sample);
--
- struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 					    unsigned int type);
+-void perf_session__update_sample_type(struct perf_session *self);
++void perf_session__set_id_hdr_size(struct perf_session *session);
+ void perf_session__remove_thread(struct perf_session *self, struct thread *th);
  
+ static inline
 -- 
 1.7.1
 
