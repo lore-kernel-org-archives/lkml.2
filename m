@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab2HCWON (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 18:14:13 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3633 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab2HCWOH (ORCPT
+	id S1753967Ab2HCWTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 18:19:39 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42230 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319Ab2HCWTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 18:14:07 -0400
-Message-ID: <501C4CCE.8020806@spin.net.au>
-Date: Sat, 04 Aug 2012 08:12:30 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 3 Aug 2012 18:19:36 -0400
+Message-ID: <501C4E92.1070801@gmail.com>
+Date: Sat, 04 Aug 2012 00:20:02 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Gaming and the kernel
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org
+Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
+References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com> <1344003788-1417-2-git-send-email-levinsasha928@gmail.com> <20120803171515.GH15477@google.com> <501C407D.9080900@gmail.com> <20120803213017.GK15477@google.com> <501C458E.7050000@gmail.com> <20120803214806.GM15477@google.com>
+In-Reply-To: <20120803214806.GM15477@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.246, required 4, AWL 0.25, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a lot of attention at the moment focused toward Linux and the 
-future of gaming support on the platform. And it got me thinking, is 
-there any particular improvements that are planned to improve the kernel 
-from better support for gaming?
+On 08/03/2012 11:48 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On Fri, Aug 03, 2012 at 11:41:34PM +0200, Sasha Levin wrote:
+>> I forgot to comment on that one, sorry.
+>>
+>> If we put hash entries after struct hash_table we don't take the
+>> bits field size into account, or did I miss something?
+> 
+> So, if you do the following,
+> 
+> 	struct {
+> 		struct {
+> 			int i;
+> 			long ar[];
+> 		} B;
+> 		long __ar_storage[32];
+> 	} A;
+
+struct A should have been an union, right?
+
+> It should always be safe to dereference A.B.ar[31].  I'm not sure
+> whether this is something guaranteed by C tho.  Maybe compilers are
+> allowed to put members in reverse order but I think we already depend
+> on the above.
+
+why is accessing A.B.ar[31] safe?
+
+__ar_storage is only 32*sizeof(long) bytes long, while struct B would need to be 32*sizeof(long) + sizeof(int) bytes long so that A.B.ar[31] access would be safe.
 
 
-Regards
-
--- 
-         Chris Jones @ kernel.devproject@gmail.com
-also on oracle.kerneldev@gmail.com and netbsd.kerneldev@gmail.com
-
-Ubuntu 12.04 (PC)|Android (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
-Linux kernel developer|Solaris kernel developer|BSD kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
+> Thanks.
+> 
 
