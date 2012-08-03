@@ -1,255 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab2HCQn2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 12:43:28 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45999 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab2HCQnZ (ORCPT
+	id S1753220Ab2HCQqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 12:46:38 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:54283 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751432Ab2HCQqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 12:43:25 -0400
-Date: Fri, 3 Aug 2012 18:43:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20120803164319.GA1984@gmail.com>
+	Fri, 3 Aug 2012 12:46:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120803104212.GA6936@x1.osrc.amd.com>
+References: <1343985378-22330-1-git-send-email-vikram.pandita@ti.com>
+ <D958900912E20642BCBC71664EFECE3E6DDCAC49AB@BGMAIL02.nvidia.com>
+ <D958900912E20642BCBC71664EFECE3E6DDCAC49AE@BGMAIL02.nvidia.com>
+ <CAFm5wm2Z+FyVqG5oMWiEmZ8Je88hJ-cyDXmJw0wp4mqA-X9eYg@mail.gmail.com>
+ <CAPXgP13UBwQLs+m_aSk3Ljbktz8WrL+ZO_Tfhrt_+tRBCARyQQ@mail.gmail.com>
+ <CAFm5wm0nf47bcTu7iiXA3geR_5dDTF1tnf81Lz7JzbWkKdhUtA@mail.gmail.com>
+ <CAPXgP11A=QfOt4SL2GvhsepP8JiDFfdaAhi6-AhW++-AvOz+aw@mail.gmail.com> <20120803104212.GA6936@x1.osrc.amd.com>
+From: "Pandita, Vikram" <vikram.pandita@ti.com>
+Date: Fri, 3 Aug 2012 09:46:15 -0700
+Message-ID: <CAFm5wm0rsvuBafMH+9PpKwfaBimbRrVzxYV0nD_pg1yisAYwxQ@mail.gmail.com>
+Subject: Re: [PATCH v2] printk: add option to print cpu id
+To: Borislav Petkov <bp@alien8.de>, Kay Sievers <kay@vrfy.org>
+Cc: linux-omap <linux-omap@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Venu Byravarasu <vbyravarasu@nvidia.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Borislav/Kay
 
-Please pull the latest sched-urgent-for-linus git tree from:
+On Fri, Aug 3, 2012 at 3:42 AM, Borislav Petkov <bp@alien8.de> wrote:
+>
+> On Fri, Aug 03, 2012 at 12:09:15PM +0200, Kay Sievers wrote:
+> > That would be needed, I guess. We easily have server systems with more
+> > than 255 CPUs. It will only be a matter of time, that the number of
+> > CPUs will increase for everybody, I guess.
+>
+> Actually, AFAICR, we already have SGI machines booting Linux on 4K cpus.
+> Now.
+>
+> > > b) to put cpuid in struct cont and struct log - under the #ifdef
+> > > macro?
+> >
+> > As said, I really can't tell how generally useful it is, and if people
+> > think that it should be there unconditionally, should not be there at
+> > all, or as a compile time option. Others might have an opinion on
+> > that.
+> >
+> > I personally never missed the CPU-ID in the logs. I personally would
+> > find the PID/task ID more interesting, and even that I never really
+> > missed. :)
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
+I mostly work with ARM Soc - specifically on OMAP.
+SMP multi core systems in ARM-v7 world started to show up only few
+years back - unlike x86 world.
 
-   HEAD: b9403130a5350fca59a50ed11c198cb8c7e54119 sched/cleanups: Add load balance cpumask pointer to 'struct lb_env'
+ARM systems are a bit unique when it comes to security( read trust
+zone ), and handling of FIQ's.
+Most of the ARM cortex-A series SoC's out there have some kind of
+affinity to CPU0 being the master.
+One use case has been, it has helped to know with this printk logging,
+if such constraints are honored.
 
-Fixes and two late cleanups.
+Sometimes, tracking of some lockup cases between cpu's because of bad
+code has also been helpful with this logging support.
+For now i will post v3 of the patch and add arm-list and linux-omap
+list, and there might be users there can benefit.
 
- Thanks,
-
-	Ingo
-
------------------->
-Alex Shi (1):
-      sched/numa: Add SD_PERFER_SIBLING to CPU domain
-
-Michael Wang (1):
-      sched/cleanups: Add load balance cpumask pointer to 'struct lb_env'
-
-Namhyung Kim (1):
-      sched: Use task_rq_unlock() in __sched_setscheduler()
-
-Srivatsa S. Bhat (1):
-      sched: Fix comment about PREEMPT_ACTIVE bit location
-
-Ying Xue (1):
-      sched: Fix minor code style issues
-
-
- include/linux/hardirq.h  |    2 +-
- include/linux/topology.h |    1 +
- kernel/sched/core.c      |    4 +---
- kernel/sched/cpupri.c    |   10 +++++-----
- kernel/sched/fair.c      |   29 ++++++++++++++---------------
- 5 files changed, 22 insertions(+), 24 deletions(-)
-
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index bb7f309..305f23c 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -22,7 +22,7 @@
-  *
-  * - bits 16-25 are the hardirq count (max # of nested hardirqs: 1024)
-  * - bit 26 is the NMI_MASK
-- * - bit 28 is the PREEMPT_ACTIVE flag
-+ * - bit 27 is the PREEMPT_ACTIVE flag
-  *
-  * PREEMPT_MASK: 0x000000ff
-  * SOFTIRQ_MASK: 0x0000ff00
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index e91cd43..fec12d6 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -164,6 +164,7 @@ int arch_update_cpu_topology(void);
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 0*SD_SHARE_PKG_RESOURCES		\
- 				| 0*SD_SERIALIZE			\
-+				| 1*SD_PREFER_SIBLING			\
- 				,					\
- 	.last_balance		= jiffies,				\
- 	.balance_interval	= 1,					\
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5d011ef..2cb4e77 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4340,9 +4340,7 @@ recheck:
- 	 */
- 	if (unlikely(policy == p->policy && (!rt_policy(policy) ||
- 			param->sched_priority == p->rt_priority))) {
--
--		__task_rq_unlock(rq);
--		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
-+		task_rq_unlock(rq, p, &flags);
- 		return 0;
- 	}
- 
-diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
-index d72586f..23aa789 100644
---- a/kernel/sched/cpupri.c
-+++ b/kernel/sched/cpupri.c
-@@ -65,8 +65,8 @@ static int convert_prio(int prio)
- int cpupri_find(struct cpupri *cp, struct task_struct *p,
- 		struct cpumask *lowest_mask)
- {
--	int                  idx      = 0;
--	int                  task_pri = convert_prio(p->prio);
-+	int idx = 0;
-+	int task_pri = convert_prio(p->prio);
- 
- 	if (task_pri >= MAX_RT_PRIO)
- 		return 0;
-@@ -137,9 +137,9 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
-  */
- void cpupri_set(struct cpupri *cp, int cpu, int newpri)
- {
--	int                 *currpri = &cp->cpu_to_pri[cpu];
--	int                  oldpri  = *currpri;
--	int                  do_mb = 0;
-+	int *currpri = &cp->cpu_to_pri[cpu];
-+	int oldpri = *currpri;
-+	int do_mb = 0;
- 
- 	newpri = convert_prio(newpri);
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 22321db..d0cc03b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3069,6 +3069,9 @@ struct lb_env {
- 	int			new_dst_cpu;
- 	enum cpu_idle_type	idle;
- 	long			imbalance;
-+	/* The set of CPUs under consideration for load-balancing */
-+	struct cpumask		*cpus;
-+
- 	unsigned int		flags;
- 
- 	unsigned int		loop;
-@@ -3653,8 +3656,7 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
-  */
- static inline void update_sg_lb_stats(struct lb_env *env,
- 			struct sched_group *group, int load_idx,
--			int local_group, const struct cpumask *cpus,
--			int *balance, struct sg_lb_stats *sgs)
-+			int local_group, int *balance, struct sg_lb_stats *sgs)
- {
- 	unsigned long nr_running, max_nr_running, min_nr_running;
- 	unsigned long load, max_cpu_load, min_cpu_load;
-@@ -3671,7 +3673,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 	max_nr_running = 0;
- 	min_nr_running = ~0UL;
- 
--	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
-+	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
- 		struct rq *rq = cpu_rq(i);
- 
- 		nr_running = rq->nr_running;
-@@ -3800,8 +3802,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
-  * @sds: variable to hold the statistics for this sched_domain.
-  */
- static inline void update_sd_lb_stats(struct lb_env *env,
--				      const struct cpumask *cpus,
--				      int *balance, struct sd_lb_stats *sds)
-+					int *balance, struct sd_lb_stats *sds)
- {
- 	struct sched_domain *child = env->sd->child;
- 	struct sched_group *sg = env->sd->groups;
-@@ -3818,8 +3819,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
- 
- 		local_group = cpumask_test_cpu(env->dst_cpu, sched_group_cpus(sg));
- 		memset(&sgs, 0, sizeof(sgs));
--		update_sg_lb_stats(env, sg, load_idx, local_group,
--				   cpus, balance, &sgs);
-+		update_sg_lb_stats(env, sg, load_idx, local_group, balance, &sgs);
- 
- 		if (local_group && !(*balance))
- 			return;
-@@ -4055,7 +4055,6 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
-  * to restore balance.
-  *
-  * @env: The load balancing environment.
-- * @cpus: The set of CPUs under consideration for load-balancing.
-  * @balance: Pointer to a variable indicating if this_cpu
-  *	is the appropriate cpu to perform load balancing at this_level.
-  *
-@@ -4065,7 +4064,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
-  *		   put to idle by rebalancing its tasks onto our group.
-  */
- static struct sched_group *
--find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
-+find_busiest_group(struct lb_env *env, int *balance)
- {
- 	struct sd_lb_stats sds;
- 
-@@ -4075,7 +4074,7 @@ find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
- 	 * Compute the various statistics relavent for load balancing at
- 	 * this level.
- 	 */
--	update_sd_lb_stats(env, cpus, balance, &sds);
-+	update_sd_lb_stats(env, balance, &sds);
- 
- 	/*
- 	 * this_cpu is not the appropriate cpu to perform load balancing at
-@@ -4155,8 +4154,7 @@ ret:
-  * find_busiest_queue - find the busiest runqueue among the cpus in group.
-  */
- static struct rq *find_busiest_queue(struct lb_env *env,
--				     struct sched_group *group,
--				     const struct cpumask *cpus)
-+				     struct sched_group *group)
- {
- 	struct rq *busiest = NULL, *rq;
- 	unsigned long max_load = 0;
-@@ -4171,7 +4169,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 		if (!capacity)
- 			capacity = fix_small_capacity(env->sd, group);
- 
--		if (!cpumask_test_cpu(i, cpus))
-+		if (!cpumask_test_cpu(i, env->cpus))
- 			continue;
- 
- 		rq = cpu_rq(i);
-@@ -4252,6 +4250,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		.dst_grpmask    = sched_group_cpus(sd->groups),
- 		.idle		= idle,
- 		.loop_break	= sched_nr_migrate_break,
-+		.cpus		= cpus,
- 	};
- 
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -4260,7 +4259,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 	schedstat_inc(sd, lb_count[idle]);
- 
- redo:
--	group = find_busiest_group(&env, cpus, balance);
-+	group = find_busiest_group(&env, balance);
- 
- 	if (*balance == 0)
- 		goto out_balanced;
-@@ -4270,7 +4269,7 @@ redo:
- 		goto out_balanced;
- 	}
- 
--	busiest = find_busiest_queue(&env, group, cpus);
-+	busiest = find_busiest_queue(&env, group);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
+>
+> And even then you can add debugging code to dump the stuff you need.
+>
+> And I have to agree with Kai here, having the cpu number in dmesg is
+> not something I'd wish for - printk timestampts OTOH has at least some
+> usecases.
+>
+> Thanks.
+>
+> --
+> Regards/Gruss,
+> Boris.
