@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab2HDQu7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 12:50:59 -0400
+	id S1754017Ab2HDQwF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 12:52:05 -0400
 Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:37654
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751991Ab2HDQu6 (ORCPT
+	by vger.kernel.org with ESMTP id S1753729Ab2HDQvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 12:50:58 -0400
+	Sat, 4 Aug 2012 12:51:00 -0400
 X-IronPort-AV: E=Sophos;i="4.77,713,1336341600"; 
-   d="scan'208";a="152439849"
+   d="scan'208";a="152439852"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/6] drivers/thermal/rcar_thermal.c: drop frees of devm allocated data
-Date: Sat,  4 Aug 2012 18:50:44 +0200
-Message-Id: <1344099049-15212-1-git-send-email-Julia.Lawall@lip6.fr>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6] drivers/pinctrl/pinctrl-nomadik.c: drop devm_kfree of devm_kzalloc'd data
+Date: Sat,  4 Aug 2012 18:50:47 +0200
+Message-Id: <1344099049-15212-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,9 +22,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-devm_kfree and devm_iounmap should not have to be explicitly used.
+devm_kfree should not have to be explicitly used.
 
-The semantic patch that fixes one of these problems is as follows:
+The semantic patch that fixes this problem is as follows:
 (http://coccinelle.lip6.fr/)
 
 // <smpl>
@@ -40,54 +40,19 @@ x = devm_kzalloc(...)
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/thermal/rcar_thermal.c |   16 ++--------------
- 1 file changed, 2 insertions(+), 14 deletions(-)
+ drivers/pinctrl/pinctrl-nomadik.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/thermal/rcar_thermal.c b/drivers/thermal/rcar_thermal.c
-index 2496b4f..9edbe04 100644
---- a/drivers/thermal/rcar_thermal.c
-+++ b/drivers/thermal/rcar_thermal.c
-@@ -206,16 +206,14 @@ static int rcar_thermal_probe(struct platform_device *pdev)
- 					  res->start, resource_size(res));
- 	if (!priv->base) {
- 		dev_err(&pdev->dev, "Unable to ioremap thermal register\n");
--		ret = -ENOMEM;
--		goto error_free_priv;
-+		return -ENOMEM;
- 	}
- 
- 	zone = thermal_zone_device_register("rcar_thermal", 0, priv,
- 					    &rcar_thermal_zone_ops, 0, 0, 0, 0);
- 	if (IS_ERR(zone)) {
- 		dev_err(&pdev->dev, "thermal zone device is NULL\n");
--		ret = PTR_ERR(zone);
--		goto error_iounmap;
-+		return PTR_ERR(zone);
- 	}
- 
- 	platform_set_drvdata(pdev, zone);
-@@ -223,13 +221,6 @@ static int rcar_thermal_probe(struct platform_device *pdev)
- 	dev_info(&pdev->dev, "proved\n");
- 
- 	return 0;
--
--error_iounmap:
--	devm_iounmap(&pdev->dev, priv->base);
--error_free_priv:
--	devm_kfree(&pdev->dev, priv);
--
--	return ret;
- }
- 
- static int rcar_thermal_remove(struct platform_device *pdev)
-@@ -240,9 +231,6 @@ static int rcar_thermal_remove(struct platform_device *pdev)
- 	thermal_zone_device_unregister(zone);
- 	platform_set_drvdata(pdev, NULL);
- 
--	devm_iounmap(&pdev->dev, priv->base);
--	devm_kfree(&pdev->dev, priv);
--
- 	return 0;
- }
- 
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 53b0d49..ec6ac50 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -1731,7 +1731,6 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+ 	for (i = 0; i < npct->soc->gpio_num_ranges; i++) {
+ 		if (!nmk_gpio_chips[i]) {
+ 			dev_warn(&pdev->dev, "GPIO chip %d not registered yet\n", i);
+-			devm_kfree(&pdev->dev, npct);
+ 			return -EPROBE_DEFER;
+ 		}
+ 		npct->soc->gpio_ranges[i].gc = &nmk_gpio_chips[i]->chip;
 
