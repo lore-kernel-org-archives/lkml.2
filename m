@@ -1,53 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab2HDITP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 04:19:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50349 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab2HDITL (ORCPT
+	id S1753775Ab2HDIfk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 04:35:40 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:41592 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751446Ab2HDIfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 04:19:11 -0400
-Date: Sat, 4 Aug 2012 09:19:07 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dongsheng Song <dongsheng.song@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: Re: Linux 3.6-rc1
-Message-ID: <20120804081907.GK23464@ZenIV.linux.org.uk>
-References: <CA+55aFy4vnD5-8SWF_WDC3oTGotzkDg2_4=YHXd6qMiJ=OKekw@mail.gmail.com>
- <1343976472.1730.18.camel@sauron.fi.intel.com>
- <CA+55aFz322dKXUwtmrrW=nfp5XJa5ACh1syE8RXOOdcA7V_76A@mail.gmail.com>
- <20120804044659.GI23464@ZenIV.linux.org.uk>
- <1344058715.1716.1.camel@kyv>
- <20120804061904.GJ23464@ZenIV.linux.org.uk>
- <CAE8XmWphq=XG3aSHWuwcnkKCnyeZ7dGzd0fjpJCKx90bvEKBQw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE8XmWphq=XG3aSHWuwcnkKCnyeZ7dGzd0fjpJCKx90bvEKBQw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 4 Aug 2012 04:35:36 -0400
+X-IronPort-AV: E=Sophos;i="4.77,711,1336341600"; 
+   d="scan'208";a="169062964"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Barry Song <baohua.song@csr.com>
+Cc: kernel-janitors@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/dma/sirf-dma.c: fix usage of devm functions
+Date: Sat,  4 Aug 2012 10:35:30 +0200
+Message-Id: <1344069330-29569-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 04, 2012 at 03:51:01PM +0800, Dongsheng Song wrote:
-> On Sat, Aug 4, 2012 at 2:19 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> >  Documentation/sysctl/vm.txt.rej        |   21 +++++++++++++
-> 
-> vm.txt.rej ???
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Grrr...  git add Documentation/sysctl/ during conflict-resolving in git am, having
-forgotten that this turd wasn't removed in process, then a bit of blindness when
-generating and pasting the diffstat ;-/  Thanks for spotting.
+Fix some problems with the use of devm_ functions.
 
-I've put the branch sans that idiocy in the same tree; for-linus-2 (basically,
-branched off at the commit introducing that, then git rm Documentation/sysctl/*.rej
-to get rid of that sucker, git commit --amend, git cherry-pick <branchpoint>..for-linus)
+devm_kzalloc: devm_kfree is not needed
 
-Same shortlog, same diffstat sans that idiocy...  Alternatively, it could be fixed
-up upon merge, if Linus is really dead set against any rebases (same git rm/git commit --amend
-right after git merge or git pull, whatever Linus uses).
+devm_ioremap: iounmap should not be used, no free is needed
 
-Sorry about that ;-/
+devm_request_irq: the devm_free_irq is followed by irq_dispose_mapping.  I
+don't know if it is safe to move the freeing of the irq in this case, so I
+have just un-devm'd this function, since the implicit freeing is never
+taken advantage of.
+
+In the original code failure of of_address_to_resource jumped to free_mem,
+but should have jumped to irq_dispose, since irq_of_parse_and_map has
+completed at this point.
+
+In the original code unmap_mem was after irq_dispose, but it should have
+been before, again since irq_of_parse_and_map has completed at this point.
+
+One of these problems was found using the following semantic match:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression x;
+@@
+
+*x = devm_ioremap(...)
+...
+iounmap(x);
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+Not compiled.  Does free_irq actually have to be called before
+irq_dispose_mapping?
+
+ drivers/dma/sirf-dma.c |   23 +++++++----------------
+ 1 file changed, 7 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+index 434ad31..1af9e48 100644
+--- a/drivers/dma/sirf-dma.c
++++ b/drivers/dma/sirf-dma.c
+@@ -570,21 +570,19 @@ static int __devinit sirfsoc_dma_probe(struct platform_device *op)
+ 
+ 	if (of_property_read_u32(dn, "cell-index", &id)) {
+ 		dev_err(dev, "Fail to get DMAC index\n");
+-		ret = -ENODEV;
+-		goto free_mem;
++		return -ENODEV;
+ 	}
+ 
+ 	sdma->irq = irq_of_parse_and_map(dn, 0);
+ 	if (sdma->irq == NO_IRQ) {
+ 		dev_err(dev, "Error mapping IRQ!\n");
+-		ret = -EINVAL;
+-		goto free_mem;
++		return -EINVAL;
+ 	}
+ 
+ 	ret = of_address_to_resource(dn, 0, &res);
+ 	if (ret) {
+ 		dev_err(dev, "Error parsing memory region!\n");
+-		goto free_mem;
++		goto irq_dispose;
+ 	}
+ 
+ 	regs_start = res.start;
+@@ -597,12 +595,11 @@ static int __devinit sirfsoc_dma_probe(struct platform_device *op)
+ 		goto irq_dispose;
+ 	}
+ 
+-	ret = devm_request_irq(dev, sdma->irq, &sirfsoc_dma_irq, 0, DRV_NAME,
+-		sdma);
++	ret = request_irq(sdma->irq, &sirfsoc_dma_irq, 0, DRV_NAME, sdma);
+ 	if (ret) {
+ 		dev_err(dev, "Error requesting IRQ!\n");
+ 		ret = -EINVAL;
+-		goto unmap_mem;
++		goto irq_dispose;
+ 	}
+ 
+ 	dma = &sdma->dma;
+@@ -652,13 +649,9 @@ static int __devinit sirfsoc_dma_probe(struct platform_device *op)
+ 	return 0;
+ 
+ free_irq:
+-	devm_free_irq(dev, sdma->irq, sdma);
++	free_irq(sdma->irq, sdma);
+ irq_dispose:
+ 	irq_dispose_mapping(sdma->irq);
+-unmap_mem:
+-	iounmap(sdma->base);
+-free_mem:
+-	devm_kfree(dev, sdma);
+ 	return ret;
+ }
+ 
+@@ -668,10 +661,8 @@ static int __devexit sirfsoc_dma_remove(struct platform_device *op)
+ 	struct sirfsoc_dma *sdma = dev_get_drvdata(dev);
+ 
+ 	dma_async_device_unregister(&sdma->dma);
+-	devm_free_irq(dev, sdma->irq, sdma);
++	free_irq(sdma->irq, sdma);
+ 	irq_dispose_mapping(sdma->irq);
+-	iounmap(sdma->base);
+-	devm_kfree(dev, sdma);
+ 	return 0;
+ }
+ 
+
