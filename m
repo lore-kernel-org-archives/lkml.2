@@ -1,159 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab2HDAs5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 20:48:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42760 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754043Ab2HDAs4 (ORCPT
+	id S1753099Ab2HDAwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 20:52:19 -0400
+Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3260 "EHLO
+	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab2HDAwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 20:48:56 -0400
-Date: Sat, 4 Aug 2012 01:48:28 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, olalilja@yahoo.se,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        lrg@ti.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [alsa-devel] [PATCH 1/6] ASoC: dapm: If one widget fails, do not
- force all subsequent widgets to fail too
-Message-ID: <20120804004821.GG4515@opensource.wolfsonmicro.com>
-References: <5017F68B.3060400@linaro.org>
- <20120731151819.GC4468@opensource.wolfsonmicro.com>
- <5018D880.5090306@linaro.org>
- <20120801132022.GS11892@opensource.wolfsonmicro.com>
- <50193428.5000708@linaro.org>
- <20120801160824.GB11892@opensource.wolfsonmicro.com>
- <20120801194134.GA4103@sirena.org.uk>
- <20120802074517.GA19231@gmail.com>
- <20120802175604.GF4537@opensource.wolfsonmicro.com>
- <20120803083009.GC7416@gmail.com>
+	Fri, 3 Aug 2012 20:52:17 -0400
+Message-ID: <501C7225.5060405@spin.net.au>
+Date: Sat, 04 Aug 2012 10:51:49 +1000
+From: Chris Jones <chrisjones@spin.net.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120803083009.GC7416@gmail.com>
-X-Cookie: Be careful!  Is it classified?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+CC: david@lang.hm
+Subject: Re: Gaming and the kernel
+References: <501C4CCE.8020806@spin.net.au> <501C545C.40601@gmail.com> <501C6BDF.9090803@spin.net.au> <alpine.DEB.2.02.1208031730100.8170@asgard.lang.hm>
+In-Reply-To: <alpine.DEB.2.02.1208031730100.8170@asgard.lang.hm>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-comcen-MailScanner-Information: Please contact the ISP for more information
+X-comcen-MailScanner: Found to be clean
+X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.251, required 4, AWL 0.25, BAYES_00 -2.60, RDNS_NONE 0.10)
+X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 09:30:10AM +0100, Lee Jones wrote:
+On 04/08/12 10:32, david@lang.hm wrote:
+> On Sat, 4 Aug 2012, Chris Jones wrote:
+>
+>> On 04/08/12 08:44, Cruz Julian Bishop wrote:
+>>> On 04/08/12 08:12, Chris Jones wrote:
+>>>> There's a lot of attention at the moment focused toward Linux and 
+>>>> the future of gaming support on the platform. And it got me 
+>>>> thinking, is there any particular improvements that are planned to 
+>>>> improve the kernel from better support for gaming?
+>>
+>> It's hard to describe what I mean. Basically, to the outside world 
+>> via media, it is presented as "Valve is taking gaming to Linux. Wow, 
+>> Linux is now capable of gaming!" That's all fine and everything. But 
+>> we need to ensure that the kernel and all other aspects of code under 
+>> our control is up to the task of handling a massive dump of games for 
+>> Linux. Otherwise, it's going to backfire on us and Linux overall. 
+>> It's moving very quickly.
+>
+> Other than drivers, what problems do you think that the Linux kernel 
+> has in supporting games?
+>
+> Drivers are bad due to the video card vendors opting to not provide 
+> the information needed for them to be good, so while I wish they were 
+> better, I don't really see anything for the "Linux kernel community" 
+> to do.
+>
+> David Lang
 
-> I do agree that it should be correct, but the difference between getting
-> it 90% correct and absolutely perfect increases the effort at least x2.
-> With so much left to do, I think it would be better to get everything in
-> and functioning, then fix the minor issues as we come across them later.
+Well you are right I guess. There really is nothing technically wrong 
+with the kernel in its current state. And there probably isn't really an 
+essential to-do list, so to speak. But I guess I know that we know this 
+because we're all developers. However, if new gamers move to Linux and 
+find they're experience is not the same as their experience was when 
+gaming under Windows, then the eventual blame-game will fall back on us. 
+The kernel developers. Even though the responsibility lies with video 
+card and hardware developers.
 
-If you're going to do this the usual way is to do it by leaving bits
-out, and see below.
+I guess I am just a little concerned that it might not be a smooth and 
+happy introduction as Valve is making out. However, if Valve handle this 
+correctly and provide the gamer community with enough information and 
+documentation, hopefully things will work out. And this might actually 
+be the kick in the rear-end that AMD and NVIDIA need to get into gear 
+and start developer some useful and Windows equivalent hardware drivers 
+for ALL their cards for Linux.
 
-> If only it were that easy. We're not bursting at the seems with resources
-> here. I'm working in a very customer focused ecosystem. If they don't 
-> request it, or file a bug about it, there's no resource allocation to fix
 
-Right, I work in the same industry - but this shouldn't be a problem,
-if it's not urgent for people to help it's probably not urgent to do
-whatever's blocked by it either.
+Regards
 
-> > You're not telling us about the problems you see so it's very difficult
-> > for anyone to help you.
+-- 
+         Chris Jones @ kernel.devproject@gmail.com
+also on oracle.kerneldev@gmail.com and netbsd.kerneldev@gmail.com
 
-> > For example with this patch the only information you've sent is the
-> > patch and the fact that you're seeing the error you're ignoring going
-> > off on the system you're working with (which I had to ask to find out
+Ubuntu 12.04 (PC)|Android (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
+Linux kernel developer|Solaris kernel developer|BSD kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
+Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
+Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
 
-> I only went off what I knew. Some objects (which wouldn't have
-> prevented playing audio) were failing. It seemed wrong to shut down the
-> entire audio system because for instance, 'headset mute' or the 'vibrator'
-> links were broken. As I said to you before, time is a big factor and I
-> have a massive TODO list. Fixing audio links a) isn't my subject of
-
-This isn't the point, and it's a *very* important point which is the
-main reason I'm replying here.
-
-The immediate point here is that you're not communicating about what
-you're trying to which is the source of a lot of problems.  Things would
-run a lot more smoothly if when you try to cut corners you were explicit
-about the corners you cut, and if when you run into problems you report
-those problems as well as sending whatever code you're using to work
-around things.  Set people's expecations about what they're seeing and
-provide them with context.
-
-Consider the patch that's in the subject line here - it took me a couple
-of goes before you even said you'd seen an issue on your system which
-you were working around (I still don't know what the actual errors are).
-As far as I could tell looking at the patch description it was something
-done for taste reasons which was being sent as a bug fix.
-
-The usual approach for things like this is a changelog or cover mail
-which says something like "I'm seeing this error, here's the code I'm
-using to get things working on my system and I think this is a good idea
-because..." (or "...but that can't be right", or whatever).  This works
-a whole lot better, it makes it clear what the underlying motivation for
-the change is and understand the submitter's expecation for the quality
-of the patch.
-
-Similarly with the missing device tree binding documentation, had you
-said something about the patches not being complete and writing the
-binding documentation later that'd have helped a lot.  Having it there
-is a basic checklist thing for new DT bindings which is easy to spot
-from a diffstat, it's really not something a reviewer should ever need
-to ask about especially from someone doing a lot of DT work and it's a
-big red flag for the quality of the code.
-
-Things like this are really important, especially for people doing lots
-of work, as they have such a big impact on communication and so much of
-what makes this thing tick is about communication.
-
-> expertise, so it would take me much longer to fix than someone with
-> a good knowledge of the system and b) isn't really my responsibility.
-
-That's fine, just tell people about the problem and move on to
-something else from what's probably a large task list if it's blocking
-you (and start nagging people if it doesn't get fixed and it seems
-important).  This happens fairly often, it works well most of the time.
-Sending a fix is of course ideal but it's not essential.
-
-> Well I know my submissions are not always 100% perfect, but I hope 
-> you're not implying that they're poor quality. Writing code and fixing
-> things you view as bugs in code you have no prior knowledge of isn't the 
-
-This is process stuff more than code stuff, it's all about communication.
-
-> easiest task in the world. All I can do is attempt to fix the issues that
-> I see, which get things off the ground or make drivers work again and
-> submit the changes. If they're wrong they're wrong, but I don't think this
-> should be viewed as poor quality code!
-
-What you can do here is to commmunicate about what you're doing more.
-Don't just think about the code, think about the communication
-surrounding the code - this is the core of the issue.
-
-> the experience. Some Maintainers say things like, "That's wrong. This
-> is wrong. Why are you doing this?" etc without explaining what the
-> issues are. That's not a good review, and will put people off trying
-> again.
-
-Like I said in my previous mail this is one of the tools people have
-available to them to drive up quality - if you watch a bit more closely
-you'll often see that the quality of the review is scaled to factors in
-the submission (and often the pattern of submissions from a contributor).
-It's often not something that's done conciously, a lot of this is just
-people conveying that they're annoyed.
-
->        Equally being too overzealous and nit-picky about stuff that a)
-> really doesn't matter or b) can be changed really easily _if_ in the
-> rare case there's an issue. I've also submitted to some Maintainers
-
-This is a similar thing - it's part of the toolbox.
-
-> who are a pleasure to work with. They explain what's wrong and why
-> and encourage resubmission. I know Maintainers aren't school teachers,
-> or life coaches, but they should be encouraging more people to share
-> their good ( after some fixup ;) ) code and not playing the role of 
-> an incredibly hard to please boss, or impenetrable brick wall.
-
-Maintainer bandwidth is limited, and people will focus these efforts
-where they think it'd be useful.  What I'm spending time doing here is
-trying to convey that there's some fairly easily solvable process issues
-here which are making everyone's life harder here.
