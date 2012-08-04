@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab2HDMPR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 08:15:17 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:17580 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab2HDMPG (ORCPT
+	id S1753276Ab2HDMPE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 08:15:04 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:20753 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab2HDMOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 08:15:06 -0400
+	Sat, 4 Aug 2012 08:14:52 -0400
 From: Jiang Liu <jiang.liu@huawei.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
@@ -20,10 +20,10 @@ CC: Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
         <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 15/16] ACPIHP: implement ACPI hotplug sysfs interfaces
-Date: Sat, 4 Aug 2012 20:14:02 +0800
-Message-ID: <1344082443-4608-16-git-send-email-jiang.liu@huawei.com>
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <liuj97@gmail.com>
+Subject: [RFC PATCH v2 06/16] ACPIHP: group devices connecting to a hotplug  slot according to device types
+Date: Sat, 4 Aug 2012 20:13:53 +0800
+Message-ID: <1344082443-4608-7-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
 References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
@@ -37,330 +37,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-This patch implements ACPI hotplug sysfs interfaces for system device hotplug.
+ACPI devices connecting to an ACPI hotplug slot are divided into groups
+according to device types. Those devices will be configured/unconfigured
+in order of device types when hot-adding/hot-removing system devices.
 
-enable: (It should be named 'power', but that causes name conflicts.)
-echo 1 > enable: power on the hotplug slot.
-echo 0 > enable: power off the hotplug slot.
+For example, when hot-adding a computer node with CPUs, memory, PCI host
+bridges, IOAPICs, the order optimized for performance should be:
+memory -> CPU -> IOAPIC -> PCI host bridge.
 
-connect:
-echo 1 > connect: create ACPI devices for system devices connecting to a slot
-echo 0 > connect: remove ACPI devices for system devices connecting to a slot
-
-configure:
-echo 1 > configure: add system devices into running system
-echo 0 > configure: remove system devices from running system
-
-dependency:
-cat dependency: show slots have dependency on this slot if the slot is powered,
-		otherwise show slots this slot depends on.
-
+Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/acpi/hotplug/Makefile     |    1 +
- drivers/acpi/hotplug/acpihp_drv.h |    3 +
- drivers/acpi/hotplug/drv_main.c   |    6 +
- drivers/acpi/hotplug/sysfs.c      |  246 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 256 insertions(+)
- create mode 100644 drivers/acpi/hotplug/sysfs.c
+ drivers/acpi/hotplug/core.c |  113 +++++++++++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_hotplug.h |   27 +++++++++++
+ 2 files changed, 140 insertions(+)
 
-diff --git a/drivers/acpi/hotplug/Makefile b/drivers/acpi/hotplug/Makefile
-index 9383320..88c7595 100644
---- a/drivers/acpi/hotplug/Makefile
-+++ b/drivers/acpi/hotplug/Makefile
-@@ -15,3 +15,4 @@ acpihp_drv-y					+= dependency.o
- acpihp_drv-y					+= cancel.o
- acpihp_drv-y					+= configure.o
- acpihp_drv-y					+= state_machine.o
-+acpihp_drv-y					+= sysfs.o
-diff --git a/drivers/acpi/hotplug/acpihp_drv.h b/drivers/acpi/hotplug/acpihp_drv.h
-index 3b6dbdd..d339f9a 100644
---- a/drivers/acpi/hotplug/acpihp_drv.h
-+++ b/drivers/acpi/hotplug/acpihp_drv.h
-@@ -101,4 +101,7 @@ int acpihp_drv_unconfigure(struct list_head *list);
- /* The heart of the ACPI system device hotplug driver */
- int acpihp_drv_change_state(struct acpihp_slot *slot, enum acpihp_drv_cmd cmd);
+diff --git a/drivers/acpi/hotplug/core.c b/drivers/acpi/hotplug/core.c
+index 6fac499..14b3d61 100644
+--- a/drivers/acpi/hotplug/core.c
++++ b/drivers/acpi/hotplug/core.c
+@@ -115,6 +115,23 @@ static char *acpihp_dev_ioapic_ids[] = {
+ 	NULL
+ };
  
-+int acpihp_drv_create_sysfs(struct acpihp_slot *slot);
-+void acpihp_drv_remove_sysfs(struct acpihp_slot *slot);
-+
- #endif	/* __ACPIHP_DRV_H__ */
-diff --git a/drivers/acpi/hotplug/drv_main.c b/drivers/acpi/hotplug/drv_main.c
-index 538772d..9858fdd 100644
---- a/drivers/acpi/hotplug/drv_main.c
-+++ b/drivers/acpi/hotplug/drv_main.c
-@@ -280,6 +280,11 @@ static int acpihp_drv_slot_add(struct device *dev, struct class_interface *intf)
- 		return -ENOMEM;
- 	}
- 
-+	if (acpihp_drv_create_sysfs(slot))
-+		ACPIHP_DEBUG("fails to create sysfs interfaces for slot %s, "
-+			     "some function will not be available to user.\n",
-+			     slot->name);
-+
- 	ACPIHP_INFO("found hotplug slot %s.\n", slot->full_path);
- 
- 	return 0;
-@@ -294,6 +299,7 @@ static void acpihp_drv_intf_remove(struct device *dev,
- 
- 	ACPIHP_INFO("remove hotplug slot %s.\n", slot->full_path);
- 
-+	acpihp_drv_remove_sysfs(slot);
- 	acpihp_drv_uninstall_handler(slot);
- 	acpihp_drv_remove_devices(slot);
- 	acpihp_slot_detach_drv_data(slot, intf, (void **)&drv_data);
-diff --git a/drivers/acpi/hotplug/sysfs.c b/drivers/acpi/hotplug/sysfs.c
-new file mode 100644
-index 0000000..62c1892
---- /dev/null
-+++ b/drivers/acpi/hotplug/sysfs.c
-@@ -0,0 +1,246 @@
-+/*
-+ * Copyright (C) 2011 Huawei Tech. Co., Ltd.
-+ * Copyright (C) 2011 Jiang Liu <jiang.liu@huawei.com>
-+ * Copyright (C) 2011 Hanjun Guo <guohanjun@huawei.com>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/mutex.h>
-+#include <acpi/acpi_hotplug.h>
-+#include "acpihp_drv.h"
-+
-+static ssize_t acpihp_drv_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count,
-+		enum acpihp_drv_cmd op_set, enum acpihp_drv_cmd op_clr)
++static void acpihp_dev_node_get(struct klist_node *lp)
 +{
-+	unsigned long val;
-+	ssize_t result = kstrtoul(buf, 0, &val);
-+	struct acpihp_slot *slot = container_of(dev, struct acpihp_slot, dev);
++	struct acpihp_dev_node *dp;
 +
-+	if (result < 0)
-+		return result;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	if (val)
-+		result = acpihp_drv_change_state(slot, op_set);
-+	else
-+		result = acpihp_drv_change_state(slot, op_clr);
-+
-+	return result < 0 ? result : count;
++	dp = container_of(lp, struct acpihp_dev_node, node);
++	get_device(dp->dev);
 +}
 +
-+static inline ssize_t acpihp_drv_print_bool(char *page, bool flag)
++static void acpihp_dev_node_put(struct klist_node *lp)
 +{
-+	return snprintf(page, PAGE_SIZE, flag ? "1\n" : "0\n");
++	struct acpihp_dev_node *dp;
++
++	dp = container_of(lp, struct acpihp_dev_node, node);
++	put_device(dp->dev);
++	kfree(dp);
 +}
 +
-+static ssize_t acpihp_drv_power_show(struct device *dev,
-+		struct device_attribute *attr, char *page)
+ static void acpihp_slot_release(struct device *dev)
+ {
+ 	struct acpihp_slot *slot = to_acpihp_slot(dev);
+@@ -134,6 +151,7 @@ static void acpihp_slot_release(struct device *dev)
+ 
+ struct acpihp_slot *acpihp_create_slot(acpi_handle handle, char *name)
+ {
++	int i;
+ 	struct acpihp_slot *slot;
+ 
+ 	if (name == NULL) {
+@@ -154,6 +172,9 @@ struct acpihp_slot *acpihp_create_slot(acpi_handle handle, char *name)
+ 	INIT_LIST_HEAD(&slot->slot_list);
+ 	INIT_LIST_HEAD(&slot->drvdata_list);
+ 	INIT_LIST_HEAD(&slot->slot_id_list);
++	for (i = ACPIHP_DEV_TYPE_UNKNOWN; i < ACPIHP_DEV_TYPE_MAX; i++)
++		klist_init(&slot->dev_lists[i],
++			   &acpihp_dev_node_get, &acpihp_dev_node_put);
+ 	strncpy(slot->name, name, sizeof(slot->name) - 1);
+ 	mutex_init(&slot->slot_mutex);
+ 
+@@ -433,6 +454,98 @@ acpi_status acpihp_slot_poweroff(struct acpihp_slot *slot)
+ }
+ EXPORT_SYMBOL_GPL(acpihp_slot_poweroff);
+ 
++/* Insert a device onto a hotplug slot's device klist. */
++int acpihp_slot_add_device(struct acpihp_slot *slot, enum acpihp_dev_type type,
++			   enum acpihp_dev_state state, struct device *dev)
 +{
-+	bool flag;
-+	struct acpihp_slot *slot = container_of(dev, struct acpihp_slot, dev);
++	struct acpihp_dev_node *np;
 +
-+	acpihp_drv_update_slot_state(slot);
-+	mutex_lock(&slot->slot_mutex);
-+	switch (slot->state) {
-+	case ACPIHP_SLOT_STATE_POWERED:
-+	case ACPIHP_SLOT_STATE_CONNECTED:
-+	case ACPIHP_SLOT_STATE_CONFIGURED:
-+	case ACPIHP_SLOT_STATE_POWERING_ON:
-+	case ACPIHP_SLOT_STATE_POWERING_OFF:
-+	case ACPIHP_SLOT_STATE_CONNECTING:
-+	case ACPIHP_SLOT_STATE_DISCONNECTING:
-+	case ACPIHP_SLOT_STATE_CONFIGURING:
-+	case ACPIHP_SLOT_STATE_UNCONFIGURING:
-+		flag = true;
-+		break;
-+	default:
-+		flag = false;
-+		break;
++	if (type < ACPIHP_DEV_TYPE_UNKNOWN || type >= ACPIHP_DEV_TYPE_MAX) {
++		ACPIHP_DEBUG("device type %d is invalid.\n", type);
++		return -EINVAL;
++	} else if (slot == NULL) {
++		ACPIHP_DEBUG("invalid parameter, slot is NULL.\n");
++		return -EINVAL;
++	} else if (dev == NULL) {
++		ACPIHP_DEBUG("invalid parameter, dev is NULL.\n");
++		return -EINVAL;
 +	}
-+	mutex_unlock(&slot->slot_mutex);
 +
-+	return acpihp_drv_print_bool(page, flag);
++	np = kzalloc(sizeof(*np), GFP_KERNEL);
++	if (np == NULL)
++		return -ENOMEM;
++
++	np->dev = dev;
++	np->state = state;
++	mutex_init(&np->lock);
++	klist_add_tail(&np->node, &slot->dev_lists[type]);
++	ACPIHP_DEBUG("add device %s to slot %s.\n",
++		     dev_name(dev), slot->name);
++
++	return 0;
 +}
++EXPORT_SYMBOL_GPL(acpihp_slot_add_device);
 +
-+static ssize_t acpihp_drv_power_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
++/* Remove a device from a hotplug slot's device klist. */
++int acpihp_slot_remove_device(struct acpihp_slot *slot,
++			      enum acpihp_dev_type type, struct device *dev)
 +{
-+	return acpihp_drv_store(dev, attr, buf, count,
-+			ACPIHP_DRV_CMD_POWERON, ACPIHP_DRV_CMD_POWEROFF);
-+}
++	int ret = -ENOENT;
++	struct klist_iter iter;
++	struct klist_node *ip;
++	struct acpihp_dev_node *np;
 +
-+/* It should be named as 'power', but that will cause name conflics. */
-+DEVICE_ATTR(enable, S_IRUSR | S_IWUSR,
-+	    &acpihp_drv_power_show, &acpihp_drv_power_store);
-+
-+static ssize_t acpihp_drv_connect_show(struct device *dev,
-+		struct device_attribute *attr, char *page)
-+{
-+	bool flag;
-+	struct acpihp_slot *slot = container_of(dev, struct acpihp_slot, dev);
-+
-+	acpihp_drv_update_slot_state(slot);
-+	mutex_lock(&slot->slot_mutex);
-+	switch (slot->state) {
-+	case ACPIHP_SLOT_STATE_CONNECTED:
-+	case ACPIHP_SLOT_STATE_CONFIGURED:
-+	case ACPIHP_SLOT_STATE_CONNECTING:
-+	case ACPIHP_SLOT_STATE_DISCONNECTING:
-+	case ACPIHP_SLOT_STATE_CONFIGURING:
-+	case ACPIHP_SLOT_STATE_UNCONFIGURING:
-+		flag = true;
-+		break;
-+	default:
-+		flag = false;
-+		break;
++	if (type < ACPIHP_DEV_TYPE_UNKNOWN || type >= ACPIHP_DEV_TYPE_MAX) {
++		ACPIHP_DEBUG("device type %d is invalid.\n", type);
++		return -EINVAL;
++	} else if (slot == NULL) {
++		ACPIHP_DEBUG("invalid parameter, slot is NULL.\n");
++		return -EINVAL;
++	} else if (dev == NULL) {
++		ACPIHP_DEBUG("invalid parameter, dev is NULL.\n");
++		return -EINVAL;
 +	}
-+	mutex_unlock(&slot->slot_mutex);
 +
-+	return acpihp_drv_print_bool(page, flag);
-+}
-+
-+static ssize_t acpihp_drv_connect_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	return acpihp_drv_store(dev, attr, buf, count,
-+			ACPIHP_DRV_CMD_CONNECT, ACPIHP_DRV_CMD_DISCONNECT);
-+}
-+
-+DEVICE_ATTR(connect, S_IRUSR | S_IWUSR,
-+	    &acpihp_drv_connect_show, &acpihp_drv_connect_store);
-+
-+static ssize_t acpihp_drv_configure_show(struct device *dev,
-+		struct device_attribute *attr, char *page)
-+{
-+	bool flag;
-+	struct acpihp_slot *slot = container_of(dev, struct acpihp_slot, dev);
-+
-+	acpihp_drv_update_slot_state(slot);
-+	mutex_lock(&slot->slot_mutex);
-+	switch (slot->state) {
-+	case ACPIHP_SLOT_STATE_CONFIGURED:
-+	case ACPIHP_SLOT_STATE_CONFIGURING:
-+	case ACPIHP_SLOT_STATE_UNCONFIGURING:
-+		flag = true;
-+		break;
-+	default:
-+		flag = false;
-+		break;
-+	}
-+	mutex_unlock(&slot->slot_mutex);
-+
-+	return acpihp_drv_print_bool(page, flag);
-+}
-+
-+static ssize_t acpihp_drv_configure_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	return acpihp_drv_store(dev, attr, buf, count,
-+			ACPIHP_DRV_CMD_CONFIGURE, ACPIHP_DRV_CMD_UNCONFIGURE);
-+}
-+
-+DEVICE_ATTR(configure, S_IRUSR | S_IWUSR,
-+	    &acpihp_drv_configure_show, &acpihp_drv_configure_store);
-+
-+static ssize_t acpihp_drv_dependency_show(struct device *dev,
-+		struct device_attribute *attr, char *page)
-+{
-+	int ret;
-+	char *p, *end;
-+	struct list_head list;
-+	enum acpihp_drv_cmd cmd;
-+	struct acpihp_slot_dependency *dep;
-+	struct acpihp_slot *slot = container_of(dev, struct acpihp_slot, dev);
-+
-+	INIT_LIST_HEAD(&list);
-+	mutex_lock(&state_machine_mutex);
-+	cmd = acpihp_slot_powered(slot) ? ACPIHP_DRV_CMD_POWEROFF :
-+					  ACPIHP_DRV_CMD_POWERON;
-+	ret = acpihp_drv_generate_dependency_list(slot, &list, cmd);
-+	if (ret) {
-+		ret = -ENXIO;
-+	} else {
-+		p = page;
-+		end = page + PAGE_SIZE;
-+
-+		list_for_each_entry(dep, &list, node) {
-+			if (dep->slot == slot)
-+				continue;
-+			if (p + strlen(dep->slot->full_path) + 2 >= end)
-+				break;
-+			p += snprintf(p, end - p, "%s\n", dep->slot->full_path);
++	klist_iter_init(&slot->dev_lists[type], &iter);
++	while ((ip = klist_next(&iter)) != NULL) {
++		np = container_of(ip, struct acpihp_dev_node, node);
++		if (np->dev == dev) {
++			ACPIHP_DEBUG("remove device %s from slot %s.\n",
++				     dev_name(dev), slot->name);
++			klist_del(&np->node);
++			ret = 0;
++			break;
 +		}
-+
-+		acpihp_drv_destroy_dependency_list(&list);
-+		ret = p - page;
 +	}
-+	mutex_unlock(&state_machine_mutex);
++	klist_iter_exit(&iter);
 +
 +	return ret;
 +}
++EXPORT_SYMBOL_GPL(acpihp_slot_remove_device);
 +
-+static DEVICE_ATTR(dependency, S_IRUSR | S_IWUSR,
-+		   &acpihp_drv_dependency_show, NULL);
-+
-+int acpihp_drv_create_sysfs(struct acpihp_slot *slot)
++/* Remove all devices from the klist */
++int acpihp_remove_device_list(struct klist *dev_list)
 +{
-+	int retval;
-+	struct device *dev = &slot->dev;
++	struct klist_iter iter;
++	struct klist_node *ip;
++	struct acpihp_dev_node *np;
 +
-+	retval = device_create_file(dev, &dev_attr_enable);
-+	if (retval)
-+		goto out;
-+	retval = device_create_file(dev, &dev_attr_connect);
-+	if (retval)
-+		goto out1;
-+	retval = device_create_file(dev, &dev_attr_configure);
-+	if (retval)
-+		goto out2;
-+	retval = device_create_file(dev, &dev_attr_dependency);
-+	if (retval)
-+		goto out3;
++	if (dev_list == NULL) {
++		ACPIHP_DEBUG("invalid parameter, dev_list is NULL.\n");
++		return -EINVAL;
++	}
++
++	klist_iter_init(dev_list, &iter);
++	while ((ip = klist_next(&iter)) != NULL) {
++		np = container_of(ip, struct acpihp_dev_node, node);
++		klist_del(&np->node);
++	}
++	klist_iter_exit(&iter);
 +
 +	return 0;
-+
-+out3:
-+	device_remove_file(dev, &dev_attr_configure);
-+out2:
-+	device_remove_file(dev, &dev_attr_connect);
-+out1:
-+	device_remove_file(dev, &dev_attr_enable);
-+out:
-+	ACPIHP_DEBUG("fails to create sysfs interfaces for slot %s.\n",
-+		     slot->name);
-+	return retval;
 +}
++EXPORT_SYMBOL_GPL(acpihp_remove_device_list);
 +
-+void acpihp_drv_remove_sysfs(struct acpihp_slot *slot)
-+{
-+	struct device *dev = &slot->dev;
+ /* SYSFS interfaces */
+ static ssize_t acpihp_slot_object_show(struct device *d,
+ 		struct device_attribute *attr, char *buf)
+diff --git a/include/acpi/acpi_hotplug.h b/include/acpi/acpi_hotplug.h
+index b81d934..cd8dd99 100644
+--- a/include/acpi/acpi_hotplug.h
++++ b/include/acpi/acpi_hotplug.h
+@@ -48,6 +48,24 @@ enum acpihp_dev_type {
+ 	ACPIHP_DEV_TYPE_MAX
+ };
+ 
++enum acpihp_dev_state {
++	DEVICE_STATE_UNKOWN = 0x00,
++	DEVICE_STATE_CONNECTED,
++	DEVICE_STATE_PRE_CONFIGURE,
++	DEVICE_STATE_CONFIGURED,
++	DEVICE_STATE_PRE_RELEASE,
++	DEVICE_STATE_RELEASED,
++	DEVICE_STATE_PRE_UNCONFIGURE,
++	DEVICE_STATE_MAX
++};
 +
-+	device_remove_file(dev, &dev_attr_dependency);
-+	device_remove_file(dev, &dev_attr_configure);
-+	device_remove_file(dev, &dev_attr_connect);
-+	device_remove_file(dev, &dev_attr_enable);
-+}
++struct acpihp_dev_node {
++	struct device		*dev;
++	enum acpihp_dev_state	state;
++	struct mutex		lock;
++	struct klist_node	node;
++};
++
+ /*
+  * ACPI hotplug slot is an abstraction of receptacles where a group of
+  * system devices could be attached, just like PCI slot in PCI hotplug.
+@@ -190,6 +208,15 @@ typedef acpi_status (*acpihp_walk_device_cb)(struct acpi_device *acpi_device,
+ extern int acpihp_walk_devices(acpi_handle handle, acpihp_walk_device_cb cb,
+ 			       void *argp);
+ 
++extern int acpihp_slot_add_device(struct acpihp_slot *slot,
++				  enum acpihp_dev_type type,
++				  enum acpihp_dev_state state,
++				  struct device *dev);
++extern int acpihp_slot_remove_device(struct acpihp_slot *slot,
++				     enum acpihp_dev_type type,
++				     struct device *dev);
++extern int acpihp_remove_device_list(struct klist *dev_list);
++
+ extern int acpihp_debug;
+ 
+ #define ACPIHP_DEBUG(fmt, ...) \
 -- 
 1.7.9.5
 
