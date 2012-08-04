@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab2HCXxo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 19:53:44 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41709 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab2HCXxn (ORCPT
+	id S1754102Ab2HDACv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 20:02:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41946 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754018Ab2HDACt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 19:53:43 -0400
-Date: Fri, 03 Aug 2012 16:53:42 -0700 (PDT)
-Message-Id: <20120803.165342.1219524726899275535.davem@davemloft.net>
-To: fengguang.wu@intel.com
-Cc: netdev@vger.kernel.org, dan.carpenter@oracle.com,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        joe@perches.com, isdn@linux-pingi.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] isdnloop: fix and simplify isdnloop_init()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120803091001.GA15772@localhost>
-References: <20120803073240.GA12723@localhost>
-	<20120803.015126.198679260163049459.davem@davemloft.net>
-	<20120803091001.GA15772@localhost>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 3 Aug 2012 20:02:49 -0400
+Message-ID: <501C66C2.2020706@gmail.com>
+Date: Sat, 04 Aug 2012 02:03:14 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org
+Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
+References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com> <1344003788-1417-2-git-send-email-levinsasha928@gmail.com> <20120803171515.GH15477@google.com> <501C407D.9080900@gmail.com> <20120803213017.GK15477@google.com> <501C458E.7050000@gmail.com> <20120803214806.GM15477@google.com> <501C4E92.1070801@gmail.com> <20120803222339.GN15477@google.com> <CA+55aFyOst4c3WHbPVbYkSBdBmLJUui5OvoVOh5AuPMnigwnEA@mail.gmail.com> <20120803223634.GO15477@google.com> <CA+55aFwTa_kYgmFwoWa6hwAAM6=2xTgQQf-vEx_gCzpEMnxodQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwTa_kYgmFwoWa6hwAAM6=2xTgQQf-vEx_gCzpEMnxodQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fengguang Wu <fengguang.wu@intel.com>
-Date: Fri, 3 Aug 2012 17:10:01 +0800
+Hi Linus,
 
-> Fix a buffer overflow bug by removing the revision and printk.
+On 08/04/2012 01:47 AM, Linus Torvalds wrote:
+> Or maybe it's just a gcc bug. I do think this all is way hackier than
+> Sasha's original simple code that didn't need these kinds of games,
+> and didn't need a size member at all.
 > 
-> [   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7 
-> [   22.097508] isdnloop: (loop0) virtual card added
-> [   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
-> [   22.174400] 
-> [   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
-> [   22.624071] Call Trace:
-> [   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-> [   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
-> [   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
-> [   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-> [   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
-> [   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
-> 
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> I really think all the extra complexity and overhead is just *bad*.
+> The first simple version was much nicer and likely generated better
+> code too.
 
-Applied.
+The problem with that code was that it doesn't work with dynamically allocated hashtables, or hashtables that grow/shrink.
+
+The alternative to going down this path, is going back to the old code and saying that it only works for the simple case, and if you're interested in something more complex it should have it's own different implementation.
+
+Does it make sense? We'll keep the simple & common case simple, and let anyone who needs something more complex than this write it as an extension?
