@@ -1,121 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab2HDDoV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 23:44:21 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:49402 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753724Ab2HDDoS (ORCPT
+	id S1753946Ab2HDD5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 23:57:13 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57208 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724Ab2HDD5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 23:44:18 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18PyV5qry8PxYmhL3xy5BmXVB0ylW9VMZfDqJXsZe
-	e0mahbW1lOGgSg
-Message-ID: <1344051854.6739.19.camel@marge.simpson.net>
-Subject: Re: [patch] sched: fix migration thread runtime bogosity
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 04 Aug 2012 05:44:14 +0200
-In-Reply-To: <1344026355.27828.10.camel@twins>
-References: <1344001354.17084.28.camel@marge.simpson.net>
-	 <1344026355.27828.10.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Fri, 3 Aug 2012 23:57:10 -0400
+X-Originating-IP: 217.70.178.138
+X-Originating-IP: 50.43.46.74
+Date: Fri, 3 Aug 2012 20:57:03 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Joe Perches <joe@perches.com>
+Cc: Alex Kelly <alex.page.kelly@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/get_maintainer.pl: Default to --no-rolestats
+ when output not a terminal
+Message-ID: <20120804035702.GA2788@leaf>
+References: <20120803182706.GA4637@jtriplet-mobl1>
+ <1344018801.10710.17.camel@joe2Laptop>
+ <20120803184743.GA4660@jtriplet-mobl1>
+ <1344040650.10710.22.camel@joe2Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344040650.10710.22.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-03 at 22:39 +0200, Peter Zijlstra wrote:
+On Fri, Aug 03, 2012 at 05:37:30PM -0700, Joe Perches wrote:
+> On Fri, 2012-08-03 at 11:47 -0700, Josh Triplett wrote:
+> > On Fri, Aug 03, 2012 at 11:33:21AM -0700, Joe Perches wrote:
+> > > On Fri, 2012-08-03 at 11:27 -0700, Josh Triplett wrote:
+> > > > scripts/get_maintainer.pl defaults to showing --rolestats, which
+> > > > provides annotations explaining why each person or list might want to
+> > > > know about a patch.  This works well for interactive use, but breaks
+> > > > when used with git send-email's --to-cmd or --cc-cmd, resulting in
+> > > > malformed email headers and mails sent to some but not all recipients.
+> > > > 
+> > > > To avoid the need to explicitly pass --no-rolestats for batch use,
+> > > > enable --rolestats by default only when outputting to a terminal.
+> > > 
+> > > Hi Josh.
+> > > 
+> > > I think it's preferable to add --no-rolestats
+> > > to the uses that need them.
+> > 
+> > Why?
+> > 
+> > > I have different scripts that I use for git send-email
+> > > options --to-cmd and --cc-cmd
+> > [...snip scripts...]
+> > 
+> > You've submitted enough patches that you've automated as much of the
+> > process as you can; I don't think that makes the defaults less
+> > error-prone.
+> 
+> I think the default use of the get_maintainer script is
+> actually not scripted but interactive, where the user is
+> just trying to figure out who the maintainer is.
 
-> Now the question is, how did that stop thing get any time to begin with?
-> Are we hotplugging or somesuch sillyness?
+I agree entirely; that's why I didn't change the default to always use
+--no-rolestats, but rather to continue using --rolestats when
+interactive and --no-rolestats when scripted.
 
-Nope, high frequency exec.
+> > As it stands now, the current default of --rolestats makes the obvious
+> > command line of
+> > git send-email --to-cmd='scripts/get_maintainer.pl' *.patch
+> > send broken emails that go to some maintainers but not all.  I think it
+> > makes sense to change the default so that the obvious usage becomes the
+> > correct one.
+> 
+> There were some discussions awhile back in 2010 about the
+> preferred defaults.
+> 
+> Perhaps you can read those discussions about why the default
+> is the way it is.
 
-> Anyway, I think I like B best, could you re-submit as a proper patch so
-> I can press the magic button that queues stuff?
+I found commit 7e1863af1636b304a5f59aab6fb78d38e4079875, but that commit
+does not serve the intended purpose.  Defaulting to --rolestats doesn't
+make it "harder" to use get_maintainer.pl with git send-email, it just
+makes it broken when used.  Meanwhile, the few discussions I see about
+get_maintainer.pl just mention the problems caused by using --git, and
+get_maintainer.pl has already improved to address those problems by not
+using git commit signers for patches to files with active maintainers.
 
-Ok, B it is.  Since that SUSE guy munged my mailboxes again (twit), he
-can write the changelog, and take the blame.
+I don't see any value in making it intentionally harder to invoke
+correctly while making it easier to invoke incorrectly.  Why not make it
+actually work?
 
--Mike
-
-From: Mike Galbraith <mgalbraith@suse.de>
-
-sched: fix migration thread runtime bogosity
-
-Make stop scheduler class do the same accounting as other classes,
-
-Migration threads can be caught in the act while doing exec balancing,
-leading to the below due to use of unmaintained ->se.exec_start.  The
-load that triggered this particular instance was an apparently out of
-control heavily threaded application that does system monitoring in
-what equated to an exec bomb, with one of the VERY frequently migrated
-tasks being ps.
-
-%CPU   PID USER     CMD
-99.3    45 root     [migration/10]
-97.7    53 root     [migration/12]
-97.0    57 root     [migration/13]
-90.1    49 root     [migration/11]
-89.6    65 root     [migration/15]
-88.7    17 root     [migration/3]
-80.4    37 root     [migration/8]
-78.1    41 root     [migration/9]
-44.2    13 root     [migration/2]
-
-Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index 7b386e8..da5eb5b 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -27,8 +27,10 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
- {
- 	struct task_struct *stop = rq->stop;
- 
--	if (stop && stop->on_rq)
-+	if (stop && stop->on_rq) {
-+		stop->se.exec_start = rq->clock_task;
- 		return stop;
-+	}
- 
- 	return NULL;
- }
-@@ -52,6 +54,21 @@ static void yield_task_stop(struct rq *rq)
- 
- static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
- {
-+	struct task_struct *curr = rq->curr;
-+	u64 delta_exec;
-+
-+	delta_exec = rq->clock_task - curr->se.exec_start;
-+	if (unlikely((s64)delta_exec < 0))
-+		delta_exec = 0;
-+
-+	schedstat_set(curr->se.statistics.exec_max,
-+			max(curr->se.statistics.exec_max, delta_exec));
-+
-+	curr->se.sum_exec_runtime += delta_exec;
-+	account_group_exec_runtime(curr, delta_exec);
-+
-+	curr->se.exec_start = rq->clock_task;
-+	cpuacct_charge(curr, delta_exec);
- }
- 
- static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
-@@ -60,6 +77,9 @@ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
- 
- static void set_curr_task_stop(struct rq *rq)
- {
-+	struct task_struct *stop = rq->stop;
-+
-+	stop->se.exec_start = rq->clock_task;
- }
- 
- static void switched_to_stop(struct rq *rq, struct task_struct *p)
-
-
+- Josh Triplett
