@@ -1,53 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab2HDWEC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 18:04:02 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46161 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639Ab2HDWD7 (ORCPT
+	id S1754094Ab2HDWEZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 18:04:25 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55852 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049Ab2HDWEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 18:03:59 -0400
+	Sat, 4 Aug 2012 18:04:12 -0400
+Date: Sat, 4 Aug 2012 15:02:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] page-table walkers vs memory order
+Message-ID: <20120804220245.GB3307@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1343064870.26034.23.camel@twins>
+ <alpine.LSU.2.00.1207241356350.2094@eggly.anvils>
+ <20120804143719.GB10459@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120730165733.33e3ddfb@notabene.brown>
-References: <CACRpkdZnRiZpKuQ6krJFa8TAfmvYYLB-n79ztzaUOV32p6ZY1Q@mail.gmail.com>
-	<20120730165733.33e3ddfb@notabene.brown>
-Date: Sun, 5 Aug 2012 00:03:59 +0200
-Message-ID: <CACRpkdbA_+xFUU9G3S+eBs+ffmGEih-jLY5YXxqpNGdfsk48gw@mail.gmail.com>
-Subject: Re: [GIT PULL] GPIO changes for v3.6
-From: Linus Walleij <linus.walleij@linaro.org>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Roland Stigge <stigge@antcom.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120804143719.GB10459@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080422-7606-0000-0000-0000028D5157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 8:57 AM, NeilBrown <neilb@suse.de> wrote:
+On Sat, Aug 04, 2012 at 04:37:19PM +0200, Andrea Arcangeli wrote:
+> On Tue, Jul 24, 2012 at 02:51:05PM -0700, Hugh Dickins wrote:
+> > Since then, I think THP has made the rules more complicated; but I
+> > believe Andrea paid a great deal of attention to that kind of issue.
+> 
+> There were many issues, one unexpected was
+> 1a5a9906d4e8d1976b701f889d8f35d54b928f25.
 
-> it means that if !gpio_is_valid(gpio), the error returned is EPROBE_DEFER
-> which isn't right (an invalid gpio number will never become valid).
-> If a driver happened to use gpio_request to check the validity of the gpio
-> rather than doing it itself, it would defer the probe, rather than assume
-> that the GPIO doesn't exist.
->
-> I would suggest the following.  Reasonable?
+[ . . . ]
 
-Unless there is a firm regression solved by this we can very well
-discuss this until the next merge window.
+> 5) compiler behaving like alpha -> impossible (I may be wrong but I
+>    believe so after thinking more on it)
+> 
+> 6) I was told a decade ago by Honza to never touch any ram that can
+>    change under the compiler unless it's declared volatile (could
+>    crash over switch/case statement implemented with a table if the
+>    switch/case value is re-read by the compiler).  -> depends, we
+>    don't always obey to this rule, clearly gup_fast currently disobeys
+>    and even the generic pmd_read_atomic still disobeys (MADV_DONTNEED
+>    can zero the pmd). If there's no "switch/case" I'm not aware of
+>    other troubles.
+> 
+> 7) barrier in pmd_none_or_trans_huge_or_clear_bad -> possible, same
+>    issue as 2, full explanation in git show 1a5a9906d4e8d1976b701f
+> 
+> Note: here I'm ignoring CPU reordering, this is only about the compiler.
+> 
+> 5 is impossible because:
+> 
+> a) the compiler can't read a guessed address or it can crash the
+>    kernel
+> 
+> b) the compiler has no memory to store a "guessed" valid address when
+>    the function return and the stack is unwind
+> 
+> For the compiler to behave like alpha, the compiler should read the
+> pteval before the pmdp, that it can't do, because it has no address to
+> guess from and it would Oops if it really tries to guess it!
+> 
+> So far it was said "compiler can guess the address" but there was no
+> valid explanation of how it could do it, and I don't see it, so please
+> explain if I'm wrong about the a, b above.
 
-The solution from Mark looks very much like the method used in
-regulators, clocks etc. I bet if we look at the error paths of the
-driver doing gpio_is_valid() the majority will be something in the
-probe() path just bailing out if that was not supplied, alternatively
-shunting in some non-GPIO code.
+OK, I'll bite.  ;-)
 
-The more typical problem for
-deferring driver to solve will be something like commit
-2805b9ab7c836cfbe01e86129983e36205078cb2
-where we have to check for -EPROBE_DEFER explicitly
-and bail out before doing any gpio_is_valid() checks.
+The most sane way for this to happen is with feedback-driven techniques
+involving profiling, similar to what is done for basic-block reordering
+or branch prediction.  The idea is that you compile the kernel in an
+as-yet (and thankfully) mythical pointer-profiling mode, which records
+the values of pointer loads and also measures the pointer-load latency.
+If a situation is found where a given pointer almost always has the
+same value but has high load latency (for example, is almost always a
+high-latency cache miss), this fact is recorded and fed back into a
+subsequent kernel build.  This subsequent kernel build might choose to
+speculate the value of the pointer concurrently with the pointer load.
 
-Yours,
-Linus Walleij
+And of course, when interpreting the phrase "most sane way" at the
+beginning of the prior paragraph, it would probably be wise to keep
+in mind who wrote it.  And that "most sane way" might have little or
+no resemblance to anything that typical kernel hackers would consider
+anywhere near sanity.  ;-)
+
+> Furthermore the ACCESS_ONCE that Peter's patch added to gup_fast
+> pud/pgd can't prevent the compiler to read a guessed pmdp address as a
+> volatile variable, before reading the pmdp pointer and compare it with
+> the guessed address! So if it's 5 you worry about, when adding
+> ACCESS_ONCE in pudp/pgdp/pmdp is useless and won't fix it. You should
+> have added a barrier() instead.
+
+Most compiler writers I have discussed this with agreed that a volatile
+cast would suppress value speculation.  The "volatile" keyword is not
+all that well specified in the C and C++ standards, but as "nix" said
+at http://lwn.net/Articles/509731/:
+
+	volatile's meaning as 'minimize optimizations applied to things
+	manipulating anything of volatile type, do not duplicate, elide,
+	move, fold, spindle or mutilate' is of long standing.
+
+That said, value speculation as a compiler optimization makes me a bit
+nervous, so my current feeling is that is should be suppressed entirely.
+
+Hey, you asked, even if only implicitly!  ;-)
+
+							Thanx, Paul
+
+> > I suspect your arch/x86/mm/gup.c ACCESS_ONCE()s are necessary:
+> > gup_fast() breaks as many rules as it can, and in particular may
+> > be racing with the freeing of page tables; but I'm not so sure
+> > about the pagewalk mods - we could say "cannot do any harm",
+> > but I don't like adding lines on that basis.
+> 
+> I agree to add ACCESS_ONCE but because it's case 2, 7 above and it
+> could race with free_pgtables of pgd/pud/pmd or MADV_DONTNEED with
+> pmd.
+> 
+> The other part of the patch in pagewalk.c is superflous and should be
+> dropped: pud/pgd can't change in walk_page_table, it's required to
+> hold the mmap_sem at least in read mode (it's not disabling irqs).
+> 
+> The pmd side instead can change but only with THP enabled, and only
+> because MADV_DONTNEED (never because of free_pgtables) but it's
+> already fully handled through pmd_none_or_trans_huge_or_clear_bad. The
+> ->pmd_entry callers are required to call pmd_trans_unstable() before
+> proceeding as the pmd may have been zeroed out by the time we get
+> there. The solution is zero barrier()/ACCESS_ONCE impact for THP=n. If
+> there are smp_read_barrier_depends already in alpha pte methods we're
+> fine.
+> 
+> Sorry for the long email but without a list that separates all
+> possible cases above, I don't think we can understand what we're
+> fixing in that patch and why the gup.c part is good.
+> 
+> Peter, I suggest to resend the fix with a more detailed explanataion
+> of the 2, 7 kind of race for gup.c only and drop the pagewalk.c.
+> 
+> Thanks,
+> Andrea
+> 
+
