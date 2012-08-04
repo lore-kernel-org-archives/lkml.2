@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2HDEDE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 00:03:04 -0400
+	id S1754173Ab2HDEDL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 00:03:11 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:45263 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab2HDEDA (ORCPT
+	with ESMTP id S1751000Ab2HDEDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 00:03:00 -0400
+	Sat, 4 Aug 2012 00:03:07 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Borislav Petkov <borislav.petkov@amd.com>,
         linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH v1 11/15] driver core: devres: introduce devres_for_each_res
-Date: Sat,  4 Aug 2012 12:01:26 +0800
-Message-Id: <1344052890-31935-12-git-send-email-ming.lei@canonical.com>
+Subject: [RFC PATCH v1 12/15] firmware: introduce device_cache/uncache_fw_images
+Date: Sat,  4 Aug 2012 12:01:27 +0800
+Message-Id: <1344052890-31935-13-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
 References: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
@@ -23,87 +23,289 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces one devres API of devres_for_each_res
-so that the device's driver can iterate each resource it has
-interest in.
+This patch introduces the three helpers below:
 
-The firmware loader will use the API to get each firmware name
-from the device instance.
+	void device_cache_fw_images(void)
+	void device_uncache_fw_images(void)
+	void device_uncache_fw_images_delay(unsigned long)
+
+so we can use device_cache_fw_images() to cache firmware for
+all devices which need firmware to work, and the device driver
+can get the firmware easily from kernel memory when system isn't
+ready for completing requests of loading firmware.
+
+After system is ready for completing firmware loading, driver core
+will call device_uncache_fw_images() or its delay version to free
+the cached firmware.
+
+The above helpers will be used to cache device firmware during
+system suspend/resume cycle in the following patches.
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/base/devres.c  |   42 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/device.h |    4 ++++
- 2 files changed, 46 insertions(+)
+ drivers/base/firmware_class.c |  221 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 215 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-index 2360adb..8731979 100644
---- a/drivers/base/devres.c
-+++ b/drivers/base/devres.c
-@@ -144,6 +144,48 @@ EXPORT_SYMBOL_GPL(devres_alloc);
- #endif
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 65c6066..68fd4c6 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -22,6 +22,11 @@
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+ #include <linux/list.h>
++#include <linux/async.h>
++#include <linux/pm.h>
++
++#include "base.h"
++#include "power/power.h"
  
- /**
-+ * devres_for_each_res - Resource iterator
-+ * @dev: Device to iterate resource from
-+ * @release: Look for resources associated with this release function
-+ * @match: Match function (optional)
-+ * @match_data: Data for the match function
-+ * @fn: Function to be called for each matched resource.
-+ * @data: Data for @fn, the 3rd parameter of @fn
-+ *
-+ * Call @fn for each devres of @dev which is associated with @release
-+ * and for which @match returns 1.
-+ *
-+ * RETURNS:
-+ * 	void
-+ */
-+void devres_for_each_res(struct device *dev, dr_release_t release,
-+			dr_match_t match, void *match_data,
-+			void (*fn)(struct device *, void *, void *),
-+			void *data)
+ MODULE_AUTHOR("Manuel Estrada Sainz");
+ MODULE_DESCRIPTION("Multi purpose firmware loading support");
+@@ -90,6 +95,19 @@ struct firmware_cache {
+ 	/* firmware_buf instance will be added into the below list */
+ 	spinlock_t lock;
+ 	struct list_head head;
++
++	/*
++	 * Names of firmware images which have been cached successfully
++	 * will be added into the below list so that device uncache
++	 * helper can trace which firmware images have been cached
++	 * before.
++	 */
++	spinlock_t name_lock;
++	struct list_head fw_names;
++
++	wait_queue_head_t wait_queue;
++	int cnt;
++	struct delayed_work work;
+ };
+ 
+ struct firmware_buf {
+@@ -106,6 +124,11 @@ struct firmware_buf {
+ 	char fw_id[];
+ };
+ 
++struct fw_cache_entry {
++	struct list_head list;
++	char name[];
++};
++
+ struct firmware_priv {
+ 	struct timer_list timeout;
+ 	bool nowait;
+@@ -220,12 +243,6 @@ static void fw_free_buf(struct firmware_buf *buf)
+ 	kref_put(&buf->ref, __fw_free_buf);
+ }
+ 
+-static void __init fw_cache_init(void)
+-{
+-	spin_lock_init(&fw_cache.lock);
+-	INIT_LIST_HEAD(&fw_cache.head);
+-}
+-
+ static struct firmware_priv *to_firmware_priv(struct device *dev)
+ {
+ 	return container_of(dev, struct firmware_priv, dev);
+@@ -1008,6 +1025,198 @@ int uncache_firmware(const char *fw_name)
+ 	return -EINVAL;
+ }
+ 
++static struct fw_cache_entry *alloc_fw_cache_entry(const char *name)
 +{
-+	struct devres_node *node;
-+	struct devres_node *tmp;
-+	unsigned long flags;
++	struct fw_cache_entry *fce;
 +
-+	if (!fn)
-+		return;
++	fce = kzalloc(sizeof(*fce) + strlen(name) + 1, GFP_ATOMIC);
++	if (!fce)
++		goto exit;
 +
-+	spin_lock_irqsave(&dev->devres_lock, flags);
-+	list_for_each_entry_safe_reverse(node, tmp,
-+			&dev->devres_head, entry) {
-+		struct devres *dr = container_of(node, struct devres, node);
-+
-+		if (node->release != release)
-+			continue;
-+		if (match && !match(dev, dr->data, match_data))
-+			continue;
-+		fn(dev, dr->data, data);
-+	}
-+	spin_unlock_irqrestore(&dev->devres_lock, flags);
++	strcpy(fce->name, name);
++exit:
++	return fce;
 +}
-+EXPORT_SYMBOL_GPL(devres_for_each_res);
++
++static void free_fw_cache_entry(struct fw_cache_entry *fce)
++{
++	kfree(fce);
++}
++
++static void __async_dev_cache_fw_image(void *fw_entry,
++				       async_cookie_t cookie)
++{
++	struct fw_cache_entry *fce = fw_entry;
++	struct firmware_cache *fwc = &fw_cache;
++	int ret;
++
++	ret = cache_firmware(fce->name);
++	if (ret)
++		goto free;
++
++	spin_lock(&fwc->name_lock);
++	list_add(&fce->list, &fwc->fw_names);
++	spin_unlock(&fwc->name_lock);
++	goto drop_ref;
++
++free:
++	free_fw_cache_entry(fce);
++drop_ref:
++	spin_lock(&fwc->name_lock);
++	fwc->cnt--;
++	spin_unlock(&fwc->name_lock);
++
++	wake_up(&fwc->wait_queue);
++}
++
++/* called with dev->devres_lock held */
++static void dev_create_fw_entry(struct device *dev, void *res,
++				void *data)
++{
++	struct fw_name_devm *fwn = res;
++	const char *fw_name = fwn->name;
++	struct list_head *head = data;
++	struct fw_cache_entry *fce;
++
++	fce = alloc_fw_cache_entry(fw_name);
++	if (fce)
++		list_add(&fce->list, head);
++}
++
++static int devm_name_match(struct device *dev, void *res,
++			   void *match_data)
++{
++	struct fw_name_devm *fwn = res;
++	return (fwn->magic == (unsigned long)match_data);
++}
++
++static void dev_cache_fw_image(struct device *dev)
++{
++	LIST_HEAD(todo);
++	struct fw_cache_entry *fce;
++	struct fw_cache_entry *fce_next;
++	struct firmware_cache *fwc = &fw_cache;
++
++	devres_for_each_res(dev, fw_name_devm_release,
++			    devm_name_match, &fw_cache,
++			    dev_create_fw_entry, &todo);
++
++	list_for_each_entry_safe(fce, fce_next, &todo, list) {
++		list_del(&fce->list);
++
++		spin_lock(&fwc->name_lock);
++		fwc->cnt++;
++		spin_unlock(&fwc->name_lock);
++
++		async_schedule(__async_dev_cache_fw_image, (void *)fce);
++	}
++}
++
++static void __device_uncache_fw_images(void)
++{
++	struct firmware_cache *fwc = &fw_cache;
++	struct fw_cache_entry *fce;
++
++	spin_lock(&fwc->name_lock);
++	while (!list_empty(&fwc->fw_names)) {
++		fce = list_entry(fwc->fw_names.next,
++				struct fw_cache_entry, list);
++		list_del(&fce->list);
++		spin_unlock(&fwc->name_lock);
++
++		uncache_firmware(fce->name);
++		free_fw_cache_entry(fce);
++
++		spin_lock(&fwc->name_lock);
++	}
++	spin_unlock(&fwc->name_lock);
++}
 +
 +/**
-  * devres_free - Free device resource data
-  * @res: Pointer to devres data to free
-  *
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 52a5f15..ecd9006 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -536,6 +536,10 @@ extern void *__devres_alloc(dr_release_t release, size_t size, gfp_t gfp,
- #else
- extern void *devres_alloc(dr_release_t release, size_t size, gfp_t gfp);
- #endif
-+extern void devres_for_each_res(struct device *dev, dr_release_t release,
-+				dr_match_t match, void *match_data,
-+				void (*fn)(struct device *, void *, void *),
-+				void *data);
- extern void devres_free(void *res);
- extern void devres_add(struct device *dev, void *res);
- extern void *devres_find(struct device *dev, dr_release_t release,
++ * device_cache_fw_images - cache devices' firmware
++ *
++ * If one device called request_firmware or its nowait version
++ * successfully before, the firmware names are recored into the
++ * device's devres link list, so device_cache_fw_images can call
++ * cache_firmware() to cache these firmwares for the device,
++ * then the device driver can load its firmwares easily at
++ * time when system is not ready to complete loading firmware.
++ */
++static void device_cache_fw_images(void)
++{
++	struct firmware_cache *fwc = &fw_cache;
++	struct device *dev;
++	DEFINE_WAIT(wait);
++
++	pr_debug("%s\n", __func__);
++
++	device_pm_lock();
++	list_for_each_entry(dev, &dpm_list, power.entry)
++		dev_cache_fw_image(dev);
++	device_pm_unlock();
++
++	/* wait for completion of caching firmware for all devices */
++	spin_lock(&fwc->name_lock);
++	for (;;) {
++		prepare_to_wait(&fwc->wait_queue, &wait,
++				TASK_UNINTERRUPTIBLE);
++		if (!fwc->cnt)
++			break;
++
++		spin_unlock(&fwc->name_lock);
++
++		schedule();
++
++		spin_lock(&fwc->name_lock);
++	}
++	spin_unlock(&fwc->name_lock);
++	finish_wait(&fwc->wait_queue, &wait);
++}
++
++/**
++ * device_uncache_fw_images - uncache devices' firmware
++ *
++ * uncache all firmwares which have been cached successfully
++ * by device_uncache_fw_images earlier
++ */
++static void device_uncache_fw_images(void)
++{
++	pr_debug("%s\n", __func__);
++	__device_uncache_fw_images();
++}
++
++static void device_uncache_fw_images_work(struct work_struct *work)
++{
++	device_uncache_fw_images();
++}
++
++/**
++ * device_uncache_fw_images_delay - uncache devices firmwares
++ * @delay: number of milliseconds to delay uncache device firmwares
++ *
++ * uncache all devices's firmwares which has been cached successfully
++ * by device_cache_fw_images after @delay milliseconds.
++ */
++static void device_uncache_fw_images_delay(unsigned long delay)
++{
++	schedule_delayed_work(&fw_cache.work,
++			msecs_to_jiffies(delay));
++}
++
++static void __init fw_cache_init(void)
++{
++	spin_lock_init(&fw_cache.lock);
++	INIT_LIST_HEAD(&fw_cache.head);
++
++	spin_lock_init(&fw_cache.name_lock);
++	INIT_LIST_HEAD(&fw_cache.fw_names);
++	fw_cache.cnt = 0;
++
++	init_waitqueue_head(&fw_cache.wait_queue);
++	INIT_DELAYED_WORK(&fw_cache.work,
++			  device_uncache_fw_images_work);
++}
++
+ static int __init firmware_class_init(void)
+ {
+ 	fw_cache_init();
 -- 
 1.7.9.5
 
