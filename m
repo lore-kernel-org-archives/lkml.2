@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab2HDPYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 11:24:16 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:43324 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab2HDPXY (ORCPT
+	id S1753617Ab2HDPYA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 11:24:00 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57625 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab2HDPXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 11:23:24 -0400
+	Sat, 4 Aug 2012 11:23:08 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,9 +24,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 5/5] cputime: Generic on-demand virtual cputime accounting
-Date: Sat,  4 Aug 2012 17:22:49 +0200
-Message-Id: <1344093769-30661-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/5] context_tracking: New context tracking susbsystem
+Date: Sat,  4 Aug 2012 17:22:45 +0200
+Message-Id: <1344093769-30661-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1344093769-30661-1-git-send-email-fweisbec@gmail.com>
 References: <1344093769-30661-1-git-send-email-fweisbec@gmail.com>
@@ -34,41 +34,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we want to stop the tick further idle, we need to be
-able to account the cputime without using the tick.
+Create a new subsystem that probes on kernel boundaries
+to keep track of the transitions between level contexts
+with two basic initial contexts: user or kernel.
 
-Virtual based cputime accounting solves that problem by
-hooking into kernel/user boundaries.
+This is an abstraction of some RCU code that use such tracking
+to implement its userspace extended quiescent state.
 
-However implementing CONFIG_VIRT_CPU_ACCOUNTING requires
-to set low level hooks and involves more overhead. But
-we already have a generic context tracking subsystem
-that is required for RCU needs by archs which will want to
-shut down the tick outside idle.
-
-This patch implements a generic virtual based cputime
-accounting that relies on these generic kernel/user hooks.
-
-There are some upsides of doing this:
-
-- This requires no arch code to implement CONFIG_VIRT_CPU_ACCOUNTING
-if context tracking is already built (already necessary for RCU in full
-tickless mode).
-
-- We can rely on the generic context tracking subsystem to dynamically
-(de)activate the hooks, so that we can switch anytime between virtual
-and tick based accounting. This way we don't have the overhead
-of the virtual accounting when the tick is running periodically.
-
-And a few downsides:
-
-- It relies on jiffies and the hooks are set in high level code. This
-results in less precise cputime accounting than with a true native
-virtual based cputime accounting which hooks on low level code and use
-a cpu hardware clock. Precision is not the goal of this though.
-
-- There is probably more overhead than a native virtual based cputime
-accounting. But this relies on hooks that are already set anyway.
+We need to pull this up from RCU into this new level of indirection
+because this tracking is also going to be used to implement an "on
+demand" generic virtual cputime accounting. A necessary step to
+shutdown the tick while still accounting the cputime.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -90,38 +66,310 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/asm-generic/cputime.h    |    2 +
- include/linux/context_tracking.h |   26 +++++++++
- include/linux/kernel_stat.h      |   12 ++++-
- init/Kconfig                     |   11 ++++-
- kernel/context_tracking.c        |   15 +-----
- kernel/sched/cputime.c           |  112 ++++++++++++++++++++++++++++++++++++++
- 6 files changed, 162 insertions(+), 16 deletions(-)
+ arch/Kconfig                                       |   12 ++--
+ arch/x86/Kconfig                                   |    2 +-
+ arch/x86/include/asm/{rcu.h => context_tracking.h} |   12 ++--
+ arch/x86/kernel/ptrace.c                           |    6 +-
+ arch/x86/kernel/signal.c                           |    5 +-
+ arch/x86/kernel/traps.c                            |    2 +-
+ arch/x86/mm/fault.c                                |    2 +-
+ include/linux/context_tracking.h                   |   18 ++++++
+ include/linux/rcupdate.h                           |    2 -
+ include/linux/sched.h                              |    8 ---
+ init/Kconfig                                       |   24 +++++---
+ kernel/Makefile                                    |    1 +
+ kernel/context_tracking.c                          |   59 ++++++++++++++++++++
+ kernel/rcutree.c                                   |   42 +-------------
+ kernel/sched/core.c                                |    9 ++-
+ 15 files changed, 121 insertions(+), 83 deletions(-)
+ rename arch/x86/include/asm/{rcu.h => context_tracking.h} (52%)
+ create mode 100644 include/linux/context_tracking.h
+ create mode 100644 kernel/context_tracking.c
 
-diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
-index 212c8bb..2a78aa7 100644
---- a/include/asm-generic/cputime.h
-+++ b/include/asm-generic/cputime.h
-@@ -66,9 +66,11 @@ typedef u64 __nocast cputime64_t;
- #define cputime64_to_clock_t(__ct)	\
- 	jiffies_64_to_clock_t(cputime64_to_jiffies64(__ct))
+diff --git a/arch/Kconfig b/arch/Kconfig
+index d891c62..4cae7e3 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -277,14 +277,14 @@ config SECCOMP_FILTER
+ config HAVE_VIRT_CPU_ACCOUNTING
+ 	bool
  
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- static inline bool accounting_vtime(void)
+-config HAVE_RCU_USER_QS
++config HAVE_CONTEXT_TRACKING
+ 	bool
+ 	help
+-	  Provide kernel entry/exit hooks necessary for userspace
++	  Provide kernel/user boundaries probes necessary for userspace
+ 	  RCU extended quiescent state. Syscalls need to be wrapped inside
+-	  rcu_user_exit()-rcu_user_enter() through the slow path using
+-	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
+-	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
+-	  preemption or signal handling on irq exit still need to be protected.
++	  user_exit()-user_enter() through the slow path using TIF_NOHZ flag.
++	  Exceptions handlers must be wrapped as well. Irqs are already
++	  protected inside rcu_irq_enter/rcu_irq_exit() but preemption or
++	  signal handling on irq exit still need to be protected.
+ 
+ source "kernel/gcov/Kconfig"
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 38dfcc2..c5d89ca 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -95,7 +95,7 @@ config X86
+ 	select KTIME_SCALAR if X86_32
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
+-	select HAVE_RCU_USER_QS if X86_64
++	select HAVE_CONTEXT_TRACKING if X86_64
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
+diff --git a/arch/x86/include/asm/rcu.h b/arch/x86/include/asm/context_tracking.h
+similarity index 52%
+rename from arch/x86/include/asm/rcu.h
+rename to arch/x86/include/asm/context_tracking.h
+index 439815b..e3eeb69 100644
+--- a/arch/x86/include/asm/rcu.h
++++ b/arch/x86/include/asm/context_tracking.h
+@@ -1,19 +1,19 @@
+-#ifndef _ASM_X86_RCU_H
+-#define _ASM_X86_RCU_H
++#ifndef _ASM_X86_CONTEXT_TRACKING_H
++#define _ASM_X86_CONTEXT_TRACKING_H
+ 
+-#include <linux/rcupdate.h>
++#include <linux/context_tracking.h>
+ #include <asm/ptrace.h>
+ 
+ static inline void exception_enter(struct pt_regs *regs)
  {
- 	return false;
+-	rcu_user_exit();
++	user_exit();
  }
+ 
+ static inline void exception_exit(struct pt_regs *regs)
+ {
+-#ifdef CONFIG_RCU_USER_QS
++#ifdef CONFIG_CONTEXT_TRACKING
+ 	if (user_mode(regs))
+-		rcu_user_enter();
++		user_enter();
+ #endif
+ }
+ 
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 9f94f8e..26fc34c 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -21,7 +21,7 @@
+ #include <linux/signal.h>
+ #include <linux/perf_event.h>
+ #include <linux/hw_breakpoint.h>
+-#include <linux/rcupdate.h>
++#include <linux/context_tracking.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+@@ -1464,7 +1464,7 @@ long syscall_trace_enter(struct pt_regs *regs)
+ {
+ 	long ret = 0;
+ 
+-	rcu_user_exit();
++	user_exit();
+ 
+ 	/*
+ 	 * If we stepped into a sysenter/syscall insn, it trapped in
+@@ -1530,5 +1530,5 @@ void syscall_trace_leave(struct pt_regs *regs)
+ 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
+ 		tracehook_report_syscall_exit(regs, step);
+ 
+-	rcu_user_enter();
++	user_enter();
+ }
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 5cc2579..7d1394f 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -19,6 +19,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/user-return-notifier.h>
+ #include <linux/uprobes.h>
++#include <linux/context_tracking.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/ucontext.h>
+@@ -776,7 +777,7 @@ static void do_signal(struct pt_regs *regs)
+ void
+ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+ {
+-	rcu_user_exit();
++	user_exit();
+ 
+ #ifdef CONFIG_X86_MCE
+ 	/* notify userspace of pending MCEs */
+@@ -804,7 +805,7 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+ 	clear_thread_flag(TIF_IRET);
+ #endif /* CONFIG_X86_32 */
+ 
+-	rcu_user_enter();
++	user_enter();
+ }
+ 
+ void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 9b8195b..1218928 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -52,7 +52,7 @@
+ #include <asm/i387.h>
+ #include <asm/fpu-internal.h>
+ #include <asm/mce.h>
+-#include <asm/rcu.h>
++#include <asm/context_tracking.h>
+ 
+ #include <asm/mach_traps.h>
+ 
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 7dde46d..45be836 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -18,7 +18,7 @@
+ #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+ #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
+ #include <asm/fixmap.h>			/* VSYSCALL_START		*/
+-#include <asm/rcu.h>			/* exception_enter(), ...	*/
++#include <asm/context_tracking.h>		/* exception_enter(), ...	*/
+ 
+ /*
+  * Page fault error code bits:
+diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+new file mode 100644
+index 0000000..e24339c
+--- /dev/null
++++ b/include/linux/context_tracking.h
+@@ -0,0 +1,18 @@
++#ifndef _LINUX_CONTEXT_TRACKING_H
++#define _LINUX_CONTEXT_TRACKING_H
++
++#ifdef CONFIG_CONTEXT_TRACKING
++#include <linux/sched.h>
++
++extern void user_enter(void);
++extern void user_exit(void);
++extern void context_tracking_task_switch(struct task_struct *prev,
++					 struct task_struct *next);
++#else
++static inline void user_enter(void) { }
++static inline void user_exit(void) { }
++static inline void context_tracking_task_switch(struct task_struct *prev,
++						struct task_struct *next) { }
++#endif /* !CONFIG_CONTEXT_TRACKING */
++
 +#endif
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 1fc0a0e..e411117 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -197,8 +197,6 @@ extern void rcu_user_enter(void);
+ extern void rcu_user_exit(void);
+ extern void rcu_user_enter_irq(void);
+ extern void rcu_user_exit_irq(void);
+-extern void rcu_user_hooks_switch(struct task_struct *prev,
+-				  struct task_struct *next);
+ #else
+ static inline void rcu_user_enter(void) { }
+ static inline void rcu_user_exit(void) { }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 30105f4..7b7a438 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1899,14 +1899,6 @@ static inline void rcu_copy_process(struct task_struct *p)
  
  #endif
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index e24339c..71e34ec 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -4,6 +4,32 @@
- #ifdef CONFIG_CONTEXT_TRACKING
- #include <linux/sched.h>
  
+-static inline void rcu_switch(struct task_struct *prev,
+-			      struct task_struct *next)
+-{
+-#ifdef CONFIG_RCU_USER_QS
+-	rcu_user_hooks_switch(prev, next);
+-#endif
+-}
+-
+ #ifdef CONFIG_SMP
+ extern void do_set_cpus_allowed(struct task_struct *p,
+ 			       const struct cpumask *new_mask);
+diff --git a/init/Kconfig b/init/Kconfig
+index cc1d581..6f59452 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -404,6 +404,19 @@ config AUDIT_LOGINUID_IMMUTABLE
+ source "kernel/irq/Kconfig"
+ source "kernel/time/Kconfig"
+ 
++config CONTEXT_TRACKING
++       bool
++
++config CONTEXT_TRACKING_FORCE
++	bool "Force context tracking"
++	depends on CONTEXT_TRACKING
++	help
++	  Probe on user/kernel boundaries by default in order to
++	  test the features that rely on it such as userspace RCU extended
++	  quiescent states.
++	  This test is there for debugging until we have a real user like a
++	  full adaptive nohz option.
++
+ menu "RCU Subsystem"
+ 
+ choice
+@@ -456,7 +469,8 @@ config PREEMPT_RCU
+ 
+ config RCU_USER_QS
+ 	bool "Consider userspace as in RCU extended quiescent state"
+-	depends on HAVE_RCU_USER_QS && SMP
++	depends on HAVE_CONTEXT_TRACKING && SMP
++	select CONTEXT_TRACKING
+ 	help
+ 	  This option sets hooks on kernel / userspace boundaries and
+ 	  puts RCU in extended quiescent state when the CPU runs in
+@@ -464,14 +478,6 @@ config RCU_USER_QS
+ 	  excluded from the global RCU state machine and thus doesn't
+ 	  to keep the timer tick on for RCU.
+ 
+-config RCU_USER_QS_FORCE
+-	bool "Force userspace extended QS by default"
+-	depends on RCU_USER_QS
+-	help
+-	  Set the hooks in user/kernel boundaries by default in order to
+-	  test this feature that treats userspace as an extended quiescent
+-	  state until we have a real user like a full adaptive nohz option.
+-
+ config RCU_FANOUT
+ 	int "Tree-based hierarchical RCU fanout value"
+ 	range 2 64 if 64BIT
+diff --git a/kernel/Makefile b/kernel/Makefile
+index c0cc67a..f0bd640 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -110,6 +110,7 @@ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
+ obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
+ obj-$(CONFIG_JUMP_LABEL) += jump_label.o
++obj-$(CONFIG_CONTEXT_TRACKING) += context_tracking.o
+ 
+ $(obj)/configs.o: $(obj)/config_data.h
+ 
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+new file mode 100644
+index 0000000..96f40d9
+--- /dev/null
++++ b/kernel/context_tracking.c
+@@ -0,0 +1,59 @@
++#include <linux/context_tracking.h>
++#include <linux/rcupdate.h>
++#include <linux/sched.h>
++#include <linux/percpu.h>
++
 +struct context_tracking {
 +	/*
 +	 * When active is false, hooks are not set to
@@ -136,233 +384,163 @@ index e24339c..71e34ec 100644
 +	} state;
 +};
 +
-+DECLARE_PER_CPU(struct context_tracking, context_tracking);
++DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
++#ifdef CONFIG_CONTEXT_TRACKING_FORCE
++	.active = true,
++#endif
++};
 +
-+static inline bool context_tracking_in_user(void)
++void user_enter(void)
 +{
-+	return __this_cpu_read(context_tracking.state) == IN_USER;
++	unsigned long flags;
++
++	WARN_ON_ONCE(!current->mm);
++	local_irq_save(flags);
++	if (__this_cpu_read(context_tracking.active) &&
++	    __this_cpu_read(context_tracking.state) != IN_USER) {
++		__this_cpu_write(context_tracking.state, IN_USER);
++		rcu_user_enter();
++	}
++	local_irq_restore(flags);
 +}
 +
-+static inline bool context_tracking_active(void)
++void user_exit(void)
 +{
-+	return __this_cpu_read(context_tracking.active);
++	unsigned long flags;
++
++	local_irq_save(flags);
++	if (__this_cpu_read(context_tracking.state) == IN_USER) {
++		__this_cpu_write(context_tracking.state, IN_KERNEL);
++		rcu_user_exit();
++	}
++	local_irq_restore(flags);
 +}
 +
- extern void user_enter(void);
- extern void user_exit(void);
- extern void context_tracking_task_switch(struct task_struct *prev,
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index 1270b86..6e509a9 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -130,13 +130,23 @@ extern void account_process_tick(struct task_struct *, int user);
- extern void account_steal_ticks(unsigned long ticks);
- extern void account_idle_ticks(unsigned long ticks);
++void context_tracking_task_switch(struct task_struct *prev,
++			     struct task_struct *next)
++{
++	if (__this_cpu_read(context_tracking.active)) {
++		clear_tsk_thread_flag(prev, TIF_NOHZ);
++		set_tsk_thread_flag(next, TIF_NOHZ);
++	}
++}
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 318d00e..f6a24cb 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -212,9 +212,6 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+ DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+ 	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
+ 	.dynticks = ATOMIC_INIT(1),
+-#if defined(CONFIG_RCU_USER_QS) && !defined(CONFIG_RCU_USER_QS_FORCE)
+-	.ignore_user_qs = true,
+-#endif
+ };
  
-+
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING
- extern void account_switch_vtime(struct task_struct *prev);
--extern bool account_process_tick_vtime(struct task_struct *p, int user_tick);
-+extern void account_process_tick_vtime(struct task_struct *p, int user_tick);
- #else
- static inline void account_switch_vtime(struct task_struct *prev) { }
- static inline void account_process_tick_vtime(struct task_struct *p,
- 					      int user_tick) { }
+ static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
+@@ -448,18 +445,7 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+  */
+ void rcu_user_enter(void)
+ {
+-	unsigned long flags;
+-	struct rcu_dynticks *rdtp;
+-
+-	WARN_ON_ONCE(!current->mm);
+-
+-	local_irq_save(flags);
+-	rdtp = &__get_cpu_var(rcu_dynticks);
+-	if (!rdtp->ignore_user_qs && !rdtp->in_user) {
+-		rdtp->in_user = true;
+-		rcu_eqs_enter(1);
+-	}
+-	local_irq_restore(flags);
++	rcu_eqs_enter(1);
+ }
+ EXPORT_SYMBOL_GPL(rcu_user_enter);
+ 
+@@ -597,16 +583,7 @@ EXPORT_SYMBOL_GPL(rcu_idle_exit);
+  */
+ void rcu_user_exit(void)
+ {
+-	unsigned long flags;
+-	struct rcu_dynticks *rdtp;
+-
+-	local_irq_save(flags);
+-	rdtp = &__get_cpu_var(rcu_dynticks);
+-	if (rdtp->in_user) {
+-		rdtp->in_user = false;
+-		rcu_eqs_exit(1);
+-	}
+-	local_irq_restore(flags);
++	rcu_eqs_exit(1);
+ }
+ EXPORT_SYMBOL_GPL(rcu_user_exit);
+ 
+@@ -730,21 +707,6 @@ int rcu_is_cpu_idle(void)
+ }
+ EXPORT_SYMBOL(rcu_is_cpu_idle);
+ 
+-#ifdef CONFIG_RCU_USER_QS
+-void rcu_user_hooks_switch(struct task_struct *prev,
+-			   struct task_struct *next)
+-{
+-	struct rcu_dynticks *rdtp;
+-
+-	/* Interrupts are disabled in context switch */
+-	rdtp = &__get_cpu_var(rcu_dynticks);
+-	if (!rdtp->ignore_user_qs) {
+-		clear_tsk_thread_flag(prev, TIF_NOHZ);
+-		set_tsk_thread_flag(next, TIF_NOHZ);
+-	}
+-}
+-#endif /* #ifdef CONFIG_RCU_USER_QS */
+-
+ #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU)
+ 
+ /*
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 94a4894..3027ac0 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -72,6 +72,7 @@
+ #include <linux/slab.h>
+ #include <linux/init_task.h>
+ #include <linux/binfmts.h>
++#include <linux/context_tracking.h>
+ 
+ #include <asm/switch_to.h>
+ #include <asm/tlb.h>
+@@ -1925,8 +1926,8 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ 	spin_release(&rq->lock.dep_map, 1, _THIS_IP_);
  #endif
  
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+void account_system_vtime(struct task_struct *tsk);
-+void account_user_vtime(struct task_struct *tsk);
-+bool accounting_vtime(void);
-+#else
-+static inline void account_system_vtime(struct task_struct *tsk) { }
-+static inline void account_user_vtime(struct task_struct *tsk) { }
-+#endif
-+
- #endif /* _LINUX_KERNEL_STAT_H */
-diff --git a/init/Kconfig b/init/Kconfig
-index e1c64c2..82ae72d 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -269,7 +269,9 @@ config POSIX_MQUEUE_SYSCTL
++	context_tracking_task_switch(prev, next);
+ 	/* Here we just switch the register state and the stack. */
+-	rcu_switch(prev, next);
+ 	switch_to(prev, next, prev);
  
- config VIRT_CPU_ACCOUNTING
- 	bool "Deterministic task and CPU time accounting"
--	depends on HAVE_VIRT_CPU_ACCOUNTING && !IRQ_TIME_ACCOUNTING
-+	depends on HAVE_VIRT_CPU_ACCOUNTING || HAVE_CONTEXT_TRACKING
-+	depends on !IRQ_TIME_ACCOUNTING
-+	select VIRT_CPU_ACCOUNTING_GEN if !HAVE_VIRT_CPU_ACCOUNTING
- 	default y if PPC64
- 	help
- 	  Select this option to enable more accurate task and CPU time
-@@ -280,6 +282,13 @@ config VIRT_CPU_ACCOUNTING
- 	  stolen time on logically-partitioned systems running on
- 	  IBM POWER5-based machines.
+ 	barrier();
+@@ -2920,9 +2921,9 @@ EXPORT_SYMBOL(schedule);
  
-+config VIRT_CPU_ACCOUNTING_GEN
-+	select CONTEXT_TRACKING
-+	bool
-+	help
-+	  Implement a generic virtual based cputime accounting by using
-+	  the context tracking subsystem.
-+
- config BSD_PROCESS_ACCT
- 	bool "BSD Process Accounting"
- 	help
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 96f40d9..d6c5d08 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -1,21 +1,8 @@
- #include <linux/context_tracking.h>
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
--#include <linux/percpu.h>
-+#include <linux/kernel_stat.h>
- 
--struct context_tracking {
--	/*
--	 * When active is false, hooks are not set to
--	 * minimize overhead: TIF flags are cleared
--	 * and calls to user_enter/exit are ignored. This
--	 * may be further optimized using static keys.
--	 */
--	bool active;
--	enum {
--		IN_KERNEL = 0,
--		IN_USER,
--	} state;
--};
- 
- DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
- #ifdef CONFIG_CONTEXT_TRACKING_FORCE
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 53b03cc..8408304 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -2,6 +2,7 @@
- #include <linux/sched.h>
- #include <linux/tsacct_kern.h>
- #include <linux/kernel_stat.h>
-+#include <linux/context_tracking.h>
- #include "sched.h"
- 
- 
-@@ -490,3 +491,114 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	*ut = sig->prev_utime;
- 	*st = sig->prev_stime;
+ asmlinkage void __sched schedule_user(void)
+ {
+-	rcu_user_exit();
++	user_exit();
+ 	schedule();
+-	rcu_user_enter();
++	user_enter();
  }
-+
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+static DEFINE_PER_CPU(long, last_jiffies) = INITIAL_JIFFIES;
-+
-+static cputime_t get_vtime_delta(void)
-+{
-+	long delta;
-+
-+	delta = jiffies - __this_cpu_read(last_jiffies);
-+	__this_cpu_add(last_jiffies, delta);
-+
-+	return jiffies_to_cputime(delta);
-+}
-+
-+void account_system_vtime(struct task_struct *tsk)
-+{
-+	cputime_t delta_cpu = get_vtime_delta();
-+
-+	account_system_time(tsk, irq_count(), delta_cpu, cputime_to_scaled(delta_cpu));
-+}
-+
-+void account_user_vtime(struct task_struct *tsk)
-+{
-+	cputime_t delta_cpu = get_vtime_delta();
-+
-+	account_user_time(tsk, delta_cpu, cputime_to_scaled(delta_cpu));
-+}
-+
-+static void account_idle_vtime(void)
-+{
-+	cputime_t delta_cpu = get_vtime_delta();
-+
-+	account_idle_time(delta_cpu);
-+}
-+
-+void account_vtime(struct task_struct *tsk)
-+{
-+	unsigned long count = irq_count();
-+
-+	if (!count) {
-+		/*
-+		 * If we interrupted user, context_tracking_in_user()
-+		 * is 1 because the context tracking don't hook
-+		 * on irq entry/exit. This way we know if
-+		 * we need to flush user time on kernel entry.
-+		 */
-+		if (context_tracking_in_user())
-+			account_user_vtime(tsk);
-+	} else {
-+		if (count == HARDIRQ_OFFSET ||
-+		    count == SOFTIRQ_OFFSET) {
-+			if (is_idle_task(tsk))
-+				account_idle_vtime();
-+			else
-+				account_system_vtime(tsk);
-+		}
-+	}
-+}
-+
-+void account_switch_vtime(struct task_struct *prev)
-+{
-+	if (is_idle_task(prev))
-+		account_idle_vtime();
-+	else
-+		account_system_vtime(prev);
-+}
-+
-+/*
-+ * This is a kind of hack: if we flush user time only on
-+ * irq entry, we miss the jiffies update and the time is spuriously
-+ * accounted to system time.
-+ */
-+void account_process_tick_vtime(struct task_struct *p, int user_tick)
-+{
-+	if (context_tracking_in_user())
-+		account_user_vtime(p);
-+}
-+
-+bool accounting_vtime(void)
-+{
-+	return context_tracking_active();
-+}
-+
-+static int __cpuinit vtime_cpu_notify(struct notifier_block *self,
-+				      unsigned long action, void *hcpu)
-+{
-+	long cpu = (long)hcpu;
-+	long *last_jiffies_cpu = per_cpu_ptr(&last_jiffies, cpu);
-+
-+	switch (action) {
-+	case CPU_UP_PREPARE:
-+	case CPU_UP_PREPARE_FROZEN:
-+		/*
-+		 * CHECKME: ensure that's visible by the CPU
-+		 * once it wakes up
-+		 */
-+		*last_jiffies_cpu = jiffies;
-+	default:
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static int __init init_vtime(void)
-+{
-+	cpu_notifier(vtime_cpu_notify, 0);
-+	return 0;
-+}
-+early_initcall(init_vtime);
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
+ 
+ /**
+@@ -3026,7 +3027,7 @@ asmlinkage void __sched preempt_schedule_irq(void)
+ 	/* Catch callers which need to be fixed */
+ 	BUG_ON(ti->preempt_count || !irqs_disabled());
+ 
+-	rcu_user_exit();
++	user_exit();
+ 	do {
+ 		add_preempt_count(PREEMPT_ACTIVE);
+ 		local_irq_enable();
 -- 
 1.7.5.4
 
