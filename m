@@ -1,65 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab2HDNt1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 09:49:27 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63845 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab2HDNt0 (ORCPT
+	id S1752973Ab2HDOCt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 10:02:49 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:42088 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab2HDOCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 09:49:26 -0400
-X-Nat-Received: from [202.181.97.72]:50083 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1344087972.9564
-To: john.stultz@linaro.org, mingo@kernel.org, tglx@linutronix.de
-Cc: a.p.zijlstra@chello.nl, richardcochran@gmail.com, prarit@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.6-rc1] sched: clock counts too quickly
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201208032318.FGJ64576.tOMVLOFHFQOFJS@I-love.SAKURA.ne.jp>
-	<201208042024.GFG34353.OFtFVQJMLOHFSO@I-love.SAKURA.ne.jp>
-	<201208042110.EFH81212.OSVOLMOtFQHJFF@I-love.SAKURA.ne.jp>
-In-Reply-To: <201208042110.EFH81212.OSVOLMOtFQHJFF@I-love.SAKURA.ne.jp>
-Message-Id: <201208042246.HBH81275.FVOOSLtJFMQOFH@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 4 Aug 2012 22:46:08 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 04082012 #8314118, status: clean
+	Sat, 4 Aug 2012 10:02:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1343887288-8866-9-git-send-email-laijs@cn.fujitsu.com>
+References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
+	<1343887288-8866-9-git-send-email-laijs@cn.fujitsu.com>
+Date: Sat, 4 Aug 2012 22:02:45 +0800
+Message-ID: <CAJd=RBBVVXj99zxSpCA_wz6Md371TTrJbDjCzJMntYHrrVOaYw@mail.gmail.com>
+Subject: Re: [RFC PATCH 08/23 V2] hugetlb: use N_MEMORY instead N_HIGH_MEMORY
+From: Hillf Danton <dhillf@gmail.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, Aug 2, 2012 at 2:01 PM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+> N_MEMORY stands for the nodes that has any memory.
+>
+> The code here need to handle with the nodes which have memory, we should
+> use N_MEMORY instead.
+>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  drivers/base/node.c |    2 +-
+>  mm/hugetlb.c        |   24 ++++++++++++------------
+>  2 files changed, 13 insertions(+), 13 deletions(-)
+>
 
-Bisected to 2a8c0883 "time: Move xtime_nsec adjustment underflow handling
-timekeeping_adjust".
+Better if the patch is split for hugetlb and node respectively.
 
-Would you check?
+Acked-by: Hillf Danton <dhillf@gmail.com>
 
-Regards.
-
-Tetsuo Handa wrote:
-> Tetsuo Handa wrote:
-> > > Under unknown condition, clock starts counting up too quickly which is enough
-> > > to confuse hangcheck timer to print stall warning.
-> > I wrote a test program.
-> 
-> I suspected that this is a problem within adjtimex() because strace reported clock
-> jump at adjtimex(). But I've just hit this problem with settimeofday() alone.
-> 
-> ---------- test program 2 start ----------
-> #include <sys/timex.h>
-> 
-> int main(int argc, char *argv[])
-> {
->         while (1) {
->                 struct timeval tv;
->                 struct timezone tz;
->                 gettimeofday(&tv, &tz);
->                 settimeofday(&tv, &tz);
+> diff --git a/drivers/base/node.c b/drivers/base/node.c
+> index af1a177..31f4805 100644
+> --- a/drivers/base/node.c
+> +++ b/drivers/base/node.c
+> @@ -227,7 +227,7 @@ static node_registration_func_t __hugetlb_unregister_node;
+>  static inline bool hugetlb_register_node(struct node *node)
+>  {
+>         if (__hugetlb_register_node &&
+> -                       node_state(node->dev.id, N_HIGH_MEMORY)) {
+> +                       node_state(node->dev.id, N_MEMORY)) {
+>                 __hugetlb_register_node(node);
+>                 return true;
 >         }
->         return 0;
-> }
-> ---------- test program 2 end ----------
-> 
-> Regards.
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index e198831..661db47 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1046,7 +1046,7 @@ static void return_unused_surplus_pages(struct hstate *h,
+>          * on-line nodes with memory and will handle the hstate accounting.
+>          */
+>         while (nr_pages--) {
+> -               if (!free_pool_huge_page(h, &node_states[N_HIGH_MEMORY], 1))
+> +               if (!free_pool_huge_page(h, &node_states[N_MEMORY], 1))
+>                         break;
+>         }
+>  }
+> @@ -1150,14 +1150,14 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  int __weak alloc_bootmem_huge_page(struct hstate *h)
+>  {
+>         struct huge_bootmem_page *m;
+> -       int nr_nodes = nodes_weight(node_states[N_HIGH_MEMORY]);
+> +       int nr_nodes = nodes_weight(node_states[N_MEMORY]);
+>
+>         while (nr_nodes) {
+>                 void *addr;
+>
+>                 addr = __alloc_bootmem_node_nopanic(
+>                                 NODE_DATA(hstate_next_node_to_alloc(h,
+> -                                               &node_states[N_HIGH_MEMORY])),
+> +                                               &node_states[N_MEMORY])),
+>                                 huge_page_size(h), huge_page_size(h), 0);
+>
+>                 if (addr) {
+> @@ -1229,7 +1229,7 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
+>                         if (!alloc_bootmem_huge_page(h))
+>                                 break;
+>                 } else if (!alloc_fresh_huge_page(h,
+> -                                        &node_states[N_HIGH_MEMORY]))
+> +                                        &node_states[N_MEMORY]))
+>                         break;
+>         }
+>         h->max_huge_pages = i;
+> @@ -1497,7 +1497,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+>                 if (!(obey_mempolicy &&
+>                                 init_nodemask_of_mempolicy(nodes_allowed))) {
+>                         NODEMASK_FREE(nodes_allowed);
+> -                       nodes_allowed = &node_states[N_HIGH_MEMORY];
+> +                       nodes_allowed = &node_states[N_MEMORY];
+>                 }
+>         } else if (nodes_allowed) {
+>                 /*
+> @@ -1507,11 +1507,11 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+>                 count += h->nr_huge_pages - h->nr_huge_pages_node[nid];
+>                 init_nodemask_of_node(nodes_allowed, nid);
+>         } else
+> -               nodes_allowed = &node_states[N_HIGH_MEMORY];
+> +               nodes_allowed = &node_states[N_MEMORY];
+>
+>         h->max_huge_pages = set_max_huge_pages(h, count, nodes_allowed);
+>
+> -       if (nodes_allowed != &node_states[N_HIGH_MEMORY])
+> +       if (nodes_allowed != &node_states[N_MEMORY])
+>                 NODEMASK_FREE(nodes_allowed);
+>
+>         return len;
+> @@ -1812,7 +1812,7 @@ static void hugetlb_register_all_nodes(void)
+>  {
+>         int nid;
+>
+> -       for_each_node_state(nid, N_HIGH_MEMORY) {
+> +       for_each_node_state(nid, N_MEMORY) {
+>                 struct node *node = &node_devices[nid];
+>                 if (node->dev.id == nid)
+>                         hugetlb_register_node(node);
+> @@ -1906,8 +1906,8 @@ void __init hugetlb_add_hstate(unsigned order)
+>         h->free_huge_pages = 0;
+>         for (i = 0; i < MAX_NUMNODES; ++i)
+>                 INIT_LIST_HEAD(&h->hugepage_freelists[i]);
+> -       h->next_nid_to_alloc = first_node(node_states[N_HIGH_MEMORY]);
+> -       h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+> +       h->next_nid_to_alloc = first_node(node_states[N_MEMORY]);
+> +       h->next_nid_to_free = first_node(node_states[N_MEMORY]);
+>         snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+>                                         huge_page_size(h)/1024);
+>
+> @@ -1995,11 +1995,11 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+>                 if (!(obey_mempolicy &&
+>                                init_nodemask_of_mempolicy(nodes_allowed))) {
+>                         NODEMASK_FREE(nodes_allowed);
+> -                       nodes_allowed = &node_states[N_HIGH_MEMORY];
+> +                       nodes_allowed = &node_states[N_MEMORY];
+>                 }
+>                 h->max_huge_pages = set_max_huge_pages(h, tmp, nodes_allowed);
+>
+> -               if (nodes_allowed != &node_states[N_HIGH_MEMORY])
+> +               if (nodes_allowed != &node_states[N_MEMORY])
+>                         NODEMASK_FREE(nodes_allowed);
+>         }
+>  out:
+> --
+> 1.7.1
+>
