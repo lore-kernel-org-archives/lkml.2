@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab2HDMSh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 08:18:37 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51018 "EHLO
+	id S1753224Ab2HDMTi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 08:19:38 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:51340 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab2HDMSb (ORCPT
+	with ESMTP id S1751640Ab2HDMTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 08:18:31 -0400
+	Sat, 4 Aug 2012 08:19:34 -0400
 From: Jiang Liu <jiang.liu@huawei.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
@@ -20,10 +20,11 @@ CC: Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
         <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 14/16] ACPIHP: implement the state machine for ACPI  hotplug slots
-Date: Sat, 4 Aug 2012 20:14:01 +0800
-Message-ID: <1344082443-4608-15-git-send-email-jiang.liu@huawei.com>
+        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>,
+        Gaohuai Han <hangaohuai@huawei.com>
+Subject: [RFC PATCH v2 07/16] ACPIHP: add callbacks into acpi_device_ops to  support new hotplug framework
+Date: Sat, 4 Aug 2012 20:13:54 +0800
+Message-ID: <1344082443-4608-8-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
 References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
@@ -37,698 +38,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-This patch implements the core of the new ACPI hotplug framework, it drivers
-the state machine for ACPI hotplug slots according to user commands. It also
-resolve dependencies among slots when transit the state machine.
+Add new callbacks into struct acpi_device_ops to provide better error handling,
+error recover and operation cancellation for ACPI based system device hotplug.
+
+There are three major operations and each major operation is divided into
+three steps.
+1) pre_configure, configure, post_configure
+	add an ACPI device into running system and rollback if error happens
+	cancelled by user.
+2) pre_release, release, post_release
+	reclaim an ACPI device from running system and rollback if error
+	happens or cancelled by user. It's important to privode a mechanism
+	to cancel memory hot-removal operations because it's may take very
+	long or even endless time to reclaim a memory device.
+3) pre_unconfigure, unconfigure, post_unconfigure
+	remove an ACPI device from running system and release all resources
+	associated with it.
+
+There's another callback to query status and information about the ACPI device.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
+Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
 ---
- drivers/acpi/hotplug/Makefile        |    1 +
- drivers/acpi/hotplug/acpihp_drv.h    |    9 +
- drivers/acpi/hotplug/state_machine.c |  633 ++++++++++++++++++++++++++++++++++
- 3 files changed, 643 insertions(+)
- create mode 100644 drivers/acpi/hotplug/state_machine.c
+ drivers/acpi/hotplug/device.c |   72 +++++++++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_bus.h       |    3 ++
+ include/acpi/acpi_hotplug.h   |   64 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 139 insertions(+)
 
-diff --git a/drivers/acpi/hotplug/Makefile b/drivers/acpi/hotplug/Makefile
-index 55d559a..9383320 100644
---- a/drivers/acpi/hotplug/Makefile
-+++ b/drivers/acpi/hotplug/Makefile
-@@ -14,3 +14,4 @@ acpihp_drv-y					= drv_main.o
- acpihp_drv-y					+= dependency.o
- acpihp_drv-y					+= cancel.o
- acpihp_drv-y					+= configure.o
-+acpihp_drv-y					+= state_machine.o
-diff --git a/drivers/acpi/hotplug/acpihp_drv.h b/drivers/acpi/hotplug/acpihp_drv.h
-index eca2036..3b6dbdd 100644
---- a/drivers/acpi/hotplug/acpihp_drv.h
-+++ b/drivers/acpi/hotplug/acpihp_drv.h
-@@ -25,6 +25,9 @@
- #ifndef	__ACPIHP_DRV_H__
- #define	__ACPIHP_DRV_H__
+diff --git a/drivers/acpi/hotplug/device.c b/drivers/acpi/hotplug/device.c
+index 1795939..19a9683 100644
+--- a/drivers/acpi/hotplug/device.c
++++ b/drivers/acpi/hotplug/device.c
+@@ -1,6 +1,7 @@
+ /*
+  * Copyright (C) 2011 Huawei Tech. Co., Ltd.
+  * Copyright (C) 2011 Jiang Liu <jiang.liu@huawei.com>
++ * Copyright (C) 2011 Hanjun Guo <guohanjun@huawei.com>
+  *
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  *
+@@ -27,6 +28,77 @@
+ #include <acpi/acpi_hotplug.h>
+ #include "../internal.h"
  
-+/* Timeout value to wait for firmware to power on the slot */
-+#define ACPIHP_EVENT_WAIT_TIME  (100 * HZ)
++int acpihp_dev_get_info(struct acpi_device *device,
++			struct acpihp_dev_info *info)
++{
++	int ret = -ENOSYS;
 +
- /* Commands to change state of a hotplug slot */
- enum acpihp_drv_cmd {
- 	ACPIHP_DRV_CMD_NOOP = 0,
-@@ -68,6 +71,9 @@ struct acpihp_slot_dependency {
- 	u32				opcodes;
++	acpihp_dev_get_type(device->handle, &info->type);
++
++	mutex_lock(&device->dev.mutex);
++	if (device->driver && device->driver->ops.hp_ops &&
++	    device->driver->ops.hp_ops->get_info)
++		ret = device->driver->ops.hp_ops->get_info(device, info);
++	else
++#if 0
++		/* Turn on this once all system devices have been converted
++		 * to the new hotplug framework
++		 */
++		info->status |= ACPIHP_DEV_STATUS_IRREMOVABLE;
++#else
++		ret = 0;
++#endif
++
++	if (device->driver)
++		info->status |= ACPIHP_DEV_STATUS_ATTACHED;
++	mutex_unlock(&device->dev.mutex);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(acpihp_dev_get_info);
++
++#define	ACPIHP_DEFINE_FUNC(method, def, err) \
++int acpihp_dev_##method(struct acpi_device *device) \
++{ \
++	int ret; \
++	BUG_ON(device == NULL); \
++	if (!device->driver || !device->driver->ops.hp_ops) \
++		ret = (err); \
++	else if (!device->driver->ops.hp_ops->method) \
++		ret = (def); \
++	else \
++		ret = device->driver->ops.hp_ops->method(device);\
++	return ret; \
++} \
++EXPORT_SYMBOL_GPL(acpihp_dev_##method)
++
++#define	ACPIHP_DEFINE_FUNC1(method, def, err, type) \
++int acpihp_dev_##method(struct acpi_device *device, type val) \
++{ \
++	int ret; \
++	BUG_ON(device == NULL); \
++	if (!device->driver || !device->driver->ops.hp_ops) \
++		ret = (err); \
++	else if (!device->driver->ops.hp_ops->method) \
++		ret = (def); \
++	else \
++		ret = device->driver->ops.hp_ops->method(device, val); \
++	return ret; \
++} \
++EXPORT_SYMBOL_GPL(acpihp_dev_##method)
++
++ACPIHP_DEFINE_FUNC1(pre_configure, 0, 0, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC1(configure, 0, -ENOSYS, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC1(post_configure, 0, 0, enum acpihp_dev_post_cmd);
++
++ACPIHP_DEFINE_FUNC1(pre_release, 0, 0, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC1(release, 0, 0, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC1(post_release, 0, 0, enum acpihp_dev_post_cmd);
++
++ACPIHP_DEFINE_FUNC(pre_unconfigure, 0, 0);
++ACPIHP_DEFINE_FUNC(unconfigure, 0, -ENOSYS);
++ACPIHP_DEFINE_FUNC(post_unconfigure, 0, 0);
++
+ /*
+  * When creating ACPI devices for hot-added system devices connecting to slot,
+  * we shouldn't cross the slot boundary. Otherwise it will cause inconsistence
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 81b4c3f..09bfa80 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -140,6 +140,9 @@ struct acpi_device_ops {
+ 	acpi_op_bind bind;
+ 	acpi_op_unbind unbind;
+ 	acpi_op_notify notify;
++#ifdef	CONFIG_ACPI_HOTPLUG
++	struct acpihp_dev_ops *hp_ops;
++#endif	/* CONFIG_ACPI_HOTPLUG */
  };
  
-+extern struct mutex state_machine_mutex;
-+extern wait_queue_head_t acpihp_drv_event_wq;
-+
- void acpihp_drv_get_data(struct acpihp_slot *slot,
- 			 struct acpihp_slot_drv **data);
- int acpihp_drv_enumerate_devices(struct acpihp_slot *slot);
-@@ -92,4 +98,7 @@ int acpihp_drv_cancel_wait(struct list_head *list);
- int acpihp_drv_configure(struct list_head *list);
- int acpihp_drv_unconfigure(struct list_head *list);
+ #define ACPI_DRIVER_ALL_NOTIFY_EVENTS	0x1	/* system AND device events */
+diff --git a/include/acpi/acpi_hotplug.h b/include/acpi/acpi_hotplug.h
+index cd8dd99..2589ccb 100644
+--- a/include/acpi/acpi_hotplug.h
++++ b/include/acpi/acpi_hotplug.h
+@@ -66,6 +66,51 @@ struct acpihp_dev_node {
+ 	struct klist_node	node;
+ };
  
-+/* The heart of the ACPI system device hotplug driver */
-+int acpihp_drv_change_state(struct acpihp_slot *slot, enum acpihp_drv_cmd cmd);
++/* Status of system devices. */
++#define	ACPIHP_DEV_STATUS_ATTACHED	0x1 /* Device driver attached */
++#define	ACPIHP_DEV_STATUS_STARTED	0x2 /* Device started */
++#define	ACPIHP_DEV_STATUS_IRREMOVABLE	0x10000 /* Device can't be removed */
++#define	ACPIHP_DEV_STATUS_FAULT		0x20000 /* Device in fault status */
 +
- #endif	/* __ACPIHP_DRV_H__ */
-diff --git a/drivers/acpi/hotplug/state_machine.c b/drivers/acpi/hotplug/state_machine.c
-new file mode 100644
-index 0000000..9f61804
---- /dev/null
-+++ b/drivers/acpi/hotplug/state_machine.c
-@@ -0,0 +1,633 @@
-+/*
-+ * Copyright (C) 2011 Huawei Tech. Co., Ltd.
-+ * Copyright (C) 2011 Jiang Liu <jiang.liu@huawei.com>
-+ * Copyright (C) 2011 Hanjun Guo <guohanjun@huawei.com>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ */
++struct acpihp_dev_info {
++	enum acpihp_dev_type		type;
++	uint32_t			status;
++};
 +
-+#include <linux/mutex.h>
-+#include <linux/wait.h>
-+#include <acpi/acpi_hotplug.h>
-+#include "acpihp_drv.h"
++/* Rollback or commit changes in post_{confiure|release} */
++enum acpihp_dev_post_cmd {
++	ACPIHP_DEV_POST_CMD_ROLLBACK,
++	ACPIHP_DEV_POST_CMD_COMMIT
++};
 +
 +/*
-+ * Global lock to serialize manipulating of dependency list among hotplug slots
-+ * to avoid deadlock among slots. The lock order is:
-+ * 1) acquire state_machine_mutex;
-+ * 2) acquire drv_data->op_mutex;
-+ * 3) acquire slot->slot_mutex;
++ * ACPI system device drivers may check cancellations of hotplug operations
++ * by invoking the callback.
 + */
-+DEFINE_MUTEX(state_machine_mutex);
-+
-+DECLARE_WAIT_QUEUE_HEAD(acpihp_drv_event_wq);
-+
-+static int acpihp_drv_lock_slot(struct acpihp_slot *slot)
-+{
-+	int retval = 0;
-+	struct acpihp_slot_drv *drv_data;
-+
-+	acpihp_drv_get_data(slot, &drv_data);
-+	if (!mutex_trylock(&drv_data->op_mutex)) {
-+		ACPIHP_DEBUG("slot %s is busy in state %d.\n",
-+			     slot->name, slot->state);
-+		retval = -EBUSY;
-+	}
-+
-+	return retval;
-+}
-+
-+static void acpihp_drv_unlock_slot(struct acpihp_slot *slot)
-+{
-+	struct acpihp_slot_drv *drv_data;
-+
-+	acpihp_drv_get_data(slot, &drv_data);
-+	BUG_ON(!mutex_is_locked(&drv_data->op_mutex));
-+	mutex_unlock(&drv_data->op_mutex);
-+}
++struct acpihp_cancel_context {
++	int (*check_cancel)(struct acpihp_cancel_context *ctx);
++};
 +
 +/*
-+ * Lock all slots in the dependency list to serialize concurrent operations.
-+ * Caller must hold state_machine_mutex.
++ * Callback hooks provided by ACPI device drivers to support system device
++ * hotplug. To support hotplug, an ACPI system device driver must implement
++ * configure(), unconfigure() and get_info() at least.
 + */
-+static int acpihp_drv_lock_slots(struct list_head *list,
-+				 struct acpihp_slot *slot)
-+{
-+	struct acpihp_slot_dependency *dep;
-+
-+	list_for_each_entry(dep, list, node)
-+		if (acpihp_drv_lock_slot(dep->slot))
-+			goto unlock;
-+
-+	return 0;
-+
-+unlock:
-+	list_for_each_entry_continue_reverse(dep, list, node)
-+		acpihp_drv_unlock_slot(dep->slot);
-+
-+	return -EBUSY;
-+}
-+
-+static void acpihp_drv_unlock_slots(struct list_head *list)
-+{
-+	struct acpihp_slot_dependency *dep;
-+
-+	list_for_each_entry(dep, list, node)
-+		acpihp_drv_unlock_slot(dep->slot);
-+}
-+
-+static bool acpihp_drv_is_ancestor(struct acpihp_slot *ancestor,
-+				   struct acpihp_slot *slot)
-+{
-+	while (slot) {
-+		if (slot->parent == ancestor)
-+			return true;
-+		slot = slot->parent;
-+	};
-+
-+	return false;
-+}
-+
-+/*
-+ * Check whether the command is valid according to current slot state,
-+ * and get required operations for this slot if command is valid.
-+ */
-+static int acpihp_drv_validate_transition(struct acpihp_slot_dependency *dep,
-+					  struct acpihp_slot *target,
-+					  enum acpihp_drv_cmd cmd)
-+{
-+	u32 op1, op2;
-+	struct acpihp_slot *slot = dep->slot;
-+
-+	if (slot->state <= ACPIHP_SLOT_STATE_UNKNOWN ||
-+	    slot->state >= ACPIHP_SLOT_STATE_MAX) {
-+		ACPIHP_DEBUG("invalid slot state %d.\n", slot->state);
-+		return -EINVAL;
-+	} else if (slot->state >= ACPIHP_SLOT_STATE_POWERING_ON) {
-+		/*
-+		 * This shouldn't happen, transcendant states are protected
-+		 * by slot->op_mutex.
-+		 */
-+		BUG_ON(slot->state);
-+		return -EBUSY;
-+	}
-+
-+	op1 = op2 = ACPIHP_DRV_CMD_NOOP;
-+	dep->opcodes = ACPIHP_DRV_CMD_NOOP;
-+
-+	/*
-+	 * To be compatible with legacy OSes, the PCI host bridges built into
-+	 * physical processor may be hosted directly under \\__SB instead of
-+	 * under the CONTAINER device corresponding to physical processor.
-+	 * That's really a corner case to deal with.
-+	 */
-+	switch (cmd) {
-+	case ACPIHP_DRV_CMD_POWERON:
-+		if (slot->state == ACPIHP_SLOT_STATE_ABSENT)
-+			return -EINVAL;
-+		else if (slot->state == ACPIHP_SLOT_STATE_PRESENT)
-+			dep->opcodes = ACPIHP_DRV_CMD_POWERON;
-+		break;
-+
-+	case ACPIHP_DRV_CMD_CONNECT:
-+		/*
-+		 * Its parent must have already been connected when connecting
-+		 * a slot, otherwise the device tree topology becomes incorrect.
-+		 */
-+		if (target == slot || acpihp_drv_is_ancestor(slot, target))
-+			op2 = ACPIHP_DRV_CMD_CONNECT;
-+
-+		if (slot->state == ACPIHP_SLOT_STATE_ABSENT)
-+			return -EINVAL;
-+		else if (slot->state == ACPIHP_SLOT_STATE_PRESENT)
-+			dep->opcodes = ACPIHP_DRV_CMD_POWERON | op2;
-+		else if (slot->state == ACPIHP_SLOT_STATE_POWERED)
-+			dep->opcodes = op2;
-+		break;
-+
-+	case ACPIHP_DRV_CMD_CONFIGURE:
-+		/* Only CONFIGURE the requested slot */
-+		if (slot == target)
-+			op1 = ACPIHP_DRV_CMD_CONFIGURE;
-+		/*
-+		 * Its parent must have already been connected when configuring
-+		 * a slot, otherwise the device tree topology becomes incorrect.
-+		 */
-+		if (target == slot || acpihp_drv_is_ancestor(slot, target))
-+			op2 = ACPIHP_DRV_CMD_CONNECT;
-+
-+		if (slot->state == ACPIHP_SLOT_STATE_ABSENT)
-+			return -EINVAL;
-+		else if (slot->state == ACPIHP_SLOT_STATE_PRESENT)
-+			dep->opcodes = ACPIHP_DRV_CMD_POWERON | op1 | op2;
-+		else if (slot->state == ACPIHP_SLOT_STATE_POWERED)
-+			dep->opcodes = op1 | op2;
-+		else if (slot->state == ACPIHP_SLOT_STATE_CONNECTED)
-+			dep->opcodes = op1;
-+		break;
-+
-+	case ACPIHP_DRV_CMD_UNCONFIGURE:
-+		/* Only UNCONFIGURE the requested slot */
-+		if (slot->state == ACPIHP_SLOT_STATE_CONFIGURED &&
-+		    slot == target)
-+			dep->opcodes = ACPIHP_DRV_CMD_UNCONFIGURE;
-+		break;
-+
-+	case ACPIHP_DRV_CMD_DISCONNECT:
-+		/*
-+		 * all descedant slots must be unconfigured/disconnected
-+		 * when disconnecting a slot.
-+		 */
-+		if (target == slot || acpihp_drv_is_ancestor(target, slot)) {
-+			op1 = ACPIHP_DRV_CMD_UNCONFIGURE;
-+			op2 = ACPIHP_DRV_CMD_DISCONNECT;
-+		}
-+
-+		if (slot->state == ACPIHP_SLOT_STATE_CONFIGURED)
-+			dep->opcodes = op1 | op2;
-+		else if (slot->state == ACPIHP_SLOT_STATE_CONNECTED)
-+			dep->opcodes = op2;
-+		break;
-+
-+	case ACPIHP_DRV_CMD_POWEROFF:
-+		/*
-+		 * All slots have dependency on the target slot must be
-+		 * powered off when powering the target slot off.
-+		 */
-+		if (slot->state == ACPIHP_SLOT_STATE_CONFIGURED)
-+			dep->opcodes = ACPIHP_DRV_CMD_UNCONFIGURE |
-+				       ACPIHP_DRV_CMD_DISCONNECT |
-+				       ACPIHP_DRV_CMD_POWEROFF;
-+		else if (slot->state == ACPIHP_SLOT_STATE_CONNECTED)
-+			dep->opcodes = ACPIHP_DRV_CMD_DISCONNECT |
-+				       ACPIHP_DRV_CMD_POWEROFF;
-+		else if (slot->state == ACPIHP_SLOT_STATE_POWERED)
-+			dep->opcodes = ACPIHP_DRV_CMD_POWEROFF;
-+		break;
-+
-+	default:
-+		ACPIHP_DEBUG("invalid command %d.\n", cmd);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int acpihp_drv_validate_command(struct list_head *list,
-+		struct acpihp_slot *target, enum acpihp_drv_cmd cmd)
-+{
-+	int retval;
-+	struct acpihp_slot *slot;
-+	struct acpihp_slot_dependency *dep;
-+
-+	list_for_each_entry(dep, list, node) {
-+		slot = dep->slot;
-+		acpihp_drv_update_slot_status(slot);
-+
-+		retval = acpihp_drv_validate_transition(dep, target, cmd);
-+		if (retval) {
-+			ACPIHP_DEBUG("Invalid cmd for slot %s in state %d.\n",
-+				     slot->name, slot->state);
-+			return retval;
-+		}
-+
-+		/*
-+		 * Check whether the slot is in good shape if we need to
-+		 * operate on it.
-+		 */
-+		if (dep->opcodes &&
-+		    acpihp_slot_get_flag(slot, ACPIHP_SLOT_FLAG_FAULT)) {
-+			ACPIHP_WARN("slot %s has been marked as faulty.\n",
-+				     slot->name);
-+			return -ENXIO;
-+		} else if ((dep->opcodes & ACPIHP_DRV_CMD_UNCONFIGURE) &&
-+		    acpihp_slot_get_flag(slot, ACPIHP_SLOT_FLAG_IRREMOVABLE)) {
-+			ACPIHP_WARN("slot %s is busy.\n", slot->name);
-+			return -EBUSY;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int acpihp_drv_pre_execute(struct acpihp_slot *slot,
-+				  enum acpihp_drv_cmd cmd,
-+				  struct list_head **head)
-+{
-+	int retval;
-+	struct list_head *list;
-+	struct acpihp_slot_drv *drv_data;
-+
-+	mutex_lock(&state_machine_mutex);
-+
-+	acpihp_drv_get_data(slot, &drv_data);
-+	*head = list = &drv_data->depend_list;
-+
-+	if (cmd == ACPIHP_DRV_CMD_CANCEL) {
-+		/*
-+		 * Set cancellation flags on all affected slots.
-+		 * All affected slots should already be on drv_data->depend_list
-+		 * if there's inprogress operation for the slot.
-+		 *
-+		 * state_machine_mutex must be held to serialize calls to
-+		 *	acpihp_drv_cancel_init(),
-+		 *	acpihp_drv_cancel_start(),
-+		 *	acpihp_drv_cancel_fini(),
-+		 */
-+		retval = acpihp_drv_cancel_start(&drv_data->depend_list);
-+		goto out;
-+	}
-+
-+	if (mutex_is_locked(&drv_data->op_mutex)) {
-+		ACPIHP_DEBUG("slot %s is busy.\n", slot->name);
-+		retval = -EBUSY;
-+		goto out;
-+	}
-+
-+	INIT_LIST_HEAD(list);
-+	retval = acpihp_drv_generate_dependency_list(slot, list, cmd);
-+	if (retval) {
-+		ACPIHP_DEBUG("fails to get dependency list for slot %s.\n",
-+			     slot->name);
-+		goto out;
-+	}
-+
-+	retval = acpihp_drv_lock_slots(list, slot);
-+	if (retval) {
-+		acpihp_drv_destroy_dependency_list(list);
-+		goto out;
-+	}
-+
-+	retval = acpihp_drv_validate_command(list, slot, cmd);
-+	if (retval) {
-+		acpihp_drv_unlock_slots(list);
-+		acpihp_drv_destroy_dependency_list(list);
-+		goto out;
-+	}
-+
-+	acpihp_drv_cancel_init(list);
-+
-+out:
-+	mutex_unlock(&state_machine_mutex);
-+
-+	return retval;
-+}
-+
-+static void acpihp_drv_post_execute(struct list_head *list,
-+				    enum acpihp_drv_cmd cmd)
-+{
-+	if (cmd == ACPIHP_DRV_CMD_CANCEL)
-+		return;
-+
-+	mutex_lock(&state_machine_mutex);
-+	if (list && !list_empty(list)) {
-+		acpihp_drv_cancel_fini(list);
-+		acpihp_drv_unlock_slots(list);
-+		acpihp_drv_destroy_dependency_list(list);
-+	}
-+	mutex_unlock(&state_machine_mutex);
-+}
-+
-+static int acpihp_drv_poweron_slot(struct acpihp_slot *slot)
-+{
-+	acpi_status status;
-+	struct acpihp_slot_drv *drv_data;
-+
-+	if (acpihp_slot_powered(slot))
-+		return 0;
-+
-+	acpihp_drv_get_data(slot, &drv_data);
-+	drv_data->event_flag = ACPIHP_DRV_EVENT_FROM_OS;
-+
-+	status = acpihp_slot_poweron(slot);
-+	if (ACPI_FAILURE(status)) {
-+		ACPIHP_WARN("fails to power on slot %s.\n", slot->name);
-+		if (status == AE_SUPPORT)
-+			return -ENOSYS;
-+		else
-+			return -ENXIO;
-+	}
-+
-+	wait_event_timeout(acpihp_drv_event_wq, acpihp_slot_powered(slot),
-+			   ACPIHP_EVENT_WAIT_TIME);
-+	if (!acpihp_slot_powered(slot)) {
-+		ACPIHP_WARN("fails to power on slot %s.\n", slot->name);
-+		return -ENXIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static int acpihp_drv_poweron(struct list_head *list)
-+{
-+	int retval = 0;
-+	struct acpihp_slot_dependency *dep;
-+
-+	list_for_each_entry(dep, list, node) {
-+		if (!(dep->opcodes & ACPIHP_DRV_CMD_POWERON))
-+			continue;
-+
-+		acpihp_slot_change_state(dep->slot,
-+					 ACPIHP_SLOT_STATE_POWERING_ON);
-+		retval = acpihp_drv_poweron_slot(dep->slot);
-+		if (!retval) {
-+			ACPIHP_DEBUG("succeed to power on slot %s!\n",
-+				     dep->slot->name);
-+			acpihp_slot_change_state(dep->slot,
-+						 ACPIHP_SLOT_STATE_POWERED);
-+		} else {
-+			acpihp_slot_change_state(dep->slot,
-+						 ACPIHP_SLOT_STATE_PRESENT);
-+			if (retval != -ENOSYS)
-+				acpihp_slot_set_flag(dep->slot,
-+						     ACPIHP_SLOT_FLAG_FAULT);
-+			break;
-+		}
-+	}
-+
-+	return retval;
-+}
-+
-+static int acpihp_drv_poweroff_slot(struct acpihp_slot *slot)
-+{
-+	acpi_status status;
-+
-+	if (acpihp_slot_powered(slot))
-+		return 0;
-+
-+	status = acpihp_slot_poweroff(slot);
-+	if (ACPI_FAILURE(status)) {
-+		ACPIHP_WARN("fails to power off slot %s.\n", slot->name);
-+		if (status == AE_SUPPORT)
-+			return -ENOSYS;
-+		else
-+			return -ENXIO;
-+	}
-+
-+	if (acpihp_slot_powered(slot)) {
-+		ACPIHP_WARN("fails to power off slot %s.\n", slot->name);
-+		return -ENXIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static int acpihp_drv_poweroff(struct list_head *list)
-+{
-+	int retval = 0;
-+	struct acpihp_slot_dependency *dep;
-+
-+	list_for_each_entry(dep, list, node) {
-+		if (!(dep->opcodes & ACPIHP_DRV_CMD_POWEROFF))
-+			continue;
-+
-+		acpihp_slot_change_state(dep->slot,
-+					 ACPIHP_SLOT_STATE_POWERING_OFF);
-+		retval = acpihp_drv_poweroff_slot(dep->slot);
-+		if (!retval) {
-+			ACPIHP_DEBUG("succeed to power off slot %s!\n",
-+				     dep->slot->name);
-+			acpihp_slot_change_state(dep->slot,
-+						 ACPIHP_SLOT_STATE_PRESENT);
-+		} else {
-+			acpihp_slot_change_state(dep->slot,
-+						 ACPIHP_SLOT_STATE_POWERED);
-+			if (retval != -ENOSYS)
-+				acpihp_slot_set_flag(dep->slot,
-+						     ACPIHP_SLOT_FLAG_FAULT);
-+			break;
-+		}
-+	}
-+
-+	return retval;
-+}
-+
-+static int acpihp_drv_connect_slot(struct acpihp_slot *slot)
-+{
-+	int retval;
-+
-+	retval = acpihp_add_devices(slot->handle, NULL);
-+	if (retval)
-+		ACPIHP_DEBUG("fails to add ACPI devices for slot %s.\n",
-+			     slot->name);
-+	else {
-+		retval = acpihp_drv_enumerate_devices(slot);
-+		if (retval)
-+			ACPIHP_DEBUG("fails to enumerate device for slot %s.\n",
-+				     slot->name);
-+	}
-+
-+	return retval;
-+}
-+
-+static int acpihp_drv_connect(struct list_head *list)
-+{
-+	int retval = 0;
-+	struct acpihp_slot_dependency *dep;
-+
-+	list_for_each_entry(dep, list, node) {
-+		if (!(dep->opcodes & ACPIHP_DRV_CMD_CONNECT))
-+			continue;
-+
-+		acpihp_slot_change_state(dep->slot,
-+					 ACPIHP_SLOT_STATE_CONNECTING);
-+		retval = acpihp_drv_connect_slot(dep->slot);
-+		if (!retval) {
-+			ACPIHP_DEBUG("succeed to connect slot %s!\n",
-+				     dep->slot->name);
-+			acpihp_slot_change_state(dep->slot,
-+						 ACPIHP_SLOT_STATE_CONNECTED);
-+		} else {
-+			acpihp_drv_update_slot_state(dep->slot);
-+			break;
-+		}
-+	}
-+
-+	return retval;
-+}
-+
-+static int acpihp_drv_disconnect_slot(struct acpihp_slot *slot)
-+{
-+	int retval = 0;
-+	enum acpihp_dev_type i;
-+	struct acpi_device *device = NULL;
-+
-+	/* remove all devices connecting to slot */
-+	for (i = ACPIHP_DEV_TYPE_UNKNOWN; i < ACPIHP_DEV_TYPE_MAX; i++) {
-+		retval = acpihp_remove_device_list(&slot->dev_lists[i]);
-+		if (retval) {
-+			ACPIHP_DEBUG("fails to remove devices under slot %s.\n",
-+				     slot->name);
-+			return retval;
-+		}
-+	}
-+
-+	/* remove ACPI devices */
-+	retval = acpi_bus_get_device(slot->handle, &device);
-+	if (!retval && device) {
-+		retval = acpi_bus_trim(device, 1);
-+		if (retval)
-+			ACPIHP_WARN("fails to remove ACPI devices for %s.\n",
-+				    slot->name);
-+	} else {
-+		ACPIHP_WARN("fails to get ACPI device for slot %s.\n",
-+			    slot->name);
-+	}
-+
-+	return retval;
-+}
-+
-+static int acpihp_drv_disconnect(struct list_head *list)
-+{
-+	int retval = 0;
-+	struct acpihp_slot_dependency *dep;
-+
-+	list_for_each_entry(dep, list, node) {
-+		if (!(dep->opcodes & ACPIHP_DRV_CMD_DISCONNECT))
-+			continue;
-+
-+		acpihp_slot_change_state(dep->slot,
-+					 ACPIHP_SLOT_STATE_DISCONNECTING);
-+		retval = acpihp_drv_disconnect_slot(dep->slot);
-+		if (!retval) {
-+			ACPIHP_DEBUG("succeed to disconnect slot %s!\n",
-+				     dep->slot->name);
-+			acpihp_slot_change_state(dep->slot,
-+						 ACPIHP_SLOT_STATE_POWERED);
-+		} else {
-+			acpihp_drv_update_slot_state(dep->slot);
-+			break;
-+		}
-+	}
-+
-+	return retval;
-+}
-+
-+static int acpihp_drv_execute(struct list_head *list, enum acpihp_drv_cmd cmd)
-+{
-+	int retval = 0;
-+	bool connect = false, configure = false;
-+	bool disconnect = false, poweroff = false;
-+
-+	if (!list || list_empty(list)) {
-+		ACPIHP_DEBUG("slot dependency list is NULL or empty!\n");
-+		retval = -EINVAL;
-+		goto out;
-+	}
-+
-+	switch (cmd) {
-+	case ACPIHP_DRV_CMD_CONFIGURE:
-+		configure = true;
-+		/* fall through */
-+	case ACPIHP_DRV_CMD_CONNECT:
-+		connect = true;
-+		/* fall through */
-+	case ACPIHP_DRV_CMD_POWERON:
-+		retval = acpihp_drv_poweron(list);
-+		if (!retval && connect)
-+			retval = acpihp_drv_connect(list);
-+		if (!retval && configure)
-+			retval = acpihp_drv_configure(list);
-+		break;
-+
-+	case ACPIHP_DRV_CMD_POWEROFF:
-+		poweroff = true;
-+		/* fall through */
-+	case ACPIHP_DRV_CMD_DISCONNECT:
-+		disconnect = true;
-+		/* fall through */
-+	case ACPIHP_DRV_CMD_UNCONFIGURE:
-+		retval = acpihp_drv_unconfigure(list);
-+		if (!retval && disconnect)
-+			retval = acpihp_drv_disconnect(list);
-+		if (!retval && poweroff)
-+			retval = acpihp_drv_poweroff(list);
-+		break;
-+
-+	case ACPIHP_DRV_CMD_CANCEL:
-+		retval = acpihp_drv_cancel_wait(list);
-+		break;
-+
-+	default:
-+		ACPIHP_DEBUG("unsupported command %d.\n", cmd);
-+		retval = -EINVAL;
-+		break;
-+	}
-+
-+out:
-+	return retval;
-+}
-+
-+/*
-+ * The heart of ACPI based system device hotplug driver, which drivers the
-+ * slot state machine according to commands.
-+ */
-+int acpihp_drv_change_state(struct acpihp_slot *slot, enum acpihp_drv_cmd cmd)
-+{
-+	int retval;
-+	struct list_head *list = NULL;
-+
-+	retval = acpihp_drv_pre_execute(slot, cmd, &list);
-+	if (!retval) {
-+		retval = acpihp_drv_execute(list, cmd);
-+		acpihp_drv_post_execute(list, cmd);
-+	}
-+
-+	return retval;
-+}
++struct acpihp_dev_ops {
++	int (*get_info)(struct acpi_device *, struct acpihp_dev_info *info);
++	int (*pre_configure)(struct acpi_device *,
++			     struct acpihp_cancel_context *);
++	int (*configure)(struct acpi_device *, struct acpihp_cancel_context *);
++	int (*post_configure)(struct acpi_device *, enum acpihp_dev_post_cmd);
++	int (*pre_release)(struct acpi_device *,
++			   struct acpihp_cancel_context *);
++	int (*release)(struct acpi_device *, struct acpihp_cancel_context *);
++	int (*post_release)(struct acpi_device *, enum acpihp_dev_post_cmd);
++	int (*pre_unconfigure)(struct acpi_device *);
++	int (*unconfigure)(struct acpi_device *);
++	int (*post_unconfigure)(struct acpi_device *);
++};
++
+ /*
+  * ACPI hotplug slot is an abstraction of receptacles where a group of
+  * system devices could be attached, just like PCI slot in PCI hotplug.
+@@ -165,6 +210,25 @@ extern int acpihp_register_class(void);
+ /* Unregister the ACPI hotplug slot class driver */
+ extern void acpihp_unregister_class(void);
+ 
++/* Interfaces to invoke the ACPI device driver's hotplug hooks. */
++extern int acpihp_dev_get_info(struct acpi_device *device,
++			       struct acpihp_dev_info *info);
++extern int acpihp_dev_pre_configure(struct acpi_device *device,
++				    struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_configure(struct acpi_device *device,
++				struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_post_configure(struct acpi_device *device,
++				     enum acpihp_dev_post_cmd cmd);
++extern int acpihp_dev_pre_release(struct acpi_device *device,
++				  struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_release(struct acpi_device *device,
++			      struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_post_release(struct acpi_device *device,
++				   enum acpihp_dev_post_cmd cmd);
++extern int acpihp_dev_pre_unconfigure(struct acpi_device *device);
++extern int acpihp_dev_unconfigure(struct acpi_device *device);
++extern int acpihp_dev_post_unconfigure(struct acpi_device *device);
++
+ /* Utility routines */
+ extern int acpihp_dev_get_type(acpi_handle handle, enum acpihp_dev_type *type);
+ extern bool acpihp_dev_match_ids(struct acpi_device_info *infop, char **ids);
 -- 
 1.7.9.5
 
