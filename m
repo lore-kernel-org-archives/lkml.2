@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab2HDIuC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 04:50:02 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54961 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989Ab2HDIt6 (ORCPT
+	id S1753891Ab2HDIwG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 04:52:06 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54367 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab2HDIwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 04:49:58 -0400
-From: Pekka Enberg <penberg@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, a.p.zijlstra@chello.nl,
-        Pekka Enberg <penberg@kernel.org>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH v2] sched: Document schedule() entry points
-Date: Sat,  4 Aug 2012 11:49:47 +0300
-Message-Id: <1344070187-2420-1-git-send-email-penberg@kernel.org>
-X-Mailer: git-send-email 1.7.7.6
+	Sat, 4 Aug 2012 04:52:02 -0400
+Date: Sat, 4 Aug 2012 09:51:42 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Pandita, Vikram" <vikram.pandita@ti.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>, kay@vrfy.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] printk: add option to print cpu id
+Message-ID: <20120804085142.GP7405@n2100.arm.linux.org.uk>
+References: <1344013004-32211-1-git-send-email-vikram.pandita@ti.com> <m2628z6euk.fsf@firstfloor.org> <CAFm5wm3ScpUU5wa=ei3TY0zjU4kVbOgJMmE5_QDpwy7B-TJa+A@mail.gmail.com> <20120803200822.GC731@harshnoise.musicnaut.iki.fi> <CAFm5wm2sf9LnZNj9_BDYTF9G7XH32fOL3x5n=kZ-1ih0Cek2DQ@mail.gmail.com> <20120803215954.GA4489@kroah.com> <CAFm5wm1_-JP0xjDdBvAcqqpZPQvxJPsmNtUOFQyaNw=6H_JJcg@mail.gmail.com> <20120803221327.GA5102@kroah.com> <CAFm5wm3ayofPD7oF1=z_jwE_wuqBxBHicAs=KOhjcUr7Jo0wDQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFm5wm3ayofPD7oF1=z_jwE_wuqBxBHicAs=KOhjcUr7Jo0wDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a comment on top of the schedule() function to explain
-to scheduler newbies how the main scheduler function is entered.
+On Fri, Aug 03, 2012 at 03:25:17PM -0700, Pandita, Vikram wrote:
+> Other issue i found, using this patch, that on multi-core ARM systems,
+> almost 99% of times, IRQ's are handled by CPU0,
+> even if CPU0 was really busy and other CPU's were free. I am yet to
+> understand a good reason why.
 
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Explained-by: Ingo Molnar <mingo@kernel.org>
-Explained-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
----
-V1 -> V2: Fix funky grammar pointed out by Peter and Randy.
+That is because you're probably not running irqbalanced on your platforms.
 
- kernel/sched/core.c |   34 ++++++++++++++++++++++++++++++++++
- 1 files changed, 34 insertions(+), 0 deletions(-)
+Firstly, the hardware does no IRQ balancing itself - you have to manually
+route IRQs to CPUs in the hardware, and if you ask for an IRQ to be
+delivered to several CPUs, all CPUs will get it each time it fires (unlike
+x86 IOAPIC which picks a CPU to route the IRQ to.)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 468bdd4..7dc75df 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3361,6 +3361,40 @@ pick_next_task(struct rq *rq)
- 
- /*
-  * __schedule() is the main scheduler function.
-+ *
-+ * The main means of driving the scheduler and thus entering this function are:
-+ *
-+ *   1. Explicit blocking: mutex, semaphore, waitqueue, etc.
-+ *
-+ *   2. TIF_NEED_RESCHED flag is checked on interrupt and userspace return
-+ *      paths. For example, see arch/x86/entry_64.S.
-+ *
-+ *      To drive preemption between tasks, the scheduler sets the flag in timer
-+ *      interrupt handler scheduler_tick().
-+ *
-+ *   3. Wakeups don't really cause entry into schedule(). They add a
-+ *      task to the run-queue and that's it.
-+ *
-+ *      Now, if the new task added to the run-queue preempts the current
-+ *      task, then the wakeup sets TIF_NEED_RESCHED and schedule() gets
-+ *      called on the nearest possible occasion:
-+ *
-+ *       - If the kernel is preemptible (CONFIG_PREEMPT=y):
-+ *
-+ *         - in syscall or exception context, at the next outmost
-+ *           preempt_enable(). (this might be as soon as the wake_up()'s
-+ *           spin_unlock()!)
-+ *
-+ *         - in IRQ context, return from interrupt-handler to
-+ *           preemptible context
-+ *
-+ *       - If the kernel is not preemptible (CONFIG_PREEMPT is not set)
-+ *         then at the next:
-+ *
-+ *          - cond_resched() call
-+ *          - explicit schedule() call
-+ *          - return from syscall or exception to user-space
-+ *          - return from interrupt-handler to user-space
-  */
- static void __sched __schedule(void)
- {
--- 
-1.7.7.6
+The ARM kernel does no IRQ balancing itself across CPUs, because when I
+tried to implement it, every algorithm I tried gave completely sub-optimal
+results, and irqbalanced existed to do the job in userspace.  So as there
+is a userspace solution which works, there was no point to doing this in
+the kernel.
 
+Please use the irqbalance daemon to spread IRQs across your CPUs.
