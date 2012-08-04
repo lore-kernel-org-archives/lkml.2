@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab2HDV4y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 17:56:54 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:42242 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833Ab2HDV4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 17:56:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [Regression, post-3.5] System suspend broken on the Mackerel board
-Date: Sun, 5 Aug 2012 00:02:43 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: kuninori.morimoto.gx@renesas.com, Magnus Damm <magnus.damm@gmail.com>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-References: <20120801073004.GE15380@linux-sh.org>
-In-Reply-To: <20120801073004.GE15380@linux-sh.org>
+	id S1754043Ab2HDWEC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 18:04:02 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:46161 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639Ab2HDWD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 18:03:59 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208050002.43465.rjw@sisk.pl>
+In-Reply-To: <20120730165733.33e3ddfb@notabene.brown>
+References: <CACRpkdZnRiZpKuQ6krJFa8TAfmvYYLB-n79ztzaUOV32p6ZY1Q@mail.gmail.com>
+	<20120730165733.33e3ddfb@notabene.brown>
+Date: Sun, 5 Aug 2012 00:03:59 +0200
+Message-ID: <CACRpkdbA_+xFUU9G3S+eBs+ffmGEih-jLY5YXxqpNGdfsk48gw@mail.gmail.com>
+Subject: Re: [GIT PULL] GPIO changes for v3.6
+From: Linus Walleij <linus.walleij@linaro.org>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Roland Stigge <stigge@antcom.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 01, 2012, Paul Mundt wrote:
-> On Sat, Jul 28, 2012 at 12:53:11AM +0200, Rafael J. Wysocki wrote:
-> > Unfortunately, your commit
-> > 
-> > commit ca5481c68e9fbcea62bb3c78ae6cccf99ca8fb73
-> > Author: Paul Mundt <lethal@linux-sh.org>
-> > Date:   Tue Jul 10 12:08:14 2012 +0900
-> > 
-> >     sh: pfc: Rudimentary pinctrl-backed GPIO support.
-> > 
-> > breaks system suspend on the Mackerel board (.config attached).  The system
-> > simply doesn't suspend and instead it hangs somewhere while suspending
-> > devices (apparently before running the "late" callbacks).
-> > 
-> > If the above commit is reverted, system suspend works normally.
-> 
-> On Tue, Jul 31, 2012 at 08:57:02PM -0700, kuninori.morimoto.gx@renesas.com wrote:
-> > gpio: sh7724_pfc handling gpio 0 -> 486
-> > core: sh7724_pfc support registered
-> > HW Breakpoints: SH-4A UBC support registered
-> > autorequest GPIO-53
-> > ------------[ cut here ]------------
-> > WARNING: at /opt/usr/src/WORK/morimoto/gitlinux/linux-2.6/drivers/gpio/gpiolib.3
-> > Modules linked in:
-> > 
-> > Pid : 1, Comm:          swapper
-> > CPU : 0                 Not tainted  (3.5.0-rc6+ #1407)
-> > 
-> > PC is at gpio_ensure_requested+0x30/0x78
-> > PR is at gpio_ensure_requested+0x30/0x78
-> 
-> Morimoto-san's logs off-list made it clear what happened. Both of these
-> platforms are going gpio_request() calls at arch_initcall() time which
-> completely screwed up the ordering of the pfc core. We seem to -ENODEV
-> out in one place due to missing a pfc pointer initialization elsewhere
-> resulting in -EPROBE_DEFER from gpiolib.
-> 
-> Turns out we can just collapse the probe/init stuff anyways, so this
-> ought to fix it. I've verified that it fixes Morimoto-san's issue, my
-> expectation is that the mackerel case is likewise getting tripped up but
-> no one bothered implementing any error detecting logic for gpio_request()
-> failing, so it doesn't fail gracefully.
-> 
-> I'll be pushing this out to Linus shortly:
+On Mon, Jul 30, 2012 at 8:57 AM, NeilBrown <neilb@suse.de> wrote:
 
-Thanks, this helped.  Resume works correctly on Mackerel with 3.6-rc1.
+> it means that if !gpio_is_valid(gpio), the error returned is EPROBE_DEFER
+> which isn't right (an invalid gpio number will never become valid).
+> If a driver happened to use gpio_request to check the validity of the gpio
+> rather than doing it itself, it would defer the probe, rather than assume
+> that the GPIO doesn't exist.
+>
+> I would suggest the following.  Reasonable?
 
-However, I'm now seeing a different problem related to system suspend on that,
-board which is that sh7372_enter_a3sm_common() returns immediately, as though
-at least one of the wakeup signals was permanently asserted.  This hadn't
-happened before your last pull request was merged, so I suspect that one
-of the irqdomain patches might introduce this behavior.
+Unless there is a firm regression solved by this we can very well
+discuss this until the next merge window.
 
-Thanks,
-Rafael
+The solution from Mark looks very much like the method used in
+regulators, clocks etc. I bet if we look at the error paths of the
+driver doing gpio_is_valid() the majority will be something in the
+probe() path just bailing out if that was not supplied, alternatively
+shunting in some non-GPIO code.
+
+The more typical problem for
+deferring driver to solve will be something like commit
+2805b9ab7c836cfbe01e86129983e36205078cb2
+where we have to check for -EPROBE_DEFER explicitly
+and bail out before doing any gpio_is_valid() checks.
+
+Yours,
+Linus Walleij
