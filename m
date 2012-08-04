@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2HDECu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 00:02:50 -0400
+	id S1754139Ab2HDEDE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 00:03:04 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:45263 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab2HDECq (ORCPT
+	with ESMTP id S1751000Ab2HDEDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 00:02:46 -0400
+	Sat, 4 Aug 2012 00:03:00 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Borislav Petkov <borislav.petkov@amd.com>,
         linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH v1 09/15] firmware loader: fix comments on request_firmware_nowait
-Date: Sat,  4 Aug 2012 12:01:24 +0800
-Message-Id: <1344052890-31935-10-git-send-email-ming.lei@canonical.com>
+Subject: [RFC PATCH v1 11/15] driver core: devres: introduce devres_for_each_res
+Date: Sat,  4 Aug 2012 12:01:26 +0800
+Message-Id: <1344052890-31935-12-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
 References: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
@@ -23,37 +23,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-request_firmware_nowait is allowed to be called in atomic
-context now if @gfp is GFP_ATOMIC, so fix the obsolete
-comments and states which situations are suitable for using
-it.
+This patch introduces one devres API of devres_for_each_res
+so that the device's driver can iterate each resource it has
+interest in.
+
+The firmware loader will use the API to get each firmware name
+from the device instance.
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/base/firmware_class.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/base/devres.c  |   42 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/device.h |    4 ++++
+ 2 files changed, 46 insertions(+)
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 7d3a83b..a47266c 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -846,9 +846,13 @@ static void request_firmware_work_func(struct work_struct *work)
-  *
-  *	Caller must hold the reference count of @device.
-  *
-- *	Asynchronous variant of request_firmware() for user contexts where
-- *	it is not possible to sleep for long time. It can't be called
-- *	in atomic contexts.
-+ *	Asynchronous variant of request_firmware() for user contexts:
-+ *		- sleep for as small periods as possible since it may
-+ *		increase kernel boot time of built-in device drivers
-+ *		requesting firmware in their ->probe() methods, if
-+ *		@gfp is GFP_KERNEL.
+diff --git a/drivers/base/devres.c b/drivers/base/devres.c
+index 2360adb..8731979 100644
+--- a/drivers/base/devres.c
++++ b/drivers/base/devres.c
+@@ -144,6 +144,48 @@ EXPORT_SYMBOL_GPL(devres_alloc);
+ #endif
+ 
+ /**
++ * devres_for_each_res - Resource iterator
++ * @dev: Device to iterate resource from
++ * @release: Look for resources associated with this release function
++ * @match: Match function (optional)
++ * @match_data: Data for the match function
++ * @fn: Function to be called for each matched resource.
++ * @data: Data for @fn, the 3rd parameter of @fn
 + *
-+ *		- can't sleep at all if @gfp is GFP_ATOMIC.
-  **/
- int
- request_firmware_nowait(
++ * Call @fn for each devres of @dev which is associated with @release
++ * and for which @match returns 1.
++ *
++ * RETURNS:
++ * 	void
++ */
++void devres_for_each_res(struct device *dev, dr_release_t release,
++			dr_match_t match, void *match_data,
++			void (*fn)(struct device *, void *, void *),
++			void *data)
++{
++	struct devres_node *node;
++	struct devres_node *tmp;
++	unsigned long flags;
++
++	if (!fn)
++		return;
++
++	spin_lock_irqsave(&dev->devres_lock, flags);
++	list_for_each_entry_safe_reverse(node, tmp,
++			&dev->devres_head, entry) {
++		struct devres *dr = container_of(node, struct devres, node);
++
++		if (node->release != release)
++			continue;
++		if (match && !match(dev, dr->data, match_data))
++			continue;
++		fn(dev, dr->data, data);
++	}
++	spin_unlock_irqrestore(&dev->devres_lock, flags);
++}
++EXPORT_SYMBOL_GPL(devres_for_each_res);
++
++/**
+  * devres_free - Free device resource data
+  * @res: Pointer to devres data to free
+  *
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 52a5f15..ecd9006 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -536,6 +536,10 @@ extern void *__devres_alloc(dr_release_t release, size_t size, gfp_t gfp,
+ #else
+ extern void *devres_alloc(dr_release_t release, size_t size, gfp_t gfp);
+ #endif
++extern void devres_for_each_res(struct device *dev, dr_release_t release,
++				dr_match_t match, void *match_data,
++				void (*fn)(struct device *, void *, void *),
++				void *data);
+ extern void devres_free(void *res);
+ extern void devres_add(struct device *dev, void *res);
+ extern void *devres_find(struct device *dev, dr_release_t release,
 -- 
 1.7.9.5
 
