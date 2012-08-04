@@ -1,280 +1,397 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab2HDVeI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 17:34:08 -0400
+	id S1754273Ab2HDVe0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 17:34:26 -0400
 Received: from mail-gg0-f174.google.com ([209.85.161.174]:61818 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009Ab2HDVeD (ORCPT
+	with ESMTP id S1754249Ab2HDVeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 17:34:03 -0400
+	Sat, 4 Aug 2012 17:34:18 -0400
 From: Jan Ariyasu <jan.ariyasu@gmail.com>
 To: Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Jan Ariyasu <jan.ariyasu@hp.com>
-Subject: [PATCH 09/13] SCTP: Make transmitted packets use per-namespace parameters.
-Date: Sat,  4 Aug 2012 15:33:53 -0600
-Message-Id: <1344116033-6462-1-git-send-email-jan.ariyasu@hp.com>
+Subject: [PATCH 10/13] SCTP: enable per-namespace authentication configuration.
+Date: Sat,  4 Aug 2012 15:34:07 -0600
+Message-Id: <1344116047-6496-1-git-send-email-jan.ariyasu@hp.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set makes transmitted packets use per-namespace protocol
-parameters such as rto_initial, max_retrans_path, etc.
+This is the first of three patches to set authentication
+by namespace.  In this patch, the relevant routines in auth.c
+now check to see if auth_enable is set as a namespace parameter
+instead of checking the global parameter sctp_auth_enable.
 
 Signed-off-by: Jan Ariyasu <jan.ariyasu@hp.com>
 ---
- include/net/sctp/structs.h |    5 +++--
- net/sctp/associola.c       |    2 +-
- net/sctp/output.c          |    2 +-
- net/sctp/outqueue.c        |   16 ++++++++++------
- net/sctp/sm_sideeffect.c   |    7 ++++---
- net/sctp/sm_statefuns.c    |    2 +-
- net/sctp/transport.c       |   28 +++++++++++++++++-----------
- 7 files changed, 37 insertions(+), 25 deletions(-)
+ include/net/sctp/auth.h    |   14 +++++++++-----
+ include/net/sctp/structs.h |    3 ++-
+ net/sctp/associola.c       |    7 ++++---
+ net/sctp/auth.c            |   29 +++++++++++++++++++----------
+ net/sctp/chunk.c           |    5 +++--
+ net/sctp/endpointola.c     |    6 ++++--
+ net/sctp/sm_make_chunk.c   |    2 +-
+ net/sctp/sm_sideeffect.c   |    2 +-
+ net/sctp/sm_statefuns.c    |   16 ++++++++--------
+ net/sctp/socket.c          |   10 ++++++----
+ 10 files changed, 57 insertions(+), 37 deletions(-)
 
+diff --git a/include/net/sctp/auth.h b/include/net/sctp/auth.h
+index 49bc957..e4e88cb 100644
+--- a/include/net/sctp/auth.h
++++ b/include/net/sctp/auth.h
+@@ -89,14 +89,15 @@ static inline void sctp_auth_key_hold(struct sctp_auth_bytes *key)
+ void sctp_auth_key_put(struct sctp_auth_bytes *key);
+ struct sctp_shared_key *sctp_auth_shkey_create(__u16 key_id, gfp_t gfp);
+ void sctp_auth_destroy_keys(struct list_head *keys);
+-int sctp_auth_asoc_init_active_key(struct sctp_association *asoc, gfp_t gfp);
++int sctp_auth_asoc_init_active_key(struct net *net,
++				   struct sctp_association *asoc, gfp_t gfp);
+ struct sctp_shared_key *sctp_auth_get_shkey(
+ 				const struct sctp_association *asoc,
+ 				__u16 key_id);
+ int sctp_auth_asoc_copy_shkeys(const struct sctp_endpoint *ep,
+ 				struct sctp_association *asoc,
+ 				gfp_t gfp);
+-int sctp_auth_init_hmacs(struct sctp_endpoint *ep, gfp_t gfp);
++int sctp_auth_init_hmacs(struct net *net, struct sctp_endpoint *ep, gfp_t gfp);
+ void sctp_auth_destroy_hmacs(struct crypto_hash *auth_hmacs[]);
+ struct sctp_hmac *sctp_auth_get_hmac(__u16 hmac_id);
+ struct sctp_hmac *sctp_auth_asoc_get_hmac(const struct sctp_association *asoc);
+@@ -104,8 +105,10 @@ void sctp_auth_asoc_set_default_hmac(struct sctp_association *asoc,
+ 				     struct sctp_hmac_algo_param *hmacs);
+ int sctp_auth_asoc_verify_hmac_id(const struct sctp_association *asoc,
+ 				    __be16 hmac_id);
+-int sctp_auth_send_cid(sctp_cid_t chunk, const struct sctp_association *asoc);
+-int sctp_auth_recv_cid(sctp_cid_t chunk, const struct sctp_association *asoc);
++int sctp_auth_send_cid(struct net *net,
++			sctp_cid_t chunk, const struct sctp_association *asoc);
++int sctp_auth_recv_cid(struct net *net,
++			sctp_cid_t chunk, const struct sctp_association *asoc);
+ void sctp_auth_calculate_hmac(const struct sctp_association *asoc,
+ 			    struct sk_buff *skb,
+ 			    struct sctp_auth_chunk *auth, gfp_t gfp);
+@@ -117,7 +120,8 @@ int sctp_auth_ep_set_hmacs(struct sctp_endpoint *ep,
+ int sctp_auth_set_key(struct sctp_endpoint *ep,
+ 		      struct sctp_association *asoc,
+ 		      struct sctp_authkey *auth_key);
+-int sctp_auth_set_active_key(struct sctp_endpoint *ep,
++int sctp_auth_set_active_key(struct net *net,
++		      struct sctp_endpoint *ep,
+ 		      struct sctp_association *asoc,
+ 		      __u16 key_id);
+ int sctp_auth_del_key_id(struct sctp_endpoint *ep,
 diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
-index 72d473b..b016da6 100644
+index b016da6..dc2998a 100644
 --- a/include/net/sctp/structs.h
 +++ b/include/net/sctp/structs.h
-@@ -1219,7 +1219,8 @@ struct sctp_transport {
- 	__u64 hb_nonce;
+@@ -805,7 +805,8 @@ struct sctp_datamsg {
+ 	   can_delay;	    /* should this message be Nagle delayed */
  };
  
--struct sctp_transport *sctp_transport_new(const union sctp_addr *,
-+struct sctp_transport *sctp_transport_new(struct net *net,
-+					  const union sctp_addr *,
- 					  gfp_t);
- void sctp_transport_set_owner(struct sctp_transport *,
- 			      struct sctp_association *);
-@@ -1231,7 +1232,7 @@ void sctp_transport_free(struct sctp_transport *);
- void sctp_transport_reset_timers(struct sctp_transport *);
- void sctp_transport_hold(struct sctp_transport *);
- void sctp_transport_put(struct sctp_transport *);
--void sctp_transport_update_rto(struct sctp_transport *, __u32);
-+void sctp_transport_update_rto(struct net *, struct sctp_transport *, __u32);
- void sctp_transport_raise_cwnd(struct sctp_transport *, __u32, __u32);
- void sctp_transport_lower_cwnd(struct sctp_transport *, sctp_lower_cwnd_t);
- void sctp_transport_burst_limited(struct sctp_transport *);
+-struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *,
++struct sctp_datamsg *sctp_datamsg_from_user(struct net *,
++					    struct sctp_association *,
+ 					    struct sctp_sndrcvinfo *,
+ 					    struct msghdr *, int len);
+ void sctp_datamsg_free(struct sctp_datamsg *);
 diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index 5b4be66..b778eba 100644
+index b778eba..b640162 100644
 --- a/net/sctp/associola.c
 +++ b/net/sctp/associola.c
-@@ -681,7 +681,7 @@ struct sctp_transport *sctp_assoc_add_peer(struct sctp_association *asoc,
- 		return peer;
- 	}
+@@ -1147,8 +1147,9 @@ static void sctp_assoc_bh_rcv(struct work_struct *work)
+ 		 *    MUST silently discard these chunks if they are not placed
+ 		 *    after an AUTH chunk in the packet.
+ 		 */
+-		if (sctp_auth_recv_cid(subtype.chunk, asoc) && !chunk->auth)
+-			continue;
++		if (sctp_auth_recv_cid(net, subtype.chunk, asoc) &&
++			!chunk->auth)
++				continue;
  
--	peer = sctp_transport_new(addr, gfp);
-+	peer = sctp_transport_new(net, addr, gfp);
- 	if (!peer)
- 		return NULL;
+ 		/* Remember where the last DATA chunk came from so we
+ 		 * know where to send the SACK.
+@@ -1305,7 +1306,7 @@ void sctp_assoc_update(struct net *net,
+ 	new->peer.peer_hmacs = NULL;
  
-diff --git a/net/sctp/output.c b/net/sctp/output.c
-index f9c5ffa..93a8b01 100644
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -599,7 +599,7 @@ out:
- 	return err;
- no_route:
- 	kfree_skb(nskb);
--	IP_INC_STATS_BH(&init_net, IPSTATS_MIB_OUTNOROUTES);
-+	IP_INC_STATS_BH(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
+ 	sctp_auth_key_put(asoc->asoc_shared_key);
+-	sctp_auth_asoc_init_active_key(asoc, GFP_ATOMIC);
++	sctp_auth_asoc_init_active_key(net, asoc, GFP_ATOMIC);
+ }
  
- 	/* FIXME: Returning the 'err' will effect all the associations
- 	 * associated with a socket, although only one of the paths of the
-diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-index e7aa177c..1334bad 100644
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -60,7 +60,8 @@
- 
- /* Declare internal functions here.  */
- static int sctp_acked(struct sctp_sackhdr *sack, __u32 tsn);
--static void sctp_check_transmitted(struct sctp_outq *q,
-+static void sctp_check_transmitted(struct net *net,
-+				   struct sctp_outq *q,
- 				   struct list_head *transmitted_queue,
- 				   struct sctp_transport *transport,
- 				   struct sctp_sackhdr *sack,
-@@ -1154,6 +1155,7 @@ int sctp_outq_sack(struct sctp_outq *q, struct sctp_sackhdr *sack)
- 	int count_of_newacks = 0;
- 	int gap_ack_blocks;
- 	u8 accum_moved = 0;
-+	struct net *net = sock_net(asoc->base.sk);
- 
- 	/* Grab the association's destination address list. */
- 	transport_list = &asoc->peer.transport_addr_list;
-@@ -1210,7 +1212,8 @@ int sctp_outq_sack(struct sctp_outq *q, struct sctp_sackhdr *sack)
- 	/* Run through the retransmit queue.  Credit bytes received
- 	 * and free those chunks that we can.
- 	 */
--	sctp_check_transmitted(q, &q->retransmit, NULL, sack, &highest_new_tsn);
-+	sctp_check_transmitted(net, q, &q->retransmit, NULL, sack,
-+				&highest_new_tsn);
- 
- 	/* Run through the transmitted queue.
- 	 * Credit bytes received and free those chunks which we can.
-@@ -1218,7 +1221,7 @@ int sctp_outq_sack(struct sctp_outq *q, struct sctp_sackhdr *sack)
- 	 * This is a MASSIVE candidate for optimization.
- 	 */
- 	list_for_each_entry(transport, transport_list, transports) {
--		sctp_check_transmitted(q, &transport->transmitted,
-+		sctp_check_transmitted(net, q, &transport->transmitted,
- 				       transport, sack, &highest_new_tsn);
- 		/*
- 		 * SFR-CACC algorithm:
-@@ -1323,7 +1326,8 @@ int sctp_outq_is_empty(const struct sctp_outq *q)
-  * transmitted_queue, we print a range: SACKED: TSN1-TSN2, TSN3, TSN4-TSN5.
-  * KEPT TSN6-TSN7, etc.
+ /* Update the retran path for sending a retransmitted packet.
+diff --git a/net/sctp/auth.c b/net/sctp/auth.c
+index bf81204..36d8059 100644
+--- a/net/sctp/auth.c
++++ b/net/sctp/auth.c
+@@ -390,15 +390,18 @@ nomem:
+ /* Public interface to creat the association shared key.
+  * See code above for the algorithm.
   */
--static void sctp_check_transmitted(struct sctp_outq *q,
-+static void sctp_check_transmitted(struct net *net,
-+				   struct sctp_outq *q,
- 				   struct list_head *transmitted_queue,
- 				   struct sctp_transport *transport,
- 				   struct sctp_sackhdr *sack,
-@@ -1402,8 +1406,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
- 				    tchunk->rtt_in_progress) {
- 					tchunk->rtt_in_progress = 0;
- 					rtt = jiffies - tchunk->sent_at;
--					sctp_transport_update_rto(transport,
--								  rtt);
-+					sctp_transport_update_rto(net,
-+							transport, rtt);
- 				}
- 			}
+-int sctp_auth_asoc_init_active_key(struct sctp_association *asoc, gfp_t gfp)
++int sctp_auth_asoc_init_active_key(struct net *net,
++				   struct sctp_association *asoc,
++				   gfp_t gfp)
+ {
+ 	struct sctp_auth_bytes	*secret;
+ 	struct sctp_shared_key *ep_key;
++	struct sctp_net_params *net_params = sctp_get_params(net);
  
+ 	/* If we don't support AUTH, or peer is not capable
+ 	 * we don't need to do anything.
+ 	 */
+-	if (!sctp_auth_enable || !asoc->peer.auth_capable)
++	if (!net_params->auth_enable || !asoc->peer.auth_capable)
+ 		return 0;
+ 
+ 	/* If the key_id is non-zero and we couldn't find an
+@@ -443,13 +446,14 @@ struct sctp_shared_key *sctp_auth_get_shkey(
+  * user context.  This forces us to pre-allocated all possible transforms
+  * at the endpoint init time.
+  */
+-int sctp_auth_init_hmacs(struct sctp_endpoint *ep, gfp_t gfp)
++int sctp_auth_init_hmacs(struct net *net, struct sctp_endpoint *ep, gfp_t gfp)
+ {
+ 	struct crypto_hash *tfm = NULL;
+ 	__u16   id;
++	struct sctp_net_params *net_params = sctp_get_params(net);
+ 
+ 	/* if the transforms are already allocted, we are done */
+-	if (!sctp_auth_enable) {
++	if (!net_params->auth_enable) {
+ 		ep->auth_hmacs = NULL;
+ 		return 0;
+ 	}
+@@ -672,18 +676,22 @@ static int __sctp_auth_cid(sctp_cid_t chunk, struct sctp_chunks_param *param)
+ }
+ 
+ /* Check if peer requested that this chunk is authenticated */
+-int sctp_auth_send_cid(sctp_cid_t chunk, const struct sctp_association *asoc)
++int sctp_auth_send_cid(struct net *net, sctp_cid_t chunk,
++		       const struct sctp_association *asoc)
+ {
+-	if (!sctp_auth_enable || !asoc || !asoc->peer.auth_capable)
++	struct sctp_net_params *net_params = sctp_get_params(net);
++	if (!net_params->auth_enable || !asoc || !asoc->peer.auth_capable)
+ 		return 0;
+ 
+ 	return __sctp_auth_cid(chunk, asoc->peer.peer_chunks);
+ }
+ 
+ /* Check if we requested that peer authenticate this chunk. */
+-int sctp_auth_recv_cid(sctp_cid_t chunk, const struct sctp_association *asoc)
++int sctp_auth_recv_cid(struct net *net, sctp_cid_t chunk,
++			const struct sctp_association *asoc)
+ {
+-	if (!sctp_auth_enable || !asoc)
++	struct sctp_net_params *net_params = sctp_get_params(net);
++	if (!net_params->auth_enable || !asoc)
+ 		return 0;
+ 
+ 	return __sctp_auth_cid(chunk,
+@@ -876,7 +884,8 @@ nomem:
+ 	return -ENOMEM;
+ }
+ 
+-int sctp_auth_set_active_key(struct sctp_endpoint *ep,
++int sctp_auth_set_active_key(struct net *net,
++			     struct sctp_endpoint *ep,
+ 			     struct sctp_association *asoc,
+ 			     __u16  key_id)
+ {
+@@ -902,7 +911,7 @@ int sctp_auth_set_active_key(struct sctp_endpoint *ep,
+ 
+ 	if (asoc) {
+ 		asoc->active_key_id = key_id;
+-		sctp_auth_asoc_init_active_key(asoc, GFP_KERNEL);
++		sctp_auth_asoc_init_active_key(net, asoc, GFP_KERNEL);
+ 	} else
+ 		ep->active_key_id = key_id;
+ 
+diff --git a/net/sctp/chunk.c b/net/sctp/chunk.c
+index 6c85564..5211278 100644
+--- a/net/sctp/chunk.c
++++ b/net/sctp/chunk.c
+@@ -169,7 +169,8 @@ static void sctp_datamsg_assign(struct sctp_datamsg *msg, struct sctp_chunk *chu
+  * with a reasonable guess than always doing our fragmentation on the
+  * soft-interrupt.
+  */
+-struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
++struct sctp_datamsg *sctp_datamsg_from_user(struct net *net,
++					    struct sctp_association *asoc,
+ 					    struct sctp_sndrcvinfo *sinfo,
+ 					    struct msghdr *msgh, int msg_len)
+ {
+@@ -209,7 +210,7 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 	 * we need to accound for bundling of the AUTH chunks along with
+ 	 * DATA.
+ 	 */
+-	if (sctp_auth_send_cid(SCTP_CID_DATA, asoc)) {
++	if (sctp_auth_send_cid(net, SCTP_CID_DATA, asoc)) {
+ 		struct sctp_hmac *hmac_desc = sctp_auth_asoc_get_hmac(asoc);
+ 
+ 		if (hmac_desc)
+diff --git a/net/sctp/endpointola.c b/net/sctp/endpointola.c
+index de42bd4..750df47 100644
+--- a/net/sctp/endpointola.c
++++ b/net/sctp/endpointola.c
+@@ -69,6 +69,7 @@ static struct sctp_endpoint *sctp_endpoint_init(struct sctp_endpoint *ep,
+ 	struct sctp_chunks_param *auth_chunks = NULL;
+ 	struct sctp_shared_key *null_key;
+ 	int err;
++	struct net *net = sock_net(sk);
+ 
+ 	ep->digest = kzalloc(SCTP_SIGNATURE_SIZE, gfp);
+ 	if (!ep->digest)
+@@ -163,7 +164,7 @@ static struct sctp_endpoint *sctp_endpoint_init(struct sctp_endpoint *ep,
+ 	list_add(&null_key->key_list, &ep->endpoint_shared_keys);
+ 
+ 	/* Allocate and initialize transorms arrays for suported HMACs. */
+-	err = sctp_auth_init_hmacs(ep, gfp);
++	err = sctp_auth_init_hmacs(net, ep, gfp);
+ 	if (err)
+ 		goto nomem_hmacs;
+ 
+@@ -465,7 +466,8 @@ normal:
+ 		}
+ 
+ 		state = asoc ? asoc->state : SCTP_STATE_CLOSED;
+-		if (sctp_auth_recv_cid(subtype.chunk, asoc) && !chunk->auth)
++		if (sctp_auth_recv_cid(sock_net(sk), subtype.chunk, asoc)
++			&& !chunk->auth)
+ 			continue;
+ 
+ 		/* Remember where the last DATA chunk came from so we
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index af02b44..1d6c8b6 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -1365,7 +1365,7 @@ struct sctp_chunk *sctp_make_chunk(const struct sctp_association *asoc,
+ 	retval->chunk_end = ((__u8 *)chunk_hdr) + sizeof(struct sctp_chunkhdr);
+ 
+ 	/* Determine if the chunk needs to be authenticated */
+-	if (sctp_auth_send_cid(type, asoc))
++	if (sctp_auth_send_cid(&init_net, type, asoc))
+ 		retval->auth = 1;
+ 
+ 	/* Set the skb to the belonging sock for accounting.  */
 diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
-index 35cbbe5..c683d88 100644
+index c683d88..7bd2d6d 100644
 --- a/net/sctp/sm_sideeffect.c
 +++ b/net/sctp/sm_sideeffect.c
-@@ -685,7 +685,8 @@ static void sctp_cmd_hb_timer_update(sctp_cmd_seq_t *cmds,
- }
- 
- /* Helper function to handle the reception of an HEARTBEAT ACK.  */
--static void sctp_cmd_transport_on(sctp_cmd_seq_t *cmds,
-+static void sctp_cmd_transport_on(struct net *net,
-+				  sctp_cmd_seq_t *cmds,
- 				  struct sctp_association *asoc,
- 				  struct sctp_transport *t,
- 				  struct sctp_chunk *chunk)
-@@ -739,7 +740,7 @@ static void sctp_cmd_transport_on(sctp_cmd_seq_t *cmds,
- 		t->rto_pending = 1;
- 
- 	hbinfo = (sctp_sender_hb_info_t *) chunk->skb->data;
--	sctp_transport_update_rto(t, (jiffies - hbinfo->sent_at));
-+	sctp_transport_update_rto(net, t, (jiffies - hbinfo->sent_at));
- 
- 	/* Update the heartbeat timer.  */
- 	if (!mod_timer(&t->hb_timer, sctp_transport_timeout(t)))
-@@ -1617,7 +1618,7 @@ static int sctp_cmd_interpreter(sctp_event_t event_type,
- 
- 		case SCTP_CMD_TRANSPORT_ON:
- 			t = cmd->obj.transport;
--			sctp_cmd_transport_on(commands, asoc, t, chunk);
-+			sctp_cmd_transport_on(net, commands, asoc, t, chunk);
+@@ -1711,7 +1711,7 @@ static int sctp_cmd_interpreter(sctp_event_t event_type,
  			break;
  
- 		case SCTP_CMD_HB_TIMERS_START:
+ 		case SCTP_CMD_ASSOC_SHKEY:
+-			error = sctp_auth_asoc_init_active_key(asoc,
++			error = sctp_auth_asoc_init_active_key(net, asoc,
+ 						GFP_ATOMIC);
+ 			break;
+ 		case SCTP_CMD_UPDATE_INITTAG:
 diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index b9b6b13..0d4aaa9 100644
+index 0d4aaa9..4cd027a 100644
 --- a/net/sctp/sm_statefuns.c
 +++ b/net/sctp/sm_statefuns.c
-@@ -6043,7 +6043,7 @@ static struct sctp_packet *sctp_ootb_pkt_new(struct net *net,
+@@ -572,14 +572,14 @@ sctp_disposition_t sctp_sf_do_5_1C_ack(struct net *net,
+ 		 * can't destroy this association just because the packet
+ 		 * was malformed.
+ 		 */
+-		if (sctp_auth_recv_cid(SCTP_CID_ABORT, asoc))
+-			return sctp_sf_pdiscard(net, ep, asoc, type, arg,
+-						commands);
++		if (sctp_auth_recv_cid(net, SCTP_CID_ABORT, asoc))
++			return sctp_sf_pdiscard(net, ep, asoc, type,
++						arg, commands);
+ 
+ 		SCTP_INC_STATS(SCTP_MIB_ABORTEDS);
+ 		return sctp_stop_t1_and_abort(net, commands, error,
+-					      ECONNREFUSED, asoc,
+-					      chunk->transport);
++						ECONNREFUSED,
++						asoc, chunk->transport);
  	}
  
- 	/* Make a transport for the bucket, Eliza... */
--	transport = sctp_transport_new(sctp_source(chunk), GFP_ATOMIC);
-+	transport = sctp_transport_new(net, sctp_source(chunk), GFP_ATOMIC);
- 	if (!transport)
- 		goto nomem;
- 
-diff --git a/net/sctp/transport.c b/net/sctp/transport.c
-index 856ba86..c4fc596 100644
---- a/net/sctp/transport.c
-+++ b/net/sctp/transport.c
-@@ -59,10 +59,13 @@
- /* 1st Level Abstractions.  */
- 
- /* Initialize a new transport from provided memory.  */
--static struct sctp_transport *sctp_transport_init(struct sctp_transport *peer,
-+static struct sctp_transport *sctp_transport_init(struct net *net,
-+						  struct sctp_transport *peer,
- 						  const union sctp_addr *addr,
- 						  gfp_t gfp)
- {
-+	struct sctp_net_params *net_params = sctp_get_params(net);
-+
- 	/* Copy in the address.  */
- 	peer->ipaddr = *addr;
- 	peer->af_specific = sctp_get_af_specific(addr->sa.sa_family);
-@@ -76,7 +79,7 @@ static struct sctp_transport *sctp_transport_init(struct sctp_transport *peer,
- 	 * given destination transport address, set RTO to the protocol
- 	 * parameter 'RTO.Initial'.
+ 	/* Tag the variable length parameters.  Note that we never
+@@ -757,7 +757,7 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(struct net *net,
+ 	 * sctp_process_init, set up the assocaition shared keys as
+ 	 * necessary so that we can potentially authenticate the ACK
  	 */
--	peer->rto = msecs_to_jiffies(sctp_rto_initial);
-+	peer->rto = msecs_to_jiffies(net_params->rto_initial);
+-	error = sctp_auth_asoc_init_active_key(new_asoc, GFP_ATOMIC);
++	error = sctp_auth_asoc_init_active_key(net, new_asoc, GFP_ATOMIC);
+ 	if (error)
+ 		goto nomem_init;
  
- 	peer->last_time_heard = jiffies;
- 	peer->last_time_ecne_reduced = jiffies;
-@@ -86,8 +89,8 @@ static struct sctp_transport *sctp_transport_init(struct sctp_transport *peer,
- 			    SPP_SACKDELAY_ENABLE;
+@@ -4364,7 +4364,7 @@ static sctp_disposition_t sctp_sf_abort_violation(
+ 	 * can't destroy this association just because the packet
+ 	 * was malformed.
+ 	 */
+-	if (sctp_auth_recv_cid(SCTP_CID_ABORT, asoc))
++	if (sctp_auth_recv_cid(net, SCTP_CID_ABORT, asoc))
+ 		goto discard;
  
- 	/* Initialize the default path max_retrans.  */
--	peer->pathmaxrxt  = sctp_max_retrans_path;
--	peer->pf_retrans  = sctp_pf_retrans;
-+	peer->pathmaxrxt  = net_params->max_retrans_path;
-+	peer->pf_retrans  = net_params->pf_retrans;
+ 	/* Make the abort chunk. */
+@@ -4490,7 +4490,7 @@ static sctp_disposition_t sctp_sf_violation_paramlen(
+ 	struct sctp_paramhdr *param = ext;
+ 	struct sctp_chunk *abort = NULL;
  
- 	INIT_LIST_HEAD(&peer->transmitted);
- 	INIT_LIST_HEAD(&peer->send_ready);
-@@ -109,7 +112,8 @@ static struct sctp_transport *sctp_transport_init(struct sctp_transport *peer,
+-	if (sctp_auth_recv_cid(SCTP_CID_ABORT, asoc))
++	if (sctp_auth_recv_cid(net, SCTP_CID_ABORT, asoc))
+ 		goto discard;
+ 
+ 	/* Make the abort chunk. */
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 78e4576..d14ac7d 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -101,9 +101,9 @@ static struct sctp_af *sctp_sockaddr_af(struct sctp_sock *opt,
+ 					union sctp_addr *addr, int len);
+ static int sctp_bindx_add(struct sock *, struct sockaddr *, int);
+ static int sctp_bindx_rem(struct sock *, struct sockaddr *, int);
+-static int sctp_send_asconf_add_ip(struct net*, struct sock *,
++static int sctp_send_asconf_add_ip(struct net *, struct sock *,
+ 				   struct sockaddr *, int);
+-static int sctp_send_asconf_del_ip(struct net*, struct sock *,
++static int sctp_send_asconf_del_ip(struct net *, struct sock *,
+ 				   struct sockaddr *, int);
+ static int sctp_send_asconf(struct sctp_association *asoc,
+ 			    struct sctp_chunk *chunk);
+@@ -1599,6 +1599,7 @@ SCTP_STATIC int sctp_sendmsg(struct kiocb *iocb, struct sock *sk,
+ 	__u16 sinfo_flags = 0;
+ 	struct sctp_datamsg *datamsg;
+ 	int msg_flags = msg->msg_flags;
++	struct net *net = sock_net(sk);
+ 
+ 	SCTP_DEBUG_PRINTK("sctp_sendmsg(sk: %p, msg: %p, msg_len: %zu)\n",
+ 			  sk, msg, msg_len);
+@@ -1920,7 +1921,7 @@ SCTP_STATIC int sctp_sendmsg(struct kiocb *iocb, struct sock *sk,
+ 	}
+ 
+ 	/* Break the message into multiple chunks of maximum size. */
+-	datamsg = sctp_datamsg_from_user(asoc, sinfo, msg, msg_len);
++	datamsg = sctp_datamsg_from_user(net, asoc, sinfo, msg, msg_len);
+ 	if (!datamsg) {
+ 		err = -ENOMEM;
+ 		goto out_free;
+@@ -3409,6 +3410,7 @@ static int sctp_setsockopt_active_key(struct sock *sk,
+ {
+ 	struct sctp_authkeyid val;
+ 	struct sctp_association *asoc;
++	struct net *net = sock_net(sk);
+ 
+ 	if (!sctp_auth_enable)
+ 		return -EACCES;
+@@ -3422,7 +3424,7 @@ static int sctp_setsockopt_active_key(struct sock *sk,
+ 	if (!asoc && val.scact_assoc_id && sctp_style(sk, UDP))
+ 		return -EINVAL;
+ 
+-	return sctp_auth_set_active_key(sctp_sk(sk)->ep, asoc,
++	return sctp_auth_set_active_key(net, sctp_sk(sk)->ep, asoc,
+ 					val.scact_keynumber);
  }
  
- /* Allocate and initialize a new transport.  */
--struct sctp_transport *sctp_transport_new(const union sctp_addr *addr,
-+struct sctp_transport *sctp_transport_new(struct net *net,
-+					  const union sctp_addr *addr,
- 					  gfp_t gfp)
- {
- 	struct sctp_transport *transport;
-@@ -118,7 +122,7 @@ struct sctp_transport *sctp_transport_new(const union sctp_addr *addr,
- 	if (!transport)
- 		goto fail;
- 
--	if (!sctp_transport_init(transport, addr, gfp))
-+	if (!sctp_transport_init(net, transport, addr, gfp))
- 		goto fail_init;
- 
- 	transport->malloced = 1;
-@@ -310,8 +314,10 @@ void sctp_transport_put(struct sctp_transport *transport)
- }
- 
- /* Update transport's RTO based on the newly calculated RTT. */
--void sctp_transport_update_rto(struct sctp_transport *tp, __u32 rtt)
-+void sctp_transport_update_rto(struct net *net, struct sctp_transport *tp,
-+				__u32 rtt)
- {
-+	struct sctp_net_params *net_params = sctp_get_params(net);
- 	/* Check for valid transport.  */
- 	SCTP_ASSERT(tp, "NULL transport", return);
- 
-@@ -330,10 +336,10 @@ void sctp_transport_update_rto(struct sctp_transport *tp, __u32 rtt)
- 		 * For example, assuming the default value of RTO.Alpha of
- 		 * 1/8, rto_alpha would be expressed as 3.
- 		 */
--		tp->rttvar = tp->rttvar - (tp->rttvar >> sctp_rto_beta)
--			+ ((abs(tp->srtt - rtt)) >> sctp_rto_beta);
--		tp->srtt = tp->srtt - (tp->srtt >> sctp_rto_alpha)
--			+ (rtt >> sctp_rto_alpha);
-+		tp->rttvar = tp->rttvar - (tp->rttvar >> net_params->rto_beta)
-+			+ ((abs(tp->srtt - rtt)) >> net_params->rto_beta);
-+		tp->srtt = tp->srtt - (tp->srtt >> net_params->rto_alpha)
-+			+ (rtt >> net_params->rto_alpha);
- 	} else {
- 		/* 6.3.1 C2) When the first RTT measurement R is made, set
- 		 * SRTT <- R, RTTVAR <- R/2.
 -- 
 1.7.9.5
 
