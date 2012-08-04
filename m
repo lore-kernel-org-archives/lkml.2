@@ -1,133 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab2HDQw1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 12:52:27 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:37654
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753493Ab2HDQu7 (ORCPT
+	id S1753746Ab2HDQ5j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 12:57:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45851 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab2HDQ5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 12:50:59 -0400
-X-IronPort-AV: E=Sophos;i="4.77,713,1336341600"; 
-   d="scan'208";a="152439850"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] drivers/mfd: drop frees of devm allocated data
-Date: Sat,  4 Aug 2012 18:50:45 +0200
-Message-Id: <1344099049-15212-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	Sat, 4 Aug 2012 12:57:37 -0400
+Date: Sat, 4 Aug 2012 11:57:27 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: dri-devel@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        Andreas Heider <andreas@meetr.de>
+Subject: Re: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we
+ can't get a panel mode
+Message-ID: <20120804165727.GA4980@thinkpad-t410>
+Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
+	dri-devel@lists.freedesktop.org,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+	Andreas Heider <andreas@meetr.de>
+References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
+ <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
+ <20120803161416.GA22563@srcf.ucam.org>
+ <20120803162451.GF8165@thinkpad-t410>
+ <20120803162702.GA22896@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120803162702.GA22896@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Fri, Aug 03, 2012 at 05:27:02PM +0100, Matthew Garrett wrote:
+> On Fri, Aug 03, 2012 at 11:24:51AM -0500, Seth Forshee wrote:
+> 
+> > This is one of the things I wasn't so sure about. There are various
+> > checks in intel_lvds_init() that can cause it to bail out before we try
+> > to get the EDID, and I don't fully understand all of them. If non-laptop
+> > machines are expected to bail out before the EDID check then the
+> > approach I've taken seems reasonable. Otherwise adding a quirk probably
+> > is a good idea.
+> 
+> I know we've previously had problems with machines with phantom LVDS 
+> hardware, but I'm not sure what the current state of affairs is.
 
-devm_kfree should not have to be explicitly used.
-devm_regmap_init_i2c also does not require an explicit free.
+It turns out that the framebuffer console issue is due to not having a
+mode when initializing LVDS. As a result 1024x768 is getting used for
+the framebuffer.
 
-The semantic patch that fixes the first problem is as follows:
-(http://coccinelle.lip6.fr/)
+So quirking is going to fix this situation. In fact, with the changes
+below switcheroo seems to work perfectly, without any of these patches
+at all.
 
-// <smpl>
-@@
-expression x,d;
-@@
 
-x = devm_kzalloc(...)
-...
-?-devm_kfree(d,x);
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/mfd/88pm800.c |    5 +----
- drivers/mfd/88pm80x.c |   20 +++-----------------
- 2 files changed, 4 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
-index b67a301..a2e5bd8 100644
---- a/drivers/mfd/88pm800.c
-+++ b/drivers/mfd/88pm800.c
-@@ -530,7 +530,7 @@ static int __devinit pm800_probe(struct i2c_client *client,
- 	ret = device_800_init(chip, pdata);
- 	if (ret) {
- 		dev_err(chip->dev, "%s id 0x%x failed!\n", __func__, chip->id);
--		goto err_800_init;
-+		goto err_subchip_alloc;
- 	}
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 627fe35..d83e5bc 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -503,6 +503,7 @@ typedef struct drm_i915_private {
+ 	enum intel_pch pch_type;
  
- 	ret = pm800_pages_init(chip);
-@@ -545,8 +545,6 @@ static int __devinit pm800_probe(struct i2c_client *client,
- err_page_init:
- 	mfd_remove_devices(chip->dev);
- 	device_irq_exit_800(chip);
--err_800_init:
--	devm_kfree(&client->dev, subchip);
- err_subchip_alloc:
- 	pm80x_deinit(client);
- out_init:
-@@ -561,7 +559,6 @@ static int __devexit pm800_remove(struct i2c_client *client)
- 	device_irq_exit_800(chip);
+ 	unsigned long quirks;
++	struct drm_display_mode *lvds_quirk_mode;
  
- 	pm800_pages_exit(chip);
--	devm_kfree(&client->dev, chip->subchip);
- 
- 	pm80x_deinit(client);
- 
-diff --git a/drivers/mfd/88pm80x.c b/drivers/mfd/88pm80x.c
-index cd0bf52..2bd090e 100644
---- a/drivers/mfd/88pm80x.c
-+++ b/drivers/mfd/88pm80x.c
-@@ -45,17 +45,14 @@ int __devinit pm80x_init(struct i2c_client *client,
- 
- 	map = devm_regmap_init_i2c(client, &pm80x_regmap_config);
- 	if (IS_ERR(map)) {
--		ret = PTR_ERR(map);
- 		dev_err(&client->dev, "Failed to allocate register map: %d\n",
- 			ret);
--		goto err_regmap_init;
-+		return PTR_ERR(map);
- 	}
- 
- 	chip->id = id->driver_data;
--	if (chip->id < CHIP_PM800 || chip->id > CHIP_PM805) {
--		ret = -EINVAL;
--		goto err_chip_id;
--	}
-+	if (chip->id < CHIP_PM800 || chip->id > CHIP_PM805)
-+		return -EINVAL;
- 
- 	chip->client = client;
- 	chip->regmap = map;
-@@ -82,19 +79,11 @@ int __devinit pm80x_init(struct i2c_client *client,
- 	}
- 
- 	return 0;
--
--err_chip_id:
--	regmap_exit(map);
--err_regmap_init:
--	devm_kfree(&client->dev, chip);
--	return ret;
- }
- EXPORT_SYMBOL_GPL(pm80x_init);
- 
- int pm80x_deinit(struct i2c_client *client)
+ 	/* Register state */
+ 	bool modeset_on_lid;
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index f615976..c810177 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7069,7 +7069,7 @@ static void intel_init_display(struct drm_device *dev)
+  * resume, or other times.  This quirk makes sure that's the case for
+  * affected systems.
+  */
+-static void quirk_pipea_force(struct drm_device *dev)
++static void quirk_pipea_force(struct drm_device *dev, void *data)
  {
--	struct pm80x_chip *chip = i2c_get_clientdata(client);
--
- 	/*
- 	 * workaround: clear the dependency between pm800 and pm805.
- 	 * would remove it after HW chip fixes the issue.
-@@ -104,9 +93,6 @@ int pm80x_deinit(struct i2c_client *client)
- 	else
- 		g_pm80x_chip = NULL;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
  
--	regmap_exit(chip->regmap);
--	devm_kfree(&client->dev, chip);
--
- 	return 0;
+@@ -7080,7 +7080,7 @@ static void quirk_pipea_force(struct drm_device *dev)
+ /*
+  * Some machines (Lenovo U160) do not work with SSC on LVDS for some reason
+  */
+-static void quirk_ssc_force_disable(struct drm_device *dev)
++static void quirk_ssc_force_disable(struct drm_device *dev, void *data)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	dev_priv->quirks |= QUIRK_LVDS_SSC_DISABLE;
+@@ -7091,48 +7091,74 @@ static void quirk_ssc_force_disable(struct drm_device *dev)
+  * A machine (e.g. Acer Aspire 5734Z) may need to invert the panel backlight
+  * brightness value
+  */
+-static void quirk_invert_brightness(struct drm_device *dev)
++static void quirk_invert_brightness(struct drm_device *dev, void *data)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	dev_priv->quirks |= QUIRK_INVERT_BRIGHTNESS;
+ 	DRM_INFO("applying inverted panel brightness quirk\n");
  }
- EXPORT_SYMBOL_GPL(pm80x_deinit);
-
+ 
++/*
++ * Some machines (e.g. certain Macbooks) may not be able to determine the
++ * LVDS mode during driver initialization
++ */
++static void quirk_lvds_panel_mode(struct drm_device *dev, void *data)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->lvds_quirk_mode = data;
++	DRM_INFO("applying LVDS panel mode quirk: %p\n", data);
++}
++
++/* LVDS panel mode for Macbook Pro 8,2 */
++struct drm_display_mode mbp82_panel_mode = {
++	DRM_MODE("1440x900", DRM_MODE_TYPE_DRIVER, 88750, 1440, 1488, 1520,
++		 1600, 0, 900, 903, 909, 926, 0,
++		 DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC)
++};
++
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+ 	int subsystem_device;
+-	void (*hook)(struct drm_device *dev);
++	void (*hook)(struct drm_device *dev, void *data);
++	void *hook_data;
+ };
+ 
+ static struct intel_quirk intel_quirks[] = {
+ 	/* HP Mini needs pipe A force quirk (LP: #322104) */
+-	{ 0x27ae, 0x103c, 0x361a, quirk_pipea_force },
++	{ 0x27ae, 0x103c, 0x361a, quirk_pipea_force, NULL },
+ 
+ 	/* Thinkpad R31 needs pipe A force quirk */
+-	{ 0x3577, 0x1014, 0x0505, quirk_pipea_force },
++	{ 0x3577, 0x1014, 0x0505, quirk_pipea_force, NULL },
+ 	/* Toshiba Protege R-205, S-209 needs pipe A force quirk */
+-	{ 0x2592, 0x1179, 0x0001, quirk_pipea_force },
++	{ 0x2592, 0x1179, 0x0001, quirk_pipea_force, NULL },
+ 
+ 	/* ThinkPad X30 needs pipe A force quirk (LP: #304614) */
+-	{ 0x3577,  0x1014, 0x0513, quirk_pipea_force },
++	{ 0x3577,  0x1014, 0x0513, quirk_pipea_force, NULL },
+ 	/* ThinkPad X40 needs pipe A force quirk */
+ 
+ 	/* ThinkPad T60 needs pipe A force quirk (bug #16494) */
+-	{ 0x2782, 0x17aa, 0x201a, quirk_pipea_force },
++	{ 0x2782, 0x17aa, 0x201a, quirk_pipea_force, NULL },
+ 
+ 	/* 855 & before need to leave pipe A & dpll A up */
+-	{ 0x3582, PCI_ANY_ID, PCI_ANY_ID, quirk_pipea_force },
+-	{ 0x2562, PCI_ANY_ID, PCI_ANY_ID, quirk_pipea_force },
++	{ 0x3582, PCI_ANY_ID, PCI_ANY_ID, quirk_pipea_force, NULL },
++	{ 0x2562, PCI_ANY_ID, PCI_ANY_ID, quirk_pipea_force, NULL },
+ 
+ 	/* Lenovo U160 cannot use SSC on LVDS */
+-	{ 0x0046, 0x17aa, 0x3920, quirk_ssc_force_disable },
++	{ 0x0046, 0x17aa, 0x3920, quirk_ssc_force_disable, NULL },
+ 
+ 	/* Sony Vaio Y cannot use SSC on LVDS */
+-	{ 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable },
++	{ 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable, NULL },
+ 
+ 	/* Acer Aspire 5734Z must invert backlight brightness */
+-	{ 0x2a42, 0x1025, 0x0459, quirk_invert_brightness },
++	{ 0x2a42, 0x1025, 0x0459, quirk_invert_brightness, NULL },
++
++	/*
++	 * Some versions of the Macbook Pro 8,2 cannot use SSC and
++	 * cannot get the panel mode on LVDS
++	 */
++	{ 0x0116, 0x106b, 0x00dc, quirk_ssc_force_disable, NULL },
++	{ 0x0116, 0x106b, 0x00dc, quirk_lvds_panel_mode, &mbp82_panel_mode },
+ };
+ 
+ static void intel_init_quirks(struct drm_device *dev)
+@@ -7148,7 +7174,7 @@ static void intel_init_quirks(struct drm_device *dev)
+ 		     q->subsystem_vendor == PCI_ANY_ID) &&
+ 		    (d->subsystem_device == q->subsystem_device ||
+ 		     q->subsystem_device == PCI_ANY_ID))
+-			q->hook(dev);
++			q->hook(dev, q->hook_data);
+ 	}
+ }
+ 
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index e05c0d3..303068d 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -996,6 +996,7 @@ bool intel_lvds_init(struct drm_device *dev)
+ 	 * 1) check for EDID on DDC
+ 	 * 2) check for VBT data
+ 	 * 3) check to see if LVDS is already on
++	 * 4) check for LVDS panel mode quirk
+ 	 *    if none of the above, no panel
+ 	 * 4) make sure lid is open
+ 	 *    if closed, act like it's not there for now
+@@ -1058,15 +1059,25 @@ bool intel_lvds_init(struct drm_device *dev)
+ 	 */
+ 
+ 	/* Ironlake: FIXME if still fail, not try pipe mode now */
+-	if (HAS_PCH_SPLIT(dev))
+-		goto failed;
+-
+-	lvds = I915_READ(LVDS);
+-	pipe = (lvds & LVDS_PIPEB_SELECT) ? 1 : 0;
+-	crtc = intel_get_crtc_for_pipe(dev, pipe);
++	if (!HAS_PCH_SPLIT(dev)) {
++		lvds = I915_READ(LVDS);
++		pipe = (lvds & LVDS_PIPEB_SELECT) ? 1 : 0;
++		crtc = intel_get_crtc_for_pipe(dev, pipe);
++
++		if (crtc && (lvds & LVDS_PORT_EN)) {
++			intel_lvds->fixed_mode = intel_crtc_mode_get(dev, crtc);
++			if (intel_lvds->fixed_mode) {
++				intel_lvds->fixed_mode->type |=
++					DRM_MODE_TYPE_PREFERRED;
++				goto out;
++			}
++		}
++	}
+ 
+-	if (crtc && (lvds & LVDS_PORT_EN)) {
+-		intel_lvds->fixed_mode = intel_crtc_mode_get(dev, crtc);
++	/* Check for panel mode quirk as a last resort */
++	if (dev_priv->lvds_quirk_mode) {
++		intel_lvds->fixed_mode =
++			drm_mode_duplicate(dev, dev_priv->lvds_quirk_mode);
+ 		if (intel_lvds->fixed_mode) {
+ 			intel_lvds->fixed_mode->type |=
+ 				DRM_MODE_TYPE_PREFERRED;
