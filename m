@@ -1,125 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab2HDNbR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 09:31:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33800 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752293Ab2HDNbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 09:31:12 -0400
-Date: Sat, 4 Aug 2012 14:31:05 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] Regression in xen-netfront on v3.6 (git commit
- c48a11c7ad2623b99bbd6859b0b4234e7f11176f, netvm: propagate page->pfmemalloc
- to skb)
-Message-ID: <20120804133105.GE29814@suse.de>
-References: <20120801190227.GA13272@phenom.dumpdata.com>
- <20120803120414.GA10670@andromeda.dapyr.net>
- <20120804110355.GA17640@andromeda.dapyr.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120804110355.GA17640@andromeda.dapyr.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752911Ab2HDNt1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 09:49:27 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63845 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab2HDNt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 09:49:26 -0400
+X-Nat-Received: from [202.181.97.72]:50083 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1344087972.9564
+To: john.stultz@linaro.org, mingo@kernel.org, tglx@linutronix.de
+Cc: a.p.zijlstra@chello.nl, richardcochran@gmail.com, prarit@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [3.6-rc1] sched: clock counts too quickly
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201208032318.FGJ64576.tOMVLOFHFQOFJS@I-love.SAKURA.ne.jp>
+	<201208042024.GFG34353.OFtFVQJMLOHFSO@I-love.SAKURA.ne.jp>
+	<201208042110.EFH81212.OSVOLMOtFQHJFF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201208042110.EFH81212.OSVOLMOtFQHJFF@I-love.SAKURA.ne.jp>
+Message-Id: <201208042246.HBH81275.FVOOSLtJFMQOFH@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 4 Aug 2012 22:46:08 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 04082012 #8314118, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 04, 2012 at 07:03:55AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, Aug 03, 2012 at 08:04:14AM -0400, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Aug 01, 2012 at 03:02:27PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > So I hadn't done a git bisection yet. But if I choose git commit:
-> > > 4b24ff71108164e047cf2c95990b77651163e315
-> > >     Merge tag 'for-v3.6' of git://git.infradead.org/battery-2.6
-> > > 
-> > >     Pull battery updates from Anton Vorontsov:
-> > > 
-> > > 
-> > > everything works nicely. Anything past that, so these merges:
-> > > 
-> > > konrad@phenom:~/ssd/linux$ git log --oneline --merges 4b24ff71108164e047cf2c95990b77651163e315..linus/master
-> > > 2d53492 Merge tag 'irqdomain-for-linus' of git://git.secretlab.ca/git/linux-2.6
-> > ===> ac694db Merge branch 'akpm' (Andrew's patch-bomb)
-> > 
-> > Somewhere in there is the culprit. Hadn't done yet the full bisection
-> > (was just checking out in each merge to see when it stopped working)
+Hello.
+
+Bisected to 2a8c0883 "time: Move xtime_nsec adjustment underflow handling
+timekeeping_adjust".
+
+Would you check?
+
+Regards.
+
+Tetsuo Handa wrote:
+> Tetsuo Handa wrote:
+> > > Under unknown condition, clock starts counting up too quickly which is enough
+> > > to confuse hangcheck timer to print stall warning.
+> > I wrote a test program.
 > 
-> Mel, your:
-> commit c48a11c7ad2623b99bbd6859b0b4234e7f11176f
-> Author: Mel Gorman <mgorman@suse.de>
-> Date:   Tue Jul 31 16:44:23 2012 -0700
+> I suspected that this is a problem within adjtimex() because strace reported clock
+> jump at adjtimex(). But I've just hit this problem with settimeofday() alone.
 > 
->     netvm: propagate page->pfmemalloc to skb
+> ---------- test program 2 start ----------
+> #include <sys/timex.h>
 > 
-> is the culprit per git bisect. Any ideas - do the drivers need to do
-> some extra processing? Here is the git bisect log
+> int main(int argc, char *argv[])
+> {
+>         while (1) {
+>                 struct timeval tv;
+>                 struct timezone tz;
+>                 gettimeofday(&tv, &tz);
+>                 settimeofday(&tv, &tz);
+>         }
+>         return 0;
+> }
+> ---------- test program 2 end ----------
 > 
-
-The problem appears to be at drivers/net/xen-netfront.c#973 where it
-calls __skb_fill_page_desc(skb, 0, NULL, 0, 0) . The driver does not
-have to do extra processing as such but I did not expect NULL to be
-passed in like this. Can you check if this fixes the bug please?
-
----8<---
-netvm: check for page == NULL when propogating the skb->pfmemalloc flag
-
-Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
-for the following bug triggered by a xen network driver
-
-[    1.908592] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-[    1.908643] IP: [<ffffffffa0037750>] xennet_poll+0x980/0xec0 [xen_netfront]
-[    1.908703] PGD ea1df067 PUD e8ada067 PMD 0
-[    1.908774] Oops: 0000 [#1] SMP
-[    1.908797] Modules linked in: fbcon tileblit font radeon bitblit softcursor ttm drm_kms_helper crc32c_intel xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea +xen_kbdfront xenfs xen_privcmd
-[    1.908938] CPU 0
-[    1.908950] Pid: 2165, comm: ip Not tainted 3.5.0upstream-08854-g444fa66 #1
-[    1.908983] RIP: e030:[<ffffffffa0037750>]  [<ffffffffa0037750>] xennet_poll+0x980/0xec0 [xen_netfront]
-[    1.909029] RSP: e02b:ffff8800ffc03db8  EFLAGS: 00010282
-[    1.909055] RAX: ffff8800ea010140 RBX: ffff8800f00e86c0 RCX: 000000000000009a
-[    1.909055] RDX: 0000000000000040 RSI: 000000000000005a RDI: ffff8800fa7dee80
-[    1.909055] RBP: ffff8800ffc03ee8 R08: ffff8800f00e86d8 R09: ffff8800ea010000
-[    1.909055] R10: dead000000200200 R11: dead000000100100 R12: ffff8800fa7dee80
-[    1.909055] R13: 000000000000005a R14: ffff8800fa7dee80 R15: 0000000000000200
-[    1.909055] FS:  00007fbafc188700(0000) GS:ffff8800ffc00000(0000) knlGS:0000000000000000
-[    1.909055] CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    1.909055] CR2: 0000000000000010 CR3: 00000000ea108000 CR4: 0000000000002660
-[    1.909055] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[    1.909055] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[    1.909055] Process ip (pid: 2165, threadinfo ffff8800ea0f2000, task ffff8800fa783040)
-[    1.909055] Stack:
-[    1.909055]  ffff8800e27e5040 ffff8800ffc03e88 ffff8800ffc03e68 ffff8800ffc03e48
-[    1.909055]  7fffffffffffffff ffff8800ffc03e00 ffff8800e27e5040 ffff8800f00e86d8
-[    1.909055]  ffff8800ffc03eb0 00000040ffffffff ffff8800f00e8000 00000000ffc03e30
-[    1.909055] Call Trace:
-[    1.909055]  <IRQ>
-[    1.909055]  [<ffffffff81066028>] ?  pvclock_clocksource_read+0x58/0xd0
-[    1.909055]  [<ffffffff81486352>] net_rx_action+0x112/0x240
-[    1.909055]  [<ffffffff8107f319>] __do_softirq+0xb9/0x190
-[    1.909055]  [<ffffffff815d8d7c>] call_softirq+0x1c/0x30
-
-The problem is that the xenfront driver is passing a NULL page to
-__skb_fill_page_desc() which was unexpected. This patch checks that
-there is a page before dereferencing.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/skbuff.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 7632c87..8857669 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1256,7 +1256,7 @@ static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
- 	 * do not lose pfmemalloc information as the pages would not be
- 	 * allocated using __GFP_MEMALLOC.
- 	 */
--	if (page->pfmemalloc && !page->mapping)
-+	if (page && page->pfmemalloc && !page->mapping)
- 		skb->pfmemalloc	= true;
- 	frag->page.p		  = page;
- 	frag->page_offset	  = off;
+> Regards.
