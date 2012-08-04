@@ -1,53 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438Ab2HDNFK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 09:05:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35736 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751895Ab2HDNEs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 09:04:48 -0400
-Date: Sat, 4 Aug 2012 11:54:24 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Anthony Olech <anthony.olech@diasemi.com>,
-        Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [PATCH] regmap-irq: allow auto-allocated IRQs to be mapped
-Message-ID: <20120804105424.GB10523@opensource.wolfsonmicro.com>
-References: <201208020805.q72858Yj003147@latitude.olech.com>
+	id S1752886Ab2HDNbR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 09:31:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33800 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752293Ab2HDNbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 09:31:12 -0400
+Date: Sat, 4 Aug 2012 14:31:05 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        xen-devel@lists.xensource.com
+Subject: Re: [Xen-devel] Regression in xen-netfront on v3.6 (git commit
+ c48a11c7ad2623b99bbd6859b0b4234e7f11176f, netvm: propagate page->pfmemalloc
+ to skb)
+Message-ID: <20120804133105.GE29814@suse.de>
+References: <20120801190227.GA13272@phenom.dumpdata.com>
+ <20120803120414.GA10670@andromeda.dapyr.net>
+ <20120804110355.GA17640@andromeda.dapyr.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <201208020805.q72858Yj003147@latitude.olech.com>
-X-Cookie: Is this really happening?
+In-Reply-To: <20120804110355.GA17640@andromeda.dapyr.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 07:05:15PM +0100, Anthony Olech wrote:
+On Sat, Aug 04, 2012 at 07:03:55AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Aug 03, 2012 at 08:04:14AM -0400, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Aug 01, 2012 at 03:02:27PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > So I hadn't done a git bisection yet. But if I choose git commit:
+> > > 4b24ff71108164e047cf2c95990b77651163e315
+> > >     Merge tag 'for-v3.6' of git://git.infradead.org/battery-2.6
+> > > 
+> > >     Pull battery updates from Anton Vorontsov:
+> > > 
+> > > 
+> > > everything works nicely. Anything past that, so these merges:
+> > > 
+> > > konrad@phenom:~/ssd/linux$ git log --oneline --merges 4b24ff71108164e047cf2c95990b77651163e315..linus/master
+> > > 2d53492 Merge tag 'irqdomain-for-linus' of git://git.secretlab.ca/git/linux-2.6
+> > ===> ac694db Merge branch 'akpm' (Andrew's patch-bomb)
+> > 
+> > Somewhere in there is the culprit. Hadn't done yet the full bisection
+> > (was just checking out in each merge to see when it stopped working)
+> 
+> Mel, your:
+> commit c48a11c7ad2623b99bbd6859b0b4234e7f11176f
+> Author: Mel Gorman <mgorman@suse.de>
+> Date:   Tue Jul 31 16:44:23 2012 -0700
+> 
+>     netvm: propagate page->pfmemalloc to skb
+> 
+> is the culprit per git bisect. Any ideas - do the drivers need to do
+> some extra processing? Here is the git bisect log
+> 
 
-> if the irq_base is set to -1 when calling regmap_add_irq_chip()
-> then allow the IRQ to be mapped even if the allocated irq_base
-> is actually zero.
+The problem appears to be at drivers/net/xen-netfront.c#973 where it
+calls __skb_fill_page_desc(skb, 0, NULL, 0, 0) . The driver does not
+have to do extra processing as such but I did not expect NULL to be
+passed in like this. Can you check if this fixes the bug please?
 
-> This restores the behaviour seen in v3.4, and I assume that the
-> tidy-ups just made in v3.5 INADVERTENTLY introduce this change
-> in behaviour.
+---8<---
+netvm: check for page == NULL when propogating the skb->pfmemalloc flag
 
-Please pay MORE attention to the changelog - obviously there's no
-problem mapping automatically allocated IRQs, there's only any effect if
-they happen to GET allocated at zero.
+Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
+for the following bug triggered by a xen network driver
 
-The only real issue I see with the current code is that if the user
-explicitly wants to statically allocate an IRQ range at zero they can't.
-The current intended behaviour is that we use a linear domain unless a
-positive IRQ base is specified, though we're not quite doing that right
-now as a transitional measure until drivers are updated.
+[    1.908592] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+[    1.908643] IP: [<ffffffffa0037750>] xennet_poll+0x980/0xec0 [xen_netfront]
+[    1.908703] PGD ea1df067 PUD e8ada067 PMD 0
+[    1.908774] Oops: 0000 [#1] SMP
+[    1.908797] Modules linked in: fbcon tileblit font radeon bitblit softcursor ttm drm_kms_helper crc32c_intel xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea +xen_kbdfront xenfs xen_privcmd
+[    1.908938] CPU 0
+[    1.908950] Pid: 2165, comm: ip Not tainted 3.5.0upstream-08854-g444fa66 #1
+[    1.908983] RIP: e030:[<ffffffffa0037750>]  [<ffffffffa0037750>] xennet_poll+0x980/0xec0 [xen_netfront]
+[    1.909029] RSP: e02b:ffff8800ffc03db8  EFLAGS: 00010282
+[    1.909055] RAX: ffff8800ea010140 RBX: ffff8800f00e86c0 RCX: 000000000000009a
+[    1.909055] RDX: 0000000000000040 RSI: 000000000000005a RDI: ffff8800fa7dee80
+[    1.909055] RBP: ffff8800ffc03ee8 R08: ffff8800f00e86d8 R09: ffff8800ea010000
+[    1.909055] R10: dead000000200200 R11: dead000000100100 R12: ffff8800fa7dee80
+[    1.909055] R13: 000000000000005a R14: ffff8800fa7dee80 R15: 0000000000000200
+[    1.909055] FS:  00007fbafc188700(0000) GS:ffff8800ffc00000(0000) knlGS:0000000000000000
+[    1.909055] CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    1.909055] CR2: 0000000000000010 CR3: 00000000ea108000 CR4: 0000000000002660
+[    1.909055] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[    1.909055] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[    1.909055] Process ip (pid: 2165, threadinfo ffff8800ea0f2000, task ffff8800fa783040)
+[    1.909055] Stack:
+[    1.909055]  ffff8800e27e5040 ffff8800ffc03e88 ffff8800ffc03e68 ffff8800ffc03e48
+[    1.909055]  7fffffffffffffff ffff8800ffc03e00 ffff8800e27e5040 ffff8800f00e86d8
+[    1.909055]  ffff8800ffc03eb0 00000040ffffffff ffff8800f00e8000 00000000ffc03e30
+[    1.909055] Call Trace:
+[    1.909055]  <IRQ>
+[    1.909055]  [<ffffffff81066028>] ?  pvclock_clocksource_read+0x58/0xd0
+[    1.909055]  [<ffffffff81486352>] net_rx_action+0x112/0x240
+[    1.909055]  [<ffffffff8107f319>] __do_softirq+0xb9/0x190
+[    1.909055]  [<ffffffff815d8d7c>] call_softirq+0x1c/0x30
 
-The current da9052 driver usage seems to have quite a few problems, I do
-recall having to fix some problems that make me doubt if it ever worked
-well.  Looking at the code now I see it's using hard coded references to
-absolute IRQ numbers which is an issue...  It should be being converted
-to use regmap_irq_get_virq().
+The problem is that the xenfront driver is passing a NULL page to
+__skb_fill_page_desc() which was unexpected. This patch checks that
+there is a page before dereferencing.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/skbuff.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 7632c87..8857669 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1256,7 +1256,7 @@ static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
+ 	 * do not lose pfmemalloc information as the pages would not be
+ 	 * allocated using __GFP_MEMALLOC.
+ 	 */
+-	if (page->pfmemalloc && !page->mapping)
++	if (page && page->pfmemalloc && !page->mapping)
+ 		skb->pfmemalloc	= true;
+ 	frag->page.p		  = page;
+ 	frag->page_offset	  = off;
