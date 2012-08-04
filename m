@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab2HDFou (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 01:44:50 -0400
-Received: from mso.anu.edu.au ([150.203.89.32]:41436 "EHLO mso.anu.edu.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752090Ab2HDFoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 01:44:46 -0400
-Message-ID: <501CB6AE.3000400@mso.anu.edu.au>
-Date: Sat, 04 Aug 2012 15:44:14 +1000
-From: Francois Rigaut <frigaut@mso.anu.edu.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Seth Forshee <seth.forshee@canonical.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
-        bhelgaas@google.com, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH V2 1/4] EFI: Stash ROMs if they're not in the PCI BAR
-References: <20120802040242.GB25933@thinkpad-t410> <20120802103423.GA1921@kroah.com> <501A955D.6030500@mso.anu.edu.au> <20120802161209.GF32395@thinkpad-t410> <501B01ED.9080309@mso.anu.edu.au> <501B0536.6070001@mso.anu.edu.au> <20120803045312.GB2446@thinkpad-t410> <501BD1FC.9020601@mso.anu.edu.au> <20120803141421.GA8165@thinkpad-t410> <501C7C1D.5010903@mso.anu.edu.au> <20120804035844.GA31711@thinkpad-t410>
-In-Reply-To: <20120804035844.GA31711@thinkpad-t410>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753523Ab2HDF6T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 01:58:19 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:48232 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab2HDF6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 01:58:17 -0400
+X-SENDER-IP: [85.230.170.20]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlJbAGK5HFBV5qoUPGdsb2JhbABFhRIiAYUArwgZAQEBATc0gn0TAQ8YEXEKGhOIEbx2FIs9hnsDmzSNBIFU
+X-IronPort-AV: E=Sophos;i="4.77,711,1336341600"; 
+   d="scan'208";a="168481409"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: Dave Airlie <airlied@gmail.com>, nouveau@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH] nouveau: Do not use nva3 engine for 0xaf chipset
+Date: Sat,  4 Aug 2012 08:00:45 +0200
+Message-Id: <1344060045-784-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seth,
+The nva3 copy engine exhibits random memory corruption in at least one
+case, the GeForce 320M (nv50, 0xaf) in the MacBookAir3,1.  This patch
+omits creating the engine for the specific chipset, falling back to
+M2MF, which kills the symptoms.
 
-[CC'd people, sorry we exchanged a few emails with Seth outside of the 
-lists, I passed him the acpi tables and here are gmux dumps]
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Hi Ben,
 
-Allright. thanks for gmux-dump. There seems to be progress, as I can see 
-the gmux dumps for the nividia-selected and intel-selected are clearly 
-different (I did it twice to be sure, it checks out).
-The 2 dumps are at
-http://maumae.net/retina/gmux-dump_intel.dat
-and
-http://maumae.net/retina/gmux-dump_nvidia_only.dat
-I hope you'll be able to get something from these.
-Francois
+this patch is still needed in 3.6-rc1, so perhaps we should apply it
+after all. I have been running it without problems for a long time
+now.
 
+Thanks,
+Henrik
 
+ drivers/gpu/drm/nouveau/nouveau_state.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-On 04/08/12 13:58, Seth Forshee wrote:
-> On Sat, Aug 04, 2012 at 11:34:21AM +1000, Francois Rigaut wrote:
->> Seth,
->>
->> I've put the acpi table dump in http://maumae.net/retina/acpi_tables.tgz
-> The ACPI stuff for the gmux looks exactly the same as for the machine
-> I've got. The I/O range is still 0x700 to 0x7ff.
->
->> As far as the mem dump, I've done it but can not see any difference
->> (between case where one or the other graphic card are selected) in
->> the first 3000 bytes. Not sure I'm doing that well though. I'm just
->> dd'ing /dev/mem with
->> dd bs=1000 count=3 if=/dev/mem of=some_file
->> Am I addressing the right memory or is the switch going to be (or
->> likely to be) somewhere else?
-> That's going to access sytem memory, not the I/O space for the gmux. Try
-> the attached instead. It's going to output the raw binary, so if you
-> want to view the output do something like
->
->   gmux-dump | xxd -g1
->
-> Seth
+diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c b/drivers/gpu/drm/nouveau/nouveau_state.c
+index 1cdfd6e..1866dbb 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_state.c
++++ b/drivers/gpu/drm/nouveau/nouveau_state.c
+@@ -731,7 +731,6 @@ nouveau_card_init(struct drm_device *dev)
+ 			case 0xa3:
+ 			case 0xa5:
+ 			case 0xa8:
+-			case 0xaf:
+ 				nva3_copy_create(dev);
+ 				break;
+ 			}
+-- 
+1.7.11.4
 
