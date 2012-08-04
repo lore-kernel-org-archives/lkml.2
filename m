@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab2HDI7J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 04:59:09 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57028 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab2HDI7F (ORCPT
+	id S1753953Ab2HDJBg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 05:01:36 -0400
+Received: from relay02ant.iops.be ([212.53.4.35]:35398 "EHLO
+	relay02ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220Ab2HDJBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 04:59:05 -0400
+	Sat, 4 Aug 2012 05:01:32 -0400
+Message-ID: <501CE4E5.20604@acm.org>
+Date: Sat, 04 Aug 2012 09:01:25 +0000
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <b9bee363-321e-409a-bc8e-65ffed8a1dc5@default>
-References: <c31aaed4-9d50-4cdf-b794-367fc5850483@default>
-	<CAOJsxLEhW=b3En737d5751xufW2BLehPc2ZGGG1NEtRVSo3=jg@mail.gmail.com>
-	<b9bee363-321e-409a-bc8e-65ffed8a1dc5@default>
-Date: Sat, 4 Aug 2012 11:59:04 +0300
-X-Google-Sender-Auth: klggmZPjcAiIZHL7uPhARxl3Ioo
-Message-ID: <CAOJsxLHe6egmMWdEAGj7DGHHX-hqYMhVWDggny9CsT0H-DOL-g@mail.gmail.com>
-Subject: Re: [RFC/PATCH] zcache/ramster rewrite and promotion
-From: Pekka Enberg <penberg@kernel.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
+To: Chanho Min <chanho0207@gmail.com>
+CC: James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Mike Christie <michaelc@cs.wisc.edu>
+Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
+References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com>
+In-Reply-To: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com>
+X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On 08/02/12 08:41, Chanho Min wrote:
+> This patch is to fix a oops from a torn down device. When
+> scsi_run_queue process starved queues, scsi_request_fn can race with
+> scsi_remove_device. In this case, rarely, scsi_request_fn release the
+> last reference and set sdev->request_queue to NULL. It result in
+> NULL-pointer dereference when spin_unlock is tried with (NULL)->
+> queue_lock. We need to add an extra reference to the device on both
+> sides of the __blk_run_queue to hold reference until scsi_request_fn
+> is finished.
 
-On Wed, Aug 1, 2012 at 12:13 AM, Dan Magenheimer
-<dan.magenheimer@oracle.com> wrote:
-> Ramster does the same thing but manages it peer-to-peer across
-> multiple systems using kernel sockets.  One could argue that
-> the dependency on sockets makes it more of a driver than "mm"
-> but ramster is "memory management" too, just a bit more exotic.
+Good catch. So far I haven't been able to trigger this issue in my
+tests. So it would be appreciated if you could verify whether the patch
+below helps (patch is based on 3.6-rc1):
 
-How do you configure it? Can we move parts of the network protocol under
-net/ramster or something?
+---
+ drivers/scsi/scsi_sysfs.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-                        Pekka
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 093d4f6..59e523c 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -348,7 +348,6 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
+ 	starget->reap_ref++;
+ 	list_del(&sdev->siblings);
+ 	list_del(&sdev->same_target_siblings);
+-	list_del(&sdev->starved_entry);
+ 	spin_unlock_irqrestore(sdev->host->host_lock, flags);
+ 
+ 	cancel_work_sync(&sdev->event_work);
+@@ -956,6 +955,8 @@ int scsi_sysfs_add_sdev(struct scsi_device *sdev)
+ void __scsi_remove_device(struct scsi_device *sdev)
+ {
+ 	struct device *dev = &sdev->sdev_gendev;
++	struct Scsi_Host *shost = sdev->host;
++	unsigned long flags;
+ 
+ 	if (sdev->is_visible) {
+ 		if (scsi_device_set_state(sdev, SDEV_CANCEL) != 0)
+@@ -977,6 +978,11 @@ void __scsi_remove_device(struct scsi_device *sdev)
+ 	blk_cleanup_queue(sdev->request_queue);
+ 	cancel_work_sync(&sdev->requeue_work);
+ 
++	spin_lock_irqsave(shost->host_lock, flags);
++	if (!list_empty(&sdev->starved_entry))
++		list_del(&sdev->starved_entry);
++	spin_unlock_irqrestore(shost->host_lock, flags);
++
+ 	if (sdev->host->hostt->slave_destroy)
+ 		sdev->host->hostt->slave_destroy(sdev);
+ 	transport_destroy_device(dev);
+-- 
+1.7.7
+
+
+
+
+
