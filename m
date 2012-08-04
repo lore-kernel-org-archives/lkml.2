@@ -1,51 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2HDWgu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 18:36:50 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:40218 "EHLO sabe.cs.wisc.edu"
+	id S1754113Ab2HDWrm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 18:47:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33405 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071Ab2HDWgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 18:36:48 -0400
-Message-ID: <501DA3F0.4090009@cs.wisc.edu>
-Date: Sat, 04 Aug 2012 17:36:32 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753639Ab2HDWrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 18:47:40 -0400
+Date: Sun, 5 Aug 2012 00:47:05 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] page-table walkers vs memory order
+Message-ID: <20120804224705.GD10459@redhat.com>
+References: <1343064870.26034.23.camel@twins>
+ <alpine.LSU.2.00.1207241356350.2094@eggly.anvils>
+ <20120804143719.GB10459@redhat.com>
+ <20120804220245.GB3307@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>
-CC: Chanho Min <chanho0207@gmail.com>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
-References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com> <501CE4E5.20604@acm.org> <501D51D1.2010806@cs.wisc.edu> <501D83A1.7040900@acm.org>
-In-Reply-To: <501D83A1.7040900@acm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120804220245.GB3307@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2012 03:18 PM, Bart Van Assche wrote:
-> On 08/04/12 16:46, Mike Christie wrote:
->> I think we have to have scsi-ml do a get_device when a sdev is added to
->> the starved entry and then do a put_device when it is removed (must do
->> these under the host lock for the starved entry case too). I am not sure
->> if that is just a hack/papering-over of the problem and there are more
->> issues like this.
+On Sat, Aug 04, 2012 at 03:02:45PM -0700, Paul E. McKenney wrote:
+> OK, I'll bite.  ;-)
+
+:))
+
+> The most sane way for this to happen is with feedback-driven techniques
+> involving profiling, similar to what is done for basic-block reordering
+> or branch prediction.  The idea is that you compile the kernel in an
+> as-yet (and thankfully) mythical pointer-profiling mode, which records
+> the values of pointer loads and also measures the pointer-load latency.
+> If a situation is found where a given pointer almost always has the
+> same value but has high load latency (for example, is almost always a
+> high-latency cache miss), this fact is recorded and fed back into a
+> subsequent kernel build.  This subsequent kernel build might choose to
+> speculate the value of the pointer concurrently with the pointer load.
 > 
-> That would result in a more complex patch than the patch at the start of
-> this thread, isn't it ? Also, IMHO it would help to document which
+> And of course, when interpreting the phrase "most sane way" at the
+> beginning of the prior paragraph, it would probably be wise to keep
+> in mind who wrote it.  And that "most sane way" might have little or
+> no resemblance to anything that typical kernel hackers would consider
+> anywhere near sanity.  ;-)
 
-Yaah, but the original patch in this thread is still racey isn't it?
+I see. The above scenario is sure fair enough assumption. We're
+clearly stretching the constraints to see what is theoretically
+possible and this is a very clear explanation of how gcc could have an
+hardcoded "guessed" address in the .text.
 
- 		spin_unlock(shost->host_lock);
+Next step to clearify now, is how gcc can safely dereference such a
+"guessed" address without the kernel knowing about it.
 
-The sdev/queue could get freed by some other thread when this function
-is right here, so the get_device call is now going to try to access
-freed memory.
+If gcc would really dereference a guessed address coming from a
+profiling run without kernel being aware of it, it would eventually
+crash the kernel with an oops. gcc cannot know what another CPU will
+do with the kernel pagetables. It'd be perfectly legitimate to
+temporarily move the data at the "guessed address" to another page and
+to update the pointer through stop_cpu during some weird "cpu
+offlining scenario" or anything you can imagine. I mean gcc must
+behave in all cases so it's not allowed to deference the guessed
+address at any given time.
 
+The only way gcc could do the alpha thing and dereference the guessed
+address before the real pointer, is with cooperation with the kernel.
+The kernel should provide gcc "safe ranges" that won't crash the
+kernel, and/or gcc could provide a .fixup section similar to the
+current .fixup and the kernel should look it up during the page fault
+handler in case the kernel is ok with temporarily getting faults in
+that range. And in turn it can't happen unless we explicitly decide to
+allow gcc to do it.
 
-+		/* hold a reference on the device so it doesn't release device */
-+		get_device(&sdev->sdev_gendev);
+> > Furthermore the ACCESS_ONCE that Peter's patch added to gup_fast
+> > pud/pgd can't prevent the compiler to read a guessed pmdp address as a
+> > volatile variable, before reading the pmdp pointer and compare it with
+> > the guessed address! So if it's 5 you worry about, when adding
+> > ACCESS_ONCE in pudp/pgdp/pmdp is useless and won't fix it. You should
+> > have added a barrier() instead.
+> 
+> Most compiler writers I have discussed this with agreed that a volatile
+> cast would suppress value speculation.  The "volatile" keyword is not
+> all that well specified in the C and C++ standards, but as "nix" said
+> at http://lwn.net/Articles/509731/:
+> 
+> 	volatile's meaning as 'minimize optimizations applied to things
+> 	manipulating anything of volatile type, do not duplicate, elide,
+> 	move, fold, spindle or mutilate' is of long standing.
 
+Ok, so if the above optimization would be possible, volatile would
+stop it too, thanks for the quote and the explanation.
 
+On a side note I believe there's a few barrier()s that may be worth
+converting to ACCESS_ONCE, that would take care of case 6) too in
+addition to avoid clobbering more CPU registers than strictly
+necessary. Not very important but a possible microoptimization.
+
+> That said, value speculation as a compiler optimization makes me a bit
+> nervous, so my current feeling is that is should be suppressed entirely.
+> 
+> Hey, you asked, even if only implicitly!  ;-)
+
+You're reading my mind! :)
