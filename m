@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2HDDdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 23:33:44 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42878 "EHLO
+	id S1754025Ab2HDDlL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 23:41:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42926 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718Ab2HDDdl (ORCPT
+	with ESMTP id S1753724Ab2HDDlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 23:33:41 -0400
-Date: Fri, 03 Aug 2012 20:33:41 -0700 (PDT)
-Message-Id: <20120803.203341.1528759021241176441.davem@davemloft.net>
-To: rdunlap@xenotime.net
-Cc: geert@linux-m68k.org, linux-kernel@vger.kernel.org, starvik@axis.com,
-        jesper.nilsson@axis.com, linux-cris-kernel@axis.com,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] cris: fix eth_v10.c build error
+	Fri, 3 Aug 2012 23:41:10 -0400
+Date: Fri, 03 Aug 2012 20:41:08 -0700 (PDT)
+Message-Id: <20120803.204108.1154138970238795947.davem@davemloft.net>
+To: tim.gardner@canonical.com
+Cc: linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        ben@decadent.org.uk, JBottomley@Parallels.com,
+        dan.j.williams@intel.com, divy@chelsio.com, netdev@vger.kernel.org
+Subject: Re: [PATCH] firmware: Remove obsolete Chelsio cxgb3 firmware
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <501C6EEF.3030100@xenotime.net>
-References: <1344002771-21072-1-git-send-email-geert@linux-m68k.org>
-	<501C6EEF.3030100@xenotime.net>
+In-Reply-To: <501A728A.2070905@canonical.com>
+References: <1343848670-31504-1-git-send-email-tim.gardner@canonical.com>
+	<20120802.002000.2023014747210925552.davem@davemloft.net>
+	<501A728A.2070905@canonical.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,16 +27,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
-Date: Fri, 03 Aug 2012 17:38:07 -0700
+From: Tim Gardner <tim.gardner@canonical.com>
+Date: Thu, 02 Aug 2012 06:28:58 -0600
 
-> From: Randy Dunlap <rdunlap@xenotime.net>
+>   git://kernel.ubuntu.com/rtg/net-next.git master
 > 
-> Fix build error on cris (not tested, no toolchain here):
+> for you to fetch changes up to 044b722f36a17bc5f7f472cc3246cb15a430bb0e:
 > 
-> drivers/net/cris/eth_v10.c: error: too many arguments to function 'e100rxtx_interrupt'
-> 
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+>   firmware: Remove obsolete Chelsio cxgb3 firmware (2012-08-02 06:23:25
+> -0600)
 
-Applied, thanks Randy.
+Pulled, thanks.
