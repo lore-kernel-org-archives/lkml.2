@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab2HDW73 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 18:59:29 -0400
-Received: from mx.treblig.org ([80.68.94.177]:45674 "EHLO mx.treblig.org"
+	id S1754168Ab2HDXGW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 19:06:22 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:49132 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753911Ab2HDW72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 18:59:28 -0400
-Date: Sat, 4 Aug 2012 23:59:10 +0100
-From: "Dr. David Alan Gilbert" <dave@treblig.org>
+	id S1754071Ab2HDXGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 19:06:17 -0400
+Date: Sat, 4 Aug 2012 16:06:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Rik van Riel <riel@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, linux-mm@kvack.org
 Subject: Re: [RFC] page-table walkers vs memory order
-Message-ID: <20120804225910.GB1255@gallifrey>
+Message-ID: <20120804230605.GJ3307@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 References: <1343064870.26034.23.camel@twins>
  <alpine.LSU.2.00.1207241356350.2094@eggly.anvils>
  <20120804143719.GB10459@redhat.com>
@@ -27,16 +27,14 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20120804224705.GD10459@redhat.com>
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/2.6.36.4-kvm-i386-20110819 (i686)
-X-Uptime: 23:56:39 up 152 days,  9:29,  1 user,  load average: 0.00, 0.01,
- 0.05
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080423-5930-0000-0000-00000A8A7461
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrea Arcangeli (aarcange@redhat.com) wrote:
+On Sun, Aug 05, 2012 at 12:47:05AM +0200, Andrea Arcangeli wrote:
 > On Sat, Aug 04, 2012 at 03:02:45PM -0700, Paul E. McKenney wrote:
 > > OK, I'll bite.  ;-)
 > 
@@ -76,16 +74,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > offlining scenario" or anything you can imagine. I mean gcc must
 > behave in all cases so it's not allowed to deference the guessed
 > address at any given time.
+> 
+> The only way gcc could do the alpha thing and dereference the guessed
+> address before the real pointer, is with cooperation with the kernel.
+> The kernel should provide gcc "safe ranges" that won't crash the
+> kernel, and/or gcc could provide a .fixup section similar to the
+> current .fixup and the kernel should look it up during the page fault
+> handler in case the kernel is ok with temporarily getting faults in
+> that range. And in turn it can't happen unless we explicitly decide to
+> allow gcc to do it.
 
-A compiler could decide to dereference it using a non-faulting load,
-do the calculations or whatever on the returned value of the non-faulting
-load, and then check whether the load actually faulted, and whether the
-address matched the prediction before it did a store based on it's
-guess.
+And these are indeed some good reasons why I am not a fan of pointer-value
+speculation.  ;-)
 
-Dave
--- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+> > > Furthermore the ACCESS_ONCE that Peter's patch added to gup_fast
+> > > pud/pgd can't prevent the compiler to read a guessed pmdp address as a
+> > > volatile variable, before reading the pmdp pointer and compare it with
+> > > the guessed address! So if it's 5 you worry about, when adding
+> > > ACCESS_ONCE in pudp/pgdp/pmdp is useless and won't fix it. You should
+> > > have added a barrier() instead.
+> > 
+> > Most compiler writers I have discussed this with agreed that a volatile
+> > cast would suppress value speculation.  The "volatile" keyword is not
+> > all that well specified in the C and C++ standards, but as "nix" said
+> > at http://lwn.net/Articles/509731/:
+> > 
+> > 	volatile's meaning as 'minimize optimizations applied to things
+> > 	manipulating anything of volatile type, do not duplicate, elide,
+> > 	move, fold, spindle or mutilate' is of long standing.
+> 
+> Ok, so if the above optimization would be possible, volatile would
+> stop it too, thanks for the quote and the explanation.
+> 
+> On a side note I believe there's a few barrier()s that may be worth
+> converting to ACCESS_ONCE, that would take care of case 6) too in
+> addition to avoid clobbering more CPU registers than strictly
+> necessary. Not very important but a possible microoptimization.
+
+Agreed on both points.
+
+> > That said, value speculation as a compiler optimization makes me a bit
+> > nervous, so my current feeling is that is should be suppressed entirely.
+> > 
+> > Hey, you asked, even if only implicitly!  ;-)
+> 
+> You're reading my mind! :)
+
+Or succesfully carrying out value speculation on it.  ;-)
+
+							Thanx, Paul
+
