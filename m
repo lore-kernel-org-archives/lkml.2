@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab2HDAEH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 20:04:07 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:35292 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754018Ab2HDAED (ORCPT
+	id S1754117Ab2HDAFi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 20:05:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51043 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992Ab2HDAFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 20:04:03 -0400
-Message-ID: <501C66A8.5000902@xenotime.net>
-Date: Fri, 03 Aug 2012 17:02:48 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
+	Fri, 3 Aug 2012 20:05:36 -0400
+Date: Fri, 3 Aug 2012 17:05:31 -0700
+From: Tejun Heo <tj@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] pstore: fix printk format warning
-References: <CA+55aFy4vnD5-8SWF_WDC3oTGotzkDg2_4=YHXd6qMiJ=OKekw@mail.gmail.com>
-In-Reply-To: <CA+55aFy4vnD5-8SWF_WDC3oTGotzkDg2_4=YHXd6qMiJ=OKekw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Cc: Sasha Levin <levinsasha928@gmail.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org
+Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
+Message-ID: <20120804000531.GP15477@google.com>
+References: <20120803171515.GH15477@google.com>
+ <501C407D.9080900@gmail.com>
+ <20120803213017.GK15477@google.com>
+ <501C458E.7050000@gmail.com>
+ <20120803214806.GM15477@google.com>
+ <501C4E92.1070801@gmail.com>
+ <20120803222339.GN15477@google.com>
+ <CA+55aFyOst4c3WHbPVbYkSBdBmLJUui5OvoVOh5AuPMnigwnEA@mail.gmail.com>
+ <20120803223634.GO15477@google.com>
+ <CA+55aFwTa_kYgmFwoWa6hwAAM6=2xTgQQf-vEx_gCzpEMnxodQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwTa_kYgmFwoWa6hwAAM6=2xTgQQf-vEx_gCzpEMnxodQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+Hello,
 
-Fix printk format warning (on i386) in pstore:
+On Fri, Aug 03, 2012 at 04:47:47PM -0700, Linus Torvalds wrote:
+> On Fri, Aug 3, 2012 at 3:36 PM, Tejun Heo <tj@kernel.org> wrote:
+> >
+> > I suppose you mean unsized.  I remember this working.  Maybe I'm
+> > confusing it with zero-sized array.  Hmm... gcc doesn't complain about
+> > the following.  --std=c99 seems happy too.
+> 
+> Ok, I'm surprised, but maybe it's supposed to work if you do it inside
+> another struct like that, exactly so that you can preallocate things..
 
-fs/pstore/ram.c:409:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
+Yeah, I think the rule is var array should be the last member of any
+given struct definition.  Once a struct is defined, its alignment and
+size are fixed and it behaves like any other struct.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Acked-by: Kees Cook <keescook@chromium.org>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
----
-I posted this patch on June 15 and July 23 but it has not been
-merged anywhere afaict, so I'm sending it directly to the man.
+> Or maybe it's just a gcc bug. I do think this all is way hackier than
+> Sasha's original simple code that didn't need these kinds of games,
+> and didn't need a size member at all.
+> 
+> I really think all the extra complexity and overhead is just *bad*.
+> The first simple version was much nicer and likely generated better
+> code too.
 
- fs/pstore/ram.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The size member could have performance impact in extreme cases.  If
+we're looking for something simple & fast, maybe just pass in @size as
+argument and be done with it?
 
---- lnx-36-rc1.orig/fs/pstore/ram.c
-+++ lnx-36-rc1/fs/pstore/ram.c
-@@ -406,7 +406,7 @@ static int __devinit ramoops_probe(struc
- 		goto fail_init_fprz;
- 
- 	if (!cxt->przs && !cxt->cprz && !cxt->fprz) {
--		pr_err("memory size too small, minimum is %lu\n",
-+		pr_err("memory size too small, minimum is %zu\n",
- 			cxt->console_size + cxt->record_size +
- 			cxt->ftrace_size);
- 		goto fail_cnt;
+Thanks.
+
+-- 
+tejun
