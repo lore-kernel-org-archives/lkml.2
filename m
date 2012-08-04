@@ -1,72 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab2HDON2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 10:13:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58816 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752628Ab2HDONZ (ORCPT
+	id S1753024Ab2HDOhR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 10:37:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33283 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab2HDOhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 10:13:25 -0400
-Date: Sat, 4 Aug 2012 15:12:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-Message-ID: <20120804141155.GJ10523@opensource.wolfsonmicro.com>
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
- <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
- <50170EA0.1010408@wwwdotorg.org>
- <501A338D.7080105@nvidia.com>
- <20120802082157.GA14866@avionic-0098.adnet.avionic-design.de>
- <20120802181111.GM4537@opensource.wolfsonmicro.com>
- <501B2642.4080805@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501B2642.4080805@nvidia.com>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 4 Aug 2012 10:37:15 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        cascardo@linux.vnet.ibm.com
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH/v2] [trivial] dma: Fix typo various drivers in dma
+Date: Sat,  4 Aug 2012 23:37:53 +0900
+Message-Id: <1344091073-22541-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.12.rc1.17.g9a7365c
+In-Reply-To: <1344004316-12204-1-git-send-email-standby24x7@gmail.com>
+References: <1344004316-12204-1-git-send-email-standby24x7@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 10:15:46AM +0900, Alex Courbot wrote:
-> On Fri 03 Aug 2012 03:11:12 AM JST, Mark Brown wrote:
+Correct spelling typo in drivers/dma.
 
-> >I missed some of the earlier bits of the thread here but why can't we do
-> >device based lookups?
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/dma/at_hdmac.c           | 8 ++++----
+ drivers/dma/ep93xx_dma.c         | 2 +-
+ drivers/dma/fsldma.c             | 2 +-
+ drivers/dma/imx-dma.c            | 4 ++--
+ drivers/dma/intel_mid_dma_regs.h | 6 +++---
+ drivers/dma/pl330.c              | 2 +-
+ drivers/dma/ppc4xx/adma.c        | 2 +-
+ drivers/dma/ste_dma40_ll.h       | 2 +-
+ 8 files changed, 14 insertions(+), 14 deletions(-)
 
-> That is because the phandles would not be properties of the device
-> node but rather of its sub-nodes:
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 3934fcc..9e87315 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -168,9 +168,9 @@ static void atc_desc_put(struct at_dma_chan *atchan, struct at_desc *desc)
+ }
+ 
+ /**
+- * atc_desc_chain - build chain adding a descripor
+- * @first: address of first descripor of the chain
+- * @prev: address of previous descripor of the chain
++ * atc_desc_chain - build chain adding a descriptor
++ * @first: address of first descriptor of the chain
++ * @prev: address of previous descriptor of the chain
+  * @desc: descriptor to queue
+  *
+  * Called from prep_* functions
+@@ -785,7 +785,7 @@ err_out:
+ }
+ 
+ /**
+- * atc_dma_cyclic_fill_desc - Fill one period decriptor
++ * atc_dma_cyclic_fill_desc - Fill one period descriptor
+  */
+ static int
+ atc_dma_cyclic_fill_desc(struct dma_chan *chan, struct at_desc *desc,
+diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+index c64917e..bb02fd9 100644
+--- a/drivers/dma/ep93xx_dma.c
++++ b/drivers/dma/ep93xx_dma.c
+@@ -1118,7 +1118,7 @@ fail:
+  * @chan: channel
+  * @dma_addr: DMA mapped address of the buffer
+  * @buf_len: length of the buffer (in bytes)
+- * @period_len: lenght of a single period
++ * @period_len: length of a single period
+  * @dir: direction of the operation
+  * @context: operation context (ignored)
+  *
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 8f84761..094437b 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1015,7 +1015,7 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
+ 	/*
+ 	 * Programming Error
+ 	 * The DMA_INTERRUPT async_tx is a NULL transfer, which will
+-	 * triger a PE interrupt.
++	 * trigger a PE interrupt.
+ 	 */
+ 	if (stat & FSL_DMA_SR_PE) {
+ 		chan_dbg(chan, "irq: Programming Error INT\n");
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index fcfeb3c..5a49d8d 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -571,8 +571,8 @@ static void imxdma_tasklet(unsigned long data)
+ 	if (desc->desc.callback)
+ 		desc->desc.callback(desc->desc.callback_param);
+ 
+-	/* If we are dealing with a cyclic descriptor keep it on ld_active
+-	 * and dont mark the descripor as complete.
++	/* If we are dealing with a cyclic descriptor, keep it on ld_active
++	 * and dont mark the descriptor as complete.
+ 	 * Only in non-cyclic cases it would be marked as complete
+ 	 */
+ 	if (imxdma_chan_is_doing_cyclic(imxdmac))
+diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
+index 1bfa926..17b4219 100644
+--- a/drivers/dma/intel_mid_dma_regs.h
++++ b/drivers/dma/intel_mid_dma_regs.h
+@@ -168,9 +168,9 @@ union intel_mid_dma_cfg_hi {
+  * @active_list: current active descriptors
+  * @queue: current queued up descriptors
+  * @free_list: current free descriptors
+- * @slave: dma slave struture
+- * @descs_allocated: total number of decsiptors allocated
+- * @dma: dma device struture pointer
++ * @slave: dma slave structure
++ * @descs_allocated: total number of descriptors allocated
++ * @dma: dma device structure pointer
+  * @busy: bool representing if ch is busy (active txn) or not
+  * @in_use: bool representing if ch is in use or not
+  * @raw_tfr: raw trf interrupt received
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index e4feba6..2343d7d 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -522,7 +522,7 @@ enum desc_status {
+ 	/* In the DMAC pool */
+ 	FREE,
+ 	/*
+-	 * Allocted to some channel during prep_xxx
++	 * Allocated to some channel during prep_xxx
+ 	 * Also may be sitting on the work_list.
+ 	 */
+ 	PREP,
+diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+index ced9882..f72348d 100644
+--- a/drivers/dma/ppc4xx/adma.c
++++ b/drivers/dma/ppc4xx/adma.c
+@@ -4446,7 +4446,7 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev)
+ 		ret = -ENOMEM;
+ 		goto err_dma_alloc;
+ 	}
+-	dev_dbg(&ofdev->dev, "allocted descriptor pool virt 0x%p phys 0x%llx\n",
++	dev_dbg(&ofdev->dev, "allocated descriptor pool virt 0x%p phys 0x%llx\n",
+ 		adev->dma_desc_pool_virt, (u64)adev->dma_desc_pool);
+ 
+ 	regs = ioremap(res.start, resource_size(&res));
+diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
+index 51e8e53..6d47373 100644
+--- a/drivers/dma/ste_dma40_ll.h
++++ b/drivers/dma/ste_dma40_ll.h
+@@ -202,7 +202,7 @@
+ /* LLI related structures */
+ 
+ /**
+- * struct d40_phy_lli - The basic configration register for each physical
++ * struct d40_phy_lli - The basic configuration register for each physical
+  * channel.
+  *
+  * @reg_cfg: The configuration register.
+-- 
+1.7.12.rc1.17.g9a7365c
 
-> backlight {
->     compatible = "pwm-backlight";
->     ...
->     power-on-sequence {
->         step@0 {
->             regulator = <&backlight_reg>;
->             enable;
->         };
-> 
-
-> So here simply using regulator_get on the backlight device would not work.
-
-Ah, right.  DT isn't being terribly helpful here...  I think the thing
-I'd expect to work here is that you have a reference back to the supply
-property of the backlight device rather than direct to the regulator so
-you end up writing "enable supply X" rather than "enable regulator X".
-
-Not quite sure how exactly you'd accomplish that - I guess if
-regulator_get() would recursively follow phandles until it hits a node
-that'd do the trick?
