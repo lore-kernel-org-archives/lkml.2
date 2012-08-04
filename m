@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab2HDD5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 23:57:13 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57208 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab2HDD5K (ORCPT
+	id S1750937Ab2HDEBo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 00:01:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45263 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab2HDEBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 23:57:10 -0400
-X-Originating-IP: 217.70.178.138
-X-Originating-IP: 50.43.46.74
-Date: Fri, 3 Aug 2012 20:57:03 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: Alex Kelly <alex.page.kelly@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/get_maintainer.pl: Default to --no-rolestats
- when output not a terminal
-Message-ID: <20120804035702.GA2788@leaf>
-References: <20120803182706.GA4637@jtriplet-mobl1>
- <1344018801.10710.17.camel@joe2Laptop>
- <20120803184743.GA4660@jtriplet-mobl1>
- <1344040650.10710.22.camel@joe2Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344040650.10710.22.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 4 Aug 2012 00:01:43 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH v1 00/15] firmware loader: introduce cache/uncache firmware
+Date: Sat,  4 Aug 2012 12:01:15 +0800
+Message-Id: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 05:37:30PM -0700, Joe Perches wrote:
-> On Fri, 2012-08-03 at 11:47 -0700, Josh Triplett wrote:
-> > On Fri, Aug 03, 2012 at 11:33:21AM -0700, Joe Perches wrote:
-> > > On Fri, 2012-08-03 at 11:27 -0700, Josh Triplett wrote:
-> > > > scripts/get_maintainer.pl defaults to showing --rolestats, which
-> > > > provides annotations explaining why each person or list might want to
-> > > > know about a patch.  This works well for interactive use, but breaks
-> > > > when used with git send-email's --to-cmd or --cc-cmd, resulting in
-> > > > malformed email headers and mails sent to some but not all recipients.
-> > > > 
-> > > > To avoid the need to explicitly pass --no-rolestats for batch use,
-> > > > enable --rolestats by default only when outputting to a terminal.
-> > > 
-> > > Hi Josh.
-> > > 
-> > > I think it's preferable to add --no-rolestats
-> > > to the uses that need them.
-> > 
-> > Why?
-> > 
-> > > I have different scripts that I use for git send-email
-> > > options --to-cmd and --cc-cmd
-> > [...snip scripts...]
-> > 
-> > You've submitted enough patches that you've automated as much of the
-> > process as you can; I don't think that makes the defaults less
-> > error-prone.
-> 
-> I think the default use of the get_maintainer script is
-> actually not scripted but interactive, where the user is
-> just trying to figure out who the maintainer is.
+Hi,
 
-I agree entirely; that's why I didn't change the default to always use
---no-rolestats, but rather to continue using --rolestats when
-interactive and --no-rolestats when scripted.
+In [1][2], the problem below has been discussed for some time:
 
-> > As it stands now, the current default of --rolestats makes the obvious
-> > command line of
-> > git send-email --to-cmd='scripts/get_maintainer.pl' *.patch
-> > send broken emails that go to some maintainers but not all.  I think it
-> > makes sense to change the default so that the obvious usage becomes the
-> > correct one.
-> 
-> There were some discussions awhile back in 2010 about the
-> preferred defaults.
-> 
-> Perhaps you can read those discussions about why the default
-> is the way it is.
+        device's firmware may be lost during suspend/resume
+        cycle because device might be unplugged and plugged again
+        or device experiences system power loss during the period.
+        But in resume path, system is still not ready(process
+        frozen, rootfs not usable, ...) to complete loading firmware
+        from user space for devices.
 
-I found commit 7e1863af1636b304a5f59aab6fb78d38e4079875, but that commit
-does not serve the intended purpose.  Defaulting to --rolestats doesn't
-make it "harder" to use get_maintainer.pl with git send-email, it just
-makes it broken when used.  Meanwhile, the few discussions I see about
-get_maintainer.pl just mention the problems caused by using --git, and
-get_maintainer.pl has already improved to address those problems by not
-using git commit signers for patches to files with active maintainers.
+The conclusion is that caching firmware during suspend/resume cycle
+is capable of solving the problem.
 
-I don't see any value in making it intentionally harder to invoke
-correctly while making it easier to invoke incorrectly.  Why not make it
-actually work?
+This patchset implements cache/uncache firmware mechanism,
+and apply the mechnism to cache device's firmware in kernel memory
+space automatically during suspend/resume cyclye, so device can
+load its firmware easily in its resume path. When resume is completed
+and system is ready, the cached firmware will be removed from
+kernel memory later.
 
-- Josh Triplett
+The patch 15/15 is one example to apply the firmware cache mechanism on
+ath9k-htc driver.
+
+Even there are some corener cases[3] which can't be solved by the
+cache approach, but as discussed in[4], the problem can be easily
+fixed by a simple patch written by Linus.
+
+This patch set is against 3.6.0-rc1-next-20120803.
+
+[1]. http://marc.info/?t=134278790800004&r=1&w=2
+[2]. http://marc.info/?t=132528956000002&r=10&w=2
+[3]. http://marc.info/?l=linux-usb&m=132554118928398&w=2
+[4]. http://marc.info/?l=linux-kernel&m=134323730805443&w=2  
+
+--
+V1:
+	-handle vmap failure case(1/15)
+	-fix a memory leak of 'firmware_buf'(5/15)
+	-fix oops during failure path of requesting firmware(6/15)
+	-fix vmap more than one time(6/15)
+	-introduce __fw_lookup_buf to avoid code duplication(7/15)
+	-fix comment of request_firmware_nowait(9/15)
+	-avoid releasing lock in devres_for_each_res(11/15)
+	-use new devres iterator API to create fw cache entry(12/15)
+	-rename some functions and data structures(12/15)
+	-some code style fixes
+
+	Thanks for Borislav's review!
+
+--
+ drivers/base/devres.c                    |   42 ++
+ drivers/base/firmware_class.c            |  764 ++++++++++++++++++++++++++----
+ drivers/net/wireless/ath/ath9k/hif_usb.c |   34 +-
+ drivers/net/wireless/ath/ath9k/hif_usb.h |    4 +-
+ include/linux/device.h                   |    4 +
+ include/linux/firmware.h                 |   15 +
+ 6 files changed, 747 insertions(+), 116 deletions(-)
+
+
+Thanks,
+--
+Ming Lei
+
+
