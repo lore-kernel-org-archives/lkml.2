@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab2HDGtP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 02:49:15 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:35166 "EHLO
+	id S1753237Ab2HDGvw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 02:51:52 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:38647 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab2HDGtO (ORCPT
+	with ESMTP id S1752090Ab2HDGvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 02:49:14 -0400
-Date: Sat, 4 Aug 2012 02:49:10 -0400 (EDT)
+	Sat, 4 Aug 2012 02:51:50 -0400
+Date: Sat, 4 Aug 2012 02:51:47 -0400 (EDT)
 From: Nicolas Pitre <nicolas.pitre@linaro.org>
 To: Cyril Chemparathy <cyril@ti.com>
 cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         arnd@arndb.de, catalin.marinas@arm.com, linux@arm.linux.org.uk,
-        will.deacon@arm.com
-Subject: Re: [PATCH 04/22] ARM: LPAE: support 64-bit virt/phys patching
-In-Reply-To: <1343775898-28345-5-git-send-email-cyril@ti.com>
-Message-ID: <alpine.LFD.2.02.1208040226060.5231@xanadu.home>
-References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-5-git-send-email-cyril@ti.com>
+        will.deacon@arm.com, Vitaly Andrianov <vitalya@ti.com>
+Subject: Re: [PATCH 06/22] ARM: LPAE: use phys_addr_t in alloc_init_pud()
+In-Reply-To: <1343775898-28345-7-git-send-email-cyril@ti.com>
+Message-ID: <alpine.LFD.2.02.1208040251020.5231@xanadu.home>
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-7-git-send-email-cyril@ti.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,63 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 31 Jul 2012, Cyril Chemparathy wrote:
 
-> This patch adds support for 64-bit physical addresses in virt_to_phys
-> patching.  This does not do real 64-bit add/sub, but instead patches in the
-> upper 32-bits of the phys_offset directly into the output of virt_to_phys.
-
-You should explain _why_ you do not a real aadd/sub.  I did deduce it 
-but that might not be obvious to everyone.  Also this subtlety should be 
-commented in the code as well.
-
-> In addition to adding 64-bit support, this patch also adds a set_phys_offset()
-> helper that is needed on architectures that need to modify PHYS_OFFSET during
-> initialization.
+> From: Vitaly Andrianov <vitalya@ti.com>
 > 
+> This patch fixes the alloc_init_pud() function to use phys_addr_t instead of
+> unsigned long when passing in the phys argument.
+> 
+> This is an extension to commit 97092e0c56830457af0639f6bd904537a150ea4a, which
+> applied similar changes elsewhere in the ARM memory management code.
+> 
+> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 > Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
 > ---
->  arch/arm/include/asm/memory.h |   22 +++++++++++++++-------
->  arch/arm/kernel/head.S        |    6 ++++++
->  arch/arm/kernel/setup.c       |   14 ++++++++++++++
->  3 files changed, 35 insertions(+), 7 deletions(-)
+>  arch/arm/mm/mmu.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-> index 4a0108f..110495c 100644
-> --- a/arch/arm/include/asm/memory.h
-> +++ b/arch/arm/include/asm/memory.h
-> @@ -153,23 +153,31 @@
->  #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index cf4528d..226985c 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -628,7 +628,8 @@ static void __init alloc_init_section(pud_t *pud, unsigned long addr,
+>  }
 >  
->  extern unsigned long __pv_phys_offset;
-> -#define PHYS_OFFSET __pv_phys_offset
-> -
-> +extern unsigned long __pv_phys_offset_high;
-
-As mentioned previously, this is just too ugly.  Please make 
-__pv_phys_offset into a phys_addr_t instead and mask the low/high parts 
-as needed in __virt_to_phys().
-
->  extern unsigned long __pv_offset;
->  
-> +extern void set_phys_offset(phys_addr_t po);
-> +
-> +#define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
-> +
->  static inline phys_addr_t __virt_to_phys(unsigned long x)
+>  static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+> -	unsigned long end, unsigned long phys, const struct mem_type *type)
+> +				  unsigned long end, phys_addr_t phys,
+> +				  const struct mem_type *type)
 >  {
-> -	unsigned long t;
-> -	early_patch_imm8(x, t, "add", __pv_offset);
-> -	return t;
-> +	unsigned long tlo, thi = 0;
-> +
-> +	early_patch_imm8(x, tlo, "add", __pv_offset);
-> +	if (sizeof(phys_addr_t) > 4)
-> +		early_patch_imm8(0, thi, "add", __pv_phys_offset_high);
-
-Given the high part is always the same, isn't there a better way than an 
-add with 0 that could be done here?  The add will force a load of 0 in a 
-register needlessly just to add a constant value to it.  Your new 
-patching framework ought to be able to patch a mov (or a mvn) 
-instruction directly.
-
-
-Nicolas
+>  	pud_t *pud = pud_offset(pgd, addr);
+>  	unsigned long next;
+> -- 
+> 1.7.9.5
+> 
