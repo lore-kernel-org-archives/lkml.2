@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab2HDIwf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 04:52:35 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:8540 "EHLO
+	id S1754004Ab2HDIwp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 04:52:45 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:23600 "EHLO
 	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab2HDIwd (ORCPT
+	with ESMTP id S1753675Ab2HDIwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 04:52:33 -0400
-Date: Sat, 4 Aug 2012 10:52:16 +0200
+	Sat, 4 Aug 2012 04:52:43 -0400
+Date: Sat, 4 Aug 2012 10:52:36 +0200
 From: Jean Delvare <khali@linux-fr.org>
 To: Silas Boyd-Wickizer <sbw@mit.edu>
 Cc: linux-kernel@vger.kernel.org,
@@ -15,11 +15,11 @@ Cc: linux-kernel@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>,
         Thomas Gleixner <tglx@linutronix.de>,
         Harald Welte <laforge@openezx.org>, x86@kernel.org
-Subject: Re: [PATCH 3/4 V2] Use get_online_cpus to avoid races involving CPU
+Subject: Re: [PATCH 4/4 V2] Use get_online_cpus to avoid races involving CPU
   hotplug
-Message-ID: <20120804105216.476f5513@endymion.delvare>
-In-Reply-To: <20120803193528.GD4227@mit.edu>
-References: <20120803193528.GD4227@mit.edu>
+Message-ID: <20120804105236.4e9c8e88@endymion.delvare>
+In-Reply-To: <20120803193638.GE4227@mit.edu>
+References: <20120803193638.GE4227@mit.edu>
 X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,15 +28,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Aug 2012 12:35:28 -0700, Silas Boyd-Wickizer wrote:
-> via_cputemp_init in drivers/hwmon/via-cputemp.c loops with
-> for_each_online_cpu, adding platform_devices, then calls
-> register_hotcpu_notifier.  If a CPU is offlined between the loop and
-> register_hotcpu_notifier, then later onlined, via_cputemp_device_add
-> will attempt to add platform devices with the same ID.  A similar race
-> occurs during via_cputemp_exit, after the module calls
-> unregister_hotcpu_notifier, a CPU might offline and a device will
-> exist for a CPU that is offline.
+On Fri, 3 Aug 2012 12:36:39 -0700, Silas Boyd-Wickizer wrote:
+> coretemp_init in drivers/hwmon/coretemp.c loops with
+> for_each_online_cpu, adding platform_devices and sysfs interfaces,
+> then calls register_hotcpu_notifier.  There is a race if a CPU is
+> offlined or onlined after the loop, but before
+> register_hotcpu_notifier.  The race might result in the absence of a
+> platform_device+sysfs interface for an online CPU, or the presence of
+> a platform_device+sysfs interface for an offline CPU.  A similar race
+> occurs during coretemp_exit, after the module calls
+> unregister_hotcpu_notifier, but before it unregisters all devices, a
+> CPU might offline and a device for an offline CPU will exist for a
+> short while.
 > 
 > This fix surrounds for_each_online_cpu and register_hotcpu_notifier
 > with get_online_cpus+put_online_cpus; and surrounds
@@ -47,7 +50,7 @@ On Fri, 3 Aug 2012 12:35:28 -0700, Silas Boyd-Wickizer wrote:
 > 
 > Signed-off-by: Silas Boyd-Wickizer <sbw@mit.edu>
 > ---
->  drivers/hwmon/via-cputemp.c |    5 +++++
+>  drivers/hwmon/coretemp.c |    5 +++++
 >  1 file changed, 5 insertions(+)
 > (...)
 
