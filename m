@@ -1,101 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab2HDGYJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 02:24:09 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:63578 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab2HDGYF (ORCPT
+	id S1753803Ab2HDGhp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 02:37:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51227 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753542Ab2HDGhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 02:24:05 -0400
-Date: Sat, 4 Aug 2012 02:24:02 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Cyril Chemparathy <cyril@ti.com>
-cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, catalin.marinas@arm.com, linux@arm.linux.org.uk,
-        will.deacon@arm.com, Vitaly Andrianov <vitalya@ti.com>
-Subject: Re: [PATCH 03/22] ARM: LPAE: use phys_addr_t on virt <--> phys
- conversion
-In-Reply-To: <1343775898-28345-4-git-send-email-cyril@ti.com>
-Message-ID: <alpine.LFD.2.02.1208040222110.5231@xanadu.home>
-References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-4-git-send-email-cyril@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 4 Aug 2012 02:37:41 -0400
+Subject: Re: [PATCH] extcon: arizona: Implement button detection support
+From: anish kumar <anish198519851985@gmail.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+In-Reply-To: <500F8DB4.30401@samsung.com>
+References: <1342800449-10328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	 <500F8DB4.30401@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 04 Aug 2012 12:07:34 +0530
+Message-ID: <1344062254.1525.239.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jul 2012, Cyril Chemparathy wrote:
-
-> This patch fixes up the types used when converting back and forth between
-> physical and virtual addresses.
+On Wed, 2012-07-25 at 15:09 +0900, Chanwoo Choi wrote:
+> Hi Mark,
 > 
-> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-
-Did you verify that this didn't introduce any compilation warning when 
-compiling for non LPAE?  If so and there were no warnings then...
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
-
-
-> ---
->  arch/arm/include/asm/memory.h |   17 +++++++++++------
->  1 file changed, 11 insertions(+), 6 deletions(-)
+> On 07/21/2012 01:07 AM, Mark Brown wrote:
 > 
-> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-> index 01c710d..4a0108f 100644
-> --- a/arch/arm/include/asm/memory.h
-> +++ b/arch/arm/include/asm/memory.h
-> @@ -157,22 +157,27 @@ extern unsigned long __pv_phys_offset;
->  
->  extern unsigned long __pv_offset;
->  
-> -static inline unsigned long __virt_to_phys(unsigned long x)
-> +static inline phys_addr_t __virt_to_phys(unsigned long x)
->  {
->  	unsigned long t;
->  	early_patch_imm8(x, t, "add", __pv_offset);
->  	return t;
->  }
->  
-> -static inline unsigned long __phys_to_virt(unsigned long x)
-> +static inline unsigned long __phys_to_virt(phys_addr_t x)
->  {
->  	unsigned long t;
->  	early_patch_imm8(x, t, "sub", __pv_offset);
->  	return t;
->  }
->  #else
-> -#define __virt_to_phys(x)	((x) - PAGE_OFFSET + PHYS_OFFSET)
-> -#define __phys_to_virt(x)	((x) - PHYS_OFFSET + PAGE_OFFSET)
-> +
-> +#define __virt_to_phys(x)		\
-> +	((phys_addr_t)(x) - PAGE_OFFSET + PHYS_OFFSET)
-> +
-> +#define __phys_to_virt(x)		\
-> +	((unsigned long)((phys_addr_t)(x) - PHYS_OFFSET + PAGE_OFFSET))
-> +
->  #endif
->  #endif
->  
-> @@ -207,14 +212,14 @@ static inline phys_addr_t virt_to_phys(const volatile void *x)
->  
->  static inline void *phys_to_virt(phys_addr_t x)
->  {
-> -	return (void *)(__phys_to_virt((unsigned long)(x)));
-> +	return (void *)__phys_to_virt(x);
->  }
->  
->  /*
->   * Drivers should NOT use these either.
->   */
->  #define __pa(x)			__virt_to_phys((unsigned long)(x))
-> -#define __va(x)			((void *)__phys_to_virt((unsigned long)(x)))
-> +#define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
->  #define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
->  
->  /*
-> -- 
-> 1.7.9.5
+> > As well as identifying accessories the accessory detection hardware on
+> > Arizona class devices can also detect a number of buttons which we should
+> > report via the input API.
+> > 
+> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > ---
+> >  drivers/extcon/extcon-arizona.c |   72 +++++++++++++++++++++++++++++++++++----
+> >  1 file changed, 65 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> > index 427a289..fa2114f 100644
+> > --- a/drivers/extcon/extcon-arizona.c
+> > +++ b/drivers/extcon/extcon-arizona.c
+> > @@ -21,6 +21,7 @@
+> >  #include <linux/interrupt.h>
+> >  #include <linux/err.h>
+> >  #include <linux/gpio.h>
+> > +#include <linux/input.h>
+> >  #include <linux/platform_device.h>
+> >  #include <linux/pm_runtime.h>
+> >  #include <linux/regulator/consumer.h>
+> > @@ -30,11 +31,14 @@
+> >  #include <linux/mfd/arizona/pdata.h>
+> >  #include <linux/mfd/arizona/registers.h>
+> >  
+> > +#define ARIZONA_NUM_BUTTONS 6
+> > +
+> >  struct arizona_extcon_info {
+> >  	struct device *dev;
+> >  	struct arizona *arizona;
+> >  	struct mutex lock;
+> >  	struct regulator *micvdd;
+> > +	struct input_dev *input;
+> >  
+> >  	int micd_mode;
+> >  	const struct arizona_micd_config *micd_modes;
+> > @@ -54,6 +58,18 @@ static const struct arizona_micd_config micd_default_modes[] = {
+> >  	{ 0,                  2 << ARIZONA_MICD_BIAS_SRC_SHIFT, 1 },
+> >  };
+> >  
+> > +static struct {
+> > +	u16 status;
+> > +	int report;
+> > +} arizona_lvl_to_key[ARIZONA_NUM_BUTTONS] = {
+> > +	{  0x1, BTN_0 },
+> > +	{  0x2, BTN_1 },
+> > +	{  0x4, BTN_2 },
+> > +	{  0x8, BTN_3 },
+> > +	{ 0x10, BTN_4 },
+> > +	{ 0x20, BTN_5 },
+> > +};
+> > +
+> >  #define ARIZONA_CABLE_MECHANICAL 0
+> >  #define ARIZONA_CABLE_MICROPHONE 1
+> >  #define ARIZONA_CABLE_HEADPHONE  2
+> > @@ -133,6 +149,7 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+> >  
+> >  	if (change) {
+> >  		regulator_disable(info->micvdd);
+> > +		pm_runtime_mark_last_busy(info->dev);
+> >  		pm_runtime_put_autosuspend(info->dev);
+> >  	}
+> >  }
+> > @@ -141,8 +158,8 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+> >  {
+> >  	struct arizona_extcon_info *info = data;
+> >  	struct arizona *arizona = info->arizona;
+> > -	unsigned int val;
+> > -	int ret;
+> > +	unsigned int val, lvl;
+> > +	int ret, i;
+> >  
+> >  	mutex_lock(&info->lock);
+> >  
+> > @@ -219,13 +236,22 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+> >  
+> >  	/*
+> >  	 * If we're still detecting and we detect a short then we've
+> > -	 * got a headphone.  Otherwise it's a button press, the
+> > -	 * button reporting is stubbed out for now.
+> > +	 * got a headphone.  Otherwise it's a button press.
+> >  	 */
+> >  	if (val & 0x3fc) {
+> >  		if (info->mic) {
+> >  			dev_dbg(arizona->dev, "Mic button detected\n");
+> >  
+> > +			lvl = val & ARIZONA_MICD_LVL_MASK;
+> > +			lvl >>= ARIZONA_MICD_LVL_SHIFT;
+> > +
+> > +			for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
+> > +				if (lvl & arizona_lvl_to_key[i].status)
+> > +					input_report_key(info->input,
+> > +							 arizona_lvl_to_key[i].report,
+> > +							 1);
+> > +			input_sync(info->input);
+> > +
+> >  		} else if (info->detecting) {
+> >  			dev_dbg(arizona->dev, "Headphone detected\n");
+> >  			info->detecting = false;
+> > @@ -244,6 +270,10 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+> >  		}
+> >  	} else {
+> >  		dev_dbg(arizona->dev, "Mic button released\n");
+> > +		for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
+> > +			input_report_key(info->input,
+> > +					 arizona_lvl_to_key[i].report, 0);
 > 
+> > +		input_sync(info->input);
+> 
+> >  	}
+> 
+> 
+> Why do you should report released event to all of buttons? I think that
+> you should only
+> report released event to previous pressed button. If user press two
+> button on the headset
+> at the same time and then user release only one button with pressed
+> another button, extcon-arizona driver have to report released event to
+> previous pressed button except for still pressed another button.
+Hello Chanwoo,
+
+According to my discussion with Mr. Myunjoo Ham.He said that single
+driver should not be used for communicating with both extcon and input
+subsystem and that is the reason he suggested that I split the samsung
+jack driver into two separate drivers.
+
+First driver to communicate with extcon about headset insertion/removal.
+Second driver is to communicate with input subsystem to report headset
+button press/release.
+
+I have followed this approach and coded and it seems to be working fine,
+but looking at this patch I feel there is no need to separate as
+both insertion/removal and button press/release is reported using a
+single driver.
+I am good with any approach but just wanted to let you know what I am
+going to post soon.
+> 
+> Thank you,
+> Chanwoo Choi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
