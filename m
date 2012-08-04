@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab2HDMU0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 08:20:26 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51395 "EHLO
+	id S1753704Ab2HDMUU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 08:20:20 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:51396 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab2HDMTh (ORCPT
+	with ESMTP id S1752533Ab2HDMTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 4 Aug 2012 08:19:37 -0400
 From: Jiang Liu <jiang.liu@huawei.com>
@@ -20,10 +20,10 @@ CC: Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
         <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 04/16] ACPI: introduce interfaces to manage ACPI  device reference count
-Date: Sat, 4 Aug 2012 20:13:51 +0800
-Message-ID: <1344082443-4608-5-git-send-email-jiang.liu@huawei.com>
+        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: [RFC PATCH v2 13/16] ACPIHP: configure/unconfigure system devices  connecting to a hotplug slot
+Date: Sat, 4 Aug 2012 20:14:00 +0800
+Message-ID: <1344082443-4608-14-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
 References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
@@ -37,410 +37,412 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Function acpi_bus_get_device() return an ACPI device without holding a
-reference count the device, which is not safe to ACPI hotplug operations.
+This patch implements functions to configure/unconfigure system devices
+connecting to a hotplug slot.
 
-So change acpi_bus_get_device() to hold a reference count on the returned
-ACPI device and introduces acpi_get_device()/acpi_put_device() to manage
-ACPI device reference count.
+To support better error recover and cancellation, configuration operations are
+splitted into three steps and unconfiguration operations are splitted into six
+steps as below:
+CONFIGURE
+ 1) pre_configure(): allocate required resources
+ 2) configure(): add devices into system
+ 3) pos_configure(): rollback if cancelled or failed to add devices
+UNCONFIGURE
+ 1) pre_release(): optional
+ 2) release(): reclaim devices from system
+ 3) post_release(): rollback if cancelled or failed to reclaim devices
+ 4) pre_unconfigure(): optional
+ 5) unconfigure(): remove devices from system
+ 6) post_unconfigure(): free resources used by devices
 
-This patch is still incomplete, need to check and modify all callers of
-acpi_bus_get_device().
+And all devices are unconfigured in reverse order to solve failures caused
+by dependencies.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
 ---
- drivers/acpi/bus.c                     |   22 +++++++++++++++++++---
- drivers/acpi/internal.h                |    3 +++
- drivers/acpi/scan.c                    |    6 ++++++
- drivers/gpu/drm/i915/intel_opregion.c  |    2 ++
- drivers/gpu/drm/nouveau/nouveau_acpi.c |    1 +
- drivers/pci/hotplug/acpiphp_glue.c     |    9 +++++++--
- drivers/pci/hotplug/acpiphp_ibm.c      |    5 ++++-
- drivers/pci/hotplug/sgi_hotplug.c      |    6 +++++-
- drivers/platform/x86/thinkpad_acpi.c   |    2 ++
- drivers/pnp/pnpacpi/core.c             |   23 ++++++++++-------------
- include/acpi/acpi_bus.h                |   16 +++++++++++++++-
- 11 files changed, 74 insertions(+), 21 deletions(-)
+ drivers/acpi/hotplug/Makefile     |    1 +
+ drivers/acpi/hotplug/acpihp_drv.h |    3 +
+ drivers/acpi/hotplug/configure.c  |  349 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 353 insertions(+)
+ create mode 100644 drivers/acpi/hotplug/configure.c
 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index adceafd..e13dcbc 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -89,26 +89,42 @@ static struct dmi_system_id dsdt_dmi_table[] __initdata = {
-                                 Device Management
-    -------------------------------------------------------------------------- */
+diff --git a/drivers/acpi/hotplug/Makefile b/drivers/acpi/hotplug/Makefile
+index 7e10f69..55d559a 100644
+--- a/drivers/acpi/hotplug/Makefile
++++ b/drivers/acpi/hotplug/Makefile
+@@ -13,3 +13,4 @@ obj-$(CONFIG_ACPI_HOTPLUG_DRIVER)		+= acpihp_drv.o
+ acpihp_drv-y					= drv_main.o
+ acpihp_drv-y					+= dependency.o
+ acpihp_drv-y					+= cancel.o
++acpihp_drv-y					+= configure.o
+diff --git a/drivers/acpi/hotplug/acpihp_drv.h b/drivers/acpi/hotplug/acpihp_drv.h
+index 5d69272..eca2036 100644
+--- a/drivers/acpi/hotplug/acpihp_drv.h
++++ b/drivers/acpi/hotplug/acpihp_drv.h
+@@ -89,4 +89,7 @@ void acpihp_drv_cancel_fini(struct list_head *list);
+ int acpihp_drv_cancel_start(struct list_head *list);
+ int acpihp_drv_cancel_wait(struct list_head *list);
  
--int acpi_bus_get_device(acpi_handle handle, struct acpi_device **device)
-+bool acpi_bus_has_device(acpi_handle handle)
- {
--	acpi_status status = AE_OK;
-+	acpi_status status;
-+	struct acpi_device *device = NULL;
++int acpihp_drv_configure(struct list_head *list);
++int acpihp_drv_unconfigure(struct list_head *list);
 +
-+	down_read(&acpi_device_data_handler_sem);
-+	status = acpi_get_data(handle, acpi_bus_data_handler, (void **)&device);
-+	up_read(&acpi_device_data_handler_sem);
+ #endif	/* __ACPIHP_DRV_H__ */
+diff --git a/drivers/acpi/hotplug/configure.c b/drivers/acpi/hotplug/configure.c
+new file mode 100644
+index 0000000..5002cf4
+--- /dev/null
++++ b/drivers/acpi/hotplug/configure.c
+@@ -0,0 +1,349 @@
++/*
++ * Copyright (C) 2011 Huawei Tech. Co., Ltd.
++ * Copyright (C) 2011 Jiang Liu <jiang.liu@huawei.com>
++ * Copyright (C) 2011 Hanjun Guo <guohanjun@huawei.com>
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
 +
-+	return ACPI_SUCCESS(status) && device;
-+}
-+EXPORT_SYMBOL(acpi_bus_has_device);
- 
-+int acpi_bus_get_device(acpi_handle handle, struct acpi_device **device)
++#include <linux/acpi.h>
++#include <linux/device.h>
++#include <acpi/acpi_bus.h>
++#include <acpi/acpi_hotplug.h>
++#include "acpihp_drv.h"
++
++enum config_op_code {
++	DRV_OP_PRE_CONFIGURE,
++	DRV_OP_CONFIGURE,
++	DRV_OP_POST_CONFIGURE,
++	DRV_OP_PRE_RELEASE,
++	DRV_OP_RELEASE,
++	DRV_OP_POST_RELEASE,
++	DRV_OP_PRE_UNCONFIGURE,
++	DRV_OP_UNCONFIGURE,
++	DRV_OP_POST_UNCONFIGURE
++};
++
++/* All devices will be configured in the order. */
++static enum acpihp_dev_type acpihp_drv_dev_types[] = {
++	ACPIHP_DEV_TYPE_CONTAINER,
++	ACPIHP_DEV_TYPE_MEM,
++	ACPIHP_DEV_TYPE_CPU,
++	ACPIHP_DEV_TYPE_IOAPIC,
++	ACPIHP_DEV_TYPE_HOST_BRIDGE,
++};
++
++/* All devices will be unconfigured in the order. */
++static enum acpihp_dev_type acpihp_drv_dev_types_reverse[] = {
++	ACPIHP_DEV_TYPE_HOST_BRIDGE,
++	ACPIHP_DEV_TYPE_IOAPIC,
++	ACPIHP_DEV_TYPE_CPU,
++	ACPIHP_DEV_TYPE_MEM,
++	ACPIHP_DEV_TYPE_CONTAINER,
++};
++
++static void acpihp_drv_update_dev_state(struct acpihp_dev_node *dev,
++					enum acpihp_dev_state state)
 +{
-+	acpi_status status;
- 
- 	if (!device)
- 		return -EINVAL;
- 
- 	/* TBD: Support fixed-feature devices */
- 
-+	down_read(&acpi_device_data_handler_sem);
- 	status = acpi_get_data(handle, acpi_bus_data_handler, (void **)device);
- 	if (ACPI_FAILURE(status) || !*device) {
-+		up_read(&acpi_device_data_handler_sem);
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No context for object [%p]\n",
- 				  handle));
- 		return -ENODEV;
-+	} else {
-+		get_device(&(*device)->dev);
-+		up_read(&acpi_device_data_handler_sem);
- 	}
- 
- 	return 0;
- }
--
- EXPORT_SYMBOL(acpi_bus_get_device);
- 
- acpi_status acpi_bus_get_status_handle(acpi_handle handle,
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index ca75b9c..70843c0 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -93,4 +93,7 @@ static inline int suspend_nvs_save(void) { return 0; }
- static inline void suspend_nvs_restore(void) {}
- #endif
- 
-+extern struct rw_semaphore acpi_device_data_handler_sem;
-+void acpi_bus_data_handler(acpi_handle handle, void *context);
-+
- #endif /* _ACPI_INTERNAL_H_ */
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 459593a..28408af 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -10,6 +10,7 @@
- #include <linux/signal.h>
- #include <linux/kthread.h>
- #include <linux/dmi.h>
-+#include <linux/sem.h>
- 
- #include <acpi/acpi_drivers.h>
- #include <linux/idr.h>
-@@ -33,6 +34,7 @@ static LIST_HEAD(acpi_device_list);
- static LIST_HEAD(acpi_bus_id_list);
- DEFINE_MUTEX(acpi_device_lock);
- LIST_HEAD(acpi_wakeup_device_list);
-+DECLARE_RWSEM(acpi_device_data_handler_sem);
- 
- struct acpi_device_bus_id{
- 	char bus_id[15];
-@@ -564,7 +566,9 @@ static void acpi_device_unregister(struct acpi_device *device, int type)
- 	acpi_device_release_id(device);
- 	mutex_unlock(&acpi_device_lock);
- 
-+	down_write(&acpi_device_data_handler_sem);
- 	acpi_detach_data(device->handle, acpi_bus_data_handler);
-+	up_write(&acpi_device_data_handler_sem);
- 
- 	acpi_device_remove_files(device);
- 	device_unregister(&device->dev);
-@@ -1227,8 +1231,10 @@ static int acpi_device_set_context(struct acpi_device *device)
- 	if (!device->handle)
- 		return 0;
- 
-+	down_write(&acpi_device_data_handler_sem);
- 	status = acpi_attach_data(device->handle,
- 				  acpi_bus_data_handler, device);
-+	up_write(&acpi_device_data_handler_sem);
- 	if (ACPI_SUCCESS(status))
- 		return 0;
- 
-diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
-index 18bd0af..da7dd48 100644
---- a/drivers/gpu/drm/i915/intel_opregion.c
-+++ b/drivers/gpu/drm/i915/intel_opregion.c
-@@ -359,6 +359,8 @@ static void intel_didl_outputs(struct drm_device *dev)
- 		}
- 	}
- 
-+	acpi_device_put(acpi_dev);
-+
- 	if (!acpi_video_bus) {
- 		pr_warn("No ACPI video bus found\n");
- 		return;
-diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-index fc841e8..f83efe3 100644
---- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-@@ -423,6 +423,7 @@ nouveau_acpi_edid(struct drm_device *dev, struct drm_connector *connector)
- 		return -ENODEV;
- 
- 	ret = acpi_video_get_edid(acpidev, type, -1, &edid);
-+	acpi_device_put(acpidev);
- 	if (ret < 0)
- 		return ret;
- 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 806c44f..78cffba4 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -724,11 +724,13 @@ static int acpiphp_bus_add(struct acpiphp_func *func)
- 		 * the bus then re-add it...
- 		 */
- 		ret_val = acpi_bus_trim(device, 1);
-+		acpi_device_put(device);
- 		dbg("acpi_bus_trim return %x\n", ret_val);
- 	}
- 
- 	ret_val = acpi_bus_add(&device, pdevice, func->handle,
- 		ACPI_BUS_TYPE_DEVICE);
-+	acpi_device_put(pdevice);
- 	if (ret_val) {
- 		dbg("error adding bus, %x\n",
- 			-ret_val);
-@@ -760,6 +762,8 @@ static int acpiphp_bus_trim(acpi_handle handle)
- 	if (retval)
- 		err("cannot remove from acpi list\n");
- 
-+	acpi_device_put(device);
-+
- 	return retval;
- }
- 
-@@ -1114,8 +1118,10 @@ static void handle_bridge_insertion(acpi_handle handle, u32 type)
- 	}
- 	if (acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE)) {
- 		err("cannot add bridge to acpi list\n");
-+		acpi_device_put(pdevice);
- 		return;
- 	}
-+	acpi_device_put(pdevice);
- 	if (!acpiphp_configure_bridge(handle) &&
- 		!acpi_bus_start(device))
- 		add_bridge(handle);
-@@ -1192,7 +1198,6 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
- 				      .pointer = objname };
--	struct acpi_device *device;
- 	int num_sub_bridges = 0;
- 	struct acpiphp_hp_work *hp_work;
- 	acpi_handle handle;
-@@ -1202,7 +1207,7 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
- 	handle = hp_work->handle;
- 	type = hp_work->type;
- 
--	if (acpi_bus_get_device(handle, &device)) {
-+	if (!acpi_bus_has_device(handle)) {
- 		/* This bridge must have just been physically inserted */
- 		handle_bridge_insertion(handle, type);
- 		goto out;
-diff --git a/drivers/pci/hotplug/acpiphp_ibm.c b/drivers/pci/hotplug/acpiphp_ibm.c
-index c35e8ad..ecd4b8d 100644
---- a/drivers/pci/hotplug/acpiphp_ibm.c
-+++ b/drivers/pci/hotplug/acpiphp_ibm.c
-@@ -450,7 +450,7 @@ static int __init ibm_acpiphp_init(void)
- 	}
- 	if (acpiphp_register_attention(&ibm_attention_info)) {
- 		retval = -ENODEV;
--		goto init_return;
-+		goto put_device;
- 	}
- 
- 	ibm_note.device = device;
-@@ -471,6 +471,8 @@ static int __init ibm_acpiphp_init(void)
- 
- init_cleanup:
- 	acpiphp_unregister_attention(&ibm_attention_info);
-+put_device:
-+	acpi_device_put(device);
- init_return:
- 	return retval;
- }
-@@ -493,6 +495,7 @@ static void __exit ibm_acpiphp_exit(void)
- 		err("%s: Notification handler removal failed\n", __func__);
- 	/* remove the /sys entries */
- 	sysfs_remove_bin_file(sysdir, &ibm_apci_table_attr);
-+	acpi_device_put(ibm_note.device);
- }
- 
- module_init(ibm_acpiphp_init);
-diff --git a/drivers/pci/hotplug/sgi_hotplug.c b/drivers/pci/hotplug/sgi_hotplug.c
-index de57311..ad120f1 100644
---- a/drivers/pci/hotplug/sgi_hotplug.c
-+++ b/drivers/pci/hotplug/sgi_hotplug.c
-@@ -464,6 +464,8 @@ static int enable_slot(struct hotplug_slot *bss_hotplug_slot)
- 				}
- 			}
- 		}
-+
-+		acpi_device_put(pdevice);
- 	}
- 
- 	/* Call the driver for the new device */
-@@ -540,8 +542,10 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
- 
- 				ret = acpi_bus_get_device(chandle,
- 							  &device);
--				if (ACPI_SUCCESS(ret))
-+				if (ACPI_SUCCESS(ret)) {
- 					acpi_bus_trim(device, 1);
-+					acpi_device_put(device);
-+				}
- 			}
- 		}
- 
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index 8b5610d..285eac5f 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -782,6 +782,7 @@ static int __init setup_acpi_notify(struct ibm_struct *ibm)
- 			pr_err("acpi_install_notify_handler(%s) failed: %s\n",
- 			       ibm->name, acpi_format_exception(status));
- 		}
-+		acpi_device_put(ibm->acpi->device);
- 		return -ENODEV;
- 	}
- 	ibm->flags.acpi_notify_installed = 1;
-@@ -8461,6 +8462,7 @@ static void ibm_exit(struct ibm_struct *ibm)
- 		acpi_remove_notify_handler(*ibm->acpi->handle,
- 					   ibm->acpi->type,
- 					   dispatch_acpi_notify);
-+		acpi_device_put(ibm->acpi->device);
- 		ibm->flags.acpi_notify_installed = 0;
- 	}
- 
-diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-index d21e8f5..684b462 100644
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -82,7 +82,6 @@ static int pnpacpi_get_resources(struct pnp_dev *dev)
- 
- static int pnpacpi_set_resources(struct pnp_dev *dev)
- {
--	struct acpi_device *acpi_dev;
- 	acpi_handle handle;
- 	struct acpi_buffer buffer;
- 	int ret;
-@@ -90,7 +89,7 @@ static int pnpacpi_set_resources(struct pnp_dev *dev)
- 	pnp_dbg(&dev->dev, "set resources\n");
- 
- 	handle = DEVICE_ACPI_HANDLE(&dev->dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || !acpi_bus_has_device(handle)) {
- 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
- 		return -ENODEV;
- 	}
-@@ -113,14 +112,13 @@ static int pnpacpi_set_resources(struct pnp_dev *dev)
- 
- static int pnpacpi_disable_resources(struct pnp_dev *dev)
- {
--	struct acpi_device *acpi_dev;
- 	acpi_handle handle;
- 	int ret;
- 
- 	dev_dbg(&dev->dev, "disable resources\n");
- 
- 	handle = DEVICE_ACPI_HANDLE(&dev->dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || !acpi_bus_has_device(handle)) {
- 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
- 		return 0;
- 	}
-@@ -138,11 +136,10 @@ static int pnpacpi_disable_resources(struct pnp_dev *dev)
- #ifdef CONFIG_ACPI_SLEEP
- static bool pnpacpi_can_wakeup(struct pnp_dev *dev)
- {
--	struct acpi_device *acpi_dev;
- 	acpi_handle handle;
- 
- 	handle = DEVICE_ACPI_HANDLE(&dev->dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || !acpi_bus_has_device(handle)) {
- 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
- 		return false;
- 	}
-@@ -152,12 +149,11 @@ static bool pnpacpi_can_wakeup(struct pnp_dev *dev)
- 
- static int pnpacpi_suspend(struct pnp_dev *dev, pm_message_t state)
- {
--	struct acpi_device *acpi_dev;
- 	acpi_handle handle;
- 	int error = 0;
- 
- 	handle = DEVICE_ACPI_HANDLE(&dev->dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || !acpi_bus_has_device(handle)) {
- 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
- 		return 0;
- 	}
-@@ -190,11 +186,10 @@ static int pnpacpi_suspend(struct pnp_dev *dev, pm_message_t state)
- 
- static int pnpacpi_resume(struct pnp_dev *dev)
- {
--	struct acpi_device *acpi_dev;
- 	acpi_handle handle = DEVICE_ACPI_HANDLE(&dev->dev);
- 	int error = 0;
- 
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || !acpi_bus_has_device(handle)) {
- 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
- 		return -ENODEV;
- 	}
-@@ -310,10 +305,12 @@ static acpi_status __init pnpacpi_add_device_handler(acpi_handle handle,
- {
- 	struct acpi_device *device;
- 
--	if (!acpi_bus_get_device(handle, &device))
--		pnpacpi_add_device(device);
--	else
-+	if (acpi_bus_get_device(handle, &device))
- 		return AE_CTRL_DEPTH;
-+
-+	pnpacpi_add_device(device);
-+	acpi_device_put(device);
-+
- 	return AE_OK;
- }
- 
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 9e6e1c6..e2a3eb0 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -345,8 +345,22 @@ extern void unregister_acpi_bus_notifier(struct notifier_block *nb);
-  * External Functions
-  */
- 
-+static inline struct acpi_device *acpi_device_get(struct acpi_device *d)
-+{
-+	if (d)
-+		get_device(&d->dev);
-+
-+	return d;
++	BUG_ON(state <= DEVICE_STATE_UNKOWN || state >= DEVICE_STATE_MAX);
++	mutex_lock(&dev->lock);
++	dev->state = state;
++	mutex_unlock(&dev->lock);
 +}
 +
-+static inline void acpi_device_put(struct acpi_device *d)
++static int acpihp_drv_invoke_method(enum config_op_code  opcode,
++				    struct acpihp_slot *slot,
++				    struct acpi_device *dev, int post)
 +{
-+	if (d)
-+		put_device(&d->dev);
++	struct acpihp_slot_drv *drv_data;
++
++	acpihp_drv_get_data(slot, &drv_data);
++
++	switch (opcode) {
++	case DRV_OP_PRE_CONFIGURE:
++		return acpihp_dev_pre_configure(dev, &drv_data->cancel_ctx);
++	case DRV_OP_CONFIGURE:
++		return acpihp_dev_configure(dev, &drv_data->cancel_ctx);
++	case DRV_OP_POST_CONFIGURE:
++		return acpihp_dev_post_configure(dev, post);
++	case DRV_OP_PRE_RELEASE:
++		return acpihp_dev_pre_release(dev, &drv_data->cancel_ctx);
++	case DRV_OP_RELEASE:
++		return acpihp_dev_release(dev, &drv_data->cancel_ctx);
++	case DRV_OP_POST_RELEASE:
++		return acpihp_dev_post_release(dev, post);
++	case DRV_OP_PRE_UNCONFIGURE:
++		return acpihp_dev_pre_unconfigure(dev);
++	case DRV_OP_UNCONFIGURE:
++		return acpihp_dev_unconfigure(dev);
++	case DRV_OP_POST_UNCONFIGURE:
++		return acpihp_dev_post_unconfigure(dev);
++	default:
++		BUG_ON(opcode);
++		return -ENOSYS;
++	}
 +}
 +
-+bool acpi_bus_has_device(acpi_handle handle);
- int acpi_bus_get_device(acpi_handle handle, struct acpi_device **device);
--void acpi_bus_data_handler(acpi_handle handle, void *context);
- acpi_status acpi_bus_get_status_handle(acpi_handle handle,
- 				       unsigned long long *sta);
- int acpi_bus_get_status(struct acpi_device *device);
++static int acpihp_drv_call_method(enum config_op_code opcode,
++				  struct acpihp_slot *slot,
++				  enum acpihp_dev_type type,
++				  enum acpihp_dev_state state)
++{
++	int result = 0;
++	struct klist_iter iter;
++	struct klist_node *ip;
++	struct acpihp_dev_node *np;
++	struct acpi_device *acpi_dev;
++
++	klist_iter_init(&slot->dev_lists[type], &iter);
++	while ((ip = klist_next(&iter)) != NULL) {
++		np = container_of(ip, struct acpihp_dev_node, node);
++		acpi_dev = container_of(np->dev, struct acpi_device, dev);
++
++		result = acpihp_drv_invoke_method(opcode, slot, acpi_dev, 0);
++		if (result) {
++			BUG_ON(opcode == DRV_OP_POST_UNCONFIGURE);
++			break;
++		}
++
++		acpihp_drv_update_dev_state(np, state);
++	}
++	klist_iter_exit(&iter);
++
++	return result;
++}
++
++static int acpihp_drv_call_method_post(enum config_op_code opcode,
++				       struct acpihp_slot *slot,
++				       enum acpihp_dev_type type,
++				       enum acpihp_dev_state state,
++				       enum acpihp_dev_post_cmd post)
++{
++	int retval = 0;
++	int result;
++	struct klist_iter iter;
++	struct klist_node *ip;
++	struct acpihp_dev_node *np;
++	struct acpi_device *acpi_dev;
++
++	klist_iter_init(&slot->dev_lists[type], &iter);
++	while ((ip = klist_next(&iter)) != NULL) {
++		np = container_of(ip, struct acpihp_dev_node, node);
++		acpi_dev = container_of(np->dev, struct acpi_device, dev);
++		if (np->state == state && post == ACPIHP_DEV_POST_CMD_ROLLBACK)
++			continue;
++
++		result = acpihp_drv_invoke_method(opcode, slot, acpi_dev, post);
++		if (result)
++			retval = -EIO;
++		else if (post == ACPIHP_DEV_POST_CMD_ROLLBACK)
++			acpihp_drv_update_dev_state(np, state);
++	}
++	klist_iter_exit(&iter);
++
++	return retval;
++}
++
++static int acpihp_drv_walk_devs(struct list_head *slot_list,
++				enum config_op_code opcode,
++				enum acpihp_dev_state state,
++				bool reverse)
++{
++	int i, retval = 0;
++	enum acpihp_dev_type *tp;
++	struct acpihp_slot_dependency *dep;
++	int count = ARRAY_SIZE(acpihp_drv_dev_types);
++
++	tp = reverse ? acpihp_drv_dev_types_reverse : acpihp_drv_dev_types;
++	for (i = 0; i < count; i++)
++		list_for_each_entry(dep, slot_list, node) {
++			retval = acpihp_drv_call_method(opcode, dep->slot,
++							tp[i], state);
++			if (retval)
++				return retval;
++		}
++
++	return 0;
++}
++
++static int acpihp_drv_walk_devs_post(struct list_head *slot_list,
++				     enum config_op_code opcode,
++				     enum acpihp_dev_state state,
++				     enum acpihp_dev_post_cmd post,
++				     bool reverse)
++{
++	int i, rv2, retval = 0;
++	enum acpihp_dev_type *tp;
++	struct acpihp_slot_dependency *dep;
++	int count = ARRAY_SIZE(acpihp_drv_dev_types);
++
++	tp = reverse ? acpihp_drv_dev_types_reverse : acpihp_drv_dev_types;
++	for (i = 0; i < count; i++)
++		list_for_each_entry(dep, slot_list, node) {
++			rv2 = acpihp_drv_call_method_post(opcode, dep->slot,
++							  tp[i], state, post);
++			if (rv2) {
++				/*
++				 * Mark slot as fault and don't touch it
++				 * anymore.
++				 */
++				acpihp_slot_set_flag(dep->slot,
++						     ACPIHP_SLOT_FLAG_FAULT);
++				retval = rv2;
++			}
++		}
++
++	return retval;
++}
++
++static int acpihp_drv_sync_cancel(struct list_head *list, int result,
++				  enum acpihp_dev_post_cmd post)
++{
++	int cancel;
++	struct acpihp_slot_dependency *dep;
++
++	if (post == ACPIHP_DEV_POST_CMD_COMMIT)
++		cancel = ACPIHP_DRV_CANCEL_MISSED;
++	else if (result)
++		cancel = ACPIHP_DRV_CANCEL_FAILED;
++	else
++		cancel = ACPIHP_DRV_CANCEL_OK;
++	list_for_each_entry(dep, list, node) {
++		acpihp_drv_cancel_notify(dep->slot, cancel);
++		acpihp_drv_update_slot_state(dep->slot);
++	}
++
++	if (!result && post == ACPIHP_DEV_POST_CMD_ROLLBACK)
++		result = -ECANCELED;
++
++	return result;
++}
++
++/*
++ * To support better error recover and cancellation, configure operations
++ * are splitted into three steps:
++ * 1) pre_configure(): allocate required resources
++ * 2) configure(): add devices into system
++ * 3) pos_configure(): rollback if cancelled or failed to add devices
++ */
++int acpihp_drv_configure(struct list_head *list)
++{
++	int result;
++	struct list_head head;
++	struct acpihp_slot_dependency *dep;
++	enum acpihp_dev_post_cmd post = ACPIHP_DEV_POST_CMD_COMMIT;
++
++	result = acpihp_drv_filter_dependency_list(list, &head,
++						   DRV_OP_CONFIGURE);
++	if (result) {
++		ACPIHP_DEBUG("fails to filter dependency list.\n");
++		return -ENOMEM;
++	}
++
++	list_for_each_entry(dep, &head, node)
++		acpihp_slot_change_state(dep->slot,
++					 ACPIHP_SLOT_STATE_CONFIGURING);
++
++	result = acpihp_drv_walk_devs(&head, DRV_OP_PRE_CONFIGURE,
++				      DEVICE_STATE_PRE_CONFIGURE, false);
++	if (!result)
++		result = acpihp_drv_walk_devs(&head, DRV_OP_CONFIGURE,
++					      DEVICE_STATE_CONFIGURED, false);
++	if (result)
++		post = ACPIHP_DEV_POST_CMD_ROLLBACK;
++	result = acpihp_drv_walk_devs_post(&head, DRV_OP_POST_CONFIGURE,
++					   DEVICE_STATE_CONNECTED, post, false);
++
++	result = acpihp_drv_sync_cancel(&head, result, post);
++	acpihp_drv_destroy_dependency_list(&head);
++
++	return result;
++}
++
++static int acpihp_drv_release(struct list_head *list)
++{
++	int result;
++	enum acpihp_dev_post_cmd post = ACPIHP_DEV_POST_CMD_COMMIT;
++
++	result = acpihp_drv_walk_devs(list, DRV_OP_PRE_RELEASE,
++				      DEVICE_STATE_PRE_RELEASE, true);
++	if (!result)
++		result = acpihp_drv_walk_devs(list, DRV_OP_RELEASE,
++					      DEVICE_STATE_RELEASED, true);
++	if (result)
++		post = ACPIHP_DEV_POST_CMD_ROLLBACK;
++	result = acpihp_drv_walk_devs_post(list, DRV_OP_POST_RELEASE,
++					   DEVICE_STATE_CONFIGURED, post, true);
++
++	return acpihp_drv_sync_cancel(list, result, post);
++}
++
++static void __acpihp_drv_unconfigure(struct list_head *list)
++{
++	int result;
++
++	result = acpihp_drv_walk_devs(list, DRV_OP_PRE_UNCONFIGURE,
++				      DEVICE_STATE_PRE_UNCONFIGURE, true);
++	BUG_ON(result);
++	result = acpihp_drv_walk_devs(list, DRV_OP_UNCONFIGURE,
++				      DEVICE_STATE_CONNECTED, true);
++	BUG_ON(result);
++	result = acpihp_drv_walk_devs(list, DRV_OP_POST_UNCONFIGURE,
++				      DEVICE_STATE_CONNECTED, true);
++	BUG_ON(result);
++}
++
++/*
++ * To support better error recover and cancellation, unconfigure operations
++ * are splitted into three steps:
++ * 1) pre_release(): optional
++ * 2) release(): reclaim devices from system
++ * 3) post_release(): rollback if cancelled or failed to reclaim devices
++ * 4) pre_unconfigure(): optional
++ * 5) unconfigure(): remove devices from system
++ * 6) post_unconfigure(): free resources used by devices
++ */
++int acpihp_drv_unconfigure(struct list_head *list)
++{
++	int result;
++	struct list_head head;
++	struct acpihp_slot_dependency *dep;
++
++	result = acpihp_drv_filter_dependency_list(list, &head,
++						   ACPIHP_DRV_CMD_UNCONFIGURE);
++	if (result) {
++		ACPIHP_DEBUG("fails to filter dependency list.\n");
++		return -ENOMEM;
++	}
++
++	list_for_each_entry(dep, &head, node)
++		acpihp_slot_change_state(dep->slot,
++					 ACPIHP_SLOT_STATE_UNCONFIGURING);
++
++	result = acpihp_drv_release(&head);
++	if (!result)
++		__acpihp_drv_unconfigure(&head);
++
++	list_for_each_entry(dep, &head, node)
++		acpihp_drv_update_slot_state(dep->slot);
++
++	acpihp_drv_destroy_dependency_list(&head);
++
++	return result;
++}
 -- 
 1.7.9.5
 
