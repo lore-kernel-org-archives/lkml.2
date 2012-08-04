@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab2HDRCF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 13:02:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56779 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab2HDRCB (ORCPT
+	id S1753902Ab2HDRK7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 13:10:59 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:54326 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753728Ab2HDRK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 13:02:01 -0400
-Date: Sat, 4 Aug 2012 10:01:13 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>, Takashi Iwai <tiwai@suse.de>,
-        Giacomo Comes <comes@naic.edu>, linux-kernel@vger.kernel.org
-Subject: i915 regression on 3.6-rc1: lid blanks screen
-Message-ID: <alpine.LSU.2.00.1208040936570.1161@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 4 Aug 2012 13:10:56 -0400
+X-IronPort-AV: E=Sophos;i="4.77,713,1336341600"; 
+   d="scan'208";a="169080479"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: "Jean Delvare" <khali@linux-fr.org>
+Cc: kernel-janitors@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/i2c/i2c-smbus.c: convert kzalloc to devm_kzalloc
+Date: Sat,  4 Aug 2012 19:10:48 +0200
+Message-Id: <1344100248-16238-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry to report that with 3.6-rc1, closing and opening the lid on
-this ThinkPad T420s leaves the screen blank, and I have to reboot.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-I understand there's also an nVidia graphics device in here,
-but I have that configured out, preferring to use the i915:
+Converting kzalloc to devm_kzalloc simplifies the code and ensures that the
+result, alert, is freed after the irq allocated by the subsequent
+devm_request_irq.  This in turn ensures that when an interrupt can be
+triggered, the alert structure is still available.
 
-00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core Processor Family Integrated Graphics Controller (rev 09) (prog-if 00 [VGA controller])
-	Subsystem: Lenovo Device 21d3
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0
-	Interrupt: pin A routed to IRQ 41
-	Region 0: Memory at f1400000 (64-bit, non-prefetchable) [size=4M]
-	Region 2: Memory at e0000000 (64-bit, prefetchable) [size=256M]
-	Region 4: I/O ports at 5000 [size=64]
-	Expansion ROM at <unassigned> [disabled]
-	Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-		Address: fee0100c  Data: 41c2
-	Capabilities: [d0] Power Management version 2
-		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [a4] PCI Advanced Features
-		AFCap: TP+ FLR+
-		AFCtrl: FLR-
-		AFStatus: TP-
-	Kernel driver in use: i915
+The problem of a free after a devm_request_irq was found using the
+following semantic match (http://coccinelle.lip6.fr/)
 
-Bisection led to this commit, and reverting indeed gets my screen back:
+// <smpl>
+@r exists@
+expression e1,e2,x,a,b,c,d;
+identifier free;
+position p1,p2;
+@@
 
-commit 520c41cf2fa029d1e8b923ac2026f96664f17c4b
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Wed Jul 11 16:27:52 2012 +0200
+  devm_request_irq@p1(e1,e2,...,x)
+  ... when any
+      when != e2 = a
+      when != x = b
+  if (...) {
+    ... when != e2 = c
+        when != x = d
+    free@p2(...,x,...);
+    ...
+    return ...;
+  }
+// </smpl>
 
-    drm/i915/lvds: ditch ->prepare special case
-    
-    LVDS is the first output where dpms on/off and prepare/commit don't
-    perfectly match. Now the idea behind this special case seems to be
-    that for simple resolution changes on the LVDS we don't need to stop
-    the pipe, because (at least on newer chips) we can adjust the panel
-    fitter on the fly.
-    
-    There are a few problems with the current code though:
-    - We still stop and restart the pipe unconditionally, because the crtc
-      helper code isn't flexible enough.
-    - We show some ugly flickering, especially when changing crtcs (this
-      the crtc helper would actually take into account, but we don't
-      implement the encoder->get_crtc callback required to make this work
-      properly).
-    
-    So it doesn't even work as advertised. I agree that it would be nice
-    to do resolution changes on LVDS (and also eDP) whithout blacking the
-    screen where the panel fitter allows to do that. But imo we should
-    implement this as a special case a few layers up in the mode set code,
-    akin to how we already detect simple framebuffer changes (and only
-    update the required registers with ->mode_set_base).
-    
-    Until this is all in place, make our lives easier and just rip it out.
-    
-    Also note that this seems to fix actual bugs with enabling the lvds
-    output, see:
-    
-    http://lists.freedesktop.org/archives/intel-gfx/2012-July/018614.html
-    
-    Cc: Takashi Iwai <tiwai@suse.de>
-    Cc: Giacomo Comes <comes@naic.edu>
-    Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-    Tested-by: Takashi Iwai <tiwai@suse.de>
-    Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 49f09a8..e05c0d3 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -409,13 +409,7 @@ static void intel_lvds_prepare(struct drm_encoder *encoder)
- {
- 	struct intel_lvds *intel_lvds = to_intel_lvds(encoder);
+---
+ drivers/i2c/i2c-smbus.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/i2c/i2c-smbus.c b/drivers/i2c/i2c-smbus.c
+index df3e0bf..50a36cf 100644
+--- a/drivers/i2c/i2c-smbus.c
++++ b/drivers/i2c/i2c-smbus.c
+@@ -142,7 +142,8 @@ static int smbalert_probe(struct i2c_client *ara,
+ 	struct i2c_adapter *adapter = ara->adapter;
+ 	int res;
  
--	/*
--	 * Prior to Ironlake, we must disable the pipe if we want to adjust
--	 * the panel fitter. However at all other times we can just reset
--	 * the registers regardless.
--	 */
--	if (!HAS_PCH_SPLIT(encoder->dev) && intel_lvds->pfit_dirty)
--		intel_lvds_disable(intel_lvds);
-+	intel_lvds_disable(intel_lvds);
+-	alert = kzalloc(sizeof(struct i2c_smbus_alert), GFP_KERNEL);
++	alert = devm_kzalloc(&ara->dev, sizeof(struct i2c_smbus_alert),
++			     GFP_KERNEL);
+ 	if (!alert)
+ 		return -ENOMEM;
+ 
+@@ -154,10 +155,8 @@ static int smbalert_probe(struct i2c_client *ara,
+ 	if (setup->irq > 0) {
+ 		res = devm_request_irq(&ara->dev, setup->irq, smbalert_irq,
+ 				       0, "smbus_alert", alert);
+-		if (res) {
+-			kfree(alert);
++		if (res)
+ 			return res;
+-		}
+ 	}
+ 
+ 	i2c_set_clientdata(ara, alert);
+@@ -167,14 +166,12 @@ static int smbalert_probe(struct i2c_client *ara,
+ 	return 0;
  }
  
- static void intel_lvds_commit(struct drm_encoder *encoder)
+-/* IRQ resource is managed so it is freed automatically */
++/* IRQ resource and alert are managed so they are freed automatically */
+ static int smbalert_remove(struct i2c_client *ara)
+ {
+ 	struct i2c_smbus_alert *alert = i2c_get_clientdata(ara);
+ 
+ 	cancel_work_sync(&alert->alert);
+-
+-	kfree(alert);
+ 	return 0;
+ }
+ 
+
