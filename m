@@ -1,94 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab2HDUOd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 16:14:33 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62521 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab2HDUO2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 16:14:28 -0400
+	id S1753852Ab2HDUQf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 16:16:35 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:42089 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752604Ab2HDUQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 16:16:31 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [Regression, post-3.5][PATCH] Revert "NMI watchdog: fix for lockup detector breakage on resume"
+Date: Sat, 4 Aug 2012 22:22:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sameer Nanda <snanda@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <1343475772-21345-3-git-send-email-jiang.liu@huawei.com>
-References: <1343475772-21345-1-git-send-email-jiang.liu@huawei.com>
-	<1343475772-21345-3-git-send-email-jiang.liu@huawei.com>
-Date: Sat, 4 Aug 2012 13:14:27 -0700
-X-Google-Sender-Auth: HXnwtfcU2Ouz6us9ZUCLylw80x0
-Message-ID: <CAE9FiQU=HmRCy0nxLgi7oqnjbaW4DJ2ct1EE2pVP+=rac2D+wQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] ACPIHP: ACPI system device hotplug slot enumerator
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, Tony Luck <tony.luch@intel.com>,
-        Bob Moore <robert.moore@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Hanjun Guo <guohanjun@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        Gaohuai Han <hangaohuai@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208042222.22413.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 28, 2012 at 4:42 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> The first is an ACPI hotplug slot enumerator, which enumerates ACPI hotplug
-> slots on load and provides callbacks to manage those hotplug slots.
-> An ACPI hotplug slot is an abstraction of receptacles, where a group of
-> system devices could be connected to. This patch implements the skeleton for
-> ACPI system device hotplug slot enumerator. On loading, the driver scans the
-> whole ACPI namespace for hotplug slots and creates a device node for each
-> hotplug slots. Every slot is associated with a device class named
-> acpihp_slot_class and will be managed by ACPI hotplug drivers.
 
-I was thinking:
-   We can have module in ACPI DSDT, and every module is coresponding
-to SystemModule.
-   so it will be
-	\_SB.NOD1
-		CPU0
-		CPU1
-		CPU2
-		CPU3
-		MEM0
-		MEM1
-		MEM2
-		MEM3
-		PCI0
-		PCI1
-		PCI2
-		PCI3
-		NTFY
-		STAT
-		STOP
-    NTFY will be something like:
-	Notify(\_SB.NOD1.CPU0,....)
-	Notify(\_SB.NOD1.CPU1,....)
-	Notify(\_SB.NOD1.CPU2,....)
-	Notify(\_SB.NOD1.CPU3,....)
+Revert commit 45226e9 (NMI watchdog: fix for lockup detector breakage
+on resume) which breaks resume from system suspend on my SH7372
+Mackerel board (by causing a NULL pointer dereference to happen) and
+is generally wrong, because it abuses CPU hotplug notifications in a
+shamelessly blatant way.
 
-	Notify(\_SB.NOD1.MEM0,....)
-	Notify(\_SB.NOD1.MEM1,....)
-	Notify(\_SB.NOD1.MEM2,....)
-	Notify(\_SB.NOD1.MEM3,....)
+The original issue should be addressed through appropriate syscore
+resume callback instead.
 
-	Notify(\_SB.NOD1.PCI0,....)
-	Notify(\_SB.NOD1.PCI1,....)
-	Notify(\_SB.NOD1.PCI2,....)
-	Notify(\_SB.NOD1.PCI3,....)
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ include/linux/sched.h  |    8 --------
+ kernel/power/suspend.c |    3 ---
+ kernel/watchdog.c      |   21 ++-------------------
+ 3 files changed, 2 insertions(+), 30 deletions(-)
 
-   and will link GPE button for SystemModule to call NTFY.
-
-   STAT could be 32bit integer for final turn off the power.
-	every CPU, MEM, PCI will own one bit, it will clear that bit in this own
-	_EJ0.
-	Every _EJ0 will double check if all are cleared, then it call extra STOP
-	to power off the whole SystemModule.
-
-if OS already have seperated handler for those type objects (CPU, MEM,
-PCI),  we may not need to change to much to os.
-
-Thanks
-
-Yinghai
+Index: linux/include/linux/sched.h
+===================================================================
+--- linux.orig/include/linux/sched.h
++++ linux/include/linux/sched.h
+@@ -334,14 +334,6 @@ static inline void lockup_detector_init(
+ }
+ #endif
+ 
+-#if defined(CONFIG_LOCKUP_DETECTOR) && defined(CONFIG_SUSPEND)
+-void lockup_detector_bootcpu_resume(void);
+-#else
+-static inline void lockup_detector_bootcpu_resume(void)
+-{
+-}
+-#endif
+-
+ #ifdef CONFIG_DETECT_HUNG_TASK
+ extern unsigned int  sysctl_hung_task_panic;
+ extern unsigned long sysctl_hung_task_check_count;
+Index: linux/kernel/power/suspend.c
+===================================================================
+--- linux.orig/kernel/power/suspend.c
++++ linux/kernel/power/suspend.c
+@@ -178,9 +178,6 @@ static int suspend_enter(suspend_state_t
+ 	arch_suspend_enable_irqs();
+ 	BUG_ON(irqs_disabled());
+ 
+-	/* Kick the lockup detector */
+-	lockup_detector_bootcpu_resume();
+-
+  Enable_cpus:
+ 	enable_nonboot_cpus();
+ 
+Index: linux/kernel/watchdog.c
+===================================================================
+--- linux.orig/kernel/watchdog.c
++++ linux/kernel/watchdog.c
+@@ -575,7 +575,7 @@ out:
+ /*
+  * Create/destroy watchdog threads as CPUs come and go:
+  */
+-static int
++static int __cpuinit
+ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ {
+ 	int hotcpu = (unsigned long)hcpu;
+@@ -610,27 +610,10 @@ cpu_callback(struct notifier_block *nfb,
+ 	return NOTIFY_OK;
+ }
+ 
+-static struct notifier_block cpu_nfb = {
++static struct notifier_block __cpuinitdata cpu_nfb = {
+ 	.notifier_call = cpu_callback
+ };
+ 
+-#ifdef CONFIG_SUSPEND
+-/*
+- * On exit from suspend we force an offline->online transition on the boot CPU
+- * so that the PMU state that was lost while in suspended state gets set up
+- * properly for the boot CPU.  This information is required for restarting the
+- * NMI watchdog.
+- */
+-void lockup_detector_bootcpu_resume(void)
+-{
+-	void *cpu = (void *)(long)smp_processor_id();
+-
+-	cpu_callback(&cpu_nfb, CPU_DEAD_FROZEN, cpu);
+-	cpu_callback(&cpu_nfb, CPU_UP_PREPARE_FROZEN, cpu);
+-	cpu_callback(&cpu_nfb, CPU_ONLINE_FROZEN, cpu);
+-}
+-#endif
+-
+ void __init lockup_detector_init(void)
+ {
+ 	void *cpu = (void *)(long)smp_processor_id();
