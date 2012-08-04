@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab2HDMTn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 08:19:43 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51407 "EHLO
+	id S1753643Ab2HDMTt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 08:19:49 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:51442 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab2HDMTi (ORCPT
+	with ESMTP id S1753460Ab2HDMTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 08:19:38 -0400
+	Sat, 4 Aug 2012 08:19:44 -0400
 From: Jiang Liu <jiang.liu@huawei.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
@@ -20,10 +20,10 @@ CC: Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
         <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 16/16] ACPIHP: enhance ACPI container driver to  support new hotplug framework
-Date: Sat, 4 Aug 2012 20:14:03 +0800
-Message-ID: <1344082443-4608-17-git-send-email-jiang.liu@huawei.com>
+        Jiang Liu <liuj97@gmail.com>, Gaohuai Han <hangaohuai@huawei.com>
+Subject: [RFC PATCH v2 02/16] ACPIHP: ACPI system device hotplug slot  enumerator
+Date: Sat, 4 Aug 2012 20:13:49 +0800
+Message-ID: <1344082443-4608-3-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
 References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
@@ -37,309 +37,561 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-This patch enhances the ACPI container driver to support the new hotplug
-framework:
-1) remove code to handle ACPI hotplug event
-2) add callbacks to support new hotplug framework
+The first is an ACPI hotplug slot enumerator, which enumerates ACPI hotplug
+slots on load and provides callbacks to manage those hotplug slots.
+An ACPI hotplug slot is an abstraction of receptacles, where a group of
+system devices could be connected to. This patch implements the skeleton for
+ACPI system device hotplug slot enumerator. On loading, the driver scans the
+whole ACPI namespace for hotplug slots and creates a device node for each
+hotplug slots. Every slot is associated with a device class named
+acpihp_slot_class and will be managed by ACPI hotplug drivers.
+
+The hotplug enumerator will create following sysfs entries for hotplug slots:
+
+linux-drf:/sys/devices/LNXSYSTM:00/acpihp # ll
+drwxr-xr-x 4 root root 0 Jul 28 16:00 NODE00
+drwxr-xr-x 3 root root 0 Jul 28 16:00 NODE01
+drwxr-xr-x 3 root root 0 Jul 28 16:00 NODE02
+
+linux-drf:/sys/devices/LNXSYSTM:00/acpihp/NODE00 # ll
+drwxr-xr-x 3 root root     0 Jul 28 16:00 IOX01
+-r--r--r-- 1 root root 65536 Jul 28 16:01 capabilities
+lrwxrwxrwx 1 root root     0 Jul 28 16:00 device -> ../../../LNXSYSTM:00
+-r--r--r-- 1 root root 65536 Jul 28 16:01 object
+drwxr-xr-x 2 root root     0 Jul 28 16:01 power
+-r--r--r-- 1 root root 65536 Jul 28 16:01 state
+-r--r--r-- 1 root root 65536 Jul 28 16:01 status
+lrwxrwxrwx 1 root root     0 Jul 28 16:00 subsystem -> ../../../../class/acpihp
+-r--r--r-- 1 root root 65536 Jul 28 16:01 type
+-rw-r--r-- 1 root root 65536 Jul 28 16:01 uevent
+
+linux-drf:/sys/bus/acpi/acpihp # ls
+NODE00  NODE00.IOX01  NODE01  NODE02
+
+linux-drf:/sys/bus/acpi/acpihp # ll
+lrwxrwxrwx 1 root root 0 Jul 28 16:03 NODE00 ->
+		../../../devices/LNXSYSTM:00/acpihp/NODE00
+lrwxrwxrwx 1 root root 0 Jul 28 16:03 NODE00.IOX01 ->
+		../../../devices/LNXSYSTM:00/acpihp/NODE00/IOX01
+lrwxrwxrwx 1 root root 0 Jul 28 16:03 NODE01 ->
+		../../../devices/LNXSYSTM:00/acpihp/NODE01
+lrwxrwxrwx 1 root root 0 Jul 28 16:03 NODE02 ->
+		../../../devices/LNXSYSTM:00/acpihp/NODE02
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
 ---
- drivers/acpi/container.c |  201 +++++++---------------------------------------
- include/acpi/container.h |   12 ---
- 2 files changed, 31 insertions(+), 182 deletions(-)
- delete mode 100644 include/acpi/container.h
+ drivers/acpi/Kconfig             |   11 +
+ drivers/acpi/hotplug/Makefile    |    3 +
+ drivers/acpi/hotplug/slot_enum.c |  466 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 480 insertions(+)
+ create mode 100644 drivers/acpi/hotplug/slot_enum.c
 
-diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-index 45cd03b..9633648 100644
---- a/drivers/acpi/container.c
-+++ b/drivers/acpi/container.c
-@@ -34,16 +34,13 @@
- #include <linux/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
--#include <acpi/container.h>
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index e457d31..711e18e 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -333,6 +333,17 @@ menuconfig ACPI_HOTPLUG
+ 	  If your hardware and firmware do not support adding or removing
+ 	  of system devices at runtime, you need not to enable this option.
+ 
++config ACPI_HOTPLUG_ENUM
++	tristate "ACPI Hotplug Slot Enumerator"
++	depends on ACPI_HOTPLUG
++	default y
++	help
++	  This driver enumerates ACPI hotplug slots for ACPI based system
++	  device hotplug.
++
++	  To compile this driver as a module, choose M here:
++	  the module will be called acpihp_enum.
++
+ config ACPI_CONTAINER
+ 	tristate "Container and Module Devices (EXPERIMENTAL)"
+ 	depends on EXPERIMENTAL
+diff --git a/drivers/acpi/hotplug/Makefile b/drivers/acpi/hotplug/Makefile
+index 5e7790f..41c0da9 100644
+--- a/drivers/acpi/hotplug/Makefile
++++ b/drivers/acpi/hotplug/Makefile
+@@ -4,3 +4,6 @@
+ 
+ obj-$(CONFIG_ACPI_HOTPLUG)			+= acpihp.o
+ acpihp-y					= core.o
++
++obj-$(CONFIG_ACPI_HOTPLUG_ENUM)			+= acpihp_enum.o
++acpihp_enum-y					= slot_enum.o
+diff --git a/drivers/acpi/hotplug/slot_enum.c b/drivers/acpi/hotplug/slot_enum.c
+new file mode 100644
+index 0000000..80396a3
+--- /dev/null
++++ b/drivers/acpi/hotplug/slot_enum.c
+@@ -0,0 +1,466 @@
++/*
++ * Copyright (C) 2011 Huawei Tech. Co., Ltd.
++ * Copyright (C) 2011 Jiang Liu <jiang.liu@huawei.com>
++ * Copyright (C) 2011 Gaohuai Han <hangaohuai@huawei.com>
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/acpi.h>
++#include <acpi/acpi.h>
 +#include <acpi/acpi_hotplug.h>
- 
- #define PREFIX "ACPI: "
- 
- #define ACPI_CONTAINER_DEVICE_NAME	"ACPI container device"
- #define ACPI_CONTAINER_CLASS		"container"
- 
--#define INSTALL_NOTIFY_HANDLER		1
--#define UNINSTALL_NOTIFY_HANDLER	2
--
- #define _COMPONENT			ACPI_CONTAINER_COMPONENT
- ACPI_MODULE_NAME("container");
- 
-@@ -54,6 +51,20 @@ MODULE_LICENSE("GPL");
- static int acpi_container_add(struct acpi_device *device);
- static int acpi_container_remove(struct acpi_device *device, int type);
- 
-+#ifdef	CONFIG_ACPI_HOTPLUG
-+static int acpihp_container_get_devinfo(struct acpi_device *device,
-+					struct acpihp_dev_info *info);
-+static int acpihp_container_configure(struct acpi_device *device,
-+				      struct acpihp_cancel_context *argp);
-+static int acpihp_container_unconfigure(struct acpi_device *device);
 +
-+struct acpihp_dev_ops acpihp_container_ops = {
-+	.get_info = acpihp_container_get_devinfo,
-+	.configure = acpihp_container_configure,
-+	.unconfigure = acpihp_container_unconfigure
++static LIST_HEAD(slot_list);
++static LIST_HEAD(slot_id_list);
++
++struct acpihp_slot_id {
++	struct list_head node;
++	unsigned long instance_id;
++	enum acpihp_slot_type type;
 +};
-+#endif
 +
- static const struct acpi_device_id container_device_ids[] = {
- 	{"ACPI0004", 0},
- 	{"PNP0A05", 0},
-@@ -69,49 +80,21 @@ static struct acpi_driver acpi_container_driver = {
- 	.ops = {
- 		.add = acpi_container_add,
- 		.remove = acpi_container_remove,
-+#ifdef	CONFIG_ACPI_HOTPLUG
-+		.hp_ops = &acpihp_container_ops,
-+#endif	/* CONFIG_ACPI_HOTPLUG */
- 		},
- };
- 
--/*******************************************************************/
--
--static int is_device_present(acpi_handle handle)
--{
--	acpi_handle temp;
--	acpi_status status;
--	unsigned long long sta;
--
--
--	status = acpi_get_handle(handle, "_STA", &temp);
--	if (ACPI_FAILURE(status))
--		return 1;	/* _STA not found, assume device present */
--
--	status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
--	if (ACPI_FAILURE(status))
--		return 0;	/* Firmware error */
--
--	return ((sta & ACPI_STA_DEVICE_PRESENT) == ACPI_STA_DEVICE_PRESENT);
--}
--
--/*******************************************************************/
- static int acpi_container_add(struct acpi_device *device)
- {
--	struct acpi_container *container;
--
--
- 	if (!device) {
- 		printk(KERN_ERR PREFIX "device is NULL\n");
- 		return -EINVAL;
- 	}
- 
--	container = kzalloc(sizeof(struct acpi_container), GFP_KERNEL);
--	if (!container)
--		return -ENOMEM;
--
--	container->handle = device->handle;
- 	strcpy(acpi_device_name(device), ACPI_CONTAINER_DEVICE_NAME);
- 	strcpy(acpi_device_class(device), ACPI_CONTAINER_CLASS);
--	device->driver_data = container;
--
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device <%s> bid <%s>\n",
- 			  acpi_device_name(device), acpi_device_bid(device)));
- 
-@@ -120,163 +103,41 @@ static int acpi_container_add(struct acpi_device *device)
- 
- static int acpi_container_remove(struct acpi_device *device, int type)
- {
--	acpi_status status = AE_OK;
- 	struct acpi_container *pc = NULL;
- 
- 	pc = acpi_driver_data(device);
- 	kfree(pc);
--	return status;
++static struct acpihp_slot_ops *slot_ops_curr;
++
++/*
++ * Array of platform specific enumeration methods.
++ * Entries in the array should be sorted by descending priority order.
++ */
++static struct acpihp_slot_ops *slot_ops_array[] = {
++	NULL
++};
++
++static void acpihp_enum_cleanup_slots(void);
++
++static int __init acpihp_get_parent_slot(struct acpihp_slot *slot)
++{
++	acpi_handle handle, root_handle;
++	struct acpihp_slot *tmp;
++
++	slot->parent = NULL;
++	handle = slot->handle;
++	if (ACPI_FAILURE(acpi_get_handle(NULL, ACPI_NS_ROOT_PATH,
++			 &root_handle))) {
++		ACPIHP_WARN("fails to get ACPI root device.\n");
++		return -EINVAL;
++	}
++
++	do {
++		if (ACPI_FAILURE(acpi_get_parent(handle, &handle))) {
++			ACPIHP_DEBUG("fails to get parent device handle.\n");
++			return -ENODEV;
++		}
++		list_for_each_entry(tmp, &slot_list, slot_list)
++			if (tmp->handle == handle) {
++				slot->parent = tmp;
++				return 0;
++			}
++	} while (handle != root_handle);
++
++	return 0;
++}
++
++static int __init acpihp_get_slot_state(struct acpihp_slot *slot)
++{
++	unsigned long long sta;
++
++	/* An hotplug slot must implement _STA method. */
++	if (ACPI_FAILURE(acpi_evaluate_integer(slot->handle, METHOD_NAME__STA,
++					       NULL, &sta))) {
++		ACPIHP_DEBUG("fails to execute _STA method.\n");
++		return -EINVAL;
++	}
++
++	if (!(sta & ACPI_STA_DEVICE_PRESENT))
++		slot->state = ACPIHP_SLOT_STATE_ABSENT;
++	else if ((sta & ACPI_STA_DEVICE_ENABLED) ||
++		 (sta & ACPI_STA_DEVICE_FUNCTIONING))
++		slot->state = ACPIHP_SLOT_STATE_POWERED;
++	else
++		slot->state = ACPIHP_SLOT_STATE_PRESENT;
++
++	return 0;
++}
++
++static int __init acpihp_enum_create_slot(acpi_handle handle)
++{
++	struct acpihp_slot *slot;
++
++	slot = acpihp_create_slot(handle, "TEMP");
++	if (!slot) {
++		ACPIHP_DEBUG("fails to allocate memory for hotplug slot.\n");
++		return -ENOMEM;
++	}
++
++	slot->slot_ops = slot_ops_curr;
++
++	if (acpihp_get_parent_slot(slot))
++		goto out;
++	if (acpihp_get_slot_state(slot))
++		goto out;
++	if (ACPI_FAILURE(acpihp_slot_get_capabilities(slot,
++						      &slot->capabilities))) {
++		ACPIHP_DEBUG("fails to get slot capabilities.\n");
++		goto out;
++	}
++	if (ACPI_FAILURE(acpihp_mark_slot(handle, slot))) {
++		ACPIHP_DEBUG("fails to attach slot to ACPI device object.\n");
++		goto out;
++	}
++
++	list_add_tail(&slot->slot_list, &slot_list);
++
++	return 0;
++out:
++	acpihp_slot_put(slot);
++	return -EINVAL;
++}
++
++/*
++ * Scan hotplug slots for ACPI based system device hotplug.
++ * We only care about processor, memory, PCI host bridge and CONTAINER.
++ */
++static acpi_status __init acpihp_enum_scan_slot(acpi_handle handle, u32 lvl,
++						void *context, void **rv)
++{
++	enum acpihp_dev_type type;
++
++	if (acpihp_dev_get_type(handle, &type) ||
++	    type == ACPIHP_DEV_TYPE_UNKNOWN)
++		return AE_OK;
++
++	if (ACPI_SUCCESS(slot_ops_curr->check(handle)))
++		acpihp_enum_create_slot(handle);
++
++	/*
++	 * Don't scan hotplug slots under PCI host bridges, they should be
++	 * handled by acpiphp or pciehp drivers.
++	 */
++	if (type == ACPIHP_DEV_TYPE_HOST_BRIDGE)
++		return AE_CTRL_DEPTH;
 +
 +	return AE_OK;
- }
- 
--static int container_device_add(struct acpi_device **device, acpi_handle handle)
-+#ifdef CONFIG_ACPI_HOTPLUG
-+static int acpihp_container_get_devinfo(struct acpi_device *device,
-+					struct acpihp_dev_info *info)
- {
--	acpi_handle phandle;
--	struct acpi_device *pdev;
--	int result;
--
--
--	if (acpi_get_parent(handle, &phandle)) {
--		return -ENODEV;
--	}
--
--	if (acpi_bus_get_device(phandle, &pdev)) {
--		return -ENODEV;
--	}
--
--	if (acpi_bus_add(device, pdev, handle, ACPI_BUS_TYPE_DEVICE)) {
--		return -ENODEV;
--	}
--
--	result = acpi_bus_start(*device);
--
--	return result;
++}
++
++/*
++ * Get types of child devices connected to this slot.
++ * We only care about CPU, memory, PCI host bridge and CONTAINER here.
++ * Values used here must be in consistence with acpihp_enum_get_slot_type().
++ */
++static acpi_status __init
++acpihp_enum_get_dev_type(acpi_handle handle, u32 lvl, void *context, void **rv)
++{
++	acpi_status status = AE_OK;
++	enum acpihp_dev_type type;
++	u32 *tp = (u32 *)rv;
++
++	if (!acpihp_dev_get_type(handle, &type)) {
++		switch (type) {
++		case ACPIHP_DEV_TYPE_CPU:
++			*tp |= 0x0001;
++			status = AE_CTRL_DEPTH;
++			break;
++		case ACPIHP_DEV_TYPE_MEM:
++			*tp |= 0x0002;
++			status = AE_CTRL_DEPTH;
++			break;
++		case ACPIHP_DEV_TYPE_HOST_BRIDGE:
++			*tp |= 0x0004;
++			status = AE_CTRL_DEPTH;
++			break;
++		case ACPIHP_DEV_TYPE_CONTAINER:
++			*tp |= 0x0008;
++			break;
++		default:
++			break;
++		}
++	}
++
++	return status;
++}
++
++/*
++ * Guess type of a hotplug slot according to child devices connecting to it.
++ */
++static enum acpihp_slot_type __init acpihp_enum_get_slot_type(u32 dev_types)
++{
++	BUG_ON(dev_types > 15);
++
++	switch (dev_types) {
++	case 0:
++		/* Generic CONTAINER */
++		return ACPIHP_SLOT_TYPE_COMMON;
++	case 1:
++		/* Physical processor with logical CPUs */
++		return ACPIHP_SLOT_TYPE_CPU;
++	case 2:
++		/* Memory board/box with memory devices */
++		return ACPIHP_SLOT_TYPE_MEM;
++	case 3:
++		/* Physical processor with CPUs and memory controllers */
++		return ACPIHP_SLOT_TYPE_CPU;
++	case 4:
++		/* IO eXtension board/box with IO host bridges */
++		return ACPIHP_SLOT_TYPE_IOX;
++	case 7:
++		/* Physical processor with CPUs, IO host bridges and MCs. */
++		return ACPIHP_SLOT_TYPE_CPU;
++	case 8:
++		/* Generic CONTAINER */
++		return ACPIHP_SLOT_TYPE_COMMON;
++	case 9:
++		/* System board with physical processors */
++		return ACPIHP_SLOT_TYPE_SYSTEM_BOARD;
++	case 11:
++		/* System board with physical processors and memory */
++		return ACPIHP_SLOT_TYPE_SYSTEM_BOARD;
++	case 15:
++		/* Node with processor, memory and IO host bridge */
++		return ACPIHP_SLOT_TYPE_NODE;
++	default:
++		return ACPIHP_SLOT_TYPE_UNKNOWN;
++	}
++}
++
++/*
++ * Guess type of a hotplug slot according to the device type of the
++ * corresponding ACPI object itself.
++ */
++static enum acpihp_slot_type __init
++acpihp_enum_check_slot_self(struct acpihp_slot *slot)
++{
++	enum acpihp_dev_type type;
++
++	if (acpihp_dev_get_type(slot->handle, &type))
++		return ACPIHP_SLOT_TYPE_UNKNOWN;
++
++	switch (type) {
++	case ACPIHP_DEV_TYPE_CPU:
++		/* Logical CPU used in virtualization environment */
++		return ACPIHP_SLOT_TYPE_CPU;
++	case ACPIHP_DEV_TYPE_MEM:
++		/* Memory board with single memory device */
++		return ACPIHP_SLOT_TYPE_MEM;
++	case ACPIHP_DEV_TYPE_HOST_BRIDGE:
++		/* IO eXtension board/box with single IO host bridge */
++		return ACPIHP_SLOT_TYPE_IOX;
++	default:
++		return ACPIHP_SLOT_TYPE_UNKNOWN;
++	}
++}
++
++static int __init acpihp_enum_generate_slot_name(struct acpihp_slot *slot)
++{
++	int found = 0;
++	struct list_head *list;
++	struct acpihp_slot_id *slot_id;
++	unsigned long long uid;
++
++	/* Respect firmware settings if _UID return an integer. */
++	if (ACPI_SUCCESS(acpi_evaluate_integer(slot->handle, METHOD_NAME__UID,
++					       NULL, &uid)))
++		goto set_name;
++
++	if (slot->parent)
++		list = &slot->parent->slot_id_list;
++	else
++		list = &slot_id_list;
++
++	list_for_each_entry(slot_id, list, node)
++		if (slot_id->type == slot->type) {
++			found = 1;
++			break;
++		}
++	if (!found) {
++		slot_id = kzalloc(sizeof(struct acpihp_slot_id), GFP_KERNEL);
++		if (!slot_id) {
++			ACPIHP_DEBUG("fails to allocate slot instance ID.\n");
++			return -ENOMEM;
++		}
++		slot_id->type = slot->type;
++		list_add_tail(&slot_id->node, list);
++	}
++
++	uid = slot_id->instance_id++;
++
++set_name:
++	snprintf(slot->name, sizeof(slot->name) - 1, "%s%02llx",
++		 acpihp_get_slot_type_name(slot->type), uid);
++	dev_set_name(&slot->dev, "%s", slot->name);
++
 +	return 0;
- }
- 
--static void container_notify_cb(acpi_handle handle, u32 type, void *context)
-+static int acpihp_container_configure(struct acpi_device *device,
-+				      struct acpihp_cancel_context *argp)
- {
--	struct acpi_device *device = NULL;
--	int result;
--	int present;
--	acpi_status status;
--
--
--	present = is_device_present(handle);
--
--	switch (type) {
--	case ACPI_NOTIFY_BUS_CHECK:
--		/* Fall through */
--	case ACPI_NOTIFY_DEVICE_CHECK:
--		printk(KERN_WARNING "Container driver received %s event\n",
--		       (type == ACPI_NOTIFY_BUS_CHECK) ?
--		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
--		status = acpi_bus_get_device(handle, &device);
--		if (present) {
--			if (ACPI_FAILURE(status) || !device) {
--				result = container_device_add(&device, handle);
--				if (!result)
--					kobject_uevent(&device->dev.kobj,
--						       KOBJ_ONLINE);
--				else
--					printk(KERN_WARNING
--					       "Failed to add container\n");
--			}
--		} else {
--			if (ACPI_SUCCESS(status)) {
--				/* device exist and this is a remove request */
--				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
--			}
--		}
--		break;
--	case ACPI_NOTIFY_EJECT_REQUEST:
--		if (!acpi_bus_get_device(handle, &device) && device) {
--			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
--		}
--		break;
--	default:
--		break;
--	}
--	return;
-+	return acpi_container_add(device);
- }
- 
--static acpi_status
--container_walk_namespace_cb(acpi_handle handle,
--			    u32 lvl, void *context, void **rv)
-+static int acpihp_container_unconfigure(struct acpi_device *device)
- {
--	char *hid = NULL;
--	struct acpi_device_info *info;
--	acpi_status status;
--	int *action = context;
--
--	status = acpi_get_object_info(handle, &info);
--	if (ACPI_FAILURE(status)) {
--		return AE_OK;
--	}
--
--	if (info->valid & ACPI_VALID_HID)
--		hid = info->hardware_id.string;
--
--	if (hid == NULL) {
--		goto end;
--	}
--
--	if (strcmp(hid, "ACPI0004") && strcmp(hid, "PNP0A05") &&
--	    strcmp(hid, "PNP0A06")) {
--		goto end;
--	}
--
--	switch (*action) {
--	case INSTALL_NOTIFY_HANDLER:
--		acpi_install_notify_handler(handle,
--					    ACPI_SYSTEM_NOTIFY,
--					    container_notify_cb, NULL);
--		break;
--	case UNINSTALL_NOTIFY_HANDLER:
--		acpi_remove_notify_handler(handle,
--					   ACPI_SYSTEM_NOTIFY,
--					   container_notify_cb);
--		break;
--	default:
--		break;
--	}
--
--      end:
--	kfree(info);
--
--	return AE_OK;
-+	return acpi_container_remove(device, 0);
- }
-+#endif	/* CONFIG_ACPI_HOTPLUG */
- 
- static int __init acpi_container_init(void)
- {
--	int result = 0;
--	int action = INSTALL_NOTIFY_HANDLER;
--
--	result = acpi_bus_register_driver(&acpi_container_driver);
--	if (result < 0) {
--		return (result);
--	}
--
--	/* register notify handler to every container device */
--	acpi_walk_namespace(ACPI_TYPE_DEVICE,
--			    ACPI_ROOT_OBJECT,
--			    ACPI_UINT32_MAX,
--			    container_walk_namespace_cb, NULL, &action, NULL);
--
--	return (0);
-+	return acpi_bus_register_driver(&acpi_container_driver);
- }
- 
- static void __exit acpi_container_exit(void)
- {
--	int action = UNINSTALL_NOTIFY_HANDLER;
--
--
--	acpi_walk_namespace(ACPI_TYPE_DEVICE,
--			    ACPI_ROOT_OBJECT,
--			    ACPI_UINT32_MAX,
--			    container_walk_namespace_cb, NULL, &action, NULL);
--
- 	acpi_bus_unregister_driver(&acpi_container_driver);
--
--	return;
- }
- 
- module_init(acpi_container_init);
-diff --git a/include/acpi/container.h b/include/acpi/container.h
-deleted file mode 100644
-index a703f14..0000000
---- a/include/acpi/container.h
-+++ /dev/null
-@@ -1,12 +0,0 @@
--#ifndef __ACPI_CONTAINER_H
--#define __ACPI_CONTAINER_H
--
--#include <linux/kernel.h>
--
--struct acpi_container {
--	acpi_handle handle;
--	unsigned long sun;
--	int state;
--};
--
--#endif				/* __ACPI_CONTAINER_H */
++}
++
++/*
++ * Generate a meaningful name for the slot according to devices connecting
++ * to this slot
++ */
++static int __init acpihp_enum_rename_slot(struct acpihp_slot *slot)
++{
++	u32 child_types = 0;
++
++	slot->type = acpihp_enum_check_slot_self(slot);
++	if (slot->type == ACPIHP_SLOT_TYPE_UNKNOWN) {
++		acpi_walk_namespace(ACPI_TYPE_DEVICE, slot->handle,
++				ACPI_UINT32_MAX, acpihp_enum_get_dev_type,
++				NULL, NULL, (void **)&child_types);
++		acpi_walk_namespace(ACPI_TYPE_PROCESSOR, slot->handle,
++				ACPI_UINT32_MAX, acpihp_enum_get_dev_type,
++				NULL, NULL, (void **)&child_types);
++		slot->type = acpihp_enum_get_slot_type(child_types);
++	}
++
++	if (acpihp_enum_generate_slot_name(slot))
++		return -EINVAL;
++
++	return 0;
++}
++
++static void __init acpihp_enum_rename_and_register_slots(void)
++{
++	struct acpihp_slot *slot;
++
++	list_for_each_entry(slot, &slot_list, slot_list) {
++		/* generate a meaningful name for this slot */
++		if (acpihp_enum_rename_slot(slot))
++			continue;
++
++		if (acpihp_register_slot(slot))
++			ACPIHP_DEBUG("fails to register slot %s.\n",
++				     slot->name);
++	}
++}
++
++static int __init acpihp_enum_generate_slots(void)
++{
++	acpi_status status;
++
++	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
++				     ACPI_UINT32_MAX, acpihp_enum_scan_slot,
++				     NULL, NULL, NULL);
++	if (!ACPI_SUCCESS(status))
++		goto out_err;
++
++	status = acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
++				     ACPI_UINT32_MAX, acpihp_enum_scan_slot,
++				     NULL, NULL, NULL);
++	if (!ACPI_SUCCESS(status))
++		goto out_err;
++
++	acpihp_enum_rename_and_register_slots();
++
++	return 0;
++
++out_err:
++	ACPIHP_DEBUG("fails to scan hotplug slots.\n");
++	acpihp_enum_cleanup_slots();
++
++	return -ENOTSUPP;
++}
++
++static void acpihp_enum_unregister_slots(void)
++{
++	struct acpihp_slot *slot, *tmp;
++	struct acpihp_slot_id *slot_id, *slot_id_safe;
++
++	list_for_each_entry_safe(slot, tmp, &slot_list, slot_list) {
++		acpihp_unregister_slot(slot);
++		list_del_init(&slot->slot_list);
++		acpihp_unmark_slot(slot->handle);
++		list_for_each_entry_safe(slot_id, slot_id_safe,
++					 &slot->slot_id_list, node) {
++			list_del(&slot_id->node);
++			kfree(slot_id);
++		}
++		acpihp_slot_put(slot);
++	}
++}
++
++static void acpihp_enum_cleanup_slots(void)
++{
++	struct acpihp_slot_id *slot_id, *tmp;
++
++	acpihp_enum_unregister_slots();
++	list_for_each_entry_safe(slot_id, tmp, &slot_id_list, node) {
++		list_del(&slot_id->node);
++		kfree(slot_id);
++	}
++}
++
++static int __init acpihp_enum_init(void)
++{
++	int i;
++	int retval;
++
++	/* probe for suitable enumerator. */
++	for (i = 0; slot_ops_array[i]; i++)
++		if (ACPI_SUCCESS(slot_ops_array[i]->init())) {
++			slot_ops_curr = slot_ops_array[i];
++			break;
++		}
++	if (slot_ops_curr == NULL) {
++		ACPIHP_DEBUG("no ACPI hotplug slot found.\n");
++		return -ENXIO;
++	}
++
++	retval = acpihp_register_class();
++	if (retval != 0) {
++		ACPIHP_DEBUG("fails to register ACPI hotplug slot class.\n");
++		goto out_fini;
++	}
++
++	retval = acpihp_enum_generate_slots();
++	if (retval != 0) {
++		ACPIHP_DEBUG("fails to enumerate ACPI hotplug slots.\n");
++		goto out_unregister_class;
++	}
++
++	/* Back out if no ACPI hotplug slot  found. */
++	if (list_empty(&slot_list)) {
++		ACPIHP_DEBUG("no ACPI hotplug slot found.\n");
++		retval = -ENODEV;
++		goto out_unregister_class;
++	}
++
++	return 0;
++
++out_unregister_class:
++	acpihp_unregister_class();
++out_fini:
++	slot_ops_curr->fini();
++	ACPIHP_DEBUG("fails to initialize hotplug slot enumerator.\n");
++
++	return retval;
++}
++
++static void __exit acpihp_enum_exit(void)
++{
++	acpihp_enum_cleanup_slots();
++	acpihp_unregister_class();
++	slot_ops_curr->fini();
++}
++
++module_init(acpihp_enum_init);
++module_exit(acpihp_enum_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Jiang Liu <jiang.liu@huawei.com>");
++MODULE_AUTHOR("Gaohuai Han <hangaohuai@huawei.com>");
 -- 
 1.7.9.5
 
