@@ -1,133 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab2HDSXd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 14:23:33 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:10436
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753780Ab2HDSXb (ORCPT
+	id S1754062Ab2HDTN0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 15:13:26 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:45714 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab2HDTNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 14:23:31 -0400
-X-IronPort-AV: E=Sophos;i="4.77,713,1336341600"; 
-   d="scan'208";a="152442042"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and devm_clk_get
-Date: Sat,  4 Aug 2012 20:23:27 +0200
-Message-Id: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	Sat, 4 Aug 2012 15:13:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <501D5B1C.2070600@acm.org>
+References: <1341865359-18482-1-git-send-email-minyard@acm.org>
+	<501D5B1C.2070600@acm.org>
+Date: Sat, 4 Aug 2012 21:13:23 +0200
+X-Google-Sender-Auth: Y0YwtGk6BzjDrKKZO8x53Tph0fQ
+Message-ID: <CAMuHMdXubOmUynZhUzgYJCMZ5zV-Uat1EkVgED_rJZqYABUo4g@mail.gmail.com>
+Subject: Re: [PATCH] CRIS: Fix I/O macros
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: minyard@acm.org
+Cc: linux-kernel@vger.kernel.org, linux-cris-kernel@axis.com, starvik@axis.com,
+        jesper.nilsson@axis.com, Corey Minyard <cminyard@mvista.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Hi Corey,
 
-Using devm_kzalloc and devm_clk_get simplifies the code and ensures that
-the use of devm_request_irq is safe.  When kzalloc and kfree were used, the
-interrupt could be triggered after the handler's data argument had been
-freed.
+On Sat, Aug 4, 2012 at 7:25 PM, Corey Minyard <tcminyard@gmail.com> wrote:
+> Can we get something like this in?  It would fix a lot of build regressions.
 
-The problem of a free after a devm_request_irq was found using the
-following semantic match (http://coccinelle.lip6.fr/)
+Yes, would be nice.
 
-// <smpl>
-@r exists@
-expression e1,e2,x,a,b,c,d;
-identifier free;
-position p1,p2;
-@@
+I also noticed these issues, causing obscure errors like:
 
-  devm_request_irq@p1(e1,e2,...,x)
-  ... when any
-      when != e2 = a
-      when != x = b
-  if (...) {
-    ... when != e2 = c
-        when != x = d
-    free@p2(...,x,...);
-    ...
-    return ...;
-  }
-// </smpl>
+drivers/block/paride/bpck.c: In function 'bpck_read_regr':
+drivers/block/paride/bpck.c:56:140: error: invalid operands to binary
+& (have 'void *' and 'int')
+drivers/block/paride/bpck.c:62:140: error: invalid operands to binary
+& (have 'void *' and 'int')
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+and
 
----
- drivers/media/video/mx2_emmaprp.c |   25 ++++++-------------------
- 1 file changed, 6 insertions(+), 19 deletions(-)
+drivers/char/ipmi/ipmi_si_intf.c: In function 'port_outw':
+drivers/char/ipmi/ipmi_si_intf.c:1373:153: error: invalid operands to
+binary << (have 'void *' and 'int')
+drivers/char/ipmi/ipmi_si_intf.c: In function 'port_outl':
+drivers/char/ipmi/ipmi_si_intf.c:1388:151: error: invalid operands to
+binary << (have 'void *' and 'int')
 
-diff --git a/drivers/media/video/mx2_emmaprp.c b/drivers/media/video/mx2_emmaprp.c
-index 5f8a6f5..78c5dc9 100644
---- a/drivers/media/video/mx2_emmaprp.c
-+++ b/drivers/media/video/mx2_emmaprp.c
-@@ -874,29 +874,27 @@ static int emmaprp_probe(struct platform_device *pdev)
- 	int irq_emma;
- 	int ret;
- 
--	pcdev = kzalloc(sizeof *pcdev, GFP_KERNEL);
-+	pcdev = devm_kzalloc(&pdev->dev, sizeof(*pcdev), GFP_KERNEL);
- 	if (!pcdev)
- 		return -ENOMEM;
- 
- 	spin_lock_init(&pcdev->irqlock);
- 
--	pcdev->clk_emma = clk_get(&pdev->dev, NULL);
-+	pcdev->clk_emma = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(pcdev->clk_emma)) {
--		ret = PTR_ERR(pcdev->clk_emma);
--		goto free_dev;
-+		return PTR_ERR(pcdev->clk_emma);
- 	}
- 
- 	irq_emma = platform_get_irq(pdev, 0);
- 	res_emma = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (irq_emma < 0 || res_emma == NULL) {
- 		dev_err(&pdev->dev, "Missing platform resources data\n");
--		ret = -ENODEV;
--		goto free_clk;
-+		return -ENODEV;
- 	}
- 
- 	ret = v4l2_device_register(&pdev->dev, &pcdev->v4l2_dev);
- 	if (ret)
--		goto free_clk;
-+		return ret;
- 
- 	mutex_init(&pcdev->dev_mutex);
- 
-@@ -922,12 +920,7 @@ static int emmaprp_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, pcdev);
- 
--	if (devm_request_mem_region(&pdev->dev, res_emma->start,
--	    resource_size(res_emma), MEM2MEM_NAME) == NULL)
--		goto rel_vdev;
--
--	pcdev->base_emma = devm_ioremap(&pdev->dev, res_emma->start,
--					resource_size(res_emma));
-+	pcdev->base_emma = devm_request_and_ioremap(&pdev->dev, res_emma);
- 	if (!pcdev->base_emma)
- 		goto rel_vdev;
- 
-@@ -969,10 +962,6 @@ rel_vdev:
- 	video_device_release(vfd);
- unreg_dev:
- 	v4l2_device_unregister(&pcdev->v4l2_dev);
--free_clk:
--	clk_put(pcdev->clk_emma);
--free_dev:
--	kfree(pcdev);
- 
- 	return ret;
- }
-@@ -987,8 +976,6 @@ static int emmaprp_remove(struct platform_device *pdev)
- 	v4l2_m2m_release(pcdev->m2m_dev);
- 	vb2_dma_contig_cleanup_ctx(pcdev->alloc_ctx);
- 	v4l2_device_unregister(&pcdev->v4l2_dev);
--	clk_put(pcdev->clk_emma);
--	kfree(pcdev);
- 
- 	return 0;
- }
+I wanted to fix them, but due to my vacation that hasn't happen yet.
+Fortunately, as I hadn't noticed your patch before ;-)
 
+And FWIW, indeed no one ever sets a non-zero cris_iops.
+
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+> On 07/09/2012 03:22 PM, minyard@acm.org wrote:
+>>
+>> From: Corey Minyard <cminyard@mvista.com>
+>>
+>> The inb/outb macros for CRIS are broken from a number of points of
+>> view, missing () around parameters and they have an unprotected if
+>> statement in them.  This was breaking the compile of IPMI on CRIS
+>> and thus I was being annoyed by build regressions, so I fixed them.
+>>
+>> Plus I don't think they would have worked at all, since the data
+>> values were missing "&" and the outsl had a "3" instead of a "4"
+>> for the size.  From what I can tell, this stuff is not used at all,
+>> so this can't be any more broken than it was before, anyway.
+>>
+>> Signed-off-by: Corey Minyard <cminyard@mvista.com>
+>> ---
+>>   arch/cris/include/asm/io.h |   39
+>> +++++++++++++++++++++++++++++++++------
+>>   1 files changed, 33 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/arch/cris/include/asm/io.h b/arch/cris/include/asm/io.h
+>> index 32567bc..ac12ae2 100644
+>> --- a/arch/cris/include/asm/io.h
+>> +++ b/arch/cris/include/asm/io.h
+>> @@ -133,12 +133,39 @@ static inline void writel(unsigned int b, volatile
+>> void __iomem *addr)
+>>   #define insb(port,addr,count) (cris_iops ?
+>> cris_iops->read_io(port,addr,1,count) : 0)
+>>   #define insw(port,addr,count) (cris_iops ?
+>> cris_iops->read_io(port,addr,2,count) : 0)
+>>   #define insl(port,addr,count) (cris_iops ?
+>> cris_iops->read_io(port,addr,4,count) : 0)
+>> -#define outb(data,port) if (cris_iops)
+>> cris_iops->write_io(port,(void*)(unsigned)data,1,1)
+>> -#define outw(data,port) if (cris_iops)
+>> cris_iops->write_io(port,(void*)(unsigned)data,2,1)
+>> -#define outl(data,port) if (cris_iops)
+>> cris_iops->write_io(port,(void*)(unsigned)data,4,1)
+>> -#define outsb(port,addr,count) if(cris_iops)
+>> cris_iops->write_io(port,(void*)addr,1,count)
+>> -#define outsw(port,addr,count) if(cris_iops)
+>> cris_iops->write_io(port,(void*)addr,2,count)
+>> -#define outsl(port,addr,count) if(cris_iops)
+>> cris_iops->write_io(port,(void*)addr,3,count)
+>> +static inline void outb(unsigned char data, unsigned int port)
+>> +{
+>> +       if (cris_iops)
+>> +               cris_iops->write_io(port, (void *) &data, 1, 1);
+>> +}
+>> +static inline void outw(unsigned short data, unsigned int port)
+>> +{
+>> +       if (cris_iops)
+>> +               cris_iops->write_io(port, (void *) &data, 2, 1);
+>> +}
+>> +static inline void outl(unsigned int data, unsigned int port)
+>> +{
+>> +       if (cris_iops)
+>> +               cris_iops->write_io(port, (void *) &data, 4, 1);
+>> +}
+>> +static inline void outsb(unsigned int port, const void *addr,
+>> +                        unsigned long count)
+>> +{
+>> +       if (cris_iops)
+>> +               cris_iops->write_io(port, (void *)addr, 1, count);
+>> +}
+>> +static inline void outsw(unsigned int port, const void *addr,
+>> +                        unsigned long count)
+>> +{
+>> +       if (cris_iops)
+>> +               cris_iops->write_io(port, (void *)addr, 2, count);
+>> +}
+>> +static inline void outsl(unsigned int port, const void *addr,
+>> +                        unsigned long count)
+>> +{
+>> +       if (cris_iops)
+>> +               cris_iops->write_io(port, (void *)addr, 4, count);
+>> +}
+>>     /*
+>>    * Convert a physical pointer to a virtual kernel pointer for /dev/mem
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
