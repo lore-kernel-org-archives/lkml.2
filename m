@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab2HDQeu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 12:34:50 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58458 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab2HDQes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 12:34:48 -0400
-Subject: Re: TCP Delayed ACK in FIN/ACK
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: =?UTF-8?Q?S=C5=82awek?= Janecki <janecki@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <CAFLxGvxqj+-rf5twsMPk-pRQqzqsK8-MSsKaez9cwarPmyEqzw@mail.gmail.com>
-References: <CACS4u_zUF9T0rSsndhyVzgaauOBFJ4LTUeb432B1zg_oLHvTsg@mail.gmail.com>
-	 <CAFLxGvxqj+-rf5twsMPk-pRQqzqsK8-MSsKaez9cwarPmyEqzw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 04 Aug 2012 18:34:43 +0200
-Message-ID: <1344098083.9299.1503.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1753693Ab2HDQqc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 12:46:32 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:39919 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753472Ab2HDQq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 12:46:29 -0400
+Message-ID: <501D51D1.2010806@cs.wisc.edu>
+Date: Sat, 04 Aug 2012 11:46:09 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Bart Van Assche <bvanassche@acm.org>
+CC: Chanho Min <chanho0207@gmail.com>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
+References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com> <501CE4E5.20604@acm.org>
+In-Reply-To: <501CE4E5.20604@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-08-04 at 16:51 +0200, richard -rw- weinberger wrote:
-> On Sat, Aug 4, 2012 at 4:45 PM, Sławek Janecki <janecki@gmail.com> wrote:
-> > I have a node.js client (10.177.62.7) requesting some data from http
-> > rest service from server (10.177.0.1).
-> > Client is simply using nodejs http.request() method (agent=false).
-> > Client is on Ubuntu 11.10 box.
-> > Why client sends FIN ACK after 475ms? Why so slow? He should send FIN
-> > ACK immediately.
-> > I have many situations like this. About 1% of whole traffic is request
-> > with delayed FIN ACK.
-> > Cpu idle on the client is about 99%, so nothing is draining CPU.
-> > How to debug this? What could it be? Is there any sysctl option I need to tune?
-> > I think this behaviour is the Delayed ACK feature of RFC1122 TCP stack.
-> >
-> > Link to tcpdump picture (done on a client machine) :
-> > http://i48.tinypic.com/35cpogx.png
-> >
-> > Can you tell why kernel delayed that FIN/ACK.
-> > In tcpflow data there is exacly one ACK per packet comming from server.
-> > Why kernel delayed client FIN/ACK.
-> > It could avoid sending ACK every 'data' packet.
-> > But it choose to delay FIN/ACK?
-> > Is this possible? Is this a bug?
-> >
-> > I've also posted question on stackexchange:
-> > http://stackoverflow.com/questions/11711218/client-sends-delayed-fin-ack-500ms-to-server
-> >
-> > Please help.
+On 08/04/2012 04:01 AM, Bart Van Assche wrote:
+> On 08/02/12 08:41, Chanho Min wrote:
+>> This patch is to fix a oops from a torn down device. When
+>> scsi_run_queue process starved queues, scsi_request_fn can race with
+>> scsi_remove_device. In this case, rarely, scsi_request_fn release the
+>> last reference and set sdev->request_queue to NULL. It result in
+>> NULL-pointer dereference when spin_unlock is tried with (NULL)->
+>> queue_lock. We need to add an extra reference to the device on both
+>> sides of the __blk_run_queue to hold reference until scsi_request_fn
+>> is finished.
 > 
-> CC'ing netdev.
+> Good catch. So far I haven't been able to trigger this issue in my
+> tests. So it would be appreciated if you could verify whether the patch
+> below helps (patch is based on 3.6-rc1):
 > 
+> ---
+>  drivers/scsi/scsi_sysfs.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+> index 093d4f6..59e523c 100644
+> --- a/drivers/scsi/scsi_sysfs.c
+> +++ b/drivers/scsi/scsi_sysfs.c
+> @@ -348,7 +348,6 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
+>  	starget->reap_ref++;
+>  	list_del(&sdev->siblings);
+>  	list_del(&sdev->same_target_siblings);
+> -	list_del(&sdev->starved_entry);
+>  	spin_unlock_irqrestore(sdev->host->host_lock, flags);
+>  
+>  	cancel_work_sync(&sdev->event_work);
+> @@ -956,6 +955,8 @@ int scsi_sysfs_add_sdev(struct scsi_device *sdev)
+>  void __scsi_remove_device(struct scsi_device *sdev)
+>  {
+>  	struct device *dev = &sdev->sdev_gendev;
+> +	struct Scsi_Host *shost = sdev->host;
+> +	unsigned long flags;
+>  
+>  	if (sdev->is_visible) {
+>  		if (scsi_device_set_state(sdev, SDEV_CANCEL) != 0)
+> @@ -977,6 +978,11 @@ void __scsi_remove_device(struct scsi_device *sdev)
+>  	blk_cleanup_queue(sdev->request_queue);
+>  	cancel_work_sync(&sdev->requeue_work);
+>  
+> +	spin_lock_irqsave(shost->host_lock, flags);
+> +	if (!list_empty(&sdev->starved_entry))
+> +		list_del(&sdev->starved_entry);
+> +	spin_unlock_irqrestore(shost->host_lock, flags);
+> +
 
-I see nothing wrong in this tcpdump. You should strace the application
-instead.
+I do not think it's that simple. If scsi_run_queue is running right now
+and that function has deleted the starved entry and is now about to
+access the sdev or queue, then this code above does not help and
+__scsi_remove_device could just continue on and end up calling
+scsi_device_dev_release_usercontext and freeing the device from under
+scsi_run_queue.
 
-FIN/ACK is sent when client closes its socket (or calls shutdown()), and
-not in reply of FIN sent by the server.
-
-Kernel has no additional delay. I suspect your client is slow processing
-the server answer, then close() its socket _after_ data processing.
-
-Its possible tcp_send_fin() has to loop while allocating one skb under
-very high memory pressure, and it seems we have no counters for this
-case. But if it _was_ ever happening, you would have lot of messages in
-kernel log (dmesg) about alloc_skb_clone() failures.
-
-
+I think we have to have scsi-ml do a get_device when a sdev is added to
+the starved entry and then do a put_device when it is removed (must do
+these under the host lock for the starved entry case too). I am not sure
+if that is just a hack/papering-over of the problem and there are more
+issues like this.
 
