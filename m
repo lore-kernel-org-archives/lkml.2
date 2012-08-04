@@ -1,40 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab2HDAcv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 20:32:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33952 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab2HDAcl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 20:32:41 -0400
-Message-ID: <501C6DC3.90904@gmail.com>
-Date: Sat, 04 Aug 2012 02:33:07 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org
-Subject: Re: [RFC v2 1/7] hashtable: introduce a small and naive hashtable
-References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com> <1344003788-1417-2-git-send-email-levinsasha928@gmail.com> <20120803171515.GH15477@google.com> <501C407D.9080900@gmail.com> <20120803213017.GK15477@google.com> <501C458E.7050000@gmail.com> <20120803214806.GM15477@google.com> <501C4E92.1070801@gmail.com> <20120803222339.GN15477@google.com> <CA+55aFyOst4c3WHbPVbYkSBdBmLJUui5OvoVOh5AuPMnigwnEA@mail.gmail.com> <20120803223634.GO15477@google.com> <CA+55aFwTa_kYgmFwoWa6hwAAM6=2xTgQQf-vEx_gCzpEMnxodQ@mail.gmail.com> <501C66C2.2020706@gmail.com> <CA+55aFziVRRBoTnm2zASGR39W1AB+0=4Sa7qO8e6_hN06ZY8wg@mail.gmail.com>
-In-Reply-To: <CA+55aFziVRRBoTnm2zASGR39W1AB+0=4Sa7qO8e6_hN06ZY8wg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754088Ab2HDAhd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 20:37:33 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59782 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754037Ab2HDAhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Aug 2012 20:37:31 -0400
+Message-ID: <1344040650.10710.22.camel@joe2Laptop>
+Subject: Re: [PATCH] scripts/get_maintainer.pl: Default to --no-rolestats
+ when output not a terminal
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Alex Kelly <alex.page.kelly@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
+Date: Fri, 03 Aug 2012 17:37:30 -0700
+In-Reply-To: <20120803184743.GA4660@jtriplet-mobl1>
+References: <20120803182706.GA4637@jtriplet-mobl1>
+	 <1344018801.10710.17.camel@joe2Laptop>
+	 <20120803184743.GA4660@jtriplet-mobl1>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2012 02:05 AM, Linus Torvalds wrote:
-> On Fri, Aug 3, 2012 at 5:03 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
->>
->> The problem with that code was that it doesn't work with dynamically allocated hashtables, or hashtables that grow/shrink.
+On Fri, 2012-08-03 at 11:47 -0700, Josh Triplett wrote:
+> On Fri, Aug 03, 2012 at 11:33:21AM -0700, Joe Perches wrote:
+> > On Fri, 2012-08-03 at 11:27 -0700, Josh Triplett wrote:
+> > > scripts/get_maintainer.pl defaults to showing --rolestats, which
+> > > provides annotations explaining why each person or list might want to
+> > > know about a patch.  This works well for interactive use, but breaks
+> > > when used with git send-email's --to-cmd or --cc-cmd, resulting in
+> > > malformed email headers and mails sent to some but not all recipients.
+> > > 
+> > > To avoid the need to explicitly pass --no-rolestats for batch use,
+> > > enable --rolestats by default only when outputting to a terminal.
+> > 
+> > Hi Josh.
+> > 
+> > I think it's preferable to add --no-rolestats
+> > to the uses that need them.
 > 
-> Sure. But once you have that kind of complexity, why would you care
-> about the trivial cases?
+> Why?
+> 
+> > I have different scripts that I use for git send-email
+> > options --to-cmd and --cc-cmd
+> [...snip scripts...]
+> 
+> You've submitted enough patches that you've automated as much of the
+> process as you can; I don't think that makes the defaults less
+> error-prone.
 
-Because there are far more trivial cases than complex ones - I've counted 50+ of these "trivial" cases.
+I think the default use of the get_maintainer script is
+actually not scripted but interactive, where the user is
+just trying to figure out who the maintainer is.
 
-None of them need the complexity we're trying to deal with at the moment.
+Anyone using get_maintainer in a scripted way should go
+through the effort of figuring out in advance who will
+be a recipient.
+
+>   Given that you've had to explicitly add --no-rolestats to
+> your scripts, that seems like evidence in *favor* of making this change.
+
+Probably not.
+
+> As it stands now, the current default of --rolestats makes the obvious
+> command line of
+> git send-email --to-cmd='scripts/get_maintainer.pl' *.patch
+> send broken emails that go to some maintainers but not all.  I think it
+> makes sense to change the default so that the obvious usage becomes the
+> correct one.
+
+There were some discussions awhile back in 2010 about the
+preferred defaults.
+
+Perhaps you can read those discussions about why the default
+is the way it is.
+
+cheers, Joe
+
