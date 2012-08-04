@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab2HDRK7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 13:10:59 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:54326 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753728Ab2HDRK4 (ORCPT
+	id S1753892Ab2HDRVX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 13:21:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63701 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab2HDRVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 13:10:56 -0400
-X-IronPort-AV: E=Sophos;i="4.77,713,1336341600"; 
-   d="scan'208";a="169080479"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: "Jean Delvare" <khali@linux-fr.org>
-Cc: kernel-janitors@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/i2c/i2c-smbus.c: convert kzalloc to devm_kzalloc
-Date: Sat,  4 Aug 2012 19:10:48 +0200
-Message-Id: <1344100248-16238-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	Sat, 4 Aug 2012 13:21:22 -0400
+From: Devendra Naga <develkernel412222@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?UTF-8?q?Javier=20Mu=C3=B1oz?= <jmunhoz@igalia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Devendra Naga <devendra.aaru@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Devendra Naga <develkernel412222@gmail.com>
+Subject: [PATCH] staging: sm7xxfb: copy name of the device before calling smtc_alloc_fb_info
+Date: Sat,  4 Aug 2012 23:06:12 +0545
+Message-Id: <1344100872-19640-1-git-send-email-develkernel412222@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+as we do a strcpy(smdrv_ptr->fb_struct->fix->id, name), and the name here in
+sm7xxx_probe is not having any assignment, and which leads to copying of the garbage value
+into the id field of the fix struct of fb interface struct. fix it by copying the name before
+calling alloc_fbinfo
 
-Converting kzalloc to devm_kzalloc simplifies the code and ensures that the
-result, alert, is freed after the irq allocated by the subsequent
-devm_request_irq.  This in turn ensures that when an interrupt can be
-triggered, the alert structure is still available.
-
-The problem of a free after a devm_request_irq was found using the
-following semantic match (http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r exists@
-expression e1,e2,x,a,b,c,d;
-identifier free;
-position p1,p2;
-@@
-
-  devm_request_irq@p1(e1,e2,...,x)
-  ... when any
-      when != e2 = a
-      when != x = b
-  if (...) {
-    ... when != e2 = c
-        when != x = d
-    free@p2(...,x,...);
-    ...
-    return ...;
-  }
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
+Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
 ---
- drivers/i2c/i2c-smbus.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ Only compile tested
+ This patch is not tested using the hardware... if any one is having this hardware, i request them to
+please test this
+ drivers/staging/sm7xxfb/sm7xxfb.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/i2c/i2c-smbus.c b/drivers/i2c/i2c-smbus.c
-index df3e0bf..50a36cf 100644
---- a/drivers/i2c/i2c-smbus.c
-+++ b/drivers/i2c/i2c-smbus.c
-@@ -142,7 +142,8 @@ static int smbalert_probe(struct i2c_client *ara,
- 	struct i2c_adapter *adapter = ara->adapter;
- 	int res;
+diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
+index 1c1780c..d3957ef 100644
+--- a/drivers/staging/sm7xxfb/sm7xxfb.c
++++ b/drivers/staging/sm7xxfb/sm7xxfb.c
+@@ -798,16 +798,17 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
+ 	if (err)
+ 		return err;
  
--	alert = kzalloc(sizeof(struct i2c_smbus_alert), GFP_KERNEL);
-+	alert = devm_kzalloc(&ara->dev, sizeof(struct i2c_smbus_alert),
-+			     GFP_KERNEL);
- 	if (!alert)
- 		return -ENOMEM;
++	sprintf(name, "sm%Xfb", ent->device);
++
+ 	sfb = smtc_alloc_fb_info(pdev, name);
  
-@@ -154,10 +155,8 @@ static int smbalert_probe(struct i2c_client *ara,
- 	if (setup->irq > 0) {
- 		res = devm_request_irq(&ara->dev, setup->irq, smbalert_irq,
- 				       0, "smbus_alert", alert);
--		if (res) {
--			kfree(alert);
-+		if (res)
- 			return res;
--		}
++	sfb->chip_id = ent->device;
++
+ 	if (!sfb) {
+ 		err = -ENOMEM;
+ 		goto failed_free;
  	}
  
- 	i2c_set_clientdata(ara, alert);
-@@ -167,14 +166,12 @@ static int smbalert_probe(struct i2c_client *ara,
- 	return 0;
- }
- 
--/* IRQ resource is managed so it is freed automatically */
-+/* IRQ resource and alert are managed so they are freed automatically */
- static int smbalert_remove(struct i2c_client *ara)
- {
- 	struct i2c_smbus_alert *alert = i2c_get_clientdata(ara);
- 
- 	cancel_work_sync(&alert->alert);
+-	sfb->chip_id = ent->device;
+-	sprintf(name, "sm%Xfb", sfb->chip_id);
 -
--	kfree(alert);
- 	return 0;
- }
+ 	pci_set_drvdata(pdev, sfb);
  
+ 	sm7xx_init_hw();
+-- 
+1.7.9.5
 
