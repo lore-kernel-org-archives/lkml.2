@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab2HDQwF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 12:52:05 -0400
+	id S1753919Ab2HDQw1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 12:52:27 -0400
 Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:37654
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753729Ab2HDQvA (ORCPT
+	by vger.kernel.org with ESMTP id S1753493Ab2HDQu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 12:51:00 -0400
+	Sat, 4 Aug 2012 12:50:59 -0400
 X-IronPort-AV: E=Sophos;i="4.77,713,1336341600"; 
-   d="scan'208";a="152439852"
+   d="scan'208";a="152439850"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] drivers/pinctrl/pinctrl-nomadik.c: drop devm_kfree of devm_kzalloc'd data
-Date: Sat,  4 Aug 2012 18:50:47 +0200
-Message-Id: <1344099049-15212-4-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 2/6] drivers/mfd: drop frees of devm allocated data
+Date: Sat,  4 Aug 2012 18:50:45 +0200
+Message-Id: <1344099049-15212-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,8 +23,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 devm_kfree should not have to be explicitly used.
+devm_regmap_init_i2c also does not require an explicit free.
 
-The semantic patch that fixes this problem is as follows:
+The semantic patch that fixes the first problem is as follows:
 (http://coccinelle.lip6.fr/)
 
 // <smpl>
@@ -40,19 +41,93 @@ x = devm_kzalloc(...)
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/pinctrl/pinctrl-nomadik.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/mfd/88pm800.c |    5 +----
+ drivers/mfd/88pm80x.c |   20 +++-----------------
+ 2 files changed, 4 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 53b0d49..ec6ac50 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -1731,7 +1731,6 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
- 	for (i = 0; i < npct->soc->gpio_num_ranges; i++) {
- 		if (!nmk_gpio_chips[i]) {
- 			dev_warn(&pdev->dev, "GPIO chip %d not registered yet\n", i);
--			devm_kfree(&pdev->dev, npct);
- 			return -EPROBE_DEFER;
- 		}
- 		npct->soc->gpio_ranges[i].gc = &nmk_gpio_chips[i]->chip;
+diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+index b67a301..a2e5bd8 100644
+--- a/drivers/mfd/88pm800.c
++++ b/drivers/mfd/88pm800.c
+@@ -530,7 +530,7 @@ static int __devinit pm800_probe(struct i2c_client *client,
+ 	ret = device_800_init(chip, pdata);
+ 	if (ret) {
+ 		dev_err(chip->dev, "%s id 0x%x failed!\n", __func__, chip->id);
+-		goto err_800_init;
++		goto err_subchip_alloc;
+ 	}
+ 
+ 	ret = pm800_pages_init(chip);
+@@ -545,8 +545,6 @@ static int __devinit pm800_probe(struct i2c_client *client,
+ err_page_init:
+ 	mfd_remove_devices(chip->dev);
+ 	device_irq_exit_800(chip);
+-err_800_init:
+-	devm_kfree(&client->dev, subchip);
+ err_subchip_alloc:
+ 	pm80x_deinit(client);
+ out_init:
+@@ -561,7 +559,6 @@ static int __devexit pm800_remove(struct i2c_client *client)
+ 	device_irq_exit_800(chip);
+ 
+ 	pm800_pages_exit(chip);
+-	devm_kfree(&client->dev, chip->subchip);
+ 
+ 	pm80x_deinit(client);
+ 
+diff --git a/drivers/mfd/88pm80x.c b/drivers/mfd/88pm80x.c
+index cd0bf52..2bd090e 100644
+--- a/drivers/mfd/88pm80x.c
++++ b/drivers/mfd/88pm80x.c
+@@ -45,17 +45,14 @@ int __devinit pm80x_init(struct i2c_client *client,
+ 
+ 	map = devm_regmap_init_i2c(client, &pm80x_regmap_config);
+ 	if (IS_ERR(map)) {
+-		ret = PTR_ERR(map);
+ 		dev_err(&client->dev, "Failed to allocate register map: %d\n",
+ 			ret);
+-		goto err_regmap_init;
++		return PTR_ERR(map);
+ 	}
+ 
+ 	chip->id = id->driver_data;
+-	if (chip->id < CHIP_PM800 || chip->id > CHIP_PM805) {
+-		ret = -EINVAL;
+-		goto err_chip_id;
+-	}
++	if (chip->id < CHIP_PM800 || chip->id > CHIP_PM805)
++		return -EINVAL;
+ 
+ 	chip->client = client;
+ 	chip->regmap = map;
+@@ -82,19 +79,11 @@ int __devinit pm80x_init(struct i2c_client *client,
+ 	}
+ 
+ 	return 0;
+-
+-err_chip_id:
+-	regmap_exit(map);
+-err_regmap_init:
+-	devm_kfree(&client->dev, chip);
+-	return ret;
+ }
+ EXPORT_SYMBOL_GPL(pm80x_init);
+ 
+ int pm80x_deinit(struct i2c_client *client)
+ {
+-	struct pm80x_chip *chip = i2c_get_clientdata(client);
+-
+ 	/*
+ 	 * workaround: clear the dependency between pm800 and pm805.
+ 	 * would remove it after HW chip fixes the issue.
+@@ -104,9 +93,6 @@ int pm80x_deinit(struct i2c_client *client)
+ 	else
+ 		g_pm80x_chip = NULL;
+ 
+-	regmap_exit(chip->regmap);
+-	devm_kfree(&client->dev, chip);
+-
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(pm80x_deinit);
 
