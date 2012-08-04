@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab2HGB1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 21:27:42 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20034 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756863Ab2HGB1k convert rfc822-to-8bit (ORCPT
+	id S1757183Ab2HGBgN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 21:36:13 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:32797 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757149Ab2HGBgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 21:27:40 -0400
+	Mon, 6 Aug 2012 21:36:00 -0400
+X-Greylist: delayed 17670 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Aug 2012 21:36:00 EDT
+Message-ID: <501D4803.60708@xenotime.net>
+Date: Sat, 04 Aug 2012 09:04:19 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Message-ID: <bc6b78b2-ab2d-4b95-add3-493d7748ef1f@default>
-Date: Mon, 6 Aug 2012 18:26:03 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org
-Subject: RE: [PATCH 4/5] [RFC][HACK] Add LRU_VOLATILE support to the VM
-References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
- <1343447832-7182-5-git-send-email-john.stultz@linaro.org>
- <20120806030451.GA11468@bbox> <aa61fb77-258b-4b6f-843f-689bc5c984cc@default>
- <20120807005620.GB19515@bbox>
-In-Reply-To: <20120807005620.GB19515@bbox>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Pekka Enberg <penberg@kernel.org>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [PATCH v2] sched: Document schedule() entry points
+References: <1344070187-2420-1-git-send-email-penberg@kernel.org>
+In-Reply-To: <1344070187-2420-1-git-send-email-penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Minchan Kim [mailto:minchan@kernel.org]
-> Subject: Re: [PATCH 4/5] [RFC][HACK] Add LRU_VOLATILE support to the VM
+On 08/04/2012 01:49 AM, Pekka Enberg wrote:
+
+> This patch adds a comment on top of the schedule() function to explain
+> to scheduler newbies how the main scheduler function is entered.
 > 
-> On Mon, Aug 06, 2012 at 08:46:18AM -0700, Dan Magenheimer wrote:
-> > > From: Minchan Kim [mailto:minchan@kernel.org]
-> > > To: John Stultz
-> > > Subject: Re: [PATCH 4/5] [RFC][HACK] Add LRU_VOLATILE support to the VM
-> >
-> > Hi Minchan --
-> >
-> > Thanks for cc'ing me on this!
-> >
-> > > Targets for the LRU list could be following as in future
-> > >
-> > > 1. volatile pages in this patchset.
-> > > 2. ephemeral pages of tmem
-> > > 3. madivse(DONTNEED)
-> > > 4. fadvise(NOREUSE)
-> > > 5. PG_reclaimed pages
-> > > 6. clean pages if we write CFLRU(clean first LRU)
-> > >
-> > > So if any guys have objection, please raise your hands
-> > > before further progress.
-> >
-> > I agree that the existing shrinker mechanism is too primitive
-> > and the kernel needs to take into account more factors in
-> > deciding how to quickly reclaim pages from a broader set
-> > of sources.  However, I think it is important to ensure
-> > that both the "demand" side and the "supply" side are
-> > studied.  There has to be some kind of prioritization policy
-> > among all the RAM consumers so that a lower-priority
-> > alloc_page doesn't cause a higher-priority "volatile" page
-> > to be consumed.  I suspect this policy will be VERY hard to
-> > define and maintain.
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Explained-by: Ingo Molnar <mingo@kernel.org>
+> Explained-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+> ---
+> V1 -> V2: Fix funky grammar pointed out by Peter and Randy.
+
+Ack.  Thanks.
+
+>  kernel/sched/core.c |   34 ++++++++++++++++++++++++++++++++++
+>  1 files changed, 34 insertions(+), 0 deletions(-)
 > 
-> Yes. It's another story.
-> At the moment, VM doesn't consider such priority-inversion problem
-> excpet giving the more memory to privileged processes. It's so simple
-> but works well till now.
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 468bdd4..7dc75df 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3361,6 +3361,40 @@ pick_next_task(struct rq *rq)
+>  
+>  /*
+>   * __schedule() is the main scheduler function.
+> + *
+> + * The main means of driving the scheduler and thus entering this function are:
+> + *
+> + *   1. Explicit blocking: mutex, semaphore, waitqueue, etc.
+> + *
+> + *   2. TIF_NEED_RESCHED flag is checked on interrupt and userspace return
+> + *      paths. For example, see arch/x86/entry_64.S.
+> + *
+> + *      To drive preemption between tasks, the scheduler sets the flag in timer
+> + *      interrupt handler scheduler_tick().
+> + *
+> + *   3. Wakeups don't really cause entry into schedule(). They add a
+> + *      task to the run-queue and that's it.
+> + *
+> + *      Now, if the new task added to the run-queue preempts the current
+> + *      task, then the wakeup sets TIF_NEED_RESCHED and schedule() gets
+> + *      called on the nearest possible occasion:
+> + *
+> + *       - If the kernel is preemptible (CONFIG_PREEMPT=y):
+> + *
+> + *         - in syscall or exception context, at the next outmost
+> + *           preempt_enable(). (this might be as soon as the wake_up()'s
+> + *           spin_unlock()!)
+> + *
+> + *         - in IRQ context, return from interrupt-handler to
+> + *           preemptible context
+> + *
+> + *       - If the kernel is not preemptible (CONFIG_PREEMPT is not set)
+> + *         then at the next:
+> + *
+> + *          - cond_resched() call
+> + *          - explicit schedule() call
+> + *          - return from syscall or exception to user-space
+> + *          - return from interrupt-handler to user-space
+>   */
+>  static void __sched __schedule(void)
+>  {
 
-I think it is very important that both stories must be
-solved together.  See below...
 
-> > Related, ephemeral pages in tmem are not truly volatile
-> 
-> "volatile" term is used by John for only his special patch so
-> I like Ereclaim(Easy Reclaim) rather than volatile.
 
-If others agree, that's fine.  However, the "E" prefix is
-currently used differently in common English (for example,
-for e-books).  Maybe "ezreclaim"?
-
-> > as there is always at least one tmem data structure pointing
-> > to it.  I haven't followed this thread previously so my apologies
-> > if it already has this, but the LRU_VOLATILE list might
-> > need to support a per-page "garbage collection" callback.
-> 
-> Right. That's why this patch provides purgepage in address_space_operations.
-> I think zcache could attach own address_space_operations to the page
-> which is allocated by zbud for instance, zcache_purgepage which is called by VM
-> when the page is reclaimed. So zcache don't need custom LRU policy(but still need
-> linked list for managing zbuddy) and pass the decision to the VM.
-
-The simple VM decisions are going to need a lot more intelligence
-(and data?) to drive which page to reclaim.  For example, is it better
-to reclaim a pageframe that contains two compressed pages of ephemeral data
-or a pageframe that has one active (or inactive) file page?  Such
-a policy is not "Easy". ;-)
-
-(Also, BTW, zcache pages aren't in any address space so don't have
-an address_space_operations... because it is not possible to directly
-address the data in a compressed page.)
+-- 
+~Randy
