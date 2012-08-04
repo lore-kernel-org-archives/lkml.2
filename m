@@ -1,358 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab2HDLEV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 07:04:21 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:34245 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab2HDLER (ORCPT
+	id S1752169Ab2HDLZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 07:25:57 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:62003 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab2HDLZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 07:04:17 -0400
-Date: Sat, 4 Aug 2012 07:03:55 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, davem@davemloft.net
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>, xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] Regression in xen-netfront on v3.6 (git commit c48a11c7ad2623b99bbd6859b0b4234e7f11176f, netvm: propagate page->pfmemalloc to skb)
-Message-ID: <20120804110355.GA17640@andromeda.dapyr.net>
-References: <20120801190227.GA13272@phenom.dumpdata.com> <20120803120414.GA10670@andromeda.dapyr.net>
+	Sat, 4 Aug 2012 07:25:52 -0400
+X-Nat-Received: from [202.181.97.72]:51583 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1344079450.31012
+To: linux-kernel@vger.kernel.org
+Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de
+Subject: Re: [3.6-rc1] sched: clock counts too quickly
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201208032318.FGJ64576.tOMVLOFHFQOFJS@I-love.SAKURA.ne.jp>
+In-Reply-To: <201208032318.FGJ64576.tOMVLOFHFQOFJS@I-love.SAKURA.ne.jp>
+Message-Id: <201208042024.GFG34353.OFtFVQJMLOHFSO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 4 Aug 2012 20:24:06 +0900
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120803120414.GA10670@andromeda.dapyr.net>
-User-Agent: Mutt/1.5.9i
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 04082012 #8314118, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 08:04:14AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, Aug 01, 2012 at 03:02:27PM -0400, Konrad Rzeszutek Wilk wrote:
-> > So I hadn't done a git bisection yet. But if I choose git commit:
-> > 4b24ff71108164e047cf2c95990b77651163e315
-> >     Merge tag 'for-v3.6' of git://git.infradead.org/battery-2.6
-> > 
-> >     Pull battery updates from Anton Vorontsov:
-> > 
-> > 
-> > everything works nicely. Anything past that, so these merges:
-> > 
-> > konrad@phenom:~/ssd/linux$ git log --oneline --merges 4b24ff71108164e047cf2c95990b77651163e315..linus/master
-> > 2d53492 Merge tag 'irqdomain-for-linus' of git://git.secretlab.ca/git/linux-2.6
-> ===> ac694db Merge branch 'akpm' (Andrew's patch-bomb)
-> 
-> Somewhere in there is the culprit. Hadn't done yet the full bisection
-> (was just checking out in each merge to see when it stopped working)
+Hello.
 
-Mel, your:
-commit c48a11c7ad2623b99bbd6859b0b4234e7f11176f
-Author: Mel Gorman <mgorman@suse.de>
-Date:   Tue Jul 31 16:44:23 2012 -0700
+Tetsuo Handa wrote:
+> Under unknown condition, clock starts counting up too quickly which is enough
+> to confuse hangcheck timer to print stall warning.
+I wrote a test program.
 
-    netvm: propagate page->pfmemalloc to skb
+---------- test program start ----------
+#include <string.h>
+#include <sys/timex.h>
+#include <unistd.h>
 
-is the culprit per git bisect. Any ideas - do the drivers need to do
-some extra processing? Here is the git bisect log
+int main(int argc, char *argv[])
+{
+        while (1) {
+                struct timeval tv;
+                struct timezone tz;
+                struct timex buf;
+                gettimeofday(&tv, &tz);
+                settimeofday(&tv, &tz);
+                memset(&buf, 0, sizeof(buf));
+                buf.modes = 0x100;
+                adjtimex(&buf);
+        }
+        return 0;
+}
+---------- test program end ----------
 
-git bisect start
-# good: [a40a1d3d0a2fd613fdec6d89d3c053268ced76ed] Merge tag
-# 'vfio-for-v3.6' of git://github.com/awilliam/linux-vfio
-git bisect good a40a1d3d0a2fd613fdec6d89d3c053268ced76ed
-# bad: [ac694dbdbc403c00e2c14d10bc7b8412cc378259] Merge branch 'akpm'
-# (Andrew's patch-bomb)
-git bisect bad ac694dbdbc403c00e2c14d10bc7b8412cc378259
-# good: [62ce1c706f817cb9defef3ac2dfdd815149f2968] mm, oom: move
-# declaration for mem_cgroup_out_of_memory to oom.h
-git bisect good 62ce1c706f817cb9defef3ac2dfdd815149f2968
-# bad: [5a178119b0fbe37f7dfb602b37df9cc4b1dc9d71] mm: add support for
-# direct_IO to highmem pages
-git bisect bad 5a178119b0fbe37f7dfb602b37df9cc4b1dc9d71
-# good: [7cb0240492caea2f6467f827313478f41877e6ef] netvm: allow the use
-# of __GFP_MEMALLOC by specific sockets
-git bisect good 7cb0240492caea2f6467f827313478f41877e6ef
-# bad: [5515061d22f0f9976ae7815864bfd22042d36848] mm: throttle direct
-# reclaimers if PF_MEMALLOC reserves are low and swap is backed by
-# network storage
-git bisect bad 5515061d22f0f9976ae7815864bfd22042d36848
-# bad: [0614002bb5f7411e61ffa0dfe5be1f2c84df3da3] netvm: propagate
-# page->pfmemalloc from skb_alloc_page to skb
-git bisect bad 0614002bb5f7411e61ffa0dfe5be1f2c84df3da3
-# bad: [c48a11c7ad2623b99bbd6859b0b4234e7f11176f] netvm: propagate
-# page->pfmemalloc to skb
-git bisect bad c48a11c7ad2623b99bbd6859b0b4234e7f11176f
-# good: [c93bdd0e03e848555d144eb44a1f275b871a8dd5] netvm: allow skb
-# allocation to use PFMEMALLOC reserves
-git bisect good c93bdd0e03e848555d144eb44a1f275b871a8dd5
+Running this program as root user on 3.6-rc1 causes clock jumping.
 
+buf.modes = 0x100 is just a random choice because I don't know what arguments
+are appropriate for adjtimex(). But I guess this is a regression because
+I didn't trigger this problem until 3.5 and I can always trigger this problem
+in 3.6-rc1. Maybe something is wrong with per-cpu clock management?
 
-> 
-> Andrew CC-ing you here, the serial log is below.
-> > a40a1d3 Merge tag 'vfio-for-v3.6' of git://github.com/awilliam/linux-vfio
-> > 3e9a970 Merge tag 'random_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/random
-> > 941c872 Merge tag 'rdma-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband
-> > 8762541 Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
-> > 6dbb35b Merge tag 'nfs-for-3.6-2' of git://git.linux-nfs.org/projects/trondmy/linux-nfs
-> > fd37ce3 Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-> > 1da9b6b Merge branches 'cma', 'ipoib', 'ocrdma' and 'qib' into for-next
-> > 6aeea3e Merge remote-tracking branch 'origin' into irqdomain/next
-> > 931efdf Merge branch 'v4l_for_linus' into staging/for_v3.6
-> > 80c1834 Merge tag 'v3.5-rc6' into irqdomain/next
-> > 
-> > are the culprit. I think it might be the networking pull but not sure. Ian
-> > any thoughts?
-> > 
-> > Using config file "/test.xm".
-> > Started domain latest (id=2)
-> > [    0.000000] console [hvc0] enabled, bootconsole disabled
-> > [    0.000000] Xen: using vcpuop timer interface
-> > [    0.000000] installing Xen timer for CPU 0
-> > [    0.000000] tsc: Detected 2294.530 MHz processor
-> > [    0.000999] Calibrating delay loop (skipped), value calculated using timer frequency.. 4589.06 BogoMIPS (lpj=2294530)
-> > [    0.000999] pid_max: default: 32768 minimum: 301
-> > [    0.000999] Security Framework initialized
-> > [    0.000999] SELinux:  Initializing.
-> > [    0.000999] SELinux:  Starting in permissive mode
-> > [    0.000999] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes)
-> > [    0.001520] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes)
-> > [    0.001875] Mount-cache hash table entries: 256
-> > [    0.002007] Initializing cgroup subsys cpuacct
-> > [    0.002013] Initializing cgroup subsys freezer
-> > [    0.002070] ENERGY_PERF_BIAS: Set to 'normal', was 'performance'
-> > [    0.002070] ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)
-> > [    0.002084] CPU: Physical Processor ID: 0
-> > [    0.002087] CPU: Processor Core ID: 0
-> > [    0.002094] Last level iTLB entries: 4KB 512, 2MB 0, 4MB 0
-> > [    0.002094] Last level dTLB entries: 4KB 512, 2MB 32, 4MB 32
-> > [    0.002094] tlb_flushall_shift is 0x5
-> > [    0.002164] SMP alternatives: switching to UP code
-> > [    0.025291] Freeing SMP alternatives: 24k freed
-> > [    0.025356] cpu 0 spinlock event irq 17
-> > [    0.025383] Performance Events: unsupported p6 CPU model 45 no PMU driver, software events only.
-> > [    0.025551] NMI watchdog: disabled (cpu0): hardware events not enabled
-> > [    0.025576] Brought up 1 CPUs
-> > [    0.028642] kworker/u:0 (14) used greatest stack depth: 5936 bytes left
-> > [    0.028675] Grant tables using version 2 layout.
-> > [    0.028691] Grant table initialized
-> > [    0.047616] RTC time: 165:165:165, date: 165/165/65
-> > [    0.047661] NET: Registered protocol family 16
-> > [    0.048184] dca service started, version 1.12.1
-> > [    0.048545] PCI: setting up Xen PCI frontend stub
-> > [    0.048552] PCI: pci_cache_line_size set to 64 bytes
-> > [    0.049543] kworker/u:0 (51) used greatest stack depth: 5472 bytes left
-> > [    0.054147] bio: create slab <bio-0> at 0
-> > [    0.054240] ACPI: Interpreter disabled.
-> > [    0.054288] xen/balloon: Initialising balloon driver.
-> > [    0.055127] xen-balloon: Initialising balloon driver.
-> > [    0.055127] vgaarb: loaded
-> > [    0.056125] usbcore: registered new interface driver usbfs
-> > [    0.056162] usbcore: registered new interface driver hub
-> > [    0.056217] usbcore: registered new device driver usb
-> > [    0.056425] PCI: System does not support PCI
-> > [    0.056431] PCI: System does not support PCI
-> > [    0.056617] NetLabel: Initializing
-> > [    0.056624] NetLabel:  domain hash size = 128
-> > [    0.056627] NetLabel:  protocols = UNLABELED CIPSOv4
-> > [    0.056642] NetLabel:  unlabeled traffic allowed by default
-> > [    0.056725] Switching to clocksource xen
-> > [    0.056795] pnp: PnP ACPI: disabled
-> > [    0.058698] NET: Registered protocol family 2
-> > [    0.059805] TCP established hash table entries: 524288 (order: 11, 8388608 bytes)
-> > [    0.061110] TCP bind hash table entries: 65536 (order: 8, 1048576 bytes)
-> > [    0.061243] TCP: Hash tables configured (established 524288 bind 65536)
-> > [    0.061281] TCP: reno registered
-> > [    0.061304] UDP hash table entries: 2048 (order: 4, 65536 bytes)
-> > [    0.061341] UDP-Lite hash table entries: 2048 (order: 4, 65536 bytes)
-> > [    0.061425] NET: Registered protocol family 1
-> > [    0.061492] RPC: Registered named UNIX socket transport module.
-> > [    0.061498] RPC: Registered udp transport module.
-> > [    0.061504] RPC: Registered tcp transport module.
-> > [    0.061510] RPC: Registered tcp NFSv4.1 backchannel transport module.
-> > [    0.061518] PCI: CLS 0 bytes, default 64
-> > [    0.061643] Trying to unpack rootfs image as initramfs...
-> > [    0.382189] Freeing initrd memory: 362080k freed
-> > [    0.499615] platform rtc_cmos: registered platform RTC device (no PNP device found)
-> > [    0.499831] Machine check injector initialized
-> > [    0.500181] microcode: CPU0 sig=0x206d2, pf=0x1, revision=0x8000020c
-> > [    0.500229] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
-> > [    0.500544] audit: initializing netlink socket (disabled)
-> > [    0.500566] type=2000 audit(1343845740.901:1): initialized
-> > [    0.515227] HugeTLB registered 2 MB page size, pre-allocated 0 pages
-> > [    0.515358] VFS: Disk quotas dquot_6.5.2
-> > [    0.515386] Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
-> > [    0.515525] NFS: Registering the id_resolver key type
-> > [    0.515544] Key type id_resolver registered
-> > [    0.515551] Key type id_legacy registered
-> > [    0.515599] NTFS driver 2.1.30 [Flags: R/W].
-> > [    0.515706] msgmni has been set to 8021
-> > [    0.515765] SELinux:  Registering netfilter hooks
-> > [    0.516222] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 253)
-> > [    0.516232] io scheduler noop registered
-> > [    0.516236] io scheduler deadline registered
-> > [    0.516243] io scheduler cfq registered (default)
-> > [    0.516337] pci_hotplug: PCI Hot Plug PCI Core version: 0.5
-> > [    0.516442] ioatdma: Intel(R) QuickData Technology Driver 4.00
-> > [    0.532923] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
-> > [    0.533399] Non-volatile memory driver v1.3
-> > [    0.533406] Linux agpgart interface v0.103
-> > [    0.533588] [drm] Initialized drm 1.1.0 20060810
-> > [    0.535196] brd: module loaded
-> > [    0.535992] loop: module loaded
-> > [    0.536344] libphy: Fixed MDIO Bus: probed
-> > [    0.536351] tun: Universal TUN/TAP device driver, 1.6
-> > [    0.536354] tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
-> > [    0.536419] ixgbevf: Intel(R) 10 Gigabit PCI Express Virtual Function Network Driver - version 2.6.0-k
-> > [    0.536428] ixgbevf: Copyright (c) 2009 - 2012 Intel Corporation.
-> > [    0.536721] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-> > [    0.536729] ehci_hcd: block sizes: qh 104 qtd 96 itd 192 sitd 96
-> > [    0.536770] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-> > [    0.536776] ohci_hcd: block sizes: ed 80 td 96
-> > [    0.536826] uhci_hcd: USB Universal Host Controller Interface driver
-> > [    0.536929] usbcore: registered new interface driver usblp
-> > [    0.536977] usbcore: registered new interface driver libusual
-> > [    0.537164] i8042: PNP: No PS/2 controller found. Probing ports directly.
-> > [    0.538013] i8042: No controller found
-> > [    0.538103] mousedev: PS/2 mouse device common for all mice
-> > [    0.598349] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
-> > [    0.598404] rtc_cmos: probe of rtc_cmos failed with error -38
-> > [    0.598559] EFI Variables Facility v0.08 2004-May-17
-> > [    0.598701] Netfilter messages via NETLINK v0.30.
-> > [    0.598719] nf_conntrack version 0.5.0 (16384 buckets, 65536 max)
-> > [    0.598790] ctnetlink v0.93: registering with nfnetlink.
-> > [    0.598971] ip_tables: (C) 2000-2006 Netfilter Core Team
-> > [    0.599007] TCP: cubic registered
-> > [    0.599014] Initializing XFRM netlink socket
-> > [    0.599043] NET: Registered protocol family 10
-> > [    0.599238] ip6_tables: (C) 2000-2006 Netfilter Core Team
-> > [    0.599374] sit: IPv6 over IPv4 tunneling driver
-> > [    0.599589] NET: Registered protocol family 17
-> > [    0.599618] Key type dns_resolver registered
-> > [    0.599808] PM: Hibernation image not present or could not be loaded.
-> > [    0.599824] registered taskstats version 1
-> > [    0.599848] XENBUS: Device with no driver: device/vkbd/0
-> > [    0.599852] XENBUS: Device with no driver: device/vfb/0
-> > [    0.599856] XENBUS: Device with no driver: device/vbd/51712
-> > [    0.599860] XENBUS: Device with no driver: device/vif/0
-> > [    0.599886]   Magic number: 1:252:3141
-> > [    0.600271] Freeing unused kernel memory: 704k freed
-> > [    0.600500] Write protecting the kernel read-only data: 8192k
-> > [    0.602437] Freeing unused kernel memory: 132k freed
-> > [    0.602589] Freeing unused kernel memory: 340k freed
-> > init started: BusyBox v1.14.3 (2012-08-01 13:52:44 EDT)
-> > [    0.607489] consoletype (1056) used greatest stack depth: 5288 bytes left
-> > Mounting directories  [  OK  ]
-> > mount: mount point /proc/bus/usb does not exist
-> > [    0.781044] modprobe (1085) used greatest stack depth: 5048 bytes left
-> > mount: mount point /sys/kernel/config does not exist
-> > [    0.785748] core_filesystem (1057) used greatest stack depth: 4968 bytes left
-> > [    0.793721] input: Xen Virtual Keyboard as /devices/virtual/input/input0
-> > [    0.793892] input: Xen Virtual Pointer as /devices/virtual/input/input1
-> > [    1.010121] Initialising Xen virtual ethernet driver.
-> > [    1.124604] blkfront: xvda: flush diskcache: enabled
-> > [    1.126118]  xvda: xvda1 xvda2 xvda3 xvda4
-> > [    1.239316] udevd (1128): /proc/1128/oom_adj is deprecated, please use /proc/1128/oom_score_adj instead.
-> > udevd-work[1130]: error opening ATTR{/sys/devices/system/cpu/cpu0/online} for writing: No such file or directory
-> > 
-> > [    1.395080] ip (1408) used greatest stack depth: 3912 bytes left
-> > Waiting for devices [  OK  ]
-> > Waiting for init.pre_custom [  OK  ]
-> > Waiting for fb [  OK  ]
-> > Starting..[/dev/fb0]
-> > /dev/fb0: len:0
-> > /dev/fb0: bits/pixel32
-> > (7f44ddbc2000): Writting .. [800:600]
-> > Done!
-> > FATAL: Module agpgart_intel not found.
-> > [    1.652131] [drm] radeon kernel modesetting enabled.
-> > WARNING: Error inserting video (/lib/modules/3.5.0upstream-08854-g444fa66/kernel/drivers/acpi/video.ko): No such device
-> > WARNING: Error inserting mxm_wmi (/lib/modules/3.5.0upstream-08854-g444fa66/kernel/drivers/platform/x86/mxm-wmi.ko): No such device
-> > WARNING: Error inserting drm_kms_helper (/lib/modules/3.5.0upstream-08854-g444fa66/kernel/drivers/gpu/drm/drm_kms_helper.ko): No such device
-> > WARNING: Error inserting ttm (/lib/modules/3.5.0upstream-08854-g444fa66/kernel/drivers/gpu/drm/ttm/ttm.ko): No such device
-> > FATAL: Error inserting nouveau (/lib/modules/3.5.0upstream-08854-g444fa66/kernel/drivers/gpu/drm/nouveau/nouveau.ko): No such device
-> > [    1.660288] Console: switching to colour frame buffer device 100x37
-> > WARNING: Error inserting drm_kms_helper (/lib/modules/3.5.0upstream-08854-g444fa66/kernel/drivers/gpu/drm/drm_kms_helper.ko): No such device
-> > FATAL: Error inserting i915 (/lib/modules/3.5.0upstream-08854-g444fa66/kernel/drivers/gpu/drm/i915/i915.ko): No such device
-> > Starting..[/dev/fb0]
-> > /dev/fb0: len:0
-> > /dev/fb0: bits/pixel32
-> > (7fb8669cc000): Writting .. [800:600]
-> > Done!
-> > VGA: 0000:
-> > Waiting for network [  OK  ]
-> > Bringing up loopback interface:  [  OK  ]
-> > Bringing up interface eth0:  [    1.908592] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-> > [    1.908643] IP: [<ffffffffa0037750>] xennet_poll+0x980/0xec0 [xen_netfront]
-> > [    1.908703] PGD ea1df067 PUD e8ada067 PMD 0 
-> > [    1.908774] Oops: 0000 [#1] SMP 
-> > [    1.908797] Modules linked in: fbcon tileblit font radeon bitblit softcursor ttm drm_kms_helper crc32c_intel xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea xen_kbdfront xenfs xen_privcmd
-> > [    1.908938] CPU 0 
-> > [    1.908950] Pid: 2165, comm: ip Not tainted 3.5.0upstream-08854-g444fa66 #1  
-> > [    1.908983] RIP: e030:[<ffffffffa0037750>]  [<ffffffffa0037750>] xennet_poll+0x980/0xec0 [xen_netfront]
-> > [    1.909029] RSP: e02b:ffff8800ffc03db8  EFLAGS: 00010282
-> > [    1.909055] RAX: ffff8800ea010140 RBX: ffff8800f00e86c0 RCX: 000000000000009a
-> > [    1.909055] RDX: 0000000000000040 RSI: 000000000000005a RDI: ffff8800fa7dee80
-> > [    1.909055] RBP: ffff8800ffc03ee8 R08: ffff8800f00e86d8 R09: ffff8800ea010000
-> > [    1.909055] R10: dead000000200200 R11: dead000000100100 R12: ffff8800fa7dee80
-> > [    1.909055] R13: 000000000000005a R14: ffff8800fa7dee80 R15: 0000000000000200
-> > [    1.909055] FS:  00007fbafc188700(0000) GS:ffff8800ffc00000(0000) knlGS:0000000000000000
-> > [    1.909055] CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [    1.909055] CR2: 0000000000000010 CR3: 00000000ea108000 CR4: 0000000000002660
-> > [    1.909055] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > [    1.909055] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > [    1.909055] Process ip (pid: 2165, threadinfo ffff8800ea0f2000, task ffff8800fa783040)
-> > [    1.909055] Stack:
-> > [    1.909055]  ffff8800e27e5040 ffff8800ffc03e88 ffff8800ffc03e68 ffff8800ffc03e48
-> > [    1.909055]  7fffffffffffffff ffff8800ffc03e00 ffff8800e27e5040 ffff8800f00e86d8
-> > [    1.909055]  ffff8800ffc03eb0 00000040ffffffff ffff8800f00e8000 00000000ffc03e30
-> > [    1.909055] Call Trace:
-> > [    1.909055]  <IRQ> 
-> > [    1.909055]  [<ffffffff81066028>] ? pvclock_clocksource_read+0x58/0xd0
-> > [    1.909055]  [<ffffffff81486352>] net_rx_action+0x112/0x240
-> > [    1.909055]  [<ffffffff8107f319>] __do_softirq+0xb9/0x190
-> > [    1.909055]  [<ffffffff815d8d7c>] call_softirq+0x1c/0x30
-> > [    1.909055]  <EOI> 
-> > [    1.909055]  [<ffffffff8103a435>] do_softirq+0x65/0xa0
-> > [    1.909055]  [<ffffffff8107f834>] local_bh_enable_ip+0x94/0xa0
-> > [    1.909055]  [<ffffffff815d11a4>] _raw_spin_unlock_bh+0x24/0x30
-> > [    1.909055]  [<ffffffffa0036d44>] xennet_open+0x54/0xe0 [xen_netfront]
-> > [    1.909055]  [<ffffffff81481dcf>] __dev_open+0xbf/0x120
-> > [    1.909055]  [<ffffffff8148022c>] __dev_change_flags+0x9c/0x180
-> > [    1.909055]  [<ffffffff81481cc3>] dev_change_flags+0x23/0x70
-> > [    1.909055]  [<ffffffff81491062>] do_setlink+0x1c2/0xa10
-> > [    1.909055]  [<ffffffff812b5d74>] ? nla_parse+0x34/0x110
-> > [    1.909055]  [<ffffffff81494005>] rtnl_newlink+0x3a5/0x5c0
-> > [    1.909055]  [<ffffffff812541c4>] ? selinux_capable+0x34/0x50
-> > [    1.909055]  [<ffffffff81250223>] ? security_capable+0x13/0x20
-> > [    1.909055]  [<ffffffff81491e07>] rtnetlink_rcv_msg+0x2c7/0x330
-> > [    1.909055]  [<ffffffff810a18b7>] ? __might_sleep+0xe7/0x100
-> > [    1.909055]  [<ffffffff81149a52>] ? kmem_cache_alloc_node+0x82/0x1d0
-> > [    1.909055]  [<ffffffff8147a00c>] ? __skb_recv_datagram+0x11c/0x2f0
-> > [    1.909055]  [<ffffffff81491b40>] ? rtnetlink_rcv+0x30/0x30
-> > [    1.909055]  [<ffffffff814a9c89>] netlink_rcv_skb+0x99/0xc0
-> > [    1.909055]  [<ffffffff81491b30>] rtnetlink_rcv+0x20/0x30
-> > [    1.909055]  [<ffffffff814a9998>] netlink_unicast+0x1a8/0x220
-> > [    1.909055]  [<ffffffff814aa535>] netlink_sendmsg+0x205/0x300
-> > [    1.909055]  [<ffffffff8146ce19>] sock_sendmsg+0xb9/0xf0
-> > [    1.909055]  [<ffffffff8146c51e>] ? copy_from_user+0x3e/0x50
-> > [    1.909055]  [<ffffffff8146c576>] ? move_addr_to_kernel+0x46/0x80
-> > [    1.909055]  [<ffffffff810a18b7>] ? __might_sleep+0xe7/0x100
-> > [    1.909055]  [<ffffffff8146dd2d>] __sys_sendmsg+0x3dd/0x400
-> > [    1.909055]  [<ffffffff8112c751>] ? handle_mm_fault+0x261/0x380
-> > [    1.909055]  [<ffffffff815d4cd0>] ? do_page_fault+0x250/0x4f0
-> > [    1.909055]  [<ffffffff8114a587>] ? kmem_cache_alloc+0x1a7/0x1f0
-> > [    1.909055]  [<ffffffff811311a4>] ? do_brk+0x1b4/0x350
-> > [    1.909055]  [<ffffffff8146df04>] sys_sendmsg+0x44/0x80
-> > [    1.909055]  [<ffffffff815d7bf9>] system_call_fastpath+0x16/0x1b
-> > [    1.909055] Code: 44 00 00 41 80 8c 24 a8 00 00 00 04 e9 2f ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 41 8b 84 24 c8 00 00 00 49 03 84 24 d0 00 00 00 <80> 3c 25 10 00 00 00 00 48 8d 50 30 74 0f 48 83 3c 25 08 00 00 
-> > [    1.909055] RIP  [<ffffffffa0037750>] xennet_poll+0x980/0xec0 [xen_netfront]
-> > [    1.909055]  RSP <ffff8800ffc03db8>
-> > [    1.909055] CR2: 0000000000000010
-> > [    1.947298] ---[ end trace 3f4ba742dffbe90d ]---
-> > [    1.947824] Kernel panic - not syncing: Fatal exception in interrupt
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+Example log 1:
+
+[  109.311730] EXT4-fs (ram0): mounting ext2 file system using the ext4 subsystem
+[  109.322127] EXT4-fs (ram0): mounted filesystem without journal. Opts: (null)
+[ 1293.082319] [sched_delayed] sched: RT throttling activated
+[ 7890.377400] BUG: soft lockup - CPU#0 stuck for 1024s! [a.out:3819]
+[ 7890.377400] Modules linked in: ipv6 binfmt_misc
+[ 8989.892529] irq event stamp: 86970
+[ 8989.892529] hardirqs last  enabled at (86969): [<c1070bf5>] do_settimeofday+0x105/0x130
+[ 8989.892529] hardirqs last disabled at (86970): [<c13ed980>] apic_timer_interrupt+0x28/0x34
+[ 8989.892529] softirqs last  enabled at (84344): [<c103a7a2>] __do_softirq+0xf2/0x160
+[ 8989.892529] softirqs last disabled at (84339): [<c1004d07>] do_softirq+0x87/0xd0
+[ 8989.892529] Pid: 3819, comm: a.out Not tainted 3.6.0-rc1-dirty #36 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+[ 8989.892529] EIP: 0060:[<c1070bf9>] EFLAGS: 00000293 CPU: 0
+[ 8989.892529] EIP is at do_settimeofday+0x109/0x130
+[ 8989.892529] EAX: da2f2160 EBX: ddcaff90 ECX: 00000000 EDX: 00000001
+[ 8989.892529] ESI: 167a5ee1 EDI: 00000000 EBP: ddcaff64 ESP: ddcaff44
+[ 8989.892529]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[ 8989.892529] CR0: 8005003b CR2: bfeddfdc CR3: 1a10f000 CR4: 000006d0
+[ 8989.892529] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[ 8989.892529] DR6: ffff0ff0 DR7: 00000400
+[ 8989.892529] Process a.out (pid: 3819, ti=ddcae000 task=da2f2160 task.ti=ddcae000)
+[ 8989.892529] Stack:
+[ 8989.892529]  167a5ee1 00000000 00000293 afe30360 167a5ee1 ddcaff90 00000000 00000000
+[ 8989.892529]  ddcaff80 c1039b8b bfa25ca4 bfa25c9c bfa25ca4 bfa25c9c ddcaff88 ddcaffac
+[ 8989.892529]  c1039c1e fffffde4 00000000 501d1b72 00000bb8 501d1b72 00000003 bfa25ca4
+[ 8989.892529] Call Trace:
+[ 8989.892529]  [<c1039b8b>] do_sys_settimeofday+0x7b/0xe0
+[ 8989.892529]  [<c1039c1e>] sys_settimeofday+0x2e/0x90
+[ 8989.892529]  [<c13eddcc>] sysenter_do_call+0x12/0x32
+[ 8989.892529] Code: 2f 78 c1 e8 8a e6 ff ff b8 90 2f 78 c1 83 05 8c 2f 78 c1 01 e8 d9 c9 37 00 f7 45 e8 00 02 00 00 74 20 e8 db a5 00 00 ff 75 e8 9d <e8> 72 61 fe ff 8b 5d f4 31 c0 8b 75 f8 8b 7d fc 89 ec 5d c3 8d
+[ 8989.892529] Kernel panic - not syncing: softlockup: hung tasks
+[ 8989.892529] Pid: 3819, comm: a.out Not tainted 3.6.0-rc1-dirty #36
+[ 8989.892529] Call Trace:
+[ 8989.892529]  [<c13e9c5c>] panic+0x87/0x196
+[ 8989.892529]  [<c1098281>] watchdog_timer_fn+0x171/0x180
+[ 8989.892529]  [<c10568b8>] hrtimer_run_queues+0xb8/0x270
+[ 8989.892529]  [<c1098110>] ? touch_softlockup_watchdog_sync+0x30/0x30
+[ 8989.892529]  [<c1040978>] run_local_timers+0x8/0x20
+[ 8989.892529]  [<c10409bf>] update_process_times+0x2f/0x70
+[ 8989.892529]  [<c1075625>] tick_periodic+0x25/0x80
+[ 8989.892529]  [<c1075699>] tick_handle_periodic+0x19/0x80
+[ 8989.892529]  [<c1022bcf>] smp_apic_timer_interrupt+0x4f/0x90
+[ 8989.892529]  [<c11e35a4>] ? trace_hardirqs_off_thunk+0xc/0x18
+[ 8989.892529]  [<c13ed987>] apic_timer_interrupt+0x2f/0x34
+[ 8989.892529]  [<c1070bf9>] ? do_settimeofday+0x109/0x130
+[ 8989.892529]  [<c1039b8b>] do_sys_settimeofday+0x7b/0xe0
+[ 8989.892529]  [<c1039c1e>] sys_settimeofday+0x2e/0x90
+[ 8989.892529]  [<c13eddcc>] sysenter_do_call+0x12/0x32
+[ 8989.892529] ------------[ cut here ]------------
+[ 8989.892529] WARNING: at kernel/lockdep.c:2592 trace_hardirqs_on_caller+0x15d/0x1c0()
+[ 8989.892529] Hardware name: VMware Virtual Platform
+[ 8989.892529] Modules linked in: ipv6 binfmt_misc
+[ 8989.892529] Pid: 3819, comm: a.out Not tainted 3.6.0-rc1-dirty #36
+[ 8989.892529] Call Trace:
+[ 8989.892529]  [<c103215d>] warn_slowpath_common+0x6d/0xa0
+[ 8989.892529]  [<c107b16d>] ? trace_hardirqs_on_caller+0x15d/0x1c0
+[ 8989.892529]  [<c107b16d>] ? trace_hardirqs_on_caller+0x15d/0x1c0
+[ 8989.892529]  [<c13e9d2c>] ? panic+0x157/0x196
+[ 8989.892529]  [<c10321ad>] warn_slowpath_null+0x1d/0x20
+[ 8989.892529]  [<c107b16d>] trace_hardirqs_on_caller+0x15d/0x1c0
+[ 8989.892529]  [<c107b1db>] trace_hardirqs_on+0xb/0x10
+[ 8989.892529]  [<c13e9d2c>] panic+0x157/0x196
+[ 8989.892529]  [<c1098281>] watchdog_timer_fn+0x171/0x180
+[ 8989.892529]  [<c10568b8>] hrtimer_run_queues+0xb8/0x270
+[ 8989.892529]  [<c1098110>] ? touch_softlockup_watchdog_sync+0x30/0x30
+[ 8989.892529]  [<c1040978>] run_local_timers+0x8/0x20
+[ 8989.892529]  [<c10409bf>] update_process_times+0x2f/0x70
+[ 8989.892529]  [<c1075625>] tick_periodic+0x25/0x80
+[ 8989.892529]  [<c1075699>] tick_handle_periodic+0x19/0x80
+[ 8989.892529]  [<c1022bcf>] smp_apic_timer_interrupt+0x4f/0x90
+[ 8989.892529]  [<c11e35a4>] ? trace_hardirqs_off_thunk+0xc/0x18
+[ 8989.892529]  [<c13ed987>] apic_timer_interrupt+0x2f/0x34
+[ 8989.892529]  [<c1070bf9>] ? do_settimeofday+0x109/0x130
+[ 8989.892529]  [<c1039b8b>] do_sys_settimeofday+0x7b/0xe0
+[ 8989.892529]  [<c1039c1e>] sys_settimeofday+0x2e/0x90
+[ 8989.892529]  [<c13eddcc>] sysenter_do_call+0x12/0x32
+[ 8989.892529] ---[ end trace 2cc59ba688ae11e6 ]---
+
+Example log 2:
+
+[   32.966527] CPA self-test:
+[   32.968959]  4k 131072 large 0 gb 0 x 131072[c0000000-dffff000] miss 0
+[   32.981918]  4k 131072 large 0 gb 0 x 131072[c0000000-dffff000] miss 0
+[   32.994237]  4k 131072 large 0 gb 0 x 131072[c0000000-dffff000] miss 0
+[   32.996998] ok.
+[ 1144.112407] [sched_delayed] sched: RT throttling activated
+[ 2247.683216] BUG: soft lockup - CPU#0 stuck for 1024s! [smbd:3530]
+[ 2247.683216] Modules linked in: ipv6 binfmt_misc
+[ 2247.683216] irq event stamp: 45100
+[ 2247.683216] hardirqs last  enabled at (45099): [<c10b3f95>] get_page_from_freelist+0x355/0x580
+[ 2247.683216] hardirqs last disabled at (45100): [<c13ed980>] apic_timer_interrupt+0x28/0x34
+[ 2247.683216] softirqs last  enabled at (43784): [<c103a7a2>] __do_softirq+0xf2/0x160
+[ 2247.683216] softirqs last disabled at (43771): [74781.658009] BUG: soft lockup - CPU#1 stuck for 66529s! [a.out:3581]
+[74781.658022] Modules linked in: ipv6 binfmt_misc
+[74781.658038] irq event stamp: 28028
+[74781.658038] hardirqs last  enabled at (28027): [<c1070ac7>] timekeeping_inject_offset+0xc7/0xf0
+[74781.658038] hardirqs last disabled at (28028): [<c13ed980>] apic_timer_interrupt+0x28/0x34
+[74781.658038] softirqs last  enabled at (27372): [<c103a7a2>] __do_softirq+0xf2/0x160
+[74781.658038] softirqs last disabled at (27369): [<c1004d07>] do_softirq+0x87/0xd0
+[74781.658038] Pid: 3581, comm: a.out Not tainted 3.6.0-rc1-dirty #36 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+[74781.658038] EIP: 0060:[<c1070ac9>] EFLAGS: 00000293 CPU: 1
+[74781.658038] EIP is at timekeeping_inject_offset+0xc9/0xf0
+[74781.658038] EAX: da2ae760 EBX: 00000293 ECX: 00000000 EDX: 00000001
+[74781.658038] ESI: 00000000 EDI: da339f20 EBP: da339edc ESP: da339ec4
+[74781.658038]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[74781.658038] CR0: 8005003b CR2: b773a070 CR3: 1e0f5000 CR4: 000006d0
+[74781.658038] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[74781.658038] DR6: ffff0ff0 DR7: 00000400
+[74781.658038] Process a.out (pid: 3581, ti=da338000 task=da2ae760 task.ti=da338000)
+[74781.658038] Stack:
+[74781.658038]  078ac4bb 00000000 afe2ff10 078ac4bb da339f20 bf8f2088 da339f18 c1071299
+[74781.658038]  da339f20 da339f04 c10c6d00 00000001 00000002 00000000 00000000 00000080
+[74781.658038]  da339f18 c11e38a4 da339f20 bf8f2088 bf8f2000 da339fac c103a05f 00000100
+[74781.658038] Call Trace:
+[74781.658038]  [<c1071299>] do_adjtimex+0x509/0x5e0
+[74781.658038]  [<c10c6d00>] ? might_fault+0x90/0xa0
+[74781.658038]  [<c11e38a4>] ? _copy_from_user+0x34/0x80
+[74781.658038]  [<c103a05f>] sys_adjtimex+0x4f/0x80
+[74781.658038]  [<c13eddcc>] sysenter_do_call+0x12/0x32
+[74781.658038] Code: 64 2f 78 c1 b8 01 00 00 00 e8 b4 e7 ff ff b8 90 2f 78 c1 83 05 8c 2f 78 c1 01 e8 03 cb 37 00 f6 c7 02 74 16 e8 09 a7 00 00 53 9d <e8> a2 62 fe ff 31 c0 83 c4 10 5b 5e 5d c3 90 53 9d e8 91 6d 00
+[74781.658038] Kernel panic - not syncing: softlockup: hung tasks
+[74781.658038] Pid: 3581, comm: a.out Not tainted 3.6.0-rc1-dirty #36
+[74781.658038] Call Trace:
+[74781.658038]  [<c13e9c5c>] panic+0x87/0x196
+[74781.658038]  [<c1098281>] watchdog_timer_fn+0x171/0x180
+[74781.658038]  [<c10568b8>] hrtimer_run_queues+0xb8/0x270
+[74781.658038]  [<c1062552>] ? sched_clock_local+0xb2/0x190
+[74781.658038]  [<c1098110>] ? touch_softlockup_watchdog_sync+0x30/0x30
+[74781.658038]  [<c1040978>] run_local_timers+0x8/0x20
+[74781.658038]  [<c10409bf>] update_process_times+0x2f/0x70
+[74781.658038]  [<c1075625>] tick_periodic+0x25/0x80
+[74781.658038]  [<c1075699>] tick_handle_periodic+0x19/0x80
+[74781.658038]  [<c1022bcf>] smp_apic_timer_interrupt+0x4f/0x90
+[74781.658038]  [<c11e35a4>] ? trace_hardirqs_off_thunk+0xc/0x18
+[74781.658038]  [<c13ed987>] apic_timer_interrupt+0x2f/0x34
+[74781.658038]  [<c1070ac9>] ? timekeeping_inject_offset+0xc9/0xf0
+[74781.658038]  [<c1071299>] do_adjtimex+0x509/0x5e0
+[74781.658038]  [<c10c6d00>] ? might_fault+0x90/0xa0
+[74781.658038]  [<c11e38a4>] ? _copy_from_user+0x34/0x80
+[74781.658038]  [<c103a05f>] sys_adjtimex+0x4f/0x80
+[74781.658038]  [<c13eddcc>] sysenter_do_call+0x12/0x32
+[ 2247.683216] [<c1004d07>] do_softirq+0x87/0xd0
+[ 2247.683216] Pid: 3530, comm: smbd Not tainted 3.6.0-rc1-dirty #36 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+[ 2247.683216] EIP: 0060:[<c102cb93>] EFLAGS: 00000202 CPU: 0
+[ 2247.683216] EIP is at kernel_map_pages+0xa3/0x100
+[ 2247.683216] EAX: 000006d0 EBX: dfb11b9c ECX: 00000650 EDX: 00000202
+[ 2247.683216] ESI: 00000001 EDI: d756fd20 EBP: d756fd30 ESP: d756fcf8
+[ 2247.683216]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[ 2247.683216] CR0: 8005003b CR2: b70e7320 CR3: 175dc000 CR4: 000006d0
+[ 2247.683216] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[ 2247.683216] DR6: ffff0ff0 DR7: 00000400
+[ 2247.683216] Process smbd (pid: 3530, ti=d756e000 task=de2b0520 task.ti=d756e000)
+[ 2247.683216] Stack:
+[ 2247.683216]  00000001 d756fd20 00000003 00000000 00000001 00000001 00019b6f 00000000
+[ 2247.683216]  00000000 00000000 d9b70000 00000001 00000001 00000000 d756fd9c c10b3e58
+[ 2247.683216]  00000001 00000041 ffffffff 00000001 001974cc 00000000 ffffffff 00000000
+[ 2247.683216] Call Trace:
+[ 2247.683216]  [<c10b3e58>] get_page_from_freelist+0x218/0x580
+[ 2247.683216]  [<c10b42b6>] __alloc_pages_nodemask+0xf6/0x650
+[ 2247.683216]  [<c10db7e2>] cache_alloc_refill+0x3d2/0x800
+[ 2247.683216]  [<c10d0340>] ? anon_vma_fork+0x50/0xd0
+[ 2247.683216]  [<c10db3ca>] kmem_cache_alloc+0x12a/0x170
+[ 2247.683216]  [<c10d0340>] anon_vma_fork+0x50/0xd0
+[ 2247.683216]  [<c1030572>] dup_mm+0x1a2/0x3c0
+[ 2247.683216]  [<c1030f97>] copy_process+0x727/0xf30
+[ 2247.683216]  [<c1031893>] do_fork+0x53/0x280
+[ 2247.683216]  [<c10c6cb6>] ? might_fault+0x46/0xa0
+[ 2247.683216]  [<c10c6d00>] ? might_fault+0x90/0xa0
+[ 2247.683216]  [<c10c6cb6>] ? might_fault+0x46/0xa0
+[ 2247.683216]  [<c11e3923>] ? copy_to_user+0x33/0x70
+[ 2247.683216]  [<c100a17f>] sys_clone+0x2f/0x40
+[ 2247.683216]  [<c13edf0d>] ptregs_clone+0x15/0x28
+[ 2247.683216]  [<c13eddcc>] ? sysenter_do_call+0x12/0x32
+[ 2247.683216] Code: 20 75 15 0f 20 d8 0f 22 d8 8b 5d f4 8b 75 f8 8b 7d fc 89 ec 5d c3 66 90 9c 5a fa 0f 20 e0 89 c1 80 e1 7f 0f 22 e1 0f 22 e0 52 9d <8b> 5d f4 8b 75 f8 8b 7d fc 89 ec 5d c3 83 3d 9c 80 ca c1 02 74
+
+Example log 3:
+
+[   33.144462] CPA self-test:
+[   33.147052]  4k 131072 large 0 gb 0 x 131072[c0000000-dffff000] miss 0
+[   33.159948]  4k 131072 large 0 gb 0 x 131072[c0000000-dffff000] miss 0
+[   33.170339]  4k 131072 large 0 gb 0 x 131072[c0000000-dffff000] miss 0
+[   33.173502] ok.
+[ 9935.135720] [sched_delayed] sched: RT throttling activated
+[11034.133140] BUG: soft lockup - CPU#0 stuck for 1024s! [a.out:3585]
+[11034.133140] Modules linked in: ipv6 binfmt_misc
+[11034.133140] irq event stamp: 14150
+[11034.133140] hardirqs last  enabled at (14149): [<c1070bf5>] do_settimeofday+0x105/0x130
+[11034.133140] hardirqs last disabled at (14150): [<c13ed980>] apic_timer_interrupt+0x28/0x34
+[11034.133140] softirqs last  enabled at (12282): [<c103a7a2>] __do_softirq+0xf2/0x160
+[11034.133140] softirqs last disabled at (12267): [<c1004d07>] do_softirq+0x87/0xd0
+[11034.133140] Pid: 3585, comm: a.out Not tainted 3.6.0-rc1-dirty #36 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+[11034.133140] EIP: 0060:[<c1070bf9>] EFLAGS: 00000293 CPU: 0
+[11034.133140] EIP is at do_settimeofday+0x109/0x130
+[11034.133140] EAX: d9a52260 EBX: ddca9f90 ECX: 00000000 EDX: 00000001
+[11034.133140] ESI: 2564b881 EDI: 00000000 EBP: ddca9f64 ESP: ddca9f44
+[11034.133140]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[11034.133140] CR0: 8005003b CR2: b77b2000 CR3: 1e4f0000 CR4: 000006d0
+[11034.133140] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[11034.133140] DR6: ffff0ff0 DR7: 00000400
+[11034.133140] Process a.out (pid: 3585, ti=ddca8000 task=d9a52260 task.ti=ddca8000)
+[11034.133140] Stack:
+[11034.133140]  2564b881 00000000 00000293 afe2fc28 2564b881 ddca9f90 00000000 00000000
+[11034.133140]  ddca9f80 c1039b8b bf9ceaa8 bf9ceaa0 bf9ceaa8 bf9ceaa0 ddca9f88 ddca9fac
+[11034.133140]  c1039c1e fffffde4 00000000 501d2ef1 00009088 501d2ef1 00000025 bf9ceaa8
+[11034.133140] Call Trace:
+[11034.133140]  [<c1039b8b>] do_sys_settimeofday+0x7b/0xe0
+[11034.133140]  [<c1039c1e>] sys_settimeofday+0x2e/0x90
+[11034.133140]  [<c13eddcc>] sysenter_do_call+0x12/0x32
+[11034.133140] Code: 2f 78 c1 e8 8a e6 ff ff b8 90 2f 78 c1 83 05 8c 2f 78 c1 01 e8 d9 c9 37 00 f7 45 e8 00 02 00 00 74 20 e8 db a5 00 00 ff 75 e8 9d <e8> 72 61 fe ff 8b 5d f4 31 c0 8b 75 f8 8b 7d fc 89 ec 5d c3 8d
+[11034.133140] Kernel panic - not syncing: softlockup: hung tasks
+[11034.133140] Pid: 3585, comm: a.out Not tainted 3.6.0-rc1-dirty #36
+[11034.133140] Call Trace:
+[11034.133140]  [<c13e9c5c>] panic+0x87/0x196
+[11034.133140]  [<c1098281>] watchdog_timer_fn+0x171/0x180
+[11034.133140]  [<c10568b8>] hrtimer_run_queues+0xb8/0x270
+[11034.133140]  [<c1098110>] ? touch_softlockup_watchdog_sync+0x30/0x30
+[12133.210650]  [<c1040978>] run_local_timers+0x8/0x20
+[12133.210650]  [<c10409bf>] update_process_times+0x2f/0x70
+[12133.210650]  [<c1075625>] tick_periodic+0x25/0x80
+[12133.210650]  [<c1075699>] tick_handle_periodic+0x19/0x80
+[12133.210650]  [<c1022bcf>] smp_apic_timer_interrupt+0x4f/0x90
+[12133.210650]  [<c11e35a4>] ? trace_hardirqs_off_thunk+0xc/0x18
+[12133.210650]  [<c13ed987>] apic_timer_interrupt+0x2f/0x34
+[12133.210650]  [<c1070bf9>] ? do_settimeofday+0x109/0x130
+[12133.210650]  [<c1039b8b>] do_sys_settimeofday+0x7b/0xe0
+[12133.210650]  [<c1039c1e>] sys_settimeofday+0x2e/0x90
+[12133.210650]  [<c13eddcc>] sysenter_do_call+0x12/0x32
+[12133.210650] ------------[ cut here ]------------
+[12133.210650] WARNING: at kernel/lockdep.c:2592 trace_hardirqs_on_caller+0x15d/0x1c0()
+[12133.210650] Hardware name: VMware Virtual Platform
+[12133.210650] Modules linked in: ipv6 binfmt_misc
+[12133.210650] Pid: 3585, comm: a.out Not tainted 3.6.0-rc1-dirty #36
+[12133.210650] Call Trace:
+[12133.210650]  [<c103215d>] warn_slowpath_common+0x6d/0xa0
+[12133.210650]  [<c107b16d>] ? trace_hardirqs_on_caller+0x15d/0x1c0
+[12133.210650]  [<c107b16d>] ? trace_hardirqs_on_caller+0x15d/0x1c0
+[12133.210650]  [<c13e9d2c>] ? panic+0x157/0x196
+[12133.210650]  [<c10321ad>] warn_slowpath_null+0x1d/0x20
+[12133.210650]  [<c107b16d>] trace_hardirqs_on_caller+0x15d/0x1c0
+[12133.210650]  [<c107b1db>] trace_hardirqs_on+0xb/0x10
+[12133.210650]  [<c13e9d2c>] panic+0x157/0x196
+[12133.210650]  [<c1098281>] watchdog_timer_fn+0x171/0x180
+[12133.210650]  [<c10568b8>] hrtimer_run_queues+0xb8/0x270
+[12133.210650]  [<c1098110>] ? touch_softlockup_watchdog_sync+0x30/0x30
+[12133.210650]  [<c1040978>] run_local_timers+0x8/0x20
+[12133.210650]  [<c10409bf>] update_process_times+0x2f/0x70
+[12133.210650]  [<c1075625>] tick_periodic+0x25/0x80
+[12133.210650]  [<c1075699>] tick_handle_periodic+0x19/0x80
+[12133.210650]  [<c1022bcf>] smp_apic_timer_interrupt+0x4f/0x90
+[12133.210650]  [<c11e35a4>] ? trace_hardirqs_off_thunk+0xc/0x18
+[12133.210650]  [<c13ed987>] apic_timer_interrupt+0x2f/0x34
+[12133.210650]  [<c1070bf9>] ? do_settimeofday+0x109/0x130
+[12133.210650]  [<c1039b8b>] do_sys_settimeofday+0x7b/0xe0
+[12133.210650]  [<c1039c1e>] sys_settimeofday+0x2e/0x90
+[12133.210650]  [<c13eddcc>] sysenter_do_call+0x12/0x32
+[12133.210650] ---[ end trace 70fa0f99035de9f7 ]---
+
+Regards.
