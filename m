@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab2HDMUt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 08:20:49 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51709 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078Ab2HDMUo (ORCPT
+	id S1753834Ab2HDMVG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 08:21:06 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53008 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab2HDMUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 08:20:44 -0400
+	Sat, 4 Aug 2012 08:20:48 -0400
 From: Jiang Liu <jiang.liu@huawei.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
@@ -20,10 +20,10 @@ CC: Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
         <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: [RFC PATCH v2 09/16] ACPIHP: implement utility functions to support  system device hotplug
-Date: Sat, 4 Aug 2012 20:13:56 +0800
-Message-ID: <1344082443-4608-10-git-send-email-jiang.liu@huawei.com>
+        Jiang Liu <liuj97@gmail.com>, Gaohuai Han <hangaohuai@huawei.com>
+Subject: [RFC PATCH v2 08/16] ACPIHP: provide interfaces to associate driver  specific data to hotplug slots
+Date: Sat, 4 Aug 2012 20:13:55 +0800
+Message-ID: <1344082443-4608-9-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
 References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
@@ -37,126 +37,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-This patch implements some utility funcitons to support system device hotplug.
+This patch provides interfaces to attach/detach/get class driver specific data
+to/from ACPI hotplug slots.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
-Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
+Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
 ---
- drivers/acpi/hotplug/core.c |   80 +++++++++++++++++++++++++++++++++++++++++++
- include/acpi/acpi_hotplug.h |    9 +++++
- 2 files changed, 89 insertions(+)
+ drivers/acpi/hotplug/core.c |   88 +++++++++++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_hotplug.h |    8 ++++
+ 2 files changed, 96 insertions(+)
 
 diff --git a/drivers/acpi/hotplug/core.c b/drivers/acpi/hotplug/core.c
-index 5e78867..230375e 100644
+index 14b3d61..5e78867 100644
 --- a/drivers/acpi/hotplug/core.c
 +++ b/drivers/acpi/hotplug/core.c
-@@ -634,6 +634,86 @@ int acpihp_remove_device_list(struct klist *dev_list)
- }
- EXPORT_SYMBOL_GPL(acpihp_remove_device_list);
+@@ -34,11 +34,18 @@
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_hotplug.h>
  
-+bool acpihp_slot_present(struct acpihp_slot *slot)
-+{
-+	acpi_status status;
-+	unsigned long long sta;
++struct acpihp_drv_data {
++	struct list_head		node;
++	struct class_interface		*key;
++	void				*data;
++};
 +
-+	/* A hotplug slot must implement ACPI _STA method */
-+	status = acpi_evaluate_integer(slot->handle,
-+				       METHOD_NAME__STA, NULL, &sta);
-+	if (ACPI_FAILURE(status)) {
-+		ACPIHP_WARN("fails to evaluate _STA for %p.\n", slot->name);
-+		return false;
+ #define to_acpihp_slot(d) container_of(d, struct acpihp_slot, dev)
+ 
+ extern struct acpi_device *acpi_root;
+ 
+ static DEFINE_MUTEX(acpihp_mutex);
++static DEFINE_MUTEX(acpihp_drvdata_mutex);
+ static int acpihp_class_count;
+ static struct kset *acpihp_slot_kset;
+ 
+@@ -407,6 +414,87 @@ char *acpihp_get_slot_type_name(enum acpihp_slot_type type)
+ }
+ EXPORT_SYMBOL_GPL(acpihp_get_slot_type_name);
+ 
++int acpihp_slot_attach_drv_data(struct acpihp_slot *slot,
++				struct class_interface *drv, void *data)
++{
++	struct acpihp_drv_data *dp, *cp;
++
++	if (slot == NULL || drv == NULL) {
++		ACPIHP_DEBUG("invalid parameters.\n");
++		return -EINVAL;
 +	}
 +
-+	return !!(sta & ACPI_STA_DEVICE_PRESENT);
++	dp = kzalloc(sizeof(*dp), GFP_KERNEL);
++	if (dp == NULL)
++		return -ENOMEM;
++
++	INIT_LIST_HEAD(&dp->node);
++	dp->key = drv;
++	dp->data = data;
++
++	mutex_lock(&acpihp_drvdata_mutex);
++	list_for_each_entry(cp, &slot->drvdata_list, node)
++		if (cp->key == drv) {
++			mutex_unlock(&acpihp_drvdata_mutex);
++			kfree(dp);
++			return -EEXIST;
++		}
++	list_add(&dp->node, &slot->drvdata_list);
++	mutex_unlock(&acpihp_drvdata_mutex);
++
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(acpihp_slot_present);
++EXPORT_SYMBOL_GPL(acpihp_slot_attach_drv_data);
 +
-+bool acpihp_slot_powered(struct acpihp_slot *slot)
++int acpihp_slot_detach_drv_data(struct acpihp_slot *slot,
++				struct class_interface *drv, void **data)
 +{
-+	acpi_status status;
-+	unsigned long long sta;
++	struct acpihp_drv_data *cp;
 +
-+	/* hotplug slot must implement _STA method */
-+	status = acpi_evaluate_integer(slot->handle,
-+				       METHOD_NAME__STA, NULL, &sta);
-+	if (ACPI_FAILURE(status)) {
-+		ACPIHP_WARN("fails to evaluate _STA for %p.\n", slot->name);
-+		return false;
++	if (slot == NULL || drv == NULL || data == NULL) {
++		ACPIHP_DEBUG("invalid parameters.\n");
++		return -EINVAL;
 +	}
 +
-+	if ((sta & ACPI_STA_DEVICE_PRESENT) &&
-+	    ((sta & ACPI_STA_DEVICE_ENABLED) ||
-+	    (sta & ACPI_STA_DEVICE_FUNCTIONING)))
-+		return true;
++	mutex_lock(&acpihp_drvdata_mutex);
++	list_for_each_entry(cp, &slot->drvdata_list, node)
++		if (cp->key == drv) {
++			list_del(&cp->node);
++			*data = cp->data;
++			mutex_unlock(&acpihp_drvdata_mutex);
++			kfree(cp);
++			return 0;
++		}
++	mutex_unlock(&acpihp_drvdata_mutex);
 +
-+	return false;
++	return -ENOENT;
 +}
-+EXPORT_SYMBOL_GPL(acpihp_slot_powered);
++EXPORT_SYMBOL_GPL(acpihp_slot_detach_drv_data);
 +
-+void acpihp_slot_set_flag(struct acpihp_slot *slot, u32 flags)
++int acpihp_slot_get_drv_data(struct acpihp_slot *slot,
++			     struct class_interface *drv, void **data)
 +{
-+	mutex_lock(&slot->slot_mutex);
-+	slot->flags |= flags;
-+	mutex_unlock(&slot->slot_mutex);
-+}
-+EXPORT_SYMBOL_GPL(acpihp_slot_set_flag);
++	int ret = -ENOENT;
++	struct acpihp_drv_data *cp;
 +
-+void acpihp_slot_clear_flag(struct acpihp_slot *slot, u32 flags)
-+{
-+	mutex_lock(&slot->slot_mutex);
-+	slot->flags &= ~flags;
-+	mutex_unlock(&slot->slot_mutex);
-+}
-+EXPORT_SYMBOL_GPL(acpihp_slot_clear_flag);
-+
-+u32 acpihp_slot_get_flag(struct acpihp_slot *slot, u32 flags)
-+{
-+	mutex_lock(&slot->slot_mutex);
-+	flags &= slot->flags;
-+	mutex_unlock(&slot->slot_mutex);
-+
-+	return flags;
-+}
-+EXPORT_SYMBOL_GPL(acpihp_slot_get_flag);
-+
-+void acpihp_slot_change_state(struct acpihp_slot *slot,
-+			      enum acpihp_slot_state state)
-+{
-+	if (state < ACPIHP_SLOT_STATE_UNKNOWN ||
-+	    state > ACPIHP_SLOT_STATE_MAX) {
-+		ACPIHP_WARN("slot state %d is invalid.\n", state);
-+		BUG_ON(state);
++	if (slot == NULL || drv == NULL || data == NULL) {
++		ACPIHP_DEBUG("invalid parameters.\n");
++		return -EINVAL;
 +	}
 +
-+	mutex_lock(&slot->slot_mutex);
-+	slot->state = state;
-+	mutex_unlock(&slot->slot_mutex);
-+}
-+EXPORT_SYMBOL_GPL(acpihp_slot_change_state);
++	mutex_lock(&acpihp_drvdata_mutex);
++	list_for_each_entry(cp, &slot->drvdata_list, node)
++		if (cp->key == drv) {
++			*data = cp->data;
++			ret = 0;
++			break;
++		}
++	mutex_unlock(&acpihp_drvdata_mutex);
 +
- /* SYSFS interfaces */
- static ssize_t acpihp_slot_object_show(struct device *d,
- 		struct device_attribute *attr, char *buf)
++	return ret;
++}
++EXPORT_SYMBOL_GPL(acpihp_slot_get_drv_data);
++
+ /*
+  * slot_ops should be valid during the life cycle of a slot, so no protection.
+  */
 diff --git a/include/acpi/acpi_hotplug.h b/include/acpi/acpi_hotplug.h
-index 1d43079..a13d9f0 100644
+index 2589ccb..1d43079 100644
 --- a/include/acpi/acpi_hotplug.h
 +++ b/include/acpi/acpi_hotplug.h
-@@ -289,6 +289,15 @@ extern int acpihp_slot_remove_device(struct acpihp_slot *slot,
- 				     struct device *dev);
- extern int acpihp_remove_device_list(struct klist *dev_list);
+@@ -256,6 +256,14 @@ extern acpi_status acpihp_slot_get_capabilities(struct acpihp_slot *slot,
+ extern acpi_status acpihp_slot_poweron(struct acpihp_slot *slot);
+ extern acpi_status acpihp_slot_poweroff(struct acpihp_slot *slot);
  
-+/* Utility Functions */
-+extern bool acpihp_slot_present(struct acpihp_slot *slot);
-+extern bool acpihp_slot_powered(struct acpihp_slot *slot);
-+extern void acpihp_slot_set_flag(struct acpihp_slot *slot, u32 flags);
-+extern void acpihp_slot_clear_flag(struct acpihp_slot *slot, u32 flags);
-+extern u32 acpihp_slot_get_flag(struct acpihp_slot *slot, u32 flags);
-+extern void acpihp_slot_change_state(struct acpihp_slot *slot,
-+				     enum acpihp_slot_state state);
++/* Help routines to assoicate driver data with hotplug slot devices. */
++extern int acpihp_slot_attach_drv_data(struct acpihp_slot *slot,
++			struct class_interface *drv, void *data);
++extern int acpihp_slot_detach_drv_data(struct acpihp_slot *slot,
++			struct class_interface *drv, void **data);
++extern int acpihp_slot_get_drv_data(struct acpihp_slot *slot,
++			struct class_interface *drv, void **data);
 +
- extern int acpihp_debug;
- 
- #define ACPIHP_DEBUG(fmt, ...) \
+ /*
+  * Add devices for ACPI objects connecting to an ACPI hotplug slot,
+  * and don't cross the hotplug slot boundary.
 -- 
 1.7.9.5
 
