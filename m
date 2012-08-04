@@ -1,149 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab2HDAjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Aug 2012 20:39:14 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:54770 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab2HDAjL convert rfc822-to-8bit (ORCPT
+	id S1754165Ab2HDAj0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Aug 2012 20:39:26 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:45822 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754124Ab2HDAjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Aug 2012 20:39:11 -0400
+	Fri, 3 Aug 2012 20:39:22 -0400
+Message-ID: <501C6EEF.3030100@xenotime.net>
+Date: Fri, 03 Aug 2012 17:38:07 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20120803190758.34e67b1e@endymion.delvare>
-References: <1344008145-14579-1-git-send-email-amaury.decreme@gmail.com>
- <20120803180712.1e768042@endymion.delvare> <CAPXEm73QX7haU5p7HU+=+qo5wnivt6j+WH5bQGZ0ZK0Ek2Cuyw@mail.gmail.com>
- <20120803190758.34e67b1e@endymion.delvare>
-From: =?UTF-8?Q?Amaury_Decr=C3=AAme?= <amaury.decreme@gmail.com>
-Date: Sat, 4 Aug 2012 00:38:29 +0000
-Message-ID: <CAPXEm72mv=j+D-7FU_VMCy0vesFV2TKa6xufWVcTkpgq=mddcQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] I2C: SIS964: Bus driver
-To: Jean Delvare <khali@linux-fr.org>
-Cc: ben-linux@fluff.org, w.sang@pengutronix.de, rob@landley.net,
-        jeffrey.t.kirsher@intel.com, akpm@linux-foundation.org,
-        davem@davemloft.net, gregkh@linuxfoundation.org, joe@perches.com,
-        ralf@linux-mips.org, dirk.brandewie@gmail.com,
-        jayachandranc@netlogicmicro.com, linux-i2c@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mhoffman@lightlink.com, amalysh@web.de,
-        =?UTF-8?B?5p2O5b+X5p2RIChuZWxzb24p?= <nelson@sis.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com,
+        netdev@vger.kernel.org, David Miller <davem@davemloft.net>
+Subject: [PATCH] cris: fix eth_v10.c build error
+References: <1344002771-21072-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1344002771-21072-1-git-send-email-geert@linux-m68k.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There's nothing confusing, drivers supporting several devices are
-> legion. If the devices are really almost compatible, reusing an
-> existing driver is the way to go.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-With that in mind, here is an alpha preview of what the patch will
-look like if SIS964 support is added in i2c-sis630.
+Fix build error on cris (not tested, no toolchain here):
 
+drivers/net/cris/eth_v10.c: error: too many arguments to function 'e100rxtx_interrupt'
 
-diff --git a/drivers/i2c/busses/i2c-sis630.c b/drivers/i2c/busses/i2c-sis630.c
-index 5d6723b..861d58b 100644
---- a/drivers/i2c/busses/i2c-sis630.c
-+++ b/drivers/i2c/busses/i2c-sis630.c
-@@ -33,6 +33,8 @@
-        Fixed logical error by restoring of Host Master Clock
-    31.07.2003
-        Added block data read/write support.
-+   03.08.2012
-+       Added support of SiS964 - Amaury Decrême <amaury.decreme@gmail.com>
- */
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Mikael Starvik <starvik@axis.com>
+Cc:	Jesper Nilsson <jesper.nilsson@axis.com>
+Cc:	linux-cris-kernel@axis.com
+---
+ drivers/net/cris/eth_v10.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- /*
-@@ -41,6 +43,7 @@
-    Supports:
-        SIS 630
-        SIS 730
-+       SIS 964
-
-    Note: we assume there can only be one device, with one SMBus interface.
- */
-@@ -55,22 +58,22 @@
- #include <linux/acpi.h>
- #include <linux/io.h>
-
-+/* SIS964 id, defined here as we are the only file using it */
-+#define PCI_DEVICE_ID_SI_964   0x0964
-+
- /* SIS630 SMBus registers */
--#define SMB_STS                        0x80    /* status */
--#define SMB_EN                 0x81    /* status enable */
--#define SMB_CNT                        0x82
--#define SMBHOST_CNT            0x83
--#define SMB_ADDR               0x84
--#define SMB_CMD                        0x85
--#define SMB_PCOUNT             0x86    /* processed count */
--#define SMB_COUNT              0x87
--#define SMB_BYTE               0x88    /* ~0x8F data byte field */
--#define SMBDEV_ADDR            0x90
--#define SMB_DB0                        0x91
--#define SMB_DB1                        0x92
--#define SMB_SAA                        0x93
--
--/* register count for request_region */
-+#define SMB_STS                        0x00 + offset   /* status */
-+#define SMB_CNT                        0x02 + offset   /* control */
-+#define SMBHOST_CNT            0x03 + offset   /* host control */
-+#define SMB_ADDR               0x04 + offset   /* address */
-+#define SMB_CMD                        0x05 + offset   /* command */
-+#define SMB_COUNT              0x07 + offset   /* byte count */
-+#define SMB_BYTE               0x08 + offset   /* ~0x8F data byte field */
-+#define SMB_SAA                        0x13 + offset   /* host slave
-alias address */
-+
-+/* register count for request_region
-+ * As we don't use SMB_PCOUNT 20 is ok for SiS630 and SiS964
-+ */
- #define SIS630_SMB_IOREGION    20
-
- /* PCI address constants */
-@@ -107,9 +110,13 @@ static unsigned short acpi_base;
- static int supported[] = {
-        PCI_DEVICE_ID_SI_630,
-        PCI_DEVICE_ID_SI_730,
-+       PCI_DEVICE_ID_SI_964,
-        0 /* terminates the list */
- };
-
-+/* SMB registers offset */
-+static int offset;
-+
- static inline u8 sis630_read(u8 reg)
+--- lnx-36-rc1.orig/drivers/net/cris/eth_v10.c
++++ lnx-36-rc1/drivers/net/cris/eth_v10.c
+@@ -1712,7 +1712,7 @@ e100_set_network_leds(int active)
+ static void
+ e100_netpoll(struct net_device* netdev)
  {
-        return inb(acpi_base + reg);
-@@ -412,6 +419,10 @@ static int __devinit sis630_setup(struct pci_dev
-*sis630_dev)
-                return -ENODEV;
-        }
-
-+       if (supported[i] == PCI_DEVICE_ID_SI_964)
-+               offset = 0xE0;
-+       else
-+               offset = 0x80;
-        /*
-           Enable ACPI first , so we can accsess reg 74-75
-           in acpi io space and read acpi base addr
-@@ -474,6 +485,7 @@ static struct i2c_adapter sis630_adapter = {
-
- static DEFINE_PCI_DEVICE_TABLE(sis630_ids) = {
-        { PCI_DEVICE(PCI_VENDOR_ID_SI, PCI_DEVICE_ID_SI_503) },
-+       { PCI_DEVICE(PCI_VENDOR_ID_SI, PCI_DEVICE_ID_SI_964) },
-        { PCI_DEVICE(PCI_VENDOR_ID_SI, PCI_DEVICE_ID_SI_LPC) },
-        { 0, }
- };
-@@ -482,6 +494,7 @@ MODULE_DEVICE_TABLE (pci, sis630_ids);
-
- static int __devinit sis630_probe(struct pci_dev *dev, const struct
-pci_device_id *id)
- {
-+       dev_dbg(&dev->dev, "salut");
-        if (sis630_setup(dev)) {
-                dev_err(&dev->dev, "SIS630 comp. bus not detected,
-module not inserted.\n");
-                return -ENODEV;
-
-
---
-Amaury Decrême
+-	e100rxtx_interrupt(NETWORK_DMA_TX_IRQ_NBR, netdev, NULL);
++	e100rxtx_interrupt(NETWORK_DMA_TX_IRQ_NBR, netdev);
+ }
+ #endif
+ 
