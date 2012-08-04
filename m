@@ -1,163 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab2HDOhR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 10:37:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33283 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab2HDOhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 10:37:15 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        cascardo@linux.vnet.ibm.com
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH/v2] [trivial] dma: Fix typo various drivers in dma
-Date: Sat,  4 Aug 2012 23:37:53 +0900
-Message-Id: <1344091073-22541-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.12.rc1.17.g9a7365c
-In-Reply-To: <1344004316-12204-1-git-send-email-standby24x7@gmail.com>
-References: <1344004316-12204-1-git-send-email-standby24x7@gmail.com>
+	id S1753232Ab2HDOil (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 10:38:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34506 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752513Ab2HDOij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 10:38:39 -0400
+Date: Sat, 4 Aug 2012 16:37:19 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] page-table walkers vs memory order
+Message-ID: <20120804143719.GB10459@redhat.com>
+References: <1343064870.26034.23.camel@twins>
+ <alpine.LSU.2.00.1207241356350.2094@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1207241356350.2094@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in drivers/dma.
+On Tue, Jul 24, 2012 at 02:51:05PM -0700, Hugh Dickins wrote:
+> Since then, I think THP has made the rules more complicated; but I
+> believe Andrea paid a great deal of attention to that kind of issue.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/dma/at_hdmac.c           | 8 ++++----
- drivers/dma/ep93xx_dma.c         | 2 +-
- drivers/dma/fsldma.c             | 2 +-
- drivers/dma/imx-dma.c            | 4 ++--
- drivers/dma/intel_mid_dma_regs.h | 6 +++---
- drivers/dma/pl330.c              | 2 +-
- drivers/dma/ppc4xx/adma.c        | 2 +-
- drivers/dma/ste_dma40_ll.h       | 2 +-
- 8 files changed, 14 insertions(+), 14 deletions(-)
+There were many issues, one unexpected was
+1a5a9906d4e8d1976b701f889d8f35d54b928f25.
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 3934fcc..9e87315 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -168,9 +168,9 @@ static void atc_desc_put(struct at_dma_chan *atchan, struct at_desc *desc)
- }
- 
- /**
-- * atc_desc_chain - build chain adding a descripor
-- * @first: address of first descripor of the chain
-- * @prev: address of previous descripor of the chain
-+ * atc_desc_chain - build chain adding a descriptor
-+ * @first: address of first descriptor of the chain
-+ * @prev: address of previous descriptor of the chain
-  * @desc: descriptor to queue
-  *
-  * Called from prep_* functions
-@@ -785,7 +785,7 @@ err_out:
- }
- 
- /**
-- * atc_dma_cyclic_fill_desc - Fill one period decriptor
-+ * atc_dma_cyclic_fill_desc - Fill one period descriptor
-  */
- static int
- atc_dma_cyclic_fill_desc(struct dma_chan *chan, struct at_desc *desc,
-diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-index c64917e..bb02fd9 100644
---- a/drivers/dma/ep93xx_dma.c
-+++ b/drivers/dma/ep93xx_dma.c
-@@ -1118,7 +1118,7 @@ fail:
-  * @chan: channel
-  * @dma_addr: DMA mapped address of the buffer
-  * @buf_len: length of the buffer (in bytes)
-- * @period_len: lenght of a single period
-+ * @period_len: length of a single period
-  * @dir: direction of the operation
-  * @context: operation context (ignored)
-  *
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 8f84761..094437b 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -1015,7 +1015,7 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
- 	/*
- 	 * Programming Error
- 	 * The DMA_INTERRUPT async_tx is a NULL transfer, which will
--	 * triger a PE interrupt.
-+	 * trigger a PE interrupt.
- 	 */
- 	if (stat & FSL_DMA_SR_PE) {
- 		chan_dbg(chan, "irq: Programming Error INT\n");
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index fcfeb3c..5a49d8d 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -571,8 +571,8 @@ static void imxdma_tasklet(unsigned long data)
- 	if (desc->desc.callback)
- 		desc->desc.callback(desc->desc.callback_param);
- 
--	/* If we are dealing with a cyclic descriptor keep it on ld_active
--	 * and dont mark the descripor as complete.
-+	/* If we are dealing with a cyclic descriptor, keep it on ld_active
-+	 * and dont mark the descriptor as complete.
- 	 * Only in non-cyclic cases it would be marked as complete
- 	 */
- 	if (imxdma_chan_is_doing_cyclic(imxdmac))
-diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
-index 1bfa926..17b4219 100644
---- a/drivers/dma/intel_mid_dma_regs.h
-+++ b/drivers/dma/intel_mid_dma_regs.h
-@@ -168,9 +168,9 @@ union intel_mid_dma_cfg_hi {
-  * @active_list: current active descriptors
-  * @queue: current queued up descriptors
-  * @free_list: current free descriptors
-- * @slave: dma slave struture
-- * @descs_allocated: total number of decsiptors allocated
-- * @dma: dma device struture pointer
-+ * @slave: dma slave structure
-+ * @descs_allocated: total number of descriptors allocated
-+ * @dma: dma device structure pointer
-  * @busy: bool representing if ch is busy (active txn) or not
-  * @in_use: bool representing if ch is in use or not
-  * @raw_tfr: raw trf interrupt received
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index e4feba6..2343d7d 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -522,7 +522,7 @@ enum desc_status {
- 	/* In the DMAC pool */
- 	FREE,
- 	/*
--	 * Allocted to some channel during prep_xxx
-+	 * Allocated to some channel during prep_xxx
- 	 * Also may be sitting on the work_list.
- 	 */
- 	PREP,
-diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
-index ced9882..f72348d 100644
---- a/drivers/dma/ppc4xx/adma.c
-+++ b/drivers/dma/ppc4xx/adma.c
-@@ -4446,7 +4446,7 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev)
- 		ret = -ENOMEM;
- 		goto err_dma_alloc;
- 	}
--	dev_dbg(&ofdev->dev, "allocted descriptor pool virt 0x%p phys 0x%llx\n",
-+	dev_dbg(&ofdev->dev, "allocated descriptor pool virt 0x%p phys 0x%llx\n",
- 		adev->dma_desc_pool_virt, (u64)adev->dma_desc_pool);
- 
- 	regs = ioremap(res.start, resource_size(&res));
-diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
-index 51e8e53..6d47373 100644
---- a/drivers/dma/ste_dma40_ll.h
-+++ b/drivers/dma/ste_dma40_ll.h
-@@ -202,7 +202,7 @@
- /* LLI related structures */
- 
- /**
-- * struct d40_phy_lli - The basic configration register for each physical
-+ * struct d40_phy_lli - The basic configuration register for each physical
-  * channel.
-  *
-  * @reg_cfg: The configuration register.
--- 
-1.7.12.rc1.17.g9a7365c
+Keep in mind when holding only mmap_sem read mode (walk page range
+speculative mode) or gup_fast, the result is always undefined and
+racey if on the other CPU you have a munmap or mremap or any other pmd
+manging concurrently messing with the mapping you're walking, all we
+have to do is not to crash, it doesn't matter what happens.
 
+The fact you need a barrier() or ACCESS_ONCE to avoid a lockup in a
+while (rcu_dereference()), is no good reason to worry about all
+possible purely theoretical gcc issues.
+
+One important thing that wasn't mentioned so far in this thread is
+also that we entirely relay on gcc for all pagetable and device driver
+writes (to do 1 movq instead of 8 movb), see native_set_pmd and writel.
+
+We must separate all different cases to avoid huge confusion:
+
+1) tmp=*ptr, while(tmp) -> possible, needs barrier or better
+   ACCESS_ONCE if possible
+
+2) orig_pmd = *pmdp before do_wp_huge_page in memory.c -> possible, needs
+   barrier() and it should be possible to convert to ACCESS_ONCE
+
+3) native_set_pmd and friends -> possible but not worth fixing, tried
+   to fix a decade ago for a peace of mind and I was suggested to
+   desist and it didn't bite us yet
+
+4) writel -> possible but same as 3
+
+5) compiler behaving like alpha -> impossible (I may be wrong but I
+   believe so after thinking more on it)
+
+6) I was told a decade ago by Honza to never touch any ram that can
+   change under the compiler unless it's declared volatile (could
+   crash over switch/case statement implemented with a table if the
+   switch/case value is re-read by the compiler).  -> depends, we
+   don't always obey to this rule, clearly gup_fast currently disobeys
+   and even the generic pmd_read_atomic still disobeys (MADV_DONTNEED
+   can zero the pmd). If there's no "switch/case" I'm not aware of
+   other troubles.
+
+7) barrier in pmd_none_or_trans_huge_or_clear_bad -> possible, same
+   issue as 2, full explanation in git show 1a5a9906d4e8d1976b701f
+
+Note: here I'm ignoring CPU reordering, this is only about the compiler.
+
+5 is impossible because:
+
+a) the compiler can't read a guessed address or it can crash the
+   kernel
+
+b) the compiler has no memory to store a "guessed" valid address when
+   the function return and the stack is unwind
+
+For the compiler to behave like alpha, the compiler should read the
+pteval before the pmdp, that it can't do, because it has no address to
+guess from and it would Oops if it really tries to guess it!
+
+So far it was said "compiler can guess the address" but there was no
+valid explanation of how it could do it, and I don't see it, so please
+explain if I'm wrong about the a, b above.
+
+Furthermore the ACCESS_ONCE that Peter's patch added to gup_fast
+pud/pgd can't prevent the compiler to read a guessed pmdp address as a
+volatile variable, before reading the pmdp pointer and compare it with
+the guessed address! So if it's 5 you worry about, when adding
+ACCESS_ONCE in pudp/pgdp/pmdp is useless and won't fix it. You should
+have added a barrier() instead.
+
+> I suspect your arch/x86/mm/gup.c ACCESS_ONCE()s are necessary:
+> gup_fast() breaks as many rules as it can, and in particular may
+> be racing with the freeing of page tables; but I'm not so sure
+> about the pagewalk mods - we could say "cannot do any harm",
+> but I don't like adding lines on that basis.
+
+I agree to add ACCESS_ONCE but because it's case 2, 7 above and it
+could race with free_pgtables of pgd/pud/pmd or MADV_DONTNEED with
+pmd.
+
+The other part of the patch in pagewalk.c is superflous and should be
+dropped: pud/pgd can't change in walk_page_table, it's required to
+hold the mmap_sem at least in read mode (it's not disabling irqs).
+
+The pmd side instead can change but only with THP enabled, and only
+because MADV_DONTNEED (never because of free_pgtables) but it's
+already fully handled through pmd_none_or_trans_huge_or_clear_bad. The
+->pmd_entry callers are required to call pmd_trans_unstable() before
+proceeding as the pmd may have been zeroed out by the time we get
+there. The solution is zero barrier()/ACCESS_ONCE impact for THP=n. If
+there are smp_read_barrier_depends already in alpha pte methods we're
+fine.
+
+Sorry for the long email but without a list that separates all
+possible cases above, I don't think we can understand what we're
+fixing in that patch and why the gup.c part is good.
+
+Peter, I suggest to resend the fix with a more detailed explanataion
+of the 2, 7 kind of race for gup.c only and drop the pagewalk.c.
+
+Thanks,
+Andrea
