@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2HDXIK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 19:08:10 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:46799 "EHLO
+	id S1754208Ab2HDXKf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 19:10:35 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:62423 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab2HDXIH (ORCPT
+	with ESMTP id S1754071Ab2HDXKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 19:08:07 -0400
+	Sat, 4 Aug 2012 19:10:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120723121222.GA27187@avionic-0098.mockup.avionic-design.de>
-References: <1334229961-1844-1-git-send-email-thierry.reding@avionic-design.de>
-	<201205121256.14283.arnd@arndb.de>
-	<20120723121222.GA27187@avionic-0098.mockup.avionic-design.de>
-Date: Sun, 5 Aug 2012 01:08:06 +0200
-Message-ID: <CACRpkdbFY3LaWOQ_7KsXzanfSr1_BE=kL4eugX1psofg6JSM_g@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: Use seq_file's iterator interface
+In-Reply-To: <1343126116.6033.1.camel@phoenix>
+References: <1343126116.6033.1.camel@phoenix>
+Date: Sun, 5 Aug 2012 01:10:32 +0200
+Message-ID: <CACRpkdabQsJ9qQRHi4HRVLKZ81MeNyTRGLvXjGmngn83W9Qqjg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: msic: Fix calculating register address in msic_gpio_to_oreg()
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>,
         Grant Likely <grant.likely@secretlab.ca>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 2:12 PM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-> On Sat, May 12, 2012 at 12:56:14PM +0000, Arnd Bergmann wrote:
+On Tue, Jul 24, 2012 at 12:35 PM, Axel Lin <axel.lin@gmail.com> wrote:
 
->> > This patch was requested by Arnd Bergmann here:
->> >
->> >         http://article.gmane.org/gmane.linux.ports.tegra/3535
->> >
->> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->> > Cc: Linus Walleij <linus.walleij@stericsson.com>
->> > Cc: Grant Likely <grant.likely@secretlab.ca>
->> > Cc: Arnd Bergmann <arnd@arndb.de>
->> > Cc: linux-kernel@vger.kernel.org
->>
->> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> In the case offset is 20 ... 23, the equation to get the register should be:
+>         INTEL_MSIC_GPIO1HV0CTLO - offset + 20
 >
-> Grant, Linus,
+> With above equation, we can get below mapping between offset and the register:
+>         offset is 20: INTEL_MSIC_GPIO1HV0CTLO
+>         offset is 21: INTEL_MSIC_GPIO1HV1CTLO
+>         offset is 22: INTEL_MSIC_GPIO1HV2CTLO
+>         offset is 23: INTEL_MSIC_GPIO1HV3CTLO
 >
-> Is this good to go?
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Applied to my devel branch for the v3.7 cycle,
-thanks!
+Thanks, applied to my fixes branch with Mathias' ACK.
 
 Yours,
 Linus Walleij
