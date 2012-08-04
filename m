@@ -1,118 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab2HDUQf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 16:16:35 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:42089 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604Ab2HDUQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 16:16:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [Regression, post-3.5][PATCH] Revert "NMI watchdog: fix for lockup detector breakage on resume"
-Date: Sat, 4 Aug 2012 22:22:22 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sameer Nanda <snanda@chromium.org>
+	id S1753948Ab2HDUSv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 16:18:51 -0400
+Received: from relay03ant.iops.be ([212.53.5.218]:48231 "EHLO
+	relay03ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099Ab2HDUSs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 16:18:48 -0400
+Message-ID: <501D83A1.7040900@acm.org>
+Date: Sat, 04 Aug 2012 20:18:41 +0000
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Mike Christie <michaelc@cs.wisc.edu>
+CC: Chanho Min <chanho0207@gmail.com>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
+References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com> <501CE4E5.20604@acm.org> <501D51D1.2010806@cs.wisc.edu>
+In-Reply-To: <501D51D1.2010806@cs.wisc.edu>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208042222.22413.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/04/12 16:46, Mike Christie wrote:
+> I think we have to have scsi-ml do a get_device when a sdev is added to
+> the starved entry and then do a put_device when it is removed (must do
+> these under the host lock for the starved entry case too). I am not sure
+> if that is just a hack/papering-over of the problem and there are more
+> issues like this.
 
-Revert commit 45226e9 (NMI watchdog: fix for lockup detector breakage
-on resume) which breaks resume from system suspend on my SH7372
-Mackerel board (by causing a NULL pointer dereference to happen) and
-is generally wrong, because it abuses CPU hotplug notifications in a
-shamelessly blatant way.
+That would result in a more complex patch than the patch at the start of
+this thread, isn't it ? Also, IMHO it would help to document which
+functions in the scsi-ml are called with an sdev reference and which
+ones not. That would make the scsi-ml code easier to verify for issues
+like the one reported at the start of this thread.
 
-The original issue should be addressed through appropriate syscore
-resume callback instead.
+Bart.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- include/linux/sched.h  |    8 --------
- kernel/power/suspend.c |    3 ---
- kernel/watchdog.c      |   21 ++-------------------
- 3 files changed, 2 insertions(+), 30 deletions(-)
-
-Index: linux/include/linux/sched.h
-===================================================================
---- linux.orig/include/linux/sched.h
-+++ linux/include/linux/sched.h
-@@ -334,14 +334,6 @@ static inline void lockup_detector_init(
- }
- #endif
- 
--#if defined(CONFIG_LOCKUP_DETECTOR) && defined(CONFIG_SUSPEND)
--void lockup_detector_bootcpu_resume(void);
--#else
--static inline void lockup_detector_bootcpu_resume(void)
--{
--}
--#endif
--
- #ifdef CONFIG_DETECT_HUNG_TASK
- extern unsigned int  sysctl_hung_task_panic;
- extern unsigned long sysctl_hung_task_check_count;
-Index: linux/kernel/power/suspend.c
-===================================================================
---- linux.orig/kernel/power/suspend.c
-+++ linux/kernel/power/suspend.c
-@@ -178,9 +178,6 @@ static int suspend_enter(suspend_state_t
- 	arch_suspend_enable_irqs();
- 	BUG_ON(irqs_disabled());
- 
--	/* Kick the lockup detector */
--	lockup_detector_bootcpu_resume();
--
-  Enable_cpus:
- 	enable_nonboot_cpus();
- 
-Index: linux/kernel/watchdog.c
-===================================================================
---- linux.orig/kernel/watchdog.c
-+++ linux/kernel/watchdog.c
-@@ -575,7 +575,7 @@ out:
- /*
-  * Create/destroy watchdog threads as CPUs come and go:
-  */
--static int
-+static int __cpuinit
- cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- {
- 	int hotcpu = (unsigned long)hcpu;
-@@ -610,27 +610,10 @@ cpu_callback(struct notifier_block *nfb,
- 	return NOTIFY_OK;
- }
- 
--static struct notifier_block cpu_nfb = {
-+static struct notifier_block __cpuinitdata cpu_nfb = {
- 	.notifier_call = cpu_callback
- };
- 
--#ifdef CONFIG_SUSPEND
--/*
-- * On exit from suspend we force an offline->online transition on the boot CPU
-- * so that the PMU state that was lost while in suspended state gets set up
-- * properly for the boot CPU.  This information is required for restarting the
-- * NMI watchdog.
-- */
--void lockup_detector_bootcpu_resume(void)
--{
--	void *cpu = (void *)(long)smp_processor_id();
--
--	cpu_callback(&cpu_nfb, CPU_DEAD_FROZEN, cpu);
--	cpu_callback(&cpu_nfb, CPU_UP_PREPARE_FROZEN, cpu);
--	cpu_callback(&cpu_nfb, CPU_ONLINE_FROZEN, cpu);
--}
--#endif
--
- void __init lockup_detector_init(void)
- {
- 	void *cpu = (void *)(long)smp_processor_id();
