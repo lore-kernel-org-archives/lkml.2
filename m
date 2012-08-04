@@ -1,183 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab2HDEDf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 00:03:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45263 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab2HDEDa (ORCPT
+	id S1751546Ab2HDEMM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 00:12:12 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:36143 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab2HDEMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 00:03:30 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
-        linux-wireless@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [RFC PATCH v1 15/15] wireless: ath9k-htc: only load firmware in need
-Date: Sat,  4 Aug 2012 12:01:30 +0800
-Message-Id: <1344052890-31935-16-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
-References: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
+	Sat, 4 Aug 2012 00:12:06 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Chris Jones <chrisjones@spin.net.au>
+Cc: linux-kernel@vger.kernel.org, david@lang.hm
+Subject: Re: Gaming and the kernel
+In-Reply-To: Your message of "Sat, 04 Aug 2012 10:51:49 +1000."
+             <501C7225.5060405@spin.net.au>
+From: valdis.kletnieks@vt.edu
+References: <501C4CCE.8020806@spin.net.au> <501C545C.40601@gmail.com> <501C6BDF.9090803@spin.net.au> <alpine.DEB.2.02.1208031730100.8170@asgard.lang.hm>
+            <501C7225.5060405@spin.net.au>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1344053521_2048P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sat, 04 Aug 2012 00:12:02 -0400
+Message-ID: <168124.1344053522@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 209.85.213.180 mail-yx0-f180.google.com valdis@vt.edu 4 softfail
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.501CA115.002F,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not necessary to hold the firmware memory during the whole
-driver lifetime, and obviously it does waste memory. Suppose there
-are 4 ath9k-htc usb dongles working, kernel has to consume about
-4*50KBytes RAM to cache firmware for all dongles. After applying the
-patch, kernel only caches one single firmware image in RAM for
-all ath9k-htc devices just during system suspend/resume cycle.
+--==_Exmh_1344053521_2048P
+Content-Type: text/plain; charset=us-ascii
 
-When system is ready for loading firmware, ath9k-htc can request
-the loading from usersapce. During system resume, ath9k-htc still
-can load the firmware which was cached in kernel memory before
-system suspend.
+On Sat, 04 Aug 2012 10:51:49 +1000, Chris Jones said:
 
-Cc: linux-wireless@vger.kernel.org
-Cc: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
-Cc: Jouni Malinen <jouni@qca.qualcomm.com>
-Cc: Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>
-Cc: Senthil Balasubramanian <senthilb@qca.qualcomm.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/net/wireless/ath/ath9k/hif_usb.c |   34 ++++++++++++++++++++----------
- drivers/net/wireless/ath/ath9k/hif_usb.h |    4 +++-
- 2 files changed, 26 insertions(+), 12 deletions(-)
+> documentation, hopefully things will work out. And this might actually
+> be the kick in the rear-end that AMD and NVIDIA need to get into gear
+> and start developer some useful and Windows equivalent hardware drivers
+> for ALL their cards for Linux.
 
-diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.c b/drivers/net/wireless/ath/ath9k/hif_usb.c
-index aa327ad..d35a19c 100644
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -973,8 +973,8 @@ static void ath9k_hif_usb_dealloc_urbs(struct hif_device_usb *hif_dev)
- static int ath9k_hif_usb_download_fw(struct hif_device_usb *hif_dev)
- {
- 	int transfer, err;
--	const void *data = hif_dev->firmware->data;
--	size_t len = hif_dev->firmware->size;
-+	const void *data = hif_dev->fw_data;
-+	size_t len = hif_dev->fw_size;
- 	u32 addr = AR9271_FIRMWARE;
- 	u8 *buf = kzalloc(4096, GFP_KERNEL);
- 	u32 firm_offset;
-@@ -1017,7 +1017,7 @@ static int ath9k_hif_usb_download_fw(struct hif_device_usb *hif_dev)
- 		return -EIO;
- 
- 	dev_info(&hif_dev->udev->dev, "ath9k_htc: Transferred FW: %s, size: %ld\n",
--		 hif_dev->fw_name, (unsigned long) hif_dev->firmware->size);
-+		 hif_dev->fw_name, (unsigned long) hif_dev->fw_size);
- 
- 	return 0;
- }
-@@ -1099,11 +1099,11 @@ static void ath9k_hif_usb_firmware_cb(const struct firmware *fw, void *context)
- 
- 	hif_dev->htc_handle = ath9k_htc_hw_alloc(hif_dev, &hif_usb,
- 						 &hif_dev->udev->dev);
--	if (hif_dev->htc_handle == NULL) {
--		goto err_fw;
--	}
-+	if (hif_dev->htc_handle == NULL)
-+		goto err_dev_alloc;
- 
--	hif_dev->firmware = fw;
-+	hif_dev->fw_data = fw->data;
-+	hif_dev->fw_size = fw->size;
- 
- 	/* Proceed with initialization */
- 
-@@ -1111,6 +1111,8 @@ static void ath9k_hif_usb_firmware_cb(const struct firmware *fw, void *context)
- 	if (ret)
- 		goto err_dev_init;
- 
-+	release_firmware(fw);
-+
- 	ret = ath9k_htc_hw_init(hif_dev->htc_handle,
- 				&hif_dev->interface->dev,
- 				hif_dev->usb_device_id->idProduct,
-@@ -1121,6 +1123,7 @@ static void ath9k_hif_usb_firmware_cb(const struct firmware *fw, void *context)
- 		goto err_htc_hw_init;
- 	}
- 
-+	hif_dev->flags |= HIF_USB_READY;
- 	complete(&hif_dev->fw_done);
- 
- 	return;
-@@ -1129,8 +1132,8 @@ err_htc_hw_init:
- 	ath9k_hif_usb_dev_deinit(hif_dev);
- err_dev_init:
- 	ath9k_htc_hw_free(hif_dev->htc_handle);
-+err_dev_alloc:
- 	release_firmware(fw);
--	hif_dev->firmware = NULL;
- err_fw:
- 	ath9k_hif_usb_firmware_fail(hif_dev);
- }
-@@ -1277,11 +1280,10 @@ static void ath9k_hif_usb_disconnect(struct usb_interface *interface)
- 
- 	wait_for_completion(&hif_dev->fw_done);
- 
--	if (hif_dev->firmware) {
-+	if (hif_dev->flags & HIF_USB_READY) {
- 		ath9k_htc_hw_deinit(hif_dev->htc_handle, unplugged);
- 		ath9k_htc_hw_free(hif_dev->htc_handle);
- 		ath9k_hif_usb_dev_deinit(hif_dev);
--		release_firmware(hif_dev->firmware);
- 	}
- 
- 	usb_set_intfdata(interface, NULL);
-@@ -1317,13 +1319,23 @@ static int ath9k_hif_usb_resume(struct usb_interface *interface)
- 	struct hif_device_usb *hif_dev = usb_get_intfdata(interface);
- 	struct htc_target *htc_handle = hif_dev->htc_handle;
- 	int ret;
-+	const struct firmware *fw;
- 
- 	ret = ath9k_hif_usb_alloc_urbs(hif_dev);
- 	if (ret)
- 		return ret;
- 
--	if (hif_dev->firmware) {
-+	if (hif_dev->flags & HIF_USB_READY) {
-+		/* request cached firmware during suspend/resume cycle */
-+		ret = request_firmware(&fw, hif_dev->fw_name,
-+				       &hif_dev->udev->dev);
-+		if (ret)
-+			goto fail_resume;
-+
-+		hif_dev->fw_data = fw->data;
-+		hif_dev->fw_size = fw->size;
- 		ret = ath9k_hif_usb_download_fw(hif_dev);
-+		release_firmware(fw);
- 		if (ret)
- 			goto fail_resume;
- 	} else {
-diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.h b/drivers/net/wireless/ath/ath9k/hif_usb.h
-index 487ff65..51496e7 100644
---- a/drivers/net/wireless/ath/ath9k/hif_usb.h
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.h
-@@ -85,12 +85,14 @@ struct cmd_buf {
- };
- 
- #define HIF_USB_START BIT(0)
-+#define HIF_USB_READY BIT(1)
- 
- struct hif_device_usb {
- 	struct usb_device *udev;
- 	struct usb_interface *interface;
- 	const struct usb_device_id *usb_device_id;
--	const struct firmware *firmware;
-+	const void *fw_data;
-+	size_t fw_size;
- 	struct completion fw_done;
- 	struct htc_target *htc_handle;
- 	struct hif_usb_tx tx;
--- 
-1.7.9.5
+The truly ironic part is that the current NVidia binary blob driver that
+everybody dislikes so much *IS* the "Windows equivalent" driver (in
+fact, it's the same driver, with a Linux shim layer wrapped around it).
+
+You can flame them for having a non-GPL binary blob, but you can't flame
+NVidia for not having equivalent drivers...
+
+--==_Exmh_1344053521_2048P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUByhEQdmEQWDXROgAQKDBQ/+OC3iADHWLhULLLtGPXuy+L2FIYJJGYUe
+5eHsM//2LDCZOSeuvZt2JVh/cV2LoBRfsZicKCh8SZVYuc1Wt0J9ld58I5YlDNXl
+uwxZX+y/NQ/TOxPSZ8cgL11J+kFMl6G0LijA5zmXKxBVZrPPGKU7X6rVnbJtfCSJ
+t6wgsKTn8t2KlBxjaBRzLRJfV+O2WnONjhIwsplGhTYmsZ48jlKOchjU3FsKubXe
+tk1B+2sOfeJeJ+HtVTowRop0BAZoq+dZjubO4wwD4Hko153nnItDZEyo1tEzRceK
++CuXvwRBMuCl8Xio6XKzTxzxnxcD4XdMiL5IGCs8zWW+hjN0kTheuP0dQLWDjU4b
+blBlEBDJKHozK8Q0bd3fjkrmBwb6eXGtbafOdzpSRNBBtvFGzzRE4Qj5/rDxtPWf
+KN4xD3h+ddKJQz4be1SivcD+W0NOX76kiYgtwf7K7ZNzHxydiyQBrsiI9poOKNvX
+gYG1GqxRjWcdOdFGry4LsGcDe+dP8RP+xn2J/KSmdMkLqFWguELq0Nth2dgj8tUH
+tN+LZYZw6f53OXgIaUvOFFuUak2TFvz+SB654rF2uSl4s5vA9G+XIJE0r/0ptARS
+fZzX173bE9gFjtmtV0WjcUMwwx+RmED39dFQP8IP3BaVbv71drw9JmKPeetCvYYs
+HSEPZ4F/jlk=
+=q0pM
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1344053521_2048P--
 
