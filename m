@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab2HDTVK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 15:21:10 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57382 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab2HDTVG convert rfc822-to-8bit (ORCPT
+	id S1754102Ab2HDTVX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 15:21:23 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:54671 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754056Ab2HDTVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 15:21:06 -0400
+	Sat, 4 Aug 2012 15:21:19 -0400
+Date: Sat, 4 Aug 2012 21:21:14 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: john.stultz@linaro.org, tglx@linutronix.de, a.p.zijlstra@chello.nl,
+        richardcochran@gmail.com, prarit@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] time: Fix adjustment cleanup bug in timekeeping_adjust()
+Message-ID: <20120804192114.GA28347@gmail.com>
+References: <201208032318.FGJ64576.tOMVLOFHFQOFJS@I-love.SAKURA.ne.jp>
+ <201208042024.GFG34353.OFtFVQJMLOHFSO@I-love.SAKURA.ne.jp>
+ <201208042110.EFH81212.OSVOLMOtFQHJFF@I-love.SAKURA.ne.jp>
+ <201208042246.HBH81275.FVOOSLtJFMQOFH@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-In-Reply-To: <1344098083.9299.1503.camel@edumazet-glaptop>
-References: <CACS4u_zUF9T0rSsndhyVzgaauOBFJ4LTUeb432B1zg_oLHvTsg@mail.gmail.com>
- <CAFLxGvxqj+-rf5twsMPk-pRQqzqsK8-MSsKaez9cwarPmyEqzw@mail.gmail.com> <1344098083.9299.1503.camel@edumazet-glaptop>
-From: =?UTF-8?Q?S=C5=82awek_Janecki?= <janecki@gmail.com>
-Date: Sat, 4 Aug 2012 21:20:45 +0200
-Message-ID: <CACS4u_xFsLzCM6NVDY6abG9XRsxgtdyOndEChuSK8-g5XzU-aw@mail.gmail.com>
-Subject: Re: TCP Delayed ACK in FIN/ACK
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208042246.HBH81275.FVOOSLtJFMQOFH@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have no such info in dmsg.
-I think I will file a issue to Node.js Dev Team.
-Thanks for reply.
 
-On Sat, Aug 4, 2012 at 6:34 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Sat, 2012-08-04 at 16:51 +0200, richard -rw- weinberger wrote:
->> On Sat, Aug 4, 2012 at 4:45 PM, Sławek Janecki <janecki@gmail.com> wrote:
->> > I have a node.js client (10.177.62.7) requesting some data from http
->> > rest service from server (10.177.0.1).
->> > Client is simply using nodejs http.request() method (agent=false).
->> > Client is on Ubuntu 11.10 box.
->> > Why client sends FIN ACK after 475ms? Why so slow? He should send FIN
->> > ACK immediately.
->> > I have many situations like this. About 1% of whole traffic is request
->> > with delayed FIN ACK.
->> > Cpu idle on the client is about 99%, so nothing is draining CPU.
->> > How to debug this? What could it be? Is there any sysctl option I need to tune?
->> > I think this behaviour is the Delayed ACK feature of RFC1122 TCP stack.
->> >
->> > Link to tcpdump picture (done on a client machine) :
->> > http://i48.tinypic.com/35cpogx.png
->> >
->> > Can you tell why kernel delayed that FIN/ACK.
->> > In tcpflow data there is exacly one ACK per packet comming from server.
->> > Why kernel delayed client FIN/ACK.
->> > It could avoid sending ACK every 'data' packet.
->> > But it choose to delay FIN/ACK?
->> > Is this possible? Is this a bug?
->> >
->> > I've also posted question on stackexchange:
->> > http://stackoverflow.com/questions/11711218/client-sends-delayed-fin-ack-500ms-to-server
->> >
->> > Please help.
->>
->> CC'ing netdev.
->>
->
-> I see nothing wrong in this tcpdump. You should strace the application
-> instead.
->
-> FIN/ACK is sent when client closes its socket (or calls shutdown()), and
-> not in reply of FIN sent by the server.
->
-> Kernel has no additional delay. I suspect your client is slow processing
-> the server answer, then close() its socket _after_ data processing.
->
-> Its possible tcp_send_fin() has to loop while allocating one skb under
-> very high memory pressure, and it seems we have no counters for this
-> case. But if it _was_ ever happening, you would have lot of messages in
-> kernel log (dmesg) about alloc_skb_clone() failures.
->
->
->
+* Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+
+> Hello.
+> 
+> Bisected to 2a8c0883 "time: Move xtime_nsec adjustment 
+> underflow handling timekeeping_adjust".
+> 
+> Would you check?
+
+probably caused by this stray return in timekeeping_adjust():
+
+        } else
+                return;
+
+which should really be a proper goto - like the (totally 
+untested!) patch below.
+
+Does this fix the bug for you?
+
+Thanks,
+
+	Ingo
+
+-------------
+
+Subject: time: Fix adjustment cleanup bug in timekeeping_adjust()
+
+Also make the flow more readable by properly balancing curly 
+braces.
+
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
 
-
--- 
-
-pozdrawiam
-Sławomir Janecki
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 2988bc8..e16af19 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -923,20 +923,22 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
+ 		if (likely(error <= interval))
+ 			adj = 1;
+ 		else
+-			adj = timekeeping_bigadjust(tk, error, &interval,
+-							&offset);
+-	} else if (error < -interval) {
+-		/* See comment above, this is just switched for the negative */
+-		error >>= 2;
+-		if (likely(error >= -interval)) {
+-			adj = -1;
+-			interval = -interval;
+-			offset = -offset;
+-		} else
+-			adj = timekeeping_bigadjust(tk, error, &interval,
+-							&offset);
+-	} else
+-		return;
++			adj = timekeeping_bigadjust(tk, error, &interval, &offset);
++	} else {
++		if (error < -interval) {
++			/* See comment above, this is just switched for the negative */
++			error >>= 2;
++			if (likely(error >= -interval)) {
++				adj = -1;
++				interval = -interval;
++				offset = -offset;
++			} else {
++				adj = timekeeping_bigadjust(tk, error, &interval, &offset);
++			}
++		} else {
++			goto out_adjust;
++		}
++	}
+ 
+ 	if (unlikely(tk->clock->maxadj &&
+ 		(tk->mult + adj > tk->clock->mult + tk->clock->maxadj))) {
+@@ -999,6 +1001,7 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
+ 	tk->xtime_nsec -= offset;
+ 	tk->ntp_error -= (interval - offset) << tk->ntp_error_shift;
+ 
++out_adjust:
+ 	/*
+ 	 * It may be possible that when we entered this function, xtime_nsec
+ 	 * was very small.  Further, if we're slightly speeding the clocksource
