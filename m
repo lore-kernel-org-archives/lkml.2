@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab2HDEtJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 00:49:09 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:39830 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750795Ab2HDEtH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 00:49:07 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+x7sQmnyyxOr+eh9k4jgVQxoJGeTdjmXkeDISpwk
-	pkX+UKklkvbf5P
-Message-ID: <1344055742.6739.40.camel@marge.simpson.net>
-Subject: Re: Gaming and the kernel
-From: Mike Galbraith <efault@gmx.de>
-To: valdis.kletnieks@vt.edu
-Cc: Chris Jones <chrisjones@spin.net.au>, linux-kernel@vger.kernel.org,
-        david@lang.hm
-Date: Sat, 04 Aug 2012 06:49:02 +0200
-In-Reply-To: <168124.1344053522@turing-police.cc.vt.edu>
-References: <501C4CCE.8020806@spin.net.au> <501C545C.40601@gmail.com>
-	 <501C6BDF.9090803@spin.net.au>
-	 <alpine.DEB.2.02.1208031730100.8170@asgard.lang.hm>
-	 <501C7225.5060405@spin.net.au> <168124.1344053522@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1751836Ab2HDFQO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 01:16:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38170 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751059Ab2HDFQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Aug 2012 01:16:13 -0400
+Date: Sat, 4 Aug 2012 07:16:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Pandita, Vikram" <vikram.pandita@ti.com>
+Cc: Kay Sievers <kay@vrfy.org>, linux-omap <linux-omap@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Venu Byravarasu <vbyravarasu@nvidia.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+Subject: Re: [PATCH v2] printk: add option to print cpu id
+Message-ID: <20120804051608.GB6728@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Pandita, Vikram" <vikram.pandita@ti.com>,
+	Kay Sievers <kay@vrfy.org>, linux-omap <linux-omap@vger.kernel.org>,
+	linux-arm-kernel@lists.infradead.org,
+	Venu Byravarasu <vbyravarasu@nvidia.com>,
+	"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Mike Turquette <mturquette@linaro.org>,
+	Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+References: <1343985378-22330-1-git-send-email-vikram.pandita@ti.com>
+ <D958900912E20642BCBC71664EFECE3E6DDCAC49AB@BGMAIL02.nvidia.com>
+ <D958900912E20642BCBC71664EFECE3E6DDCAC49AE@BGMAIL02.nvidia.com>
+ <CAFm5wm2Z+FyVqG5oMWiEmZ8Je88hJ-cyDXmJw0wp4mqA-X9eYg@mail.gmail.com>
+ <CAPXgP13UBwQLs+m_aSk3Ljbktz8WrL+ZO_Tfhrt_+tRBCARyQQ@mail.gmail.com>
+ <CAFm5wm0nf47bcTu7iiXA3geR_5dDTF1tnf81Lz7JzbWkKdhUtA@mail.gmail.com>
+ <CAPXgP11A=QfOt4SL2GvhsepP8JiDFfdaAhi6-AhW++-AvOz+aw@mail.gmail.com>
+ <20120803104212.GA6936@x1.osrc.amd.com>
+ <CAFm5wm0rsvuBafMH+9PpKwfaBimbRrVzxYV0nD_pg1yisAYwxQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAFm5wm0rsvuBafMH+9PpKwfaBimbRrVzxYV0nD_pg1yisAYwxQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-08-04 at 00:12 -0400, valdis.kletnieks@vt.edu wrote: 
-> On Sat, 04 Aug 2012 10:51:49 +1000, Chris Jones said:
-> 
-> > documentation, hopefully things will work out. And this might actually
-> > be the kick in the rear-end that AMD and NVIDIA need to get into gear
-> > and start developer some useful and Windows equivalent hardware drivers
-> > for ALL their cards for Linux.
-> 
-> The truly ironic part is that the current NVidia binary blob driver that
-> everybody dislikes so much *IS* the "Windows equivalent" driver (in
-> fact, it's the same driver, with a Linux shim layer wrapped around it).
+On Fri, Aug 03, 2012 at 09:46:15AM -0700, Pandita, Vikram wrote:
+> I mostly work with ARM Soc - specifically on OMAP. SMP multi core
+> systems in ARM-v7 world started to show up only few years back -
+> unlike x86 world.
 
-Hm.. so windows can be kept in kernel for a full second of IPI blasting
-all cores too.  That driver seems to work very nicely once things are
-running, but whatever the heck it does when you first fire up rendering
-is.. something to keep far far away from realtime tasks :)
+This is exactly the thing: other SMP vendors have made it so far without
+emitting which core is doing what in dmesg.
 
--Mike
+> ARM systems are a bit unique when it comes to security( read trust
+> zone ), and handling of FIQ's. Most of the ARM cortex-A series SoC's
+> out there have some kind of affinity to CPU0 being the master. One use
+> case has been, it has helped to know with this printk logging, if such
+> constraints are honored.
+>
+> Sometimes, tracking of some lockup cases between cpu's because of bad
+> code has also been helpful with this logging support. For now i will
+> post v3 of the patch and add arm-list and linux-omap list, and there
+> might be users there can benefit.
 
+Right, so if arm people need this thing, why not make it arm-only? I
+still fail to see the need for this (... at all, actually).
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
