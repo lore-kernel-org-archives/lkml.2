@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab2HDMBj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 08:01:39 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:18545 "EHLO
+	id S1752975Ab2HDMBl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 08:01:41 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:62212 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751806Ab2HDMAn (ORCPT
+	by vger.kernel.org with ESMTP id S1751833Ab2HDMAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 4 Aug 2012 08:00:43 -0400
 X-IronPort-AV: E=Sophos;i="4.77,711,1336341600"; 
-   d="scan'208";a="169070475"
+   d="scan'208";a="169070476"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] drivers/mfd/palmas.c: drop kfree of devm_kzalloc's data
-Date: Sat,  4 Aug 2012 14:00:31 +0200
-Message-Id: <1344081632-4729-2-git-send-email-Julia.Lawall@lip6.fr>
+To: Liam Girdwood <lrg@ti.com>, matthias@kaehlcke.net
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] sound/soc/soc-core.c: drop kfree of devm_kzalloc's data
+Date: Sat,  4 Aug 2012 14:00:32 +0200
+Message-Id: <1344081632-4729-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -40,19 +43,29 @@ x = devm_kzalloc(...)
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/mfd/palmas.c |    1 -
- 1 file changed, 1 deletion(-)
+The kfrees were introduced in b761c0ca.
 
-diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index c4a69f1..92c6fc7 100644
---- a/drivers/mfd/palmas.c
-+++ b/drivers/mfd/palmas.c
-@@ -463,7 +463,6 @@ static int __devinit palmas_i2c_probe(struct i2c_client *i2c,
- 
- err:
- 	mfd_remove_devices(palmas->dev);
--	kfree(palmas);
- 	return ret;
- }
- 
+ sound/soc/soc-core.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index f81c597..86d7a36 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -4136,7 +4136,6 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 			dev_err(card->dev,
+ 				"Property '%s' index %d could not be read: %d\n",
+ 				propname, 2 * i, ret);
+-			kfree(routes);
+ 			return -EINVAL;
+ 		}
+ 		ret = of_property_read_string_index(np, propname,
+@@ -4145,7 +4144,6 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 			dev_err(card->dev,
+ 				"Property '%s' index %d could not be read: %d\n",
+ 				propname, (2 * i) + 1, ret);
+-			kfree(routes);
+ 			return -EINVAL;
+ 		}
+ 	}
 
