@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2HDMTi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 08:19:38 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51340 "EHLO
+	id S1753565Ab2HDMTn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 08:19:43 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:51407 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab2HDMTe (ORCPT
+	with ESMTP id S1752950Ab2HDMTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 08:19:34 -0400
+	Sat, 4 Aug 2012 08:19:38 -0400
 From: Jiang Liu <jiang.liu@huawei.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
@@ -20,11 +20,10 @@ CC: Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
         <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Gaohuai Han <hangaohuai@huawei.com>
-Subject: [RFC PATCH v2 07/16] ACPIHP: add callbacks into acpi_device_ops to  support new hotplug framework
-Date: Sat, 4 Aug 2012 20:13:54 +0800
-Message-ID: <1344082443-4608-8-git-send-email-jiang.liu@huawei.com>
+        Jiang Liu <liuj97@gmail.com>
+Subject: [RFC PATCH v2 16/16] ACPIHP: enhance ACPI container driver to  support new hotplug framework
+Date: Sat, 4 Aug 2012 20:14:03 +0800
+Message-ID: <1344082443-4608-17-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
 References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com>
@@ -38,220 +37,309 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Add new callbacks into struct acpi_device_ops to provide better error handling,
-error recover and operation cancellation for ACPI based system device hotplug.
-
-There are three major operations and each major operation is divided into
-three steps.
-1) pre_configure, configure, post_configure
-	add an ACPI device into running system and rollback if error happens
-	cancelled by user.
-2) pre_release, release, post_release
-	reclaim an ACPI device from running system and rollback if error
-	happens or cancelled by user. It's important to privode a mechanism
-	to cancel memory hot-removal operations because it's may take very
-	long or even endless time to reclaim a memory device.
-3) pre_unconfigure, unconfigure, post_unconfigure
-	remove an ACPI device from running system and release all resources
-	associated with it.
-
-There's another callback to query status and information about the ACPI device.
+This patch enhances the ACPI container driver to support the new hotplug
+framework:
+1) remove code to handle ACPI hotplug event
+2) add callbacks to support new hotplug framework
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
-Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
-Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
 ---
- drivers/acpi/hotplug/device.c |   72 +++++++++++++++++++++++++++++++++++++++++
- include/acpi/acpi_bus.h       |    3 ++
- include/acpi/acpi_hotplug.h   |   64 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 139 insertions(+)
+ drivers/acpi/container.c |  201 +++++++---------------------------------------
+ include/acpi/container.h |   12 ---
+ 2 files changed, 31 insertions(+), 182 deletions(-)
+ delete mode 100644 include/acpi/container.h
 
-diff --git a/drivers/acpi/hotplug/device.c b/drivers/acpi/hotplug/device.c
-index 1795939..19a9683 100644
---- a/drivers/acpi/hotplug/device.c
-+++ b/drivers/acpi/hotplug/device.c
-@@ -1,6 +1,7 @@
- /*
-  * Copyright (C) 2011 Huawei Tech. Co., Ltd.
-  * Copyright (C) 2011 Jiang Liu <jiang.liu@huawei.com>
-+ * Copyright (C) 2011 Hanjun Guo <guohanjun@huawei.com>
-  *
-  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  *
-@@ -27,6 +28,77 @@
- #include <acpi/acpi_hotplug.h>
- #include "../internal.h"
+diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+index 45cd03b..9633648 100644
+--- a/drivers/acpi/container.c
++++ b/drivers/acpi/container.c
+@@ -34,16 +34,13 @@
+ #include <linux/acpi.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+-#include <acpi/container.h>
++#include <acpi/acpi_hotplug.h>
  
-+int acpihp_dev_get_info(struct acpi_device *device,
-+			struct acpihp_dev_info *info)
-+{
-+	int ret = -ENOSYS;
+ #define PREFIX "ACPI: "
+ 
+ #define ACPI_CONTAINER_DEVICE_NAME	"ACPI container device"
+ #define ACPI_CONTAINER_CLASS		"container"
+ 
+-#define INSTALL_NOTIFY_HANDLER		1
+-#define UNINSTALL_NOTIFY_HANDLER	2
+-
+ #define _COMPONENT			ACPI_CONTAINER_COMPONENT
+ ACPI_MODULE_NAME("container");
+ 
+@@ -54,6 +51,20 @@ MODULE_LICENSE("GPL");
+ static int acpi_container_add(struct acpi_device *device);
+ static int acpi_container_remove(struct acpi_device *device, int type);
+ 
++#ifdef	CONFIG_ACPI_HOTPLUG
++static int acpihp_container_get_devinfo(struct acpi_device *device,
++					struct acpihp_dev_info *info);
++static int acpihp_container_configure(struct acpi_device *device,
++				      struct acpihp_cancel_context *argp);
++static int acpihp_container_unconfigure(struct acpi_device *device);
 +
-+	acpihp_dev_get_type(device->handle, &info->type);
-+
-+	mutex_lock(&device->dev.mutex);
-+	if (device->driver && device->driver->ops.hp_ops &&
-+	    device->driver->ops.hp_ops->get_info)
-+		ret = device->driver->ops.hp_ops->get_info(device, info);
-+	else
-+#if 0
-+		/* Turn on this once all system devices have been converted
-+		 * to the new hotplug framework
-+		 */
-+		info->status |= ACPIHP_DEV_STATUS_IRREMOVABLE;
-+#else
-+		ret = 0;
++struct acpihp_dev_ops acpihp_container_ops = {
++	.get_info = acpihp_container_get_devinfo,
++	.configure = acpihp_container_configure,
++	.unconfigure = acpihp_container_unconfigure
++};
 +#endif
 +
-+	if (device->driver)
-+		info->status |= ACPIHP_DEV_STATUS_ATTACHED;
-+	mutex_unlock(&device->dev.mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(acpihp_dev_get_info);
-+
-+#define	ACPIHP_DEFINE_FUNC(method, def, err) \
-+int acpihp_dev_##method(struct acpi_device *device) \
-+{ \
-+	int ret; \
-+	BUG_ON(device == NULL); \
-+	if (!device->driver || !device->driver->ops.hp_ops) \
-+		ret = (err); \
-+	else if (!device->driver->ops.hp_ops->method) \
-+		ret = (def); \
-+	else \
-+		ret = device->driver->ops.hp_ops->method(device);\
-+	return ret; \
-+} \
-+EXPORT_SYMBOL_GPL(acpihp_dev_##method)
-+
-+#define	ACPIHP_DEFINE_FUNC1(method, def, err, type) \
-+int acpihp_dev_##method(struct acpi_device *device, type val) \
-+{ \
-+	int ret; \
-+	BUG_ON(device == NULL); \
-+	if (!device->driver || !device->driver->ops.hp_ops) \
-+		ret = (err); \
-+	else if (!device->driver->ops.hp_ops->method) \
-+		ret = (def); \
-+	else \
-+		ret = device->driver->ops.hp_ops->method(device, val); \
-+	return ret; \
-+} \
-+EXPORT_SYMBOL_GPL(acpihp_dev_##method)
-+
-+ACPIHP_DEFINE_FUNC1(pre_configure, 0, 0, struct acpihp_cancel_context *);
-+ACPIHP_DEFINE_FUNC1(configure, 0, -ENOSYS, struct acpihp_cancel_context *);
-+ACPIHP_DEFINE_FUNC1(post_configure, 0, 0, enum acpihp_dev_post_cmd);
-+
-+ACPIHP_DEFINE_FUNC1(pre_release, 0, 0, struct acpihp_cancel_context *);
-+ACPIHP_DEFINE_FUNC1(release, 0, 0, struct acpihp_cancel_context *);
-+ACPIHP_DEFINE_FUNC1(post_release, 0, 0, enum acpihp_dev_post_cmd);
-+
-+ACPIHP_DEFINE_FUNC(pre_unconfigure, 0, 0);
-+ACPIHP_DEFINE_FUNC(unconfigure, 0, -ENOSYS);
-+ACPIHP_DEFINE_FUNC(post_unconfigure, 0, 0);
-+
- /*
-  * When creating ACPI devices for hot-added system devices connecting to slot,
-  * we shouldn't cross the slot boundary. Otherwise it will cause inconsistence
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 81b4c3f..09bfa80 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -140,6 +140,9 @@ struct acpi_device_ops {
- 	acpi_op_bind bind;
- 	acpi_op_unbind unbind;
- 	acpi_op_notify notify;
+ static const struct acpi_device_id container_device_ids[] = {
+ 	{"ACPI0004", 0},
+ 	{"PNP0A05", 0},
+@@ -69,49 +80,21 @@ static struct acpi_driver acpi_container_driver = {
+ 	.ops = {
+ 		.add = acpi_container_add,
+ 		.remove = acpi_container_remove,
 +#ifdef	CONFIG_ACPI_HOTPLUG
-+	struct acpihp_dev_ops *hp_ops;
++		.hp_ops = &acpihp_container_ops,
 +#endif	/* CONFIG_ACPI_HOTPLUG */
+ 		},
  };
  
- #define ACPI_DRIVER_ALL_NOTIFY_EVENTS	0x1	/* system AND device events */
-diff --git a/include/acpi/acpi_hotplug.h b/include/acpi/acpi_hotplug.h
-index cd8dd99..2589ccb 100644
---- a/include/acpi/acpi_hotplug.h
-+++ b/include/acpi/acpi_hotplug.h
-@@ -66,6 +66,51 @@ struct acpihp_dev_node {
- 	struct klist_node	node;
- };
+-/*******************************************************************/
+-
+-static int is_device_present(acpi_handle handle)
+-{
+-	acpi_handle temp;
+-	acpi_status status;
+-	unsigned long long sta;
+-
+-
+-	status = acpi_get_handle(handle, "_STA", &temp);
+-	if (ACPI_FAILURE(status))
+-		return 1;	/* _STA not found, assume device present */
+-
+-	status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
+-	if (ACPI_FAILURE(status))
+-		return 0;	/* Firmware error */
+-
+-	return ((sta & ACPI_STA_DEVICE_PRESENT) == ACPI_STA_DEVICE_PRESENT);
+-}
+-
+-/*******************************************************************/
+ static int acpi_container_add(struct acpi_device *device)
+ {
+-	struct acpi_container *container;
+-
+-
+ 	if (!device) {
+ 		printk(KERN_ERR PREFIX "device is NULL\n");
+ 		return -EINVAL;
+ 	}
  
-+/* Status of system devices. */
-+#define	ACPIHP_DEV_STATUS_ATTACHED	0x1 /* Device driver attached */
-+#define	ACPIHP_DEV_STATUS_STARTED	0x2 /* Device started */
-+#define	ACPIHP_DEV_STATUS_IRREMOVABLE	0x10000 /* Device can't be removed */
-+#define	ACPIHP_DEV_STATUS_FAULT		0x20000 /* Device in fault status */
-+
-+struct acpihp_dev_info {
-+	enum acpihp_dev_type		type;
-+	uint32_t			status;
-+};
-+
-+/* Rollback or commit changes in post_{confiure|release} */
-+enum acpihp_dev_post_cmd {
-+	ACPIHP_DEV_POST_CMD_ROLLBACK,
-+	ACPIHP_DEV_POST_CMD_COMMIT
-+};
-+
-+/*
-+ * ACPI system device drivers may check cancellations of hotplug operations
-+ * by invoking the callback.
-+ */
-+struct acpihp_cancel_context {
-+	int (*check_cancel)(struct acpihp_cancel_context *ctx);
-+};
-+
-+/*
-+ * Callback hooks provided by ACPI device drivers to support system device
-+ * hotplug. To support hotplug, an ACPI system device driver must implement
-+ * configure(), unconfigure() and get_info() at least.
-+ */
-+struct acpihp_dev_ops {
-+	int (*get_info)(struct acpi_device *, struct acpihp_dev_info *info);
-+	int (*pre_configure)(struct acpi_device *,
-+			     struct acpihp_cancel_context *);
-+	int (*configure)(struct acpi_device *, struct acpihp_cancel_context *);
-+	int (*post_configure)(struct acpi_device *, enum acpihp_dev_post_cmd);
-+	int (*pre_release)(struct acpi_device *,
-+			   struct acpihp_cancel_context *);
-+	int (*release)(struct acpi_device *, struct acpihp_cancel_context *);
-+	int (*post_release)(struct acpi_device *, enum acpihp_dev_post_cmd);
-+	int (*pre_unconfigure)(struct acpi_device *);
-+	int (*unconfigure)(struct acpi_device *);
-+	int (*post_unconfigure)(struct acpi_device *);
-+};
-+
- /*
-  * ACPI hotplug slot is an abstraction of receptacles where a group of
-  * system devices could be attached, just like PCI slot in PCI hotplug.
-@@ -165,6 +210,25 @@ extern int acpihp_register_class(void);
- /* Unregister the ACPI hotplug slot class driver */
- extern void acpihp_unregister_class(void);
+-	container = kzalloc(sizeof(struct acpi_container), GFP_KERNEL);
+-	if (!container)
+-		return -ENOMEM;
+-
+-	container->handle = device->handle;
+ 	strcpy(acpi_device_name(device), ACPI_CONTAINER_DEVICE_NAME);
+ 	strcpy(acpi_device_class(device), ACPI_CONTAINER_CLASS);
+-	device->driver_data = container;
+-
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device <%s> bid <%s>\n",
+ 			  acpi_device_name(device), acpi_device_bid(device)));
  
-+/* Interfaces to invoke the ACPI device driver's hotplug hooks. */
-+extern int acpihp_dev_get_info(struct acpi_device *device,
-+			       struct acpihp_dev_info *info);
-+extern int acpihp_dev_pre_configure(struct acpi_device *device,
-+				    struct acpihp_cancel_context *ctx);
-+extern int acpihp_dev_configure(struct acpi_device *device,
-+				struct acpihp_cancel_context *ctx);
-+extern int acpihp_dev_post_configure(struct acpi_device *device,
-+				     enum acpihp_dev_post_cmd cmd);
-+extern int acpihp_dev_pre_release(struct acpi_device *device,
-+				  struct acpihp_cancel_context *ctx);
-+extern int acpihp_dev_release(struct acpi_device *device,
-+			      struct acpihp_cancel_context *ctx);
-+extern int acpihp_dev_post_release(struct acpi_device *device,
-+				   enum acpihp_dev_post_cmd cmd);
-+extern int acpihp_dev_pre_unconfigure(struct acpi_device *device);
-+extern int acpihp_dev_unconfigure(struct acpi_device *device);
-+extern int acpihp_dev_post_unconfigure(struct acpi_device *device);
+@@ -120,163 +103,41 @@ static int acpi_container_add(struct acpi_device *device)
+ 
+ static int acpi_container_remove(struct acpi_device *device, int type)
+ {
+-	acpi_status status = AE_OK;
+ 	struct acpi_container *pc = NULL;
+ 
+ 	pc = acpi_driver_data(device);
+ 	kfree(pc);
+-	return status;
 +
- /* Utility routines */
- extern int acpihp_dev_get_type(acpi_handle handle, enum acpihp_dev_type *type);
- extern bool acpihp_dev_match_ids(struct acpi_device_info *infop, char **ids);
++	return AE_OK;
+ }
+ 
+-static int container_device_add(struct acpi_device **device, acpi_handle handle)
++#ifdef CONFIG_ACPI_HOTPLUG
++static int acpihp_container_get_devinfo(struct acpi_device *device,
++					struct acpihp_dev_info *info)
+ {
+-	acpi_handle phandle;
+-	struct acpi_device *pdev;
+-	int result;
+-
+-
+-	if (acpi_get_parent(handle, &phandle)) {
+-		return -ENODEV;
+-	}
+-
+-	if (acpi_bus_get_device(phandle, &pdev)) {
+-		return -ENODEV;
+-	}
+-
+-	if (acpi_bus_add(device, pdev, handle, ACPI_BUS_TYPE_DEVICE)) {
+-		return -ENODEV;
+-	}
+-
+-	result = acpi_bus_start(*device);
+-
+-	return result;
++	return 0;
+ }
+ 
+-static void container_notify_cb(acpi_handle handle, u32 type, void *context)
++static int acpihp_container_configure(struct acpi_device *device,
++				      struct acpihp_cancel_context *argp)
+ {
+-	struct acpi_device *device = NULL;
+-	int result;
+-	int present;
+-	acpi_status status;
+-
+-
+-	present = is_device_present(handle);
+-
+-	switch (type) {
+-	case ACPI_NOTIFY_BUS_CHECK:
+-		/* Fall through */
+-	case ACPI_NOTIFY_DEVICE_CHECK:
+-		printk(KERN_WARNING "Container driver received %s event\n",
+-		       (type == ACPI_NOTIFY_BUS_CHECK) ?
+-		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
+-		status = acpi_bus_get_device(handle, &device);
+-		if (present) {
+-			if (ACPI_FAILURE(status) || !device) {
+-				result = container_device_add(&device, handle);
+-				if (!result)
+-					kobject_uevent(&device->dev.kobj,
+-						       KOBJ_ONLINE);
+-				else
+-					printk(KERN_WARNING
+-					       "Failed to add container\n");
+-			}
+-		} else {
+-			if (ACPI_SUCCESS(status)) {
+-				/* device exist and this is a remove request */
+-				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+-			}
+-		}
+-		break;
+-	case ACPI_NOTIFY_EJECT_REQUEST:
+-		if (!acpi_bus_get_device(handle, &device) && device) {
+-			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+-		}
+-		break;
+-	default:
+-		break;
+-	}
+-	return;
++	return acpi_container_add(device);
+ }
+ 
+-static acpi_status
+-container_walk_namespace_cb(acpi_handle handle,
+-			    u32 lvl, void *context, void **rv)
++static int acpihp_container_unconfigure(struct acpi_device *device)
+ {
+-	char *hid = NULL;
+-	struct acpi_device_info *info;
+-	acpi_status status;
+-	int *action = context;
+-
+-	status = acpi_get_object_info(handle, &info);
+-	if (ACPI_FAILURE(status)) {
+-		return AE_OK;
+-	}
+-
+-	if (info->valid & ACPI_VALID_HID)
+-		hid = info->hardware_id.string;
+-
+-	if (hid == NULL) {
+-		goto end;
+-	}
+-
+-	if (strcmp(hid, "ACPI0004") && strcmp(hid, "PNP0A05") &&
+-	    strcmp(hid, "PNP0A06")) {
+-		goto end;
+-	}
+-
+-	switch (*action) {
+-	case INSTALL_NOTIFY_HANDLER:
+-		acpi_install_notify_handler(handle,
+-					    ACPI_SYSTEM_NOTIFY,
+-					    container_notify_cb, NULL);
+-		break;
+-	case UNINSTALL_NOTIFY_HANDLER:
+-		acpi_remove_notify_handler(handle,
+-					   ACPI_SYSTEM_NOTIFY,
+-					   container_notify_cb);
+-		break;
+-	default:
+-		break;
+-	}
+-
+-      end:
+-	kfree(info);
+-
+-	return AE_OK;
++	return acpi_container_remove(device, 0);
+ }
++#endif	/* CONFIG_ACPI_HOTPLUG */
+ 
+ static int __init acpi_container_init(void)
+ {
+-	int result = 0;
+-	int action = INSTALL_NOTIFY_HANDLER;
+-
+-	result = acpi_bus_register_driver(&acpi_container_driver);
+-	if (result < 0) {
+-		return (result);
+-	}
+-
+-	/* register notify handler to every container device */
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE,
+-			    ACPI_ROOT_OBJECT,
+-			    ACPI_UINT32_MAX,
+-			    container_walk_namespace_cb, NULL, &action, NULL);
+-
+-	return (0);
++	return acpi_bus_register_driver(&acpi_container_driver);
+ }
+ 
+ static void __exit acpi_container_exit(void)
+ {
+-	int action = UNINSTALL_NOTIFY_HANDLER;
+-
+-
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE,
+-			    ACPI_ROOT_OBJECT,
+-			    ACPI_UINT32_MAX,
+-			    container_walk_namespace_cb, NULL, &action, NULL);
+-
+ 	acpi_bus_unregister_driver(&acpi_container_driver);
+-
+-	return;
+ }
+ 
+ module_init(acpi_container_init);
+diff --git a/include/acpi/container.h b/include/acpi/container.h
+deleted file mode 100644
+index a703f14..0000000
+--- a/include/acpi/container.h
++++ /dev/null
+@@ -1,12 +0,0 @@
+-#ifndef __ACPI_CONTAINER_H
+-#define __ACPI_CONTAINER_H
+-
+-#include <linux/kernel.h>
+-
+-struct acpi_container {
+-	acpi_handle handle;
+-	unsigned long sun;
+-	int state;
+-};
+-
+-#endif				/* __ACPI_CONTAINER_H */
 -- 
 1.7.9.5
 
