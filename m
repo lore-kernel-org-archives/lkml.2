@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab2HDF6T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 01:58:19 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:48232 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab2HDF6R (ORCPT
+	id S1753041Ab2HDGId (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 02:08:33 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49206 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab2HDGIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 01:58:17 -0400
-X-SENDER-IP: [85.230.170.20]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlJbAGK5HFBV5qoUPGdsb2JhbABFhRIiAYUArwgZAQEBATc0gn0TAQ8YEXEKGhOIEbx2FIs9hnsDmzSNBIFU
-X-IronPort-AV: E=Sophos;i="4.77,711,1336341600"; 
-   d="scan'208";a="168481409"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: Dave Airlie <airlied@gmail.com>, nouveau@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] nouveau: Do not use nva3 engine for 0xaf chipset
-Date: Sat,  4 Aug 2012 08:00:45 +0200
-Message-Id: <1344060045-784-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.11.4
+	Sat, 4 Aug 2012 02:08:32 -0400
+MIME-Version: 1.0
+Date: Sat, 4 Aug 2012 14:08:31 +0800
+Message-ID: <CAJd=RBC9HhKh5Q0-yXi3W0x3guXJPFz4BNsniyOFmp0TjBdFqg@mail.gmail.com>
+Subject: [patch v2] hugetlb: correct page offset index for sharing pmd
+From: Hillf Danton <dhillf@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nva3 copy engine exhibits random memory corruption in at least one
-case, the GeForce 320M (nv50, 0xaf) in the MacBookAir3,1.  This patch
-omits creating the engine for the specific chipset, falling back to
-M2MF, which kills the symptoms.
+The computation of page offset index is incorrect to be used in scanning
+prio tree, as huge page offset is required, and is fixed with well
+defined routine.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Changes from v1
+	o s/linear_page_index/linear_hugepage_index/ for clearer code
+	o hp_idx variable added for less change
+
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
 ---
-Hi Ben,
 
-this patch is still needed in 3.6-rc1, so perhaps we should apply it
-after all. I have been running it without problems for a long time
-now.
+--- a/arch/x86/mm/hugetlbpage.c	Fri Aug  3 20:34:58 2012
++++ b/arch/x86/mm/hugetlbpage.c	Fri Aug  3 20:40:16 2012
+@@ -62,6 +62,7 @@ static void huge_pmd_share(struct mm_str
+ {
+ 	struct vm_area_struct *vma = find_vma(mm, addr);
+ 	struct address_space *mapping = vma->vm_file->f_mapping;
++	pgoff_t hp_idx;
+ 	pgoff_t idx = ((addr - vma->vm_start) >> PAGE_SHIFT) +
+ 			vma->vm_pgoff;
+ 	struct prio_tree_iter iter;
+@@ -72,8 +73,10 @@ static void huge_pmd_share(struct mm_str
+ 	if (!vma_shareable(vma, addr))
+ 		return;
 
-Thanks,
-Henrik
++	hp_idx = linear_hugepage_index(vma, addr);
++
+ 	mutex_lock(&mapping->i_mmap_mutex);
+-	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
++	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, hp_idx, hp_idx) {
+ 		if (svma == vma)
+ 			continue;
 
- drivers/gpu/drm/nouveau/nouveau_state.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c b/drivers/gpu/drm/nouveau/nouveau_state.c
-index 1cdfd6e..1866dbb 100644
---- a/drivers/gpu/drm/nouveau/nouveau_state.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_state.c
-@@ -731,7 +731,6 @@ nouveau_card_init(struct drm_device *dev)
- 			case 0xa3:
- 			case 0xa5:
- 			case 0xa8:
--			case 0xaf:
- 				nva3_copy_create(dev);
- 				break;
- 			}
--- 
-1.7.11.4
-
+--
