@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab2HDOpz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 10:45:55 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44053 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab2HDOpy convert rfc822-to-8bit (ORCPT
+	id S1753539Ab2HDOqA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 10:46:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42486 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab2HDOpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 10:45:54 -0400
+	Sat, 4 Aug 2012 10:45:55 -0400
 MIME-Version: 1.0
-From: =?UTF-8?Q?S=C5=82awek_Janecki?= <janecki@gmail.com>
-Date: Sat, 4 Aug 2012 16:45:33 +0200
-Message-ID: <CACS4u_zUF9T0rSsndhyVzgaauOBFJ4LTUeb432B1zg_oLHvTsg@mail.gmail.com>
-Subject: TCP Delayed ACK in FIN/ACK
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <201208011438.28719.arnd@arndb.de>
+References: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
+	<1343292170-2599-2-git-send-email-vinholikatti@gmail.com>
+	<201208011438.28719.arnd@arndb.de>
+Date: Sat, 4 Aug 2012 20:15:54 +0530
+Message-ID: <CAKVbJB_n7pivdNLq_3Q6auSKpnMOErd9eJgGJXBtbJ6NbAqG_g@mail.gmail.com>
+Subject: Re: [PATCH V3 1/4] [SCSI] drivers/scsi/ufs: Seggregate PCI Specific Code
+From: vinayak holikatti <vinholikatti@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
+        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
+        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
+        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
+        sreekumar.c@samsung.com, Santosh Yaraganavi <santoshsy@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a node.js client (10.177.62.7) requesting some data from http
-rest service from server (10.177.0.1).
-Client is simply using nodejs http.request() method (agent=false).
-Client is on Ubuntu 11.10 box.
-Why client sends FIN ACK after 475ms? Why so slow? He should send FIN
-ACK immediately.
-I have many situations like this. About 1% of whole traffic is request
-with delayed FIN ACK.
-Cpu idle on the client is about 99%, so nothing is draining CPU.
-How to debug this? What could it be? Is there any sysctl option I need to tune?
-I think this behaviour is the Delayed ACK feature of RFC1122 TCP stack.
+On Wed, Aug 1, 2012 at 8:08 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 26 July 2012, Vinayak Holikatti wrote:
+>
+>> -static void ufshcd_remove(struct pci_dev *pdev)
+>> +void ufshcd_remove(struct ufs_hba *hba)
+>>  {
+>> -     struct ufs_hba *hba = pci_get_drvdata(pdev);
+>> -
+>>       /* disable interrupts */
+>>       ufshcd_int_config(hba, UFSHCD_INT_DISABLE);
+>> -     free_irq(pdev->irq, hba);
+>>
+>>       ufshcd_hba_stop(hba);
+>>       ufshcd_hba_free(hba);
+>>
+>>       scsi_remove_host(hba->host);
+>>       scsi_host_put(hba->host);
+>> +}
+>> +EXPORT_SYMBOL(ufshcd_remove);
+>
+> For driver internal symbols, you should always use "EXPORT_SYMBOL_GPL"
+> here.
+Ok, will use EXPORT_SYMBOL_GPL
+>
+>         Arnd
+>
 
-Link to tcpdump picture (done on a client machine) :
-http://i48.tinypic.com/35cpogx.png
 
-Can you tell why kernel delayed that FIN/ACK.
-In tcpflow data there is exacly one ACK per packet comming from server.
-Why kernel delayed client FIN/ACK.
-It could avoid sending ACK every 'data' packet.
-But it choose to delay FIN/ACK?
-Is this possible? Is this a bug?
-
-I've also posted question on stackexchange:
-http://stackoverflow.com/questions/11711218/client-sends-delayed-fin-ack-500ms-to-server
-
-Please help.
 
 -- 
-pozdrawiam
-Sławomir Janecki
+Regards,
+Vinayak Holikatti
