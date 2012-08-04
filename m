@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab2HDQvh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 12:51:37 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:63697
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753472Ab2HDQvB (ORCPT
+	id S1753983Ab2HDQvr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 12:51:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45840 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537Ab2HDQvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 12:51:01 -0400
-X-IronPort-AV: E=Sophos;i="4.77,713,1336341600"; 
-   d="scan'208";a="152439853"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: kernel-janitors@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] drivers/video/backlight/da9052_bl.c: drop devm_kfree of devm_kzalloc'd data
-Date: Sat,  4 Aug 2012 18:50:48 +0200
-Message-Id: <1344099049-15212-5-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	Sat, 4 Aug 2012 12:51:44 -0400
+Message-ID: <501D531D.7050607@canonical.com>
+Date: Sat, 04 Aug 2012 18:51:41 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Calvin Walton <calvin.walton@kepstin.ca>
+CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: Re: Why is there no nouveau driver maintainer listed in MAINTAINERS?
+References: <CAHFgRy_uo2wgFjockPmQgS18X76NxEBAkzJKc_ELTEmhmjuYWA@mail.gmail.com>  <CAFLxGvwapPJthzm6=EzRmrhWRJn5YzKcSomD7GKeTX74zQTdag@mail.gmail.com> <1344097981.4495.6.camel@ayu>
+In-Reply-To: <1344097981.4495.6.camel@ayu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Hey,
 
-devm_kfree should not have to be explicitly used.
+Op 04-08-12 18:33, Calvin Walton schreef:
+> On Sat, 2012-08-04 at 17:49 +0200, richard -rw- weinberger wrote:
+>> On Sat, Aug 4, 2012 at 5:36 PM, Miles Lane <miles.lane@gmail.com> wrote:
+>>> I would like to report an issue in the nouveau driver, but don't know
+>>> who to report it to.
+>> We have a script for this.
+>>
+>> rw@raccoon:/media/data1/linux-2.6 (master)>
+>> ./scripts/get_maintainer.pl -f ./drivers/gpu/drm/nouveau
+>> Ben Skeggs <bskeggs@redhat.com> (commit_signer:399/442=90%)
+>> Dave Airlie <airlied@redhat.com> (commit_signer:40/442=9%)
+>> Martin Peres <martin.peres@labri.fr> (commit_signer:35/442=8%)
+>> linux-kernel@vger.kernel.org (open list)
+> In addition, the nouveau driver has its own mailing list, at
+> nouveau@lists.freedesktop.org - and they respond to issues on the
+> http://bugs.freedesktop.org/ bugzilla.
+>
 
-The semantic patch that fixes this problem is as follows:
-(http://coccinelle.lip6.fr/)
+How does this look?
 
-// <smpl>
-@@
-expression x,d;
-@@
+I would like to have feedback from Ben Skeggs and Dave Airlie on this
+patch, but would make sense to add nouveau to the maintainers list.
 
-x = devm_kzalloc(...)
-...
-?-devm_kfree(d,x);
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/video/backlight/da9052_bl.c |    2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/video/backlight/da9052_bl.c b/drivers/video/backlight/da9052_bl.c
-index b628d68..7c8626a 100644
---- a/drivers/video/backlight/da9052_bl.c
-+++ b/drivers/video/backlight/da9052_bl.c
-@@ -129,7 +129,6 @@ static int da9052_backlight_probe(struct platform_device *pdev)
- 				       &da9052_backlight_ops, &props);
- 	if (IS_ERR(bl)) {
- 		dev_err(&pdev->dev, "Failed to register backlight\n");
--		devm_kfree(&pdev->dev, wleds);
- 		return PTR_ERR(bl);
- 	}
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fe643e7..791be24 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4828,6 +4828,15 @@ S:	Supported
+ F:	Documentation/filesystems/ntfs.txt
+ F:	fs/ntfs/
  
-@@ -149,7 +148,6 @@ static int da9052_backlight_remove(struct platform_device *pdev)
- 	wleds->state = DA9052_WLEDS_OFF;
- 	da9052_adjust_wled_brightness(wleds);
- 	backlight_device_unregister(bl);
--	devm_kfree(&pdev->dev, wleds);
- 
- 	return 0;
- }
++NOUVEAU DRIVER
++M:	Ben Skeggs <bskeggs@redhat.com>
++L:	nouveau@lists.freedesktop.org (subscribers-only)
++L:	dri-devel@lists.freedesktop.org
++T:	git git://anongit.freedesktop.org/nouveau/linux-2.6
++S:	Maintained
++F:	drivers/gpu/drm/nouveau/
++F:	include/drm/nouveau_drm.h
++
+ NVIDIA (rivafb and nvidiafb) FRAMEBUFFER DRIVER
+ M:	Antonino Daplas <adaplas@gmail.com>
+ L:	linux-fbdev@vger.kernel.org
 
