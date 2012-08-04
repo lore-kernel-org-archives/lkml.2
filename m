@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386Ab2HDEBy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 00:01:54 -0400
+	id S1751864Ab2HDECE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 00:02:04 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:45263 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001Ab2HDEBu (ORCPT
+	with ESMTP id S1751001Ab2HDEB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 00:01:50 -0400
+	Sat, 4 Aug 2012 00:01:57 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Borislav Petkov <borislav.petkov@amd.com>,
         linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH v1 01/15] firmware loader: simplify pages ownership transfer
-Date: Sat,  4 Aug 2012 12:01:16 +0800
-Message-Id: <1344052890-31935-2-git-send-email-ming.lei@canonical.com>
+Subject: [RFC PATCH v1 02/15] firmware loader: fix races during loading firmware
+Date: Sat,  4 Aug 2012 12:01:17 +0800
+Message-Id: <1344052890-31935-3-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
 References: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
@@ -23,174 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch doesn't transfer ownership of pages' buffer to the
-instance of firmware until the firmware loading is completed,
-which will simplify firmware_loading_store a lot, so help
-to introduce the following cache_firmware and uncache_firmware
-mechanism during system suspend-resume cycle.
+This patch fixes two races in loading firmware:
 
-In fact, this patch fixes one bug: if writing data into
-firmware loader device is bypassed between writting 1 and 0 to
-'loading', OOPS will be triggered without the patch.
+1, FW_STATUS_DONE should be set before waking up the task waitting
+on _request_firmware_load, otherwise FW_STATUS_ABORT may be
+thought as DONE mistakenly.
 
-Also handle the vmap failure case, and add some comments to make
-code more readable.
+2, Inside _request_firmware_load(), there is a small window between
+wait_for_completion() and mutex_lock(&fw_lock), and 'echo 1 > loading'
+still may happen during the period, so this patch checks FW_STATUS_DONE
+to prevent pages' buffer completed from being freed in firmware_loading_store.
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/base/firmware_class.c |   62 ++++++++++++++++++++++++++---------------
- 1 file changed, 39 insertions(+), 23 deletions(-)
+ drivers/base/firmware_class.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 803cfc1..1cbefcf 100644
+index 1cbefcf..1915ad8 100644
 --- a/drivers/base/firmware_class.c
 +++ b/drivers/base/firmware_class.c
-@@ -93,6 +93,8 @@ struct firmware_priv {
- 	struct completion completion;
- 	struct firmware *fw;
- 	unsigned long status;
-+	void *data;
-+	size_t size;
- 	struct page **pages;
- 	int nr_pages;
- 	int page_array_size;
-@@ -156,9 +158,11 @@ static void fw_dev_release(struct device *dev)
- 	struct firmware_priv *fw_priv = to_firmware_priv(dev);
- 	int i;
- 
-+	/* free untransfered pages buffer */
- 	for (i = 0; i < fw_priv->nr_pages; i++)
- 		__free_page(fw_priv->pages[i]);
- 	kfree(fw_priv->pages);
-+
- 	kfree(fw_priv);
- 
- 	module_put(THIS_MODULE);
-@@ -194,6 +198,7 @@ static ssize_t firmware_loading_show(struct device *dev,
- 	return sprintf(buf, "%d\n", loading);
- }
- 
-+/* firmware holds the ownership of pages */
- static void firmware_free_data(const struct firmware *fw)
- {
- 	int i;
-@@ -237,9 +242,7 @@ static ssize_t firmware_loading_store(struct device *dev,
- 
+@@ -243,18 +243,21 @@ static ssize_t firmware_loading_store(struct device *dev,
  	switch (loading) {
  	case 1:
--		firmware_free_data(fw_priv->fw);
--		memset(fw_priv->fw, 0, sizeof(struct firmware));
--		/* If the pages are not owned by 'struct firmware' */
-+		/* discarding any previous partial load */
- 		for (i = 0; i < fw_priv->nr_pages; i++)
- 			__free_page(fw_priv->pages[i]);
- 		kfree(fw_priv->pages);
-@@ -250,20 +253,6 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 		/* discarding any previous partial load */
+-		for (i = 0; i < fw_priv->nr_pages; i++)
+-			__free_page(fw_priv->pages[i]);
+-		kfree(fw_priv->pages);
+-		fw_priv->pages = NULL;
+-		fw_priv->page_array_size = 0;
+-		fw_priv->nr_pages = 0;
+-		set_bit(FW_STATUS_LOADING, &fw_priv->status);
++		if (!test_bit(FW_STATUS_DONE, &fw_priv->status)) {
++			for (i = 0; i < fw_priv->nr_pages; i++)
++				__free_page(fw_priv->pages[i]);
++			kfree(fw_priv->pages);
++			fw_priv->pages = NULL;
++			fw_priv->page_array_size = 0;
++			fw_priv->nr_pages = 0;
++			set_bit(FW_STATUS_LOADING, &fw_priv->status);
++		}
  		break;
  	case 0:
  		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
--			vunmap(fw_priv->fw->data);
--			fw_priv->fw->data = vmap(fw_priv->pages,
--						 fw_priv->nr_pages,
--						 0, PAGE_KERNEL_RO);
--			if (!fw_priv->fw->data) {
--				dev_err(dev, "%s: vmap() failed\n", __func__);
--				goto err;
--			}
--			/* Pages are now owned by 'struct firmware' */
--			fw_priv->fw->pages = fw_priv->pages;
--			fw_priv->pages = NULL;
--
--			fw_priv->page_array_size = 0;
--			fw_priv->nr_pages = 0;
- 			complete(&fw_priv->completion);
+-			complete(&fw_priv->completion);
++			set_bit(FW_STATUS_DONE, &fw_priv->status);
  			clear_bit(FW_STATUS_LOADING, &fw_priv->status);
++			complete(&fw_priv->completion);
  			break;
-@@ -273,7 +262,6 @@ static ssize_t firmware_loading_store(struct device *dev,
- 		dev_err(dev, "%s: unexpected value (%d)\n", __func__, loading);
+ 		}
  		/* fallthrough */
- 	case -1:
--	err:
- 		fw_load_abort(fw_priv);
- 		break;
- 	}
-@@ -299,12 +287,12 @@ static ssize_t firmware_data_read(struct file *filp, struct kobject *kobj,
- 		ret_count = -ENODEV;
- 		goto out;
- 	}
--	if (offset > fw->size) {
-+	if (offset > fw_priv->size) {
- 		ret_count = 0;
- 		goto out;
- 	}
--	if (count > fw->size - offset)
--		count = fw->size - offset;
-+	if (count > fw_priv->size - offset)
-+		count = fw_priv->size - offset;
+@@ -557,7 +560,6 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
  
- 	ret_count = count;
+ 	wait_for_completion(&fw_priv->completion);
  
-@@ -396,6 +384,7 @@ static ssize_t firmware_data_write(struct file *filp, struct kobject *kobj,
- 		retval = -ENODEV;
- 		goto out;
- 	}
-+
- 	retval = fw_realloc_buffer(fw_priv, offset + count);
- 	if (retval)
- 		goto out;
-@@ -418,7 +407,7 @@ static ssize_t firmware_data_write(struct file *filp, struct kobject *kobj,
- 		count -= page_cnt;
- 	}
- 
--	fw->size = max_t(size_t, offset, fw->size);
-+	fw_priv->size = max_t(size_t, offset, fw_priv->size);
- out:
- 	mutex_unlock(&fw_lock);
- 	return retval;
-@@ -504,6 +493,29 @@ static void _request_firmware_cleanup(const struct firmware **firmware_p)
- 	*firmware_p = NULL;
- }
- 
-+/* transfer the ownership of pages to firmware */
-+static int fw_set_page_data(struct firmware_priv *fw_priv)
-+{
-+	struct firmware *fw = fw_priv->fw;
-+
-+	fw_priv->data = vmap(fw_priv->pages, fw_priv->nr_pages,
-+				0, PAGE_KERNEL_RO);
-+	if (!fw_priv->data)
-+		return -ENOMEM;
-+
-+	fw->data = fw_priv->data;
-+	fw->pages = fw_priv->pages;
-+	fw->size = fw_priv->size;
-+
-+	WARN_ON(PFN_UP(fw->size) != fw_priv->nr_pages);
-+
-+	fw_priv->nr_pages = 0;
-+	fw_priv->pages = NULL;
-+	fw_priv->data = NULL;
-+
-+	return 0;
-+}
-+
- static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
- 				  long timeout)
- {
-@@ -549,8 +561,12 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+-	set_bit(FW_STATUS_DONE, &fw_priv->status);
  	del_timer_sync(&fw_priv->timeout);
  
  	mutex_lock(&fw_lock);
--	if (!fw_priv->fw->size || test_bit(FW_STATUS_ABORT, &fw_priv->status))
-+	if (!fw_priv->size || test_bit(FW_STATUS_ABORT, &fw_priv->status))
- 		retval = -ENOENT;
-+
-+	/* transfer pages ownership at the last minute */
-+	if (!retval)
-+		retval = fw_set_page_data(fw_priv);
- 	fw_priv->fw = NULL;
- 	mutex_unlock(&fw_lock);
- 
 -- 
 1.7.9.5
 
