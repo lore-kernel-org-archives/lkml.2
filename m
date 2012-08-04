@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab2HDECi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Aug 2012 00:02:38 -0400
+	id S1754058Ab2HDECp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Aug 2012 00:02:45 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:45263 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab2HDECc (ORCPT
+	with ESMTP id S1751005Ab2HDECj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Aug 2012 00:02:32 -0400
+	Sat, 4 Aug 2012 00:02:39 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Borislav Petkov <borislav.petkov@amd.com>,
         linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH v1 07/15] firmware loader: introduce cache_firmware and uncache_firmware
-Date: Sat,  4 Aug 2012 12:01:22 +0800
-Message-Id: <1344052890-31935-8-git-send-email-ming.lei@canonical.com>
+Subject: [RFC PATCH v1 08/15] firmware loader: fix device lifetime
+Date: Sat,  4 Aug 2012 12:01:23 +0800
+Message-Id: <1344052890-31935-9-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
 References: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
@@ -23,186 +23,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches introduce two kernel APIs of cache_firmware and
-uncache_firmware, both of which take the firmware file name
-as the only parameter.
+Callers of request_firmware* must hold the reference count of
+@device, otherwise it is easy to trigger oops since the firmware
+loader device is the child of @device.
 
-So any drivers can call cache_firmware to cache the specified
-firmware file into kernel memory, and can use the cached firmware
-in situations which can't request firmware from user space.
+This patch adds comments about the usage. In fact, most of drivers
+call request_firmware* in its probe() or open(), so the constraint
+should be reasonable and can be satisfied.
+
+Also this patch holds the reference count of @device before
+schedule_work() in request_firmware_nowait() to avoid that
+the @device is released after request_firmware_nowait returns
+and before the worker function is scheduled.
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/base/firmware_class.c |  100 +++++++++++++++++++++++++++++++++++++----
- include/linux/firmware.h      |   12 +++++
- 2 files changed, 104 insertions(+), 8 deletions(-)
+ drivers/base/firmware_class.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 848ad97..fc119ce 100644
+index fc119ce..7d3a83b 100644
 --- a/drivers/base/firmware_class.c
 +++ b/drivers/base/firmware_class.c
-@@ -142,6 +142,17 @@ static struct firmware_buf *__allocate_fw_buf(const char *fw_name,
- 	return buf;
- }
+@@ -742,6 +742,8 @@ err_put_dev:
+  *      @name will be used as $FIRMWARE in the uevent environment and
+  *      should be distinctive enough not to be confused with any other
+  *      firmware image for this or any other device.
++ *
++ *	Caller must hold the reference count of @device.
+  **/
+ int
+ request_firmware(const struct firmware **firmware_p, const char *name,
+@@ -823,6 +825,7 @@ static void request_firmware_work_func(struct work_struct *work)
  
-+static struct firmware_buf *__fw_lookup_buf(const char *fw_name)
-+{
-+	struct firmware_buf *tmp;
-+	struct firmware_cache *fwc = &fw_cache;
-+
-+	list_for_each_entry(tmp, &fwc->head, list)
-+		if (!strcmp(tmp->fw_id, fw_name))
-+			return tmp;
-+	return NULL;
-+}
-+
- static int fw_lookup_and_allocate_buf(const char *fw_name,
- 				      struct firmware_cache *fwc,
- 				      struct firmware_buf **buf)
-@@ -149,14 +160,13 @@ static int fw_lookup_and_allocate_buf(const char *fw_name,
- 	struct firmware_buf *tmp;
+  out:
+ 	fw_work->cont(fw, fw_work->context);
++	put_device(fw_work->device);
  
- 	spin_lock(&fwc->lock);
--	list_for_each_entry(tmp, &fwc->head, list)
--		if (!strcmp(tmp->fw_id, fw_name)) {
--			kref_get(&tmp->ref);
--			spin_unlock(&fwc->lock);
--			*buf = tmp;
--			return 1;
--		}
--
-+	tmp = __fw_lookup_buf(fw_name);
-+	if (tmp) {
-+		kref_get(&tmp->ref);
-+		spin_unlock(&fwc->lock);
-+		*buf = tmp;
-+		return 1;
-+	}
- 	tmp = __allocate_fw_buf(fw_name, fwc);
- 	if (tmp)
- 		list_add(&tmp->list, &fwc->head);
-@@ -167,6 +177,18 @@ static int fw_lookup_and_allocate_buf(const char *fw_name,
- 	return tmp ? 0 : -ENOMEM;
- }
+ 	module_put(fw_work->module);
+ 	kfree(fw_work);
+@@ -841,6 +844,8 @@ static void request_firmware_work_func(struct work_struct *work)
+  * @cont: function will be called asynchronously when the firmware
+  *	request is over.
+  *
++ *	Caller must hold the reference count of @device.
++ *
+  *	Asynchronous variant of request_firmware() for user contexts where
+  *	it is not possible to sleep for long time. It can't be called
+  *	in atomic contexts.
+@@ -869,6 +874,7 @@ request_firmware_nowait(
+ 		return -EFAULT;
+ 	}
  
-+static struct firmware_buf *fw_lookup_buf(const char *fw_name)
-+{
-+	struct firmware_buf *tmp;
-+	struct firmware_cache *fwc = &fw_cache;
-+
-+	spin_lock(&fwc->lock);
-+	tmp = __fw_lookup_buf(fw_name);
-+	spin_unlock(&fwc->lock);
-+
-+	return tmp;
-+}
-+
- static void __fw_free_buf(struct kref *ref)
- {
- 	struct firmware_buf *buf = to_fwbuf(ref);
-@@ -852,6 +874,66 @@ request_firmware_nowait(
++	get_device(fw_work->device);
+ 	INIT_WORK(&fw_work->work, request_firmware_work_func);
+ 	schedule_work(&fw_work->work);
  	return 0;
- }
- 
-+/**
-+ * cache_firmware - cache one firmware image in kernel memory space
-+ * @fw_name: the firmware image name
-+ *
-+ * Cache firmware in kernel memory so that drivers can use it when
-+ * system isn't ready for them to request firmware image from userspace.
-+ * Once it returns successfully, driver can use request_firmware or its
-+ * nowait version to get the cached firmware without any interacting
-+ * with userspace
-+ *
-+ * Return 0 if the firmware image has been cached successfully
-+ * Return !0 otherwise
-+ *
-+ */
-+int cache_firmware(const char *fw_name)
-+{
-+	int ret;
-+	const struct firmware *fw;
-+
-+	pr_debug("%s: %s\n", __func__, fw_name);
-+
-+	ret = request_firmware(&fw, fw_name, NULL);
-+	if (!ret)
-+		kfree(fw);
-+
-+	pr_debug("%s: %s ret=%d\n", __func__, fw_name, ret);
-+
-+	return ret;
-+}
-+
-+/**
-+ * uncache_firmware - remove one cached firmware image
-+ * @fw_name: the firmware image name
-+ *
-+ * Uncache one firmware image which has been cached successfully
-+ * before.
-+ *
-+ * Return 0 if the firmware cache has been removed successfully
-+ * Return !0 otherwise
-+ *
-+ */
-+int uncache_firmware(const char *fw_name)
-+{
-+	struct firmware_buf *buf;
-+	struct firmware fw;
-+
-+	pr_debug("%s: %s\n", __func__, fw_name);
-+
-+	if (fw_get_builtin_firmware(&fw, fw_name))
-+		return 0;
-+
-+	buf = fw_lookup_buf(fw_name);
-+	if (buf) {
-+		fw_free_buf(buf);
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+
- static int __init firmware_class_init(void)
- {
- 	fw_cache_init();
-@@ -869,3 +951,5 @@ module_exit(firmware_class_exit);
- EXPORT_SYMBOL(release_firmware);
- EXPORT_SYMBOL(request_firmware);
- EXPORT_SYMBOL(request_firmware_nowait);
-+EXPORT_SYMBOL_GPL(cache_firmware);
-+EXPORT_SYMBOL_GPL(uncache_firmware);
-diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-index e85b771..e4279fe 100644
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -47,6 +47,8 @@ int request_firmware_nowait(
- 	void (*cont)(const struct firmware *fw, void *context));
- 
- void release_firmware(const struct firmware *fw);
-+int cache_firmware(const char *name);
-+int uncache_firmware(const char *name);
- #else
- static inline int request_firmware(const struct firmware **fw,
- 				   const char *name,
-@@ -65,6 +67,16 @@ static inline int request_firmware_nowait(
- static inline void release_firmware(const struct firmware *fw)
- {
- }
-+
-+static inline int cache_firmware(const char *name)
-+{
-+	return -ENOENT;
-+}
-+
-+static inline int uncache_firmware(const char *name)
-+{
-+	return -EINVAL;
-+}
- #endif
- 
- #endif
 -- 
 1.7.9.5
 
