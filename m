@@ -1,114 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab2HEOZE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 10:25:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46015 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab2HEOZC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 10:25:02 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, trivial@kernel.org, cjb@laptop.org,
-        linux-mmc@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] mmc: Fix typo in mmc
-Date: Sun,  5 Aug 2012 23:25:40 +0900
-Message-Id: <1344176740-5521-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.12.rc1.17.g9a7365c
+	id S1754596Ab2HEOZU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 10:25:20 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754561Ab2HEOZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 10:25:17 -0400
+Message-ID: <501E823E.7080101@nod.at>
+Date: Sun, 05 Aug 2012 16:25:02 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+CC: artem.bityutskiy@linux.intel.com, Tim Bird <tim.bird@am.sony.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "adrian.hunter@intel.com" <adrian.hunter@intel.com>,
+        "Heinz.Egger@linutronix.de" <Heinz.Egger@linutronix.de>,
+        "thomas.wucher@linutronix.de" <thomas.wucher@linutronix.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Marius.Mazarel@ugal.ro" <Marius.Mazarel@ugal.ro>,
+        "nyoushchenko@mvista.com" <nyoushchenko@mvista.com>
+Subject: Re: UBI fastmap updates
+References: <1341836323-43916-1-git-send-email-richard@nod.at> <1343916747.25013.112.camel@sauron.fi.intel.com> <20120802161512.5ac7a303@spider.haslach.nod.at> <1343917741.25013.114.camel@sauron.fi.intel.com> <20120802165132.1bf1e5d7@spider.haslach.nod.at> <1343924267.25013.156.camel@sauron.fi.intel.com> <20120802183210.7076aa48@spider.haslach.nod.at> <1343925930.25013.163.camel@sauron.fi.intel.com> <501AB2C8.9010805@am.sony.com> <1343929200.25013.197.camel@sauron.fi.intel.com> <20120802194538.26e2ec98@spider.haslach.nod.at> <20120805112337.2a315c75@pixies.home.jungo.com>
+In-Reply-To: <20120805112337.2a315c75@pixies.home.jungo.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigDEB34771C7FA71702DB3F5AE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in drivers/mmc
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigDEB34771C7FA71702DB3F5AE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/mmc/core/sdio.c            | 2 +-
- drivers/mmc/host/at91_mci.c        | 2 +-
- drivers/mmc/host/atmel-mci.c       | 2 +-
- drivers/mmc/host/omap_hsmmc.c      | 2 +-
- drivers/mmc/host/sdhci-esdhc-imx.c | 2 +-
- drivers/mmc/host/vub300.c          | 2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
+Am 05.08.2012 10:23, schrieb Shmulik Ladkani:
+> On Thu, 2 Aug 2012 19:45:38 +0200 Richard Weinberger <richard@nod.at> w=
+rote:
+>> Okay, then let's explicitly reserve a few PEBs for fastmap.
+>> This should be very easy task.
+>=20
+> Need to consider what's expected when migrating from a former non-FM
+> UBI system to an FM enabled system, in the case where all PEBs where
+> consumed (reserved) in the former system.
 
-diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index d4619e2..2273ce6 100644
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -641,7 +641,7 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
- 	/*
- 	 * If the host and card support UHS-I mode request the card
- 	 * to switch to 1.8V signaling level.  No 1.8v signalling if
--	 * UHS mode is not enabled to maintain compatibilty and some
-+	 * UHS mode is not enabled to maintain compatibility and some
- 	 * systems that claim 1.8v signalling in fact do not support
- 	 * it.
- 	 */
-diff --git a/drivers/mmc/host/at91_mci.c b/drivers/mmc/host/at91_mci.c
-index efdb81d..74bed0f 100644
---- a/drivers/mmc/host/at91_mci.c
-+++ b/drivers/mmc/host/at91_mci.c
-@@ -356,7 +356,7 @@ static void at91_mci_handle_transmitted(struct at91mci_host *host)
- }
- 
- /*
-- * Update bytes tranfered count during a write operation
-+ * Update bytes transfered count during a write operation
-  */
- static void at91_mci_update_bytes_xfered(struct at91mci_host *host)
- {
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index 322412c..eea9cf2 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1021,7 +1021,7 @@ static void atmci_stop_transfer(struct atmel_mci *host)
- }
- 
- /*
-- * Stop data transfer because error(s) occured.
-+ * Stop data transfer because error(s) occurred.
-  */
- static void atmci_stop_transfer_pdc(struct atmel_mci *host)
- {
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index 3a09f93..686e256 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -447,7 +447,7 @@ static void omap_hsmmc_stop_clock(struct omap_hsmmc_host *host)
- 	OMAP_HSMMC_WRITE(host->base, SYSCTL,
- 		OMAP_HSMMC_READ(host->base, SYSCTL) & ~CEN);
- 	if ((OMAP_HSMMC_READ(host->base, SYSCTL) & CEN) != 0x0)
--		dev_dbg(mmc_dev(host->mmc), "MMC Clock is not stoped\n");
-+		dev_dbg(mmc_dev(host->mmc), "MMC Clock is not stopped\n");
- }
- 
- static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host,
-diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-index e23f813..32f4a07 100644
---- a/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -315,7 +315,7 @@ static void esdhc_writeb_le(struct sdhci_host *host, u8 val, int reg)
- 		new_val = val & (SDHCI_CTRL_LED | \
- 				SDHCI_CTRL_4BITBUS | \
- 				SDHCI_CTRL_D3CD);
--		/* ensure the endianess */
-+		/* ensure the endianness */
- 		new_val |= ESDHC_HOST_CONTROL_LE;
- 		/* bits 8&9 are reserved on mx25 */
- 		if (!is_imx25_esdhc(imx_data)) {
-diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
-index 3135a1a..58eab9a 100644
---- a/drivers/mmc/host/vub300.c
-+++ b/drivers/mmc/host/vub300.c
-@@ -806,7 +806,7 @@ static void command_res_completed(struct urb *urb)
- 		 * we suspect a buggy USB host controller
- 		 */
- 	} else if (!vub300->data) {
--		/* this means that the command (typically CMD52) suceeded */
-+		/* this means that the command (typically CMD52) succeeded */
- 	} else if (vub300->resp.common.header_type != 0x02) {
- 		/*
- 		 * this is an error response from the VUB300 chip
--- 
-1.7.12.rc1.17.g9a7365c
+If no PEBs are available no fastmap can be installed.
+*Maybe* we can steal some PEBs which reserved for bad block handling.
 
+>> How much PEB should be reserved? 2 x sizeof(fastmap)?
+>=20
+> Since FM does not use EBA's atomic LEB change when writing the new
+> fastmap, but instead implements its own FM "leb change" internally -
+> then reserving 2x is needed if we'd like to avoid reusing the same
+> fastmap PEB.
+
+Yep.
+
+Thanks,
+//richard
+
+
+--------------enigDEB34771C7FA71702DB3F5AE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJQHoJCAAoJEN9758yqZn9e7CsH/R4gcauhmpf45X6Q+nrJMKqM
+wXW174uPDl8zryUGtaFUr2Hg1aqEjY4vkha30klfJypkSfb8m7Zgf//W6QRqRb/b
+2XcCgNILzo6+Mq5Gi63MVonAHNlafNQkIHkDHQqyKoGTeSmmWp4hHJomFXGMzG+3
+z7/dBdenx1jcHFYD/YM1x/t6MyuF11fuzjCvJ0saDcTdqxt/Pi60/yI6y58ZhYxP
++DwM53/kXNBiQs2HqfhhZLDGV8SIJydkgduv3uu0r4hf0hEgIFbuqOCs5pBsTU5k
+tD+ZXbg0ZHWzB1mEcTexK9ZSvh3rvtNmkdmD3VmWtCRDlv4m+52UcpVdMNfB88w=
+=lyki
+-----END PGP SIGNATURE-----
+
+--------------enigDEB34771C7FA71702DB3F5AE--
