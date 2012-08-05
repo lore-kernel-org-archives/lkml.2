@@ -1,109 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab2HESml (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 14:42:41 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:34117 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754776Ab2HESmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 14:42:38 -0400
-Date: Sun, 5 Aug 2012 11:39:56 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Alex Kelly <alex.page.kelly@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [NAK] Re: [PATCHv3 1/4] fs: Move core dump functionality into its
- own file
-Message-ID: <20120805183956.GE28340@outflux.net>
-References: <1344027800-8270-1-git-send-email-eshink@gmail.com>
- <1344165521-14200-1-git-send-email-alex.page.kelly@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344165521-14200-1-git-send-email-alex.page.kelly@gmail.com>
-Organization: Outflux
-X-HELO: www.outflux.net
+	id S1754884Ab2HES4b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 14:56:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46009 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754810Ab2HES4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 14:56:30 -0400
+Message-ID: <1344192968.13142.8.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 33/73] x86, microcode: Sanitize per-cpu microcode reloading
+ interface
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Sven Joachim <svenjoac@gmx.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Kevin Winchester <kjwinchester@gmail.com>
+Date: Sun, 05 Aug 2012 19:56:08 +0100
+In-Reply-To: <20120805092118.GA16462@aftab.osrc.amd.com>
+References: <20120731044310.013763753@decadent.org.uk>
+	 <20120731044316.585695559@decadent.org.uk> <87y5lw73eh.fsf@turtle.gmx.de>
+	 <20120803094314.GB31792@aftab.osrc.amd.com>
+	 <20120803122727.GA32299@aftab.osrc.amd.com>
+	 <1344094877.4642.183.camel@deadeye.wl.decadent.org.uk>
+	 <20120804160745.GA17188@khazad-dum.debian.net>
+	 <1344101021.4642.187.camel@deadeye.wl.decadent.org.uk>
+	 <20120805092118.GA16462@aftab.osrc.amd.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-GbUbtBU8XPmBHwXQwZQz"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
 
-Overall, this seems like a fine idea. However, I think the code move
-has gone very badly. Comments are mismatched, there are typos added,
-formatting changed, case changed, trailing white space added, and
-punctuation dropped.
+--=-GbUbtBU8XPmBHwXQwZQz
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-NAKed-by: Kees Cook <keescook@chromium.org>
+On Sun, 2012-08-05 at 11:21 +0200, Borislav Petkov wrote:
+> On Sat, Aug 04, 2012 at 06:23:41PM +0100, Ben Hutchings wrote:
+>=20
+> [ =E2=80=A6 ]
+>=20
+> > > > Thanks everyone for working this out.
+> > > >
+> > > > If you combine multiple mainline commits like this, the new commit
+> > > > message should refer to all of them. I've fixed that up this time.
+>=20
+> Thanks.
+>=20
+> > > Ben, the backport is also needed on 3.0 and 3.4, do you have your pat=
+ch
+> > > queue available for download/pull somewhere?
+> >=20
+> > This is in v3.2.26, tagged in git
+> > <git://git.kernel.org/pub/scm/linux/kernel/git/bwh/linux-3.2.y.git>.
+> > I'll wait for Greg to generate tarballs etc. before sending the
+> > announcement.
+>=20
+> Ok, guys.
+>=20
+> Pls let me know if I should send the backported patch for 3.0 and 3.4 to
+> Greg or you are doing this.
 
-On Sun, Aug 05, 2012 at 04:18:38AM -0700, Alex Kelly wrote:
-> +/* The maximal length of core_pattern is also specified in sysctl.c */
-> +static int zap_process(struct task_struct *start, int exit_code)
+Please do that.  They will both need commit
+e826abd523913f63eb03b59746ffb16153c53dc4 ('x86, microcode:
+microcode_core.c simple_strtoul cleanup') and 3.0 needs the !SMP fix.
 
-These two lines have nothing to do with each other. This comment belongs
-with "char core_pattern[CORENAME_MAX_SIZE] = "core";", IIUC.
+Ben.
 
-Why is zap_process not with the zap_threads helpers?
+--=20
+Ben Hutchings
+Computers are not intelligent.	They only think they are.
 
-> +void do_coredump(long signr, int exit_code, struct pt_regs *regs)
-> +[...]
-> +	 * so we dump it as root in mode 2, and onlt into a controlled
+--=-GbUbtBU8XPmBHwXQwZQz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-"onlt"? The removed code didn't have this typo. Was the moved code
-not cut/pasted? That got my attention. In fact, I went and compared
-all the code that was moved, and this was not the only change -- what
-happened here?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
---- /tmp/del.code	2012-08-05 11:32:36.602881193 -0700
-+++ /tmp/add.code	2012-08-05 11:33:06.615270285 -0700
-@@ -327,7 +328,7 @@
- 		core_waiters = zap_threads(tsk, mm, core_state, exit_code);
- 	up_write(&mm->mmap_sem);
- 
--	if (core_waiters > 0) {
-+	if (core_waiters > 0){
- 		struct core_thread *ptr;
- 
- 		wait_for_completion(&core_state->startup);
-@@ -466,8 +467,8 @@
- 	/*
- 	 * We cannot trust fsuid as being the "true" uid of the process
- 	 * nor do we know its entire history. We only know it was tainted
--	 * so we dump it as root in mode 2, and only into a controlled
--	 * environment (pipe handler or fully qualified path).
-+	 * so we dump it as root in mode 2, and onlt into a controlled
-+	 * environment (pipe handler or fully qualified path)
- 	 */
- 	if (__get_dumpable(cprm.mm_flags) == SUID_DUMPABLE_SAFE) {
- 		/* Setuid core dump mode */
-@@ -505,11 +506,11 @@
- 			 *
- 			 * Normally core limits are irrelevant to pipes, since
- 			 * we're not writing to the file system, but we use
--			 * cprm.limit of 1 here as a speacial value, this is a
-+			 * cprm.limit of 1 here as a speacial value, this is a 
- 			 * consistent way to catch recursive crashes.
- 			 * We can still crash if the core_pattern binary sets
- 			 * RLIM_CORE = !1, but it runs as root, and can do
--			 * lots of stupid things.
-+			 * lots of stupid things
- 			 *
- 			 * Note that we use task_tgid_vnr here to grab the pid
- 			 * of the process group leader.  That way we get the
-@@ -556,7 +557,7 @@
- 
- 		if (need_nonrelative && cn.corename[0] != '/') {
- 			printk(KERN_WARNING "Pid %d(%s) can only dump core "\
--				"to fully qualified path!\n",
-+				"To fully qualified path!\n",
- 				task_tgid_vnr(current), current->comm);
- 			printk(KERN_WARNING "Skipping core dump\n");
- 			goto fail_unlock;
+iQIVAwUAUB7ByOe/yOyVhhEJAQpCHg/+Kf5TdiJjUZSi+Jw1zeg7iWxT7u2ROUY8
+Gpkgmsu0GfckAiO8/y07xyWZywFt9iq+z4phgHz4LAtGqY1Fj4MfWq4vjFL9dkjF
+MlVrSWGKhfxqeq1KNW1l3jvUbwMnbA2FOWm/tBQUAAZLp3YHPLQQHMvEzXh/nsZK
+4BazU7EBDWNhGHVM3VtaFBfqpf5fWmVNvPSVAdF/nratyBk+sJfRFM8ELc5wCIVz
+RoOzHSBpOisbexvcA0PgMq79r3prHMdFPnRkV/6HgO0O6JfqrIcUftRQW7cOndJN
+2cJorw23IGqIKkjRK+BVkX7WZWzYBGfYilW+iZSPF2QtE7uvssam7aFRechJ4RAF
+QTMh+NggFBp5CNLEB5S/jOilGOF8Vgym3NmG10h7KyFaWwzsQk2UWhTHQY0E+YYa
+xGERNnut3j7Rti7NqjMjDBqCV8q7m2yv0S1JZYXJTfZYgFZ0PS0UJuj+2/q2Qb9J
+zqkvbVl41V8DkDmHPQoBw7QZxS4A3Xs0exV4elgKWyWZoW3GWVvGPU3BJy4/iHsC
+tDR/YbVSBUnpQBzgJoERmUBzK4TM3aGPaeN0ZqB9xe1sU5/uUMu5w8d+POF8mHFN
+fwNT3hTCzUhdmY4NuwHIsYtDhuQO6gvkLc10A6BEXbahVoW9nyVVvKMe38wN9XPJ
+zLVbHQmSN6o=
+=d0pk
+-----END PGP SIGNATURE-----
 
-
--Kees
-
--- 
-Kees Cook                                            @outflux.net
+--=-GbUbtBU8XPmBHwXQwZQz--
