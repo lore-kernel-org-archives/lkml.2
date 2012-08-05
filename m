@@ -1,97 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab2HERCV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 13:02:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57088 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab2HERCT (ORCPT
+	id S1755104Ab2HERCe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 13:02:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45292 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755022Ab2HERCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 13:02:19 -0400
-Date: Sun, 5 Aug 2012 09:58:45 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-6b118e92cc78ccef7b54a296158d4738fd377bcc@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
-        dsahern@gmail.com, tglx@linutronix.de, namhyung@kernel.org,
-        jolsa@redhat.com
-In-Reply-To: <1343709095-7089-5-git-send-email-dsahern@gmail.com>
-References: <1343709095-7089-5-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf kvm top:
-  Limit guest kernel info message to once
-Git-Commit-ID: 6b118e92cc78ccef7b54a296158d4738fd377bcc
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 5 Aug 2012 13:02:31 -0400
+Message-ID: <501EA749.9060400@gmail.com>
+Date: Sun, 05 Aug 2012 19:03:05 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 05 Aug 2012 09:58:51 -0700 (PDT)
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org
+Subject: Re: [RFC v2 6/7] tracepoint: use new hashtable implementation
+References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com> <1344003788-1417-7-git-send-email-levinsasha928@gmail.com> <1344126994.27983.116.camel@gandalf.stny.rr.com> <20120805163114.GA21768@Krystal>
+In-Reply-To: <20120805163114.GA21768@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6b118e92cc78ccef7b54a296158d4738fd377bcc
-Gitweb:     http://git.kernel.org/tip/6b118e92cc78ccef7b54a296158d4738fd377bcc
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Mon, 30 Jul 2012 22:31:35 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 3 Aug 2012 10:43:47 -0300
+On 08/05/2012 06:31 PM, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+>> FYI, Mathieu is the author of this file.
+>>
+>> -- Steve
+>>
+>>
+>> On Fri, 2012-08-03 at 16:23 +0200, Sasha Levin wrote:
+>>> Switch tracepoints to use the new hashtable implementation. This reduces the amount of
+>>> generic unrelated code in the tracepoints.
+>>>
+>>> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+>>> ---
+>>>  kernel/tracepoint.c |   26 +++++++++-----------------
+>>>  1 files changed, 9 insertions(+), 17 deletions(-)
+>>>
+>>> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+>>> index d96ba22..b5a2650 100644
+>>> --- a/kernel/tracepoint.c
+>>> +++ b/kernel/tracepoint.c
+>>> @@ -26,6 +26,7 @@
+>>>  #include <linux/slab.h>
+>>>  #include <linux/sched.h>
+>>>  #include <linux/static_key.h>
+>>> +#include <linux/hashtable.h>
+>>>  
+>>>  extern struct tracepoint * const __start___tracepoints_ptrs[];
+>>>  extern struct tracepoint * const __stop___tracepoints_ptrs[];
+>>> @@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
+>>>   * Protected by tracepoints_mutex.
+>>>   */
+>>>  #define TRACEPOINT_HASH_BITS 6
+>>> -#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
+>>> -static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
+>>> +DEFINE_STATIC_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
+> 
+> I wonder why the "static" has been embedded within
+> "DEFINE_STATIC_HASHTABLE" ? I'm used to see something similar to:
+> 
+> static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
+> 
+> elsewhere in the kernel (e.g. static DEFINE_PER_CPU(), static
+> DEFINE_MUTEX(), etc).
 
-perf kvm top: Limit guest kernel info message to once
+We had to create two different definitions of hashtable, one to be used as static and one to be used in structs. I chose the uglier way of doing it, and Tejun already pointed it out :)
 
-'perf kvm top' shows a continual flurry of:
-    Can't find guest [5201]'s kernel information
+It will be much nicer in the future.
 
-if it can't find the guest info and with a lot of VMs running a user has no
-chance of reading them all. Limit message to once per guest.
+>>>  
+>>>  /*
+>>>   * Note about RCU :
+>>> @@ -191,16 +191,14 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
+>>>   */
+>>>  static struct tracepoint_entry *get_tracepoint(const char *name)
+>>>  {
+>>> -	struct hlist_head *head;
+>>>  	struct hlist_node *node;
+>>>  	struct tracepoint_entry *e;
+>>>  	u32 hash = jhash(name, strlen(name), 0);
+>>>  
+>>> -	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
+>>> -	hlist_for_each_entry(e, node, head, hlist) {
+>>> +	hash_for_each_possible(&tracepoint_table, node, e, hlist, hash)
+>>>  		if (!strcmp(name, e->name))
+>>>  			return e;
+>>> -	}
+>>> +
+> 
+> Typically, where there are 2 or more nesting levels, I try to keep the
+> outer brackets, even if the 1st level only contain a single statement
+> (this is what I did across tracepoint.c). This is especially useful when
+> nesting multiple if levels, and ensures the "else" clause match the
+> right if. We might want to keep it that way within the file, to ensure
+> style consistency.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1343709095-7089-5-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+Roger that, will fix.
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 3409627..68cd61e 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -38,6 +38,7 @@
- #include "util/cpumap.h"
- #include "util/xyarray.h"
- #include "util/sort.h"
-+#include "util/intlist.h"
- 
- #include "util/debug.h"
- 
-@@ -706,8 +707,16 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 	int err;
- 
- 	if (!machine && perf_guest) {
--		pr_err("Can't find guest [%d]'s kernel information\n",
--			event->ip.pid);
-+		static struct intlist *seen;
-+
-+		if (!seen)
-+			seen = intlist__new();
-+
-+		if (!intlist__has_entry(seen, event->ip.pid)) {
-+			pr_err("Can't find guest [%d]'s kernel information\n",
-+				event->ip.pid);
-+			intlist__add(seen, event->ip.pid);
-+		}
- 		return;
- 	}
- 
+> Other than that, it looks good!
+> 
+> Thanks!
+> 
+> Mathieu
+> 
+
+Thanks for the review Mathieu!
+
