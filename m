@@ -1,530 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab2HEMgo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 08:36:44 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:38352 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab2HEMgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 08:36:42 -0400
-Message-ID: <501E68C3.3080108@free.fr>
-Date: Sun, 05 Aug 2012 14:36:19 +0200
-From: Vincent Blut <vincent.debian@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
-MIME-Version: 1.0
-To: dgreid@chromium.org
-CC: tiwai@suse.de, perex@perex.cz, linux-kernel@vger.kernel.org
-Subject: sound: BUG: can't load gdm greeter on battery with Linux 3.5
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/mixed;
- boundary="------------000606030601080004070409"
+	id S1754429Ab2HEMuj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 08:50:39 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:41865 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab2HEMui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 08:50:38 -0400
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: m.szyprowski@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dma-mapping: fix incorrect freeing of atomic allocations
+Date: Sun,  5 Aug 2012 15:50:29 +0300
+Message-Id: <1344171029-24804-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000606030601080004070409
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Commit e9da6e9905e639b0f842a244bc770b48ad0523e9 (ARM: dma-mapping:
+remove custom consistent dma region) changed the way atomic allocations
+are handled. However, arm_dma_free() was not modified accordingly, and
+as a result freeing of atomic allocations does not work correctly when
+CMA is disabled. Memory is leaked and following WARNINGs are seen:
 
-Hi,
+[   57.698911] ------------[ cut here ]------------
+[   57.753518] WARNING: at arch/arm/mm/dma-mapping.c:263 arm_dma_free+0x88/0xe4()
+[   57.811473] trying to free invalid coherent area: e0848000
+[   57.867398] Modules linked in: sata_mv(-)
+[   57.921373] [<c000d270>] (unwind_backtrace+0x0/0xf0) from [<c0015430>] (warn_slowpath_common+0x50/0x68)
+[   58.033924] [<c0015430>] (warn_slowpath_common+0x50/0x68) from [<c00154dc>] (warn_slowpath_fmt+0x30/0x40)
+[   58.152024] [<c00154dc>] (warn_slowpath_fmt+0x30/0x40) from [<c000dc18>] (arm_dma_free+0x88/0xe4)
+[   58.219592] [<c000dc18>] (arm_dma_free+0x88/0xe4) from [<c008fa30>] (dma_pool_destroy+0x100/0x148)
+[   58.345526] [<c008fa30>] (dma_pool_destroy+0x100/0x148) from [<c019a64c>] (release_nodes+0x144/0x218)
+[   58.475782] [<c019a64c>] (release_nodes+0x144/0x218) from [<c0197e10>] (__device_release_driver+0x60/0xb8)
+[   58.614260] [<c0197e10>] (__device_release_driver+0x60/0xb8) from [<c0198608>] (driver_detach+0xd8/0xec)
+[   58.756527] [<c0198608>] (driver_detach+0xd8/0xec) from [<c0197c54>] (bus_remove_driver+0x7c/0xc4)
+[   58.901648] [<c0197c54>] (bus_remove_driver+0x7c/0xc4) from [<c004bfac>] (sys_delete_module+0x19c/0x220)
+[   59.051447] [<c004bfac>] (sys_delete_module+0x19c/0x220) from [<c0009140>] (ret_fast_syscall+0x0/0x2c)
+[   59.207996] ---[ end trace 0745420412c0325a ]---
+[   59.287110] ------------[ cut here ]------------
+[   59.366324] WARNING: at arch/arm/mm/dma-mapping.c:263 arm_dma_free+0x88/0xe4()
+[   59.450511] trying to free invalid coherent area: e0847000
+[   59.534357] Modules linked in: sata_mv(-)
+[   59.616785] [<c000d270>] (unwind_backtrace+0x0/0xf0) from [<c0015430>] (warn_slowpath_common+0x50/0x68)
+[   59.790030] [<c0015430>] (warn_slowpath_common+0x50/0x68) from [<c00154dc>] (warn_slowpath_fmt+0x30/0x40)
+[   59.972322] [<c00154dc>] (warn_slowpath_fmt+0x30/0x40) from [<c000dc18>] (arm_dma_free+0x88/0xe4)
+[   60.070701] [<c000dc18>] (arm_dma_free+0x88/0xe4) from [<c008fa30>] (dma_pool_destroy+0x100/0x148)
+[   60.256817] [<c008fa30>] (dma_pool_destroy+0x100/0x148) from [<c019a64c>] (release_nodes+0x144/0x218)
+[   60.445201] [<c019a64c>] (release_nodes+0x144/0x218) from [<c0197e10>] (__device_release_driver+0x60/0xb8)
+[   60.634148] [<c0197e10>] (__device_release_driver+0x60/0xb8) from [<c0198608>] (driver_detach+0xd8/0xec)
+[   60.823623] [<c0198608>] (driver_detach+0xd8/0xec) from [<c0197c54>] (bus_remove_driver+0x7c/0xc4)
+[   61.013268] [<c0197c54>] (bus_remove_driver+0x7c/0xc4) from [<c004bfac>] (sys_delete_module+0x19c/0x220)
+[   61.203472] [<c004bfac>] (sys_delete_module+0x19c/0x220) from [<c0009140>] (ret_fast_syscall+0x0/0x2c)
+[   61.393390] ---[ end trace 0745420412c0325b ]---
 
-Despite that the subject might suggest that this is a bug in the graphic
-stack, it appears that
-commit [b4a91cf0] makes the GDM greeter not loadable, however GDM has
-been correctly loaded:
+The patch fixes this.
 
-# service gdm3 status
-[ ok ] gdm3 is running.
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+---
+ arch/arm/mm/dma-mapping.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-This issue only affects Linux 3.5 when I boot on battery, I spent some
-time to bisect and  this commit seems to be the bad one:
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index c2cdf65..2cc77b7 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -648,12 +648,12 @@ void arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
+ 
+ 	if (arch_is_coherent() || nommu()) {
+ 		__dma_free_buffer(page, size);
++	} else if (__free_from_pool(cpu_addr, size)) {
++		return;
+ 	} else if (!IS_ENABLED(CONFIG_CMA)) {
+ 		__dma_free_remap(cpu_addr, size);
+ 		__dma_free_buffer(page, size);
+ 	} else {
+-		if (__free_from_pool(cpu_addr, size))
+-			return;
+ 		/*
+ 		 * Non-atomic allocations cannot be freed with IRQs disabled
+ 		 */
+-- 
+1.7.2.5
 
-commit b4a91cf05c33d4ab5b2b3738a257a3fe49b462bd
-Author: Dylan Reid <dgreid@chromium.org>
-Date:   Fri Jun 15 19:36:23 2012 -0700
-
-    ALSA: hda - Handle open while transitioning to D3.
-   
-    This addresses an issue encountered when a pcm is opened while
-    transitioning to low power state (codec->power_on == 1 &&
-    codec->power_transition == -1).  Add snd_pcm_power_up_d3wait to
-    hda_codec.  This function is used to power up from azx_open as opposed
-    to snd_hda_power_up used from codec_exec_verb. When powering up from
-    azx_open, wait for pending power downs to complete, avoiding the power
-    up continuing in parallel with the power down on the work queue.
-   
-    The specific issue seen was with the CS4210 codec, it powers off the ADC
-    and DAC nid in its suspend handler.  If it is re-opened before the
-    ~100ms power down process completes, the ADC and DAC nid are initialized
-    while powered down and audio is lost until another suspend/resume cycle.
-   
-    Signed-off-by: Dylan Reid <dgreid@chromium.org>
-    Signed-off-by: Takashi Iwai <tiwai@suse.de>
-
-Is this a known issue?
-
-[alsa-info attached]
-
-Have a good day,
-Vincent
-
---------------000606030601080004070409
-Content-Type: text/plain;
- name="alsa-info.txt"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="alsa-info.txt"
-
-name=brutux&type=33&description=/tmp/alsa-info.txt&expiry=&s=Submit+Post&content=
-!!################################
-!!ALSA Information Script v 0.4.61
-!!################################
-
-!!Script ran on: Sun Aug  5 11:33:28 UTC 2012
-
-
-!!Linux Distribution
-!!------------------
-
-
-
-
-!!DMI Information
-!!---------------
-
-Manufacturer:      ASUSTeK COMPUTER INC.
-Product Name:      UX31A
-Product Version:   1.0       
-Firmware Version:  UX31A.206
-
-
-!!Kernel Information
-!!------------------
-
-Kernel release:    3.5.0+
-Operating System:  GNU/Linux
-Architecture:      x86_64
-Processor:         unknown
-SMP Enabled:       No
-
-
-!!ALSA Version
-!!------------
-
-Driver version:     1.0.25
-Library version:    1.0.25
-Utilities version:  1.0.25
-
-
-!!Loaded ALSA modules
-!!-------------------
-
-snd_hda_intel
-
-
-!!Sound Servers on this system
-!!----------------------------
-
-
-!!Soundcards recognised by ALSA
-!!-----------------------------
-
- 0 [PCH            ]: HDA-Intel - HDA Intel PCH
-                      HDA Intel PCH at 0xf7d18000 irq 44
-
-
-!!PCI Soundcards installed in the system
-!!--------------------------------------
-
-00:1b.0 Audio device: Intel Corporation 7 Series/C210 Series Chipset Family High Definition Audio Controller (rev 04)
-
-
-!!Advanced information - PCI Vendor/Device/Subsystem ID's
-!!-------------------------------------------------------
-
-00:1b.0 0403: 8086:1e20 (rev 04)
-	Subsystem: 1043:1517
-
-
-!!Modprobe options (Sound related)
-!!--------------------------------
-
-snd_atiixp_modem: index=-2
-snd_intel8x0m: index=-2
-snd_via82xx_modem: index=-2
-snd_pcsp: index=-2
-snd_usb_audio: index=-2
-
-
-!!Loaded sound module options
-!!---------------------------
-
-!!Module: snd_hda_intel
--ne 	
-align_buffer_size : -1
--ne 	
-bdl_pos_adj : 1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
--ne 	
-beep_mode : 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
--ne 	
-enable : Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y
--ne 	
-enable_msi : -1
--ne 	
-id : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
--ne 	
-index : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
--ne 	
-model : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
--ne 	
-patch : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
--ne 	
-position_fix : 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
--ne 	
-power_save : 1
--ne 	
-power_save_controller : Y
--ne 	
-probe_mask : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
--ne 	
-probe_only : 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
--ne 	
-single_cmd : N
--ne 	
-snoop : Y
-
-
-!!HDA-Intel Codec information
-!!---------------------------
---startcollapse--
-
-Codec: Realtek ALC269VB
-Address: 0
-AFG Function Id: 0x1 (unsol 1)
-Vendor Id: 0x10ec0269
-Subsystem Id: 0x10431517
-Revision Id: 0x100100
-No Modem Function Group found
-Default PCM:
-    rates [0x560]: 44100 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-Default Amp-In caps: N/A
-Default Amp-Out caps: N/A
-GPIO: io=2, o=0, i=0, unsolicited=1, wake=0
-  IO[0]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-  IO[1]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-Node 0x02 [Audio Output] wcaps 0x1d: Stereo Amp-Out
-  Control: name="Headphone Playback Volume", index=0, device=0
-    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
-  Device: name="ALC269VB Analog", type="Audio", device=0
-  Amp-Out caps: ofs=0x57, nsteps=0x57, stepsize=0x02, mute=0
-  Amp-Out vals:  [0x00 0x00]
-  Converter: stream=8, channel=0
-  PCM:
-    rates [0x560]: 44100 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-Node 0x03 [Audio Output] wcaps 0x1d: Stereo Amp-Out
-  Control: name="Speaker Playback Volume", index=0, device=0
-    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
-  Amp-Out caps: ofs=0x57, nsteps=0x57, stepsize=0x02, mute=0
-  Amp-Out vals:  [0x00 0x00]
-  Converter: stream=8, channel=0
-  PCM:
-    rates [0x560]: 44100 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-Node 0x04 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x05 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x06 [Audio Output] wcaps 0x211: Stereo Digital
-  Converter: stream=0, channel=0
-  Digital:
-  Digital category: 0x0
-  PCM:
-    rates [0x5e0]: 44100 48000 88200 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-Node 0x07 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x08 [Audio Input] wcaps 0x10011b: Stereo Amp-In
-  Amp-In caps: ofs=0x0b, nsteps=0x1f, stepsize=0x05, mute=1
-  Amp-In vals:  [0x8b 0x8b]
-  Converter: stream=0, channel=0
-  SDI-Select: 0
-  PCM:
-    rates [0x560]: 44100 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-  Connection: 1
-     0x23
-Node 0x09 [Audio Input] wcaps 0x10011b: Stereo Amp-In
-  Control: name="Capture Switch", index=0, device=0
-  Control: name="Capture Volume", index=0, device=0
-  Device: name="ALC269VB Analog", type="Audio", device=0
-  Amp-In caps: ofs=0x0b, nsteps=0x1f, stepsize=0x05, mute=1
-  Amp-In vals:  [0x80 0x80]
-  Converter: stream=0, channel=0
-  SDI-Select: 0
-  PCM:
-    rates [0x560]: 44100 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-  Connection: 1
-     0x22
-Node 0x0a [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x0b [Audio Mixer] wcaps 0x20010b: Stereo Amp-In
-  Amp-In caps: ofs=0x17, nsteps=0x1f, stepsize=0x05, mute=1
-  Amp-In vals:  [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80]
-  Connection: 5
-     0x18 0x19 0x1a 0x1b 0x1d
-Node 0x0c [Audio Mixer] wcaps 0x20010b: Stereo Amp-In
-  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-In vals:  [0x00 0x00] [0x00 0x00]
-  Connection: 2
-     0x02 0x0b
-Node 0x0d [Audio Mixer] wcaps 0x20010b: Stereo Amp-In
-  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-In vals:  [0x00 0x00] [0x00 0x00]
-  Connection: 2
-     0x03 0x0b
-Node 0x0e [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x0f [Audio Mixer] wcaps 0x20010a: Mono Amp-In
-  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-In vals:  [0x00] [0x80]
-  Connection: 2
-     0x02 0x0b
-Node 0x10 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x11 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x12 [Pin Complex] wcaps 0x40000b: Stereo Amp-In
-  Control: name="Mic Boost Volume", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x2f, mute=0
-  Amp-In vals:  [0x00 0x00]
-  Pincap 0x00000020: IN
-  Pin Default 0x90a60930: [Fixed] Mic at Int N/A
-    Conn = Digital, Color = Unknown
-    DefAssociation = 0x3, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x20: IN
-Node 0x13 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x14 [Pin Complex] wcaps 0x40018d: Stereo Amp-Out
-  Control: name="Speaker Playback Switch", index=0, device=0
-    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x00 0x00]
-  Pincap 0x00010014: OUT EAPD Detect
-  EAPD 0x2: EAPD
-  Pin Default 0x90170110: [Fixed] Speaker at Int N/A
-    Conn = Analog, Color = Unknown
-    DefAssociation = 0x1, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x40: OUT
-  Unsolicited: tag=00, enabled=0
-  Connection: 2
-     0x0c 0x0d*
-Node 0x15 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x16 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x17 [Pin Complex] wcaps 0x40010c: Mono Amp-Out
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x80]
-  Pincap 0x00000010: OUT
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x00:
-  Connection: 1
-     0x0f
-Node 0x18 [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
-  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x2f, mute=0
-  Amp-In vals:  [0x00 0x00]
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x80 0x80]
-  Pincap 0x00001734: IN OUT Detect
-    Vref caps: HIZ 50 GRD 80
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x20: IN VREF_HIZ
-  Unsolicited: tag=00, enabled=0
-  Connection: 1
-     0x0d
-Node 0x19 [Pin Complex] wcaps 0x40008b: Stereo Amp-In
-  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x2f, mute=0
-  Amp-In vals:  [0x00 0x00]
-  Pincap 0x00001724: IN Detect
-    Vref caps: HIZ 50 GRD 80
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x20: IN VREF_HIZ
-  Unsolicited: tag=00, enabled=0
-Node 0x1a [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
-  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x2f, mute=0
-  Amp-In vals:  [0x00 0x00]
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x80 0x80]
-  Pincap 0x0000003c: IN OUT HP Detect
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x20: IN
-  Unsolicited: tag=00, enabled=0
-  Connection: 2
-     0x0c* 0x0d
-Node 0x1b [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
-  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x2f, mute=0
-  Amp-In vals:  [0x00 0x00]
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x80 0x80]
-  Pincap 0x00000034: IN OUT Detect
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x20: IN
-  Unsolicited: tag=00, enabled=0
-  Connection: 2
-     0x0c* 0x0d
-Node 0x1c [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x1d [Pin Complex] wcaps 0x400000: Mono
-  Pincap 0x00000020: IN
-  Pin Default 0x40079a2d: [N/A] Line Out at Ext N/A
-    Conn = Analog, Color = Pink
-    DefAssociation = 0x2, Sequence = 0xd
-  Pin-ctls: 0x20: IN
-Node 0x1e [Pin Complex] wcaps 0x400381: Stereo Digital
-  Pincap 0x00000014: OUT Detect
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x40: OUT
-  Unsolicited: tag=00, enabled=0
-  Connection: 1
-     0x06
-Node 0x1f [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x20 [Vendor Defined Widget] wcaps 0xf00040: Mono
-  Processing caps: benign=0, ncoeff=25
-Node 0x21 [Pin Complex] wcaps 0x40018d: Stereo Amp-Out
-  Control: name="Headphone Playback Switch", index=0, device=0
-    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
-  Control: name="Headphone Jack", index=0, device=0
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x00 0x00]
-  Pincap 0x0000001c: OUT HP Detect
-  Pin Default 0x03211020: [Jack] HP Out at Ext Left
-    Conn = 1/8, Color = Black
-    DefAssociation = 0x2, Sequence = 0x0
-  Pin-ctls: 0xc0: OUT HP
-  Unsolicited: tag=01, enabled=1
-  Connection: 2
-     0x0c* 0x0d
-Node 0x22 [Audio Selector] wcaps 0x30010b: Stereo Amp-In
-  Amp-In caps: N/A
-  Amp-In vals:  [0x00 0x00] [0x00 0x00] [0x00 0x00] [0x00 0x00] [0x00 0x00] [0x00 0x00] [0x00 0x00]
-  Connection: 7
-     0x18 0x19 0x1a 0x1b 0x1d 0x0b 0x12*
-Node 0x23 [Audio Mixer] wcaps 0x20010b: Stereo Amp-In
-  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-In vals:  [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80]
-  Connection: 6
-     0x18 0x19 0x1a 0x1b 0x1d 0x0b
-Codec: Intel PantherPoint HDMI
-Address: 3
-AFG Function Id: 0x1 (unsol 0)
-Vendor Id: 0x80862806
-Subsystem Id: 0x80860101
-Revision Id: 0x100000
-No Modem Function Group found
-Default PCM:
-    rates [0x0]:
-    bits [0x0]:
-    formats [0x0]:
-Default Amp-In caps: N/A
-Default Amp-Out caps: N/A
-GPIO: io=0, o=0, i=0, unsolicited=0, wake=0
-Node 0x02 [Audio Output] wcaps 0x6611: 8-Channels Digital
-  Converter: stream=0, channel=0
-  Digital: Enabled
-  Digital category: 0x0
-  PCM:
-    rates [0x7f0]: 32000 44100 48000 88200 96000 176400 192000
-    bits [0x1e]: 16 20 24 32
-    formats [0x5]: PCM AC3
-  Power states:  D0 D3 EPSS
-  Power: setting=D0, actual=D0
-Node 0x03 [Audio Output] wcaps 0x6611: 8-Channels Digital
-  Converter: stream=0, channel=0
-  Digital: Enabled GenLevel
-  Digital category: 0x2
-  PCM:
-    rates [0x7f0]: 32000 44100 48000 88200 96000 176400 192000
-    bits [0x1e]: 16 20 24 32
-    formats [0x5]: PCM AC3
-  Power states:  D0 D3 EPSS
-  Power: setting=D0, actual=D0
-Node 0x04 [Audio Output] wcaps 0x6611: 8-Channels Digital
-  Converter: stream=0, channel=0
-  Digital: Enabled
-  Digital category: 0x0
-  PCM:
-    rates [0x7f0]: 32000 44100 48000 88200 96000 176400 192000
-    bits [0x1e]: 16 20 24 32
-    formats [0x5]: PCM AC3
-  Power states:  D0 D3 EPSS
-  Power: setting=D0, actual=D0
-Node 0x05 [Pin Complex] wcaps 0x40778d: 8-Channels Digital Amp-Out CP
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x00 0x80]
-  Pincap 0x09000094: OUT Detect HBR HDMI DP
-  Pin Default 0x58560010: [N/A] Digital Out at Int HDMI
-    Conn = Digital, Color = Unknown
-    DefAssociation = 0x1, Sequence = 0x0
-  Pin-ctls: 0x40: OUT
-  Unsolicited: tag=00, enabled=0
-  Power states:  D0 D3 EPSS
-  Power: setting=D0, actual=D0
-  Connection: 1
-     0x02
-Node 0x06 [Pin Complex] wcaps 0x40778d: 8-Channels Digital Amp-Out CP
-  Control: name="HDMI/DP,pcm=3 Jack", index=0, device=0
-  Control: name="IEC958 Playback Con Mask", index=0, device=0
-  Control: name="IEC958 Playback Pro Mask", index=0, device=0
-  Control: name="IEC958 Playback Default", index=0, device=0
-  Control: name="IEC958 Playback Switch", index=0, device=0
-  Control: name="ELD", index=0, device=3
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x00 0x00]
-  Pincap 0x09000094: OUT Detect HBR HDMI DP
-  Pin Default 0x18560020: [Jack] Digital Out at Int HDMI
-    Conn = Digital, Color = Unknown
-    DefAssociation = 0x2, Sequence = 0x0
-  Pin-ctls: 0x00:
-  Unsolicited: tag=01, enabled=1
-  Power states:  D0 D3 EPSS
-  Power: setting=D0, actual=D0
-  Connection: 1
-     0x03
-Node 0x07 [Pin Complex] wcaps 0x40778d: 8-Channels Digital Amp-Out CP
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x00 0x80]
-  Pincap 0x09000094: OUT Detect HBR HDMI DP
-  Pin Default 0x58560030: [N/A] Digital Out at Int HDMI
-    Conn = Digital, Color = Unknown
-    DefAssociation = 0x3, Sequence = 0x0
-  Pin-ctls: 0x40: OUT
-  Unsolicited: tag=00, enabled=0
-  Power states:  D0 D3 EPSS
-  Power: setting=D0, actual=D0
-  Connection: 1
-     0x04
-Node 0x08 [Vendor Defined Widget] wcaps 0xf00000: Mono
---endcollapse--
-
-
-
---------------000606030601080004070409--
