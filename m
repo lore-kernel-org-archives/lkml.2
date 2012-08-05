@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246Ab2HEFM2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 01:12:28 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34515 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab2HEFM1 (ORCPT
+	id S1751566Ab2HEGjz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 02:39:55 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:45078 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab2HEGjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 01:12:27 -0400
-From: Joe Millenbach <jmillenbach@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+	Sun, 5 Aug 2012 02:39:52 -0400
+X-Auth-Info: X+T8ky+E0x+h6088fcsAUFM0Z6A1UYHa9//qpxv++1M=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, Anton Blanchard <anton@au1.ibm.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         linux-kernel@vger.kernel.org
-Cc: team-fjord@googlegroups.com, Joe Millenbach <jmillenbach@gmail.com>
-Subject: [PATCH] x86: Changing date reference in CONFIG_SWIOTLB help from a relative to fixed point
-Date: Sat,  4 Aug 2012 22:12:01 -0700
-Message-Id: <1344143521-30151-1-git-send-email-jmillenbach@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+Subject: Re: Is iommu_num_pages() broken ?
+References: <1344125816.24037.84.camel@pasglop>
+X-Yow: Half a mind is a terrible thing to waste!
+Date: Sun, 05 Aug 2012 08:39:39 +0200
+In-Reply-To: <1344125816.24037.84.camel@pasglop> (Benjamin Herrenschmidt's
+	message of "Sun, 05 Aug 2012 10:16:56 +1000")
+Message-ID: <m24nohsuz8.fsf@linux-m68k.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_SWIOTLB's existing help information refers to "the current
-generation of Intel's x86-64 CPUs", but the statement is no longer
-true.  After researching on Intel's ark site, I changed the statement
-to the also true "all Intel CPUs released before 2008".
+Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
 
-Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- arch/x86/Kconfig |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+> static inline unsigned long iommu_num_pages(unsigned long addr,
+> 					    unsigned long len,
+> 					    unsigned long io_page_size)
+> {
+> 	unsigned long size = (addr & (io_page_size - 1)) + len;
+>
+> 	return DIV_ROUND_UP(size, io_page_size);
+> }
+>  
+>
+> That doesn't look right to me...
+>
+> The powerpc iommu code at least uses that with an addr which may not be
+> page aligned (ie, result of sg_virt() which include the offset).
+>
+> The above code will align the start before adding the len which is wrong
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bed94e..dadbfd6 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -755,10 +755,10 @@ config SWIOTLB
- 	def_bool y if X86_64
- 	---help---
- 	  Support for software bounce buffers used on x86-64 systems
--	  which don't have a hardware IOMMU (e.g. the current generation
--	  of Intel's x86-64 CPUs). Using this PCI devices which can only
--	  access 32-bits of memory can be used on systems with more than
--	  3 GB of memory. If unsure, say Y.
-+	  which don't have a hardware IOMMU (e.g. all Intel CPUs released
-+	  before 2008). Using this PCI devices which can only access 32-bits
-+	  of memory can be used on systems with more than 3 GB of memory. If
-+	  unsure, say Y.
- 
- config IOMMU_HELPER
- 	def_bool (CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU)
+addr & (io_page_size - 1) computes the offset into the page pointed to
+by addr.  Looks right to me.
+
+addr & ~(io_page_size - 1) would round addr down to the start of the
+page.
+
+Andreas.
+
 -- 
-1.7.9.5
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
