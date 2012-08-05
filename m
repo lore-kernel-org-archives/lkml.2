@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab2HEXto (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 19:49:44 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:43001 "EHLO ogre.sisk.pl"
+	id S1755587Ab2HEXtn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 19:49:43 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43004 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755414Ab2HEXtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755416Ab2HEXtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 Aug 2012 19:49:19 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 7/15] PM: Reorganize device PM initialization
-Date: Mon, 6 Aug 2012 01:44:28 +0200
+Subject: [PATCH 12/15] sh: TMU: Basic runtime PM support
+Date: Mon, 6 Aug 2012 01:48:17 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "Linux-sh list" <linux-sh@vger.kernel.org>,
@@ -21,100 +21,194 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208060144.29037.rjw@sisk.pl>
+Message-Id: <201208060148.17592.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Make the device power management initialization more straightforward
-by moving the initialization of common (i.e. used by both runtime PM
-and system suspend) fields to a separate routine.
+Modify the SH TMU clock source/clock event device driver to support
+runtime PM at a basic level (i.e. device clocks can be disabled and
+enabled, but domain power must be on, because the devices have to
+be marked as "irq safe").
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/main.c  |    7 ++-----
- drivers/base/power/power.h |   22 +++++++++++++++-------
- 2 files changed, 17 insertions(+), 12 deletions(-)
+ drivers/clocksource/sh_tmu.c |   80 ++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 65 insertions(+), 15 deletions(-)
 
-Index: linux/drivers/base/power/main.c
+Index: linux/drivers/clocksource/sh_tmu.c
 ===================================================================
---- linux.orig/drivers/base/power/main.c
-+++ linux/drivers/base/power/main.c
-@@ -57,20 +57,17 @@ static pm_message_t pm_transition;
- static int async_error;
+--- linux.orig/drivers/clocksource/sh_tmu.c
++++ linux/drivers/clocksource/sh_tmu.c
+@@ -45,6 +45,7 @@ struct sh_tmu_priv {
+ 	struct clock_event_device ced;
+ 	struct clocksource cs;
+ 	bool cs_enabled;
++	unsigned int enable_count;
+ };
  
- /**
-- * device_pm_init - Initialize the PM-related part of a device object.
-+ * device_pm_sleep_init - Initialize system suspend-related device fields.
-  * @dev: Device object being initialized.
-  */
--void device_pm_init(struct device *dev)
-+void device_pm_sleep_init(struct device *dev)
- {
- 	dev->power.is_prepared = false;
- 	dev->power.is_suspended = false;
- 	init_completion(&dev->power.completion);
- 	complete_all(&dev->power.completion);
- 	dev->power.wakeup = NULL;
--	spin_lock_init(&dev->power.lock);
--	pm_runtime_init(dev);
- 	INIT_LIST_HEAD(&dev->power.entry);
--	dev->power.power_state = PMSG_INVALID;
+ static DEFINE_RAW_SPINLOCK(sh_tmu_lock);
+@@ -109,7 +110,7 @@ static void sh_tmu_start_stop_ch(struct
+ 	raw_spin_unlock_irqrestore(&sh_tmu_lock, flags);
  }
  
- /**
-Index: linux/drivers/base/power/power.h
-===================================================================
---- linux.orig/drivers/base/power/power.h
-+++ linux/drivers/base/power/power.h
-@@ -1,5 +1,11 @@
- #include <linux/pm_qos.h>
+-static int sh_tmu_enable(struct sh_tmu_priv *p)
++static int __sh_tmu_enable(struct sh_tmu_priv *p)
+ {
+ 	int ret;
  
-+static inline void device_pm_init_common(struct device *dev)
-+{
-+	spin_lock_init(&dev->power.lock);
-+	dev->power.power_state = PMSG_INVALID;
-+}
-+
- #ifdef CONFIG_PM_RUNTIME
- 
- extern void pm_runtime_init(struct device *dev);
-@@ -25,7 +31,7 @@ static inline struct device *to_device(s
- 	return container_of(entry, struct device, power.entry);
+@@ -137,7 +138,18 @@ static int sh_tmu_enable(struct sh_tmu_p
+ 	return 0;
  }
  
--extern void device_pm_init(struct device *dev);
-+extern void device_pm_sleep_init(struct device *dev);
- extern void device_pm_add(struct device *);
- extern void device_pm_remove(struct device *);
- extern void device_pm_move_before(struct device *, struct device *);
-@@ -34,12 +40,7 @@ extern void device_pm_move_last(struct d
- 
- #else /* !CONFIG_PM_SLEEP */
- 
--static inline void device_pm_init(struct device *dev)
--{
--	spin_lock_init(&dev->power.lock);
--	dev->power.power_state = PMSG_INVALID;
--	pm_runtime_init(dev);
--}
-+static inline void device_pm_sleep_init(struct device *dev) {}
- 
- static inline void device_pm_add(struct device *dev)
- {
-@@ -60,6 +61,13 @@ static inline void device_pm_move_last(s
- 
- #endif /* !CONFIG_PM_SLEEP */
- 
-+static inline void device_pm_init(struct device *dev)
+-static void sh_tmu_disable(struct sh_tmu_priv *p)
++static int sh_tmu_enable(struct sh_tmu_priv *p)
 +{
-+	device_pm_init_common(dev);
-+	device_pm_sleep_init(dev);
-+	pm_runtime_init(dev);
++	if (p->enable_count++ > 0)
++		return 0;
++
++	pm_runtime_get_sync(&p->pdev->dev);
++	dev_pm_syscore_device(&p->pdev->dev, true);
++
++	return __sh_tmu_enable(p);
 +}
 +
- #ifdef CONFIG_PM
++static void __sh_tmu_disable(struct sh_tmu_priv *p)
+ {
+ 	/* disable channel */
+ 	sh_tmu_start_stop_ch(p, 0);
+@@ -149,6 +161,20 @@ static void sh_tmu_disable(struct sh_tmu
+ 	clk_disable(p->clk);
+ }
  
- /*
++static void sh_tmu_disable(struct sh_tmu_priv *p)
++{
++	if (WARN_ON(p->enable_count == 0))
++		return;
++
++	if (--p->enable_count > 0)
++		return;
++
++	__sh_tmu_disable(p);
++
++	dev_pm_syscore_device(&p->pdev->dev, false);
++	pm_runtime_put(&p->pdev->dev);
++}
++
+ static void sh_tmu_set_next(struct sh_tmu_priv *p, unsigned long delta,
+ 			    int periodic)
+ {
+@@ -205,11 +231,15 @@ static int sh_tmu_clocksource_enable(str
+ 	struct sh_tmu_priv *p = cs_to_sh_tmu(cs);
+ 	int ret;
+ 
++	if (WARN_ON(p->cs_enabled))
++		return 0;
++
+ 	ret = sh_tmu_enable(p);
+ 	if (!ret) {
+ 		__clocksource_updatefreq_hz(cs, p->rate);
+ 		p->cs_enabled = true;
+ 	}
++
+ 	return ret;
+ }
+ 
+@@ -217,7 +247,8 @@ static void sh_tmu_clocksource_disable(s
+ {
+ 	struct sh_tmu_priv *p = cs_to_sh_tmu(cs);
+ 
+-	WARN_ON(!p->cs_enabled);
++	if (WARN_ON(!p->cs_enabled))
++		return;
+ 
+ 	sh_tmu_disable(p);
+ 	p->cs_enabled = false;
+@@ -227,19 +258,26 @@ static void sh_tmu_clocksource_suspend(s
+ {
+ 	struct sh_tmu_priv *p = cs_to_sh_tmu(cs);
+ 
+-	if (p->cs_enabled)
+-		sh_tmu_disable(p);
++	if (!p->cs_enabled)
++		return;
+ 
+-	pm_genpd_syscore_poweroff(&p->pdev->dev);
++	if (--p->enable_count == 0) {
++		__sh_tmu_disable(p);
++		pm_genpd_syscore_poweroff(&p->pdev->dev);
++	}
+ }
+ 
+ static void sh_tmu_clocksource_resume(struct clocksource *cs)
+ {
+ 	struct sh_tmu_priv *p = cs_to_sh_tmu(cs);
+ 
+-	pm_genpd_syscore_poweron(&p->pdev->dev);
+-	if (p->cs_enabled)
+-		sh_tmu_enable(p);
++	if (!p->cs_enabled)
++		return;
++
++	if (p->enable_count++ == 0) {
++		pm_genpd_syscore_poweron(&p->pdev->dev);
++		__sh_tmu_enable(p);
++	}
+ }
+ 
+ static int sh_tmu_register_clocksource(struct sh_tmu_priv *p,
+@@ -434,6 +472,8 @@ static int sh_tmu_setup(struct sh_tmu_pr
+ 		ret = PTR_ERR(p->clk);
+ 		goto err1;
+ 	}
++	p->cs_enabled = false;
++	p->enable_count = 0;
+ 
+ 	return sh_tmu_register(p, (char *)dev_name(&p->pdev->dev),
+ 			       cfg->clockevent_rating,
+@@ -447,18 +487,17 @@ static int sh_tmu_setup(struct sh_tmu_pr
+ static int __devinit sh_tmu_probe(struct platform_device *pdev)
+ {
+ 	struct sh_tmu_priv *p = platform_get_drvdata(pdev);
++	struct sh_timer_config *cfg = pdev->dev.platform_data;
+ 	int ret;
+ 
+ 	if (!is_early_platform_device(pdev)) {
+-		struct sh_timer_config *cfg = pdev->dev.platform_data;
+-
+-		if (cfg->clocksource_rating || cfg->clockevent_rating)
+-			dev_pm_syscore_device(&pdev->dev, true);
++		pm_runtime_set_active(&pdev->dev);
++		pm_runtime_enable(&pdev->dev);
+ 	}
+ 
+ 	if (p) {
+ 		dev_info(&pdev->dev, "kept as earlytimer\n");
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	p = kmalloc(sizeof(*p), GFP_KERNEL);
+@@ -471,8 +510,19 @@ static int __devinit sh_tmu_probe(struct
+ 	if (ret) {
+ 		kfree(p);
+ 		platform_set_drvdata(pdev, NULL);
++		pm_runtime_idle(&pdev->dev);
++		return ret;
+ 	}
+-	return ret;
++	if (is_early_platform_device(pdev))
++		return 0;
++
++ out:
++	if (cfg->clockevent_rating || cfg->clocksource_rating)
++		pm_runtime_irq_safe(&pdev->dev);
++	else
++		pm_runtime_idle(&pdev->dev);
++
++	return 0;
+ }
+ 
+ static int __devexit sh_tmu_remove(struct platform_device *pdev)
 
