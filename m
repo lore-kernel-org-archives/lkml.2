@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab2HEXte (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 19:49:34 -0400
+	id S1755489Ab2HEXtc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 19:49:32 -0400
 Received: from ogre.sisk.pl ([193.178.161.156]:42963 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755392Ab2HEXsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 19:48:33 -0400
+	id S1755336Ab2HEXsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 19:48:30 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 3/15] timekeeping: Add suspend and resume of clock event devices
-Date: Mon, 6 Aug 2012 01:40:41 +0200
+Subject: [PATCH 2/15] PM / Domains: Add power off/on function for system core suspend stage
+Date: Mon, 6 Aug 2012 01:39:57 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "Linux-sh list" <linux-sh@vger.kernel.org>,
@@ -21,104 +21,158 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208060140.41761.rjw@sisk.pl>
+Message-Id: <201208060139.57494.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Some clock event devices, for example such that belong to PM domains,
-need to be handled in a spcial way during the timekeeping suspend
-and resume (which takes place in the system core, or "syscore",
-stages of system power transitions) in analogy with clock sources.
+Introduce function pm_genpd_syscore_switch() and two wrappers around
+it, pm_genpd_syscore_poweroff() and pm_genpd_syscore_poweron(),
+allowing the callers to let the generic PM domains framework know
+that the given device is not necessary any more and its PM domain
+can be turned off (the former) or that the given device will be
+required immediately, so its PM domain has to be turned on (the
+latter) during the system core (syscore) stage of system suspend
+(or hibernation) and resume.
 
-Introduce .suspend() and .resume() callbacks for clock event devices
-that will be executed by timekeeping_suspend/_resume(), respectively,
-next the the clock sources' .suspend() and .resume() callbacks.
+These functions will be used for handling devices registered as
+clock sources and clock event devices that belong to PM domains.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- include/linux/clockchips.h |    5 +++++
- kernel/time/clockevents.c  |   24 ++++++++++++++++++++++++
- kernel/time/timekeeping.c  |    2 ++
- 3 files changed, 31 insertions(+)
+ drivers/base/power/domain.c |   57 +++++++++++++++++++++++++++++++++++++++-----
+ include/linux/pm_domain.h   |   16 ++++++++++++
+ kernel/power/Kconfig        |    4 +++
+ 3 files changed, 71 insertions(+), 6 deletions(-)
 
-Index: linux/include/linux/clockchips.h
+Index: linux/drivers/base/power/domain.c
 ===================================================================
---- linux.orig/include/linux/clockchips.h
-+++ linux/include/linux/clockchips.h
-@@ -97,6 +97,8 @@ struct clock_event_device {
- 	void			(*broadcast)(const struct cpumask *mask);
- 	void			(*set_mode)(enum clock_event_mode mode,
- 					    struct clock_event_device *);
-+	void			(*suspend)(struct clock_event_device *);
-+	void			(*resume)(struct clock_event_device *);
- 	unsigned long		min_delta_ticks;
- 	unsigned long		max_delta_ticks;
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -697,6 +697,24 @@ static inline void genpd_power_off_work_
  
-@@ -156,6 +158,9 @@ clockevents_calc_mult_shift(struct clock
- 				      freq, minsec);
+ #ifdef CONFIG_PM_SLEEP
+ 
++/**
++ * pm_genpd_present - Check if the given PM domain has been initialized.
++ * @genpd: PM domain to check.
++ */
++static bool pm_genpd_present(struct generic_pm_domain *genpd)
++{
++	struct generic_pm_domain *gpd;
++
++	if (IS_ERR_OR_NULL(genpd))
++		return false;
++
++	list_for_each_entry(gpd, &gpd_list, gpd_list_node)
++		if (gpd == genpd)
++			return true;
++
++	return false;
++}
++
+ static bool genpd_dev_active_wakeup(struct generic_pm_domain *genpd,
+ 				    struct device *dev)
+ {
+@@ -750,9 +768,10 @@ static int genpd_thaw_dev(struct generic
+  * Check if the given PM domain can be powered off (during system suspend or
+  * hibernation) and do that if so.  Also, in that case propagate to its masters.
+  *
+- * This function is only called in "noirq" stages of system power transitions,
+- * so it need not acquire locks (all of the "noirq" callbacks are executed
+- * sequentially, so it is guaranteed that it will never run twice in parallel).
++ * This function is only called in "noirq" and "syscore" stages of system power
++ * transitions, so it need not acquire locks (all of the "noirq" callbacks are
++ * executed sequentially, so it is guaranteed that it will never run twice in
++ * parallel).
+  */
+ static void pm_genpd_sync_poweroff(struct generic_pm_domain *genpd)
+ {
+@@ -780,9 +799,10 @@ static void pm_genpd_sync_poweroff(struc
+  * pm_genpd_sync_poweron - Synchronously power on a PM domain and its masters.
+  * @genpd: PM domain to power on.
+  *
+- * This function is only called in "noirq" stage of system power transitions, so
+- * it need not acquire locks (all of the "noirq" callbacks are executed
+- * sequentially, so it is guaranteed that it will never run twice in parallel).
++ * This function is only called in "noirq" and "syscore" stages of system power
++ * transitions, so it need not acquire locks (all of the "noirq" callbacks are
++ * executed sequentially, so it is guaranteed that it will never run twice in
++ * parallel).
+  */
+ static void pm_genpd_sync_poweron(struct generic_pm_domain *genpd)
+ {
+@@ -1272,6 +1292,31 @@ static void pm_genpd_complete(struct dev
+ 	}
  }
  
-+extern void clockevents_suspend(void);
-+extern void clockevents_resume(void);
++/**
++ * pm_genpd_syscore_switch - Switch power during system core suspend or resume.
++ * @dev: Device that normally is marked as "always on" to switch power for.
++ *
++ * This routine may only be called during the system core (syscore) suspend or
++ * resume phase for devices whose "always on" flags are set.
++ */
++void pm_genpd_syscore_switch(struct device *dev, bool suspend)
++{
++	struct generic_pm_domain *genpd;
 +
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
- extern void clockevents_notify(unsigned long reason, void *arg);
++	genpd = dev_to_genpd(dev);
++	if (!pm_genpd_present(genpd))
++		return;
++
++	if (suspend) {
++		genpd->suspended_count++;
++		pm_genpd_sync_poweroff(genpd);
++	} else {
++		pm_genpd_sync_poweron(genpd);
++		genpd->suspended_count--;
++	}
++}
++EXPORT_SYMBOL_GPL(pm_genpd_syscore_switch);
++
  #else
-Index: linux/kernel/time/clockevents.c
-===================================================================
---- linux.orig/kernel/time/clockevents.c
-+++ linux/kernel/time/clockevents.c
-@@ -397,6 +397,30 @@ void clockevents_exchange_device(struct
- 	local_irq_restore(flags);
- }
  
-+/**
-+ * clockevents_suspend - suspend clock devices
-+ */
-+void clockevents_suspend(void)
-+{
-+	struct clock_event_device *dev;
+ #define pm_genpd_prepare		NULL
+Index: linux/include/linux/pm_domain.h
+===================================================================
+--- linux.orig/include/linux/pm_domain.h
++++ linux/include/linux/pm_domain.h
+@@ -258,4 +258,20 @@ static inline void genpd_queue_power_off
+ static inline void pm_genpd_poweroff_unused(void) {}
+ #endif
+ 
++#ifdef CONFIG_PM_GENERIC_DOMAINS_SLEEP
++extern void pm_genpd_syscore_switch(struct device *dev, bool suspend);
++#else
++static inline void pm_genpd_syscore_switch(struct device *dev, bool suspend) {}
++#endif
 +
-+	list_for_each_entry_reverse(dev, &clockevent_devices, list)
-+		if (dev->suspend)
-+			dev->suspend(dev);
++static inline void pm_genpd_syscore_poweroff(struct device *dev)
++{
++	pm_genpd_syscore_switch(dev, true);
 +}
 +
-+/**
-+ * clockevents_resume - resume clock devices
-+ */
-+void clockevents_resume(void)
++static inline void pm_genpd_syscore_poweron(struct device *dev)
 +{
-+	struct clock_event_device *dev;
-+
-+	list_for_each_entry(dev, &clockevent_devices, list)
-+		if (dev->resume)
-+			dev->resume(dev);
++	pm_genpd_syscore_switch(dev, false);
 +}
 +
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
- /**
-  * clockevents_notify - notification about relevant events
-Index: linux/kernel/time/timekeeping.c
+ #endif /* _LINUX_PM_DOMAIN_H */
+Index: linux/kernel/power/Kconfig
 ===================================================================
---- linux.orig/kernel/time/timekeeping.c
-+++ linux/kernel/time/timekeeping.c
-@@ -750,6 +750,7 @@ static void timekeeping_resume(void)
+--- linux.orig/kernel/power/Kconfig
++++ linux/kernel/power/Kconfig
+@@ -263,6 +263,10 @@ config PM_GENERIC_DOMAINS
+ 	bool
+ 	depends on PM
  
- 	read_persistent_clock(&ts);
- 
-+	clockevents_resume();
- 	clocksource_resume();
- 
- 	write_seqlock_irqsave(&tk->lock, flags);
-@@ -809,6 +810,7 @@ static int timekeeping_suspend(void)
- 
- 	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
- 	clocksource_suspend();
-+	clockevents_suspend();
- 
- 	return 0;
- }
++config PM_GENERIC_DOMAINS_SLEEP
++	def_bool y
++	depends on PM_SLEEP && PM_GENERIC_DOMAINS
++
+ config PM_GENERIC_DOMAINS_RUNTIME
+ 	def_bool y
+ 	depends on PM_RUNTIME && PM_GENERIC_DOMAINS
 
