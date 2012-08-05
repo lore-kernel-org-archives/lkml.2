@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab2HEQyE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 12:54:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56902 "EHLO
+	id S1754822Ab2HEQyz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 12:54:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56920 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab2HEQyB (ORCPT
+	with ESMTP id S1754175Ab2HEQyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 12:54:01 -0400
-Date: Sun, 5 Aug 2012 09:50:24 -0700
+	Sun, 5 Aug 2012 12:54:54 -0400
+Date: Sun, 5 Aug 2012 09:51:18 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-wdtmgak0ihgsmw1brb54a8h4@git.kernel.org>
+Message-ID: <tip-jd8tqbx8o8bs4t4g50vyhoc2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -19,9 +19,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evsel:
-  Adopt parse_sample method from perf_event
-Git-Commit-ID: a3f698fe3082ff80a7f3b27c9b64b4b748c81f9d
+Subject: [tip:perf/urgent] perf session:
+  Remove no longer used synthesize_sample method
+Git-Commit-ID: 7405ed10f6adcdd556d59c360b5b216fccada3d9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,22 +30,19 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 05 Aug 2012 09:50:30 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 05 Aug 2012 09:51:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a3f698fe3082ff80a7f3b27c9b64b4b748c81f9d
-Gitweb:     http://git.kernel.org/tip/a3f698fe3082ff80a7f3b27c9b64b4b748c81f9d
+Commit-ID:  7405ed10f6adcdd556d59c360b5b216fccada3d9
+Gitweb:     http://git.kernel.org/tip/7405ed10f6adcdd556d59c360b5b216fccada3d9
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 2 Aug 2012 12:23:46 -0300
+AuthorDate: Thu, 2 Aug 2012 21:01:17 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 2 Aug 2012 12:23:46 -0300
+CommitDate: Thu, 2 Aug 2012 21:02:02 -0300
 
-perf evsel: Adopt parse_sample method from perf_event
-
-Since we need evsel->{attr.{sample_{id_all,type}},sample_size},
-reducing the number of parameters tools have to pass.
+perf session: Remove no longer used synthesize_sample method
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -55,122 +52,44 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-wdtmgak0ihgsmw1brb54a8h4@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-jd8tqbx8o8bs4t4g50vyhoc2@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/event.h  |    3 ---
- tools/perf/util/evlist.c |    6 ++----
- tools/perf/util/evlist.h |    3 +--
- tools/perf/util/evsel.c  |   12 ++++++------
- tools/perf/util/evsel.h  |    2 ++
- 5 files changed, 11 insertions(+), 15 deletions(-)
+ tools/perf/util/session.c |    8 --------
+ tools/perf/util/session.h |    4 ----
+ 2 files changed, 0 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 1b19728..d84870b 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -197,9 +197,6 @@ int perf_event__preprocess_sample(const union perf_event *self,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 7d07324..2437fb0 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -16,14 +16,6 @@
+ #include "cpumap.h"
+ #include "event-parse.h"
  
- const char *perf_event__name(unsigned int id);
- 
--int perf_event__parse_sample(const union perf_event *event, u64 type,
--			     int sample_size, bool sample_id_all,
--			     struct perf_sample *sample, bool swapped);
- int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 				  const struct perf_sample *sample,
- 				  bool swapped);
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 1a560e0..9b38681 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -882,11 +882,9 @@ int perf_evlist__start_workload(struct perf_evlist *evlist)
- 	return 0;
- }
- 
--int perf_evlist__parse_sample(struct perf_evlist *evlist,
--			      const union perf_event *event,
-+int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *event,
- 			      struct perf_sample *sample, bool swapped)
+-int perf_session__synthesize_sample(struct perf_session *session,
+-				    union perf_event *event,
+-				    const struct perf_sample *sample)
+-{
+-	return perf_event__synthesize_sample(event, perf_evlist__sample_type(session->evlist),
+-					     sample, session->header.needs_swap);
+-}
+-
+ static int perf_session__open(struct perf_session *self, bool force)
  {
- 	struct perf_evsel *e = list_entry(evlist->entries.next, struct perf_evsel, node);
--	return perf_event__parse_sample(event, e->attr.sample_type, e->sample_size,
--					e->attr.sample_id_all, sample, swapped);
-+	return perf_evsel__parse_sample(e, event, sample, swapped);
- }
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index a5a4911..528c1ac 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -122,8 +122,7 @@ u64 perf_evlist__sample_type(const struct perf_evlist *evlist);
- bool perf_evlist__sample_id_all(const const struct perf_evlist *evlist);
- u16 perf_evlist__id_hdr_size(const struct perf_evlist *evlist);
+ 	struct stat input_stat;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 7389fb1..1f7ec87 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -126,10 +126,6 @@ size_t perf_session__fprintf_dsos_buildid(struct perf_session *self,
  
--int perf_evlist__parse_sample(struct perf_evlist *evlist,
--			      const union perf_event *event,
-+int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *event,
- 			      struct perf_sample *sample, bool swapped);
+ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp);
  
- bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist);
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 8feec40..2eaae14 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -729,10 +729,10 @@ static bool sample_overlap(const union perf_event *event,
- 	return false;
- }
+-int perf_session__synthesize_sample(struct perf_session *session,
+-				    union perf_event *event,
+-				    const struct perf_sample *sample);
+-
+ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ 					    unsigned int type);
  
--int perf_event__parse_sample(const union perf_event *event, u64 type,
--			     int sample_size, bool sample_id_all,
-+int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 			     struct perf_sample *data, bool swapped)
- {
-+	u64 type = evsel->attr.sample_type;
- 	const u64 *array;
- 
- 	/*
-@@ -747,14 +747,14 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 	data->period = 1;
- 
- 	if (event->header.type != PERF_RECORD_SAMPLE) {
--		if (!sample_id_all)
-+		if (!evsel->attr.sample_id_all)
- 			return 0;
- 		return perf_event__parse_id_sample(event, type, data, swapped);
- 	}
- 
- 	array = event->sample.array;
- 
--	if (sample_size + sizeof(event->header) > event->header.size)
-+	if (evsel->sample_size + sizeof(event->header) > event->header.size)
- 		return -EFAULT;
- 
- 	if (type & PERF_SAMPLE_IP) {
-@@ -896,7 +896,7 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 		u.val32[1] = sample->tid;
- 		if (swapped) {
- 			/*
--			 * Inverse of what is done in perf_event__parse_sample
-+			 * Inverse of what is done in perf_evsel__parse_sample
- 			 */
- 			u.val32[0] = bswap_32(u.val32[0]);
- 			u.val32[1] = bswap_32(u.val32[1]);
-@@ -931,7 +931,7 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 		u.val32[0] = sample->cpu;
- 		if (swapped) {
- 			/*
--			 * Inverse of what is done in perf_event__parse_sample
-+			 * Inverse of what is done in perf_evsel__parse_sample
- 			 */
- 			u.val32[0] = bswap_32(u.val32[0]);
- 			u.val64 = bswap_64(u.val64);
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 894bd77..b559929 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -180,4 +180,6 @@ static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
- 
- void hists__init(struct hists *hists);
- 
-+int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
-+			     struct perf_sample *sample, bool swapped);
- #endif /* __PERF_EVSEL_H */
