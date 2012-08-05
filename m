@@ -1,283 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab2HEVUo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 17:20:44 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:42798 "EHLO ogre.sisk.pl"
+	id S1755159Ab2HEVXr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 17:23:47 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:42809 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755052Ab2HEVUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 17:20:42 -0400
+	id S1752960Ab2HEVXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 17:23:45 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andre Przywara <andre.przywara@amd.com>, Len Brown <lenb@kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 5/8] acpi-cpufreq: Add support for disabling dynamic overclocking
-Date: Sun, 5 Aug 2012 23:26:32 +0200
+To: Andre Przywara <andre.przywara@amd.com>
+Subject: Re: [PATCH 6/8] acpi-cpufreq: Add compatibility for legacy AMD cpb sysfs knob
+Date: Sun, 5 Aug 2012 23:29:36 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
 Cc: cpufreq@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Thomas Renninger <trenn@suse.de>, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-References: <1343305724-2809-1-git-send-email-andre.przywara@amd.com> <1343305724-2809-6-git-send-email-andre.przywara@amd.com>
-In-Reply-To: <1343305724-2809-6-git-send-email-andre.przywara@amd.com>
+References: <1343305724-2809-1-git-send-email-andre.przywara@amd.com> <1343305724-2809-7-git-send-email-andre.przywara@amd.com>
+In-Reply-To: <1343305724-2809-7-git-send-email-andre.przywara@amd.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208052326.33066.rjw@sisk.pl>
+Message-Id: <201208052329.36556.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thursday, July 26, 2012, Andre Przywara wrote:
-> One feature present in powernow-k8 that isn't present in acpi-cpufreq
-> is support for enabling or disabling AMD's core performance boost
-> technology. This patch adds support to acpi-cpufreq, but also
-> includes support for Intel's dynamic acceleration.
+> The powernow-k8 driver supported a sysfs knob called "cpb", which was
+> instantiated per CPU, but actually acted globally for the whole
+> system. To keep some compatibility with this feature, we re-introduce
+> this behavior here, but:
+> a) only enable it on AMD CPUs and
+> b) protect it with a Kconfig switch
 > 
-> The original boost disabling sysfs file was per CPU, but acted
-> globally. Also the naming (cpb) was at least not intuitive.
-> So lets introduce a single file simply called "boost", which sits
-> once in /sys/devices/system/cpu/cpufreq. This should be the
-> documented and approved way of using this feature.
-> 
-> A following patch will re-introduce the cpb knob for compatibility
-> reasons on AMD CPUs.
-> 
-> Per-CPU boost switching is possible, but not trivial and is thus
-> postponed to a later patch series.
-> 
-> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+> I'd like to consider this feature obsolete. Lets keep it around for
+> some kernel versions and then phase it out.
 
-Len, Dave, any comments and/or objections here?
+You're not keeing it, but moving it to a different driver. :-)
+
+Why don't we ask the users who really really want it to use powernow-k8
+instead?
 
 Rafael
 
 
+> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
 > ---
->  drivers/cpufreq/acpi-cpufreq.c |  177 ++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 177 insertions(+), 0 deletions(-)
+>  drivers/cpufreq/Kconfig.x86    |   12 ++++++++++
+>  drivers/cpufreq/acpi-cpufreq.c |   46 ++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 56 insertions(+), 2 deletions(-)
 > 
+> diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
+> index 78ff7ee..d2f2320 100644
+> --- a/drivers/cpufreq/Kconfig.x86
+> +++ b/drivers/cpufreq/Kconfig.x86
+> @@ -32,6 +32,18 @@ config X86_ACPI_CPUFREQ
+>  
+>  	  If in doubt, say N.
+>  
+> +config X86_ACPI_CPUFREQ_CPB
+> +	default y
+> +	bool "Legacy cpb sysfs knob support for AMD CPUs"
+> +	depends on X86_ACPI_CPUFREQ && CPU_SUP_AMD
+> +	help
+> +	  The powernow-k8 driver used to provide a sysfs knob called "cpb"
+> +	  to disable the Core Performance Boosting feature of AMD CPUs. This
+> +	  file has now been superseeded by the more generic "boost" entry.
+> +
+> +	  By enabling this option the acpi_cpufreq driver provides the old
+> +	  entry in addition to the new boost ones, for compatibility reasons.
+> +
+>  config ELAN_CPUFREQ
+>  	tristate "AMD Elan SC400 and SC410"
+>  	select CPU_FREQ_TABLE
 > diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-> index ea949b8..ca41aaa 100644
+> index ca41aaa..1ba4cac 100644
 > --- a/drivers/cpufreq/acpi-cpufreq.c
 > +++ b/drivers/cpufreq/acpi-cpufreq.c
-> @@ -61,6 +61,8 @@ enum {
->  #define INTEL_MSR_RANGE		(0xffff)
->  #define AMD_MSR_RANGE		(0x7)
+> @@ -131,8 +131,7 @@ static void boost_set_msrs(bool enable, const struct cpumask *cpumask)
+>  	wrmsr_on_cpus(cpumask, msr_addr, msrs);
+>  }
 >  
-> +#define MSR_K7_HWCR_CPB_DIS	(1ULL << 25)
-> +
->  struct acpi_cpufreq_data {
->  	struct acpi_processor_performance *acpi_data;
->  	struct cpufreq_frequency_table *freq_table;
-> @@ -76,6 +78,96 @@ static struct acpi_processor_performance __percpu *acpi_perf_data;
->  static struct cpufreq_driver acpi_cpufreq_driver;
+> -static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
+> -				  const char *buf, size_t count)
+> +static ssize_t _store_boost(const char *buf, size_t count)
+>  {
+>  	int ret;
+>  	unsigned long val = 0;
+> @@ -159,6 +158,12 @@ static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
+>  	return count;
+>  }
 >  
->  static unsigned int acpi_pstate_strict;
-> +static bool boost_enabled, boost_supported;
-> +static struct msr __percpu *msrs;
-> +
-> +static bool boost_state(unsigned int cpu)
-> +{
-> +	u32 lo, hi;
-> +	u64 msr;
-> +
-> +	switch (boot_cpu_data.x86_vendor) {
-> +	case X86_VENDOR_INTEL:
-> +		rdmsr_on_cpu(cpu, MSR_IA32_MISC_ENABLE, &lo, &hi);
-> +		msr = lo | ((u64)hi << 32);
-> +		return !(msr & MSR_IA32_MISC_ENABLE_TURBO_DISABLE);
-> +	case X86_VENDOR_AMD:
-> +		rdmsr_on_cpu(cpu, MSR_K7_HWCR, &lo, &hi);
-> +		msr = lo | ((u64)hi << 32);
-> +		return !(msr & MSR_K7_HWCR_CPB_DIS);
-> +	}
-> +	return false;
-> +}
-> +
-> +static void boost_set_msrs(bool enable, const struct cpumask *cpumask)
-> +{
-> +	u32 cpu;
-> +	u32 msr_addr;
-> +	u64 msr_mask;
-> +
-> +	switch (boot_cpu_data.x86_vendor) {
-> +	case X86_VENDOR_INTEL:
-> +		msr_addr = MSR_IA32_MISC_ENABLE;
-> +		msr_mask = MSR_IA32_MISC_ENABLE_TURBO_DISABLE;
-> +		break;
-> +	case X86_VENDOR_AMD:
-> +		msr_addr = MSR_K7_HWCR;
-> +		msr_mask = MSR_K7_HWCR_CPB_DIS;
-> +		break;
-> +	default:
-> +		return;
-> +	}
-> +
-> +	rdmsr_on_cpus(cpumask, msr_addr, msrs);
-> +
-> +	for_each_cpu(cpu, cpumask) {
-> +		struct msr *reg = per_cpu_ptr(msrs, cpu);
-> +		if (enable)
-> +			reg->q &= ~msr_mask;
-> +		else
-> +			reg->q |= msr_mask;
-> +	}
-> +
-> +	wrmsr_on_cpus(cpumask, msr_addr, msrs);
-> +}
-> +
 > +static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
 > +				  const char *buf, size_t count)
 > +{
-> +	int ret;
-> +	unsigned long val = 0;
-> +
-> +	if (!boost_supported)
-> +		return -EINVAL;
-> +
-> +	ret = kstrtoul(buf, 10, &val);
-> +	if (ret || (val > 1))
-> +		return -EINVAL;
-> +
-> +	if ((val && boost_enabled) || (!val && !boost_enabled))
-> +		return count;
-> +
-> +	get_online_cpus();
-> +
-> +	boost_set_msrs(val, cpu_online_mask);
-> +
-> +	put_online_cpus();
-> +
-> +	boost_enabled = val;
-> +	pr_debug("Core Boosting %sabled.\n", val ? "en" : "dis");
-> +
-> +	return count;
+> +	return _store_boost(buf, count);
 > +}
 > +
-> +static ssize_t show_global_boost(struct kobject *kobj,
-> +				 struct attribute *attr, char *buf)
+>  static ssize_t show_global_boost(struct kobject *kobj,
+>  				 struct attribute *attr, char *buf)
+>  {
+> @@ -169,6 +174,21 @@ static struct global_attr global_boost = __ATTR(boost, 0644,
+>  						show_global_boost,
+>  						store_global_boost);
+>  
+> +#ifdef CONFIG_X86_ACPI_CPUFREQ_CPB
+> +static ssize_t store_cpb(struct cpufreq_policy *policy, const char *buf,
+> +			 size_t count)
+> +{
+> +	return _store_boost(buf, count);
+> +}
+> +
+> +static ssize_t show_cpb(struct cpufreq_policy *policy, char *buf)
 > +{
 > +	return sprintf(buf, "%u\n", boost_enabled);
 > +}
 > +
-> +static struct global_attr global_boost = __ATTR(boost, 0644,
-> +						show_global_boost,
-> +						store_global_boost);
->  
+> +static struct freq_attr cpb = __ATTR(cpb, 0644, show_cpb, store_cpb);
+> +#endif
+> +
 >  static int check_est_cpu(unsigned int cpuid)
 >  {
-> @@ -446,6 +538,44 @@ static void free_acpi_perf_data(void)
->  	free_percpu(acpi_perf_data);
->  }
+>  	struct cpuinfo_x86 *cpu = &cpu_data(cpuid);
+> @@ -887,6 +907,7 @@ static int acpi_cpufreq_resume(struct cpufreq_policy *policy)
 >  
-> +static int boost_notify(struct notifier_block *nb, unsigned long action,
-> +		      void *hcpu)
-> +{
-> +	unsigned cpu = (long)hcpu;
-> +	const struct cpumask *cpumask;
-> +
-> +	cpumask = get_cpu_mask(cpu);
-> +
-> +	/*
-> +	 * Clear the boost-disable bit on the CPU_DOWN path so that
-> +	 * this cpu cannot block the remaining ones from boosting. On
-> +	 * the CPU_UP path we simply keep the boost-disable flag in
-> +	 * sync with the current global state.
-> +	 */
-> +
-> +	switch (action) {
-> +	case CPU_UP_PREPARE:
-> +	case CPU_UP_PREPARE_FROZEN:
-> +		boost_set_msrs(boost_enabled, cpumask);
-> +		break;
-> +
-> +	case CPU_DOWN_PREPARE:
-> +	case CPU_DOWN_PREPARE_FROZEN:
-> +		boost_set_msrs(1, cpumask);
-> +		break;
-> +
-> +	default:
-> +		break;
-> +	}
-> +
-> +	return NOTIFY_OK;
-> +}
-> +
-> +
-> +static struct notifier_block boost_nb = {
-> +	.notifier_call          = boost_notify,
-> +};
-> +
->  /*
->   * acpi_cpufreq_early_init - initialize ACPI P-States library
->   *
-> @@ -772,6 +902,49 @@ static struct cpufreq_driver acpi_cpufreq_driver = {
->  	.attr		= acpi_cpufreq_attr,
+>  static struct freq_attr *acpi_cpufreq_attr[] = {
+>  	&cpufreq_freq_attr_scaling_available_freqs,
+> +	NULL,	/* this is a placeholder for cpb, do not remove */
+>  	NULL,
 >  };
 >  
-> +static void __init acpi_cpufreq_boost_init(void)
-> +{
-> +	if (boot_cpu_has(X86_FEATURE_CPB) || boot_cpu_has(X86_FEATURE_IDA)) {
-> +		msrs = msrs_alloc();
-> +
-> +		if (!msrs)
-> +			return;
-> +
-> +		boost_supported = true;
-> +		boost_enabled = boost_state(0);
-> +
-> +		get_online_cpus();
-> +
-> +		/* Force all MSRs to the same value */
-> +		boost_set_msrs(boost_enabled, cpu_online_mask);
-> +
-> +		register_cpu_notifier(&boost_nb);
-> +
-> +		put_online_cpus();
-> +	} else
-> +		global_boost.attr.mode = 0444;
-> +
-> +	/* We create the boost file in any case, though for systems without
-> +	 * hardware support it will be read-only and hardwired to return 0.
+> @@ -958,6 +979,27 @@ static int __init acpi_cpufreq_init(void)
+>  	if (ret)
+>  		return ret;
+>  
+> +#ifdef CONFIG_X86_ACPI_CPUFREQ_CPB
+> +	/* this is a sysfs file with a strange name and an even stranger
+> +	 * semantic - per CPU instantiation, but system global effect.
+> +	 * Lets enable it only on AMD CPUs for compatibility reasons and
+> +	 * only if configured. This is considered legacy code, which
+> +	 * will probably be removed at some point in the future.
 > +	 */
-> +	if (sysfs_create_file(cpufreq_global_kobject, &(global_boost.attr)))
-> +		pr_warn("could not register global boost sysfs file\n");
-> +	else
-> +		pr_debug("registered global boost sysfs file\n");
-> +}
+> +	if (check_amd_hwpstate_cpu(0)) {
+> +		struct freq_attr **iter;
 > +
-> +static void __exit acpi_cpufreq_boost_exit(void)
-> +{
-> +	sysfs_remove_file(cpufreq_global_kobject, &(global_boost.attr));
+> +		pr_debug("adding sysfs entry for cpb\n");
 > +
-> +	if (msrs) {
-> +		unregister_cpu_notifier(&boost_nb);
+> +		for (iter = acpi_cpufreq_attr; *iter != NULL; iter++)
+> +			;
 > +
-> +		msrs_free(msrs);
-> +		msrs = NULL;
+> +		/* make sure there is a terminator behind it */
+> +		if (iter[1] == NULL)
+> +			*iter = &cpb;
 > +	}
-> +}
+> +#endif
 > +
->  static int __init acpi_cpufreq_init(void)
->  {
->  	int ret;
-> @@ -789,6 +962,8 @@ static int __init acpi_cpufreq_init(void)
+>  	ret = cpufreq_register_driver(&acpi_cpufreq_driver);
 >  	if (ret)
 >  		free_acpi_perf_data();
->  
-> +	acpi_cpufreq_boost_init();
-> +
->  	return ret;
->  }
->  
-> @@ -796,6 +971,8 @@ static void __exit acpi_cpufreq_exit(void)
->  {
->  	pr_debug("acpi_cpufreq_exit\n");
->  
-> +	acpi_cpufreq_boost_exit();
-> +
->  	cpufreq_unregister_driver(&acpi_cpufreq_driver);
->  
->  	free_acpi_perf_data();
 > 
 
