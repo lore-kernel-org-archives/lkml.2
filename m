@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab2HFHja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 03:39:30 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:24199 "EHLO
+	id S1753632Ab2HFHk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 03:40:29 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:19606 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753737Ab2HFHj2 (ORCPT
+	with ESMTP id S1753366Ab2HFHk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 03:39:28 -0400
-Message-Id: <201208060737.q767biox005703@ubuntu>
+	Mon, 6 Aug 2012 03:40:27 -0400
+Message-Id: <201208060738.q767ci5c005713@ubuntu>
 From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Sun, 5 Aug 2012 21:43:44 +0100
-Subject: [NEW DRIVER V2 6/7] DA9058 HWMON driver
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
+Date: Sun, 5 Aug 2012 21:43:43 +0100
+Subject: [NEW DRIVER V2 5/7] DA9058 GPIO driver
+To: Grant Likely <grant.likely@secretlab.ca>
+To: Linus Walleij <linus.walleij@stericsson.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Randy Dunlop <randy.dunlap@oracle.com>
-Cc: lm-sensors@lm-sensors.org
 Cc: LKML <linux-kernel@vger.kernel.org>
 Cc: David Dajun Chen <david.chen@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the HWMON component driver of the Dialog DA9058 PMIC.
+This is the GPIO component driver of the Dialog DA9058 PMIC.
 This driver is just one component of the whole DA9058 PMIC driver.
 It depends on the core DA9058 MFD driver.
 
 Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
 Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
 ---
- drivers/hwmon/Kconfig        |   10 +
- drivers/hwmon/Makefile       |    1 +
- drivers/hwmon/da9058-hwmon.c |  390 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 401 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hwmon/da9058-hwmon.c
+ drivers/gpio/Kconfig       |   12 ++
+ drivers/gpio/Makefile      |    1 +
+ drivers/gpio/gpio-da9058.c |  376 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 389 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/gpio-da9058.c
 
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 6f1d167..0986f43 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -294,6 +294,16 @@ config SENSORS_ATXP1
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called atxp1.
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 542f0c0..63b574a 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -86,6 +86,18 @@ config GPIO_DA9052
+ 	help
+ 	  Say yes here to enable the GPIO driver for the DA9052 chip.
  
-+config SENSORS_DA9058
-+	tristate "Dialog Semiconductor DA9058 ADC"
-+	depends on I2C
++config GPIO_DA9058
++	tristate "Dialog DA9058 GPIO"
++	depends on MFD_DA9058
 +	help
-+	  If you say yes here you get support for ADC on the Dialog
-+	  Semiconductor DA9058 PMIC.
++	  Say yes here to enable the GPIO driver for the DA9058 chip.
 +
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called da9058-hwmon.
++	  The Dialog DA9058 PMIC chip has 2 GPIO pins that can be
++	  be controller by this driver.
 +
- config SENSORS_DS620
- 	tristate "Dallas Semiconductor DS620"
- 	depends on I2C
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index e1eeac1..be99572 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -43,6 +43,7 @@ obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
- obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
- obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
- obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
-+obj-$(CONFIG_SENSORS_DA9058)	+= da9058-hwmon.o
- obj-$(CONFIG_SENSORS_DS620)	+= ds620.o
- obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
- obj-$(CONFIG_SENSORS_EMC1403)	+= emc1403.o
-diff --git a/drivers/hwmon/da9058-hwmon.c b/drivers/hwmon/da9058-hwmon.c
++	  If driver is built as a module it will be called da9058-gpio.
++
++
+ config GPIO_MAX730X
+ 	tristate
+ 
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 0f55662..209224a 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_GPIO_ADP5520)	+= gpio-adp5520.o
+ obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
+ obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
+ obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
++obj-$(CONFIG_GPIO_DA9058)	+= gpio-da9058.o
+ obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
+ obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
+ obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
+diff --git a/drivers/gpio/gpio-da9058.c b/drivers/gpio/gpio-da9058.c
 new file mode 100644
-index 0000000..a1475e4
+index 0000000..ed464ff
 --- /dev/null
-+++ b/drivers/hwmon/da9058-hwmon.c
-@@ -0,0 +1,390 @@
++++ b/drivers/gpio/gpio-da9058.c
+@@ -0,0 +1,376 @@
 +/*
 + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
 + *
@@ -84,276 +84,282 @@ index 0000000..a1475e4
 + *
 + */
 +
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/slab.h>
++#include <linux/fs.h>
++#include <linux/uaccess.h>
 +#include <linux/platform_device.h>
-+#include <linux/regmap.h>
++#include <linux/gpio.h>
++#include <linux/syscalls.h>
++#include <linux/seq_file.h>
++#include <linux/slab.h>
++#include <linux/interrupt.h>
 +#include <linux/mfd/core.h>
++#include <linux/regmap.h>
 +
 +#include <linux/mfd/da9058/version.h>
 +#include <linux/mfd/da9058/registers.h>
 +#include <linux/mfd/da9058/core.h>
-+#include <linux/mfd/da9058/hwmon.h>
++#include <linux/mfd/da9058/gpio.h>
++#include <linux/mfd/da9058/irq.h>
++#include <linux/mfd/da9058/pdata.h>
 +
-+struct da9058_hwmon {
-+	struct da9058	*da9058;
++/*
++ *  There are only 2 available GPIO pins on the DA9058 PMIC
++ *
++ *  Thus this driver distinguishes them by the offset number
++ *  being zero or non-zero for simplicity
++ */
++
++struct da9058_gpio {
++	struct da9058 *da9058;
 +	struct platform_device *pdev;
-+
-+	struct device	*class_device;
-+	struct mutex	hwmon_lock;
-+	int use_automatic_adc;
-+	int temp_adc_resistance;
-+	int vf_adc_resistance;
++	struct gpio_chip gp;
++	struct mutex lock;
++	u8 inp_config;
++	u8 out_config;
 +};
 +
-+static ssize_t da9058_read_tbat(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
++static struct da9058_gpio *gpio_chip_to_da9058_gpio(struct gpio_chip *chip)
 +{
-+	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-+	int voltage; /* x000 .. xFFF = 0 .. 2500 mV */
-+	int ret;
-+
-+	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TEMP,
-+					hwmon->use_automatic_adc, &voltage);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", voltage * 2500 / 0xFFF);
++	return container_of(chip, struct da9058_gpio, gp);
 +}
 +
-+static ssize_t da9058_read_vbat(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
++static int da9058_gpio_get(struct gpio_chip *gc, unsigned offset)
 +{
-+	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-+	int voltage; /* x000 .. xFFF = 2500 .. 4500 mV */
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	unsigned int gpio_level;
 +	int ret;
 +
-+	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VBAT,
-+					hwmon->use_automatic_adc, &voltage);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", 2500 + voltage * 2000 / 0xFFF);
-+}
-+
-+static ssize_t da9058_read_misc_channel(struct device *dev,
-+					struct device_attribute *devattr,
-+					char *buf)
-+{
-+	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-+	int channel = to_sensor_dev_attr(devattr)->index;
-+	int voltage; /* xFFF .. x800 = 0 .. 2500 mV */
-+	int ret;
-+
-+	ret = da9058_adc_read(hwmon->da9058, channel,
-+				hwmon->use_automatic_adc, &voltage);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", (0xFFF - voltage) * 2500 / 0x7FF);
-+}
-+
-+/*
-+ *  The algorithm for converting the value is
-+ *  Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
-+ *  T_OFFSET is a trim value used to improve accuracy of the result
-+ */
-+static ssize_t da9058_read_tjunc(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
-+{
-+	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-+	int tjunc;
-+	unsigned int toffset;
-+	int ret;
-+
-+	ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffset);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TJUNC,
-+					hwmon->use_automatic_adc, &tjunc);
-+	if (ret < 0)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", 1708 * (tjunc - (int)toffset) - 108800);
-+}
-+
-+static ssize_t da9058_read_vfpin(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
-+{
-+	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-+	int voltage; /* x000 .. xFFF = 0 .. 4095 mV */
-+	int ret;
-+
-+	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VF,
-+					hwmon->use_automatic_adc, &voltage);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", voltage);
-+}
-+
-+static ssize_t da9058_vfpin_mode(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
-+{
-+	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-+	int ret;
-+	unsigned int mode;
-+
-+	ret = da9058_reg_read(hwmon->da9058, DA9058_ADCCONT_REG, &mode);
-+	if (ret)
-+		return ret;
-+
-+	if (mode & DA9058_ADCCONT_VFISRCEN) {
-+		if (hwmon->vf_adc_resistance)
-+			return sprintf(buf, "resistance\n");
-+		else
-+			return sprintf(buf,
-+				"resistance - but should be voltage\n");
-+	} else {
-+		if (hwmon->vf_adc_resistance)
-+			return sprintf(buf,
-+				"voltage - but should be resistance\n");
-+		else
-+			return sprintf(buf, "voltage\n");
-+	}
-+}
-+
-+static ssize_t da9058_get_adc_mode(struct device *dev,
-+					struct device_attribute *devattr,
-+					char *buf)
-+{
-+	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-+	unsigned int mode;
-+	int ret;
-+
-+	ret = da9058_reg_read(hwmon->da9058, DA9058_ADCCONT_REG, &mode);
-+	if (ret)
-+		return ret;
-+
-+	if (mode & DA9058_ADCCONT_AUTOADCEN) {
-+		if (hwmon->use_automatic_adc)
-+			return sprintf(buf, "automatic\n");
-+		else
-+			return sprintf(buf,
-+					"automatic - but should be manual\n");
-+	} else {
-+		if (hwmon->use_automatic_adc)
-+			return sprintf(buf,
-+					"manual - but should be automatic\n");
-+		else
-+			return sprintf(buf, "manual\n");
-+	}
-+}
-+
-+static ssize_t da9058_set_adc_mode(struct device *dev,
-+					struct device_attribute *devattr,
-+					const char *buf, size_t count)
-+{
-+	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-+
-+	if (*buf == 'A' || *buf == 'a') {
-+		if (hwmon->use_automatic_adc) {
-+			dev_info(&hwmon->pdev->dev,
-+					"already in AUTOMATIC adc_mode\n");
-+			return -EINVAL;
-+		} else {
-+			int ret;
-+			unsigned int mode = DA9058_ADCCONT_AUTOADCEN |
-+					DA9058_ADCCONT_TEMPISRCEN |
-+					DA9058_ADCCONT_AUTOVBATEN |
-+					DA9058_ADCCONT_AUTOVFEN |
-+					DA9058_ADCCONT_AUTOAINEN;
-+
-+			if (hwmon->vf_adc_resistance)
-+				mode |= DA9058_ADCCONT_VFISRCEN;
-+
-+			hwmon->use_automatic_adc = 1;
-+			ret = da9058_reg_write(hwmon->da9058,
-+						DA9058_ADCCONT_REG, mode);
-+			if (ret)
-+				return ret;
-+			return count;
-+		}
-+
-+	} else if (*buf == 'M' || *buf == 'm') {
-+		if (hwmon->use_automatic_adc) {
-+			int ret;
-+			unsigned int mode = 0;
-+
-+			if (hwmon->temp_adc_resistance)
-+				mode |= DA9058_ADCCONT_TEMPISRCEN;
-+			if (hwmon->vf_adc_resistance)
-+				mode |= DA9058_ADCCONT_VFISRCEN;
-+
-+			hwmon->use_automatic_adc = 0;
-+			ret = da9058_reg_write(hwmon->da9058,
-+						DA9058_ADCCONT_REG, mode);
-+			if (ret)
-+				return ret;
-+			return count;
-+		} else {
-+			dev_info(&hwmon->pdev->dev,
-+				"already in MANUAL adc_mode\n");
-+			return -EINVAL;
-+		}
-+	} else {
-+		dev_err(&hwmon->pdev->dev,
-+			"adc_mode should be AUTOMATIC or MANUAL not '%s'",
-+				buf);
++	if (offset > 1)
 +		return -EINVAL;
++
++	mutex_lock(&gpio->lock);
++	ret = da9058_reg_read(da9058, DA9058_STATUSC_REG, &gpio_level);
++	mutex_unlock(&gpio->lock);
++	if (ret < 0)
++		return ret;
++
++	if (offset) {
++		if (gpio_level & DA9058_STATUSC_GPI1)
++			return 1;
++		else
++			return 0;
++	} else {
++		if (gpio_level & DA9058_STATUSC_GPI0)
++			return 1;
++		else
++			return 0;
 +	}
 +}
 +
-+static ssize_t da9058_hwmon_show_name(struct device *dev,
-+					struct device_attribute *devattr,
-+					char *buf)
++static void da9058_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
 +{
-+	return sprintf(buf, "da9058-hwmon\n");
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	unsigned int gpio_cntrl;
++	int ret;
++
++	if (offset > 1) {
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d output=%d because illegal GPIO\n",
++			offset, value);
++		return;
++	}
++
++	mutex_lock(&gpio->lock);
++
++	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	if (ret)
++		goto exit;
++
++	if (offset) {
++		u8 value_bits = value ? 0x80 : 0x00;
++
++		gpio->out_config &= ~0x80;
++		gpio->out_config |= value_bits;
++
++		if (!(gpio_cntrl & 0x20))
++			goto exit;
++
++		gpio_cntrl &= ~0xF0;
++		gpio_cntrl |= 0xF0 & gpio->out_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	} else {
++		u8 value_bits = value ? 0x08 : 0x00;
++
++		gpio->out_config &= ~0x08;
++		gpio->out_config |= value_bits;
++
++		if (!(gpio_cntrl & 0x02))
++			goto exit;
++
++		gpio_cntrl &= ~0x0F;
++		gpio_cntrl |= 0x0F & gpio->out_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	}
++exit:
++	mutex_unlock(&gpio->lock);
++	if (ret)
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d output=%d error=%d\n",
++			offset, value, ret);
++	return;
 +}
 +
-+static SENSOR_DEVICE_ATTR(vbat_mV, S_IRUGO, da9058_read_vbat, NULL, 0);
-+static SENSOR_DEVICE_ATTR(adc_mV, S_IRUGO, da9058_read_misc_channel, NULL,
-+				DA9058_ADCMAN_MUXSEL_ADCIN);
-+static SENSOR_DEVICE_ATTR(vfpin_mV, S_IRUGO, da9058_read_vfpin, NULL, 0);
-+static SENSOR_DEVICE_ATTR(vfpin_mode, S_IRUGO, da9058_vfpin_mode, NULL, 0);
-+static SENSOR_DEVICE_ATTR(tbat_mV, S_IRUGO, da9058_read_tbat, NULL, 0);
-+static SENSOR_DEVICE_ATTR(tjunc_in, S_IRUGO, da9058_read_tjunc, NULL, 0);
-+static SENSOR_DEVICE_ATTR(adc_mode, S_IWUSR | S_IRUGO, da9058_get_adc_mode,
-+				da9058_set_adc_mode, 0);
++static int da9058_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
++{
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	unsigned int gpio_cntrl;
++	int ret;
 +
-+static DEVICE_ATTR(name, S_IRUGO, da9058_hwmon_show_name, NULL);
++	if (offset > 1)
++		return -EINVAL;
 +
-+static struct attribute *da9058_attr[] = {
-+	&dev_attr_name.attr,
-+	&sensor_dev_attr_adc_mode.dev_attr.attr,
-+	&sensor_dev_attr_vbat_mV.dev_attr.attr,
-+	&sensor_dev_attr_adc_mV.dev_attr.attr,
-+	&sensor_dev_attr_vfpin_mV.dev_attr.attr,
-+	&sensor_dev_attr_vfpin_mode.dev_attr.attr,
-+	&sensor_dev_attr_tbat_mV.dev_attr.attr,
-+	&sensor_dev_attr_tjunc_in.dev_attr.attr,
-+	NULL
-+};
++	mutex_lock(&gpio->lock);
 +
++	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	if (ret)
++		goto exit;
++
++	if (offset) {
++		gpio_cntrl &= ~0xF0;
++		gpio_cntrl |= 0xF0 & gpio->inp_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	} else {
++		gpio_cntrl &= ~0x0F;
++		gpio_cntrl |= 0x0F & gpio->inp_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	}
++exit:
++	mutex_unlock(&gpio->lock);
++	if (ret)
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d to output error=%d\n",
++			offset, ret);
++	return ret;
++}
++
++static int da9058_gpio_direction_output(struct gpio_chip *gc,
++					unsigned offset, int value)
++{
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	unsigned int gpio_cntrl;
++	int ret;
++
++	if (offset > 1)
++		return -EINVAL;
++
++	mutex_lock(&gpio->lock);
++
++	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	if (ret)
++		goto exit;
++
++	if (offset) {
++		gpio_cntrl &= ~0xF0;
++		gpio_cntrl |= 0xF0 & gpio->out_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	} else {
++		gpio_cntrl &= ~0x0F;
++		gpio_cntrl |= 0x0F & gpio->out_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	}
++exit:
++	mutex_unlock(&gpio->lock);
++	if (ret)
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d to input error=%d\n",
++			offset, ret);
++	return ret;
++}
 +/*
-+ *  the attributes will appear in /sys/class/hwmon/hwmon0/device
++ *  da9058_gpio_to_irq is an implementation of the GPIO Hook
++ *  @to_irq: supporting non-static gpio_to_irq() mappings
++ *  whose implementation may not sleep. This hook is called
++ *  when setting up the threaded GPIO irq handler.
 + */
++static int da9058_gpio_to_irq(struct gpio_chip *gc, u32 offset)
++{
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
 +
-+static const struct attribute_group da9058_attr_group = {.attrs = da9058_attr};
++	if (offset > 1)
++		return -EINVAL;
 +
-+static int __devinit da9058_hwmon_probe(struct platform_device *pdev)
++	if (offset)
++		return da9058_to_virt_irq_num(da9058, DA9058_IRQ_EGPI1);
++	else
++		return da9058_to_virt_irq_num(da9058, DA9058_IRQ_EGPI0);
++}
++
++static int da9058_gpio_set_debounce(struct gpio_chip *gc, unsigned offset,
++				unsigned debounce)
++{
++	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
++	struct da9058 *da9058 = gpio->da9058;
++	int ret;
++	unsigned int gpio_cntrl;
++
++	if (offset > 1)
++		return -EINVAL;
++
++	mutex_lock(&gpio->lock);
++
++	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	if (ret)
++		goto exit;
++
++	if (offset) {
++		u8 debounce_bits = debounce ? 0x80 : 0x00;
++
++		gpio->inp_config &= ~0x80;
++		gpio->inp_config |= debounce_bits;
++
++		if (gpio_cntrl & 0x20)
++			goto exit;
++
++		gpio_cntrl &= ~0xF0;
++		gpio_cntrl |= 0xF0 & gpio->inp_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	} else {
++		u8 debounce_bits = debounce ? 0x08 : 0x00;
++
++		gpio->inp_config &= ~0x08;
++		gpio->inp_config |= debounce_bits;
++
++		if (gpio_cntrl & 0x02)
++			goto exit;
++
++		gpio_cntrl &= ~0x0F;
++		gpio_cntrl |= 0x0F & gpio->inp_config;
++
++		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	}
++exit:
++	mutex_unlock(&gpio->lock);
++	if (ret)
++		dev_err(da9058->dev,
++			"Failed to set GPIO%d bounce=%d error=%d\n",
++			offset, debounce, ret);
++	return ret;
++}
++
++static int __devinit da9058_gpio_probe(struct platform_device *pdev)
 +{
 +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
 +	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_hwmon_pdata *hwmon_pdata;
-+	struct da9058_hwmon *hwmon;
++	struct da9058_gpio_pdata *gpio_pdata;
++	struct da9058_gpio *gpio;
 +	int ret;
 +
 +	if (cell == NULL) {
@@ -361,109 +367,89 @@ index 0000000..a1475e4
 +		goto exit;
 +	}
 +
-+	hwmon_pdata = cell->platform_data;
++	gpio_pdata = cell->platform_data;
 +
-+	if (hwmon_pdata == NULL) {
++	if (!gpio_pdata) {
 +		ret = -EINVAL;
 +		goto exit;
 +	}
 +
-+	if (hwmon_pdata->use_automatic_adc &
-+				!hwmon_pdata->temp_adc_resistance) {
-+		ret = -EINVAL; /* impossible setting */
-+		goto exit;
-+	}
-+
-+	dev_info(&pdev->dev, "HWMON uses %s ADC conversions\n",
-+		hwmon_pdata->use_automatic_adc ? "automatic" : "manual");
-+
-+	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct da9058_hwmon),
-+				GFP_KERNEL);
-+	if (!hwmon) {
++	gpio = devm_kzalloc(&pdev->dev, sizeof(struct da9058_gpio), GFP_KERNEL);
++	if (!gpio) {
 +		ret = -ENOMEM;
 +		goto exit;
 +	}
 +
-+	platform_set_drvdata(pdev, hwmon);
++	gpio->da9058 = da9058;
++	gpio->pdev = pdev;
 +
-+	hwmon->da9058 = da9058;
-+	hwmon->pdev = pdev;
-+	hwmon->use_automatic_adc = hwmon_pdata->use_automatic_adc;
-+	hwmon->temp_adc_resistance = hwmon_pdata->temp_adc_resistance;
-+	hwmon->vf_adc_resistance = hwmon_pdata->vf_adc_resistance;
++	gpio->gp.label = "da9058-gpio";
++	gpio->gp.owner = THIS_MODULE;
++	gpio->gp.get = da9058_gpio_get;
++	gpio->gp.set = da9058_gpio_set;
++	gpio->gp.direction_input = da9058_gpio_direction_input;
++	gpio->gp.direction_output = da9058_gpio_direction_output;
++	gpio->gp.to_irq = da9058_gpio_to_irq;
++	gpio->gp.set_debounce = da9058_gpio_set_debounce;
++	gpio->gp.can_sleep = 1;
++	gpio->gp.ngpio = gpio_pdata->ngpio;
++	gpio->gp.base = gpio_pdata->gpio_base;
 +
-+	if (hwmon->use_automatic_adc) {
-+		unsigned int mode = DA9058_ADCCONT_AUTOADCEN |
-+				DA9058_ADCCONT_TEMPISRCEN |
-+				DA9058_ADCCONT_AUTOVBATEN |
-+				DA9058_ADCCONT_AUTOVFEN |
-+				DA9058_ADCCONT_AUTOAINEN;
++	gpio->inp_config = 0x99;
++	gpio->out_config = 0x66;
 +
-+		if (hwmon->vf_adc_resistance)
-+			mode |= DA9058_ADCCONT_VFISRCEN;
++	mutex_init(&gpio->lock);
 +
-+		ret = da9058_reg_write(da9058, DA9058_ADCCONT_REG, mode);
-+		if (ret)
-+			goto err1;
-+	} else {
-+		unsigned int mode = 0;
-+
-+		if (hwmon->temp_adc_resistance)
-+			mode |= DA9058_ADCCONT_TEMPISRCEN;
-+		if (hwmon->vf_adc_resistance)
-+			mode |= DA9058_ADCCONT_VFISRCEN;
-+
-+		ret = da9058_reg_write(da9058, DA9058_ADCCONT_REG, mode);
-+		if (ret)
-+			goto err1;
++	ret = gpiochip_add(&gpio->gp);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
++		goto err;
 +	}
 +
-+	mutex_init(&hwmon->hwmon_lock);
++	platform_set_drvdata(pdev, gpio);
 +
-+	ret = sysfs_create_group(&pdev->dev.kobj, &da9058_attr_group);
++	dev_info(&pdev->dev, "%d GPIO pins at base %d\n", gpio_pdata->ngpio,
++				gpio->gp.base);
++
++	mutex_lock(&gpio->lock);
++	ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio->inp_config);
++	mutex_unlock(&gpio->lock);
 +	if (ret)
-+		goto err1;
-+
-+	hwmon->class_device = hwmon_device_register(&pdev->dev);
-+	if (IS_ERR(hwmon->class_device)) {
-+		ret = PTR_ERR(hwmon->class_device);
-+		goto err2;
-+	}
-+
-+	goto exit;
-+
-+err2:
-+	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
-+err1:
++		dev_err(da9058->dev,
++			"Failed to set GPIO0 as an output error = %d\n",
++				ret);
++err:
 +exit:
 +	return ret;
 +}
 +
-+static int __devexit da9058_hwmon_remove(struct platform_device *pdev)
++static int __devexit da9058_gpio_remove(struct platform_device *pdev)
 +{
-+	struct da9058_hwmon *hwmon = platform_get_drvdata(pdev);
++	struct da9058_gpio *gpio = platform_get_drvdata(pdev);
++	int ret;
 +
-+	hwmon_device_unregister(hwmon->class_device);
-+	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
++	ret = gpiochip_remove(&gpio->gp);
++	if (ret == 0)
++		kfree(gpio);
 +
-+	return 0;
++	return ret;
 +}
 +
-+static struct platform_driver da9058_hwmon_driver = {
-+	.probe = da9058_hwmon_probe,
-+	.remove = __devexit_p(da9058_hwmon_remove),
++static struct platform_driver da9058_gpio_driver = {
++	.probe = da9058_gpio_probe,
++	.remove = __devexit_p(da9058_gpio_remove),
 +	.driver = {
-+		.name = "da9058-hwmon",
++		.name = "da9058-gpio",
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+module_platform_driver(da9058_hwmon_driver);
++module_platform_driver(da9058_gpio_driver);
 +
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC HardWare Monitor Driver");
++MODULE_DESCRIPTION("Dialog DA9058 PMIC General Purpose IO Driver");
 +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-hwmon");
++MODULE_ALIAS("platform:da9058-gpio");
 -- 
 end-of-patch for NEW DRIVER V2
 
