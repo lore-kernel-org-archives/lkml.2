@@ -1,169 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab2HEV2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 17:28:24 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:42835 "EHLO ogre.sisk.pl"
+	id S1755147Ab2HEVin (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 17:38:43 -0400
+Received: from zougloub.eu ([188.165.233.99]:54295 "EHLO zougloub.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755056Ab2HEV2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 17:28:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andre Przywara <andre.przywara@amd.com>
-Subject: Re: [PATCH 8/8] Documentation: Add documentation for boost control switch
-Date: Sun, 5 Aug 2012 23:34:15 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: cpufreq@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Thomas Renninger <trenn@suse.de>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1343305724-2809-1-git-send-email-andre.przywara@amd.com> <1343305724-2809-9-git-send-email-andre.przywara@amd.com>
-In-Reply-To: <1343305724-2809-9-git-send-email-andre.przywara@amd.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1754986Ab2HEVim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 17:38:42 -0400
+X-Greylist: delayed 639 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Aug 2012 17:38:42 EDT
+Date: Sun, 5 Aug 2012 17:29:03 -0400
+From: =?UTF-8?B?SsOpcsO0bWU=?= Carretero <cJ-ko@zougloub.eu>
+To: Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, matt.fleming@linux.intel.com
+Subject: [Regression] "x86-64/efi: Use EFI to deal with platform wall clock"
+ prevents my machine from booting
+Message-ID: <20120805172903.5f8bb24c@zougloub.eu>
+Organization: none
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208052334.15253.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 26, 2012, Andre Przywara wrote:
-> The new acpi-cpufreq driver supports a system global control switch
-> to disable the frequency boosting feature of some (x86) CPUs.
-> Provide documentation about the rationale and the usage.
-> 
-> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+Hi,
 
-That should be folded into the patch adding the feature being documented.
+My PC (AMD Bulldozer + Asus SABERTOOTH 990FX) booted fine from UEFI
+and it broke between v3.5 and v3.6-rc1.
+Other machines with old BIOSes booted fine so I looked into EFI-related
+patches trying to revert them, because I didn't know what else to do.
 
-Thanks,
-Rafael
+Bingo, bacef661: x86-64/efi: Use EFI to deal with platform wall clock.
 
+At the moment I reverted this commit after v3.6-rc1-133-g42a579a,
+and it boots fine.
 
-> ---
->  Documentation/ABI/testing/sysfs-devices-system-cpu |   12 +++
->  Documentation/cpu-freq/boost.txt                   |   94 ++++++++++++++++++++
->  2 files changed, 106 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/cpu-freq/boost.txt
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> index 5dab364..1107a2e 100644
-> --- a/Documentation/ABI/testing/sysfs-devices-system-cpu
-> +++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> @@ -176,3 +176,15 @@ Description:	Disable L3 cache indices
->  		All AMD processors with L3 caches provide this functionality.
->  		For details, see BKDGs at
->  		http://developer.amd.com/documentation/guides/Pages/default.aspx
-> +
-> +
-> +What:		/sys/devices/system/cpu/cpufreq/boost
-> +Date:		August 2012
-> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> +Description:	Processor frequency boosting control
-> +
-> +		This switch controls the boost setting for the whole system.
-> +		Boosting allows the CPU and the firmware to run at a frequency
-> +		beyound it's nominal limit.
-> +		More details can be found in Documentation/cpu-freq/boost.txt
-> +
-> diff --git a/Documentation/cpu-freq/boost.txt b/Documentation/cpu-freq/boost.txt
-> new file mode 100644
-> index 0000000..0085494
-> --- /dev/null
-> +++ b/Documentation/cpu-freq/boost.txt
-> @@ -0,0 +1,94 @@
-> +Processor boosting control
-> +
-> +	- information for users -
-> +
-> +Quick guide for the impatient:
-> +--------------------
-> +/sys/devices/system/cpu/cpufreq/boost
-> +controls the boost setting for the whole system. You can read and write
-> +that file with either "0" (boosting disabled) or "1" (boosting allowed).
-> +Reading or writing 1 does not mean that the system is boosting at this
-> +very moment, but only that the CPU _may_ raise the frequency at it's
-> +discretion.
-> +--------------------
-> +
-> +Introduction
-> +-------------
-> +Some CPUs support a functionality to raise the operating frequency of
-> +some cores in a multi-core package if certain conditions apply, mostly
-> +if the whole chip is not fully utilized and below it's intended thermal
-> +budget. This is done without operating system control by a combination
-> +of hardware and firmware.
-> +On Intel CPUs this is called "Turbo Boost", AMD calls it "Turbo-Core",
-> +in technical documentation "Core performance boost". In Linux we use
-> +the term "boost" for convenience.
-> +
-> +Rationale for disable switch
-> +----------------------------
-> +
-> +Though the idea is to just give better performance without any user
-> +intervention, sometimes the need arises to disable this functionality.
-> +Most systems offer a switch in the (BIOS) firmware to disable the
-> +functionality at all, but a more fine-grained and dynamic control would
-> +be desirable:
-> +1. While running benchmarks, reproducible results are important. Since
-> +   the boosting functionality depends on the load of the whole package,
-> +   single thread performance can vary. By explicitly disabling the boost
-> +   functionality at least for the benchmark's run-time the system will run
-> +   at a fixed frequency and results are reproducible again.
-> +2. To examine the impact of the boosting functionality it is helpful
-> +   to do tests with and without boosting.
-> +3. Boosting means overclocking the processor, though under controlled
-> +   conditions. By raising the frequency and the voltage the processor
-> +   will consume more power than without the boosting, which may be
-> +   undesirable for instance for mobile users. Disabling boosting may
-> +   save power here, though this depends on the workload.
-> +
-> +
-> +User controlled switch
-> +----------------------
-> +
-> +To allow the user to toggle the boosting functionality, the acpi-cpufreq
-> +driver exports a sysfs knob to disable it. There is a file:
-> +/sys/devices/system/cpu/cpufreq/boost
-> +which can either read "0" (boosting disabled) or "1" (boosting enabled).
-> +Reading the file is always supported, even if the processor does not
-> +support boosting. In this case the file will be read-only and always
-> +reads as "0". Explicitly changing the permissions and writing to that
-> +file anyway will return EINVAL.
-> +
-> +On supported CPUs one can write either a "0" or a "1" into this file.
-> +This will either disable the boost functionality on all cores in the
-> +whole system (0) or will allow the hardware to boost at will (1).
-> +
-> +Writing a "1" does not explicitly boost the system, but just allows the
-> +CPU (and the firmware) to boost at their discretion. Some implementations
-> +take external factors like the chip's temperature into account, so 
-> +boosting once does not necessarily mean that it will occur every time
-> +even using the exact same software setup.
-> +
-> +
-> +AMD legacy cpb switch
-> +---------------------
-> +The AMD powernow-k8 driver used to support a very similar switch to
-> +disable or enable the "Core Performance Boost" feature of some AMD CPUs.
-> +This switch was instantiated in each CPU's cpufreq directory
-> +(/sys/devices/system/cpu[0-9]*/cpufreq) and was called "cpb".
-> +Though the per CPU existence hints at a more fine grained control, the
-> +actual implementation only supported a system-global switch semantics,
-> +which was simply reflected into each CPU's file. Writing a 0 or 1 into it
-> +would pull the other CPUs to the same state.
-> +For compatibility reasons this file and its behavior is still supported
-> +on AMD CPUs, though it is now protected by a config switch
-> +(X86_ACPI_CPUFREQ_CPB). On Intel CPUs this file will never be created,
-> +even with the config option set.
-> +This functionality is considered legacy and will be removed in some future
-> +kernel version.
-> +
-> +More fine grained boosting control
-> +----------------------------------
-> +
-> +Technically it is possible to switch the boosting functionality at least
-> +on a per package basis, for some CPUs even per core. Currently the driver
-> +does not support it, but this may be implemented in the future.
-> +
-> 
+This really not my domain so tell me if I can help testing.
 
+Regards,
+
+-- 
+cJ
+
+Note, probably irrelevant: I use grub2 with no boot parameters
+except root= and the standard .config EFI options.
