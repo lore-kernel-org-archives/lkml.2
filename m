@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab2HEVSp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 17:18:45 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:36506 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011Ab2HEVSo (ORCPT
+	id S1755096Ab2HEVTg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 17:19:36 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:24575 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755015Ab2HEVTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 17:18:44 -0400
-Date: Sun, 5 Aug 2012 22:18:38 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org, Andreas Heider <andreas@meetr.de>
-Subject: Re: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we
- can't get a panel mode
-Message-ID: <20120805211838.GA27188@srcf.ucam.org>
-References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
- <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
- <20120803161416.GA22563@srcf.ucam.org>
- <20120803162451.GF8165@thinkpad-t410>
- <20120803162702.GA22896@srcf.ucam.org>
- <20120804165727.GA4980@thinkpad-t410>
- <20120805211412.GG12232@phenom.ffwll.local>
+	Sun, 5 Aug 2012 17:19:35 -0400
+Date: Sun, 5 Aug 2012 23:19:34 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Daniel Vetter <daniel@ffwll.ch>
+cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jesse Barnes <jesse.barnes@intel.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915: Fix mem leak in intel_sdvo_write_cmd()
+In-Reply-To: <20120805210044.GE12232@phenom.ffwll.local>
+Message-ID: <alpine.LNX.2.00.1208052319010.25703@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1207312228270.7100@swampdragon.chaosbits.net> <20120805210044.GE12232@phenom.ffwll.local>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120805211412.GG12232@phenom.ffwll.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 05, 2012 at 11:14:12PM +0200, Daniel Vetter wrote:
+On Sun, 5 Aug 2012, Daniel Vetter wrote:
 
-> I like this approach more - the only other solution I see is to ask the
-> currently active driver (i.e. radeon) at bootime for the right mode. Which
-> sounds much more hellish and fragile ...
+> On Tue, Jul 31, 2012 at 10:31:15PM +0200, Jesper Juhl wrote:
+> > If the allocation of 'buf' succeeds but the allocation of 'msgs' fails
+> > we'll return false and leak 'buf' when it goes out of scope.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> 
+> I've already merged a similar patch from Alan Cox for -fixes, should land
+> in 3.6 soonish.
 
-The "correct" approach is clearly to just have the drm core change the 
-i2c mux before requesting edid, but that's made difficult because of the 
-absence of ordering guarantees in initialisation. I don't like quirking 
-this, since we're then back to the situation of potentially having to 
-add every new piece of related hardware to the quirk list.
+Perfect.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
