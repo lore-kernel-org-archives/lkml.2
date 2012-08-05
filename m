@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab2HEOpu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 10:45:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44723 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab2HEOpt (ORCPT
+	id S1754620Ab2HEOqK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 10:46:10 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:43519 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab2HEOqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 10:45:49 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] ARM: kirkwood: fix typo in Makefile.boot
-Date: Sun,  5 Aug 2012 16:45:32 +0200
-Message-Id: <1344177932-6466-1-git-send-email-sebastian.hesselbarth@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 5 Aug 2012 10:46:06 -0400
+Date: Sun, 5 Aug 2012 16:48:14 +0200
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: linux-can@vger.kernel.org
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH can-next 0/5] can: add LED trigger support to common devices
+Message-ID: <20120805144814.GA2804@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux balto-eee 3.5.0-balto-eee-08842-ge2bb6f7 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a small typo fix to make lsxl dtbs compile
+Hello,
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-kirkwood/Makefile.boot |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+this patch series adds support for LED triggers to CAN devices commonly
+found on SoC architectures, using the support code recently merged in
+Marc's can-next tree.
 
-diff --git a/arch/arm/mach-kirkwood/Makefile.boot b/arch/arm/mach-kirkwood/Makefile.boot
-index 2a576ab..a571755 100644
---- a/arch/arm/mach-kirkwood/Makefile.boot
-+++ b/arch/arm/mach-kirkwood/Makefile.boot
-@@ -9,5 +9,5 @@ dtb-$(CONFIG_MACH_ICONNECT_DT) += kirkwood-iconnect.dtb
- dtb-$(CONFIG_MACH_IB62X0_DT) += kirkwood-ib62x0.dtb
- dtb-$(CONFIG_MACH_TS219_DT)	+= kirkwood-qnap-ts219.dtb
- dtb-$(CONFIG_MACH_GOFLEXNET_DT) += kirkwood-goflexnet.dtb
--dbt-$(CONFIG_MACH_LSXL_DT) += kirkwood-lschlv2.dtb
--dbt-$(CONFIG_MACH_LSXL_DT) += kirkwood-lsxhl.dtb
-+dtb-$(CONFIG_MACH_LSXL_DT) += kirkwood-lschlv2.dtb
-+dtb-$(CONFIG_MACH_LSXL_DT) += kirkwood-lsxhl.dtb
--- 
-1.7.10.4
+I actually modified only drivers who's devices may be commonly found
+in embedded platforms with associated cpu-controlled LEDs, let me know
+if I missed anything.
 
+As I lack the actual hardware, these patches are *compile tested* only,
+so I hope to get some test on real hardware from other developers,
+through the modifications should be quite straightforward.
+
+Also, I'll let you know that I may not have access to my email during
+the next week, so if you write me, I'll try to answer as soon as
+possible.
+
+Fabio
+
+
+Fabio Baltieri (5):
+      can: at91_can: add LED trigger support
+      can: ti_hecc: add LED trigger support
+      can: c_can: add LED trigger support
+      can: mcp251x: add LED trigger support
+      can: sja1000: add LED trigger support
+
+ at91_can.c        |   10 ++++++++++
+ c_can/c_can.c     |   17 ++++++++++++++++-
+ mcp251x.c         |   23 +++++++++++++++++++----
+ sja1000/sja1000.c |   17 ++++++++++++++++-
+ ti_hecc.c         |   10 ++++++++++
+ 5 files changed, 71 insertions(+), 6 deletions(-)
