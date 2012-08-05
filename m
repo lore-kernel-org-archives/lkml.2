@@ -1,117 +1,469 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2HFHjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 03:39:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:36330 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753312Ab2HFHjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 03:39:12 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>,
-        "Greg KH" <gregkh@linuxfoundation.org>
-Cc: Alex Lyashkov <umka@cloudlinux.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Subject: [PULL] Last-minute module patches
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 06 Aug 2012 16:59:31 +0930
-Message-ID: <87lihsxyuc.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753749Ab2HFHja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 03:39:30 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:24199 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753737Ab2HFHj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 03:39:28 -0400
+Message-Id: <201208060737.q767biox005703@ubuntu>
+From: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Date: Sun, 5 Aug 2012 21:43:44 +0100
+Subject: [NEW DRIVER V2 6/7] DA9058 HWMON driver
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Randy Dunlop <randy.dunlap@oracle.com>
+Cc: lm-sensors@lm-sensors.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: David Dajun Chen <david.chen@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 42a579a0f960081cd16fc945036e4780c3ad3202:
+This is the HWMON component driver of the Dialog DA9058 PMIC.
+This driver is just one component of the whole DA9058 PMIC driver.
+It depends on the core DA9058 MFD driver.
 
-  Merge branches 'timers-urgent-for-linus' and 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2012-08-05 22:28:49 +0300)
+Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+---
+ drivers/hwmon/Kconfig        |   10 +
+ drivers/hwmon/Makefile       |    1 +
+ drivers/hwmon/da9058-hwmon.c |  390 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 401 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/da9058-hwmon.c
 
-are available in the git repository at:
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 6f1d167..0986f43 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -294,6 +294,16 @@ config SENSORS_ATXP1
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called atxp1.
+ 
++config SENSORS_DA9058
++	tristate "Dialog Semiconductor DA9058 ADC"
++	depends on I2C
++	help
++	  If you say yes here you get support for ADC on the Dialog
++	  Semiconductor DA9058 PMIC.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called da9058-hwmon.
++
+ config SENSORS_DS620
+ 	tristate "Dallas Semiconductor DS620"
+ 	depends on I2C
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index e1eeac1..be99572 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
+ obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
+ obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
+ obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
++obj-$(CONFIG_SENSORS_DA9058)	+= da9058-hwmon.o
+ obj-$(CONFIG_SENSORS_DS620)	+= ds620.o
+ obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
+ obj-$(CONFIG_SENSORS_EMC1403)	+= emc1403.o
+diff --git a/drivers/hwmon/da9058-hwmon.c b/drivers/hwmon/da9058-hwmon.c
+new file mode 100644
+index 0000000..a1475e4
+--- /dev/null
++++ b/drivers/hwmon/da9058-hwmon.c
+@@ -0,0 +1,390 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/regmap.h>
++#include <linux/mfd/core.h>
++
++#include <linux/mfd/da9058/version.h>
++#include <linux/mfd/da9058/registers.h>
++#include <linux/mfd/da9058/core.h>
++#include <linux/mfd/da9058/hwmon.h>
++
++struct da9058_hwmon {
++	struct da9058	*da9058;
++	struct platform_device *pdev;
++
++	struct device	*class_device;
++	struct mutex	hwmon_lock;
++	int use_automatic_adc;
++	int temp_adc_resistance;
++	int vf_adc_resistance;
++};
++
++static ssize_t da9058_read_tbat(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int voltage; /* x000 .. xFFF = 0 .. 2500 mV */
++	int ret;
++
++	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TEMP,
++					hwmon->use_automatic_adc, &voltage);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%d\n", voltage * 2500 / 0xFFF);
++}
++
++static ssize_t da9058_read_vbat(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int voltage; /* x000 .. xFFF = 2500 .. 4500 mV */
++	int ret;
++
++	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VBAT,
++					hwmon->use_automatic_adc, &voltage);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%d\n", 2500 + voltage * 2000 / 0xFFF);
++}
++
++static ssize_t da9058_read_misc_channel(struct device *dev,
++					struct device_attribute *devattr,
++					char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int channel = to_sensor_dev_attr(devattr)->index;
++	int voltage; /* xFFF .. x800 = 0 .. 2500 mV */
++	int ret;
++
++	ret = da9058_adc_read(hwmon->da9058, channel,
++				hwmon->use_automatic_adc, &voltage);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%d\n", (0xFFF - voltage) * 2500 / 0x7FF);
++}
++
++/*
++ *  The algorithm for converting the value is
++ *  Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
++ *  T_OFFSET is a trim value used to improve accuracy of the result
++ */
++static ssize_t da9058_read_tjunc(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int tjunc;
++	unsigned int toffset;
++	int ret;
++
++	ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffset);
++	if (ret < 0)
++		return ret;
++
++	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TJUNC,
++					hwmon->use_automatic_adc, &tjunc);
++	if (ret < 0)
++		return ret;
++
++	return sprintf(buf, "%d\n", 1708 * (tjunc - (int)toffset) - 108800);
++}
++
++static ssize_t da9058_read_vfpin(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int voltage; /* x000 .. xFFF = 0 .. 4095 mV */
++	int ret;
++
++	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VF,
++					hwmon->use_automatic_adc, &voltage);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%d\n", voltage);
++}
++
++static ssize_t da9058_vfpin_mode(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int ret;
++	unsigned int mode;
++
++	ret = da9058_reg_read(hwmon->da9058, DA9058_ADCCONT_REG, &mode);
++	if (ret)
++		return ret;
++
++	if (mode & DA9058_ADCCONT_VFISRCEN) {
++		if (hwmon->vf_adc_resistance)
++			return sprintf(buf, "resistance\n");
++		else
++			return sprintf(buf,
++				"resistance - but should be voltage\n");
++	} else {
++		if (hwmon->vf_adc_resistance)
++			return sprintf(buf,
++				"voltage - but should be resistance\n");
++		else
++			return sprintf(buf, "voltage\n");
++	}
++}
++
++static ssize_t da9058_get_adc_mode(struct device *dev,
++					struct device_attribute *devattr,
++					char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	unsigned int mode;
++	int ret;
++
++	ret = da9058_reg_read(hwmon->da9058, DA9058_ADCCONT_REG, &mode);
++	if (ret)
++		return ret;
++
++	if (mode & DA9058_ADCCONT_AUTOADCEN) {
++		if (hwmon->use_automatic_adc)
++			return sprintf(buf, "automatic\n");
++		else
++			return sprintf(buf,
++					"automatic - but should be manual\n");
++	} else {
++		if (hwmon->use_automatic_adc)
++			return sprintf(buf,
++					"manual - but should be automatic\n");
++		else
++			return sprintf(buf, "manual\n");
++	}
++}
++
++static ssize_t da9058_set_adc_mode(struct device *dev,
++					struct device_attribute *devattr,
++					const char *buf, size_t count)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++
++	if (*buf == 'A' || *buf == 'a') {
++		if (hwmon->use_automatic_adc) {
++			dev_info(&hwmon->pdev->dev,
++					"already in AUTOMATIC adc_mode\n");
++			return -EINVAL;
++		} else {
++			int ret;
++			unsigned int mode = DA9058_ADCCONT_AUTOADCEN |
++					DA9058_ADCCONT_TEMPISRCEN |
++					DA9058_ADCCONT_AUTOVBATEN |
++					DA9058_ADCCONT_AUTOVFEN |
++					DA9058_ADCCONT_AUTOAINEN;
++
++			if (hwmon->vf_adc_resistance)
++				mode |= DA9058_ADCCONT_VFISRCEN;
++
++			hwmon->use_automatic_adc = 1;
++			ret = da9058_reg_write(hwmon->da9058,
++						DA9058_ADCCONT_REG, mode);
++			if (ret)
++				return ret;
++			return count;
++		}
++
++	} else if (*buf == 'M' || *buf == 'm') {
++		if (hwmon->use_automatic_adc) {
++			int ret;
++			unsigned int mode = 0;
++
++			if (hwmon->temp_adc_resistance)
++				mode |= DA9058_ADCCONT_TEMPISRCEN;
++			if (hwmon->vf_adc_resistance)
++				mode |= DA9058_ADCCONT_VFISRCEN;
++
++			hwmon->use_automatic_adc = 0;
++			ret = da9058_reg_write(hwmon->da9058,
++						DA9058_ADCCONT_REG, mode);
++			if (ret)
++				return ret;
++			return count;
++		} else {
++			dev_info(&hwmon->pdev->dev,
++				"already in MANUAL adc_mode\n");
++			return -EINVAL;
++		}
++	} else {
++		dev_err(&hwmon->pdev->dev,
++			"adc_mode should be AUTOMATIC or MANUAL not '%s'",
++				buf);
++		return -EINVAL;
++	}
++}
++
++static ssize_t da9058_hwmon_show_name(struct device *dev,
++					struct device_attribute *devattr,
++					char *buf)
++{
++	return sprintf(buf, "da9058-hwmon\n");
++}
++
++static SENSOR_DEVICE_ATTR(vbat_mV, S_IRUGO, da9058_read_vbat, NULL, 0);
++static SENSOR_DEVICE_ATTR(adc_mV, S_IRUGO, da9058_read_misc_channel, NULL,
++				DA9058_ADCMAN_MUXSEL_ADCIN);
++static SENSOR_DEVICE_ATTR(vfpin_mV, S_IRUGO, da9058_read_vfpin, NULL, 0);
++static SENSOR_DEVICE_ATTR(vfpin_mode, S_IRUGO, da9058_vfpin_mode, NULL, 0);
++static SENSOR_DEVICE_ATTR(tbat_mV, S_IRUGO, da9058_read_tbat, NULL, 0);
++static SENSOR_DEVICE_ATTR(tjunc_in, S_IRUGO, da9058_read_tjunc, NULL, 0);
++static SENSOR_DEVICE_ATTR(adc_mode, S_IWUSR | S_IRUGO, da9058_get_adc_mode,
++				da9058_set_adc_mode, 0);
++
++static DEVICE_ATTR(name, S_IRUGO, da9058_hwmon_show_name, NULL);
++
++static struct attribute *da9058_attr[] = {
++	&dev_attr_name.attr,
++	&sensor_dev_attr_adc_mode.dev_attr.attr,
++	&sensor_dev_attr_vbat_mV.dev_attr.attr,
++	&sensor_dev_attr_adc_mV.dev_attr.attr,
++	&sensor_dev_attr_vfpin_mV.dev_attr.attr,
++	&sensor_dev_attr_vfpin_mode.dev_attr.attr,
++	&sensor_dev_attr_tbat_mV.dev_attr.attr,
++	&sensor_dev_attr_tjunc_in.dev_attr.attr,
++	NULL
++};
++
++/*
++ *  the attributes will appear in /sys/class/hwmon/hwmon0/device
++ */
++
++static const struct attribute_group da9058_attr_group = {.attrs = da9058_attr};
++
++static int __devinit da9058_hwmon_probe(struct platform_device *pdev)
++{
++	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
++	const struct mfd_cell *cell = mfd_get_cell(pdev);
++	struct da9058_hwmon_pdata *hwmon_pdata;
++	struct da9058_hwmon *hwmon;
++	int ret;
++
++	if (cell == NULL) {
++		ret = -ENODEV;
++		goto exit;
++	}
++
++	hwmon_pdata = cell->platform_data;
++
++	if (hwmon_pdata == NULL) {
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	if (hwmon_pdata->use_automatic_adc &
++				!hwmon_pdata->temp_adc_resistance) {
++		ret = -EINVAL; /* impossible setting */
++		goto exit;
++	}
++
++	dev_info(&pdev->dev, "HWMON uses %s ADC conversions\n",
++		hwmon_pdata->use_automatic_adc ? "automatic" : "manual");
++
++	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct da9058_hwmon),
++				GFP_KERNEL);
++	if (!hwmon) {
++		ret = -ENOMEM;
++		goto exit;
++	}
++
++	platform_set_drvdata(pdev, hwmon);
++
++	hwmon->da9058 = da9058;
++	hwmon->pdev = pdev;
++	hwmon->use_automatic_adc = hwmon_pdata->use_automatic_adc;
++	hwmon->temp_adc_resistance = hwmon_pdata->temp_adc_resistance;
++	hwmon->vf_adc_resistance = hwmon_pdata->vf_adc_resistance;
++
++	if (hwmon->use_automatic_adc) {
++		unsigned int mode = DA9058_ADCCONT_AUTOADCEN |
++				DA9058_ADCCONT_TEMPISRCEN |
++				DA9058_ADCCONT_AUTOVBATEN |
++				DA9058_ADCCONT_AUTOVFEN |
++				DA9058_ADCCONT_AUTOAINEN;
++
++		if (hwmon->vf_adc_resistance)
++			mode |= DA9058_ADCCONT_VFISRCEN;
++
++		ret = da9058_reg_write(da9058, DA9058_ADCCONT_REG, mode);
++		if (ret)
++			goto err1;
++	} else {
++		unsigned int mode = 0;
++
++		if (hwmon->temp_adc_resistance)
++			mode |= DA9058_ADCCONT_TEMPISRCEN;
++		if (hwmon->vf_adc_resistance)
++			mode |= DA9058_ADCCONT_VFISRCEN;
++
++		ret = da9058_reg_write(da9058, DA9058_ADCCONT_REG, mode);
++		if (ret)
++			goto err1;
++	}
++
++	mutex_init(&hwmon->hwmon_lock);
++
++	ret = sysfs_create_group(&pdev->dev.kobj, &da9058_attr_group);
++	if (ret)
++		goto err1;
++
++	hwmon->class_device = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(hwmon->class_device)) {
++		ret = PTR_ERR(hwmon->class_device);
++		goto err2;
++	}
++
++	goto exit;
++
++err2:
++	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
++err1:
++exit:
++	return ret;
++}
++
++static int __devexit da9058_hwmon_remove(struct platform_device *pdev)
++{
++	struct da9058_hwmon *hwmon = platform_get_drvdata(pdev);
++
++	hwmon_device_unregister(hwmon->class_device);
++	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
++
++	return 0;
++}
++
++static struct platform_driver da9058_hwmon_driver = {
++	.probe = da9058_hwmon_probe,
++	.remove = __devexit_p(da9058_hwmon_remove),
++	.driver = {
++		.name = "da9058-hwmon",
++		.owner = THIS_MODULE,
++	},
++};
++
++module_platform_driver(da9058_hwmon_driver);
++
++MODULE_DESCRIPTION("Dialog DA9058 PMIC HardWare Monitor Driver");
++MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:da9058-hwmon");
+-- 
+end-of-patch for NEW DRIVER V2
 
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git tags/module-for-linus
-
-for you to fetch changes up to 26ab1397b6e51ffc72fb00ad012598eb2e135726:
-
-  Make most arch asm/module.h files use asm-generic/module.h (2012-08-06 16:57:33 +0930)
-
-----------------------------------------------------------------
-Left to (past?) the last minute for two reasons:
-1) There were minor conflicts in linux-next; I like a clean merge, so wanted
-   the other stuff (aka real work) in first.
-2) I was hoping we could discard the lve license check, but Greg tells me
-   it's still not 100% resolved, so I've left it in.
-
-Thanks!
-Rusty.
-
-----------------------------------------------------------------
-David Howells (1):
-      Make most arch asm/module.h files use asm-generic/module.h
-
-Matthew Garrett (1):
-      module: taint kernel when lve module is loaded
-
- arch/Kconfig                       |   19 +++++++++++++++++
- arch/alpha/Kconfig                 |    2 ++
- arch/alpha/include/asm/module.h    |   10 ++-------
- arch/arm/Kconfig                   |    2 ++
- arch/arm/include/asm/module.h      |    8 ++------
- arch/avr32/Kconfig                 |    2 ++
- arch/avr32/include/asm/module.h    |    6 ++----
- arch/blackfin/Kconfig              |    2 ++
- arch/blackfin/include/asm/module.h |    4 +---
- arch/c6x/Kconfig                   |    1 +
- arch/c6x/include/asm/module.h      |   12 +----------
- arch/cris/Kconfig                  |    1 +
- arch/cris/include/asm/Kbuild       |    2 ++
- arch/cris/include/asm/module.h     |    9 --------
- arch/frv/include/asm/module.h      |    8 +-------
- arch/h8300/Kconfig                 |    1 +
- arch/h8300/include/asm/Kbuild      |    2 ++
- arch/h8300/include/asm/module.h    |   11 ----------
- arch/hexagon/Kconfig               |    1 +
- arch/ia64/Kconfig                  |    2 ++
- arch/ia64/include/asm/module.h     |    6 ++----
- arch/m32r/Kconfig                  |    1 +
- arch/m32r/include/asm/Kbuild       |    2 ++
- arch/m32r/include/asm/module.h     |   10 ---------
- arch/m32r/kernel/module.c          |   15 --------------
- arch/m68k/Kconfig                  |    3 +++
- arch/m68k/include/asm/module.h     |    6 ++----
- arch/microblaze/Kconfig            |    1 +
- arch/mips/Kconfig                  |    3 +++
- arch/mips/include/asm/module.h     |   10 +++++++--
- arch/mips/kernel/module.c          |    2 ++
- arch/mn10300/Kconfig               |    1 +
- arch/mn10300/include/asm/module.h  |    7 +------
- arch/openrisc/Kconfig              |    1 +
- arch/parisc/Kconfig                |    2 ++
- arch/parisc/include/asm/module.h   |   16 +++------------
- arch/powerpc/Kconfig               |    2 ++
- arch/powerpc/include/asm/module.h  |    7 +------
- arch/s390/Kconfig                  |    2 ++
- arch/s390/include/asm/module.h     |   18 +++-------------
- arch/score/Kconfig                 |    2 ++
- arch/score/include/asm/module.h    |    6 +-----
- arch/score/kernel/module.c         |   10 ---------
- arch/sh/Kconfig                    |    2 ++
- arch/sh/include/asm/module.h       |   14 +++----------
- arch/sparc/Kconfig                 |    1 +
- arch/sparc/include/asm/Kbuild      |    1 +
- arch/sparc/include/asm/module.h    |   24 ----------------------
- arch/tile/Kconfig                  |    1 +
- arch/unicore32/Kconfig             |    1 +
- arch/x86/Kconfig                   |    2 ++
- arch/xtensa/Kconfig                |    1 +
- arch/xtensa/include/asm/module.h   |    9 +-------
- include/asm-generic/module.h       |   40 +++++++++++++++++++++++++++++-------
- include/linux/moduleloader.h       |   36 ++++++++++++++++++++++++++++----
- kernel/module.c                    |   24 ++++------------------
- 56 files changed, 171 insertions(+), 223 deletions(-)
- delete mode 100644 arch/cris/include/asm/module.h
- delete mode 100644 arch/h8300/include/asm/module.h
- delete mode 100644 arch/m32r/include/asm/module.h
- delete mode 100644 arch/sparc/include/asm/module.h
