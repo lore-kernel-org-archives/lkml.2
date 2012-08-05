@@ -1,311 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab2HESGG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 14:06:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45675 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752520Ab2HESGE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 14:06:04 -0400
-Message-ID: <1344189947.13142.3.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: Linux 3.2.26
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
-        stable@vger.kernel.org, lwn@lwn.net
-Date: Sun, 05 Aug 2012 19:05:47 +0100
-In-Reply-To: <1344189872.13142.2.camel@deadeye.wl.decadent.org.uk>
-References: <1344189872.13142.2.camel@deadeye.wl.decadent.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-n7DFa/btRWI4s0TiSl91"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1754846Ab2HESml (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 14:42:41 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:34117 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754776Ab2HESmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 14:42:38 -0400
+Date: Sun, 5 Aug 2012 11:39:56 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Alex Kelly <alex.page.kelly@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [NAK] Re: [PATCHv3 1/4] fs: Move core dump functionality into its
+ own file
+Message-ID: <20120805183956.GE28340@outflux.net>
+References: <1344027800-8270-1-git-send-email-eshink@gmail.com>
+ <1344165521-14200-1-git-send-email-alex.page.kelly@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344165521-14200-1-git-send-email-alex.page.kelly@gmail.com>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Alex,
 
---=-n7DFa/btRWI4s0TiSl91
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Overall, this seems like a fine idea. However, I think the code move
+has gone very badly. Comments are mismatched, there are typos added,
+formatting changed, case changed, trailing white space added, and
+punctuation dropped.
 
-diff --git a/Makefile b/Makefile
-index e13e4e7..fa5acc83 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION =3D 3
- PATCHLEVEL =3D 2
--SUBLEVEL =3D 25
-+SUBLEVEL =3D 26
- EXTRAVERSION =3D
- NAME =3D Saber-toothed Squirrel
-=20
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/proces=
-sor.h
-index bb3ee36..f7c89e2 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -99,7 +99,6 @@ struct cpuinfo_x86 {
- 	u16			apicid;
- 	u16			initial_apicid;
- 	u16			x86_clflush_size;
--#ifdef CONFIG_SMP
- 	/* number of cores as seen by the OS: */
- 	u16			booted_cores;
- 	/* Physical processor id: */
-@@ -110,7 +109,6 @@ struct cpuinfo_x86 {
- 	u8			compute_unit_id;
- 	/* Index into per_cpu list: */
- 	u16			cpu_index;
--#endif
- 	u32			microcode;
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
-=20
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index bae1efe..be16854 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -154,16 +154,14 @@ int amd_get_subcaches(int cpu)
- {
- 	struct pci_dev *link =3D node_to_amd_nb(amd_get_nb_id(cpu))->link;
- 	unsigned int mask;
--	int cuid =3D 0;
-+	int cuid;
-=20
- 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
- 		return 0;
-=20
- 	pci_read_config_dword(link, 0x1d4, &mask);
-=20
--#ifdef CONFIG_SMP
- 	cuid =3D cpu_data(cpu).compute_unit_id;
--#endif
- 	return (mask >> (4 * cuid)) & 0xf;
- }
-=20
-@@ -172,7 +170,7 @@ int amd_set_subcaches(int cpu, int mask)
- 	static unsigned int reset, ban;
- 	struct amd_northbridge *nb =3D node_to_amd_nb(amd_get_nb_id(cpu));
- 	unsigned int reg;
--	int cuid =3D 0;
-+	int cuid;
-=20
- 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING) || mask > 0xf)
- 		return -EINVAL;
-@@ -190,9 +188,7 @@ int amd_set_subcaches(int cpu, int mask)
- 		pci_write_config_dword(nb->misc, 0x1b8, reg & ~0x180000);
- 	}
-=20
--#ifdef CONFIG_SMP
- 	cuid =3D cpu_data(cpu).compute_unit_id;
--#endif
- 	mask <<=3D 4 * cuid;
- 	mask |=3D (0xf ^ (1 << cuid)) << 26;
-=20
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 3524e1f..ff8557e 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -148,7 +148,6 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c=
-)
-=20
- static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
- {
--#ifdef CONFIG_SMP
- 	/* calling is from identify_secondary_cpu() ? */
- 	if (!c->cpu_index)
- 		return;
-@@ -192,7 +191,6 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x=
-86 *c)
-=20
- valid_k7:
- 	;
--#endif
- }
-=20
- static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index aa003b1..ca93cc7 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -676,9 +676,7 @@ static void __init early_identify_cpu(struct cpuinfo_x8=
-6 *c)
- 	if (this_cpu->c_early_init)
- 		this_cpu->c_early_init(c);
-=20
--#ifdef CONFIG_SMP
- 	c->cpu_index =3D 0;
--#endif
- 	filter_cpuid_features(c, false);
-=20
- 	setup_smep(c);
-@@ -764,10 +762,7 @@ static void __cpuinit generic_identify(struct cpuinfo_=
-x86 *c)
- 		c->apicid =3D c->initial_apicid;
- # endif
- #endif
--
--#ifdef CONFIG_X86_HT
- 		c->phys_proc_id =3D c->initial_apicid;
--#endif
- 	}
-=20
- 	setup_smep(c);
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 5231312..3e6ff6c 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -181,7 +181,6 @@ static void __cpuinit trap_init_f00f_bug(void)
-=20
- static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
- {
--#ifdef CONFIG_SMP
- 	/* calling is from identify_secondary_cpu() ? */
- 	if (!c->cpu_index)
- 		return;
-@@ -198,7 +197,6 @@ static void __cpuinit intel_smp_check(struct cpuinfo_x8=
-6 *c)
- 		WARN_ONCE(1, "WARNING: SMP operation may be unreliable"
- 				    "with B stepping processors.\n");
- 	}
--#endif
- }
-=20
- static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/=
-mce.c
-index b0f1271..3b67877 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -119,9 +119,7 @@ void mce_setup(struct mce *m)
- 	m->time =3D get_seconds();
- 	m->cpuvendor =3D boot_cpu_data.x86_vendor;
- 	m->cpuid =3D cpuid_eax(1);
--#ifdef CONFIG_SMP
- 	m->socketid =3D cpu_data(m->extcpu).phys_proc_id;
--#endif
- 	m->apicid =3D cpu_data(m->extcpu).initial_apicid;
- 	rdmsrl(MSR_IA32_MCG_CAP, m->mcgcap);
- }
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mch=
-eck/mce_amd.c
-index 445a61c..d4444be 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -65,11 +65,9 @@ struct threshold_bank {
- };
- static DEFINE_PER_CPU(struct threshold_bank * [NR_BANKS], threshold_banks)=
-;
-=20
--#ifdef CONFIG_SMP
- static unsigned char shared_bank[NR_BANKS] =3D {
- 	0, 0, 0, 0, 1
- };
--#endif
-=20
- static DEFINE_PER_CPU(unsigned char, bank_map);	/* see which banks are on =
-*/
-=20
-@@ -227,10 +225,9 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
-=20
- 			if (!block)
- 				per_cpu(bank_map, cpu) |=3D (1 << bank);
--#ifdef CONFIG_SMP
-+
- 			if (shared_bank[bank] && c->cpu_core_id)
- 				break;
--#endif
-=20
- 			memset(&b, 0, sizeof(b));
- 			b.cpu			=3D cpu;
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 14b2314..8022c66 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -64,12 +64,10 @@ static void show_cpuinfo_misc(struct seq_file *m, struc=
-t cpuinfo_x86 *c)
- static int show_cpuinfo(struct seq_file *m, void *v)
- {
- 	struct cpuinfo_x86 *c =3D v;
--	unsigned int cpu =3D 0;
-+	unsigned int cpu;
- 	int i;
-=20
--#ifdef CONFIG_SMP
- 	cpu =3D c->cpu_index;
--#endif
- 	seq_printf(m, "processor\t: %u\n"
- 		   "vendor_id\t: %s\n"
- 		   "cpu family\t: %d\n"
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index 18a1293..0db57b5 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -1609,11 +1609,9 @@ static int sbridge_mce_check_error(struct notifier_b=
-lock *nb, unsigned long val,
- 		mce->cpuvendor, mce->cpuid, mce->time,
- 		mce->socketid, mce->apicid);
-=20
--#ifdef CONFIG_SMP
- 	/* Only handle if it is the right mc controller */
- 	if (cpu_data(mce->cpu).phys_proc_id !=3D pvt->sbridge_dev->mc)
- 		return NOTIFY_DONE;
--#endif
-=20
- 	smp_rmb();
- 	if ((pvt->mce_out + 1) % MCE_LOG_LEN =3D=3D pvt->mce_in) {
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 0790c98..19b4412 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -57,16 +57,15 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius=
-");
- #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
- #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
-=20
--#ifdef CONFIG_SMP
- #define TO_PHYS_ID(cpu)		cpu_data(cpu).phys_proc_id
- #define TO_CORE_ID(cpu)		cpu_data(cpu).cpu_core_id
-+#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
-+
-+#ifdef CONFIG_SMP
- #define for_each_sibling(i, cpu)	for_each_cpu(i, cpu_sibling_mask(cpu))
- #else
--#define TO_PHYS_ID(cpu)		(cpu)
--#define TO_CORE_ID(cpu)		(cpu)
- #define for_each_sibling(i, cpu)	for (i =3D 0; false; )
- #endif
--#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
-=20
- /*
-  * Per-Core Temperature Data
+NAKed-by: Kees Cook <keescook@chromium.org>
+
+On Sun, Aug 05, 2012 at 04:18:38AM -0700, Alex Kelly wrote:
+> +/* The maximal length of core_pattern is also specified in sysctl.c */
+> +static int zap_process(struct task_struct *start, int exit_code)
+
+These two lines have nothing to do with each other. This comment belongs
+with "char core_pattern[CORENAME_MAX_SIZE] = "core";", IIUC.
+
+Why is zap_process not with the zap_threads helpers?
+
+> +void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+> +[...]
+> +	 * so we dump it as root in mode 2, and onlt into a controlled
+
+"onlt"? The removed code didn't have this typo. Was the moved code
+not cut/pasted? That got my attention. In fact, I went and compared
+all the code that was moved, and this was not the only change -- what
+happened here?
+
+--- /tmp/del.code	2012-08-05 11:32:36.602881193 -0700
++++ /tmp/add.code	2012-08-05 11:33:06.615270285 -0700
+@@ -327,7 +328,7 @@
+ 		core_waiters = zap_threads(tsk, mm, core_state, exit_code);
+ 	up_write(&mm->mmap_sem);
+ 
+-	if (core_waiters > 0) {
++	if (core_waiters > 0){
+ 		struct core_thread *ptr;
+ 
+ 		wait_for_completion(&core_state->startup);
+@@ -466,8 +467,8 @@
+ 	/*
+ 	 * We cannot trust fsuid as being the "true" uid of the process
+ 	 * nor do we know its entire history. We only know it was tainted
+-	 * so we dump it as root in mode 2, and only into a controlled
+-	 * environment (pipe handler or fully qualified path).
++	 * so we dump it as root in mode 2, and onlt into a controlled
++	 * environment (pipe handler or fully qualified path)
+ 	 */
+ 	if (__get_dumpable(cprm.mm_flags) == SUID_DUMPABLE_SAFE) {
+ 		/* Setuid core dump mode */
+@@ -505,11 +506,11 @@
+ 			 *
+ 			 * Normally core limits are irrelevant to pipes, since
+ 			 * we're not writing to the file system, but we use
+-			 * cprm.limit of 1 here as a speacial value, this is a
++			 * cprm.limit of 1 here as a speacial value, this is a 
+ 			 * consistent way to catch recursive crashes.
+ 			 * We can still crash if the core_pattern binary sets
+ 			 * RLIM_CORE = !1, but it runs as root, and can do
+-			 * lots of stupid things.
++			 * lots of stupid things
+ 			 *
+ 			 * Note that we use task_tgid_vnr here to grab the pid
+ 			 * of the process group leader.  That way we get the
+@@ -556,7 +557,7 @@
+ 
+ 		if (need_nonrelative && cn.corename[0] != '/') {
+ 			printk(KERN_WARNING "Pid %d(%s) can only dump core "\
+-				"to fully qualified path!\n",
++				"To fully qualified path!\n",
+ 				task_tgid_vnr(current), current->comm);
+ 			printk(KERN_WARNING "Skipping core dump\n");
+ 			goto fail_unlock;
 
 
+-Kees
 
---=-n7DFa/btRWI4s0TiSl91
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUB61++e/yOyVhhEJAQrsnhAArw6aaXKyT8xvQctVOu7zb3grkMD5Q+mq
-gyWkLGjmiOimq0x6+L/UtbcQNs9hx3elVx3zRG7CZC6HdjakNb+ZaOUPzZY0oZ8m
-79UdqaW87BLPTDnbdE/+RjBgxsiAnIx/rFJQhpqpeRyFpTEKzMh/omxPfz5R51z2
-jr2dNhKzFp3XnNH3EVPQJIYXMv/cNFy+HlR388Y/IMTrTumgzPT+oq7c0g0/nNWs
-tkO67ayX3zliZI01ugGyBz/Ckf1n6C+cBf0G0dqzJg6Bpf59/BnGYlzttWpFM7OD
-K4ISCLfZiWFFiJdIB02fPfk4LYiYSozRIMMk8exzfGfESluKY+DJ2EPzXORsDvO2
-maEWNzRY1l9pgpr4gUdeVeeTtHFeC9WNbpp4u/7ylQi546IkTfiU2aMlh716tfty
-Rn0Wnq7sI8nMAttOnEnOaiWV4N/G3IS65ZpjdUgJB4v4rDrElHcCrpRBL+9ni5i+
-w5ZXj6zIz5IOB/mWLYuiRs+QaBplMUHLjgQQsF3lExmhFjetN3jDx0Cd8mbLD9dN
-ErC2dMbhSaR4a61CDGitoslkxwJHoOoNp/WlWe1dFif6kciMvQppdSvlW9KNr4w3
-CbJ9hTXv/arJ/IRszQwj6Co3YjQjAXUlC66N/Hm+fumMeagcEddMki/qZWqt5nd0
-bZrIDt3q8HM=
-=HbQc
------END PGP SIGNATURE-----
-
---=-n7DFa/btRWI4s0TiSl91--
+-- 
+Kees Cook                                            @outflux.net
