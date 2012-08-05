@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2HEJwt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 05:52:49 -0400
+	id S1754507Ab2HEJx7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 05:53:59 -0400
 Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:9379 "EHLO
 	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754201Ab2HEJwp (ORCPT
+	by vger.kernel.org with ESMTP id S1754193Ab2HEJwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 05:52:45 -0400
+	Sun, 5 Aug 2012 05:52:46 -0400
 X-IronPort-AV: E=Sophos;i="4.77,715,1336341600"; 
-   d="scan'208";a="152465604"
+   d="scan'208";a="152465607"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: kernel-janitors@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Julia Lawall <julia@diku.dk>
-Subject: [PATCH 2/6] drivers/cpufreq/pcc-cpufreq.c: fix error return code
-Date: Sun,  5 Aug 2012 11:52:32 +0200
-Message-Id: <1344160356-387-3-git-send-email-Julia.Lawall@lip6.fr>
+To: Mark Gross <mark.gross@intel.com>
+Cc: kernel-janitors@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
+Subject: [PATCH 5/6] drivers/char/tlclk.c: fix error return code
+Date: Sun,  5 Aug 2012 11:52:35 +0200
+Message-Id: <1344160356-387-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -57,19 +57,23 @@ ret = 0
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/cpufreq/pcc-cpufreq.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/char/tlclk.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
-index cdc02ac..503996a 100644
---- a/drivers/cpufreq/pcc-cpufreq.c
-+++ b/drivers/cpufreq/pcc-cpufreq.c
-@@ -454,6 +454,7 @@ static int __init pcc_cpufreq_probe(void)
- 					mem_resource->address_length);
- 	if (pcch_virt_addr == NULL) {
- 		pr_debug("probe: could not map shared mem region\n");
-+		ret = -ENOMEM;
- 		goto out_free;
+diff --git a/drivers/char/tlclk.c b/drivers/char/tlclk.c
+index ce29e7c..e95e0ab 100644
+--- a/drivers/char/tlclk.c
++++ b/drivers/char/tlclk.c
+@@ -784,8 +784,10 @@ static int __init tlclk_init(void)
  	}
- 	pcch_hdr = pcch_virt_addr;
+ 	tlclk_major = ret;
+ 	alarm_events = kzalloc( sizeof(struct tlclk_alarms), GFP_KERNEL);
+-	if (!alarm_events)
++	if (!alarm_events) {
++		ret = -ENOMEM;
+ 		goto out1;
++	}
+ 
+ 	/* Read telecom clock IRQ number (Set by BIOS) */
+ 	if (!request_region(TLCLK_BASE, 8, "telco_clock")) {
 
