@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab2HEJwv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 05:52:51 -0400
+	id S1754434Ab2HEJwy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 05:52:54 -0400
 Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:9396 "EHLO
 	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754216Ab2HEJwp (ORCPT
+	by vger.kernel.org with ESMTP id S1754275Ab2HEJwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 05:52:45 -0400
+	Sun, 5 Aug 2012 05:52:47 -0400
 X-IronPort-AV: E=Sophos;i="4.77,715,1336341600"; 
-   d="scan'208";a="152465606"
+   d="scan'208";a="152465608"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: kernel-janitors@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
-Subject: [PATCH 4/6] drivers/gpio/gpio-langwell.c: fix error return code
-Date: Sun,  5 Aug 2012 11:52:34 +0200
-Message-Id: <1344160356-387-5-git-send-email-Julia.Lawall@lip6.fr>
+To: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: kernel-janitors@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Julia Lawall <julia@diku.dk>
+Subject: [PATCH 6/6] drivers/atm/iphase.c: fix error return code
+Date: Sun,  5 Aug 2012 11:52:36 +0200
+Message-Id: <1344160356-387-7-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -57,40 +57,20 @@ ret = 0
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/gpio/gpio-langwell.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/atm/iphase.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-index a1c8754..202a992 100644
---- a/drivers/gpio/gpio-langwell.c
-+++ b/drivers/gpio/gpio-langwell.c
-@@ -339,7 +339,7 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
- 	resource_size_t start, len;
- 	struct lnw_gpio *lnw;
- 	u32 gpio_base;
--	int retval = 0;
-+	int retval;
- 	int ngpio = id->driver_data;
- 
- 	retval = pci_enable_device(pdev);
-@@ -357,6 +357,7 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
- 	base = ioremap_nocache(start, len);
- 	if (!base) {
- 		dev_err(&pdev->dev, "error mapping bar1\n");
-+		retval = -EFAULT;
- 		goto err3;
- 	}
- 	gpio_base = *((u32 *)base + 1);
-@@ -381,8 +382,10 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
- 
- 	lnw->domain = irq_domain_add_linear(pdev->dev.of_node, ngpio,
- 					    &lnw_gpio_irq_ops, lnw);
--	if (!lnw->domain)
-+	if (!lnw->domain) {
-+		retval = -ENOMEM;
- 		goto err3;
-+	}
- 
- 	lnw->reg_base = base;
- 	lnw->chip.label = dev_name(&pdev->dev);
+diff --git a/drivers/atm/iphase.c b/drivers/atm/iphase.c
+index d438601..96cce6d 100644
+--- a/drivers/atm/iphase.c
++++ b/drivers/atm/iphase.c
+@@ -2362,7 +2362,7 @@ static int __devinit ia_init(struct atm_dev *dev)
+ 	{  
+ 		printk(DEV_LABEL " (itf %d): can't set up page mapping\n",  
+ 			    dev->number);  
+-		return error;  
++		return -ENOMEM;
+ 	}  
+ 	IF_INIT(printk(DEV_LABEL " (itf %d): rev.%d,base=%p,irq=%d\n",  
+ 			dev->number, iadev->pci->revision, base, iadev->irq);)
 
