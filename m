@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab2HEVj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 17:39:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58622 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112Ab2HEVj5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 17:39:57 -0400
-Date: Sun, 5 Aug 2012 23:40:16 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org, Andreas Heider <andreas@meetr.de>
-Subject: Re: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we
- can't get a panel mode
-Message-ID: <20120805214016.GH12232@phenom.ffwll.local>
-Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-	dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-	linux-kernel@vger.kernel.org, Andreas Heider <andreas@meetr.de>
-References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
- <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
- <20120803161416.GA22563@srcf.ucam.org>
- <20120803162451.GF8165@thinkpad-t410>
- <20120803162702.GA22896@srcf.ucam.org>
- <20120804165727.GA4980@thinkpad-t410>
- <20120805211412.GG12232@phenom.ffwll.local>
- <20120805211838.GA27188@srcf.ucam.org>
+	id S1755185Ab2HEVnu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 17:43:50 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:42852 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755057Ab2HEVnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 17:43:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Todd Poynor <toddpoynor@google.com>
+Subject: Re: [PATCH v2] PM / Sleep: Print name of wakeup source that aborts suspend
+Date: Sun, 5 Aug 2012 23:49:42 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, arve@android.com
+References: <1342746658-17388-1-git-send-email-toddpoynor@google.com>
+In-Reply-To: <1342746658-17388-1-git-send-email-toddpoynor@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120805211838.GA27188@srcf.ucam.org>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208052349.42606.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 05, 2012 at 10:18:38PM +0100, Matthew Garrett wrote:
-> On Sun, Aug 05, 2012 at 11:14:12PM +0200, Daniel Vetter wrote:
-> 
-> > I like this approach more - the only other solution I see is to ask the
-> > currently active driver (i.e. radeon) at bootime for the right mode. Which
-> > sounds much more hellish and fragile ...
-> 
-> The "correct" approach is clearly to just have the drm core change the 
-> i2c mux before requesting edid, but that's made difficult because of the 
-> absence of ordering guarantees in initialisation. I don't like quirking 
-> this, since we're then back to the situation of potentially having to 
-> add every new piece of related hardware to the quirk list.
+On Friday, July 20, 2012, Todd Poynor wrote:
+> Signed-off-by: Todd Poynor <toddpoynor@google.com>
 
-The "correct" approach of switching the mux before we fetch the edid is
-actualy the one I fear will result in fragile code: Only run on few
-machines, and as you say with tons of funky interactions with the init
-sequence ordering. And I guess people will bitch&moan about the flickering
-this will cause ;-)
+Applied to the linux-next branch of the linux-pm.git tree, as v3.7 material.
 
-As long as it's only apple shipping multi-gpu machines with
-broken/non-existing vbt, I'll happily stomach the quirk list entries.
-They're bad, but imo the lesser evil.
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Thanks,
+Rafael
+
+
+> ---
+>  drivers/base/power/wakeup.c |   29 +++++++++++++++++++++++++++++
+>  1 files changed, 29 insertions(+), 0 deletions(-)
+> 
+> A driver or app may repeatedly request a wakeup source while the system
+> is attempting to enter suspend, which may indicate a bug or at least
+> point out a highly active system component that is responsible for
+> decreased battery life on a mobile device.  Even when the incidence
+> of suspend abort is not severe, identifying wakeup sources that
+> frequently abort suspend can be a useful clue for power management
+> analysis.
+> 
+> In some cases the existing stats can point out the offender where there is
+> an unexpectedly high activation count that stands out from the others, but
+> in other cases the wakeup source frequently taken just after the rest of
+> the system thinks its time to suspend might not stand out in the overall
+> stats.
+> 
+> It is also often useful to have information about what's been happening
+> recently, rather than totals of all activity for the system boot.
+> 
+> It's suggested to dump a line about which wakeup source
+> aborted suspend to aid analysis of these situations.
+>  
+> v2
+> use ktime_to_ns() instead of comparisons on .tv64 field
+> 
+> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+> index cbb463b..8a0a9ca 100644
+> --- a/drivers/base/power/wakeup.c
+> +++ b/drivers/base/power/wakeup.c
+> @@ -649,6 +649,31 @@ void pm_wakeup_event(struct device *dev, unsigned int msec)
+>  }
+>  EXPORT_SYMBOL_GPL(pm_wakeup_event);
+>  
+> +static void print_active_wakeup_sources(void)
+> +{
+> +	struct wakeup_source *ws;
+> +	int active = 0;
+> +	struct wakeup_source *last_activity_ws = NULL;
+> +
+> +	rcu_read_lock();
+> +	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
+> +		if (ws->active) {
+> +			pr_info("active wakeup source: %s\n", ws->name);
+> +			active = 1;
+> +		} else if (!active &&
+> +			   (!last_activity_ws ||
+> +			    ktime_to_ns(ws->last_time) >
+> +			    ktime_to_ns(last_activity_ws->last_time))) {
+> +			last_activity_ws = ws;
+> +		}
+> +	}
+> +
+> +	if (!active && last_activity_ws)
+> +		pr_info("last active wakeup source: %s\n",
+> +			last_activity_ws->name);
+> +	rcu_read_unlock();
+> +}
+> +
+>  /**
+>   * pm_wakeup_pending - Check if power transition in progress should be aborted.
+>   *
+> @@ -671,6 +696,10 @@ bool pm_wakeup_pending(void)
+>  		events_check_enabled = !ret;
+>  	}
+>  	spin_unlock_irqrestore(&events_lock, flags);
+> +
+> +	if (ret)
+> +		print_active_wakeup_sources();
+> +
+>  	return ret;
+>  }
+>  
+> 
+
