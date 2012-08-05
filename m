@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab2HEOZU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 10:25:20 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754561Ab2HEOZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 10:25:17 -0400
-Message-ID: <501E823E.7080101@nod.at>
-Date: Sun, 05 Aug 2012 16:25:02 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1754604Ab2HEOaL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 10:30:11 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41574 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab2HEOaJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 10:30:09 -0400
+Message-ID: <501E8367.8070907@ti.com>
+Date: Sun, 5 Aug 2012 10:29:59 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-CC: artem.bityutskiy@linux.intel.com, Tim Bird <tim.bird@am.sony.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "adrian.hunter@intel.com" <adrian.hunter@intel.com>,
-        "Heinz.Egger@linutronix.de" <Heinz.Egger@linutronix.de>,
-        "thomas.wucher@linutronix.de" <thomas.wucher@linutronix.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Marius.Mazarel@ugal.ro" <Marius.Mazarel@ugal.ro>,
-        "nyoushchenko@mvista.com" <nyoushchenko@mvista.com>
-Subject: Re: UBI fastmap updates
-References: <1341836323-43916-1-git-send-email-richard@nod.at> <1343916747.25013.112.camel@sauron.fi.intel.com> <20120802161512.5ac7a303@spider.haslach.nod.at> <1343917741.25013.114.camel@sauron.fi.intel.com> <20120802165132.1bf1e5d7@spider.haslach.nod.at> <1343924267.25013.156.camel@sauron.fi.intel.com> <20120802183210.7076aa48@spider.haslach.nod.at> <1343925930.25013.163.camel@sauron.fi.intel.com> <501AB2C8.9010805@am.sony.com> <1343929200.25013.197.camel@sauron.fi.intel.com> <20120802194538.26e2ec98@spider.haslach.nod.at> <20120805112337.2a315c75@pixies.home.jungo.com>
-In-Reply-To: <20120805112337.2a315c75@pixies.home.jungo.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigDEB34771C7FA71702DB3F5AE"
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, <catalin.marinas@arm.com>, <linux@arm.linux.org.uk>,
+        <will.deacon@arm.com>, Vitaly Andrianov <vitalya@ti.com>
+Subject: Re: [PATCH 09/22] ARM: LPAE: use 64-bit pgd physical address in switch_mm()
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-10-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208040259200.5231@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1208040259200.5231@xanadu.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigDEB34771C7FA71702DB3F5AE
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 8/4/2012 3:04 AM, Nicolas Pitre wrote:
+> On Tue, 31 Jul 2012, Cyril Chemparathy wrote:
+>
+>> This patch modifies the switch_mm() processor functions to use 64-bit
+>> addresses.  We use u64 instead of phys_addr_t, in order to avoid having config
+>> dependent register usage when calling into switch_mm assembly code.
+>>
+>> The changes in this patch are primarily adjustments for registers used for
+>> arguments to switch_mm.  The few processor definitions that did use the second
+>> argument have been modified accordingly.
+>>
+>> Arguments and calling conventions aside, this patch should be a no-op on v6
+>> and non-LPAE v7 processors.
+>
+> NAK.
+>
+> You just broke all big endian targets, LPAE or not.
+>
 
-Am 05.08.2012 10:23, schrieb Shmulik Ladkani:
-> On Thu, 2 Aug 2012 19:45:38 +0200 Richard Weinberger <richard@nod.at> w=
-rote:
->> Okay, then let's explicitly reserve a few PEBs for fastmap.
->> This should be very easy task.
->=20
-> Need to consider what's expected when migrating from a former non-FM
-> UBI system to an FM enabled system, in the case where all PEBs where
-> consumed (reserved) in the former system.
+Indeed.  Thanks.
 
-If no PEBs are available no fastmap can be installed.
-*Maybe* we can steal some PEBs which reserved for bad block handling.
+Would C-land word swappery on BE do?  Any other ideas on the best 
+approach to this?
 
->> How much PEB should be reserved? 2 x sizeof(fastmap)?
->=20
-> Since FM does not use EBA's atomic LEB change when writing the new
-> fastmap, but instead implements its own FM "leb change" internally -
-> then reserving 2x is needed if we'd like to avoid reusing the same
-> fastmap PEB.
+>
+> Nicolas
+>
 
-Yep.
-
-Thanks,
-//richard
-
-
---------------enigDEB34771C7FA71702DB3F5AE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJQHoJCAAoJEN9758yqZn9e7CsH/R4gcauhmpf45X6Q+nrJMKqM
-wXW174uPDl8zryUGtaFUr2Hg1aqEjY4vkha30klfJypkSfb8m7Zgf//W6QRqRb/b
-2XcCgNILzo6+Mq5Gi63MVonAHNlafNQkIHkDHQqyKoGTeSmmWp4hHJomFXGMzG+3
-z7/dBdenx1jcHFYD/YM1x/t6MyuF11fuzjCvJ0saDcTdqxt/Pi60/yI6y58ZhYxP
-+DwM53/kXNBiQs2HqfhhZLDGV8SIJydkgduv3uu0r4hf0hEgIFbuqOCs5pBsTU5k
-tD+ZXbg0ZHWzB1mEcTexK9ZSvh3rvtNmkdmD3VmWtCRDlv4m+52UcpVdMNfB88w=
-=lyki
------END PGP SIGNATURE-----
-
---------------enigDEB34771C7FA71702DB3F5AE--
+-- 
+Thanks
+- Cyril
