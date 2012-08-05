@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2HEQtw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 12:49:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56794 "EHLO
+	id S1754769Ab2HEQuc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 12:50:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56819 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab2HEQtu (ORCPT
+	with ESMTP id S1754175Ab2HEQua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 12:49:50 -0400
-Date: Sun, 5 Aug 2012 09:45:59 -0700
+	Sun, 5 Aug 2012 12:50:30 -0400
+Date: Sun, 5 Aug 2012 09:46:52 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-ptod86fxkpgq3h62m9refkv4@git.kernel.org>
+Message-ID: <tip-mnt1zwlik7sp7z6ljc9kyefg@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -19,8 +19,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evsel: Precalculate the sample size
-Git-Commit-ID: bde09467b56c5a3cfe2a29d58edc5f7172c15184
+Subject: [tip:perf/urgent] perf session:
+  Use perf_evlist__sample_type more extensively
+Git-Commit-ID: 7f3be652c1a8866251bfba9ea8b02067328f5db9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,23 +30,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 05 Aug 2012 09:46:05 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 05 Aug 2012 09:46:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bde09467b56c5a3cfe2a29d58edc5f7172c15184
-Gitweb:     http://git.kernel.org/tip/bde09467b56c5a3cfe2a29d58edc5f7172c15184
+Commit-ID:  7f3be652c1a8866251bfba9ea8b02067328f5db9
+Gitweb:     http://git.kernel.org/tip/7f3be652c1a8866251bfba9ea8b02067328f5db9
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 1 Aug 2012 18:53:11 -0300
+AuthorDate: Wed, 1 Aug 2012 19:15:52 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 1 Aug 2012 18:53:11 -0300
+CommitDate: Wed, 1 Aug 2012 19:15:52 -0300
 
-perf evsel: Precalculate the sample size
+perf session: Use perf_evlist__sample_type more extensively
 
-So that we don't have to store it in the perf_session instance, because
-in the future perf_session instances may have multiple evlists, each
-with different sample_type/sizes.
+Removing perf_session->sample_type, as it can be obtained from the
+evsel/evlist.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -55,185 +55,200 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ptod86fxkpgq3h62m9refkv4@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-mnt1zwlik7sp7z6ljc9kyefg@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-test.c |    9 ++++-----
- tools/perf/util/evsel.c   |    3 ++-
- tools/perf/util/evsel.h   |    8 +-------
- tools/perf/util/python.c  |    2 +-
- tools/perf/util/session.c |   14 +++++++++++++-
- tools/perf/util/session.h |   13 +++----------
- 6 files changed, 24 insertions(+), 25 deletions(-)
+ tools/perf/builtin-report.c |    5 +++--
+ tools/perf/builtin-test.c   |   10 ++--------
+ tools/perf/util/session.c   |   31 ++++++++++++++++++++++---------
+ tools/perf/util/session.h   |   11 +++--------
+ 4 files changed, 30 insertions(+), 27 deletions(-)
 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 69b1c11..7c88a24 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -249,8 +249,9 @@ static int process_read_event(struct perf_tool *tool,
+ static int perf_report__setup_sample_type(struct perf_report *rep)
+ {
+ 	struct perf_session *self = rep->session;
++	u64 sample_type = perf_evlist__sample_type(self->evlist);
+ 
+-	if (!self->fd_pipe && !(self->sample_type & PERF_SAMPLE_CALLCHAIN)) {
++	if (!self->fd_pipe && !(sample_type & PERF_SAMPLE_CALLCHAIN)) {
+ 		if (sort__has_parent) {
+ 			ui__error("Selected --sort parent, but no "
+ 				    "callchain data. Did you call "
+@@ -274,7 +275,7 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
+ 
+ 	if (sort__branch_mode == 1) {
+ 		if (!self->fd_pipe &&
+-		    !(self->sample_type & PERF_SAMPLE_BRANCH_STACK)) {
++		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
+ 			ui__error("Selected -b but no branch data. "
+ 				  "Did you call perf record without -b?\n");
+ 			return -1;
 diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index d909eb7..2ea5fe4 100644
+index 2ea5fe4..e5032ed 100644
 --- a/tools/perf/builtin-test.c
 +++ b/tools/perf/builtin-test.c
-@@ -478,7 +478,6 @@ static int test__basic_mmap(void)
- 	unsigned int nr_events[nsyscalls],
- 		     expected_nr_events[nsyscalls], i, j;
- 	struct perf_evsel *evsels[nsyscalls], *evsel;
--	int sample_size = __perf_evsel__sample_size(attr.sample_type);
- 
- 	for (i = 0; i < nsyscalls; ++i) {
- 		char name[64];
-@@ -563,7 +562,8 @@ static int test__basic_mmap(void)
- 			goto out_munmap;
- 		}
- 
--		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
-+		err = perf_event__parse_sample(event, attr.sample_type,
-+					       evsels[0]->sample_size,
- 					       false, &sample, false);
- 		if (err) {
- 			pr_err("Can't parse sample, err = %d\n", err);
-@@ -666,7 +666,7 @@ static int test__PERF_RECORD(void)
+@@ -661,7 +661,7 @@ static int test__PERF_RECORD(void)
+ 	const char *cmd = "sleep";
+ 	const char *argv[] = { cmd, "1", NULL, };
+ 	char *bname;
+-	u64 sample_type, prev_time = 0;
++	u64 prev_time = 0;
+ 	bool found_cmd_mmap = false,
  	     found_libc_mmap = false,
  	     found_vdso_mmap = false,
- 	     found_ld_mmap = false;
--	int err = -1, errs = 0, i, wakeups = 0, sample_size;
-+	int err = -1, errs = 0, i, wakeups = 0;
- 	u32 cpu;
- 	int total_events = 0, nr_events[PERF_RECORD_MAX] = { 0, };
- 
-@@ -761,7 +761,6 @@ static int test__PERF_RECORD(void)
- 	 * event.
- 	 */
- 	sample_type = perf_evlist__sample_type(evlist);
--	sample_size = __perf_evsel__sample_size(sample_type);
+@@ -757,12 +757,6 @@ static int test__PERF_RECORD(void)
+ 	}
  
  	/*
+-	 * We'll need these two to parse the PERF_SAMPLE_* fields in each
+-	 * event.
+-	 */
+-	sample_type = perf_evlist__sample_type(evlist);
+-
+-	/*
  	 * Now that all is properly set up, enable the events, they will
-@@ -789,7 +788,7 @@ static int test__PERF_RECORD(void)
+ 	 * count just on workload.pid, which will start...
+ 	 */
+@@ -787,7 +781,7 @@ static int test__PERF_RECORD(void)
+ 				if (type < PERF_RECORD_MAX)
  					nr_events[type]++;
  
- 				err = perf_event__parse_sample(event, sample_type,
--							       sample_size, true,
-+							       evsel->sample_size, true,
+-				err = perf_event__parse_sample(event, sample_type,
++				err = perf_event__parse_sample(event, evsel->attr.sample_type,
+ 							       evsel->sample_size, true,
  							       &sample, false);
  				if (err < 0) {
- 					if (verbose)
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index e817713..8feec40 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -20,7 +20,7 @@
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
- 
--int __perf_evsel__sample_size(u64 sample_type)
-+static int __perf_evsel__sample_size(u64 sample_type)
- {
- 	u64 mask = sample_type & PERF_SAMPLE_MASK;
- 	int size = 0;
-@@ -53,6 +53,7 @@ void perf_evsel__init(struct perf_evsel *evsel,
- 	evsel->attr	   = *attr;
- 	INIT_LIST_HEAD(&evsel->node);
- 	hists__init(&evsel->hists);
-+	evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
- }
- 
- struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 67cc503..894bd77 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -65,6 +65,7 @@ struct perf_evsel {
- 		void		*func;
- 		void		*data;
- 	} handler;
-+	unsigned int		sample_size;
- 	bool 			supported;
- };
- 
-@@ -177,13 +178,6 @@ static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
- 	return __perf_evsel__read(evsel, ncpus, nthreads, true);
- }
- 
--int __perf_evsel__sample_size(u64 sample_type);
--
--static inline int perf_evsel__sample_size(struct perf_evsel *evsel)
--{
--	return __perf_evsel__sample_size(evsel->attr.sample_type);
--}
--
- void hists__init(struct hists *hists);
- 
- #endif /* __PERF_EVSEL_H */
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index e03b58a..b0d6f85 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -806,7 +806,7 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
- 
- 		first = list_entry(evlist->entries.next, struct perf_evsel, node);
- 		err = perf_event__parse_sample(event, first->attr.sample_type,
--					       perf_evsel__sample_size(first),
-+					       first->sample_size,
- 					       sample_id_all, &pevent->sample, false);
- 		if (err)
- 			return PyErr_Format(PyExc_OSError,
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 8e4f075..b8da60d 100644
+index b8da60d..00e180e 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -16,6 +16,19 @@
- #include "cpumap.h"
- #include "event-parse.h"
+@@ -23,12 +23,20 @@ int perf_session__parse_sample(struct perf_session *session,
+ 	struct perf_evsel *first;
+ 	first = list_entry(session->evlist->entries.next, struct perf_evsel, node);
  
-+int perf_session__parse_sample(struct perf_session *session,
-+			       const union perf_event *event,
-+			       struct perf_sample *sample)
+-	return perf_event__parse_sample(event, session->sample_type,
++	return perf_event__parse_sample(event, first->attr.sample_type,
+ 					first->sample_size,
+ 					session->sample_id_all, sample,
+ 					session->header.needs_swap);
+ }
+ 
++int perf_session__synthesize_sample(struct perf_session *session,
++				    union perf_event *event,
++				    const struct perf_sample *sample)
 +{
-+	struct perf_evsel *first;
-+	first = list_entry(session->evlist->entries.next, struct perf_evsel, node);
-+
-+	return perf_event__parse_sample(event, session->sample_type,
-+					first->sample_size,
-+					session->sample_id_all, sample,
-+					session->header.needs_swap);
++	return perf_event__synthesize_sample(event, perf_evlist__sample_type(session->evlist),
++					     sample, session->header.needs_swap);
 +}
 +
  static int perf_session__open(struct perf_session *self, bool force)
  {
  	struct stat input_stat;
-@@ -83,7 +96,6 @@ out_close:
+@@ -95,7 +103,6 @@ out_close:
+ 
  void perf_session__update_sample_type(struct perf_session *self)
  {
- 	self->sample_type = perf_evlist__sample_type(self->evlist);
--	self->sample_size = __perf_evsel__sample_size(self->sample_type);
+-	self->sample_type = perf_evlist__sample_type(self->evlist);
  	self->sample_id_all = perf_evlist__sample_id_all(self->evlist);
  	self->id_hdr_size = perf_evlist__id_hdr_size(self->evlist);
  	self->host_machine.id_hdr_size = self->id_hdr_size;
+@@ -877,16 +884,18 @@ static void perf_session__print_tstamp(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_sample *sample)
+ {
++	u64 sample_type = perf_evlist__sample_type(session->evlist);
++
+ 	if (event->header.type != PERF_RECORD_SAMPLE &&
+ 	    !session->sample_id_all) {
+ 		fputs("-1 -1 ", stdout);
+ 		return;
+ 	}
+ 
+-	if ((session->sample_type & PERF_SAMPLE_CPU))
++	if ((sample_type & PERF_SAMPLE_CPU))
+ 		printf("%u ", sample->cpu);
+ 
+-	if (session->sample_type & PERF_SAMPLE_TIME)
++	if (sample_type & PERF_SAMPLE_TIME)
+ 		printf("%" PRIu64 " ", sample->time);
+ }
+ 
+@@ -911,6 +920,8 @@ static void dump_event(struct perf_session *session, union perf_event *event,
+ static void dump_sample(struct perf_session *session, union perf_event *event,
+ 			struct perf_sample *sample)
+ {
++	u64 sample_type;
++
+ 	if (!dump_trace)
+ 		return;
+ 
+@@ -918,10 +929,12 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
+ 	       event->header.misc, sample->pid, sample->tid, sample->ip,
+ 	       sample->period, sample->addr);
+ 
+-	if (session->sample_type & PERF_SAMPLE_CALLCHAIN)
++	sample_type = perf_evlist__sample_type(session->evlist);
++
++	if (sample_type & PERF_SAMPLE_CALLCHAIN)
+ 		callchain__printf(sample);
+ 
+-	if (session->sample_type & PERF_SAMPLE_BRANCH_STACK)
++	if (sample_type & PERF_SAMPLE_BRANCH_STACK)
+ 		branch_stack__printf(sample);
+ }
+ 
+@@ -1018,7 +1031,7 @@ static int perf_session__preprocess_sample(struct perf_session *session,
+ 					   union perf_event *event, struct perf_sample *sample)
+ {
+ 	if (event->header.type != PERF_RECORD_SAMPLE ||
+-	    !(session->sample_type & PERF_SAMPLE_CALLCHAIN))
++	    !(perf_evlist__sample_type(session->evlist) & PERF_SAMPLE_CALLCHAIN))
+ 		return 0;
+ 
+ 	if (!ip_callchain__valid(sample->callchain, event)) {
+@@ -1401,9 +1414,9 @@ int perf_session__process_events(struct perf_session *self,
+ 	return err;
+ }
+ 
+-bool perf_session__has_traces(struct perf_session *self, const char *msg)
++bool perf_session__has_traces(struct perf_session *session, const char *msg)
+ {
+-	if (!(self->sample_type & PERF_SAMPLE_RAW)) {
++	if (!(perf_evlist__sample_type(session->evlist) & PERF_SAMPLE_RAW)) {
+ 		pr_err("No trace sample to read. Did you call 'perf %s'?\n", msg);
+ 		return false;
+ 	}
 diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 7c435bd..4d549e2 100644
+index 4d549e2..c45ce43 100644
 --- a/tools/perf/util/session.h
 +++ b/tools/perf/util/session.h
-@@ -42,7 +42,6 @@ struct perf_session {
+@@ -41,7 +41,6 @@ struct perf_session {
+ 	 *	  perf.data file.
  	 */
  	struct hists		hists;
- 	u64			sample_type;
--	int			sample_size;
+-	u64			sample_type;
  	int			fd;
  	bool			fd_pipe;
  	bool			repipe;
-@@ -130,15 +129,9 @@ size_t perf_session__fprintf_dsos_buildid(struct perf_session *self,
+@@ -133,13 +132,9 @@ int perf_session__parse_sample(struct perf_session *session,
+ 			       const union perf_event *event,
+ 			       struct perf_sample *sample);
  
- size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp);
- 
--static inline int perf_session__parse_sample(struct perf_session *session,
--					     const union perf_event *event,
--					     struct perf_sample *sample)
+-static inline int perf_session__synthesize_sample(struct perf_session *session,
+-						  union perf_event *event,
+-						  const struct perf_sample *sample)
 -{
--	return perf_event__parse_sample(event, session->sample_type,
--					session->sample_size,
--					session->sample_id_all, sample,
--					session->header.needs_swap);
+-	return perf_event__synthesize_sample(event, session->sample_type,
+-					     sample, session->header.needs_swap);
 -}
-+int perf_session__parse_sample(struct perf_session *session,
-+			       const union perf_event *event,
-+			       struct perf_sample *sample);
++int perf_session__synthesize_sample(struct perf_session *session,
++				    union perf_event *event,
++				    const struct perf_sample *sample);
  
- static inline int perf_session__synthesize_sample(struct perf_session *session,
- 						  union perf_event *event,
+ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ 					    unsigned int type);
