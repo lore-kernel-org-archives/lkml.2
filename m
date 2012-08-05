@@ -1,117 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab2HEOqd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 10:46:33 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46126 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab2HEOqa (ORCPT
+	id S1754613Ab2HEOt5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 10:49:57 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62438 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab2HEOt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 10:46:30 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ARM: kirkwood: DT descriptor for Seagate FreeAgent Dockstar
-Date: Sun,  5 Aug 2012 16:46:13 +0200
-Message-Id: <1344177973-6505-2-git-send-email-sebastian.hesselbarth@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344177973-6505-1-git-send-email-sebastian.hesselbarth@googlemail.com>
-References: <1344177973-6505-1-git-send-email-sebastian.hesselbarth@googlemail.com>
+	Sun, 5 Aug 2012 10:49:56 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: linux-can@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH can-next 1/5] can: at91_can: add LED trigger support
+Date: Sun,  5 Aug 2012 16:51:46 +0200
+Message-Id: <1344178310-2898-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <20120805144814.GA2804@gmail.com>
+References: <20120805144814.GA2804@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the corresponding device tree descriptor for the
-Seagate FreeAgent Dockstar based on Kirkwood DT.
+Add support for canbus activity led indicators on at91_can devices by
+calling appropriate can_led functions.
 
-Please note that this patch requires the mach-kirkwood Makefile.boot typo
-fix to fully apply.
+These are only enabled when CONFIG_CAN_LEDS is Y, becomes no-op
+otherwise.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
 ---
- arch/arm/boot/dts/kirkwood-dockstar.dts |   57 +++++++++++++++++++++++++++++++
- arch/arm/mach-kirkwood/Makefile.boot    |    1 +
- 2 files changed, 58 insertions(+)
- create mode 100644 arch/arm/boot/dts/kirkwood-dockstar.dts
+ drivers/net/can/at91_can.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/arm/boot/dts/kirkwood-dockstar.dts b/arch/arm/boot/dts/kirkwood-dockstar.dts
-new file mode 100644
-index 0000000..08a5824
---- /dev/null
-+++ b/arch/arm/boot/dts/kirkwood-dockstar.dts
-@@ -0,0 +1,57 @@
-+/dts-v1/;
+diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
+index fcff73a..b496bff 100644
+--- a/drivers/net/can/at91_can.c
++++ b/drivers/net/can/at91_can.c
+@@ -36,6 +36,7 @@
+ 
+ #include <linux/can/dev.h>
+ #include <linux/can/error.h>
++#include <linux/can/led.h>
+ 
+ #include <mach/board.h>
+ 
+@@ -642,6 +643,8 @@ static void at91_read_msg(struct net_device *dev, unsigned int mb)
+ 
+ 	stats->rx_packets++;
+ 	stats->rx_bytes += cf->can_dlc;
 +
-+/include/ "kirkwood.dtsi"
++	can_led_event(dev, CAN_LED_EVENT_RX);
+ }
+ 
+ /**
+@@ -876,6 +879,7 @@ static void at91_irq_tx(struct net_device *dev, u32 reg_sr)
+ 			/* _NOTE_: subtract AT91_MB_TX_FIRST offset from mb! */
+ 			can_get_echo_skb(dev, mb - get_mb_tx_first(priv));
+ 			dev->stats.tx_packets++;
++			can_led_event(dev, CAN_LED_EVENT_TX);
+ 		}
+ 	}
+ 
+@@ -1129,6 +1133,8 @@ static int at91_open(struct net_device *dev)
+ 		goto out_close;
+ 	}
+ 
++	can_led_event(dev, CAN_LED_EVENT_OPEN);
 +
-+/ {
-+	model = "Seagate FreeAgent Dockstar";
-+	compatible = "seagate,dockstar", "marvell,kirkwood-88f6281", "marvell,kirkwood";
+ 	/* start chip and queuing */
+ 	at91_chip_start(dev);
+ 	napi_enable(&priv->napi);
+@@ -1160,6 +1166,8 @@ static int at91_close(struct net_device *dev)
+ 
+ 	close_candev(dev);
+ 
++	can_led_event(dev, CAN_LED_EVENT_STOP);
 +
-+	memory {
-+		device_type = "memory";
-+		reg = <0x00000000 0x8000000>;
-+	};
+ 	return 0;
+ }
+ 
+@@ -1322,6 +1330,8 @@ static int __devinit at91_can_probe(struct platform_device *pdev)
+ 		goto exit_free;
+ 	}
+ 
++	devm_can_led_init(dev);
 +
-+	chosen {
-+		bootargs = "console=ttyS0,115200n8 earlyprintk root=/dev/sda1 rootdelay=10";
-+	};
-+
-+	ocp@f1000000 {
-+		serial@12000 {
-+			clock-frequency = <200000000>;
-+			status = "ok";
-+		};
-+
-+		nand@3000000 {
-+			status = "okay";
-+
-+			partition@0 {
-+				label = "u-boot";
-+				reg = <0x0000000 0x100000>;
-+				read-only;
-+			};
-+
-+			partition@100000 {
-+				label = "uImage";
-+				reg = <0x0100000 0x400000>;
-+			};
-+
-+			partition@500000 {
-+				label = "data";
-+				reg = <0x0500000 0xfb00000>;
-+			};
-+		};
-+	};
-+	gpio-leds {
-+		compatible = "gpio-leds";
-+
-+		health {
-+			label = "status:green:health";
-+			gpios = <&gpio1 14 1>;
-+			linux,default-trigger = "default-on";
-+		};
-+		fault {
-+			label = "status:orange:fault";
-+			gpios = <&gpio1 15 1>;
-+		};
-+	};
-+};
-diff --git a/arch/arm/mach-kirkwood/Makefile.boot b/arch/arm/mach-kirkwood/Makefile.boot
-index a571755..2c2edfb 100644
---- a/arch/arm/mach-kirkwood/Makefile.boot
-+++ b/arch/arm/mach-kirkwood/Makefile.boot
-@@ -11,3 +11,4 @@ dtb-$(CONFIG_MACH_TS219_DT)	+= kirkwood-qnap-ts219.dtb
- dtb-$(CONFIG_MACH_GOFLEXNET_DT) += kirkwood-goflexnet.dtb
- dtb-$(CONFIG_MACH_LSXL_DT) += kirkwood-lschlv2.dtb
- dtb-$(CONFIG_MACH_LSXL_DT) += kirkwood-lsxhl.dtb
-+dtb-$(CONFIG_MACH_DOCKSTAR_DT) += kirkwood-dockstar.dtb
+ 	dev_info(&pdev->dev, "device registered (reg_base=%p, irq=%d)\n",
+ 		 priv->reg_base, dev->irq);
+ 
 -- 
-1.7.10.4
+1.7.11.rc1.9.gf623ca1.dirty
 
