@@ -1,114 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab2HEJhn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 05:37:43 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:47508 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab2HEJhl (ORCPT
+	id S1754291Ab2HEJwv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 05:52:51 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:9396 "EHLO
+	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754216Ab2HEJwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 05:37:41 -0400
-Message-ID: <501E3EAD.9090905@huawei.com>
-Date: Sun, 5 Aug 2012 17:36:45 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jiang Liu <liuj97@gmail.com>, Len Brown <lenb@kernel.org>,
-        Tony Luck <tony.luch@intel.com>, Bob Moore <robert.moore@intel.com>,
-        Huang Ying <ying.huang@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Hanjun Guo <guohanjun@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Gaohuai Han <hangaohuai@huawei.com>
-Subject: Re: [RFC PATCH 2/3] ACPIHP: ACPI system device hotplug slot enumerator
-References: <1343475772-21345-1-git-send-email-jiang.liu@huawei.com> <1343475772-21345-3-git-send-email-jiang.liu@huawei.com> <CAE9FiQU=HmRCy0nxLgi7oqnjbaW4DJ2ct1EE2pVP+=rac2D+wQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQU=HmRCy0nxLgi7oqnjbaW4DJ2ct1EE2pVP+=rac2D+wQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+	Sun, 5 Aug 2012 05:52:45 -0400
+X-IronPort-AV: E=Sophos;i="4.77,715,1336341600"; 
+   d="scan'208";a="152465606"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: kernel-janitors@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
+Subject: [PATCH 4/6] drivers/gpio/gpio-langwell.c: fix error return code
+Date: Sun,  5 Aug 2012 11:52:34 +0200
+Message-Id: <1344160356-387-5-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-8-5 4:14, Yinghai Lu wrote:
-> On Sat, Jul 28, 2012 at 4:42 AM, Jiang Liu <liuj97@gmail.com> wrote:
->> The first is an ACPI hotplug slot enumerator, which enumerates ACPI hotplug
->> slots on load and provides callbacks to manage those hotplug slots.
->> An ACPI hotplug slot is an abstraction of receptacles, where a group of
->> system devices could be connected to. This patch implements the skeleton for
->> ACPI system device hotplug slot enumerator. On loading, the driver scans the
->> whole ACPI namespace for hotplug slots and creates a device node for each
->> hotplug slots. Every slot is associated with a device class named
->> acpihp_slot_class and will be managed by ACPI hotplug drivers.
-> 
-> I was thinking:
->    We can have module in ACPI DSDT, and every module is coresponding
-> to SystemModule.
->    so it will be
-> 	\_SB.NOD1
-> 		CPU0
-> 		CPU1
-> 		CPU2
-> 		CPU3
-> 		MEM0
-> 		MEM1
-> 		MEM2
-> 		MEM3
-> 		PCI0
-> 		PCI1
-> 		PCI2
-> 		PCI3
-> 		NTFY
-> 		STAT
-> 		STOP
->     NTFY will be something like:
-> 	Notify(\_SB.NOD1.CPU0,....)
-> 	Notify(\_SB.NOD1.CPU1,....)
-> 	Notify(\_SB.NOD1.CPU2,....)
-> 	Notify(\_SB.NOD1.CPU3,....)
-> 
-> 	Notify(\_SB.NOD1.MEM0,....)
-> 	Notify(\_SB.NOD1.MEM1,....)
-> 	Notify(\_SB.NOD1.MEM2,....)
-> 	Notify(\_SB.NOD1.MEM3,....)
-> 
-> 	Notify(\_SB.NOD1.PCI0,....)
-> 	Notify(\_SB.NOD1.PCI1,....)
-> 	Notify(\_SB.NOD1.PCI2,....)
-> 	Notify(\_SB.NOD1.PCI3,....)
-> 
->    and will link GPE button for SystemModule to call NTFY.
-> 
->    STAT could be 32bit integer for final turn off the power.
-> 	every CPU, MEM, PCI will own one bit, it will clear that bit in this own
-> 	_EJ0.
-> 	Every _EJ0 will double check if all are cleared, then it call extra STOP
-> 	to power off the whole SystemModule.
-> 
-> if OS already have seperated handler for those type objects (CPU, MEM,
-> PCI),  we may not need to change to much to os.
+From: Julia Lawall <julia@diku.dk>
 
-Hi Yinghai,
-	Thanks for your comments.
-	It's one of the major concerns that we may need to make too many changes
-to existing code, and even break backward compatibilities:(
+Convert a 0 error return code to a negative one, as returned elsewhere in the
+function.
 
-	There are two possible ways to support hotplug in ACPI BIOS:
-	1) send hotplug notifications to each sub-component of an FRU/module.
-	2) send hotplug notifications to the FRU itself. 
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-	We have had discussions with BIOS team and chose to adopt the second 
-solution because:
-	1) It's more convenient for user to operate on FRUs instead of sub-components.
-	2) BIOS will be simpler because it only need to track status of FRU itself
-	instead	of sub-components.
-	3) It will be much more complex to do error recover if OS/BIOS cooperate on
-	sub-component granularity.
-	Any suggestions here?
-	Regards!
-	Gerry
+// <smpl>
+@@
+identifier ret;
+expression e,e1,e2,e3,e4,x;
+@@
+
+(
+if (\(ret != 0\|ret < 0\) || ...) { ... return ...; }
+|
+ret = 0
+)
+... when != ret = e1
+*x = \(kmalloc\|kzalloc\|kcalloc\|devm_kzalloc\|ioremap\|ioremap_nocache\|devm_ioremap\|devm_ioremap_nocache\)(...);
+... when != x = e2
+    when != ret = e3
+*if (x == NULL || ...)
+{
+  ... when != ret = e4
+*  return ret;
+}
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/gpio/gpio-langwell.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
+index a1c8754..202a992 100644
+--- a/drivers/gpio/gpio-langwell.c
++++ b/drivers/gpio/gpio-langwell.c
+@@ -339,7 +339,7 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
+ 	resource_size_t start, len;
+ 	struct lnw_gpio *lnw;
+ 	u32 gpio_base;
+-	int retval = 0;
++	int retval;
+ 	int ngpio = id->driver_data;
+ 
+ 	retval = pci_enable_device(pdev);
+@@ -357,6 +357,7 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
+ 	base = ioremap_nocache(start, len);
+ 	if (!base) {
+ 		dev_err(&pdev->dev, "error mapping bar1\n");
++		retval = -EFAULT;
+ 		goto err3;
+ 	}
+ 	gpio_base = *((u32 *)base + 1);
+@@ -381,8 +382,10 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
+ 
+ 	lnw->domain = irq_domain_add_linear(pdev->dev.of_node, ngpio,
+ 					    &lnw_gpio_irq_ops, lnw);
+-	if (!lnw->domain)
++	if (!lnw->domain) {
++		retval = -ENOMEM;
+ 		goto err3;
++	}
+ 
+ 	lnw->reg_base = base;
+ 	lnw->chip.label = dev_name(&pdev->dev);
 
