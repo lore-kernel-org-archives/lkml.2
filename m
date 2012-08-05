@@ -1,90 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab2HEWjb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 18:39:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47512 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753065Ab2HEWja (ORCPT
+	id S1755238Ab2HEXFJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 19:05:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34869 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab2HEXFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 18:39:30 -0400
-Message-ID: <1344206349.13142.47.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [stable] backport "xen: mark local pages as FOREIGN in the
- m2p_override"
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: stable@vger.kernel.org,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 05 Aug 2012 23:39:09 +0100
-In-Reply-To: <alpine.DEB.2.02.1208011401101.4645@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1208011401101.4645@kaball.uk.xensource.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-BR6nFs1QfgjKjt4BXLoS"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 5 Aug 2012 19:05:07 -0400
+Date: Sun, 5 Aug 2012 16:02:38 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: [PATCH 0/9] Get rid of FIQ_START/enable/disable_fiq() + some FIQ
+ cleanups
+Message-ID: <20120805230238.GA1663@lizard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Russell,
 
---=-BR6nFs1QfgjKjt4BXLoS
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+During KDB FIQ patches review you mentioned that I should not introduce
+another FIQ_START. It seems that in v3.6-rc the FIQ_START issue was
+somewhat band-aided, i.e. machines don't necessary need to define this
+stuff any longer, but I also read the background of the issue, and you
+once said that you don't want the FIQ subsystem to mess with genirq.
 
-On Wed, 2012-08-01 at 14:34 +0100, Stefano Stabellini wrote:
-> Hello,
-> I would like to request a backport of the following upstream Linux
-> commit to 3.4, 3.3, 3.2, 3.1, 3.0, 2.6.39 and 2.6.38.
-> It fixes a deadlock that happens when a Xen frontend driver connects to
-> a Xen backend driver in the same domain. A detailed explanation is
-> included in the commit message.
->=20
-> A simple cherry-pick should work for all the stable versions.
->=20
-> Thanks,
->=20
-> Stefano
->=20
->=20
-> commit b9e0d95c041ca2d7ad297ee37c2e9cfab67a188f
-> Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Date:   Wed May 23 18:57:20 2012 +0100
->=20
->     xen: mark local pages as FOREIGN in the m2p_override
-[...]
+It is surely makes sense as FIQs are arch-specific, plus FIQs are special
+in that way that platform makers are free to connects device directly
+to the FIQ line, avoiding IC routing, and then enable_fiq(<IRQ>) would
+look awkward, at the best.
 
-Added to the queue for 3.2, thanks.
+So, given that, it seems that the only entity that knows for sure how
+the particular FIQ is routed is whoever claims the FIQ and fills-in the
+fiq_handler struct. It might make sense to introduce disable/enable
+callbacks in the fiq_handler struct, and then prototypes for disable/
+enable FIQ calls would look like this:
 
-Ben.
+	enable_fiq(struct fiq_handler *fh);
+	disable_fiq(struct fiq_handler *fh);
 
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
+I.e. completely abstracted from the genirq.
 
---=-BR6nFs1QfgjKjt4BXLoS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Although, to not duplicate IC code, I think it's pretty legitimate to
+call genirq functions iff the caller knows for sure that FIQ comes from
+IRQ line and it is is routed through the well-known platform IC.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+In that case (which is a majority), the typical user would do this:
 
-iQIVAwUAUB72Dee/yOyVhhEJAQrsJhAAufVImA675om7pXaXUul/0CbMvh5WFWAu
-mT3FPZHho79ajZOW9BzZFw9eNJuIshxcwcy6D/HxOPErs/zZH4aRUYgsnFFeMYtd
-ZAW7ZuK3KarzlDsf9yGeExIjDzqjbQpFqNtrNTpmk8JOAkUO98U8sTv6smxmafkW
-CCHMHA1UA58FGXgYpxgJA4mwtRbjWj0W5NvdaeCCX9Vd+GW8rIe71IC3mYXsmXgD
-ETOkcvxMSxVsfuzzLQVGQYFt6c4sxe29DdMsuhyA19UXrXaHB4AePCP9/Ali2g44
-n61BAsGQpgWz1Ev7B2r+bIgP516H/4wWeiq8PoJ9QydjJAm0Ls4Rku4HcD50jA4Y
-+wUHFjGHoGMxIu5owPQzLlUd8CYFdpkRYd86ouuzCEb9uD+rZ6lNcC6wzVrEVrO/
-oEBOvajdTVuULML6wMSpPiYzDgNOKWMA6e29s52achfYA9qIepGTxs4DNPNqe5xu
-Npx2IqNoKDFjgaKNVsfozTOoTfNjzzZtUU6Uci2j9nsk46RJ7j1jI/gRN8E45LfS
-PDTslDtF1r0nvOZOMgLgSMQDbQlZYtIHaAZGNYTPkqF6rQlHFqR4/wgN1AFr12lu
-+t26PMZ7pRBI01d04By28kmlqzDpvemFERNnRphOiPGf79n/4FTrXUU5VeoRY2P+
-HGEpMdEaJUo=
-=xDsu
------END PGP SIGNATURE-----
+	static int irq_line;
 
---=-BR6nFs1QfgjKjt4BXLoS--
+	void foo_enable_fiq(struct fiq_handler *fh)
+	{
+		enable_irq(irq_line);
+	}
+
+	static struct fiq_handler foo_fiq = {
+		.name = "foo",
+		.enable_fiq = foo_enable_fiq,
+	};
+
+	claim_fiq(&foo_fiq);
+	enable_fiq(&foo_fiq);
+
+Obviously, it's needless indirection, so I don't do this. If we ever
+pass 'foo_fiq' to some device, which does not know all the routing
+details, then it would make sense to introduce it, but not now.
+
+So, the patch set is pretty straightforward:
+
+- Get rid of FIQ_START. Nobody but platform-specific code (and drivers)
+  should know the details about which interrupt can be routed to FIQ
+  and which cannot;
+
+- Remove disable/enable_fiq() calls from the FIQ subsys (the calls can
+  be reintroduced w/ new prototypes when/if needed).
+
+Does the approach make sense?
+
+Thanks!
+
+--
+ arch/arm/include/asm/fiq.h                |    2 --
+ arch/arm/include/asm/mach/irq.h           |    9 +++++++--
+ arch/arm/kernel/fiq.c                     |   22 +++-------------------
+ arch/arm/kernel/irq.c                     |    2 --
+ arch/arm/mach-rpc/dma.c                   |    4 ++--
+ arch/arm/mach-rpc/include/mach/irqs.h     |    8 ++++----
+ arch/arm/mach-rpc/irq.c                   |   21 +++++----------------
+ arch/arm/mach-s3c24xx/include/mach/irqs.h |    3 ---
+ arch/arm/plat-mxc/avic.c                  |    4 +---
+ arch/arm/plat-mxc/include/mach/irqs.h     |    2 --
+ arch/arm/plat-mxc/tzic.c                  |    4 +---
+ arch/arm/plat-omap/include/plat/irqs.h    |    4 ----
+ arch/arm/plat-s3c24xx/irq.c               |    6 ++----
+ drivers/media/video/mx1_camera.c          |    6 +++---
+ sound/soc/fsl/imx-pcm-fiq.c               |    4 ++--
+ 15 files changed, 30 insertions(+), 71 deletions(-)
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
