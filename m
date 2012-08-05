@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab2HEIfQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 04:35:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29789 "EHLO mga01.intel.com"
+	id S1754215Ab2HEJVX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 05:21:23 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:52007 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752893Ab2HEIeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 04:34:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="193349698"
-Message-Id: <20120805083337.109517848@intel.com>
-User-Agent: quilt/0.51-1
-Date: Sun, 05 Aug 2012 16:26:15 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-to: Jens Axboe <axboe@kernel.dk>
-CC: Andrew Morton <akpm@linux-foundation.org>, Li Shaohua <shli@fusionio.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-cc: <linux-fsdevel@vger.kernel.org>
-cc: Damien Wyart <damien.wyart@free.fr>
-CC: Jeff Moyer <jmoyer@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] block: remove plugging at buffered write time 
-References: <20120805082614.071671796@intel.com>
-Content-Disposition: inline; filename=remove-write-plug.patch
+	id S1752483Ab2HEJVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 05:21:21 -0400
+Date: Sun, 5 Aug 2012 11:21:18 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Sven Joachim <svenjoac@gmx.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Kevin Winchester <kjwinchester@gmail.com>
+Subject: Re: [ 33/73] x86, microcode: Sanitize per-cpu microcode reloading
+ interface
+Message-ID: <20120805092118.GA16462@aftab.osrc.amd.com>
+References: <20120731044310.013763753@decadent.org.uk>
+ <20120731044316.585695559@decadent.org.uk>
+ <87y5lw73eh.fsf@turtle.gmx.de>
+ <20120803094314.GB31792@aftab.osrc.amd.com>
+ <20120803122727.GA32299@aftab.osrc.amd.com>
+ <1344094877.4642.183.camel@deadeye.wl.decadent.org.uk>
+ <20120804160745.GA17188@khazad-dum.debian.net>
+ <1344101021.4642.187.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1344101021.4642.187.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Buffered write(2) is not directly tied to IO, so it's not suitable to
-handle plug in generic_file_aio_write().
+On Sat, Aug 04, 2012 at 06:23:41PM +0100, Ben Hutchings wrote:
 
-Note that plugging for O_SYNC writes is also removed. The user may pass
-arbitrary @size arguments, which may be much larger than the preferable
-I/O size, or may cross extent/device boundaries. Let the lower layers
-handle the plugging. The plugging code here actually turns them into
-no-ops.
+[ … ]
 
-CC: Li Shaohua <shli@fusionio.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/filemap.c |    3 ---
- 1 file changed, 3 deletions(-)
+> > > Thanks everyone for working this out.
+> > >
+> > > If you combine multiple mainline commits like this, the new commit
+> > > message should refer to all of them. I've fixed that up this time.
 
---- linux-next.orig/mm/filemap.c	2012-08-05 16:23:53.000000000 +0800
-+++ linux-next/mm/filemap.c	2012-08-05 16:24:07.251464157 +0800
-@@ -2527,14 +2527,12 @@ ssize_t generic_file_aio_write(struct ki
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
--	struct blk_plug plug;
- 	ssize_t ret;
- 
- 	BUG_ON(iocb->ki_pos != pos);
- 
- 	sb_start_write(inode->i_sb);
- 	mutex_lock(&inode->i_mutex);
--	blk_start_plug(&plug);
- 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
- 	mutex_unlock(&inode->i_mutex);
- 
-@@ -2545,7 +2543,6 @@ ssize_t generic_file_aio_write(struct ki
- 		if (err < 0 && ret > 0)
- 			ret = err;
- 	}
--	blk_finish_plug(&plug);
- 	sb_end_write(inode->i_sb);
- 	return ret;
- }
+Thanks.
 
+> > Ben, the backport is also needed on 3.0 and 3.4, do you have your patch
+> > queue available for download/pull somewhere?
+> 
+> This is in v3.2.26, tagged in git
+> <git://git.kernel.org/pub/scm/linux/kernel/git/bwh/linux-3.2.y.git>.
+> I'll wait for Greg to generate tarballs etc. before sending the
+> announcement.
 
+Ok, guys.
+
+Pls let me know if I should send the backported patch for 3.0 and 3.4 to
+Greg or you are doing this.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
