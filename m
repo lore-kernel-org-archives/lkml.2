@@ -1,436 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab2HFHfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 03:35:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43066 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753024Ab2HFHfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 03:35:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="202889546"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
-        andi@firstfloor.org, jolsa@redhat.com, linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [RFC PATCH] perf/x86: Add cpumask for uncore PMU.
-Date: Mon,  6 Aug 2012 15:35:38 +0800
-Message-Id: <1344238538-3420-1-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.11.2
+	id S1753514Ab2HFHh3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 03:37:29 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:13057 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab2HFHh2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 03:37:28 -0400
+Message-Id: <201208060735.q767ZYc5005436@ubuntu>
+From: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Date: Sun, 5 Aug 2012 21:43:44 +0100
+Subject: [NEW DRIVER V2 0/7] DA9058 PMIC - please comment on this new driver
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Andrew Jones <drjones@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Anton Vorontov <cbou@mail.ru>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Axel Lin <axel.lin@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Donggeun Kim <dg77.kim@samsung.com>
+Cc: Eric Andersson <eric.andersson@unixphere.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Liam Girdwood <lrg@ti.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-input@vger.kernel.org
+Cc: lm-sensors@lm-sensors.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Michael Krufky <mkrufky@kernellabs.com>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: Randy Dunlop <randy.dunlap@oracle.com>
+Cc: rtc-linux@googlegroups.com
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Steven Toth <stoth@kernellabs.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+This is submission attempt number 2 to have this driver included in
+the linux kernel source tree. This is the driver for the Dialog DA9058.
 
-This RFC patch adds a cpumask file to the uncore pmu sysfs directory.
-If user doesn't explicitly specify CPU list, perf-stat only collects
-uncore events on CPUs listed in the cpumask file.
+The DA9058 is a low power Power Management Integrated Circuit with extra
+functionality. It is a Multi Function Device controlled only from an I2C
+bus whose components can raise an interrupt request on a single IRQ line.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 28 ++++++++++++++++++++++---
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |  6 ++++--
- tools/perf/builtin-stat.c                     | 30 ++++++++++++++++++---------
- tools/perf/util/cpumap.c                      | 22 +++++++++++++-------
- tools/perf/util/cpumap.h                      |  2 +-
- tools/perf/util/evsel.h                       |  1 +
- tools/perf/util/parse-events.c                | 14 +++++++------
- tools/perf/util/pmu.c                         | 30 +++++++++++++++++++++++++++
- tools/perf/util/pmu.h                         |  1 +
- 9 files changed, 105 insertions(+), 29 deletions(-)
+The driver for the DA9058 consists of a core (i2c) device driver that
+instantiates the individual component device drivers for:
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 0a55710..62ec3e6 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2341,6 +2341,27 @@ int uncore_pmu_event_init(struct perf_event *event)
- 	return ret;
- }
- 
-+static ssize_t uncore_get_attr_cpumask(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &uncore_cpu_mask);
-+
-+	buf[n++] = '\n';
-+	buf[n] = '\0';
-+	return n;
-+}
-+
-+static DEVICE_ATTR(cpumask, S_IRUGO, uncore_get_attr_cpumask, NULL);
-+
-+static struct attribute *uncore_pmu_attrs[] = {
-+	&dev_attr_cpumask.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group uncore_pmu_attr_group = {
-+	.attrs = uncore_pmu_attrs,
-+};
-+
- static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
- {
- 	int ret;
-@@ -2378,8 +2399,8 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
- 		free_percpu(type->pmus[i].box);
- 	kfree(type->pmus);
- 	type->pmus = NULL;
--	kfree(type->attr_groups[1]);
--	type->attr_groups[1] = NULL;
-+	kfree(type->events_group);
-+	type->events_group = NULL;
- }
- 
- static void __init uncore_types_exit(struct intel_uncore_type **types)
-@@ -2431,9 +2452,10 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
- 		for (j = 0; j < i; j++)
- 			attrs[j] = &type->event_descs[j].attr.attr;
- 
--		type->attr_groups[1] = events_group;
-+		type->events_group = events_group;
- 	}
- 
-+	type->pmu_group = &uncore_pmu_attr_group;
- 	type->pmus = pmus;
- 	return 0;
- fail:
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 5b81c18..e68a455 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -369,10 +369,12 @@ struct intel_uncore_type {
- 	struct intel_uncore_pmu *pmus;
- 	struct intel_uncore_ops *ops;
- 	struct uncore_event_desc *event_descs;
--	const struct attribute_group *attr_groups[3];
-+	const struct attribute_group *attr_groups[4];
- };
- 
--#define format_group attr_groups[0]
-+#define pmu_group attr_groups[0]
-+#define format_group attr_groups[1]
-+#define events_group attr_groups[2]
- 
- struct intel_uncore_ops {
- 	void (*init_box)(struct intel_uncore_box *);
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 861f0ae..8b4275c 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -220,6 +220,16 @@ static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
- 	evsel->priv = NULL;
- }
- 
-+static inline struct cpu_map *perf_evsel__cpus(struct perf_evsel *evsel)
-+{
-+	return (evsel->cpus && !target.cpu_list) ? evsel->cpus : evsel_list->cpus;
-+}
-+
-+static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
-+{
-+	return perf_evsel__cpus(evsel)->nr;
-+}
-+
- static void update_stats(struct stats *stats, u64 val)
- {
- 	double delta;
-@@ -299,7 +309,7 @@ retry:
- 		evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
- 
- 	if (perf_target__has_cpu(&target)) {
--		ret = perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
-+		ret = perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel),
- 					       group, group_fd);
- 		if (ret)
- 			goto check_ret;
-@@ -382,7 +392,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
- 	u64 *count = counter->counts->aggr.values;
- 	int i;
- 
--	if (__perf_evsel__read(counter, evsel_list->cpus->nr,
-+	if (__perf_evsel__read(counter, perf_evsel__nr_cpus(counter),
- 			       evsel_list->threads->nr, scale) < 0)
- 		return -1;
- 
-@@ -411,7 +421,7 @@ static int read_counter(struct perf_evsel *counter)
- 	u64 *count;
- 	int cpu;
- 
--	for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
-+	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
- 		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
- 			return -1;
- 
-@@ -546,12 +556,12 @@ static int run_perf_stat(int argc __used, const char **argv)
- 	if (no_aggr) {
- 		list_for_each_entry(counter, &evsel_list->entries, node) {
- 			read_counter(counter);
--			perf_evsel__close_fd(counter, evsel_list->cpus->nr, 1);
-+			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter), 1);
- 		}
- 	} else {
- 		list_for_each_entry(counter, &evsel_list->entries, node) {
- 			read_counter_aggr(counter);
--			perf_evsel__close_fd(counter, evsel_list->cpus->nr,
-+			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter),
- 					     evsel_list->threads->nr);
- 		}
- 	}
-@@ -592,7 +602,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	if (no_aggr)
- 		sprintf(cpustr, "CPU%*d%s",
- 			csv_output ? 0 : -4,
--			evsel_list->cpus->map[cpu], csv_sep);
-+			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
- 
- 	fprintf(output, fmt, cpustr, msecs, csv_sep, perf_evsel__name(evsel));
- 
-@@ -788,7 +798,7 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	if (no_aggr)
- 		sprintf(cpustr, "CPU%*d%s",
- 			csv_output ? 0 : -4,
--			evsel_list->cpus->map[cpu], csv_sep);
-+			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
- 	else
- 		cpu = 0;
- 
-@@ -949,14 +959,14 @@ static void print_counter(struct perf_evsel *counter)
- 	u64 ena, run, val;
- 	int cpu;
- 
--	for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
-+	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
- 		val = counter->counts->cpu[cpu].val;
- 		ena = counter->counts->cpu[cpu].ena;
- 		run = counter->counts->cpu[cpu].run;
- 		if (run == 0 || ena == 0) {
- 			fprintf(output, "CPU%*d%s%*s%s%*s",
- 				csv_output ? 0 : -4,
--				evsel_list->cpus->map[cpu], csv_sep,
-+				perf_evsel__cpus(counter)->map[cpu], csv_sep,
- 				csv_output ? 0 : 18,
- 				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
- 				csv_sep,
-@@ -1255,7 +1265,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 
- 	list_for_each_entry(pos, &evsel_list->entries, node) {
- 		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
--		    perf_evsel__alloc_counts(pos, evsel_list->cpus->nr) < 0)
-+		    perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
- 			goto out_free_fd;
- 	}
- 
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index adc72f0..2b32ffa 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -38,24 +38,19 @@ static struct cpu_map *cpu_map__trim_new(int nr_cpus, int *tmp_cpus)
- 	return cpus;
- }
- 
--static struct cpu_map *cpu_map__read_all_cpu_map(void)
-+struct cpu_map *cpu_map__read(FILE *file)
- {
- 	struct cpu_map *cpus = NULL;
--	FILE *onlnf;
- 	int nr_cpus = 0;
- 	int *tmp_cpus = NULL, *tmp;
- 	int max_entries = 0;
- 	int n, cpu, prev;
- 	char sep;
- 
--	onlnf = fopen("/sys/devices/system/cpu/online", "r");
--	if (!onlnf)
--		return cpu_map__default_new();
--
- 	sep = 0;
- 	prev = -1;
- 	for (;;) {
--		n = fscanf(onlnf, "%u%c", &cpu, &sep);
-+		n = fscanf(file, "%u%c", &cpu, &sep);
- 		if (n <= 0)
- 			break;
- 		if (prev >= 0) {
-@@ -95,6 +90,19 @@ static struct cpu_map *cpu_map__read_all_cpu_map(void)
- 		cpus = cpu_map__default_new();
- out_free_tmp:
- 	free(tmp_cpus);
-+	return cpus;
-+}
-+
-+static struct cpu_map *cpu_map__read_all_cpu_map(void)
-+{
-+	struct cpu_map *cpus = NULL;
-+	FILE *onlnf;
-+
-+	onlnf = fopen("/sys/devices/system/cpu/online", "r");
-+	if (!onlnf)
-+		return cpu_map__default_new();
-+
-+	cpus = cpu_map__read(onlnf);
- 	fclose(onlnf);
- 	return cpus;
- }
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index c415185..17b5264 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -11,7 +11,7 @@ struct cpu_map {
- struct cpu_map *cpu_map__new(const char *cpu_list);
- struct cpu_map *cpu_map__dummy_new(void);
- void cpu_map__delete(struct cpu_map *map);
--
-+struct cpu_map *cpu_map__read(FILE *file);
- size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
- 
- #endif /* __PERF_CPUMAP_H */
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index b559929..26c0095 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -65,6 +65,7 @@ struct perf_evsel {
- 		void		*func;
- 		void		*data;
- 	} handler;
-+	struct cpu_map		*cpus;
- 	unsigned int		sample_size;
- 	bool 			supported;
- };
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 74a5af4..af07c4f 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -240,7 +240,8 @@ const char *event_type(int type)
- }
- 
- static int add_event(struct list_head **_list, int *idx,
--		     struct perf_event_attr *attr, char *name)
-+		     struct perf_event_attr *attr,
-+		     struct cpu_map *cpus, char *name)
- {
- 	struct perf_evsel *evsel;
- 	struct list_head *list = *_list;
-@@ -260,6 +261,7 @@ static int add_event(struct list_head **_list, int *idx,
- 		return -ENOMEM;
- 	}
- 
-+	evsel->cpus = cpus;
- 	if (name)
- 		evsel->name = strdup(name);
- 	list_add_tail(&evsel->node, list);
-@@ -343,7 +345,7 @@ int parse_events_add_cache(struct list_head **list, int *idx,
- 	memset(&attr, 0, sizeof(attr));
- 	attr.config = cache_type | (cache_op << 8) | (cache_result << 16);
- 	attr.type = PERF_TYPE_HW_CACHE;
--	return add_event(list, idx, &attr, name);
-+	return add_event(list, idx, &attr, NULL, name);
- }
- 
- static int add_tracepoint(struct list_head **list, int *idx,
-@@ -381,7 +383,7 @@ static int add_tracepoint(struct list_head **list, int *idx,
- 	attr.sample_period = 1;
- 
- 	snprintf(name, MAX_NAME_LEN, "%s:%s", sys_name, evt_name);
--	return add_event(list, idx, &attr, name);
-+	return add_event(list, idx, &attr, NULL, name);
- }
- 
- static int add_tracepoint_multi(struct list_head **list, int *idx,
-@@ -492,7 +494,7 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
- 	attr.type = PERF_TYPE_BREAKPOINT;
- 	attr.sample_period = 1;
- 
--	return add_event(list, idx, &attr, NULL);
-+	return add_event(list, idx, &attr, NULL, NULL);
- }
- 
- static int config_term(struct perf_event_attr *attr,
-@@ -564,7 +566,7 @@ int parse_events_add_numeric(struct list_head **list, int *idx,
- 	    config_attr(&attr, head_config, 1))
- 		return -EINVAL;
- 
--	return add_event(list, idx, &attr, NULL);
-+	return add_event(list, idx, &attr, NULL, NULL);
- }
- 
- static int parse_events__is_name_term(struct parse_events__term *term)
-@@ -607,7 +609,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
- 	if (perf_pmu__config(pmu, &attr, head_config))
- 		return -EINVAL;
- 
--	return add_event(list, idx, &attr,
-+	return add_event(list, idx, &attr, pmu->cpus,
- 			 pmu_event_name(head_config));
- }
- 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 67715a4..0b9aca6 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -9,6 +9,7 @@
- #include "util.h"
- #include "pmu.h"
- #include "parse-events.h"
-+#include "cpumap.h"
- 
- int perf_pmu_parse(struct list_head *list, char *name);
- extern FILE *perf_pmu_in;
-@@ -222,6 +223,33 @@ static int pmu_type(char *name, __u32 *type)
- 	return ret;
- }
- 
-+static struct cpu_map *pmu_cpumask(char *name)
-+{
-+	struct stat st;
-+	char path[PATH_MAX];
-+	const char *sysfs;
-+	FILE *file;
-+	struct cpu_map *cpus;
-+
-+	sysfs = sysfs_find_mountpoint();
-+	if (!sysfs)
-+		return NULL;
-+
-+	snprintf(path, PATH_MAX,
-+		 "%s/bus/event_source/devices/%s/cpumask", sysfs, name);
-+
-+	if (stat(path, &st) < 0)
-+		return NULL;
-+
-+	file = fopen(path, "r");
-+	if (!file)
-+		return NULL;
-+
-+	cpus = cpu_map__read(file);
-+	fclose(file);
-+	return cpus;
-+}
-+
- static struct perf_pmu *pmu_lookup(char *name)
- {
- 	struct perf_pmu *pmu;
-@@ -244,6 +272,8 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	if (!pmu)
- 		return NULL;
- 
-+	pmu->cpus = pmu_cpumask(name);
-+
- 	pmu_aliases(name, &aliases);
- 
- 	INIT_LIST_HEAD(&pmu->format);
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 535f2c5..277c874 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -28,6 +28,7 @@ struct perf_pmu__alias {
- struct perf_pmu {
- 	char *name;
- 	__u32 type;
-+	struct cpu_map *cpus;
- 	struct list_head format;
- 	struct list_head aliases;
- 	struct list_head list;
+hwmon - 5 ADC channels
+gpio - 2 available pins
+onkey - 1 device
+regulator - 4 BUCKS, 19 LDO and 3 fixed
+rtc - low power clock
+power - battery information
+
+All the above six component device drivers depend on the 'core' driver,
+which is number one in the patch series.
+
+This driver has been tested on a Samsung SMDK6410 connected to a Dialog
+DA9058 Evaluation Board via one GPIO and a 3-wire I2C connection.
+
+All the components can be builtin to the kernel or compiled as modules.
+As far as I can tell, all the latest APIs both for the core driver and
+all the component drivers have been adhered to, but if I have missed
+something please let me know.
+
+Many thanks,
+Anthony Olech, Dialog Semiconductor Ltd.
+
+Anthony Olech (Drivers Team) (7):
+  DA9058 MFD core and ADC driver
+  DA9058 ONKEY driver
+  DA9058 POWER driver
+  DA9058 RTC driver
+  DA9058 GPIO driver
+  DA9058 HWMON driver
+  DA9058 REGULATOR driver
+
+ drivers/gpio/Kconfig                 |   12 +
+ drivers/gpio/Makefile                |    1 +
+ drivers/gpio/gpio-da9058.c           |  376 ++++++++++++++++++++++++++
+ drivers/hwmon/Kconfig                |   10 +
+ drivers/hwmon/Makefile               |    1 +
+ drivers/hwmon/da9058-hwmon.c         |  390 +++++++++++++++++++++++++++
+ drivers/input/misc/Kconfig           |   10 +
+ drivers/input/misc/Makefile          |    1 +
+ drivers/input/misc/da9058_onkey.c    |  171 ++++++++++++
+ drivers/mfd/Kconfig                  |   18 ++
+ drivers/mfd/Makefile                 |    3 +
+ drivers/mfd/da9058-core.c            |  268 +++++++++++++++++++
+ drivers/mfd/da9058-i2c.c             |  102 +++++++
+ drivers/mfd/da9058-irq.c             |   57 ++++
+ drivers/power/Kconfig                |   10 +
+ drivers/power/Makefile               |    1 +
+ drivers/power/da9058_power.c         |  404 ++++++++++++++++++++++++++++
+ drivers/regulator/Kconfig            |   11 +
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/da9058-regulator.c |  239 +++++++++++++++++
+ drivers/rtc/Kconfig                  |   10 +
+ drivers/rtc/Makefile                 |    1 +
+ drivers/rtc/rtc-da9058.c             |  446 +++++++++++++++++++++++++++++++
+ include/linux/mfd/da9058/bat.h       |   33 +++
+ include/linux/mfd/da9058/codec.h     |   21 ++
+ include/linux/mfd/da9058/core.h      |   58 ++++
+ include/linux/mfd/da9058/gpio.h      |   19 ++
+ include/linux/mfd/da9058/hwmon.h     |   20 ++
+ include/linux/mfd/da9058/irq.h       |   50 ++++
+ include/linux/mfd/da9058/onkey.h     |   17 ++
+ include/linux/mfd/da9058/pdata.h     |   28 ++
+ include/linux/mfd/da9058/registers.h |  480 ++++++++++++++++++++++++++++++++++
+ include/linux/mfd/da9058/regulator.h |   33 +++
+ include/linux/mfd/da9058/rtc.h       |   17 ++
+ 34 files changed, 3319 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/gpio-da9058.c
+ create mode 100644 drivers/hwmon/da9058-hwmon.c
+ create mode 100644 drivers/input/misc/da9058_onkey.c
+ create mode 100644 drivers/mfd/da9058-core.c
+ create mode 100644 drivers/mfd/da9058-i2c.c
+ create mode 100644 drivers/mfd/da9058-irq.c
+ create mode 100644 drivers/power/da9058_power.c
+ create mode 100644 drivers/regulator/da9058-regulator.c
+ create mode 100644 drivers/rtc/rtc-da9058.c
+ create mode 100644 include/linux/mfd/da9058/bat.h
+ create mode 100644 include/linux/mfd/da9058/codec.h
+ create mode 100644 include/linux/mfd/da9058/core.h
+ create mode 100644 include/linux/mfd/da9058/gpio.h
+ create mode 100644 include/linux/mfd/da9058/hwmon.h
+ create mode 100644 include/linux/mfd/da9058/irq.h
+ create mode 100644 include/linux/mfd/da9058/onkey.h
+ create mode 100644 include/linux/mfd/da9058/pdata.h
+ create mode 100644 include/linux/mfd/da9058/registers.h
+ create mode 100644 include/linux/mfd/da9058/regulator.h
+ create mode 100644 include/linux/mfd/da9058/rtc.h
+
 -- 
-1.7.11.2
+end-of-patch for NEW DRIVER V2
 
