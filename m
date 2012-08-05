@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab2HEIF1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 04:05:27 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:39053 "EHLO minas.ics.muni.cz"
+	id S1753290Ab2HEIPK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 04:15:10 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:10195 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373Ab2HEIFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 04:05:17 -0400
-Date: Sun, 5 Aug 2012 10:05:00 +0200
-From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-To: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: yinghai@kernel.org, linux-pci@vger.kernel.org, roland@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mellanox mlx4_core and SR-IOV
-Message-ID: <20120805080500.GH25979@ics.muni.cz>
-References: <9f903175-4080-4016-b9f8-83e8615c110e@default>
+	id S1751347Ab2HEIPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 04:15:07 -0400
+Message-ID: <501E2BC5.5020709@c-s.fr>
+Date: Sun, 05 Aug 2012 10:16:05 +0200
+From: LEROY christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
-Content-Disposition: inline
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Huge performance degradation for UDP between 2.4.17 and 2.6
+References: <501A722D.1070900@c-s.fr> <1343916836.9299.189.camel@edumazet-glaptop>
+In-Reply-To: <1343916836.9299.189.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <9f903175-4080-4016-b9f8-83e8615c110e@default>
-X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Muni-Spam-TestIP: 94.112.253.31
-X-Muni-Envelope-From: xhejtman@ics.muni.cz
-X-Muni-Virus-Test: Clean
-X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Sun, 05 Aug 2012 10:05:07 +0200 (CEST)
+X-Antivirus: avast! (VPS 120805-0, 05/08/2012), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Le 02/08/2012 16:13, Eric Dumazet a Ã©crit :
+> On Thu, 2012-08-02 at 14:27 +0200, leroy christophe wrote:
+>> Hi
+>>
+>> I'm having a big issue with UDP. Using a powerpc board (MPC860).
+>>
+>> With our board running kernel 2.4.17, I'm able to send 160000 voice
+>> packets (UDP, 96 bytes per packet) in 11 seconds.
+>> With the same board running either Kernel 2.6.35.14 or Kernel 3.4.7, I
+>> need 55 seconds to send the same amount of packets.
+>>
+>>
+>> Is there anything to tune in order to get same output rate as with
+>> Kernel 2.4 ?
+> kernel size is probably too big for your old / slow cpu.
+>
+> Maybe you added too many features on your 3.4.7 kernel. (netfilter ?
+> SLUB debugging ...)
+>
+> Its hard to say, 2.4.17 had less features and was faster.
+>
 
-On Fri, Aug 03, 2012 at 06:49:59AM -0700, Konrad Wilk wrote:
-> This looks like you are using PV PCI passthrough? If so, did you
-> remember to use 'iommu=soft' to enable the Xen-SWIOTLB in your guest?
-> And are you booting with more than 4GB? Or is less than 3GB (so that you have
-> a nice gap in E820).
+Thanks for your answer.
+Yes I have netfilter as I need it. However, I tried without it and still 
+need about 37 seconds to send the 160000 packets I was sending in 11 
+seconds with 2.4.17
 
-good catch. I forgot to pass swiotl=force for DomU in Xen. So now, it seems
-that mlx4_core works, mlx4_en (ethernet part) works as well. Unfortunately,
-the IB part does not. IB layer complains that SR-IOV is currently unsupported
-(kernel 3.5.0). So no luck here so far. 
+I don't think there is any problem with size of the kernel. I still have 
+plenty of memory available.
 
-There is OFED stack directly from Mellanox, that seems to support SR-IOV even
-for IB layer, but they have buildable sources only for RHEL/SLES kernels
-(2.6.32) and even correcting the sources to get it compile with 3.5.0 does not
-make things work. The driver complains about interrupts not working in Dom0 or
-even without Xen hypervisor at all.
+All debugging is turned off, and I'm not using SLUB but SLOB.
+I have 32Mbytes of RAM. Would SLUB be more performant than SLOB ?
 
-The only good point is, that I managed to convice Supermicro (board
-manufacturer), that enabling SR-IOV in BIOS leads to BIOS lockup, they
-confirmed it and maybe they provide BIOS upgrade.
-
-Thanks all.
-
--- 
-Luká¹ Hejtmánek
+Christophe
