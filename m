@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab2HFHla (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 03:41:30 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:6380 "EHLO
+	id S1753710Ab2HFHmb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 03:42:31 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:65447 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473Ab2HFHl2 (ORCPT
+	with ESMTP id S1753492Ab2HFHm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 03:41:28 -0400
-Message-Id: <201208060739.q767djnO005723@ubuntu>
+	Mon, 6 Aug 2012 03:42:29 -0400
+Message-Id: <201208060740.q767ekYZ005733@ubuntu>
 From: Anthony Olech <anthony.olech.opensource@diasemi.com>
 Date: Sun, 5 Aug 2012 21:43:43 +0100
-Subject: [NEW DRIVER V2 4/7] DA9058 RTC driver
-To: Andrew Morton <akpm@linux-foundation.org>
+Subject: [NEW DRIVER V2 3/7] DA9058 POWER driver
+To: Anton Vorontov <cbou@mail.ru>
+To: David Woodhouse <dwmw2@infradead.org>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Axel Lin <axel.lin@gmail.com>
 Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com
 Cc: LKML <linux-kernel@vger.kernel.org>
 Cc: David Dajun Chen <david.chen@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the RTC component driver of the Dialog DA9058 PMIC.
+This is the POWER component driver of the Dialog DA9058 PMIC.
 This driver is just one component of the whole DA9058 PMIC driver.
 It depends on the core DA9058 MFD driver.
 
 Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
 Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
 ---
- drivers/rtc/Kconfig      |   10 +
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-da9058.c |  446 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 457 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-da9058.c
+ drivers/power/Kconfig        |   10 +
+ drivers/power/Makefile       |    1 +
+ drivers/power/da9058_power.c |  404 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 415 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/da9058_power.c
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 08cbdb9..21f5630 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -135,6 +135,16 @@ config RTC_DRV_88PM860X
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-88pm860x.
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index e3a3b49..e0b4d34 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -8,6 +8,16 @@ menuconfig POWER_SUPPLY
  
-+config RTC_DRV_DA9058
-+	tristate "Dialog DA9058"
+ if POWER_SUPPLY
+ 
++config BATTERY_DA9058
++	tristate "DA9058 battery charger support"
 +	depends on MFD_DA9058
 +	help
-+	  If you say yes here you will get support for the
-+	  RTC of the Dialog DA9058 PMIC.
++	  Say Y here to enable support for the battery charger in the Dialog
++	  DA9058 PMIC.
 +
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-da9058.
++	  To compile this driver as a module, choose M here: the module
++	  will be called da9058_power.
 +
- config RTC_DRV_DS1307
- 	tristate "Dallas/Maxim DS1307/37/38/39/40, ST M41T00, EPSON RX-8025"
+ config POWER_SUPPLY_DEBUG
+ 	bool "Power supply debug"
  	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 2973921..b772f05 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_RTC_DRV_CMOS)	+= rtc-cmos.o
- obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
- obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
- obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
-+obj-$(CONFIG_RTC_DRV_DA9058)	+= rtc-da9058.o
- obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
- obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
- obj-$(CONFIG_RTC_DRV_DS1216)	+= rtc-ds1216.o
-diff --git a/drivers/rtc/rtc-da9058.c b/drivers/rtc/rtc-da9058.c
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index b6b2434..8a4a049 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_WM831X_POWER)	+= wm831x_power.o
+ obj-$(CONFIG_WM8350_POWER)	+= wm8350_power.o
+ obj-$(CONFIG_TEST_POWER)	+= test_power.o
+ 
++obj-$(CONFIG_BATTERY_DA9058)	+= da9058_power.o
+ obj-$(CONFIG_BATTERY_DS2760)	+= ds2760_battery.o
+ obj-$(CONFIG_BATTERY_DS2780)	+= ds2780_battery.o
+ obj-$(CONFIG_BATTERY_DS2781)	+= ds2781_battery.o
+diff --git a/drivers/power/da9058_power.c b/drivers/power/da9058_power.c
 new file mode 100644
-index 0000000..c981900
+index 0000000..08907c1
 --- /dev/null
-+++ b/drivers/rtc/rtc-da9058.c
-@@ -0,0 +1,446 @@
++++ b/drivers/power/da9058_power.c
+@@ -0,0 +1,404 @@
 +/*
 + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
 + *
@@ -86,10 +86,10 @@ index 0000000..c981900
 + */
 +
 +#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/rtc.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/power_supply.h>
 +#include <linux/slab.h>
-+#include <linux/irq.h>
 +#include <linux/regmap.h>
 +#include <linux/mfd/core.h>
 +
@@ -97,430 +97,388 @@ index 0000000..c981900
 +#include <linux/mfd/da9058/registers.h>
 +#include <linux/mfd/da9058/core.h>
 +#include <linux/mfd/da9058/irq.h>
-+#include <linux/mfd/da9058/rtc.h>
++#include <linux/mfd/da9058/bat.h>
 +
-+/*
-+ * Limit values
-+ */
-+#define DA9058_RTC_SECONDS_LIMIT		59
-+#define DA9058_RTC_MINUTES_LIMIT		59
-+#define DA9058_RTC_HOURS_LIMIT			23
-+#define DA9058_RTC_DAYS_LIMIT			31
-+#define DA9058_RTC_MONTHS_LIMIT			12
-+#define DA9058_RTC_YEARS_LIMIT			63
-+
-+struct da9058_rtc {
++struct da9058_power {
 +	struct da9058 *da9058;
 +	struct platform_device *pdev;
-+	struct rtc_device *rtc_dev;
-+	int alarm_irq;
-+	int tick_irq;
-+	int alarm_enabled;	/* used over suspend/resume */
++	struct power_supply battery;
++
++	int battery_type;
++	u8 illegalbattery;
++	u8 health;
++	u16 bat_temp;
++	u16 bat_voltage;
++	u8 cal_capacity;
++	int bat_low_limit;
++	int use_automatic_adc;
++	int temperature_points;
++	struct da9058_temp_capacity (*temp_tables)[];
 +};
 +
-+static int da9058_rtc_check_param(struct rtc_time *rtc_tm)
++static inline u8 bat_temp_reg_to_C(u16 value)
 +{
-+	if ((rtc_tm->tm_sec > DA9058_RTC_SECONDS_LIMIT) || (rtc_tm->tm_sec < 0))
-+		return -EIO;
++	return 55 - value;
++}
 +
-+	if ((rtc_tm->tm_min > DA9058_RTC_MINUTES_LIMIT) || (rtc_tm->tm_min < 0))
-+		return -EIO;
++static inline u8 bat_mV_to_reg(u16 value)
++{
++	return ((value - 4100) / 100) << 4;
++}
 +
-+	if ((rtc_tm->tm_hour > DA9058_RTC_HOURS_LIMIT) || (rtc_tm->tm_hour < 0))
-+		return -EIO;
++static inline u8 bat_drop_mV_to_reg(u16 value)
++{
++	return ((value - 100) / 100) << 6;
++}
 +
-+	if (rtc_tm->tm_mday == 0)
-+		return -EIO;
++static inline u16 bat_reg_to_mV(u8 value)
++{
++	return (value * 100) + 4100;
++}
 +
-+	if ((rtc_tm->tm_mon > DA9058_RTC_MONTHS_LIMIT) || (rtc_tm->tm_mon <= 0))
-+		return -EIO;
++static inline u16 bat_drop_reg_to_mV(u8 value)
++{
++	return (value * 100) + 100;
++}
 +
-+	if ((rtc_tm->tm_year > DA9058_RTC_YEARS_LIMIT) || (rtc_tm->tm_year < 0))
-+		return -EIO;
++static inline u8 vbat_thr_mV_to_reg(u16 value)
++{
++	return (value - 2500) / 8;
++}
++
++static inline u16 vddout_reg_to_mV(u8 value)
++{
++	return (value * 8) + 2500;
++}
++
++static inline u16 volt_bit_reg_to_mV(u16 value)
++{
++	return (value * 2) + 2500;
++}
++
++static inline u16 volt_reg_to_mV(u16 value)
++{
++	return (((value * 610 * 100) / 115) + 2400000) / 1000;
++}
++
++static inline u16 volt_10bit_reg_to_mV(u16 value)
++{
++	return (((value * 1510 * 100) / 75) + 2400000) / 1000;
++}
++
++static inline u8 bit8_mV_to_reg(u16 value)
++{
++	return (value * 2500) / 256000;
++}
++
++/*
++ *  to convert the ADC reading to milliVolts:
++ *  0000MMMMMMMMLL00 for automatic conversion
++ *  0000MMMMMMMMLLLL for manual conversion
++ *  2.5Volts == 0x0000 --> 2500
++ *  4.5Volts == 0x0FFF --> 4500
++ */
++static int da9058_read_battery_millivolts(struct da9058_power *power)
++{
++	struct da9058 *da9058 = power->da9058;
++	int vbat;
++	int ret;
++
++	ret = da9058_adc_read(da9058, DA9058_ADCMAN_MUXSEL_VBAT,
++				power->use_automatic_adc, &vbat);
++
++	if (ret)
++		return ret;
++
++	power->bat_voltage = (2500*0x0FFF + vbat*2000)/0x0FFF;
 +
 +	return 0;
 +}
 +
-+static int da9058_rtc_readtime(struct device *dev, struct rtc_time *tm)
++static int da9058_battery_temperature_tbat(struct da9058_power *power)
 +{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+	struct da9058 *da9058 = rtc->da9058;
-+	unsigned int rtc_time[6];
++	struct da9058 *da9058 = power->da9058;
++	int temp;
 +	int ret;
 +
-+	ret = da9058_bulk_read(da9058, DA9058_COUNTS_REG, rtc_time, 6);
-+	if (ret)
-+		return ret;
-+
-+	tm->tm_sec = rtc_time[0] & DA9058_RTC_SECS_MASK;
-+
-+	tm->tm_min = rtc_time[1] & DA9058_RTC_MINS_MASK;
-+
-+	tm->tm_hour = rtc_time[2] & DA9058_RTC_HRS_MASK;
-+
-+	tm->tm_mday = (rtc_time[3] & DA9058_RTC_DAY_MASK);
-+
-+	tm->tm_mon = (rtc_time[4] & DA9058_RTC_MTH_MASK);
-+
-+	tm->tm_year = (rtc_time[5] & DA9058_RTC_YRS_MASK);
-+
-+	ret = da9058_rtc_check_param(tm);
++	ret = da9058_adc_read(da9058, DA9058_ADCMAN_MUXSEL_TEMP,
++				power->use_automatic_adc, &temp);
 +
 +	if (ret)
 +		return ret;
 +
-+	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon,
-+						tm->tm_year);
-+	tm->tm_year += 100;
-+	tm->tm_mon -= 1;
++	power->bat_temp = temp;
 +
 +	return 0;
 +}
 +
-+static int da9058_rtc_settime(struct device *dev, struct rtc_time *tm)
++static u32 interpolated(u32 vbat_lower, u32 vbat_upper, u32 level_lower,
++			u32 level_upper, u32 vbat)
 +{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+	struct da9058 *da9058 = rtc->da9058;
-+	unsigned int rtc_ctrl, val, rtc_time[6];
++	s32 temp;
++
++	/*apply formula y= yk + (x <96> xk) * (yk+1 <96> yk)/(xk+1 - xk) */
++
++	temp = ((level_upper - level_lower) * 1000)/(vbat_upper - vbat_lower);
++	temp = level_lower + (((vbat - vbat_lower) * temp) / 1000);
++
++	return temp;
++}
++
++static int da9058_get_bat_level(struct da9058_power *power)
++{
 +	int ret;
 +
-+	tm->tm_year -= 111;
-+	tm->tm_mon += 1;
++	u16 tbat;
++	u16 vbat;
++	u32 vbat_lower = 0, vbat_upper = 0, level_upper =
++		0, level_lower, level = 0;
++	u8 access_index = 0, index = 0, flag = 0;
 +
-+	ret = da9058_rtc_check_param(tm);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = da9058_reg_read(da9058, DA9058_COUNTS_REG, &rtc_ctrl);
-+	if (ret)
-+		return ret;
-+	rtc_ctrl &= ~DA9058_RTC_SECS_MASK;
-+
-+	rtc_time[0] = rtc_ctrl | tm->tm_sec;
-+	rtc_time[1] = tm->tm_min;
-+	rtc_time[2] = tm->tm_hour;
-+	rtc_time[3] = tm->tm_mday;
-+	rtc_time[4] = tm->tm_mon;
-+	rtc_time[5] = tm->tm_year;
-+
-+	ret = da9058_bulk_write(da9058, DA9058_COUNTS_REG, rtc_time, 6);
-+	if (ret) {
-+		dev_dbg(dev, "failed %d to write to RTC\n", ret);
-+		return ret;
-+	}
-+	ret = da9058_reg_read(da9058, DA9058_COUNTY_REG, &val);
++	ret = da9058_read_battery_millivolts(power);
 +	if (ret)
 +		return ret;
 +
-+	val &= DA9058_COUNTY_MONITOR;
-+	if (val)
++	vbat = power->bat_voltage;
++
++	ret = da9058_battery_temperature_tbat(power);
++	if (ret)
++		return ret;
++
++	tbat = power->bat_temp;
++
++	do {
++		if ((tbat + tbat) <=
++			((*power->temp_tables)[access_index].temperature +
++			(*power->temp_tables)[access_index + 1].temperature))
++			break;
++
++	} while (++access_index < (power->temperature_points - 1));
++
++	if (vbat >= (*power->temp_tables)[access_index].capacity[0][0]) {
++		power->cal_capacity = 100;
 +		return 0;
++	}
++	if (vbat <=
++		(*power->temp_tables)[access_index].
++		capacity[DA9058_LOOK_UP_TABLE_SIZE - 1][0]) {
++		power->cal_capacity = 0;
++		return 0;
++	}
++	flag = 0;
 +
-+	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
++	for (index = 0; index < (DA9058_LOOK_UP_TABLE_SIZE - 1); index++) {
++		struct da9058_temp_capacity *t =
++					&(*power->temp_tables)[access_index];
++
++		if ((vbat <= t->capacity[index][0])
++			&& (vbat >= t->capacity[index + 1][0])) {
++			vbat_upper = t->capacity[index][0];
++			vbat_lower = t->capacity[index + 1][0];
++			level_upper = t->capacity[index][1];
++			level_lower = t->capacity[index + 1][1];
++			flag = 1;
++			break;
++		}
++	}
++	if (!flag)
++		return -EIO;
++
++	level = interpolated(vbat_lower, vbat_upper, level_lower, level_upper,
++				vbat);
++	power->cal_capacity = level;
++	return 0;
++}
++
++static int da9058_bat_check_health(struct da9058_power *power)
++{
++	int ret;
++
++	ret = da9058_read_battery_millivolts(power);
++	if (ret) {
++		power->health = POWER_SUPPLY_HEALTH_UNKNOWN;
++		goto exit;
++	}
++
++	if (power->bat_voltage < 2850) {
++		power->health = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
++		goto exit;
++	}
++
++	ret = da9058_get_bat_level(power);
++	if (ret) {
++		power->health = POWER_SUPPLY_HEALTH_UNKNOWN;
++		goto exit;
++	}
++
++	if (power->health != POWER_SUPPLY_HEALTH_OVERHEAT) {
++		if (power->illegalbattery)
++			power->health = POWER_SUPPLY_HEALTH_UNKNOWN;
++		else if (power->cal_capacity < power->bat_low_limit)
++			power->health = POWER_SUPPLY_HEALTH_DEAD;
++		else
++			power->health = POWER_SUPPLY_HEALTH_GOOD;
++	}
++exit:
++	return ret;
++}
++
++static int da9058_bat_get_property(struct power_supply *psy,
++					enum power_supply_property psp,
++					union power_supply_propval *val)
++{
++	struct da9058_power *power = dev_get_drvdata(psy->dev->parent);
++	int ret;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_PRESENT:
++		ret = 0;
++		if (power->illegalbattery)
++			val->intval = 0;
++		else
++			val->intval = 1;
++		break;
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		ret = 0;
++		val->intval = power->battery_type;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		ret = da9058_read_battery_millivolts(power);
++		val->intval = power->bat_voltage;
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		ret = da9058_bat_check_health(power);
++		val->intval = power->health;
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY:
++		ret = da9058_get_bat_level(power);
++		val->intval = power->cal_capacity;
++		break;
++	case POWER_SUPPLY_PROP_TEMP:
++		ret = da9058_battery_temperature_tbat(power);
++		val->intval = power->bat_temp;
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
 +
 +	return ret;
 +}
 +
-+static int da9058_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+	struct da9058 *da9058 = rtc->da9058;
-+	struct rtc_time *tm = &alrm->time;
-+	unsigned int alm_time[6], val;
-+	int ret;
-+
-+	ret = da9058_bulk_read(da9058, DA9058_ALARMS_REG, alm_time, 6);
-+	if (ret)
-+		return ret;
-+
-+	tm->tm_min = alm_time[0] & DA9058_RTC_ALMSECS_MASK;
-+
-+	tm->tm_min = alm_time[1] & DA9058_RTC_ALMMINS_MASK;
-+
-+	tm->tm_hour = alm_time[2] & DA9058_RTC_ALMHRS_MASK;
-+
-+	tm->tm_mday = alm_time[3] & DA9058_RTC_ALMDAY_MASK;
-+
-+	tm->tm_mon = alm_time[4] & DA9058_RTC_ALMMTH_MASK;
-+
-+	tm->tm_year = alm_time[5] & DA9058_RTC_ALMYRS_MASK;
-+
-+	ret = da9058_rtc_check_param(tm);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &val);
-+	if (ret)
-+		return ret;
-+
-+	alrm->enabled = val & DA9058_ALARMY_ALARMON;
-+
-+	tm->tm_year += 100;
-+	tm->tm_mon -= 1;
-+
-+	return 0;
-+}
-+
-+static int da9058_rtc_stop_alarm(struct da9058_rtc *rtc)
-+{
-+	return da9058_clear_bits(rtc->da9058, DA9058_ALARMY_REG,
-+						DA9058_ALARMY_ALARMON);
-+}
-+
-+static int da9058_rtc_start_alarm(struct da9058_rtc *rtc)
-+{
-+	return da9058_set_bits(rtc->da9058, DA9058_ALARMY_REG,
-+						DA9058_ALARMY_ALARMON);
-+}
-+
-+static int da9058_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+	struct da9058 *da9058 = rtc->da9058;
-+	struct rtc_time *tm = &alrm->time;
-+	unsigned int alm_time[6], rtc_ctrl;
-+	int ret;
-+
-+	tm->tm_year -= 100;
-+	tm->tm_mon += 1;
-+
-+	ret = da9058_rtc_check_param(tm);
-+	if (ret < 0)
-+		return ret;
-+
-+	memset(alm_time, 0, sizeof(alm_time));
-+
-+	if (tm->tm_sec != -1)
-+		alm_time[0] |= tm->tm_sec;
-+	else
-+		alm_time[0] |= DA9058_RTC_ALMSECS_MASK;
-+
-+	ret = da9058_reg_read(da9058, DA9058_ALARMMI_REG, &rtc_ctrl);
-+	if (ret)
-+		return ret;
-+	rtc_ctrl &= ~DA9058_RTC_ALMMINS_MASK;
-+
-+	if (tm->tm_min != -1)
-+		alm_time[1] = rtc_ctrl | tm->tm_min;
-+	else
-+		alm_time[1] = rtc_ctrl | DA9058_RTC_ALMMINS_MASK;
-+
-+	if (tm->tm_hour != -1)
-+		alm_time[2] |= tm->tm_hour;
-+	else
-+		alm_time[2] |= DA9058_RTC_ALMHRS_MASK;
-+
-+	if (tm->tm_mday != -1)
-+		alm_time[3] |= tm->tm_mday;
-+	else
-+		alm_time[3] |= DA9058_RTC_ALMDAY_MASK;
-+
-+	if (tm->tm_mon != -1)
-+		alm_time[4] |= tm->tm_mon;
-+	else
-+		alm_time[4] |= DA9058_RTC_ALMMTH_MASK;
-+
-+	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &rtc_ctrl);
-+	if (ret)
-+		return ret;
-+
-+	rtc_ctrl &= ~DA9058_RTC_ALMYRS_MASK;
-+
-+	if (tm->tm_year != -1)
-+		alm_time[5] = rtc_ctrl | tm->tm_year;
-+	else
-+		alm_time[5] = rtc_ctrl | DA9058_RTC_ALMYRS_MASK;
-+
-+	ret = da9058_rtc_stop_alarm(rtc);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = da9058_bulk_write(da9058, DA9058_ALARMS_REG, alm_time, 6);
-+	if (ret)
-+		return ret;
-+
-+	if (alrm->enabled)
-+		ret = da9058_rtc_start_alarm(rtc);
-+
-+	return ret;
-+}
-+
-+static int da9058_rtc_alarm_irq_enable(struct device *dev,
-+						unsigned int enabled)
-+{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+
-+	if (enabled)
-+		return da9058_rtc_start_alarm(rtc);
-+	else
-+		return da9058_rtc_stop_alarm(rtc);
-+}
-+
-+static irqreturn_t da9058_rtc_timer_alarm_handler(int irq, void *data)
-+{
-+	struct da9058_rtc *rtc = data;
-+
-+	da9058_rtc_stop_alarm(rtc);
-+	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static irqreturn_t da9058_rtc_tick_alarm_handler(int irq, void *data)
-+{
-+	struct da9058_rtc *rtc = data;
-+
-+	rtc_update_irq(rtc->rtc_dev, 1, RTC_PF | RTC_IRQF);
-+
-+	return IRQ_HANDLED;
-+}
-+static int da9058_rtc_proc(struct device *dev, struct seq_file *seq)
-+{
-+	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-+	struct da9058 *da9058 = rtc->da9058;
-+	unsigned int rtc_ctrl;
-+	int ret;
-+
-+	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &rtc_ctrl);
-+
-+	seq_printf(seq, rtc_ctrl & DA9058_ALARMY_ALARMON ?
-+		"ALRM is running\n" : "ALRM is not running\n");
-+
-+	return 0;
-+}
-+
-+static const struct rtc_class_ops da9058_rtc_ops = {
-+	.read_time = da9058_rtc_readtime,
-+	.set_time = da9058_rtc_settime,
-+	.read_alarm = da9058_rtc_readalarm,
-+	.set_alarm = da9058_rtc_setalarm,
-+	.proc = da9058_rtc_proc,
-+	.alarm_irq_enable = da9058_rtc_alarm_irq_enable,
++static enum power_supply_property da9058_bat_props[] = {
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_TEMP,
 +};
 +
-+static int da9058_rtc_probe(struct platform_device *pdev)
++static __devinit int da9058_power_probe(struct platform_device *pdev)
 +{
 +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
 +	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_rtc_pdata *rtc_pdata;
-+	struct da9058_rtc *rtc;
-+	int ret;
++	struct da9058_power_pdata *power_pdata;
++	struct da9058_power *power;
++	struct power_supply *battery;
++	int ret = 0;
 +
 +	if (cell == NULL) {
 +		ret = -ENODEV;
 +		goto exit;
 +	}
 +
-+	rtc_pdata = cell->platform_data;
++	power_pdata = cell->platform_data;
 +
-+	if (rtc_pdata == NULL) {
++	if (power_pdata == NULL) {
 +		ret = -EINVAL;
 +		goto exit;
 +	}
 +
-+	rtc = devm_kzalloc(&pdev->dev, sizeof(struct da9058_rtc), GFP_KERNEL);
-+	if (!rtc) {
++	dev_info(&pdev->dev, "BAT type=%d monitored by %s ADC conversion",
++					power_pdata->battery_type,
++		power_pdata->use_automatic_adc ? "automatic" : "manual");
++
++	power = devm_kzalloc(&pdev->dev, sizeof(struct da9058_power),
++				GFP_KERNEL);
++	if (!power) {
 +		ret = -ENOMEM;
 +		goto exit;
 +	}
 +
-+	platform_set_drvdata(pdev, rtc);
++	platform_set_drvdata(pdev, power);
 +
-+	rtc->da9058 = da9058;
-+	rtc->pdev = pdev;
-+	ret = da9058_clear_bits(da9058, DA9058_WAITCONT_REG,
-+						DA9058_WAITCONT_RTCCLOCK);
++	power->da9058 = da9058;
++	power->pdev = pdev;
++	power->battery_type = power_pdata->battery_type;
++	power->bat_low_limit = power_pdata->bat_low_limit;
++	power->use_automatic_adc = power_pdata->use_automatic_adc;
++	power->temperature_points =
++		power_pdata->lookup_tables->temperature_points;
++	power->temp_tables = power_pdata->lookup_tables->temp_tables;
++
++	battery = &power->battery;
++
++	battery->name = "da9058-battery";
++	battery->properties = da9058_bat_props;
++	battery->num_properties = ARRAY_SIZE(da9058_bat_props);
++	battery->get_property = da9058_bat_get_property;
++	battery->use_for_apm = 1;
++
++	if (!power_pdata->use_automatic_adc) {
++		unsigned int adc_ctrl;
++		ret = da9058_reg_read(da9058, DA9058_ADCCONT_REG, &adc_ctrl);
++		if (ret)
++			goto err;
++
++		if (!(adc_ctrl & DA9058_ADCCONT_TEMPISRCEN)) {
++			dev_err(&power->pdev->dev,
++				"TEMP ADC must be a resistance\n");
++			goto err;
++		}
++	}
++
++	ret = power_supply_register(&pdev->dev, battery);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Failed to set RTC running: %d\n", ret);
-+		goto err0;
++		dev_err(&power->pdev->dev,
++			"failed to register da9058-power driver: %d\n", ret);
++		goto err;
 +	}
 +
-+	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed No gating RTC: %d\n", ret);
-+		goto err1;
-+	}
++	power->illegalbattery = 0;
 +
-+	device_init_wakeup(&pdev->dev, 1);
-+
-+	rtc->rtc_dev = rtc_device_register("da9058", &pdev->dev,
-+						&da9058_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(rtc->rtc_dev)) {
-+		ret = PTR_ERR(rtc->rtc_dev);
-+		dev_err(&pdev->dev, "failed to register RTC: %d\n", ret);
-+		goto err2;
-+	}
-+
-+	rtc->alarm_irq = DA9058_IRQ_EALRAM;
-+	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
-+							rtc->alarm_irq),
-+				NULL, da9058_rtc_timer_alarm_handler,
-+				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-+				"DA9058 RTC Timer Alarm", rtc);
-+
-+	if (ret != 0) {
-+		dev_err(&pdev->dev,
-+			"Failed to get rtc timer alarm IRQ %d: %d\n",
-+			rtc->alarm_irq, ret);
-+		goto err3;
-+	}
-+
-+	rtc->tick_irq = DA9058_IRQ_ETICK;
-+	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
-+							rtc->tick_irq),
-+				NULL, da9058_rtc_tick_alarm_handler,
-+				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-+				"DA9058 RTC Tick Alarm", rtc);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"Failed to get rtc timer alarm IRQ %d: %d\n",
-+			DA9058_IRQ_ETICK, ret);
-+		goto err4;
-+	}
-+
-+	ret = 0;
 +	goto exit;
 +
-+err4:
-+	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
-+err3:
-+err2:
-+	rtc_device_unregister(rtc->rtc_dev);
-+err1:
-+err0:
++err:
 +	platform_set_drvdata(pdev, NULL);
 +exit:
 +	return ret;
 +}
 +
-+static int __devexit da9058_rtc_remove(struct platform_device *pdev)
++static __devexit int da9058_power_remove(struct platform_device *pdev)
 +{
-+	struct da9058_rtc *rtc = platform_get_drvdata(pdev);
-+	struct da9058 *da9058 = rtc->da9058;
++	struct da9058_power *power = platform_get_drvdata(pdev);
 +
-+	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
-+	free_irq(da9058_to_virt_irq_num(da9058, rtc->tick_irq), rtc);
-+
-+	rtc_device_unregister(rtc->rtc_dev);
-+
++	power_supply_unregister(&power->battery);
 +	return 0;
 +}
 +
-+static struct platform_driver da9058_rtc_driver = {
-+	.probe = da9058_rtc_probe,
-+	.remove = __devexit_p(da9058_rtc_remove),
++static struct platform_driver da9058_power_driver = {
++	.probe = da9058_power_probe,
++	.remove = __devexit_p(da9058_power_remove),
 +	.driver = {
-+		.name = "da9058-rtc",
++		.name = "da9058-power",
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+module_platform_driver(da9058_rtc_driver);
++module_platform_driver(da9058_power_driver);
 +
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC Real Time Clock Driver");
++MODULE_DESCRIPTION("Dialog DA9058 PMIC Battery Driver");
 +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-rtc");
++MODULE_ALIAS("platform:da9058-power");
 -- 
 end-of-patch for NEW DRIVER V2
 
