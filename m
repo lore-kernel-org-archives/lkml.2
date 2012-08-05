@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab2HESEk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 14:04:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45657 "EHLO
+	id S1754882Ab2HESGG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 14:06:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45675 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754796Ab2HESEj (ORCPT
+	by vger.kernel.org with ESMTP id S1752520Ab2HESGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 14:04:39 -0400
-Message-ID: <1344189872.13142.2.camel@deadeye.wl.decadent.org.uk>
-Subject: Linux 3.2.26
+	Sun, 5 Aug 2012 14:06:04 -0400
+Message-ID: <1344189947.13142.3.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Linux 3.2.26
 From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net
-Date: Sun, 05 Aug 2012 19:04:32 +0100
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
+        stable@vger.kernel.org, lwn@lwn.net
+Date: Sun, 05 Aug 2012 19:05:47 +0100
+In-Reply-To: <1344189872.13142.2.camel@deadeye.wl.decadent.org.uk>
+References: <1344189872.13142.2.camel@deadeye.wl.decadent.org.uk>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Xjz3neIFHsMzaJAKVwgc"
+	protocol="application/pgp-signature"; boundary="=-n7DFa/btRWI4s0TiSl91"
 X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
@@ -26,68 +28,284 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-Xjz3neIFHsMzaJAKVwgc
+--=-n7DFa/btRWI4s0TiSl91
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-I'm announcing the release of the 3.2.26 kernel.
+diff --git a/Makefile b/Makefile
+index e13e4e7..fa5acc83 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION =3D 3
+ PATCHLEVEL =3D 2
+-SUBLEVEL =3D 25
++SUBLEVEL =3D 26
+ EXTRAVERSION =3D
+ NAME =3D Saber-toothed Squirrel
+=20
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/proces=
+sor.h
+index bb3ee36..f7c89e2 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -99,7 +99,6 @@ struct cpuinfo_x86 {
+ 	u16			apicid;
+ 	u16			initial_apicid;
+ 	u16			x86_clflush_size;
+-#ifdef CONFIG_SMP
+ 	/* number of cores as seen by the OS: */
+ 	u16			booted_cores;
+ 	/* Physical processor id: */
+@@ -110,7 +109,6 @@ struct cpuinfo_x86 {
+ 	u8			compute_unit_id;
+ 	/* Index into per_cpu list: */
+ 	u16			cpu_index;
+-#endif
+ 	u32			microcode;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+=20
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index bae1efe..be16854 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -154,16 +154,14 @@ int amd_get_subcaches(int cpu)
+ {
+ 	struct pci_dev *link =3D node_to_amd_nb(amd_get_nb_id(cpu))->link;
+ 	unsigned int mask;
+-	int cuid =3D 0;
++	int cuid;
+=20
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+ 		return 0;
+=20
+ 	pci_read_config_dword(link, 0x1d4, &mask);
+=20
+-#ifdef CONFIG_SMP
+ 	cuid =3D cpu_data(cpu).compute_unit_id;
+-#endif
+ 	return (mask >> (4 * cuid)) & 0xf;
+ }
+=20
+@@ -172,7 +170,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 	static unsigned int reset, ban;
+ 	struct amd_northbridge *nb =3D node_to_amd_nb(amd_get_nb_id(cpu));
+ 	unsigned int reg;
+-	int cuid =3D 0;
++	int cuid;
+=20
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING) || mask > 0xf)
+ 		return -EINVAL;
+@@ -190,9 +188,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 		pci_write_config_dword(nb->misc, 0x1b8, reg & ~0x180000);
+ 	}
+=20
+-#ifdef CONFIG_SMP
+ 	cuid =3D cpu_data(cpu).compute_unit_id;
+-#endif
+ 	mask <<=3D 4 * cuid;
+ 	mask |=3D (0xf ^ (1 << cuid)) << 26;
+=20
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 3524e1f..ff8557e 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -148,7 +148,6 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c=
+)
+=20
+ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -192,7 +191,6 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x=
+86 *c)
+=20
+ valid_k7:
+ 	;
+-#endif
+ }
+=20
+ static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index aa003b1..ca93cc7 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -676,9 +676,7 @@ static void __init early_identify_cpu(struct cpuinfo_x8=
+6 *c)
+ 	if (this_cpu->c_early_init)
+ 		this_cpu->c_early_init(c);
+=20
+-#ifdef CONFIG_SMP
+ 	c->cpu_index =3D 0;
+-#endif
+ 	filter_cpuid_features(c, false);
+=20
+ 	setup_smep(c);
+@@ -764,10 +762,7 @@ static void __cpuinit generic_identify(struct cpuinfo_=
+x86 *c)
+ 		c->apicid =3D c->initial_apicid;
+ # endif
+ #endif
+-
+-#ifdef CONFIG_X86_HT
+ 		c->phys_proc_id =3D c->initial_apicid;
+-#endif
+ 	}
+=20
+ 	setup_smep(c);
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 5231312..3e6ff6c 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -181,7 +181,6 @@ static void __cpuinit trap_init_f00f_bug(void)
+=20
+ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -198,7 +197,6 @@ static void __cpuinit intel_smp_check(struct cpuinfo_x8=
+6 *c)
+ 		WARN_ONCE(1, "WARNING: SMP operation may be unreliable"
+ 				    "with B stepping processors.\n");
+ 	}
+-#endif
+ }
+=20
+ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/=
+mce.c
+index b0f1271..3b67877 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -119,9 +119,7 @@ void mce_setup(struct mce *m)
+ 	m->time =3D get_seconds();
+ 	m->cpuvendor =3D boot_cpu_data.x86_vendor;
+ 	m->cpuid =3D cpuid_eax(1);
+-#ifdef CONFIG_SMP
+ 	m->socketid =3D cpu_data(m->extcpu).phys_proc_id;
+-#endif
+ 	m->apicid =3D cpu_data(m->extcpu).initial_apicid;
+ 	rdmsrl(MSR_IA32_MCG_CAP, m->mcgcap);
+ }
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mch=
+eck/mce_amd.c
+index 445a61c..d4444be 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -65,11 +65,9 @@ struct threshold_bank {
+ };
+ static DEFINE_PER_CPU(struct threshold_bank * [NR_BANKS], threshold_banks)=
+;
+=20
+-#ifdef CONFIG_SMP
+ static unsigned char shared_bank[NR_BANKS] =3D {
+ 	0, 0, 0, 0, 1
+ };
+-#endif
+=20
+ static DEFINE_PER_CPU(unsigned char, bank_map);	/* see which banks are on =
+*/
+=20
+@@ -227,10 +225,9 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+=20
+ 			if (!block)
+ 				per_cpu(bank_map, cpu) |=3D (1 << bank);
+-#ifdef CONFIG_SMP
++
+ 			if (shared_bank[bank] && c->cpu_core_id)
+ 				break;
+-#endif
+=20
+ 			memset(&b, 0, sizeof(b));
+ 			b.cpu			=3D cpu;
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 14b2314..8022c66 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -64,12 +64,10 @@ static void show_cpuinfo_misc(struct seq_file *m, struc=
+t cpuinfo_x86 *c)
+ static int show_cpuinfo(struct seq_file *m, void *v)
+ {
+ 	struct cpuinfo_x86 *c =3D v;
+-	unsigned int cpu =3D 0;
++	unsigned int cpu;
+ 	int i;
+=20
+-#ifdef CONFIG_SMP
+ 	cpu =3D c->cpu_index;
+-#endif
+ 	seq_printf(m, "processor\t: %u\n"
+ 		   "vendor_id\t: %s\n"
+ 		   "cpu family\t: %d\n"
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index 18a1293..0db57b5 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -1609,11 +1609,9 @@ static int sbridge_mce_check_error(struct notifier_b=
+lock *nb, unsigned long val,
+ 		mce->cpuvendor, mce->cpuid, mce->time,
+ 		mce->socketid, mce->apicid);
+=20
+-#ifdef CONFIG_SMP
+ 	/* Only handle if it is the right mc controller */
+ 	if (cpu_data(mce->cpu).phys_proc_id !=3D pvt->sbridge_dev->mc)
+ 		return NOTIFY_DONE;
+-#endif
+=20
+ 	smp_rmb();
+ 	if ((pvt->mce_out + 1) % MCE_LOG_LEN =3D=3D pvt->mce_in) {
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 0790c98..19b4412 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -57,16 +57,15 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius=
+");
+ #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
+ #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+=20
+-#ifdef CONFIG_SMP
+ #define TO_PHYS_ID(cpu)		cpu_data(cpu).phys_proc_id
+ #define TO_CORE_ID(cpu)		cpu_data(cpu).cpu_core_id
++#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
++
++#ifdef CONFIG_SMP
+ #define for_each_sibling(i, cpu)	for_each_cpu(i, cpu_sibling_mask(cpu))
+ #else
+-#define TO_PHYS_ID(cpu)		(cpu)
+-#define TO_CORE_ID(cpu)		(cpu)
+ #define for_each_sibling(i, cpu)	for (i =3D 0; false; )
+ #endif
+-#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
+=20
+ /*
+  * Per-Core Temperature Data
 
-This has a single fix for a build regression on x86 non-SMP
-configurations in 3.2.25.  If 3.2.25 works for you, there is no reason
-to upgrade.
-
-The updated 3.2.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
-it linux-3.2.y
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git
-
-Ben.
-
-------------
-
- Makefile                             |    2 +-
- arch/x86/include/asm/processor.h     |    2 --
- arch/x86/kernel/amd_nb.c             |    8 ++------
- arch/x86/kernel/cpu/amd.c            |    2 --
- arch/x86/kernel/cpu/common.c         |    5 -----
- arch/x86/kernel/cpu/intel.c          |    2 --
- arch/x86/kernel/cpu/mcheck/mce.c     |    2 --
- arch/x86/kernel/cpu/mcheck/mce_amd.c |    5 +----
- arch/x86/kernel/cpu/proc.c           |    4 +---
- drivers/edac/sb_edac.c               |    2 --
- drivers/hwmon/coretemp.c             |    7 +++----
- 11 files changed, 8 insertions(+), 33 deletions(-)
-
-Ben Hutchings (1):
-      Linux 3.2.26
-
-Kevin Winchester (1):
-      x86: Simplify code by removing a !SMP #ifdefs from 'struct cpuinfo_x8=
-6'
 
 
-
---=-Xjz3neIFHsMzaJAKVwgc
+--=-n7DFa/btRWI4s0TiSl91
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUB61sOe/yOyVhhEJAQoVZQ/7BBIbMKE4S+4QBfiEe0FboeLLxsLCWYU6
-5IvcjVdHrzZbor5dRS0H8w6I/gGcByEv2dP5GYLbc1TP3TOKIvAdkUDVDwlgl/zG
-nw95fqcmnGLQ/cskGd1yqS6KhALgRl7/gHSunF62w09zGO/Ho5ZSMl3RSUFZC62H
-WCsh45dl8lvBCrh/VkD4qwsF5lzufAZ5HA+HxC6FCXVWIpxG2EpnvpTbMzxCwqoP
-5jcwACTxIVczPDF2BhUrQHj7cBNhuPTcnR+2BLfV+mp3jI6O2qSo5Ah2vU7Jmaek
-9cX+SWvBjxOVbo06kk4BphX+0QzsqSOIIFXK16HmFmaTMPL3VghPI6NZDn086J1p
-XgR/AGxbtteqhJOjJO5EdoZa6ZSek9V72BgRFeTvDtftPQ9F3KR4E8JRpK8fMRby
-x97kO3TXO+QMtIzwYrD/iP+/4TY6KHI364cA24QqhDvWAIXY4wiXCdoJdsBYG/UT
-ubxR0c1Oct93Js1mAyhB3hGOvBYLTI4OSUODuQXtpPHl7HNePFfmOpT+iWlCy8mQ
-Kijhxkr8Q06eoS+DYqg4WLGxPRki17KHrRhMtD1esI7w93QRZRFx1HHMV1DVAYs2
-rKQHqJN96h13066ot95Ql08csgGygyiOoJ0s5XR3HweVJTwxJbAAJ3ZW+5sTcoGy
-pZCa/cm9UpA=
-=KBVJ
+iQIVAwUAUB61++e/yOyVhhEJAQrsnhAArw6aaXKyT8xvQctVOu7zb3grkMD5Q+mq
+gyWkLGjmiOimq0x6+L/UtbcQNs9hx3elVx3zRG7CZC6HdjakNb+ZaOUPzZY0oZ8m
+79UdqaW87BLPTDnbdE/+RjBgxsiAnIx/rFJQhpqpeRyFpTEKzMh/omxPfz5R51z2
+jr2dNhKzFp3XnNH3EVPQJIYXMv/cNFy+HlR388Y/IMTrTumgzPT+oq7c0g0/nNWs
+tkO67ayX3zliZI01ugGyBz/Ckf1n6C+cBf0G0dqzJg6Bpf59/BnGYlzttWpFM7OD
+K4ISCLfZiWFFiJdIB02fPfk4LYiYSozRIMMk8exzfGfESluKY+DJ2EPzXORsDvO2
+maEWNzRY1l9pgpr4gUdeVeeTtHFeC9WNbpp4u/7ylQi546IkTfiU2aMlh716tfty
+Rn0Wnq7sI8nMAttOnEnOaiWV4N/G3IS65ZpjdUgJB4v4rDrElHcCrpRBL+9ni5i+
+w5ZXj6zIz5IOB/mWLYuiRs+QaBplMUHLjgQQsF3lExmhFjetN3jDx0Cd8mbLD9dN
+ErC2dMbhSaR4a61CDGitoslkxwJHoOoNp/WlWe1dFif6kciMvQppdSvlW9KNr4w3
+CbJ9hTXv/arJ/IRszQwj6Co3YjQjAXUlC66N/Hm+fumMeagcEddMki/qZWqt5nd0
+bZrIDt3q8HM=
+=HbQc
 -----END PGP SIGNATURE-----
 
---=-Xjz3neIFHsMzaJAKVwgc--
+--=-n7DFa/btRWI4s0TiSl91--
