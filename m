@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab2HEKC0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 06:02:26 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:39435 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab2HEKCZ (ORCPT
+	id S1754296Ab2HEKGG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 06:06:06 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:35943 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719Ab2HEKGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 06:02:25 -0400
+	Sun, 5 Aug 2012 06:06:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120723173415.5b80b28b@endymion.delvare>
-References: <20120723173415.5b80b28b@endymion.delvare>
-Date: Sun, 5 Aug 2012 12:02:25 +0200
-Message-ID: <CACRpkdauixNKja44nC13Cwr-023uVwZ54Y-9pJTCTOSGQH+6cw@mail.gmail.com>
-Subject: Re: [PATCH] gpio-ich: Share ownership of GPIO groups
+In-Reply-To: <20120801152240.GA16388@sig21.net>
+References: <20120801152240.GA16388@sig21.net>
+Date: Sun, 5 Aug 2012 12:06:03 +0200
+Message-ID: <CACRpkdZryc95WpSXddCrLvZGDsv4x-ndX9XcVzoxaDCT53AFLw@mail.gmail.com>
+Subject: Re: DT GPIO numbering?
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Peter Tyser <ptyser@xes-inc.com>, Aaron Sierra <asierra@xes-inc.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 5:34 PM, Jean Delvare <khali@linux-fr.org> wrote:
+On Wed, Aug 1, 2012 at 5:22 PM, Johannes Stezenbach <js@sig21.net> wrote:
 
-> The ICH chips have their GPIO pins organized in 2 or 3 independent
-> groups of 32 GPIO pins. It can happen that the ACPI BIOS wants to make
-> use of pins in one group, preventing the OS to access these. This does
-> not prevent the OS from accessing the other group(s).
+> I'm currently learning how Linux devicetree support works,
+> here is one question I couldn't find an answer for.
 >
-> This is the case for example on my Asus Z8NA-D6 board. The ACPI BIOS
-> wants to control GPIO 18 (group 1), while I (the OS) need to control
-> GPIO 52 and 53 (group 2) for SMBus multiplexing.
->
-> So instead of checking for ACPI resource conflict on the whole I/O
-> range, check on a per-group basis, and consider it a success if at
-> least one of the groups is available for the OS to use.
->
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> Cc: Peter Tyser <ptyser@xes-inc.com>
-> Cc: Aaron Sierra <asierra@xes-inc.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> ---
-> That's probably not the nicest code you've seen, but everything else I
-> could think of either couldn't work or was looking worse. If anyone can
-> think of a better approach, I'm all ears.
+> I understand that within the devicetree GPIOs are referenced by phandle,
+> thus the numbers are irrelevant.  However, in sysfs the number is
+> what is used to access the GPIO, e.g. for debugging or
+> blinkenlight apps.  How does this fit together?
 
-I'm not very good at Intel and SMBus so cannot really help either.
+I think it simply does not fit together.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Grant & me has been claiming the GPIO sysfs interface is a bit
+crazy from time to time.
 
-I guess you're bringing this through Sam's tree.
+My long-term plan would be to replace it with /dev/gpio/gpioN
+device nodes per-gpiochip and use ioctl etc to control these
+beasts instead. However one does not do that overnight,
+and my life is too busy, and other refactorings also need to
+happen :-/
 
 Yours,
 Linus Walleij
