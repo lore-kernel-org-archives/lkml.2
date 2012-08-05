@@ -1,106 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab2HES4b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 14:56:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46009 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754810Ab2HES4a (ORCPT
+	id S1754895Ab2HETAo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 15:00:44 -0400
+Received: from mail.profihost.ag ([85.158.179.208]:54160 "EHLO
+	mail.profihost.ag" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab2HETAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 14:56:30 -0400
-Message-ID: <1344192968.13142.8.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 33/73] x86, microcode: Sanitize per-cpu microcode reloading
- interface
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Sven Joachim <svenjoac@gmx.de>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Kevin Winchester <kjwinchester@gmail.com>
-Date: Sun, 05 Aug 2012 19:56:08 +0100
-In-Reply-To: <20120805092118.GA16462@aftab.osrc.amd.com>
-References: <20120731044310.013763753@decadent.org.uk>
-	 <20120731044316.585695559@decadent.org.uk> <87y5lw73eh.fsf@turtle.gmx.de>
-	 <20120803094314.GB31792@aftab.osrc.amd.com>
-	 <20120803122727.GA32299@aftab.osrc.amd.com>
-	 <1344094877.4642.183.camel@deadeye.wl.decadent.org.uk>
-	 <20120804160745.GA17188@khazad-dum.debian.net>
-	 <1344101021.4642.187.camel@deadeye.wl.decadent.org.uk>
-	 <20120805092118.GA16462@aftab.osrc.amd.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-GbUbtBU8XPmBHwXQwZQz"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 5 Aug 2012 15:00:42 -0400
+Message-ID: <501EC2E2.8010802@profihost.ag>
+Date: Sun, 05 Aug 2012 21:00:50 +0200
+From: Stefan Priebe <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
+References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com> <501817C9.6090405@profihost.ag> <5018EC7D.9090702@redhat.com> <5018F5BB.9070500@profihost.ag> <5018F7E6.4020909@redhat.com> <5018F9F6.70307@profihost.ag> <5018FC9B.8040808@redhat.com> <501E4615.7060801@profihost.ag> <501E4AFD.3020806@redhat.com> <501E96BB.5060702@profihost.ag>
+In-Reply-To: <501E96BB.5060702@profihost.ag>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 05.08.2012 17:52, schrieb Stefan Priebe:
+> Am 05.08.2012 12:29, schrieb Avi Kivity:
+>> On 08/05/2012 01:08 PM, Stefan Priebe wrote:
+>>> Am 01.08.2012 11:53, schrieb Avi Kivity:
+>>>> On 08/01/2012 12:42 PM, Stefan Priebe - Profihost AG wrote:
+>>>>> Am 01.08.2012 11:33, schrieb Avi Kivity:
+>>>>>>> So here are 3 backtraces from booting the rescue system:
+>>>>>>> http://pastebin.com/raw.php?i=xCy2pEcP
+>>>>>>>
+>>>>>>> To me they all look the same.
+>>>>>>
+>>>>>> They are.  What version of qemu are you using?
+>>>>>
+>>>>> latest stable-1.1 branch (1.1.1) - which works fine with latest RHEL6
+>>>>> kernel.
+>>>>
+>>>> This could be due to a kernel bug, or due to a different code path
+>>>> taken
+>>>> in qemu because of differing features exposed to kvm.
+>>>>
+>>>> Please try qemu-kvm.git master and report.
 
---=-GbUbtBU8XPmBHwXQwZQz
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+OK got it running it's just awfully slow and i was too impatient. It 
+crashes at the part as 1.1.1 stable.
 
-On Sun, 2012-08-05 at 11:21 +0200, Borislav Petkov wrote:
-> On Sat, Aug 04, 2012 at 06:23:41PM +0100, Ben Hutchings wrote:
->=20
-> [ =E2=80=A6 ]
->=20
-> > > > Thanks everyone for working this out.
-> > > >
-> > > > If you combine multiple mainline commits like this, the new commit
-> > > > message should refer to all of them. I've fixed that up this time.
->=20
-> Thanks.
->=20
-> > > Ben, the backport is also needed on 3.0 and 3.4, do you have your pat=
-ch
-> > > queue available for download/pull somewhere?
-> >=20
-> > This is in v3.2.26, tagged in git
-> > <git://git.kernel.org/pub/scm/linux/kernel/git/bwh/linux-3.2.y.git>.
-> > I'll wait for Greg to generate tarballs etc. before sending the
-> > announcement.
->=20
-> Ok, guys.
->=20
-> Pls let me know if I should send the backported patch for 3.0 and 3.4 to
-> Greg or you are doing this.
-
-Please do that.  They will both need commit
-e826abd523913f63eb03b59746ffb16153c53dc4 ('x86, microcode:
-microcode_core.c simple_strtoul cleanup') and 3.0 needs the !SMP fix.
-
-Ben.
-
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
-
---=-GbUbtBU8XPmBHwXQwZQz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUB7ByOe/yOyVhhEJAQpCHg/+Kf5TdiJjUZSi+Jw1zeg7iWxT7u2ROUY8
-Gpkgmsu0GfckAiO8/y07xyWZywFt9iq+z4phgHz4LAtGqY1Fj4MfWq4vjFL9dkjF
-MlVrSWGKhfxqeq1KNW1l3jvUbwMnbA2FOWm/tBQUAAZLp3YHPLQQHMvEzXh/nsZK
-4BazU7EBDWNhGHVM3VtaFBfqpf5fWmVNvPSVAdF/nratyBk+sJfRFM8ELc5wCIVz
-RoOzHSBpOisbexvcA0PgMq79r3prHMdFPnRkV/6HgO0O6JfqrIcUftRQW7cOndJN
-2cJorw23IGqIKkjRK+BVkX7WZWzYBGfYilW+iZSPF2QtE7uvssam7aFRechJ4RAF
-QTMh+NggFBp5CNLEB5S/jOilGOF8Vgym3NmG10h7KyFaWwzsQk2UWhTHQY0E+YYa
-xGERNnut3j7Rti7NqjMjDBqCV8q7m2yv0S1JZYXJTfZYgFZ0PS0UJuj+2/q2Qb9J
-zqkvbVl41V8DkDmHPQoBw7QZxS4A3Xs0exV4elgKWyWZoW3GWVvGPU3BJy4/iHsC
-tDR/YbVSBUnpQBzgJoERmUBzK4TM3aGPaeN0ZqB9xe1sU5/uUMu5w8d+POF8mHFN
-fwNT3hTCzUhdmY4NuwHIsYtDhuQO6gvkLc10A6BEXbahVoW9nyVVvKMe38wN9XPJ
-zLVbHQmSN6o=
-=d0pk
------END PGP SIGNATURE-----
-
---=-GbUbtBU8XPmBHwXQwZQz--
+Stefan
