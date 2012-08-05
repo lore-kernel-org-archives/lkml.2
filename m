@@ -1,85 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab2HEJyb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 05:54:31 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:9388 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754197Ab2HEJwo (ORCPT
+	id S1754282Ab2HEJ7z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 05:59:55 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:46871 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719Ab2HEJ7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 05:52:44 -0400
-X-IronPort-AV: E=Sophos;i="4.77,715,1336341600"; 
-   d="scan'208";a="152465603"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: kernel-janitors@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Julia Lawall <julia@diku.dk>
-Subject: [PATCH 1/6] drivers/edac/i7core_edac.c: fix error return code
-Date: Sun,  5 Aug 2012 11:52:31 +0200
-Message-Id: <1344160356-387-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr>
+	Sun, 5 Aug 2012 05:59:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342817939-7118-1-git-send-email-seanpaul@chromium.org>
+References: <1342817939-7118-1-git-send-email-seanpaul@chromium.org>
+Date: Sun, 5 Aug 2012 11:59:53 +0200
+Message-ID: <CACRpkdaBTfQ965H+zR_tQmGhBdPz-g=uW259cj4CsGCxq7RCvQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: samsung: Fix off-by-one bug in gpio addresses
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sean Paul <seanpaul@chromium.org>
+Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org, olofj@chromium.org,
+        dianders@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Fri, Jul 20, 2012 at 10:58 PM, Sean Paul <seanpaul@chromium.org> wrote:
 
-Convert a 0 error return code to a negative one, as returned elsewhere in the
-function.
+> Move gpc4 to the end of the automatically processed gpio controllers so
+> we don't taint the automatic offset calculation.
+>
+> This bug caused all controllers coming after gpc4 to map to the
+> incorrect address. The result is <&gpd1 0 0 0 0> would actually map to
+> GPIO 0 in gpd0.
+>
+> Signed-off-by: Sean Paul <seanpaul@chromium.org>
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+Patch applied with some Acks and Reviewed-by's.
 
-// <smpl>
-@@
-identifier ret;
-expression e,e1,e2,e3,e4,x;
-@@
-
-(
-if (\(ret != 0\|ret < 0\) || ...) { ... return ...; }
-|
-ret = 0
-)
-... when != ret = e1
-*x = \(kmalloc\|kzalloc\|kcalloc\|devm_kzalloc\|ioremap\|ioremap_nocache\|devm_ioremap\|devm_ioremap_nocache\)(...);
-... when != x = e2
-    when != ret = e3
-*if (x == NULL || ...)
-{
-  ... when != ret = e4
-*  return ret;
-}
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/edac/i7core_edac.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 3672101..64dcc98 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1177,7 +1177,7 @@ static int i7core_create_sysfs_devices(struct mem_ctl_info *mci)
- 
- 	pvt->addrmatch_dev = kzalloc(sizeof(*pvt->addrmatch_dev), GFP_KERNEL);
- 	if (!pvt->addrmatch_dev)
--		return rc;
-+		return -ENOMEM;
- 
- 	pvt->addrmatch_dev->type = &addrmatch_type;
- 	pvt->addrmatch_dev->bus = mci->dev.bus;
-@@ -1198,7 +1198,7 @@ static int i7core_create_sysfs_devices(struct mem_ctl_info *mci)
- 		if (!pvt->chancounts_dev) {
- 			put_device(pvt->addrmatch_dev);
- 			device_del(pvt->addrmatch_dev);
--			return rc;
-+			return -ENOMEM;
- 		}
- 
- 		pvt->chancounts_dev->type = &all_channel_counts_type;
-
+Thanks,
+Linus Walleij
