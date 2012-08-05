@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab2HEVF7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 17:05:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42185 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755055Ab2HEVFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755087Ab2HEVF5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 17:05:57 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:42744 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755054Ab2HEVFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 Aug 2012 17:05:52 -0400
-Date: Sun, 5 Aug 2012 23:06:11 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm: ignore disconnected <-> unknown status changes
-Message-ID: <20120805210611.GF12232@phenom.ffwll.local>
-Mail-Followup-To: Alex Deucher <alexdeucher@gmail.com>,
-	Knut Petersen <Knut_Petersen@t-online.de>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <501A2A6F.4030502@t-online.de>
- <CADnq5_OVmCds-xaPB7VsOhLd-4QSVwq9nHHarvmy9mQ8T_sNpg@mail.gmail.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Subject: Re: [PATCH 2/6] drivers/cpufreq/pcc-cpufreq.c: fix error return code
+Date: Sun, 5 Aug 2012 23:11:44 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: kernel-janitors@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Julia Lawall <julia@diku.dk>
+References: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr> <1344160356-387-3-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1344160356-387-3-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADnq5_OVmCds-xaPB7VsOhLd-4QSVwq9nHHarvmy9mQ8T_sNpg@mail.gmail.com>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208052311.44825.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 03, 2012 at 09:32:44AM -0400, Alex Deucher wrote:
-> On Thu, Aug 2, 2012 at 3:21 AM, Knut Petersen <Knut_Petersen@t-online.de> wrote:
-> > On an AOpen i915GMm-hfs the hotplug events generated
-> > by transitions between connector_status_unknown and
-> > connector_status_disconnected cause screen distortions.
-> >
-> > The attached patch cures the problem by disabling the
-> > generation of hotplug events in those cases. That should
-> > be safe for everybody as the only relevant changes are
-> > those from / to connector_status_connected.
+On Sunday, August 05, 2012, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Seems reasonable to me.  We should just drop unknown.
+> Convert a 0 error return code to a negative one, as returned elsewhere in the
+> function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> identifier ret;
+> expression e,e1,e2,e3,e4,x;
+> @@
+> 
+> (
+> if (\(ret != 0\|ret < 0\) || ...) { ... return ...; }
+> |
+> ret = 0
+> )
+> ... when != ret = e1
+> *x = \(kmalloc\|kzalloc\|kcalloc\|devm_kzalloc\|ioremap\|ioremap_nocache\|devm_ioremap\|devm_ioremap_nocache\)(...);
+> ... when != x = e2
+>     when != ret = e3
+> *if (x == NULL || ...)
+> {
+>   ... when != ret = e4
+> *  return ret;
+> }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-We (ab)use that in i915 to avoid some (more costly) load-detection tricks
-in the hotplug code (but only on rather ancient hw), instead returning
-unknown. When userspace then inquires the connector status, we flip-flop
-back to connected. The issue is that we need to avoid these, for the
-current kms locking would stall the cursor for a while, which is not
-acceptable to do every 10s. Until the kms locking is fixed, we hence can't
-drop the unknown state.
+Applied to the linux-next branch of the linux-pm.git tree.  I'm going to
+push it as a fix for v3.6.
 
-> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Thanks,
+Rafael
+
+
+> ---
+>  drivers/cpufreq/pcc-cpufreq.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
+> index cdc02ac..503996a 100644
+> --- a/drivers/cpufreq/pcc-cpufreq.c
+> +++ b/drivers/cpufreq/pcc-cpufreq.c
+> @@ -454,6 +454,7 @@ static int __init pcc_cpufreq_probe(void)
+>  					mem_resource->address_length);
+>  	if (pcch_virt_addr == NULL) {
+>  		pr_debug("probe: could not map shared mem region\n");
+> +		ret = -ENOMEM;
+>  		goto out_free;
+>  	}
+>  	pcch_hdr = pcch_virt_addr;
+> 
+> 
+> 
+
