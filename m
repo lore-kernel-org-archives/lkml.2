@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab2HEUrr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 16:47:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1311 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754948Ab2HEUrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 16:47:46 -0400
-Message-ID: <501EDBCD.6030208@redhat.com>
-Date: Sun, 05 Aug 2012 16:47:09 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755030Ab2HEVA0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 17:00:26 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58089 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977Ab2HEVAZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 17:00:25 -0400
+Date: Sun, 5 Aug 2012 23:00:44 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jesse Barnes <jesse.barnes@intel.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915: Fix mem leak in intel_sdvo_write_cmd()
+Message-ID: <20120805210044.GE12232@phenom.ffwll.local>
+Mail-Followup-To: Jesper Juhl <jj@chaosbits.net>,
+	David Airlie <airlied@linux.ie>,
+	Jesse Barnes <jesse.barnes@intel.com>, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org
+References: <alpine.LNX.2.00.1207312228270.7100@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: peterz@infradead.org, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH v2 1/9] rbtree test: fix sparse warning about 64-bit constant
-References: <1343946858-8170-1-git-send-email-walken@google.com> <1343946858-8170-2-git-send-email-walken@google.com>
-In-Reply-To: <1343946858-8170-2-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1207312228270.7100@swampdragon.chaosbits.net>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 06:34 PM, Michel Lespinasse wrote:
-> Just a small fix to make sparse happy.
->
-> Signed-off-by: Michel Lespinasse<walken@google.com>
-> Reported-by: Fengguang Wu<wfg@linux.intel.com>
+On Tue, Jul 31, 2012 at 10:31:15PM +0200, Jesper Juhl wrote:
+> If the allocation of 'buf' succeeds but the allocation of 'msgs' fails
+> we'll return false and leak 'buf' when it goes out of scope.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
+I've already merged a similar patch from Alan Cox for -fixes, should land
+in 3.6 soonish.
+-Daniel
 -- 
-All rights reversed
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
