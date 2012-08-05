@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab2HEQdI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 12:33:08 -0400
+	id S1754768Ab2HEQdS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 12:33:18 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:45546 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754476Ab2HEQdD (ORCPT
+	with ESMTP id S1754476Ab2HEQdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 12:33:03 -0400
+	Sun, 5 Aug 2012 12:33:13 -0400
 From: Haojian Zhuang <haojian.zhuang@gmail.com>
 To: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
         rpurdie@rpsys.net, bryan.wu@canonical.com,
         linux-kernel@vger.kernel.org
 Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH 2/5] mfd: use IORESOUCE_MEM in 88pm860x leds driver
-Date: Mon,  6 Aug 2012 00:32:50 +0800
-Message-Id: <1344184373-9670-3-git-send-email-haojian.zhuang@gmail.com>
+Subject: [PATCH 3/5] mfd: use IORESOURCE_MEM in 88pm860x regulator
+Date: Mon,  6 Aug 2012 00:32:51 +0800
+Message-Id: <1344184373-9670-4-git-send-email-haojian.zhuang@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
 References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
@@ -22,454 +22,376 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid to use IORESOURCE_IO in 88pm860x leds drivers. Use
-IORESOURCE_MEM instead.
+Avoid to use IORESOURCE_IO in 88pm860x regulator driver. Use
+IORESOURCE_IO instead.
 
 Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 ---
- drivers/leds/leds-88pm860x.c |  176 +++++++++++++++++-------------------------
- drivers/mfd/88pm860x-core.c  |  114 +++++++++++++++++----------
- include/linux/mfd/88pm860x.h |   12 ---
- 3 files changed, 143 insertions(+), 159 deletions(-)
+ drivers/mfd/88pm860x-core.c  |  265 +++++++++++++++++++++++++++++++-----------
+ drivers/regulator/88pm8607.c |    7 +-
+ include/linux/mfd/88pm860x.h |   18 ++-
+ 3 files changed, 218 insertions(+), 72 deletions(-)
 
-diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
-index 61897cf..701d006 100644
---- a/drivers/leds/leds-88pm860x.c
-+++ b/drivers/leds/leds-88pm860x.c
-@@ -20,18 +20,12 @@
- #include <linux/mfd/88pm860x.h>
- #include <linux/module.h>
- 
--#define LED_PWM_SHIFT		(3)
- #define LED_PWM_MASK		(0x1F)
- #define LED_CURRENT_MASK	(0x07 << 5)
- 
--#define LED_BLINK_ON_MASK	(0x07)
- #define LED_BLINK_MASK		(0x7F)
- 
--#define LED_BLINK_ON(x)		((x & 0x7) * 66 + 66)
--#define LED_BLINK_ON_MIN	LED_BLINK_ON(0)
--#define LED_BLINK_ON_MAX	LED_BLINK_ON(0x7)
- #define LED_ON_CONTINUOUS	(0x0F << 3)
--#define LED_TO_ON(x)		((x - 66) / 66)
- 
- #define LED1_BLINK_EN		(1 << 1)
- #define LED2_BLINK_EN		(1 << 2)
-@@ -49,85 +43,25 @@ struct pm860x_led {
- 	unsigned char brightness;
- 	unsigned char current_brightness;
- 
--	int blink_data;
--	int blink_time;
--	int blink_on;
--	int blink_off;
-+	int reg_control;
-+	int reg_blink;
-+	int blink_mask;
- };
- 
--/* return offset of color register */
--static inline int __led_off(int port)
--{
--	int ret = -EINVAL;
--
--	switch (port) {
--	case PM8606_LED1_RED:
--	case PM8606_LED1_GREEN:
--	case PM8606_LED1_BLUE:
--		ret = port - PM8606_LED1_RED + PM8606_RGB1B;
--		break;
--	case PM8606_LED2_RED:
--	case PM8606_LED2_GREEN:
--	case PM8606_LED2_BLUE:
--		ret = port - PM8606_LED2_RED + PM8606_RGB2B;
--		break;
--	}
--	return ret;
--}
--
--/* return offset of blink register */
--static inline int __blink_off(int port)
--{
--	int ret = -EINVAL;
--
--	switch (port) {
--	case PM8606_LED1_RED:
--	case PM8606_LED1_GREEN:
--	case PM8606_LED1_BLUE:
--		ret = PM8606_RGB1A;
--		break;
--	case PM8606_LED2_RED:
--	case PM8606_LED2_GREEN:
--	case PM8606_LED2_BLUE:
--		ret = PM8606_RGB2A;
--		break;
--	}
--	return ret;
--}
--
--static inline int __blink_ctl_mask(int port)
--{
--	int ret = -EINVAL;
--
--	switch (port) {
--	case PM8606_LED1_RED:
--	case PM8606_LED1_GREEN:
--	case PM8606_LED1_BLUE:
--		ret = LED1_BLINK_EN;
--		break;
--	case PM8606_LED2_RED:
--	case PM8606_LED2_GREEN:
--	case PM8606_LED2_BLUE:
--		ret = LED2_BLINK_EN;
--		break;
--	}
--	return ret;
--}
--
- static int led_power_set(struct pm860x_chip *chip, int port, int on)
- {
- 	int ret = -EINVAL;
- 
- 	switch (port) {
--	case PM8606_LED1_RED:
--	case PM8606_LED1_GREEN:
--	case PM8606_LED1_BLUE:
-+	case 0:
-+	case 1:
-+	case 2:
- 		ret = on ? pm8606_osc_enable(chip, RGB1_ENABLE) :
- 			pm8606_osc_disable(chip, RGB1_ENABLE);
- 		break;
--	case PM8606_LED2_RED:
--	case PM8606_LED2_GREEN:
--	case PM8606_LED2_BLUE:
-+	case 3:
-+	case 4:
-+	case 5:
- 		ret = on ? pm8606_osc_enable(chip, RGB2_ENABLE) :
- 			pm8606_osc_disable(chip, RGB2_ENABLE);
- 		break;
-@@ -141,7 +75,7 @@ static void pm860x_led_work(struct work_struct *work)
- 	struct pm860x_led *led;
- 	struct pm860x_chip *chip;
- 	unsigned char buf[3];
--	int mask, ret;
-+	int ret;
- 
- 	led = container_of(work, struct pm860x_led, work);
- 	chip = led->chip;
-@@ -149,34 +83,34 @@ static void pm860x_led_work(struct work_struct *work)
- 	if ((led->current_brightness == 0) && led->brightness) {
- 		led_power_set(chip, led->port, 1);
- 		if (led->iset) {
--			pm860x_set_bits(led->i2c, __led_off(led->port),
-+			pm860x_set_bits(led->i2c, led->reg_control,
- 					LED_CURRENT_MASK, led->iset);
- 		}
--		pm860x_set_bits(led->i2c, __blink_off(led->port),
-+		pm860x_set_bits(led->i2c, led->reg_blink,
- 				LED_BLINK_MASK, LED_ON_CONTINUOUS);
--		mask = __blink_ctl_mask(led->port);
--		pm860x_set_bits(led->i2c, PM8606_WLED3B, mask, mask);
-+		pm860x_set_bits(led->i2c, PM8606_WLED3B, led->blink_mask,
-+				led->blink_mask);
- 	}
--	pm860x_set_bits(led->i2c, __led_off(led->port), LED_PWM_MASK,
-+	pm860x_set_bits(led->i2c, led->reg_control, LED_PWM_MASK,
- 			led->brightness);
- 
- 	if (led->brightness == 0) {
--		pm860x_bulk_read(led->i2c, __led_off(led->port), 3, buf);
-+		pm860x_bulk_read(led->i2c, led->reg_control, 3, buf);
- 		ret = buf[0] & LED_PWM_MASK;
- 		ret |= buf[1] & LED_PWM_MASK;
- 		ret |= buf[2] & LED_PWM_MASK;
- 		if (ret == 0) {
- 			/* unset current since no led is lighting */
--			pm860x_set_bits(led->i2c, __led_off(led->port),
-+			pm860x_set_bits(led->i2c, led->reg_control,
- 					LED_CURRENT_MASK, 0);
--			mask = __blink_ctl_mask(led->port);
--			pm860x_set_bits(led->i2c, PM8606_WLED3B, mask, 0);
-+			pm860x_set_bits(led->i2c, PM8606_WLED3B,
-+					led->blink_mask, 0);
- 			led_power_set(chip, led->port, 0);
- 		}
- 	}
- 	led->current_brightness = led->brightness;
- 	dev_dbg(chip->dev, "Update LED. (reg:%d, brightness:%d)\n",
--		__led_off(led->port), led->brightness);
-+		led->reg_control, led->brightness);
- 	mutex_unlock(&led->lock);
- }
- 
-@@ -192,36 +126,61 @@ static void pm860x_led_set(struct led_classdev *cdev,
- static int pm860x_led_probe(struct platform_device *pdev)
- {
- 	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
--	struct pm860x_led_pdata *pdata;
-+	struct pm860x_led_pdata *pdata = pdev->dev.platform_data;
- 	struct pm860x_led *data;
- 	struct resource *res;
--	int ret;
--
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
--	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource!\n");
--		return -EINVAL;
--	}
--
--	pdata = pdev->dev.platform_data;
--	if (pdata == NULL) {
--		dev_err(&pdev->dev, "No platform data!\n");
--		return -EINVAL;
--	}
-+	int ret = 0;
- 
- 	data = devm_kzalloc(&pdev->dev, sizeof(struct pm860x_led), GFP_KERNEL);
- 	if (data == NULL)
- 		return -ENOMEM;
--	strncpy(data->name, res->name, MFD_NAME_SIZE - 1);
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "control");
-+	if (!res) {
-+		dev_err(&pdev->dev, "No memory resource for control\n");
-+		ret = -ENXIO;
-+		goto out;
-+	}
-+	data->reg_control = res->start;
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "blink");
-+	if (!res) {
-+		dev_err(&pdev->dev, "No memory resource for blink\n");
-+		ret = -ENXIO;
-+		goto out;
-+	}
-+	data->reg_blink = res->start;
-+	memset(data->name, 0, MFD_NAME_SIZE);
-+	switch (pdev->id) {
-+	case 0:
-+		data->blink_mask = LED1_BLINK_EN;
-+		sprintf(data->name, "led0-red");
-+		break;
-+	case 1:
-+		data->blink_mask = LED1_BLINK_EN;
-+		sprintf(data->name, "led0-green");
-+		break;
-+	case 2:
-+		data->blink_mask = LED1_BLINK_EN;
-+		sprintf(data->name, "led0-blue");
-+		break;
-+	case 3:
-+		data->blink_mask = LED2_BLINK_EN;
-+		sprintf(data->name, "led1-red");
-+		break;
-+	case 4:
-+		data->blink_mask = LED2_BLINK_EN;
-+		sprintf(data->name, "led1-green");
-+		break;
-+	case 5:
-+		data->blink_mask = LED2_BLINK_EN;
-+		sprintf(data->name, "led1-blue");
-+		break;
-+	}
- 	dev_set_drvdata(&pdev->dev, data);
- 	data->chip = chip;
- 	data->i2c = (chip->id == CHIP_PM8606) ? chip->client : chip->companion;
--	data->iset = pdata->iset;
--	data->port = pdata->flags;
--	if (data->port < 0) {
--		dev_err(&pdev->dev, "check device failed\n");
--		return -EINVAL;
--	}
-+	data->port = pdev->id;
-+	if (pdata && pdata->iset)
-+		data->iset = pdata->iset;
- 
- 	data->current_brightness = 0;
- 	data->cdev.name = data->name;
-@@ -236,6 +195,9 @@ static int pm860x_led_probe(struct platform_device *pdev)
- 	}
- 	pm860x_led_set(&data->cdev, 0);
- 	return 0;
-+out:
-+	devm_kfree(&pdev->dev, data);
-+	return ret;
- }
- 
- static int pm860x_led_remove(struct platform_device *pdev)
 diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index ee2445c..2934ea3 100644
+index 2934ea3..bde9231 100644
 --- a/drivers/mfd/88pm860x-core.c
 +++ b/drivers/mfd/88pm860x-core.c
-@@ -37,13 +37,35 @@ static struct resource bk2_resources[] __devinitdata = {
- 	{5, 5, "current",    IORESOURCE_MEM, },
+@@ -68,25 +68,53 @@ static struct resource led5_resources[] __devinitdata = {
+ 	{0x8, 0x8, "blink",   IORESOURCE_MEM, },
  };
  
--static struct resource led_resources[] __devinitdata = {
--	{PM8606_LED1_RED,   PM8606_LED1_RED,   "led0-red",   IORESOURCE_IO,},
--	{PM8606_LED1_GREEN, PM8606_LED1_GREEN, "led0-green", IORESOURCE_IO,},
--	{PM8606_LED1_BLUE,  PM8606_LED1_BLUE,  "led0-blue",  IORESOURCE_IO,},
--	{PM8606_LED2_RED,   PM8606_LED2_RED,   "led1-red",   IORESOURCE_IO,},
--	{PM8606_LED2_GREEN, PM8606_LED2_GREEN, "led1-green", IORESOURCE_IO,},
--	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,},
-+static struct resource led0_resources[] __devinitdata = {
-+	/* RGB1 Red LED */
-+	{0xd, 0xd, "control", IORESOURCE_MEM, },
-+	{0xc, 0xc, "blink",   IORESOURCE_MEM, },
+-static struct resource regulator_resources[] __devinitdata = {
+-	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_IO,},
+-	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_IO,},
+-	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_IO,},
+-	{PM8607_ID_LDO1,  PM8607_ID_LDO1,  "ldo-01", IORESOURCE_IO,},
+-	{PM8607_ID_LDO2,  PM8607_ID_LDO2,  "ldo-02", IORESOURCE_IO,},
+-	{PM8607_ID_LDO3,  PM8607_ID_LDO3,  "ldo-03", IORESOURCE_IO,},
+-	{PM8607_ID_LDO4,  PM8607_ID_LDO4,  "ldo-04", IORESOURCE_IO,},
+-	{PM8607_ID_LDO5,  PM8607_ID_LDO5,  "ldo-05", IORESOURCE_IO,},
+-	{PM8607_ID_LDO6,  PM8607_ID_LDO6,  "ldo-06", IORESOURCE_IO,},
+-	{PM8607_ID_LDO7,  PM8607_ID_LDO7,  "ldo-07", IORESOURCE_IO,},
+-	{PM8607_ID_LDO8,  PM8607_ID_LDO8,  "ldo-08", IORESOURCE_IO,},
+-	{PM8607_ID_LDO9,  PM8607_ID_LDO9,  "ldo-09", IORESOURCE_IO,},
+-	{PM8607_ID_LDO10, PM8607_ID_LDO10, "ldo-10", IORESOURCE_IO,},
+-	{PM8607_ID_LDO11, PM8607_ID_LDO11, "ldo-11", IORESOURCE_IO,},
+-	{PM8607_ID_LDO12, PM8607_ID_LDO12, "ldo-12", IORESOURCE_IO,},
+-	{PM8607_ID_LDO13, PM8607_ID_LDO13, "ldo-13", IORESOURCE_IO,},
+-	{PM8607_ID_LDO14, PM8607_ID_LDO14, "ldo-14", IORESOURCE_IO,},
+-	{PM8607_ID_LDO15, PM8607_ID_LDO15, "ldo-15", IORESOURCE_IO,},
++static struct resource buck1_resources[] __devinitdata = {
++	{0x24, 0x24, "buck set", IORESOURCE_MEM, },
 +};
-+static struct resource led1_resources[] __devinitdata = {
-+	/* RGB1 Green LED */
-+	{0xe, 0xe, "control", IORESOURCE_MEM, },
-+	{0xc, 0xc, "blink",   IORESOURCE_MEM, },
++static struct resource buck2_resources[] __devinitdata = {
++	{0x25, 0x25, "buck set", IORESOURCE_MEM, },
 +};
-+static struct resource led2_resources[] __devinitdata = {
-+	/* RGB1 Blue LED */
-+	{0xf, 0xf, "control", IORESOURCE_MEM, },
-+	{0xc, 0xc, "blink",   IORESOURCE_MEM, },
++static struct resource buck3_resources[] __devinitdata = {
++	{0x26, 0x26, "buck set", IORESOURCE_MEM, },
 +};
-+static struct resource led3_resources[] __devinitdata = {
-+	/* RGB2 Red LED */
-+	{0x9, 0x9, "control", IORESOURCE_MEM, },
-+	{0x8, 0x8, "blink",   IORESOURCE_MEM, },
++static struct resource ldo1_resources[] __devinitdata = {
++	{0x10, 0x10, "ldo set", IORESOURCE_MEM, },
 +};
-+static struct resource led4_resources[] __devinitdata = {
-+	/* RGB2 Green LED */
-+	{0xa, 0xa, "control", IORESOURCE_MEM, },
-+	{0x8, 0x8, "blink",   IORESOURCE_MEM, },
++static struct resource ldo2_resources[] __devinitdata = {
++	{0x11, 0x11, "ldo set", IORESOURCE_MEM, },
 +};
-+static struct resource led5_resources[] __devinitdata = {
-+	/* RGB2 Blue LED */
-+	{0xb, 0xb, "control", IORESOURCE_MEM, },
-+	{0x8, 0x8, "blink",   IORESOURCE_MEM, },
++static struct resource ldo3_resources[] __devinitdata = {
++	{0x12, 0x12, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo4_resources[] __devinitdata = {
++	{0x13, 0x13, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo5_resources[] __devinitdata = {
++	{0x14, 0x14, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo6_resources[] __devinitdata = {
++	{0x15, 0x15, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo7_resources[] __devinitdata = {
++	{0x16, 0x16, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo8_resources[] __devinitdata = {
++	{0x17, 0x17, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo9_resources[] __devinitdata = {
++	{0x18, 0x18, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo10_resources[] __devinitdata = {
++	{0x19, 0x19, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo12_resources[] __devinitdata = {
++	{0x1a, 0x1a, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo_vibrator_resources[] __devinitdata = {
++	{0x28, 0x28, "ldo set", IORESOURCE_MEM, },
++};
++static struct resource ldo14_resources[] __devinitdata = {
++	{0x1b, 0x1b, "ldo set", IORESOURCE_MEM, },
  };
  
- static struct resource regulator_resources[] __devinitdata = {
-@@ -128,12 +150,37 @@ static struct mfd_cell bk_devs[] = {
+ static struct resource touch_resources[] __devinitdata = {
+@@ -183,25 +211,88 @@ static struct mfd_cell led_devs[] = {
+ 	},
  };
  
- static struct mfd_cell led_devs[] = {
--	{"88pm860x-led", 0,},
--	{"88pm860x-led", 1,},
--	{"88pm860x-led", 2,},
--	{"88pm860x-led", 3,},
--	{"88pm860x-led", 4,},
--	{"88pm860x-led", 5,},
+-static struct mfd_cell regulator_devs[] = {
+-	{"88pm860x-regulator", 0,},
+-	{"88pm860x-regulator", 1,},
+-	{"88pm860x-regulator", 2,},
+-	{"88pm860x-regulator", 3,},
+-	{"88pm860x-regulator", 4,},
+-	{"88pm860x-regulator", 5,},
+-	{"88pm860x-regulator", 6,},
+-	{"88pm860x-regulator", 7,},
+-	{"88pm860x-regulator", 8,},
+-	{"88pm860x-regulator", 9,},
+-	{"88pm860x-regulator", 10,},
+-	{"88pm860x-regulator", 11,},
+-	{"88pm860x-regulator", 12,},
+-	{"88pm860x-regulator", 13,},
+-	{"88pm860x-regulator", 14,},
+-	{"88pm860x-regulator", 15,},
+-	{"88pm860x-regulator", 16,},
+-	{"88pm860x-regulator", 17,},
++static struct mfd_cell reg_devs[] = {
 +	{
-+		.name = "88pm860x-led",
++		.name = "88pm860x-regulator",
 +		.id = 0,
-+		.num_resources = ARRAY_SIZE(led0_resources),
-+		.resources = led0_resources,
++		.num_resources = ARRAY_SIZE(buck1_resources),
++		.resources = buck1_resources,
 +	}, {
-+		.name = "88pm860x-led",
++		.name = "88pm860x-regulator",
 +		.id = 1,
-+		.num_resources = ARRAY_SIZE(led1_resources),
-+		.resources = led1_resources,
++		.num_resources = ARRAY_SIZE(buck2_resources),
++		.resources = buck2_resources,
 +	}, {
-+		.name = "88pm860x-led",
++		.name = "88pm860x-regulator",
 +		.id = 2,
-+		.num_resources = ARRAY_SIZE(led2_resources),
-+		.resources = led2_resources,
++		.num_resources = ARRAY_SIZE(buck3_resources),
++		.resources = buck3_resources,
 +	}, {
-+		.name = "88pm860x-led",
++		.name = "88pm860x-regulator",
 +		.id = 3,
-+		.num_resources = ARRAY_SIZE(led3_resources),
-+		.resources = led3_resources,
++		.num_resources = ARRAY_SIZE(ldo1_resources),
++		.resources = ldo1_resources,
 +	}, {
-+		.name = "88pm860x-led",
++		.name = "88pm860x-regulator",
 +		.id = 4,
-+		.num_resources = ARRAY_SIZE(led4_resources),
-+		.resources = led4_resources,
++		.num_resources = ARRAY_SIZE(ldo2_resources),
++		.resources = ldo2_resources,
 +	}, {
-+		.name = "88pm860x-led",
++		.name = "88pm860x-regulator",
 +		.id = 5,
-+		.num_resources = ARRAY_SIZE(led5_resources),
-+		.resources = led5_resources,
++		.num_resources = ARRAY_SIZE(ldo3_resources),
++		.resources = ldo3_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 6,
++		.num_resources = ARRAY_SIZE(ldo4_resources),
++		.resources = ldo4_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 7,
++		.num_resources = ARRAY_SIZE(ldo5_resources),
++		.resources = ldo5_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 8,
++		.num_resources = ARRAY_SIZE(ldo6_resources),
++		.resources = ldo6_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 9,
++		.num_resources = ARRAY_SIZE(ldo7_resources),
++		.resources = ldo7_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 10,
++		.num_resources = ARRAY_SIZE(ldo8_resources),
++		.resources = ldo8_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 11,
++		.num_resources = ARRAY_SIZE(ldo9_resources),
++		.resources = ldo9_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 12,
++		.num_resources = ARRAY_SIZE(ldo10_resources),
++		.resources = ldo10_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 13,
++		.num_resources = ARRAY_SIZE(ldo12_resources),
++		.resources = ldo12_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 14,
++		.num_resources = ARRAY_SIZE(ldo_vibrator_resources),
++		.resources = ldo_vibrator_resources,
++	}, {
++		.name = "88pm860x-regulator",
++		.id = 15,
++		.num_resources = ARRAY_SIZE(ldo14_resources),
++		.resources = ldo14_resources,
 +	},
  };
  
- static struct mfd_cell regulator_devs[] = {
-@@ -658,36 +705,23 @@ static void __devinit device_bk_init(struct pm860x_chip *chip,
- static void __devinit device_led_init(struct pm860x_chip *chip,
- 				      struct pm860x_platform_data *pdata)
+ static struct mfd_cell touch_devs[] = {
+@@ -727,38 +818,80 @@ static void __devinit device_led_init(struct pm860x_chip *chip,
+ static void __devinit device_regulator_init(struct pm860x_chip *chip,
+ 					    struct pm860x_platform_data *pdata)
  {
--	int ret;
--	int i, j, id;
--
--	if ((pdata == NULL) || (pdata->led == NULL))
--		return;
-+	int ret, i;
+-	struct regulator_init_data *initdata;
+ 	int ret;
+-	int i, seq;
  
--	if (pdata->num_leds > ARRAY_SIZE(led_devs))
--		pdata->num_leds = ARRAY_SIZE(led_devs);
--
--	for (i = 0; i < pdata->num_leds; i++) {
--		led_devs[i].platform_data = &pdata->led[i];
--		led_devs[i].pdata_size = sizeof(struct pm860x_led_pdata);
--
--		for (j = 0; j < ARRAY_SIZE(led_devs); j++) {
--			id = led_resources[j].start;
--			if (pdata->led[i].flags != id)
--				continue;
--
--			led_devs[i].num_resources = 1;
--			led_devs[i].resources = &led_resources[j],
--			ret = mfd_add_devices(chip->dev, 0,
--					      &led_devs[i], 1,
--					      &led_resources[j], 0);
--			if (ret < 0) {
--				dev_err(chip->dev, "Failed to add "
--					"led subdev\n");
--				return;
--			}
-+	if (pdata && pdata->led) {
-+		if (pdata->num_leds > ARRAY_SIZE(led_devs))
-+			pdata->num_leds = ARRAY_SIZE(led_devs);
-+		for (i = 0; i < pdata->num_leds; i++) {
-+			led_devs[i].platform_data = &pdata->led[i];
-+			led_devs[i].pdata_size =
-+				sizeof(struct pm860x_led_pdata);
- 		}
- 	}
-+	ret = mfd_add_devices(chip->dev, 0, led_devs,
-+			      ARRAY_SIZE(led_devs), NULL, 0);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "Failed to add led subdev\n");
+-	if ((pdata == NULL) || (pdata->regulator == NULL))
++	if (pdata == NULL)
 +		return;
++	if (pdata->buck1) {
++		reg_devs[0].platform_data = pdata->buck1;
++		reg_devs[0].pdata_size = sizeof(struct regulator_init_data);
 +	}
++	if (pdata->buck2) {
++		reg_devs[1].platform_data = pdata->buck2;
++		reg_devs[1].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->buck3) {
++		reg_devs[2].platform_data = pdata->buck3;
++		reg_devs[2].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo1) {
++		reg_devs[3].platform_data = pdata->ldo1;
++		reg_devs[3].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo2) {
++		reg_devs[4].platform_data = pdata->ldo2;
++		reg_devs[4].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo3) {
++		reg_devs[5].platform_data = pdata->ldo3;
++		reg_devs[5].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo4) {
++		reg_devs[6].platform_data = pdata->ldo4;
++		reg_devs[6].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo5) {
++		reg_devs[7].platform_data = pdata->ldo5;
++		reg_devs[7].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo6) {
++		reg_devs[8].platform_data = pdata->ldo6;
++		reg_devs[8].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo7) {
++		reg_devs[9].platform_data = pdata->ldo7;
++		reg_devs[9].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo8) {
++		reg_devs[10].platform_data = pdata->ldo8;
++		reg_devs[10].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo9) {
++		reg_devs[11].platform_data = pdata->ldo9;
++		reg_devs[11].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo10) {
++		reg_devs[12].platform_data = pdata->ldo10;
++		reg_devs[12].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo12) {
++		reg_devs[13].platform_data = pdata->ldo12;
++		reg_devs[13].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo_vibrator) {
++		reg_devs[14].platform_data = pdata->ldo_vibrator;
++		reg_devs[14].pdata_size = sizeof(struct regulator_init_data);
++	}
++	if (pdata->ldo14) {
++		reg_devs[15].platform_data = pdata->ldo14;
++		reg_devs[15].pdata_size = sizeof(struct regulator_init_data);
++	}
++	ret = mfd_add_devices(chip->dev, 0, reg_devs,
++			      ARRAY_SIZE(reg_devs), NULL, 0);
++	if (ret < 0) {
++		dev_err(chip->dev, "Failed to add regulator subdev\n");
+ 		return;
+-
+-	if (pdata->num_regulators > ARRAY_SIZE(regulator_devs))
+-		pdata->num_regulators = ARRAY_SIZE(regulator_devs);
+-
+-	for (i = 0, seq = -1; i < pdata->num_regulators; i++) {
+-		initdata = &pdata->regulator[i];
+-		seq = *(unsigned int *)initdata->driver_data;
+-		if ((seq < 0) || (seq > PM8607_ID_RG_MAX)) {
+-			dev_err(chip->dev, "Wrong ID(%d) on regulator(%s)\n",
+-				seq, initdata->constraints.name);
+-			goto out;
+-		}
+-		regulator_devs[i].platform_data = &pdata->regulator[i];
+-		regulator_devs[i].pdata_size = sizeof(struct regulator_init_data);
+-		regulator_devs[i].num_resources = 1;
+-		regulator_devs[i].resources = &regulator_resources[seq];
+-
+-		ret = mfd_add_devices(chip->dev, 0, &regulator_devs[i], 1,
+-				      &regulator_resources[seq], 0);
+-		if (ret < 0) {
+-			dev_err(chip->dev, "Failed to add regulator subdev\n");
+-			goto out;
+-		}
+ 	}
+-out:
+-	return;
  }
  
- static void __devinit device_regulator_init(struct pm860x_chip *chip,
+ static void __devinit device_rtc_init(struct pm860x_chip *chip,
+diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+index c3482b9..33aad41 100644
+--- a/drivers/regulator/88pm8607.c
++++ b/drivers/regulator/88pm8607.c
+@@ -320,14 +320,14 @@ static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	int i;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource!\n");
++		dev_err(&pdev->dev, "No memory resource!\n");
+ 		return -EINVAL;
+ 	}
+ 	for (i = 0; i < ARRAY_SIZE(pm8607_regulator_info); i++) {
+ 		info = &pm8607_regulator_info[i];
+-		if (info->desc.id == res->start)
++		if (info->desc.vsel_reg == res->start)
+ 			break;
+ 	}
+ 	if (i == ARRAY_SIZE(pm8607_regulator_info)) {
+@@ -351,7 +351,6 @@ static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
+ 	else
+ 		config.regmap = chip->regmap_companion;
+ 
+-	/* replace driver_data with info */
+ 	info->regulator = regulator_register(&info->desc, &config);
+ 	if (IS_ERR(info->regulator)) {
+ 		dev_err(&pdev->dev, "failed to register regulator %s\n",
 diff --git a/include/linux/mfd/88pm860x.h b/include/linux/mfd/88pm860x.h
-index b7e656d..2d042f9 100644
+index 2d042f9..87c933d 100644
 --- a/include/linux/mfd/88pm860x.h
 +++ b/include/linux/mfd/88pm860x.h
-@@ -34,16 +34,6 @@ enum {
- 	PM8606_ID_MAX,
+@@ -359,7 +359,22 @@ struct pm860x_platform_data {
+ 	struct pm860x_rtc_pdata		*rtc;
+ 	struct pm860x_touch_pdata	*touch;
+ 	struct pm860x_power_pdata	*power;
+-	struct regulator_init_data	*regulator;
++	struct regulator_init_data	*buck1;
++	struct regulator_init_data	*buck2;
++	struct regulator_init_data	*buck3;
++	struct regulator_init_data	*ldo1;
++	struct regulator_init_data	*ldo2;
++	struct regulator_init_data	*ldo3;
++	struct regulator_init_data	*ldo4;
++	struct regulator_init_data	*ldo5;
++	struct regulator_init_data	*ldo6;
++	struct regulator_init_data	*ldo7;
++	struct regulator_init_data	*ldo8;
++	struct regulator_init_data	*ldo9;
++	struct regulator_init_data	*ldo10;
++	struct regulator_init_data	*ldo12;
++	struct regulator_init_data	*ldo_vibrator;
++	struct regulator_init_data	*ldo14;
+ 
+ 	unsigned short	companion_addr;	/* I2C address of companion chip */
+ 	int		i2c_port;	/* Controlled by GI2C or PI2C */
+@@ -367,7 +382,6 @@ struct pm860x_platform_data {
+ 	int		irq_base;	/* IRQ base number of 88pm860x */
+ 	int		num_leds;
+ 	int		num_backlights;
+-	int		num_regulators;
  };
  
--enum {
--	PM8606_LED1_RED = 0,
--	PM8606_LED1_GREEN,
--	PM8606_LED1_BLUE,
--	PM8606_LED2_RED,
--	PM8606_LED2_GREEN,
--	PM8606_LED2_BLUE,
--	PM8607_LED_VIBRATOR,
--};
--
- 
- /* 8606 Registers */
- #define PM8606_DCM_BOOST		(0x00)
-@@ -339,9 +329,7 @@ struct pm860x_backlight_pdata {
- };
- 
- struct pm860x_led_pdata {
--	int		id;
- 	int		iset;
--	unsigned long	flags;
- };
- 
- struct pm860x_rtc_pdata {
+ extern int pm8606_osc_enable(struct pm860x_chip *, unsigned short);
 -- 
 1.7.9.5
 
