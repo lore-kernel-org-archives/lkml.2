@@ -1,349 +1,1450 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab2HEKu6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 06:50:58 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56569 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754236Ab2HEKuz (ORCPT
+	id S1754002Ab2HELV6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 07:21:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab2HELVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 06:50:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
-References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de>
-	<CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
-	<20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
-Date: Sun, 5 Aug 2012 12:50:54 +0200
-Message-ID: <CACRpkdbrdWw_HR91r72aB_S2+vxiaSBKHwW+Tsmi8pKk9VsgFg@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 5 Aug 2012 07:21:54 -0400
+From: Alex Kelly <alex.page.kelly@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Alex Kelly <alex.page.kelly@gmail.com>
+Subject: [PATCHv3 1/4] fs: Move core dump functionality into its own file
+Date: Sun,  5 Aug 2012 04:18:38 -0700
+Message-Id: <1344165521-14200-1-git-send-email-alex.page.kelly@gmail.com>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1344027800-8270-1-git-send-email-eshink@gmail.com>
+References: <1344027800-8270-1-git-send-email-eshink@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 9:47 AM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-> On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
->> On Mon, Jul 23, 2012 at 1:59 PM, Thierry Reding
->> <thierry.reding@avionic-design.de> wrote:
+This prepares for making core dump functionality optional.
 
->> > +- interrupt-controller: Marks the device as an interrupt controller.
->> > +- nr-gpios: The number of pins supported by the controller.
->>
->> These two last things look very generic, like something every GPIO
->> driver could want to expose.
->
-> As Arnd mentioned, interrupt-controller is a generic property required
-> by all interrupt controller nodes. Perhaps it shouldn't be listed in the
-> DT binding for this driver.
+The variable "suid_dumpable" and associated functions are left in fs/exec.c
+because they're used elsewhere, such as in ptrace.
 
-After reading Rob's etc comments I think nr-gpios should be in this
-binding, but interrupt-controller seems like it should go into
-Documentation/devicetree/bindings/gpio/gpio.txt
-can you take care of this?
+Signed-off-by: Alex Kelly <alex.page.kelly@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+v2: This patch set is a second revision that follows some suggestions from
+Ingo Molnar and Josh Triplett. Specifically, authorship of commits is
+revised for consistency, and an additional two patches cleaning up artifacts
+and making headers more sane are added.
 
-(Anyone agains, beat me up...)
+v3: This version fixes a few more authorship issues and some problems caused
+by a bad git send-email config. Sorry about the extra mails
 
->> > +config GPIO_ADNP
->> > +       tristate "Avionic Design N-bit GPIO expander"
->> > +       depends on I2C && OF
->> > +       help
->> > +         This option enables support for N GPIOs found on Avionic Design
->> > +         I2C GPIO expanders. The register space will be extended by powers
->> > +         of two, so the controller will need to accomodate for that. For
->> > +         example: if a controller provides 48 pins, 6 registers will be
->> > +         enough to represent all pins, but the driver will assume a
->> > +         register layout for 64 pins (8 registers).
->> > +
->> > +config GPIO_ADNP_IRQ
->> > +       tristate "Interrupt controller support"
->> > +       depends on GPIO_ADNP
->> > +       help
->> > +         Say yes here to enable the Avionic Design N-bit GPIO expander to
->> > +         be used as an interrupt controller.
->>
->> First: please describe the usecase where the Avionic driver is used
->> without making use of the IRQ, and *why* it should be possible
->> to configure this out. E.g. is there a hardware which isn't using the
->> IRQ portions? If there is no non-irq usecase just drop this
->> config option.
->
-> This expander is used in a number of Tegra-based boards and handles
-> things like enabling or disabling power to a given IC but on other
-> boards it is also used to handle interrupts from input devices or
-> card-detect for example.
->
-> The controller is synthesized in a CPLD, which is one of the reasons for
-> the nr-gpios DT property. There is at least one platform that currently
-> doesn't use the interrupt functionality. Mainly I allowed this to be
-> configured out in order to reduce the number of interrupts required for
-> a platform. Another reason was that at the time I first wrote this, IRQ
-> domains hadn't been available, so the driver couldn't be built as a
-> module if interrupt support was required. This also no longer applies.
->
-> I'm actually fine either way, but I thought it'd be most flexible by
-> keeping the IRQ support optional for the above reasons.
+ fs/Makefile           |   2 +-
+ fs/coredump.c         | 689 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/exec.c             | 647 +----------------------------------------------
+ include/linux/sched.h |   1 +
+ 4 files changed, 692 insertions(+), 647 deletions(-)
+ create mode 100644 fs/coredump.c
 
-We're working on a goal of a "single zImage" (one unified ARM
-kernel) which means your platform must be able to handle the
-case where this is turned on anyway, so I would suggest you
-drop the optional compile-time IRQ support, just make it
-optional at runtime instead.
+diff --git a/fs/Makefile b/fs/Makefile
+index 2fb9779..8938f82 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -11,7 +11,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
+ 		attr.o bad_inode.o file.o filesystems.o namespace.o \
+ 		seq_file.o xattr.o libfs.o fs-writeback.o \
+ 		pnode.o drop_caches.o splice.o sync.o utimes.o \
+-		stack.o fs_struct.o statfs.o
++		stack.o fs_struct.o statfs.o coredump.o
+ 
+ ifeq ($(CONFIG_BLOCK),y)
+ obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
+diff --git a/fs/coredump.c b/fs/coredump.c
+new file mode 100644
+index 0000000..34c9236
+--- /dev/null
++++ b/fs/coredump.c
+@@ -0,0 +1,689 @@
++#include <linux/slab.h>
++#include <linux/file.h>
++#include <linux/fdtable.h>
++#include <linux/mm.h>
++#include <linux/stat.h>
++#include <linux/fcntl.h>
++#include <linux/swap.h>
++#include <linux/string.h>
++#include <linux/init.h>
++#include <linux/pagemap.h>
++#include <linux/perf_event.h>
++#include <linux/highmem.h>
++#include <linux/spinlock.h>
++#include <linux/key.h>
++#include <linux/personality.h>
++#include <linux/binfmts.h>
++#include <linux/utsname.h>
++#include <linux/pid_namespace.h>
++#include <linux/module.h>
++#include <linux/namei.h>
++#include <linux/mount.h>
++#include <linux/security.h>
++#include <linux/syscalls.h>
++#include <linux/tsacct_kern.h>
++#include <linux/cn_proc.h>
++#include <linux/audit.h>
++#include <linux/tracehook.h>
++#include <linux/kmod.h>
++#include <linux/fsnotify.h>
++#include <linux/fs_struct.h>
++#include <linux/pipe_fs_i.h>
++#include <linux/oom.h>
++#include <linux/compat.h>
++
++#include <asm/uaccess.h>
++#include <asm/mmu_context.h>
++#include <asm/tlb.h>
++#include <asm/exec.h>
++
++#include <trace/events/task.h>
++#include "internal.h"
++
++#include <trace/events/sched.h>
++
++int core_uses_pid;
++char core_pattern[CORENAME_MAX_SIZE] = "core";
++unsigned int core_pipe_limit;
++static atomic_t call_count = ATOMIC_INIT(1);
++
++/* The maximal length of core_pattern is also specified in sysctl.c */
++static int zap_process(struct task_struct *start, int exit_code)
++{
++	struct task_struct *t;
++	int nr = 0;
++
++	start->signal->flags = SIGNAL_GROUP_EXIT;
++	start->signal->group_exit_code = exit_code;
++	start->signal->group_stop_count = 0;
++
++	t = start;
++	do {
++		task_clear_jobctl_pending(t, JOBCTL_PENDING_MASK);
++		if (t != current && t->mm) {
++			sigaddset(&t->pending.signal, SIGKILL);
++			signal_wake_up(t, 1);
++			nr++;
++		}
++	} while_each_thread(start, t);
++
++	return nr;
++}
++
++
++/*
++ * Core dumping helper functions.  These are the only things you should
++ * do on a core-file: use only these functions to write out all the
++ * necessary info.
++ */
++int dump_write(struct file *file, const void *addr, int nr)
++{
++	return access_ok(VERIFY_READ, addr, nr) && file->f_op->write(file, addr, nr, &file->f_pos) == nr;
++}
++EXPORT_SYMBOL(dump_write);
++
++struct core_name {
++	char *corename;
++	int used, size;
++};
++
++static int expand_corename(struct core_name *cn)
++{
++	char *old_corename = cn->corename;
++
++	cn->size = CORENAME_MAX_SIZE * atomic_inc_return(&call_count);
++	cn->corename = krealloc(old_corename, cn->size, GFP_KERNEL);
++
++	if (!cn->corename) {
++		kfree(old_corename);
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
++static int cn_printf(struct core_name *cn, const char *fmt, ...)
++{
++	char *cur;
++	int need;
++	int ret;
++	va_list arg;
++
++	va_start(arg, fmt);
++	need = vsnprintf(NULL, 0, fmt, arg);
++	va_end(arg);
++
++	if (likely(need < cn->size - cn->used - 1))
++		goto out_printf;
++
++	ret = expand_corename(cn);
++	if (ret)
++		goto expand_fail;
++
++out_printf:
++	cur = cn->corename + cn->used;
++	va_start(arg, fmt);
++	vsnprintf(cur, need + 1, fmt, arg);
++	va_end(arg);
++	cn->used += need;
++	return 0;
++
++expand_fail:
++	return ret;
++}
++
++static void cn_escape(char *str)
++{
++	for (; *str; str++)
++		if (*str == '/')
++			*str = '!';
++}
++
++static int cn_print_exe_file(struct core_name *cn)
++{
++	struct file *exe_file;
++	char *pathbuf, *path;
++	int ret;
++
++	exe_file = get_mm_exe_file(current->mm);
++	if (!exe_file) {
++		char *commstart = cn->corename + cn->used;
++		ret = cn_printf(cn, "%s (path unknown)", current->comm);
++		cn_escape(commstart);
++		return ret;
++	}
++
++	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
++	if (!pathbuf) {
++		ret = -ENOMEM;
++		goto put_exe_file;
++	}
++
++	path = d_path(&exe_file->f_path, pathbuf, PATH_MAX);
++	if (IS_ERR(path)) {
++		ret = PTR_ERR(path);
++		goto free_buf;
++	}
++
++	cn_escape(path);
++
++	ret = cn_printf(cn, "%s", path);
++
++free_buf:
++	kfree(pathbuf);
++put_exe_file:
++	fput(exe_file);
++	return ret;
++}
++
++/* format_corename will inspect the pattern parameter, and output a
++ * name into corename, which must have space for at least
++ * CORENAME_MAX_SIZE bytes plus one byte for the zero terminator.
++ */
++static int format_corename(struct core_name *cn, long signr)
++{
++	const struct cred *cred = current_cred();
++	const char *pat_ptr = core_pattern;
++	int ispipe = (*pat_ptr == '|');
++	int pid_in_pattern = 0;
++	int err = 0;
++
++	cn->size = CORENAME_MAX_SIZE * atomic_read(&call_count);
++	cn->corename = kmalloc(cn->size, GFP_KERNEL);
++	cn->used = 0;
++
++	if (!cn->corename)
++		return -ENOMEM;
++
++	/* Repeat as long as we have more pattern to process and more output
++	   space */
++	while (*pat_ptr) {
++		if (*pat_ptr != '%') {
++			if (*pat_ptr == 0)
++				goto out;
++			err = cn_printf(cn, "%c", *pat_ptr++);
++		} else {
++			switch (*++pat_ptr) {
++			/* single % at the end, drop that */
++			case 0:
++				goto out;
++			/* Double percent, output one percent */
++			case '%':
++				err = cn_printf(cn, "%c", '%');
++				break;
++			/* pid */
++			case 'p':
++				pid_in_pattern = 1;
++				err = cn_printf(cn, "%d",
++					      task_tgid_vnr(current));
++				break;
++			/* uid */
++			case 'u':
++				err = cn_printf(cn, "%d", cred->uid);
++				break;
++			/* gid */
++			case 'g':
++				err = cn_printf(cn, "%d", cred->gid);
++				break;
++			/* signal that caused the coredump */
++			case 's':
++				err = cn_printf(cn, "%ld", signr);
++				break;
++			/* UNIX time of coredump */
++			case 't': {
++				struct timeval tv;
++				do_gettimeofday(&tv);
++				err = cn_printf(cn, "%lu", tv.tv_sec);
++				break;
++			}
++			/* hostname */
++			case 'h': {
++				char *namestart = cn->corename + cn->used;
++				down_read(&uts_sem);
++				err = cn_printf(cn, "%s",
++					      utsname()->nodename);
++				up_read(&uts_sem);
++				cn_escape(namestart);
++				break;
++			}
++			/* executable */
++			case 'e': {
++				char *commstart = cn->corename + cn->used;
++				err = cn_printf(cn, "%s", current->comm);
++				cn_escape(commstart);
++				break;
++			}
++			case 'E':
++				err = cn_print_exe_file(cn);
++				break;
++			/* core limit size */
++			case 'c':
++				err = cn_printf(cn, "%lu",
++					      rlimit(RLIMIT_CORE));
++				break;
++			default:
++				break;
++			}
++			++pat_ptr;
++		}
++
++		if (err)
++			return err;
++	}
++
++	/* Backward compatibility with core_uses_pid:
++	 *
++	 * If core_pattern does not include a %p (as is the default)
++	 * and core_uses_pid is set, then .%pid will be appended to
++	 * the filename. Do not do this for piped commands. */
++	if (!ispipe && !pid_in_pattern && core_uses_pid) {
++		err = cn_printf(cn, ".%d", task_tgid_vnr(current));
++		if (err)
++			return err;
++	}
++out:
++	return ispipe;
++}
++
++static inline int zap_threads(struct task_struct *tsk, struct mm_struct *mm,
++				struct core_state *core_state, int exit_code)
++{
++	struct task_struct *g, *p;
++	unsigned long flags;
++	int nr = -EAGAIN;
++
++	spin_lock_irq(&tsk->sighand->siglock);
++	if (!signal_group_exit(tsk->signal)) {
++		mm->core_state = core_state;
++		nr = zap_process(tsk, exit_code);
++	}
++	spin_unlock_irq(&tsk->sighand->siglock);
++	if (unlikely(nr < 0))
++		return nr;
++
++	if (atomic_read(&mm->mm_users) == nr + 1)
++		goto done;
++	/*
++	 * We should find and kill all tasks which use this mm, and we should
++	 * count them correctly into ->nr_threads. We don't take tasklist
++	 * lock, but this is safe wrt:
++	 *
++	 * fork:
++	 *	None of sub-threads can fork after zap_process(leader). All
++	 *	processes which were created before this point should be
++	 *	visible to zap_threads() because copy_process() adds the new
++	 *	process to the tail of init_task.tasks list, and lock/unlock
++	 *	of ->siglock provides a memory barrier.
++	 *
++	 * do_exit:
++	 *	The caller holds mm->mmap_sem. This means that the task which
++	 *	uses this mm can't pass exit_mm(), so it can't exit or clear
++	 *	its ->mm.
++	 *
++	 * de_thread:
++	 *	It does list_replace_rcu(&leader->tasks, &current->tasks),
++	 *	we must see either old or new leader, this does not matter.
++	 *	However, it can change p->sighand, so lock_task_sighand(p)
++	 *	must be used. Since p->mm != NULL and we hold ->mmap_sem
++	 *	it can't fail.
++	 *
++	 *	Note also that "g" can be the old leader with ->mm == NULL
++	 *	and already unhashed and thus removed from ->thread_group.
++	 *	This is OK, __unhash_process()->list_del_rcu() does not
++	 *	clear the ->next pointer, we will find the new leader via
++	 *	next_thread().
++	 */
++	rcu_read_lock();
++	for_each_process(g) {
++		if (g == tsk->group_leader)
++			continue;
++		if (g->flags & PF_KTHREAD)
++			continue;
++		p = g;
++		do {
++			if (p->mm) {
++				if (unlikely(p->mm == mm)) {
++					lock_task_sighand(p, &flags);
++					nr += zap_process(p, exit_code);
++					unlock_task_sighand(p, &flags);
++				}
++				break;
++			}
++		} while_each_thread(g, p);
++	}
++	rcu_read_unlock();
++done:
++	atomic_set(&core_state->nr_threads, nr);
++	return nr;
++}
++
++static int coredump_wait(int exit_code, struct core_state *core_state)
++{
++	struct task_struct *tsk = current;
++	struct mm_struct *mm = tsk->mm;
++	int core_waiters = -EBUSY;
++
++	init_completion(&core_state->startup);
++	core_state->dumper.task = tsk;
++	core_state->dumper.next = NULL;
++
++	down_write(&mm->mmap_sem);
++	if (!mm->core_state)
++		core_waiters = zap_threads(tsk, mm, core_state, exit_code);
++	up_write(&mm->mmap_sem);
++
++	if (core_waiters > 0){
++		struct core_thread *ptr;
++
++		wait_for_completion(&core_state->startup);
++		/*
++		 * Wait for all the threads to become inactive, so that
++		 * all the thread context (extended register state, like
++		 * fpu etc) gets copied to the memory.
++		 */
++		ptr = core_state->dumper.next;
++		while (ptr != NULL) {
++			wait_task_inactive(ptr->task, 0);
++			ptr = ptr->next;
++		}
++	}
++
++	return core_waiters;
++}
++
++static void coredump_finish(struct mm_struct *mm)
++{
++	struct core_thread *curr, *next;
++	struct task_struct *task;
++
++	next = mm->core_state->dumper.next;
++	while ((curr = next) != NULL) {
++		next = curr->next;
++		task = curr->task;
++		/*
++		 * see exit_mm(), curr->task must not see
++		 * ->task == NULL before we read ->next.
++		 */
++		smp_mb();
++		curr->task = NULL;
++		wake_up_process(task);
++	}
++
++	mm->core_state = NULL;
++}
++
++static void wait_for_dump_helpers(struct file *file)
++{
++	struct pipe_inode_info *pipe;
++
++	pipe = file->f_path.dentry->d_inode->i_pipe;
++
++	pipe_lock(pipe);
++	pipe->readers++;
++	pipe->writers--;
++
++	while ((pipe->readers > 1) && (!signal_pending(current))) {
++		wake_up_interruptible_sync(&pipe->wait);
++		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
++		pipe_wait(pipe);
++	}
++
++	pipe->readers--;
++	pipe->writers++;
++	pipe_unlock(pipe);
++
++}
++
++/*
++ * umh_pipe_setup
++ * helper function to customize the process used
++ * to collect the core in userspace.  Specifically
++ * it sets up a pipe and installs it as fd 0 (stdin)
++ * for the process.  Returns 0 on success, or
++ * PTR_ERR on failure.
++ * Note that it also sets the core limit to 1.  This
++ * is a special value that we use to trap recursive
++ * core dumps
++ */
++static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
++{
++	struct file *files[2];
++	struct fdtable *fdt;
++	struct coredump_params *cp = (struct coredump_params *)info->data;
++	struct files_struct *cf = current->files;
++	int err = create_pipe_files(files, 0);
++	if (err)
++		return err;
++
++	cp->file = files[1];
++
++	sys_close(0);
++	fd_install(0, files[0]);
++	spin_lock(&cf->file_lock);
++	fdt = files_fdtable(cf);
++	__set_open_fd(0, fdt);
++	__clear_close_on_exec(0, fdt);
++	spin_unlock(&cf->file_lock);
++
++	/* and disallow core files too */
++	current->signal->rlim[RLIMIT_CORE] = (struct rlimit){1, 1};
++
++	return 0;
++}
++
++
++void do_coredump(long signr, int exit_code, struct pt_regs *regs)
++{
++	struct core_state core_state;
++	struct core_name cn;
++	struct mm_struct *mm = current->mm;
++	struct linux_binfmt * binfmt;
++	const struct cred *old_cred;
++	struct cred *cred;
++	int retval = 0;
++	int flag = 0;
++	int ispipe;
++	bool need_nonrelative = false;
++	static atomic_t core_dump_count = ATOMIC_INIT(0);
++	struct coredump_params cprm = {
++		.signr = signr,
++		.regs = regs,
++		.limit = rlimit(RLIMIT_CORE),
++		/*
++		 * We must use the same mm->flags while dumping core to avoid
++		 * inconsistency of bit flags, since this flag is not protected
++		 * by any locks.
++		 */
++		.mm_flags = mm->flags,
++	};
++
++	audit_core_dumps(signr);
++
++	binfmt = mm->binfmt;
++	if (!binfmt || !binfmt->core_dump)
++		goto fail;
++	if (!__get_dumpable(cprm.mm_flags))
++		goto fail;
++
++	cred = prepare_creds();
++	if (!cred)
++		goto fail;
++	/*
++	 * We cannot trust fsuid as being the "true" uid of the process
++	 * nor do we know its entire history. We only know it was tainted
++	 * so we dump it as root in mode 2, and onlt into a controlled
++	 * environment (pipe handler or fully qualified path)
++	 */
++	if (__get_dumpable(cprm.mm_flags) == SUID_DUMPABLE_SAFE) {
++		/* Setuid core dump mode */
++		flag = O_EXCL;		/* Stop rewrite attacks */
++		cred->fsuid = GLOBAL_ROOT_UID;	/* Dump root private */
++		need_nonrelative = true;
++	}
++
++	retval = coredump_wait(exit_code, &core_state);
++	if (retval < 0)
++		goto fail_creds;
++
++	old_cred = override_creds(cred);
++
++	/*
++	 * Clear any false indication of pending signals that might
++	 * be seen by the filesystem code called to write the core file.
++	 */
++	clear_thread_flag(TIF_SIGPENDING);
++
++	ispipe = format_corename(&cn, signr);
++
++ 	if (ispipe) {
++		int dump_count;
++		char **helper_argv;
++
++		if (ispipe < 0) {
++			printk(KERN_WARNING "format_corename failed\n");
++			printk(KERN_WARNING "Aborting core\n");
++			goto fail_corename;
++		}
++
++		if (cprm.limit == 1) {
++			/* See umh_pipe_setup() which sets RLIMIT_CORE = 1.
++			 *
++			 * Normally core limits are irrelevant to pipes, since
++			 * we're not writing to the file system, but we use
++			 * cprm.limit of 1 here as a speacial value, this is a 
++			 * consistent way to catch recursive crashes.
++			 * We can still crash if the core_pattern binary sets
++			 * RLIM_CORE = !1, but it runs as root, and can do
++			 * lots of stupid things
++			 *
++			 * Note that we use task_tgid_vnr here to grab the pid
++			 * of the process group leader.  That way we get the
++			 * right pid if a thread in a multi-threaded
++			 * core_pattern process dies.
++			 */
++			printk(KERN_WARNING
++				"Process %d(%s) has RLIMIT_CORE set to 1\n",
++				task_tgid_vnr(current), current->comm);
++			printk(KERN_WARNING "Aborting core\n");
++			goto fail_unlock;
++		}
++		cprm.limit = RLIM_INFINITY;
++
++		dump_count = atomic_inc_return(&core_dump_count);
++		if (core_pipe_limit && (core_pipe_limit < dump_count)) {
++			printk(KERN_WARNING "Pid %d(%s) over core_pipe_limit\n",
++			       task_tgid_vnr(current), current->comm);
++			printk(KERN_WARNING "Skipping core dump\n");
++			goto fail_dropcount;
++		}
++
++		helper_argv = argv_split(GFP_KERNEL, cn.corename+1, NULL);
++		if (!helper_argv) {
++			printk(KERN_WARNING "%s failed to allocate memory\n",
++			       __func__);
++			goto fail_dropcount;
++		}
++
++		retval = call_usermodehelper_fns(helper_argv[0], helper_argv,
++					NULL, UMH_WAIT_EXEC, umh_pipe_setup,
++					NULL, &cprm);
++		argv_free(helper_argv);
++		if (retval) {
++ 			printk(KERN_INFO "Core dump to %s pipe failed\n",
++			       cn.corename);
++			goto close_fail;
++ 		}
++	} else {
++		struct inode *inode;
++
++		if (cprm.limit < binfmt->min_coredump)
++			goto fail_unlock;
++
++		if (need_nonrelative && cn.corename[0] != '/') {
++			printk(KERN_WARNING "Pid %d(%s) can only dump core "\
++				"To fully qualified path!\n",
++				task_tgid_vnr(current), current->comm);
++			printk(KERN_WARNING "Skipping core dump\n");
++			goto fail_unlock;
++		}
++
++		cprm.file = filp_open(cn.corename,
++				 O_CREAT | 2 | O_NOFOLLOW | O_LARGEFILE | flag,
++				 0600);
++		if (IS_ERR(cprm.file))
++			goto fail_unlock;
++
++		inode = cprm.file->f_path.dentry->d_inode;
++		if (inode->i_nlink > 1)
++			goto close_fail;
++		if (d_unhashed(cprm.file->f_path.dentry))
++			goto close_fail;
++		/*
++		 * AK: actually i see no reason to not allow this for named
++		 * pipes etc, but keep the previous behaviour for now.
++		 */
++		if (!S_ISREG(inode->i_mode))
++			goto close_fail;
++		/*
++		 * Dont allow local users get cute and trick others to coredump
++		 * into their pre-created files.
++		 */
++		if (!uid_eq(inode->i_uid, current_fsuid()))
++			goto close_fail;
++		if (!cprm.file->f_op || !cprm.file->f_op->write)
++			goto close_fail;
++		if (do_truncate(cprm.file->f_path.dentry, 0, 0, cprm.file))
++			goto close_fail;
++	}
++
++	retval = binfmt->core_dump(&cprm);
++	if (retval)
++		current->signal->group_exit_code |= 0x80;
++
++	if (ispipe && core_pipe_limit)
++		wait_for_dump_helpers(cprm.file);
++close_fail:
++	if (cprm.file)
++		filp_close(cprm.file, NULL);
++fail_dropcount:
++	if (ispipe)
++		atomic_dec(&core_dump_count);
++fail_unlock:
++	kfree(cn.corename);
++fail_corename:
++	coredump_finish(mm);
++	revert_creds(old_cred);
++fail_creds:
++	put_cred(cred);
++fail:
++	return;
++}
++
++int dump_seek(struct file *file, loff_t off)
++{
++	int ret = 1;
++
++	if (file->f_op->llseek && file->f_op->llseek != no_llseek) {
++		if (file->f_op->llseek(file, off, SEEK_CUR) < 0)
++			return 0;
++	} else {
++		char *buf = (char *)get_zeroed_page(GFP_KERNEL);
++
++		if (!buf)
++			return 0;
++		while (off > 0) {
++			unsigned long n = off;
++
++			if (n > PAGE_SIZE)
++				n = PAGE_SIZE;
++			if (!dump_write(file, buf, n)) {
++				ret = 0;
++				break;
++			}
++			off -= n;
++		}
++		free_page((unsigned long)buf);
++	}
++	return ret;
++}
++EXPORT_SYMBOL(dump_seek);
+diff --git a/fs/exec.c b/fs/exec.c
+index 574cf4d..b604050 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -66,19 +66,8 @@
+ 
+ #include <trace/events/sched.h>
+ 
+-int core_uses_pid;
+-char core_pattern[CORENAME_MAX_SIZE] = "core";
+-unsigned int core_pipe_limit;
+ int suid_dumpable = 0;
+ 
+-struct core_name {
+-	char *corename;
+-	int used, size;
+-};
+-static atomic_t call_count = ATOMIC_INIT(1);
+-
+-/* The maximal length of core_pattern is also specified in sysctl.c */
+-
+ static LIST_HEAD(formats);
+ static DEFINE_RWLOCK(binfmt_lock);
+ 
+@@ -1632,353 +1621,6 @@ void set_binfmt(struct linux_binfmt *new)
+ 
+ EXPORT_SYMBOL(set_binfmt);
+ 
+-static int expand_corename(struct core_name *cn)
+-{
+-	char *old_corename = cn->corename;
+-
+-	cn->size = CORENAME_MAX_SIZE * atomic_inc_return(&call_count);
+-	cn->corename = krealloc(old_corename, cn->size, GFP_KERNEL);
+-
+-	if (!cn->corename) {
+-		kfree(old_corename);
+-		return -ENOMEM;
+-	}
+-
+-	return 0;
+-}
+-
+-static int cn_printf(struct core_name *cn, const char *fmt, ...)
+-{
+-	char *cur;
+-	int need;
+-	int ret;
+-	va_list arg;
+-
+-	va_start(arg, fmt);
+-	need = vsnprintf(NULL, 0, fmt, arg);
+-	va_end(arg);
+-
+-	if (likely(need < cn->size - cn->used - 1))
+-		goto out_printf;
+-
+-	ret = expand_corename(cn);
+-	if (ret)
+-		goto expand_fail;
+-
+-out_printf:
+-	cur = cn->corename + cn->used;
+-	va_start(arg, fmt);
+-	vsnprintf(cur, need + 1, fmt, arg);
+-	va_end(arg);
+-	cn->used += need;
+-	return 0;
+-
+-expand_fail:
+-	return ret;
+-}
+-
+-static void cn_escape(char *str)
+-{
+-	for (; *str; str++)
+-		if (*str == '/')
+-			*str = '!';
+-}
+-
+-static int cn_print_exe_file(struct core_name *cn)
+-{
+-	struct file *exe_file;
+-	char *pathbuf, *path;
+-	int ret;
+-
+-	exe_file = get_mm_exe_file(current->mm);
+-	if (!exe_file) {
+-		char *commstart = cn->corename + cn->used;
+-		ret = cn_printf(cn, "%s (path unknown)", current->comm);
+-		cn_escape(commstart);
+-		return ret;
+-	}
+-
+-	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+-	if (!pathbuf) {
+-		ret = -ENOMEM;
+-		goto put_exe_file;
+-	}
+-
+-	path = d_path(&exe_file->f_path, pathbuf, PATH_MAX);
+-	if (IS_ERR(path)) {
+-		ret = PTR_ERR(path);
+-		goto free_buf;
+-	}
+-
+-	cn_escape(path);
+-
+-	ret = cn_printf(cn, "%s", path);
+-
+-free_buf:
+-	kfree(pathbuf);
+-put_exe_file:
+-	fput(exe_file);
+-	return ret;
+-}
+-
+-/* format_corename will inspect the pattern parameter, and output a
+- * name into corename, which must have space for at least
+- * CORENAME_MAX_SIZE bytes plus one byte for the zero terminator.
+- */
+-static int format_corename(struct core_name *cn, long signr)
+-{
+-	const struct cred *cred = current_cred();
+-	const char *pat_ptr = core_pattern;
+-	int ispipe = (*pat_ptr == '|');
+-	int pid_in_pattern = 0;
+-	int err = 0;
+-
+-	cn->size = CORENAME_MAX_SIZE * atomic_read(&call_count);
+-	cn->corename = kmalloc(cn->size, GFP_KERNEL);
+-	cn->used = 0;
+-
+-	if (!cn->corename)
+-		return -ENOMEM;
+-
+-	/* Repeat as long as we have more pattern to process and more output
+-	   space */
+-	while (*pat_ptr) {
+-		if (*pat_ptr != '%') {
+-			if (*pat_ptr == 0)
+-				goto out;
+-			err = cn_printf(cn, "%c", *pat_ptr++);
+-		} else {
+-			switch (*++pat_ptr) {
+-			/* single % at the end, drop that */
+-			case 0:
+-				goto out;
+-			/* Double percent, output one percent */
+-			case '%':
+-				err = cn_printf(cn, "%c", '%');
+-				break;
+-			/* pid */
+-			case 'p':
+-				pid_in_pattern = 1;
+-				err = cn_printf(cn, "%d",
+-					      task_tgid_vnr(current));
+-				break;
+-			/* uid */
+-			case 'u':
+-				err = cn_printf(cn, "%d", cred->uid);
+-				break;
+-			/* gid */
+-			case 'g':
+-				err = cn_printf(cn, "%d", cred->gid);
+-				break;
+-			/* signal that caused the coredump */
+-			case 's':
+-				err = cn_printf(cn, "%ld", signr);
+-				break;
+-			/* UNIX time of coredump */
+-			case 't': {
+-				struct timeval tv;
+-				do_gettimeofday(&tv);
+-				err = cn_printf(cn, "%lu", tv.tv_sec);
+-				break;
+-			}
+-			/* hostname */
+-			case 'h': {
+-				char *namestart = cn->corename + cn->used;
+-				down_read(&uts_sem);
+-				err = cn_printf(cn, "%s",
+-					      utsname()->nodename);
+-				up_read(&uts_sem);
+-				cn_escape(namestart);
+-				break;
+-			}
+-			/* executable */
+-			case 'e': {
+-				char *commstart = cn->corename + cn->used;
+-				err = cn_printf(cn, "%s", current->comm);
+-				cn_escape(commstart);
+-				break;
+-			}
+-			case 'E':
+-				err = cn_print_exe_file(cn);
+-				break;
+-			/* core limit size */
+-			case 'c':
+-				err = cn_printf(cn, "%lu",
+-					      rlimit(RLIMIT_CORE));
+-				break;
+-			default:
+-				break;
+-			}
+-			++pat_ptr;
+-		}
+-
+-		if (err)
+-			return err;
+-	}
+-
+-	/* Backward compatibility with core_uses_pid:
+-	 *
+-	 * If core_pattern does not include a %p (as is the default)
+-	 * and core_uses_pid is set, then .%pid will be appended to
+-	 * the filename. Do not do this for piped commands. */
+-	if (!ispipe && !pid_in_pattern && core_uses_pid) {
+-		err = cn_printf(cn, ".%d", task_tgid_vnr(current));
+-		if (err)
+-			return err;
+-	}
+-out:
+-	return ispipe;
+-}
+-
+-static int zap_process(struct task_struct *start, int exit_code)
+-{
+-	struct task_struct *t;
+-	int nr = 0;
+-
+-	start->signal->flags = SIGNAL_GROUP_EXIT;
+-	start->signal->group_exit_code = exit_code;
+-	start->signal->group_stop_count = 0;
+-
+-	t = start;
+-	do {
+-		task_clear_jobctl_pending(t, JOBCTL_PENDING_MASK);
+-		if (t != current && t->mm) {
+-			sigaddset(&t->pending.signal, SIGKILL);
+-			signal_wake_up(t, 1);
+-			nr++;
+-		}
+-	} while_each_thread(start, t);
+-
+-	return nr;
+-}
+-
+-static inline int zap_threads(struct task_struct *tsk, struct mm_struct *mm,
+-				struct core_state *core_state, int exit_code)
+-{
+-	struct task_struct *g, *p;
+-	unsigned long flags;
+-	int nr = -EAGAIN;
+-
+-	spin_lock_irq(&tsk->sighand->siglock);
+-	if (!signal_group_exit(tsk->signal)) {
+-		mm->core_state = core_state;
+-		nr = zap_process(tsk, exit_code);
+-	}
+-	spin_unlock_irq(&tsk->sighand->siglock);
+-	if (unlikely(nr < 0))
+-		return nr;
+-
+-	if (atomic_read(&mm->mm_users) == nr + 1)
+-		goto done;
+-	/*
+-	 * We should find and kill all tasks which use this mm, and we should
+-	 * count them correctly into ->nr_threads. We don't take tasklist
+-	 * lock, but this is safe wrt:
+-	 *
+-	 * fork:
+-	 *	None of sub-threads can fork after zap_process(leader). All
+-	 *	processes which were created before this point should be
+-	 *	visible to zap_threads() because copy_process() adds the new
+-	 *	process to the tail of init_task.tasks list, and lock/unlock
+-	 *	of ->siglock provides a memory barrier.
+-	 *
+-	 * do_exit:
+-	 *	The caller holds mm->mmap_sem. This means that the task which
+-	 *	uses this mm can't pass exit_mm(), so it can't exit or clear
+-	 *	its ->mm.
+-	 *
+-	 * de_thread:
+-	 *	It does list_replace_rcu(&leader->tasks, &current->tasks),
+-	 *	we must see either old or new leader, this does not matter.
+-	 *	However, it can change p->sighand, so lock_task_sighand(p)
+-	 *	must be used. Since p->mm != NULL and we hold ->mmap_sem
+-	 *	it can't fail.
+-	 *
+-	 *	Note also that "g" can be the old leader with ->mm == NULL
+-	 *	and already unhashed and thus removed from ->thread_group.
+-	 *	This is OK, __unhash_process()->list_del_rcu() does not
+-	 *	clear the ->next pointer, we will find the new leader via
+-	 *	next_thread().
+-	 */
+-	rcu_read_lock();
+-	for_each_process(g) {
+-		if (g == tsk->group_leader)
+-			continue;
+-		if (g->flags & PF_KTHREAD)
+-			continue;
+-		p = g;
+-		do {
+-			if (p->mm) {
+-				if (unlikely(p->mm == mm)) {
+-					lock_task_sighand(p, &flags);
+-					nr += zap_process(p, exit_code);
+-					unlock_task_sighand(p, &flags);
+-				}
+-				break;
+-			}
+-		} while_each_thread(g, p);
+-	}
+-	rcu_read_unlock();
+-done:
+-	atomic_set(&core_state->nr_threads, nr);
+-	return nr;
+-}
+-
+-static int coredump_wait(int exit_code, struct core_state *core_state)
+-{
+-	struct task_struct *tsk = current;
+-	struct mm_struct *mm = tsk->mm;
+-	int core_waiters = -EBUSY;
+-
+-	init_completion(&core_state->startup);
+-	core_state->dumper.task = tsk;
+-	core_state->dumper.next = NULL;
+-
+-	down_write(&mm->mmap_sem);
+-	if (!mm->core_state)
+-		core_waiters = zap_threads(tsk, mm, core_state, exit_code);
+-	up_write(&mm->mmap_sem);
+-
+-	if (core_waiters > 0) {
+-		struct core_thread *ptr;
+-
+-		wait_for_completion(&core_state->startup);
+-		/*
+-		 * Wait for all the threads to become inactive, so that
+-		 * all the thread context (extended register state, like
+-		 * fpu etc) gets copied to the memory.
+-		 */
+-		ptr = core_state->dumper.next;
+-		while (ptr != NULL) {
+-			wait_task_inactive(ptr->task, 0);
+-			ptr = ptr->next;
+-		}
+-	}
+-
+-	return core_waiters;
+-}
+-
+-static void coredump_finish(struct mm_struct *mm)
+-{
+-	struct core_thread *curr, *next;
+-	struct task_struct *task;
+-
+-	next = mm->core_state->dumper.next;
+-	while ((curr = next) != NULL) {
+-		next = curr->next;
+-		task = curr->task;
+-		/*
+-		 * see exit_mm(), curr->task must not see
+-		 * ->task == NULL before we read ->next.
+-		 */
+-		smp_mb();
+-		curr->task = NULL;
+-		wake_up_process(task);
+-	}
+-
+-	mm->core_state = NULL;
+-}
+-
+ /*
+  * set_dumpable converts traditional three-value dumpable to two flags and
+  * stores them into mm->flags.  It modifies lower two bits of mm->flags, but
+@@ -2020,7 +1662,7 @@ void set_dumpable(struct mm_struct *mm, int value)
+ 	}
+ }
+ 
+-static int __get_dumpable(unsigned long mm_flags)
++int __get_dumpable(unsigned long mm_flags)
+ {
+ 	int ret;
+ 
+@@ -2032,290 +1674,3 @@ int get_dumpable(struct mm_struct *mm)
+ {
+ 	return __get_dumpable(mm->flags);
+ }
+-
+-static void wait_for_dump_helpers(struct file *file)
+-{
+-	struct pipe_inode_info *pipe;
+-
+-	pipe = file->f_path.dentry->d_inode->i_pipe;
+-
+-	pipe_lock(pipe);
+-	pipe->readers++;
+-	pipe->writers--;
+-
+-	while ((pipe->readers > 1) && (!signal_pending(current))) {
+-		wake_up_interruptible_sync(&pipe->wait);
+-		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+-		pipe_wait(pipe);
+-	}
+-
+-	pipe->readers--;
+-	pipe->writers++;
+-	pipe_unlock(pipe);
+-
+-}
+-
+-
+-/*
+- * umh_pipe_setup
+- * helper function to customize the process used
+- * to collect the core in userspace.  Specifically
+- * it sets up a pipe and installs it as fd 0 (stdin)
+- * for the process.  Returns 0 on success, or
+- * PTR_ERR on failure.
+- * Note that it also sets the core limit to 1.  This
+- * is a special value that we use to trap recursive
+- * core dumps
+- */
+-static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
+-{
+-	struct file *files[2];
+-	struct fdtable *fdt;
+-	struct coredump_params *cp = (struct coredump_params *)info->data;
+-	struct files_struct *cf = current->files;
+-	int err = create_pipe_files(files, 0);
+-	if (err)
+-		return err;
+-
+-	cp->file = files[1];
+-
+-	sys_close(0);
+-	fd_install(0, files[0]);
+-	spin_lock(&cf->file_lock);
+-	fdt = files_fdtable(cf);
+-	__set_open_fd(0, fdt);
+-	__clear_close_on_exec(0, fdt);
+-	spin_unlock(&cf->file_lock);
+-
+-	/* and disallow core files too */
+-	current->signal->rlim[RLIMIT_CORE] = (struct rlimit){1, 1};
+-
+-	return 0;
+-}
+-
+-void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+-{
+-	struct core_state core_state;
+-	struct core_name cn;
+-	struct mm_struct *mm = current->mm;
+-	struct linux_binfmt * binfmt;
+-	const struct cred *old_cred;
+-	struct cred *cred;
+-	int retval = 0;
+-	int flag = 0;
+-	int ispipe;
+-	bool need_nonrelative = false;
+-	static atomic_t core_dump_count = ATOMIC_INIT(0);
+-	struct coredump_params cprm = {
+-		.signr = signr,
+-		.regs = regs,
+-		.limit = rlimit(RLIMIT_CORE),
+-		/*
+-		 * We must use the same mm->flags while dumping core to avoid
+-		 * inconsistency of bit flags, since this flag is not protected
+-		 * by any locks.
+-		 */
+-		.mm_flags = mm->flags,
+-	};
+-
+-	audit_core_dumps(signr);
+-
+-	binfmt = mm->binfmt;
+-	if (!binfmt || !binfmt->core_dump)
+-		goto fail;
+-	if (!__get_dumpable(cprm.mm_flags))
+-		goto fail;
+-
+-	cred = prepare_creds();
+-	if (!cred)
+-		goto fail;
+-	/*
+-	 * We cannot trust fsuid as being the "true" uid of the process
+-	 * nor do we know its entire history. We only know it was tainted
+-	 * so we dump it as root in mode 2, and only into a controlled
+-	 * environment (pipe handler or fully qualified path).
+-	 */
+-	if (__get_dumpable(cprm.mm_flags) == SUID_DUMPABLE_SAFE) {
+-		/* Setuid core dump mode */
+-		flag = O_EXCL;		/* Stop rewrite attacks */
+-		cred->fsuid = GLOBAL_ROOT_UID;	/* Dump root private */
+-		need_nonrelative = true;
+-	}
+-
+-	retval = coredump_wait(exit_code, &core_state);
+-	if (retval < 0)
+-		goto fail_creds;
+-
+-	old_cred = override_creds(cred);
+-
+-	/*
+-	 * Clear any false indication of pending signals that might
+-	 * be seen by the filesystem code called to write the core file.
+-	 */
+-	clear_thread_flag(TIF_SIGPENDING);
+-
+-	ispipe = format_corename(&cn, signr);
+-
+- 	if (ispipe) {
+-		int dump_count;
+-		char **helper_argv;
+-
+-		if (ispipe < 0) {
+-			printk(KERN_WARNING "format_corename failed\n");
+-			printk(KERN_WARNING "Aborting core\n");
+-			goto fail_corename;
+-		}
+-
+-		if (cprm.limit == 1) {
+-			/* See umh_pipe_setup() which sets RLIMIT_CORE = 1.
+-			 *
+-			 * Normally core limits are irrelevant to pipes, since
+-			 * we're not writing to the file system, but we use
+-			 * cprm.limit of 1 here as a speacial value, this is a
+-			 * consistent way to catch recursive crashes.
+-			 * We can still crash if the core_pattern binary sets
+-			 * RLIM_CORE = !1, but it runs as root, and can do
+-			 * lots of stupid things.
+-			 *
+-			 * Note that we use task_tgid_vnr here to grab the pid
+-			 * of the process group leader.  That way we get the
+-			 * right pid if a thread in a multi-threaded
+-			 * core_pattern process dies.
+-			 */
+-			printk(KERN_WARNING
+-				"Process %d(%s) has RLIMIT_CORE set to 1\n",
+-				task_tgid_vnr(current), current->comm);
+-			printk(KERN_WARNING "Aborting core\n");
+-			goto fail_unlock;
+-		}
+-		cprm.limit = RLIM_INFINITY;
+-
+-		dump_count = atomic_inc_return(&core_dump_count);
+-		if (core_pipe_limit && (core_pipe_limit < dump_count)) {
+-			printk(KERN_WARNING "Pid %d(%s) over core_pipe_limit\n",
+-			       task_tgid_vnr(current), current->comm);
+-			printk(KERN_WARNING "Skipping core dump\n");
+-			goto fail_dropcount;
+-		}
+-
+-		helper_argv = argv_split(GFP_KERNEL, cn.corename+1, NULL);
+-		if (!helper_argv) {
+-			printk(KERN_WARNING "%s failed to allocate memory\n",
+-			       __func__);
+-			goto fail_dropcount;
+-		}
+-
+-		retval = call_usermodehelper_fns(helper_argv[0], helper_argv,
+-					NULL, UMH_WAIT_EXEC, umh_pipe_setup,
+-					NULL, &cprm);
+-		argv_free(helper_argv);
+-		if (retval) {
+- 			printk(KERN_INFO "Core dump to %s pipe failed\n",
+-			       cn.corename);
+-			goto close_fail;
+- 		}
+-	} else {
+-		struct inode *inode;
+-
+-		if (cprm.limit < binfmt->min_coredump)
+-			goto fail_unlock;
+-
+-		if (need_nonrelative && cn.corename[0] != '/') {
+-			printk(KERN_WARNING "Pid %d(%s) can only dump core "\
+-				"to fully qualified path!\n",
+-				task_tgid_vnr(current), current->comm);
+-			printk(KERN_WARNING "Skipping core dump\n");
+-			goto fail_unlock;
+-		}
+-
+-		cprm.file = filp_open(cn.corename,
+-				 O_CREAT | 2 | O_NOFOLLOW | O_LARGEFILE | flag,
+-				 0600);
+-		if (IS_ERR(cprm.file))
+-			goto fail_unlock;
+-
+-		inode = cprm.file->f_path.dentry->d_inode;
+-		if (inode->i_nlink > 1)
+-			goto close_fail;
+-		if (d_unhashed(cprm.file->f_path.dentry))
+-			goto close_fail;
+-		/*
+-		 * AK: actually i see no reason to not allow this for named
+-		 * pipes etc, but keep the previous behaviour for now.
+-		 */
+-		if (!S_ISREG(inode->i_mode))
+-			goto close_fail;
+-		/*
+-		 * Dont allow local users get cute and trick others to coredump
+-		 * into their pre-created files.
+-		 */
+-		if (!uid_eq(inode->i_uid, current_fsuid()))
+-			goto close_fail;
+-		if (!cprm.file->f_op || !cprm.file->f_op->write)
+-			goto close_fail;
+-		if (do_truncate(cprm.file->f_path.dentry, 0, 0, cprm.file))
+-			goto close_fail;
+-	}
+-
+-	retval = binfmt->core_dump(&cprm);
+-	if (retval)
+-		current->signal->group_exit_code |= 0x80;
+-
+-	if (ispipe && core_pipe_limit)
+-		wait_for_dump_helpers(cprm.file);
+-close_fail:
+-	if (cprm.file)
+-		filp_close(cprm.file, NULL);
+-fail_dropcount:
+-	if (ispipe)
+-		atomic_dec(&core_dump_count);
+-fail_unlock:
+-	kfree(cn.corename);
+-fail_corename:
+-	coredump_finish(mm);
+-	revert_creds(old_cred);
+-fail_creds:
+-	put_cred(cred);
+-fail:
+-	return;
+-}
+-
+-/*
+- * Core dumping helper functions.  These are the only things you should
+- * do on a core-file: use only these functions to write out all the
+- * necessary info.
+- */
+-int dump_write(struct file *file, const void *addr, int nr)
+-{
+-	return access_ok(VERIFY_READ, addr, nr) && file->f_op->write(file, addr, nr, &file->f_pos) == nr;
+-}
+-EXPORT_SYMBOL(dump_write);
+-
+-int dump_seek(struct file *file, loff_t off)
+-{
+-	int ret = 1;
+-
+-	if (file->f_op->llseek && file->f_op->llseek != no_llseek) {
+-		if (file->f_op->llseek(file, off, SEEK_CUR) < 0)
+-			return 0;
+-	} else {
+-		char *buf = (char *)get_zeroed_page(GFP_KERNEL);
+-
+-		if (!buf)
+-			return 0;
+-		while (off > 0) {
+-			unsigned long n = off;
+-
+-			if (n > PAGE_SIZE)
+-				n = PAGE_SIZE;
+-			if (!dump_write(file, buf, n)) {
+-				ret = 0;
+-				break;
+-			}
+-			off -= n;
+-		}
+-		free_page((unsigned long)buf);
+-	}
+-	return ret;
+-}
+-EXPORT_SYMBOL(dump_seek);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index c147e70..7bb5047 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -413,6 +413,7 @@ static inline void arch_pick_mmap_layout(struct mm_struct *mm) {}
+ 
+ extern void set_dumpable(struct mm_struct *mm, int value);
+ extern int get_dumpable(struct mm_struct *mm);
++extern int __get_dumpable(unsigned long mm_flags);
+ 
+ /* get/set_dumpable() values */
+ #define SUID_DUMPABLE_DISABLED	0
+-- 
+1.7.11.2
 
->> > +       u8 *irq_mask;
->> > +       u8 *irq_mask_cur;
->> > +       u8 *irq_level;
->> > +       u8 *irq_rise;
->> > +       u8 *irq_fall;
->> > +       u8 *irq_high;
->> > +       u8 *irq_low;
->>
->> Some or all of this looks like a regmap reimplementation, see below.
->
-> Actually none of these represent actual registers, except for irq_mask
-> and irq_mask_cur. They are used to emulate various IRQ trigger modes.
-
-OK.
-
->> When I do this at several places in a driver I usually define
->> a macro like
->>
->> #define to_adnp(foo) container_of(foo, struct adnp, gpio)
->>
->> Used like so:
->>
->> struct adnp *adnp = to_adnp(chip);
->
-> Yes, I usually do that as well. I guess this driver has been in the
-> works in too many variants for too long. =)
-
-OK expect it to be changed in v3 then...
-
->> > +       unsigned int reg = offset >> gpio->reg_shift;
->> > +       unsigned int pos = offset & 7;
->> > +       u8 value;
->> > +       int err;
->> > +
->> > +       mutex_lock(&gpio->i2c_lock);
->>
->> The point of taking this mutex here avoids me.
->> adnp_read() only performs a single transaction.
->
-> I think that's a relic from an earlier version that used to access the
-> PTR (Pin Tristate Register) as well. At the time I used to return 2 here
-> to signify a tristated input, which was dependent on the contents of the
-> PTR. Tristating an output is, I believe, better done using pinmux/
-> pinctrl nowadays, so I took that code because the only platform where
-> this was ever used will probably never be mainlined.
-
-OK so will be gone in v3 I guess.
-
-> On that note, provided there is special additional circuitry, the GPIO
-> controller is able to detect tristate on an input. I'm not aware that
-> the pinctrl subsystem provides for that functionality yet, right?
-
-pinctrl is usually about *setting* things into tristate, but I'm all
-for adding support for getting it as well. But that depends on
-the generic pin configurations being adopted first (still most
-controllers have their own way of doing pin config, so this
-cannot be represented in a generic way).
-
->> > +       base = kzalloc(regs * 5, GFP_KERNEL);
->>
->> Why kzalloc()/kfree() when you can just use a
->>
->> static u8 base[N];
->>
->> where N is the max number of registers on any HW instead?
->
-> As I explained above, the number of pins is configurable, so it'd be
-> quite a waste to always assume a maximum of, say, 256 pins if the
-> hardware actually only uses 8.
-
-OK but atleast find a way to move this to the probe() function,
-what happens if the debugfs file is browsed and you run out
-of memory? Not nice, and you were using this to debug as
-well...
-
->> Usually we define the struct gpio_chip as a static const and have
->> the state containter hold a static const struct gpio_chip *chip;
->> entry assigned to point to the static const at probe time.
->
-> The problem with a static const is that you can no longer configure the
-> number of GPIOs at runtime, which is sort of essential for this driver.
-
-OK keep it like this...
-
->> All other GPIO drivers #ifdef their debugfs code, this probably
->> works fine too, but never saw it before.
->>
->> I'm ambivalent about this, I sort of like it because it avoids
->> #ifdefs and also makes sure the code is always compiled,
->> so if you like it like this, keep it.
->
-> I've started to use this wherever possible because otherwise you have to
-> build numerous configurations to ensure complete compile coverage. Then
-> again this also has the drawback to potentially hide issues if you don't
-> properly separate conditionalized code.
-
-OK I'll adopt to liking this.
-
->> (...)
->> > +static void adnp_irq_update_mask(struct adnp *gpio)
->> > +{
->> > +       unsigned int regs = 1 << gpio->reg_shift;
->> > +       bool equal = true;
->> > +       unsigned int i;
->> > +
->> > +       for (i = 0; i < regs; i++) {
->> > +               if (gpio->irq_mask[i] != gpio->irq_mask_cur[i]) {
->> > +                       equal = false;
->> > +                       break;
->> > +               }
->> > +       }
->>
->> This is not looking good. It looks like you're reimplementing
->> parts of regmap.
->>
->> In that case, please use <linux/regmap.h> to cache registers
->> instead.
->>
->> But I'm not sure ...
->>
->> (...)
->> > +static void adnp_irq_bus_lock(struct irq_data *data)
->> > +{
->> > +       struct adnp *gpio = irq_data_get_irq_chip_data(data);
->> > +       unsigned int regs = 1 << gpio->reg_shift;
->> > +
->> > +       mutex_lock(&gpio->irq_lock);
->> > +       memcpy(gpio->irq_mask_cur, gpio->irq_mask, regs);
->> > +}
->> > +
->> > +static void adnp_irq_bus_unlock(struct irq_data *data)
->> > +{
->> > +       struct adnp *gpio = irq_data_get_irq_chip_data(data);
->> > +
->> > +       adnp_irq_update_mask(gpio);
->> > +       mutex_unlock(&gpio->irq_lock);
->> > +}
->>
->> Actually I'm not following why the IRQ mask registers are shadowed
->> at bus_lock and restored at bus_unlock().
->>
->> A comment describing why that's needed and how it works is
->> definately needed.
->
-> I'm not sure that this is required anymore. IIRC I did copy this from
-> some other driver at the time. This is probably supposed to be an
-> optimization, but I think I can live without it.
-
-If it's an optimization, please see if you can live without it and
-add it back in using regmap if you want it later. regmap rocks...
-
->> > +       gpio->irq_mask = devm_kzalloc(chip->dev, regs * 7, GFP_KERNEL);
->> > +       if (!gpio->irq_mask)
->> > +               return -ENOMEM;
->> > +
->> > +       gpio->irq_mask_cur = gpio->irq_mask + (regs * 1);
->> > +       gpio->irq_level = gpio->irq_mask + (regs * 2);
->> > +       gpio->irq_rise = gpio->irq_mask + (regs * 3);
->> > +       gpio->irq_fall = gpio->irq_mask + (regs * 4);
->> > +       gpio->irq_high = gpio->irq_mask + (regs * 5);
->> > +       gpio->irq_low = gpio->irq_mask + (regs * 6);
->>
->> I'm not following this regs * 1, regs * 2 ... regs *7 stuff. What are you doing
->> here? Explain with some comment atleast.
->
-> Basically I need at least irq_level, irq_rise, irq_fall, irq_high and
-> irq_low to keep track of the current level and trigger modes for each
-> interrupt. Instead of allocating small chunks for each of these I
-> allocate one chunk and just make the others point into that.
-
-Maybe you said this would go away in this case not comments
-of course.
-
-But I wasn't getting the multiplication part. I understand the
-allocation, 7 registers time the number of registers (hm, there
-is something about the naming too....)
-
-You're storing the things in such an awkward way: all
-current masks for all registers sets, then all levels for
-all register etc.
-
-Instead could you store all the flags for *one* instance
-then the next set of registers etc.
-
->> > +       for (i = 0; i < regs; i++) {
->> > +               err = adnp_read(gpio, GPIO_PLR(gpio) + i, &gpio->irq_level[i]);
->> > +               if (err < 0)
->> > +                       return err;
->> > +       }
->>
->> Looks like regmap reimplementation.
->
-> This is used to obtain the initial pin levels, which in turn is required
-> to check for rising and falling edges.
-
-Yeah sorry I misread this code.
-
->> > +       err = request_threaded_irq(gpio->client->irq, NULL, adnp_irq,
->> > +                                  IRQF_TRIGGER_RISING | IRQF_ONESHOT,
->> > +                                  dev_name(chip->dev), gpio);
->>
->> Since you're using devm_* above use it here too:
->> devm_request_threaded_irq().
->> > (...)
->> > +static void adnp_irq_teardown(struct adnp *gpio)
->> > +{
->> > +       unsigned int irq, i;
->> > +
->> > +       free_irq(gpio->client->irq, gpio);
->>
->> If you're using devm to grab the IRQ this is not needed.
->
-> I don't think that'll work. In this case the interrupt needs to be freed
-> before cleaning up, because otherwise the interrupt handler may still be
-> run after the IRQ domain has already been removed.
-
-Hm. Paging Grant on this one.
-
-Grant: can't we add devm_* managed IRQ domains so this
-ordering etc goes into the core as well?
-
->> > +               return -EPROBE_DEFER;
->>
->> Why would you defer in this case? If the IRQ controller appear later
->> than the GPIO driver?
->
-> Yes. In particular when using DT it can happen that the parent interrupt
-> controller is probed later than this.
-
-OK.
-
->> > +       if (IS_ENABLED(CONFIG_GPIO_ADNP_IRQ)) {
->> > +               err = adnp_irq_setup(gpio);
->> > +               if (err < 0)
->> > +                       goto teardown;
->> > +       }
->>
->> And that activates the question why this should be conditional,
->> please elaborate.
->
-> I think I've answered this before.
-
-Yep, and I suggest to make this 100% runtime, not compile-time.
-
-> Thanks for reviewing. I'll fixup the problems you've pointed out and
-> will have to retest.
-
-Thanks, waiting for v3.
-
-Yours,
-Linus Walleij
