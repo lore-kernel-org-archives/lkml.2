@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab2HEQpa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 12:45:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56741 "EHLO
+	id S1754757Ab2HEQtw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 12:49:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56794 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab2HEQp3 (ORCPT
+	with ESMTP id S1754662Ab2HEQtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 12:45:29 -0400
-Date: Sun, 5 Aug 2012 09:45:04 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-0ecf4f0c02b7802de5d1251e03e6eab360f158e1@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, drepper@gmail.com,
-        tglx@linutronix.de, kirill@shutemov.name
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, drepper@gmail.com,
-        tglx@linutronix.de, kirill@shutemov.name
-In-Reply-To: <1343267410-7758-1-git-send-email-namhyung@kernel.org>
-References: <1343267410-7758-1-git-send-email-namhyung@kernel.org>
+	Sun, 5 Aug 2012 12:49:50 -0400
+Date: Sun, 5 Aug 2012 09:45:59 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-ptod86fxkpgq3h62m9refkv4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf target: Fix check on buffer size
-Git-Commit-ID: 0ecf4f0c02b7802de5d1251e03e6eab360f158e1
+Subject: [tip:perf/urgent] perf evsel: Precalculate the sample size
+Git-Commit-ID: bde09467b56c5a3cfe2a29d58edc5f7172c15184
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,46 +29,211 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 05 Aug 2012 09:45:11 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 05 Aug 2012 09:46:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0ecf4f0c02b7802de5d1251e03e6eab360f158e1
-Gitweb:     http://git.kernel.org/tip/0ecf4f0c02b7802de5d1251e03e6eab360f158e1
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 26 Jul 2012 10:50:10 +0900
+Commit-ID:  bde09467b56c5a3cfe2a29d58edc5f7172c15184
+Gitweb:     http://git.kernel.org/tip/bde09467b56c5a3cfe2a29d58edc5f7172c15184
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 1 Aug 2012 18:53:11 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 1 Aug 2012 18:42:54 -0300
+CommitDate: Wed, 1 Aug 2012 18:53:11 -0300
 
-perf target: Fix check on buffer size
+perf evsel: Precalculate the sample size
 
-It was a mistake just replace assert to BUG_ON since its condition
-should be negated. Fix it.
+So that we don't have to store it in the perf_session instance, because
+in the future perf_session instances may have multiple evlists, each
+with different sample_type/sizes.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1343267410-7758-1-git-send-email-namhyung@kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-ptod86fxkpgq3h62m9refkv4@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/target.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/builtin-test.c |    9 ++++-----
+ tools/perf/util/evsel.c   |    3 ++-
+ tools/perf/util/evsel.h   |    8 +-------
+ tools/perf/util/python.c  |    2 +-
+ tools/perf/util/session.c |   14 +++++++++++++-
+ tools/perf/util/session.h |   13 +++----------
+ 6 files changed, 24 insertions(+), 25 deletions(-)
 
-diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 3f59c49..051eaa6 100644
---- a/tools/perf/util/target.c
-+++ b/tools/perf/util/target.c
-@@ -110,7 +110,7 @@ int perf_target__strerror(struct perf_target *target, int errnum,
- 	int idx;
- 	const char *msg;
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index d909eb7..2ea5fe4 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -478,7 +478,6 @@ static int test__basic_mmap(void)
+ 	unsigned int nr_events[nsyscalls],
+ 		     expected_nr_events[nsyscalls], i, j;
+ 	struct perf_evsel *evsels[nsyscalls], *evsel;
+-	int sample_size = __perf_evsel__sample_size(attr.sample_type);
  
--	BUG_ON(buflen > 0);
-+	BUG_ON(buflen == 0);
+ 	for (i = 0; i < nsyscalls; ++i) {
+ 		char name[64];
+@@ -563,7 +562,8 @@ static int test__basic_mmap(void)
+ 			goto out_munmap;
+ 		}
  
- 	if (errnum >= 0) {
- 		const char *err = strerror_r(errnum, buf, buflen);
+-		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
++		err = perf_event__parse_sample(event, attr.sample_type,
++					       evsels[0]->sample_size,
+ 					       false, &sample, false);
+ 		if (err) {
+ 			pr_err("Can't parse sample, err = %d\n", err);
+@@ -666,7 +666,7 @@ static int test__PERF_RECORD(void)
+ 	     found_libc_mmap = false,
+ 	     found_vdso_mmap = false,
+ 	     found_ld_mmap = false;
+-	int err = -1, errs = 0, i, wakeups = 0, sample_size;
++	int err = -1, errs = 0, i, wakeups = 0;
+ 	u32 cpu;
+ 	int total_events = 0, nr_events[PERF_RECORD_MAX] = { 0, };
+ 
+@@ -761,7 +761,6 @@ static int test__PERF_RECORD(void)
+ 	 * event.
+ 	 */
+ 	sample_type = perf_evlist__sample_type(evlist);
+-	sample_size = __perf_evsel__sample_size(sample_type);
+ 
+ 	/*
+ 	 * Now that all is properly set up, enable the events, they will
+@@ -789,7 +788,7 @@ static int test__PERF_RECORD(void)
+ 					nr_events[type]++;
+ 
+ 				err = perf_event__parse_sample(event, sample_type,
+-							       sample_size, true,
++							       evsel->sample_size, true,
+ 							       &sample, false);
+ 				if (err < 0) {
+ 					if (verbose)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index e817713..8feec40 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -20,7 +20,7 @@
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
+ 
+-int __perf_evsel__sample_size(u64 sample_type)
++static int __perf_evsel__sample_size(u64 sample_type)
+ {
+ 	u64 mask = sample_type & PERF_SAMPLE_MASK;
+ 	int size = 0;
+@@ -53,6 +53,7 @@ void perf_evsel__init(struct perf_evsel *evsel,
+ 	evsel->attr	   = *attr;
+ 	INIT_LIST_HEAD(&evsel->node);
+ 	hists__init(&evsel->hists);
++	evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
+ }
+ 
+ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 67cc503..894bd77 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -65,6 +65,7 @@ struct perf_evsel {
+ 		void		*func;
+ 		void		*data;
+ 	} handler;
++	unsigned int		sample_size;
+ 	bool 			supported;
+ };
+ 
+@@ -177,13 +178,6 @@ static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
+ 	return __perf_evsel__read(evsel, ncpus, nthreads, true);
+ }
+ 
+-int __perf_evsel__sample_size(u64 sample_type);
+-
+-static inline int perf_evsel__sample_size(struct perf_evsel *evsel)
+-{
+-	return __perf_evsel__sample_size(evsel->attr.sample_type);
+-}
+-
+ void hists__init(struct hists *hists);
+ 
+ #endif /* __PERF_EVSEL_H */
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index e03b58a..b0d6f85 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -806,7 +806,7 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
+ 
+ 		first = list_entry(evlist->entries.next, struct perf_evsel, node);
+ 		err = perf_event__parse_sample(event, first->attr.sample_type,
+-					       perf_evsel__sample_size(first),
++					       first->sample_size,
+ 					       sample_id_all, &pevent->sample, false);
+ 		if (err)
+ 			return PyErr_Format(PyExc_OSError,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 8e4f075..b8da60d 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -16,6 +16,19 @@
+ #include "cpumap.h"
+ #include "event-parse.h"
+ 
++int perf_session__parse_sample(struct perf_session *session,
++			       const union perf_event *event,
++			       struct perf_sample *sample)
++{
++	struct perf_evsel *first;
++	first = list_entry(session->evlist->entries.next, struct perf_evsel, node);
++
++	return perf_event__parse_sample(event, session->sample_type,
++					first->sample_size,
++					session->sample_id_all, sample,
++					session->header.needs_swap);
++}
++
+ static int perf_session__open(struct perf_session *self, bool force)
+ {
+ 	struct stat input_stat;
+@@ -83,7 +96,6 @@ out_close:
+ void perf_session__update_sample_type(struct perf_session *self)
+ {
+ 	self->sample_type = perf_evlist__sample_type(self->evlist);
+-	self->sample_size = __perf_evsel__sample_size(self->sample_type);
+ 	self->sample_id_all = perf_evlist__sample_id_all(self->evlist);
+ 	self->id_hdr_size = perf_evlist__id_hdr_size(self->evlist);
+ 	self->host_machine.id_hdr_size = self->id_hdr_size;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 7c435bd..4d549e2 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -42,7 +42,6 @@ struct perf_session {
+ 	 */
+ 	struct hists		hists;
+ 	u64			sample_type;
+-	int			sample_size;
+ 	int			fd;
+ 	bool			fd_pipe;
+ 	bool			repipe;
+@@ -130,15 +129,9 @@ size_t perf_session__fprintf_dsos_buildid(struct perf_session *self,
+ 
+ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp);
+ 
+-static inline int perf_session__parse_sample(struct perf_session *session,
+-					     const union perf_event *event,
+-					     struct perf_sample *sample)
+-{
+-	return perf_event__parse_sample(event, session->sample_type,
+-					session->sample_size,
+-					session->sample_id_all, sample,
+-					session->header.needs_swap);
+-}
++int perf_session__parse_sample(struct perf_session *session,
++			       const union perf_event *event,
++			       struct perf_sample *sample);
+ 
+ static inline int perf_session__synthesize_sample(struct perf_session *session,
+ 						  union perf_event *event,
