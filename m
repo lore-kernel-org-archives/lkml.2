@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab2HEIb4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 04:31:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36805 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab2HEIbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 04:31:43 -0400
-From: eshink@gmail.com
-To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Alex Kelly <eshink@gmail.com>, Alex Kelly <alex.page.kelly@gmail.com>
-Subject: [PATCH 3/4] fs: Clean up some artifacts in coredump.c
-Date: Sun,  5 Aug 2012 01:28:19 -0700
-Message-Id: <1344155300-10432-3-git-send-email-eshink@gmail.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1344155300-10432-1-git-send-email-eshink@gmail.com>
-References: <1344027800-8270-1-git-send-email-eshink@gmail.com>
- <1344155300-10432-1-git-send-email-eshink@gmail.com>
+	id S1754325Ab2HEIep (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 04:34:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:29789 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039Ab2HEIen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 04:34:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="193349696"
+Message-Id: <20120805082614.071671796@intel.com>
+User-Agent: quilt/0.51-1
+Date: Sun, 05 Aug 2012 16:26:14 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+to: Jens Axboe <axboe@kernel.dk>
+CC: Andrew Morton <akpm@linux-foundation.org>
+cc: <linux-fsdevel@vger.kernel.org>
+cc: Damien Wyart <damien.wyart@free.fr>
+cc: Li Shaohua <shli@fusionio.com>
+CC: Jeff Moyer <jmoyer@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] [RESEND] Remove plugging at buffered write time
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Kelly <eshink@gmail.com>
+Hi all,
 
-Specifically, some whitespace got carried over from the move that
-shouldn't have, and there were some comment style issues in the original
-code that are now fixed
+It seems this patch was silently forgotten, but the review comments have all
+been addressed: the patch has been split into two pieces and tests show no
+performance regressions (nor noticeable gains..).
 
-Signed-off-by: Alex Kelly <alex.page.kelly@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- fs/coredump.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Thanks to Damien for reminding me of the patch!
 
-diff --git a/fs/coredump.c b/fs/coredump.c
-index 34c9236..7f75060 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -70,7 +70,6 @@ static int zap_process(struct task_struct *start, int exit_code)
- 	return nr;
- }
- 
--
- /*
-  * Core dumping helper functions.  These are the only things you should
-  * do on a core-file: use only these functions to write out all the
-@@ -195,8 +194,10 @@ static int format_corename(struct core_name *cn, long signr)
- 	if (!cn->corename)
- 		return -ENOMEM;
- 
--	/* Repeat as long as we have more pattern to process and more output
--	   space */
-+	/*
-+	 * Repeat as long as we have more pattern to process and more output
-+	 * space.
-+	 */
- 	while (*pat_ptr) {
- 		if (*pat_ptr != '%') {
- 			if (*pat_ptr == 0)
-@@ -471,7 +472,6 @@ static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
- 	return 0;
- }
- 
--
- void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- {
- 	struct core_state core_state;
--- 
-1.7.11.2
+Thanks,
+Fengguang
 
