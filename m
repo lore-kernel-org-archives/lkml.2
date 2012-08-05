@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab2HFHk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 03:40:29 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:19606 "EHLO
+	id S1753679Ab2HFHla (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 03:41:30 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:6380 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab2HFHk1 (ORCPT
+	with ESMTP id S1753473Ab2HFHl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 03:40:27 -0400
-Message-Id: <201208060738.q767ci5c005713@ubuntu>
+	Mon, 6 Aug 2012 03:41:28 -0400
+Message-Id: <201208060739.q767djnO005723@ubuntu>
 From: Anthony Olech <anthony.olech.opensource@diasemi.com>
 Date: Sun, 5 Aug 2012 21:43:43 +0100
-Subject: [NEW DRIVER V2 5/7] DA9058 GPIO driver
-To: Grant Likely <grant.likely@secretlab.ca>
-To: Linus Walleij <linus.walleij@stericsson.com>
+Subject: [NEW DRIVER V2 4/7] DA9058 RTC driver
+To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com
 Cc: LKML <linux-kernel@vger.kernel.org>
 Cc: David Dajun Chen <david.chen@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the GPIO component driver of the Dialog DA9058 PMIC.
+This is the RTC component driver of the Dialog DA9058 PMIC.
 This driver is just one component of the whole DA9058 PMIC driver.
 It depends on the core DA9058 MFD driver.
 
 Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
 Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
 ---
- drivers/gpio/Kconfig       |   12 ++
- drivers/gpio/Makefile      |    1 +
- drivers/gpio/gpio-da9058.c |  376 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 389 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/gpio-da9058.c
+ drivers/rtc/Kconfig      |   10 +
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-da9058.c |  446 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 457 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-da9058.c
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 542f0c0..63b574a 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -86,6 +86,18 @@ config GPIO_DA9052
- 	help
- 	  Say yes here to enable the GPIO driver for the DA9052 chip.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 08cbdb9..21f5630 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -135,6 +135,16 @@ config RTC_DRV_88PM860X
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-88pm860x.
  
-+config GPIO_DA9058
-+	tristate "Dialog DA9058 GPIO"
++config RTC_DRV_DA9058
++	tristate "Dialog DA9058"
 +	depends on MFD_DA9058
 +	help
-+	  Say yes here to enable the GPIO driver for the DA9058 chip.
++	  If you say yes here you will get support for the
++	  RTC of the Dialog DA9058 PMIC.
 +
-+	  The Dialog DA9058 PMIC chip has 2 GPIO pins that can be
-+	  be controller by this driver.
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-da9058.
 +
-+	  If driver is built as a module it will be called da9058-gpio.
-+
-+
- config GPIO_MAX730X
- 	tristate
- 
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 0f55662..209224a 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -14,6 +14,7 @@ obj-$(CONFIG_GPIO_ADP5520)	+= gpio-adp5520.o
- obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
- obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
- obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
-+obj-$(CONFIG_GPIO_DA9058)	+= gpio-da9058.o
- obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
- obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
- obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
-diff --git a/drivers/gpio/gpio-da9058.c b/drivers/gpio/gpio-da9058.c
+ config RTC_DRV_DS1307
+ 	tristate "Dallas/Maxim DS1307/37/38/39/40, ST M41T00, EPSON RX-8025"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 2973921..b772f05 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_RTC_DRV_CMOS)	+= rtc-cmos.o
+ obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
+ obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
+ obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
++obj-$(CONFIG_RTC_DRV_DA9058)	+= rtc-da9058.o
+ obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
+ obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
+ obj-$(CONFIG_RTC_DRV_DS1216)	+= rtc-ds1216.o
+diff --git a/drivers/rtc/rtc-da9058.c b/drivers/rtc/rtc-da9058.c
 new file mode 100644
-index 0000000..ed464ff
+index 0000000..c981900
 --- /dev/null
-+++ b/drivers/gpio/gpio-da9058.c
-@@ -0,0 +1,376 @@
++++ b/drivers/rtc/rtc-da9058.c
+@@ -0,0 +1,446 @@
 +/*
 + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
 + *
@@ -85,281 +86,324 @@ index 0000000..ed464ff
 + */
 +
 +#include <linux/module.h>
-+#include <linux/fs.h>
-+#include <linux/uaccess.h>
-+#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/syscalls.h>
-+#include <linux/seq_file.h>
++#include <linux/kernel.h>
++#include <linux/rtc.h>
 +#include <linux/slab.h>
-+#include <linux/interrupt.h>
-+#include <linux/mfd/core.h>
++#include <linux/irq.h>
 +#include <linux/regmap.h>
++#include <linux/mfd/core.h>
 +
 +#include <linux/mfd/da9058/version.h>
 +#include <linux/mfd/da9058/registers.h>
 +#include <linux/mfd/da9058/core.h>
-+#include <linux/mfd/da9058/gpio.h>
 +#include <linux/mfd/da9058/irq.h>
-+#include <linux/mfd/da9058/pdata.h>
++#include <linux/mfd/da9058/rtc.h>
 +
 +/*
-+ *  There are only 2 available GPIO pins on the DA9058 PMIC
-+ *
-+ *  Thus this driver distinguishes them by the offset number
-+ *  being zero or non-zero for simplicity
++ * Limit values
 + */
++#define DA9058_RTC_SECONDS_LIMIT		59
++#define DA9058_RTC_MINUTES_LIMIT		59
++#define DA9058_RTC_HOURS_LIMIT			23
++#define DA9058_RTC_DAYS_LIMIT			31
++#define DA9058_RTC_MONTHS_LIMIT			12
++#define DA9058_RTC_YEARS_LIMIT			63
 +
-+struct da9058_gpio {
++struct da9058_rtc {
 +	struct da9058 *da9058;
 +	struct platform_device *pdev;
-+	struct gpio_chip gp;
-+	struct mutex lock;
-+	u8 inp_config;
-+	u8 out_config;
++	struct rtc_device *rtc_dev;
++	int alarm_irq;
++	int tick_irq;
++	int alarm_enabled;	/* used over suspend/resume */
 +};
 +
-+static struct da9058_gpio *gpio_chip_to_da9058_gpio(struct gpio_chip *chip)
++static int da9058_rtc_check_param(struct rtc_time *rtc_tm)
 +{
-+	return container_of(chip, struct da9058_gpio, gp);
++	if ((rtc_tm->tm_sec > DA9058_RTC_SECONDS_LIMIT) || (rtc_tm->tm_sec < 0))
++		return -EIO;
++
++	if ((rtc_tm->tm_min > DA9058_RTC_MINUTES_LIMIT) || (rtc_tm->tm_min < 0))
++		return -EIO;
++
++	if ((rtc_tm->tm_hour > DA9058_RTC_HOURS_LIMIT) || (rtc_tm->tm_hour < 0))
++		return -EIO;
++
++	if (rtc_tm->tm_mday == 0)
++		return -EIO;
++
++	if ((rtc_tm->tm_mon > DA9058_RTC_MONTHS_LIMIT) || (rtc_tm->tm_mon <= 0))
++		return -EIO;
++
++	if ((rtc_tm->tm_year > DA9058_RTC_YEARS_LIMIT) || (rtc_tm->tm_year < 0))
++		return -EIO;
++
++	return 0;
 +}
 +
-+static int da9058_gpio_get(struct gpio_chip *gc, unsigned offset)
++static int da9058_rtc_readtime(struct device *dev, struct rtc_time *tm)
 +{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	unsigned int gpio_level;
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	unsigned int rtc_time[6];
 +	int ret;
 +
-+	if (offset > 1)
-+		return -EINVAL;
++	ret = da9058_bulk_read(da9058, DA9058_COUNTS_REG, rtc_time, 6);
++	if (ret)
++		return ret;
 +
-+	mutex_lock(&gpio->lock);
-+	ret = da9058_reg_read(da9058, DA9058_STATUSC_REG, &gpio_level);
-+	mutex_unlock(&gpio->lock);
++	tm->tm_sec = rtc_time[0] & DA9058_RTC_SECS_MASK;
++
++	tm->tm_min = rtc_time[1] & DA9058_RTC_MINS_MASK;
++
++	tm->tm_hour = rtc_time[2] & DA9058_RTC_HRS_MASK;
++
++	tm->tm_mday = (rtc_time[3] & DA9058_RTC_DAY_MASK);
++
++	tm->tm_mon = (rtc_time[4] & DA9058_RTC_MTH_MASK);
++
++	tm->tm_year = (rtc_time[5] & DA9058_RTC_YRS_MASK);
++
++	ret = da9058_rtc_check_param(tm);
++
++	if (ret)
++		return ret;
++
++	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon,
++						tm->tm_year);
++	tm->tm_year += 100;
++	tm->tm_mon -= 1;
++
++	return 0;
++}
++
++static int da9058_rtc_settime(struct device *dev, struct rtc_time *tm)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	unsigned int rtc_ctrl, val, rtc_time[6];
++	int ret;
++
++	tm->tm_year -= 111;
++	tm->tm_mon += 1;
++
++	ret = da9058_rtc_check_param(tm);
 +	if (ret < 0)
 +		return ret;
 +
-+	if (offset) {
-+		if (gpio_level & DA9058_STATUSC_GPI1)
-+			return 1;
-+		else
-+			return 0;
-+	} else {
-+		if (gpio_level & DA9058_STATUSC_GPI0)
-+			return 1;
-+		else
-+			return 0;
-+	}
-+}
-+
-+static void da9058_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
-+{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	unsigned int gpio_cntrl;
-+	int ret;
-+
-+	if (offset > 1) {
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d output=%d because illegal GPIO\n",
-+			offset, value);
-+		return;
-+	}
-+
-+	mutex_lock(&gpio->lock);
-+
-+	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	ret = da9058_reg_read(da9058, DA9058_COUNTS_REG, &rtc_ctrl);
 +	if (ret)
-+		goto exit;
++		return ret;
++	rtc_ctrl &= ~DA9058_RTC_SECS_MASK;
 +
-+	if (offset) {
-+		u8 value_bits = value ? 0x80 : 0x00;
++	rtc_time[0] = rtc_ctrl | tm->tm_sec;
++	rtc_time[1] = tm->tm_min;
++	rtc_time[2] = tm->tm_hour;
++	rtc_time[3] = tm->tm_mday;
++	rtc_time[4] = tm->tm_mon;
++	rtc_time[5] = tm->tm_year;
 +
-+		gpio->out_config &= ~0x80;
-+		gpio->out_config |= value_bits;
-+
-+		if (!(gpio_cntrl & 0x20))
-+			goto exit;
-+
-+		gpio_cntrl &= ~0xF0;
-+		gpio_cntrl |= 0xF0 & gpio->out_config;
-+
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	} else {
-+		u8 value_bits = value ? 0x08 : 0x00;
-+
-+		gpio->out_config &= ~0x08;
-+		gpio->out_config |= value_bits;
-+
-+		if (!(gpio_cntrl & 0x02))
-+			goto exit;
-+
-+		gpio_cntrl &= ~0x0F;
-+		gpio_cntrl |= 0x0F & gpio->out_config;
-+
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
++	ret = da9058_bulk_write(da9058, DA9058_COUNTS_REG, rtc_time, 6);
++	if (ret) {
++		dev_dbg(dev, "failed %d to write to RTC\n", ret);
++		return ret;
 +	}
-+exit:
-+	mutex_unlock(&gpio->lock);
++	ret = da9058_reg_read(da9058, DA9058_COUNTY_REG, &val);
 +	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d output=%d error=%d\n",
-+			offset, value, ret);
-+	return;
-+}
++		return ret;
 +
-+static int da9058_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	unsigned int gpio_cntrl;
-+	int ret;
++	val &= DA9058_COUNTY_MONITOR;
++	if (val)
++		return 0;
 +
-+	if (offset > 1)
-+		return -EINVAL;
++	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
 +
-+	mutex_lock(&gpio->lock);
-+
-+	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
-+	if (ret)
-+		goto exit;
-+
-+	if (offset) {
-+		gpio_cntrl &= ~0xF0;
-+		gpio_cntrl |= 0xF0 & gpio->inp_config;
-+
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	} else {
-+		gpio_cntrl &= ~0x0F;
-+		gpio_cntrl |= 0x0F & gpio->inp_config;
-+
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	}
-+exit:
-+	mutex_unlock(&gpio->lock);
-+	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d to output error=%d\n",
-+			offset, ret);
 +	return ret;
 +}
 +
-+static int da9058_gpio_direction_output(struct gpio_chip *gc,
-+					unsigned offset, int value)
++static int da9058_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
 +{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	unsigned int gpio_cntrl;
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	struct rtc_time *tm = &alrm->time;
++	unsigned int alm_time[6], val;
 +	int ret;
 +
-+	if (offset > 1)
-+		return -EINVAL;
-+
-+	mutex_lock(&gpio->lock);
-+
-+	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	ret = da9058_bulk_read(da9058, DA9058_ALARMS_REG, alm_time, 6);
 +	if (ret)
-+		goto exit;
++		return ret;
 +
-+	if (offset) {
-+		gpio_cntrl &= ~0xF0;
-+		gpio_cntrl |= 0xF0 & gpio->out_config;
++	tm->tm_min = alm_time[0] & DA9058_RTC_ALMSECS_MASK;
 +
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	} else {
-+		gpio_cntrl &= ~0x0F;
-+		gpio_cntrl |= 0x0F & gpio->out_config;
++	tm->tm_min = alm_time[1] & DA9058_RTC_ALMMINS_MASK;
 +
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	}
-+exit:
-+	mutex_unlock(&gpio->lock);
++	tm->tm_hour = alm_time[2] & DA9058_RTC_ALMHRS_MASK;
++
++	tm->tm_mday = alm_time[3] & DA9058_RTC_ALMDAY_MASK;
++
++	tm->tm_mon = alm_time[4] & DA9058_RTC_ALMMTH_MASK;
++
++	tm->tm_year = alm_time[5] & DA9058_RTC_ALMYRS_MASK;
++
++	ret = da9058_rtc_check_param(tm);
++	if (ret < 0)
++		return ret;
++
++	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &val);
 +	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d to input error=%d\n",
-+			offset, ret);
-+	return ret;
++		return ret;
++
++	alrm->enabled = val & DA9058_ALARMY_ALARMON;
++
++	tm->tm_year += 100;
++	tm->tm_mon -= 1;
++
++	return 0;
 +}
-+/*
-+ *  da9058_gpio_to_irq is an implementation of the GPIO Hook
-+ *  @to_irq: supporting non-static gpio_to_irq() mappings
-+ *  whose implementation may not sleep. This hook is called
-+ *  when setting up the threaded GPIO irq handler.
-+ */
-+static int da9058_gpio_to_irq(struct gpio_chip *gc, u32 offset)
++
++static int da9058_rtc_stop_alarm(struct da9058_rtc *rtc)
 +{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
++	return da9058_clear_bits(rtc->da9058, DA9058_ALARMY_REG,
++						DA9058_ALARMY_ALARMON);
++}
 +
-+	if (offset > 1)
-+		return -EINVAL;
++static int da9058_rtc_start_alarm(struct da9058_rtc *rtc)
++{
++	return da9058_set_bits(rtc->da9058, DA9058_ALARMY_REG,
++						DA9058_ALARMY_ALARMON);
++}
 +
-+	if (offset)
-+		return da9058_to_virt_irq_num(da9058, DA9058_IRQ_EGPI1);
++static int da9058_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	struct rtc_time *tm = &alrm->time;
++	unsigned int alm_time[6], rtc_ctrl;
++	int ret;
++
++	tm->tm_year -= 100;
++	tm->tm_mon += 1;
++
++	ret = da9058_rtc_check_param(tm);
++	if (ret < 0)
++		return ret;
++
++	memset(alm_time, 0, sizeof(alm_time));
++
++	if (tm->tm_sec != -1)
++		alm_time[0] |= tm->tm_sec;
 +	else
-+		return da9058_to_virt_irq_num(da9058, DA9058_IRQ_EGPI0);
-+}
++		alm_time[0] |= DA9058_RTC_ALMSECS_MASK;
 +
-+static int da9058_gpio_set_debounce(struct gpio_chip *gc, unsigned offset,
-+				unsigned debounce)
-+{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	int ret;
-+	unsigned int gpio_cntrl;
-+
-+	if (offset > 1)
-+		return -EINVAL;
-+
-+	mutex_lock(&gpio->lock);
-+
-+	ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
++	ret = da9058_reg_read(da9058, DA9058_ALARMMI_REG, &rtc_ctrl);
 +	if (ret)
-+		goto exit;
++		return ret;
++	rtc_ctrl &= ~DA9058_RTC_ALMMINS_MASK;
 +
-+	if (offset) {
-+		u8 debounce_bits = debounce ? 0x80 : 0x00;
++	if (tm->tm_min != -1)
++		alm_time[1] = rtc_ctrl | tm->tm_min;
++	else
++		alm_time[1] = rtc_ctrl | DA9058_RTC_ALMMINS_MASK;
 +
-+		gpio->inp_config &= ~0x80;
-+		gpio->inp_config |= debounce_bits;
++	if (tm->tm_hour != -1)
++		alm_time[2] |= tm->tm_hour;
++	else
++		alm_time[2] |= DA9058_RTC_ALMHRS_MASK;
 +
-+		if (gpio_cntrl & 0x20)
-+			goto exit;
++	if (tm->tm_mday != -1)
++		alm_time[3] |= tm->tm_mday;
++	else
++		alm_time[3] |= DA9058_RTC_ALMDAY_MASK;
 +
-+		gpio_cntrl &= ~0xF0;
-+		gpio_cntrl |= 0xF0 & gpio->inp_config;
++	if (tm->tm_mon != -1)
++		alm_time[4] |= tm->tm_mon;
++	else
++		alm_time[4] |= DA9058_RTC_ALMMTH_MASK;
 +
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	} else {
-+		u8 debounce_bits = debounce ? 0x08 : 0x00;
-+
-+		gpio->inp_config &= ~0x08;
-+		gpio->inp_config |= debounce_bits;
-+
-+		if (gpio_cntrl & 0x02)
-+			goto exit;
-+
-+		gpio_cntrl &= ~0x0F;
-+		gpio_cntrl |= 0x0F & gpio->inp_config;
-+
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	}
-+exit:
-+	mutex_unlock(&gpio->lock);
++	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &rtc_ctrl);
 +	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d bounce=%d error=%d\n",
-+			offset, debounce, ret);
++		return ret;
++
++	rtc_ctrl &= ~DA9058_RTC_ALMYRS_MASK;
++
++	if (tm->tm_year != -1)
++		alm_time[5] = rtc_ctrl | tm->tm_year;
++	else
++		alm_time[5] = rtc_ctrl | DA9058_RTC_ALMYRS_MASK;
++
++	ret = da9058_rtc_stop_alarm(rtc);
++	if (ret < 0)
++		return ret;
++
++	ret = da9058_bulk_write(da9058, DA9058_ALARMS_REG, alm_time, 6);
++	if (ret)
++		return ret;
++
++	if (alrm->enabled)
++		ret = da9058_rtc_start_alarm(rtc);
++
 +	return ret;
 +}
 +
-+static int __devinit da9058_gpio_probe(struct platform_device *pdev)
++static int da9058_rtc_alarm_irq_enable(struct device *dev,
++						unsigned int enabled)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++
++	if (enabled)
++		return da9058_rtc_start_alarm(rtc);
++	else
++		return da9058_rtc_stop_alarm(rtc);
++}
++
++static irqreturn_t da9058_rtc_timer_alarm_handler(int irq, void *data)
++{
++	struct da9058_rtc *rtc = data;
++
++	da9058_rtc_stop_alarm(rtc);
++	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
++
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t da9058_rtc_tick_alarm_handler(int irq, void *data)
++{
++	struct da9058_rtc *rtc = data;
++
++	rtc_update_irq(rtc->rtc_dev, 1, RTC_PF | RTC_IRQF);
++
++	return IRQ_HANDLED;
++}
++static int da9058_rtc_proc(struct device *dev, struct seq_file *seq)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	unsigned int rtc_ctrl;
++	int ret;
++
++	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &rtc_ctrl);
++
++	seq_printf(seq, rtc_ctrl & DA9058_ALARMY_ALARMON ?
++		"ALRM is running\n" : "ALRM is not running\n");
++
++	return 0;
++}
++
++static const struct rtc_class_ops da9058_rtc_ops = {
++	.read_time = da9058_rtc_readtime,
++	.set_time = da9058_rtc_settime,
++	.read_alarm = da9058_rtc_readalarm,
++	.set_alarm = da9058_rtc_setalarm,
++	.proc = da9058_rtc_proc,
++	.alarm_irq_enable = da9058_rtc_alarm_irq_enable,
++};
++
++static int da9058_rtc_probe(struct platform_device *pdev)
 +{
 +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
 +	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_gpio_pdata *gpio_pdata;
-+	struct da9058_gpio *gpio;
++	struct da9058_rtc_pdata *rtc_pdata;
++	struct da9058_rtc *rtc;
 +	int ret;
 +
 +	if (cell == NULL) {
@@ -367,89 +411,116 @@ index 0000000..ed464ff
 +		goto exit;
 +	}
 +
-+	gpio_pdata = cell->platform_data;
++	rtc_pdata = cell->platform_data;
 +
-+	if (!gpio_pdata) {
++	if (rtc_pdata == NULL) {
 +		ret = -EINVAL;
 +		goto exit;
 +	}
 +
-+	gpio = devm_kzalloc(&pdev->dev, sizeof(struct da9058_gpio), GFP_KERNEL);
-+	if (!gpio) {
++	rtc = devm_kzalloc(&pdev->dev, sizeof(struct da9058_rtc), GFP_KERNEL);
++	if (!rtc) {
 +		ret = -ENOMEM;
 +		goto exit;
 +	}
 +
-+	gpio->da9058 = da9058;
-+	gpio->pdev = pdev;
++	platform_set_drvdata(pdev, rtc);
 +
-+	gpio->gp.label = "da9058-gpio";
-+	gpio->gp.owner = THIS_MODULE;
-+	gpio->gp.get = da9058_gpio_get;
-+	gpio->gp.set = da9058_gpio_set;
-+	gpio->gp.direction_input = da9058_gpio_direction_input;
-+	gpio->gp.direction_output = da9058_gpio_direction_output;
-+	gpio->gp.to_irq = da9058_gpio_to_irq;
-+	gpio->gp.set_debounce = da9058_gpio_set_debounce;
-+	gpio->gp.can_sleep = 1;
-+	gpio->gp.ngpio = gpio_pdata->ngpio;
-+	gpio->gp.base = gpio_pdata->gpio_base;
-+
-+	gpio->inp_config = 0x99;
-+	gpio->out_config = 0x66;
-+
-+	mutex_init(&gpio->lock);
-+
-+	ret = gpiochip_add(&gpio->gp);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
-+		goto err;
++	rtc->da9058 = da9058;
++	rtc->pdev = pdev;
++	ret = da9058_clear_bits(da9058, DA9058_WAITCONT_REG,
++						DA9058_WAITCONT_RTCCLOCK);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to set RTC running: %d\n", ret);
++		goto err0;
 +	}
 +
-+	platform_set_drvdata(pdev, gpio);
++	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed No gating RTC: %d\n", ret);
++		goto err1;
++	}
 +
-+	dev_info(&pdev->dev, "%d GPIO pins at base %d\n", gpio_pdata->ngpio,
-+				gpio->gp.base);
++	device_init_wakeup(&pdev->dev, 1);
 +
-+	mutex_lock(&gpio->lock);
-+	ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio->inp_config);
-+	mutex_unlock(&gpio->lock);
-+	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO0 as an output error = %d\n",
-+				ret);
-+err:
++	rtc->rtc_dev = rtc_device_register("da9058", &pdev->dev,
++						&da9058_rtc_ops, THIS_MODULE);
++	if (IS_ERR(rtc->rtc_dev)) {
++		ret = PTR_ERR(rtc->rtc_dev);
++		dev_err(&pdev->dev, "failed to register RTC: %d\n", ret);
++		goto err2;
++	}
++
++	rtc->alarm_irq = DA9058_IRQ_EALRAM;
++	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
++							rtc->alarm_irq),
++				NULL, da9058_rtc_timer_alarm_handler,
++				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
++				"DA9058 RTC Timer Alarm", rtc);
++
++	if (ret != 0) {
++		dev_err(&pdev->dev,
++			"Failed to get rtc timer alarm IRQ %d: %d\n",
++			rtc->alarm_irq, ret);
++		goto err3;
++	}
++
++	rtc->tick_irq = DA9058_IRQ_ETICK;
++	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
++							rtc->tick_irq),
++				NULL, da9058_rtc_tick_alarm_handler,
++				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
++				"DA9058 RTC Tick Alarm", rtc);
++	if (ret) {
++		dev_err(&pdev->dev,
++			"Failed to get rtc timer alarm IRQ %d: %d\n",
++			DA9058_IRQ_ETICK, ret);
++		goto err4;
++	}
++
++	ret = 0;
++	goto exit;
++
++err4:
++	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
++err3:
++err2:
++	rtc_device_unregister(rtc->rtc_dev);
++err1:
++err0:
++	platform_set_drvdata(pdev, NULL);
 +exit:
 +	return ret;
 +}
 +
-+static int __devexit da9058_gpio_remove(struct platform_device *pdev)
++static int __devexit da9058_rtc_remove(struct platform_device *pdev)
 +{
-+	struct da9058_gpio *gpio = platform_get_drvdata(pdev);
-+	int ret;
++	struct da9058_rtc *rtc = platform_get_drvdata(pdev);
++	struct da9058 *da9058 = rtc->da9058;
 +
-+	ret = gpiochip_remove(&gpio->gp);
-+	if (ret == 0)
-+		kfree(gpio);
++	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
++	free_irq(da9058_to_virt_irq_num(da9058, rtc->tick_irq), rtc);
 +
-+	return ret;
++	rtc_device_unregister(rtc->rtc_dev);
++
++	return 0;
 +}
 +
-+static struct platform_driver da9058_gpio_driver = {
-+	.probe = da9058_gpio_probe,
-+	.remove = __devexit_p(da9058_gpio_remove),
++static struct platform_driver da9058_rtc_driver = {
++	.probe = da9058_rtc_probe,
++	.remove = __devexit_p(da9058_rtc_remove),
 +	.driver = {
-+		.name = "da9058-gpio",
++		.name = "da9058-rtc",
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+module_platform_driver(da9058_gpio_driver);
++module_platform_driver(da9058_rtc_driver);
 +
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC General Purpose IO Driver");
++MODULE_DESCRIPTION("Dialog DA9058 PMIC Real Time Clock Driver");
 +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-gpio");
++MODULE_ALIAS("platform:da9058-rtc");
 -- 
 end-of-patch for NEW DRIVER V2
 
