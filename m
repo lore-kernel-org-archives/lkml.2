@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab2HEOux (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 10:50:53 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:38011 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754554Ab2HEOuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 10:50:17 -0400
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: linux-can@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH can-next 4/5] can: mcp251x: add LED trigger support
-Date: Sun,  5 Aug 2012 16:51:49 +0200
-Message-Id: <1344178310-2898-4-git-send-email-fabio.baltieri@gmail.com>
-X-Mailer: git-send-email 1.7.10.3
-In-Reply-To: <1344178310-2898-1-git-send-email-fabio.baltieri@gmail.com>
-References: <20120805144814.GA2804@gmail.com>
- <1344178310-2898-1-git-send-email-fabio.baltieri@gmail.com>
+	id S1754630Ab2HEPKu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 11:10:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39478 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754531Ab2HEPKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 11:10:49 -0400
+Message-ID: <501E8CEA.9050601@ti.com>
+Date: Sun, 5 Aug 2012 11:10:34 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, <catalin.marinas@arm.com>, <nico@linaro.org>,
+        <will.deacon@arm.com>
+Subject: Re: [PATCH 00/22] Introducing the TI Keystone platform
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <20120804083945.GB6802@n2100.arm.linux.org.uk>
+In-Reply-To: <20120804083945.GB6802@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for canbus activity led indicators on mcp251x devices by
-calling appropriate can_led functions.
+Hi Russell,
 
-These are only enabled when CONFIG_CAN_LEDS is Y, becomes no-op
-otherwise.
+On 8/4/2012 4:39 AM, Russell King - ARM Linux wrote:
+> On Tue, Jul 31, 2012 at 07:04:36PM -0400, Cyril Chemparathy wrote:
+>> This series is a follow on to the RFC series posted earlier (archived at [1]).
+>> The major change introduced here is the modification to the kernel patching
+>> mechanism for phys_to_virt/virt_to_phys, in order to support LPAE platforms
+>> that require late patching.  In addition to these changes, we've updated the
+>> series based on feedback from the earlier posting.
+>>
+>> Most of the patches in this series are fixes and extensions to LPAE support on
+>> ARM. The last three patches in this series are specific to the TI Keystone
+>> platform, and are being provided here for the sake of completeness.  These
+>> three patches are dependent on the smpops patch set (see [2]), and are not
+>> ready to be merged in as yet.
+>
+> Can you explain why you want the kernel loaded above the 4GB watermark?
+> This seems silly to me, as the kernel needs to run at points with a 1:1
+> physical to virtual mapping, and you can't do that if the kernel is
+> stored in physical memory above the 4GB watermark.
+>
 
-Cc: Christian Pellegrin <chripell@fsfe.org>
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
----
- drivers/net/can/mcp251x.c | 23 +++++++++++++++++++----
- 1 file changed, 19 insertions(+), 4 deletions(-)
+The Keystone family of devices is built to run with large (>8G) physical 
+memory for certain use-cases.  From the CPUs perspective, this entire 
+range of physical memory is mapped in linearly at 08:0000:0000, i.e., 
+above the 4GB watermark.
 
-diff --git a/drivers/net/can/mcp251x.c b/drivers/net/can/mcp251x.c
-index a580db2..128235e 100644
---- a/drivers/net/can/mcp251x.c
-+++ b/drivers/net/can/mcp251x.c
-@@ -60,6 +60,7 @@
- 
- #include <linux/can/core.h>
- #include <linux/can/dev.h>
-+#include <linux/can/led.h>
- #include <linux/can/platform/mcp251x.h>
- #include <linux/completion.h>
- #include <linux/delay.h>
-@@ -485,6 +486,9 @@ static void mcp251x_hw_rx(struct spi_device *spi, int buf_idx)
- 
- 	priv->net->stats.rx_packets++;
- 	priv->net->stats.rx_bytes += frame->can_dlc;
-+
-+	can_led_event(priv->net, CAN_LED_EVENT_RX);
-+
- 	netif_rx_ni(skb);
- }
- 
-@@ -698,6 +702,8 @@ static int mcp251x_stop(struct net_device *net)
- 
- 	mutex_unlock(&priv->mcp_lock);
- 
-+	can_led_event(net, CAN_LED_EVENT_STOP);
-+
- 	return 0;
- }
- 
-@@ -896,6 +902,7 @@ static irqreturn_t mcp251x_can_ist(int irq, void *dev_id)
- 		if (intf & CANINTF_TX) {
- 			net->stats.tx_packets++;
- 			net->stats.tx_bytes += priv->tx_len - 1;
-+			can_led_event(net, CAN_LED_EVENT_TX);
- 			if (priv->tx_len) {
- 				can_get_echo_skb(net, 0);
- 				priv->tx_len = 0;
-@@ -959,6 +966,9 @@ static int mcp251x_open(struct net_device *net)
- 		mcp251x_open_clean(net);
- 		goto open_unlock;
- 	}
-+
-+	can_led_event(net, CAN_LED_EVENT_OPEN);
-+
- 	netif_wake_queue(net);
- 
- open_unlock:
-@@ -1068,10 +1078,15 @@ static int __devinit mcp251x_can_probe(struct spi_device *spi)
- 		pdata->transceiver_enable(0);
- 
- 	ret = register_candev(net);
--	if (!ret) {
--		dev_info(&spi->dev, "probed\n");
--		return ret;
--	}
-+	if (ret)
-+		goto error_probe;
-+
-+	devm_can_led_init(net);
-+
-+	dev_info(&spi->dev, "probed\n");
-+
-+	return ret;
-+
- error_probe:
- 	if (!mcp251x_enable_dma)
- 		kfree(priv->spi_rx_buf);
+The interconnect provides an aliased view of the first 2GB of this 
+memory at the 8000:0000 offset.  This alias is intended primarily for 
+boot-time usage, and does not support DMA coherence.  We considered the 
+option of running with the first 2G of memory located under the 4GB 
+watermark, and the rest located at the native >4GB location, but this 
+would necessitate sparsemem, and would also break DMA coherence out of 
+lowmem.  Hence the need for the more complicated approach implemented in 
+this patch series.
+
+
+The posted patch series manages to get an SMP system running out of 
+memory beyond the 4GB watermark.  We identified a couple of places that 
+needed the 1:1 physical to virtual mapping, and for these we take 
+advantage of the alias view provided by the interconnect.  The two 
+places that we found the need for 1:1 mapping were:
+
+1. initial boot code in head.S:  here we've taken the approach of 
+initially running out of the alias space, and then switching over to the 
+high address space once we are safely in machine-specific territory.
+
+2. idmap for secondary CPU boot:  here we've added a virt_to_idmap() 
+facility that our sub-architecture then overrides to express the 
+interconnect supported alias view.
+
+
+We are well aware of the fact that we are barely scratching the surface 
+of the problem space here, and we'd be very thankful for a heads up on 
+issues that we may have missed so far.  We would similarly appreciate 
+other better ideas to solve this problem in light of the unique 
+constraints imposed here.
+
 -- 
-1.7.11.rc1.9.gf623ca1.dirty
-
+Thanks
+- Cyril
