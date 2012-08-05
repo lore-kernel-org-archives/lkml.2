@@ -1,86 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab2HEQ4t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 12:56:49 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46901 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697Ab2HEQ4o (ORCPT
+	id S1754897Ab2HEQ5c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 12:57:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56987 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754697Ab2HEQ5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 12:56:44 -0400
+	Sun, 5 Aug 2012 12:57:31 -0400
+Date: Sun, 5 Aug 2012 09:53:58 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-347ed9903a10179d1cf733d5d77072b283d89da3@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de, namhyung@kernel.org,
+        jolsa@redhat.com
+In-Reply-To: <1343616875-6455-1-git-send-email-dsahern@gmail.com>
+References: <1343616875-6455-1-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf kvm:
+  Use strtol for walking guestmount directory
+Git-Commit-ID: 347ed9903a10179d1cf733d5d77072b283d89da3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <501E9DDB.3020807@gmail.com>
-References: <1333777207-4151-1-git-send-email-olof@lixom.net>
-	<20120407070206.GA17623@core.coreip.homeip.net>
-	<4F8089A9.6080704@raumfeld.com>
-	<20120503043651.GA11830@core.coreip.homeip.net>
-	<20120713070102.GA2223@core.coreip.homeip.net>
-	<500561AF.9090901@gmail.com>
-	<5008296C.5070709@gmail.com>
-	<20120723165120.GB26577@core.coreip.homeip.net>
-	<500EE314.7040708@gmail.com>
-	<501E9DDB.3020807@gmail.com>
-Date: Mon, 6 Aug 2012 00:56:42 +0800
-Message-ID: <CAN1soZy-_MdjqS3r3Tc1XET6tPzMxDqjYq3Tn0fYLBNNUkdVAg@mail.gmail.com>
-Subject: Re: Emulating level IRQs
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 05 Aug 2012 09:54:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 12:22 AM, Daniel Mack <zonque@gmail.com> wrote:
-> On 24.07.2012 20:01, Daniel Mack wrote:
->> On 23.07.2012 18:51, Dmitry Torokhov wrote:
->>> On Thu, Jul 19, 2012 at 05:36:12PM +0200, Daniel Mack wrote:
->>
->>>> Ok, finally I found some time. In general, the patch works fine. The
->>>> only detail I had to amend was the irqflags, which were changed from
->>>> IRQF_TRIGGER_RISING/IRQF_TRIGGER_FALLING to
->>>> IRQF_TRIGGER_HIGH/IRQF_TRIGGER_LOW, which doesn't work as the PXA can't
->>>> deal with level-based IRQs. Changing this back to RISING/FALLING makes
->>>> the driver work again.
->>>
->>> Hmm, but that would mean we need to restore reading the data in open()
->>> to make sure we re-arm IRQ in case somebody touched the screen before it
->>> was opened by userspace...
->>
->> I had another look at this and don't really know what to do here. We
->> definitely need level interrupts for this device as the interrupt line's
->> level is the only that tells us when we can stop reading from the
->> device. So it's not just the start condition that bites us here.
->>
->> I copied some people that might help find a solution.
->>
->> To summarize the problem: The EETI touchscreen is a device that asserts
->> a GPIO line when it has events to deliver and waits for I2C commands to
->> empty its buffers. When there are no more buffered events, it will
->> de-assert the line.
->>
->> This device is connected to a PXA GPIO that is only able to deliver edge
->> IRQs, and the old implemenation was to wait for an interrupt and then
->> read data as long as the IRQ's corresponding GPIO was asserted. However,
->> expecting that an IRQ is mappable to a GPIO is not something we should
->> do, so the only clean solution is to teach the PXA GPIO controller level
->> IRQs.
->>
->> So it boils down to the question: Is there any easy and generic way to
->> emulate level irq on chips that don't support that natively?
->
-> Otherwise, we would need some sort of generic irq_to_gpio() again, and
-> the interrupt line the driver listens to must have support for that sort
-> of mapping.
->
-> Any opinion on this, anyone?
->
-Since you're using gpio as input, you need to call gpio_request() and set it
-as input direction. And you could also transfer the gpio number into touch
-driver via platform data. Is it OK for you?
+Commit-ID:  347ed9903a10179d1cf733d5d77072b283d89da3
+Gitweb:     http://git.kernel.org/tip/347ed9903a10179d1cf733d5d77072b283d89da3
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Sun, 29 Jul 2012 20:54:35 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 3 Aug 2012 10:35:23 -0300
 
-Regards
-Haojian
+perf kvm: Use strtol for walking guestmount directory
+
+Only want to process directories under the guestmnount directory that
+have a pid as a name (ie, all digits). Other entries in the guestmount
+directory should be ignored.  There is already a check that requires the
+first character of each entry to be a digit, but atoi is used to convert
+the directory name to a pid. For example if guestmount contains a
+directory with the name 1foo, atoi converts it to a pid of 1 and a
+machine is created with a pid of 1. This is wrong; this directory really
+should be ignored. Use strtol to do that.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1343616875-6455-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index fe86612..8b63b67 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -2875,6 +2875,7 @@ int machines__create_guest_kernel_maps(struct rb_root *machines)
+ 	int i, items = 0;
+ 	char path[PATH_MAX];
+ 	pid_t pid;
++	char *endp;
+ 
+ 	if (symbol_conf.default_guest_vmlinux_name ||
+ 	    symbol_conf.default_guest_modules ||
+@@ -2891,7 +2892,14 @@ int machines__create_guest_kernel_maps(struct rb_root *machines)
+ 				/* Filter out . and .. */
+ 				continue;
+ 			}
+-			pid = atoi(namelist[i]->d_name);
++			pid = (pid_t)strtol(namelist[i]->d_name, &endp, 10);
++			if ((*endp != '\0') ||
++			    (endp == namelist[i]->d_name) ||
++			    (errno == ERANGE)) {
++				pr_debug("invalid directory (%s). Skipping.\n",
++					 namelist[i]->d_name);
++				continue;
++			}
+ 			sprintf(path, "%s/%s/proc/kallsyms",
+ 				symbol_conf.guestmount,
+ 				namelist[i]->d_name);
