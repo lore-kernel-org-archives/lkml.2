@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab2HEOaL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 10:30:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41574 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab2HEOaJ (ORCPT
+	id S1754585Ab2HEOpu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 10:45:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44723 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab2HEOpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 10:30:09 -0400
-Message-ID: <501E8367.8070907@ti.com>
-Date: Sun, 5 Aug 2012 10:29:59 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, <catalin.marinas@arm.com>, <linux@arm.linux.org.uk>,
-        <will.deacon@arm.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: Re: [PATCH 09/22] ARM: LPAE: use 64-bit pgd physical address in switch_mm()
-References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-10-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208040259200.5231@xanadu.home>
-In-Reply-To: <alpine.LFD.2.02.1208040259200.5231@xanadu.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 5 Aug 2012 10:45:49 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] ARM: kirkwood: fix typo in Makefile.boot
+Date: Sun,  5 Aug 2012 16:45:32 +0200
+Message-Id: <1344177932-6466-1-git-send-email-sebastian.hesselbarth@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/4/2012 3:04 AM, Nicolas Pitre wrote:
-> On Tue, 31 Jul 2012, Cyril Chemparathy wrote:
->
->> This patch modifies the switch_mm() processor functions to use 64-bit
->> addresses.  We use u64 instead of phys_addr_t, in order to avoid having config
->> dependent register usage when calling into switch_mm assembly code.
->>
->> The changes in this patch are primarily adjustments for registers used for
->> arguments to switch_mm.  The few processor definitions that did use the second
->> argument have been modified accordingly.
->>
->> Arguments and calling conventions aside, this patch should be a no-op on v6
->> and non-LPAE v7 processors.
->
-> NAK.
->
-> You just broke all big endian targets, LPAE or not.
->
+Just a small typo fix to make lsxl dtbs compile
 
-Indeed.  Thanks.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/mach-kirkwood/Makefile.boot |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Would C-land word swappery on BE do?  Any other ideas on the best 
-approach to this?
-
->
-> Nicolas
->
-
+diff --git a/arch/arm/mach-kirkwood/Makefile.boot b/arch/arm/mach-kirkwood/Makefile.boot
+index 2a576ab..a571755 100644
+--- a/arch/arm/mach-kirkwood/Makefile.boot
++++ b/arch/arm/mach-kirkwood/Makefile.boot
+@@ -9,5 +9,5 @@ dtb-$(CONFIG_MACH_ICONNECT_DT) += kirkwood-iconnect.dtb
+ dtb-$(CONFIG_MACH_IB62X0_DT) += kirkwood-ib62x0.dtb
+ dtb-$(CONFIG_MACH_TS219_DT)	+= kirkwood-qnap-ts219.dtb
+ dtb-$(CONFIG_MACH_GOFLEXNET_DT) += kirkwood-goflexnet.dtb
+-dbt-$(CONFIG_MACH_LSXL_DT) += kirkwood-lschlv2.dtb
+-dbt-$(CONFIG_MACH_LSXL_DT) += kirkwood-lsxhl.dtb
++dtb-$(CONFIG_MACH_LSXL_DT) += kirkwood-lschlv2.dtb
++dtb-$(CONFIG_MACH_LSXL_DT) += kirkwood-lsxhl.dtb
 -- 
-Thanks
-- Cyril
+1.7.10.4
+
