@@ -1,62 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2HEQdf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 12:33:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45546 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab2HEQdc (ORCPT
+	id S1754723Ab2HEQlR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 12:41:17 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:49362 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754175Ab2HEQlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 12:33:32 -0400
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
-        rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH 5/5] ARM: mmp: enable 88pm860x in ttc dkb
-Date: Mon,  6 Aug 2012 00:32:53 +0800
-Message-Id: <1344184373-9670-6-git-send-email-haojian.zhuang@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
-References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
+	Sun, 5 Aug 2012 12:41:16 -0400
+X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Aug 2012 12:41:15 EDT
+Date: Sun, 5 Aug 2012 12:31:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org
+Subject: Re: [RFC v2 6/7] tracepoint: use new hashtable implementation
+Message-ID: <20120805163114.GA21768@Krystal>
+References: <1344003788-1417-1-git-send-email-levinsasha928@gmail.com> <1344003788-1417-7-git-send-email-levinsasha928@gmail.com> <1344126994.27983.116.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344126994.27983.116.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable backlight & led components of 88pm860x PMIC in ttc dkb board.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> FYI, Mathieu is the author of this file.
+> 
+> -- Steve
+> 
+> 
+> On Fri, 2012-08-03 at 16:23 +0200, Sasha Levin wrote:
+> > Switch tracepoints to use the new hashtable implementation. This reduces the amount of
+> > generic unrelated code in the tracepoints.
+> > 
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > ---
+> >  kernel/tracepoint.c |   26 +++++++++-----------------
+> >  1 files changed, 9 insertions(+), 17 deletions(-)
+> > 
+> > diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> > index d96ba22..b5a2650 100644
+> > --- a/kernel/tracepoint.c
+> > +++ b/kernel/tracepoint.c
+> > @@ -26,6 +26,7 @@
+> >  #include <linux/slab.h>
+> >  #include <linux/sched.h>
+> >  #include <linux/static_key.h>
+> > +#include <linux/hashtable.h>
+> >  
+> >  extern struct tracepoint * const __start___tracepoints_ptrs[];
+> >  extern struct tracepoint * const __stop___tracepoints_ptrs[];
+> > @@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
+> >   * Protected by tracepoints_mutex.
+> >   */
+> >  #define TRACEPOINT_HASH_BITS 6
+> > -#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
+> > -static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
+> > +DEFINE_STATIC_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
 
-Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
----
- arch/arm/mach-mmp/ttc_dkb.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+I wonder why the "static" has been embedded within
+"DEFINE_STATIC_HASHTABLE" ? I'm used to see something similar to:
 
-diff --git a/arch/arm/mach-mmp/ttc_dkb.c b/arch/arm/mach-mmp/ttc_dkb.c
-index 7a7de2b..1b51b81 100644
---- a/arch/arm/mach-mmp/ttc_dkb.c
-+++ b/arch/arm/mach-mmp/ttc_dkb.c
-@@ -138,8 +138,23 @@ static struct pca953x_platform_data max7312_data[] = {
- 	},
- };
- 
-+static struct pm860x_backlight_pdata ttc_dkb_backlight[] = {
-+	{ .iset	= PM8606_WLED_CURRENT(4), },
-+};
-+
-+static struct pm860x_led_pdata ttc_dkb_led[] = {
-+	{ .iset = PM8606_LED_CURRENT(12), },
-+	{ .iset = PM8606_LED_CURRENT(12), },
-+	{ .iset = PM8606_LED_CURRENT(12), },
-+};
-+
- static struct pm860x_platform_data ttc_dkb_pm8607_info = {
- 	.irq_base       = IRQ_BOARD_START,
-+	.companion_addr	= 0x11,
-+	.backlight	= &ttc_dkb_backlight[0],
-+	.num_backlights	= ARRAY_SIZE(ttc_dkb_backlight),
-+	.led		= &ttc_dkb_led[0],
-+	.num_leds	= ARRAY_SIZE(ttc_dkb_led),
- };
- 
- static struct i2c_board_info ttc_dkb_i2c_info[] = {
+static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
+
+elsewhere in the kernel (e.g. static DEFINE_PER_CPU(), static
+DEFINE_MUTEX(), etc).
+
+> >  
+> >  /*
+> >   * Note about RCU :
+> > @@ -191,16 +191,14 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
+> >   */
+> >  static struct tracepoint_entry *get_tracepoint(const char *name)
+> >  {
+> > -	struct hlist_head *head;
+> >  	struct hlist_node *node;
+> >  	struct tracepoint_entry *e;
+> >  	u32 hash = jhash(name, strlen(name), 0);
+> >  
+> > -	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
+> > -	hlist_for_each_entry(e, node, head, hlist) {
+> > +	hash_for_each_possible(&tracepoint_table, node, e, hlist, hash)
+> >  		if (!strcmp(name, e->name))
+> >  			return e;
+> > -	}
+> > +
+
+Typically, where there are 2 or more nesting levels, I try to keep the
+outer brackets, even if the 1st level only contain a single statement
+(this is what I did across tracepoint.c). This is especially useful when
+nesting multiple if levels, and ensures the "else" clause match the
+right if. We might want to keep it that way within the file, to ensure
+style consistency.
+
+Other than that, it looks good!
+
+Thanks!
+
+Mathieu
+
+> >  	return NULL;
+> >  }
+> >  
+> > @@ -210,19 +208,13 @@ static struct tracepoint_entry *get_tracepoint(const char *name)
+> >   */
+> >  static struct tracepoint_entry *add_tracepoint(const char *name)
+> >  {
+> > -	struct hlist_head *head;
+> > -	struct hlist_node *node;
+> >  	struct tracepoint_entry *e;
+> >  	size_t name_len = strlen(name) + 1;
+> >  	u32 hash = jhash(name, name_len-1, 0);
+> >  
+> > -	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
+> > -	hlist_for_each_entry(e, node, head, hlist) {
+> > -		if (!strcmp(name, e->name)) {
+> > -			printk(KERN_NOTICE
+> > -				"tracepoint %s busy\n", name);
+> > -			return ERR_PTR(-EEXIST);	/* Already there */
+> > -		}
+> > +	if (get_tracepoint(name)) {
+> > +		printk(KERN_NOTICE "tracepoint %s busy\n", name);
+> > +		return ERR_PTR(-EEXIST);	/* Already there */
+> >  	}
+> >  	/*
+> >  	 * Using kmalloc here to allocate a variable length element. Could
+> > @@ -234,7 +226,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
+> >  	memcpy(&e->name[0], name, name_len);
+> >  	e->funcs = NULL;
+> >  	e->refcount = 0;
+> > -	hlist_add_head(&e->hlist, head);
+> > +	hash_add(&tracepoint_table, &e->hlist, hash);
+> >  	return e;
+> >  }
+> >  
+> > @@ -244,7 +236,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
+> >   */
+> >  static inline void remove_tracepoint(struct tracepoint_entry *e)
+> >  {
+> > -	hlist_del(&e->hlist);
+> > +	hash_del(&e->hlist);
+> >  	kfree(e);
+> >  }
+> >  
+> 
+> 
+
 -- 
-1.7.9.5
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
