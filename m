@@ -1,107 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab2HFFbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 01:31:11 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33489 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2HFFbJ (ORCPT
+	id S1753431Ab2HFFrL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 01:47:11 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:35782 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752091Ab2HFFrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 01:31:09 -0400
+	Mon, 6 Aug 2012 01:47:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120804181445.6598.6505.stgit@bling.home>
-References: <20120804181445.6598.6505.stgit@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sun, 5 Aug 2012 23:30:46 -0600
-Message-ID: <CAErSpo42VMnfzDP6t5eCFfE-5=yPNmNGLs6a2D0KwGMhe71DbQ@mail.gmail.com>
-Subject: Re: [PATCH] pci: Account for virtual buses in pci_acs_path_enabled
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org, dsahern@gmail.com
+In-Reply-To: <CAKdam55cixHXzEsOQ-1QYr6k-i6Ge1UpULF8jgS5Nq47Ax03rQ@mail.gmail.com>
+References: <CAKdam54gXixs4F-a07ajj9GNMth46d4NTdoUL3GokzvjuWaGyg@mail.gmail.com>
+ <CAC83ZvKnOw+UBOWYtt294k-5Xk8S6Gy1pChSF7aXGmGjLGSeCA@mail.gmail.com>
+ <CAKdam56QEXY55SYC7YND4BP=tQmiyAa=avVCADTj3Ym6X9cCvg@mail.gmail.com>
+ <87fw89gf4w.fsf@ti.com> <CAKdam57xtXnKAgvneqATSTr0ng978T5HbkTB0T3sYp96N=Qfww@mail.gmail.com>
+ <20120731065224.GE6004@arwen.pp.htv.fi> <CAMQu2gxXX+4gtKVnAMMK4qr9ihJuP-OwjOYgr=6VrGZ2DWSf2A@mail.gmail.com>
+ <CAKdam55cixHXzEsOQ-1QYr6k-i6Ge1UpULF8jgS5Nq47Ax03rQ@mail.gmail.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Mon, 6 Aug 2012 11:16:47 +0530
+Message-ID: <CAMQu2gwbqdA1bjFWCFyCAUVsU5x=fr91xX17k4xiZQh4F44Jng@mail.gmail.com>
+Subject: Re: [GPIO] Crashed when not using
+To: "Poddar, Sourav" <sourav.poddar@ti.com>
+Cc: balbi@ti.com, Kevin Hilman <khilman@ti.com>,
+        "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>,
+        lo <linux-omap@vger.kernel.org>, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 4, 2012 at 12:19 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> It's possible to have buses without an associated bridge
-> (bus->self == NULL).  SR-IOV can generate such buses.  When
-> we find these, skip to the parent bus to look for the next
-> ACS test.
+On Tue, Jul 31, 2012 at 6:26 PM, Poddar, Sourav <sourav.poddar@ti.com> wrote:
+> Hi Santosh,
+>
+> On Tue, Jul 31, 2012 at 6:02 PM, Shilimkar, Santosh
+> <santosh.shilimkar@ti.com> wrote:
+>> On Tue, Jul 31, 2012 at 8:52 AM, Felipe Balbi <balbi@ti.com> wrote:
+>>>
+>>> Hi,
+>>>
+>>> On Tue, Jul 31, 2012 at 10:23:16AM +0530, Poddar, Sourav wrote:
+>>> > >>>> The device tree data for acquiring the above GPIO interrupt line
+>>> > >>>> looks
+>>> > >>>> like this.
+>>> > >>>>
+>>> > >>>> +++ linux-omap-storage/arch/arm/boot/dts/omap5-evm.dts  2012-07-30
+>>> > >>>> 14:11:08.931694001 +0530
+>>> > >>>> @@ -42,7 +42,8 @@
+>>> > >>>>         tsl2771@39 {
+>>> > >>>>                 compatible = "taos,tsl2771";
+>>> > >>>>                 reg = <0x39>;
+>>> > >>>> +                interrupt-parent = <&gpio5>;
+>>> > >>>> +                interrupts = <21>; /* gpio line 149 */
+>>> > >>>>         };
+>>> > >>>>  };
+>>> > >>>>
+>>> > >>>> Note: using "gpio_request_one" in the driver solves the issue.
+>>> > >>>> Is using this api in the driver required?
+>>> > >>>> Any pointer on the above crash?
+>>> > >>>
+>>> > >> Hi Tarun,
+>>> > >>> Any user/client driver of GPIO is supposed to go through
+>>> > >>> gpio_request() API so that module clock
+>>> > >>> is enabled correctly. Overriding of APIs would put the power
+>>> > >>> management state machine in jeopardy.
+>>> > >>> --
+>>> > >> I tried putting "pm_runtime_get_sync" in gpio_irq_type api where the
+>>> > >> kernel
+>>> > >> is crashing and the crash is no longer observed. So indeed, its about
+>>> > >> enabling clocks.
+>>> > >>
+>>> > >> One doubt: Can't we put runtime apis in "gpio_irq_type" and eliminate
+>>> > >> the use of
+>>> > >> "gpio_request_one"??
+>>> > >
+>>> > > No.
+>>> > >
+>>> > > You must use the GPIO requiest/free APIs to tell the GPIO core that
+>>> > > the GPIO line is in use.
+>>> > >
+>>> > Thanks for this confirmation.
+>>> > > Why do you want to avoid using gpio_request/gpio_free?
+>>> > >
+>>> > I was assuming that DT based gpio IRQ registration will automatically
+>>> > take care of
+>>> > the above APIs. But since that is not the case(as mentioned by
+>>> > santosh),  we need to use the
+>>> > gpio_request/free apis.
+>>>
+>>> Hang on for a while, let's try to get to the bottom of this debate first
+>>> ;-)
+>>>
+>>> We have a canonical way of passing IRQ numbers to drivers through DT and
+>>> that is the "interrupts" attribute. It shouldn't matter if that IRQ pin
+>>> is connected to a real IRQ line or through a GPIO controller. In both
+>>> cases we should use the "interrupts" attribute.
+>>>
+>>> If DT core doesn't allocate the GPIO for us then how does this work:
+>>>
+>>> (omap4-sdp.dts)
+>>>
+>>> 127 &mcspi1 {
+>>> 128         eth@0 {
+>>> 129                 compatible = "ks8851";
+>>> 130                 spi-max-frequency = <24000000>;
+>>> 131                 reg = <0>;
+>>> 132                 interrupt-parent = <&gpio2>;
+>>> 133                 interrupts = <2>; /* gpio line 34 */
+>>> 134                 vdd-supply = <&vdd_eth>;
+>>> 135         };
+>>> 136 };
+>>>
+>>>
+>>> There's no gpio request on the driver:
+>>>
+>>> $ git grep -e gpio_request drivers/net/ethernet/micrel/ks8851.c
+>>> $
+>>>
+>>> Since Benoit was the one who added that to the dts file (commit
+>>> e7c64db9), I assume he tested his patch before posting, so again I ask -
+>>> How does that work and why doesn't this work for Sourav's tsl2771
+>>> controller ?
+>>>
+>>> This is either a regression on drivers/of, or commit e7c64db9 is also
+>>> broken...
+>>>
+>>> Benoit, do you know how should this work ?
+>>>
+>> I had a discussion with Benoit on this. In fact there is a way to actually
+>> trigger the GPIO request.
+>>
+>>> 132                 interrupt-parent = <&gpio2>;
+>>> 133                 interrupts = <2>; /* gpio line 34 */
+>>
+>> As above you can see, GPIO2 bank and 2nd line.
+>> And then it will make use of gpio_irq chip properties
+>> to probe the GPIO line.
+>>
+>> Saurabh can try this out for his use case.
+>>
+> I am using the above properties only and seeing the issue.
+>
+There seeems to be an issue with the GPIO DT probing. The Ethernet
+works because there is another GPIO line from BANK2 is probed and since
+BANK2 shares the clock, you won't see any issue.
 
-To make sure I understand the problem here, I think you're referring
-to the situation where an SR-IOV device can span several bus numbers,
-e.g., the "VFs Spanning Multiple Bus Numbers" implementation note in
-the SR-IOV 1.1 spec, sec. 2.1.2.
+We are looking at fixing the issue. Will keep the thread posted.
 
-It says "All PFs must be located on the Device's captured Bus Number"
--- I think that means every PF will be directly on a bridge's
-secondary bus and hence will have a valid dev->bus->self pointer.
-
-However, VFs need not be on the same bus number.  If a VF is on
-(captured Bus Number plus 1), I think we allocate a new struct pci_bus
-for it, but there's no P2P bridge that leads to that bus, so the
-bus->self pointer is probably NULL.
-
-This makes me quite nervous, because I bet there are many places that
-assume every non-root bus has a valid bus->self pointer  -- I know I
-certainly had that assumption.
-
-I looked at callers of pci_is_root_bus(), and at first glance, it seems like
-iommu_init_device(), intel_iommu_add_device(), pci_acs_path_enabled(),
-pci_get_interrupt_pin(), pci_common_swizzle(),
-pci_find_upstream_pcie_bridge(), and
-pci_bus_release_bridge_resources() all might have similar problems.
-
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
->
-> David Ahern reported an oops from iommu drivers passing NULL into
-> this function for the same mistake.  Harden this function against
-> assuming bus->self is valid as well.  David, please include this
-> patch as well as the iommu patches in your testing.
->
->  drivers/pci/pci.c |   22 +++++++++++++++++-----
->  1 file changed, 17 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index f3ea977..e11a49c 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -2486,18 +2486,30 @@ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
->  bool pci_acs_path_enabled(struct pci_dev *start,
->                           struct pci_dev *end, u16 acs_flags)
->  {
-> -       struct pci_dev *pdev, *parent = start;
-> +       struct pci_dev *pdev = start;
-> +       struct pci_bus *bus;
->
->         do {
-> -               pdev = parent;
-> -
->                 if (!pci_acs_enabled(pdev, acs_flags))
->                         return false;
->
-> -               if (pci_is_root_bus(pdev->bus))
-> +               bus = pdev->bus;
-> +
-> +               if (pci_is_root_bus(bus))
->                         return (end == NULL);
->
-> -               parent = pdev->bus->self;
-> +               /*
-> +                * Skip buses without an associated bridge.  In this
-> +                * case move to the parent and continue.
-> +                */
-> +               while (!bus->self) {
-> +                       if (!pci_is_root_bus(bus))
-> +                               bus = bus->parent;
-> +                       else
-> +                               return (end == NULL);
-> +               }
-> +
-> +               pdev = bus->self;
->         } while (pdev != end);
->
->         return true;
->
+Regards
+Santosh
