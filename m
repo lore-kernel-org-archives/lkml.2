@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab2HFRVQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 13:21:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45270 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab2HFRVP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 13:21:15 -0400
-Date: Mon, 6 Aug 2012 18:21:10 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, dmitry.torokhov@gmail.com,
-        STEricsson_nomadik_linux@list.st.com, sameo@linux.intel.com
-Subject: Re: [PATCH 4/6] mfd: Use interrupt-parent as IRQ controller if
- specified in DT
-Message-ID: <20120806172109.GA31409@gmail.com>
-References: <1344250002-6011-1-git-send-email-lee.jones@linaro.org>
- <1344250002-6011-5-git-send-email-lee.jones@linaro.org>
- <20120806155446.GD29272@sirena.org.uk>
+	id S1756797Ab2HFRVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 13:21:53 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56234 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756379Ab2HFRVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 13:21:52 -0400
+Message-ID: <501FFD23.9080109@linaro.org>
+Date: Mon, 06 Aug 2012 10:21:39 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120806155446.GD29272@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, tglx@linutronix.de,
+        a.p.zijlstra@chello.nl, richardcochran@gmail.com, prarit@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] time: Fix adjustment cleanup bug in timekeeping_adjust()
+References: <201208032318.FGJ64576.tOMVLOFHFQOFJS@I-love.SAKURA.ne.jp> <201208042024.GFG34353.OFtFVQJMLOHFSO@I-love.SAKURA.ne.jp> <201208042110.EFH81212.OSVOLMOtFQHJFF@I-love.SAKURA.ne.jp> <201208042246.HBH81275.FVOOSLtJFMQOFH@I-love.SAKURA.ne.jp> <20120804192114.GA28347@gmail.com>
+In-Reply-To: <20120804192114.GA28347@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080617-7182-0000-0000-0000022F2B77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 04:54:46PM +0100, Mark Brown wrote:
-> On Mon, Aug 06, 2012 at 11:46:40AM +0100, Lee Jones wrote:
-> 
-> > -				domain = irq_find_host(parent->of_node);
-> > +#ifdef CONFIG_OF
-> > +				parent_node = of_irq_find_parent(np);
-> > +#endif
-> 
-> Shouldn't of_irq_find_parent() be stubbed out by the header?  Every
-> single user of this is going to need it.  Indeed, shouldn't we be making
-> irq_find_host() just do this?
+On 08/04/2012 12:21 PM, Ingo Molnar wrote:
+> * Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+>
+>> Hello.
+>>
+>> Bisected to 2a8c0883 "time: Move xtime_nsec adjustment
+>> underflow handling timekeeping_adjust".
+>>
+>> Would you check?
+> probably caused by this stray return in timekeeping_adjust():
+>
+>          } else
+>                  return;
+>
+> which should really be a proper goto - like the (totally
+> untested!) patch below.
 
-Sounds reasonable. I'll look into it tomorrow.
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Ooof.   Your analysis looks correct, thanks for fixing this, Ingo!
+And thanks for catching the issue Tetsuo!
+
+thanks
+-john
+
