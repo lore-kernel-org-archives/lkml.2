@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab2HFVr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:47:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42526 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753198Ab2HFVrZ (ORCPT
+	id S1756200Ab2HFV4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 17:56:22 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54812 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab2HFVz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:47:25 -0400
-Date: Mon, 6 Aug 2012 22:47:24 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] regulator: add MAX8907 driver
-Message-ID: <20120806214724.GC26698@opensource.wolfsonmicro.com>
-References: <1343932033-911-1-git-send-email-swarren@wwwdotorg.org> <20120804101918.GD9248@opensource.wolfsonmicro.com> <50203589.5020509@wwwdotorg.org>
+	Mon, 6 Aug 2012 17:55:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50203589.5020509@wwwdotorg.org>
-X-Cookie: You will pass away very quickly.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20120806204245.GI25559@redhat.com>
+References: <1339478463-31172-1-git-send-email-amwang@redhat.com>
+	<5004D8BF.6050205@jp.fujitsu.com>
+	<500D20A1.1030800@redhat.com>
+	<500D340F.5080801@jp.fujitsu.com>
+	<1343145331.16290.45.camel@cr0>
+	<500F3B7C.70009@jp.fujitsu.com>
+	<20120806204245.GI25559@redhat.com>
+Date: Mon, 6 Aug 2012 14:55:55 -0700
+X-Google-Sender-Auth: i8uXaJaLRVxXq_of_z7EXdXSqzI
+Message-ID: <CAE9FiQW1AiKPVsesmQD5yTk1+4w56pkcDrsRo2yZThuB+2bsOQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: revert "x86: Fix S4 regression"
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Takao Indoh <indou.takao@jp.fujitsu.com>, amwang@redhat.com, tiwai@suse.de,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        xiyou.wangcong@gmail.com, akpm@linux-foundation.org, dyoung@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 03:22:17PM -0600, Stephen Warren wrote:
-> On 08/04/2012 04:19 AM, Mark Brown wrote:
+On Mon, Aug 6, 2012 at 1:42 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
 
-> > I'm really not convinced it makes much sense to represent the backlight
-> > driver current regulators as regulators, they only get used as part of
-> > the backlight and are usually tightly coupled to their boosts.
+>
+> Did something happen on this patch. We definitely want to gain back the
+> capability to be able to reserve 512MB of kdump memory.
 
-> So you mean just completely remove any reference to WLED from the
-> driver? There is a register to configure the current limit - do you not
-> expect anything to ever need to set that in the kernel; do you expect
-> the HW default to be correct, or the bootloader to set the desired value?
+Maybe Ingo and peter could push that to Linus.
 
-I'd expect it to be configured as part of configuring the overall
-backlight, for an actual current regulator you're not setting a current
-limit but rather a current which usually translates directly into a
-brightness.  As I say this will usually be done in conjunction with a
-boost regulator.
+Assume we have Acked-by from you, me and others.
+
+Thanks
+
+Yinghai
