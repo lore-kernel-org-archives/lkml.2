@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab2HFSay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:30:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56190 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756794Ab2HFSaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:30:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="177570472"
-Message-ID: <50200D57.7090003@linux.intel.com>
-Date: Mon, 06 Aug 2012 11:30:47 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: dragos.tatulea@intel.com
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: set fpmath to 387 to avoid gcc warnings
-References: <1344253011-5026-1-git-send-email-dragos.tatulea@intel.com>
-In-Reply-To: <1344253011-5026-1-git-send-email-dragos.tatulea@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756878Ab2HFSbQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:31:16 -0400
+Received: from www17.your-server.de ([213.133.104.17]:47680 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794Ab2HFSbP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 14:31:15 -0400
+X-Greylist: delayed 1287 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Aug 2012 14:31:15 EDT
+Subject: [PATCH] net: Use PTR_RET rather than if(IS_ERR(.. [2]
+From: Thomas Meyer <thomas@m3y3r.de>
+To: "[netdev@vger.kernel.org, linux-kernel@vger.kernel.org]"@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Date: Mon, 06 Aug 2012 19:51:17 +0200
+Message-ID: <1344275477.14513.107.camel@localhost.localdomain>
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 04:36 AM, dragos.tatulea@intel.com wrote:
-> From: Dragos Tatulea <dragos.tatulea@intel.com>
-> 
-> If gcc has a different default fpmath set (e.g. sse),
-> many unuseful warnings will be spewed when compiling on an
-> architecture that doesn't support it.
-> 
-> An example would be Google's Android 4.1 x86 toochain which
-> is compiled with -mfpmath=sse.
-> 
-> This can affect out of tree modules that compile with
-> -Werror (ex: systemtap stp scripts).
-> 
-> Signed-off-by: Dragos Tatulea <dragos.tatulea@intel.com>
-> ---
->  arch/x86/Makefile |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-> index b1c611e..f4fefb8 100644
-> --- a/arch/x86/Makefile
-> +++ b/arch/x86/Makefile
-> @@ -130,6 +130,7 @@ KBUILD_CFLAGS += -fno-asynchronous-unwind-tables
->  # prevent gcc from generating any FP code by mistake
->  KBUILD_CFLAGS += $(call cc-option,-mno-sse -mno-mmx -mno-sse2 -mno-3dnow,)
->  KBUILD_CFLAGS += $(call cc-option,-mno-avx,)
-> +KBUILD_CFLAGS += $(call cc-option,-mfpmath=387,)
->  
->  KBUILD_CFLAGS += $(mflags-y)
->  KBUILD_AFLAGS += $(mflags-y)
-> 
+The semantic patch that makes this change is available
+in scripts/coccinelle/api/ptr_ret.cocci.
 
-I guess we should do -msoft-float as well to try to get an error if FP
-instructions are generated at all...
+More information about semantic patching is available at
+http://coccinelle.lip6.fr/
 
-	-hpa
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+
+diff -u -p a/drivers/net/ethernet/amd/atarilance.c b/drivers/net/ethernet/amd/atarilance.c
+--- a/drivers/net/ethernet/amd/atarilance.c
++++ b/drivers/net/ethernet/amd/atarilance.c
+@@ -1149,9 +1149,7 @@ static struct net_device *atarilance_dev
+ static int __init atarilance_module_init(void)
+ {
+ 	atarilance_dev = atarilance_probe(-1);
+-	if (IS_ERR(atarilance_dev))
+-		return PTR_ERR(atarilance_dev);
+-	return 0;
++	return PTR_RET(atarilance_dev);
+ }
+ 
+ static void __exit atarilance_module_exit(void)
+diff -u -p a/drivers/net/ethernet/amd/mvme147.c b/drivers/net/ethernet/amd/mvme147.c
+--- a/drivers/net/ethernet/amd/mvme147.c
++++ b/drivers/net/ethernet/amd/mvme147.c
+@@ -188,9 +188,7 @@ static struct net_device *dev_mvme147_la
+ int __init init_module(void)
+ {
+ 	dev_mvme147_lance = mvme147lance_probe(-1);
+-	if (IS_ERR(dev_mvme147_lance))
+-		return PTR_ERR(dev_mvme147_lance);
+-	return 0;
++	return PTR_RET(dev_mvme147_lance);
+ }
+ 
+ void __exit cleanup_module(void)
