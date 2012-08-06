@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab2HFPKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 11:10:55 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:52140 "EHLO minas.ics.muni.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932153Ab2HFPKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 11:10:53 -0400
-Date: Mon, 6 Aug 2012 17:10:43 +0200
-From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: yinghai@kernel.org, linux-pci@vger.kernel.org, roland@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mellanox mlx4_core and SR-IOV
-Message-ID: <20120806151043.GY25979@ics.muni.cz>
-References: <9f903175-4080-4016-b9f8-83e8615c110e@default>
- <20120805080500.GH25979@ics.muni.cz>
- <20120806140706.GC3093@phenom.dumpdata.com>
+	id S932204Ab2HFPLI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 11:11:08 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26634 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932153Ab2HFPLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 11:11:06 -0400
+Date: Mon, 6 Aug 2012 10:33:08 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: lenb@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel_idle: Check cpu_idle_get_driver() for NULL before
+ dereferencing it.
+Message-ID: <20120806143308.GC2487@phenom.dumpdata.com>
+References: <1343918341-25985-1-git-send-email-konrad.wilk@oracle.com>
+ <201208042356.35884.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120806140706.GC3093@phenom.dumpdata.com>
-X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+In-Reply-To: <201208042356.35884.rjw@sisk.pl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Muni-Spam-TestIP: 147.251.17.147
-X-Muni-Envelope-From: xhejtman@ics.muni.cz
-X-Muni-Virus-Test: Clean
-X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Mon, 06 Aug 2012 17:10:45 +0200 (CEST)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 10:07:06AM -0400, Konrad Rzeszutek Wilk wrote:
-> > good catch. I forgot to pass swiotl=force for DomU in Xen. So now, it seems
-> > that mlx4_core works, mlx4_en (ethernet part) works as well. Unfortunately,
-> > the IB part does not. IB layer complains that SR-IOV is currently unsupported
-> > (kernel 3.5.0). So no luck here so far. 
+On Sat, Aug 04, 2012 at 11:56:35PM +0200, Rafael J. Wysocki wrote:
+> On Thursday, August 02, 2012, Konrad Rzeszutek Wilk wrote:
+> > If the machine is booted without any cpu_idle driver set
+> > (b/c disable_cpuidle() has been called) we should follow
+> > other users of cpu_idle API and check the return value
+> > for NULL before using it.
+> > 
+> > Reported-by: Mark van Dijk <mark@internecto.net>
+> > Tested-by: Mark van Dijk <mark@internecto.net>
+> > Suggested-by: Jan Beulich <JBeulich@suse.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/idle/intel_idle.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> > index f559088..7383aa0 100644
+> > --- a/drivers/idle/intel_idle.c
+> > +++ b/drivers/idle/intel_idle.c
+> > @@ -607,7 +607,7 @@ static int __init intel_idle_init(void)
+> >  	retval = cpuidle_register_driver(&intel_idle_driver);
+> >  	if (retval) {
 > 
-> Don't use swiotlb=force. That is for the old style kernels. Use iommu=soft.
-
-OK.
-
-> > There is OFED stack directly from Mellanox, that seems to support SR-IOV even
-> > for IB layer, but they have buildable sources only for RHEL/SLES kernels
-> > (2.6.32) and even correcting the sources to get it compile with 3.5.0 does not
-> > make things work. The driver complains about interrupts not working in Dom0 or
-> > even without Xen hypervisor at all.
+> What about:
 > 
-> So there is a bug that .. well, I thought I had fixed it with the
-> IB layer but maybe not. It was about VM_IO having to be used on the vmaps
-> being setup. But I can't recall the details. Perhaps the InfiniBand mailing
-> list might have some ... ah here it is:
-> http://old-list-archives.xen.org/archives/html/xen-devel/2011-01/msg00246.html
+>   		struct cpuidle_driver *drv = cpuidle_get_driver();
+> 
+>   		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
+> 			drv ? drv->name : "none");
 
-not sure what do you mean. This fix is for Mellanox OFED driver to work? Or for stock kernel?
-Stock kernel contains explicit check for SR-IOV and refuses to load.
+Much prettier. Let me spin that up.
 
-this is exact fail of the Mellanox OFED driver.
-
-kernel: [    6.568433] mlx4_core: Mellanox ConnectX core driver v1.0-mlnx_ofed1.5.3 (November 3, 2011)
-kernel: [    6.568526] mlx4_core: Initializing 0000:02:00.0
-kernel: [    7.071292] mlx4_core 0000:02:00.0: Enabling sriov with:1 vfs
-kernel: [    7.175587] mlx4_core 0000:02:00.0: Running in master mode
-kernel: [   18.613383] mlx4_core 0000:02:00.0: command 0x31 timed out (go bit not cleared)
-kernel: [   18.613475] mlx4_core 0000:02:00.0: NOP command failed to generate MSI-X interrupt IRQ 94).
-kernel: [   18.613564] mlx4_core 0000:02:00.0: Trying again without MSI-X.
-kernel: [   28.606086] mlx4_core 0000:02:00.0: command 0x31 timed out (go bit not cleared)
-kernel: [   30.615093] mlx4_core: probe of 0000:02:00.0 failed with error -16
-
-
--- 
-Luká¹ Hejtmánek
+> 
+> >  		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
+> > -			cpuidle_get_driver()->name);
+> > +			cpuidle_get_driver() ? cpuidle_get_driver()->name : "none");
+> >  		return retval;
+> >  	}
+> >  
+> > 
+> 
+> Rafael
