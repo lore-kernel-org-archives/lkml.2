@@ -1,118 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab2HFQnP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 12:43:15 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40349 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab2HFQnO (ORCPT
+	id S932346Ab2HFQtG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 12:49:06 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:48523 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271Ab2HFQtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 12:43:14 -0400
+	Mon, 6 Aug 2012 12:49:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAK=WgbbBHspN_LTUXH1kUugH8-Nr-G=p-G3Wj60tAmrqqfakmg@mail.gmail.com>
-References: <1344237865-32491-1-git-send-email-roylee17@gmail.com>
-	<CAK=WgbbBHspN_LTUXH1kUugH8-Nr-G=p-G3Wj60tAmrqqfakmg@mail.gmail.com>
-Date: Tue, 7 Aug 2012 00:43:12 +0800
-Message-ID: <CAEvN+1h5dVxX74YtBNwjiqzZNrpK56jBw9TaJjszf_-E3DY2gw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] remoteproc: extend customized fw loader to cover
- request and release
-From: Tzu-Jung Lee <roylee17@gmail.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-arm-kernel@lists.infradead.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1344266096.2486.17.camel@lorien2>
+References: <1342221125.17464.8.camel@lorien2>
+	<CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
+	<1344224494.3053.5.camel@lorien2>
+	<1344266096.2486.17.camel@lorien2>
+Date: Tue, 7 Aug 2012 01:49:03 +0900
+Message-ID: <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
+Subject: Re: [PATCH RESEND] mm: Restructure kmem_cache_create() to move debug
+ cache integrity checks into a new function
+From: JoonSoo Kim <js1304@gmail.com>
+To: shuah.khan@hp.com
+Cc: Pekka Enberg <penberg@kernel.org>, cl@linux.com, glommer@parallels.com,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, shuahkhan@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
-
-On Mon, Aug 6, 2012 at 10:16 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> Hi Tzu-Jung Lee,
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index 12637ce..08bc2a4 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -23,6 +23,41 @@ enum slab_state slab_state;
+>  LIST_HEAD(slab_caches);
+>  DEFINE_MUTEX(slab_mutex);
 >
-> On Mon, Aug 6, 2012 at 10:24 AM, Tzu-Jung Lee <roylee17@gmail.com> wrote:
->> Previously, the remoteproc mandates an actual ELF firmware in order to
->> parse the resource table and boot the remoteproc.
->>
->> An fw loader abstraction was added in v3.61-rc1 to make the ELF as a
->> "default" handler, and allows firmwares in other formats to be loaded.
->>
->> However, in our use cases, we don't actually have a firmware for linux
->> to load. The remote processor always boots first, and then boots the
->> rest of processors that running linux.
->
-> Can you describe your use case some more ?
+> +static int kmem_cache_sanity_check(const char *name, size_t size)
+> +{
+> +#ifdef CONFIG_DEBUG_VM
+> +       struct kmem_cache *s = NULL;
+> +
+> +       list_for_each_entry(s, &slab_caches, list) {
+> +               char tmp;
+> +               int res;
+> +
+> +               /*
+> +                * This happens when the module gets unloaded and doesn't
+> +                * destroy its slab cache and no-one else reuses the vmalloc
+> +                * area of the module.  Print a warning.
+> +                */
+> +               res = probe_kernel_address(s->name, tmp);
+> +               if (res) {
+> +                       pr_err("Slab cache with size %d has lost its name\n",
+> +                              s->object_size);
+> +                       continue;
+> +               }
+> +
+> +               if (!strcmp(s->name, name)) {
+> +                       pr_err("%s (%s): Cache name already exists.\n",
+> +                              __func__, name);
+> +                       dump_stack();
+> +                       s = NULL;
+> +                       return -EINVAL;
+> +               }
+> +       }
+> +
+> +       WARN_ON(strchr(name, ' '));     /* It confuses parsers */
+> +#endif
+> +       return 0;
+> +}
 
-It's three processors AMP SoC, the first powered on processors runs
- an RTOS and boots up the other two which run linux.
+As I know, following is more preferable than above.
 
-> What parts in remoteproc are actually helpful for you (not much I
-> guess if Linux doesn't control the life cycle of the remote processor
-> in your case) ?
->
-> Do you use rpmsg ?
+#ifdef CONFIG_DEBUG_VM
+static int kmem_cache_sanity_check(const char *name, size_t size);
+#else
+static inline int kmem_cache_sanity_check(const char *name, size_t size)
+{
+return 0;
+}
+#endif
 
-Yes, I'm using rpmsg.
-And actually the remoteproc provides a good abstraction and the generic
-facilities sysfs/debugfs handling, resource format, vring allocation, etc...
-And the start/stop/kick API also serves as good place for handshaking
-with the remote processors. Overall, most of the framework works well with
-our platform, and the difference can be hidden in the platform priv
-data structure.
-
->> In this case, forging an binary firmware just for the resource table
->> creates a burden for maintenence.
->> Allowing the firmware request/release function to be customized gives
->> developers to construct the reqource table in memory, instead of loading
->> one from filesystem.
->
-> I'm not sure this is an ideal abstraction though.
-
-Agree.
-The patch may not solve this, but it should address some issues I'm having.
-
-> The problem you describe is architectural and not necessarily related
-> with a specific binary format, which this patch ties it up with (by
-> abstracting it away in rproc_fw_ops). It seems that a
-> binary-format-agnostic solution is preferable, because it could then
-> be utilized by any platform, regardless of the binary format it uses.
-
-> In general we prefer not to adopt a solution that puts the resource
-> table in the kernel, because that means redundant churn and
-> compatibility issues, as the resource table is inherently coupled with
-> the software running on the remote processor, and not with the Linux
-> kernel.
-
-Yes, that's the point.
-
-The format issue has been addressed by the fw format handler.
-But we still need to address where the data come from.
-Even it is in ELF format, it may not necessarily come from root file system.
-It can be loaded from MTD partition or constructed/derived from the cmdline.
-
-> An easy solution is to allow loading an external stand-alone resource
-> table from the filesystem. We've discussed this in the past and
-> several parties showed interest. Will it help you ?
-
-Actually, I've been using the this approach for the past few weeks.
-I forged an ELF file containing the resource table, and dummy loadable
-sections, otherwise it  failed the sanity checks. Until yesterday I merged
-and found the fw format handler support in v3.6-rc1, and wondered if we
-can just extend it a little bit to not load (bypass) the firmware at all.
-
-> Another possible solution is to allow the low level rproc driver to
-> provide the remoteproc framework a pointer to an in-memory resource
-> table. This may prove useful in case the remote processor is already
-> up when Linux boots, and the resource table is already loaded to
-> memory.
-
-That's what I'm trying to do, and it has two things needs to be address.
-
-  1)  Make the firmware loading step "optional" in the booting process.
-
-  2)  Allow the remoteproc use an customized handler to get the resource table.
-
-Thanks,
-Roy
+Is there any reason to do like that?
+Thanks.
