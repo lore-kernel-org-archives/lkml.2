@@ -1,89 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab2HFUkN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 16:40:13 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:37190 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991Ab2HFUkL (ORCPT
+	id S932213Ab2HFUlg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 16:41:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53324 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932149Ab2HFUlf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 16:40:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120806201609.GX25644@pengutronix.de>
-References: <20120805230238.GA1663@lizard> <1344207819-3415-4-git-send-email-anton.vorontsov@linaro.org>
- <CAKGA1bkiHj=zMJXSzoGp3fpLS3POnFXSV5y7sYYFAikqoUT9tQ@mail.gmail.com>
- <20120806154951.GQ16861@opensource.wolfsonmicro.com> <CAKGA1b=_AOub_pEJJGBTb6Y7wLZaSYKQjFTyMVFSr_=9VX4wpg@mail.gmail.com>
- <20120806193734.GA16199@opensource.wolfsonmicro.com> <20120806201609.GX25644@pengutronix.de>
-From: Matt Sealey <matt@genesi-usa.com>
-Date: Mon, 6 Aug 2012 15:39:50 -0500
-Message-ID: <CAKGA1bmMqyL4gyLYcanEH=R=HuBjRCNRLjUEWCj8wmpi3HuL0g@mail.gmail.com>
-Subject: Re: [PATCH 4/9] ASoC: imx: Don't use {en,dis}able_fiq() calls
-To: Robert Schwebel <r.schwebel@pengutronix.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        Sascha Hauer <kernel@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 6 Aug 2012 16:41:35 -0400
+Message-ID: <1344285688.27828.114.camel@twins>
+Subject: Re: [patch] sched,cgroup_sched: fix up task_groups list
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 06 Aug 2012 22:41:28 +0200
+In-Reply-To: <1344283776.6768.10.camel@marge.simpson.net>
+References: <1344267125.6853.33.camel@marge.simpson.net>
+	 <1344279897.27828.97.camel@twins>
+	 <1344283776.6768.10.camel@marge.simpson.net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 3:16 PM, Robert Schwebel
-<r.schwebel@pengutronix.de> wrote:
-> On Mon, Aug 06, 2012 at 08:37:34PM +0100, Mark Brown wrote:
->> As far as I can tell nobody's really running much up to date mainline
->> on older i.MX processors, all the work is going on the new stuff and
->> most of the board are on either vendor BSPs or older kernels.
->
-> That's not true; we still run MX25, MX27, MX35, MX28 on mainline in
-> active projects.
+On Mon, 2012-08-06 at 22:09 +0200, Mike Galbraith wrote:
+> On Mon, 2012-08-06 at 21:04 +0200, Peter Zijlstra wrote: 
+> > On Mon, 2012-08-06 at 17:32 +0200, Mike Galbraith wrote:
+> > > Thinko happened during sched migration to kernel/sched, fix it up.
+> > 
+> > what's the effect.. that is what broke and why are we backporting this
+> > to -stable?
+> 
+> The effect is that for_each_rt_rq() doesn't work, because it's not the
+> same task_groups list that groups were added to, it's an empty list, so
+> __enable/disable_runtime() and print_rt_stats() don't work, and you
+> can't see rt task groups.
 
-I think Shawn Guo (FSL/Linaro) would also disagree, since he's just
-posted a large amount of MXS patches to fix up the board for device
-trees, and Arnd is pulling them.
-
-Work is ongoing, it would be awful to delete something people really
-relied on or were in progress fixing (ahem). If they get up to audio
-in the near future the audio FIQ stuff would just end up being
-resubmitted almost verbatim... that seems like unnecessary churn.
-
-As far as I know, the FIQ usage is quite valid for the processor it
-needs to run on (MX21/27/28, right?) in the modes it runs in (AC97 on
-these processors, and maybe MX35 too), and I'm just trying to figure
-out what the steps are for
-
-* making sure it doesn't get built for architectures/variants it's
-certainly NOT required on (imx_v6_v7_defconfig, if it actually enabled
-audio, that is - in fact, audio should be enabled as more one of the
-boards supported defines it in the device tree) which would amount to
-two seperate patches, one for the defconfig, one for the CONFIG item.
-
-I did note that SND_SOC_EUKREA_TLV320 enables FIQ but it also depends
-on MX51 which makes me think this need to be split, too, so that MX51
-boards don't have it but MX2/MX3 do.
-
-* if it is built then it's built as ARM code (redundant, as previously
-stated, but would have stopped me from swearing at my build box when I
-hit the issue yet again) which could be a patch or could be ignored.
-I'd rather discuss this here than clutter the ML with several respins
-of a patch, let's get an opinion first - to .arm or no to .arm?
-
-* make sure there's no weird FIQ stuff floating around that has so far
-relied on SND_SOC_IMX_PCM_FIQ doing select FIQ before I make it not
-compile in for other boards (since otherwise no i.MX processor selects
-FIQ if they're not using that driver, it could be simply coincidence
-nobody noticed). I don't want to be the one submitting a patch I can't
-test which mysteriously breaks every MX28 on the planet (since Rob,
-Shawn, Sascha might be the ones swearing at me instead)
-
-* making sure someone's actually testing audio as above... and
-where/if/when the MX28 audio stuff is going in the future und so
-weiter..
-
-I guess I need Sascha to pipe up and tell me what the code is needed
-for exactly again.. and someone to test the result of the changes..
-
--- 
-Matt Sealey <matt@genesi-usa.com>
-Product Development Analyst, Genesi USA, Inc.
+It seems to me this makes for excellent changelog material ;-)
