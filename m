@@ -1,40 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab2HFPO1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 11:14:27 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:51225 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932185Ab2HFPOZ (ORCPT
+	id S932228Ab2HFPO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 11:14:59 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:20441 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081Ab2HFPO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 11:14:25 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+bk8c3b8ubv2/W3bcRG+dv1At1kV5lY862TZNDyS
-	ct7Fj8DpAu09CB
-Message-ID: <1344266062.6853.26.camel@marge.simpson.net>
-Subject: Re: unfair scheduling with tbb application observed, could it be a
- kernel issue?
-From: Mike Galbraith <efault@gmx.de>
-To: Pedro Larroy <pedro.larroy.lists@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 06 Aug 2012 17:14:22 +0200
-In-Reply-To: <1344264419.6853.19.camel@marge.simpson.net>
-References: <CAC_CU1hzuSAeHG7-5g5kOa=MMh3KnJZNwWr+ySkJQyxixck4WA@mail.gmail.com>
-	 <1344263139.6853.10.camel@marge.simpson.net>
-	 <CAC_CU1iP0y9pVPPWVuER3kZbFGbBwS6Q2w1mJ6Ke6VNLqJOgbA@mail.gmail.com>
-	 <1344263912.6853.14.camel@marge.simpson.net>
-	 <1344264419.6853.19.camel@marge.simpson.net>
+	Mon, 6 Aug 2012 11:14:58 -0400
+Message-ID: <1344266096.2486.17.camel@lorien2>
+Subject: [PATCH RESEND] mm: Restructure kmem_cache_create() to move debug
+ cache integrity checks into a new function
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Pekka Enberg <penberg@kernel.org>
+Cc: cl@linux.com, glommer@parallels.com, js1304@gmail.com, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, shuahkhan@gmail.com
+Date: Mon, 06 Aug 2012 09:14:56 -0600
+In-Reply-To: <1344224494.3053.5.camel@lorien2>
+References: <1342221125.17464.8.camel@lorien2>
+	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
+	 <1344224494.3053.5.camel@lorien2>
+Organization: ISS-Linux
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, with the sched_debug info you sent offline, booting with noautogroup
-appended to the kernel command line should fix it up for you.  You've
-got autogroup enabled, which creates automagic per session task groups.
+kmem_cache_create() does cache integrity checks when CONFIG_DEBUG_VM
+is defined. These checks interspersed with the regular code path has
+lead to compile time warnings when compiled without CONFIG_DEBUG_VM
+defined. Restructuring the code to move the integrity checks in to a new
+function would eliminate the current compile warning problem and also
+will allow for future changes to the debug only code to evolve without
+introducing new warnings in the regular path. This restructuring work
+is based on the discussion in the following thread:
 
--Mike  
+https://lkml.org/lkml/2012/7/13/424
+
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ mm/slab_common.c |   74 ++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 38 insertions(+), 36 deletions(-)
+
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 12637ce..08bc2a4 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -23,6 +23,41 @@ enum slab_state slab_state;
+ LIST_HEAD(slab_caches);
+ DEFINE_MUTEX(slab_mutex);
+ 
++static int kmem_cache_sanity_check(const char *name, size_t size)
++{
++#ifdef CONFIG_DEBUG_VM
++	struct kmem_cache *s = NULL;
++
++	list_for_each_entry(s, &slab_caches, list) {
++		char tmp;
++		int res;
++
++		/*
++		 * This happens when the module gets unloaded and doesn't
++		 * destroy its slab cache and no-one else reuses the vmalloc
++		 * area of the module.  Print a warning.
++		 */
++		res = probe_kernel_address(s->name, tmp);
++		if (res) {
++			pr_err("Slab cache with size %d has lost its name\n",
++			       s->object_size);
++			continue;
++		}
++
++		if (!strcmp(s->name, name)) {
++			pr_err("%s (%s): Cache name already exists.\n",
++			       __func__, name);
++			dump_stack();
++			s = NULL;
++			return -EINVAL;
++		}
++	}
++
++	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
++#endif
++	return 0;
++}
++
+ /*
+  * kmem_cache_create - Create a cache.
+  * @name: A string which is used in /proc/slabinfo to identify this cache.
+@@ -53,48 +88,17 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
+ {
+ 	struct kmem_cache *s = NULL;
+ 
+-#ifdef CONFIG_DEBUG_VM
+ 	if (!name || in_interrupt() || size < sizeof(void *) ||
+ 		size > KMALLOC_MAX_SIZE) {
+-		printk(KERN_ERR "kmem_cache_create(%s) integrity check"
+-			" failed\n", name);
++		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
+ 		goto out;
+ 	}
+-#endif
+ 
+ 	get_online_cpus();
+ 	mutex_lock(&slab_mutex);
+ 
+-#ifdef CONFIG_DEBUG_VM
+-	list_for_each_entry(s, &slab_caches, list) {
+-		char tmp;
+-		int res;
+-
+-		/*
+-		 * This happens when the module gets unloaded and doesn't
+-		 * destroy its slab cache and no-one else reuses the vmalloc
+-		 * area of the module.  Print a warning.
+-		 */
+-		res = probe_kernel_address(s->name, tmp);
+-		if (res) {
+-			printk(KERN_ERR
+-			       "Slab cache with size %d has lost its name\n",
+-			       s->object_size);
+-			continue;
+-		}
+-
+-		if (!strcmp(s->name, name)) {
+-			printk(KERN_ERR "kmem_cache_create(%s): Cache name"
+-				" already exists.\n",
+-				name);
+-			dump_stack();
+-			s = NULL;
+-			goto oops;
+-		}
+-	}
+-
+-	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
+-#endif
++	if (kmem_cache_sanity_check(name, size))
++		goto oops;
+ 
+ 	s = __kmem_cache_create(name, size, align, flags, ctor);
+ 
+@@ -102,9 +106,7 @@ oops:
+ 	mutex_unlock(&slab_mutex);
+ 	put_online_cpus();
+ 
+-#ifdef CONFIG_DEBUG_VM
+ out:
+-#endif
+ 	if (!s && (flags & SLAB_PANIC))
+ 		panic("kmem_cache_create: Failed to create slab '%s'\n", name);
+ 
+-- 
+1.7.9.5
+
+
 
