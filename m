@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab2HFO4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:56:07 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:57426 "EHLO
+	id S932178Ab2HFO4R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:56:17 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:61065 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144Ab2HFO4E (ORCPT
+	with ESMTP id S932144Ab2HFO4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:56:04 -0400
+	Mon, 6 Aug 2012 10:56:14 -0400
 X-IronPort-AV: E=Sophos;i="4.77,720,1336363200"; 
-   d="scan'208";a="204279817"
+   d="scan'208";a="204279844"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
@@ -16,9 +16,9 @@ CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
         <catalin.marinas@arm.com>, <arnd@arndb.de>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v2 16/23] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
-Date: Mon, 6 Aug 2012 15:27:19 +0100
-Message-ID: <1344263246-28036-16-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v2 12/23] xen/arm: introduce CONFIG_XEN on ARM
+Date: Mon, 6 Aug 2012 15:27:15 +0100
+Message-ID: <1344263246-28036-12-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
@@ -28,28 +28,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
-default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
-irq_startup, that is responsible for calling irq_unmask at startup time.
-As a result event channels remain masked.
+Changes in v2:
+
+- mark Xen guest support on ARM as EXPERIMENTAL.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- drivers/xen/events.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/arm/Kconfig |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 5ecb596..8ffb7b7 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -836,6 +836,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
- 		struct irq_info *info = info_for_irq(irq);
- 		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
- 	}
-+	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a91009c..f14664b 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1855,6 +1855,16 @@ config DEPRECATED_PARAM_STRUCT
+ 	  This was deprecated in 2001 and announced to live on for 5 years.
+ 	  Some old boot loaders still use this way.
  
- out:
- 	mutex_unlock(&irq_mapping_update_lock);
++config XEN_DOM0
++	def_bool y
++
++config XEN
++	bool "Xen guest support on ARM (EXPERIMENTAL)"
++	depends on EXPERIMENTAL && ARM && OF
++	select XEN_DOM0
++	help
++	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
++
+ endmenu
+ 
+ menu "Boot options"
 -- 
 1.7.2.5
 
