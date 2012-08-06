@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab2HFVo2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:44:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36771 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756200Ab2HFVo0 (ORCPT
+	id S1755906Ab2HFVr1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 17:47:27 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42526 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753198Ab2HFVrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:44:26 -0400
-Date: Mon, 6 Aug 2012 14:44:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yann Cantin <yann.cantin@laposte.net>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC ebeam PATCH v3 0/2]
-Message-ID: <20120806214423.GC30355@kroah.com>
-References: <1344288104-20731-1-git-send-email-yann.cantin@laposte.net>
+	Mon, 6 Aug 2012 17:47:25 -0400
+Date: Mon, 6 Aug 2012 22:47:24 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] regulator: add MAX8907 driver
+Message-ID: <20120806214724.GC26698@opensource.wolfsonmicro.com>
+References: <1343932033-911-1-git-send-email-swarren@wwwdotorg.org> <20120804101918.GD9248@opensource.wolfsonmicro.com> <50203589.5020509@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344288104-20731-1-git-send-email-yann.cantin@laposte.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50203589.5020509@wwwdotorg.org>
+X-Cookie: You will pass away very quickly.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 11:21:42PM +0200, Yann Cantin wrote:
-> Hi,
-> 
-> New USB input driver for eBeam devices.
-> 
-> Currently, only the Luidia eBeam classic projection model is supported.
-> Edge model and a NEC interactive video-projector support planned for the
-> end of the mounth. 
-> 
-> Patch 1 to blacklist the device for hid generic-usb.
-> 
-> Patch 2 is the actual driver.
-> 
-> Changes from previous :
-> - switch to div64_s64 for portable 64/64-bits divisions
-> - some cosmetics in device name
-> - unused include and def removed
-> - variables name changes for readability
-> 
-> Pending issues :
-> - sysfs custom files : need to pass 13 parameters for calibration :
->   choice is between lots of simply-handled, or few with a big sscanf.
+On Mon, Aug 06, 2012 at 03:22:17PM -0600, Stephen Warren wrote:
+> On 08/04/2012 04:19 AM, Mark Brown wrote:
 
-sysfs is "one value per file", so use lots of different files please.
+> > I'm really not convinced it makes much sense to represent the backlight
+> > driver current regulators as regulators, they only get used as part of
+> > the backlight and are usually tightly coupled to their boosts.
 
-greg k-h
+> So you mean just completely remove any reference to WLED from the
+> driver? There is a register to configure the current limit - do you not
+> expect anything to ever need to set that in the kernel; do you expect
+> the HW default to be correct, or the bootloader to set the desired value?
+
+I'd expect it to be configured as part of configuring the overall
+backlight, for an actual current regulator you're not setting a current
+limit but rather a current which usually translates directly into a
+brightness.  As I say this will usually be done in conjunction with a
+boost regulator.
