@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab2HFR45 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 13:56:57 -0400
-Received: from relay02ant.iops.be ([212.53.4.35]:44700 "EHLO
-	relay02ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756800Ab2HFR4z (ORCPT
+	id S932304Ab2HFR5f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 13:57:35 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:9898 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756800Ab2HFR5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 13:56:55 -0400
-Message-ID: <50200561.4020100@acm.org>
-Date: Mon, 06 Aug 2012 17:56:49 +0000
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mike Christie <michaelc@cs.wisc.edu>
-CC: Chanho Min <chanho0207@gmail.com>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
-References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com> <501CE4E5.20604@acm.org> <501D51D1.2010806@cs.wisc.edu> <501D83A1.7040900@acm.org> <501DA3F0.4090009@cs.wisc.edu>
-In-Reply-To: <501DA3F0.4090009@cs.wisc.edu>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Aug 2012 13:57:33 -0400
+Message-ID: <1344275849.2632.28.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] net:appletalk:ddp:fixed coding style issue relating to
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jeffrin Jose <ahiliation@yahoo.co.in>
+CC: <acme@ghostprotocols.net>, <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Mon, 6 Aug 2012 18:57:29 +0100
+In-Reply-To: <1344274298-4711-1-git-send-email-ahiliation@yahoo.co.in>
+References: <1344274298-4711-1-git-send-email-ahiliation@yahoo.co.in>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/12 22:36, Mike Christie wrote:
-> On 08/04/2012 03:18 PM, Bart Van Assche wrote:
->> On 08/04/12 16:46, Mike Christie wrote:
->>> I think we have to have scsi-ml do a get_device when a sdev is added to
->>> the starved entry and then do a put_device when it is removed (must do
->>> these under the host lock for the starved entry case too). I am not sure
->>> if that is just a hack/papering-over of the problem and there are more
->>> issues like this.
->>
->> That would result in a more complex patch than the patch at the start of
->> this thread, isn't it ?
+On Mon, 2012-08-06 at 23:01 +0530, Jeffrin Jose wrote:
+> Fixed coding style issue relating to indentation
+> in net/appletalk/ddp.c found by checkpatch.pl tool.
 > 
-> Yaah, but the original patch in this thread is still racey isn't it?
+> Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+> ---
+>  net/appletalk/ddp.c |   26 +++++++++++++-------------
+>  1 file changed, 13 insertions(+), 13 deletions(-)
+> 
+> diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
+> index 8685296..4023fca 100644
+> --- a/net/appletalk/ddp.c
+> +++ b/net/appletalk/ddp.c
+> @@ -1796,7 +1796,7 @@ static int atalk_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
+>  
+>  	switch (cmd) {
+>  		/* Protocol layer */
+> -		case TIOCOUTQ: {
+> +	case TIOCOUTQ: {
+>  			long amount = sk->sk_sndbuf - sk_wmem_alloc_get(sk);
+>  
+>  			if (amount < 0)
+[...]
 
-Indeed. How about the patch below ? Scsi devices are removed from
-starved_list after blk_cleanup_queue() and before put_device(). That
-guarantees that inside scsi_run_queue() get_device() under host lock
-will succeed.
+The whole of the switch body should be shifted left by one tab, not just
+the case-labels.
 
----
- drivers/scsi/scsi_lib.c   |    5 +++++
- drivers/scsi/scsi_sysfs.c |    7 ++++++-
- 2 files changed, 11 insertions(+), 1 deletions(-)
+Ben.
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index ffd7773..bd7daec 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -452,10 +452,15 @@ static void scsi_run_queue(struct request_queue *q)
- 			continue;
- 		}
- 
-+		get_device(&sdev->sdev_gendev);
- 		spin_unlock(shost->host_lock);
-+
- 		spin_lock(sdev->request_queue->queue_lock);
- 		__blk_run_queue(sdev->request_queue);
- 		spin_unlock(sdev->request_queue->queue_lock);
-+
-+		put_device(&sdev->sdev_gendev);
-+
- 		spin_lock(shost->host_lock);
- 	}
- 	/* put any unprocessed entries back */
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 093d4f6..44f232e 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -348,7 +348,6 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
- 	starget->reap_ref++;
- 	list_del(&sdev->siblings);
- 	list_del(&sdev->same_target_siblings);
--	list_del(&sdev->starved_entry);
- 	spin_unlock_irqrestore(sdev->host->host_lock, flags);
- 
- 	cancel_work_sync(&sdev->event_work);
-@@ -956,6 +955,8 @@ int scsi_sysfs_add_sdev(struct scsi_device *sdev)
- void __scsi_remove_device(struct scsi_device *sdev)
- {
- 	struct device *dev = &sdev->sdev_gendev;
-+	struct Scsi_Host *shost = sdev->host;
-+	unsigned long flags;
- 
- 	if (sdev->is_visible) {
- 		if (scsi_device_set_state(sdev, SDEV_CANCEL) != 0)
-@@ -977,6 +978,10 @@ void __scsi_remove_device(struct scsi_device *sdev)
- 	blk_cleanup_queue(sdev->request_queue);
- 	cancel_work_sync(&sdev->requeue_work);
- 
-+	spin_lock_irqsave(shost->host_lock, flags);
-+	list_del(&sdev->starved_entry);
-+	spin_unlock_irqrestore(shost->host_lock, flags);
-+
- 	if (sdev->host->hostt->slave_destroy)
- 		sdev->host->hostt->slave_destroy(sdev);
- 	transport_destroy_device(dev);
 -- 
-1.7.7
-
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
