@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab2HFXLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:11:55 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:44975 "EHLO ogre.sisk.pl"
+	id S1757047Ab2HFXMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:12:42 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44981 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932230Ab2HFXLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:11:52 -0400
+	id S932255Ab2HFXLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 19:11:54 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [PATCH 7/12] PM / Domains: Add power-on function using names to identify domains
-Date: Tue, 7 Aug 2012 01:11:14 +0200
+Subject: [PATCH 9/12] ARM: shmobile: Move sh7372's PM domain objects to a table
+Date: Tue, 7 Aug 2012 01:12:56 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Linux PM list <linux-pm@vger.kernel.org>,
@@ -20,117 +20,241 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208070111.15171.rjw@sisk.pl>
+Message-Id: <201208070112.56980.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-It sometimes is necessary to turn on a given PM domain when only
-the name of it is known and the domain pointer is not readily
-available.  For this reason, add a new helper function,
-pm_genpd_name_poweron(), allowing the caller to turn on a PM domain
-using its name for identification.  To avoid code duplication,
-move the domain lookup code to a separate function.
+Instead of giving a name to every sh7372's PM domain object, put them
+all into a table and use rmobile_init_domains(), introduced by a
+previous patch, for initializing them all altogether.  Also, use
+pm_genpd_add_subdomain_names() for adding subdomains to the PM
+domains and pm_genpd_poweron_name() for turning on the A4S domain
+when preparing for system suspend.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/domain.c |   46 +++++++++++++++++++++++++++++---------------
- include/linux/pm_domain.h   |    5 ++++
- 2 files changed, 36 insertions(+), 15 deletions(-)
+ arch/arm/mach-shmobile/include/mach/sh7372.h |   18 +---
+ arch/arm/mach-shmobile/pm-sh7372.c           |  111 +++++++++++++--------------
+ arch/arm/mach-shmobile/setup-sh7372.c        |   16 ---
+ 3 files changed, 64 insertions(+), 81 deletions(-)
 
-Index: linux/drivers/base/power/domain.c
+Index: linux/arch/arm/mach-shmobile/pm-sh7372.c
 ===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -53,6 +53,24 @@
- static LIST_HEAD(gpd_list);
- static DEFINE_MUTEX(gpd_list_lock);
+--- linux.orig/arch/arm/mach-shmobile/pm-sh7372.c
++++ linux/arch/arm/mach-shmobile/pm-sh7372.c
+@@ -71,21 +71,6 @@
  
-+static struct generic_pm_domain *pm_genpd_lookup_name(const char *domain_name)
-+{
-+	struct generic_pm_domain *genpd = NULL, *gpd;
-+
-+	if (IS_ERR_OR_NULL(domain_name))
-+		return NULL;
-+
-+	mutex_lock(&gpd_list_lock);
-+	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
-+		if (!strcmp(gpd->name, domain_name)) {
-+			genpd = gpd;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&gpd_list_lock);
-+	return genpd;
-+}
-+
  #ifdef CONFIG_PM
  
- struct generic_pm_domain *dev_to_genpd(struct device *dev)
-@@ -262,6 +280,18 @@ int pm_genpd_poweron(struct generic_pm_d
- 	return ret;
+-struct rmobile_pm_domain sh7372_pd_a4lc = {
+-	.genpd.name = "A4LC",
+-	.bit_shift = 1,
+-};
+-
+-struct rmobile_pm_domain sh7372_pd_a4mp = {
+-	.genpd.name = "A4MP",
+-	.bit_shift = 2,
+-};
+-
+-struct rmobile_pm_domain sh7372_pd_d4 = {
+-	.genpd.name = "D4",
+-	.bit_shift = 3,
+-};
+-
+ static int sh7372_a4r_pd_suspend(void)
+ {
+ 	sh7372_intcs_suspend();
+@@ -93,26 +78,9 @@ static int sh7372_a4r_pd_suspend(void)
+ 	return 0;
  }
  
-+/**
-+ * pm_genpd_name_poweron - Restore power to a given PM domain and its masters.
-+ * @domain_name: Name of the PM domain to power up.
-+ */
-+int pm_genpd_name_poweron(const char *domain_name)
+-struct rmobile_pm_domain sh7372_pd_a4r = {
+-	.genpd.name = "A4R",
+-	.bit_shift = 5,
+-	.suspend = sh7372_a4r_pd_suspend,
+-	.resume = sh7372_intcs_resume,
+-};
+-
+-struct rmobile_pm_domain sh7372_pd_a3rv = {
+-	.genpd.name = "A3RV",
+-	.bit_shift = 6,
+-};
+-
+-struct rmobile_pm_domain sh7372_pd_a3ri = {
+-	.genpd.name = "A3RI",
+-	.bit_shift = 8,
+-};
+-
+ static bool a4s_suspend_ready;
+ 
+-static int sh7372_pd_a4s_suspend(void)
++static int sh7372_a4s_pd_suspend(void)
+ {
+ 	/*
+ 	 * The A4S domain contains the CPU core and therefore it should
+@@ -125,20 +93,11 @@ static int sh7372_pd_a4s_suspend(void)
+ 	return -EBUSY;
+ }
+ 
+-static void sh7372_pd_a4s_resume(void)
++static void sh7372_a4s_pd_resume(void)
+ {
+ 	a4s_suspend_ready = false;
+ }
+ 
+-struct rmobile_pm_domain sh7372_pd_a4s = {
+-	.genpd.name = "A4S",
+-	.bit_shift = 10,
+-	.gov = &pm_domain_always_on_gov,
+-	.no_debug = true,
+-	.suspend = sh7372_pd_a4s_suspend,
+-	.resume = sh7372_pd_a4s_resume,
+-};
+-
+ static int sh7372_a3sp_pd_suspend(void)
+ {
+ 	/*
+@@ -148,18 +107,62 @@ static int sh7372_a3sp_pd_suspend(void)
+ 	return console_suspend_enabled ? 0 : -EBUSY;
+ }
+ 
+-struct rmobile_pm_domain sh7372_pd_a3sp = {
+-	.genpd.name = "A3SP",
+-	.bit_shift = 11,
+-	.gov = &pm_domain_always_on_gov,
+-	.no_debug = true,
+-	.suspend = sh7372_a3sp_pd_suspend,
++static struct rmobile_pm_domain sh7372_pm_domains[] = {
++	{
++		.genpd.name = "A4LC",
++		.bit_shift = 1,
++	},
++	{
++		.genpd.name = "A4MP",
++		.bit_shift = 2,
++	},
++	{
++		.genpd.name = "D4",
++		.bit_shift = 3,
++	},
++	{
++		.genpd.name = "A4R",
++		.bit_shift = 5,
++		.suspend = sh7372_a4r_pd_suspend,
++		.resume = sh7372_intcs_resume,
++	},
++	{
++		.genpd.name = "A3RV",
++		.bit_shift = 6,
++	},
++	{
++		.genpd.name = "A3RI",
++		.bit_shift = 8,
++	},
++	{
++		.genpd.name = "A4S",
++		.bit_shift = 10,
++		.gov = &pm_domain_always_on_gov,
++		.no_debug = true,
++		.suspend = sh7372_a4s_pd_suspend,
++		.resume = sh7372_a4s_pd_resume,
++	},
++	{
++		.genpd.name = "A3SP",
++		.bit_shift = 11,
++		.gov = &pm_domain_always_on_gov,
++		.no_debug = true,
++		.suspend = sh7372_a3sp_pd_suspend,
++	},
++	{
++		.genpd.name = "A3SG",
++		.bit_shift = 13,
++	},
+ };
+ 
+-struct rmobile_pm_domain sh7372_pd_a3sg = {
+-	.genpd.name = "A3SG",
+-	.bit_shift = 13,
+-};
++void __init sh7372_init_pm_domains(void)
 +{
-+	struct generic_pm_domain *genpd;
-+
-+	genpd = pm_genpd_lookup_name(domain_name);
-+	return genpd ? pm_genpd_poweron(genpd) : -EINVAL;
++	rmobile_init_domains(sh7372_pm_domains, ARRAY_SIZE(sh7372_pm_domains));
++	pm_genpd_add_subdomain_names("A4LC", "A3RV");
++	pm_genpd_add_subdomain_names("A4R", "A4LC");
++	pm_genpd_add_subdomain_names("A4S", "A3SG");
++	pm_genpd_add_subdomain_names("A4S", "A3SP");
 +}
-+
+ 
  #endif /* CONFIG_PM */
  
- #ifdef CONFIG_PM_RUNTIME
-@@ -1475,21 +1505,7 @@ int __pm_genpd_of_add_device(struct devi
- int __pm_genpd_name_add_device(const char *domain_name, struct device *dev,
- 			       struct gpd_timing_data *td)
- {
--	struct generic_pm_domain *genpd = NULL, *gpd;
--
--	if (IS_ERR_OR_NULL(domain_name) || IS_ERR_OR_NULL(dev))
--		return -EINVAL;
--
--	mutex_lock(&gpd_list_lock);
--	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
--		if (!strcmp(gpd->name, domain_name)) {
--			genpd = gpd;
--			break;
--		}
--	}
--	mutex_unlock(&gpd_list_lock);
--
--	return __pm_genpd_add_device(genpd, dev, td);
-+	return __pm_genpd_add_device(pm_genpd_lookup_name(domain_name), dev, td);
- }
- 
- /**
-Index: linux/include/linux/pm_domain.h
+@@ -436,7 +439,7 @@ static int sh7372_pm_notifier_fn(struct
+ 		 * executed during system suspend and resume, respectively, so
+ 		 * that those functions don't crash while accessing the INTCS.
+ 		 */
+-		pm_genpd_poweron(&sh7372_pd_a4r.genpd);
++		pm_genpd_name_poweron("A4R");
+ 		break;
+ 	case PM_POST_SUSPEND:
+ 		pm_genpd_poweroff_unused();
+Index: linux/arch/arm/mach-shmobile/setup-sh7372.c
 ===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -161,6 +161,7 @@ extern void pm_genpd_init(struct generic
- 			  struct dev_power_governor *gov, bool is_off);
+--- linux.orig/arch/arm/mach-shmobile/setup-sh7372.c
++++ linux/arch/arm/mach-shmobile/setup-sh7372.c
+@@ -1001,21 +1001,7 @@ static struct platform_device *sh7372_la
  
- extern int pm_genpd_poweron(struct generic_pm_domain *genpd);
-+extern int pm_genpd_name_poweron(const char *domain_name);
- 
- extern bool default_stop_ok(struct device *dev);
- 
-@@ -239,6 +240,10 @@ static inline int pm_genpd_poweron(struc
+ void __init sh7372_add_standard_devices(void)
  {
- 	return -ENOSYS;
- }
-+static inline int pm_genpd_name_poweron(const char *domain_name)
-+{
-+	return -ENOSYS;
-+}
- static inline bool default_stop_ok(struct device *dev)
- {
- 	return false;
+-	rmobile_init_pm_domain(&sh7372_pd_a4lc);
+-	rmobile_init_pm_domain(&sh7372_pd_a4mp);
+-	rmobile_init_pm_domain(&sh7372_pd_d4);
+-	rmobile_init_pm_domain(&sh7372_pd_a4r);
+-	rmobile_init_pm_domain(&sh7372_pd_a3rv);
+-	rmobile_init_pm_domain(&sh7372_pd_a3ri);
+-	rmobile_init_pm_domain(&sh7372_pd_a4s);
+-	rmobile_init_pm_domain(&sh7372_pd_a3sp);
+-	rmobile_init_pm_domain(&sh7372_pd_a3sg);
+-
+-	pm_genpd_add_subdomain_names("A4LC", "A3RV");
+-	pm_genpd_add_subdomain_names("A4R", "A4LC");
+-
+-	pm_genpd_add_subdomain_names("A4S", "A3SG");
+-	pm_genpd_add_subdomain_names("A4S", "A3SP");
++	sh7372_init_pm_domains();
+ 
+ 	platform_add_devices(sh7372_early_devices,
+ 			    ARRAY_SIZE(sh7372_early_devices));
+Index: linux/arch/arm/mach-shmobile/include/mach/sh7372.h
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/include/mach/sh7372.h
++++ linux/arch/arm/mach-shmobile/include/mach/sh7372.h
+@@ -478,21 +478,15 @@ extern struct clk sh7372_fsibck_clk;
+ extern struct clk sh7372_fsidiva_clk;
+ extern struct clk sh7372_fsidivb_clk;
+ 
+-#ifdef CONFIG_PM
+-extern struct rmobile_pm_domain sh7372_pd_a4lc;
+-extern struct rmobile_pm_domain sh7372_pd_a4mp;
+-extern struct rmobile_pm_domain sh7372_pd_d4;
+-extern struct rmobile_pm_domain sh7372_pd_a4r;
+-extern struct rmobile_pm_domain sh7372_pd_a3rv;
+-extern struct rmobile_pm_domain sh7372_pd_a3ri;
+-extern struct rmobile_pm_domain sh7372_pd_a4s;
+-extern struct rmobile_pm_domain sh7372_pd_a3sp;
+-extern struct rmobile_pm_domain sh7372_pd_a3sg;
+-#endif /* CONFIG_PM */
+-
+ extern void sh7372_intcs_suspend(void);
+ extern void sh7372_intcs_resume(void);
+ extern void sh7372_intca_suspend(void);
+ extern void sh7372_intca_resume(void);
+ 
++#ifdef CONFIG_PM
++extern void __init sh7372_init_pm_domains(void);
++#else
++static inline void sh7372_init_pm_domains(void) {}
++#endif
++
+ #endif /* __ASM_SH7372_H__ */
 
