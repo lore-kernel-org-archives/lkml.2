@@ -1,36 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab2HFOaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:30:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49021 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756493Ab2HFOaS (ORCPT
+	id S932089Ab2HFObM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:31:12 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49764 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756399Ab2HFObL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:30:18 -0400
-Date: Mon, 6 Aug 2012 15:30:16 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: sameo@linux.intel.com, rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-Message-ID: <20120806143016.GK16861@opensource.wolfsonmicro.com>
-References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
+	Mon, 6 Aug 2012 10:31:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [121.7.238.199]
+Date: Mon, 6 Aug 2012 22:31:09 +0800
+Message-ID: <CAMVG2su47PegSW75aGomPP_6ot86suks9o29MiFEvneY4mTgyQ@mail.gmail.com>
+Subject: rts5139 polling overhead...
+From: Daniel J Blueman <daniel@quora.org>
+To: edwin_rong <edwin_rong@realsil.com.cn>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, wei_wang@realsil.com.cn
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 12:32:48AM +0800, Haojian Zhuang wrote:
+Hi Edwin,
 
-> Since IORESOURCE_IO is used for PCI devices, it doesn't fit on
-> 88PM860x PMIC device that lies on I2C bus. So use IORESOURCE_MEM
-> instead.
+The Realsil/Realtek rts5139 card reader driver polls it's hardware at
+20Hz and has racked up 25 minutes of processor time over a few days on
+this Sandy Bridge media centre box, without any cards inserted. This
+is more than the sum of all the other processes (including X):
 
-This isn't much more appropriate - _MEM is for memory ranges so isn't
-directly relevant to register addresses either.  If anything _IO is
-slightly nearer.
+$ ps -ef | grep rts5139
+root       691     2  0 Aug03 ?        00:00:36 [rts5139-control]
+root       693     2  0 Aug03 ?        00:25:36 [rts5139-polling]
+
+The kernel is stock 3.5.0 without debug; would it help if I log a bug
+report or eg collect further detail?
+
+Thanks,
+  Daniel
+-- 
+Daniel J Blueman
