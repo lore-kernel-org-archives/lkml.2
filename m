@@ -1,99 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab2HFSnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:43:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27903 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932273Ab2HFSnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:43:45 -0400
-Date: Mon, 6 Aug 2012 12:49:14 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: eparis@redhat.com, paulmck@linux.vnet.ibm.com, paul@paul-moore.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Fix sel_netnode_insert suspicious rcu dereference.
-Message-ID: <20120806164914.GA25940@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
-	paulmck@linux.vnet.ibm.com, paul@paul-moore.com,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20120605051238.GA30614@redhat.com>
+	id S932422Ab2HFSof (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:44:35 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:53756 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932273Ab2HFSod (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 14:44:33 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Miller <davem@davemloft.net>
+Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Ariyasu <jan.ariyasu@hp.com>, Jan Ariyasu <jan.ariyasu@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@infradead.org>,
+        Xi Wang <xi.wang@gmail.com>
+References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
+	<87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com>
+Date: Mon, 06 Aug 2012 11:44:24 -0700
+In-Reply-To: <87zk67q31q.fsf_-_@xmission.com> (Eric W. Biederman's message of
+	"Mon, 06 Aug 2012 11:38:09 -0700")
+Message-ID: <87393zq2rb.fsf_-_@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120605051238.GA30614@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19SxyoZDbM+yEW28LM4LeMXod4Gr7wCWrQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0455]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;David Miller <davem@davemloft.net>
+X-Spam-Relay-Country: 
+Subject: [PATCH net-next 6/9] sctp: Move the percpu sockets counter out of sctp_proc_init
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 01:12:39AM -0400, Dave Jones wrote:
- > I reported this a year ago (https://lkml.org/lkml/2011/4/20/308).
- > It's still a problem apparently ...
 
-And another two months pass in silence.
+The percpu sctp socket counter has nothing at all to do with the sctp
+proc files, and having it in the wrong initialization is confusing,
+and makes network namespace support a pain.
 
-This is happening to other people too.
-https://bugzilla.redhat.com/show_bug.cgi?id=846037
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ net/sctp/protocol.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-Can someone please apply this patch, or at least point out what's wrong with it ?
-
-	Dave
-
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index 6193d20..976d765 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -93,8 +93,6 @@ int sysctl_sctp_wmem[3];
+ /* Set up the proc fs entry for the SCTP protocol. */
+ static __init int sctp_proc_init(void)
+ {
+-	if (percpu_counter_init(&sctp_sockets_allocated, 0))
+-		goto out_nomem;
+ #ifdef CONFIG_PROC_FS
+ 	if (!proc_net_sctp) {
+ 		proc_net_sctp = proc_mkdir("sctp", init_net.proc_net);
+@@ -125,12 +123,9 @@ out_snmp_proc_init:
+ 		remove_proc_entry("sctp", init_net.proc_net);
+ 	}
+ out_free_percpu:
+-	percpu_counter_destroy(&sctp_sockets_allocated);
+ #else
+ 	return 0;
+ #endif /* CONFIG_PROC_FS */
+-
+-out_nomem:
+ 	return -ENOMEM;
+ }
  
- > ===============================
- > [ INFO: suspicious RCU usage. ]
- > 3.5.0-rc1+ #63 Not tainted
- > -------------------------------
- > security/selinux/netnode.c:178 suspicious rcu_dereference_check() usage!
- > 
- > other info that might help us debug this:
- > 
- > 
- > rcu_scheduler_active = 1, debug_locks = 0
- > 1 lock held by trinity-child1/8750:
- >  #0:  (sel_netnode_lock){+.....}, at: [<ffffffff812d8f8a>] sel_netnode_sid+0x16a/0x3e0
- > 
- > stack backtrace:
- > Pid: 8750, comm: trinity-child1 Not tainted 3.5.0-rc1+ #63
- > Call Trace:
- >  [<ffffffff810cec2d>] lockdep_rcu_suspicious+0xfd/0x130
- >  [<ffffffff812d91d1>] sel_netnode_sid+0x3b1/0x3e0
- >  [<ffffffff812d8e20>] ? sel_netnode_find+0x1a0/0x1a0
- >  [<ffffffff812d24a6>] selinux_socket_bind+0xf6/0x2c0
- >  [<ffffffff810cd1dd>] ? trace_hardirqs_off+0xd/0x10
- >  [<ffffffff810cdb55>] ? lock_release_holdtime.part.9+0x15/0x1a0
- >  [<ffffffff81093841>] ? lock_hrtimer_base+0x31/0x60
- >  [<ffffffff812c9536>] security_socket_bind+0x16/0x20
- >  [<ffffffff815550ca>] sys_bind+0x7a/0x100
- >  [<ffffffff816c03d5>] ? sysret_check+0x22/0x5d
- >  [<ffffffff810d392d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
- >  [<ffffffff8133b09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- >  [<ffffffff816c03a9>] system_call_fastpath+0x16/0x1b
- > 
- > This patch below does what Paul McKenney suggested in the previous thread.
- > 
- > Signed-off-by: Dave Jones <davej@redhat.com>
- > 
- > diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
- > index 28f911c..c5454c0 100644
- > --- a/security/selinux/netnode.c
- > +++ b/security/selinux/netnode.c
- > @@ -174,7 +174,8 @@ static void sel_netnode_insert(struct sel_netnode *node)
- >  	if (sel_netnode_hash[idx].size == SEL_NETNODE_HASH_BKT_LIMIT) {
- >  		struct sel_netnode *tail;
- >  		tail = list_entry(
- > -			rcu_dereference(sel_netnode_hash[idx].list.prev),
- > +			rcu_dereference_protected(sel_netnode_hash[idx].list.prev,
- > +						  lockdep_is_held(&sel_netnode_lock)),
- >  			struct sel_netnode, list);
- >  		list_del_rcu(&tail->list);
- >  		kfree_rcu(tail, rcu);
- > --
- > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
- > the body of a message to majordomo@vger.kernel.org
- > More majordomo info at  http://vger.kernel.org/majordomo-info.html
- > Please read the FAQ at  http://www.tux.org/lkml/
----end quoted text---
+@@ -151,7 +146,6 @@ static void sctp_proc_exit(void)
+ 		remove_proc_entry("sctp", init_net.proc_net);
+ 	}
+ #endif
+-	percpu_counter_destroy(&sctp_sockets_allocated);
+ }
+ 
+ /* Private helper to extract ipv4 address and stash them in
+@@ -1261,6 +1255,10 @@ SCTP_STATIC __init int sctp_init(void)
+ 	if (status)
+ 		goto err_init_mibs;
+ 
++	status = percpu_counter_init(&sctp_sockets_allocated, 0);
++	if (status)
++		goto err_percpu_counter_init;
++
+ 	/* Initialize proc fs directory.  */
+ 	status = sctp_proc_init();
+ 	if (status)
+@@ -1481,6 +1479,8 @@ err_ahash_alloc:
+ 	sctp_dbg_objcnt_exit();
+ 	sctp_proc_exit();
+ err_init_proc:
++	percpu_counter_destroy(&sctp_sockets_allocated);
++err_percpu_counter_init:
+ 	cleanup_sctp_mibs();
+ err_init_mibs:
+ 	kmem_cache_destroy(sctp_chunk_cachep);
+@@ -1521,6 +1521,7 @@ SCTP_STATIC __exit void sctp_exit(void)
+ 			     sizeof(struct sctp_bind_hashbucket)));
+ 
+ 	sctp_dbg_objcnt_exit();
++	percpu_counter_destroy(&sctp_sockets_allocated);
+ 	sctp_proc_exit();
+ 	cleanup_sctp_mibs();
+ 
+-- 
+1.7.5.4
+
