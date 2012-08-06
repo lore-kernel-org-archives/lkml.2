@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460Ab2HFTBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 15:01:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16018 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932380Ab2HFTBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 15:01:34 -0400
-Date: Mon, 6 Aug 2012 16:00:54 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v5 1/3] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120806190053.GA3968@t510.redhat.com>
-References: <cover.1344259054.git.aquini@redhat.com>
- <212b5297df32cb4e3f60d5b76a8cb0629d328a4e.1344259054.git.aquini@redhat.com>
- <50200F1F.7060605@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50200F1F.7060605@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932472Ab2HFTEB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 15:04:01 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38031 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414Ab2HFTD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 15:03:59 -0400
+Date: Mon, 06 Aug 2012 12:03:59 -0700 (PDT)
+Message-Id: <20120806.120359.747789694625389454.davem@davemloft.net>
+To: ahiliation@yahoo.co.in
+Cc: acme@ghostprotocols.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net:appletalk:ddp:fixed coding style issue relating to
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1344274298-4711-1-git-send-email-ahiliation@yahoo.co.in>
+References: <1344274298-4711-1-git-send-email-ahiliation@yahoo.co.in>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 02:38:23PM -0400, Rik van Riel wrote:
-> On 08/06/2012 09:56 AM, Rafael Aquini wrote:
-> 
-> >@@ -846,6 +861,21 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
-> >  			goto out;
-> >
-> >  	rc = __unmap_and_move(page, newpage, force, offlining, mode);
-> >+
-> >+	if (unlikely(is_balloon_page(newpage)&&
-> >+		     balloon_compaction_enabled())) {
-> 
-> Could that be collapsed into one movable_balloon_page(newpage) function
-> call?
-> 
-Keeping is_balloon_page() as is, and itroducing this new movable_balloon_page()
-function call, or just doing a plain rename, as Andrew has first suggested?
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+Date: Mon,  6 Aug 2012 23:01:38 +0530
 
+> Fixed coding style issue relating to indentation
+> in net/appletalk/ddp.c found by checkpatch.pl tool.
+> 
+> Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+> ---
+>  net/appletalk/ddp.c |   26 +++++++++++++-------------
+>  1 file changed, 13 insertions(+), 13 deletions(-)
+> 
+> diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
+> index 8685296..4023fca 100644
+> --- a/net/appletalk/ddp.c
+> +++ b/net/appletalk/ddp.c
+> @@ -1796,7 +1796,7 @@ static int atalk_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
+>  
+>  	switch (cmd) {
+>  		/* Protocol layer */
+> -		case TIOCOUTQ: {
+> +	case TIOCOUTQ: {
+>  			long amount = sk->sk_sndbuf - sk_wmem_alloc_get(sk);
 
+Only moving the case statement back one TAB and but not any of the
+surrounding code is utterly rediculous.
+
+This is why we hate purely coding style fixing patches.
