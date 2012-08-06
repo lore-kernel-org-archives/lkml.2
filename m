@@ -1,571 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105Ab2HFXb4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:31:56 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60555 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757007Ab2HFXby (ORCPT
+	id S1756914Ab2HFXk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:40:29 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52488 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756486Ab2HFXk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:31:54 -0400
-Date: Mon, 6 Aug 2012 20:31:46 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Andrey Wagin <avagin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 2/3] perf: teach perf inject to merge sched_stat_* and
- sched_switch events
-Message-ID: <20120806233146.GK21441@infradead.org>
-References: <1344247319-304069-1-git-send-email-avagin@openvz.org>
- <1344247319-304069-3-git-send-email-avagin@openvz.org>
- <20120806181941.GG21441@infradead.org>
- <CANaxB-xq_wDGZQ16nTD6agwc_JiE4dQe1fXmvmPZckAX0EVr9w@mail.gmail.com>
- <20120806220000.GH21441@infradead.org>
+	Mon, 6 Aug 2012 19:40:27 -0400
+Message-ID: <50205592.1030205@gmail.com>
+Date: Tue, 07 Aug 2012 03:38:58 +0400
+From: Max Filippov <jcmvbkbc@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="LpQ9ahxlCli8rRTG"
-Content-Disposition: inline
-In-Reply-To: <20120806220000.GH21441@infradead.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, linux-xtensa@linux-xtensa.org,
+        linux-next@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@tensilica.com>,
+        Kirill Krinkin <kirill.krinkin@gmail.com>
+Subject: xtensa port maintenance
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi.
 
---LpQ9ahxlCli8rRTG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+AFAIK xtensa linux port is currently in bad shape: it doesn't work in the
+mainline, it fails to build in the linux-next. The latest working kernels for
+xtensa are 2.6.29...31 trees hosted at the git.linux-xtensa.org.
 
-Em Mon, Aug 06, 2012 at 07:00:00PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Mon, Aug 06, 2012 at 11:43:04PM +0400, Andrey Wagin escreveu:
-> > 2012/8/6 Arnaldo Carvalho de Melo <acme@ghostprotocols.net>:
-> > >> +struct perf_session  *session;
+I have a goal to make xtensa arch in the linux mainline usable.
+Currently I have a number of patches on top of Linus' tree that allow to build
+working allnoconfig, defconfig and allmodconfig kernels for ISS machine with
+dc232b and fsf core variants [1]. For the next several weeks I'm planning to
+forward-port patches accumulated in linux-xtensa.org git trees and make the
+resulting kernels rock-solid. I'd like to restore xtensa participation in the
+linux-next. Further (currently undetailed) plans are to bring modern Linux
+features to the xtensa port, e.g. device trees.
 
-> > perf_event__sched_stat (perf_inject.sample) uses "session" for getting
-> > an event name. I don't know how to get it by another way
-> 
-> Can you try with the attached patch? We already lookup the event_format
-> entries when we read the perf.data header so that we can cache
-> evsel->name, we might as well cache the event_format in
-> evsel->tp_format, so that tools don't have to relookup this for each
-> sample.
+I have a couple of questions regarding the path of xtensa-specific patches
+upstream:
+    - which git tree should they be targeted for? Should I set up a tree for
+      pull requests, or will patches be picked up into some existing tree?
+      (Looks like Linus' tree is the right target. AFAIK previously xtensa
+      patches went mostly through akpm tree).
 
-Attached goes a more complete patch that removes the pevent_find_event
-calls from several tools, David, could you give it some testing?
+    - which mailing lists should they go to?
+      (I guess that besides linux-xtensa@linux-xtensa.org list they should go
+      to linux-kernel@vger.kernel.org for general review. Anything else?)
 
-- Arnaldo
+Should you wonder what I am:
+I am a member of St.Petersburg Open Source and Linux Lab [2].
+My previous contributions to Linux are related to p54spi wireless driver.
+I'm also a developer and maintainer of the target-xtensa QEMU port [3].
 
---LpQ9ahxlCli8rRTG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="perf_evsel_tp_format.patch"
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index ce35015..ffb93f4 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -1,6 +1,7 @@
- #include "builtin.h"
- #include "perf.h"
- 
-+#include "util/evsel.h"
- #include "util/util.h"
- #include "util/cache.h"
- #include "util/symbol.h"
-@@ -57,11 +58,6 @@ static unsigned long nr_allocs, nr_cross_allocs;
- 
- #define PATH_SYS_NODE	"/sys/devices/system/node"
- 
--struct perf_kmem {
--	struct perf_tool    tool;
--	struct perf_session *session;
--};
--
- static void init_cpunode_map(void)
- {
- 	FILE *fp;
-@@ -283,16 +279,10 @@ static void process_free_event(void *data,
- 	s_alloc->alloc_cpu = -1;
- }
- 
--static void process_raw_event(struct perf_tool *tool,
--			      union perf_event *raw_event __used, void *data,
-+static void process_raw_event(struct perf_evsel *evsel, void *data,
- 			      int cpu, u64 timestamp, struct thread *thread)
- {
--	struct perf_kmem *kmem = container_of(tool, struct perf_kmem, tool);
--	struct event_format *event;
--	int type;
--
--	type = trace_parse_common_type(kmem->session->pevent, data);
--	event = pevent_find_event(kmem->session->pevent, type);
-+	struct event_format *event = evsel->tp_format;
- 
- 	if (!strcmp(event->name, "kmalloc") ||
- 	    !strcmp(event->name, "kmem_cache_alloc")) {
-@@ -313,10 +303,10 @@ static void process_raw_event(struct perf_tool *tool,
- 	}
- }
- 
--static int process_sample_event(struct perf_tool *tool,
-+static int process_sample_event(struct perf_tool *tool __used,
- 				union perf_event *event,
- 				struct perf_sample *sample,
--				struct perf_evsel *evsel __used,
-+				struct perf_evsel *evsel,
- 				struct machine *machine)
- {
- 	struct thread *thread = machine__findnew_thread(machine, event->ip.pid);
-@@ -329,18 +319,16 @@ static int process_sample_event(struct perf_tool *tool,
- 
- 	dump_printf(" ... thread: %s:%d\n", thread->comm, thread->pid);
- 
--	process_raw_event(tool, event, sample->raw_data, sample->cpu,
-+	process_raw_event(evsel, sample->raw_data, sample->cpu,
- 			  sample->time, thread);
- 
- 	return 0;
- }
- 
--static struct perf_kmem perf_kmem = {
--	.tool = {
--		.sample			= process_sample_event,
--		.comm			= perf_event__process_comm,
--		.ordered_samples	= true,
--	},
-+static struct perf_tool perf_kmem = {
-+	.sample		 = process_sample_event,
-+	.comm		 = perf_event__process_comm,
-+	.ordered_samples = true,
- };
- 
- static double fragmentation(unsigned long n_req, unsigned long n_alloc)
-@@ -497,13 +485,10 @@ static int __cmd_kmem(void)
- 	int err = -EINVAL;
- 	struct perf_session *session;
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false,
--				    &perf_kmem.tool);
-+	session = perf_session__new(input_name, O_RDONLY, 0, false, &perf_kmem);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
--	perf_kmem.session = session;
--
- 	if (perf_session__create_kernel_maps(session) < 0)
- 		goto out_delete;
- 
-@@ -511,7 +496,7 @@ static int __cmd_kmem(void)
- 		goto out_delete;
- 
- 	setup_pager();
--	err = perf_session__process_events(session, &perf_kmem.tool);
-+	err = perf_session__process_events(session, &perf_kmem);
- 	if (err != 0)
- 		goto out_delete;
- 	sort_result();
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index b3c4285..142b303 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -1,6 +1,7 @@
- #include "builtin.h"
- #include "perf.h"
- 
-+#include "util/evsel.h"
- #include "util/util.h"
- #include "util/cache.h"
- #include "util/symbol.h"
-@@ -718,14 +719,10 @@ process_lock_release_event(void *data,
- 		trace_handler->release_event(&release_event, event, cpu, timestamp, thread);
- }
- 
--static void
--process_raw_event(void *data, int cpu, u64 timestamp, struct thread *thread)
-+static void process_raw_event(struct perf_evsel *evsel, void *data, int cpu,
-+			      u64 timestamp, struct thread *thread)
- {
--	struct event_format *event;
--	int type;
--
--	type = trace_parse_common_type(session->pevent, data);
--	event = pevent_find_event(session->pevent, type);
-+	struct event_format *event = evsel->tp_format;
- 
- 	if (!strcmp(event->name, "lock_acquire"))
- 		process_lock_acquire_event(data, event, cpu, timestamp, thread);
-@@ -849,7 +846,7 @@ static void dump_info(void)
- static int process_sample_event(struct perf_tool *tool __used,
- 				union perf_event *event,
- 				struct perf_sample *sample,
--				struct perf_evsel *evsel __used,
-+				struct perf_evsel *evsel,
- 				struct machine *machine)
- {
- 	struct thread *thread = machine__findnew_thread(machine, sample->tid);
-@@ -860,7 +857,7 @@ static int process_sample_event(struct perf_tool *tool __used,
- 		return -1;
- 	}
- 
--	process_raw_event(sample->raw_data, sample->cpu, sample->time, thread);
-+	process_raw_event(evsel, sample->raw_data, sample->cpu, sample->time, thread);
- 
- 	return 0;
- }
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 7a9ad2b..30ef82a 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -43,11 +43,6 @@ static u64			sleep_measurement_overhead;
- 
- static unsigned long		nr_tasks;
- 
--struct perf_sched {
--	struct perf_tool    tool;
--	struct perf_session *session;
--};
--
- struct sched_atom;
- 
- struct task_desc {
-@@ -1596,14 +1591,12 @@ typedef void (*tracepoint_handler)(struct perf_tool *tool, struct event_format *
- 				   struct machine *machine,
- 				   struct thread *thread);
- 
--static int perf_sched__process_tracepoint_sample(struct perf_tool *tool,
-+static int perf_sched__process_tracepoint_sample(struct perf_tool *tool __used,
- 						 union perf_event *event __used,
- 						 struct perf_sample *sample,
- 						 struct perf_evsel *evsel,
- 						 struct machine *machine)
- {
--	struct perf_sched *sched = container_of(tool, struct perf_sched, tool);
--	struct pevent *pevent = sched->session->pevent;
- 	struct thread *thread = machine__findnew_thread(machine, sample->pid);
- 
- 	if (thread == NULL) {
-@@ -1617,25 +1610,18 @@ static int perf_sched__process_tracepoint_sample(struct perf_tool *tool,
- 
- 	if (evsel->handler.func != NULL) {
- 		tracepoint_handler f = evsel->handler.func;
--
--		if (evsel->handler.data == NULL)
--			evsel->handler.data = pevent_find_event(pevent,
--							  evsel->attr.config);
--
--		f(tool, evsel->handler.data, sample, machine, thread);
-+		f(tool, evsel->tp_format, sample, machine, thread);
- 	}
- 
- 	return 0;
- }
- 
--static struct perf_sched perf_sched = {
--	.tool = {
--		.sample		 = perf_sched__process_tracepoint_sample,
--		.comm		 = perf_event__process_comm,
--		.lost		 = perf_event__process_lost,
--		.fork		 = perf_event__process_task,
--		.ordered_samples = true,
--	},
-+static struct perf_tool perf_sched = {
-+	.sample		 = perf_sched__process_tracepoint_sample,
-+	.comm		 = perf_event__process_comm,
-+	.lost		 = perf_event__process_lost,
-+	.fork		 = perf_event__process_task,
-+	.ordered_samples = true,
- };
- 
- static void read_events(bool destroy, struct perf_session **psession)
-@@ -1652,18 +1638,15 @@ static void read_events(bool destroy, struct perf_session **psession)
- 	};
- 	struct perf_session *session;
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false,
--				    &perf_sched.tool);
-+	session = perf_session__new(input_name, O_RDONLY, 0, false, &perf_sched);
- 	if (session == NULL)
- 		die("No Memory");
- 
--	perf_sched.session = session;
--
- 	err = perf_session__set_tracepoints_handlers(session, handlers);
- 	assert(err == 0);
- 
- 	if (perf_session__has_traces(session, "record -R")) {
--		err = perf_session__process_events(session, &perf_sched.tool);
-+		err = perf_session__process_events(session, &perf_sched);
- 		if (err)
- 			die("Failed to process events, error %d", err);
- 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 1e60ab7..8dba470 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -262,14 +262,11 @@ static int perf_session__check_output_opt(struct perf_session *session)
- 	return 0;
- }
- 
--static void print_sample_start(struct pevent *pevent,
--			       struct perf_sample *sample,
-+static void print_sample_start(struct perf_sample *sample,
- 			       struct thread *thread,
- 			       struct perf_evsel *evsel)
- {
--	int type;
- 	struct perf_event_attr *attr = &evsel->attr;
--	struct event_format *event;
- 	const char *evname = NULL;
- 	unsigned long secs;
- 	unsigned long usecs;
-@@ -307,20 +304,7 @@ static void print_sample_start(struct pevent *pevent,
- 	}
- 
- 	if (PRINT_FIELD(EVNAME)) {
--		if (attr->type == PERF_TYPE_TRACEPOINT) {
--			/*
--			 * XXX Do we really need this here?
--			 * perf_evlist__set_tracepoint_names should have done
--			 * this already
--			 */
--			type = trace_parse_common_type(pevent,
--						       sample->raw_data);
--			event = pevent_find_event(pevent, type);
--			if (event)
--				evname = event->name;
--		} else
--			evname = perf_evsel__name(evsel);
--
-+		evname = perf_evsel__name(evsel);
- 		printf("%s: ", evname ? evname : "[unknown]");
- 	}
- }
-@@ -416,7 +400,7 @@ static void print_sample_bts(union perf_event *event,
- }
- 
- static void process_event(union perf_event *event __unused,
--			  struct pevent *pevent,
-+			  struct pevent *pevent __unused,
- 			  struct perf_sample *sample,
- 			  struct perf_evsel *evsel,
- 			  struct machine *machine,
-@@ -427,7 +411,7 @@ static void process_event(union perf_event *event __unused,
- 	if (output[attr->type].fields == 0)
- 		return;
- 
--	print_sample_start(pevent, sample, thread, evsel);
-+	print_sample_start(sample, thread, evsel);
- 
- 	if (is_bts_event(attr)) {
- 		print_sample_bts(event, sample, evsel, machine, thread);
-@@ -435,9 +419,8 @@ static void process_event(union perf_event *event __unused,
- 	}
- 
- 	if (PRINT_FIELD(TRACE))
--		print_trace_event(pevent, sample->cpu, sample->raw_data,
--				  sample->raw_size);
--
-+		event_format__print(evsel->tp_format, sample->cpu,
-+				    sample->raw_data, sample->raw_size);
- 	if (PRINT_FIELD(ADDR))
- 		print_sample_addr(event, sample, machine, thread, attr);
- 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index b559929..a56c457 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -56,6 +56,7 @@ struct perf_evsel {
- 	int			ids;
- 	struct hists		hists;
- 	char			*name;
-+	struct event_format	*tp_format;
- 	union {
- 		void		*priv;
- 		off_t		id_offset;
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 74ea3c2..7f13ed4 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2123,6 +2123,7 @@ static int perf_evsel__set_tracepoint_name(struct perf_evsel *evsel,
- 	if (event->name == NULL)
- 		return -1;
- 
-+	evsel->tp_format = event;
- 	return 0;
- }
- 
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index 02dfa19..c266281 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -237,16 +237,16 @@ static void define_event_symbols(struct event_format *event,
- 		define_event_symbols(event, ev_name, args->next);
- }
- 
--static inline
--struct event_format *find_cache_event(struct pevent *pevent, int type)
-+static inline struct event_format *find_cache_event(struct perf_evsel *evsel)
- {
- 	static char ev_name[256];
- 	struct event_format *event;
-+	int type = evsel->attr.config;
- 
- 	if (events[type])
- 		return events[type];
- 
--	events[type] = event = pevent_find_event(pevent, type);
-+	events[type] = event = evsel->tp_format;
- 	if (!event)
- 		return NULL;
- 
-@@ -269,7 +269,6 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
- 	unsigned long long val;
- 	unsigned long s, ns;
- 	struct event_format *event;
--	int type;
- 	int pid;
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
-@@ -281,11 +280,9 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
- 	if (evsel->attr.type != PERF_TYPE_TRACEPOINT)
- 		return;
- 
--	type = trace_parse_common_type(pevent, data);
--
--	event = find_cache_event(pevent, type);
-+	event = find_cache_event(evsel);
- 	if (!event)
--		die("ug! no event found for type %d", type);
-+		die("ug! no event found for type %d", evsel->attr.config);
- 
- 	pid = trace_parse_common_pid(pevent, data);
- 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index ce4d1b0..8006978 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -27,6 +27,7 @@
- #include <errno.h>
- 
- #include "../../perf.h"
-+#include "../evsel.h"
- #include "../util.h"
- #include "../event.h"
- #include "../thread.h"
-@@ -194,16 +195,21 @@ static void define_event_symbols(struct event_format *event,
- 		define_event_symbols(event, ev_name, args->next);
- }
- 
--static inline
--struct event_format *find_cache_event(struct pevent *pevent, int type)
-+static inline struct event_format *find_cache_event(struct perf_evsel *evsel)
- {
- 	static char ev_name[256];
- 	struct event_format *event;
-+	int type = evsel->attr.config;
- 
-+	/*
-+ 	 * XXX: Do we really need to cache this since now we have evsel->tp_format
-+ 	 * cached already? Need to re-read this "cache" routine that as well calls
-+ 	 * define_event_symbols() :-\
-+ 	 */
- 	if (events[type])
- 		return events[type];
- 
--	events[type] = event = pevent_find_event(pevent, type);
-+	events[type] = event = evsel->tp_format;
- 	if (!event)
- 		return NULL;
- 
-@@ -217,7 +223,7 @@ struct event_format *find_cache_event(struct pevent *pevent, int type)
- static void python_process_event(union perf_event *perf_event __unused,
- 				 struct pevent *pevent,
- 				 struct perf_sample *sample,
--				 struct perf_evsel *evsel __unused,
-+				 struct perf_evsel *evsel,
- 				 struct machine *machine __unused,
- 				 struct thread *thread)
- {
-@@ -228,7 +234,6 @@ static void python_process_event(union perf_event *perf_event __unused,
- 	unsigned long s, ns;
- 	struct event_format *event;
- 	unsigned n = 0;
--	int type;
- 	int pid;
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
-@@ -239,11 +244,9 @@ static void python_process_event(union perf_event *perf_event __unused,
- 	if (!t)
- 		Py_FatalError("couldn't create Python tuple");
- 
--	type = trace_parse_common_type(pevent, data);
--
--	event = find_cache_event(pevent, type);
-+	event = find_cache_event(evsel);
- 	if (!event)
--		die("ug! no event found for type %d", type);
-+		die("ug! no event found for type %d", (int)evsel->attr.config);
- 
- 	pid = trace_parse_common_pid(pevent, data);
- 
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 0715c84..1208834 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -167,20 +167,11 @@ unsigned long long read_size(struct pevent *pevent, void *ptr, int size)
- 	return pevent_read_number(pevent, ptr, size);
- }
- 
--void print_trace_event(struct pevent *pevent, int cpu, void *data, int size)
-+void event_format__print(struct event_format *event,
-+			 int cpu, void *data, int size)
- {
--	struct event_format *event;
- 	struct pevent_record record;
- 	struct trace_seq s;
--	int type;
--
--	type = trace_parse_common_type(pevent, data);
--
--	event = pevent_find_event(pevent, type);
--	if (!event) {
--		warning("ug! no event found for type %d", type);
--		return;
--	}
- 
- 	memset(&record, 0, sizeof(record));
- 	record.cpu = cpu;
-@@ -192,6 +183,19 @@ void print_trace_event(struct pevent *pevent, int cpu, void *data, int size)
- 	trace_seq_do_printf(&s);
- }
- 
-+void print_trace_event(struct pevent *pevent, int cpu, void *data, int size)
-+{
-+	int type = trace_parse_common_type(pevent, data);
-+	struct event_format *event = pevent_find_event(pevent, type);
-+
-+	if (!event) {
-+		warning("ug! no event found for type %d", type);
-+		return;
-+	}
-+
-+	event_format__print(event, cpu, data, size);
-+}
-+
- void print_event(struct pevent *pevent, int cpu, void *data, int size,
- 		 unsigned long long nsecs, char *comm)
- {
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 8fef1d6..069d105 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -32,6 +32,8 @@ int bigendian(void);
- 
- struct pevent *read_trace_init(int file_bigendian, int host_bigendian);
- void print_trace_event(struct pevent *pevent, int cpu, void *data, int size);
-+void event_format__print(struct event_format *event,
-+			 int cpu, void *data, int size);
- 
- void print_event(struct pevent *pevent, int cpu, void *data, int size,
- 		 unsigned long long nsecs, char *comm);
+[1] https://github.com/jcmvbkbc/linux-xtensa
+[2] http://osll.spb.ru
+[3] http://wiki.qemu.org/Features/Xtensa
 
---LpQ9ahxlCli8rRTG--
+-- 
+Thanks.
+-- Max
