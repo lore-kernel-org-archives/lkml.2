@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab2HFUDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 16:03:08 -0400
-Received: from ns.pmeerw.net ([87.118.82.44]:46774 "EHLO pmeerw.net"
+	id S1756956Ab2HFUED (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 16:04:03 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:55390 "EHLO isis.lip6.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756768Ab2HFUDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 16:03:07 -0400
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: linux-kernel@vger.kernel.org
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Subject: [PATCH] extcon: fix typos in max77693 driver
-Date: Mon,  6 Aug 2012 22:03:02 +0200
-Message-Id: <1344283383-11033-1-git-send-email-pmeerw@pmeerw.net>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752782Ab2HFUEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 16:04:00 -0400
+X-pt: isis.lip6.fr
+Message-ID: <20120806215727.60177hgs4k81txvw@webmail.lip6.fr>
+Date: Mon, 06 Aug 2012 21:57:27 +0200
+From: Julia.Lawall@lip6.fr
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Samuel Ortiz <sameo@linux.intel.com>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] drivers/mfd: drop frees of devm allocated data
+References: <1344099049-15212-2-git-send-email-Julia.Lawall@lip6.fr>
+ <20120806140515.GM4352@mwanda>
+In-Reply-To: <20120806140515.GM4352@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-15;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (isis.lip6.fr [132.227.60.2]); Mon, 06 Aug 2012 21:57:27 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
----
- drivers/extcon/extcon-max77693.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Quoting Dan Carpenter <dan.carpenter@oracle.com>:
 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index 920a609..8bb438b 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -356,7 +356,7 @@ static int max77693_muic_adc_ground_handler(struct max77693_muic_info *info,
- 		extcon_set_cable_state(info->edev, "MHL", attached);
- 		break;
- 	default:
--		dev_err(info->dev, "faild to detect %s accessory\n",
-+		dev_err(info->dev, "failed to detect %s accessory\n",
- 			attached ? "attached" : "detached");
- 		dev_err(info->dev, "- adc:0x%x, adclow:0x%x, adc1k:0x%x\n",
- 			adc, adclow, adc1k);
-@@ -548,7 +548,7 @@ static void max77693_muic_irq_work(struct work_struct *work)
- 		curr_adc = info->status[0] & STATUS1_ADC_MASK;
- 		curr_adc >>= STATUS1_ADC_SHIFT;
- 
--		/* Check accossory state which is either detached or attached */
-+		/* Check accessory state which is either detached or attached */
- 		if (curr_adc == MAX77693_MUIC_ADC_OPEN)
- 			attached = false;
- 
-@@ -564,7 +564,7 @@ static void max77693_muic_irq_work(struct work_struct *work)
- 		curr_chg_type = info->status[1] & STATUS2_CHGTYP_MASK;
- 		curr_chg_type >>= STATUS2_CHGTYP_SHIFT;
- 
--		/* Check charger accossory state which
-+		/* Check charger accessory state which
- 		   is either detached or attached */
- 		if (curr_chg_type == MAX77693_CHARGER_TYPE_NONE)
- 			attached = false;
--- 
-1.7.9.5
+> On Sat, Aug 04, 2012 at 06:50:45PM +0200, Julia Lawall wrote:
+>> diff --git a/drivers/mfd/88pm80x.c b/drivers/mfd/88pm80x.c
+>> index cd0bf52..2bd090e 100644
+>> --- a/drivers/mfd/88pm80x.c
+>> +++ b/drivers/mfd/88pm80x.c
+>> @@ -45,17 +45,14 @@ int __devinit pm80x_init(struct i2c_client *client,
+>>
+>>  	map = devm_regmap_init_i2c(client, &pm80x_regmap_config);
+>>  	if (IS_ERR(map)) {
+>> -		ret = PTR_ERR(map);
+>>  		dev_err(&client->dev, "Failed to allocate register map: %d\n",
+>>  			ret);
+>                         ^^^
+> The ret = PTR_ERR(map); is still needed for the error message.
+
+Good point.  Thanks.  I will fix it as soon as possible, at the end of  
+the week.
+
+julia
+
+>> -		goto err_regmap_init;
+>> +		return PTR_ERR(map);
+>>  	}
+>
+> regards,
+> dan carpenter
+>
+>
+
+
+
 
