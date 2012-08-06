@@ -1,90 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab2HFKCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 06:02:46 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45083 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755620Ab2HFKCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 06:02:07 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 0/3] perf: Teach perf tool to profile sleep times
-Date: Mon,  6 Aug 2012 14:01:56 +0400
-Message-Id: <1344247319-304069-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1755721Ab2HFKMK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 06:12:10 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62656 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825Ab2HFKMI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 06:12:08 -0400
+MIME-Version: 1.0
+Date: Mon, 6 Aug 2012 18:12:05 +0800
+Message-ID: <CAN_1RdsTX5ZGSx7T6X0t70Q6k5_M1zgizL-KzPYrnHOnZ_nfSg@mail.gmail.com>
+Subject: [BUG] Kernel panic when try s3c-hsotg.c with kernel 3.5
+From: Peiyong Feng <peiyong.feng.kernel@gmail.com>
+To: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This functionality helps to analize where a task sleeps or waits locks.
-This feature can help to investigate a scalability problems.
+I got a kernel panic when try hsotg of ok6410 which is based on s3c6410:
 
-The main idea is that we can combine sched_switch and sched_stat_sleep events.
-sched_switch contains a callchain, when a task starts sleeping.
-sched_stat_sleep contains a time period for which a task slept.
 
-This series teaches "perf inject" to combine this events.
+cdc_acm: USB Abstract Control Model driver for USB modems and ISDN adapters
+Unable to handle kernel NULL pointer dereference at virtual address 00000100
+pgd = c0004000
+[00000100] *pgd=00000000
+Internal error: Oops: 5 [#1] ARM
+Modules linked in:
+CPU: 0    Not tainted  (3.5.0 #9)
+PC is at s3c_hsotg_handle_outdone+0x44/0x158
+LR is at s3c_hsotg_irq+0x75c/0x804
+pc : [<c023e7fc>]    lr : [<c024061c>]    psr: 60000193
+sp : c782fd20  ip : 00000029  fp : c13a1460
+r10: 00000000  r9 : 00000008  r8 : 000000d0
+r7 : c13a1400  r6 : 00000002  r5 : 00000000  r4 : 00060002
+r3 : 000000d0  r2 : 00000000  r1 : 00080200  r0 : c13a1400
+Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 00c5387d  Table: 50004008  DAC: 00000017
+Process swapper (pid: 1, stack limit = 0xc782e268)
+Stack: (0xc782fd20 to 0xc7830000)
+fd20: c13a1460 c0200f64 00000000 00060002 00000000 00000002 c13a1400 00000010
+fd40: 00000000 c024061c 00060002 00000000 00000002 00000008 c782fda0 c139a5c0
+fd60: c139a5c0 00000000 00000000 0000005a c04cc52c c04cc594 c04ea5fe c00565c0
+fd80: 00000000 00000000 00000000 c04cc52c c139a5c0 c04cc57c 00000000 c04eb328
+fda0: c04cc55c c04eb324 c04c44c0 c0056768 c04cc52c c04cc57c 00000000 c0058d64
+fdc0: 0000005a c04d7dd8 00000000 c005617c 0000005a c000efbc c04eb350 00000001
+fde0: c782fe08 c000853c c036c540 60000013 ffffffff c782fe3c c04cc57c c04cc55c
+fe00: 60000013 c000dd80 c04cc57c c782c000 ffffffff 00000001 60000013 c04cc52c
+fe20: c139a5c0 0000005a c04cc57c c04cc55c 60000013 c04c44c0 f6010000 c782fe50
+fe40: c036c53c c036c540 60000013 ffffffff c023fec0 c00574c8 00000000 c008b2dc
+fe60: c023fec0 00000000 00000000 c13a1400 0000005a c139a5c0 c04cc52c c0057960
+fe80: 0000005a c13a1400 c04c44b8 00000000 c051d238 c049b0ec 00000000 c03688fc
+fea0: c7853e60 c13a1400 c7804f80 00000000 c04c44f4 60000013 c7855a80 00000000
+fec0: c04e1bb4 c04c44c0 c04c44c0 c04e1bb4 c04e1bb4 c051d238 c049b0ec 00000000
+fee0: c04eb040 c020588c c04c44c0 c0204524 c04c44c0 c04c44f4 c04e1bb4 c02046ac
+ff00: c13a01e0 c0204738 00000000 c782ff18 c04e1bb4 c0202e30 c7803878 c7823700
+ff20: c04dd1d0 c040b8d4 c04e1bb4 c04e1bb4 c04dd1d0 c0203600 c040b8d4 c01b8568
+ff40: 00000000 00000000 c04e1bb4 00000007 c04eb040 c782e000 c04a65e0 c0204ce8
+ff60: 00000000 c04a65d4 00000007 c04eb040 c782e000 c0008628 c04c7ea0 00000000
+ff80: 0000009c 00000000 c0625cf9 c0037178 00000006 00000006 c0461b84 c042cee8
+ffa0: c04c7ea0 c04abdd4 c04a65d4 00000007 c04eb040 0000009c c04841b0 c04a65e0
+ffc0: 00000000 c048430c 00000006 00000006 c04841b0 00000000 00000000 c048421c
+ffe0: c000f08c 00000013 00000000 00000000 00000000 c000f08c 00000000 00000000
+[<c023e7fc>] (s3c_hsotg_handle_outdone+0x44/0x158) from [<c024061c>]
+(s3c_hsotg_irq+0x75c/0x804)
+[<c024061c>] (s3c_hsotg_irq+0x75c/0x804) from [<c00565c0>]
+(handle_irq_event_percpu+0x50/0x1bc)
+[<c00565c0>] (handle_irq_event_percpu+0x50/0x1bc) from [<c0056768>]
+(handle_irq_event+0x3c/0x5c)
+[<c0056768>] (handle_irq_event+0x3c/0x5c) from [<c0058d64>]
+(handle_level_irq+0x8c/0x118)
+[<c0058d64>] (handle_level_irq+0x8c/0x118) from [<c005617c>]
+(generic_handle_irq+0x38/0x44)
+[<c005617c>] (generic_handle_irq+0x38/0x44) from [<c000efbc>]
+(handle_IRQ+0x30/0x84)
+[<c000efbc>] (handle_IRQ+0x30/0x84) from [<c000853c>] (vic_handle_irq+0x68/0xa8)
+[<c000853c>] (vic_handle_irq+0x68/0xa8) from [<c000dd80>] (__irq_svc+0x40/0x60)
+Exception stack(0xc782fe08 to 0xc782fe50)
+fe00:                   c04cc57c c782c000 ffffffff 00000001 60000013 c04cc52c
+fe20: c139a5c0 0000005a c04cc57c c04cc55c 60000013 c04c44c0 f6010000 c782fe50
+fe40: c036c53c c036c540 60000013 ffffffff
+[<c000dd80>] (__irq_svc+0x40/0x60) from [<c036c540>]
+(_raw_spin_unlock_irqrestore+0x10/0x14)
+[<c036c540>] (_raw_spin_unlock_irqrestore+0x10/0x14) from [<c00574c8>]
+(__setup_irq+0x178/0x3f8)
+[<c00574c8>] (__setup_irq+0x178/0x3f8) from [<c0057960>]
+(request_threaded_irq+0xc4/0x12c)
+[<c0057960>] (request_threaded_irq+0xc4/0x12c) from [<c03688fc>]
+(s3c_hsotg_probe+0x14c/0x700)
+[<c03688fc>] (s3c_hsotg_probe+0x14c/0x700) from [<c020588c>]
+(platform_drv_probe+0x18/0x1c)
+[<c020588c>] (platform_drv_probe+0x18/0x1c) from [<c0204524>]
+(driver_probe_device+0x78/0x200)
+[<c0204524>] (driver_probe_device+0x78/0x200) from [<c0204738>]
+(__driver_attach+0x8c/0x90)
+[<c0204738>] (__driver_attach+0x8c/0x90) from [<c0202e30>]
+(bus_for_each_dev+0x60/0x8c)
+[<c0202e30>] (bus_for_each_dev+0x60/0x8c) from [<c0203600>]
+(bus_add_driver+0xac/0x250)
+[<c0203600>] (bus_add_driver+0xac/0x250) from [<c0204ce8>]
+(driver_register+0x58/0x130)
+[<c0204ce8>] (driver_register+0x58/0x130) from [<c0008628>]
+(do_one_initcall+0x34/0x17c)
+[<c0008628>] (do_one_initcall+0x34/0x17c) from [<c048430c>]
+(kernel_init+0xf0/0x1bc)
+[<c048430c>] (kernel_init+0xf0/0x1bc) from [<c000f08c>]
+(kernel_thread_exit+0x0/0x8)
+Code: e0433106 e0833006 e1a03183 e0828003 (e5984030)
+---[ end trace 2ea4e574318ecf99 ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+-----------------------------------------------------------------------------------
 
-All kernel related patches were committed committed in 3.6-rc1.
 
-Here is an example of a report:
-$ cat ~/foo.c
-....
-          for (i = 0; i <  10; i++) {
-                  ts1.tv_sec = 0;
-                  ts1.tv_nsec = 10000000;
-                  nanosleep(&ts1, NULL);
+When I try locate the source using arm-linux-gdb, I got this:
+-------------------------------------------------------------
+GNU gdb (Sourcery G++ Lite 2008q3-72) 6.8.50.20080821-cvs
+Copyright (C) 2008 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "--host=i686-pc-linux-gnu
+--target=arm-none-linux-gnueabi".
+For bug reporting instructions, please see:
+<https://support.codesourcery.com/GNUToolchain/>...
+(gdb) l *(s3c_hsotg_handle_outdone+0x44)
+0xc023e7fc is in s3c_hsotg_handle_outdone (drivers/usb/gadget/s3c-hsotg.c:1553).
+1548	static void s3c_hsotg_handle_outdone(struct s3c_hsotg *hsotg,
+1549					     int epnum, bool was_setup)
+1550	{
+1551		u32 epsize = readl(hsotg->regs + DOEPTSIZ(epnum));
+1552		struct s3c_hsotg_ep *hs_ep = &hsotg->eps[epnum];
+1553		struct s3c_hsotg_req *hs_req = hs_ep->req;
+1554		struct usb_request *req = &hs_req->req;
+1555		unsigned size_left = DxEPTSIZ_XferSize_GET(epsize);
+1556		int result = 0;
+1557	
+(gdb)
 
-                  tv1.tv_sec = 0;
-                  tv1.tv_usec = 40000;
-                  select(0, NULL, NULL, NULL,&tv1);
-          }
-...
 
-$ ./perf record -e sched:sched_stat_sleep -e sched:sched_switch \
-		-e sched:sched_process_exit -gP -o ~/perf.data.raw ~/foo
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.015 MB /root/perf.data.raw (~661 samples) ]
-$ ./perf inject -v -s -i ~/perf.data.raw -o ~/perf.data
-$ ./perf report -i ~/perf.data
-# Samples: 40  of event 'sched:sched_switch'
-# Event count (approx.): 1005527702
-#
-# Overhead  Command      Shared Object          Symbol
-# ........  .......  .................  ..............
-#
-   100.00%      foo  [kernel.kallsyms]  [k] __schedule
-                |
-                --- __schedule
-                    schedule
-                   |          
-                   |--79.81%-- schedule_hrtimeout_range_clock
-                   |          schedule_hrtimeout_range
-                   |          poll_schedule_timeout
-                   |          do_select
-                   |          core_sys_select
-                   |          sys_select
-                   |          system_call_fastpath
-                   |          __select
-                   |          __libc_start_main
-                   |          
-                    --20.19%-- do_nanosleep
-                              hrtimer_nanosleep
-                              sys_nanosleep
-                              system_call_fastpath
-                              __GI___libc_nanosleep
-                              __libc_start_main
 
-Andrew Vagin (3):
-  perf: teach "perf inject" to work with files
-  perf: teach perf inject to merge sched_stat_* and sched_switch events
-  perf: mark a dso if it's used
-
- tools/perf/builtin-inject.c |  139 ++++++++++++++++++++++++++++++++++++++++---
- tools/perf/util/build-id.c  |    2 +-
- tools/perf/util/build-id.h  |    5 ++
- 3 files changed, 137 insertions(+), 9 deletions(-)
-
+I also try the old linux like 2.6.36, I works fine.
