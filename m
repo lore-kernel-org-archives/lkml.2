@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750887Ab2HFEOv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 00:14:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38235 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab2HFEOu (ORCPT
+	id S1751033Ab2HFEP0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 00:15:26 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54857 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab2HFEPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 00:14:50 -0400
-Message-ID: <501F44B2.4010703@gmail.com>
-Date: Sun, 05 Aug 2012 22:14:42 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ulrich Drepper <drepper@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 03/18] perf target: Fix check on buffer size
-References: <1344002470-5965-1-git-send-email-acme@infradead.org> <1344002470-5965-4-git-send-email-acme@infradead.org> <20120803141703.GA19736@shutemov.name> <87vcgwznen.fsf@sejong.aot.lge.com>
-In-Reply-To: <87vcgwznen.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Aug 2012 00:15:25 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Sun, 05 Aug 2012 23:15:24 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Guenter Roeck <linux@roeck-us.net>, Sean Young <sean@mess.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [PATCH] [media] Add USB dependency for IguanaWorks USB IR Transceiver
+Date: Sun,  5 Aug 2012 21:15:20 -0700
+Message-Id: <1344226520-22318-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/5/12 9:53 PM, Namhyung Kim wrote:
->
-> I think this should go to the urgent branch too as the offending patch
-> seemed to go to the mainline already.
->
+This patch fixes the error
+	drivers/usb/core/hub.c:3753: undefined reference to `usb_speed_string'
+seen in various random configurations.
 
-It was picked up by Ingo today and included in his pull request sent to 
-Linus.
+Cc: Sean Young <sean@mess.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/media/rc/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-David
+diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
+index 5180390..8be5763 100644
+--- a/drivers/media/rc/Kconfig
++++ b/drivers/media/rc/Kconfig
+@@ -261,6 +261,7 @@ config IR_WINBOND_CIR
+ 
+ config IR_IGUANA
+ 	tristate "IguanaWorks USB IR Transceiver"
++	depends on USB_ARCH_HAS_HCD
+ 	depends on RC_CORE
+ 	select USB
+ 	---help---
+-- 
+1.7.9.7
 
