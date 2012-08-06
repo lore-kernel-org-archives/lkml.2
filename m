@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab2HFWLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 18:11:05 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59340 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756841Ab2HFWJR (ORCPT
+	id S1756656Ab2HFWJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 18:09:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61129 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756668Ab2HFWJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 18:09:17 -0400
+	Mon, 6 Aug 2012 18:09:12 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
@@ -14,9 +14,9 @@ Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
         vgoyal@redhat.com, mpatocka@redhat.com, sage@newdream.net,
         yehuda@hq.newdream.net
-Subject: [PATCH v5 07/12] block: Rename bio_split() -> bio_pair_split()
-Date: Mon,  6 Aug 2012 15:08:36 -0700
-Message-Id: <1344290921-25154-8-git-send-email-koverstreet@google.com>
+Subject: [PATCH v5 04/12] pktcdvd: Switch to bio_kmalloc()
+Date: Mon,  6 Aug 2012 15:08:33 -0700
+Message-Id: <1344290921-25154-5-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1344290921-25154-1-git-send-email-koverstreet@google.com>
 References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
@@ -24,142 +24,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is prep work for introducing a more general bio_split()
+This is prep work for killing bi_destructor - previously, pktcdvd had
+its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
+necessitating its own bi_destructor implementation.
+
+v5: Un-reorder some functions, to make the patch easier to review
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- drivers/block/drbd/drbd_req.c |    2 +-
- drivers/block/pktcdvd.c       |    2 +-
- drivers/block/rbd.c           |    3 ++-
- drivers/md/linear.c           |    2 +-
- drivers/md/raid0.c            |    6 +++---
- drivers/md/raid10.c           |    4 ++--
- fs/bio.c                      |    4 ++--
- include/linux/bio.h           |    2 +-
- 8 files changed, 13 insertions(+), 12 deletions(-)
+ drivers/block/pktcdvd.c |   67 +++++++++++-----------------------------------
+ 1 files changed, 16 insertions(+), 51 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 8e93a6a..b5cfa3b 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -1150,7 +1150,7 @@ void drbd_make_request(struct request_queue *q, struct bio *bio)
- 		const int sps = 1 << HT_SHIFT; /* sectors per slot */
- 		const int mask = sps - 1;
- 		const sector_t first_sectors = sps - (sect & mask);
--		bp = bio_split(bio, first_sectors);
-+		bp = bio_pair_split(bio, first_sectors);
- 
- 		/* we need to get a "reference count" (ap_bio_cnt)
- 		 * to avoid races with the disconnect/reconnect/suspend code.
 diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index ae55f08..18393a1 100644
+index ba66e44..ae55f08 100644
 --- a/drivers/block/pktcdvd.c
 +++ b/drivers/block/pktcdvd.c
-@@ -2469,7 +2469,7 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
- 		if (last_zone != zone) {
- 			BUG_ON(last_zone != zone + pd->settings.size);
- 			first_sectors = last_zone - bio->bi_sector;
--			bp = bio_split(bio, first_sectors);
-+			bp = bio_pair_split(bio, first_sectors);
- 			BUG_ON(!bp);
- 			pkt_make_request(q, &bp->bio1);
- 			pkt_make_request(q, &bp->bio2);
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index 8f428a8..e33c224 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -732,7 +732,8 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
+@@ -101,6 +101,8 @@ static struct dentry	*pkt_debugfs_root = NULL; /* /sys/kernel/debug/pktcdvd */
+ static int pkt_setup_dev(dev_t dev, dev_t* pkt_dev);
+ static int pkt_remove_dev(dev_t pkt_dev);
+ static int pkt_seq_show(struct seq_file *m, void *p);
++static void pkt_end_io_read(struct bio *bio, int err);
++static void pkt_end_io_packet_write(struct bio *bio, int err);
  
- 			/* split the bio. We'll release it either in the next
- 			   call, or it will have to be released outside */
--			bp = bio_split(old_chain, (len - total) / SECTOR_SIZE);
-+			bp = bio_pair_split(old_chain,
-+					    (len - total) / SECTOR_SIZE);
- 			if (!bp)
- 				goto err_out;
  
-diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-index fa211d8..e860cb9 100644
---- a/drivers/md/linear.c
-+++ b/drivers/md/linear.c
-@@ -314,7 +314,7 @@ static void linear_make_request(struct mddev *mddev, struct bio *bio)
  
- 		rcu_read_unlock();
- 
--		bp = bio_split(bio, end_sector - bio->bi_sector);
-+		bp = bio_pair_split(bio, end_sector - bio->bi_sector);
- 
- 		linear_make_request(mddev, &bp->bio1);
- 		linear_make_request(mddev, &bp->bio2);
-diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-index de63a1f..c89c8aa 100644
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -516,11 +516,11 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
- 		 * refuse to split for us, so we need to split it.
- 		 */
- 		if (likely(is_power_of_2(chunk_sects)))
--			bp = bio_split(bio, chunk_sects - (sector &
-+			bp = bio_pair_split(bio, chunk_sects - (sector &
- 							   (chunk_sects-1)));
- 		else
--			bp = bio_split(bio, chunk_sects -
--				       sector_div(sector, chunk_sects));
-+			bp = bio_pair_split(bio, chunk_sects -
-+					    sector_div(sector, chunk_sects));
- 		raid0_make_request(mddev, &bp->bio1);
- 		raid0_make_request(mddev, &bp->bio2);
- 		bio_pair_release(bp);
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 8da6282..be75924 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1063,8 +1063,8 @@ static void make_request(struct mddev *mddev, struct bio * bio)
- 		/* This is a one page bio that upper layers
- 		 * refuse to split for us, so we need to split it.
- 		 */
--		bp = bio_split(bio,
--			       chunk_sects - (bio->bi_sector & (chunk_sects - 1)) );
-+		bp = bio_pair_split(bio,
-+				    chunk_sects - (bio->bi_sector & (chunk_sects - 1)) );
- 
- 		/* Each of these 'make_request' calls will call 'wait_barrier'.
- 		 * If the first succeeds but the second blocks due to the resync
-diff --git a/fs/bio.c b/fs/bio.c
-index ff34311..0470376 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1491,7 +1491,7 @@ static void bio_pair_end_2(struct bio *bi, int err)
- /*
-  * split a bio - only worry about a bio with a single page in its iovec
-  */
--struct bio_pair *bio_split(struct bio *bi, int first_sectors)
-+struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors)
- {
- 	struct bio_pair *bp = mempool_alloc(bio_split_pool, GFP_NOIO);
- 
-@@ -1534,7 +1534,7 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- 
- 	return bp;
+@@ -522,38 +524,6 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
+ 	}
  }
--EXPORT_SYMBOL(bio_split);
-+EXPORT_SYMBOL(bio_pair_split);
  
- /**
-  *      bio_sector_offset - Find hardware sector offset in bio
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 484b96e..fdcc8dc 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -201,7 +201,7 @@ struct bio_pair {
- 	atomic_t			cnt;
- 	int				error;
- };
--extern struct bio_pair *bio_split(struct bio *bi, int first_sectors);
-+extern struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors);
- extern void bio_pair_release(struct bio_pair *dbio);
+-static void pkt_bio_destructor(struct bio *bio)
+-{
+-	kfree(bio->bi_io_vec);
+-	kfree(bio);
+-}
+-
+-static struct bio *pkt_bio_alloc(int nr_iovecs)
+-{
+-	struct bio_vec *bvl = NULL;
+-	struct bio *bio;
+-
+-	bio = kmalloc(sizeof(struct bio), GFP_KERNEL);
+-	if (!bio)
+-		goto no_bio;
+-	bio_init(bio);
+-
+-	bvl = kcalloc(nr_iovecs, sizeof(struct bio_vec), GFP_KERNEL);
+-	if (!bvl)
+-		goto no_bvl;
+-
+-	bio->bi_max_vecs = nr_iovecs;
+-	bio->bi_io_vec = bvl;
+-	bio->bi_destructor = pkt_bio_destructor;
+-
+-	return bio;
+-
+- no_bvl:
+-	kfree(bio);
+- no_bio:
+-	return NULL;
+-}
+-
+ /*
+  * Allocate a packet_data struct
+  */
+@@ -567,10 +537,13 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
+ 		goto no_pkt;
  
- extern struct bio_set *bioset_create(unsigned int, unsigned int);
+ 	pkt->frames = frames;
+-	pkt->w_bio = pkt_bio_alloc(frames);
++	pkt->w_bio = bio_kmalloc(GFP_KERNEL, frames);
+ 	if (!pkt->w_bio)
+ 		goto no_bio;
+ 
++	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
++	pkt->w_bio->bi_private = pkt;
++
+ 	for (i = 0; i < frames / FRAMES_PER_PAGE; i++) {
+ 		pkt->pages[i] = alloc_page(GFP_KERNEL|__GFP_ZERO);
+ 		if (!pkt->pages[i])
+@@ -581,9 +554,12 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
+ 	bio_list_init(&pkt->orig_bios);
+ 
+ 	for (i = 0; i < frames; i++) {
+-		struct bio *bio = pkt_bio_alloc(1);
++		struct bio *bio = bio_kmalloc(GFP_KERNEL, 1);
+ 		if (!bio)
+ 			goto no_rd_bio;
++
++		bio->bi_end_io = pkt_end_io_read;
++		bio->bi_private = pkt;
+ 		pkt->r_bios[i] = bio;
+ 	}
+ 
+@@ -1111,21 +1087,15 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
+ 	 * Schedule reads for missing parts of the packet.
+ 	 */
+ 	for (f = 0; f < pkt->frames; f++) {
+-		struct bio_vec *vec;
+-
+ 		int p, offset;
++
+ 		if (written[f])
+ 			continue;
++
+ 		bio = pkt->r_bios[f];
+-		vec = bio->bi_io_vec;
+-		bio_init(bio);
+-		bio->bi_max_vecs = 1;
+-		bio->bi_sector = pkt->sector + f * (CD_FRAMESIZE >> 9);
+-		bio->bi_bdev = pd->bdev;
+-		bio->bi_end_io = pkt_end_io_read;
+-		bio->bi_private = pkt;
+-		bio->bi_io_vec = vec;
+-		bio->bi_destructor = pkt_bio_destructor;
++		bio_reset(bio);
++		bio->bi_sector	= pkt->sector + f * (CD_FRAMESIZE >> 9);
++		bio->bi_bdev	= pd->bdev;
+ 
+ 		p = (f * CD_FRAMESIZE) / PAGE_SIZE;
+ 		offset = (f * CD_FRAMESIZE) % PAGE_SIZE;
+@@ -1418,14 +1388,9 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
+ 	}
+ 
+ 	/* Start the write request */
+-	bio_init(pkt->w_bio);
+-	pkt->w_bio->bi_max_vecs = PACKET_MAX_SIZE;
++	bio_reset(pkt->w_bio);
+ 	pkt->w_bio->bi_sector = pkt->sector;
+ 	pkt->w_bio->bi_bdev = pd->bdev;
+-	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
+-	pkt->w_bio->bi_private = pkt;
+-	pkt->w_bio->bi_io_vec = bvec;
+-	pkt->w_bio->bi_destructor = pkt_bio_destructor;
+ 	for (f = 0; f < pkt->frames; f++)
+ 		if (!bio_add_page(pkt->w_bio, bvec[f].bv_page, CD_FRAMESIZE, bvec[f].bv_offset))
+ 			BUG();
 -- 
 1.7.7.3
 
