@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069Ab2HFWAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 18:00:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45270 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab2HFWAH (ORCPT
+	id S1756320Ab2HFWAf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 18:00:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48680 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756180Ab2HFWAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 18:00:07 -0400
-Date: Mon, 6 Aug 2012 19:00:00 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Andrey Wagin <avagin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 2/3] perf: teach perf inject to merge sched_stat_* and
- sched_switch events
-Message-ID: <20120806220000.GH21441@infradead.org>
-References: <1344247319-304069-1-git-send-email-avagin@openvz.org>
- <1344247319-304069-3-git-send-email-avagin@openvz.org>
- <20120806181941.GG21441@infradead.org>
- <CANaxB-xq_wDGZQ16nTD6agwc_JiE4dQe1fXmvmPZckAX0EVr9w@mail.gmail.com>
+	Mon, 6 Aug 2012 18:00:34 -0400
+Date: Mon, 6 Aug 2012 23:00:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
+        rpurdie@rpsys.net, bryan.wu@canonical.com,
+        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
+Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
+Message-ID: <20120806220032.GD26698@opensource.wolfsonmicro.com>
+References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com> <20120806143016.GK16861@opensource.wolfsonmicro.com> <CAN1soZwCr=L3Xdi7HS9dQMxo4DzzbQv2kXo9R_U6QAf7v=B10Q@mail.gmail.com> <20120806154619.GO16861@opensource.wolfsonmicro.com> <CAN1soZzytOwxnS8oNMhFs1rfwVPwFnZoVsXeaMUc4Kf_TnunkA@mail.gmail.com> <20120806155805.GR16861@opensource.wolfsonmicro.com> <20120806192209.GA14594@flint.arm.linux.org.uk> <20120806195352.GC16199@opensource.wolfsonmicro.com> <20120806213124.GB14594@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="2oS5YaxWCcQjTEyO"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANaxB-xq_wDGZQ16nTD6agwc_JiE4dQe1fXmvmPZckAX0EVr9w@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120806213124.GB14594@flint.arm.linux.org.uk>
+X-Cookie: You will pass away very quickly.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 06, 2012 at 10:31:24PM +0100, Russell King wrote:
 
---2oS5YaxWCcQjTEyO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> So, the fact that platform devices will get any resource marked
+> IORESOURCE_IO registered against ioport_resource isn't a problem
+> then...
 
-Em Mon, Aug 06, 2012 at 11:43:04PM +0400, Andrey Wagin escreveu:
-> 2012/8/6 Arnaldo Carvalho de Melo <acme@ghostprotocols.net>:
-> >> +struct perf_session  *session;
-> 
-> perf_event__sched_stat (perf_inject.sample) uses "session" for getting
-> an event name. I don't know how to get it by another way
+This is what providing a separate parent to ensure they're in a
+different tree is there to fix.
 
-Can you try with the attached patch? We already lookup the event_format
-entries when we read the perf.data header so that we can cache
-evsel->name, we might as well cache the event_format in
-evsel->tp_format, so that tools don't have to relookup this for each
-sample.
+> Anyway, given that this thread is broken, there's no way for me to find
+> out what the _original_ issue is that you're talking about.  So I'm going
+> to guess that it's come up because we're out of IORESOURCE bits.
 
-It would look like:
+No, that's not it.  What's happened is that Haojian has posted some
+patching changing all the _IO resources to _MEM in the Marvell PMIC
+drivers, I think because you yelled at him for using _IO when he
+reported that the changes in ioport_resource broke things a few releases
+ago.  Obviously this doesn't achieve a huge amount, it's a misplaced
+cleanup.
 
-	static int perf_event__sched_stat(struct perf_tool *tool,
-					  union perf_event *event,
-					  struct perf_sample *sample,
-					  struct perf_evsel *evsel,
-					  struct machine *machine)
-	{
-		int type;
-		struct event_format *e = evsel->tp_format;
-		const char *evname = e->name;
+> So, if we made this a numeric index, then we have 32 resource types
+> to deal with, and no need to bugger around with re-using an existing
+> type for something else.
 
-- Arnaldo
+This seems sensible, and I'm sure if that change were made people would
+be delighed to use new resource types, but like I say nobody who's
+motivated to do anything here seems to have the time to do anything
+about it.
 
---2oS5YaxWCcQjTEyO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="a.patch"
-
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index b559929..a56c457 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -56,6 +56,7 @@ struct perf_evsel {
- 	int			ids;
- 	struct hists		hists;
- 	char			*name;
-+	struct event_format	*tp_format;
- 	union {
- 		void		*priv;
- 		off_t		id_offset;
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 24c489b..5b328a4 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2126,6 +2126,7 @@ static int perf_evsel__set_tracepoint_name(struct perf_evsel *evsel,
- 	if (event->name == NULL)
- 		return -1;
- 
-+	evsel->tp_format = event;
- 	return 0;
- }
- 
-
---2oS5YaxWCcQjTEyO--
+Whoever looks at this would need to do some detective work, it does seem
+like there must have been a reason to use a bitmask here...
