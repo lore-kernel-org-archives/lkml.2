@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2HFDlj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 23:41:39 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:11641 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755545Ab2HFDli (ORCPT
+	id S1755583Ab2HFDn3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 23:43:29 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59308 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755514Ab2HFDn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 23:41:38 -0400
-Message-ID: <1344224494.3053.5.camel@lorien2>
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Pekka Enberg <penberg@kernel.org>
-Cc: cl@linux.com, glommer@parallels.com, js1304@gmail.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, shuahkhan@gmail.com
-Date: Sun, 05 Aug 2012 21:41:34 -0600
-In-Reply-To: <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
-References: <1342221125.17464.8.camel@lorien2>
-	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
+	Sun, 5 Aug 2012 23:43:27 -0400
+Date: Mon, 6 Aug 2012 13:43:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20120806134318.8af35d047e255fd25398210b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__6_Aug_2012_13_43_18_+1000_jvNAPey6_wx/d_38"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-30 at 13:18 +0300, Pekka Enberg wrote:
-> On Sat, Jul 14, 2012 at 2:12 AM, Shuah Khan <shuah.khan@hp.com> wrote:
-> > The label oops is used in CONFIG_DEBUG_VM ifdef block and is defined
-> > outside ifdef CONFIG_DEBUG_VM block. This results in the following
-> > build warning when built with CONFIG_DEBUG_VM disabled. Fix to move
-> > label oops definition to inside a CONFIG_DEBUG_VM block.
-> >
-> > mm/slab_common.c: In function ‘kmem_cache_create’:
-> > mm/slab_common.c:101:1: warning: label ‘oops’ defined but not used
-> > [-Wunused-label]
-> >
-> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> 
-> I merged this as an obvious and safe fix for current merge window. We
-> need to clean this up properly for v3.7.
+--Signature=_Mon__6_Aug_2012_13_43_18_+1000_jvNAPey6_wx/d_38
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for merging the obvious fix. I was on vacation for the last two
-weeks, and just got back. I sent another patch that restructures the
-debug and non-debug code right before I went on vacation. Didn't get a
-chance to look at the responses (if any). Will get working on following
-up and re-working and re-sending the patch as needed this week.
+Hi Andrew,
 
--- Shuah
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+fs/gfs2/rgrp.c: In function 'gfs2_rs_alloc':
+fs/gfs2/rgrp.c:456:2: error: implicit declaration of function 'rb_init_node=
+' [-Werror=3Dimplicit-function-declaration]
 
+Caused by commit 5599fe1ab023 ("rbtree: empty nodes have no color") from
+the akpm tree interacting with commit cde7c325077b ("GFS2: Add structure
+to contain rgrp, bitmap, offset tuple") from the gfs2 tree.
+
+I have applied the following merge fix patch (which is probably not
+sufficient).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 6 Aug 2012 13:35:11 +1000
+Subject: [PATCH] rbtree/gfs2: remove call to rb_init_node
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/gfs2/rgrp.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
+index 06476b3..6fb3a57 100644
+--- a/fs/gfs2/rgrp.c
++++ b/fs/gfs2/rgrp.c
+@@ -453,8 +453,6 @@ int gfs2_rs_alloc(struct gfs2_inode *ip)
+ 	if (!res)
+ 		error =3D -ENOMEM;
+=20
+-	rb_init_node(&res->rs_node);
+-
+ 	down_write(&ip->i_rw_mutex);
+ 	if (ip->i_res)
+ 		kmem_cache_free(gfs2_rsrv_cachep, res);
+@@ -486,7 +484,6 @@ static void __rs_deltree(struct gfs2_inode *ip, struct =
+gfs2_blkreserv *rs)
+ 	rgd =3D rs->rs_rbm.rgd;
+ 	trace_gfs2_rs(ip, rs, TRACE_RS_TREEDEL);
+ 	rb_erase(&rs->rs_node, &rgd->rd_rstree);
+-	rb_init_node(&rs->rs_node);
+ 	BUG_ON(!rgd->rd_rs_cnt);
+ 	rgd->rd_rs_cnt--;
+=20
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__6_Aug_2012_13_43_18_+1000_jvNAPey6_wx/d_38
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQHz1WAAoJEECxmPOUX5FEShEP/iWP3QDeMn4Kk7DbDIMA0Bve
+AIEnLudK6Oo2znip+aHt2z9J/s4NazZb6XH76oIm/nnbm+W2U7s7lVBLadIQQofX
+SeqdQtIofExDp68XJIcDfeZcLwgbf76FwDBxZFJJHiC3l6Yhpu7+PrSHmcdHhPhU
+0KxsqUelCYphp6MSDBJCJfMQTVGP/f72+AnfTA7dSWqH0RtBUIaxMJx05anpqSux
+bdddvIaolb4l+6WJI+HwyuguWcPicIfMLlEP5rXNqNkImzCbm/089BoCywodbDKp
+UN18SvQ7M5g4ez+ni0XDNFsc2zqORiZBdQzvxVsiVtPck0IhyiBdxhwQbR/OR5gD
+pKVZMPO92/WMv+iAK4i8urt/9xzB0hAFfa3RkKD5xaqAQNXwlWMNxwgPuKo09CG3
+U2Pzn5cj1TE3vQJJHKA8dKF+VS3n+EnTzKm9a+8toe00WOxp424tc2BlH6UUuDKO
+9fIOuk8yyf57CsI37VlW4aC1Jbo9PK5Gi98CTUhGkgkHBenIGZwrpOdzpOkcb4Cc
+LK8vxAvC7CPs+jbfLo97ckWZHtlr8QVsAphekghyEODW676NB2Wg6+NpxyJVHKIG
+HeYprQQA8c6s0GmqvWa6Hwr3gupEZU1lNfPJhknN2sWnUK0Ffo75HXt8KV15tbYK
+yW2x3+pXn6ApbCKfgvGK
+=7V+m
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__6_Aug_2012_13_43_18_+1000_jvNAPey6_wx/d_38--
