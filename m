@@ -1,79 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab2HFCDQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 22:03:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59451 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133Ab2HFCDP (ORCPT
+	id S1755474Ab2HFCGf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 22:06:35 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:38803 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755352Ab2HFCGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 22:03:15 -0400
-Date: Mon, 6 Aug 2012 12:03:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>
-Subject: linux-next: build failure after merge of the spi-mb tree
-Message-Id: <20120806120301.cafca6614722b92d92600904@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__6_Aug_2012_12_03_01_+1000_7Pb7Iy5ykOatWtmf"
+	Sun, 5 Aug 2012 22:06:33 -0400
+Date: Sun, 5 Aug 2012 22:06:30 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Cyril Chemparathy <cyril@ti.com>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, catalin.marinas@arm.com, linux@arm.linux.org.uk,
+        will.deacon@arm.com
+Subject: Re: [PATCH 02/22] ARM: use late patch framework for phys-virt
+ patching
+In-Reply-To: <501E7D41.8070303@ti.com>
+Message-ID: <alpine.LFD.2.02.1208052153540.5231@xanadu.home>
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-3-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208040138560.5231@xanadu.home> <501E7D41.8070303@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__6_Aug_2012_12_03_01_+1000_7Pb7Iy5ykOatWtmf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 5 Aug 2012, Cyril Chemparathy wrote:
 
-Hi Mark,
+> Hi Nicolas,
+> 
+> On 8/4/2012 2:15 AM, Nicolas Pitre wrote:
+> > On Tue, 31 Jul 2012, Cyril Chemparathy wrote:
+> > 
+> > > This patch replaces the original physical offset patching implementation
+> > > with one that uses the newly added patching framework.  In the process, we
+> > > now
+> > > unconditionally initialize the __pv_phys_offset and __pv_offset globals in
+> > > the
+> > > head.S code.
+> > 
+> > Why unconditionally initializing those?  There is no reason for that.
+> > 
+> 
+> We could keep this conditional on LPAE, but do you see any specific need for
+> keeping it conditional?
 
-After merging the spi-mb tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+This has nothing to do with LPAe.  This is about 
+CONFIG_ARM_PATCH_PHYS_VIRT only.  If not selected, those global 
+vaariables have no need to exist.
 
-drivers/spi/spi-gpio.c: In function 'spi_gpio_setup':
-drivers/spi/spi-gpio.c:255:8: warning: cast from pointer to integer of diff=
-erent size [-Wpointer-to-int-cast]
+> > Comments below.
+> > 
+> > > diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+> > > index 835898e..d165896 100644
+> > > --- a/arch/arm/kernel/head.S
+> > > +++ b/arch/arm/kernel/head.S
+> > [...]
+> > >   	.data
+> > >   	.globl	__pv_phys_offset
+> > >   	.type	__pv_phys_offset, %object
+> > >   __pv_phys_offset:
+> > >   	.long	0
+> > >   	.size	__pv_phys_offset, . - __pv_phys_offset
+> > > +
+> > > +	.globl	__pv_offset
+> > > +	.type	__pv_offset, %object
+> > >   __pv_offset:
+> > >   	.long	0
+> > > -#endif
+> > > +	.size	__pv_offset, . - __pv_offset
+> > 
+> > Please move those to C code.  They aren't of much use in this file
+> > anymore.  This will allow you to use pphys_addr_t for them as well in
+> > your subsequent patch. And more importantly get rid of that ugly
+> > pv_offset_high that you introduced iin another patch.
+> > 
+> 
+> Moving it to C-code caused problems because these get filled in prior to BSS
+> being cleared.
+> 
+> We could potentially have this initialized in C with a mystery dummy value to
+> prevent it from landing in BSS.  Would that be acceptable?
 
-Caused by casting a pointer to "unsigned int" in commit a38e7a71f120
-("spi: spi-gpio: Add DT bindings").
+Just initialize them explicitly to zero.  They will end up in .ddata 
+section.
+> 
+> > > index df5e897..39f8fce 100644
+> > > --- a/arch/arm/kernel/module.c
+> > > +++ b/arch/arm/kernel/module.c
+> > > @@ -317,11 +317,6 @@ int module_finalize(const Elf32_Ehdr *hdr, const
+> > > Elf_Shdr *sechdrs,
+> > >   					         maps[i].txt_sec->sh_addr,
+> > >   					         maps[i].txt_sec->sh_size);
+> > >   #endif
+> > > -#ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+> > > -	s = find_mod_section(hdr, sechdrs, ".pv_table");
+> > > -	if (s)
+> > > -		fixup_pv_table((void *)s->sh_addr, s->sh_size);
+> > > -#endif
+> > >   	s = find_mod_section(hdr, sechdrs, ".patch.table");
+> > >   	if (s)
+> > >   		patch_kernel((void *)s->sh_addr, s->sh_size);
+> > 
+> > The patch_kernel code and its invokation should still be conditional on
+> > CONFIG_ARM_PATCH_PHYS_VIRT.  This ability may still be configured out
+> > irrespective of the implementation used.
+> > 
+> 
+> Maybe CONFIG_ARM_PATCH_PHYS_VIRT is not quite appropriate if this is used to
+> patch up other things in addition to phys-virt stuff?
+
+Maybe, but at the moment this is not the case.
+
+> I could have this dependent on CONFIG_ARM_INIT_PATCH (or whatever nomenclature
+> we chose for this) and have CONFIG_ARM_PATCH_PHYS_VIRT depend on it.
+
+Let's cross that bridge in time.
+
+FWIW, I don't like "init patch" much.  I feel like the "runtime" 
+qualifier more pricisely describe this code than "init".
 
 
-drivers/spi/spi-gpio.c: In function 'spi_probe_dt':
-drivers/spi/spi-gpio.c:389:39: error: parameter name omitted
-drivers/spi/spi-gpio.c: In function 'spi_gpio_probe':
-drivers/spi/spi-gpio.c:404:2: error: implicit declaration of function 'spi_=
-gpio_probe_dt' [-Werror=3Dimplicit-function-declaration]
-
-Caused by commit a38e7a71f120 ("spi: spi-gpio: Add DT bindings").  This
-build does not have CONFIG_OF set.
-
-I have used the spi-mb tree from next-20120803 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__6_Aug_2012_12_03_01_+1000_7Pb7Iy5ykOatWtmf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQHyXVAAoJEECxmPOUX5FEkwMP/1JhC2KwwlsOHkE8nM08B2aA
-q+AcKR3F7xpimhsf0s9ICOwaIBuy8Mkgyvt2uUHTT0K4lsqhjS3TAB+adMOcwWSt
-HEVYIJ9j3gJAGgJ0ZzrnKqIynKjKaGSn3a4JsBnpwOJq9Lob1jt3tUnzARwvSWl/
-YFI2g3hxn8akyG7uRvjyy+ySBR6YngsniHytUc07V3CgjrbggQan6GRu+O6+z0Kb
-3j5z9B/MHdN3w/g9FcqNbUCBQ7gFNaDELCDMCc7GCwfxZItMm48BTvZaOEKVv8TK
-RZmUUhaC7AV+pxdN8A/nQ+1agqGKF1X6/KK7OU7zvCMsQVQZ8mVznYUIZcGb8EBG
-OnEEei5768uNXyv+N1KQZ4QLMhobYO4Udbmsb3W3hqWSOzZGLE/wsSlqOHLfxtgc
-M7jfDSsdRaUDY3iQSZOcz/NVBRGFDI63TlaZNDm6R4XvhLxihoSQXKciS0ubj0df
-+jgqze/V1I6lxEBkIqKy9BZBV+SYjXWs3EFDzbkIL5hNl3ileSV+a0/4rMsxal4s
-lJOQ4U7mL5zX3W/nB0jbCm2TSx5ngUwh6P8YcSxSNSZSfWKih9nE0xrJZYtDcP9E
-hNRvD4kVnXfK0AgY5tESk/vB2CDKlm7PLmp33wUtx8Tw3QI1KAgFLdRIsKIPmhI3
-86Yd/ZUZFu/sIUILwMcA
-=V7WA
------END PGP SIGNATURE-----
-
---Signature=_Mon__6_Aug_2012_12_03_01_+1000_7Pb7Iy5ykOatWtmf--
+Nicolas
