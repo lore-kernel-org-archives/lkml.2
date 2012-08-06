@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab2HFXLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:11:19 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:44950 "EHLO ogre.sisk.pl"
+	id S932088Ab2HFXLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:11:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44947 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756777Ab2HFXLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:11:14 -0400
+	id S1756424Ab2HFXLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 19:11:13 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [PATCH 4/12] PM / Domains: Make it possible to use names when adding subdomains
-Date: Tue, 7 Aug 2012 01:08:37 +0200
+Subject: [PATCH 3/12] ARM: shmobile: Drop r8a7779_add_device_to_domain()
+Date: Tue, 7 Aug 2012 01:07:46 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Linux PM list <linux-pm@vger.kernel.org>,
@@ -20,100 +20,87 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208070108.38081.rjw@sisk.pl>
+Message-Id: <201208070107.46751.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Add a new helper function, pm_genpd_add_subdomain_names(), allowing
-the caller to add a subdomain to a generic PM domain using names for
-domain identification (both domains have to be initialized before).
+If the r8a7779's PM domains are given names, this SoC and its boards
+will be able to use rmobile_add_device_to_domain() for adding devices
+to those domains and r8a7779_add_device_to_domain(), which is not
+used anywhere at the moment anyway, may be dopped.
 
-This function is useful for adding subdomains to PM domains whose
-representations are stored in tables, when the caller doesn't know
-the indices of the domain to add the subdomain to and of the
-subdomain itself, but it knows the domains' names.
+Accordingly, give names to the r8a7779's PM domains and drop
+r8a7779_add_device_to_domain().
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/domain.c |   32 +++++++++++++++++++++++++++++++-
- include/linux/pm_domain.h   |    7 +++++++
- 2 files changed, 38 insertions(+), 1 deletion(-)
+ arch/arm/mach-shmobile/include/mach/r8a7779.h |    3 ---
+ arch/arm/mach-shmobile/pm-r8a7779.c           |   14 ++++----------
+ 2 files changed, 4 insertions(+), 13 deletions(-)
 
-Index: linux/drivers/base/power/domain.c
+Index: linux/arch/arm/mach-shmobile/include/mach/r8a7779.h
 ===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -1584,7 +1584,8 @@ int pm_genpd_add_subdomain(struct generi
- 	struct gpd_link *link;
- 	int ret = 0;
+--- linux.orig/arch/arm/mach-shmobile/include/mach/r8a7779.h
++++ linux/arch/arm/mach-shmobile/include/mach/r8a7779.h
+@@ -353,11 +353,8 @@ extern struct r8a7779_pm_domain r8a7779_
+ extern struct r8a7779_pm_domain r8a7779_impx3;
  
--	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(subdomain))
-+	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(subdomain)
-+	    || genpd == subdomain)
- 		return -EINVAL;
+ extern void r8a7779_init_pm_domain(struct r8a7779_pm_domain *r8a7779_pd);
+-extern void r8a7779_add_device_to_domain(struct r8a7779_pm_domain *r8a7779_pd,
+-					struct platform_device *pdev);
+ #else
+ #define r8a7779_init_pm_domain(pd) do { } while (0)
+-#define r8a7779_add_device_to_domain(pd, pdev) do { } while (0)
+ #endif /* CONFIG_PM */
  
-  start:
-@@ -1631,6 +1632,35 @@ int pm_genpd_add_subdomain(struct generi
+ #endif /* __ASM_R8A7779_H__ */
+Index: linux/arch/arm/mach-shmobile/pm-r8a7779.c
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/pm-r8a7779.c
++++ linux/arch/arm/mach-shmobile/pm-r8a7779.c
+@@ -199,17 +199,8 @@ void r8a7779_init_pm_domain(struct r8a77
+ 		pd_power_up(&r8a7779_pd->genpd);
  }
  
- /**
-+ * pm_genpd_add_subdomain_names - Add a subdomain to an I/O PM domain.
-+ * @master_name: Name of the master PM domain to add the subdomain to.
-+ * @subdomain_name: Name of the subdomain to be added.
-+ */
-+int pm_genpd_add_subdomain_names(const char *master_name,
-+				 const char *subdomain_name)
-+{
-+	struct generic_pm_domain *master = NULL, *subdomain = NULL, *gpd;
-+
-+	if (IS_ERR_OR_NULL(master_name) || IS_ERR_OR_NULL(subdomain_name))
-+		return -EINVAL;
-+
-+	mutex_lock(&gpd_list_lock);
-+	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
-+		if (!master && !strcmp(gpd->name, master_name))
-+			master = gpd;
-+
-+		if (!subdomain && !strcmp(gpd->name, subdomain_name))
-+			subdomain = gpd;
-+
-+		if (master && subdomain)
-+			break;
-+	}
-+	mutex_unlock(&gpd_list_lock);
-+
-+	return pm_genpd_add_subdomain(master, subdomain);
-+}
-+
-+/**
-  * pm_genpd_remove_subdomain - Remove a subdomain from an I/O PM domain.
-  * @genpd: Master PM domain to remove the subdomain from.
-  * @subdomain: Subdomain to be removed.
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -147,6 +147,8 @@ extern int pm_genpd_remove_device(struct
- extern void pm_genpd_dev_need_restore(struct device *dev, bool val);
- extern int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
- 				  struct generic_pm_domain *new_subdomain);
-+extern int pm_genpd_add_subdomain_names(const char *master_name,
-+					const char *subdomain_name);
- extern int pm_genpd_remove_subdomain(struct generic_pm_domain *genpd,
- 				     struct generic_pm_domain *target);
- extern int pm_genpd_add_callbacks(struct device *dev,
-@@ -201,6 +203,11 @@ static inline int pm_genpd_add_subdomain
- {
- 	return -ENOSYS;
- }
-+static inline int pm_genpd_add_subdomain_names(const char *master_name,
-+					       const char *subdomain_name)
-+{
-+	return -ENOSYS;
-+}
- static inline int pm_genpd_remove_subdomain(struct generic_pm_domain *genpd,
- 					    struct generic_pm_domain *target)
- {
+-void r8a7779_add_device_to_domain(struct r8a7779_pm_domain *r8a7779_pd,
+-				 struct platform_device *pdev)
+-{
+-	struct device *dev = &pdev->dev;
+-
+-	pm_genpd_add_device(&r8a7779_pd->genpd, dev);
+-	if (pm_clk_no_clocks(dev))
+-		pm_clk_add(dev, NULL);
+-}
+-
+ struct r8a7779_pm_domain r8a7779_sh4a = {
++	.genpd_name = "SH4A",
+ 	.ch = {
+ 		.chan_offs = 0x80, /* PWRSR1 .. PWRER1 */
+ 		.isr_bit = 16, /* SH4A */
+@@ -217,6 +208,7 @@ struct r8a7779_pm_domain r8a7779_sh4a =
+ };
+ 
+ struct r8a7779_pm_domain r8a7779_sgx = {
++	.genpd_name = "SGX",
+ 	.ch = {
+ 		.chan_offs = 0xc0, /* PWRSR2 .. PWRER2 */
+ 		.isr_bit = 20, /* SGX */
+@@ -224,6 +216,7 @@ struct r8a7779_pm_domain r8a7779_sgx = {
+ };
+ 
+ struct r8a7779_pm_domain r8a7779_vdp1 = {
++	.genpd_name = "VDP1",
+ 	.ch = {
+ 		.chan_offs = 0x100, /* PWRSR3 .. PWRER3 */
+ 		.isr_bit = 21, /* VDP */
+@@ -231,6 +224,7 @@ struct r8a7779_pm_domain r8a7779_vdp1 =
+ };
+ 
+ struct r8a7779_pm_domain r8a7779_impx3 = {
++	.genpd_name = "IMPX3",
+ 	.ch = {
+ 		.chan_offs = 0x140, /* PWRSR4 .. PWRER4 */
+ 		.isr_bit = 24, /* IMP */
 
