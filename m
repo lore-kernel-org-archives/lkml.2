@@ -1,174 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab2HFGiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 02:38:14 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:53132 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751603Ab2HFGiN (ORCPT
+	id S1752484Ab2HFGj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 02:39:26 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49700 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab2HFGjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 02:38:13 -0400
+	Mon, 6 Aug 2012 02:39:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAF6AEGs2evpga=h1+0L0sz+vG1czHff83z13WxdBv+xvcxQKxw@mail.gmail.com>
-References: <1342715014-5316-1-git-send-email-rob.clark@linaro.org>
- <1342715014-5316-3-git-send-email-rob.clark@linaro.org> <CAF6AEGs2evpga=h1+0L0sz+vG1czHff83z13WxdBv+xvcxQKxw@mail.gmail.com>
-From: "Semwal, Sumit" <sumit.semwal@ti.com>
-Date: Mon, 6 Aug 2012 12:07:50 +0530
-Message-ID: <CAB2ybb-jWWgxNMwRBCOA5W4=y4Q9U-xQHeu+CtNp-eRteA4jxQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] dma-buf: add helpers for attacher dma-parms
-To: Rob Clark <rob.clark@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        patches@linaro.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        jesse.barker@linaro.org, m.szyprowski@samsung.com, daniel@ffwll.ch,
-        t.stanislaws@samsung.com, maarten.lankhorst@canonical.com,
-        Rob Clark <rob@ti.com>
+In-Reply-To: <20120806051144.GA12642@avionic-0098.mockup.avionic-design.de>
+References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de>
+	<CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
+	<20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
+	<CACRpkdbrdWw_HR91r72aB_S2+vxiaSBKHwW+Tsmi8pKk9VsgFg@mail.gmail.com>
+	<20120806051144.GA12642@avionic-0098.mockup.avionic-design.de>
+Date: Mon, 6 Aug 2012 08:39:24 +0200
+Message-ID: <CACRpkdZDQLRDzxmkcrMQX+ZGwSgMwtBsD4sPr_S2jOyft1L37Q@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 10:09 PM, Rob Clark <rob.clark@linaro.org> wrote:
-> Fyi, Daniel Vetter had suggested on IRC that it would be cleaner to
-> have a single helper fxn that most-restrictive union of all attached
-> device's dma_parms.  Really this should include dma_mask and
-> coherent_dma_mask, I think.  But that touches a lot of other places in
-> the code.  If no one objects to the cleanup of moving
-> dma_mask/coherent_dma_mask into dma_parms, I'll do this first.
+On Mon, Aug 6, 2012 at 7:11 AM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> On Sun, Aug 05, 2012 at 12:50:54PM +0200, Linus Walleij wrote:
+
+>> We're working on a goal of a "single zImage" (one unified ARM
+>> kernel) which means your platform must be able to handle the
+>> case where this is turned on anyway, so I would suggest you
+>> drop the optional compile-time IRQ support, just make it
+>> optional at runtime instead.
 >
-> So anyways, don't consider this patch yet for inclusion, I'll make an
-> updated one based on dma_parms..
-Hi Rob,
-Any news on this patch-set?
+> I don't quite understand. Do you want me to add a module parameter to
+> make it optional at runtime? Since the driver is now OF only I suppose I
+> could make it optional on the interrupt-controller property as well.
+
+No, no module parameter. Just don't register the IRQ domain if there
+are not IRQ resources in the device tree, if the interrupt-controller
+property is not present I guess?
+
+>> OK but atleast find a way to move this to the probe() function,
+>> what happens if the debugfs file is browsed and you run out
+>> of memory? Not nice, and you were using this to debug as
+>> well...
 >
-> BR,
-> -R
-BR,
-~Sumit.
+> Alright, I can do that. Alternatively I could probably drop the
+> allocations altogether and use local variables within the second loop to
+> store the variables:
 >
-> On Thu, Jul 19, 2012 at 11:23 AM, Rob Clark <rob.clark@linaro.org> wrote:
->> From: Rob Clark <rob@ti.com>
->>
->> Add some helpers to iterate through all attachers and get the most
->> restrictive segment size/count/boundary.
->>
->> Signed-off-by: Rob Clark <rob@ti.com>
->> ---
->>  drivers/base/dma-buf.c  |   63 +++++++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/dma-buf.h |   19 ++++++++++++++
->>  2 files changed, 82 insertions(+)
->>
->> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
->> index 24e88fe..757ee20 100644
->> --- a/drivers/base/dma-buf.c
->> +++ b/drivers/base/dma-buf.c
->> @@ -192,6 +192,69 @@ void dma_buf_put(struct dma_buf *dmabuf)
->>  EXPORT_SYMBOL_GPL(dma_buf_put);
->>
->>  /**
->> + * dma_buf_max_seg_size - helper for exporters to get the minimum of
->> + * all attached device's max segment size
->> + */
->> +unsigned int dma_buf_max_seg_size(struct dma_buf *dmabuf)
->> +{
->> +       struct dma_buf_attachment *attach;
->> +       unsigned int max = (unsigned int)-1;
->> +
->> +       if (WARN_ON(!dmabuf))
->> +               return 0;
->> +
->> +       mutex_lock(&dmabuf->lock);
->> +       list_for_each_entry(attach, &dmabuf->attachments, node)
->> +               max = min(max, dma_get_max_seg_size(attach->dev));
->> +       mutex_unlock(&dmabuf->lock);
->> +
->> +       return max;
->> +}
->> +EXPORT_SYMBOL_GPL(dma_buf_max_seg_size);
->> +
->> +/**
->> + * dma_buf_max_seg_count - helper for exporters to get the minimum of
->> + * all attached device's max segment count
->> + */
->> +unsigned int dma_buf_max_seg_count(struct dma_buf *dmabuf)
->> +{
->> +       struct dma_buf_attachment *attach;
->> +       unsigned int max = (unsigned int)-1;
->> +
->> +       if (WARN_ON(!dmabuf))
->> +               return 0;
->> +
->> +       mutex_lock(&dmabuf->lock);
->> +       list_for_each_entry(attach, &dmabuf->attachments, node)
->> +               max = min(max, dma_get_max_seg_count(attach->dev));
->> +       mutex_unlock(&dmabuf->lock);
->> +
->> +       return max;
->> +}
->> +EXPORT_SYMBOL_GPL(dma_buf_max_seg_count);
->> +
->> +/**
->> + * dma_buf_get_seg_boundary - helper for exporters to get the most
->> + * restrictive segment alignment of all the attached devices
->> + */
->> +unsigned int dma_buf_get_seg_boundary(struct dma_buf *dmabuf)
->> +{
->> +       struct dma_buf_attachment *attach;
->> +       unsigned int mask = (unsigned int)-1;
->> +
->> +       if (WARN_ON(!dmabuf))
->> +               return 0;
->> +
->> +       mutex_lock(&dmabuf->lock);
->> +       list_for_each_entry(attach, &dmabuf->attachments, node)
->> +               mask &= dma_get_seg_boundary(attach->dev);
->> +       mutex_unlock(&dmabuf->lock);
->> +
->> +       return mask;
->> +}
->> +EXPORT_SYMBOL_GPL(dma_buf_get_seg_boundary);
->> +
->> +/**
->>   * dma_buf_attach - Add the device to dma_buf's attachments list; optionally,
->>   * calls attach() of dma_buf_ops to allow device-specific attach functionality
->>   * @dmabuf:    [in]    buffer to attach device to.
->> diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
->> index eb48f38..9533b9b 100644
->> --- a/include/linux/dma-buf.h
->> +++ b/include/linux/dma-buf.h
->> @@ -167,6 +167,10 @@ int dma_buf_fd(struct dma_buf *dmabuf, int flags);
->>  struct dma_buf *dma_buf_get(int fd);
->>  void dma_buf_put(struct dma_buf *dmabuf);
->>
->> +unsigned int dma_buf_max_seg_size(struct dma_buf *dmabuf);
->> +unsigned int dma_buf_max_seg_count(struct dma_buf *dmabuf);
->> +unsigned int dma_buf_get_seg_boundary(struct dma_buf *dmabuf);
->> +
->>  struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *,
->>                                         enum dma_data_direction);
->>  void dma_buf_unmap_attachment(struct dma_buf_attachment *, struct sg_table *,
->> @@ -220,6 +224,21 @@ static inline void dma_buf_put(struct dma_buf *dmabuf)
->>         return;
->>  }
->>
->> +static inline unsigned int dma_buf_max_seg_size(struct dma_buf *dmabuf)
->> +{
->> +       return 0;
->> +}
->> +
->> +static inline unsigned int dma_buf_max_seg_count(struct dma_buf *dmabuf)
->> +{
->> +       return 0;
->> +}
->> +
->> +static inline unsigned int dma_buf_get_seg_boundary(struct dma_buf *dmabuf)
->> +{
->> +       return 0;
->> +}
->> +
->>  static inline struct sg_table *dma_buf_map_attachment(
->>         struct dma_buf_attachment *attach, enum dma_data_direction write)
->>  {
->> --
->> 1.7.9.5
->>
+>         for (i = 0; i < num_regs; i++) {
+>                 u8 ddr, plr, ier, isr, ptr;
+>
+>                 err = adnp_read(gpio, GPIO_DDR(gpio) + i, &ddr);
+>                 if (err < 0)
+>                         goto out;
+>
+>                 ...
+>         }
+>
+> With the proper locking this shouldn't be a problem. The reason why I
+> used the block-wise approach in the first place was that the register
+> accesses were more "atomic". Of course without locking this is non-
+> sense.
+
+Either approach works, the above seems more elegant though!
+
+Yours,
+Linus Walleij
