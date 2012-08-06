@@ -1,160 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab2HFVmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:42:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53572 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755369Ab2HFVmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:42:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="193911976"
-Date: Tue, 7 Aug 2012 05:43:36 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: bp@amd64.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH 0/5 V2] x86: mce: Bugfixes, cleanups and a new
- CMCI poll version
-Message-ID: <20120806214336.GA11726@gchen.bj.intel.com>
-Mail-Followup-To: "Luck, Tony" <tony.luck@intel.com>, bp@amd64.org,
-	x86@kernel.org, linux-kernel@vger.kernel.org
-References: <20120801005610.GA23536@gchen.bj.intel.com>
- <501c50de151302d0d7@agluck-desktop.sc.intel.com>
+	id S1756341Ab2HFVnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 17:43:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62767 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898Ab2HFVnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 17:43:43 -0400
+Date: Mon, 6 Aug 2012 14:43:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Yann Cantin <yann.cantin@laposte.net>
+Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC ebeam PATCH v3 1/2] hid: Blacklist new eBeam classic device
+Message-ID: <20120806214340.GA30355@kroah.com>
+References: <1344288104-20731-1-git-send-email-yann.cantin@laposte.net>
+ <1344288104-20731-2-git-send-email-yann.cantin@laposte.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x+6KMIRAuhnl3hBn"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <501c50de151302d0d7@agluck-desktop.sc.intel.com>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1344288104-20731-2-git-send-email-yann.cantin@laposte.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 06, 2012 at 11:21:43PM +0200, Yann Cantin wrote:
+> 
+> Signed-off-by: Yann Cantin <yann.cantin@laposte.net>
+> ---
+>  drivers/hid/hid-core.c |    3 +++
+>  drivers/hid/hid-ids.h  |    3 +++
+>  2 files changed, 6 insertions(+)
+> 
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 60ea284..b1ed8ee 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1908,6 +1908,9 @@ static const struct hid_device_id hid_ignore_list[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EM_LT20) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x0004) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x000a) },
+> +#if defined(CONFIG_INPUT_EBEAM_USB)
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_EFI, USB_DEVICE_ID_EFI_CLASSIC) },
+> +#endif
 
---x+6KMIRAuhnl3hBn
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Why is this #if in here?  Just always do it, how could it not be
+defined?
 
-On Fri, Aug 03, 2012 at 03:29:50PM -0700, Luck, Tony wrote:
-> Date: Fri, 03 Aug 2012 15:29:50 -0700
-> From: "Luck, Tony" <tony.luck@intel.com>
-> To: Chen Gong <gong.chen@linux.intel.com>
-> Cc: bp@amd64.org, x86@kernel.org, linux-kernel@vger.kernel.org
-> Subject: Re: [RESEND PATCH 0/5 V2] x86: mce: Bugfixes, cleanups and a new
->  CMCI poll version
->=20
-> I applied this series on top of v3.6-rc1 and took it for
-> a test drive with a little storm of 20 corrected interrupts.
->=20
-> The series worked ... but the console log was entirely unhelpful
-> in letting me know what had just happened to my system.  All I saw
-> was:
->=20
-> mce: [Hardware Error]: Machine check events logged
-> mce: [Hardware Error]: Machine check events logged
->     ... several seconds pass ...
-> CPU 35 MCA banks CMCI:0 CMCI:1 CMCI:3 CMCI:5 CMCI:6 CMCI:7 CMCI:8 CMCI:9 =
-CMCI:10 CMCI:11
-> mce_notify_irq: 3 callbacks suppressed
-> CPU 1 MCA banks CMCI:0 CMCI:1 CMCI:3
-> CPU 39 MCA banks CMCI:0 CMCI:1 CMCI:3
-> CPU 38 MCA banks CMCI:0 CMCI:1 CMCI:3
-> CPU 32 MCA banks CMCI:0 CMCI:1 CMCI:3
-> CPU 37 MCA banks CMCI:0 CMCI:1 CMCI:3
-> CPU 36 MCA banks CMCI:0 CMCI:1 CMCI:3
-> CPU 34 MCA banks CMCI:0 CMCI:1 CMCI:3
-> mce: [Hardware Error]: Machine check events logged
->=20
-> No mention of the storm, no mention that we switched to polling
-> mode (and so missed some of the reports). Just the cryptic output
-> as the kernel re-established the CMCI on processors that had been
-> affected by the storm.
->=20
-> I tried the patch below to log the start/end of the storm. But I
-> may be doing something wrong with printk_timed_ratelimit() because
-> I saw two "storm detected" and two "storm subsided" messages.
-
-You saw two times because the injection speed is not quick enough so that
-the poll timer thinks during the expected time it doesn't meet new CMC, and
-then double this timer, again, no CMC... until restore for poll timer to
-INT mode. Under the real situation, thousands of CMCI come in so this
-situation wil not happen. In fact, during the test I met this kind of=20
-situations many times.
-
->=20
-> It would also be nice to avoid all the "CPU 1 MCA banks CMCI:0 CMCI:1 CMC=
-I:3"
-> messages.
->=20
-> -Tony
->=20
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu=
-/mcheck/mce_intel.c
-> index 693bc7d..236f60e 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> @@ -87,6 +87,8 @@ void mce_intel_hcpu_update(unsigned long cpu)
-> =20
->  unsigned long mce_intel_adjust_timer(unsigned long interval)
->  {
-> +	static unsigned long jiffie_state;
-> +
->  	if (interval < CMCI_POLL_INTERVAL)
->  		return interval;
-> =20
-> @@ -108,6 +110,8 @@ unsigned long mce_intel_adjust_timer(unsigned long in=
-terval)
->  		 */
->  		if (!atomic_read(&cmci_storm_on_cpus)) {
->  			__this_cpu_write(cmci_storm_state, CMCI_STORM_NONE);
-> +			if (printk_timed_ratelimit(&jiffie_state, CMCI_STORM_INTERVAL/HZ*1000=
-))
-> +				pr_notice("CMCI storm subsided, switching to interrupt mode\n");
->  			cmci_reenable();
->  			cmci_recheck();
->  		}
-> @@ -126,6 +130,7 @@ static bool cmci_storm_detect(void)
->  	unsigned int cnt =3D __this_cpu_read(cmci_storm_cnt);
->  	unsigned long ts =3D __this_cpu_read(cmci_time_stamp);
->  	unsigned long now =3D jiffies;
-> +	static unsigned long jiffie_state;
-> =20
->  	if (__this_cpu_read(cmci_storm_state) !=3D CMCI_STORM_NONE)
->  		return true;
-> @@ -145,6 +150,9 @@ static bool cmci_storm_detect(void)
->  	__this_cpu_write(cmci_storm_state, CMCI_STORM_ACTIVE);
->  	atomic_inc(&cmci_storm_on_cpus);
->  	mce_timer_kick(CMCI_POLL_INTERVAL);
-> +
-> +	if (printk_timed_ratelimit(&jiffie_state, CMCI_STORM_INTERVAL/HZ*1000))
-> +		pr_notice("CMCI storm detected, switching to poll mode\n");
->  	return true;
->  }
-> =20
-
---x+6KMIRAuhnl3hBn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQIDqIAAoJEI01n1+kOSLHtfsP+wblUDjj/TrDwHLdgBZVai+T
-aQzSmO9TG3MIr5yZ/BETi4Fc4MjaK1wrrJmCHnhUsdu2n6Pavc6vh/4dTq2EFeSr
-YN+AQm0aVlpZZq88xj8WKK5lNv9yMWkg1eXHLLJUvlSryvzbUDFNX54Zw7gQM4vx
-VQn9oSbUnKS22D6qAR9TzCRQEd2fyD2VL+et0s99bUUXWclyqSrjEhE3sEBZJLZF
-y2pBi9EbQNn2sFq5YREMuwnV43BfXuu5uUpueLjVJmzjUzmiW9W7Lg7m8e7EjyNP
-+cARPCyBJy5Gl50wXRt6msMx7YCXn7JXUTR2LSTQU9nBjoTyurRz+5QReS75Q4Kr
-+MjZ3qPIN5GoB6rkjnpowpmqKjyAjXZX/q36fIzpioUSyn4zqhTzflmh0uoXV7FL
-Jm6nodBg0ZD7VwG7WlH5g8IaOjOdPkQBdQTKmBdZBfrBmS0l0cT5f+ZbjDoB9jDR
-DnCfBRTF+d23SJd+umBHmcKNLXwSJVwBZKWQRx1sJc7jG5w+Td/9loYCLBwft8fN
-JubN5ZCLk8OfLTA6OpQnjQ2BmudywVNKzXo16HmTHWd2GQLlMTjnz91QrfrK2h0Z
-VUPkP3i/bxv1RSPq47FbDtaeQ5JBVm1yB2fTwTtqvT6OMhs1iNctx2p+45SjKi+z
-pd08JG0W512hr5f2khq3
-=F6LA
------END PGP SIGNATURE-----
-
---x+6KMIRAuhnl3hBn--
+greg k-h
