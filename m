@@ -1,429 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab2HFNKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 09:10:46 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43325 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab2HFNIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 09:08:32 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
-        <b-cousson@ti.com>, <rnayak@ti.com>, <tony@atomide.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-CC: Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH v7 3/7] drivers: usb: otg: make twl6030_usb as a comparator driver to omap_usb2
-Date: Mon, 6 Aug 2012 18:37:56 +0530
-Message-ID: <1344258480-4304-4-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344258480-4304-1-git-send-email-kishon@ti.com>
-References: <1344258480-4304-1-git-send-email-kishon@ti.com>
+	id S1756266Ab2HFNL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 09:11:58 -0400
+Received: from mail.profihost.ag ([85.158.179.208]:46780 "EHLO
+	mail.profihost.ag" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755955Ab2HFNL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 09:11:56 -0400
+Message-ID: <501FC299.1050408@profihost.ag>
+Date: Mon, 06 Aug 2012 15:11:53 +0200
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org,
+        qemu-devel <qemu-devel@nongnu.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kevin Wolf <kwolf@redhat.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
+References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com> <501817C9.6090405@profihost.ag> <5018EC7D.9090702@redhat.com> <5018F5BB.9070500@profihost.ag> <5018F7E6.4020909@redhat.com> <5018F9F6.70307@profihost.ag> <5018FC9B.8040808@redhat.com> <501E4615.7060801@profihost.ag> <501E4AFD.3020806@redhat.com> <501E96BB.5060702@profihost.ag> <501EC2E2.8010802@profihost.ag> <501F8226.9090500@redhat.com> <501F846C.50903@profihost.ag> <501FB4A8.6080609@redhat.com> <501FBAA2.6050205@redhat.com>
+In-Reply-To: <501FBAA2.6050205@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the PHY configuration other than VBUS, ID GND and OTG SRP are removed
-from twl6030. The phy configurations are taken care by the dedicated
-usb2 phy driver. So twl6030 is made as comparator driver for VBUS and
-ID detection.
-
-Writing to control module which is now handled in omap2430.c should be
-removed once a driver for control module is in place.
-
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/musb/omap2430.c   |   52 +++++++++++++++---
- drivers/usb/musb/omap2430.h   |    9 ++++
- drivers/usb/otg/twl6030-usb.c |  118 +++++++----------------------------------
- 3 files changed, 72 insertions(+), 107 deletions(-)
-
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 392fc7a..74dbd6f 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -44,6 +44,7 @@ struct omap2430_glue {
- 	struct platform_device	*musb;
- 	enum omap_musb_vbus_id_status status;
- 	struct work_struct	omap_musb_mailbox_work;
-+	u32 __iomem		*control_otghs;
- };
- #define glue_to_musb(g)		platform_get_drvdata(g->musb)
- 
-@@ -51,6 +52,26 @@ struct omap2430_glue		*_glue;
- 
- static struct timer_list musb_idle_timer;
- 
-+/**
-+ * omap4_usb_phy_mailbox - write to usb otg mailbox
-+ * @glue: struct omap2430_glue *
-+ * @val: the value to be written to the mailbox
-+ *
-+ * On detection of a device (ID pin is grounded), this API should be called
-+ * to set AVALID, VBUSVALID and ID pin is grounded.
-+ *
-+ * When OMAP is connected to a host (OMAP in device mode), this API
-+ * is called to set AVALID, VBUSVALID and ID pin in high impedance.
-+ *
-+ * XXX: This function will be removed once we have a seperate driver for
-+ * control module
-+ */
-+static void omap4_usb_phy_mailbox(struct omap2430_glue *glue, u32 val)
-+{
-+	if (glue->control_otghs)
-+		writel(val, glue->control_otghs);
-+}
-+
- static void musb_do_idle(unsigned long _musb)
- {
- 	struct musb	*musb = (void *)_musb;
-@@ -245,6 +266,7 @@ EXPORT_SYMBOL_GPL(omap_musb_mailbox);
- 
- static void omap_musb_set_mailbox(struct omap2430_glue *glue)
- {
-+	u32 val;
- 	struct musb *musb = glue_to_musb(glue);
- 	struct device *dev = musb->controller;
- 	struct musb_hdrc_platform_data *pdata = dev->platform_data;
-@@ -260,7 +282,8 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
- 		musb->xceiv->last_event = USB_EVENT_ID;
- 		if (!is_otg_enabled(musb) || musb->gadget_driver) {
- 			pm_runtime_get_sync(dev);
--			usb_phy_init(musb->xceiv);
-+			val = AVALID | VBUSVALID;
-+			omap4_usb_phy_mailbox(glue, val);
- 			omap2430_musb_set_vbus(musb, 1);
- 		}
- 		break;
-@@ -273,7 +296,8 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
- 		musb->xceiv->last_event = USB_EVENT_VBUS;
- 		if (musb->gadget_driver)
- 			pm_runtime_get_sync(dev);
--		usb_phy_init(musb->xceiv);
-+		val = IDDIG | AVALID | VBUSVALID;
-+		omap4_usb_phy_mailbox(glue, val);
- 		break;
- 
- 	case OMAP_MUSB_ID_FLOAT:
-@@ -291,7 +315,8 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
- 			if (musb->xceiv->otg->set_vbus)
- 				otg_set_vbus(musb->xceiv->otg, 0);
- 		}
--		usb_phy_shutdown(musb->xceiv);
-+		val = SESSEND | IDDIG;
-+		omap4_usb_phy_mailbox(glue, val);
- 		break;
- 	default:
- 		dev_dbg(dev, "ID float\n");
-@@ -366,6 +391,7 @@ err1:
- static void omap2430_musb_enable(struct musb *musb)
- {
- 	u8		devctl;
-+	u32		val;
- 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
- 	struct device *dev = musb->controller;
- 	struct omap2430_glue *glue = dev_get_drvdata(dev->parent);
-@@ -375,7 +401,8 @@ static void omap2430_musb_enable(struct musb *musb)
- 	switch (glue->status) {
- 
- 	case OMAP_MUSB_ID_GROUND:
--		usb_phy_init(musb->xceiv);
-+		val = AVALID | VBUSVALID;
-+		omap4_usb_phy_mailbox(glue, val);
- 		if (data->interface_type != MUSB_INTERFACE_UTMI)
- 			break;
- 		devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
-@@ -394,7 +421,8 @@ static void omap2430_musb_enable(struct musb *musb)
- 		break;
- 
- 	case OMAP_MUSB_VBUS_VALID:
--		usb_phy_init(musb->xceiv);
-+		val = IDDIG | AVALID | VBUSVALID;
-+		omap4_usb_phy_mailbox(glue, val);
- 		break;
- 
- 	default:
-@@ -404,11 +432,14 @@ static void omap2430_musb_enable(struct musb *musb)
- 
- static void omap2430_musb_disable(struct musb *musb)
- {
-+	u32 val;
- 	struct device *dev = musb->controller;
- 	struct omap2430_glue *glue = dev_get_drvdata(dev->parent);
- 
--	if (glue->status != OMAP_MUSB_UNKNOWN)
--		usb_phy_shutdown(musb->xceiv);
-+	if (glue->status != OMAP_MUSB_UNKNOWN) {
-+		val = SESSEND | IDDIG;
-+		omap4_usb_phy_mailbox(glue, val);
-+	}
- }
- 
- static int omap2430_musb_exit(struct musb *musb)
-@@ -440,6 +471,7 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
- 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
- 	struct platform_device		*musb;
- 	struct omap2430_glue		*glue;
-+	struct resource			*res;
- 	int				ret = -ENOMEM;
- 
- 	glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
-@@ -462,6 +494,12 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
- 	glue->musb			= musb;
- 	glue->status			= OMAP_MUSB_UNKNOWN;
- 
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+
-+	glue->control_otghs = devm_request_and_ioremap(&pdev->dev, res);
-+	if (glue->control_otghs == NULL)
-+		dev_dbg(&pdev->dev, "Failed to obtain control memory\n");
-+
- 	pdata->platform_ops		= &omap2430_ops;
- 
- 	platform_set_drvdata(pdev, glue);
-diff --git a/drivers/usb/musb/omap2430.h b/drivers/usb/musb/omap2430.h
-index 40b3c02..b85f397 100644
---- a/drivers/usb/musb/omap2430.h
-+++ b/drivers/usb/musb/omap2430.h
-@@ -49,4 +49,13 @@
- #define OTG_FORCESTDBY		0x414
- #	define	ENABLEFORCE		(1 << 0)
- 
-+/*
-+ * Control Module bit definitions
-+ * XXX: Will be removed once we have a driver for control module.
-+ */
-+#define	AVALID				BIT(0)
-+#define	BVALID				BIT(1)
-+#define	VBUSVALID			BIT(2)
-+#define	SESSEND				BIT(3)
-+#define	IDDIG				BIT(4)
- #endif	/* __MUSB_OMAP243X_H__ */
-diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
-index 6907d8d..32525bb 100644
---- a/drivers/usb/otg/twl6030-usb.c
-+++ b/drivers/usb/otg/twl6030-usb.c
-@@ -25,8 +25,9 @@
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
--#include <linux/usb/otg.h>
- #include <linux/usb/musb-omap.h>
-+#include <linux/usb/phy_companion.h>
-+#include <linux/usb/omap_usb.h>
- #include <linux/i2c/twl.h>
- #include <linux/regulator/consumer.h>
- #include <linux/err.h>
-@@ -87,7 +88,7 @@
- #define	VBUS_DET			BIT(2)
- 
- struct twl6030_usb {
--	struct usb_phy		phy;
-+	struct phy_companion	comparator;
- 	struct device		*dev;
- 
- 	/* for vbus reporting with irqs disabled */
-@@ -107,7 +108,7 @@ struct twl6030_usb {
- 	unsigned long		features;
- };
- 
--#define phy_to_twl(x)		container_of((x), struct twl6030_usb, phy)
-+#define	comparator_to_twl(x) container_of((x), struct twl6030_usb, comparator)
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -137,50 +138,9 @@ static inline u8 twl6030_readb(struct twl6030_usb *twl, u8 module, u8 address)
- 	return ret;
- }
- 
--static int twl6030_phy_init(struct usb_phy *x)
-+static int twl6030_start_srp(struct phy_companion *comparator)
- {
--	struct twl6030_usb *twl;
--	struct device *dev;
--	struct twl4030_usb_data *pdata;
--
--	twl = phy_to_twl(x);
--	dev  = twl->dev;
--	pdata = dev->platform_data;
--
--	if (twl->linkstat == OMAP_MUSB_ID_GROUND)
--		pdata->phy_power(twl->dev, 1, 1);
--	else
--		pdata->phy_power(twl->dev, 0, 1);
--
--	return 0;
--}
--
--static void twl6030_phy_shutdown(struct usb_phy *x)
--{
--	struct twl6030_usb *twl;
--	struct device *dev;
--	struct twl4030_usb_data *pdata;
--
--	twl = phy_to_twl(x);
--	dev  = twl->dev;
--	pdata = dev->platform_data;
--	pdata->phy_power(twl->dev, 0, 0);
--}
--
--static int twl6030_phy_suspend(struct usb_phy *x, int suspend)
--{
--	struct twl6030_usb *twl = phy_to_twl(x);
--	struct device *dev = twl->dev;
--	struct twl4030_usb_data *pdata = dev->platform_data;
--
--	pdata->phy_suspend(dev, suspend);
--
--	return 0;
--}
--
--static int twl6030_start_srp(struct usb_otg *otg)
--{
--	struct twl6030_usb *twl = phy_to_twl(otg->phy);
-+	struct twl6030_usb *twl = comparator_to_twl(comparator);
- 
- 	twl6030_writeb(twl, TWL_MODULE_USB, 0x24, USB_VBUS_CTRL_SET);
- 	twl6030_writeb(twl, TWL_MODULE_USB, 0x84, USB_VBUS_CTRL_SET);
-@@ -313,23 +273,8 @@ static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
- 	return IRQ_HANDLED;
- }
- 
--static int twl6030_set_peripheral(struct usb_otg *otg,
--		struct usb_gadget *gadget)
-+static int twl6030_enable_irq(struct twl6030_usb *twl)
- {
--	if (!otg)
--		return -ENODEV;
--
--	otg->gadget = gadget;
--	if (!gadget)
--		otg->phy->state = OTG_STATE_UNDEFINED;
--
--	return 0;
--}
--
--static int twl6030_enable_irq(struct usb_phy *x)
--{
--	struct twl6030_usb *twl = phy_to_twl(x);
--
- 	twl6030_writeb(twl, TWL_MODULE_USB, 0x1, USB_ID_INT_EN_HI_SET);
- 	twl6030_interrupt_unmask(0x05, REG_INT_MSK_LINE_C);
- 	twl6030_interrupt_unmask(0x05, REG_INT_MSK_STS_C);
-@@ -362,9 +307,9 @@ static void otg_set_vbus_work(struct work_struct *data)
- 							CHARGERUSB_CTRL1);
- }
- 
--static int twl6030_set_vbus(struct usb_otg *otg, bool enabled)
-+static int twl6030_set_vbus(struct phy_companion *comparator, bool enabled)
- {
--	struct twl6030_usb *twl = phy_to_twl(otg->phy);
-+	struct twl6030_usb *twl = comparator_to_twl(comparator);
- 
- 	twl->vbus_enable = enabled;
- 	schedule_work(&twl->set_vbus_work);
-@@ -372,23 +317,12 @@ static int twl6030_set_vbus(struct usb_otg *otg, bool enabled)
- 	return 0;
- }
- 
--static int twl6030_set_host(struct usb_otg *otg, struct usb_bus *host)
--{
--	if (!otg)
--		return -ENODEV;
--
--	otg->host = host;
--	if (!host)
--		otg->phy->state = OTG_STATE_UNDEFINED;
--	return 0;
--}
--
- static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- {
-+	u32 ret;
- 	struct twl6030_usb	*twl;
- 	int			status, err;
- 	struct twl4030_usb_data *pdata;
--	struct usb_otg		*otg;
- 	struct device *dev = &pdev->dev;
- 	pdata = dev->platform_data;
- 
-@@ -396,28 +330,20 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	if (!twl)
- 		return -ENOMEM;
- 
--	otg = devm_kzalloc(dev, sizeof *otg, GFP_KERNEL);
--	if (!otg)
--		return -ENOMEM;
--
- 	twl->dev		= &pdev->dev;
- 	twl->irq1		= platform_get_irq(pdev, 0);
- 	twl->irq2		= platform_get_irq(pdev, 1);
- 	twl->features		= pdata->features;
- 	twl->linkstat		= OMAP_MUSB_UNKNOWN;
- 
--	twl->phy.dev		= twl->dev;
--	twl->phy.label		= "twl6030";
--	twl->phy.otg		= otg;
--	twl->phy.init		= twl6030_phy_init;
--	twl->phy.shutdown	= twl6030_phy_shutdown;
--	twl->phy.set_suspend	= twl6030_phy_suspend;
-+	twl->comparator.set_vbus	= twl6030_set_vbus;
-+	twl->comparator.start_srp	= twl6030_start_srp;
- 
--	otg->phy		= &twl->phy;
--	otg->set_host		= twl6030_set_host;
--	otg->set_peripheral	= twl6030_set_peripheral;
--	otg->set_vbus		= twl6030_set_vbus;
--	otg->start_srp		= twl6030_start_srp;
-+	ret = omap_usb2_set_comparator(&twl->comparator);
-+	if (ret == -ENODEV) {
-+		dev_info(&pdev->dev, "phy not ready, deferring probe");
-+		return -EPROBE_DEFER;
-+	}
- 
- 	/* init spinlock for workqueue */
- 	spin_lock_init(&twl->lock);
-@@ -427,7 +353,6 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "ldo init failed\n");
- 		return err;
- 	}
--	usb_add_phy(&twl->phy, USB_PHY_TYPE_USB2);
- 
- 	platform_set_drvdata(pdev, twl);
- 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
-@@ -458,9 +383,7 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	}
- 
- 	twl->asleep = 0;
--	pdata->phy_init(dev);
--	twl6030_phy_suspend(&twl->phy, 0);
--	twl6030_enable_irq(&twl->phy);
-+	twl6030_enable_irq(twl);
- 	dev_info(&pdev->dev, "Initialized TWL6030 USB module\n");
- 
- 	return 0;
-@@ -470,10 +393,6 @@ static int __exit twl6030_usb_remove(struct platform_device *pdev)
- {
- 	struct twl6030_usb *twl = platform_get_drvdata(pdev);
- 
--	struct twl4030_usb_data *pdata;
--	struct device *dev = &pdev->dev;
--	pdata = dev->platform_data;
--
- 	twl6030_interrupt_mask(TWL6030_USBOTG_INT_MASK,
- 		REG_INT_MSK_LINE_C);
- 	twl6030_interrupt_mask(TWL6030_USBOTG_INT_MASK,
-@@ -481,7 +400,6 @@ static int __exit twl6030_usb_remove(struct platform_device *pdev)
- 	free_irq(twl->irq1, twl);
- 	free_irq(twl->irq2, twl);
- 	regulator_put(twl->usb3v3);
--	pdata->phy_exit(twl->dev);
- 	device_remove_file(twl->dev, &dev_attr_vbus);
- 	cancel_work_sync(&twl->set_vbus_work);
- 
--- 
-1.7.9.5
-
+can confirm - this fixed it!
+Am 06.08.2012 14:37, schrieb Avi Kivity:
+> On 08/06/2012 03:12 PM, Avi Kivity wrote:
+>> On 08/06/2012 11:46 AM, Stefan Priebe - Profihost AG wrote:
+>>
+>>> But still i got the segfault and core dump - this is my main problem? I
+>>> mean qemu-kvm master isn't declared as stable. So i don't care about the
+>>> slowness here.
+>>>
+>>> What can we do about the core dump and crash?
+>>
+>> Okay, I reproduced it; it seems aio=native is the culprit.  You can try
+>> aio=threads as a workaround.
+>>
+>> Copying some relevant people (context: aio=native on qemu-kvm-1.1.1
+>> segfaults pretty early during guest install)
+>>
+>
+> The following ought to fix it:
+>
+>
+> From: Avi Kivity <avi@redhat.com>
+> Date: Mon, 6 Aug 2012 15:35:02 +0300
+> Subject: [PATCH] virtio-mlk: fix use-after-free while handling scsi commands
+>
+> The scsi passthrough handler falls through after completing a
+> request into the failure path, resulting in a use after free.
+>
+> Reprducible by running a guest with aio=native on a block device.
+>
+> Reported-by: Stefan Priebe <s.priebe@profihost.ag>
+> Signed-off-by: Avi Kivity <avi@redhat.com>
+>
+> diff --git a/hw/virtio-blk.c b/hw/virtio-blk.c
+> index f21757e..552b3b6 100644
+> --- a/hw/virtio-blk.c
+> +++ b/hw/virtio-blk.c
+> @@ -254,6 +254,7 @@ static void virtio_blk_handle_scsi(VirtIOBlockReq *req)
+>
+>       virtio_blk_req_complete(req, status);
+>       g_free(req);
+> +    return;
+>   #else
+>       abort();
+>   #endif
+>
+>
