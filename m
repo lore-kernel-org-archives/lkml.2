@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab2HFBfn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 21:35:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16530 "EHLO mga11.intel.com"
+	id S1755432Ab2HFBh6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 21:37:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31773 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755364Ab2HFBef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 21:34:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="193560350"
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Huang Ying <ying.huang@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [BUGFIX -v2 1/4] PCI/PM: enable D3/D3cold by default for most devices
-Date: Mon,  6 Aug 2012 09:34:27 +0800
-Message-Id: <1344216870-21105-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344216870-21105-1-git-send-email-ying.huang@intel.com>
-References: <1344216870-21105-1-git-send-email-ying.huang@intel.com>
+	id S1755168Ab2HFBh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 21:37:56 -0400
+From: Ian Kent <ikent@redhat.com>
+Subject: [PATCH] autofs4 - fix get_next_positive_subdir()
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        autofs mailing list <autofs@vger.kernel.org>,
+        Jan Sanislo <oystr@cs.washington.edu>
+Date: Mon, 06 Aug 2012 09:37:47 +0800
+Message-ID: <20120806013747.2915.64344.stgit@perseus.themaw.net>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following bug:
+From: Ian Kent <raven@themaw.net>
 
-http://marc.info/?l=linux-usb&m=134318961120825&w=2
+Following a report of a crash during an automount expire I found that
+the locking in fs/autofs4/expire.c:get_next_positive_subdir() was wrong.
+Not only is the locking wrong but the function is more complex than it
+needs to be.
 
-Originally, device lower power states include D1, D2, D3.  After that,
-D3 is further divided into D3hot and D3cold.  To support both scenario
-safely, original D3 is mapped to D3cold.
+The function is meant to calculate (and dget) the next entry in the list
+of directories contained in the root of an autofs mount point (an autofs
+indirect mount to be precise). The main problem was that the d_lock of
+the owner of the list was not being taken when walking the list, which
+lead to list corruption under load. The only other lock that needs to
+be taken is against the next dentry candidate so it can be checked for
+usability.
 
-When adding D3cold support, because worry about some device may have
-broken D3cold support, D3cold is disabled by default.  This disable D3
-on original platform too.  But some original platform may only have
-working D3, but no working D1, D2.  The root cause of the above bug is
-it too.
-
-To deal with this, this patch enables D3/D3cold by default for most
-devices.  This restores the original behavior.  For some devices that
-suspected to have broken D3cold support, such as PCIe port, D3cold is
-disabled by default.
-
-Reported-by: Bjorn Mork <bjorn@mork.no>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Ian Kent <raven@themaw.net>
 ---
- drivers/pci/pci.c              |    1 +
- drivers/pci/pcie/portdrv_pci.c |    5 +++++
- 2 files changed, 6 insertions(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1941,6 +1941,7 @@ void pci_pm_init(struct pci_dev *dev)
- 	dev->pm_cap = pm;
- 	dev->d3_delay = PCI_PM_D3_WAIT;
- 	dev->d3cold_delay = PCI_PM_D3COLD_WAIT;
-+	dev->d3cold_allowed = true;
+ fs/autofs4/expire.c |   31 +++++++++++++------------------
+ 1 files changed, 13 insertions(+), 18 deletions(-)
+
+diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
+index 1feb68e..8c0e56d 100644
+--- a/fs/autofs4/expire.c
++++ b/fs/autofs4/expire.c
+@@ -94,25 +94,21 @@ static struct dentry *get_next_positive_subdir(struct dentry *prev,
+ {
+ 	struct autofs_sb_info *sbi = autofs4_sbi(root->d_sb);
+ 	struct list_head *next;
+-	struct dentry *p, *q;
++	struct dentry *q;
  
- 	dev->d1_support = false;
- 	dev->d2_support = false;
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -200,6 +200,11 @@ static int __devinit pcie_portdrv_probe(
- 		return status;
+ 	spin_lock(&sbi->lookup_lock);
++	spin_lock(&root->d_lock);
  
- 	pci_save_state(dev);
-+	/*
-+	 * D3cold may not work properly on some PCIe port, so disable
-+	 * it by default.
-+	 */
-+	dev->d3cold_allowed = false;
- 	if (!pci_match_id(port_runtime_pm_black_list, dev))
- 		pm_runtime_put_noidle(&dev->dev);
+-	if (prev == NULL) {
+-		spin_lock(&root->d_lock);
++	if (prev)
++		next = prev->d_u.d_child.next;
++	else {
+ 		prev = dget_dlock(root);
+ 		next = prev->d_subdirs.next;
+-		p = prev;
+-		goto start;
+ 	}
  
+-	p = prev;
+-	spin_lock(&p->d_lock);
+-again:
+-	next = p->d_u.d_child.next;
+-start:
++cont:
+ 	if (next == &root->d_subdirs) {
+-		spin_unlock(&p->d_lock);
++		spin_unlock(&root->d_lock);
+ 		spin_unlock(&sbi->lookup_lock);
+ 		dput(prev);
+ 		return NULL;
+@@ -121,16 +117,15 @@ start:
+ 	q = list_entry(next, struct dentry, d_u.d_child);
+ 
+ 	spin_lock_nested(&q->d_lock, DENTRY_D_LOCK_NESTED);
+-	/* Negative dentry - try next */
+-	if (!simple_positive(q)) {
+-		spin_unlock(&p->d_lock);
+-		lock_set_subclass(&q->d_lock.dep_map, 0, _RET_IP_);
+-		p = q;
+-		goto again;
++	/* Already gone or negative dentry (under construction) - try next */
++	if (q->d_count == 0 || !simple_positive(q)) {
++		spin_unlock(&q->d_lock);
++		next = q->d_u.d_child.next;
++		goto cont;
+ 	}
+ 	dget_dlock(q);
+ 	spin_unlock(&q->d_lock);
+-	spin_unlock(&p->d_lock);
++	spin_unlock(&root->d_lock);
+ 	spin_unlock(&sbi->lookup_lock);
+ 
+ 	dput(prev);
+
