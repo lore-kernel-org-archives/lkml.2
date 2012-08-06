@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab2HFPAl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 11:00:41 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:51895 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab2HFPAj (ORCPT
+	id S1756638Ab2HFPB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 11:01:59 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38398 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756460Ab2HFPB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 11:00:39 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: mfm@muteddisk.com
-Cc: gregkh@linuxfoundation.org, sshtylyov@mvista.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH v2]staging "usbip" Fix typos.
-Date: Mon,  6 Aug 2012 08:00:27 -0700
-Message-Id: <1344265227-336-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 6 Aug 2012 11:01:57 -0400
+Date: Mon, 6 Aug 2012 10:52:16 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joe Millenbach <jmillenbach@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, team-fjord@googlegroups.com
+Subject: Re: [PATCH] x86: Changing date reference in CONFIG_SWIOTLB help from
+ a relative to fixed point
+Message-ID: <20120806145216.GE2487@phenom.dumpdata.com>
+References: <1344143521-30151-1-git-send-email-jmillenbach@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344143521-30151-1-git-send-email-jmillenbach@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+On Sat, Aug 04, 2012 at 10:12:01PM -0700, Joe Millenbach wrote:
+> CONFIG_SWIOTLB's existing help information refers to "the current
+> generation of Intel's x86-64 CPUs", but the statement is no longer
+> true.  After researching on Intel's ark site, I changed the statement
+> to the also true "all Intel CPUs released before 2008".
+> 
+> Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  arch/x86/Kconfig |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 5bed94e..dadbfd6 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -755,10 +755,10 @@ config SWIOTLB
+>  	def_bool y if X86_64
+>  	---help---
+>  	  Support for software bounce buffers used on x86-64 systems
+> -	  which don't have a hardware IOMMU (e.g. the current generation
+> -	  of Intel's x86-64 CPUs). Using this PCI devices which can only
+> -	  access 32-bits of memory can be used on systems with more than
+> -	  3 GB of memory. If unsure, say Y.
+> +	  which don't have a hardware IOMMU (e.g. all Intel CPUs released
+> +	  before 2008). Using this PCI devices which can only access 32-bits
+> +	  of memory can be used on systems with more than 3 GB of memory. If
+> +	  unsure, say Y.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+It actually should have that part about Intel CPUs removed - as the hardware
+IOMMUs have nothing to do with the CPU. For example the SWIOTLB is used
+on the AMD IOMMUs if the IOMMU does not cover certain devices.
+So is the case with the IBM Calgary.
 
----
-NOTE:I see *rc1 in the git web log, so hopefully its ok to send out.
-The below patch fixes typos found while reading through staging usbip.
-
- drivers/staging/usbip/stub_rx.c  |    2 +-
- drivers/staging/usbip/vhci_hcd.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/usbip/stub_rx.c b/drivers/staging/usbip/stub_rx.c
-index 1d5b3fc..694cfd7 100644
---- a/drivers/staging/usbip/stub_rx.c
-+++ b/drivers/staging/usbip/stub_rx.c
-@@ -155,7 +155,7 @@ static int tweak_set_configuration_cmd(struct urb *urb)
- 	 * eventually reassigned to the device as far as driver matching
- 	 * condition is kept.
- 	 *
--	 * Unfortunatelly, an existing usbip connection will be dropped
-+	 * Unfortunately, an existing usbip connection will be dropped
- 	 * due to this driver unbinding. So, skip here.
- 	 * A user may need to set a special configuration value before
- 	 * exporting the device.
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index 12a9a5f..a5b028d 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -828,11 +828,11 @@ static void vhci_shutdown_connection(struct usbip_device *ud)
- 	 *	disable endpoints. pending urbs are unlinked(dequeued).
- 	 *
- 	 * NOTE: After calling rh_port_disconnect(), the USB device drivers of a
--	 * deteched device should release used urbs in a cleanup function(i.e.
-+	 * detached device should release used urbs in a cleanup function (i.e.
- 	 * xxx_disconnect()). Therefore, vhci_hcd does not need to release
- 	 * pushed urbs and their private data in this function.
- 	 *
--	 * NOTE: vhci_dequeue() must be considered carefully. When shutdowning
-+	 * NOTE: vhci_dequeue() must be considered carefully. When shutting down
- 	 * a connection, vhci_shutdown_connection() expects vhci_dequeue()
- 	 * gives back pushed urbs and frees their private data by request of
- 	 * the cleanup function of a USB driver. When unlinking a urb with an
--- 
-1.7.5.4
-
+>  
+>  config IOMMU_HELPER
+>  	def_bool (CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU)
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
