@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab2HFPLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 11:11:08 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26634 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932153Ab2HFPLG (ORCPT
+	id S932207Ab2HFPL4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 11:11:56 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:55874 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932153Ab2HFPLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 11:11:06 -0400
-Date: Mon, 6 Aug 2012 10:33:08 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: lenb@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel_idle: Check cpu_idle_get_driver() for NULL before
- dereferencing it.
-Message-ID: <20120806143308.GC2487@phenom.dumpdata.com>
-References: <1343918341-25985-1-git-send-email-konrad.wilk@oracle.com>
- <201208042356.35884.rjw@sisk.pl>
+	Mon, 6 Aug 2012 11:11:55 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Axel Lin <axel.lin@gmail.com>
+Subject: [PATCH] regulator: ab3100: add missing voltage table
+Date: Mon, 6 Aug 2012 17:11:40 +0200
+Message-ID: <1344265900-17726-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208042356.35884.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 04, 2012 at 11:56:35PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, August 02, 2012, Konrad Rzeszutek Wilk wrote:
-> > If the machine is booted without any cpu_idle driver set
-> > (b/c disable_cpuidle() has been called) we should follow
-> > other users of cpu_idle API and check the return value
-> > for NULL before using it.
-> > 
-> > Reported-by: Mark van Dijk <mark@internecto.net>
-> > Tested-by: Mark van Dijk <mark@internecto.net>
-> > Suggested-by: Jan Beulich <JBeulich@suse.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  drivers/idle/intel_idle.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> > index f559088..7383aa0 100644
-> > --- a/drivers/idle/intel_idle.c
-> > +++ b/drivers/idle/intel_idle.c
-> > @@ -607,7 +607,7 @@ static int __init intel_idle_init(void)
-> >  	retval = cpuidle_register_driver(&intel_idle_driver);
-> >  	if (retval) {
-> 
-> What about:
-> 
->   		struct cpuidle_driver *drv = cpuidle_get_driver();
-> 
->   		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
-> 			drv ? drv->name : "none");
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Much prettier. Let me spin that up.
+The conversion to voltage tables in
 
-> 
-> >  		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
-> > -			cpuidle_get_driver()->name);
-> > +			cpuidle_get_driver() ? cpuidle_get_driver()->name : "none");
-> >  		return retval;
-> >  	}
-> >  
-> > 
-> 
-> Rafael
+commit a3beb74261f26142019847128b2441b0301797ac
+"regulator: ab3100: Use regulator_list_voltage_table()"
+
+missed to add the voltage table to the buck. Fix this and
+it works like a charm.
+
+Cc: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/regulator/ab3100.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
+index 182b553..c151fd5 100644
+--- a/drivers/regulator/ab3100.c
++++ b/drivers/regulator/ab3100.c
+@@ -486,6 +486,7 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
+ 		.id   = AB3100_BUCK,
+ 		.ops  = &regulator_ops_variable_sleepable,
+ 		.n_voltages = ARRAY_SIZE(ldo_e_buck_typ_voltages),
++		.volt_table = ldo_e_buck_typ_voltages,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.owner = THIS_MODULE,
+ 		.enable_time = 1000,
+-- 
+1.7.11.3
+
