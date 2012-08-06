@@ -1,102 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab2HFJdC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:33:02 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:18331 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab2HFJdA (ORCPT
+	id S1755226Ab2HFJeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:34:09 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:42571 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754125Ab2HFJeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:33:00 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-07-501f8f4be277
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jin Park'" <jinyoungp@nvidia.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 2/3] backlight: aat2870: remove goto out
-Date: Mon, 06 Aug 2012 18:32:59 +0900
-Message-id: <003f01cd73b6$77ce18d0$676a4a70$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1ztne3F2A0b+hXScmlr4lEx6LeBg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jAV3vfvkAgykndCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGz3sr2Avm8Fasf3GAtYHxClcXIyeHhICJxJWNt9khbDGJC/fW
-	s3UxcnEICSxilNjVvocJwpnNJDFn+1mwKjYBNYkvXw6D2SICERLNM2Yxg9jMAoUSj+fPZAKx
-	hQUsJHZsPMYIYrMIqErMXzYBrJ5XwFbi9tteRghbUOLH5HssEL1aEpu3NbFC2PISm9e8BZrJ
-	AXSRusSjv7oQq/Qk1ky8C1UuIrHvxTvGCYwCs5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk9
-	10ivODG3uDQvXS85P3cTIzgwn0nvYFzVYHGIUYCDUYmH95aBfIAQa2JZcWXuIUYJDmYlEd7e
-	ZqAQb0piZVVqUX58UWlOavEhRmkOFiVxXhPvr/5CAumJJanZqakFqUUwWSYOTqkGxpl9m19K
-	rfqze8XGE18PyUnl8z4p3T1lV6zxXKGMRZdfx63xN+/703L9oH9NoIp0sYrYhLSzInUyLeLi
-	a98Lv7u2+6dkWyVbl8jPGxE7skp3958Jf/2Q9TqneJE2q3Z6vaBS4PYljecX2l2bVv/ImPn5
-	PWfv89s/qCvddGD9prh49kKlktU7fJRYijMSDbWYi4oTATM1oTpIAgAA
-X-TM-AS-MML: No
+	Mon, 6 Aug 2012 05:34:07 -0400
+Date: Mon, 6 Aug 2012 12:30:34 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, arnd@arndb.de,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] driver: misc: bmp085: remove "of_match_table" property.
+Message-ID: <20120806093033.GH17551@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1344245324-16704-1-git-send-email-sourav.poddar@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K1n7F7fSdjvFAEnM"
+Content-Disposition: inline
+In-Reply-To: <1344245324-16704-1-git-send-email-sourav.poddar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes goto out, which makes code a bit smaller.
 
-Cc: Jin Park <jinyoungp@nvidia.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/aat2870_bl.c |   13 ++++---------
- 1 files changed, 4 insertions(+), 9 deletions(-)
+--K1n7F7fSdjvFAEnM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/video/backlight/aat2870_bl.c b/drivers/video/backlight/aat2870_bl.c
-index 7ff7522..619a1e0 100644
---- a/drivers/video/backlight/aat2870_bl.c
-+++ b/drivers/video/backlight/aat2870_bl.c
-@@ -135,14 +135,12 @@ static int aat2870_bl_probe(struct platform_device *pdev)
- 
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "No platform data\n");
--		ret = -ENXIO;
--		goto out;
-+		return -ENXIO;
- 	}
- 
- 	if (pdev->id != AAT2870_ID_BL) {
- 		dev_err(&pdev->dev, "Invalid device ID, %d\n", pdev->id);
--		ret = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	aat2870_bl = devm_kzalloc(&pdev->dev,
-@@ -151,8 +149,7 @@ static int aat2870_bl_probe(struct platform_device *pdev)
- 	if (!aat2870_bl) {
- 		dev_err(&pdev->dev,
- 			"Failed to allocate memory for aat2870 backlight\n");
--		ret = -ENOMEM;
--		goto out;
-+		return -ENOMEM;
- 	}
- 
- 	memset(&props, 0, sizeof(struct backlight_properties));
-@@ -163,8 +160,7 @@ static int aat2870_bl_probe(struct platform_device *pdev)
- 	if (IS_ERR(bd)) {
- 		dev_err(&pdev->dev,
- 			"Failed allocate memory for backlight device\n");
--		ret = PTR_ERR(bd);
--		goto out;
-+		return PTR_ERR(bd);
- 	}
- 
- 	aat2870_bl->pdev = pdev;
-@@ -201,7 +197,6 @@ static int aat2870_bl_probe(struct platform_device *pdev)
- 
- out_bl_dev_unregister:
- 	backlight_device_unregister(bd);
--out:
- 	return ret;
- }
- 
--- 
-1.7.1
+On Mon, Aug 06, 2012 at 02:58:44PM +0530, Sourav Poddar wrote:
+> There is an automatic binding done for I2C devices in the of_i2c core
+> code. So, DT will be able to bind to any I2C device using the
+> already existing table: MODULE_DEVICE_TABLE(i2c, bmp085_id).
+>=20
+> Tested on omap5430 evm.
+>=20
+> Cc: Benoit Cousson <b-cousson@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
 
+Acked-by: Felipe Balbi <balbi@ti.com>
 
+> ---
+>  drivers/misc/bmp085-i2c.c |    7 -------
+>  1 files changed, 0 insertions(+), 7 deletions(-)
+>=20
+> diff --git a/drivers/misc/bmp085-i2c.c b/drivers/misc/bmp085-i2c.c
+> index 9943971..a4f33c9 100644
+> --- a/drivers/misc/bmp085-i2c.c
+> +++ b/drivers/misc/bmp085-i2c.c
+> @@ -57,12 +57,6 @@ static int bmp085_i2c_remove(struct i2c_client *client)
+>  	return bmp085_remove(&client->dev);
+>  }
+> =20
+> -static const struct of_device_id bmp085_of_match[] =3D {
+> -	{ .compatible =3D "bosch,bmp085", },
+> -	{ },
+> -};
+> -MODULE_DEVICE_TABLE(of, bmp085_of_match);
+> -
+>  static const struct i2c_device_id bmp085_id[] =3D {
+>  	{ BMP085_NAME, 0 },
+>  	{ "bmp180", 0 },
+> @@ -74,7 +68,6 @@ static struct i2c_driver bmp085_i2c_driver =3D {
+>  	.driver =3D {
+>  		.owner	=3D THIS_MODULE,
+>  		.name	=3D BMP085_NAME,
+> -		.of_match_table =3D bmp085_of_match
+>  	},
+>  	.id_table	=3D bmp085_id,
+>  	.probe		=3D bmp085_i2c_probe,
+> --=20
+> 1.7.1
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+--=20
+balbi
+
+--K1n7F7fSdjvFAEnM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQH465AAoJEIaOsuA1yqREcJoQAJENziQpMBU4QPDfICJ8k1um
+38UederLGeC2zHMWOo0oKxTpSo7YGaA+gLjDgmnrOvuSRxvHsKrSh4AvQqrrMI65
+EsSrs6TeDZc7sYg+JQ/nRWPgRkW4Bs1lpCjeQwwCvEfyAxAoLO44Eum9DqNZOg0Z
+cDoPfk7Lifs7OacHYj4ZquM4QvtE0jjMUxYbTgTs6vIvhT/veSDZqVOha71sRpX/
+2gGVnGqR0P3Es0c7k+bTf4+d2+Oz3xgzr8L3J2+AD/8ZcUFKRVsG1mVDhPF0TtsJ
+CDGuT3DpoEIysmvXoHblWXXUFewm2nS3/bqjujcbdwTowhthVrDZiQARMrmvt+p5
+dM1g+ng31bVVKRBDjNZ0GQ087p8rtDEr8hzXsqolRrfYUkzwai1MKqThLJ4SlTk5
+kGvJqDvHbFhn1+DeUFBtA4VCP2B1jtqbLLSZn1Lrd4ksAjXUpmBj7GcnXySRZ+Nh
+1objbxZVodoiTMZsQcMUDGY0HoKHl8IlLLEukTfC5jUsvsQgD91kg7s8Ez4Zd78W
+NFus3ZcmTS6+fIMRmnCEOUBPs3w7pKweIShVyc02git407BPON9BC8s4W9A2SSk+
+7sSDyjPfwMIyJO1bKe62lrUW2+BUKNVBArJaekHacShtHuQabKnqeVcR8u2oes+P
+hh1fXXOEsxGcdUETKW2t
+=RKAD
+-----END PGP SIGNATURE-----
+
+--K1n7F7fSdjvFAEnM--
