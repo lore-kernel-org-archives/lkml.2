@@ -1,104 +1,448 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab2HFSk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:40:57 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59418 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932437Ab2HFSkz (ORCPT
+	id S932452Ab2HFSl1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:41:27 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:49680 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932381Ab2HFSlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:40:55 -0400
-Date: Mon, 6 Aug 2012 15:40:47 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-bluetooth@vger.kernel.org, marcel@holtmann.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Bluetooth: Another vendor specific ID for BCM20702A0
- [0a5c:21f1]
-Message-ID: <20120806184047.GD3146@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Michal Marek <mmarek@suse.cz>, linux-bluetooth@vger.kernel.org,
-	marcel@holtmann.org, linux-kernel@vger.kernel.org
-References: <1343431747.1803.12.camel@aeonflux>
- <1343742454-28019-1-git-send-email-mmarek@suse.cz>
+	Mon, 6 Aug 2012 14:41:24 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Miller <davem@davemloft.net>
+Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Ariyasu <jan.ariyasu@hp.com>, Jan Ariyasu <jan.ariyasu@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@infradead.org>,
+        Xi Wang <xi.wang@gmail.com>
+References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
+	<87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com>
+Date: Mon, 06 Aug 2012 11:41:13 -0700
+In-Reply-To: <87zk67q31q.fsf_-_@xmission.com> (Eric W. Biederman's message of
+	"Mon, 06 Aug 2012 11:38:09 -0700")
+Message-ID: <87ipcvq2wm.fsf_-_@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343742454-28019-1-git-send-email-mmarek@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+gwhl80qfaY4wKKU2oIhjsBtIR8sVuttU=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4760]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;David Miller <davem@davemloft.net>
+X-Spam-Relay-Country: 
+Subject: [PATCH net-next 3/9] sctp: Make the association hashtable handle multiple network namespaces
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
 
-* Michal Marek <mmarek@suse.cz> [2012-07-31 15:47:34 +0200]:
+- Use struct net in the hash calculation
+- Use sock_net(association.base.sk) in the association lookups.
+- On receive calculate the network namespace from skb->dev.
+- Pass struct net from receive down to the functions that actually
+  do the association lookup.
 
-> T:  Bus=02 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
-> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-> P:  Vendor=0a5c ProdID=21f1 Rev= 1.12
-> S:  Manufacturer=Broadcom Corp
-> S:  Product=BCM20702A0
-> S:  SerialNumber=9CB70DCFF833
-> C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
-> I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-> I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-> I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-> I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-> I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-> I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-> I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-> I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-> E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-> E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-> I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-> 
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
->  drivers/bluetooth/btusb.c |    1 +
->  1 file changed, 1 insertion(+)
-
-Can you try the following patch on 3.6-rc1? It should fix this by matching
-vendor and inteface info.
-
-	Gustavo
-
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
+ include/net/sctp/sctp.h    |    6 ++--
+ include/net/sctp/structs.h |    3 +-
+ net/sctp/associola.c       |    4 ++-
+ net/sctp/endpointola.c     |    6 +++-
+ net/sctp/input.c           |   64 +++++++++++++++++++++++++++----------------
+ net/sctp/ipv6.c            |    3 +-
+ 6 files changed, 54 insertions(+), 32 deletions(-)
 
-Author: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Date:   Mon Aug 6 15:36:49 2012 -0300
-
-    Bluetooth: Use USB_VENDOR_AND_INTERFACE_INFO() for Broadcom devices
-    
-    Many Broadcom devices has a vendor specific devices class, with this rule
-    we match all existent and future controllers with this behavior.
-    
-    Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index cef3bac..504231e 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -104,6 +104,9 @@ static struct usb_device_id btusb_table[] = {
-        /* Foxconn - Hon Hai */
-        { USB_DEVICE(0x0489, 0xe033) },
+diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
+index 87b119f..640915a 100644
+--- a/include/net/sctp/sctp.h
++++ b/include/net/sctp/sctp.h
+@@ -156,7 +156,7 @@ void sctp_hash_established(struct sctp_association *);
+ void sctp_unhash_established(struct sctp_association *);
+ void sctp_hash_endpoint(struct sctp_endpoint *);
+ void sctp_unhash_endpoint(struct sctp_endpoint *);
+-struct sock *sctp_err_lookup(int family, struct sk_buff *,
++struct sock *sctp_err_lookup(struct net *net, int family, struct sk_buff *,
+ 			     struct sctphdr *, struct sctp_association **,
+ 			     struct sctp_transport **);
+ void sctp_err_finish(struct sock *, struct sctp_association *);
+@@ -644,9 +644,9 @@ static inline int sctp_ep_hashfn(struct net *net, __u16 lport)
+ }
  
-+       /*Broadcom devices with vendor specific id */
-+       { USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) },
-+
-        { }     /* Terminating entry */
- };
+ /* This is the hash function for the association hash table. */
+-static inline int sctp_assoc_hashfn(__u16 lport, __u16 rport)
++static inline int sctp_assoc_hashfn(struct net *net, __u16 lport, __u16 rport)
+ {
+-	int h = (lport << 16) + rport;
++	int h = (lport << 16) + rport + net_hash_mix(net);
+ 	h ^= h>>8;
+ 	return h & (sctp_assoc_hashsize - 1);
+ }
+diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+index 9f9de55..c0563d1 100644
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -1427,7 +1427,7 @@ int sctp_endpoint_is_peeled_off(struct sctp_endpoint *,
+ 				const union sctp_addr *);
+ struct sctp_endpoint *sctp_endpoint_is_match(struct sctp_endpoint *,
+ 					struct net *, const union sctp_addr *);
+-int sctp_has_association(const union sctp_addr *laddr,
++int sctp_has_association(struct net *net, const union sctp_addr *laddr,
+ 			 const union sctp_addr *paddr);
+ 
+ int sctp_verify_init(const struct sctp_association *asoc, sctp_cid_t,
+@@ -2014,6 +2014,7 @@ void sctp_assoc_control_transport(struct sctp_association *,
+ 				  sctp_transport_cmd_t, sctp_sn_error_t);
+ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *, __u32);
+ struct sctp_transport *sctp_assoc_is_match(struct sctp_association *,
++					   struct net *,
+ 					   const union sctp_addr *,
+ 					   const union sctp_addr *);
+ void sctp_assoc_migrate(struct sctp_association *, struct sock *);
+diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+index ebaef3e..a3601f3 100644
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -1089,13 +1089,15 @@ out:
+ 
+ /* Is this the association we are looking for? */
+ struct sctp_transport *sctp_assoc_is_match(struct sctp_association *asoc,
++					   struct net *net,
+ 					   const union sctp_addr *laddr,
+ 					   const union sctp_addr *paddr)
+ {
+ 	struct sctp_transport *transport;
+ 
+ 	if ((htons(asoc->base.bind_addr.port) == laddr->v4.sin_port) &&
+-	    (htons(asoc->peer.port) == paddr->v4.sin_port)) {
++	    (htons(asoc->peer.port) == paddr->v4.sin_port) &&
++	    net_eq(sock_net(asoc->base.sk), net)) {
+ 		transport = sctp_assoc_lookup_paddr(asoc, paddr);
+ 		if (!transport)
+ 			goto out;
+diff --git a/net/sctp/endpointola.c b/net/sctp/endpointola.c
+index 50c87b4..6b76393 100644
+--- a/net/sctp/endpointola.c
++++ b/net/sctp/endpointola.c
+@@ -345,7 +345,8 @@ static struct sctp_association *__sctp_endpoint_lookup_assoc(
+ 
+ 	rport = ntohs(paddr->v4.sin_port);
+ 
+-	hash = sctp_assoc_hashfn(ep->base.bind_addr.port, rport);
++	hash = sctp_assoc_hashfn(sock_net(ep->base.sk), ep->base.bind_addr.port,
++				 rport);
+ 	head = &sctp_assoc_hashtable[hash];
+ 	read_lock(&head->lock);
+ 	sctp_for_each_hentry(epb, node, &head->chain) {
+@@ -388,13 +389,14 @@ int sctp_endpoint_is_peeled_off(struct sctp_endpoint *ep,
+ {
+ 	struct sctp_sockaddr_entry *addr;
+ 	struct sctp_bind_addr *bp;
++	struct net *net = sock_net(ep->base.sk);
+ 
+ 	bp = &ep->base.bind_addr;
+ 	/* This function is called with the socket lock held,
+ 	 * so the address_list can not change.
+ 	 */
+ 	list_for_each_entry(addr, &bp->address_list, list) {
+-		if (sctp_has_association(&addr->a, paddr))
++		if (sctp_has_association(net, &addr->a, paddr))
+ 			return 1;
+ 	}
+ 
+diff --git a/net/sctp/input.c b/net/sctp/input.c
+index c0ca893..a7e9a85 100644
+--- a/net/sctp/input.c
++++ b/net/sctp/input.c
+@@ -66,13 +66,15 @@
+ 
+ /* Forward declarations for internal helpers. */
+ static int sctp_rcv_ootb(struct sk_buff *);
+-static struct sctp_association *__sctp_rcv_lookup(struct sk_buff *skb,
++static struct sctp_association *__sctp_rcv_lookup(struct net *net,
++				      struct sk_buff *skb,
+ 				      const union sctp_addr *laddr,
+ 				      const union sctp_addr *paddr,
+ 				      struct sctp_transport **transportp);
+ static struct sctp_endpoint *__sctp_rcv_lookup_endpoint(struct net *net,
+ 						const union sctp_addr *laddr);
+ static struct sctp_association *__sctp_lookup_association(
++					struct net *net,
+ 					const union sctp_addr *local,
+ 					const union sctp_addr *peer,
+ 					struct sctp_transport **pt);
+@@ -180,7 +182,7 @@ int sctp_rcv(struct sk_buff *skb)
+ 	    !af->addr_valid(&dest, NULL, skb))
+ 		goto discard_it;
+ 
+-	asoc = __sctp_rcv_lookup(skb, &src, &dest, &transport);
++	asoc = __sctp_rcv_lookup(net, skb, &src, &dest, &transport);
+ 
+ 	if (!asoc)
+ 		ep = __sctp_rcv_lookup_endpoint(net, &dest);
+@@ -476,7 +478,7 @@ void sctp_icmp_proto_unreachable(struct sock *sk,
+ }
+ 
+ /* Common lookup code for icmp/icmpv6 error handler. */
+-struct sock *sctp_err_lookup(int family, struct sk_buff *skb,
++struct sock *sctp_err_lookup(struct net *net, int family, struct sk_buff *skb,
+ 			     struct sctphdr *sctphdr,
+ 			     struct sctp_association **app,
+ 			     struct sctp_transport **tpp)
+@@ -505,7 +507,7 @@ struct sock *sctp_err_lookup(int family, struct sk_buff *skb,
+ 	/* Look for an association that matches the incoming ICMP error
+ 	 * packet.
+ 	 */
+-	asoc = __sctp_lookup_association(&saddr, &daddr, &transport);
++	asoc = __sctp_lookup_association(net, &saddr, &daddr, &transport);
+ 	if (!asoc)
+ 		return NULL;
+ 
+@@ -588,6 +590,7 @@ void sctp_v4_err(struct sk_buff *skb, __u32 info)
+ 	struct inet_sock *inet;
+ 	sk_buff_data_t saveip, savesctp;
+ 	int err;
++	struct net *net = dev_net(skb->dev);
+ 
+ 	if (skb->len < ihlen + 8) {
+ 		ICMP_INC_STATS_BH(&init_net, ICMP_MIB_INERRORS);
+@@ -599,7 +602,7 @@ void sctp_v4_err(struct sk_buff *skb, __u32 info)
+ 	savesctp = skb->transport_header;
+ 	skb_reset_network_header(skb);
+ 	skb_set_transport_header(skb, ihlen);
+-	sk = sctp_err_lookup(AF_INET, skb, sctp_hdr(skb), &asoc, &transport);
++	sk = sctp_err_lookup(net, AF_INET, skb, sctp_hdr(skb), &asoc, &transport);
+ 	/* Put back, the original values. */
+ 	skb->network_header = saveip;
+ 	skb->transport_header = savesctp;
+@@ -803,13 +806,15 @@ hit:
+ /* Insert association into the hash table.  */
+ static void __sctp_hash_established(struct sctp_association *asoc)
+ {
++	struct net *net = sock_net(asoc->base.sk);
+ 	struct sctp_ep_common *epb;
+ 	struct sctp_hashbucket *head;
+ 
+ 	epb = &asoc->base;
+ 
+ 	/* Calculate which chain this entry will belong to. */
+-	epb->hashent = sctp_assoc_hashfn(epb->bind_addr.port, asoc->peer.port);
++	epb->hashent = sctp_assoc_hashfn(net, epb->bind_addr.port,
++					 asoc->peer.port);
+ 
+ 	head = &sctp_assoc_hashtable[epb->hashent];
+ 
+@@ -832,12 +837,13 @@ void sctp_hash_established(struct sctp_association *asoc)
+ /* Remove association from the hash table.  */
+ static void __sctp_unhash_established(struct sctp_association *asoc)
+ {
++	struct net *net = sock_net(asoc->base.sk);
+ 	struct sctp_hashbucket *head;
+ 	struct sctp_ep_common *epb;
+ 
+ 	epb = &asoc->base;
+ 
+-	epb->hashent = sctp_assoc_hashfn(epb->bind_addr.port,
++	epb->hashent = sctp_assoc_hashfn(net, epb->bind_addr.port,
+ 					 asoc->peer.port);
+ 
+ 	head = &sctp_assoc_hashtable[epb->hashent];
+@@ -860,6 +866,7 @@ void sctp_unhash_established(struct sctp_association *asoc)
+ 
+ /* Look up an association. */
+ static struct sctp_association *__sctp_lookup_association(
++					struct net *net,
+ 					const union sctp_addr *local,
+ 					const union sctp_addr *peer,
+ 					struct sctp_transport **pt)
+@@ -874,12 +881,13 @@ static struct sctp_association *__sctp_lookup_association(
+ 	/* Optimize here for direct hit, only listening connections can
+ 	 * have wildcards anyways.
+ 	 */
+-	hash = sctp_assoc_hashfn(ntohs(local->v4.sin_port), ntohs(peer->v4.sin_port));
++	hash = sctp_assoc_hashfn(net, ntohs(local->v4.sin_port),
++				 ntohs(peer->v4.sin_port));
+ 	head = &sctp_assoc_hashtable[hash];
+ 	read_lock(&head->lock);
+ 	sctp_for_each_hentry(epb, node, &head->chain) {
+ 		asoc = sctp_assoc(epb);
+-		transport = sctp_assoc_is_match(asoc, local, peer);
++		transport = sctp_assoc_is_match(asoc, net, local, peer);
+ 		if (transport)
+ 			goto hit;
+ 	}
+@@ -897,27 +905,29 @@ hit:
+ 
+ /* Look up an association. BH-safe. */
+ SCTP_STATIC
+-struct sctp_association *sctp_lookup_association(const union sctp_addr *laddr,
++struct sctp_association *sctp_lookup_association(struct net *net,
++						 const union sctp_addr *laddr,
+ 						 const union sctp_addr *paddr,
+ 					    struct sctp_transport **transportp)
+ {
+ 	struct sctp_association *asoc;
+ 
+ 	sctp_local_bh_disable();
+-	asoc = __sctp_lookup_association(laddr, paddr, transportp);
++	asoc = __sctp_lookup_association(net, laddr, paddr, transportp);
+ 	sctp_local_bh_enable();
+ 
+ 	return asoc;
+ }
+ 
+ /* Is there an association matching the given local and peer addresses? */
+-int sctp_has_association(const union sctp_addr *laddr,
++int sctp_has_association(struct net *net,
++			 const union sctp_addr *laddr,
+ 			 const union sctp_addr *paddr)
+ {
+ 	struct sctp_association *asoc;
+ 	struct sctp_transport *transport;
+ 
+-	if ((asoc = sctp_lookup_association(laddr, paddr, &transport))) {
++	if ((asoc = sctp_lookup_association(net, laddr, paddr, &transport))) {
+ 		sctp_association_put(asoc);
+ 		return 1;
+ 	}
+@@ -943,7 +953,8 @@ int sctp_has_association(const union sctp_addr *laddr,
+  * in certain circumstances.
+  *
+  */
+-static struct sctp_association *__sctp_rcv_init_lookup(struct sk_buff *skb,
++static struct sctp_association *__sctp_rcv_init_lookup(struct net *net,
++	struct sk_buff *skb,
+ 	const union sctp_addr *laddr, struct sctp_transport **transportp)
+ {
+ 	struct sctp_association *asoc;
+@@ -983,7 +994,7 @@ static struct sctp_association *__sctp_rcv_init_lookup(struct sk_buff *skb,
+ 
+ 		af->from_addr_param(paddr, params.addr, sh->source, 0);
+ 
+-		asoc = __sctp_lookup_association(laddr, paddr, &transport);
++		asoc = __sctp_lookup_association(net, laddr, paddr, &transport);
+ 		if (asoc)
+ 			return asoc;
+ 	}
+@@ -1006,6 +1017,7 @@ static struct sctp_association *__sctp_rcv_init_lookup(struct sk_buff *skb,
+  * subsequent ASCONF Chunks. If found, proceed to rule D4.
+  */
+ static struct sctp_association *__sctp_rcv_asconf_lookup(
++					struct net *net,
+ 					sctp_chunkhdr_t *ch,
+ 					const union sctp_addr *laddr,
+ 					__be16 peer_port,
+@@ -1025,7 +1037,7 @@ static struct sctp_association *__sctp_rcv_asconf_lookup(
+ 
+ 	af->from_addr_param(&paddr, param, peer_port, 0);
+ 
+-	return __sctp_lookup_association(laddr, &paddr, transportp);
++	return __sctp_lookup_association(net, laddr, &paddr, transportp);
+ }
+ 
+ 
+@@ -1038,7 +1050,8 @@ static struct sctp_association *__sctp_rcv_asconf_lookup(
+ * This means that any chunks that can help us identify the association need
+ * to be looked at to find this association.
+ */
+-static struct sctp_association *__sctp_rcv_walk_lookup(struct sk_buff *skb,
++static struct sctp_association *__sctp_rcv_walk_lookup(struct net *net,
++				      struct sk_buff *skb,
+ 				      const union sctp_addr *laddr,
+ 				      struct sctp_transport **transportp)
+ {
+@@ -1080,7 +1093,8 @@ static struct sctp_association *__sctp_rcv_walk_lookup(struct sk_buff *skb,
+ 
+ 		    case SCTP_CID_ASCONF:
+ 			    if (have_auth || sctp_addip_noauth)
+-				    asoc = __sctp_rcv_asconf_lookup(ch, laddr,
++				    asoc = __sctp_rcv_asconf_lookup(
++							net, ch, laddr,
+ 							sctp_hdr(skb)->source,
+ 							transportp);
+ 		    default:
+@@ -1103,7 +1117,8 @@ static struct sctp_association *__sctp_rcv_walk_lookup(struct sk_buff *skb,
+  * include looking inside of INIT/INIT-ACK chunks or after the AUTH
+  * chunks.
+  */
+-static struct sctp_association *__sctp_rcv_lookup_harder(struct sk_buff *skb,
++static struct sctp_association *__sctp_rcv_lookup_harder(struct net *net,
++				      struct sk_buff *skb,
+ 				      const union sctp_addr *laddr,
+ 				      struct sctp_transport **transportp)
+ {
+@@ -1123,11 +1138,11 @@ static struct sctp_association *__sctp_rcv_lookup_harder(struct sk_buff *skb,
+ 	switch (ch->type) {
+ 	case SCTP_CID_INIT:
+ 	case SCTP_CID_INIT_ACK:
+-		return __sctp_rcv_init_lookup(skb, laddr, transportp);
++		return __sctp_rcv_init_lookup(net, skb, laddr, transportp);
+ 		break;
+ 
+ 	default:
+-		return __sctp_rcv_walk_lookup(skb, laddr, transportp);
++		return __sctp_rcv_walk_lookup(net, skb, laddr, transportp);
+ 		break;
+ 	}
+ 
+@@ -1136,21 +1151,22 @@ static struct sctp_association *__sctp_rcv_lookup_harder(struct sk_buff *skb,
+ }
+ 
+ /* Lookup an association for an inbound skb. */
+-static struct sctp_association *__sctp_rcv_lookup(struct sk_buff *skb,
++static struct sctp_association *__sctp_rcv_lookup(struct net *net,
++				      struct sk_buff *skb,
+ 				      const union sctp_addr *paddr,
+ 				      const union sctp_addr *laddr,
+ 				      struct sctp_transport **transportp)
+ {
+ 	struct sctp_association *asoc;
+ 
+-	asoc = __sctp_lookup_association(laddr, paddr, transportp);
++	asoc = __sctp_lookup_association(net, laddr, paddr, transportp);
+ 
+ 	/* Further lookup for INIT/INIT-ACK packets.
+ 	 * SCTP Implementors Guide, 2.18 Handling of address
+ 	 * parameters within the INIT or INIT-ACK.
+ 	 */
+ 	if (!asoc)
+-		asoc = __sctp_rcv_lookup_harder(skb, laddr, transportp);
++		asoc = __sctp_rcv_lookup_harder(net, skb, laddr, transportp);
+ 
+ 	return asoc;
+ }
+diff --git a/net/sctp/ipv6.c b/net/sctp/ipv6.c
+index ed7139e..2165a7e 100644
+--- a/net/sctp/ipv6.c
++++ b/net/sctp/ipv6.c
+@@ -154,6 +154,7 @@ SCTP_STATIC void sctp_v6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
+ 	struct ipv6_pinfo *np;
+ 	sk_buff_data_t saveip, savesctp;
+ 	int err;
++	struct net *net = dev_net(skb->dev);
+ 
+ 	idev = in6_dev_get(skb->dev);
+ 
+@@ -162,7 +163,7 @@ SCTP_STATIC void sctp_v6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
+ 	savesctp = skb->transport_header;
+ 	skb_reset_network_header(skb);
+ 	skb_set_transport_header(skb, offset);
+-	sk = sctp_err_lookup(AF_INET6, skb, sctp_hdr(skb), &asoc, &transport);
++	sk = sctp_err_lookup(net, AF_INET6, skb, sctp_hdr(skb), &asoc, &transport);
+ 	/* Put back, the original pointers. */
+ 	skb->network_header   = saveip;
+ 	skb->transport_header = savesctp;
+-- 
+1.7.5.4
+
