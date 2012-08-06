@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab2HFAg7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 20:36:59 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52258 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755304Ab2HFAg6 (ORCPT
+	id S1755121Ab2HFAsx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 20:48:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50742 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab2HFAsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 20:36:58 -0400
-X-AuditID: 9c930197-b7b66ae000006a2c-96-501f11a65b2d
-Date: Mon, 6 Aug 2012 09:38:16 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        devel@driverdev.osuosl.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 0/4] promote zcache from staging
-Message-ID: <20120806003816.GA11375@bbox>
-References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <b95aec06-5a10-4f83-bdfd-e7f6adabd9df@default>
- <20120727205932.GA12650@localhost.localdomain>
- <d4656ba5-d6d1-4c36-a6c8-f6ecd193b31d@default>
- <5016DE4E.5050300@linux.vnet.ibm.com>
- <f47a6d86-785f-498c-8ee5-0d2df1b2616c@default>
- <20120731155843.GP4789@phenom.dumpdata.com>
- <20120731161916.GA4941@kroah.com>
- <20120731175142.GE29533@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120731175142.GE29533@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 5 Aug 2012 20:48:50 -0400
+Date: Mon, 6 Aug 2012 10:48:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the cifs tree
+Message-Id: <20120806104841.07ed3708b600529ff7eb6fa6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__6_Aug_2012_10_48_41_+1000_Q0A.8HsKl6VsDv18"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Konrad,
+--Signature=_Mon__6_Aug_2012_10_48_41_+1000_Q0A.8HsKl6VsDv18
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 31, 2012 at 01:51:42PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Tue, Jul 31, 2012 at 09:19:16AM -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Jul 31, 2012 at 11:58:43AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > So in my head I feel that it is Ok to:
-> > > 1) address the concerns that zcache has before it is unstaged
-> > > 2) rip out the two-engine system with a one-engine system
-> > >    (and see how well it behaves)
-> > > 3) sysfs->debugfs as needed
-> > > 4) other things as needed
-> > > 
-> > > I think we are getting hung-up what Greg said about adding features
-> > > and the two-engine->one engine could be understood as that.
-> > > While I think that is part of a staging effort to clean up the
-> > > existing issues. Lets see what Greg thinks.
-> > 
-> > Greg has no idea, except I want to see the needed fixups happen before
-> > new features get added.  Add the new features _after_ it is out of
-> > staging.
-> 
-> I think we (that is me, Seth, Minchan, Dan) need to talk to have a good
-> understanding of what each of us thinks are fixups.
-> 
-> Would Monday Aug 6th at 1pm EST on irc.freenode.net channel #zcache work
-> for people?
+Hi all,
 
-1pm EST is 2am KST(Korea Standard Time) so it's not good for me. :)
-I know it's hard to adjust my time for yours so let you talk without
-me. Instead, I will write it down my requirement. It's very simple and
-trivial.
+After merging the cifs tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-1) Please don't add any new feature like replace zsmalloc with zbud.
-   It's totally untested so it needs more time for stable POV bug,
-   or performance/fragementation.
+fs/cifs/Kconfig:3: syntax error
+fs/Kconfig:244: missing end statement for this entry
+fs/Kconfig:5: missing end statement for this entry
+fs/cifs/Kconfig:2: invalid statement
+fs/cifs/Kconfig:3: unexpected option "depends"
+fs/cifs/Kconfig:4: unexpected option "select"
+fs/cifs/Kconfig:5: unexpected option "select"
+fs/cifs/Kconfig:6: unexpected option "select"
+fs/cifs/Kconfig:7: unexpected option "select"
+fs/cifs/Kconfig:8: unexpected option "select"
+fs/cifs/Kconfig:9: unexpected option "select"
+fs/cifs/Kconfig:10: unexpected option "select"
+fs/cifs/Kconfig:11: unexpected option "select"
+fs/cifs/Kconfig:12: unexpected option "select"
+fs/cifs/Kconfig:13: invalid statement
+fs/cifs/Kconfig:14: unknown statement "This"
+fs/cifs/Kconfig:15: unknown statement "CIFS"
+fs/cifs/Kconfig:16: unknown statement "SMB"
+fs/cifs/Kconfig:17: unknown statement "PC"
+fs/cifs/Kconfig:18: unknown statement "file"
+fs/cifs/Kconfig:19: unknown statement "and"
+fs/cifs/Kconfig:20: unknown statement "server"
+fs/cifs/Kconfig:21: unknown statement "support"
+fs/cifs/Kconfig:22: unknown statement "well"
+fs/cifs/Kconfig:25: syntax error
+fs/cifs/Kconfig:24: unknown statement "The"
+fs/cifs/Kconfig:25: unknown statement "client"
+fs/cifs/Kconfig:26: unknown statement "support"
+fs/cifs/Kconfig:27: unknown statement "session"
+fs/cifs/Kconfig:28: unknown statement "safe"
+fs/cifs/Kconfig:29: unknown statement "signing"
+fs/cifs/Kconfig:30: unknown statement "If"
+fs/Kconfig:274: unexpected end statement
+fs/Kconfig:279: unexpected end statement
 
-2) Factor out common code between zcache and ramster. It should be just
-   clean up code and should not change current behavior.
+Caused by commit 12f3f9b7c80c ("Remove sparse warning in cifsfs.c").
+Please, please build test after doing updates and before publishing your
+tree.
 
-3) Add lots of comment to public functions
+I have used the cifs tree from next-20120803 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-4) make function/varabiel names more clearly.
+--Signature=_Mon__6_Aug_2012_10_48_41_+1000_Q0A.8HsKl6VsDv18
+Content-Type: application/pgp-signature
 
-They are necessary for promotion and after promotion,
-let's talk about new great features.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQHxRpAAoJEECxmPOUX5FE4ooP/jn+QY9oPxV6evy7omzvSTky
+/9mrnVDZR61plLzThUAUhUfKXWO3Q7XvSEVctWOYZakJvcbfX4omw9hOyu5uiEw6
+IGGpZSguf3S3Cz/vCp+UcsM0ui2PCiwln923IAuEaOLimLacpvpN33HoOasKLwdf
+vKx3w2WRHICR773lz+ILqToVEoZ6g+tYZWO2IT4FB2CYxESnAVB41BStvl81boyL
+wNx4uH8gueJ1l/+0cUhPmWMz9Z+yxCfCUqmvUEteWTEq1XKCisZVi/+4uo8AUA/n
+LAYi3Es4UiLe7UfqX7uRkgeMy8l7uAGOMmSsfYNw/0SzPk70BGXokWKtjWbIXNJi
+8mG+/l5xM5r3HLKXU5u0JBNIG6DZ2ceuwMfTW3Abm62YqfCwA4OadpS4fCOu421X
+O541RMViWG6VxingM8KnKQyt6mHZCazNGatilWzz8Agv5Y37fPAJFAkFgSzuOLlh
+XGkWCyyO+3Bnym+zNcIF31bKOd5REtGmkvl+HTmErOYJRbiLreQHDglkarzZfp0a
+zEr5JLayAIUWi1iX9nMd7/VLko/fxfzXPZjRvfNnT5QAJgEa4J/TDDrTKMlik6Vi
+EOy4gv4SlJqlvd+DcC7kJbKFc9Ap5nRpp8fsUulxA88C1VfY8GZqRdskdwIpLHl5
+zV0mlgI75tDNiSGv8X0F
+=yqaf
+-----END PGP SIGNATURE-----
 
-> 
-> > 
-> > greg k-h
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+--Signature=_Mon__6_Aug_2012_10_48_41_+1000_Q0A.8HsKl6VsDv18--
