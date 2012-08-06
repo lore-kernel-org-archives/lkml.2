@@ -1,61 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab2HFVX1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:23:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52865 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab2HFVXY (ORCPT
+	id S1756313Ab2HFVXi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 17:23:38 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39566 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab2HFVXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:23:24 -0400
-From: manoj.iyer@canonical.com
-To: linux-kernel@vger.kernel.org
-Cc: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
-        mjg@redhat.com, ibm-acpi@hmh.eng.br
-Subject: [PATCH] thinkpad-acpi: recognize latest V-Series using DMI_BIOS_VENDOR
-Date: Mon,  6 Aug 2012 16:23:20 -0500
-Message-Id: <1344288200-8502-1-git-send-email-manoj.iyer@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 6 Aug 2012 17:23:35 -0400
+Date: Mon, 06 Aug 2012 14:23:34 -0700 (PDT)
+Message-Id: <20120806.142334.1553901172590891407.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
 
-In the latest V-series bios DMI_PRODUCT_VERSION does not contain
-the string Lenovo or Thinkpad, but is set to the model number, this
-causes the thinkpad_acpi module to fail to load. Recognize laptop
-as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
+1) Missed rcu_assign_pointer() in mac80211 scanning, from Johannes Berg.
 
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
----
- drivers/platform/x86/thinkpad_acpi.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+2) Allow devices to limit the number of segments that an individual
+   TCP TSO packet can use at a time, to deal with device and/or driver
+   specific limitations.  From Ben Hutchings.
 
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index e7f7328..17692c8 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -8658,11 +8658,16 @@ static int __must_check __init get_thinkpad_model_data(
- 	}
- 
- 	s = dmi_get_system_info(DMI_PRODUCT_VERSION);
--	if (s && !(strnicmp(s, "ThinkPad", 8) && strnicmp(s, "Lenovo", 6))) {
-+	if (s && !(strnicmp(s, "ThinkPad", 8) && strnicmp(s, "Lenovo", 6)))
- 		tp->model_str = kstrdup(s, GFP_KERNEL);
--		if (!tp->model_str)
--			return -ENOMEM;
--	}
-+	else {
-+		s = dmi_get_system_info(DMI_BIOS_VENDOR);
-+		if (s && !(strnicmp(s, "Lenovo", 6)))
-+			tp->model_str = kstrdup(s, GFP_KERNEL);
-+	} 
-+
-+	if (!tp->model_str)
-+		return -ENOMEM;
- 
- 	s = dmi_get_system_info(DMI_PRODUCT_NAME);
- 	tp->nummodel_str = kstrdup(s, GFP_KERNEL);
--- 
-1.7.9.5
+3) Fix unexpected hard IPSEC expiration after setting the date.  From
+   Fan Du.
 
+4) Memory leak fix in bxn2x driver, from Jesper Juhl.
+
+5) Fix two memory leaks in libertas driver, from Daniel Drake.
+
+6) Fix deref of out-of-range array index in packet scheduler generic
+   actions layer.  From Hiroaki SHIMODA.
+
+7) Fix TX flow control errors in mlx4 driver, from Yevgeny Petrilin.
+
+8) Fix CRIS eth_v10.c driver build, from Randy Dunlap.
+
+9) Fix wrong SKB freeing in LLC protocol layer, from Sorin Dumitru.
+
+10) The IP output path checks neigh lookup errors incorrectly, it
+    needs to use IS_ERR().  From Vasiliy Kulikov.
+
+11) An estimator leak leads to deref of freed memory in timer handler,
+    fix from Hiroaki SHIMODA.
+
+12) TCP early demux in ipv6 needs to use DST cookies in order to
+    validate the RX route properly.  Fix from Eric Dumazet.
+
+Please pull, thanks a lot!
+
+The following changes since commit 1a9b4993b70fb1884716902774dc9025b457760d:
+
+  Merge branch 'upstream' of git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2012-08-01 16:47:15 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 5d299f3d3c8a2fbc732b1bf03af36333ccec3130:
+
+  net: ipv6: fix TCP early demux (2012-08-06 13:33:21 -0700)
+
+----------------------------------------------------------------
+Amir Vadai (1):
+      net/mlx4_en: loopbacked packets are dropped when SMAC=DMAC
+
+Arnaud Patard (1):
+      ixp4xx_eth: fix ptp_ixp46x build failure
+
+Ben Hutchings (3):
+      net: Allow driver to limit number of GSO segments per skb
+      sfc: Fix maximum number of TSO segments and minimum TX queue size
+      tcp: Apply device TSO segment limit earlier
+
+Carolyn Wyborny (1):
+      igb: Fix for failure to init on some 82576 devices.
+
+Daniel Drake (2):
+      libertas: don't reset card on error when it is being removed
+      libertas: fix two memory leaks
+
+Eliad Peller (1):
+      mac80211: don't clear sched_scan_sdata on sched scan stop request
+
+Eric Dumazet (2):
+      ipv4: route.c cleanup
+      net: ipv6: fix TCP early demux
+
+Fan Du (1):
+      Fix unexpected SA hard expiration after changing date
+
+Haiyang Zhang (1):
+      hyperv: Move wait completion msg code into rndis_filter_halt_device()
+
+Hiroaki SHIMODA (2):
+      net_sched: gact: Fix potential panic in tcf_gact().
+      net_sched: act: Delete estimator in error path.
+
+Jesper Juhl (3):
+      bnx2x: fix mem leak when command is unknown
+      igb: correct hardware type (i210/i211) check in igb_loopback_test()
+      igb: don't break user visible strings over multiple lines in igb_ethtool.c
+
+Johannes Berg (4):
+      mac80211: fix scan_sdata assignment
+      Merge remote-tracking branch 'wireless/master' into mac80211
+      mac80211: clear timer bits when disconnecting
+      mac80211: cancel mesh path timer
+
+John W. Linville (1):
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+
+Julia Lawall (2):
+      drivers/net/phy/mdio-mux-gpio.c: drop devm_kfree of devm_kzalloc'd data
+      drivers/atm/iphase.c: fix error return code
+
+Karsten Keil (1):
+      mISDN: Bugfix for layer2 fixed TEI mode
+
+Marek Lindner (1):
+      batman-adv: select an internet gateway if none was chosen
+
+Masanari Iida (1):
+      emulex: benet: Add a missing CR in the end of message
+
+Mohammed Shafi Shajakhan (1):
+      ath9k: Add PID/VID support for AR1111
+
+Paul Stewart (1):
+      cfg80211: Clear "beacon_found" on regulatory restore
+
+Peter Meiser (1):
+      cdc-ncm: tag Ericsson WWAN devices (eg F5521gw) with FLAG_WWAN
+
+Rafa©© Mi©©ecki (2):
+      bcma: BCM43228 support
+      b43: fix logic in GPIO init
+
+Randy Dunlap (1):
+      cris: fix eth_v10.c build error
+
+Seth Forshee (2):
+      cfg80211: add channel flag to prohibit OFDM operation
+      brcmsmac: use channel flags to restrict OFDM
+
+Silviu-Mihai Popescu (1):
+      tcp_output: fix sparse warning for tcp_wfree
+
+Sorin Dumitru (1):
+      llc: free the right skb
+
+Stanislaw Gruszka (1):
+      wireless: reg: restore previous behaviour of chan->max_power calculations
+
+Thomas Meyer (1):
+      net: Use PTR_RET rather than if(IS_ERR(.. [1]
+
+Vasiliy Kulikov (1):
+      ip: fix error handling in ip_finish_output2()
+
+Woody Hung (1):
+      rt2x00 : fix rt3290 resuming failed.
+
+Wu Fengguang (1):
+      isdnloop: fix and simplify isdnloop_init()
+
+Yevgeny Petrilin (2):
+      net/mlx4_en: Fixing TX queue stop/wake flow
+      net/mlx4_core: Remove port type restrictions
+
+ drivers/atm/iphase.c                                  |  2 +-
+ drivers/bcma/host_pci.c                               |  1 +
+ drivers/bcma/sprom.c                                  |  4 ++-
+ drivers/isdn/isdnloop/isdnloop.c                      | 12 -------
+ drivers/isdn/mISDN/layer2.c                           |  2 +-
+ drivers/net/appletalk/cops.c                          |  4 +--
+ drivers/net/appletalk/ltpc.c                          |  4 +--
+ drivers/net/cris/eth_v10.c                            |  2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c        |  1 +
+ drivers/net/ethernet/emulex/benet/be_main.c           |  2 +-
+ drivers/net/ethernet/intel/igb/e1000_82575.c          | 16 ++++-----
+ drivers/net/ethernet/intel/igb/igb_ethtool.c          | 25 +++++++-------
+ drivers/net/ethernet/mellanox/mlx4/en_rx.c            |  4 +--
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c            | 17 ++++------
+ drivers/net/ethernet/mellanox/mlx4/main.c             |  3 --
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h          |  1 -
+ drivers/net/ethernet/mellanox/mlx4/sense.c            | 14 --------
+ drivers/net/ethernet/sfc/efx.c                        |  6 ++++
+ drivers/net/ethernet/sfc/efx.h                        | 14 +++++---
+ drivers/net/ethernet/sfc/ethtool.c                    | 16 ++++++---
+ drivers/net/ethernet/sfc/tx.c                         | 19 +++++++++++
+ drivers/net/ethernet/xscale/ixp4xx_eth.c              |  1 +
+ drivers/net/hyperv/netvsc.c                           |  7 ----
+ drivers/net/hyperv/rndis_filter.c                     | 11 ++++++
+ drivers/net/phy/mdio-mux-gpio.c                       |  1 -
+ drivers/net/usb/cdc_ncm.c                             | 20 +++++++++++
+ drivers/net/wireless/ath/ath9k/hw.c                   |  1 +
+ drivers/net/wireless/ath/ath9k/hw.h                   |  1 +
+ drivers/net/wireless/ath/ath9k/pci.c                  |  1 +
+ drivers/net/wireless/b43/main.c                       | 21 +++++++-----
+ drivers/net/wireless/brcm80211/brcmsmac/channel.c     |  5 +--
+ drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c |  3 +-
+ drivers/net/wireless/libertas/cfg.c                   |  1 +
+ drivers/net/wireless/libertas/if_sdio.c               |  1 +
+ drivers/net/wireless/libertas/main.c                  |  5 ++-
+ drivers/net/wireless/rt2x00/rt2800lib.c               | 68 +++++++++++++++++++++++++++++++++++++
+ drivers/net/wireless/rt2x00/rt2800pci.c               | 71 ---------------------------------------
+ include/linux/bcma/bcma_driver_chipcommon.h           |  6 ++++
+ include/linux/ipv6.h                                  |  1 +
+ include/linux/netdevice.h                             |  2 ++
+ include/net/cfg80211.h                                |  2 ++
+ include/net/inet_connection_sock.h                    |  1 +
+ include/net/inet_sock.h                               |  9 -----
+ include/net/sock.h                                    |  2 ++
+ include/net/xfrm.h                                    |  4 +++
+ net/batman-adv/gateway_client.c                       |  6 ++--
+ net/core/dev.c                                        |  4 +++
+ net/core/sock.c                                       |  1 +
+ net/ipv4/ip_output.c                                  |  2 +-
+ net/ipv4/route.c                                      |  4 ---
+ net/ipv4/tcp.c                                        |  4 ++-
+ net/ipv4/tcp_cong.c                                   |  3 +-
+ net/ipv4/tcp_input.c                                  |  4 ++-
+ net/ipv4/tcp_ipv4.c                                   | 13 +++++--
+ net/ipv4/tcp_minisocks.c                              |  2 +-
+ net/ipv4/tcp_output.c                                 | 23 +++++++------
+ net/ipv6/tcp_ipv6.c                                   | 27 +++++++++++++--
+ net/llc/llc_station.c                                 |  6 ++--
+ net/mac80211/mesh.c                                   |  3 ++
+ net/mac80211/mlme.c                                   |  2 ++
+ net/mac80211/scan.c                                   |  3 +-
+ net/sched/act_gact.c                                  | 14 ++++++--
+ net/sched/act_ipt.c                                   |  7 +++-
+ net/sched/act_pedit.c                                 |  5 ++-
+ net/sched/act_simple.c                                |  5 ++-
+ net/wireless/reg.c                                    | 19 ++++++++++-
+ net/xfrm/xfrm_state.c                                 | 21 +++++++++---
+ 67 files changed, 364 insertions(+), 228 deletions(-)
