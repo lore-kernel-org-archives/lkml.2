@@ -1,35 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab2HFBHn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 21:07:43 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:50298 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755029Ab2HFBHm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 21:07:42 -0400
-Date: Sun, 5 Aug 2012 21:07:41 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Todd Poynor <toddpoynor@google.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <arve@android.com>
-Subject: Re: [PATCH v2] PM / Sleep: Print name of wakeup source that aborts
- suspend
-In-Reply-To: <201208052349.42606.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1208052106110.21764-100000@netrider.rowland.org>
+	id S1755312Ab2HFBNk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 21:13:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23856 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755133Ab2HFBNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 21:13:39 -0400
+Message-ID: <501F1A24.60505@redhat.com>
+Date: Sun, 05 Aug 2012 21:13:08 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Michel Lespinasse <walken@google.com>
+CC: peterz@infradead.org, daniel.santos@pobox.com, aarcange@redhat.com,
+        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH v2 4/9] rbtree: place easiest case first in rb_erase()
+References: <1343946858-8170-1-git-send-email-walken@google.com> <1343946858-8170-5-git-send-email-walken@google.com>
+In-Reply-To: <1343946858-8170-5-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Aug 2012, Rafael J. Wysocki wrote:
+On 08/02/2012 06:34 PM, Michel Lespinasse wrote:
+> In rb_erase, move the easy case (node to erase has no more than
+> 1 child) first. I feel the code reads easier that way.
+>
+> Signed-off-by: Michel Lespinasse<walken@google.com>
 
-> > v2
-> > use ktime_to_ns() instead of comparisons on .tv64 field
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-What is the reason for this?  It apparently adds complexity and code 
-(on non-64-bit systems) to no purpose.
 
-Alan Stern
-
+-- 
+All rights reversed
