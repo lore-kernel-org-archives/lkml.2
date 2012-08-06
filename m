@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab2HFJfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:35:08 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:60409 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab2HFJfG (ORCPT
+	id S1755191Ab2HFJoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:44:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63156 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab2HFJoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:35:06 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-0c-501f8fc4326b
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Milo(Woogyom) Kim'" <milo.kim@ti.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 3/3] backlight: lp855x: remove goto err_dev
-Date: Mon, 06 Aug 2012 18:35:00 +0900
-Message-id: <004001cd73b6$c011da50$40358ef0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1ztr/7coLsb16/SeONd+CmjHJZPQ==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jQd0j/fIBBlMOWFtc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MpbNusRWs5ayYs+o6ewPjefYuRk4OCQETidYl61ghbDGJC/fW
-	s3UxcnEICUxnlOhuOckO4cxmkviwdgsjSBWbgJrEly+HwbpFBCIkmmfMYgaxmQXKJf7cvgcW
-	Fxawlmh7/wKsnkVAVWLziSVgG3gFbCV2PH0FZQtK/Jh8jwWiV0ti87YmVghbXmLzmrdAMzmA
-	LlKXePRXF2KVnsTqNxuhykUk9r14xziBUWAWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca
-	6hUn5haX5qXrJefnbmIEB+YzqR2MKxssDjEKcDAq8fDeNJAPEGJNLCuuzD3EKMHBrCTC29sM
-	FOJNSaysSi3Kjy8qzUktPsQozcGiJM5r7P3VX0ggPbEkNTs1tSC1CCbLxMEp1cDo6zHZ4kC2
-	Xt/379N25p+RWVPDkr1g+dlgscc7vbdxZc5esvmPoWewrYK4IPeHtTYG5QfzLmSXRceabXyn
-	+X7i+c/fNvXtloqaPZvx+pHyAi+52MVZK58uVjBj/macpfTaveCRfmfn7J28yznNBfc9fs0/
-	/0y2+f1PH/iMyxSDwpmnzJm77O45JZbijERDLeai4kQA5G1ocUgCAAA=
-X-TM-AS-MML: No
+	Mon, 6 Aug 2012 05:44:11 -0400
+Subject: Re: [PATCH 1/7] netpoll: use GFP_ATOMIC in slave_enable_netpoll()
+ and __netpoll_setup()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Joe Perches <joe@perches.com>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1344244118.14728.28.camel@cr0>
+References: <1343403484-29347-1-git-send-email-amwang@redhat.com>
+	 <1343403484-29347-2-git-send-email-amwang@redhat.com>
+	 <1343985428.9299.868.camel@edumazet-glaptop> <1343986487.20871.2.camel@cr0>
+	 <1343988623.9299.932.camel@edumazet-glaptop>
+	 <1344244118.14728.28.camel@cr0>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Aug 2012 11:44:04 +0200
+Message-ID: <1344246244.26674.0.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes goto err_dev, which makes code a bit smaller.
+On Mon, 2012-08-06 at 17:08 +0800, Cong Wang wrote:
+> On Fri, 2012-08-03 at 12:10 +0200, Eric Dumazet wrote: 
+> > 
+> > I did this , just take it ;)
+> 
+> Do we have to pass gfp to ->ndo_netpoll_setup() too? It seems no, so far
+> I don't think we have to do that.
+> 
+> Thanks.
+> 
 
-Cc: Milo(Woogyom) Kim <milo.kim@ti.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/lp855x_bl.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+It is needed.
 
-diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
-index aa6d4f7..c629fa8 100644
---- a/drivers/video/backlight/lp855x_bl.c
-+++ b/drivers/video/backlight/lp855x_bl.c
-@@ -272,14 +272,14 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
- 	if (ret) {
- 		dev_err(lp->dev, "i2c communication err: %d", ret);
- 		if (mode == REGISTER_BASED)
--			goto err_dev;
-+			return ret;
- 	}
- 
- 	ret = lp855x_backlight_register(lp);
- 	if (ret) {
- 		dev_err(lp->dev,
- 			"failed to register backlight. err: %d\n", ret);
--		goto err_dev;
-+		return ret;
- 	}
- 
- 	ret = sysfs_create_group(&lp->dev->kobj, &lp855x_attr_group);
-@@ -293,7 +293,6 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
- 
- err_sysfs:
- 	lp855x_backlight_unregister(lp);
--err_dev:
- 	return ret;
- }
- 
--- 
-1.7.1
+->ndo_netpoll_setup() is called from __netpoll_setup()
+
+So it would make no sense to allow GFP_KERNEL allocations in
+ndo_netpoll_setup() hgandlers if we called __netpoll_setup() with
+GFP_ATOMIC gfp
+
 
 
