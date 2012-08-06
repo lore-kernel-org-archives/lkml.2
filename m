@@ -1,114 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab2HFTKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 15:10:55 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:39345 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932380Ab2HFTKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 15:10:54 -0400
-Date: Mon, 6 Aug 2012 12:09:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        eparis@redhat.com, paul@paul-moore.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Fix sel_netnode_insert suspicious rcu dereference.
-Message-ID: <20120806190930.GH2401@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120605051238.GA30614@redhat.com>
- <20120806164914.GA25940@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120806164914.GA25940@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080619-1780-0000-0000-00000817C365
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000290; HX=3.00000194; KW=3.00000007;
- PH=3.00000001; SC=3.00000006; SDB=6.00163061; UDB=6.00036882; UTC=2012-08-06
- 19:10:43
+	id S932510Ab2HFTP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 15:15:28 -0400
+Received: from ns.pmeerw.net ([87.118.82.44]:43955 "EHLO pmeerw.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932494Ab2HFTP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 15:15:27 -0400
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        Peter Meerwald <pmeerw@pmeerw.net>
+Subject: [PATCH] extcon: fix typos in sys-class-extcon
+Date: Mon,  6 Aug 2012 21:15:19 +0200
+Message-Id: <1344280519-10792-1-git-send-email-pmeerw@pmeerw.net>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 12:49:14PM -0400, Dave Jones wrote:
-> On Tue, Jun 05, 2012 at 01:12:39AM -0400, Dave Jones wrote:
->  > I reported this a year ago (https://lkml.org/lkml/2011/4/20/308).
->  > It's still a problem apparently ...
-> 
-> And another two months pass in silence.
-> 
-> This is happening to other people too.
-> https://bugzilla.redhat.com/show_bug.cgi?id=846037
-> 
-> Can someone please apply this patch, or at least point out what's wrong with it ?
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+---
+ Documentation/ABI/testing/sysfs-class-extcon |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-Feel free to add:
-
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-in case that helps.
-
-							Thanx, Paul
-
-> 	Dave
-> 
-> 
->  > ===============================
->  > [ INFO: suspicious RCU usage. ]
->  > 3.5.0-rc1+ #63 Not tainted
->  > -------------------------------
->  > security/selinux/netnode.c:178 suspicious rcu_dereference_check() usage!
->  > 
->  > other info that might help us debug this:
->  > 
->  > 
->  > rcu_scheduler_active = 1, debug_locks = 0
->  > 1 lock held by trinity-child1/8750:
->  >  #0:  (sel_netnode_lock){+.....}, at: [<ffffffff812d8f8a>] sel_netnode_sid+0x16a/0x3e0
->  > 
->  > stack backtrace:
->  > Pid: 8750, comm: trinity-child1 Not tainted 3.5.0-rc1+ #63
->  > Call Trace:
->  >  [<ffffffff810cec2d>] lockdep_rcu_suspicious+0xfd/0x130
->  >  [<ffffffff812d91d1>] sel_netnode_sid+0x3b1/0x3e0
->  >  [<ffffffff812d8e20>] ? sel_netnode_find+0x1a0/0x1a0
->  >  [<ffffffff812d24a6>] selinux_socket_bind+0xf6/0x2c0
->  >  [<ffffffff810cd1dd>] ? trace_hardirqs_off+0xd/0x10
->  >  [<ffffffff810cdb55>] ? lock_release_holdtime.part.9+0x15/0x1a0
->  >  [<ffffffff81093841>] ? lock_hrtimer_base+0x31/0x60
->  >  [<ffffffff812c9536>] security_socket_bind+0x16/0x20
->  >  [<ffffffff815550ca>] sys_bind+0x7a/0x100
->  >  [<ffffffff816c03d5>] ? sysret_check+0x22/0x5d
->  >  [<ffffffff810d392d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
->  >  [<ffffffff8133b09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->  >  [<ffffffff816c03a9>] system_call_fastpath+0x16/0x1b
->  > 
->  > This patch below does what Paul McKenney suggested in the previous thread.
->  > 
->  > Signed-off-by: Dave Jones <davej@redhat.com>
->  > 
->  > diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
->  > index 28f911c..c5454c0 100644
->  > --- a/security/selinux/netnode.c
->  > +++ b/security/selinux/netnode.c
->  > @@ -174,7 +174,8 @@ static void sel_netnode_insert(struct sel_netnode *node)
->  >  	if (sel_netnode_hash[idx].size == SEL_NETNODE_HASH_BKT_LIMIT) {
->  >  		struct sel_netnode *tail;
->  >  		tail = list_entry(
->  > -			rcu_dereference(sel_netnode_hash[idx].list.prev),
->  > +			rcu_dereference_protected(sel_netnode_hash[idx].list.prev,
->  > +						  lockdep_is_held(&sel_netnode_lock)),
->  >  			struct sel_netnode, list);
->  >  		list_del_rcu(&tail->list);
->  >  		kfree_rcu(tail, rcu);
->  > --
->  > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->  > the body of a message to majordomo@vger.kernel.org
->  > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->  > Please read the FAQ at  http://www.tux.org/lkml/
-> ---end quoted text---
-> 
+diff --git a/Documentation/ABI/testing/sysfs-class-extcon b/Documentation/ABI/testing/sysfs-class-extcon
+index 20ab361..57a7262 100644
+--- a/Documentation/ABI/testing/sysfs-class-extcon
++++ b/Documentation/ABI/testing/sysfs-class-extcon
+@@ -13,7 +13,7 @@ Description:
+ 		accessory cables have such capability. For example,
+ 		the 30-pin port of Nuri board (/arch/arm/mach-exynos)
+ 		may have both HDMI and Charger attached, or analog audio,
+-		video, and USB cables attached simulteneously.
++		video, and USB cables attached simultaneously.
+ 
+ 		If there are cables mutually exclusive with each other,
+ 		such binary relations may be expressed with extcon_dev's
+@@ -35,7 +35,7 @@ Description:
+ 		The /sys/class/extcon/.../state shows and stores the cable
+ 		attach/detach information of the corresponding extcon object.
+ 		If the extcon object has an optional callback "show_state"
+-		defined, the showing function is overriden with the optional
++		defined, the showing function is overridden with the optional
+ 		callback.
+ 
+ 		If the default callback for showing function is used, the
+@@ -46,19 +46,19 @@ Description:
+ 		TA=1
+ 		EAR_JACK=0
+ 		#
+-		In this example, the extcon device have USB_OTG and TA
++		In this example, the extcon device has USB_OTG and TA
+ 		cables attached and HDMI and EAR_JACK cables detached.
+ 
+ 		In order to update the state of an extcon device, enter a hex
+-		state number starting with 0x.
+-		 echo 0xHEX > state
++		state number starting with 0x:
++		# echo 0xHEX > state
+ 
+-		This updates the whole state of the extcon dev.
++		This updates the whole state of the extcon device.
+ 		Inputs of all the methods are required to meet the
+-		mutually_exclusive contidions if they exist.
++		mutually_exclusive conditions if they exist.
+ 
+ 		It is recommended to use this "global" state interface if
+-		you need to enter the value atomically. The later state
++		you need to set the value atomically. The later state
+ 		interface associated with each cable cannot update
+ 		multiple cable states of an extcon device simultaneously.
+ 
+@@ -73,7 +73,7 @@ What:		/sys/class/extcon/.../cable.x/state
+ Date:		February 2012
+ Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
+ Description:
+-		The /sys/class/extcon/.../cable.x/name shows and stores the
++		The /sys/class/extcon/.../cable.x/state shows and stores the
+ 		state of cable "x" (integer between 0 and 31) of an extcon
+ 		device. The state value is either 0 (detached) or 1
+ 		(attached).
+@@ -83,8 +83,8 @@ Date:		December 2011
+ Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
+ Description:
+ 		Shows the relations of mutually exclusiveness. For example,
+-		if the mutually_exclusive array of extcon_dev is
+-		{0x3, 0x5, 0xC, 0x0}, the, the output is:
++		if the mutually_exclusive array of extcon device is
++		{0x3, 0x5, 0xC, 0x0}, then the output is:
+ 		# ls mutually_exclusive/
+ 		0x3
+ 		0x5
+-- 
+1.7.9.5
 
