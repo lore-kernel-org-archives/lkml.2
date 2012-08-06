@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab2HFV4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:56:20 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:34803 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab2HFVzq (ORCPT
+	id S1756069Ab2HFWAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 18:00:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45270 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab2HFWAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:55:46 -0400
+	Mon, 6 Aug 2012 18:00:07 -0400
+Date: Mon, 6 Aug 2012 19:00:00 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Andrey Wagin <avagin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 2/3] perf: teach perf inject to merge sched_stat_* and
+ sched_switch events
+Message-ID: <20120806220000.GH21441@infradead.org>
+References: <1344247319-304069-1-git-send-email-avagin@openvz.org>
+ <1344247319-304069-3-git-send-email-avagin@openvz.org>
+ <20120806181941.GG21441@infradead.org>
+ <CANaxB-xq_wDGZQ16nTD6agwc_JiE4dQe1fXmvmPZckAX0EVr9w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1344267537.27828.93.camel@twins>
-References: <1343946858-8170-1-git-send-email-walken@google.com>
-	<1343946858-8170-9-git-send-email-walken@google.com>
-	<1344262669.27828.55.camel@twins>
-	<1344267537.27828.93.camel@twins>
-Date: Mon, 6 Aug 2012 14:55:45 -0700
-Message-ID: <CANN689HKPKeZ-sqqwXGPhv=Jno4c=v=ffeOxLPkOFmMzEVXexw@mail.gmail.com>
-Subject: Re: [PATCH v2 8/9] rbtree: faster augmented rbtree manipulation
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: multipart/mixed; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+In-Reply-To: <CANaxB-xq_wDGZQ16nTD6agwc_JiE4dQe1fXmvmPZckAX0EVr9w@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 8:38 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2012-08-06 at 16:17 +0200, Peter Zijlstra wrote:
->
->> Why would every user need to replicate the propagate and rotate
->> boilerplate?
->
-> So I don't have a tree near that any of this applies to (hence no actual
-> patch)
 
-All right, here are instructions to get a tree this will apply to :)
-1- fetch linux-next tree
-2- check out next-20120806
-3- revert e406c4110c968b7691c4ccfadcd866a74a72fa5b (was sent as
-previous RFC version of this series, didn't realize it had made it
-into -mm)
-4- apply patches 1 and 3-9 of this series (patch 2 was also sent as
-previous RFC version and made it into -mm)
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> but why can't we have something like:
->
-> struct rb_augment_callback {
->         const bool (*update)(struct rb_node *node);
->         const int offset;
->         const int size;
-> };
->
-> #define RB_AUGMENT_CALLBACK(_update, _type, _rb_member, _aug_member)    \
-> (struct rb_augment_callback){                                           \
->         .update = _update,                                              \
->         .offset = offsetof(_type, _aug_member) -                        \
->                   offsetof(_type, _rb_member),                          \
->         .size   = sizeof(((_type *)NULL)->_aug_member),                 \
-> }
->
-> static __always_inline void
-> augment_copy(struct rb_node *dst, struct rb_node *src,
->              const rb_augment_callback *ac)
-> {
->         memcpy((void *)dst + ac->offset,
->                (void *)src + ac->offset,
->                ac->size);
-> }
->
-> static __always_inline void
-> augment_propagate(struct rb_node *rb, struct rb_node *stop,
->                   const struct rb_augment_callback *ac)
-> {
->         while (rb != stop) {
->                 if (!ac->update(rb))
->                         break;
->                 rb = rb_parent(rb);
->         }
-> }
->
-> static __always_inline void
-> augment_rotate(struct rb_node *old, struct rb_node *new.
->                const struct rb_augment_callback *ac)
-> {
->         augment_copy(new, old, ac);
->         (void)ac->update(old);
-> }
+Em Mon, Aug 06, 2012 at 11:43:04PM +0400, Andrey Wagin escreveu:
+> 2012/8/6 Arnaldo Carvalho de Melo <acme@ghostprotocols.net>:
+> >> +struct perf_session  *session;
+> 
+> perf_event__sched_stat (perf_inject.sample) uses "session" for getting
+> an event name. I don't know how to get it by another way
 
-I don't think this would work well, because ac->offset and ac->size
-wouldn't be known at the point where they are needed, so the memcpy
-wouldn't be nicely optimized into a fetch and store of the desired
-size.
+Can you try with the attached patch? We already lookup the event_format
+entries when we read the perf.data header so that we can cache
+evsel->name, we might as well cache the event_format in
+evsel->tp_format, so that tools don't have to relookup this for each
+sample.
 
-However, I wouldn't have a problem with declaring all 3 callbacks (and
-the struct holding them) using a preprocessor macro as you propose.
-Would that seem fine with you ? I can send an add-on patch to do that.
+It would look like:
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+	static int perf_event__sched_stat(struct perf_tool *tool,
+					  union perf_event *event,
+					  struct perf_sample *sample,
+					  struct perf_evsel *evsel,
+					  struct machine *machine)
+	{
+		int type;
+		struct event_format *e = evsel->tp_format;
+		const char *evname = e->name;
+
+- Arnaldo
+
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="a.patch"
+
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index b559929..a56c457 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -56,6 +56,7 @@ struct perf_evsel {
+ 	int			ids;
+ 	struct hists		hists;
+ 	char			*name;
++	struct event_format	*tp_format;
+ 	union {
+ 		void		*priv;
+ 		off_t		id_offset;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 24c489b..5b328a4 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2126,6 +2126,7 @@ static int perf_evsel__set_tracepoint_name(struct perf_evsel *evsel,
+ 	if (event->name == NULL)
+ 		return -1;
+ 
++	evsel->tp_format = event;
+ 	return 0;
+ }
+ 
+
+--2oS5YaxWCcQjTEyO--
