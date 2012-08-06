@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab2HFQQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 12:16:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57086 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756429Ab2HFQQo (ORCPT
+	id S932306Ab2HFQRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 12:17:43 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:31426 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932242Ab2HFQRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 12:16:44 -0400
-Message-ID: <501FEDE7.1060202@wwwdotorg.org>
-Date: Mon, 06 Aug 2012 10:16:39 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Alex Courbot <acourbot@nvidia.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <50170EA0.1010408@wwwdotorg.org> <501A338D.7080105@nvidia.com> <20120802082157.GA14866@avionic-0098.adnet.avionic-design.de> <20120802181111.GM4537@opensource.wolfsonmicro.com> <501B2642.4080805@nvidia.com> <20120804141155.GJ10523@opensource.wolfsonmicro.com> <501F2BAA.8000808@nvidia.com>
-In-Reply-To: <501F2BAA.8000808@nvidia.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Aug 2012 12:17:41 -0400
+Date: Mon, 6 Aug 2012 18:17:28 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c: fix i2c-i801.c printk format warning
+Message-ID: <20120806181728.56c471dd@endymion.delvare>
+In-Reply-To: <501FEC87.6060506@xenotime.net>
+References: <20120806140109.b1a33b63686ef04f30139c9e@canb.auug.org.au>
+	<501FEC87.6060506@xenotime.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2012 08:27 PM, Alex Courbot wrote:
-> On 08/04/2012 11:12 PM, Mark Brown wrote:
->> On Fri, Aug 03, 2012 at 10:15:46AM +0900, Alex Courbot wrote:
->>> On Fri 03 Aug 2012 03:11:12 AM JST, Mark Brown wrote:
->>
->>>> I missed some of the earlier bits of the thread here but why can't
->>>> we do
->>>> device based lookups?
-...
-> I think we only have two choices for this:
-> 
-> 1) Stick to the scheme where resources are declared at the device level,
-> such as they can be referenced by name in the sub-nodes (basically what
-> I did in this patch):
-> 
-> backlight {
->      compatible = "pwm-backlight";
->      ...
->      backlight-supply = <&backlight_reg>;
-> 
->      power-on-sequence {
->          step@0 {
->              regulator = "backlight";
->              enable;
->          };
-> 
-> This would translate by a get_regulator(dev, "backlight") in the code
-> which would be properly resolved.
+Hi Randy,
 
-Yes, upon reflection, that scheme does make sense. I withdraw the
-comments I made re: whether it'd be better to just stick the phandles
-into the steps.
+On Mon, 06 Aug 2012 09:10:47 -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> Fix printk format warning.  ARRAY_SIZE() uses sizeof(),
+> which is size_t, so use %zu to print it.
+> 
+> drivers/i2c/busses/i2c-i801.c: In function 'i801_add_mux':
+> drivers/i2c/busses/i2c-i801.c:1043:4: warning: format '%lu' expects type 'long unsigned int', but argument 3 has type 'unsigned int'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Mark D. Studebaker <mdsxyz123@yahoo.com>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> ---
+>  drivers/i2c/busses/i2c-i801.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-next-20120806.orig/drivers/i2c/busses/i2c-i801.c
+> +++ linux-next-20120806/drivers/i2c/busses/i2c-i801.c
+> @@ -1039,7 +1039,7 @@ static int __devinit i801_add_mux(struct
+>  
+>  	/* Find absolute GPIO pin numbers */
+>  	if (ARRAY_SIZE(priv->mux_priv) < mux_config->n_gpios) {
+> -		dev_err(dev, "i801_priv.mux_priv too small (%lu, need %d)\n",
+> +		dev_err(dev, "i801_priv.mux_priv too small (%zu, need %d)\n",
+>  			ARRAY_SIZE(priv->mux_priv), mux_config->n_gpios);
+>  		return -ENODEV;
+>  	}
+
+Good catch once again, thanks a lot. As the offending patch is still
+not upstream, I've folded your fix into it.
+
+-- 
+Jean Delvare
