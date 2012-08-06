@@ -1,108 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab2HFC0D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 22:26:03 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7583 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755468Ab2HFC0A (ORCPT
+	id S1755528Ab2HFC1f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 22:27:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58566 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab2HFC1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 22:26:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 05 Aug 2012 19:20:57 -0700
-Message-ID: <501F2BAA.8000808@nvidia.com>
-Date: Mon, 6 Aug 2012 11:27:54 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <50170EA0.1010408@wwwdotorg.org> <501A338D.7080105@nvidia.com> <20120802082157.GA14866@avionic-0098.adnet.avionic-design.de> <20120802181111.GM4537@opensource.wolfsonmicro.com> <501B2642.4080805@nvidia.com> <20120804141155.GJ10523@opensource.wolfsonmicro.com>
-In-Reply-To: <20120804141155.GJ10523@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 5 Aug 2012 22:27:34 -0400
+Date: Mon, 6 Aug 2012 12:27:26 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: linux-next: manual merge of the rcu tree with the rr tree
+Message-Id: <20120806122726.ac3e525f2d45de4470fa2703@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__6_Aug_2012_12_27_26_+1000_jNKaJ0zHgi6eTim="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2012 11:12 PM, Mark Brown wrote:
-> On Fri, Aug 03, 2012 at 10:15:46AM +0900, Alex Courbot wrote:
->> On Fri 03 Aug 2012 03:11:12 AM JST, Mark Brown wrote:
->
->>> I missed some of the earlier bits of the thread here but why can't we do
->>> device based lookups?
->
->> That is because the phandles would not be properties of the device
->> node but rather of its sub-nodes:
->
->> backlight {
->>      compatible = "pwm-backlight";
->>      ...
->>      power-on-sequence {
->>          step@0 {
->>              regulator = <&backlight_reg>;
->>              enable;
->>          };
->>
->
->> So here simply using regulator_get on the backlight device would not work.
->
-> Ah, right.  DT isn't being terribly helpful here...  I think the thing
-> I'd expect to work here is that you have a reference back to the supply
-> property of the backlight device rather than direct to the regulator so
-> you end up writing "enable supply X" rather than "enable regulator X".
->
-> Not quite sure how exactly you'd accomplish that - I guess if
-> regulator_get() would recursively follow phandles until it hits a node
-> that'd do the trick?
+--Signature=_Mon__6_Aug_2012_12_27_26_+1000_jNKaJ0zHgi6eTim=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Do you mean that regulator_get() would parse sub-nodes looking for a 
-match? That seems rather dangerous and error-prone, especially if one 
-has actual devices within the sub-nodes - their regulators could be 
-stolen by the parent device.
+Hi Paul,
 
-I think we only have two choices for this:
+Today's linux-next merge of the rcu tree got a conflict in arch/Kconfig
+arch/x86/Kconfig between commit d673c23ca730 ("Make most arch
+asm/module.h files use asm-generic/module.h") from the rr tree and commits
+3dbdfc26e27f ("rcu: Settle config for userspace extended quiescent
+state") and 1ea856be75ce ("x86: Exit RCU extended QS on notify resume")
+from the rcu tree.
 
-1) Stick to the scheme where resources are declared at the device level, 
-such as they can be referenced by name in the sub-nodes (basically what 
-I did in this patch):
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-backlight {
-      compatible = "pwm-backlight";
-      ...
-      backlight-supply = <&backlight_reg>;
+diff --cc arch/Kconfig
+index 3450115,1c7c9be..0000000
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@@ -281,23 -274,14 +281,33 @@@ config SECCOMP_FILTE
+ =20
+  	  See Documentation/prctl/seccomp_filter.txt for details.
+ =20
+ +config HAVE_MOD_ARCH_SPECIFIC
+ +	bool
+ +	help
+ +	  The arch uses struct mod_arch_specific to store data.  Many arches
+ +	  just need a simple module loader without arch specific data - those
+ +	  should not enable this.
+ +
+ +config MODULES_USE_ELF_RELA
+ +	bool
+ +	help
+ +	  Modules only use ELF RELA relocations.  Modules with ELF REL
+ +	  relocations will give an error.
+ +
+ +config MODULES_USE_ELF_REL
+ +	bool
+ +	help
+ +	  Modules only use ELF REL relocations.  Modules with ELF RELA
+ +	  relocations will give an error.
+ +
++ config HAVE_RCU_USER_QS
++ 	bool
++ 	help
++ 	  Provide kernel entry/exit hooks necessary for userspace
++ 	  RCU extended quiescent state. Syscalls need to be wrapped inside
++ 	  rcu_user_exit()-rcu_user_enter() through the slow path using
++ 	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
++ 	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
++ 	  preemption or signal handling on irq exit still need to be protected.
++=20
+  source "kernel/gcov/Kconfig"
+diff --cc arch/x86/Kconfig
+index a00d899,38dfcc2..0000000
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@@ -97,8 -95,7 +97,9 @@@ config X8
+  	select KTIME_SCALAR if X86_32
+  	select GENERIC_STRNCPY_FROM_USER
+  	select GENERIC_STRNLEN_USER
+ +	select MODULES_USE_ELF_REL if X86_32
+ +	select MODULES_USE_ELF_RELA if X86_64
++ 	select HAVE_RCU_USER_QS if X86_64
+ =20
+  config INSTRUCTION_DECODER
+  	def_bool (KPROBES || PERF_EVENTS || UPROBES)
 
-      power-on-sequence {
-          step@0 {
-              regulator = "backlight";
-              enable;
-          };
+--Signature=_Mon__6_Aug_2012_12_27_26_+1000_jNKaJ0zHgi6eTim=
+Content-Type: application/pgp-signature
 
-This would translate by a get_regulator(dev, "backlight") in the code 
-which would be properly resolved.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-2) Export a lower-level DT API for resolving phandles directly from a 
-property, similar to of_get_named_gpio. We would then have 
-of_get_named_regulator and of_get_named_pwm.
+iQIcBAEBCAAGBQJQHyuOAAoJEECxmPOUX5FEy+MP/1IAi+EZ32VRSPeFypliCBD6
+Vdj32qrSOinIMs/qwO/8OwQ4MZ/aqrLsdLWTHNskaA+SMf4CR+8cd4IsII70k74P
+OP4T+zp38dW4raRpNnsmXGw437i2AcJKvryKYN9pbmUZ7OYrvahswRkiaT/Rtsjw
+eedKITHNRlBQplzFaf6fVkj+0hJBzvEZWF7Ijj4A0zjML7OhXqbCE+3jvBLt8Tzg
+kyFY0/kJXLInut5Cxk6OavmneRUQSUU+WDB98sNasn5uXSGJJzIVndMgrNq6oPck
+L4XsrK+oIbKpqr9mdEbjGbHAomFqJZshvGZA57Y3k5+qiCtqNe/poQKFWlLBlm8x
+e49AFwaWv0ZeALSIUJzH/S5agn4aDp4OJuk5kgpM/dFE9W3tvZwAkU5W0Muvv0vC
+yBdiCJ54vNYp/uSj6iaZJ5I9H0lRLwPCxcDpwpm4WZNsWDb6BKbhNCxHIdIFutgi
+8ZkTPninsPl6tZHZ9GSM5P8BIxrJXDpguE99cLTy30Yl7tGdRhq6NpC/6Gv5YaQp
+gzXFW52wDCG7z1t5eulXpn8A1Yc009NKtdvNwa17I9AaR0AIk6MR5Q0ULJvJvvZV
+tNN3mtiQOIzy7WFnHJzv2tGa7bwPGO68jkq8hg5aznULgIPCISsVt03MoqqbMHSb
+rdoaemDNJFKhbJulss7U
+=zOAq
+-----END PGP SIGNATURE-----
 
-If 2) is deemed acceptable, then I think we should go for it as it would 
-provide the most compact and readable DT syntax. Otherwise 1) is still 
-acceptable IMHO, as it should at least make sense to people already 
-familiar with how the DT works.
-
-Opinions from DT experts?
-
-Alex.
-
+--Signature=_Mon__6_Aug_2012_12_27_26_+1000_jNKaJ0zHgi6eTim=--
