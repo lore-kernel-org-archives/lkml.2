@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab2HFHec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 03:34:32 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47251 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab2HFHea (ORCPT
+	id S1753471Ab2HFHfg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 03:35:36 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:49829 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753024Ab2HFHff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 03:34:30 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: Update VIP to videobuf2 and control framework
-Date: Mon, 06 Aug 2012 09:38:10 +0200
-Message-ID: <4296967.xtOULN4YkB@harkonnen>
-User-Agent: KMail/4.8.4 (Linux/3.5.0-2.fc17.x86_64; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <201208060926.40164.hverkuil@xs4all.nl>
-References: <1343765829-6006-1-git-send-email-federico.vaga@gmail.com> <5055608.KkUHWr6mgc@harkonnen> <201208060926.40164.hverkuil@xs4all.nl>
+	Mon, 6 Aug 2012 03:35:35 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <501BE6B1.9000100@ti.com>
+References: <1343997350-676-1-git-send-email-sourav.poddar@ti.com>
+	<501BE6B1.9000100@ti.com>
+Date: Mon, 6 Aug 2012 13:05:34 +0530
+Message-ID: <CAKdam54Zshr-d502E_AS+vw5+vLQnTBrAGRPTy-9-hZy1QEFbA@mail.gmail.com>
+Subject: Re: [PATCH] hwmon: tmp102: Add device tree support
+From: "Poddar, Sourav" <sourav.poddar@ti.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: khali@linux-fr.org, linux@roeck-us.net, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Benoit,
 
-> > I applied all your suggestions, and some extra simplification;
-> > [...]
+On Fri, Aug 3, 2012 at 8:26 PM, Benoit Cousson <b-cousson@ti.com> wrote:
+> Hi Sourav,
+>
+> On 08/03/2012 02:35 PM, Sourav Poddar wrote:
+>> update tmp102 temperature sensor to also use device tree.
+>>
+>> Cc: Benoit Cousson <b-cousson@ti.com>
+>> Cc: Felipe Balbi <balbi@ti.com>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Acked-by: Felipe Balbi <balbi@ti.com>
+>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+>> ---
+>>  drivers/hwmon/tmp102.c |   14 +++++++++++++-
+>>  1 files changed, 13 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+>> index 0d466b9..a8a9060 100644
+>> --- a/drivers/hwmon/tmp102.c
+>> +++ b/drivers/hwmon/tmp102.c
+>> @@ -26,6 +26,7 @@
+>>  #include <linux/err.h>
+>>  #include <linux/mutex.h>
+>>  #include <linux/device.h>
+>> +#include <linux/of.h>
+>>
+>>  #define      DRIVER_NAME "tmp102"
+>>
+>> @@ -284,8 +285,19 @@ static const struct i2c_device_id tmp102_id[] = {
+>>  };
+>>  MODULE_DEVICE_TABLE(i2c, tmp102_id);
+>>
+>> +#ifdef CONFIG_OF
+>> +static const struct of_device_id temperature_dt_match[] = {
+>> +     { .compatible = "ti,tmp102" },
+>
+> Are you sure this is needed for this device?
+>
+> There is an automatic binding done for I2C devices in the of_i2c core
+> code. So in theory, DT will be able to bind to any I2C device using the
+> already existing table: MODULE_DEVICE_TABLE(i2c, tmp102_id).
+>
+> So I think this patch should not be needed.
+>
+Indeed. Checked it just now, this patch is not required and the already
+existing table is enough for the device to work fine.
 
-> > ---------------
-> > - flags: optional. Set to V4L2_FL_USE_FH_PRIO if you want to let the
-> > framework handle the VIDIOC_G/S_PRIORITY ioctls. This requires that
-> > you use struct v4l2_fh.
-> 
->   ^^^^^^^^^^^^^^^^^^
-> 
-> Are you using struct v4l2_fh? The version you posted didn't. You need
-> this anyway to implement control events.
+Thanks for the information.
 
-Yes I'm using it now, it is part of the extra simplification that I did.
-
--- 
-Federico Vaga
+This patch is abandoned.
+~Sourav
+> Regards,
+> Benoit
+>
