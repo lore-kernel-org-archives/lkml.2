@@ -1,108 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab2HFJXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:23:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:33398 "EHLO song.cn.fujitsu.com"
+	id S1755706Ab2HFJ3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:29:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:44379 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754095Ab2HFJXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:23:24 -0400
+	id S1755243Ab2HFJXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 05:23:32 -0400
 X-IronPort-AV: E=Sophos;i="4.77,719,1336320000"; 
-   d="scan'208";a="5560124"
+   d="scan'208";a="5560130"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org
-Subject: [RFC V3 PATCH 01/25] page_alloc.c: don't subtract unrelated memmap from zone's present pages
-Date: Mon, 6 Aug 2012 17:22:55 +0800
-Message-Id: <1344244999-5081-2-git-send-email-laijs@cn.fujitsu.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
+Subject: [RFC V3 PATCH 06/25] cpuset: use N_MEMORY instead N_HIGH_MEMORY
+Date: Mon, 6 Aug 2012 17:23:00 +0800
+Message-Id: <1344244999-5081-7-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
  <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/06 17:23:47,
+ 2012/08/06 17:23:54,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/06 17:23:48,
-	Serialize complete at 2012/08/06 17:23:48
+ 2012/08/06 17:23:55,
+	Serialize complete at 2012/08/06 17:23:55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A)======
-Currently, memory-page-map(struct page array) is not defined in struct zone.
-It is defined in several ways:
+N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+N_MEMORY stands for the nodes that has any memory.
 
-FLATMEM: global memmap, can be allocated from any zone <= ZONE_NORMAL
-CONFIG_DISCONTIGMEM: node-specific memmap, can be allocated from any
-		     zone <= ZONE_NORMAL within that node.
-CONFIG_SPARSEMEM: memorysection-specific memmap, can be allocated from any zone,
-		  when CONFIG_SPARSEMEM_VMEMMAP, it is even not physical continuous.
-
-So, the memmap has nothing directly related with the zone. And it's memory can be
-allocated outside, so it is wrong to subtract memmap's size from zone's
-present pages.
-
-B)======
-When system has large holes, the subtracted-present-pages-size will become
-very small or negative, make the memory management works bad at the zone or
-make the zone unusable even the real-present-pages-size is actually large.
-
-C)======
-And subtracted-present-pages-size has problem when memory-hot-removing,
-the zone->zone->present_pages may overflow and become huge(unsigned long).
-
-D)======
-memory-page-map is large and long living unreclaimable memory, it is good to
-subtract them for proper watermark.
-So a new proper approach is needed to do it similarly
-and new approach should also handle other long living unreclaimable memory.
-
-Current blindly subtracted-present-pages-size approach does wrong, remove it.
+The code here need to handle with the nodes which have memory, we should
+use N_MEMORY instead.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- mm/page_alloc.c |   20 +-------------------
- 1 files changed, 1 insertions(+), 19 deletions(-)
+ Documentation/cgroups/cpusets.txt |    2 +-
+ include/linux/cpuset.h            |    2 +-
+ kernel/cpuset.c                   |   32 ++++++++++++++++----------------
+ 3 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4a4f921..9312702 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4357,30 +4357,12 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+diff --git a/Documentation/cgroups/cpusets.txt b/Documentation/cgroups/cpusets.txt
+index cefd3d8..12e01d4 100644
+--- a/Documentation/cgroups/cpusets.txt
++++ b/Documentation/cgroups/cpusets.txt
+@@ -218,7 +218,7 @@ and name space for cpusets, with a minimum of additional kernel code.
+ The cpus and mems files in the root (top_cpuset) cpuset are
+ read-only.  The cpus file automatically tracks the value of
+ cpu_online_mask using a CPU hotplug notifier, and the mems file
+-automatically tracks the value of node_states[N_HIGH_MEMORY]--i.e.,
++automatically tracks the value of node_states[N_MEMORY]--i.e.,
+ nodes with memory--using the cpuset_track_online_nodes() hook.
  
- 	for (j = 0; j < MAX_NR_ZONES; j++) {
- 		struct zone *zone = pgdat->node_zones + j;
--		unsigned long size, realsize, memmap_pages;
-+		unsigned long size, realsize;
  
- 		size = zone_spanned_pages_in_node(nid, j, zones_size);
- 		realsize = size - zone_absent_pages_in_node(nid, j,
- 								zholes_size);
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index 838320f..8c8a60d29 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -144,7 +144,7 @@ static inline nodemask_t cpuset_mems_allowed(struct task_struct *p)
+ 	return node_possible_map;
+ }
  
--		/*
--		 * Adjust realsize so that it accounts for how much memory
--		 * is used by this zone for memmap. This affects the watermark
--		 * and per-cpu initialisations
--		 */
--		memmap_pages =
--			PAGE_ALIGN(size * sizeof(struct page)) >> PAGE_SHIFT;
--		if (realsize >= memmap_pages) {
--			realsize -= memmap_pages;
--			if (memmap_pages)
--				printk(KERN_DEBUG
--				       "  %s zone: %lu pages used for memmap\n",
--				       zone_names[j], memmap_pages);
--		} else
--			printk(KERN_WARNING
--				"  %s zone: %lu pages exceeds realsize %lu\n",
--				zone_names[j], memmap_pages, realsize);
--
- 		/* Account for reserved pages */
- 		if (j == 0 && realsize > dma_reserve) {
- 			realsize -= dma_reserve;
+-#define cpuset_current_mems_allowed (node_states[N_HIGH_MEMORY])
++#define cpuset_current_mems_allowed (node_states[N_MEMORY])
+ static inline void cpuset_init_current_mems_allowed(void) {}
+ 
+ static inline int cpuset_nodemask_valid_mems_allowed(nodemask_t *nodemask)
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index f33c715..2b133db 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -302,10 +302,10 @@ static void guarantee_online_cpus(const struct cpuset *cs,
+  * are online, with memory.  If none are online with memory, walk
+  * up the cpuset hierarchy until we find one that does have some
+  * online mems.  If we get all the way to the top and still haven't
+- * found any online mems, return node_states[N_HIGH_MEMORY].
++ * found any online mems, return node_states[N_MEMORY].
+  *
+  * One way or another, we guarantee to return some non-empty subset
+- * of node_states[N_HIGH_MEMORY].
++ * of node_states[N_MEMORY].
+  *
+  * Call with callback_mutex held.
+  */
+@@ -313,14 +313,14 @@ static void guarantee_online_cpus(const struct cpuset *cs,
+ static void guarantee_online_mems(const struct cpuset *cs, nodemask_t *pmask)
+ {
+ 	while (cs && !nodes_intersects(cs->mems_allowed,
+-					node_states[N_HIGH_MEMORY]))
++					node_states[N_MEMORY]))
+ 		cs = cs->parent;
+ 	if (cs)
+ 		nodes_and(*pmask, cs->mems_allowed,
+-					node_states[N_HIGH_MEMORY]);
++					node_states[N_MEMORY]);
+ 	else
+-		*pmask = node_states[N_HIGH_MEMORY];
+-	BUG_ON(!nodes_intersects(*pmask, node_states[N_HIGH_MEMORY]));
++		*pmask = node_states[N_MEMORY];
++	BUG_ON(!nodes_intersects(*pmask, node_states[N_MEMORY]));
+ }
+ 
+ /*
+@@ -1100,7 +1100,7 @@ static int update_nodemask(struct cpuset *cs, struct cpuset *trialcs,
+ 		return -ENOMEM;
+ 
+ 	/*
+-	 * top_cpuset.mems_allowed tracks node_stats[N_HIGH_MEMORY];
++	 * top_cpuset.mems_allowed tracks node_stats[N_MEMORY];
+ 	 * it's read-only
+ 	 */
+ 	if (cs == &top_cpuset) {
+@@ -1122,7 +1122,7 @@ static int update_nodemask(struct cpuset *cs, struct cpuset *trialcs,
+ 			goto done;
+ 
+ 		if (!nodes_subset(trialcs->mems_allowed,
+-				node_states[N_HIGH_MEMORY])) {
++				node_states[N_MEMORY])) {
+ 			retval =  -EINVAL;
+ 			goto done;
+ 		}
+@@ -2034,7 +2034,7 @@ static struct cpuset *cpuset_next(struct list_head *queue)
+  * before dropping down to the next.  It always processes a node before
+  * any of its children.
+  *
+- * In the case of memory hot-unplug, it will remove nodes from N_HIGH_MEMORY
++ * In the case of memory hot-unplug, it will remove nodes from N_MEMORY
+  * if all present pages from a node are offlined.
+  */
+ static void
+@@ -2073,7 +2073,7 @@ scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
+ 
+ 			/* Continue past cpusets with all mems online */
+ 			if (nodes_subset(cp->mems_allowed,
+-					node_states[N_HIGH_MEMORY]))
++					node_states[N_MEMORY]))
+ 				continue;
+ 
+ 			oldmems = cp->mems_allowed;
+@@ -2081,7 +2081,7 @@ scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
+ 			/* Remove offline mems from this cpuset. */
+ 			mutex_lock(&callback_mutex);
+ 			nodes_and(cp->mems_allowed, cp->mems_allowed,
+-						node_states[N_HIGH_MEMORY]);
++						node_states[N_MEMORY]);
+ 			mutex_unlock(&callback_mutex);
+ 
+ 			/* Move tasks from the empty cpuset to a parent */
+@@ -2134,8 +2134,8 @@ void cpuset_update_active_cpus(bool cpu_online)
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG
+ /*
+- * Keep top_cpuset.mems_allowed tracking node_states[N_HIGH_MEMORY].
+- * Call this routine anytime after node_states[N_HIGH_MEMORY] changes.
++ * Keep top_cpuset.mems_allowed tracking node_states[N_MEMORY].
++ * Call this routine anytime after node_states[N_MEMORY] changes.
+  * See cpuset_update_active_cpus() for CPU hotplug handling.
+  */
+ static int cpuset_track_online_nodes(struct notifier_block *self,
+@@ -2148,7 +2148,7 @@ static int cpuset_track_online_nodes(struct notifier_block *self,
+ 	case MEM_ONLINE:
+ 		oldmems = top_cpuset.mems_allowed;
+ 		mutex_lock(&callback_mutex);
+-		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
++		top_cpuset.mems_allowed = node_states[N_MEMORY];
+ 		mutex_unlock(&callback_mutex);
+ 		update_tasks_nodemask(&top_cpuset, &oldmems, NULL);
+ 		break;
+@@ -2177,7 +2177,7 @@ static int cpuset_track_online_nodes(struct notifier_block *self,
+ void __init cpuset_init_smp(void)
+ {
+ 	cpumask_copy(top_cpuset.cpus_allowed, cpu_active_mask);
+-	top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
++	top_cpuset.mems_allowed = node_states[N_MEMORY];
+ 
+ 	hotplug_memory_notifier(cpuset_track_online_nodes, 10);
+ 
+@@ -2245,7 +2245,7 @@ void cpuset_init_current_mems_allowed(void)
+  *
+  * Description: Returns the nodemask_t mems_allowed of the cpuset
+  * attached to the specified @tsk.  Guaranteed to return some non-empty
+- * subset of node_states[N_HIGH_MEMORY], even if this means going outside the
++ * subset of node_states[N_MEMORY], even if this means going outside the
+  * tasks cpuset.
+  **/
+ 
 -- 
 1.7.4.4
 
