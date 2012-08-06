@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab2HFJ61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:58:27 -0400
-Received: from bar.sig21.net ([80.81.252.164]:36246 "EHLO bar.sig21.net"
+	id S1755692Ab2HFKCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 06:02:09 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:19524 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754894Ab2HFJ6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:58:25 -0400
-Date: Mon, 6 Aug 2012 11:58:05 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: DT GPIO numbering?
-Message-ID: <20120806095805.GA16607@sig21.net>
-References: <20120801152240.GA16388@sig21.net>
- <CACRpkdZryc95WpSXddCrLvZGDsv4x-ndX9XcVzoxaDCT53AFLw@mail.gmail.com>
- <501F296B.4070004@wwwdotorg.org>
- <CACRpkdZ8AO5SrjJvJxvpauEadQOKMNaW_Pxxzhjk5hWnVB1b+g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZ8AO5SrjJvJxvpauEadQOKMNaW_Pxxzhjk5hWnVB1b+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
+	id S1755217Ab2HFKCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 06:02:07 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 3/3] perf: mark a dso if it's used
+Date: Mon,  6 Aug 2012 14:01:59 +0400
+Message-Id: <1344247319-304069-4-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1344247319-304069-1-git-send-email-avagin@openvz.org>
+References: <1344247319-304069-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 08:35:51AM +0200, Linus Walleij wrote:
-> On Mon, Aug 6, 2012 at 4:18 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> 
-> > I can't comment on the sysfs-vs-dev interface location, but I don't
-> > think it addresses Johannes' issue; finding out which GPIO IDs are
-> > provided by which devices.
-> >
-> > Perhaps in each device's sysfs node, there should be some information
-> > re: which GPIO range it provides. Right now, perhaps a text file with
-> > the GPIO base it it.
-> 
-> Yes that could work ...
+Otherwise they will be not written in an output file.
 
-The method used by the gpio-mxs.c driver (of_alias_get_id)
-would also work.  The question is which method is preferable.
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ tools/perf/builtin-inject.c |   11 +++++++++--
+ tools/perf/util/build-id.c  |    2 +-
+ tools/perf/util/build-id.h  |    5 +++++
+ 3 files changed, 15 insertions(+), 3 deletions(-)
 
-Ideally I would like to use DT attributes to identify my GPIOs
-in the same way as they appear in the schematics.  E.g.
-one device may have GPIOs called PORT_A.0 to PORT_A.7,
-another one may be EXT.0 to EXT.15.  But a single integer ID
-is good enough since GPIO usage is platform specific anyway.
-However, the mapping must be static and not depend e.g. on
-module load order like now if you use pl061 and some i2c GPIO.
-Software must be able to rely on that e.g. GPIO ID 11
-always refers to EXT.3.
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 247f41c..cb2fd77 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -14,6 +14,7 @@
+ 
+ #include "util/parse-options.h"
+ #include "util/trace-event.h"
++#include "util/build-id.h"
+ 
+ 
+ static char		const *input_name	= "-";
+@@ -281,13 +282,17 @@ static int perf_event__sched_stat(struct perf_tool *tool,
+ 
+ 		event_sw = &ent->event[0];
+ 		perf_session__parse_sample(session, event_sw, &sample_sw);
++
+ 		sample_sw.period = sample->period;
+ 		sample_sw.time = sample->time;
+ 		perf_session__synthesize_sample(session, event_sw, &sample_sw);
++
++		build_id__mark_dso_hit(tool, event_sw, &sample_sw, evsel, machine);
+ 		perf_event__repipe(tool, event_sw, &sample_sw, machine);
+ 		return 0;
+ 	}
+ 
++	build_id__mark_dso_hit(tool, event, sample, evsel, machine);
+ 	perf_event__repipe(tool, event, sample, machine);
+ 
+ 	return 0;
+@@ -321,12 +326,14 @@ static int __cmd_inject(void)
+ 
+ 	signal(SIGINT, sig_handler);
+ 
+-	if (inject_build_ids) {
++	if (inject_build_ids || inject_sched_stat) {
+ 		perf_inject.sample	 = perf_event__inject_buildid;
+ 		perf_inject.mmap	 = perf_event__repipe_mmap;
+ 		perf_inject.fork	 = perf_event__repipe_task;
+ 		perf_inject.tracing_data = perf_event__repipe_tracing_data;
+-	} else if (inject_sched_stat) {
++	}
++
++	if (inject_sched_stat) {
+ 		perf_inject.sample	= perf_event__sched_stat;
+ 		perf_inject.ordered_samples = true;
+ 	}
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index fd9a594..9ce0e11 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -16,7 +16,7 @@
+ #include "session.h"
+ #include "tool.h"
+ 
+-static int build_id__mark_dso_hit(struct perf_tool *tool __used,
++int build_id__mark_dso_hit(struct perf_tool *tool __used,
+ 				  union perf_event *event,
+ 				  struct perf_sample *sample __used,
+ 				  struct perf_evsel *evsel __used,
+diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
+index a993ba8..032a968 100644
+--- a/tools/perf/util/build-id.h
++++ b/tools/perf/util/build-id.h
+@@ -7,4 +7,9 @@ extern struct perf_tool build_id__mark_dso_hit_ops;
+ 
+ char *dso__build_id_filename(struct dso *self, char *bf, size_t size);
+ 
++int build_id__mark_dso_hit(struct perf_tool *tool __used,
++				  union perf_event *event,
++				  struct perf_sample *sample __used,
++				  struct perf_evsel *evsel __used,
++				  struct machine *machine);
+ #endif
+-- 
+1.7.1
 
-
-> > With the new /dev interface you mention above,
-> > perhaps a symlink to the /dev file, or a file containing the /dev file's
-> > major/minor number. Or, is there such a thing already (other than
-> > debugfs's gpio file).
-> 
-> Nothing I know of, but yes the day we come up with something,
-> it needs to be backward-compatible some way.
-> 
-> The problem is that there is really no reference userspace
-> like "lsgpio" or so. Maybe the first step could be to create that.
-
-I don't know much about OpenWrt, but I've seen they have
-something:
-https://dev.openwrt.org/browser/trunk/target/linux/generic/files/drivers/char/gpio_dev.c
-https://dev.openwrt.org/browser/trunk/target/linux/generic/files/include/linux/gpio_dev.h
-https://dev.openwrt.org/browser/trunk/package/gpioctl/src/main.c
-
-
-Johannes
