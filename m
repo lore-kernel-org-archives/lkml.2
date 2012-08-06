@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472Ab2HFTEB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 15:04:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38031 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab2HFTD7 (ORCPT
+	id S932487Ab2HFTEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 15:04:25 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:39818 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932380Ab2HFTEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 15:03:59 -0400
-Date: Mon, 06 Aug 2012 12:03:59 -0700 (PDT)
-Message-Id: <20120806.120359.747789694625389454.davem@davemloft.net>
-To: ahiliation@yahoo.co.in
-Cc: acme@ghostprotocols.net, netdev@vger.kernel.org,
+	Mon, 6 Aug 2012 15:04:23 -0400
+Date: Mon, 6 Aug 2012 16:04:16 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net:appletalk:ddp:fixed coding style issue relating to
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1344274298-4711-1-git-send-email-ahiliation@yahoo.co.in>
-References: <1344274298-4711-1-git-send-email-ahiliation@yahoo.co.in>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Subject: pull request: bluetooth 2012-08-06
+Message-ID: <20120806190416.GE3146@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-Date: Mon,  6 Aug 2012 23:01:38 +0530
 
-> Fixed coding style issue relating to indentation
-> in net/appletalk/ddp.c found by checkpatch.pl tool.
-> 
-> Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
-> ---
->  net/appletalk/ddp.c |   26 +++++++++++++-------------
->  1 file changed, 13 insertions(+), 13 deletions(-)
-> 
-> diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
-> index 8685296..4023fca 100644
-> --- a/net/appletalk/ddp.c
-> +++ b/net/appletalk/ddp.c
-> @@ -1796,7 +1796,7 @@ static int atalk_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
->  
->  	switch (cmd) {
->  		/* Protocol layer */
-> -		case TIOCOUTQ: {
-> +	case TIOCOUTQ: {
->  			long amount = sk->sk_sndbuf - sk_wmem_alloc_get(sk);
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Only moving the case statement back one TAB and but not any of the
-surrounding code is utterly rediculous.
+Hi John,=20
 
-This is why we hate purely coding style fixing patches.
+Here goes some fixes for 3.6-rc1, there are a few fix to thte inquiry code =
+by
+Ram Malovany, support for 2 new devices, and few others fixes for NULL
+dereference, possible deadlock and a memory leak.
+
+Please pull, or let me know of any problems with this! Thanks.
+
+	Gustavo
+
+---
+
+The following changes since commit d4e5979c0da95791aa717c18e162540c7a596360:
+
+  ath9k: Add PID/VID support for AR1111 (2012-08-03 10:11:14 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+
+for you to fetch changes up to 2096ae6ca647302d50a68aa36cb66a00e7dfac70:
+
+  Bluetooth: add support for atheros 0489:e057 (2012-08-06 15:33:05 -0300)
+
+----------------------------------------------------------------
+Andrei Emeltchenko (1):
+      Bluetooth: smp: Fix possible NULL dereference
+
+Gustavo Padovan (1):
+      Bluetooth: Fix possible deadlock in SCO code
+
+Jaganath Kanakkassery (1):
+      Bluetooth: Fix socket not getting freed if l2cap channel create fails
+
+Manoj Iyer (1):
+      Bluetooth: btusb: Add vendor specific ID (0a5c:21f4) BCM20702A0
+
+Peng Chen (1):
+      Bluetooth: add support for atheros 0489:e057
+
+Ram Malovany (3):
+      Bluetooth: Fix using NULL inquiry entry
+      Bluetooth: Fix using a NULL inquiry cache entry
+      Bluetooth: Set name_state to unknown when entry name is empty
+
+Szymon Janc (1):
+      Bluetooth: Fix legacy pairing with some devices
+
+ drivers/bluetooth/ath3k.c  |  2 ++
+ drivers/bluetooth/btusb.c  |  2 ++
+ net/bluetooth/hci_event.c  | 28 ++++++++++++++++++++++------
+ net/bluetooth/l2cap_core.c |  1 +
+ net/bluetooth/l2cap_sock.c |  2 +-
+ net/bluetooth/sco.c        | 19 +++++++++----------
+ net/bluetooth/smp.c        |  5 ++++-
+ 7 files changed, 41 insertions(+), 18 deletions(-)
+
+--M9NhX3UHpAaciwkO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQIBUwAAoJEPs3PUX4s20oV00P/jykZdeYqL6AD6relxw2B9Ew
+g2WqcfTjLZO7oQdufiRlKho7rD/WX2T5CHRFksQ+n1XUwcVve4ffFTKgeLrabEdN
+TK4xYw43ze+OcpT4nLn3gNxVu0QMGsr/TEIT6nQ6hQq9JNgPWTvKij+ysBbdsTpk
+3oiLdpXQjNNssIZdIQu0b87WjsFlDt1yeoLDT9gyHSZyBgUuj3H65jyC3jeXzHgt
+3bVlt7dizYEAghzJXxTokAFK6Ye+CflyKav2E82oe/qXOzuUHAjIKdOKWsdGi3IY
+k1PDhd7khGUROOQw/BZvl/mHBZWsks4+pWPeVApQuMiJfA5NufUt3lus+CxyZKGp
+f8jl3B6nsiEscXMuRr41XcLwoYDJ49u73uyLN8OiFbGFgbPXg903SPRLq352xIOB
+fvMB2dTO2T8ymAZ9KUGPlXWDg0S8OFQT4bY+FIhUtIqaWXNUqHtBqCVKk5kFbBIG
+X8HgZTxrv9KwVWclBCu9Iwh4MU1KpJJ09eaGx8/bOvPWuaiyJNMFvSFcohTlI0qN
+yzt/9qKERGj0FjBI0hFHz8Zo9byf2jxvjj3HtzHX/CM1wXZl1rc33SfJdCgltFTG
+tKpjwo6zZs25HOBR+MB8jVQHezBgsdF8GhZ7BEmR0t854K3KacxwbnCty4RdCvDq
+uhVj8qVsCGjk0tqYf6q+
+=3DRr
+-----END PGP SIGNATURE-----
+
+--M9NhX3UHpAaciwkO--
