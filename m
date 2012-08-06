@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab2HFO5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:57:01 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:13167 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756628Ab2HFO45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:56:57 -0400
-X-IronPort-AV: E=Sophos;i="4.77,720,1336363200"; 
-   d="scan'208";a="33702215"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>, <tim@xen.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
-        <catalin.marinas@arm.com>, <arnd@arndb.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v2 11/23] xen: do not compile manage, balloon, pci, acpi and cpu_hotplug on ARM
-Date: Mon, 6 Aug 2012 15:27:14 +0100
-Message-ID: <1344263246-28036-11-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
+	id S1756663Ab2HFO5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:57:15 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45656 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756523Ab2HFO5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 10:57:13 -0400
+Date: Mon, 6 Aug 2012 15:57:03 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dongjin Kim <tobetter@gmail.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Jon Medhurst <tixy@yxit.co.uk>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        Dongjin Kim <dongjin.kim@agreeyamobility.net>
+Subject: Re: [PATCH] ODROID-X: hkdk4412: Add new hardware based on
+ Exynos4412
+Message-ID: <20120806145702.GB29272@sirena.org.uk>
+References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
+X-Cookie: Oatmeal raisin.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes in v2:
+On Mon, Aug 06, 2012 at 11:10:51PM +0900, Dongjin Kim wrote:
 
-- make pci.o depend on CONFIG_PCI and acpi.o depend on CONFIG_ACPI.
+> +static struct regulator_consumer_supply __initdata max77686_buck4_consumer[] = {
+> +	REGULATOR_SUPPLY("vdd_g3d", NULL),
+> +};
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/xen/Makefile |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+Not that it matters much since new board drivers won't get merged but
+all your regulator setup here is problematic.  These look like names
+from the board schematic as opposed to mappings of the supplies onto the
+consumer devices.
 
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index fc34886..bee02b2 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -1,11 +1,17 @@
--obj-y	+= grant-table.o features.o events.o manage.o balloon.o
-+ifneq ($(CONFIG_ARM),y)
-+obj-y	+= manage.o balloon.o
-+obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
-+endif
-+obj-y	+= grant-table.o features.o events.o
- obj-y	+= xenbus/
- 
- nostackp := $(call cc-option, -fno-stack-protector)
- CFLAGS_features.o			:= $(nostackp)
- 
-+obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
-+dom0-$(CONFIG_PCI) := pci.o
-+dom0-$(CONFIG_ACPI) := acpi.o
- obj-$(CONFIG_BLOCK)			+= biomerge.o
--obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
- obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
- obj-$(CONFIG_XEN_BALLOON)		+= xen-balloon.o
- obj-$(CONFIG_XEN_SELFBALLOONING)	+= xen-selfballoon.o
-@@ -17,7 +23,6 @@ obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
- obj-$(CONFIG_XEN_PVHVM)			+= platform-pci.o
- obj-$(CONFIG_XEN_TMEM)			+= tmem.o
- obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
--obj-$(CONFIG_XEN_DOM0)			+= pci.o acpi.o
- obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
- obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
- obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
--- 
-1.7.2.5
+> +static struct regulator_init_data __initdata max77686_buck1_data = {
+> +	.constraints = {
+> +		.name		= "vdd_mif range",
 
+This would normally just be the name of the supply for display purposes.
