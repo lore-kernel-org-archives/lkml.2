@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab2HFJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:34:09 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:42571 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754125Ab2HFJeH (ORCPT
+	id S1755370Ab2HFJfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:35:08 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:60409 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab2HFJfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:34:07 -0400
-Date: Mon, 6 Aug 2012 12:30:34 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, arnd@arndb.de,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH] driver: misc: bmp085: remove "of_match_table" property.
-Message-ID: <20120806093033.GH17551@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1344245324-16704-1-git-send-email-sourav.poddar@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K1n7F7fSdjvFAEnM"
-Content-Disposition: inline
-In-Reply-To: <1344245324-16704-1-git-send-email-sourav.poddar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Aug 2012 05:35:06 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-0c-501f8fc4326b
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Milo(Woogyom) Kim'" <milo.kim@ti.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 3/3] backlight: lp855x: remove goto err_dev
+Date: Mon, 06 Aug 2012 18:35:00 +0900
+Message-id: <004001cd73b6$c011da50$40358ef0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1ztr/7coLsb16/SeONd+CmjHJZPQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jQd0j/fIBBlMOWFtc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MpbNusRWs5ayYs+o6ewPjefYuRk4OCQETidYl61ghbDGJC/fW
+	s3UxcnEICUxnlOhuOckO4cxmkviwdgsjSBWbgJrEly+HwbpFBCIkmmfMYgaxmQXKJf7cvgcW
+	Fxawlmh7/wKsnkVAVWLziSVgG3gFbCV2PH0FZQtK/Jh8jwWiV0ti87YmVghbXmLzmrdAMzmA
+	LlKXePRXF2KVnsTqNxuhykUk9r14xziBUWAWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca
+	6hUn5haX5qXrJefnbmIEB+YzqR2MKxssDjEKcDAq8fDeNJAPEGJNLCuuzD3EKMHBrCTC29sM
+	FOJNSaysSi3Kjy8qzUktPsQozcGiJM5r7P3VX0ggPbEkNTs1tSC1CCbLxMEp1cDo6zHZ4kC2
+	Xt/379N25p+RWVPDkr1g+dlgscc7vbdxZc5esvmPoWewrYK4IPeHtTYG5QfzLmSXRceabXyn
+	+X7i+c/fNvXtloqaPZvx+pHyAi+52MVZK58uVjBj/macpfTaveCRfmfn7J28yznNBfc9fs0/
+	/0y2+f1PH/iMyxSDwpmnzJm77O45JZbijERDLeai4kQA5G1ocUgCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch removes goto err_dev, which makes code a bit smaller.
 
---K1n7F7fSdjvFAEnM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Cc: Milo(Woogyom) Kim <milo.kim@ti.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/lp855x_bl.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-On Mon, Aug 06, 2012 at 02:58:44PM +0530, Sourav Poddar wrote:
-> There is an automatic binding done for I2C devices in the of_i2c core
-> code. So, DT will be able to bind to any I2C device using the
-> already existing table: MODULE_DEVICE_TABLE(i2c, bmp085_id).
->=20
-> Tested on omap5430 evm.
->=20
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+index aa6d4f7..c629fa8 100644
+--- a/drivers/video/backlight/lp855x_bl.c
++++ b/drivers/video/backlight/lp855x_bl.c
+@@ -272,14 +272,14 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 	if (ret) {
+ 		dev_err(lp->dev, "i2c communication err: %d", ret);
+ 		if (mode == REGISTER_BASED)
+-			goto err_dev;
++			return ret;
+ 	}
+ 
+ 	ret = lp855x_backlight_register(lp);
+ 	if (ret) {
+ 		dev_err(lp->dev,
+ 			"failed to register backlight. err: %d\n", ret);
+-		goto err_dev;
++		return ret;
+ 	}
+ 
+ 	ret = sysfs_create_group(&lp->dev->kobj, &lp855x_attr_group);
+@@ -293,7 +293,6 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 
+ err_sysfs:
+ 	lp855x_backlight_unregister(lp);
+-err_dev:
+ 	return ret;
+ }
+ 
+-- 
+1.7.1
 
-Acked-by: Felipe Balbi <balbi@ti.com>
 
-> ---
->  drivers/misc/bmp085-i2c.c |    7 -------
->  1 files changed, 0 insertions(+), 7 deletions(-)
->=20
-> diff --git a/drivers/misc/bmp085-i2c.c b/drivers/misc/bmp085-i2c.c
-> index 9943971..a4f33c9 100644
-> --- a/drivers/misc/bmp085-i2c.c
-> +++ b/drivers/misc/bmp085-i2c.c
-> @@ -57,12 +57,6 @@ static int bmp085_i2c_remove(struct i2c_client *client)
->  	return bmp085_remove(&client->dev);
->  }
-> =20
-> -static const struct of_device_id bmp085_of_match[] =3D {
-> -	{ .compatible =3D "bosch,bmp085", },
-> -	{ },
-> -};
-> -MODULE_DEVICE_TABLE(of, bmp085_of_match);
-> -
->  static const struct i2c_device_id bmp085_id[] =3D {
->  	{ BMP085_NAME, 0 },
->  	{ "bmp180", 0 },
-> @@ -74,7 +68,6 @@ static struct i2c_driver bmp085_i2c_driver =3D {
->  	.driver =3D {
->  		.owner	=3D THIS_MODULE,
->  		.name	=3D BMP085_NAME,
-> -		.of_match_table =3D bmp085_of_match
->  	},
->  	.id_table	=3D bmp085_id,
->  	.probe		=3D bmp085_i2c_probe,
-> --=20
-> 1.7.1
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
---=20
-balbi
-
---K1n7F7fSdjvFAEnM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQH465AAoJEIaOsuA1yqREcJoQAJENziQpMBU4QPDfICJ8k1um
-38UederLGeC2zHMWOo0oKxTpSo7YGaA+gLjDgmnrOvuSRxvHsKrSh4AvQqrrMI65
-EsSrs6TeDZc7sYg+JQ/nRWPgRkW4Bs1lpCjeQwwCvEfyAxAoLO44Eum9DqNZOg0Z
-cDoPfk7Lifs7OacHYj4ZquM4QvtE0jjMUxYbTgTs6vIvhT/veSDZqVOha71sRpX/
-2gGVnGqR0P3Es0c7k+bTf4+d2+Oz3xgzr8L3J2+AD/8ZcUFKRVsG1mVDhPF0TtsJ
-CDGuT3DpoEIysmvXoHblWXXUFewm2nS3/bqjujcbdwTowhthVrDZiQARMrmvt+p5
-dM1g+ng31bVVKRBDjNZ0GQ087p8rtDEr8hzXsqolRrfYUkzwai1MKqThLJ4SlTk5
-kGvJqDvHbFhn1+DeUFBtA4VCP2B1jtqbLLSZn1Lrd4ksAjXUpmBj7GcnXySRZ+Nh
-1objbxZVodoiTMZsQcMUDGY0HoKHl8IlLLEukTfC5jUsvsQgD91kg7s8Ez4Zd78W
-NFus3ZcmTS6+fIMRmnCEOUBPs3w7pKweIShVyc02git407BPON9BC8s4W9A2SSk+
-7sSDyjPfwMIyJO1bKe62lrUW2+BUKNVBArJaekHacShtHuQabKnqeVcR8u2oes+P
-hh1fXXOEsxGcdUETKW2t
-=RKAD
------END PGP SIGNATURE-----
-
---K1n7F7fSdjvFAEnM--
