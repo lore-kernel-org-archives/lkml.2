@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab2HFM3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 08:29:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31215 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756101Ab2HFM3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 08:29:36 -0400
-From: Cong Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>, Joern Engel <joern@logfs.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [Patch] string: do not export memweight() to userspace
-Date: Mon,  6 Aug 2012 20:29:15 +0800
-Message-Id: <1344256158-20358-1-git-send-email-amwang@redhat.com>
+	id S1756167Ab2HFMcP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 08:32:15 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:33417 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126Ab2HFMcO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 08:32:14 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/1] Input: ab8500-ponkey: Make the distinction between DT and non-DT boots
+Date: Mon,  6 Aug 2012 13:32:03 +0100
+Message-Id: <1344256323-10484-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: WANG Cong <xiyou.wangcong@gmail.com>
+If we're booting with Device Tree enabled, we want the IRQ numbers to
+be taken and translated from the Device Tree binary. If not, they
+should be taken from the resource allocation defined in the AB8500 MFD
+core driver.
 
-This patch fixes the following warning:
-
-usr/include/linux/string.h:8: userspace cannot reference function or variable defined in the kernel
-
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
-diff --git a/include/linux/string.h b/include/linux/string.h
-index ffe0442..b917881 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -144,8 +144,8 @@ static inline bool strstarts(const char *str, const char *prefix)
+ drivers/input/misc/ab8500-ponkey.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
+index 1a1d974..afcd87f 100644
+--- a/drivers/input/misc/ab8500-ponkey.c
++++ b/drivers/input/misc/ab8500-ponkey.c
+@@ -47,6 +47,7 @@ static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
+ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
  {
- 	return strncmp(str, prefix, strlen(prefix)) == 0;
- }
--#endif
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
++	struct device_node *np = pdev->dev.of_node;
+ 	struct ab8500_ponkey *ponkey;
+ 	struct input_dev *input;
+ 	int irq_dbf, irq_dbr;
+@@ -73,8 +74,9 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
  
- extern size_t memweight(const void *ptr, size_t bytes);
+ 	ponkey->idev = input;
+ 	ponkey->ab8500 = ab8500;
+-	ponkey->irq_dbf = ab8500_irq_get_virq(ab8500, irq_dbf);
+-	ponkey->irq_dbr = ab8500_irq_get_virq(ab8500, irq_dbr);
++
++	ponkey->irq_dbf = (np) ? ab8500_irq_get_virq(ab8500, irq_dbf) : irq_dbf;
++	ponkey->irq_dbr = (np) ? ab8500_irq_get_virq(ab8500, irq_dbr) : irq_dbr;
  
-+#endif /* __KERNEL__ */
- #endif /* _LINUX_STRING_H_ */
+ 	input->name = "AB8500 POn(PowerOn) Key";
+ 	input->dev.parent = &pdev->dev;
+-- 
+1.7.9.5
+
