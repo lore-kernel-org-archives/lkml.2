@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab2HFB2H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 21:28:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7561 "EHLO mx1.redhat.com"
+	id S1755409Ab2HFBeg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 21:34:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16530 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755133Ab2HFB2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 21:28:04 -0400
-Message-ID: <501F1D86.7020409@redhat.com>
-Date: Sun, 05 Aug 2012 21:27:34 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: peterz@infradead.org, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH v2 5/9] rbtree: handle 1-child recoloring in rb_erase()
- instead of rb_erase_color()
-References: <1343946858-8170-1-git-send-email-walken@google.com> <1343946858-8170-6-git-send-email-walken@google.com>
-In-Reply-To: <1343946858-8170-6-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755133Ab2HFBee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 21:34:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="193560346"
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Huang Ying <ying.huang@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH -v2 0/4] PCI/PM: PCI D3cold support fixes for 3.6-rc1
+Date: Mon,  6 Aug 2012 09:34:26 +0800
+Message-Id: <1344216870-21105-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 06:34 PM, Michel Lespinasse wrote:
-> An interesting observation for rb_erase() is that when a node has
-> exactly one child, the node must be black and the child must be red.
-> An interesting consequence is that removing such a node can be done by
-> simply replacing it with its child and making the child black,
-> which we can do efficiently in rb_erase(). __rb_erase_color() then
-> only needs to handle the no-childs case and can be modified accordingly.
->
-> Signed-off-by: Michel Lespinasse<walken@google.com>
+Changes:
 
-Acked-by: Rik van Riel <riel@redhat.com>
+v2:
+
+- Change some pm_runtime_put to pm_runtime_put_sync per Alan and Rafael's comments.
 
 
--- 
-All rights reversed
+[BUGFIX -v2 1/4] PCI/PM: enable D3/D3cold by default for most devices
+[BUGFIX -v2 2/4] PCI/PM: Keep parent bridge active when probing device
+[BUGFIX -v2 3/4] PCI/PM: Fix config reg access for D3cold and bridge suspending
+[PATCH -v2 4/4] PCI/PM: Add ABI document for sysfs file d3cold_allowed
