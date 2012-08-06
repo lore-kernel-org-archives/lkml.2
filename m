@@ -1,55 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab2HFHjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 03:39:13 -0400
-Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:3321 "EHLO
-	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab2HFHjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753384Ab2HFHjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 03:39:25 -0400
+Received: from ozlabs.org ([203.10.76.45]:36330 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753312Ab2HFHjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Aug 2012 03:39:12 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Federico Vaga <federico.vaga@gmail.com>
-Subject: Re: Update VIP to videobuf2 and control framework
-Date: Mon, 6 Aug 2012 09:36:29 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-References: <1343765829-6006-1-git-send-email-federico.vaga@gmail.com> <201208060926.40164.hverkuil@xs4all.nl> <4296967.xtOULN4YkB@harkonnen>
-In-Reply-To: <4296967.xtOULN4YkB@harkonnen>
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+        "Greg KH" <gregkh@linuxfoundation.org>
+Cc: Alex Lyashkov <umka@cloudlinux.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Subject: [PULL] Last-minute module patches
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 06 Aug 2012 16:59:31 +0930
+Message-ID: <87lihsxyuc.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208060936.29244.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon August 6 2012 09:38:10 Federico Vaga wrote:
-> 
-> > > I applied all your suggestions, and some extra simplification;
-> > > [...]
-> 
-> > > ---------------
-> > > - flags: optional. Set to V4L2_FL_USE_FH_PRIO if you want to let the
-> > > framework handle the VIDIOC_G/S_PRIORITY ioctls. This requires that
-> > > you use struct v4l2_fh.
-> > 
-> >   ^^^^^^^^^^^^^^^^^^
-> > 
-> > Are you using struct v4l2_fh? The version you posted didn't. You need
-> > this anyway to implement control events.
-> 
-> Yes I'm using it now, it is part of the extra simplification that I did.
+The following changes since commit 42a579a0f960081cd16fc945036e4780c3ad3202:
 
-In that case I need to see your latest version of the source code to see
-why it doesn't work.
+  Merge branches 'timers-urgent-for-linus' and 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2012-08-05 22:28:49 +0300)
 
-Regards,
+are available in the git repository at:
 
-	Hans
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git tags/module-for-linus
+
+for you to fetch changes up to 26ab1397b6e51ffc72fb00ad012598eb2e135726:
+
+  Make most arch asm/module.h files use asm-generic/module.h (2012-08-06 16:57:33 +0930)
+
+----------------------------------------------------------------
+Left to (past?) the last minute for two reasons:
+1) There were minor conflicts in linux-next; I like a clean merge, so wanted
+   the other stuff (aka real work) in first.
+2) I was hoping we could discard the lve license check, but Greg tells me
+   it's still not 100% resolved, so I've left it in.
+
+Thanks!
+Rusty.
+
+----------------------------------------------------------------
+David Howells (1):
+      Make most arch asm/module.h files use asm-generic/module.h
+
+Matthew Garrett (1):
+      module: taint kernel when lve module is loaded
+
+ arch/Kconfig                       |   19 +++++++++++++++++
+ arch/alpha/Kconfig                 |    2 ++
+ arch/alpha/include/asm/module.h    |   10 ++-------
+ arch/arm/Kconfig                   |    2 ++
+ arch/arm/include/asm/module.h      |    8 ++------
+ arch/avr32/Kconfig                 |    2 ++
+ arch/avr32/include/asm/module.h    |    6 ++----
+ arch/blackfin/Kconfig              |    2 ++
+ arch/blackfin/include/asm/module.h |    4 +---
+ arch/c6x/Kconfig                   |    1 +
+ arch/c6x/include/asm/module.h      |   12 +----------
+ arch/cris/Kconfig                  |    1 +
+ arch/cris/include/asm/Kbuild       |    2 ++
+ arch/cris/include/asm/module.h     |    9 --------
+ arch/frv/include/asm/module.h      |    8 +-------
+ arch/h8300/Kconfig                 |    1 +
+ arch/h8300/include/asm/Kbuild      |    2 ++
+ arch/h8300/include/asm/module.h    |   11 ----------
+ arch/hexagon/Kconfig               |    1 +
+ arch/ia64/Kconfig                  |    2 ++
+ arch/ia64/include/asm/module.h     |    6 ++----
+ arch/m32r/Kconfig                  |    1 +
+ arch/m32r/include/asm/Kbuild       |    2 ++
+ arch/m32r/include/asm/module.h     |   10 ---------
+ arch/m32r/kernel/module.c          |   15 --------------
+ arch/m68k/Kconfig                  |    3 +++
+ arch/m68k/include/asm/module.h     |    6 ++----
+ arch/microblaze/Kconfig            |    1 +
+ arch/mips/Kconfig                  |    3 +++
+ arch/mips/include/asm/module.h     |   10 +++++++--
+ arch/mips/kernel/module.c          |    2 ++
+ arch/mn10300/Kconfig               |    1 +
+ arch/mn10300/include/asm/module.h  |    7 +------
+ arch/openrisc/Kconfig              |    1 +
+ arch/parisc/Kconfig                |    2 ++
+ arch/parisc/include/asm/module.h   |   16 +++------------
+ arch/powerpc/Kconfig               |    2 ++
+ arch/powerpc/include/asm/module.h  |    7 +------
+ arch/s390/Kconfig                  |    2 ++
+ arch/s390/include/asm/module.h     |   18 +++-------------
+ arch/score/Kconfig                 |    2 ++
+ arch/score/include/asm/module.h    |    6 +-----
+ arch/score/kernel/module.c         |   10 ---------
+ arch/sh/Kconfig                    |    2 ++
+ arch/sh/include/asm/module.h       |   14 +++----------
+ arch/sparc/Kconfig                 |    1 +
+ arch/sparc/include/asm/Kbuild      |    1 +
+ arch/sparc/include/asm/module.h    |   24 ----------------------
+ arch/tile/Kconfig                  |    1 +
+ arch/unicore32/Kconfig             |    1 +
+ arch/x86/Kconfig                   |    2 ++
+ arch/xtensa/Kconfig                |    1 +
+ arch/xtensa/include/asm/module.h   |    9 +-------
+ include/asm-generic/module.h       |   40 +++++++++++++++++++++++++++++-------
+ include/linux/moduleloader.h       |   36 ++++++++++++++++++++++++++++----
+ kernel/module.c                    |   24 ++++------------------
+ 56 files changed, 171 insertions(+), 223 deletions(-)
+ delete mode 100644 arch/cris/include/asm/module.h
+ delete mode 100644 arch/h8300/include/asm/module.h
+ delete mode 100644 arch/m32r/include/asm/module.h
+ delete mode 100644 arch/sparc/include/asm/module.h
