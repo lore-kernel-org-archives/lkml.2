@@ -1,106 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab2HFImV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 04:42:21 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:56116 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753792Ab2HFImS (ORCPT
+	id S1754004Ab2HFIoV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 04:44:21 -0400
+Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:1171 "EHLO
+	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab2HFIoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 04:42:18 -0400
-Date: Mon, 6 Aug 2012 11:38:45 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH 1/4] arm/dts: omap5-evm: Add I2C support
-Message-ID: <20120806083843.GA17612@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1343997486-710-1-git-send-email-sourav.poddar@ti.com>
- <1343997486-710-2-git-send-email-sourav.poddar@ti.com>
- <501C08CB.3060701@mvista.com>
+	Mon, 6 Aug 2012 04:44:20 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Federico Vaga <federico.vaga@gmail.com>
+Subject: Re: [PATCH 3/3 v2] [media] sta2x11_vip: convert to videobuf2 and control framework
+Date: Mon, 6 Aug 2012 10:42:03 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>
+References: <1343765829-6006-4-git-send-email-federico.vaga@gmail.com> <1344241059-15271-1-git-send-email-federico.vaga@gmail.com>
+In-Reply-To: <1344241059-15271-1-git-send-email-federico.vaga@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
-Content-Disposition: inline
-In-Reply-To: <501C08CB.3060701@mvista.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208061042.03658.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon August 6 2012 10:17:39 Federico Vaga wrote:
+> Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> 
+> ---
+>  drivers/media/video/sta2x11_vip.c | 1239 +++++++++++++------------------------
+>  1 file modificato, 414 inserzioni(+), 825 rimozioni(-)
+> 
+> diff --git a/drivers/media/video/sta2x11_vip.c b/drivers/media/video/sta2x11_vip.c
+> index 4c10205..ffd9f0a 100644
+> --- a/drivers/media/video/sta2x11_vip.c
+> +++ b/drivers/media/video/sta2x11_vip.c
+> @@ -1186,25 +798,6 @@ static void vip_gpio_release(struct device *dev, int pin, const char *name)
+>  	}
+>  }
+>  
+> -/**
+> - * sta2x11_vip_init_one - init one instance of video device
+> - * @pdev: PCI device
+> - * @ent: (not used)
+> - *
+> - * allocate reset pins for DAC.
+> - * Reset video DAC, this is done via reset line.
+> - * allocate memory for managing device
+> - * request interrupt
+> - * map IO region
+> - * register device
+> - * find and initialize video DAC
+> - *
+> - * return value: 0, no error
+> - *
+> - * -ENOMEM, no memory
+> - *
+> - * -ENODEV, device could not be detected or registered
+> - */
+>  static int __devinit sta2x11_vip_init_one(struct pci_dev *pdev,
+>  					  const struct pci_device_id *ent)
+>  {
+> @@ -1212,10 +805,17 @@ static int __devinit sta2x11_vip_init_one(struct pci_dev *pdev,
+>  	struct sta2x11_vip *vip;
+>  	struct vip_config *config;
+>  
+> +	/* Check if hardware support 26-bit DMA */
+> +	if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(26))) {
+> +		dev_err(&pdev->dev, "26-bit DMA addressing not available\n");
+> +		return -EINVAL;
+> +	}
+> +	/* Enable PCI */
+>  	ret = pci_enable_device(pdev);
+>  	if (ret)
+>  		return ret;
+>  
+> +	/* Get VIP platform data */
+>  	config = dev_get_platdata(&pdev->dev);
+>  	if (!config) {
+>  		dev_info(&pdev->dev, "VIP slot disabled\n");
+> @@ -1223,6 +823,7 @@ static int __devinit sta2x11_vip_init_one(struct pci_dev *pdev,
+>  		goto disable;
+>  	}
+>  
+> +	/* Power configuration */
+>  	ret = vip_gpio_reserve(&pdev->dev, config->pwr_pin, 0,
+>  			       config->pwr_name);
+>  	if (ret)
+> @@ -1237,7 +838,6 @@ static int __devinit sta2x11_vip_init_one(struct pci_dev *pdev,
+>  			goto disable;
+>  		}
+>  	}
+> -
+>  	if (config->pwr_pin != -1) {
+>  		/* Datasheet says 5ms between PWR and RST */
+>  		usleep_range(5000, 25000);
+> @@ -1251,17 +851,20 @@ static int __devinit sta2x11_vip_init_one(struct pci_dev *pdev,
+>  	}
+>  	usleep_range(5000, 25000);
+>  
+> +	/* Allocate a new VIP instance */
+>  	vip = kzalloc(sizeof(struct sta2x11_vip), GFP_KERNEL);
+>  	if (!vip) {
+>  		ret = -ENOMEM;
+>  		goto release_gpios;
+>  	}
+> -
+>  	vip->pdev = pdev;
+>  	vip->std = V4L2_STD_PAL;
+>  	vip->format = formats_50[0];
+>  	vip->config = config;
+>  
+> +	ret = sta2x11_vip_init_controls(vip);
+> +	if (ret)
+> +		goto free_mem;
+>  	if (v4l2_device_register(&pdev->dev, &vip->v4l2_dev))
+>  		goto free_mem;
+>  
+> @@ -1271,46 +874,52 @@ static int __devinit sta2x11_vip_init_one(struct pci_dev *pdev,
+>  
+>  	pci_set_master(pdev);
+>  
+> -	ret = pci_request_regions(pdev, DRV_NAME);
+> +	ret = pci_request_regions(pdev, KBUILD_MODNAME);
+>  	if (ret)
+>  		goto unreg;
+>  
+>  	vip->iomem = pci_iomap(pdev, 0, 0x100);
+>  	if (!vip->iomem) {
+> -		ret = -ENOMEM; /* FIXME */
+> +		ret = -ENOMEM;
+>  		goto release;
+>  	}
+>  
+>  	pci_enable_msi(pdev);
+>  
+> -	INIT_LIST_HEAD(&vip->capture);
+> +	/* Initialize buffer */
+> +	ret = sta2x11_vip_init_buffer(vip);
+> +	if (ret)
+> +		goto unmap;
+> +
+>  	spin_lock_init(&vip->slock);
+> -	mutex_init(&vip->mutex);
+> -	vip->started = 0;
+> -	vip->disabled = 0;
+>  
+>  	ret = request_irq(pdev->irq,
+>  			  (irq_handler_t) vip_irq,
+> -			  IRQF_SHARED, DRV_NAME, vip);
+> +			  IRQF_SHARED, KBUILD_MODNAME, vip);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "request_irq failed\n");
+>  		ret = -ENODEV;
+> -		goto unmap;
+> +		goto release_buf;
+>  	}
+>  
+> +	/* Alloc, initialize and register video device */
+>  	vip->video_dev = video_device_alloc();
+>  	if (!vip->video_dev) {
+>  		ret = -ENOMEM;
+>  		goto release_irq;
+>  	}
+>  
+> -	*(vip->video_dev) = video_dev_template;
+> +	vip->video_dev = &video_dev_template;
+> +	vip->video_dev->v4l2_dev = &vip->v4l2_dev;
+> +	vip->video_dev->queue = &vip->vb_vidq;
+> +	vip->video_dev->flags |= V4L2_FL_USES_V4L2_FH | V4L2_FL_USE_FH_PRIO;
 
---7JfCtLOvnd9MIVvH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Been there, done that :-)
 
-Hi,
+V4L2_FL_USE_FH_PRIO is a bit number, not a bit mask. Use set_bit instead:
 
-On Fri, Aug 03, 2012 at 09:22:19PM +0400, Sergei Shtylyov wrote:
-> Hello.
->=20
-> On 08/03/2012 04:38 PM, Sourav Poddar wrote:
->=20
-> > Add I2C data node in omap5 device tree file.
->=20
-> > Tested on omap5430 sdp.
->=20
-> > Cc: Benoit Cousson <b-cousson@ti.com>
-> > Cc: Felipe Balbi <balbi@ti.com>
-> > Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> > Acked-by: Felipe Balbi <balbi@ti.com>
-> > Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> > ---
-> >  arch/arm/boot/dts/omap5.dtsi |   35 +++++++++++++++++++++++++++++++++++
-> >  1 files changed, 35 insertions(+), 0 deletions(-)
->=20
-> > diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-> > index 57e5270..6b68dfe 100644
-> > --- a/arch/arm/boot/dts/omap5.dtsi
-> > +++ b/arch/arm/boot/dts/omap5.dtsi
-> > @@ -145,6 +145,41 @@
-> >  			#interrupt-cells =3D <1>;
-> >  		};
-> > =20
-> > +		i2c1: i2c@48070000 {
-> > +			compatible =3D "ti,omap4-i2c";
-> > +			#address-cells =3D <1>;
-> > +			#size-cells =3D <0>;
-> > +			ti,hwmods =3D "i2c1";
->=20
->    Address postfix in the node name and no "reg" property?
+	set_bit(V4L2_FL_USE_FH_PRIO, &vip->video_dev->flags);
 
-that's because of the ti,hwmods attribute. OMAP is still not entirely
-converted to DT and there's this weird ti,hwmods attribute. OMAP's hwmod
-framework will fill up register addresses, irqs, etc when the device is
-created. Oh well...
+No need to set V4L2_FL_USES_V4L2_FH, BTW. That will be set automatically as soon
+as v4l2_fh_open is called.
 
---=20
-balbi
+Regards,
 
---7JfCtLOvnd9MIVvH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQH4KTAAoJEIaOsuA1yqREyVoQAKKkTcGy302m5Gam9wnCP0Cb
-HXqBoaioUwfiXyV0sM4soLy4P1Q0yULDNzttzsYOhPMSSQx5ewbyh6sa1MJK8qvk
-bILOFDE3z6cYdjZQATlo7QcvxpcjSBaD0RxlEsdZBTtNPWN2dIrLmbl1iQy/UVkx
-oS4d5aKLj9LQLWjcG2d4FpbLu+oeLMIIF67tY4vr1JXscWoIX3XPZ/98CwmtTUXE
-yAL2hkCrX3jFc0FgR7oCNwdfkZ8BPpp3wbN7Mec6dI0cFcmoVU7XdT6tqXnaqtju
-p3I6CdDh9cBdMwte5zNFM6OB9Jhr97Xjsu7eQSmcO6O+R/6LtHRliRab52ZIw4ib
-h5kfSEEweWA4ypVqpF4z5p9tydkgtNoojdfErLyiPAW1mem7cgQ9ftRHShjBqJko
-hlKZH8doQe0ibLRsIXtdP3qugImbk96Fms7U/B0WZ6Ubo9CLWiJL+9/8517qmuYB
-50fdoLFMucafW49zoYzpjsGmCGrAMIRHPrXDCr4Z32Us5haOFpDFkR1vdDMHPpqU
-ymaFJhwNBOYzi7j3Gf9IH1FFadYOXxzRk/z7RRZ2GGEknut7bV0RoIDZtiXapZT8
-Xd5qdyxhs9sNV0DD7ihzriy7RFYYzNTD4zy12oGkdhNk334pFLI3xg4Xtk9hhQxQ
-HEWtrI6XeWWKmZ0Jrkp3
-=h60n
------END PGP SIGNATURE-----
-
---7JfCtLOvnd9MIVvH--
+	Hans
