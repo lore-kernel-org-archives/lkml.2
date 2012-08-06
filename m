@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab2HFN6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 09:58:33 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:61487 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756340Ab2HFN6b (ORCPT
+	id S932065Ab2HFN6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 09:58:45 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49168 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756374Ab2HFN6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 09:58:31 -0400
+	Mon, 6 Aug 2012 09:58:41 -0400
 From: Dongjin Kim <tobetter@gmail.com>
 Cc: Dongjin Kim <dongjin.kim@agreeyamobility.net>,
         Kukjin Kim <kgene.kim@samsung.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jongpill Lee <boyko.lee@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Neil Zhang <zhangwm@marvell.com>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH] ARM: EXYNOS: Add USB HSIC device
-Date: Mon,  6 Aug 2012 22:57:40 +0900
-Message-Id: <1344261462-14183-3-git-send-email-dongjin.kim@agreeyamobility.net>
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: EXYNOS: Enable multiple cores on Exynos4
+Date: Mon,  6 Aug 2012 22:57:41 +0900
+Message-Id: <1344261462-14183-4-git-send-email-dongjin.kim@agreeyamobility.net>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
 References: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
@@ -32,792 +27,236 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch support to control USB HSIC of EXYNOS4,
-edited based on Samsung's GT-i9100 ICS Opensource Update7.
+This patch enables CPU cores on Exynos4, on Exynos4412 secondary CPU cores
+are power-gated, therefore we must turn on the CPU cores on the system boot.
 
-Change-Id: Ifba33c6a5166abf3644794eee6abe528bd71f521
+Shows below log message on boot.
+[    0.045000] CPU: Testing write buffer coherency: ok
+[    0.045000] CPU0: thread -1, cpu 0, socket 10, mpidr 80000a00
+[    0.045000] hw perfevents: enabled with ARMv7 Cortex-A9 PMU driver, 7
+counters e
+[    0.045000] Setting up static identity map for 0x40370790 - 0x403707e8
+[    0.045000] L310 cache controller enabled
+[    0.045000] l2x0: 16 ways, CACHE_ID 0x4100c4c8, AUX_CTRL 0x7e470001, Cache
+sizeB
+[    0.070000] CPU1: Booted secondary processor
+[    0.090000] CPU1: thread -1, cpu 1, socket 10, mpidr 80000a01
+[    0.090000] CPU1: Unknown IPI message 0x1
+[    0.100000] CPU2: Booted secondary processor
+[    0.120000] CPU2: thread -1, cpu 2, socket 10, mpidr 80000a02
+[    0.120000] CPU2: Unknown IPI message 0x1
+[    0.130000] CPU3: Booted secondary processor
+[    0.150000] CPU3: thread -1, cpu 3, socket 10, mpidr 80000a03
+[    0.150000] CPU3: Unknown IPI message 0x1
+[    0.150000] Brought up 4 CPUs
+[    0.150000] SMP: Total of 4 processors activated (7969.17 BogoMIPS).
+
+Change-Id: I61615c5b719d3646698f114fc3777eb304694099
 Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
 ---
- arch/arm/mach-exynos/common.c                    |    5 +
- arch/arm/mach-exynos/include/mach/regs-pmu.h     |   12 +
- arch/arm/mach-exynos/include/mach/regs-usb-phy.h |   97 +++++
- arch/arm/mach-exynos/setup-usb-phy.c             |  493 ++++++++++++++++------
- drivers/usb/host/Kconfig                         |   14 +
- 5 files changed, 501 insertions(+), 120 deletions(-)
+ arch/arm/mach-exynos/hotplug.c               |    4 +-
+ arch/arm/mach-exynos/include/mach/regs-pmu.h |   11 ++-
+ arch/arm/mach-exynos/platsmp.c               |  100 +++++++++++++++++---------
+ 3 files changed, 76 insertions(+), 39 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index 4eb39cd..94d58af 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -179,6 +179,11 @@ static struct map_desc exynos4_iodesc[] __initdata = {
- 		.length		= SZ_4K,
- 		.type		= MT_DEVICE,
- 	}, {
-+		.virtual	= (unsigned long)S5P_VA_GPIO2,
-+		.pfn		= __phys_to_pfn(EXYNOS4_PA_GPIO2),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	}, {
- 		.virtual	= (unsigned long)S5P_VA_DMC0,
- 		.pfn		= __phys_to_pfn(EXYNOS4_PA_DMC0),
- 		.length		= SZ_64K,
+diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+index 9c17a0a..cd53497 100644
+--- a/arch/arm/mach-exynos/hotplug.c
++++ b/arch/arm/mach-exynos/hotplug.c
+@@ -66,8 +66,8 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
+ 	for (;;) {
+ 
+ 		/* make cpu1 to be turned off at next WFI command */
+-		if (cpu == 1)
+-			__raw_writel(0, S5P_ARM_CORE1_CONFIGURATION);
++		if ((cpu >= 1) && (cpu < num_possible_cpus()))
++			__raw_writel(0, S5P_ARM_CORE_CONFIGURATION(cpu));
+ 
+ 		/*
+ 		 * here's the WFI
 diff --git a/arch/arm/mach-exynos/include/mach/regs-pmu.h b/arch/arm/mach-exynos/include/mach/regs-pmu.h
-index 0bb21e2..d98c2fe 100644
+index d4e392b..0bb21e2 100644
 --- a/arch/arm/mach-exynos/include/mach/regs-pmu.h
 +++ b/arch/arm/mach-exynos/include/mach/regs-pmu.h
-@@ -185,6 +185,15 @@
- #define S5P_PMU_LCD1_CONF		S5P_PMUREG(0x3CA0)
+@@ -123,10 +123,15 @@
+ #define S5P_GPS_ALIVE_LOWPWR			S5P_PMUREG(0x13A0)
  
- /* Only for EXYNOS4x12 */
-+#define S5P_USB_PHY_CONTROL			S5P_PMUREG(0x0704)
-+#define S5P_USB_PHY_ENABLE			(0x1 << 0)
+ #define S5P_ARM_CORE0_CONFIGURATION		S5P_PMUREG(0x2000)
++#define S5P_ARM_CORE0_STATUS			S5P_PMUREG(0x2004)
+ #define S5P_ARM_CORE0_OPTION			S5P_PMUREG(0x2008)
+-#define S5P_ARM_CORE1_CONFIGURATION		S5P_PMUREG(0x2080)
+-#define S5P_ARM_CORE1_STATUS			S5P_PMUREG(0x2084)
+-#define S5P_ARM_CORE1_OPTION			S5P_PMUREG(0x2088)
 +
-+#define S5P_HSIC_1_PHY_CONTROL			S5P_PMUREG(0x0708)
-+#define S5P_HSIC_1_PHY_ENABLE			(0x1 << 0)
++#define S5P_ARM_CORE_OPTION(_nr)	(S5P_ARM_CORE0_OPTION + ((_nr) * 0x80))
++#define S5P_ARM_CORE_STATUS(_nr)	(S5P_ARM_CORE0_STATUS + ((_nr) * 0x80))
++#define S5P_ARM_CORE_CONFIGURATION(_nr)	\
++				(S5P_ARM_CORE0_CONFIGURATION + ((_nr) * 0x80))
 +
-+#define S5P_HSIC_2_PHY_CONTROL			S5P_PMUREG(0x070C)
-+#define S5P_HSIC_2_PHY_ENABLE			(0x1 << 0)
-+
- #define S5P_ISP_ARM_LOWPWR			S5P_PMUREG(0x1050)
- #define S5P_DIS_IRQ_ISP_ARM_LOCAL_LOWPWR	S5P_PMUREG(0x1054)
- #define S5P_DIS_IRQ_ISP_ARM_CENTRAL_LOWPWR	S5P_PMUREG(0x1058)
-@@ -242,6 +251,9 @@
++#define S5P_CORE_OPTION_DIS                     (1 << 8)
  
- #define EXYNOS5_SYS_WDTRESET					(1 << 20)
+ #define S5P_ARM_COMMON_OPTION			S5P_PMUREG(0x2408)
+ #define S5P_TOP_PWR_OPTION			S5P_PMUREG(0x2C48)
+diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+index 36c3984..68ca26f 100644
+--- a/arch/arm/mach-exynos/platsmp.c
++++ b/arch/arm/mach-exynos/platsmp.c
+@@ -34,9 +34,6 @@
  
-+#define EXYNOS5_USBDEV_PHY_CONTROL			S5P_PMUREG(0x0704)
-+#define EXYNOS5_USBHOST_PHY_CONTROL			S5P_PMUREG(0x0708)
-+
- #define EXYNOS5_ARM_CORE0_SYS_PWR_REG				S5P_PMUREG(0x1000)
- #define EXYNOS5_DIS_IRQ_ARM_CORE0_LOCAL_SYS_PWR_REG		S5P_PMUREG(0x1004)
- #define EXYNOS5_DIS_IRQ_ARM_CORE0_CENTRAL_SYS_PWR_REG		S5P_PMUREG(0x1008)
-diff --git a/arch/arm/mach-exynos/include/mach/regs-usb-phy.h b/arch/arm/mach-exynos/include/mach/regs-usb-phy.h
-index 0727773..79021a0 100644
---- a/arch/arm/mach-exynos/include/mach/regs-usb-phy.h
-+++ b/arch/arm/mach-exynos/include/mach/regs-usb-phy.h
-@@ -43,6 +43,43 @@
- #define EXYNOS4210_CLKSEL_12M		(0x2 << 0)
- #define EXYNOS4210_CLKSEL_24M		(0x3 << 0)
+ extern void exynos4_secondary_startup(void);
  
-+#define EXYNOS4210_HSIC1_NORMAL_MASK            (0x3 << 11)
-+#define EXYNOS4210_HSIC1_SLEEP                  (1 << 12)
-+#define EXYNOS4210_HSIC1_FORCE_SUSPEND          (1 << 11)
-+#define EXYNOS4210_HSIC0_NORMAL_MASK            (0x3 << 9)
-+#define EXYNOS4210_HSIC0_SLEEP                  (1 << 10)
-+#define EXYNOS4210_HSIC0_FORCE_SUSPEND          (1 << 9)
-+
-+#define EXYNOS4210_HOST_LINK_PORT_SWRST_MASK    (0xf << 6)
-+#define EXYNOS4210_HOST_LINK_PORT2_SWRST        (1 << 9)
-+#define EXYNOS4210_HOST_LINK_PORT1_SWRST        (1 << 8)
-+#define EXYNOS4210_HOST_LINK_PORT0_SWRST        (1 << 7)
-+#define EXYNOS4210_HOST_LINK_ALL_SWRST          (1 << 6)
-+#define EXYNOS4210_PHY1_SWRST_MASK              (0x7 << 3)
-+#define EXYNOS4210_PHY1_HSIC_SWRST              (1 << 5)
-+#define EXYNOS4210_PHY1_STD_SWRST               (1 << 4)
-+#define EXYNOS4210_PHY1_ALL_SWRST               (1 << 3)
-+
-+#define EXYNOS4X12_HSIC1_NORMAL_MASK		(0x7 << 12)
-+#define EXYNOS4X12_HSIC1_SLEEP			(1 << 14)
-+#define EXYNOS4X12_HSIC1_ANALOG_POWERDOWN	(1 << 13)
-+#define EXYNOS4X12_HSIC1_FORCE_SUSPEND		(1 << 12)
-+#define EXYNOS4X12_HSIC0_NORMAL_MASK		(0x7 << 9)
-+#define EXYNOS4X12_HSIC0_SLEEP			(1 << 11)
-+#define EXYNOS4X12_HSIC0_ANALOG_POWERDOWN	(1 << 10)
-+#define EXYNOS4X12_HSIC0_FORCE_SUSPEND		(1 << 9)
-+
-+#define EXYNOS4X12_HOST_LINK_PORT_SWRST_MASK	(0xf << 7)
-+#define EXYNOS4X12_HOST_LINK_PORT2_SWRST	(1 << 10)
-+#define EXYNOS4X12_HOST_LINK_PORT1_SWRST	(1 << 9)
-+#define EXYNOS4X12_HOST_LINK_PORT0_SWRST	(1 << 8)
-+#define EXYNOS4X12_HOST_LINK_ALL_SWRST		(1 << 7)
-+#define EXYNOS4X12_PHY1_SWRST_MASK		(0xf << 3)
-+#define EXYNOS4X12_PHY1_HSIC1_SWRST		(1 << 6)
-+#define EXYNOS4X12_PHY1_HSIC0_SWRST		(1 << 5)
-+#define EXYNOS4X12_PHY1_SWRST			(1 << 4)
-+#define EXYNOS4X12_HOST_PHY_SWRST		(1 << 3)
-+
- #define EXYNOS4X12_CLKSEL_MASK		(0x7 << 0)
- #define EXYNOS4X12_CLKSEL_9600K		(0x0 << 0)
- #define EXYNOS4X12_CLKSEL_10M		(0x1 << 0)
-@@ -71,4 +108,64 @@
- #define EXYNOS4_PHY1CON			EXYNOS4_HSOTG_PHYREG(0x34)
- #define FPENABLEN			(1 << 0)
- 
-+/* For Exynos5 */
-+#define EXYNOS5_PHY_HOST_CTRL0                  EXYNOS4_HSOTG_PHYREG(0x00)
-+#define HOST_CTRL0_PHYSWRSTALL                  (0x1 << 31)
-+#define HOST_CTRL0_REFCLKSEL(val)               (val << 19)
-+#define EXYNOS5_CLKSEL_50M                      (0x7)
-+#define EXYNOS5_CLKSEL_24M                      (0x5)
-+#define EXYNOS5_CLKSEL_20M                      (0x4)
-+#define EXYNOS5_CLKSEL_19200K                   (0x3)
-+#define EXYNOS5_CLKSEL_12M                      (0x2)
-+#define EXYNOS5_CLKSEL_10M                      (0x1)
-+#define EXYNOS5_CLKSEL_9600K                    (0x0)
-+#define HOST_CTRL0_CLKSEL_SHIFT                 (16)
-+#define HOST_CTRL0_FSEL_MASK                    (0x7 << 16)
-+
-+#define HOST_CTRL0_COMMONON_N                   (0x1 << 9)
-+#define HOST_CTRL0_SIDDQ                        (0x1 << 6)
-+#define HOST_CTRL0_FORCESLEEP                   (0x1 << 5)
-+#define HOST_CTRL0_FORCESUSPEND                 (0x1 << 4)
-+#define HOST_CTRL0_WORDINTERFACE                (0x1 << 3)
-+#define HOST_CTRL0_UTMISWRST                    (0x1 << 2)
-+#define HOST_CTRL0_LINKSWRST                    (0x1 << 1)
-+#define HOST_CTRL0_PHYSWRST                     (0x1 << 0)
-+
-+#define EXYNOS5_PHY_HOST_TUNE0                  EXYNOS4_HSOTG_PHYREG(0x04)
-+#define EXYNOS5_PHY_HOST_TEST0                  EXYNOS4_HSOTG_PHYREG(0x08)
-+
-+#define EXYNOS5_PHY_HSIC_CTRL1                  EXYNOS4_HSOTG_PHYREG(0x10)
-+#define EXYNOS5_PHY_HSIC_CTRL2                  EXYNOS4_HSOTG_PHYREG(0x20)
-+#define HSIC_CTRL_REFCLKSEL(val)                ((val&0x3) << 23)
-+#define HSIC_CTRL_REFCLKDIV(val)                ((val&0x7f) << 16)
-+#define HSIC_CTRL_SIDDQ                         (0x1 << 6)
-+#define HSIC_CTRL_FORCESLEEP                    (0x1 << 5)
-+#define HSIC_CTRL_FORCESUSPEND                  (0x1 << 4)
-+#define HSIC_CTRL_WORDINTERFACE                 (0x1 << 3)
-+#define HSIC_CTRL_UTMISWRST                     (0x1 << 2)
-+#define HSIC_CTRL_PHYSWRST                      (0x1 << 0)
-+
-+#define EXYNOS5_PHY_HOST_EHCICTRL               EXYNOS4_HSOTG_PHYREG(0x30)
-+#define EHCICTRL_ENAINCRXALIGN                  (0x1 << 29)
-+#define EHCICTRL_ENAINCR4                       (0x1 << 28)
-+#define EHCICTRL_ENAINCR8                       (0x1 << 27)
-+#define EHCICTRL_ENAINCR16                      (0x1 << 26)
-+
-+#define EXYNOS5_PHY_HOST_OHCICTRL               EXYNOS4_HSOTG_PHYREG(0x34)
-+
-+#define EXYNOS5_PHY_OTG_SYS                     EXYNOS4_HSOTG_PHYREG(0x38)
-+#define OTG_SYS_PHYLINK_SW_RESET                (0x1 << 14)
-+#define OTG_SYS_LINK_SW_RST_UOTG                (0x1 << 13)
-+#define OTG_SYS_PHY0_SW_RST                     (0x1 << 12)
-+#define OTG_SYS_REF_CLK_SEL(val)                ((val&0x3) << 9)
-+#define OTG_SYS_REF_CLK_SEL_MASK                (0x3 << 9)
-+#define OTG_SYS_IP_PULLUP_UOTG                  (0x1 << 8)
-+#define OTG_SYS_COMMON_ON                       (0x1 << 7)
-+#define OTG_SYS_CLKSEL_SHIFT                    (4)
-+#define OTG_SYS_CTRL0_FSEL_MASK                 (0x7 << 4)
-+#define OTG_SYS_FORCE_SLEEP                     (0x1 << 3)
-+#define OTG_SYS_OTGDISABLE                      (0x1 << 2)
-+#define OTG_SYS_SIDDQ_UOTG                      (0x1 << 1)
-+#define OTG_SYS_FORCE_SUSPEND                   (0x1 << 0)
-+
- #endif /* __PLAT_S5P_REGS_USB_PHY_H */
-diff --git a/arch/arm/mach-exynos/setup-usb-phy.c b/arch/arm/mach-exynos/setup-usb-phy.c
-index b81cc56..c725745 100644
---- a/arch/arm/mach-exynos/setup-usb-phy.c
-+++ b/arch/arm/mach-exynos/setup-usb-phy.c
-@@ -1,5 +1,6 @@
+-#define CPU1_BOOT_REG		(samsung_rev() == EXYNOS4210_REV_1_1 ? \
+-				S5P_INFORM5 : S5P_VA_SYSRAM)
+-
  /*
-  * Copyright (C) 2011 Samsung Electronics Co.Ltd
-+ * Author: Yulgon Kim <yulgon.kim@samsung.com>
-  * Author: Joonyoung Shim <jy0922.shim@samsung.com>
-  *
-  *  This program is free software; you can redistribute  it and/or modify it
-@@ -19,205 +20,457 @@
- #include <plat/cpu.h>
- #include <plat/usb-phy.h>
+  * control for which core is the next to come out of the secondary
+  * boot "holding pen"
+@@ -59,6 +56,9 @@ static void write_pen_release(int val)
  
-+#define ETC6PUD		(S5P_VA_GPIO2 + 0x228)
-+#define EXYNOS4_USB_CFG	(S3C_VA_SYS + 0x21C)
-+
-+#define PHY_ENABLE	(1 << 0)
-+#define PHY_DISABLE	(0)
-+
-+enum usb_host_type {
-+	HOST_PHY_EHCI	= (0x1 << 0),
-+	HOST_PHY_OHCI	= (0x1 << 1),
-+};
-+
-+enum usb_phy_type {
-+	USB_PHY		= (0x1 << 0),
-+	USB_PHY0	= (0x1 << 0),
-+	USB_PHY1	= (0x1 << 1),
-+	USB_PHY_HSIC0	= (0x1 << 1),
-+	USB_PHY_HSIC1	= (0x1 << 2),
-+};
-+
- static atomic_t host_usage;
-+static DEFINE_MUTEX(phy_lock);
-+static struct clk *phy_clk;
- 
- static int exynos4_usb_host_phy_is_on(void)
+ static void __iomem *scu_base_addr(void)
  {
- 	return (readl(EXYNOS4_PHYPWR) & PHY1_STD_ANALOG_POWERDOWN) ? 0 : 1;
++	if (soc_is_exynos5250())
++		return 0;
++
+ 	return (void __iomem *)(S5P_VA_SCU);
  }
  
--static void exynos4210_usb_phy_clkset(struct platform_device *pdev)
-+static int exynos4_usb_phy20_is_on(void)
- {
--	struct clk *xusbxti_clk;
--	u32 phyclk;
-+	return exynos4_usb_host_phy_is_on();
-+}
-+
-+static int exynos_usb_phy_clock_enable(struct platform_device *pdev)
+@@ -86,9 +86,41 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
+ 	spin_unlock(&boot_lock);
+ }
+ 
++static int exynos_power_up_cpu(unsigned int cpu)
 +{
-+	int err;
++	unsigned long timeout;
++	unsigned int val;
++	void __iomem *power_base = S5P_ARM_CORE_CONFIGURATION(cpu);
 +
-+	if (!phy_clk) {
-+		if (soc_is_exynos4210() ||
-+				soc_is_exynos4212() || soc_is_exynos4412())
-+			phy_clk = clk_get(&pdev->dev, "otg");
-+		else
-+			phy_clk = clk_get(&pdev->dev, "usbhost");
++	val = __raw_readl(power_base);
++	if (!(val & S5P_CORE_LOCAL_PWR_EN)) {
++		__raw_writel(S5P_CORE_LOCAL_PWR_EN, power_base);
 +
-+		if (IS_ERR(phy_clk)) {
-+			dev_err(&pdev->dev, "Failed to get phy clock\n");
-+			return PTR_ERR(phy_clk);
++		timeout = 10;
++
++		/* wait max 10 ms until cpu is on */
++		while ((__raw_readl(power_base + 0x4)
++			& S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN) {
++			if (timeout-- == 0)
++				break;
++
++			mdelay(1);
++		}
++
++		if (timeout == 0) {
++			pr_err("cpu%d power enable failed", cpu);
++			return -ETIMEDOUT;
 +		}
 +	}
-+
-+	err = clk_enable(phy_clk);
-+
-+	return err;
-+}
- 
--	xusbxti_clk = clk_get(&pdev->dev, "xusbxti");
--	if (xusbxti_clk && !IS_ERR(xusbxti_clk)) {
--		if (soc_is_exynos4210()) {
--			/* set clock frequency for PLL */
--			phyclk = readl(EXYNOS4_PHYCLK) & ~EXYNOS4210_CLKSEL_MASK;
--
--			switch (clk_get_rate(xusbxti_clk)) {
--			case 12 * MHZ:
--				phyclk |= EXYNOS4210_CLKSEL_12M;
--				break;
--			case 48 * MHZ:
--				phyclk |= EXYNOS4210_CLKSEL_48M;
--				break;
--			default:
--			case 24 * MHZ:
--				phyclk |= EXYNOS4210_CLKSEL_24M;
--				break;
--			}
--			writel(phyclk, EXYNOS4_PHYCLK);
--		} else if (soc_is_exynos4212() || soc_is_exynos4412()) {
--			/* set clock frequency for PLL */
--			phyclk = readl(EXYNOS4_PHYCLK) & ~EXYNOS4X12_CLKSEL_MASK;
--
--			switch (clk_get_rate(xusbxti_clk)) {
--			case 9600 * KHZ:
--				phyclk |= EXYNOS4X12_CLKSEL_9600K;
--				break;
--			case 10 * MHZ:
--				phyclk |= EXYNOS4X12_CLKSEL_10M;
--				break;
--			case 12 * MHZ:
--				phyclk |= EXYNOS4X12_CLKSEL_12M;
--				break;
--			case 19200 * KHZ:
--				phyclk |= EXYNOS4X12_CLKSEL_19200K;
--				break;
--			case 20 * MHZ:
--				phyclk |= EXYNOS4X12_CLKSEL_20M;
--				break;
--			default:
--			case 24 * MHZ:
--				/* default reference clock */
--				phyclk |= EXYNOS4X12_CLKSEL_24M;
--				break;
--			}
--			writel(phyclk, EXYNOS4_PHYCLK);
-+static int exynos_usb_phy_clock_disable(struct platform_device *pdev)
-+{
-+	if (!phy_clk) {
-+		if (soc_is_exynos4210() ||
-+				soc_is_exynos4212() || soc_is_exynos4412())
-+			phy_clk = clk_get(&pdev->dev, "otg");
-+		else
-+			phy_clk = clk_get(&pdev->dev, "usbhost");
-+		if (IS_ERR(phy_clk)) {
-+			dev_err(&pdev->dev, "Failed to get phy clock\n");
-+			return PTR_ERR(phy_clk);
- 		}
--		clk_put(xusbxti_clk);
- 	}
-+
-+	clk_disable(phy_clk);
 +
 +	return 0;
- }
- 
--static int exynos4210_usb_phy0_init(struct platform_device *pdev)
-+static u32 exynos_usb_phy_set_clock(struct platform_device *pdev)
++}
++
+ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
  {
-+	struct clk *ref_clk;
-+	u32 refclk_freq = 0;
-+
-+	if (soc_is_exynos4210() || soc_is_exynos4212() || soc_is_exynos4412())
-+		ref_clk = clk_get(&pdev->dev, "xusbxti");
-+	else
-+		ref_clk = clk_get(&pdev->dev, "ext_xtal");
-+
-+	if (IS_ERR(ref_clk)) {
-+		dev_err(&pdev->dev, "Failed to get reference clock\n");
-+		return PTR_ERR(ref_clk);
+ 	unsigned long timeout;
++	void __iomem *boot_base;
++	int ret;
+ 
+ 	/*
+ 	 * Set synchronisation state between this boot processor
+@@ -96,6 +128,12 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+ 	 */
+ 	spin_lock(&boot_lock);
+ 
++	ret = exynos_power_up_cpu(cpu);
++	if (ret) {
++		spin_unlock(&boot_lock);
++		return ret;
 +	}
 +
-+	if (soc_is_exynos4210()) {
-+		switch (clk_get_rate(ref_clk)) {
-+		case 12 * MHZ:
-+			refclk_freq = EXYNOS4210_CLKSEL_12M;
-+			break;
-+		case 48 * MHZ:
-+			refclk_freq = EXYNOS4210_CLKSEL_48M;
-+			break;
-+		case 24 * MHZ:
-+		default:
-+			/* default reference clock */
-+			refclk_freq = EXYNOS4210_CLKSEL_24M;
-+			break;
-+		}
-+	} else if (soc_is_exynos4212() | soc_is_exynos4412()) {
-+		switch (clk_get_rate(ref_clk)) {
-+		case 96 * 100000:
-+			refclk_freq = EXYNOS4X12_CLKSEL_9600K;
-+			break;
-+		case 10 * MHZ:
-+			refclk_freq = EXYNOS4X12_CLKSEL_10M;
-+			break;
-+		case 12 * MHZ:
-+			refclk_freq = EXYNOS4X12_CLKSEL_12M;
-+			break;
-+		case 192 * 100000:
-+			refclk_freq = EXYNOS4X12_CLKSEL_19200K;
-+			break;
-+		case 20 * MHZ:
-+			refclk_freq = EXYNOS4X12_CLKSEL_20M;
-+			break;
-+		case 24 * MHZ:
-+		default:
-+			/* default reference clock */
-+			refclk_freq = EXYNOS4X12_CLKSEL_24M;
-+			break;
-+		}
-+	} else {
-+		switch (clk_get_rate(ref_clk)) {
-+		case 96 * 100000:
-+			refclk_freq = EXYNOS5_CLKSEL_9600K;
-+			break;
-+		case 10 * MHZ:
-+			refclk_freq = EXYNOS5_CLKSEL_10M;
-+			break;
-+		case 12 * MHZ:
-+			refclk_freq = EXYNOS5_CLKSEL_12M;
-+			break;
-+		case 192 * 100000:
-+			refclk_freq = EXYNOS5_CLKSEL_19200K;
-+			break;
-+		case 20 * MHZ:
-+			refclk_freq = EXYNOS5_CLKSEL_20M;
-+			break;
-+		case 50 * MHZ:
-+			refclk_freq = EXYNOS5_CLKSEL_50M;
-+			break;
-+		case 24 * MHZ:
-+		default:
-+			/* default reference clock */
-+			refclk_freq = EXYNOS5_CLKSEL_24M;
-+			break;
-+		}
-+	}
-+	clk_put(ref_clk);
-+
-+	return refclk_freq;
-+}
-+
-+static void exynos_usb_phy_control(enum usb_phy_type phy_type , int on)
-+{
-+	if (soc_is_exynos4210()) {
-+		if (phy_type & USB_PHY0)
-+			writel(on, S5P_USBDEVICE_PHY_CONTROL);
-+		if (phy_type & USB_PHY1)
-+			writel(on, S5P_USBHOST_PHY_CONTROL);
-+	} else if (soc_is_exynos4212() | soc_is_exynos4412()) {
-+		if (phy_type & USB_PHY)
-+			writel(on, S5P_USB_PHY_CONTROL);
-+#ifdef CONFIG_USB_S5P_HSIC0
-+		if (phy_type & USB_PHY_HSIC0)
-+			writel(on, S5P_HSIC_1_PHY_CONTROL);
-+#endif
-+#ifdef CONFIG_USB_S5P_HSIC1
-+		if (phy_type & USB_PHY_HSIC1)
-+			writel(on, S5P_HSIC_2_PHY_CONTROL);
-+#endif
-+	} else {
-+		if (phy_type & USB_PHY0)
-+			writel(on, EXYNOS5_USBDEV_PHY_CONTROL);
-+		if (phy_type & USB_PHY1)
-+			writel(on, EXYNOS5_USBHOST_PHY_CONTROL);
-+	}
-+}
-+
-+static int exynos4_usb_phy0_init(struct platform_device *pdev)
-+{
-+	u32 phypwr;
-+	u32 phyclk;
- 	u32 rstcon;
+ 	/*
+ 	 * The secondary processor is waiting to be released from
+ 	 * the holding pen - release it, then wait for it to flag
+@@ -106,39 +144,33 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+ 	 */
+ 	write_pen_release(cpu_logical_map(cpu));
  
--	writel(readl(S5P_USBDEVICE_PHY_CONTROL) | S5P_USBDEVICE_PHY_ENABLE,
--			S5P_USBDEVICE_PHY_CONTROL);
-+	exynos_usb_phy_control(USB_PHY0, PHY_ENABLE);
- 
--	exynos4210_usb_phy_clkset(pdev);
-+	/* set clock frequency for PLL */
-+	phyclk = exynos_usb_phy_set_clock(pdev);
-+	phyclk &= ~(PHY0_COMMON_ON_N);
-+	writel(phyclk, EXYNOS4_PHYCLK);
- 
--	/* set to normal PHY0 */
--	writel((readl(EXYNOS4_PHYPWR) & ~PHY0_NORMAL_MASK), EXYNOS4_PHYPWR);
-+	/* set to normal of PHY0 */
-+	phypwr = readl(EXYNOS4_PHYPWR) & ~PHY0_NORMAL_MASK;
-+	writel(phypwr, EXYNOS4_PHYPWR);
- 
--	/* reset PHY0 and Link */
-+	/* reset all ports of both PHY and Link */
- 	rstcon = readl(EXYNOS4_RSTCON) | PHY0_SWRST_MASK;
- 	writel(rstcon, EXYNOS4_RSTCON);
- 	udelay(10);
+-	if (!(__raw_readl(S5P_ARM_CORE1_STATUS) & S5P_CORE_LOCAL_PWR_EN)) {
+-		__raw_writel(S5P_CORE_LOCAL_PWR_EN,
+-			     S5P_ARM_CORE1_CONFIGURATION);
 -
- 	rstcon &= ~PHY0_SWRST_MASK;
- 	writel(rstcon, EXYNOS4_RSTCON);
- 
- 	return 0;
- }
- 
--static int exynos4210_usb_phy0_exit(struct platform_device *pdev)
-+static int exynos4_usb_phy0_exit(struct platform_device *pdev)
- {
--	writel((readl(EXYNOS4_PHYPWR) | PHY0_ANALOG_POWERDOWN |
--				PHY0_OTG_DISABLE), EXYNOS4_PHYPWR);
-+	/* unset to normal of PHY0 */
-+	writel((readl(EXYNOS4_PHYPWR) | PHY0_NORMAL_MASK),
-+			EXYNOS4_PHYPWR);
- 
--	writel(readl(S5P_USBDEVICE_PHY_CONTROL) & ~S5P_USBDEVICE_PHY_ENABLE,
--			S5P_USBDEVICE_PHY_CONTROL);
-+	exynos_usb_phy_control(USB_PHY0, PHY_DISABLE);
- 
- 	return 0;
- }
- 
--static int exynos4210_usb_phy1_init(struct platform_device *pdev)
-+static int exynos4_usb_phy1_init(struct platform_device *pdev)
- {
--	struct clk *otg_clk;
-+	u32 phypwr;
-+	u32 phyclk;
- 	u32 rstcon;
--	int err;
- 
- 	atomic_inc(&host_usage);
- 
--	otg_clk = clk_get(&pdev->dev, "otg");
--	if (IS_ERR(otg_clk)) {
--		dev_err(&pdev->dev, "Failed to get otg clock\n");
--		return PTR_ERR(otg_clk);
-+	if (exynos4_usb_host_phy_is_on()) {
-+		dev_err(&pdev->dev, "Already power on PHY\n");
-+		return 0;
- 	}
- 
--	err = clk_enable(otg_clk);
--	if (err) {
--		clk_put(otg_clk);
--		return err;
+-		timeout = 10;
+-
+-		/* wait max 10 ms until cpu1 is on */
+-		while ((__raw_readl(S5P_ARM_CORE1_STATUS)
+-			& S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN) {
+-			if (timeout-- == 0)
+-				break;
+-
+-			mdelay(1);
+-		}
+-
+-		if (timeout == 0) {
+-			printk(KERN_ERR "cpu1 power enable failed");
+-			spin_unlock(&boot_lock);
+-			return -ETIMEDOUT;
+-		}
 -	}
-+	/*
-+	 *  set XuhostOVERCUR to in-active by controlling ET6PUD[15:14]
-+	 *  0x0 : pull-up/down disabled
-+	 *  0x1 : pull-down enabled
-+	 *  0x2 : reserved
-+	 *  0x3 : pull-up enabled
-+	 */
-+	writel((__raw_readl(ETC6PUD) & ~(0x3 << 14)) | (0x3 << 14),
-+		ETC6PUD);
- 
--	if (exynos4_usb_host_phy_is_on())
--		return 0;
-+	exynos_usb_phy_control(USB_PHY1, PHY_ENABLE);
- 
--	writel(readl(S5P_USBHOST_PHY_CONTROL) | S5P_USBHOST_PHY_ENABLE,
--			S5P_USBHOST_PHY_CONTROL);
-+	/* set clock frequency for PLL */
-+	phyclk = exynos_usb_phy_set_clock(pdev);
-+	phyclk &= ~(PHY1_COMMON_ON_N);
-+	writel(phyclk, EXYNOS4_PHYCLK);
- 
--	exynos4210_usb_phy_clkset(pdev);
-+	/* set to normal HSIC 0 and 1 of PHY1 */
-+	phypwr = readl(EXYNOS4_PHYPWR);
-+	phypwr &= ~(PHY1_STD_NORMAL_MASK
-+		| EXYNOS4210_HSIC0_NORMAL_MASK);
-+	writel(phypwr, EXYNOS4_PHYPWR);
- 
- 	/* floating prevention logic: disable */
- 	writel((readl(EXYNOS4_PHY1CON) | FPENABLEN), EXYNOS4_PHY1CON);
- 
--	/* set to normal HSIC 0 and 1 of PHY1 */
--	writel((readl(EXYNOS4_PHYPWR) & ~PHY1_HSIC_NORMAL_MASK),
--			EXYNOS4_PHYPWR);
+ 	/*
+ 	 * Send the secondary CPU a soft interrupt, thereby causing
+ 	 * the boot monitor to read the system wide flags register,
+ 	 * and branch to the address found there.
+ 	 */
 -
--	/* set to normal standard USB of PHY1 */
--	writel((readl(EXYNOS4_PHYPWR) & ~PHY1_STD_NORMAL_MASK), EXYNOS4_PHYPWR);
--
- 	/* reset all ports of both PHY and Link */
--	rstcon = readl(EXYNOS4_RSTCON) | HOST_LINK_PORT_SWRST_MASK |
--		PHY1_SWRST_MASK;
-+	rstcon = readl(EXYNOS4_RSTCON)
-+		| EXYNOS4210_HOST_LINK_PORT_SWRST_MASK
-+		| EXYNOS4210_PHY1_SWRST_MASK;
- 	writel(rstcon, EXYNOS4_RSTCON);
- 	udelay(10);
+ 	timeout = jiffies + (1 * HZ);
+ 	while (time_before(jiffies, timeout)) {
+ 		smp_rmb();
  
--	rstcon &= ~(HOST_LINK_PORT_SWRST_MASK | PHY1_SWRST_MASK);
-+	rstcon &= ~(EXYNOS4210_HOST_LINK_PORT_SWRST_MASK
-+		| EXYNOS4210_PHY1_SWRST_MASK);
- 	writel(rstcon, EXYNOS4_RSTCON);
- 	udelay(80);
- 
--	clk_disable(otg_clk);
--	clk_put(otg_clk);
-+	return 0;
-+}
-+
-+static int exynos4_usb_phy1_exit(struct platform_device *pdev)
-+{
-+	u32 phypwr;
-+
-+	if (atomic_dec_return(&host_usage) > 0) {
-+		dev_info(&pdev->dev, "still being used\n");
-+		return -EBUSY;
-+	}
-+
-+	phypwr = readl(EXYNOS4_PHYPWR)
-+		| PHY1_STD_NORMAL_MASK
-+		| EXYNOS4210_HSIC0_NORMAL_MASK;
-+	writel(phypwr, EXYNOS4_PHYPWR);
-+
-+	exynos_usb_phy_control(USB_PHY1, PHY_DISABLE);
- 
- 	return 0;
- }
- 
--static int exynos4210_usb_phy1_exit(struct platform_device *pdev)
-+static int exynos4_usb_phy20_init(struct platform_device *pdev)
- {
--	struct clk *otg_clk;
--	int err;
-+	u32 phypwr, phyclk, rstcon;
- 
--	if (atomic_dec_return(&host_usage) > 0)
--		return 0;
-+	atomic_inc(&host_usage);
- 
--	otg_clk = clk_get(&pdev->dev, "otg");
--	if (IS_ERR(otg_clk)) {
--		dev_err(&pdev->dev, "Failed to get otg clock\n");
--		return PTR_ERR(otg_clk);
-+	if (exynos4_usb_phy20_is_on()) {
-+		dev_err(&pdev->dev, "Already power on PHY\n");
-+		return 0;
- 	}
- 
--	err = clk_enable(otg_clk);
--	if (err) {
--		clk_put(otg_clk);
--		return err;
-+	/*
-+	 *  set XuhostOVERCUR to in-active by controlling ET6PUD[15:14]
-+	 *  0x0 : pull-up/down disabled
-+	 *  0x1 : pull-down enabled
-+	 *  0x2 : reserved
-+	 *  0x3 : pull-up enabled
-+	 */
-+	writel((__raw_readl(ETC6PUD) & ~(0x3 << 14)) | (0x3 << 14),
-+		ETC6PUD);
-+
-+	exynos_usb_phy_control(USB_PHY
-+		| USB_PHY_HSIC0,
-+		PHY_ENABLE);
-+
-+	/* set clock frequency for PLL */
-+	phyclk = exynos_usb_phy_set_clock(pdev);
-+	/* COMMON Block configuration during suspend */
-+	phyclk &= ~(PHY0_COMMON_ON_N | PHY1_COMMON_ON_N);
-+	writel(phyclk, EXYNOS4_PHYCLK);
-+
-+	/* set to normal of Device */
-+	phypwr = readl(EXYNOS4_PHYPWR) & ~PHY0_NORMAL_MASK;
-+	writel(phypwr, EXYNOS4_PHYPWR);
-+
-+	/* set to normal of Host */
-+	phypwr = readl(EXYNOS4_PHYPWR);
-+	phypwr &= ~(PHY1_STD_NORMAL_MASK
-+		| EXYNOS4X12_HSIC0_NORMAL_MASK);
-+	writel(phypwr, EXYNOS4_PHYPWR);
-+
-+	/* reset both PHY and Link of Device */
-+	rstcon = readl(EXYNOS4_RSTCON) | PHY0_SWRST_MASK;
-+	writel(rstcon, EXYNOS4_RSTCON);
-+	udelay(10);
-+	rstcon &= ~PHY0_SWRST_MASK;
-+	writel(rstcon, EXYNOS4_RSTCON);
-+
-+	/* reset both PHY and Link of Host */
-+	rstcon = readl(EXYNOS4_RSTCON)
-+		| EXYNOS4X12_HOST_LINK_PORT_SWRST_MASK
-+		| EXYNOS4X12_PHY1_SWRST_MASK;
-+	writel(rstcon, EXYNOS4_RSTCON);
-+	udelay(10);
-+
-+	rstcon &= ~(EXYNOS4X12_HOST_LINK_PORT_SWRST_MASK
-+		| EXYNOS4X12_PHY1_SWRST_MASK);
-+	writel(rstcon, EXYNOS4_RSTCON);
-+	udelay(80);
-+
-+	return 0;
-+}
-+
-+static int exynos4_usb_phy20_exit(struct platform_device *pdev)
-+{
-+	u32 phypwr;
-+
-+	if (atomic_dec_return(&host_usage) > 0) {
-+		dev_info(&pdev->dev, "still being used\n");
-+		return -EBUSY;
- 	}
- 
--	writel((readl(EXYNOS4_PHYPWR) | PHY1_STD_ANALOG_POWERDOWN),
-+	/* unset to normal of Device */
-+	writel((readl(EXYNOS4_PHYPWR) | PHY0_NORMAL_MASK),
- 			EXYNOS4_PHYPWR);
- 
--	writel(readl(S5P_USBHOST_PHY_CONTROL) & ~S5P_USBHOST_PHY_ENABLE,
--			S5P_USBHOST_PHY_CONTROL);
-+	/* unset to normal of Host */
-+	phypwr = readl(EXYNOS4_PHYPWR)
-+		| PHY1_STD_NORMAL_MASK
-+		| EXYNOS4X12_HSIC0_NORMAL_MASK;
-+	writel(phypwr, EXYNOS4_PHYPWR);
- 
--	clk_disable(otg_clk);
--	clk_put(otg_clk);
-+	exynos_usb_phy_control(USB_PHY
-+		| USB_PHY_HSIC0,
-+		PHY_DISABLE);
-+
-+	return 0;
-+}
-+
-+static int exynos_usb_dev_phy20_init(struct platform_device *pdev)
-+{
-+	if (soc_is_exynos4212() || soc_is_exynos4412())
-+		exynos4_usb_phy20_init(pdev);
-+
-+	writel(0, EXYNOS4_USB_CFG);
-+
-+	return 0;
-+}
-+
-+static int exynos_usb_dev_phy20_exit(struct platform_device *pdev)
-+{
-+	if (soc_is_exynos4212() || soc_is_exynos4412())
-+		exynos4_usb_phy20_exit(pdev);
- 
- 	return 0;
- }
- 
- int s5p_usb_phy_init(struct platform_device *pdev, int type)
- {
--	if (type == S5P_USB_PHY_DEVICE)
--		return exynos4210_usb_phy0_init(pdev);
--	else if (type == S5P_USB_PHY_HOST)
--		return exynos4210_usb_phy1_init(pdev);
-+	int ret = -EINVAL;
-+
-+	if (exynos_usb_phy_clock_enable(pdev))
-+		return ret;
-+
-+	mutex_lock(&phy_lock);
-+	if (type == S5P_USB_PHY_HOST) {
-+		if (soc_is_exynos4210())
-+			ret = exynos4_usb_phy1_init(pdev);
-+		else if (soc_is_exynos4212() || soc_is_exynos4412())
-+			ret = exynos4_usb_phy20_init(pdev);
-+	} else if (type == S5P_USB_PHY_DEVICE) {
-+		if (soc_is_exynos4210())
-+			ret = exynos4_usb_phy0_init(pdev);
++		if (soc_is_exynos4210() &&
++				(samsung_rev() == EXYNOS4210_REV_1_1))
++			boot_base = S5P_INFORM5;
 +		else
-+			ret = exynos_usb_dev_phy20_init(pdev);
-+	}
++			boot_base = S5P_VA_SYSRAM;
 +
-+	mutex_unlock(&phy_lock);
-+	exynos_usb_phy_clock_disable(pdev);
++		if (soc_is_exynos4412())
++			boot_base += (0x4 * cpu);
++
++		/*
++		 * Write the address of secondary startup into the
++		 * system-wide flags register. The boot monitor waits
++		 * until it receives a soft interrupt, and then the
++		 * secondary CPU branches to this address.
++		 */
+ 		__raw_writel(virt_to_phys(exynos4_secondary_startup),
+-			CPU1_BOOT_REG);
++				boot_base);
++
+ 		gic_raise_softirq(cpumask_of(cpu), 1);
  
--	return -EINVAL;
-+	return ret;
- }
+ 		if (pen_release == -1)
+@@ -186,15 +218,15 @@ void __init smp_init_cpus(void)
  
- int s5p_usb_phy_exit(struct platform_device *pdev, int type)
+ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
  {
--	if (type == S5P_USB_PHY_DEVICE)
--		return exynos4210_usb_phy0_exit(pdev);
--	else if (type == S5P_USB_PHY_HOST)
--		return exynos4210_usb_phy1_exit(pdev);
-+	int ret = -EINVAL;
-+
-+	if (exynos_usb_phy_clock_enable(pdev))
-+		return ret;
-+
-+	mutex_lock(&phy_lock);
-+
-+	if (type == S5P_USB_PHY_HOST) {
-+		if (soc_is_exynos4210())
-+			ret = exynos4_usb_phy1_exit(pdev);
-+		else if (soc_is_exynos4212() || soc_is_exynos4412())
-+			ret = exynos4_usb_phy20_exit(pdev);
-+	} else if (type == S5P_USB_PHY_DEVICE) {
-+		if (soc_is_exynos4210())
-+			ret = exynos4_usb_phy0_exit(pdev);
-+		else
-+			ret = exynos_usb_dev_phy20_exit(pdev);
-+	}
-+
-+	mutex_unlock(&phy_lock);
-+	exynos_usb_phy_clock_disable(pdev);
+-	if (!soc_is_exynos5250())
+-		scu_enable(scu_base_addr());
++	int i;
  
--	return -EINVAL;
-+	return ret;
+ 	/*
+-	 * Write the address of secondary startup into the
+-	 * system-wide flags register. The boot monitor waits
+-	 * until it receives a soft interrupt, and then the
+-	 * secondary CPU branches to this address.
++	 * Initialise the present map, which describes the set of CPUs
++	 * actually populated at the present time.
+ 	 */
+-	__raw_writel(virt_to_phys(exynos4_secondary_startup),
+-			CPU1_BOOT_REG);
++	for (i = 0; i < max_cpus; i++)
++		set_cpu_present(i, true);
++
++	if (!soc_is_exynos5250())
++		scu_enable(scu_base_addr());
  }
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 075d2ec..5f69041 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -199,6 +199,20 @@ config USB_EHCI_S5P
-        help
- 	 Enable support for the S5P SOC's on-chip EHCI controller.
- 
-+config USB_S5P_HSIC0
-+    boolean "S5P HSIC0 support"
-+    depends on USB_EHCI_HCD && PLAT_S5P && USB_EHCI_S5P
-+    default n
-+    help
-+      Enable support for the S5P SOC's on-chip HSIC PHY.
-+
-+config USB_S5P_HSIC1
-+    boolean "S5P HSIC1 support"
-+    depends on USB_EHCI_HCD && PLAT_S5P && USB_EHCI_S5P
-+    default n
-+    help
-+      Enable support for the S5P SOC's on-chip HSIC PHY.
-+
- config USB_EHCI_MV
- 	bool "EHCI support for Marvell on-chip controller"
- 	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)
 -- 
 1.7.9.5
 
