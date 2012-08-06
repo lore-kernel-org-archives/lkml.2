@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab2HFOig (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:38:36 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57467 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932082Ab2HFOif (ORCPT
+	id S932098Ab2HFOmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:42:15 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34362 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754782Ab2HFOmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:38:35 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18fl/YjnDYfH+Z4ZTmrDwCIOIRpORmSImpKCr5GSQ
-	ishOYXvi6VNq2D
-Message-ID: <1344263912.6853.14.camel@marge.simpson.net>
-Subject: Re: unfair scheduling with tbb application observed, could it be a
- kernel issue?
-From: Mike Galbraith <efault@gmx.de>
-To: Pedro Larroy <pedro.larroy.lists@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 06 Aug 2012 16:38:32 +0200
-In-Reply-To: <CAC_CU1iP0y9pVPPWVuER3kZbFGbBwS6Q2w1mJ6Ke6VNLqJOgbA@mail.gmail.com>
-References: <CAC_CU1hzuSAeHG7-5g5kOa=MMh3KnJZNwWr+ySkJQyxixck4WA@mail.gmail.com>
-	 <1344263139.6853.10.camel@marge.simpson.net>
-	 <CAC_CU1iP0y9pVPPWVuER3kZbFGbBwS6Q2w1mJ6Ke6VNLqJOgbA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Mon, 6 Aug 2012 10:42:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120806143016.GK16861@opensource.wolfsonmicro.com>
+References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
+	<20120806143016.GK16861@opensource.wolfsonmicro.com>
+Date: Mon, 6 Aug 2012 22:42:12 +0800
+Message-ID: <CAN1soZwCr=L3Xdi7HS9dQMxo4DzzbQv2kXo9R_U6QAf7v=B10Q@mail.gmail.com>
+Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, rpurdie@rpsys.net, bryan.wu@canonical.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-06 at 16:28 +0200, Pedro Larroy wrote: 
-> I didn't enable cgroups explicitly, and don't have userspace tools for
-> that installed.
+On Mon, Aug 6, 2012 at 10:30 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Aug 06, 2012 at 12:32:48AM +0800, Haojian Zhuang wrote:
+>
+>> Since IORESOURCE_IO is used for PCI devices, it doesn't fit on
+>> 88PM860x PMIC device that lies on I2C bus. So use IORESOURCE_MEM
+>> instead.
+>
+> This isn't much more appropriate - _MEM is for memory ranges so isn't
+> directly relevant to register addresses either.  If anything _IO is
+> slightly nearer.
 
-You don't userspace tools.  cat /proc/<pid>/cgroup will show the group.
+I use register resource to distinguish different components now. For
+example, component driver
+needs to access the registers in PMIC. These registers offsets are set
+in 88pm860x-core.c.
+So I think that it may not be called _IO.
 
--Mike
-
+Regards
+Haojian
