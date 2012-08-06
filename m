@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab2HFVkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:40:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59755 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab2HFVj6 (ORCPT
+	id S1756271Ab2HFVlZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 17:41:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51023 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754139Ab2HFVlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:39:58 -0400
-Message-ID: <502039A8.7080807@gmail.com>
-Date: Mon, 06 Aug 2012 17:39:52 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 6 Aug 2012 17:41:24 -0400
+Date: Mon, 6 Aug 2012 22:41:22 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Matt Sealey <matt@genesi-usa.com>
+Cc: Robert Schwebel <r.schwebel@pengutronix.de>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH 4/9] ASoC: imx: Don't use {en,dis}able_fiq() calls
+Message-ID: <20120806214121.GA26698@opensource.wolfsonmicro.com>
+References: <20120805230238.GA1663@lizard> <1344207819-3415-4-git-send-email-anton.vorontsov@linaro.org> <CAKGA1bkiHj=zMJXSzoGp3fpLS3POnFXSV5y7sYYFAikqoUT9tQ@mail.gmail.com> <20120806154951.GQ16861@opensource.wolfsonmicro.com> <CAKGA1b=_AOub_pEJJGBTb6Y7wLZaSYKQjFTyMVFSr_=9VX4wpg@mail.gmail.com> <20120806193734.GA16199@opensource.wolfsonmicro.com> <20120806201609.GX25644@pengutronix.de> <CAKGA1bmMqyL4gyLYcanEH=R=HuBjRCNRLjUEWCj8wmpi3HuL0g@mail.gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: ebiederm@xmission.com, jan.ariyasu@gmail.com, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.ariyasu@hp.com
-Subject: Re: [PATCH 00/13] SCTP: Enable netns
-References: <87mx27rig7.fsf@xmission.com> <50201928.2030802@gmail.com> <874noflrzd.fsf@xmission.com> <20120806.134737.1358773847818872075.davem@davemloft.net>
-In-Reply-To: <20120806.134737.1358773847818872075.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKGA1bmMqyL4gyLYcanEH=R=HuBjRCNRLjUEWCj8wmpi3HuL0g@mail.gmail.com>
+X-Cookie: You will pass away very quickly.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 04:47 PM, David Miller wrote:
-> From: ebiederm@xmission.com (Eric W. Biederman)
-> Date: Mon, 06 Aug 2012 12:50:46 -0700
->
->> Vlad Yasevich <vyasevich@gmail.com> writes:
->>
->>
->>> Hi Eric
->>>
->>> Associations are looked up by ports, but then verifyed by addresses.
->>> Also, associations belong to sockets and simply validating the socket
->>> namespace should be sufficient.
->>
->> True.  Your set of patches isn't quite as likely to malfunction as it
->> looked at first glance.  It requires address reuse which happens accross
->> namespaces but not too frequently.
->>
->> As for validating the socket namespace I agree that is the fix and my
->> patchset winds up doing it.
->
-> FWIW I much prefer Eric's patch set, it was so significantly easier to
-> read and validate than Jan's.
->
+On Mon, Aug 06, 2012 at 03:39:50PM -0500, Matt Sealey wrote:
+> On Mon, Aug 6, 2012 at 3:16 PM, Robert Schwebel
 
-Yes, but Eric's patch set is missing a very significant piece which is 
-per-net sctp tunables/globals.  I think adding that piece in will 
-introduce some of the complexities of Jan's patch.
+> > That's not true; we still run MX25, MX27, MX35, MX28 on mainline in
+> > active projects.
 
-Also, I noticed that Eric went the route of placing sctp netns into 
-struct net, but Jan used a generic pointer.  Which one should be used? 
-Is there some guidance?
+> I think Shawn Guo (FSL/Linaro) would also disagree, since he's just
+> posted a large amount of MXS patches to fix up the board for device
+> trees, and Arnd is pulling them.
 
--vlad
+MXS != i.MX.
+
+> As far as I know, the FIQ usage is quite valid for the processor it
+> needs to run on (MX21/27/28, right?) in the modes it runs in (AC97 on
+> these processors, and maybe MX35 too), and I'm just trying to figure
+> out what the steps are for
+
+Oh, ick.  What is the problem that means people want to use the FIQ on
+these processors?  There's been i.MX2x audio DMA since forever, it had
+DMA in mainline before any of the later i.MXs due to them having SDMA.
+The original mainline i.MX audio support was done on i.MX27 and didn't
+have any issue here, this is the fist I've heard of a problem.
+
+> I did note that SND_SOC_EUKREA_TLV320 enables FIQ but it also depends
+> on MX51 which makes me think this need to be split, too, so that MX51
+> boards don't have it but MX2/MX3 do.
+
+Is that not bitrot due to it being there before SDMA support was?
