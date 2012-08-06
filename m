@@ -1,145 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab2HFJXZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:23:25 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:11817 "EHLO song.cn.fujitsu.com"
+	id S1755578Ab2HFJXe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:23:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64148 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754085Ab2HFJXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:23:22 -0400
+	id S1755225Ab2HFJXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 05:23:31 -0400
 X-IronPort-AV: E=Sophos;i="4.77,719,1336320000"; 
-   d="scan'208";a="5560123"
+   d="scan'208";a="5560128"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [RFC V3 PATCH 00/25] memory,numa: introduce MOVABLE-dedicated node and online_movable for hotplug
-Date: Mon, 6 Aug 2012 17:22:54 +0800
-Message-Id: <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: [RFC V3 PATCH 05/25] node_states: introduce N_MEMORY
+Date: Mon, 6 Aug 2012 17:22:59 +0800
+Message-Id: <1344244999-5081-6-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
+ <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/06 17:23:45,
+ 2012/08/06 17:23:54,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/06 17:23:45,
-	Serialize complete at 2012/08/06 17:23:45
+ 2012/08/06 17:23:54,
+	Serialize complete at 2012/08/06 17:23:54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	A) Introduction:
+We have N_NORMAL_MEMORY for standing for the nodes that have normal memory with
+zone_type <= ZONE_NORMAL.
 
-This patchset adds MOVABLE-dedicated node and online_movable for memory-management.
+And we have N_HIGH_MEMORY for standing for the nodes that have normal or high
+memory.
 
-It is used for anti-fragmentation(hugepage, big-order allocation...),
-hot-removal-of-memory(virtualization, power-conserve, move memory between systems
-to make better utilities of memories).
+But we don't have any word to stand for the nodes that have *any* memory.
 
-	B) User Interface:
+And we have N_CPU but without N_MEMORY.
 
-When users(big system manager) need config some node/memory as MOVABLE:
-	1 Use kernelcore_max_addr=XX when boot
-	2 Use movable_online hotplug action when running
-We may introduce some more convenient interface, such as
-	movable_node=NODE_LIST boot option.
+Current code reuse the N_HIGH_MEMORY for this purpose because any node which
+has memory must have high memory or normal memory currently.
 
-	C) Patches
+A)	But this reusing is bad for *readability*. Because the name
+	N_HIGH_MEMORY just stands for high or normal:
 
-Patch1-3      Fix problems of the current code.(all related with hotplug)
-Patch4        cleanup for node_state_attr
-Patch5        introduce N_MEMORY
-Patch6-18     use N_MEMORY instead N_HIGH_MEMORY.
-              The patches are separated by subsystem,
-              *these conversions was(must be) checked carefully*.
-              Patch18 also changes the node_states initialization
-Patch19       Add config to allow MOVABLE-dedicated node
-Patch20-24    Add kernelcore_max_addr
-Patch25       Add online_movable and online_kernel
+A.example 1)
+	mem_cgroup_nr_lru_pages():
+		for_each_node_state(nid, N_HIGH_MEMORY)
 
+	The user will be confused(why this function just counts for high or
+	normal memory node? does it counts for ZONE_MOVABLE's lru pages?)
+	until someone else tell them N_HIGH_MEMORY is reused to stand for
+	nodes that have any memory.
 
-	D) changes
-change V3-v2:
-	Proper nodemask management
+A.cont) If we introduce N_MEMORY, we can reduce this confusing
+	AND make the code more clearly:
 
-change V2-V1:
+A.example 2) mm/page_cgroup.c use N_HIGH_MEMORY twice:
 
-The original V1 patchset of MOVABLE-dedicated node is here:
-http://comments.gmane.org/gmane.linux.kernel.mm/78122
+	One is in page_cgroup_init(void):
+		for_each_node_state(nid, N_HIGH_MEMORY) {
 
-The new V2 adds N_MEMORY and a notion of "MOVABLE-dedicated node".
-And fix some related problems.
+	It means if the node have memory, we will allocate page_cgroup map for
+	the node. We should use N_MEMORY instead here to gaim more clearly.
 
-The orignal V1 patchset of "add online_movable" is here:
-https://lkml.org/lkml/2012/7/4/145
+	The second using is in alloc_page_cgroup():
+		if (node_state(nid, N_HIGH_MEMORY))
+			addr = vzalloc_node(size, nid);
 
-The new V2 discards the MIGRATE_HOTREMOVE approach, and use a more straight
-implementation(only 1 patch).
+	It means if the node has high or normal memory that can be allocated
+	from kernel. We should keep N_HIGH_MEMORY here, and it will be better
+	if the "any memory" semantic of N_HIGH_MEMORY is removed.
 
+B)	This reusing is out-dated if we introduce MOVABLE-dedicated node.
+	The MOVABLE-dedicated node should not appear in
+	node_stats[N_HIGH_MEMORY] nor node_stats[N_NORMAL_MEMORY],
+	because MOVABLE-dedicated node has no high or normal memory.
 
-Lai Jiangshan (21):
-  page_alloc.c: don't subtract unrelated memmap from zone's present
-    pages
-  memory_hotplug: fix missing nodemask management
-  slub, hotplug: ignore unrelated node's hot-adding and hot-removing
-  node: cleanup node_state_attr
-  node_states: introduce N_MEMORY
-  cpuset: use N_MEMORY instead N_HIGH_MEMORY
-  procfs: use N_MEMORY instead N_HIGH_MEMORY
-  memcontrol: use N_MEMORY instead N_HIGH_MEMORY
-  oom: use N_MEMORY instead N_HIGH_MEMORY
-  mm,migrate: use N_MEMORY instead N_HIGH_MEMORY
-  mempolicy: use N_MEMORY instead N_HIGH_MEMORY
-  hugetlb: use N_MEMORY instead N_HIGH_MEMORY
-  vmstat: use N_MEMORY instead N_HIGH_MEMORY
-  kthread: use N_MEMORY instead N_HIGH_MEMORY
-  init: use N_MEMORY instead N_HIGH_MEMORY
-  vmscan: use N_MEMORY instead N_HIGH_MEMORY
-  page_alloc: use N_MEMORY instead N_HIGH_MEMORY change the node_states
-    initialization
-  hotplug: update nodemasks management
-  numa: add CONFIG_MOVABLE_NODE for movable-dedicated node
-  page_alloc: add kernelcore_max_addr
-  mm, memory-hotplug: add online_movable and online_kernel
+	In x86_64, N_HIGH_MEMORY=N_NORMAL_MEMORY, if a MOVABLE-dedicated node
+	is in node_stats[N_HIGH_MEMORY], it is also means it is in
+	node_stats[N_NORMAL_MEMORY], it causes SLUB wrong.
 
-Yasuaki Ishimatsu (4):
-  x86: get pg_data_t's memory from other node
-  x86: use memblock_set_current_limit() to set memblock.current_limit
-  memblock: limit memory address from memblock
-  memblock: compare current_limit with end variable at
-    memblock_find_in_range_node()
+	The slub uses
+		for_each_node_state(nid, N_NORMAL_MEMORY)
+	and creates kmem_cache_node for MOVABLE-dedicated node and cause problem.
 
- Documentation/cgroups/cpusets.txt   |    2 +-
- Documentation/kernel-parameters.txt |    9 ++
- Documentation/memory-hotplug.txt    |   24 +++-
- arch/x86/kernel/setup.c             |    4 +-
- arch/x86/mm/init_64.c               |    4 +-
- arch/x86/mm/numa.c                  |    8 +-
- drivers/base/memory.c               |   19 ++-
- drivers/base/node.c                 |   28 +++--
- fs/proc/kcore.c                     |    2 +-
- fs/proc/task_mmu.c                  |    4 +-
- include/linux/cpuset.h              |    2 +-
- include/linux/memblock.h            |    1 +
- include/linux/memory.h              |    2 +
- include/linux/memory_hotplug.h      |   13 ++-
- include/linux/nodemask.h            |    5 +
- init/main.c                         |    2 +-
- kernel/cpuset.c                     |   32 +++---
- kernel/kthread.c                    |    2 +-
- mm/Kconfig                          |    8 ++
- mm/hugetlb.c                        |   24 ++--
- mm/memblock.c                       |   10 +-
- mm/memcontrol.c                     |   18 ++--
- mm/memory_hotplug.c                 |  232 ++++++++++++++++++++++++++++++++---
- mm/mempolicy.c                      |   12 +-
- mm/migrate.c                        |    2 +-
- mm/oom_kill.c                       |    2 +-
- mm/page_alloc.c                     |   96 +++++++++------
- mm/page_cgroup.c                    |    2 +-
- mm/slub.c                           |    4 +-
- mm/vmscan.c                         |    4 +-
- mm/vmstat.c                         |    4 +-
- 31 files changed, 437 insertions(+), 144 deletions(-)
+In one word, we need a N_MEMORY. We just intrude it as an alias to
+N_HIGH_MEMORY and fix all im-proper usages of N_HIGH_MEMORY in late patches.
 
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
+---
+ include/linux/nodemask.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
+index 7afc363..c6ebdc9 100644
+--- a/include/linux/nodemask.h
++++ b/include/linux/nodemask.h
+@@ -380,6 +380,7 @@ enum node_states {
+ #else
+ 	N_HIGH_MEMORY = N_NORMAL_MEMORY,
+ #endif
++	N_MEMORY = N_HIGH_MEMORY,
+ 	N_CPU,		/* The node has one or more cpus */
+ 	NR_NODE_STATES
+ };
 -- 
 1.7.4.4
 
