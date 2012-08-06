@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab2HFQMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 12:12:54 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:46494 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756228Ab2HFQMx (ORCPT
+	id S932277Ab2HFQO3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 12:14:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45560 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755760Ab2HFQO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 12:12:53 -0400
+	Mon, 6 Aug 2012 12:14:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120806141248.GN4352@mwanda>
-References: <1344100872-19640-1-git-send-email-develkernel412222@gmail.com>
-	<20120806141248.GN4352@mwanda>
-Date: Mon, 6 Aug 2012 21:57:52 +0545
-Message-ID: <CA+C2MxQ1327Y+Fn+pFwE_bizOmT5WN2EericQL9dmPEeckuM+g@mail.gmail.com>
-Subject: Re: [PATCH] staging: sm7xxfb: copy name of the device before calling smtc_alloc_fb_info
-From: Devendra Naga <develkernel412222@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Devendra Naga <devendra.aaru@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+From: Hui Zhu <teawater@gmail.com>
+Date: Tue, 7 Aug 2012 00:13:45 +0800
+Message-ID: <CANFwon0ua-=__v3gKHgyDRXtY0mbcFnOfkPMdsTSDthf02QOTw@mail.gmail.com>
+Subject: KGTP (Linux Kernel debugger and tracer) 20120806 release (bug fix)
+To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
+        kgtp <kgtp@freelists.org>
+Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 7:57 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Sat, Aug 04, 2012 at 11:06:12PM +0545, Devendra Naga wrote:
->> as we do a strcpy(smdrv_ptr->fb_struct->fix->id, name), and the name here in
->> sm7xxx_probe is not having any assignment, and which leads to copying of the garbage value
->> into the id field of the fix struct of fb interface struct. fix it by copying the name before
->> calling alloc_fbinfo
->>
->> Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
->> ---
->>  Only compile tested
->>  This patch is not tested using the hardware... if any one is having this hardware, i request them to
->> please test this
->>  drivers/staging/sm7xxfb/sm7xxfb.c |    7 ++++---
->>  1 file changed, 4 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
->> index 1c1780c..d3957ef 100644
->> --- a/drivers/staging/sm7xxfb/sm7xxfb.c
->> +++ b/drivers/staging/sm7xxfb/sm7xxfb.c
->> @@ -798,16 +798,17 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
->>       if (err)
->>               return err;
->>
->> +     sprintf(name, "sm%Xfb", ent->device);
->> +
->>       sfb = smtc_alloc_fb_info(pdev, name);
->>
->> +     sfb->chip_id = ent->device;
->> +
->>       if (!sfb) {
->
-> Thanks for fixing this, and well done for spotting the bug.
->
-Thanks Dan...
+KGTP is a realtime and lightweight Linux debugger and tracer.
+To use it, you don't need patch or rebuild the Linux kernel. Just
+build KGTP module and insmod it is OK.
 
-> There is a dereference before the check here, but I see you resent
-> this in another thread.  Next time could you respond to the
-> original with a message which says to not apply it.
->
-Sure but i have a doubt.
+It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
+current machine or remote machine can debug and trace Linux through
+GDB tracepoint and some other functions without stopping the Linux
+Kernel.
+And even if the board doesn't have GDB on it and doesn't have
+interface for remote debug. It can debug the Linux Kernel using
+offline debug (See
+HOWTO#/sys/kernel/debug/gtpframe_and_offline_debug).
+KGTP supports X86-32, X86-64, MIPS and ARM.
+KGTP is tested on Linux kernel 2.6.18 to upstream.
+And it can work with Android (See
+http://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid).
 
-since we do V++ after every change to the sent patch , do we really
-need to say that please dont apply this patch and there's one more
-patch coming with fix?
+Please go to http://code.google.com/p/kgtp/wiki/HOWTO or
+http://code.google.com/p/kgtp/wiki/HOWTO (Chinese) to get more info
+about howto use KGTP.
 
-> regards,
-> dan carpenter
->
->
+Now, KGTP 20120806 release.
+You can get the package for it from
+http://kgtp.googlecode.com/files/kgtp_20120805.tar.bz2
+or
+svn co https://kgtp.googlecode.com/svn/tags/20120806
+
+The main change of this release is:
+* When "make clean" with new Linux kernel.  Linux kernel will clean itself.
+  So change "make clean" to "rm" to handle it.
+
+* Remove S_IFIFO from debugfs_create_file because new Kernel doesn't
+  like it.
+
+* Fix a bug of gtp_task_read.  This bug will make this function can
+  sleep sometimes.  This bug is dangerous when tracepoint access user
+  space memory.
+
+* Support enable and disable when tracepoint is running.
+
+* Fix build error with RHEL 6.3.
+
+Please goto http://code.google.com/p/kgtp/wiki/UPDATE get more info
+about this release.
+
+According to the comments of Christoph, Geoff and Andi.  I make lite
+patch for review.  Please goto https://lkml.org/lkml/2012/5/9/90 to
+see it.
 
 Thanks,
+Hui
