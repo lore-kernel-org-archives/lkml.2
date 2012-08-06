@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab2HFMsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 08:48:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754167Ab2HFMsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 08:48:35 -0400
-Message-ID: <501FBD14.6030508@redhat.com>
-Date: Mon, 06 Aug 2012 15:48:20 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1756102Ab2HFMwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 08:52:36 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:38943 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab2HFMwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 08:52:34 -0400
+Date: Mon, 6 Aug 2012 13:52:16 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: cJ-ko@zougloub.eu, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Matt Fleming <matt.fleming@linux.intel.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform wall
+ clock" prevents my machine from booting
+Message-ID: <20120806125216.GA11863@srcf.ucam.org>
+References: <20120805172903.5f8bb24c@zougloub.eu>
+ <501EF3A2.20200@zytor.com>
+ <501F83F20200007800092C1C@nat28.tlf.novell.com>
 MIME-Version: 1.0
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-CC: mtosatti@redhat.com, kvm@vger.kernel.org,
-        qemu-devel <qemu-devel@nongnu.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kevin Wolf <kwolf@redhat.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
-References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com> <501817C9.6090405@profihost.ag> <5018EC7D.9090702@redhat.com> <5018F5BB.9070500@profihost.ag> <5018F7E6.4020909@redhat.com> <5018F9F6.70307@profihost.ag> <5018FC9B.8040808@redhat.com> <501E4615.7060801@profihost.ag> <501E4AFD.3020806@redhat.com> <501E96BB.5060702@profihost.ag> <501EC2E2.8010802@profihost.ag> <501F8226.9090500@redhat.com> <501F846C.50903@profihost.ag> <501FB4A8.6080609@redhat.com> <501FBAA2.6050205@redhat.com>
-In-Reply-To: <501FBAA2.6050205@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501F83F20200007800092C1C@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 03:37 PM, Avi Kivity wrote:
-> On 08/06/2012 03:12 PM, Avi Kivity wrote:
->> On 08/06/2012 11:46 AM, Stefan Priebe - Profihost AG wrote:
->> 
->>> But still i got the segfault and core dump - this is my main problem? I
->>> mean qemu-kvm master isn't declared as stable. So i don't care about the
->>> slowness here.
->>> 
->>> What can we do about the core dump and crash?
->> 
->> Okay, I reproduced it; it seems aio=native is the culprit.  You can try
->> aio=threads as a workaround.
->> 
->> Copying some relevant people (context: aio=native on qemu-kvm-1.1.1
->> segfaults pretty early during guest install)
->> 
-> 
-> The following ought to fix it:
+On Mon, Aug 06, 2012 at 07:44:34AM +0100, Jan Beulich wrote:
 
-It does.
+> In any case, without having seen _how_ things break I don't
+> think a decision should be taken if/how to address this
+> (apparent) regression.
 
-Kevin: despite aio=native, I get iothreads and pwrites, something is broken.
-
+Machines that previously worked no longer work. That's a pretty strong 
+argument in favour of reverting until we can identify a workaround.
 
 -- 
-error compiling committee.c: too many arguments to function
+Matthew Garrett | mjg59@srcf.ucam.org
