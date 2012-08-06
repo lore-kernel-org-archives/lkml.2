@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab2HFS0U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:26:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47524 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754788Ab2HFS0T (ORCPT
+	id S1756864Ab2HFS2W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:28:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60477 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756737Ab2HFS2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:26:19 -0400
-Date: Mon, 6 Aug 2012 11:25:30 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-cc: Hugh Dickins <hughd@google.com>, Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Giacomo Comes <comes@naic.edu>, linux-kernel@vger.kernel.org
-Subject: Re: i915 regression on 3.6-rc1: lid blanks screen
-In-Reply-To: <CAKMK7uHZ3F9neO6=ZX2MFLzYmincPeEF23udgZ-0YJ0R+WHEkg@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1208061122060.1425@eggly.anvils>
-References: <alpine.LSU.2.00.1208040936570.1161@eggly.anvils> <s5h3941ke2p.wl%tiwai@suse.de> <alpine.LSU.2.00.1208052113530.1300@eggly.anvils> <CAKMK7uHZ3F9neO6=ZX2MFLzYmincPeEF23udgZ-0YJ0R+WHEkg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 6 Aug 2012 14:28:21 -0400
+Message-ID: <50200CE6.70009@gmail.com>
+Date: Mon, 06 Aug 2012 20:28:54 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: John Stultz <johnstul@us.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, paulmck@linux.vnet.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, prarit@redhat.com,
+        tglx@linutronix.de, Dave Jones <davej@redhat.com>
+Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
+References: <500ED719.2010002@gmail.com> <50112D3B.4020201@redhat.com> <50127B16.5040401@gmail.com> <50153138.4020304@redhat.com> <5015A5A8.7030601@gmail.com> <50161D5E.4030009@redhat.com> <50165046.9020705@gmail.com> <501654D3.7020504@redhat.com> <50168162.4010508@gmail.com> <50168981.3000001@redhat.com> <501EA58D.4090606@gmail.com> <501FFD2A.4010905@us.ibm.com> <50200AEF.5080904@us.ibm.com>
+In-Reply-To: <50200AEF.5080904@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Aug 2012, Daniel Vetter wrote:
-> On Mon, Aug 6, 2012 at 6:21 AM, Hugh Dickins <hughd@google.com> wrote:
-> > On Sun, 5 Aug 2012, Takashi Iwai wrote:
-> >> At Sat, 4 Aug 2012 10:01:13 -0700 (PDT),
-> >> Hugh Dickins wrote:
-> >> >
-> >> > Sorry to report that with 3.6-rc1, closing and opening the lid on
-> >> > this ThinkPad T420s leaves the screen blank, and I have to reboot.
-> >> >
-> >> > Bisection led to this commit, and reverting indeed gets my screen back:
-> >> >
-> >> > commit 520c41cf2fa029d1e8b923ac2026f96664f17c4b
-> >> > Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> >> > Date:   Wed Jul 11 16:27:52 2012 +0200
-> >> >
-> >> >     drm/i915/lvds: ditch ->prepare special case
-> > ...
-> >>
-> >> Hm, it's surprising.
-> >>
-> >> Could you check whether the counter-part intel_lvds_enable() is
-> >> called?  If the prepare callback affects, it must be from the mode
-> >> setting (drm_crtc_helper_set_mode()).
-> >
-> > Yes, I put a dump_stack() in both, and intel_lvds_enable() gets called
-> > about 0.28 seconds after the intel_lvds_disable() when I lift the lid;
-> > but with no video display until I revert that commit.
-> 
-> Can you please boot with drm.debug=0xe added to your kernel cmdline,
-> reproduce the issue (with the two dump_stack calls added) and then
-> attach the full dmesg?
+On 08/06/2012 08:20 PM, John Stultz wrote:
+> On 08/06/2012 10:21 AM, John Stultz wrote:
+>> On 08/05/2012 09:55 AM, Sasha Levin wrote:
+>>> On 07/30/2012 03:17 PM, Avi Kivity wrote:
+>>>> Possible causes:
+>>>>   - the APIC calibration in the guest failed, so it is programming too
+>>>> low values into the timer
+>>>>   - it actually needs 1 us wakeups and then can't keep up (esp. as kvm
+>>>> interrupt injection is slowing it down)
+>>>>
+>>>> You can try to find out by changing
+>>>> arch/x86/kvm/lapic.c:start_lapic_timer() to impose a minimum wakeup of
+>>>> (say) 20 microseconds which will let the guest live long enough for you
+>>>> to ftrace it and see what kind of timers it is programming.
+>>> I've kept trying to narrow it down, and found out It's triggerable using adjtimex().
+> Sorry, one more question: Could you provide details on how is it trigger-able using adjtimex?
 
-Collected, I'll send it to you both privately in a moment.
+It triggers after a while of fuzzing using trinity of just adjtimex ('./trinity --quiet -l off -cadjtimex').
 
-> 
-> Also a few other things to try: What happens if you do a modeset on
-> the LVDS while it's still working, e.g.
+Trinity is available here: http://git.codemonkey.org.uk/?p=trinity.git .
 
-In the dmesg, I've only gone to runlevel 3, simply working on the
-console without startx.  For these xrandrs to work, I did startx
-and used the graphics screen.
-
-> 
-> xrandr --outpu LVDS1 --auto --crtc 1
-
-Blanks and restores the screen.
-
-> 
-> then switch back to crtc 0 with
-> 
-> xrandr --outpu LVDS1 --auto --crtc 0
-
-Blanks and restores the screen.
-
-> 
-> Would also be interesting to know whether this can resurrect your machine.
-
-Indeed it does: the first (--crtc 1) restores the display from
-its blank state after opening the lid, the second (--crtc 0) then
-behaves as before, briefly blanking then restoring the display.
-
-> 
-> Also, how blank is the screen? I.e. is only the backlight off, but you
-> can (dimly) see some screen contents, or is it completely off?
-
-Completely off.
-
-Thanks,
-Hugh
+Let me know if I can help further with reproducing this, I can probably copy over my testing environment to some other host if you'd like.
