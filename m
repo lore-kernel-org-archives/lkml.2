@@ -1,181 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab2HFJYA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:24:00 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:42381 "EHLO song.cn.fujitsu.com"
+	id S1755842Ab2HFJYY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:24:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:42455 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755727Ab2HFJX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:23:58 -0400
+	id S1755806Ab2HFJYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 05:24:18 -0400
 X-IronPort-AV: E=Sophos;i="4.77,719,1336320000"; 
-   d="scan'208";a="5560146"
+   d="scan'208";a="5560155"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Rob Landley <rob@landley.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        David Rientjes <rientjes@google.com>, linux-doc@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [RFC V3 PATCH 18/25] hotplug: update nodemasks management
-Date: Mon, 6 Aug 2012 17:23:12 +0800
-Message-Id: <1344244999-5081-19-git-send-email-laijs@cn.fujitsu.com>
+        Yinghai Lu <yinghai@kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Ingo Molnar <mingo@kernel.org>, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org
+Subject: [RFC V3 PATCH 23/25] memblock: limit memory address from memblock
+Date: Mon, 6 Aug 2012 17:23:17 +0800
+Message-Id: <1344244999-5081-24-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
  <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/06 17:24:21,
+ 2012/08/06 17:24:39,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/06 17:24:22,
-	Serialize complete at 2012/08/06 17:24:22
+ 2012/08/06 17:24:40,
+	Serialize complete at 2012/08/06 17:24:40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-update nodemasks management for N_MEMORY
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
+Setting kernelcore_max_pfn means all memory which is bigger than
+the boot parameter is allocated as ZONE_MOVABLE. So memory which
+is allocated by memblock also should be limited by the parameter.
+
+The patch limits memory from memblock.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- Documentation/memory-hotplug.txt |    5 +++-
- include/linux/memory.h           |    1 +
- mm/memory_hotplug.c              |   49 +++++++++++++++++++++++++++++++++----
- 3 files changed, 48 insertions(+), 7 deletions(-)
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |    5 ++++-
+ mm/page_alloc.c          |    6 +++++-
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
-index 6e6cbc7..70bc1c7 100644
---- a/Documentation/memory-hotplug.txt
-+++ b/Documentation/memory-hotplug.txt
-@@ -378,6 +378,7 @@ struct memory_notify {
-        unsigned long start_pfn;
-        unsigned long nr_pages;
-        int status_change_nid_normal;
-+       int status_change_nid_high;
-        int status_change_nid;
- }
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 19dc455..f2977ae 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -42,6 +42,7 @@ struct memblock {
  
-@@ -385,7 +386,9 @@ start_pfn is start_pfn of online/offline memory.
- nr_pages is # of pages of online/offline memory.
- status_change_nid_normal is set node id when N_NORMAL_MEMORY of nodemask
- is (will be) set/clear, if this is -1, then nodemask status is not changed.
--status_change_nid is set node id when N_HIGH_MEMORY of nodemask is (will be)
-+status_change_nid_high is set node id when N_HIGH_MEMORY of nodemask
-+is (will be) set/clear, if this is -1, then nodemask status is not changed.
-+status_change_nid is set node id when N_MEMORY of nodemask is (will be)
- set/clear. It means a new(memoryless) node gets new memory by online and a
- node loses all memory. If this is -1, then nodemask status is not changed.
- If status_changed_nid* >= 0, callback should create/discard structures for the
-diff --git a/include/linux/memory.h b/include/linux/memory.h
-index 6b9202b..8089e49 100644
---- a/include/linux/memory.h
-+++ b/include/linux/memory.h
-@@ -54,6 +54,7 @@ struct memory_notify {
- 	unsigned long start_pfn;
- 	unsigned long nr_pages;
- 	int status_change_nid_normal;
-+	int status_change_nid_high;
- 	int status_change_nid;
- };
+ extern struct memblock memblock;
+ extern int memblock_debug;
++extern phys_addr_t memblock_limit;
  
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 3438c4a..c2c96a4 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -462,7 +462,7 @@ static void check_nodemasks_changes_online(unsigned long nr_pages,
- 	int nid = zone_to_nid(zone);
- 	enum zone_type zone_last = ZONE_NORMAL;
+ #define memblock_dbg(fmt, ...) \
+ 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 5cc6731..663b805 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -931,7 +931,10 @@ int __init_memblock memblock_is_region_reserved(phys_addr_t base, phys_addr_t si
  
--	if (N_HIGH_MEMORY == N_NORMAL_MEMORY)
-+	if (N_MEMORY == N_NORMAL_MEMORY)
- 		zone_last = ZONE_MOVABLE;
- 
- 	if (zone_idx(zone) <= zone_last && !node_state(nid, N_NORMAL_MEMORY))
-@@ -470,7 +470,20 @@ static void check_nodemasks_changes_online(unsigned long nr_pages,
- 	else
- 		arg->status_change_nid_normal = -1;
- 
--	if (!node_state(nid, N_HIGH_MEMORY))
-+#ifdef CONFIG_HIGHMEM
-+	zone_last = ZONE_HIGH;
-+	if (N_MEMORY == N_HIGH_MEMORY)
-+		zone_last = ZONE_MOVABLE;
-+
-+	if (zone_idx(zone) <= zone_last && !node_state(nid, N_HIGH_MEMORY))
-+		arg->status_change_nid_high = nid;
+ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ {
+-	memblock.current_limit = limit;
++	if (!memblock_limit || (memblock_limit > limit))
++		memblock.current_limit = limit;
 +	else
-+		arg->status_change_nid_high = -1;
-+#else
-+	arg->status_change_nid_high = arg->status_change_nid_normal;
-+#endif
-+
-+	if (!node_state(nid, N_MEMORY))
- 		arg->status_change_nid = nid;
- 	else
- 		arg->status_change_nid = -1;
-@@ -481,7 +494,10 @@ static void set_nodemasks(int node, struct memory_notify *arg)
- 	if (arg->status_change_nid_normal >= 0)
- 		node_set_state(node, N_NORMAL_MEMORY);
- 
--	node_set_state(node, N_HIGH_MEMORY);
-+	if (arg->status_change_nid_high >= 0)
-+		node_set_state(node, N_HIGH_MEMORY);
-+
-+	node_set_state(node, N_MEMORY);
++		memblock.current_limit = memblock_limit;
  }
  
+ static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 65ac5c9..c4d3aa0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -209,6 +209,8 @@ static unsigned long __initdata required_kernelcore;
+ static unsigned long __initdata required_movablecore;
+ static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
  
-@@ -899,7 +915,7 @@ static void check_nodemasks_changes_offline(unsigned long nr_pages,
- 	unsigned long present_pages = 0;
- 	enum zone_type zt, zone_last = ZONE_NORMAL;
- 
--	if (N_HIGH_MEMORY == N_NORMAL_MEMORY)
-+	if (N_MEMORY == N_NORMAL_MEMORY)
- 		zone_last = ZONE_MOVABLE;
- 
- 	for (zt = 0; zt <= zone_last; zt++)
-@@ -909,6 +925,21 @@ static void check_nodemasks_changes_offline(unsigned long nr_pages,
- 	else
- 		arg->status_change_nid_normal = -1;
- 
-+#ifdef CONIG_HIGHMEM
-+	zone_last = ZONE_HIGH;
-+	if (N_MEMORY == N_HIGH_MEMORY)
-+		zone_last = ZONE_MOVABLE;
++phys_addr_t memblock_limit;
 +
-+	for (; zt <= zone_last; zt++)
-+		present_pages += pgdat->node_zones[zt].present_pages;
-+	if (zone_idx(zone) <= zone_last && nr_pages >= present_pages)
-+		arg->status_change_nid_high = zone_to_nid(zone);
-+	else
-+		arg->status_change_nid_high = -1;
-+#else
-+	arg->status_change_nid_high = arg->status_change_nid_normal;
-+#endif
-+
- 	zone_last = ZONE_MOVABLE;
- 	for (; zt <= zone_last; zt++)
- 		present_pages += pgdat->node_zones[zt].present_pages;
-@@ -923,11 +954,17 @@ static void clear_nodemasks(int node, struct memory_notify *arg)
- 	if (arg->status_change_nid_normal >= 0)
- 		node_clear_state(node, N_NORMAL_MEMORY);
- 
--	if (N_HIGH_MEMORY == N_NORMAL_MEMORY)
-+	if (N_MEMORY == N_NORMAL_MEMORY)
- 		return;
- 
--	if (arg->status_change_nid >= 0)
-+	if (arg->status_change_nid_high >= 0)
- 		node_clear_state(node, N_HIGH_MEMORY);
-+
-+	if (N_MEMORY == N_HIGH_MEMORY)
-+		return;
-+
-+	if (arg->status_change_nid >= 0)
-+		node_clear_state(node, N_MEMORY);
+ /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
+ int movable_zone;
+ EXPORT_SYMBOL(movable_zone);
+@@ -4876,7 +4878,9 @@ static int __init cmdline_parse_core(char *p, unsigned long *core)
+  */
+ static int __init cmdline_parse_kernelcore_max_addr(char *p)
+ {
+-	return cmdline_parse_core(p, &required_kernelcore_max_pfn);
++	cmdline_parse_core(p, &required_kernelcore_max_pfn);
++	memblock_limit = required_kernelcore_max_pfn << PAGE_SHIFT;
++	return 0;
  }
- 
- static int __ref offline_pages(unsigned long start_pfn,
+ early_param("kernelcore_max_addr", cmdline_parse_kernelcore_max_addr);
+ #endif
 -- 
 1.7.4.4
 
