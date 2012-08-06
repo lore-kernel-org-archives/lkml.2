@@ -1,86 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952Ab2HFX05 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:26:57 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:39361 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab2HFX04 (ORCPT
+	id S1757034Ab2HFX2T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:28:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49790 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab2HFX2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:26:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120806214121.GA26698@opensource.wolfsonmicro.com>
-References: <20120805230238.GA1663@lizard> <1344207819-3415-4-git-send-email-anton.vorontsov@linaro.org>
- <CAKGA1bkiHj=zMJXSzoGp3fpLS3POnFXSV5y7sYYFAikqoUT9tQ@mail.gmail.com>
- <20120806154951.GQ16861@opensource.wolfsonmicro.com> <CAKGA1b=_AOub_pEJJGBTb6Y7wLZaSYKQjFTyMVFSr_=9VX4wpg@mail.gmail.com>
- <20120806193734.GA16199@opensource.wolfsonmicro.com> <20120806201609.GX25644@pengutronix.de>
- <CAKGA1bmMqyL4gyLYcanEH=R=HuBjRCNRLjUEWCj8wmpi3HuL0g@mail.gmail.com> <20120806214121.GA26698@opensource.wolfsonmicro.com>
-From: Matt Sealey <matt@genesi-usa.com>
-Date: Mon, 6 Aug 2012 18:26:34 -0500
-Message-ID: <CAKGA1bma1T5NXZgY4XDko0r4o_m1b-JioVjjC8+c4-1PE+r1aw@mail.gmail.com>
-Subject: Re: [PATCH 4/9] ASoC: imx: Don't use {en,dis}able_fiq() calls
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Robert Schwebel <r.schwebel@pengutronix.de>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        Sascha Hauer <kernel@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 6 Aug 2012 19:28:17 -0400
+From: anish kumar <anish198519851985@gmail.com>
+To: lars@metafoo.de
+Cc: cw00.choi@samsung.com, myungjoo.ham@samsung.com, jic23@cam.ac.uk,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        anish kumar <anish198519851985@gmail.com>,
+        anish kumar <anish.singh@samsung.com>
+Subject: [PATCH] [PATCH V2]Extcon: adc_jack: adc-jack driver to support 3.5 pi or simliar devices
+Date: Mon,  6 Aug 2012 16:28:00 -0700
+Message-Id: <1344295680-21064-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 4:41 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Aug 06, 2012 at 03:39:50PM -0500, Matt Sealey wrote:
->> On Mon, Aug 6, 2012 at 3:16 PM, Robert Schwebel
->
->> > That's not true; we still run MX25, MX27, MX35, MX28 on mainline in
->> > active projects.
->
->> I think Shawn Guo (FSL/Linaro) would also disagree, since he's just
->> posted a large amount of MXS patches to fix up the board for device
->> trees, and Arnd is pulling them.
->
-> MXS != i.MX.
->
->> As far as I know, the FIQ usage is quite valid for the processor it
->> needs to run on (MX21/27/28, right?) in the modes it runs in (AC97 on
->> these processors, and maybe MX35 too), and I'm just trying to figure
->> out what the steps are for
->
-> Oh, ick.  What is the problem that means people want to use the FIQ on
-> these processors?  There's been i.MX2x audio DMA since forever, it had
-> DMA in mainline before any of the later i.MXs due to them having SDMA.
-> The original mainline i.MX audio support was done on i.MX27 and didn't
-> have any issue here, this is the fist I've heard of a problem.
+From: anish kumar <anish198519851985@gmail.com>
 
-For SSI in I2S mode, I think it works great, AC97 not so much. It's
-the AC97 mode
-the FIQ stuff is there to fix. It seems a bunch of boards use AC97
-codecs (for no
-good reason)
+External connector devices that decides connection information based on
+ADC values may use adc-jack device driver. The user simply needs to
+provide a table of adc range and connection states. Then, extcon
+framework will automatically notify others.
 
->> I did note that SND_SOC_EUKREA_TLV320 enables FIQ but it also depends
->> on MX51 which makes me think this need to be split, too, so that MX51
->> boards don't have it but MX2/MX3 do.
->
-> Is that not bitrot due to it being there before SDMA support was?
+Changes in V1:
+added Lars-Peter Clausen suggested changes:
+Using macros to get rid of boiler plate code such as devm_kzalloc
+and module_platform_driver.Other changes suggested are related to
+coding guidelines.
 
-Possibly. I'm going to wait for Sascha to explain it again.. if AC97
-was the predicate
-for FIQ being required, it doesn't make any sense for a codec that says in it's
-description that it's I2S. It may not be bitrot but pure,
-unadulterated zeal on the part
-of whoever wrote that Kconfig snippet - enable everything, in case it
-fails (actually
-that kind of thing is why I fear for nuking the building of this
-driver since if FIQ stuff
-is silently required by something else and all that kept it in there
-was some badly
-thought out or bitrotted Kconfig entries... I don't want to cause a
-world of hurt).
+Changes in this version:
+Removed some unnecessary checks and changed the way we are un-regitering
+extcon and freeing the irq while removing.
 
+Signed-off-by: anish kumar <anish.singh@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+---
+ drivers/extcon/Kconfig          |    5 +
+ drivers/extcon/Makefile         |    1 +
+ drivers/extcon/adc_jack.c       |  193 +++++++++++++++++++++++++++++++++++++++
+ include/linux/extcon/adc_jack.h |   76 +++++++++++++++
+ 4 files changed, 275 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/extcon/adc_jack.c
+ create mode 100644 include/linux/extcon/adc_jack.h
+
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index e175c8e..596e277 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -21,6 +21,11 @@ config EXTCON_GPIO
+ 	  Say Y here to enable GPIO based extcon support. Note that GPIO
+ 	  extcon supports single state per extcon instance.
+ 
++config EXTCON_ADC_JACK
++        tristate "ADC Jack extcon support"
++        help
++          Say Y here to enable extcon device driver based on ADC values.
++
+ config EXTCON_MAX77693
+ 	tristate "MAX77693 EXTCON Support"
+ 	depends on MFD_MAX77693
+diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+index 88961b3..d95c5ea 100644
+--- a/drivers/extcon/Makefile
++++ b/drivers/extcon/Makefile
+@@ -4,6 +4,7 @@
+ 
+ obj-$(CONFIG_EXTCON)		+= extcon_class.o
+ obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
++obj-$(CONFIG_EXTCON_ADC_JACK)   += adc_jack.o
+ obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
+ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+ obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+diff --git a/drivers/extcon/adc_jack.c b/drivers/extcon/adc_jack.c
+new file mode 100644
+index 0000000..7a1aeb7
+--- /dev/null
++++ b/drivers/extcon/adc_jack.c
+@@ -0,0 +1,193 @@
++/*
++ * drivers/extcon/adc_jack.c
++ *
++ * Analog Jack extcon driver with ADC-based detection capability.
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * MyungJoo Ham <myungjoo.ham@samsung.com>
++ *
++ * Modified for calling to IIO to get adc by <anish.singh@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/slab.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/workqueue.h>
++#include <linux/iio/consumer.h>
++#include <linux/extcon/adc_jack.h>
++#include <linux/extcon.h>
++
++/**
++ * struct adc_jack_data - internal data for adc_jack device driver
++ * @edev        - extcon device.
++ * @cable_names - list of supported cables.
++ * @num_cables  - size of cable_names.
++ * @adc_condition       - list of adc value conditions.
++ * @num_condition       - size of adc_condition.
++ * @irq         - irq number of attach/detach event (0 if not exist).
++ * @handling_delay      - interrupt handler will schedule extcon event
++ *                      handling at handling_delay jiffies.
++ * @handler     - extcon event handler called by interrupt handler.
++ * @chan	- iio channel being queried.
++ */
++struct adc_jack_data {
++	struct extcon_dev edev;
++
++	const char **cable_names;
++	int num_cables;
++	struct adc_jack_cond *adc_condition;
++	int num_conditions;
++
++	int irq;
++	unsigned long handling_delay; /* in jiffies */
++	struct delayed_work handler;
++
++	struct iio_channel *chan;
++};
++
++static void adc_jack_handler(struct work_struct *work)
++{
++	struct adc_jack_data *data = container_of(to_delayed_work(work),
++						  struct adc_jack_data,
++						  handler);
++	u32 state = 0;
++	int ret, adc_val;
++	int i;
++
++	ret = iio_read_channel_raw(data->chan, &adc_val);
++	if (ret < 0) {
++		dev_err(data->edev.dev, "read channel() error: %d\n", ret);
++		return;
++	}
++
++	/* Get state from adc value with adc_condition */
++	for (i = 0; i < data->num_conditions; i++) {
++		struct adc_jack_cond *def = &data->adc_condition[i];
++		if (!def->state)
++			break;
++		if (def->min_adc <= adc_val && def->max_adc >= adc_val) {
++			state = def->state;
++			break;
++		}
++	}
++	/* if no def has met, it means state = 0 (no cables attached) */
++
++	extcon_set_state(&data->edev, state);
++}
++
++static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
++{
++	struct adc_jack_data *data = _data;
++
++	schedule_delayed_work(&data->handler, data->handling_delay);
++	return IRQ_HANDLED;
++}
++
++static int __devinit adc_jack_probe(struct platform_device *pdev)
++{
++	struct adc_jack_data *data;
++	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
++	int i, err = 0;
++
++	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	data->edev.name = pdata->name;
++
++	if (pdata->cable_names)
++		data->edev.supported_cable = pdata->cable_names;
++	else
++		data->edev.supported_cable = extcon_cable_name;
++
++	/* Check the length of array and set num_cables */
++	for (i = 0; data->edev.supported_cable[i]; i++)
++		;
++	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
++		err = -EINVAL;
++		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
++			i - 1);
++		goto out;
++	}
++	data->num_cables = i;
++
++	if (!pdata->adc_condition ||
++	    !pdata->adc_condition[0].state) {
++		err = -EINVAL;
++		dev_err(&pdev->dev, "error: adc_condition not defined.\n");
++		goto out;
++	}
++	data->adc_condition = pdata->adc_condition;
++
++	/* Check the length of array and set num_conditions */
++	for (i = 0; data->adc_condition[i].state; i++)
++		;
++	data->num_conditions = i;
++
++	data->chan = iio_channel_get(dev_name(&pdev->dev),
++						pdata->consumer_channel);
++	if (IS_ERR(data->chan)) {
++		err = PTR_ERR(data->chan);
++		goto out;
++	}
++
++	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
++
++	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
++
++	platform_set_drvdata(pdev, data);
++
++	err = extcon_dev_register(&data->edev, &pdev->dev);
++	if (err)
++		goto out;
++
++	data->irq = platform_get_irq(pdev, 0);
++	if (!data->irq) {
++		dev_err(&pdev->dev, "platform_get_irq failed\n");
++		err = -ENODEV;
++		goto err_irq;
++	}
++
++	err = request_any_context_irq(data->irq, adc_jack_irq_thread,
++				pdata->irq_flags, pdata->name, data);
++
++	if (err) {
++		dev_err(&pdev->dev, "error: irq %d\n", data->irq);
++		err = -EINVAL;
++		goto err_irq;
++	}
++
++	goto out;
++
++err_irq:
++	extcon_dev_unregister(&data->edev);
++out:
++	return err;
++}
++
++static int __devexit adc_jack_remove(struct platform_device *pdev)
++{
++	struct adc_jack_data *data = platform_get_drvdata(pdev);
++
++	free_irq(data->irq, data);
++	extcon_dev_unregister(&data->edev);
++
++	return 0;
++}
++
++static struct platform_driver adc_jack_driver = {
++	.probe		= adc_jack_probe,
++	.remove		= __devexit_p(adc_jack_remove),
++	.driver		= {
++		.name	= "adc-jack",
++		.owner	= THIS_MODULE,
++	},
++};
++
++module_platform_driver(adc_jack_driver);
+diff --git a/include/linux/extcon/adc_jack.h b/include/linux/extcon/adc_jack.h
+new file mode 100644
+index 0000000..79299a5
+--- /dev/null
++++ b/include/linux/extcon/adc_jack.h
+@@ -0,0 +1,76 @@
++/*
++ * include/linux/extcon/adc_jack.h
++ *
++ * Analog Jack extcon driver with ADC-based detection capability.
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * MyungJoo Ham <myungjoo.ham@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef _EXTCON_ADC_JACK_H_
++#define _EXTCON_ADC_JACK_H_ __FILE__
++
++#include <linux/module.h>
++#include <linux/extcon.h>
++
++/**
++ * struct adc_jack_cond - condition to use an extcon state
++ * @state	- the corresponding extcon state (if 0, this struct denotes
++ *		the last adc_jack_cond element among the array)
++ * @min_adc	- min adc value for this condition
++ * @max_adc	- max adc value for this condition
++ *
++ * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
++ * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
++ * 1 are attached (1<<0 | 1<<1 == 0x3)
++ *
++ * Note that you don't need to describe condition for "no cable attached"
++ * because when no adc_jack_cond is met, state = 0 is automatically chosen.
++ */
++struct adc_jack_cond {
++	u32 state; /* extcon state value. 0 if invalid */
++	u32 min_adc;
++	u32 max_adc;
++};
++
++/**
++ * struct adc_jack_pdata - platform data for adc jack device.
++ * @name	- name of the extcon device. If null, "adc-jack" is used.
++ * @consumer_channel - Unique name to identify the channel on the consumer
++ *                   side. This typically describes the channels use within
++ *                   the consumer. E.g. 'battery_voltage'
++ * @cable_names	- array of cable names ending with null. If the array itself
++ *		if null, extcon standard cable names are chosen.
++ * @adc_contition	- array of struct adc_jack_cond conditions ending
++ *			with .state = 0 entry. This describes how to decode
++ *			adc values into extcon state.
++ * @irq		- IRQ number that is triggerred by cable attach/detach
++ *		events. If irq = 0, use should manually update extcon state
++ *		with extcon APIs.
++ * @irq_flags	- irq flags used for the @irq
++ * @handling_delay_ms	- in some devices, we need to read ADC value some
++ *			milli-seconds after the interrupt occurs. You may
++ *			describe such delays with @handling_delay_ms, which
++ *			is rounded-off by jiffies.
++ */
++struct adc_jack_pdata {
++	const char *name;
++	const char *consumer_channel;
++	/*
++	 * NULL if standard extcon names are used.
++	 * The last entry should be NULL
++	 */
++	const char **cable_names;
++	/* The last entry's state should be 0 */
++	struct adc_jack_cond *adc_condition;
++
++	unsigned long irq_flags;
++	unsigned long handling_delay_ms; /* in ms */
++};
++
++#endif /* _EXTCON_ADC_JACK_H */
 -- 
-Matt Sealey <matt@genesi-usa.com>
-Product Development Analyst, Genesi USA, Inc.
+1.7.1
+
