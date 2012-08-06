@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab2HFKi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 06:38:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8945 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754475Ab2HFKiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 06:38:25 -0400
-Message-ID: <501F9E99.9010109@redhat.com>
-Date: Mon, 06 Aug 2012 13:38:17 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1755853Ab2HFKjC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 06:39:02 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:45829
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754923Ab2HFKi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 06:38:58 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
+From: <qiang.liu@freescale.com>
+To: <linux-crypto@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <dan.j.williams@intel.com>, <linux-kernel@vger.kernel.org>,
+        <dan.j.williams@gmail.com>, <vinod.koul@intel.com>
+CC: <kim.phillips@freescale.com>, <herbert@gondor.hengli.com.au>,
+        <davem@davemloft.net>, <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
+        Qiang Liu <qiang.liu@freescale.com>, Li Yang <leoli@freescale.com>
+Subject: [PATCH v6 2/8] fsl-dma: remove attribute DMA_INTERRUPT of dmaengine
+Date: Mon, 6 Aug 2012 18:12:46 +0800
+Message-ID: <1344247966-9156-1-git-send-email-qiang.liu@freescale.com>
+X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-References: <20120724203628.21081.56884.stgit@bling.home> <20120724204320.21081.32333.stgit@bling.home> <501F99A8.9050006@redhat.com>
-In-Reply-To: <501F99A8.9050006@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 01:17 PM, Avi Kivity wrote:
-> 
->>  
->> +4.77 KVM_EOIFD
->> +
->> +Capability: KVM_CAP_EOIFD
->> +Architectures: x86
->> +Type: vm ioctl
->> +Parameters: struct kvm_eoifd (in)
->> +Returns: 0 on success, < 0 on error
->> +
->> +KVM_EOIFD allows userspace to receive interrupt EOI notification
->> +through an eventfd.  kvm_eoifd.fd specifies the eventfd used for
->> +notification.  KVM_EOIFD_FLAG_DEASSIGN is used to de-assign an eoifd
->> +once assigned.  KVM_EOIFD also requires additional bits set in
->> +kvm_eoifd.flags to bind to the proper interrupt line.  The
->> +KVM_EOIFD_FLAG_LEVEL_IRQFD indicates that kvm_eoifd.key is provided
->> +and is a key from a level triggered interrupt (configured from
->> +KVM_IRQFD using KVM_IRQFD_FLAG_LEVEL).  The EOI notification is bound
->> +to the same GSI and irqchip input as the irqfd.  Both kvm_eoifd.key
->> +and KVM_EOIFD_FLAG_LEVEL_IRQFD must be specified on assignment and
->> +de-assignment of KVM_EOIFD.  A level irqfd may only be bound to a
->> +single eoifd.  KVM_CAP_EOIFD_LEVEL_IRQFD indicates support of
->> +KVM_EOIFD_FLAG_LEVEL_IRQFD.
-> 
-> Why do we need to couple eoifd and irqfd?
+From: Qiang Liu <qiang.liu@freescale.com>
 
-Oh, it's to auto-deassert the line.
+Delete attribute DMA_INTERRUPT because fsl-dma doesn't support this function,
+exception will be thrown if talitos is used to offload xor at the same time.
 
-Regarding the implementation, instead of a linked list, would an array
-of counters parallel to the bitmap make it simpler?
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Dan Williams <dan.j.williams@gmail.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Li Yang <leoli@freescale.com>
+Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
+Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
+---
+ drivers/dma/fsldma.c |   31 -------------------------------
+ 1 files changed, 0 insertions(+), 31 deletions(-)
 
--- 
-error compiling committee.c: too many arguments to function
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 8f84761..4f2f212 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -543,35 +543,6 @@ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
+ }
+
+ static struct dma_async_tx_descriptor *
+-fsl_dma_prep_interrupt(struct dma_chan *dchan, unsigned long flags)
+-{
+-	struct fsldma_chan *chan;
+-	struct fsl_desc_sw *new;
+-
+-	if (!dchan)
+-		return NULL;
+-
+-	chan = to_fsl_chan(dchan);
+-
+-	new = fsl_dma_alloc_descriptor(chan);
+-	if (!new) {
+-		chan_err(chan, "%s\n", msg_ld_oom);
+-		return NULL;
+-	}
+-
+-	new->async_tx.cookie = -EBUSY;
+-	new->async_tx.flags = flags;
+-
+-	/* Insert the link descriptor to the LD ring */
+-	list_add_tail(&new->node, &new->tx_list);
+-
+-	/* Set End-of-link to the last link descriptor of new list */
+-	set_ld_eol(chan, new);
+-
+-	return &new->async_tx;
+-}
+-
+-static struct dma_async_tx_descriptor *
+ fsl_dma_prep_memcpy(struct dma_chan *dchan,
+ 	dma_addr_t dma_dst, dma_addr_t dma_src,
+ 	size_t len, unsigned long flags)
+@@ -1352,12 +1323,10 @@ static int __devinit fsldma_of_probe(struct platform_device *op)
+ 	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+
+ 	dma_cap_set(DMA_MEMCPY, fdev->common.cap_mask);
+-	dma_cap_set(DMA_INTERRUPT, fdev->common.cap_mask);
+ 	dma_cap_set(DMA_SG, fdev->common.cap_mask);
+ 	dma_cap_set(DMA_SLAVE, fdev->common.cap_mask);
+ 	fdev->common.device_alloc_chan_resources = fsl_dma_alloc_chan_resources;
+ 	fdev->common.device_free_chan_resources = fsl_dma_free_chan_resources;
+-	fdev->common.device_prep_dma_interrupt = fsl_dma_prep_interrupt;
+ 	fdev->common.device_prep_dma_memcpy = fsl_dma_prep_memcpy;
+ 	fdev->common.device_prep_dma_sg = fsl_dma_prep_sg;
+ 	fdev->common.device_tx_status = fsl_tx_status;
+--
+1.7.5.1
+
+
