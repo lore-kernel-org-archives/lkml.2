@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab2HFWJV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 18:09:21 -0400
+	id S1757033Ab2HFWKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 18:10:07 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:61129 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756655Ab2HFWJK (ORCPT
+	with ESMTP id S1756930Ab2HFWJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 18:09:10 -0400
+	Mon, 6 Aug 2012 18:09:21 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
@@ -14,9 +14,9 @@ Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
         vgoyal@redhat.com, mpatocka@redhat.com, sage@newdream.net,
         yehuda@hq.newdream.net
-Subject: [PATCH v5 03/12] block: Add bio_reset()
-Date: Mon,  6 Aug 2012 15:08:32 -0700
-Message-Id: <1344290921-25154-4-git-send-email-koverstreet@google.com>
+Subject: [PATCH v5 10/12] block: Add bio_clone_kmalloc()
+Date: Mon,  6 Aug 2012 15:08:39 -0700
+Message-Id: <1344290921-25154-11-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1344290921-25154-1-git-send-email-koverstreet@google.com>
 References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
@@ -24,90 +24,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reusing bios is something that's been highly frowned upon in the past,
-but driver code keeps doing it anyways. If it's going to happen anyways,
-we should provide a generic method.
-
-This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
-was open coding it, by doing a bio_init() and resetting bi_destructor.
-
-v5: Add a define BIO_RESET_BITS, to be very explicit about what parts of
-bio->bi_flags are saved.
-
+Acked-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Change-Id: I4eb2975bd678d3be811d5423d0620b08020be9ff
 ---
- fs/bio.c                  |    9 +++++++++
- include/linux/bio.h       |    1 +
- include/linux/blk_types.h |    9 +++++++++
- 3 files changed, 19 insertions(+), 0 deletions(-)
+ drivers/block/osdblk.c |    3 +--
+ fs/bio.c               |   13 +++++++++++++
+ fs/exofs/ore.c         |    5 ++---
+ include/linux/bio.h    |    1 +
+ 4 files changed, 17 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/block/osdblk.c b/drivers/block/osdblk.c
+index 87311eb..1bbc681 100644
+--- a/drivers/block/osdblk.c
++++ b/drivers/block/osdblk.c
+@@ -266,11 +266,10 @@ static struct bio *bio_chain_clone(struct bio *old_chain, gfp_t gfpmask)
+ 	struct bio *tmp, *new_chain = NULL, *tail = NULL;
+ 
+ 	while (old_chain) {
+-		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
++		tmp = bio_clone_kmalloc(old_chain, gfpmask);
+ 		if (!tmp)
+ 			goto err_out;
+ 
+-		__bio_clone(tmp, old_chain);
+ 		tmp->bi_bdev = NULL;
+ 		gfpmask &= ~__GFP_WAIT;
+ 		tmp->bi_next = NULL;
 diff --git a/fs/bio.c b/fs/bio.c
-index 1c6c8b7..c7f3442 100644
+index f0c865b..77b9313 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
-@@ -261,6 +261,15 @@ void bio_init(struct bio *bio)
+@@ -497,6 +497,19 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
  }
- EXPORT_SYMBOL(bio_init);
+ EXPORT_SYMBOL(bio_clone);
  
-+void bio_reset(struct bio *bio)
++struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
 +{
-+	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
++	struct bio *b = bio_kmalloc(gfp_mask, bio->bi_max_vecs);
 +
-+	memset(bio, 0, BIO_RESET_BYTES);
-+	bio->bi_flags = flags|(1 << BIO_UPTODATE);
++	if (!b)
++		return NULL;
++
++	__bio_clone(b, bio);
++
++	return b;
 +}
-+EXPORT_SYMBOL(bio_reset);
++EXPORT_SYMBOL(bio_clone_kmalloc);
 +
  /**
-  * bio_alloc_bioset - allocate a bio for I/O
-  * @gfp_mask:   the GFP_ mask given to the slab allocator
+  *	bio_get_nr_vecs		- return approx number of vecs
+  *	@bdev:  I/O target
+diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
+index 24a49d4..a8d92fc 100644
+--- a/fs/exofs/ore.c
++++ b/fs/exofs/ore.c
+@@ -814,8 +814,8 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
+ 			struct bio *bio;
+ 
+ 			if (per_dev != master_dev) {
+-				bio = bio_kmalloc(GFP_KERNEL,
+-						  master_dev->bio->bi_max_vecs);
++				bio = bio_clone_kmalloc(master_dev->bio,
++							GFP_KERNEL);
+ 				if (unlikely(!bio)) {
+ 					ORE_DBGMSG(
+ 					      "Failed to allocate BIO size=%u\n",
+@@ -824,7 +824,6 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
+ 					goto out;
+ 				}
+ 
+-				__bio_clone(bio, master_dev->bio);
+ 				bio->bi_bdev = NULL;
+ 				bio->bi_next = NULL;
+ 				per_dev->offset = master_dev->offset;
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 2643589..ba60319 100644
+index 9720544..e180f1d 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -226,6 +226,7 @@ extern void __bio_clone(struct bio *, struct bio *);
+@@ -221,6 +221,7 @@ extern int bio_phys_segments(struct request_queue *, struct bio *);
+ 
+ extern void __bio_clone(struct bio *, struct bio *);
  extern struct bio *bio_clone(struct bio *, gfp_t);
++struct bio *bio_clone_kmalloc(struct bio *, gfp_t);
  
  extern void bio_init(struct bio *);
-+extern void bio_reset(struct bio *);
- 
- extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
- extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 293547e..401c573 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -59,6 +59,10 @@ struct bio {
- 	unsigned int		bi_seg_front_size;
- 	unsigned int		bi_seg_back_size;
- 
-+	/*
-+	 * Everything starting with bi_max_vecs will be preserved by bio_reset()
-+	 */
-+
- 	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
- 
- 	atomic_t		bi_cnt;		/* pin count */
-@@ -93,6 +97,8 @@ struct bio {
- 	struct bio_vec		bi_inline_vecs[0];
- };
- 
-+#define BIO_RESET_BYTES		offsetof(struct bio, bi_max_vecs)
-+
- /*
-  * bio flags
-  */
-@@ -108,6 +114,9 @@ struct bio {
- #define BIO_FS_INTEGRITY 9	/* fs owns integrity data, not block layer */
- #define BIO_QUIET	10	/* Make BIO Quiet */
- #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
-+
-+#define BIO_RESET_BITS	12	/* Flags starting here get preserved by bio_reset() */
-+
- #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
- 
- /*
+ extern void bio_reset(struct bio *);
 -- 
 1.7.7.3
 
