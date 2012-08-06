@@ -1,154 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2HFUr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 16:47:27 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55379 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756604Ab2HFUrZ (ORCPT
+	id S1756846Ab2HFUrk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 16:47:40 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39224 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756604Ab2HFUri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 16:47:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344232549.3441.7.camel@ul30vt.home>
-References: <20120804181445.6598.6505.stgit@bling.home> <CAErSpo42VMnfzDP6t5eCFfE-5=yPNmNGLs6a2D0KwGMhe71DbQ@mail.gmail.com>
- <1344232549.3441.7.camel@ul30vt.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 6 Aug 2012 13:47:03 -0700
-Message-ID: <CAErSpo756PXBNjwEMEX8DKGcEu0R+UuQ+rg9NG8k1c+TZ=j2Gw@mail.gmail.com>
-Subject: Re: [PATCH] pci: Account for virtual buses in pci_acs_path_enabled
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org, dsahern@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Mon, 6 Aug 2012 16:47:38 -0400
+Date: Mon, 06 Aug 2012 13:47:37 -0700 (PDT)
+Message-Id: <20120806.134737.1358773847818872075.davem@davemloft.net>
+To: ebiederm@xmission.com
+Cc: vyasevich@gmail.com, jan.ariyasu@gmail.com, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.ariyasu@hp.com
+Subject: Re: [PATCH 00/13] SCTP: Enable netns
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <874noflrzd.fsf@xmission.com>
+References: <87mx27rig7.fsf@xmission.com>
+	<50201928.2030802@gmail.com>
+	<874noflrzd.fsf@xmission.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 5, 2012 at 11:55 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Sun, 2012-08-05 at 23:30 -0600, Bjorn Helgaas wrote:
->> On Sat, Aug 4, 2012 at 12:19 PM, Alex Williamson
->> <alex.williamson@redhat.com> wrote:
->> > It's possible to have buses without an associated bridge
->> > (bus->self == NULL).  SR-IOV can generate such buses.  When
->> > we find these, skip to the parent bus to look for the next
->> > ACS test.
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 06 Aug 2012 12:50:46 -0700
+
+> Vlad Yasevich <vyasevich@gmail.com> writes:
+> 
+> 
+>> Hi Eric
 >>
->> To make sure I understand the problem here, I think you're referring
->> to the situation where an SR-IOV device can span several bus numbers,
->> e.g., the "VFs Spanning Multiple Bus Numbers" implementation note in
->> the SR-IOV 1.1 spec, sec. 2.1.2.
->>
->> It says "All PFs must be located on the Device's captured Bus Number"
->> -- I think that means every PF will be directly on a bridge's
->> secondary bus and hence will have a valid dev->bus->self pointer.
->>
->> However, VFs need not be on the same bus number.  If a VF is on
->> (captured Bus Number plus 1), I think we allocate a new struct pci_bus
->> for it, but there's no P2P bridge that leads to that bus, so the
->> bus->self pointer is probably NULL.
->
-> Yes, exactly.  virtfn_add_bus() is where we're creating this new bus.
->
->> This makes me quite nervous, because I bet there are many places that
->> assume every non-root bus has a valid bus->self pointer  -- I know I
->> certainly had that assumption.
->>
->> I looked at callers of pci_is_root_bus(), and at first glance, it seems like
->> iommu_init_device(), intel_iommu_add_device(), pci_acs_path_enabled(),
->
->
-> These 3 are handled by this patch, plus the intel and amd iommu patches
-> I sent.
->
->> pci_get_interrupt_pin(), pci_common_swizzle(),
->
-> If sr-iov is the only source of these virtual buses, these are probably
-> ok since VFs don't support INTx.
->
->> pci_find_upstream_pcie_bridge(), and
->
-> Here the pci_is_root_bus() is after a pci_is_pcie() check, so again if
-> sr-iov only (and assuming VFs properly report PCIe capability), we
-> shouldn't stumble on it.
->
->> pci_bus_release_bridge_resources() all might have similar problems.
->
-> This one might deserve further investigation.  Thanks,
+>> Associations are looked up by ports, but then verifyed by addresses.
+>> Also, associations belong to sockets and simply validating the socket
+>> namespace should be sufficient.
+> 
+> True.  Your set of patches isn't quite as likely to malfunction as it
+> looked at first glance.  It requires address reuse which happens accross
+> namespaces but not too frequently.
+> 
+> As for validating the socket namespace I agree that is the fix and my
+> patchset winds up doing it.
 
-We can fix all these places piecemeal, but that doesn't feel like a
-very satisfying solution.  It makes it much harder to know that each
-place is correct, and this oddity of a bus with no upstream bridge is
-still lying around, waiting to bite us again later.
-
-What other possible ways of fixing this do we have?  Could we set
-bus->self (multiple buses would then point to the same bridge, and I
-don't know if that would break something)?  Add something like a
-pci_upstream_p2p_bridge() interface that would encapsulate traversing
-the bus->parent and bus->self links?
-
-Since these fake VF buses don't have a bridge that points to them, I
-think the only place we keep a pointer to them is in the parent bus's
-"children" list (updated in pci_add_new_bus()).  And now I'm confused
-about when we should use bus->children and when we should use
-bus->devices and why we should have both.
-
-Does pci_walk_bus() work correctly with these VFs on fake buses?  It
-doesn't use "children", so I can't see how it would ever find them.
-
-Aren't you sorry you opened this can of worms?  :)
-
->> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
->> > ---
->> >
->> > David Ahern reported an oops from iommu drivers passing NULL into
->> > this function for the same mistake.  Harden this function against
->> > assuming bus->self is valid as well.  David, please include this
->> > patch as well as the iommu patches in your testing.
->> >
->> >  drivers/pci/pci.c |   22 +++++++++++++++++-----
->> >  1 file changed, 17 insertions(+), 5 deletions(-)
->> >
->> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->> > index f3ea977..e11a49c 100644
->> > --- a/drivers/pci/pci.c
->> > +++ b/drivers/pci/pci.c
->> > @@ -2486,18 +2486,30 @@ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
->> >  bool pci_acs_path_enabled(struct pci_dev *start,
->> >                           struct pci_dev *end, u16 acs_flags)
->> >  {
->> > -       struct pci_dev *pdev, *parent = start;
->> > +       struct pci_dev *pdev = start;
->> > +       struct pci_bus *bus;
->> >
->> >         do {
->> > -               pdev = parent;
->> > -
->> >                 if (!pci_acs_enabled(pdev, acs_flags))
->> >                         return false;
->> >
->> > -               if (pci_is_root_bus(pdev->bus))
->> > +               bus = pdev->bus;
->> > +
->> > +               if (pci_is_root_bus(bus))
->> >                         return (end == NULL);
->> >
->> > -               parent = pdev->bus->self;
->> > +               /*
->> > +                * Skip buses without an associated bridge.  In this
->> > +                * case move to the parent and continue.
->> > +                */
->> > +               while (!bus->self) {
->> > +                       if (!pci_is_root_bus(bus))
->> > +                               bus = bus->parent;
->> > +                       else
->> > +                               return (end == NULL);
->> > +               }
->> > +
->> > +               pdev = bus->self;
->> >         } while (pdev != end);
->> >
->> >         return true;
->> >
->
->
->
+FWIW I much prefer Eric's patch set, it was so significantly easier to
+read and validate than Jan's.
