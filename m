@@ -1,335 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2HFGo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 02:44:29 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:36516 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752056Ab2HFGo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 02:44:28 -0400
-Message-ID: <501F6842.8080707@metafoo.de>
-Date: Mon, 06 Aug 2012 08:46:26 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
-MIME-Version: 1.0
-To: anish kumar <anish198519851985@gmail.com>
-CC: cw00.choi@samsung.com, myungjoo.ham@samsung.com, jic23@cam.ac.uk,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        anish kumar <anish.singh@samsung.com>
-Subject: Re: [PATCH] Extcon: adc_jack: adc-jack driver to support 3.5 pi or
- simliar devices
-References: <1344228841-8342-1-git-send-email-anish198519851985@gmail.com>
-In-Reply-To: <1344228841-8342-1-git-send-email-anish198519851985@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753311Ab2HFGol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 02:44:41 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38793 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041Ab2HFGoj (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:2>);
+	Mon, 6 Aug 2012 02:44:39 -0400
+Message-Id: <501F83F20200007800092C1C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 06 Aug 2012 07:44:34 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <cJ-ko@zougloub.eu>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Ingo Molnar" <mingo@kernel.org>,
+        "Matt Fleming" <matt.fleming@linux.intel.com>,
+        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform
+ wall clock" prevents my machine from booting
+References: <20120805172903.5f8bb24c@zougloub.eu>
+ <501EF3A2.20200@zytor.com>
+In-Reply-To: <501EF3A2.20200@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 06:54 AM, anish kumar wrote:
-> From: anish kumar <anish198519851985@gmail.com>
+>>> On 06.08.12 at 00:28, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> On 08/05/2012 02:29 PM, Jérôme Carretero wrote:
+>> Hi,
+>>
+>> My PC (AMD Bulldozer + Asus SABERTOOTH 990FX) booted fine from UEFI
+>> and it broke between v3.5 and v3.6-rc1.
+>> Other machines with old BIOSes booted fine so I looked into EFI-related
+>> patches trying to revert them, because I didn't know what else to do.
+>>
+>> Bingo, bacef661: x86-64/efi: Use EFI to deal with platform wall clock.
+>>
+>> At the moment I reverted this commit after v3.6-rc1-133-g42a579a,
+>> and it boots fine.
+>>
+>> This really not my domain so tell me if I can help testing.
+>>
 > 
-> External connector devices that decides connection information based on
-> ADC values may use adc-jack device driver. The user simply needs to
-> provide a table of adc range and connection states. Then, extcon
-> framework will automatically notify others.
+> Thank you... we were aware of the problem but had not been able to 
+> reproduce it, so we had hoped someone would bisect or otherwise identify 
+> the faulty patch.
 
-Hi,
+Faulty? Without technical detail I'd be careful with this, as there's
+too many broken EFI implementation around.
 
-some comments inline.
+The only change that has a (very low) potential for causing
+problems by itself is the earlier calling of efi_enter_virtual_mode(),
+which was requested/recommended by Matthew.
 
-> 
-> Signed-off-by: anish kumar <anish.singh@samsung.com>
-> ---
->  drivers/extcon/Kconfig          |    5 +
->  drivers/extcon/Makefile         |    1 +
->  drivers/extcon/adc_jack.c       |  183 +++++++++++++++++++++++++++++++++++++++
->  include/linux/extcon/adc_jack.h |  108 +++++++++++++++++++++++
->  4 files changed, 297 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/extcon/adc_jack.c
->  create mode 100644 include/linux/extcon/adc_jack.h
-> 
-[...]
-> diff --git a/drivers/extcon/adc_jack.c b/drivers/extcon/adc_jack.c
-> new file mode 100644
-> index 0000000..fef8334
-> --- /dev/null
-> +++ b/drivers/extcon/adc_jack.c
-> @@ -0,0 +1,183 @@
-[...]
-> +static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
-> +{
-> +	struct adc_jack_data *data = _data;
-> +
-> +	schedule_delayed_work(&data->handler, data->handling_delay);
+I am e.g. (meanwhile) aware of (Intel) systems that use floating
+point instructions in the UEFI runtime code, which is clearly a
+violation of the spec; having the kernel continue to be not spec
+compliant is a questionable tradeoff.
 
-If you are just going to schedule a delayed work in the interrupt handler you
-don't necessarily need a threaded interrupt handler. I'd use
-request_any_context_irq to request the IRQ.
+In any case, without having seen _how_ things break I don't
+think a decision should be taken if/how to address this
+(apparent) regression.
 
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int adc_jack_probe(struct platform_device *pdev)
-> +{
-> +	struct adc_jack_data *data;
-> +	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
-> +	int i, err = 0;
-> +
-> +	data = kzalloc(sizeof(struct adc_jack_data), GFP_KERNEL);
-
-It makes sense to use devm_kzalloc here.
-
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	data->edev.name = pdata->name;
-> +
-> +	if (pdata->cable_names)
-> +		data->edev.supported_cable = pdata->cable_names;
-> +	else
-> +		data->edev.supported_cable = extcon_cable_name;
-> +
-> +	/* Check the length of array and set num_cables */
-> +	for (i = 0; data->edev.supported_cable[i]; i++)
-> +		;
-> +	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
-> +		err = -EINVAL;
-> +		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
-> +			i - 1);
-> +		goto err_alloc;
-> +	}
-> +	data->num_cables = i;
-> +
-> +	if (!pdata->adc_condition ||
-> +	    !pdata->adc_condition[0].state) {
-> +		err = -EINVAL;
-> +		dev_err(&pdev->dev, "error: adc_condition not defined.\n");
-> +		goto err_alloc;
-> +	}
-> +	data->adc_condition = pdata->adc_condition;
-> +
-> +	/* Check the length of array and set num_conditions */
-> +	for (i = 0; data->adc_condition[i].state; i++)
-> +		;
-> +	data->num_conditions = i;
-> +
-> +	data->chan = iio_channel_get(dev_name(&pdev->dev),
-> +						pdata->consumer_channel);
-
-You should check the result of iio_channel_get.
-
-> +	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
-> +
-> +	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
-> +
-> +	platform_set_drvdata(pdev, data);
-> +
-> +	if (pdata->irq) {
-
-Is the driver actually useful without a interrupt? I mean it wouldn't do much
-expect always reporting a unconnected cable.
-
-> +		data->irq = pdata->irq;
-
-Usually you'd use platform device resources to set the IRQ and not platform
-data. E.g. data->irq = platform_get_irq(pdev, 0);
-
-> +
-> +		err = request_threaded_irq(data->irq, NULL,
-> +					   adc_jack_irq_thread,
-> +					   pdata->irq_flags, pdata->name,
-> +					   data);
-> +
-> +		if (err) {
-> +			dev_err(&pdev->dev, "error: irq %d\n", data->irq);
-> +			err = -EINVAL;
-> +			goto err_initwork;
-> +		}
-> +	}
-> +	err = extcon_dev_register(&data->edev, &pdev->dev);
-> +	if (err)
-> +		goto err_irq;
-> +
-> +	data->ready = true;
-
-If you request the irq after you registered the extcon_dev you don't need ready.
-
-> +
-> +	goto out;
-> +
-> +err_irq:
-> +	if (data->irq)
-> +		free_irq(data->irq, data);
-> +err_initwork:
-> +	cancel_delayed_work_sync(&data->handler);
-> +err_alloc:
-> +	kfree(data);
-> +out:
-> +	return err;
-> +}
-> +
-> +static int __devexit adc_jack_remove(struct platform_device *pdev)
-> +{
-> +	struct adc_jack_data *data = platform_get_drvdata(pdev);
-> +
-> +	extcon_dev_unregister(&data->edev);
-> +	if (data->irq)
-> +		free_irq(data->irq, data);
-> +	platform_set_drvdata(pdev, NULL);
-
-Setting the drvdata to NULL is not necessary.
-
-> +	kfree(data);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver adc_jack_driver = {
-> +	.probe		= adc_jack_probe,
-> +	.remove		= __devexit_p(adc_jack_remove),
-> +	.driver		= {
-> +		.name	= "adc-jack",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init adc_jack_init(void)
-> +{
-> +	return platform_driver_register(&adc_jack_driver);
-> +}
-> +
-> +static void __exit adc_jack_exit(void)
-> +{
-> +	platform_driver_unregister(&adc_jack_driver);
-> +}
-> +
-> +module_init(adc_jack_init);
-> +module_exit(adc_jack_exit);
-
-module_platform_driver(adc_jack_driver);
-
-> diff --git a/include/linux/extcon/adc_jack.h b/include/linux/extcon/adc_jack.h
-> new file mode 100644
-> index 0000000..4d6a1f7
-> --- /dev/null
-> +++ b/include/linux/extcon/adc_jack.h
-> @@ -0,0 +1,108 @@
-> +/*
-> + * include/linux/extcon/adc_jack.h
-> + *
-> + * Analog Jack extcon driver with ADC-based detection capability.
-> + *
-> + * Copyright (C) 2012 Samsung Electronics
-> + * MyungJoo Ham <myungjoo.ham@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#ifndef _EXTCON_ADC_JACK_H_
-> +#define _EXTCON_ADC_JACK_H_ __FILE__
-> +
-> +#include <linux/module.h>
-> +#include <linux/extcon.h>
-> +
-> +/**
-> + * struct adc_jack_data - internal data for adc_jack device driver
-> + * @edev	- extcon device.
-> + * @cable_names	- list of supported cables.
-> + * @num_cables	- size of cable_names.
-> + * @adc_condition	- list of adc value conditions.
-> + * @num_condition	- size of adc_condition.
-> + * @irq		- irq number of attach/detach event (0 if not exist).
-> + * @handling_delay	- interrupt handler will schedule extcon event
-> + *			handling at handling_delay jiffies.
-> + * @handler	- extcon event handler called by interrupt handler.
-> + * @chan	- iio channel being queried.
-> + * @ready	- true if it is safe to run handler.
-> + */
-> +struct adc_jack_data {
-> +	struct extcon_dev edev;
-> +
-> +	const char **cable_names;
-> +	int num_cables;
-> +	struct adc_jack_cond *adc_condition;
-> +	int num_conditions;
-> +
-> +	int irq;
-> +	unsigned long handling_delay; /* in jiffies */
-> +	struct delayed_work handler;
-> +
-> +	struct iio_channel *chan;
-> +
-> +	bool ready;
-> +};
-
-This struct should not go into the public header. The only one who needs this
-is the driver itself.
-
-> +
-> +/**
-> + * struct adc_jack_cond - condition to use an extcon state
-> + * @state	- the corresponding extcon state (if 0, this struct denotes
-> + *		the last adc_jack_cond element among the array)
-> + * @min_adc	- min adc value for this condition
-> + * @max_adc	- max adc value for this condition
-> + *
-> + * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
-> + * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
-> + * 1 are attached (1<<0 | 1<<1 == 0x3)
-> + *
-> + * Note that you don't need to describe condition for "no cable attached"
-> + * because when no adc_jack_cond is met, state = 0 is automatically chosen.
-> + */
-> +struct adc_jack_cond {
-> +	u32 state; /* extcon state value. 0 if invalid */
-> +	u32 min_adc;
-> +	u32 max_adc;
-> +};
-> +
-> +/**
-> + * struct adc_jack_pdata - platform data for adc jack device.
-> + * @name	- name of the extcon device. If null, "adc-jack" is used.
-> + * @consumer_channel - Unique name to identify the channel on the consumer
-> + *                   side. This typically describes the channels use within
-> + *                   the consumer. E.g. 'battery_voltage'
-> + * @cable_names	- array of cable names ending with null. If the array itself
-> + *		if null, extcon standard cable names are chosen.
-> + * @adc_contition	- array of struct adc_jack_cond conditions ending
-> + *			with .state = 0 entry. This describes how to decode
-> + *			adc values into extcon state.
-> + * @irq		- IRQ number that is triggerred by cable attach/detach
-> + *		events. If irq = 0, use should manually update extcon state
-> + *		with extcon APIs.
-> + * @irq_flags	- irq flags used for the @irq
-> + * @handling_delay_ms	- in some devices, we need to read ADC value some
-> + *			milli-seconds after the interrupt occurs. You may
-> + *			describe such delays with @handling_delay_ms, which
-> + *			is rounded-off by jiffies.
-> + */
-> +struct adc_jack_pdata {
-> +	const char *name;
-> +	const char *consumer_channel;
-> +	/*
-> +	 * NULL if standard extcon names are used.
-> +	 * The last entry should be NULL
-> +	 */
-> +	const char **cable_names;
-
-const char * const *
-
-> +	/* The last entry's state should be 0 */
-> +	struct adc_jack_cond *adc_condition;
-> +
-> +	int irq; /* Jack insertion/removal interrupt */
-> +	unsigned long irq_flags;
-> +	unsigned long handling_delay_ms; /* in ms */
-> +};
-> +
-> +#endif /* _EXTCON_ADC_JACK_H */
-
+Jan
