@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab2HFXNg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:13:36 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:44964 "EHLO ogre.sisk.pl"
+	id S932409Ab2HFXON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:14:13 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44941 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756424Ab2HFXLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:11:45 -0400
+	id S1752887Ab2HFXLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 19:11:12 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [PATCH 5/12] ARM: shmobile: Use domain names when adding subdomains to power domains
-Date: Tue, 7 Aug 2012 01:09:31 +0200
+Subject: [PATCH 1/12] PM / Domains: Make it possible to use domain names when adding devices
+Date: Tue, 7 Aug 2012 01:06:11 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Linux PM list <linux-pm@vger.kernel.org>,
@@ -20,90 +20,132 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208070109.31453.rjw@sisk.pl>
+Message-Id: <201208070106.12060.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Make the power management code under arch/arm/mach-shmobile/
-use pm_genpd_add_subdomain_names() for adding subdomains to power
-domains, which makes it possible to drop
-rmobile_pm_add_subdomain() and will allow us to carry out those
-operations for domain objects stored in tables in a straightforward
-way.
+Add a new helper function __pm_genpd_name_add_device() allowing
+a device to be added to a (registered) generic PM domain identified
+by name.  Add a wrapper around it, pm_genpd_name_add_device(),
+passing NULL as the last argument and reorganize pm_domains.h for the
+new functions to be defined consistently with the existing ones.
+
+These functions are useful for adding devices to PM domains whose
+representations are stored in tables, when the caller doesn't know
+the index of the domain to add the device to, but it knows the
+domain's name.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/mach-shmobile/include/mach/pm-rmobile.h |    3 ---
- arch/arm/mach-shmobile/pm-rmobile.c              |    6 ------
- arch/arm/mach-shmobile/setup-r8a7740.c           |    2 +-
- arch/arm/mach-shmobile/setup-sh7372.c            |    8 ++++----
- 4 files changed, 5 insertions(+), 14 deletions(-)
+ drivers/base/power/domain.c |   27 +++++++++++++++++++++++++++
+ include/linux/pm_domain.h   |   42 +++++++++++++++++++++++++++++-------------
+ 2 files changed, 56 insertions(+), 13 deletions(-)
 
-Index: linux/arch/arm/mach-shmobile/include/mach/pm-rmobile.h
+Index: linux/drivers/base/power/domain.c
 ===================================================================
---- linux.orig/arch/arm/mach-shmobile/include/mach/pm-rmobile.h
-+++ linux/arch/arm/mach-shmobile/include/mach/pm-rmobile.h
-@@ -33,12 +33,9 @@ struct rmobile_pm_domain *to_rmobile_pd(
- extern void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd);
- extern void rmobile_add_device_to_domain(const char *domain_name,
- 					struct platform_device *pdev);
--extern void rmobile_pm_add_subdomain(struct rmobile_pm_domain *rmobile_pd,
--				    struct rmobile_pm_domain *rmobile_sd);
- #else
- #define rmobile_init_pm_domain(pd) do { } while (0)
- #define rmobile_add_device_to_domain(name, pdev) do { } while (0)
--#define rmobile_pm_add_subdomain(pd, sd) do { } while (0)
- #endif /* CONFIG_PM */
- 
- #endif /* PM_RMOBILE_H */
-Index: linux/arch/arm/mach-shmobile/pm-rmobile.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/pm-rmobile.c
-+++ linux/arch/arm/mach-shmobile/pm-rmobile.c
-@@ -158,10 +158,4 @@ void rmobile_add_device_to_domain(const
- 	if (pm_clk_no_clocks(dev))
- 		pm_clk_add(dev, NULL);
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -1465,6 +1465,33 @@ int __pm_genpd_of_add_device(struct devi
+ 	return __pm_genpd_add_device(genpd, dev, td);
  }
--
--void rmobile_pm_add_subdomain(struct rmobile_pm_domain *rmobile_pd,
--			     struct rmobile_pm_domain *rmobile_sd)
+ 
++
++/**
++ * __pm_genpd_name_add_device - Find I/O PM domain and add a device to it.
++ * @domain_name: Name of the PM domain to add the device to.
++ * @dev: Device to be added.
++ * @td: Set of PM QoS timing parameters to attach to the device.
++ */
++int __pm_genpd_name_add_device(const char *domain_name, struct device *dev,
++			       struct gpd_timing_data *td)
++{
++	struct generic_pm_domain *genpd = NULL, *gpd;
++
++	if (IS_ERR_OR_NULL(domain_name) || IS_ERR_OR_NULL(dev))
++		return -EINVAL;
++
++	mutex_lock(&gpd_list_lock);
++	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
++		if (!strcmp(gpd->name, domain_name)) {
++			genpd = gpd;
++			break;
++		}
++	}
++	mutex_unlock(&gpd_list_lock);
++
++	return __pm_genpd_add_device(genpd, dev, td);
++}
++
+ /**
+  * pm_genpd_remove_device - Remove a device from an I/O PM domain.
+  * @genpd: PM domain to remove the device from.
+Index: linux/include/linux/pm_domain.h
+===================================================================
+--- linux.orig/include/linux/pm_domain.h
++++ linux/include/linux/pm_domain.h
+@@ -138,17 +138,9 @@ extern int __pm_genpd_of_add_device(stru
+ 				    struct device *dev,
+ 				    struct gpd_timing_data *td);
+ 
+-static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
+-				      struct device *dev)
 -{
--	pm_genpd_add_subdomain(&rmobile_pd->genpd, &rmobile_sd->genpd);
+-	return __pm_genpd_add_device(genpd, dev, NULL);
 -}
- #endif /* CONFIG_PM */
-Index: linux/arch/arm/mach-shmobile/setup-r8a7740.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/setup-r8a7740.c
-+++ linux/arch/arm/mach-shmobile/setup-r8a7740.c
-@@ -678,7 +678,7 @@ void __init r8a7740_add_standard_devices
- 	rmobile_init_pm_domain(&r8a7740_pd_a3sp);
- 	rmobile_init_pm_domain(&r8a7740_pd_a4lc);
+-
+-static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
+-					 struct device *dev)
+-{
+-	return __pm_genpd_of_add_device(genpd_node, dev, NULL);
+-}
++extern int __pm_genpd_name_add_device(const char *domain_name,
++				      struct device *dev,
++				      struct gpd_timing_data *td);
  
--	rmobile_pm_add_subdomain(&r8a7740_pd_a4s, &r8a7740_pd_a3sp);
-+	pm_genpd_add_subdomain_names("A4S", "A3SP");
+ extern int pm_genpd_remove_device(struct generic_pm_domain *genpd,
+ 				  struct device *dev);
+@@ -187,8 +179,14 @@ static inline int __pm_genpd_add_device(
+ {
+ 	return -ENOSYS;
+ }
+-static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
+-				      struct device *dev)
++static inline int __pm_genpd_of_add_device(struct device_node *genpd_node,
++					   struct device *dev)
++{
++	return -ENOSYS;
++}
++static inline int __pm_genpd_name_add_device(char *domain_name,
++					     struct device *dev,
++					     struct gpd_timing_data *td)
+ {
+ 	return -ENOSYS;
+ }
+@@ -242,6 +240,24 @@ static inline bool default_stop_ok(struc
+ #define pm_domain_always_on_gov NULL
+ #endif
  
- 	/* add devices */
- 	platform_add_devices(r8a7740_early_devices,
-Index: linux/arch/arm/mach-shmobile/setup-sh7372.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/setup-sh7372.c
-+++ linux/arch/arm/mach-shmobile/setup-sh7372.c
-@@ -1011,11 +1011,11 @@ void __init sh7372_add_standard_devices(
- 	rmobile_init_pm_domain(&sh7372_pd_a3sp);
- 	rmobile_init_pm_domain(&sh7372_pd_a3sg);
- 
--	rmobile_pm_add_subdomain(&sh7372_pd_a4lc, &sh7372_pd_a3rv);
--	rmobile_pm_add_subdomain(&sh7372_pd_a4r, &sh7372_pd_a4lc);
-+	pm_genpd_add_subdomain_names("A4LC", "A3RV");
-+	pm_genpd_add_subdomain_names("A4R", "A4LC");
- 
--	rmobile_pm_add_subdomain(&sh7372_pd_a4s, &sh7372_pd_a3sg);
--	rmobile_pm_add_subdomain(&sh7372_pd_a4s, &sh7372_pd_a3sp);
-+	pm_genpd_add_subdomain_names("A4S", "A3SG");
-+	pm_genpd_add_subdomain_names("A4S", "A3SP");
- 
- 	platform_add_devices(sh7372_early_devices,
- 			    ARRAY_SIZE(sh7372_early_devices));
++static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
++				      struct device *dev)
++{
++	return __pm_genpd_add_device(genpd, dev, NULL);
++}
++
++static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
++					 struct device *dev)
++{
++	return __pm_genpd_of_add_device(genpd_node, dev, NULL);
++}
++
++static inline int pm_genpd_name_add_device(const char *domain_name,
++					   struct device *dev)
++{
++	return __pm_genpd_name_add_device(domain_name, dev, NULL);
++}
++
+ static inline int pm_genpd_remove_callbacks(struct device *dev)
+ {
+ 	return __pm_genpd_remove_callbacks(dev, true);
 
