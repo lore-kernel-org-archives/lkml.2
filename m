@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2HFVUR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:20:17 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59793 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab2HFVUP (ORCPT
+	id S1755965Ab2HFVVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 17:21:12 -0400
+Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:27983 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab2HFVVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:20:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344286699.27828.115.camel@twins>
-References: <1343946858-8170-1-git-send-email-walken@google.com>
-	<1343946858-8170-7-git-send-email-walken@google.com>
-	<1344262863.27828.56.camel@twins>
-	<CANN689Gcca_Xr8GQSjJads8psz3PZpya+s8aWTt_goVt0+O4YA@mail.gmail.com>
-	<1344286699.27828.115.camel@twins>
-Date: Mon, 6 Aug 2012 14:20:14 -0700
-Message-ID: <CANN689GZDxCkz-01qnZYENWDJhezFf1f-Xgx0NoaxPf64Cz_GQ@mail.gmail.com>
-Subject: Re: [PATCH v2 6/9] rbtree: low level optimizations in rb_erase()
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Mon, 6 Aug 2012 17:21:08 -0400
+From: Yann Cantin <yann.cantin@laposte.net>
+To: linux-input@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: [RFC ebeam PATCH v3 0/2]
+Date: Mon,  6 Aug 2012 23:21:42 +0200
+Message-Id: <1344288104-20731-1-git-send-email-yann.cantin@laposte.net>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 1:58 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2012-08-06 at 13:50 -0700, Michel Lespinasse wrote:
->> On Mon, Aug 6, 2012 at 7:21 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Thu, 2012-08-02 at 15:34 -0700, Michel Lespinasse wrote:
->> >> +                       /* Case 3: node's successor is leftmost under its
->> >> +                        * right child subtree
->> >
->> > Hmm?
->>
->> Would 'leftmost under node's right child subtree' make more sense ?
->
-> Nah, its the comment style discrepancy..
->
->  /*
->   * Case 3: ....
+Hi,
 
-Gah, failed to notice that. Sending new patch (just the comment
-changed) as a reply.
+New USB input driver for eBeam devices.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Currently, only the Luidia eBeam classic projection model is supported.
+Edge model and a NEC interactive video-projector support planned for the
+end of the mounth. 
+
+Patch 1 to blacklist the device for hid generic-usb.
+
+Patch 2 is the actual driver.
+
+Changes from previous :
+- switch to div64_s64 for portable 64/64-bits divisions
+- some cosmetics in device name
+- unused include and def removed
+- variables name changes for readability
+
+Pending issues :
+- sysfs custom files : need to pass 13 parameters for calibration :
+  choice is between lots of simply-handled, or few with a big sscanf.
+- is div64_s64 safe and available on all plateform ? this is the only
+  use of this function i've found in all the kernel tree.
+
+The module run fine with a 3.3.6 and a 3.5.0 kernel, both x86_32 and 64.
+
+Thanks for your help.
+
