@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab2HFSbQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:31:16 -0400
-Received: from www17.your-server.de ([213.133.104.17]:47680 "EHLO
+	id S1756892Ab2HFSbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:31:17 -0400
+Received: from www17.your-server.de ([213.133.104.17]:47685 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794Ab2HFSbP (ORCPT
+	with ESMTP id S1756879Ab2HFSbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:31:15 -0400
-X-Greylist: delayed 1287 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Aug 2012 14:31:15 EDT
-Subject: [PATCH] net: Use PTR_RET rather than if(IS_ERR(.. [2]
+	Mon, 6 Aug 2012 14:31:16 -0400
+Subject: [PATCH] arm: imx: Use PTR_RET rather than if(IS_ERR(.. [1]
 From: Thomas Meyer <thomas@m3y3r.de>
-To: "[netdev@vger.kernel.org, linux-kernel@vger.kernel.org]"@vger.kernel.org
+To: "[kernel@pengutronix.de, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org]"@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Date: Mon, 06 Aug 2012 19:51:17 +0200
-Message-ID: <1344275477.14513.107.camel@localhost.localdomain>
+Date: Mon, 06 Aug 2012 19:51:16 +0200
+Message-ID: <1344275476.14513.96.camel@localhost.localdomain>
 X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -31,31 +30,48 @@ http://coccinelle.lip6.fr/
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/net/ethernet/amd/atarilance.c b/drivers/net/ethernet/amd/atarilance.c
---- a/drivers/net/ethernet/amd/atarilance.c
-+++ b/drivers/net/ethernet/amd/atarilance.c
-@@ -1149,9 +1149,7 @@ static struct net_device *atarilance_dev
- static int __init atarilance_module_init(void)
- {
- 	atarilance_dev = atarilance_probe(-1);
--	if (IS_ERR(atarilance_dev))
--		return PTR_ERR(atarilance_dev);
+diff -u -p a/arch/arm/mach-imx/mach-mx31moboard.c b/arch/arm/mach-imx/mach-mx31moboard.c
+--- a/arch/arm/mach-imx/mach-mx31moboard.c
++++ b/arch/arm/mach-imx/mach-mx31moboard.c
+@@ -445,10 +445,7 @@ static int __init moboard_usbh2_init(voi
+ 		return -ENODEV;
+ 
+ 	pdev = imx31_add_mxc_ehci_hs(2, &usbh2_pdata);
+-	if (IS_ERR(pdev))
+-		return PTR_ERR(pdev);
+-
 -	return 0;
-+	return PTR_RET(atarilance_dev);
++	return PTR_RET(pdev);
  }
  
- static void __exit atarilance_module_exit(void)
-diff -u -p a/drivers/net/ethernet/amd/mvme147.c b/drivers/net/ethernet/amd/mvme147.c
---- a/drivers/net/ethernet/amd/mvme147.c
-+++ b/drivers/net/ethernet/amd/mvme147.c
-@@ -188,9 +188,7 @@ static struct net_device *dev_mvme147_la
- int __init init_module(void)
- {
- 	dev_mvme147_lance = mvme147lance_probe(-1);
--	if (IS_ERR(dev_mvme147_lance))
--		return PTR_ERR(dev_mvme147_lance);
+ static const struct gpio_led mx31moboard_leds[] __initconst = {
+diff -u -p a/arch/arm/mach-imx/mx31moboard-devboard.c b/arch/arm/mach-imx/mx31moboard-devboard.c
+--- a/arch/arm/mach-imx/mx31moboard-devboard.c
++++ b/arch/arm/mach-imx/mx31moboard-devboard.c
+@@ -214,10 +214,7 @@ static int __init devboard_usbh1_init(vo
+ 	usbh1_pdata.otg = phy;
+ 
+ 	pdev = imx31_add_mxc_ehci_hs(1, &usbh1_pdata);
+-	if (IS_ERR(pdev))
+-		return PTR_ERR(pdev);
+-
 -	return 0;
-+	return PTR_RET(dev_mvme147_lance);
++	return PTR_RET(pdev);
  }
  
- void __exit cleanup_module(void)
+ 
+diff -u -p a/arch/arm/mach-imx/mx31moboard-marxbot.c b/arch/arm/mach-imx/mx31moboard-marxbot.c
+--- a/arch/arm/mach-imx/mx31moboard-marxbot.c
++++ b/arch/arm/mach-imx/mx31moboard-marxbot.c
+@@ -328,10 +328,7 @@ static int __init marxbot_usbh1_init(voi
+ 	usbh1_pdata.otg = phy;
+ 
+ 	pdev = imx31_add_mxc_ehci_hs(1, &usbh1_pdata);
+-	if (IS_ERR(pdev))
+-		return PTR_ERR(pdev);
+-
+-	return 0;
++	return PTR_RET(pdev);
+ }
+ 
+ static const struct fsl_usb2_platform_data usb_pdata __initconst = {
