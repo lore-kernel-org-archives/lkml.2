@@ -1,180 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2HFLCQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 07:02:16 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:51413 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755773Ab2HFLCO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 07:02:14 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
-From: <qiang.liu@freescale.com>
-To: <linux-crypto@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <dan.j.williams@intel.com>, <linux-kernel@vger.kernel.org>,
-        <dan.j.williams@gmail.com>, <vinod.koul@intel.com>
-CC: <kim.phillips@freescale.com>, <herbert@gondor.hengli.com.au>,
-        <davem@davemloft.net>, <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
-        Qiang Liu <qiang.liu@freescale.com>, Li Yang <leoli@freescale.com>,
-        Timur Tabi <timur@freescale.com>
-Subject: [PATCH v6 6/8] fsl-dma: use spin_lock_bh to instead of spin_lock_irqsave
-Date: Mon, 6 Aug 2012 18:36:01 +0800
-Message-ID: <1344249361-10263-1-git-send-email-qiang.liu@freescale.com>
-X-Mailer: git-send-email 1.7.5.1
+	id S1755960Ab2HFLFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 07:05:25 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43779 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755773Ab2HFLFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 07:05:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Huang Ying <ying.huang@intel.com>
+Subject: Re: [BUGFIX -v2 3/4] PCI/PM: Fix config reg access for D3cold and bridge suspending
+Date: Mon, 6 Aug 2012 13:11:15 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <1344216870-21105-1-git-send-email-ying.huang@intel.com> <1344216870-21105-4-git-send-email-ying.huang@intel.com>
+In-Reply-To: <1344216870-21105-4-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208061311.15431.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Qiang Liu <qiang.liu@freescale.com>
+On Monday, August 06, 2012, Huang Ying wrote:
+> This patch fixes the following bug:
+> 
+> http://marc.info/?l=linux-pci&m=134338059022620&w=2
+> 
+> Where lspci does not work properly if a device and the corresponding
+> parent bridge (such as PCIe port) is suspended.  This is because the
+> device configuration space registers will be not accessible if the
+> corresponding parent bridge is suspended or the device is put into
+> D3cold state.
+> 
+> To solve the issue, the bridge/PCIe port connected to the device is
+> put into active state before read/write configuration space registers.
+> If the device is in D3cold state, it will be put into active state
+> too.
+> 
+> To avoid resume/suspend PCIe port for each configuration register
+> read/write, a small delay is added before the PCIe port to go
+> suspended.
+> 
+> Reported-by: Bjorn Mork <bjorn@mork.no>
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  drivers/pci/pci-sysfs.c        |   37 +++++++++++++++++++++++++++++++++++++
+>  drivers/pci/pcie/portdrv_pci.c |    9 +++++++++
+>  2 files changed, 46 insertions(+)
+> 
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -458,6 +458,35 @@ boot_vga_show(struct device *dev, struct
+>  }
+>  struct device_attribute vga_attr = __ATTR_RO(boot_vga);
+>  
+> +static void
+> +pci_config_pm_runtime_get(struct pci_dev *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device *parent = dev->parent;
+> +
+> +	if (parent)
+> +		pm_runtime_get_sync(parent);
+> +	pm_runtime_get_noresume(dev);
+> +	/*
+> +	 * pdev->current_state is set to PCI_D3cold during suspending,
+> +	 * so wait until suspending completes
+> +	 */
+> +	pm_runtime_barrier(dev);
+> +	if (pdev->current_state == PCI_D3cold)
+> +		pm_runtime_resume(dev);
 
-The use of spin_lock_irqsave() is a stronger locking mechanism than is
-required throughout the driver. The minimum locking required should be
-used instead. Interrupts will be turned off and context will be saved,
-there is needless to use irqsave.
+I think it would be good to write a comment explaining why we avoid
+doing pm_runtime_get_sync(dev) here.
 
-Change all instances of spin_lock_irqsave() to spin_lock_bh().
-All manipulation of protected fields is done using tasklet context or
-weaker, which makes spin_lock_bh() the correct choice.
+> +}
+> +
+> +static void
+> +pci_config_pm_runtime_put(struct pci_dev *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device *parent = dev->parent;
+> +
+> +	pm_runtime_put(dev);
+> +	if (parent)
+> +		pm_runtime_put_sync(parent);
+> +}
+> +
+>  static ssize_t
+>  pci_read_config(struct file *filp, struct kobject *kobj,
+>  		struct bin_attribute *bin_attr,
+> @@ -484,6 +513,8 @@ pci_read_config(struct file *filp, struc
+>  		size = count;
+>  	}
+>  
+> +	pci_config_pm_runtime_get(dev);
+> +
+>  	if ((off & 1) && size) {
+>  		u8 val;
+>  		pci_user_read_config_byte(dev, off, &val);
+> @@ -529,6 +560,8 @@ pci_read_config(struct file *filp, struc
+>  		--size;
+>  	}
+>  
+> +	pci_config_pm_runtime_put(dev);
+> +
+>  	return count;
+>  }
+>  
+> @@ -549,6 +582,8 @@ pci_write_config(struct file* filp, stru
+>  		count = size;
+>  	}
+>  	
+> +	pci_config_pm_runtime_get(dev);
+> +
+>  	if ((off & 1) && size) {
+>  		pci_user_write_config_byte(dev, off, data[off - init_off]);
+>  		off++;
+> @@ -587,6 +622,8 @@ pci_write_config(struct file* filp, stru
+>  		--size;
+>  	}
+>  
+> +	pci_config_pm_runtime_put(dev);
+> +
+>  	return count;
+>  }
+>  
+> --- a/drivers/pci/pcie/portdrv_pci.c
+> +++ b/drivers/pci/pcie/portdrv_pci.c
+> @@ -140,9 +140,17 @@ static int pcie_port_runtime_resume(stru
+>  {
+>  	return 0;
+>  }
+> +
+> +static int pcie_port_runtime_idle(struct device *dev)
+> +{
+> +	/* Delay for a short while to prevent too frequent suspend/resume */
+> +	pm_schedule_suspend(dev, 10);
+> +	return -EBUSY;
+> +}
+>  #else
+>  #define pcie_port_runtime_suspend	NULL
+>  #define pcie_port_runtime_resume	NULL
+> +#define pcie_port_runtime_idle		NULL
+>  #endif
+>  
+>  static const struct dev_pm_ops pcie_portdrv_pm_ops = {
+> @@ -155,6 +163,7 @@ static const struct dev_pm_ops pcie_port
+>  	.resume_noirq	= pcie_port_resume_noirq,
+>  	.runtime_suspend = pcie_port_runtime_suspend,
+>  	.runtime_resume = pcie_port_runtime_resume,
+> +	.runtime_idle	= pcie_port_runtime_idle,
+>  };
+>  
+>  #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
 
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Dan Williams <dan.j.williams@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Timur Tabi <timur@freescale.com>
-Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
-Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
----
- drivers/dma/fsldma.c |   30 ++++++++++++------------------
- 1 files changed, 12 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 938d8c1..3f809df 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -405,10 +405,9 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
- 	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
- 	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
- 	struct fsl_desc_sw *child;
--	unsigned long flags;
- 	dma_cookie_t cookie;
-
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+	spin_lock_bh(&chan->desc_lock);
-
- 	/*
- 	 * assign cookies to all of the software descriptors
-@@ -421,7 +420,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
- 	/* put this transaction onto the tail of the pending queue */
- 	append_ld_queue(chan, desc);
-
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+	spin_unlock_bh(&chan->desc_lock);
-
- 	return cookie;
- }
-@@ -761,15 +760,14 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
- static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
- {
- 	struct fsldma_chan *chan = to_fsl_chan(dchan);
--	unsigned long flags;
-
- 	chan_dbg(chan, "free all channel resources\n");
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+	spin_lock_bh(&chan->desc_lock);
- 	fsldma_cleanup_descriptors(chan);
- 	fsldma_free_desc_list(chan, &chan->ld_pending);
- 	fsldma_free_desc_list(chan, &chan->ld_running);
- 	fsldma_free_desc_list(chan, &chan->ld_completed);
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+	spin_unlock_bh(&chan->desc_lock);
-
- 	dma_pool_destroy(chan->desc_pool);
- 	chan->desc_pool = NULL;
-@@ -988,7 +986,6 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
- {
- 	struct dma_slave_config *config;
- 	struct fsldma_chan *chan;
--	unsigned long flags;
- 	int size;
-
- 	if (!dchan)
-@@ -998,7 +995,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
-
- 	switch (cmd) {
- 	case DMA_TERMINATE_ALL:
--		spin_lock_irqsave(&chan->desc_lock, flags);
-+		spin_lock_bh(&chan->desc_lock);
-
- 		/* Halt the DMA engine */
- 		dma_halt(chan);
-@@ -1009,7 +1006,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
- 		fsldma_free_desc_list(chan, &chan->ld_completed);
- 		chan->idle = true;
-
--		spin_unlock_irqrestore(&chan->desc_lock, flags);
-+		spin_unlock_bh(&chan->desc_lock);
- 		return 0;
-
- 	case DMA_SLAVE_CONFIG:
-@@ -1051,11 +1048,10 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
- static void fsl_dma_memcpy_issue_pending(struct dma_chan *dchan)
- {
- 	struct fsldma_chan *chan = to_fsl_chan(dchan);
--	unsigned long flags;
-
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+	spin_lock_bh(&chan->desc_lock);
- 	fsl_chan_xfer_ld_queue(chan);
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+	spin_unlock_bh(&chan->desc_lock);
- }
-
- /**
-@@ -1068,15 +1064,14 @@ static enum dma_status fsl_tx_status(struct dma_chan *dchan,
- {
- 	struct fsldma_chan *chan = to_fsl_chan(dchan);
- 	enum dma_status ret;
--	unsigned long flags;
-
- 	ret = dma_cookie_status(dchan, cookie, txstate);
- 	if (ret == DMA_SUCCESS)
- 		return ret;
-
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+	spin_lock_bh(&chan->desc_lock);
- 	fsldma_cleanup_descriptors(chan);
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+	spin_unlock_bh(&chan->desc_lock);
-
- 	return dma_cookie_status(dchan, cookie, txstate);
- }
-@@ -1155,11 +1150,10 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
- static void dma_do_tasklet(unsigned long data)
- {
- 	struct fsldma_chan *chan = (struct fsldma_chan *)data;
--	unsigned long flags;
-
- 	chan_dbg(chan, "tasklet entry\n");
-
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+	spin_lock_bh(&chan->desc_lock);
-
- 	/* the hardware is now idle and ready for more */
- 	chan->idle = true;
-@@ -1167,7 +1161,7 @@ static void dma_do_tasklet(unsigned long data)
- 	/* Run all cleanup for descriptors which have been completed */
- 	fsldma_cleanup_descriptors(chan);
-
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+	spin_unlock_bh(&chan->desc_lock);
-
- 	chan_dbg(chan, "tasklet exit\n");
- }
---
-1.7.5.1
-
-
+Thanks,
+Rafael
