@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab2HFN6I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 09:58:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64026 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867Ab2HFN6G (ORCPT
+	id S1756241Ab2HFN6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 09:58:18 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49168 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756304Ab2HFN6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 09:58:06 -0400
+	Mon, 6 Aug 2012 09:58:15 -0400
 From: Dongjin Kim <tobetter@gmail.com>
 Cc: Dongjin Kim <dongjin.kim@agreeyamobility.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: EXYNOS: Add gpio functions for Exynos4412
-Date: Mon,  6 Aug 2012 22:57:38 +0900
-Message-Id: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: EXYNOS: Add HDMIPHY I2C adaptor
+Date: Mon,  6 Aug 2012 22:57:39 +0900
+Message-Id: <1344261462-14183-2-git-send-email-dongjin.kim@agreeyamobility.net>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
+References: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GPIO functions are not registered for Exynos4412 yet,
-therefore exynos4_gpiolib_init() is added to initialize Exynos4412 SoC.
+This patch assign the I2C channel for HDMIPHY for Exynos4x12
+in s5p_i2c_hdmiphy_set_platdata() and s5p_hdmi_set_platdata()
 
-Change-Id: I5945d94c6fbfc309ccf882eba067864a338c04ca
+Change-Id: I7e66c8f9327e2f7dce7440efb8583b506d65831a
 Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
 ---
- drivers/gpio/gpio-samsung.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/arm/plat-samsung/devs.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index 92f7b2b..6b312a9 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -2727,7 +2727,7 @@ static __init void exynos_gpiolib_attach_ofnode(struct samsung_gpio_chip *chip,
+diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
+index a199e55..54614d0 100644
+--- a/arch/arm/plat-samsung/devs.c
++++ b/arch/arm/plat-samsung/devs.c
+@@ -752,6 +752,8 @@ void __init s5p_i2c_hdmiphy_set_platdata(struct s3c2410_platform_i2c *pd)
  
- static __init void exynos4_gpiolib_init(void)
- {
--#ifdef CONFIG_CPU_EXYNOS4210
-+#ifdef CONFIG_ARCH_EXYNOS4
- 	struct samsung_gpio_chip *chip;
- 	int i, nr_chips;
- 	void __iomem *gpio_base1, *gpio_base2, *gpio_base3;
-@@ -2816,7 +2816,7 @@ err_ioremap2:
- 	iounmap(gpio_base1);
- err_ioremap1:
- 	return;
--#endif	/* CONFIG_CPU_EXYNOS4210 */
-+#endif	/* CONFIG_ARCH_EXYNOS4 */
- }
+ 		if (soc_is_exynos4210())
+ 			pd->bus_num = 8;
++		else if (soc_is_exynos4212() || soc_is_exynos4412())
++			pd->bus_num = 8;
+ 		else if (soc_is_s5pv210())
+ 			pd->bus_num = 3;
+ 		else
+@@ -771,6 +773,8 @@ void __init s5p_hdmi_set_platdata(struct i2c_board_info *hdmiphy_info,
  
- static __init void exynos5_gpiolib_init(void)
-@@ -3014,6 +3014,8 @@ static __init int samsung_gpiolib_init(void)
- 		exynos4_gpiolib_init();
- 	} else if (soc_is_exynos5250()) {
- 		exynos5_gpiolib_init();
-+	} else if (soc_is_exynos4212() || soc_is_exynos4412()) {
-+		exynos4_gpiolib_init();
- 	} else {
- 		WARN(1, "Unknown SoC in gpio-samsung, no GPIOs added\n");
- 		return -ENODEV;
+ 	if (soc_is_exynos4210())
+ 		pd->hdmiphy_bus = 8;
++	else if (soc_is_exynos4212() || soc_is_exynos4412())
++		pd->hdmiphy_bus = 8;
+ 	else if (soc_is_s5pv210())
+ 		pd->hdmiphy_bus = 3;
+ 	else
 -- 
 1.7.9.5
 
