@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab2HFMX7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 08:23:59 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40028 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055Ab2HFMX6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 08:23:58 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
-        Ian Molton <ian.molton@codethink.co.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 1/6] ARM: dove: unify clock setup
-Date: Mon,  6 Aug 2012 14:23:29 +0200
-Message-Id: <1344255815-4457-2-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1756174Ab2HFMYK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 08:24:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40704 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756055Ab2HFMYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 08:24:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="182172459"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc 3.6] mei: add mei_quirk_probe function
+Date: Mon,  6 Aug 2012 15:23:55 +0300
+Message-Id: <1344255835-11139-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch synchronizes the clock setup of dove with other orion-based
-platforms.
+The main purpose of this function is to exclude ME devices
+without support for MEI/HECI interface from binding
 
-In dove_find_tclk there was a note about DOVE_SAMPLE_HI/LO register to
-detect tclk. While it might be possible to set a different tclk frequency 
-with reset strapping the Dove datasheets don't tell anything about tclk 
-frequency here. Therefore, I removed that comment.
+Currently affected systems are C600/X79 based servers
+that expose PCI device even though it doesn't supported ME Interface.
+MEI driver accessing such nonfunctional device can corrupt
+the system.
 
-Also, the patch ensures that tclk is always clocked by prepare/enable.
-
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Rabeeh Khoury <rabeeh@solid-run.com>
-Cc: Ian Molton <ian.molton@codethink.co.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Maen Suleiman <maen@marvell.com>
-Cc: Olof Johansson <olof@lixom.net>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- arch/arm/mach-dove/common.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ drivers/misc/mei/main.c |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
-index 4db5de5..20b765c 100644
---- a/arch/arm/mach-dove/common.c
-+++ b/arch/arm/mach-dove/common.c
-@@ -33,8 +33,6 @@
- #include <plat/addr-map.h>
- #include "common.h"
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index 0923302..7422c76 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -925,6 +925,27 @@ static struct miscdevice  mei_misc_device = {
+ };
  
--static int get_tclk(void);
--
- /*****************************************************************************
-  * I/O Address Mapping
-  ****************************************************************************/
-@@ -70,14 +68,18 @@ void __init dove_map_io(void)
- /*****************************************************************************
-  * CLK tree
-  ****************************************************************************/
-+static int dove_tclk;
- static struct clk *tclk;
+ /**
++ * mei_quirk_probe - probe for devices that doesn't valid ME interface
++ * @pdev: PCI device structure
++ * @ent: entry into pci_device_table
++ *
++ * returns true if ME Interface is valid, false otherwise
++ */
++static bool __devinit mei_quirk_probe(struct pci_dev *pdev,
++				const struct pci_device_id *ent)
++{
++	u32 reg;
++	if (ent->device == MEI_DEV_ID_PBG_1) {
++		pci_read_config_dword(pdev, 0x48, &reg);
++		/* make sure that bit 9 is up and bit 10 is down */
++		if ((reg & 0x600) == 0x200) {
++			dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
++			return false;
++		}
++	}
++	return true;
++}
++/**
+  * mei_probe - Device Initialization Routine
+  *
+  * @pdev: PCI device structure
+@@ -939,6 +960,12 @@ static int __devinit mei_probe(struct pci_dev *pdev,
+ 	int err;
  
--static void __init clk_init(void)
-+static void __init dove_clk_init(void)
- {
- 	tclk = clk_register_fixed_rate(NULL, "tclk", NULL, CLK_IS_ROOT,
--				       get_tclk());
-+				       dove_tclk);
- 
- 	orion_clkdev_init(tclk);
+ 	mutex_lock(&mei_mutex);
 +
-+	/* Ensure tclk is always clocked */
-+	clk_prepare_enable(tclk);
- }
- 
- /*****************************************************************************
-@@ -187,16 +189,16 @@ void __init dove_init_early(void)
- 	orion_time_set_base(TIMER_VIRT_BASE);
- }
- 
--static int get_tclk(void)
-+static int __init dove_find_tclk(void)
- {
--	/* use DOVE_RESET_SAMPLE_HI/LO to detect tclk */
- 	return 166666667;
- }
- 
- static void __init dove_timer_init(void)
- {
-+	dove_tclk = dove_find_tclk();
- 	orion_time_init(BRIDGE_VIRT_BASE, BRIDGE_INT_TIMER1_CLR,
--			IRQ_DOVE_BRIDGE, get_tclk());
-+			IRQ_DOVE_BRIDGE, dove_tclk);
- }
- 
- struct sys_timer dove_timer = {
-@@ -284,8 +286,8 @@ void __init dove_sdio1_init(void)
- 
- void __init dove_init(void)
- {
--	printk(KERN_INFO "Dove 88AP510 SoC, ");
--	printk(KERN_INFO "TCLK = %dMHz\n", (get_tclk() + 499999) / 1000000);
-+	pr_info("Dove 88AP510 SoC, TCLK = %d MHz.\n",
-+		(dove_tclk + 499999) / 1000000);
- 
- #ifdef CONFIG_CACHE_TAUROS2
- 	tauros2_init();
-@@ -293,7 +295,7 @@ void __init dove_init(void)
- 	dove_setup_cpu_mbus();
- 
- 	/* Setup root of clk tree */
--	clk_init();
-+	dove_clk_init();
- 
- 	/* internal devices that every board has */
- 	dove_rtc_init();
++	if (!mei_quirk_probe(pdev, ent)) {
++		err = -ENODEV;
++		goto end;
++	}
++
+ 	if (mei_device) {
+ 		err = -EEXIST;
+ 		goto end;
 -- 
-1.7.10.4
+1.7.4.4
 
