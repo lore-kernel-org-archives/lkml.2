@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab2HFUeq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 16:34:46 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59502 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756343Ab2HFUeo (ORCPT
+	id S1756666Ab2HFUiL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 16:38:11 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:41201 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756458Ab2HFUiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 16:34:44 -0400
-Message-ID: <50202A83.40705@gmail.com>
-Date: Mon, 06 Aug 2012 22:35:15 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
-MIME-Version: 1.0
-To: John Stultz <johnstul@us.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, paulmck@linux.vnet.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, prarit@redhat.com,
-        tglx@linutronix.de, Dave Jones <davej@redhat.com>
-Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
-References: <500ED719.2010002@gmail.com> <50112D3B.4020201@redhat.com> <50127B16.5040401@gmail.com> <50153138.4020304@redhat.com> <5015A5A8.7030601@gmail.com> <50161D5E.4030009@redhat.com> <50165046.9020705@gmail.com> <501654D3.7020504@redhat.com> <50168162.4010508@gmail.com> <50168981.3000001@redhat.com> <501EA58D.4090606@gmail.com> <501FFD2A.4010905@us.ibm.com> <50200AEF.5080904@us.ibm.com> <50200CE6.70009@gmail.com> <50202987.80409@us.ibm.com>
-In-Reply-To: <50202987.80409@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Aug 2012 16:38:10 -0400
+Message-ID: <1344285484.14543.0.camel@maxim-laptop>
+Subject: Re: [bisected] nouveau: "Failed to idle channel x" after resume
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Aioanei Rares <krnl.list@gmail.com>
+Cc: Martin Nyhus <martin.nyhus@gmx.com>, Ben Skeggs <bskeggs@redhat.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
+Date: Mon, 06 Aug 2012 23:38:04 +0300
+In-Reply-To: <1344091275.4520.1.camel@maxim-laptop>
+References: <20120611231842.221bd738@europa>
+	 <20120705222429.43586868@europa>
+	 <CAJCn4U=pLjiLVW_TT+JN5G177dh4RUwg=vinjBrS4udChOyqoQ@mail.gmail.com>
+	 <1344091275.4520.1.camel@maxim-laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 10:31 PM, John Stultz wrote:
-> On 08/06/2012 11:28 AM, Sasha Levin wrote:
->> On 08/06/2012 08:20 PM, John Stultz wrote:
->>> On 08/06/2012 10:21 AM, John Stultz wrote:
->>>> On 08/05/2012 09:55 AM, Sasha Levin wrote:
->>>>> On 07/30/2012 03:17 PM, Avi Kivity wrote:
->>>>>> Possible causes:
->>>>>>    - the APIC calibration in the guest failed, so it is programming too
->>>>>> low values into the timer
->>>>>>    - it actually needs 1 us wakeups and then can't keep up (esp. as kvm
->>>>>> interrupt injection is slowing it down)
->>>>>>
->>>>>> You can try to find out by changing
->>>>>> arch/x86/kvm/lapic.c:start_lapic_timer() to impose a minimum wakeup of
->>>>>> (say) 20 microseconds which will let the guest live long enough for you
->>>>>> to ftrace it and see what kind of timers it is programming.
->>>>> I've kept trying to narrow it down, and found out It's triggerable using adjtimex().
->>> Sorry, one more question: Could you provide details on how is it trigger-able using adjtimex?
->> It triggers after a while of fuzzing using trinity of just adjtimex ('./trinity --quiet -l off -cadjtimex').
->>
->> Trinity is available here: http://git.codemonkey.org.uk/?p=trinity.git .
->>
->> Let me know if I can help further with reproducing this, I can probably copy over my testing environment to some other host if you'd like.
-> So far no luck. Dmesg mostly just gets filled up with trinity-child OOMs.   How much memory are you running with?
+On Sat, 2012-08-04 at 17:41 +0300, Maxim Levitsky wrote: 
+> On Mon, 2012-07-23 at 18:25 +0300, Aioanei Rares wrote: 
+> > On Thu, Jul 5, 2012 at 11:24 PM, Martin Nyhus <martin.nyhus@gmx.com> wrote:
+> > >
+> > > On Mon, 11 Jun 2012 23:18:42 +0200 Martin Nyhus wrote:
+> > > > after resuming from suspend nouveau starts writing Failed to idle
+> > > > channel x (where x is 2 or 3) to the log and X appears to stop and
+> > > > then restart only to stop again. Starting Firefox after resuming
+> > > > triggers the bugs every time, and bisecting leads to 03bd6efa
+> > > > ("drm/nv50/fifo: use hardware channel kickoff functionality").
+> > >
+> > > Hi Ben,
+> > > I'm still seeing this bug with the latest from Linus
+> > > (v3.5-rc5-98-g9e85a6f) and linux-next (next-20120705).
+> > >
+> > > lspci output:
+> > > 01:00.0 VGA compatible controller: nVidia Corporation G86 [GeForce
+> > > 8400M GS] (rev a1)
+> > >
+> > > Sorry I haven't followed up on this earlier,
+> > > Martin
+> > 
+> > I can confirm this with 3.5.0, Chromium and Arch Linux. It's a HP
+> > Pavilion laptop with a G86 [GeForce 8400 M GS] video card .
+> > Seems related to this bug:
+> > http://lists.freedesktop.org/archives/nouveau/2011-January/007358.html
+> > . If I can do anything else
+> > to help, I will be glad to.
+> Added nouveau@lists.freedesktop.org>
 > 
-> Are you running trinity as root or as some user that has CAP_SYS_TIME and can actually change values via adjtimex? Or does it trip just by reading the values?
+> I confirm the same issue here.
+> will try to do dig it.
+Nope,can't dig this :-(
 
-As root in a disposable vm. It triggers at a random point, not after a specific call.
+
+
+-- 
+Best regards,
+        Maxim Levitsky
+
+
 
