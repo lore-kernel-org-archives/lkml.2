@@ -1,44 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab2HFG6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 02:58:19 -0400
-Received: from ozlabs.org ([203.10.76.45]:41747 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751676Ab2HFG6R convert rfc822-to-8bit (ORCPT
+	id S1753383Ab2HFH3l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 03:29:41 -0400
+Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:3271 "EHLO
+	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989Ab2HFH3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 02:58:17 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Barbaros =?utf-8?Q?Tokao=C4=9Flu?= <barbarost@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] module: Fix compile error for ref_module when CONFIG_MODULES is not set
-In-Reply-To: <CAL7r9b39L1HuKis+PxOh9tAJ0iEwsP2c+k+=6w00JWCa=FwW5w@mail.gmail.com>
-References: <CAL7r9b39L1HuKis+PxOh9tAJ0iEwsP2c+k+=6w00JWCa=FwW5w@mail.gmail.com>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 06 Aug 2012 10:00:52 +0930
-Message-ID: <87vcgwzwsj.fsf@rustcorp.com.au>
+	Mon, 6 Aug 2012 03:29:40 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Federico Vaga <federico.vaga@gmail.com>
+Subject: Re: Update VIP to videobuf2 and control framework
+Date: Mon, 6 Aug 2012 09:26:40 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>
+References: <1343765829-6006-1-git-send-email-federico.vaga@gmail.com> <201208010841.56941.hverkuil@xs4all.nl> <5055608.KkUHWr6mgc@harkonnen>
+In-Reply-To: <5055608.KkUHWr6mgc@harkonnen>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208060926.40164.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Aug 2012 20:57:07 +0300, Barbaros Tokaoğlu <barbarost@gmail.com> wrote:
-> ref_module function is not defined when CONFIG_MODULES is not set thus
-> it causes compile error when a module which is set to be built-in uses it.
-> This patch defines a dummy ref_module function when CONFIG_MODULES
-> is not set.
+On Sun August 5 2012 19:11:19 Federico Vaga wrote:
+> Hi Hans,
+>  
+> > Did you run the latest v4l2-compliance tool from the v4l-utils.git
+> > repository over your driver? I'm sure you didn't since VIP is missing
+> > support for control events and v4l2-compliance would certainly
+> > complain about that.
+> > 
+> > Always check with v4l2-compliance whenever you make changes! It's
+> > continuously improved as well, so a periodic check wouldn't hurt.
 > 
-> Signed-off-by: Barbaros Tokaoğlu <barbarost@gmail.com>
+> I applied all your suggestions, and some extra simplification; now I'm 
+> running v4l2-compliance but I have this error:
+> 
+> 
+> Allow for multiple opens:
+>         test second video open: OK
+>         test VIDIOC_QUERYCAP: OK
+>                 fail: v4l2-compliance.cpp(322): doioctl(node, 
+> VIDIOC_G_PRIORITY, &prio)
+>         test VIDIOC_G/S_PRIORITY: FAIL
+> 
+> 
+> which I don't undestand. I don't have vidio_{g|s}_priority functions in 
+> my implementation. And I'm using the V4L2_FL_USE_FH_PRIO flag as 
+> suggested in the documentation:
+> 
+> ---------------
+> - flags: optional. Set to V4L2_FL_USE_FH_PRIO if you want to let the 
+> framework handle the VIDIOC_G/S_PRIORITY ioctls. This requires that you 
+> use struct v4l2_fh.
 
-Hi Barbaros,
+  ^^^^^^^^^^^^^^^^^^
 
-        It's usually a good idea to paste the error message into the
-commit message for compile fixes: it helps people googling the problem.
+Are you using struct v4l2_fh? The version you posted didn't. You need this
+anyway to implement control events.
 
-In this case, it's particularly important, because I can't find any
-users of ref_module() outside module.c itself: it's only exported for
-ksplice to use.
+Regards,
 
-Cheers,
-Rusty.
+	Hans
+
+> Eventually this flag will disappear once all drivers 
+> use the core priority handling. But for now it has to be set explicitly.
+> --------------
+> 
+> 
