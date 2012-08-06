@@ -1,193 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab2HFVV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:21:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62473 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756112Ab2HFVVz (ORCPT
+	id S1756232Ab2HFVWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 17:22:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53017 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab2HFVWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:21:55 -0400
-Date: Mon, 6 Aug 2012 14:21:51 -0700
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH v2 6/9] rbtree: low level optimizations in rb_erase()
-Message-ID: <20120806212151.GA26876@google.com>
-References: <1343946858-8170-1-git-send-email-walken@google.com>
- <1343946858-8170-7-git-send-email-walken@google.com>
- <1344262863.27828.56.camel@twins>
- <CANN689Gcca_Xr8GQSjJads8psz3PZpya+s8aWTt_goVt0+O4YA@mail.gmail.com>
- <1344286699.27828.115.camel@twins>
- <CANN689GZDxCkz-01qnZYENWDJhezFf1f-Xgx0NoaxPf64Cz_GQ@mail.gmail.com>
+	Mon, 6 Aug 2012 17:22:21 -0400
+Message-ID: <50203589.5020509@wwwdotorg.org>
+Date: Mon, 06 Aug 2012 15:22:17 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANN689GZDxCkz-01qnZYENWDJhezFf1f-Xgx0NoaxPf64Cz_GQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] regulator: add MAX8907 driver
+References: <1343932033-911-1-git-send-email-swarren@wwwdotorg.org> <20120804101918.GD9248@opensource.wolfsonmicro.com>
+In-Reply-To: <20120804101918.GD9248@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Various minor optimizations in rb_erase():
-- Avoid multiple loading of node->__rb_parent_color when computing parent
-  and color information (possibly not in close sequence, as there might
-  be further branches in the algorithm)
-- In the 1-child subcase of case 1, copy the __rb_parent_color field from
-  the erased node to the child instead of recomputing it from the desired
-  parent and color
-- When searching for the erased node's successor, differentiate between
-  cases 2 and 3 based on whether any left links were followed. This avoids
-  a condition later down.
-- In case 3, keep a pointer to the erased node's right child so we don't
-  have to refetch it later to adjust its parent.
-- In the no-childs subcase of cases 2 and 3, place the rebalance assigment
-  last so that the compiler can remove the following if(rebalance) test.
+On 08/04/2012 04:19 AM, Mark Brown wrote:
+> On Thu, Aug 02, 2012 at 12:27:13PM -0600, Stephen Warren wrote:
+> 
+>> The MAX8907 is an I2C-based power-management IC containing voltage
+>> regulators, a reset controller, a real-time clock, and a touch-screen
+>> controller.
 
-Also, added some comments to illustrate cases 2 and 3.
+>> +static int max8907_regulator_wled_set_current_limit(struct regulator_dev *rdev,
+>> +						    int min_uA, int max_uA)
+> 
+> I'm really not convinced it makes much sense to represent the backlight
+> driver current regulators as regulators, they only get used as part of
+> the backlight and are usually tightly coupled to their boosts.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- lib/rbtree.c |   98 ++++++++++++++++++++++++++++++++++++++--------------------
- 1 files changed, 64 insertions(+), 34 deletions(-)
+So you mean just completely remove any reference to WLED from the
+driver? There is a register to configure the current limit - do you not
+expect anything to ever need to set that in the kernel; do you expect
+the HW default to be correct, or the bootloader to set the desired value?
 
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 80b0925..938061e 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -47,9 +47,14 @@
- #define	RB_RED		0
- #define	RB_BLACK	1
- 
--#define rb_color(r)   ((r)->__rb_parent_color & 1)
--#define rb_is_red(r)   (!rb_color(r))
--#define rb_is_black(r) rb_color(r)
-+#define __rb_parent(pc)    ((struct rb_node *)(pc & ~3))
-+
-+#define __rb_color(pc)     ((pc) & 1)
-+#define __rb_is_black(pc)  __rb_color(pc)
-+#define __rb_is_red(pc)    (!__rb_color(pc))
-+#define rb_color(rb)       __rb_color((rb)->__rb_parent_color)
-+#define rb_is_red(rb)      __rb_is_red((rb)->__rb_parent_color)
-+#define rb_is_black(rb)    __rb_is_black((rb)->__rb_parent_color)
- 
- static inline void rb_set_black(struct rb_node *rb)
- {
-@@ -378,6 +383,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- {
- 	struct rb_node *child = node->rb_right, *tmp = node->rb_left;
- 	struct rb_node *parent, *rebalance;
-+	unsigned long pc;
- 
- 	if (!tmp) {
- 		/*
-@@ -387,51 +393,75 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- 		 * and node must be black due to 4). We adjust colors locally
- 		 * so as to bypass __rb_erase_color() later on.
- 		 */
--
--		parent = rb_parent(node);
-+		pc = node->__rb_parent_color;
-+		parent = __rb_parent(pc);
- 		__rb_change_child(node, child, parent, root);
- 		if (child) {
--			rb_set_parent_color(child, parent, RB_BLACK);
-+			child->__rb_parent_color = pc;
- 			rebalance = NULL;
--		} else {
--			rebalance = rb_is_black(node) ? parent : NULL;
--		}
-+		} else
-+			rebalance = __rb_is_black(pc) ? parent : NULL;
- 	} else if (!child) {
- 		/* Still case 1, but this time the child is node->rb_left */
--		parent = rb_parent(node);
-+		tmp->__rb_parent_color = pc = node->__rb_parent_color;
-+		parent = __rb_parent(pc);
- 		__rb_change_child(node, tmp, parent, root);
--		rb_set_parent_color(tmp, parent, RB_BLACK);
- 		rebalance = NULL;
- 	} else {
--		struct rb_node *old = node, *left;
--
--		node = child;
--		while ((left = node->rb_left) != NULL)
--			node = left;
--
--		__rb_change_child(old, node, rb_parent(old), root);
--
--		child = node->rb_right;
--		parent = rb_parent(node);
--
--		if (parent == old) {
--			parent = node;
-+		struct rb_node *successor = child, *child2;
-+		tmp = child->rb_left;
-+		if (!tmp) {
-+			/*
-+			 * Case 2: node's successor is its right child
-+			 *
-+			 *    (n)          (s)
-+			 *    / \          / \
-+			 *  (x) (s)  ->  (x) (c)
-+			 *        \
-+			 *        (c)
-+			 */
-+			parent = child;
-+			child2 = child->rb_right;
- 		} else {
--			parent->rb_left = child;
--
--			node->rb_right = old->rb_right;
--			rb_set_parent(old->rb_right, node);
-+			/*
-+			 * Case 3: node's successor is leftmost under
-+			 * node's right child subtree
-+			 *
-+			 *    (n)          (s)
-+			 *    / \          / \
-+			 *  (x) (y)  ->  (x) (y)
-+			 *      /            /
-+			 *    (p)          (p)
-+			 *    /            /
-+			 *  (s)          (c)
-+			 *    \
-+			 *    (c)
-+			 */
-+			do {
-+				parent = successor;
-+				successor = tmp;
-+				tmp = tmp->rb_left;
-+			} while (tmp);
-+			parent->rb_left = child2 = successor->rb_right;
-+			successor->rb_right = child;
-+			rb_set_parent(child, successor);
- 		}
- 
--		if (child) {
--			rb_set_parent_color(child, parent, RB_BLACK);
-+		successor->rb_left = tmp = node->rb_left;
-+		rb_set_parent(tmp, successor);
-+
-+		pc = node->__rb_parent_color;
-+		tmp = __rb_parent(pc);
-+		__rb_change_child(node, successor, tmp, root);
-+		if (child2) {
-+			successor->__rb_parent_color = pc;
-+			rb_set_parent_color(child2, parent, RB_BLACK);
- 			rebalance = NULL;
- 		} else {
--			rebalance = rb_is_black(node) ? parent : NULL;
-+			unsigned long pc2 = successor->__rb_parent_color;
-+			successor->__rb_parent_color = pc;
-+			rebalance = __rb_is_black(pc2) ? parent : NULL;
- 		}
--		node->__rb_parent_color = old->__rb_parent_color;
--		node->rb_left = old->rb_left;
--		rb_set_parent(old->rb_left, node);
- 	}
- 
- 	if (rebalance)
--- 
-1.7.7.3
+Thanks for the other parts of the review.
