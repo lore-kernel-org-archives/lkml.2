@@ -1,124 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab2HFIxQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 04:53:16 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:50535 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753958Ab2HFIxE (ORCPT
+	id S1752912Ab2HFIz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 04:55:57 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:47295 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751282Ab2HFIzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 04:53:04 -0400
-Date: Mon, 6 Aug 2012 11:49:30 +0300
+	Mon, 6 Aug 2012 04:55:55 -0400
+Date: Mon, 6 Aug 2012 11:52:22 +0300
 From: Felipe Balbi <balbi@ti.com>
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-Cc: balbi@ti.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rob@landley.net, linux@arm.linux.org.uk, gregkh@linuxfoundation.org,
-        b-cousson@ti.com, rnayak@ti.com, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
+        rnayak@ti.com, tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
         linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v6 01/11] drivers: usb: otg: add a new driver for omap
- usb2 phy
-Message-ID: <20120806084928.GD17551@arwen.pp.htv.fi>
+Subject: Re: [PATCH v6 00/11] omap: musb: Add device tree support
+Message-ID: <20120806085221.GE17551@arwen.pp.htv.fi>
 Reply-To: balbi@ti.com
 References: <1343639400-28725-1-git-send-email-kishon@ti.com>
- <1343639400-28725-2-git-send-email-kishon@ti.com>
- <20120803132708.GC8269@arwen.pp.htv.fi>
- <CAAe_U6K15Nm5aNs2Vn71G7ELZWka1zB2E3VGZWTc0VjyViJ6Yw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VMt1DrMGOVs3KQwf"
+	protocol="application/pgp-signature"; boundary="k3qmt+ucFURmlhDS"
 Content-Disposition: inline
-In-Reply-To: <CAAe_U6K15Nm5aNs2Vn71G7ELZWka1zB2E3VGZWTc0VjyViJ6Yw@mail.gmail.com>
+In-Reply-To: <1343639400-28725-1-git-send-email-kishon@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---VMt1DrMGOVs3KQwf
+--k3qmt+ucFURmlhDS
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Fri, Aug 03, 2012 at 08:01:44PM +0530, ABRAHAM, KISHON VIJAY wrote:
-> >> +     return 0;
-> >> +}
-> >> +
-> >> +#ifdef CONFIG_PM_RUNTIME
-> >> +
-> >> +static int omap_usb2_runtime_suspend(struct device *dev)
-> >> +{
-> >> +     struct platform_device  *pdev =3D to_platform_device(dev);
-> >> +     struct omap_usb *phy =3D platform_get_drvdata(pdev);
-> >> +
-> >> +     clk_disable(phy->wkupclk);
-> >
-> > weird. I would expect the wakeup clock to be enabled on suspend and
-> > disabled on resume. Isn't this causing any unbalanced disable warnings ?
+On Mon, Jul 30, 2012 at 02:39:49PM +0530, Kishon Vijay Abraham I wrote:
+> This patch series adds device tree support for MUSB and device
+> tree support for all the related modules to get MUSB working in
+> OMAP platform.
 >=20
-> Even I was expecting the wakeup clock to be enabled on suspend but if
-> we have this enabled coreaon domain is never
-> gated and core does not hit low power state. btw Why do think this is
-> unbalanced?
-
-because you never do a clk_enable() on probe(), so on your first
-suspend, you will disable the clock without having enabled it before,
-no? Unless pm_runtime forces a runtime_resume() when you call
-pm_runtime_enable()...
-
-> >> +static int omap_usb2_runtime_resume(struct device *dev)
-> >> +{
-> >> +     u32 ret =3D 0;
-> >> +     struct platform_device  *pdev =3D to_platform_device(dev);
-> >> +     struct omap_usb *phy =3D platform_get_drvdata(pdev);
-> >> +
-> >> +     ret =3D clk_enable(phy->wkupclk);
-> >> +     if (ret < 0)
-> >> +             dev_err(phy->dev, "Failed to enable wkupclk %d\n", ret);
-> >> +
-> >> +     return ret;
-> >> +}
-> >> +
-> >> +static const struct dev_pm_ops omap_usb2_pm_ops =3D {
-> >> +     SET_RUNTIME_PM_OPS(omap_usb2_runtime_suspend, omap_usb2_runtime_=
-resume,
-> >> +             NULL)
-> >
-> > only runtime ? What about static suspend ? We need this to work also
-> > after a traditional echo mem > /sys/power/state ;-)
+> A new omap-usb2 phy driver has been added (with only dt suppport)
+> to perform phy configurations. Previously this configuration was
+> performed by twl6030, using pdata function pointers.
 >=20
-> The static suspend case is handled by users of this phy using
-> set_suspend hooks.
+> With the addition of omap-usb2 to perform phy configurations,
+> twl6030 is made as a comparator driver to detect VBUS and ID events
+> and notify it to the glue layer.
+>=20
+> musb core is _NOT_ yet converted to support device tree support as it
+> would need lot of driver re-design because of its enormous use of
+> function pointers. That will be in _TO DO_ list.
+>=20
+> Changes from v5:
+> minor cleanups like checking for return value in get_sync and few changes
+> in the documentation has been done.
+>=20
+> Changes from v4:
+> duplicate getting of 'mode' property is removed in omap-musb glue.
+>=20
+> Changes from v3:
+> remove the address in the node name of usb_otg_hs since the usb_otg_hs
+> node doesn't have a reg property. Thanks Ajay Gupta for finding this.
+>=20
+> Changes from v2:
+> Fixed Sergei's comment to remove *0x* prefix in usb2phy@0x4a0ad080
+>=20
+> Changes from v1:
+> * Fixed Rajendra Nayak comments (regulator naming, compatible naming of
+> musb and other minor cleanups.)
+> * It's agreed to have ocp2scp in drivers/bus and usb2 phy is a child of
+> ocp2scp, the documentation is updated accordingly.
+>=20
+> Changes from RFC:
+> Removed the dependency on [RFC PATCH 00/11] OMAP System Control Module.
+> Writing to control module register is now handled in otg driver itself.
+> Once the system control module driver get upstreamed, I'll send a patch
+> to make use of API's in control module driver to write to control
+> module register.
+>=20
+> This series was developed on
+> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
+>=20
+> This patch series depends on
+> [PATCH 0/2] omap: add ocp2scp as a bus driver
+>=20
+> Performed MUSB device mode testing on OMAP4 panda, OMAP4 SDP
+> and OMAP3 beagle.
+>=20
+> Kishon Vijay Abraham I (11):
+>   drivers: usb: otg: add a new driver for omap usb2 phy
+>   arm/dts: omap: Add omap-usb2 dt data
+>   drivers: usb: otg: make twl6030_usb as a comparator driver to
+>     omap_usb2
+>   arm: omap: hwmod: add a new addr space in otg for writing to control
+>     module
+>   drivers: usb: twl6030: Add dt support for twl6030 usb
+>   arm/dts: Add twl6030-usb data
+>   drivers: usb: twl4030: Add device tree support for twl4030 usb
+>   arm/dts: Add twl4030-usb data
+>   drivers: usb: musb: Add device tree support for omap musb glue
+>   arm/dts: omap: Add usb_otg and glue data
+>   arm: omap: phy: remove unused functions from omap-phy-internal.c
 
-I'm not sure if that's too wise, what if your user enabled USB, but
-for whatever reason loaded only the phy driver and not musb or dwc3. It
-will fail, right ?
+When you send your next series, can you please split the stuff based on
+their dependencies or at least note here what depends on what ? I mean,
+I cannot take the DT patches without an Acked-by Grant and Tony, but the
+drivers themselves I could take queue them since they're already in good
+shape ;-)
+
+Maybe just start the series with patches without dependencies on one
+another, and the rest of the series would be ones that need to go
+together, or something. That'll help me ;-)
 
 --=20
 balbi
 
---VMt1DrMGOVs3KQwf
+--k3qmt+ucFURmlhDS
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQH4UYAAoJEIaOsuA1yqREFocP/i8C2ZsJXeF15dc8ODbWtT5L
-1K3bFJwKZCqXIxLi/vpOgMYrpcCmv0EpYx4rwYtnDwXL3cd/t9i6XcjiJz6bBv7W
-EwVfK185DNSf/nLM1lbiKiDSmNDZiMDe2MNYR6rts4jes9DjOr40mT2dhO1Xok5G
-L8LXNifwjb/YUYXhvQ99iFN9Z5wj8wY0V6xJypP+fhjcx9TQac8p7aQmpi3/vayt
-gXN8N3eXOozQeBACOprnhcQ6SXgOPWVojYE99gzjgYPaY0SD3LU1Hi2JjUT1ty0v
-fj6P82ykMVYBjQBuJp5ShKVKFRCchoA07mNs96S1cZGx6sv75fmGyyS5MOPWh0iM
-LmD8281A0Mw0oF6gP58iTSS5hyrAEgU6R7UVCJyYQsy5gTXIqy81pVaLJu5KSB5E
-T0F3ncojFbnCde46hRpPTVQdCQde7uubrwmm5/C1MVYob/yh9ibxPznNMygGFGmp
-/7pHw1we1wGE9J5MP8Im/1c6D8tWeI3yJogeUrf5YqCeYQz9ANuNyiZmGBezS+Oe
-jMqw35b/aaUfSU6PkMWj8c3wkCkTGhxwSbdB29+W4Ee1Q9m/DHRJND1OIOpaYTNX
-t4tOsLSjvYt4VyBli6rek6ehW2Jp/pY/2z0R8PGiwzPto6gKeh3/ASzu/J60Lr2P
-gCgnC/x8JY1a9/hc7VS5
-=8Oyd
+iQIcBAEBAgAGBQJQH4XFAAoJEIaOsuA1yqRED80QAIn9gOnLHktMqLQqVmMYHQfK
+J7KbKBniKZsrHDT2DHvqOhz7gQ0kjokvlOX9C1QRZuSnqnk0JofzLqMLnK5WqUKQ
+/LTSd2OtpjSfIe3KDd7DqNRZGxFr4c6xA/8q2o8RxzTXHOcJIG+erOF+nPVqpxtp
+FKX9m6ISuY0NM4dUAegiA+rJBnVVM7pVyMWULfO6rYhQaBRXv9J05adUsADdxPID
+59dsj58KNlaExFeVuYypIsEhOFgu4ogjD/nJxcLD2DWqa7jjBfoHwxHQaY2Ify+K
+E23hJyaal+GcyhQCJbnx0rlgOonBrOXTfIYQBNN43Z4t7MM2cb5N9rdn4fWpKOI+
+7tlEvdzgqlzEW20pQHGxhrWH9ajNuWdutJnWBjNWL6bjlpq22uf6E4UXwE6C5l+R
+Nt/L69YfTOcErpetWFbxxpjDQtvDVWw9jBUn+rbnSFopUuhcPNXSloFrFd+LL0FY
+GNQU2SUTeCFwvI42jQR1mOFee4MNKUsP5eiAdP2U91N+IS+blmcZxbxh7QTYFLfp
+MF4beq4Ly2wvgxSlOPNcRxLInuzcvLgTPlNhkz+VXOfGieWoDjy1I0EriJlKEq+y
+aXMON+fvZfx0B29x+rdPKPK9wFzHn28NEkI7yLUwJdNkaRFGG4PSx7SZYthz/Rv0
+6bUnFuJI7soxD6R/gVZY
+=5ypd
 -----END PGP SIGNATURE-----
 
---VMt1DrMGOVs3KQwf--
+--k3qmt+ucFURmlhDS--
