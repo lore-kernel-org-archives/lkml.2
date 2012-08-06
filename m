@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab2HFOhA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:37:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36540 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756269Ab2HFOg6 (ORCPT
+	id S1756644Ab2HFOhW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:37:22 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50878 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756568Ab2HFOhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:36:58 -0400
-Date: Mon, 6 Aug 2012 10:36:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Pavel Machek <pavel@ucw.cz>
-cc: Len Brown <lenb@kernel.org>, <linux-acpi@vger.kernel.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Vasilyev <pavel@pavlinux.ru>
-Subject: Re: [linux-pm] [PATCH] ACPI: replace strlen("string") with
- sizeof("string") -1
-In-Reply-To: <20120806102114.GA31404@elf.ucw.cz>
-Message-ID: <Pine.LNX.4.44L0.1208061028160.1649-100000@iolanthe.rowland.org>
+	Mon, 6 Aug 2012 10:37:19 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 6 Aug 2012 22:37:17 +0800
+Message-ID: <CANQmPXg_easObFwAdBHYYUA0q-2z3n0HZA8N8qmCu9qxFaS3BA@mail.gmail.com>
+Subject: [PATCH]RIFS scheduler ready for 3.5.x kernel
+From: Chen <hi3766691@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: mou Chen <hi3766691@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Aug 2012, Pavel Machek wrote:
+Hi everyone.
 
-> On Thu 2012-07-26 21:39:38, Len Brown wrote:
-> > ...both give the number of chars in the string
-> > without the '\0', as strncmp() wants,
-> > but sizeof() is compile-time.
-> 
-> What about introducing something like streq() to do this
-> automatically? This is ugly....
-> 
-> #define streq(a, b) ... if (_buildin_constant(b)) ...
-> 
-> ?
-> 
-> > -	if (!strncmp(val, "enable", strlen("enable"))) {
-> > +	if (!strncmp(val, "enable", sizeof("enable") - 1)) {
+RIFS offical patch for 3.5.x kernel:
+http://rifs-scheduler.googlecode.com/files/rifs-kernel3.5.x
+The tweaks of the scheduler can be found at '/proc/sys/sched_rifs'.
 
-While you're at it, there's no point using strncmp when you know the 
-length of one of the strings beforehand.  Just use memcmp, and don't 
-subtract 1 from the sizeof value.
+RIFS-ES scheduler has been rewritten to solve some strange behavior
+e.g. strange CPU load(Reported by ID:KernelOfTruth on Phoronix).The
+part I have rewritten is about the tick accounting. Also the scheduler
+is a strict scheduler(No any special treats, unlike the previous
+RIFS-ES scheduler).
+RIFS-ES patch for 3.5 kernel:
+http://rifs-scheduler.googlecode.com/files/rifs-es-kernel3.5.x
 
-Alan Stern
-
+                       Chen
