@@ -1,94 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab2HFPCM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 11:02:12 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:42858 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756641Ab2HFPCI (ORCPT
+	id S1756653Ab2HFPGL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 11:06:11 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:51211 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756460Ab2HFPGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 11:02:08 -0400
-Date: Mon, 6 Aug 2012 10:31:58 -0400
+	Mon, 6 Aug 2012 11:06:09 -0400
+Date: Mon, 6 Aug 2012 10:50:10 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] Regression in xen-netfront on v3.6 (git commit
- c48a11c7ad2623b99bbd6859b0b4234e7f11176f, netvm: propagate page->pfmemalloc
- to skb)
-Message-ID: <20120806143158.GB2487@phenom.dumpdata.com>
-References: <20120801190227.GA13272@phenom.dumpdata.com>
- <20120803120414.GA10670@andromeda.dapyr.net>
- <20120804110355.GA17640@andromeda.dapyr.net>
- <20120804133105.GE29814@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: lenb@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel_idle: Check cpu_idle_get_driver() for NULL before
+ dereferencing it.
+Message-ID: <20120806145009.GD2487@phenom.dumpdata.com>
+References: <1343918341-25985-1-git-send-email-konrad.wilk@oracle.com>
+ <201208042356.35884.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120804133105.GE29814@suse.de>
+In-Reply-To: <201208042356.35884.rjw@sisk.pl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 04, 2012 at 02:31:05PM +0100, Mel Gorman wrote:
-> On Sat, Aug 04, 2012 at 07:03:55AM -0400, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Aug 03, 2012 at 08:04:14AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > On Wed, Aug 01, 2012 at 03:02:27PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > So I hadn't done a git bisection yet. But if I choose git commit:
-> > > > 4b24ff71108164e047cf2c95990b77651163e315
-> > > >     Merge tag 'for-v3.6' of git://git.infradead.org/battery-2.6
-> > > > 
-> > > >     Pull battery updates from Anton Vorontsov:
-> > > > 
-> > > > 
-> > > > everything works nicely. Anything past that, so these merges:
-> > > > 
-> > > > konrad@phenom:~/ssd/linux$ git log --oneline --merges 4b24ff71108164e047cf2c95990b77651163e315..linus/master
-> > > > 2d53492 Merge tag 'irqdomain-for-linus' of git://git.secretlab.ca/git/linux-2.6
-> > > ===> ac694db Merge branch 'akpm' (Andrew's patch-bomb)
-> > > 
-> > > Somewhere in there is the culprit. Hadn't done yet the full bisection
-> > > (was just checking out in each merge to see when it stopped working)
+On Sat, Aug 04, 2012 at 11:56:35PM +0200, Rafael J. Wysocki wrote:
+> On Thursday, August 02, 2012, Konrad Rzeszutek Wilk wrote:
+> > If the machine is booted without any cpu_idle driver set
+> > (b/c disable_cpuidle() has been called) we should follow
+> > other users of cpu_idle API and check the return value
+> > for NULL before using it.
 > > 
-> > Mel, your:
-> > commit c48a11c7ad2623b99bbd6859b0b4234e7f11176f
-> > Author: Mel Gorman <mgorman@suse.de>
-> > Date:   Tue Jul 31 16:44:23 2012 -0700
+> > Reported-by: Mark van Dijk <mark@internecto.net>
+> > Tested-by: Mark van Dijk <mark@internecto.net>
+> > Suggested-by: Jan Beulich <JBeulich@suse.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/idle/intel_idle.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
 > > 
-> >     netvm: propagate page->pfmemalloc to skb
-> > 
-> > is the culprit per git bisect. Any ideas - do the drivers need to do
-> > some extra processing? Here is the git bisect log
+> > diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> > index f559088..7383aa0 100644
+> > --- a/drivers/idle/intel_idle.c
+> > +++ b/drivers/idle/intel_idle.c
+> > @@ -607,7 +607,7 @@ static int __init intel_idle_init(void)
+> >  	retval = cpuidle_register_driver(&intel_idle_driver);
+> >  	if (retval) {
+> 
+> What about:
+> 
+>   		struct cpuidle_driver *drv = cpuidle_get_driver();
+> 
+>   		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
+> 			drv ? drv->name : "none");
+> 
+> >  		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
+> > -			cpuidle_get_driver()->name);
+> > +			cpuidle_get_driver() ? cpuidle_get_driver()->name : "none");
+> >  		return retval;
+> >  	}
+> >  
 > > 
 > 
-> The problem appears to be at drivers/net/xen-netfront.c#973 where it
-> calls __skb_fill_page_desc(skb, 0, NULL, 0, 0) . The driver does not
-> have to do extra processing as such but I did not expect NULL to be
-> passed in like this. Can you check if this fixes the bug please?
+> Rafael
 
-That does it!
-.. snip..
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Here it is:
 
-Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>From a8b7aa06cacb5f42a90a0d4a0a1a95e230d43fc6 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 2 Aug 2012 10:31:52 -0400
+Subject: [PATCH] intel_idle: Check cpu_idle_get_driver() for NULL before
+ dereferencing it.
 
-> ---
->  include/linux/skbuff.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> index 7632c87..8857669 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -1256,7 +1256,7 @@ static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
->  	 * do not lose pfmemalloc information as the pages would not be
->  	 * allocated using __GFP_MEMALLOC.
->  	 */
-> -	if (page->pfmemalloc && !page->mapping)
-> +	if (page && page->pfmemalloc && !page->mapping)
->  		skb->pfmemalloc	= true;
->  	frag->page.p		  = page;
->  	frag->page_offset	  = off;
+If the machine is booted without any cpu_idle driver set
+(b/c disable_cpuidle() has been called) we should follow
+other users of cpu_idle API and check the return value
+for NULL before using it.
+
+Reported-by: Mark van Dijk <mark@internecto.net>
+Tested-by: Mark van Dijk <mark@internecto.net>
+Suggested-by: Jan Beulich <JBeulich@suse.com>
+[v1: Redo per Rafael's suggestion]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/idle/intel_idle.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index d0f59c3..6b313af 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -556,8 +556,9 @@ static int __init intel_idle_init(void)
+ 	intel_idle_cpuidle_driver_init();
+ 	retval = cpuidle_register_driver(&intel_idle_driver);
+ 	if (retval) {
++		struct cpuidle_driver *drv = cpuidle_get_driver();
+ 		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
+-			cpuidle_get_driver()->name);
++			drv ? drv->name : "none");
+ 		return retval;
+ 	}
+ 
+-- 
+1.7.7.6
+
