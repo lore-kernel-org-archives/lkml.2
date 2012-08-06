@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab2HFFIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 01:08:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44046 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab2HFFId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 01:08:33 -0400
-Message-ID: <501F514C.2090909@ozlabs.ru>
-Date: Mon, 06 Aug 2012 15:08:28 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@ozlabs.org
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: how to implement platform specific per process parameter?
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751778Ab2HFFLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 01:11:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9342 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111Ab2HFFLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 01:11:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="176383261"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH 1/3] perf/x86: Fix section mismatch in uncore_types_exit()
+Date: Mon,  6 Aug 2012 13:11:20 +0800
+Message-Id: <1344229882-3907-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-There is a per core register on modern POWER processors (POWER6+) called 
-"DSCR": The DSCR (aka Data Stream Control Register) is supported on some
-server PowerPC chips and allow some control over the prefetch of data
-streams.
+Fix section mismatch in uncore_types_exit():
 
-Its "per process" support has been added by
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=efcac6589a277c10060e4be44b9455cf43838dc1
-"powerpc: Per process DSCR + some fixes (try#4)"
+WARNING: vmlinux.o(.text+0x13831): Section mismatch in
+reference from the function uncore_types_exit() to the
+function .init.text:uncore_type_exit()
 
-The patch adds the DSCR value into "struct thread_struct" and 
-saves/restores it when the context is switched. Also, there is some policy 
-to initialize the register when a thread starts. So far so good.
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Here is the problem.
-
-Some customer(s) of this feature want an ability to change the DSCR value 
-of the already running process. I.e. we need some kernel interface which 
-would accept pid and the register value and change it.
-
-There are 4 options:
-1. [not a kernel interface] use ptrace to execute the register changing 
-command inside the specified pid. The next context switch saves the new 
-value in the thread_struct. Dirty hack.
-
-2. Add a new syscall which would receive pid + register value and do the 
-job. A bit too much.
-
-3. Add some hook in /proc filesystem but so far there were no platform 
-specific bits, right?
-
-4. Implement a static node "/sys/devices/system/cpu/dscr_control". write() 
-would parse the input stream, call scanf("%d %x", &pid, &dscr) and do the job.
-
-What is the correct approach? Thanks.
-
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 7563fda..a7ccd68 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2373,7 +2373,7 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
+ 	type->attr_groups[1] = NULL;
+ }
+ 
+-static void uncore_types_exit(struct intel_uncore_type **types)
++static void __init uncore_types_exit(struct intel_uncore_type **types)
+ {
+ 	int i;
+ 	for (i = 0; types[i]; i++)
 -- 
-Alexey
+1.7.11.2
+
