@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab2HFPN4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 11:13:56 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49391 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab2HFPNz (ORCPT
+	id S932231Ab2HFPO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 11:14:27 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:51225 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932185Ab2HFPOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 11:13:55 -0400
-MIME-Version: 1.0
-Date: Mon, 6 Aug 2012 11:13:53 -0400
-Message-ID: <CAGh4K3L_nY5B22g5oMBuoY=a1OB7U10yH1ZJvn0dG_O5TVz6+Q@mail.gmail.com>
-Subject: [PATCH]: Autosleep patch.
-From: Christopher Sacchi <chris.sacchi@gmail.com>
-To: linux-wireless@vger.kernel.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Aug 2012 11:14:25 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+bk8c3b8ubv2/W3bcRG+dv1At1kV5lY862TZNDyS
+	ct7Fj8DpAu09CB
+Message-ID: <1344266062.6853.26.camel@marge.simpson.net>
+Subject: Re: unfair scheduling with tbb application observed, could it be a
+ kernel issue?
+From: Mike Galbraith <efault@gmx.de>
+To: Pedro Larroy <pedro.larroy.lists@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 06 Aug 2012 17:14:22 +0200
+In-Reply-To: <1344264419.6853.19.camel@marge.simpson.net>
+References: <CAC_CU1hzuSAeHG7-5g5kOa=MMh3KnJZNwWr+ySkJQyxixck4WA@mail.gmail.com>
+	 <1344263139.6853.10.camel@marge.simpson.net>
+	 <CAC_CU1iP0y9pVPPWVuER3kZbFGbBwS6Q2w1mJ6Ke6VNLqJOgbA@mail.gmail.com>
+	 <1344263912.6853.14.camel@marge.simpson.net>
+	 <1344264419.6853.19.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch (listed below), changes an old function in autosleep.c in
-kernel version 3.5. It's code is listed from the first -- line to the
-2nd to last -- line.
-This patch was checked with checkpatch.pl with no errors:
---
---- power/autosleep.c	2012-07-21 20:58:29.000000000 +0000
-+++ power/autosleepnew.c	2012-08-06 10:52:26.000000000 +0000
-@@ -30,7 +30,7 @@ static void try_to_suspend(struct work_s
- 	if (!pm_get_wakeup_count(&initial_count, true))
- 		goto out;
+Ok, with the sched_debug info you sent offline, booting with noautogroup
+appended to the kernel command line should fix it up for you.  You've
+got autogroup enabled, which creates automagic per session task groups.
 
--	mutex_lock(&autosleep_lock);
-+	mutex_lock_interruptable();
+-Mike  
 
- 	if (!pm_save_wakeup_count(initial_count)) {
- 		mutex_unlock(&autosleep_lock);
-Signed-off-by: Christopher P. Sacchi <chris.sacchi@gmail.com>
---
-
--- 
-Christopher
