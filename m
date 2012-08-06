@@ -1,41 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab2HFUlg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 16:41:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53324 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932149Ab2HFUlf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 16:41:35 -0400
-Message-ID: <1344285688.27828.114.camel@twins>
-Subject: Re: [patch] sched,cgroup_sched: fix up task_groups list
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <efault@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 06 Aug 2012 22:41:28 +0200
-In-Reply-To: <1344283776.6768.10.camel@marge.simpson.net>
-References: <1344267125.6853.33.camel@marge.simpson.net>
-	 <1344279897.27828.97.camel@twins>
-	 <1344283776.6768.10.camel@marge.simpson.net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756711Ab2HFUm6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 16:42:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755974Ab2HFUm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 16:42:57 -0400
+Date: Mon, 6 Aug 2012 16:42:45 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: amwang@redhat.com, yinghai.lu@oracle.com, tiwai@suse.de,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        hpa@zytor.com, xiyou.wangcong@gmail.com, akpm@linux-foundation.org,
+        dyoung@redhat.com
+Subject: Re: [PATCH] x86: revert "x86: Fix S4 regression"
+Message-ID: <20120806204245.GI25559@redhat.com>
+References: <1339478463-31172-1-git-send-email-amwang@redhat.com>
+ <5004D8BF.6050205@jp.fujitsu.com>
+ <500D20A1.1030800@redhat.com>
+ <500D340F.5080801@jp.fujitsu.com>
+ <1343145331.16290.45.camel@cr0>
+ <500F3B7C.70009@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500F3B7C.70009@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-06 at 22:09 +0200, Mike Galbraith wrote:
-> On Mon, 2012-08-06 at 21:04 +0200, Peter Zijlstra wrote: 
-> > On Mon, 2012-08-06 at 17:32 +0200, Mike Galbraith wrote:
-> > > Thinko happened during sched migration to kernel/sched, fix it up.
-> > 
-> > what's the effect.. that is what broke and why are we backporting this
-> > to -stable?
+On Wed, Jul 25, 2012 at 09:19:08AM +0900, Takao Indoh wrote:
+> (2012/07/25 0:55), Cong Wang wrote:
+> >On Mon, 2012-07-23 at 20:22 +0900, Takao Indoh wrote:
+> >>(2012/07/23 19:00), Dave Young wrote:
+> >>>On 07/17/2012 11:15 AM, Takao Indoh wrote:
+> >>>
+> >>>>Hi Cong,
+> >>>>
+> >>>>When I tested kdump with 3.5.0-rc6 kernel, I found a problem of kdump
+> >>>>kernel's panic in find_early_table_space().
+> >>>>
+> >>>>init_memory_mapping: [mem 0x00000000-0x36ffafff]
+> >>>>Kernel panic - not syncing: Cannot find space for the kernel page tables
+> >>>>Pid: 0, comm: swapper Not tainted 3.5.0-rc6 #17
+> >>>>Call Trace:
+> >>>>   [<ffffffff8158549b>] panic+0xb8/0x1c8
+> >>>>   [<ffffffff8158565d>] ? printk+0x48/0x4a
+> >>>>   [<ffffffff8157304c>] init_memory_mapping+0x46c/0x530
+> >>>>   [<ffffffff818a73c7>] setup_arch+0x669/0xb0e
+> >>>>   [<ffffffff8158565d>] ? printk+0x48/0x4a
+> >>>>   [<ffffffff818a3a1f>] start_kernel+0x9b/0x34a
+> >>>>   [<ffffffff818a332d>] x86_64_start_reservations+0x131/0x136
+> >>>>   [<ffffffff818a341f>] x86_64_start_kernel+0xed/0xf4
+> >>>>
+> >>>>In find_early_table_space(), a kernel tries to find free area below 512M
+> >>>>for pgtable using memblock_find_in_range, but it fails because kdump
+> >>>>kernel does not have enough free space below 512M due to the memmap
+> >>>>restriction. This is the memmap option specified against kdump kernel
+> >>>>when crashkernel=128M.
+> >>>>
+> >>>>memmap=560K@64K memmap=130492K@770608K
+> >>>>
+> >>>>Only 560KB area is available and it is not sufficient for pgtable (it
+> >>>>seems that about 1.8MB area is needed for pgtable). This problem is
+> >>>>fixed by your revert patch. I hope this patch gets merged.
+> >>>
+> >>>
+> >>>I can reproduce this issue as well, probably related to some x86 mm init
+> >>>commits, this alloc failure does not happen with reverting below commits:
+> >>>
+> >>>bd2753b2dda7bb43c7468826de75f49c6a7e8965
+> >>>722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> >>Yeah, my result of bisect is as follows and at first I thought the
+> >>commit 722bc6 caused this regression.
+> >>
+> >>722bc6b16771ed80871e1fd81c86d3627dda2ac8 is the first bad commit
+> >>commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> >>Author: WANG Cong <xiyou.wangcong@gmail.com>
+> >>Date:   Mon Mar 5 15:05:13 2012 -0800
+> >>
+> >>IIUC, this commit just fixes a bug of counting pgtable entries. As the
+> >>result, another problem came up to the surface. In the case of my
+> >>machine(16GB memory), before applying 722bc6, find_early_table_space()
+> >>requests about 12KB free area and it can be got from 560K@64K area
+> >>luckily. I think the size find_early_table_space() requests was a bug.
+> >>After the bug is fixed by the commit 722bc6, find_early_table_space()
+> >>requires 1.8MB area and it fails as I wrote.
+> >
+> >Thanks for tracking this, Takao!
+> >
+> >I bet you are using x86_64 not x86 PAE? If so, could you try this patch
+> >https://patchwork.kernel.org/patch/1195751/
+> >? I already reviewed it.
 > 
-> The effect is that for_each_rt_rq() doesn't work, because it's not the
-> same task_groups list that groups were added to, it's an empty list, so
-> __enable/disable_runtime() and print_rt_stats() don't work, and you
-> can't see rt task groups.
+> Great, I applied it and now kdump works. Thanks!
 
-It seems to me this makes for excellent changelog material ;-)
+Did something happen on this patch. We definitely want to gain back the
+capability to be able to reserve 512MB of kdump memory.
+
+Thanks
+Vivek
