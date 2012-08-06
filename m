@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab2HFSd0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:33:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44792 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab2HFSdW (ORCPT
+	id S932386Ab2HFSiG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:38:06 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:38595 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab2HFSiE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:33:22 -0400
+	Mon, 6 Aug 2012 14:38:04 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "H. Peter Anvin (hpa@linux.intel.com)" <hpa@linux.intel.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "Paul Gortmaker (paul.gortmaker@windriver.com)" 
+	<paul.gortmaker@windriver.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: [RESEND][PATCH]efi: initialize efi.runtime_version to make
+ query_variable_info/update_capsule workable
+Thread-Topic: [RESEND][PATCH]efi: initialize efi.runtime_version to make
+ query_variable_info/update_capsule workable
+Thread-Index: Ac10Agc/XnA3Qh5yTkKGuWpYlkjSxg==
+Date: Mon, 6 Aug 2012 18:37:20 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB5C7C3@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <A6A3B7488C419F488E5B13FFD03C08AD2F4362EE@SN2PRD0510MB370.namprd05.prod.outlook.com>
-References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
-	<CAJuYYwSjnQ6z0iUaLCV9guC7yyKH3_pbd1QZe3ELKF-fYNfaqQ@mail.gmail.com>
-	<A6A3B7488C419F488E5B13FFD03C08AD2F4362EE@SN2PRD0510MB370.namprd05.prod.outlook.com>
-Date: Mon, 6 Aug 2012 11:33:21 -0700
-Message-ID: <CAOesGMh=6QrCmL4EqnSqTxi1nH+8Wn+x=z9BYq8QJCznH3a=zQ@mail.gmail.com>
-Subject: =?UTF-8?Q?Re=3A_=ED=9A=8C=EC=8B=A0=3A_=5BPATCH=5D_ODROID=2DX=3A_hkdk4412=3A_Add_new_hard?=
-	=?UTF-8?Q?ware_based_on_Exynos4412?=
-From: Olof Johansson <olof@lixom.net>
-To: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Dongjin Kim <tobetter@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Jon Medhurst <tixy@yxit.co.uk>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-08-06_04:2012-08-06,2012-08-06,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1208060203
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+A value of efi.runtime_version is checked before calling
+update_capsule()/query_variable_info() as follows.
+But it isn't initialized anywhere.
+<snip>
+static efi_status_t virt_efi_query_variable_info(u32 attr,
+                                                 u64 *storage_space,
+                                                  u64 *remaining_space,
+                                                 u64 *max_variable_size) {
+        if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
+                return EFI_UNSUPPORTED; 
+<snip>
 
-On Mon, Aug 6, 2012 at 11:16 AM, Dongjin Kim
-<Dongjin.Kim@agreeyamobility.net> wrote:
-> Hello Tomas,
->
-> I am agree with you to look at using device tree and I have some plan for it.
-> But as of now I am focusing to bring up the hardware itself with mainline kernel and merge into it.
-> I also need some time to look at the requirement of device tree, because I am not familiar with it yet.
->
-> Any advice will be welcomed.
+This patch initializes a value of efi.runtime_version at boot time.
 
-Basic rule (that has some flexibility for legacy platforms) is that
-the net movement of board support should move from board files to
-device-tree based. Introduction of a brand new board like this is a
-prime example of something that should be using device tree from day
-1.
+Acked-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ arch/x86/platform/efi/efi.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-
--Olof
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 2dc29f5..4c82998 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -868,6 +868,7 @@ void __init efi_enter_virtual_mode(void)
+ 	 *
+ 	 * Call EFI services through wrapper functions.
+ 	 */
++	efi.runtime_version = efi_systab.fw_revision;
+ 	efi.get_time = virt_efi_get_time;
+ 	efi.set_time = virt_efi_set_time;
+ 	efi.get_wakeup_time = virt_efi_get_wakeup_time;
+-- 
+1.7.1
