@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab2HFImM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 04:42:12 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60336 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab2HFImL (ORCPT
+	id S1754052Ab2HFImV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 04:42:21 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:56116 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753792Ab2HFImS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 04:42:11 -0400
-Message-ID: <501F8357.3070102@linux.vnet.ibm.com>
-Date: Mon, 06 Aug 2012 16:41:59 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 6 Aug 2012 04:42:18 -0400
+Date: Mon, 6 Aug 2012 11:38:45 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH 1/4] arm/dts: omap5-evm: Add I2C support
+Message-ID: <20120806083843.GA17612@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1343997486-710-1-git-send-email-sourav.poddar@ti.com>
+ <1343997486-710-2-git-send-email-sourav.poddar@ti.com>
+ <501C08CB.3060701@mvista.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH] sched: using dst_rq instead of this_rq during load balance
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12080608-8256-0000-0000-000003991E4C
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
+Content-Disposition: inline
+In-Reply-To: <501C08CB.3060701@mvista.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-As we already have dst_rq in lb_env, using or changing "this_rq" do not
-make sense.
+--7JfCtLOvnd9MIVvH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch will replace "this_rq" with dst_rq in load_balance, and we
-don't need to change "this_rq" while process LBF_SOME_PINNED any more.
+Hi,
 
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- kernel/sched/fair.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+On Fri, Aug 03, 2012 at 09:22:19PM +0400, Sergei Shtylyov wrote:
+> Hello.
+>=20
+> On 08/03/2012 04:38 PM, Sourav Poddar wrote:
+>=20
+> > Add I2C data node in omap5 device tree file.
+>=20
+> > Tested on omap5430 sdp.
+>=20
+> > Cc: Benoit Cousson <b-cousson@ti.com>
+> > Cc: Felipe Balbi <balbi@ti.com>
+> > Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> > Acked-by: Felipe Balbi <balbi@ti.com>
+> > Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> > ---
+> >  arch/arm/boot/dts/omap5.dtsi |   35 +++++++++++++++++++++++++++++++++++
+> >  1 files changed, 35 insertions(+), 0 deletions(-)
+>=20
+> > diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+> > index 57e5270..6b68dfe 100644
+> > --- a/arch/arm/boot/dts/omap5.dtsi
+> > +++ b/arch/arm/boot/dts/omap5.dtsi
+> > @@ -145,6 +145,41 @@
+> >  			#interrupt-cells =3D <1>;
+> >  		};
+> > =20
+> > +		i2c1: i2c@48070000 {
+> > +			compatible =3D "ti,omap4-i2c";
+> > +			#address-cells =3D <1>;
+> > +			#size-cells =3D <0>;
+> > +			ti,hwmods =3D "i2c1";
+>=20
+>    Address postfix in the node name and no "reg" property?
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index d0cc03b..f03b99c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4275,7 +4275,7 @@ redo:
- 		goto out_balanced;
- 	}
- 
--	BUG_ON(busiest == this_rq);
-+	BUG_ON(busiest == env.dst_rq);
- 
- 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
- 
-@@ -4295,7 +4295,7 @@ redo:
- 
- more_balance:
- 		local_irq_save(flags);
--		double_rq_lock(this_rq, busiest);
-+		double_rq_lock(env.dst_rq, busiest);
- 		if (!env.loop)
- 			update_h_load(env.src_cpu);
- 
-@@ -4305,7 +4305,7 @@ more_balance:
- 		 */
- 		cur_ld_moved = move_tasks(&env);
- 		ld_moved += cur_ld_moved;
--		double_rq_unlock(this_rq, busiest);
-+		double_rq_unlock(env.dst_rq, busiest);
- 		local_irq_restore(flags);
- 
- 		if (env.flags & LBF_NEED_BREAK) {
-@@ -4341,8 +4341,7 @@ more_balance:
- 		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0 &&
- 				lb_iterations++ < max_lb_iterations) {
- 
--			this_rq		 = cpu_rq(env.new_dst_cpu);
--			env.dst_rq	 = this_rq;
-+			env.dst_rq	 = cpu_rq(env.new_dst_cpu);
- 			env.dst_cpu	 = env.new_dst_cpu;
- 			env.flags	&= ~LBF_SOME_PINNED;
- 			env.loop	 = 0;
--- 
-1.7.4.1
+that's because of the ti,hwmods attribute. OMAP is still not entirely
+converted to DT and there's this weird ti,hwmods attribute. OMAP's hwmod
+framework will fill up register addresses, irqs, etc when the device is
+created. Oh well...
 
+--=20
+balbi
+
+--7JfCtLOvnd9MIVvH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQH4KTAAoJEIaOsuA1yqREyVoQAKKkTcGy302m5Gam9wnCP0Cb
+HXqBoaioUwfiXyV0sM4soLy4P1Q0yULDNzttzsYOhPMSSQx5ewbyh6sa1MJK8qvk
+bILOFDE3z6cYdjZQATlo7QcvxpcjSBaD0RxlEsdZBTtNPWN2dIrLmbl1iQy/UVkx
+oS4d5aKLj9LQLWjcG2d4FpbLu+oeLMIIF67tY4vr1JXscWoIX3XPZ/98CwmtTUXE
+yAL2hkCrX3jFc0FgR7oCNwdfkZ8BPpp3wbN7Mec6dI0cFcmoVU7XdT6tqXnaqtju
+p3I6CdDh9cBdMwte5zNFM6OB9Jhr97Xjsu7eQSmcO6O+R/6LtHRliRab52ZIw4ib
+h5kfSEEweWA4ypVqpF4z5p9tydkgtNoojdfErLyiPAW1mem7cgQ9ftRHShjBqJko
+hlKZH8doQe0ibLRsIXtdP3qugImbk96Fms7U/B0WZ6Ubo9CLWiJL+9/8517qmuYB
+50fdoLFMucafW49zoYzpjsGmCGrAMIRHPrXDCr4Z32Us5haOFpDFkR1vdDMHPpqU
+ymaFJhwNBOYzi7j3Gf9IH1FFadYOXxzRk/z7RRZ2GGEknut7bV0RoIDZtiXapZT8
+Xd5qdyxhs9sNV0DD7ihzriy7RFYYzNTD4zy12oGkdhNk334pFLI3xg4Xtk9hhQxQ
+HEWtrI6XeWWKmZ0Jrkp3
+=h60n
+-----END PGP SIGNATURE-----
+
+--7JfCtLOvnd9MIVvH--
