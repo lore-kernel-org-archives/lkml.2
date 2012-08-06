@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab2HFKCM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 06:02:12 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:14789 "EHLO relay.sw.ru"
+	id S1755752Ab2HFKCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 06:02:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28974 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755607Ab2HFKCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755574Ab2HFKCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Aug 2012 06:02:07 -0400
 From: Andrew Vagin <avagin@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 2/3] perf: teach perf inject to merge sched_stat_* and sched_switch events
-Date: Mon,  6 Aug 2012 14:01:58 +0400
-Message-Id: <1344247319-304069-3-git-send-email-avagin@openvz.org>
+Subject: [PATCH 1/3] perf: teach "perf inject" to work with files
+Date: Mon,  6 Aug 2012 14:01:57 +0400
+Message-Id: <1344247319-304069-2-git-send-email-avagin@openvz.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1344247319-304069-1-git-send-email-avagin@openvz.org>
 References: <1344247319-304069-1-git-send-email-avagin@openvz.org>
@@ -21,187 +21,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You may want to know where and how long a task is sleeping. A callchain
-may be found in sched_switch and a time slice in stat_iowait, so I add
-handler in perf inject for merging this events.
+Before this patch "perf inject" can only handle data from pipe.
 
-My code saves sched_switch event for each process and when it meets
-stat_iowait, it reports the sched_switch event, because this event
-contains a correct callchain. By another words it replaces all
-stat_iowait events on proper sched_switch events.
+I want to use "perf inject" for reworking events. Look at my following patch.
 
 Signed-off-by: Andrew Vagin <avagin@openvz.org>
 ---
- tools/perf/builtin-inject.c |   96 ++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 91 insertions(+), 5 deletions(-)
+ tools/perf/builtin-inject.c |   33 +++++++++++++++++++++++++++++++--
+ 1 files changed, 31 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index d04b7a4..247f41c 100644
+index 3beab48..d04b7a4 100644
 --- a/tools/perf/builtin-inject.c
 +++ b/tools/perf/builtin-inject.c
-@@ -13,6 +13,8 @@
- #include "util/debug.h"
+@@ -14,7 +14,12 @@
  
  #include "util/parse-options.h"
-+#include "util/trace-event.h"
+ 
+-static char		const *input_name = "-";
++static char		const *input_name	= "-";
++static const char	*output_name		= "-";
++static int		pipe_output;
++static int		output;
++static u64		bytes_written;
 +
- 
- static char		const *input_name	= "-";
- static const char	*output_name		= "-";
-@@ -21,6 +23,9 @@ static int		output;
- static u64		bytes_written;
- 
  static bool		inject_build_ids;
-+static bool		inject_sched_stat;
-+
-+struct perf_session	*session;
  
  static int perf_event__repipe_synth(struct perf_tool *tool __used,
- 				    union perf_event *event,
-@@ -47,7 +52,7 @@ static int perf_event__repipe_synth(struct perf_tool *tool __used,
+@@ -27,12 +32,14 @@ static int perf_event__repipe_synth(struct perf_tool *tool __used,
+ 	size = event->header.size;
  
- static int perf_event__repipe_op2_synth(struct perf_tool *tool,
- 					union perf_event *event,
--					struct perf_session *session __used)
-+					struct perf_session *s __used)
- {
- 	return perf_event__repipe_synth(tool, event, NULL);
- }
-@@ -59,7 +64,7 @@ static int perf_event__repipe_event_type_synth(struct perf_tool *tool,
- }
+ 	while (size) {
+-		int ret = write(STDOUT_FILENO, buf, size);
++		int ret = write(output, buf, size);
+ 		if (ret < 0)
+ 			return -errno;
  
- static int perf_event__repipe_tracing_data_synth(union perf_event *event,
--						 struct perf_session *session __used)
-+						 struct perf_session *s __used)
- {
- 	return perf_event__repipe_synth(NULL, event, NULL);
- }
-@@ -119,12 +124,12 @@ static int perf_event__repipe_task(struct perf_tool *tool,
- }
- 
- static int perf_event__repipe_tracing_data(union perf_event *event,
--					   struct perf_session *session)
-+					   struct perf_session *s)
- {
- 	int err;
- 
- 	perf_event__repipe_synth(NULL, event, NULL);
--	err = perf_event__process_tracing_data(event, session);
-+	err = perf_event__process_tracing_data(event, s);
- 
- 	return err;
- }
-@@ -210,6 +215,83 @@ repipe:
- 	return 0;
- }
- 
-+struct event_entry {
-+	struct list_head list;
-+	u32		 pid;
-+	union perf_event event[0];
-+};
+ 		size -= ret;
+ 		buf += ret;
 +
-+static LIST_HEAD(samples);
-+
-+static int perf_event__sched_stat(struct perf_tool *tool,
-+				      union perf_event *event,
-+				      struct perf_sample *sample,
-+				      struct perf_evsel *evsel __used,
-+				      struct machine *machine)
-+{
-+	int type;
-+	struct event_format *e;
-+	const char *evname = NULL;
-+	uint32_t size;
-+	struct event_entry *ent;
-+	union perf_event *event_sw = NULL;
-+	struct perf_sample sample_sw;
-+	int sched_process_exit;
-+
-+	size = event->header.size;
-+
-+	type = trace_parse_common_type(session->pevent, sample->raw_data);
-+	e = pevent_find_event(session->pevent, type);
-+	if (e)
-+		evname = e->name;
-+
-+	sched_process_exit = !strcmp(evname, "sched_process_exit");
-+
-+	if (!strcmp(evname, "sched_switch") ||  sched_process_exit) {
-+		list_for_each_entry(ent, &samples, list)
-+			if (sample->pid == ent->pid)
-+				break;
-+
-+		if (&ent->list != &samples) {
-+			list_del(&ent->list);
-+			free(ent);
-+		}
-+
-+		if (sched_process_exit)
-+			return 0;
-+
-+		ent = malloc(size + sizeof(struct event_entry));
-+		ent->pid = sample->pid;
-+		memcpy(&ent->event, event, size);
-+		list_add(&ent->list, &samples);
-+		return 0;
-+
-+	} else if (!strncmp(evname, "sched_stat_", 11)) {
-+		u32 pid;
-+
-+		pid = raw_field_value(e, "pid", sample->raw_data);
-+
-+		list_for_each_entry(ent, &samples, list) {
-+			if (pid == ent->pid)
-+				break;
-+		}
-+
-+		if (&ent->list == &samples)
-+			return 0;
-+
-+		event_sw = &ent->event[0];
-+		perf_session__parse_sample(session, event_sw, &sample_sw);
-+		sample_sw.period = sample->period;
-+		sample_sw.time = sample->time;
-+		perf_session__synthesize_sample(session, event_sw, &sample_sw);
-+		perf_event__repipe(tool, event_sw, &sample_sw, machine);
-+		return 0;
-+	}
-+
-+	perf_event__repipe(tool, event, sample, machine);
-+
-+	return 0;
-+}
- struct perf_tool perf_inject = {
- 	.sample		= perf_event__repipe_sample,
- 	.mmap		= perf_event__repipe,
-@@ -235,7 +317,6 @@ static void sig_handler(int sig __attribute__((__unused__)))
- 
- static int __cmd_inject(void)
- {
--	struct perf_session *session;
- 	int ret = -EINVAL;
- 
- 	signal(SIGINT, sig_handler);
-@@ -245,6 +326,9 @@ static int __cmd_inject(void)
- 		perf_inject.mmap	 = perf_event__repipe_mmap;
- 		perf_inject.fork	 = perf_event__repipe_task;
- 		perf_inject.tracing_data = perf_event__repipe_tracing_data;
-+	} else if (inject_sched_stat) {
-+		perf_inject.sample	= perf_event__sched_stat;
-+		perf_inject.ordered_samples = true;
++		bytes_written += ret;
  	}
  
- 	session = perf_session__new(input_name, O_RDONLY, false, true, &perf_inject);
-@@ -272,6 +356,8 @@ static const char * const report_usage[] = {
+ 	return 0;
+@@ -244,8 +251,14 @@ static int __cmd_inject(void)
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
++	if (!pipe_output)
++		lseek(output, session->header.data_offset, SEEK_SET);
+ 	ret = perf_session__process_events(session, &perf_inject);
+ 
++	if (!pipe_output) {
++		session->header.data_size = bytes_written;
++		perf_session__write_header(session, session->evlist, output, true);
++	}
+ 	perf_session__delete(session);
+ 
+ 	return ret;
+@@ -259,6 +272,10 @@ static const char * const report_usage[] = {
  static const struct option options[] = {
  	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
  		    "Inject build-ids into the output stream"),
-+	OPT_BOOLEAN('s', "sched-stat", &inject_sched_stat,
-+		    "Set source call-chains for sched:shed-stat-*"),
- 	OPT_STRING('i', "input", &input_name, "file",
- 		    "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file",
++	OPT_STRING('i', "input", &input_name, "file",
++		    "input file name"),
++	OPT_STRING('o', "output", &output_name, "file",
++		    "output file name"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		 "be more verbose (show build ids, etc)"),
+ 	OPT_END()
+@@ -274,6 +291,18 @@ int cmd_inject(int argc, const char **argv, const char *prefix __used)
+ 	if (argc)
+ 		usage_with_options(report_usage, options);
+ 
++	if (!strcmp(output_name, "-")) {
++		pipe_output = 1;
++		output = STDOUT_FILENO;
++	} else {
++		output = open(output_name, O_CREAT | O_WRONLY | O_TRUNC,
++							S_IRUSR | S_IWUSR);
++		if (output < 0) {
++			perror("failed to create output file");
++			exit(-1);
++		}
++	}
++
+ 	if (symbol__init() < 0)
+ 		return -1;
+ 
 -- 
 1.7.1
 
