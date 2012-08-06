@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab2HFSNB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:13:01 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55442 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932322Ab2HFSM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:12:58 -0400
-Message-ID: <5020091B.6060008@us.ibm.com>
-Date: Mon, 06 Aug 2012 11:12:43 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S932354Ab2HFSOo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:14:44 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:57102 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756737Ab2HFSOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 14:14:42 -0400
+Date: Mon, 6 Aug 2012 15:14:36 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 3/3] perf: mark a dso if it's used
+Message-ID: <20120806181436.GF21441@infradead.org>
+References: <1344247319-304069-1-git-send-email-avagin@openvz.org>
+ <1344247319-304069-4-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, paulmck@linux.vnet.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, prarit@redhat.com,
-        tglx@linutronix.de
-Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
-References: <500ED719.2010002@gmail.com> <50112D3B.4020201@redhat.com> <50127B16.5040401@gmail.com> <50153138.4020304@redhat.com> <5015A5A8.7030601@gmail.com> <50161D5E.4030009@redhat.com> <50165046.9020705@gmail.com> <501654D3.7020504@redhat.com> <50168162.4010508@gmail.com> <50168981.3000001@redhat.com> <501EA58D.4090606@gmail.com> <501FFD2A.4010905@us.ibm.com>
-In-Reply-To: <501FFD2A.4010905@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080618-7182-0000-0000-0000022F85D4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344247319-304069-4-git-send-email-avagin@openvz.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 10:21 AM, John Stultz wrote:
-> On 08/05/2012 09:55 AM, Sasha Levin wrote:
->> On 07/30/2012 03:17 PM, Avi Kivity wrote:
->>> Possible causes:
->>>   - the APIC calibration in the guest failed, so it is programming too
->>> low values into the timer
->>>   - it actually needs 1 us wakeups and then can't keep up (esp. as kvm
->>> interrupt injection is slowing it down)
->>>
->>> You can try to find out by changing
->>> arch/x86/kvm/lapic.c:start_lapic_timer() to impose a minimum wakeup of
->>> (say) 20 microseconds which will let the guest live long enough for you
->>> to ftrace it and see what kind of timers it is programming.
->> I've kept trying to narrow it down, and found out It's triggerable 
->> using adjtimex().
->>
->> At that point I've bisected it, and got the following commit (parties 
->> Cc'ed):
->>
->> commit 5baefd6d84163443215f4a99f6a20f054ef11236
->> Author: John Stultz <johnstul@us.ibm.com>
->> Date:   Tue Jul 10 18:43:25 2012 -0400
->>
->>      hrtimer: Update hrtimer base offsets each hrtimer_interrupt
->>
->>
->> I've also confirmed that reverting the commit above on top of 
->> linux-next indeed fixes the issue.
-> Hey Sasha,
->     Thanks for the heads up.  I don't have a clear sense of what could 
-> be wrong here yet, but if you see this with 3.6-rc but not 3.5,  could 
-> you try the fix(1d17d17484d40f2d5b35c79518597a2b25296996) Ingo just 
-> made on tip/timers/urgent?
+Em Mon, Aug 06, 2012 at 02:01:59PM +0400, Andrew Vagin escreveu:
+> -	if (inject_build_ids) {
+> +	if (inject_build_ids || inject_sched_stat) {
+>  		perf_inject.sample	 = perf_event__inject_buildid;
+>  		perf_inject.mmap	 = perf_event__repipe_mmap;
+>  		perf_inject.fork	 = perf_event__repipe_task;
+>  		perf_inject.tracing_data = perf_event__repipe_tracing_data;
+> -	} else if (inject_sched_stat) {
+> +	}
+> +
+> +	if (inject_sched_stat) {
+>  		perf_inject.sample	= perf_event__sched_stat;
+>  		perf_inject.ordered_samples = true;
+>  	}
 
-Reading over the thread here, the large timeouts also made me think that 
-it could also be related to this pending fix:
-     http://lkml.org/lkml/2012/8/1/436
+Huh? so if inject_sched_stat is true we will first set
+perf_inject.sample to something, then to another?
 
-Its not a clear cut solution though, since the edge case that limits 
-usually results in a hang since we stop expiring timers all together.
-
-Still working to reproduce what you're seeing, and will let you know as 
-soon as I have any more info.
-
-thanks
--john
-
+- Arnaldo
