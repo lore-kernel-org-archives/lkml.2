@@ -1,76 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab2HFQW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 12:22:56 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27628 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab2HFQWz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 12:22:55 -0400
+	id S932321Ab2HFQXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 12:23:07 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:5864 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932242Ab2HFQXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 12:23:05 -0400
+X-IronPort-AV: E=Sophos;i="4.77,720,1336363200"; 
+   d="scan'208";a="33714898"
+Message-ID: <501FEF65.1000304@citrix.com>
+Date: Mon, 6 Aug 2012 17:23:01 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Message-ID: <be1daa96-d246-46de-a178-b14b3a862eca@default>
-Date: Mon, 6 Aug 2012 09:21:22 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Minchan Kim <minchan@kernel.org>, Konrad Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: RE: [PATCH 0/4] promote zcache from staging
-References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <b95aec06-5a10-4f83-bdfd-e7f6adabd9df@default>
- <20120727205932.GA12650@localhost.localdomain>
- <d4656ba5-d6d1-4c36-a6c8-f6ecd193b31d@default>
- <5016DE4E.5050300@linux.vnet.ibm.com>
- <f47a6d86-785f-498c-8ee5-0d2df1b2616c@default>
- <20120731155843.GP4789@phenom.dumpdata.com> <20120731161916.GA4941@kroah.com>
- <20120731175142.GE29533@phenom.dumpdata.com> <20120806003816.GA11375@bbox>
- <041cb4ce-48ae-4600-9f11-d722bc03b9cc@default>
- <CAOJsxLHDcgxxu146QWXw0ZhMHMhFOquEFXhF55HK2mCjHzk7hw@mail.gmail.com>
-In-Reply-To: <CAOJsxLHDcgxxu146QWXw0ZhMHMhFOquEFXhF55HK2mCjHzk7hw@mail.gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        <linaro-dev@lists.linaro.org>, <Ian.Campbell@citrix.com>,
+        <arnd@arndb.de>, <konrad.wilk@oracle.com>, <catalin.marinas@arm.com>,
+        <tim@xen.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH v2 07/23] xen/arm: Xen detection and shared_info
+ page mapping
+References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-7-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1344263246-28036-7-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Pekka Enberg [mailto:penberg@kernel.org]
-> Subject: Re: [PATCH 0/4] promote zcache from staging
+On 06/08/12 15:27, Stefano Stabellini wrote:
+> Check for a "/xen" node in the device tree, if it is present set
+> xen_domain_type to XEN_HVM_DOMAIN and continue initialization.
 > 
-> On Mon, Aug 6, 2012 at 6:24 PM, Dan Magenheimer
-> <dan.magenheimer@oracle.com> wrote:
-> > IMHO, the fastest way to get the best zcache into the kernel and
-> > to distros and users is to throw away the "demo" version, move forward
-> > to a new solid well-designed zcache code base, and work together to
-> > build on it.  There's still a lot to do so I hope we can work together.
+> Map the real shared info page using XENMEM_add_to_physmap with
+> XENMAPSPACE_shared_info.
 > 
-> I'm not convinced it's the _fastest way_.
+> Changes in v2:
+> 
+> - replace pr_info with pr_debug.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/arm/xen/enlighten.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 52 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> index d27c2a6..102d823 100644
+> --- a/arch/arm/xen/enlighten.c
+> +++ b/arch/arm/xen/enlighten.c
+> @@ -5,6 +5,9 @@
+>  #include <asm/xen/hypervisor.h>
+>  #include <asm/xen/hypercall.h>
+>  #include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/of_address.h>
+>  
+>  struct start_info _xen_start_info;
+>  struct start_info *xen_start_info = &_xen_start_info;
+> @@ -33,3 +36,52 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+>  	return -ENOSYS;
+>  }
+>  EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
+> +
+> +/*
+> + * == Xen Device Tree format ==
+> + * - /xen node;
+> + * - compatible "arm,xen";
+> + * - one interrupt for Xen event notifications;
+> + * - one memory region to map the grant_table.
+> + */
 
-<grin> I guess I meant "optimal", combining "fast" and "best".
+These needs to be documented in Documentation/devicetree/bindings/ and
+should be sent to the devicetree-discuss mailing list for review.
 
-> You're effectively
-> invalidating all the work done under drivers/staging so you might end up
-> in review limbo with your shiny new code...
+The node should be called 'hypervisor' I think.
 
-Fixing the fundamental design flaws will sooner or later invalidate
-most (or all) of the previous testing/work anyway, won't it?  Since
-any kernel built with staging is "tainted" already, I feel like now
-is a better time to make a major design transition.
+The first word of the compatible string is the vendor/organization that
+defined the binding so should be "xen" here.  This does give a odd
+looking "xen,xen" but we'll have to live with that.
 
-I suppose:
+I'd suggest that the DT provided by the hypervisor or tools give the
+hypercall ABI version in the compatible string as well.  e.g.,
 
- (E) replace "demo" zcache with new code base and keep it
-     in staging for another cycle
+hypervisor {
+    compatible = "xen,xen-4.3", "xen,xen"
+};
 
-is another alternative, but I think gregkh has said no to that.
+I missed the Xen patch that adds this node for dom0.  Can you point me
+to it?
 
-Dan
+David
+
+> +static int __init xen_guest_init(void)
+> +{
+> +	struct xen_add_to_physmap xatp;
+> +	static struct shared_info *shared_info_page = 0;
+> +	struct device_node *node;
+> +
+> +	node = of_find_compatible_node(NULL, NULL, "arm,xen");
+> +	if (!node) {
+> +		pr_debug("No Xen support\n");
+> +		return 0;
+> +	}
+> +	xen_domain_type = XEN_HVM_DOMAIN;
+> +
+> +	if (!shared_info_page)
+> +		shared_info_page = (struct shared_info *)
+> +			get_zeroed_page(GFP_KERNEL);
+> +	if (!shared_info_page) {
+> +		pr_err("not enough memory\n");
+> +		return -ENOMEM;
+> +	}
+> +	xatp.domid = DOMID_SELF;
+> +	xatp.idx = 0;
+> +	xatp.space = XENMAPSPACE_shared_info;
+> +	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
+> +	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
+> +		BUG();
+> +
+> +	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
+> +
+> +	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
+> +	 * page, we use it in the event channel upcall and in some pvclock
+> +	 * related functions. We don't need the vcpu_info placement
+> +	 * optimizations because we don't use any pv_mmu or pv_irq op on
+> +	 * HVM.
+> +	 * The shared info contains exactly 1 CPU (the boot CPU). The guest
+> +	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
+> +	 * for secondary CPUs as they are brought up. */
+> +	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> +	return 0;
+> +}
+> +core_initcall(xen_guest_init);
+
