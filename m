@@ -1,81 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab2HFK5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 06:57:33 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:38254
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755863Ab2HFK5c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 06:57:32 -0400
-X-Greylist: delayed 957 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Aug 2012 06:57:32 EDT
+	id S1755934Ab2HFLBn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 07:01:43 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:4965 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755773Ab2HFLBl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 07:01:41 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h839hd24he5bhf0ah107ah)
-From: <qiang.liu@freescale.com>
-To: <linux-crypto@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <dan.j.williams@intel.com>, <arnd@arndb.de>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <dan.j.williams@gmail.com>, <vinod.koul@intel.com>
-CC: <kim.phillips@freescale.com>, <herbert@gondor.hengli.com.au>,
-        <davem@davemloft.net>, Qiang Liu <qiang.liu@freescale.com>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH v6 8/8] carma: remove unnecessary DMA_INTERRUPT capability
-Date: Mon, 6 Aug 2012 18:15:13 +0800
-Message-ID: <1344248113-9398-1-git-send-email-qiang.liu@freescale.com>
-X-Mailer: git-send-email 1.7.5.1
+X-SpamScore: -7
+X-BigFish: VS-7(zz9371I542M1432I14ffIzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
+From: Liu Qiang-B32616 <B32616@freescale.com>
+To: Liu Qiang-B32616 <B32616@freescale.com>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dan.j.williams@gmail.com" <dan.j.williams@gmail.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>
+CC: Phillips Kim-R1AAHA <R1AAHA@freescale.com>,
+        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Li Yang-R58472 <r58472@freescale.com>,
+        Tabi Timur-B04825 <B04825@freescale.com>
+Subject: RE: [PATCH 6/8] fsl-dma: use spin_lock_bh to instead of
+ spin_lock_irqsave
+Thread-Topic: [PATCH 6/8] fsl-dma: use spin_lock_bh to instead of
+ spin_lock_irqsave
+Thread-Index: AQHNc7/w4/vtwMc8LU6namYQzEwoFJdMngPw
+Date: Mon, 6 Aug 2012 11:01:37 +0000
+Message-ID: <BCB48C05FCE8BC4D9E61E841ECBE6DB70DFD24@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1344248085-9315-1-git-send-email-qiang.liu@freescale.com>
+In-Reply-To: <1344248085-9315-1-git-send-email-qiang.liu@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.94]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Qiang Liu <qiang.liu@freescale.com>
+Hi all,
 
-These drivers set the DMA_INTERRUPT capability bit when requesting a DMA
-controller channel. This was historical, and is no longer needed.
+Please ignore this one. Thanks.
 
-Recent changes to the drivers/dma/fsldma.c driver have removed support
-for this flag. This makes the carma drivers unable to find a DMA channel
-with the required capabilities.
-
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
----
-Based on git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git
-against branch char-misc-next.
-
- drivers/misc/carma/carma-fpga-program.c |    1 -
- drivers/misc/carma/carma-fpga.c         |    2 +-
- 2 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/misc/carma/carma-fpga-program.c b/drivers/misc/carma/carma-fpga-program.c
-index a2d25e4..eaddfe9 100644
---- a/drivers/misc/carma/carma-fpga-program.c
-+++ b/drivers/misc/carma/carma-fpga-program.c
-@@ -978,7 +978,6 @@ static int fpga_of_probe(struct platform_device *op)
- 	dev_set_drvdata(priv->dev, priv);
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_MEMCPY, mask);
--	dma_cap_set(DMA_INTERRUPT, mask);
- 	dma_cap_set(DMA_SLAVE, mask);
- 	dma_cap_set(DMA_SG, mask);
-
-diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
-index 8c279da..0c43297 100644
---- a/drivers/misc/carma/carma-fpga.c
-+++ b/drivers/misc/carma/carma-fpga.c
-@@ -666,7 +666,7 @@ static int data_submit_dma(struct fpga_device *priv, struct data_buf *buf)
- 	src = SYS_FPGA_BLOCK;
- 	tx = chan->device->device_prep_dma_memcpy(chan, dst, src,
- 						  REG_BLOCK_SIZE,
--						  DMA_PREP_INTERRUPT);
-+						  0);
- 	if (!tx) {
- 		dev_err(priv->dev, "unable to prep SYS-FPGA DMA\n");
- 		return -ENOMEM;
---
-1.7.5.1
+> -----Original Message-----
+> From: Liu Qiang-B32616
+> Sent: Monday, August 06, 2012 6:15 PM
+> To: linux-crypto@vger.kernel.org; linuxppc-dev@lists.ozlabs.org;
+> dan.j.williams@intel.com; linux-kernel@vger.kernel.org;
+> dan.j.williams@gmail.com; vinod.koul@intel.com
+> Cc: Phillips Kim-R1AAHA; herbert@gondor.hengli.com.au;
+> davem@davemloft.net; arnd@arndb.de; gregkh@linuxfoundation.org; Liu
+> Qiang-B32616; Li Yang-R58472; Tabi Timur-B04825
+> Subject: [PATCH 6/8] fsl-dma: use spin_lock_bh to instead of
+> spin_lock_irqsave
+> 
+> From: Qiang Liu <qiang.liu@freescale.com>
+> 
+> The use of spin_lock_irqsave() is a stronger locking mechanism than is
+> required throughout the driver. The minimum locking required should be
+> used instead. Interrupts will be turned off and context will be saved,
+> there is needless to use irqsave.
+> 
+> Change all instances of spin_lock_irqsave() to spin_lock_bh().
+> All manipulation of protected fields is done using tasklet context or
+> weaker, which makes spin_lock_bh() the correct choice.
+> 
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: Dan Williams <dan.j.williams@gmail.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Li Yang <leoli@freescale.com>
+> Cc: Timur Tabi <timur@freescale.com>
+> Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
+> Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
+> ---
+>  drivers/dma/fsldma.c |   30 ++++++++++++------------------
+>  1 files changed, 12 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index 938d8c1..3f809df 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -405,10 +405,9 @@ static dma_cookie_t fsl_dma_tx_submit(struct
+> dma_async_tx_descriptor *tx)
+>  	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
+>  	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
+>  	struct fsl_desc_sw *child;
+> -	unsigned long flags;
+>  	dma_cookie_t cookie;
+> 
+> -	spin_lock_irqsave(&chan->desc_lock, flags);
+> +	spin_lock_bh(&chan->desc_lock);
+> 
+>  	/*
+>  	 * assign cookies to all of the software descriptors
+> @@ -421,7 +420,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct
+> dma_async_tx_descriptor *tx)
+>  	/* put this transaction onto the tail of the pending queue */
+>  	append_ld_queue(chan, desc);
+> 
+> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +	spin_unlock_bh(&chan->desc_lock);
+> 
+>  	return cookie;
+>  }
+> @@ -761,15 +760,14 @@ static void fsldma_free_desc_list_reverse(struct
+> fsldma_chan *chan,
+>  static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
+>  {
+>  	struct fsldma_chan *chan = to_fsl_chan(dchan);
+> -	unsigned long flags;
+> 
+>  	chan_dbg(chan, "free all channel resources\n");
+> -	spin_lock_irqsave(&chan->desc_lock, flags);
+> +	spin_lock_bh(&chan->desc_lock);
+>  	fsldma_cleanup_descriptors(chan);
+>  	fsldma_free_desc_list(chan, &chan->ld_pending);
+>  	fsldma_free_desc_list(chan, &chan->ld_running);
+>  	fsldma_free_desc_list(chan, &chan->ld_completed);
+> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +	spin_unlock_bh(&chan->desc_lock);
+> 
+>  	dma_pool_destroy(chan->desc_pool);
+>  	chan->desc_pool = NULL;
+> @@ -988,7 +986,6 @@ static int fsl_dma_device_control(struct dma_chan
+> *dchan,
+>  {
+>  	struct dma_slave_config *config;
+>  	struct fsldma_chan *chan;
+> -	unsigned long flags;
+>  	int size;
+> 
+>  	if (!dchan)
+> @@ -998,7 +995,7 @@ static int fsl_dma_device_control(struct dma_chan
+> *dchan,
+> 
+>  	switch (cmd) {
+>  	case DMA_TERMINATE_ALL:
+> -		spin_lock_irqsave(&chan->desc_lock, flags);
+> +		spin_lock_bh(&chan->desc_lock);
+> 
+>  		/* Halt the DMA engine */
+>  		dma_halt(chan);
+> @@ -1009,7 +1006,7 @@ static int fsl_dma_device_control(struct dma_chan
+> *dchan,
+>  		fsldma_free_desc_list(chan, &chan->ld_completed);
+>  		chan->idle = true;
+> 
+> -		spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +		spin_unlock_bh(&chan->desc_lock);
+>  		return 0;
+> 
+>  	case DMA_SLAVE_CONFIG:
+> @@ -1051,11 +1048,10 @@ static int fsl_dma_device_control(struct dma_chan
+> *dchan,
+>  static void fsl_dma_memcpy_issue_pending(struct dma_chan *dchan)
+>  {
+>  	struct fsldma_chan *chan = to_fsl_chan(dchan);
+> -	unsigned long flags;
+> 
+> -	spin_lock_irqsave(&chan->desc_lock, flags);
+> +	spin_lock_bh(&chan->desc_lock);
+>  	fsl_chan_xfer_ld_queue(chan);
+> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +	spin_unlock_bh(&chan->desc_lock);
+>  }
+> 
+>  /**
+> @@ -1068,15 +1064,14 @@ static enum dma_status fsl_tx_status(struct
+> dma_chan *dchan,
+>  {
+>  	struct fsldma_chan *chan = to_fsl_chan(dchan);
+>  	enum dma_status ret;
+> -	unsigned long flags;
+> 
+>  	ret = dma_cookie_status(dchan, cookie, txstate);
+>  	if (ret == DMA_SUCCESS)
+>  		return ret;
+> 
+> -	spin_lock_irqsave(&chan->desc_lock, flags);
+> +	spin_lock_bh(&chan->desc_lock);
+>  	fsldma_cleanup_descriptors(chan);
+> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +	spin_unlock_bh(&chan->desc_lock);
+> 
+>  	return dma_cookie_status(dchan, cookie, txstate);
+>  }
+> @@ -1155,11 +1150,10 @@ static irqreturn_t fsldma_chan_irq(int irq, void
+> *data)
+>  static void dma_do_tasklet(unsigned long data)
+>  {
+>  	struct fsldma_chan *chan = (struct fsldma_chan *)data;
+> -	unsigned long flags;
+> 
+>  	chan_dbg(chan, "tasklet entry\n");
+> 
+> -	spin_lock_irqsave(&chan->desc_lock, flags);
+> +	spin_lock_bh(&chan->desc_lock);
+> 
+>  	/* the hardware is now idle and ready for more */
+>  	chan->idle = true;
+> @@ -1167,7 +1161,7 @@ static void dma_do_tasklet(unsigned long data)
+>  	/* Run all cleanup for descriptors which have been completed */
+>  	fsldma_cleanup_descriptors(chan);
+> 
+> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +	spin_unlock_bh(&chan->desc_lock);
+> 
+>  	chan_dbg(chan, "tasklet exit\n");
+>  }
+> --
+> 1.7.5.1
 
 
