@@ -1,224 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab2HFIiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 04:38:52 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11177 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab2HFIiu convert rfc822-to-8bit (ORCPT
+	id S1753983Ab2HFImM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 04:42:12 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60336 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab2HFImL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 04:38:50 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 06 Aug 2012 01:33:14 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Paul Gortmaker <p_gortmaker@yahoo.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Date: Mon, 6 Aug 2012 14:08:12 +0530
-Subject: RE: [NEW DRIVER V2 4/7] DA9058 RTC driver
-Thread-Topic: [NEW DRIVER V2 4/7] DA9058 RTC driver
-Thread-Index: Ac1zpu97Arhoj29oS8CBj1aswGMeXgAA1ReA
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDCAC4BA9@BGMAIL02.nvidia.com>
-References: <201208060739.q767djnO005723@ubuntu>
-In-Reply-To: <201208060739.q767djnO005723@ubuntu>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Mon, 6 Aug 2012 04:42:11 -0400
+Message-ID: <501F8357.3070102@linux.vnet.ibm.com>
+Date: Mon, 06 Aug 2012 16:41:59 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH] sched: using dst_rq instead of this_rq during load balance
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12080608-8256-0000-0000-000003991E4C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Anthony Olech
-> Sent: Monday, August 06, 2012 2:14 AM
-> To: Andrew Morton
-> Cc: Mark Brown; Paul Gortmaker; Samuel Ortiz; Alessandro Zummo; rtc-
-> linux@googlegroups.com; LKML; David Dajun Chen
-> Subject: [NEW DRIVER V2 4/7] DA9058 RTC driver
-> 
-> This is the RTC component driver of the Dialog DA9058 PMIC.
-> This driver is just one component of the whole DA9058 PMIC driver.
-> It depends on the core DA9058 MFD driver.
-> 
-> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
-> ---
-> +
-> +static int da9058_rtc_check_param(struct rtc_time *rtc_tm)
-> +{
-> +	if ((rtc_tm->tm_sec > DA9058_RTC_SECONDS_LIMIT) || (rtc_tm-
-> >tm_sec < 0))
-> +		return -EIO;
-> +
-> +	if ((rtc_tm->tm_min > DA9058_RTC_MINUTES_LIMIT) || (rtc_tm-
-> >tm_min < 0))
-> +		return -EIO;
-> +
-> +	if ((rtc_tm->tm_hour > DA9058_RTC_HOURS_LIMIT) || (rtc_tm-
-> >tm_hour < 0))
-> +		return -EIO;
-> +
-> +	if (rtc_tm->tm_mday == 0)
-> +		return -EIO;
+As we already have dst_rq in lb_env, using or changing "this_rq" do not
+make sense.
 
-Why limit check is not done for mday, like it is done for other params? 
+This patch will replace "this_rq" with dst_rq in load_balance, and we
+don't need to change "this_rq" while process LBF_SOME_PINNED any more.
 
-> +
-> +	if ((rtc_tm->tm_mon > DA9058_RTC_MONTHS_LIMIT) || (rtc_tm-
-> >tm_mon <= 0))
-> +		return -EIO;
-> +
-> +	if ((rtc_tm->tm_year > DA9058_RTC_YEARS_LIMIT) || (rtc_tm-
-> >tm_year < 0))
-> +		return -EIO;
-> +
-> +	return 0;
-> +}
-> +
-> +static int da9058_rtc_readtime(struct device *dev, struct rtc_time *tm)
-> +{
-> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-> +	struct da9058 *da9058 = rtc->da9058;
-> +	unsigned int rtc_time[6];
-> +	int ret;
-> +
-> +	ret = da9058_bulk_read(da9058, DA9058_COUNTS_REG, rtc_time, 6);
-> +	if (ret)
-> +		return ret;
-> +
-> +	tm->tm_sec = rtc_time[0] & DA9058_RTC_SECS_MASK;
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ kernel/sched/fair.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-Usually most of the PMIC RTCs provide RTC time registers in BCD
-Format. Plz make sure that is not the case with your device, 
-otherwise these masks may not be valid.
-
-> +	tm->tm_min = rtc_time[1] & DA9058_RTC_MINS_MASK;
-> +
-> +	tm->tm_hour = rtc_time[2] & DA9058_RTC_HRS_MASK;
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index d0cc03b..f03b99c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4275,7 +4275,7 @@ redo:
+ 		goto out_balanced;
+ 	}
  
-
-> +
-> +	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon,
-> +						tm->tm_year);
-> +	tm->tm_year += 100;
-> +	tm->tm_mon -= 1;
-> +
-> +	return 0;
-> +}
-> +
-> +static int da9058_rtc_settime(struct device *dev, struct rtc_time *tm)
-> +{
-> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
-> +	struct da9058 *da9058 = rtc->da9058;
-> +	unsigned int rtc_ctrl, val, rtc_time[6];
-> +	int ret;
-> +
-> +	tm->tm_year -= 111;
-
-Why 111 is subtracted here and only 100 is added in read_time()
-above? If this is what you really wanted to have, it would be
-better to add few comments justifying these magic numbers. 
-
-> +	tm->tm_mon += 1;
-
-
-> +static irqreturn_t da9058_rtc_timer_alarm_handler(int irq, void *data)
-> +{
-> +	struct da9058_rtc *rtc = data;
-> +
-> +	da9058_rtc_stop_alarm(rtc);
-> +	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
-> +
-
-Whether start RTC is not needed here explicitly?
-
-> +	return IRQ_HANDLED;
-> +}
-> +
-
-
-> +	rtc->tick_irq = DA9058_IRQ_ETICK;
-> +	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
-> +							rtc->tick_irq),
-> +				NULL, da9058_rtc_tick_alarm_handler,
-> +				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-> +				"DA9058 RTC Tick Alarm", rtc);
-> +	if (ret) {
-> +		dev_err(&pdev->dev,
-> +			"Failed to get rtc timer alarm IRQ %d: %d\n",
-> +			DA9058_IRQ_ETICK, ret);
-> +		goto err4;
-> +	}
-> +
-> +	ret = 0;
-> +	goto exit;
-
-You can have return 0 here, instead of above two statements.
+-	BUG_ON(busiest == this_rq);
++	BUG_ON(busiest == env.dst_rq);
  
-> +
-> +err4:
-> +	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
-> +err3:
-> +err2:
-> +	rtc_device_unregister(rtc->rtc_dev);
-> +err1:
-> +err0:
-> +	platform_set_drvdata(pdev, NULL);
-> +exit:
-> +	return ret;
-> +}
-> +
-> +static int __devexit da9058_rtc_remove(struct platform_device *pdev)
-> +{
-> +	struct da9058_rtc *rtc = platform_get_drvdata(pdev);
-> +	struct da9058 *da9058 = rtc->da9058;
-> +
-> +	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
-> +	free_irq(da9058_to_virt_irq_num(da9058, rtc->tick_irq), rtc);
-> +
-> +	rtc_device_unregister(rtc->rtc_dev);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver da9058_rtc_driver = {
-> +	.probe = da9058_rtc_probe,
-> +	.remove = __devexit_p(da9058_rtc_remove),
-> +	.driver = {
-> +		.name = "da9058-rtc",
+ 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
+ 
+@@ -4295,7 +4295,7 @@ redo:
+ 
+ more_balance:
+ 		local_irq_save(flags);
+-		double_rq_lock(this_rq, busiest);
++		double_rq_lock(env.dst_rq, busiest);
+ 		if (!env.loop)
+ 			update_h_load(env.src_cpu);
+ 
+@@ -4305,7 +4305,7 @@ more_balance:
+ 		 */
+ 		cur_ld_moved = move_tasks(&env);
+ 		ld_moved += cur_ld_moved;
+-		double_rq_unlock(this_rq, busiest);
++		double_rq_unlock(env.dst_rq, busiest);
+ 		local_irq_restore(flags);
+ 
+ 		if (env.flags & LBF_NEED_BREAK) {
+@@ -4341,8 +4341,7 @@ more_balance:
+ 		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0 &&
+ 				lb_iterations++ < max_lb_iterations) {
+ 
+-			this_rq		 = cpu_rq(env.new_dst_cpu);
+-			env.dst_rq	 = this_rq;
++			env.dst_rq	 = cpu_rq(env.new_dst_cpu);
+ 			env.dst_cpu	 = env.new_dst_cpu;
+ 			env.flags	&= ~LBF_SOME_PINNED;
+ 			env.loop	 = 0;
+-- 
+1.7.4.1
 
-Some of the rtc drivers had name as rtc-deviceName and others have deviceName-rtc.
-Can some experts comment which one is correct practice?
-
-
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +module_platform_driver(da9058_rtc_driver);
-> +
-> +MODULE_DESCRIPTION("Dialog DA9058 PMIC Real Time Clock Driver");
-> +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:da9058-rtc");
-> --
-> end-of-patch for NEW DRIVER V2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
