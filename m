@@ -1,286 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab2HFEsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 00:48:31 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52194 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab2HFEre (ORCPT
+	id S1751781Ab2HFEtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 00:49:19 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40666 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab2HFEtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 00:47:34 -0400
-X-AuditID: 9c930197-b7b66ae000006a2c-8d-501f4c623133
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 3/4] perf tools: Support minimal build without libelf
-Date: Mon,  6 Aug 2012 13:41:21 +0900
-Message-Id: <1344228082-15569-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1344228082-15569-1-git-send-email-namhyung@kernel.org>
-References: <1344228082-15569-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 6 Aug 2012 00:49:18 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <501F4BCE.4060702@jp.fujitsu.com>
+Date: Mon, 06 Aug 2012 13:45:02 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: ddutile@redhat.com
+CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com, vgoyal@redhat.com,
+        hbabu@us.ibm.com, ishii.hironobu@jp.fujitsu.com,
+        martin.wilck@ts.fujitsu.com
+Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+References: <501BB4EF.7080909@jp.fujitsu.com> <501F4387.3010404@redhat.com>
+In-Reply-To: <501F4387.3010404@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi Don,
 
-Now we have isolated all ELF-specific stuff, it's possible to build
-without libelf. The output binary can do most of jobs but lacks (user
-level) symbol information - kernel symbols are still accessable thanks
-to the kallsyms.
+(2012/08/06 13:09), Don Dutile wrote:
+> On 08/03/2012 07:24 AM, Takao Indoh wrote:
+>> Hi all,
+>>
+>> This patch adds kernel parameter "reset_pcie_devices" which resets PCIe
+>> devices at boot time to address DMA problem on kdump with iommu. When
+>> this parameter is specified, a hot reset is triggered on each PCIe root
+>> port and downstream port to reset its downstream endpoint.
+>>
+>> Background:
+>> A kdump problem about DMA has been discussed for a long time. That is,
+>> when a kernel is switched to the kdump kernel DMA derived from first
+>> kernel affects second kernel. Recently this problem surfaces when iommu
+>> is used for PCI passthrough on KVM guest. In the case of the machine I
+>> use, when intel_iommu=on is specified, DMAR error is detected in kdump
+>> kernel and PCI SERR is also detected. Finally kdump fails because some
+>> devices does not work correctly.
+>>
+>> The root cause is that ongoing DMA from first kernel causes DMAR fault
+>> because page table of DMAR is initialized while kdump kernel is booting
+>> up. Therefore to address this problem DMA needs to be stopped before DMAR
+>> is initialized at kdump kernel boot time. By this patch, PCIe devices
+>> are reset by hot reset and its DMA is stopped when reset_pcie_devices is
+>> specified. One problem of this solution is that VGA is reset and the
+>> monitor blacks out when the link between the port and VGA controller was
+>> reset. So this patch does not reset the port whose child endpoint is VGA
+>> device.
+>>
+>> Any comments would be appreciated.
+>>
+>> Signed-off-by: Takao Indoh<indou.takao@jp.fujitsu.com>
+>> ---
+> Have you considered something less disruptive such as clearing the
+> Master Enable in each endpoint's PCI Command Register ?
+> That should prevent DMA transactions from endpoints during the kdump and
+> kexec, and when the driver for the device gets reconfigured,
+> Master Enable will be set back on, but after the driver has had the
+> opportunity to do a device-specific reset.
 
-To build perf without libelf (elfutils), give NO_LIBELF=1 to make.
+Yes, that is what I tried first. First of all I found this thread.
 
-For now, only 'perf probe' command is removed since it depends on
-libelf/libdw heavily.
+[PATCH] Disable Bus Master on PCI device shutdown
+https://lkml.org/lkml/2012/6/6/278
+original patch: http://marc.info/?l=kexec&m=133546519231295&w=2
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Makefile                 | 57 ++++++++++++++++++++++++++++---------
- tools/perf/builtin-inject.c         |  5 +++-
- tools/perf/command-list.txt         |  2 +-
- tools/perf/perf.c                   |  2 ++
- tools/perf/util/generate-cmdlist.sh | 15 ++++++++++
- tools/perf/util/map.c               |  3 +-
- tools/perf/util/symbol-minimal.c    | 39 +++++++++++++++++++++++++
- 7 files changed, 106 insertions(+), 17 deletions(-)
- create mode 100644 tools/perf/util/symbol-minimal.c
+And I thought ongoing DMA could be stopped by disabling it on kdump
+kernel boot, but DMAR error is still found after adding quirk below.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index a25162a858ab..1b7dcc641f11 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -37,7 +37,12 @@ include config/utilities.mak
- #
- # Define NO_NEWT if you do not want TUI support.
- #
-+# Define NO_GTK2 if you do not want GTK+ GUI support.
-+#
- # Define NO_DEMANGLE if you do not want C++ symbol demangling.
-+#
-+# Define NO_LIBELF if you do not want libelf dependency (e.g. cross-builds)
-+#
+In this thread, AER link reset was also suggested, so I got the
+idea to reset root port and downstream port.
+
+Thanks,
+Takao Indoh
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 5155317..0e8b41a 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -31,6 +31,22 @@
+ #include <asm/dma.h>	/* isa_dma_bridge_buggy */
+ #include "pci.h"
  
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-@@ -446,34 +451,57 @@ PYRF_OBJS += $(OUTPUT)util/xyarray.o
- -include config.mak.autogen
- -include config.mak
- 
--ifndef NO_DWARF
--FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
--ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
--	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
-+ifdef NO_LIBELF
- 	NO_DWARF := 1
--endif # Dwarf support
--endif # NO_DWARF
--
---include arch/$(ARCH)/Makefile
--
--ifneq ($(OUTPUT),)
--	BASIC_CFLAGS += -I$(OUTPUT)
--endif
--
-+	NO_DEMANGLE := 1
-+else
- FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
- ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
- 	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
- 	ifneq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC)),y)
- 		msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
- 	else
--		msg := $(error No libelf.h/libelf found, please install libelf-dev/elfutils-libelf-devel);
-+		NO_LIBELF := 1
-+		NO_DWARF := 1
-+		NO_DEMANGLE := 1
- 	endif
- endif
-+endif # NO_LIBELF
-+
-+-include arch/$(ARCH)/Makefile
-+
-+ifneq ($(OUTPUT),)
-+	BASIC_CFLAGS += -I$(OUTPUT)
-+endif
-+
-+ifdef NO_LIBELF
-+BASIC_CFLAGS += -DNO_LIBELF_SUPPORT
-+
-+EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
-+
-+# Remove ELF/DWARF dependent codes
-+LIB_OBJS := $(filter-out $(OUTPUT)util/symbol-elf.o,$(LIB_OBJS))
-+LIB_OBJS := $(filter-out $(OUTPUT)util/dwarf-aux.o,$(LIB_OBJS))
-+LIB_OBJS := $(filter-out $(OUTPUT)util/probe-event.o,$(LIB_OBJS))
-+LIB_OBJS := $(filter-out $(OUTPUT)util/probe-finder.o,$(LIB_OBJS))
-+
-+BUILTIN_OBJS := $(filter-out $(OUTPUT)builtin-probe.o,$(BUILTIN_OBJS))
-+
-+# Use minimal symbol handling
-+LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
-+
-+else # NO_LIBELF
- 
- ifneq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON)),y)
- 	BASIC_CFLAGS += -DLIBELF_NO_MMAP
- endif
- 
-+FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
-+ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
-+	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
-+	NO_DWARF := 1
-+endif # Dwarf support
-+
- ifndef NO_DWARF
- ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
- 	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
-@@ -484,6 +512,7 @@ else
- 	LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
- endif # PERF_HAVE_DWARF_REGS
- endif # NO_DWARF
-+endif # NO_LIBELF
- 
- ifdef NO_NEWT
- 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 3beab489afc5..64d8ba2fb7bc 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -191,10 +191,13 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 				 * If this fails, too bad, let the other side
- 				 * account this as unresolved.
- 				 */
--			} else
-+			} else {
-+#ifndef NO_LIBELF_SUPPORT
- 				pr_warning("no symbols found in %s, maybe "
- 					   "install a debug package?\n",
- 					   al.map->dso->long_name);
-+#endif
-+			}
- 		}
- 	}
- 
-diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
-index d695fe40fbff..0303ec692274 100644
---- a/tools/perf/command-list.txt
-+++ b/tools/perf/command-list.txt
-@@ -18,7 +18,7 @@ perf-stat			mainporcelain common
- perf-timechart			mainporcelain common
- perf-top			mainporcelain common
- perf-script			mainporcelain common
--perf-probe			mainporcelain common
-+perf-probe			mainporcelain full
- perf-kmem			mainporcelain common
- perf-lock			mainporcelain common
- perf-kvm			mainporcelain common
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 2b2e225a4d4c..a1450ccac291 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -313,7 +313,9 @@ static void handle_internal_command(int argc, const char **argv)
- 		{ "version",	cmd_version,	0 },
- 		{ "script",	cmd_script,	0 },
- 		{ "sched",	cmd_sched,	0 },
-+#ifndef NO_LIBELF_SUPPORT
- 		{ "probe",	cmd_probe,	0 },
-+#endif
- 		{ "kmem",	cmd_kmem,	0 },
- 		{ "lock",	cmd_lock,	0 },
- 		{ "kvm",	cmd_kvm,	0 },
-diff --git a/tools/perf/util/generate-cmdlist.sh b/tools/perf/util/generate-cmdlist.sh
-index f06f6fd148f8..389590c1ad21 100755
---- a/tools/perf/util/generate-cmdlist.sh
-+++ b/tools/perf/util/generate-cmdlist.sh
-@@ -21,4 +21,19 @@ do
- 	    p
-      }' "Documentation/perf-$cmd.txt"
- done
-+
-+echo "#ifndef NO_LIBELF_SUPPORT"
-+sed -n -e 's/^perf-\([^ 	]*\)[ 	].* full.*/\1/p' command-list.txt |
-+sort |
-+while read cmd
-+do
-+     sed -n '
-+     /^NAME/,/perf-'"$cmd"'/H
-+     ${
-+            x
-+            s/.*perf-'"$cmd"' - \(.*\)/  {"'"$cmd"'", "\1"},/
-+	    p
-+     }' "Documentation/perf-$cmd.txt"
-+done
-+echo "#endif /* NO_LIBELF_SUPPORT */"
- echo "};"
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 115654c469c6..287cb3452b4b 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -156,6 +156,7 @@ int map__load(struct map *self, symbol_filter_t filter)
- 		pr_warning(", continuing without symbols\n");
- 		return -1;
- 	} else if (nr == 0) {
-+#ifndef NO_LIBELF_SUPPORT
- 		const size_t len = strlen(name);
- 		const size_t real_len = len - sizeof(DSO__DELETED);
- 
-@@ -168,7 +169,7 @@ int map__load(struct map *self, symbol_filter_t filter)
- 			pr_warning("no symbols found in %s, maybe install "
- 				   "a debug package?\n", name);
- 		}
--
-+#endif
- 		return -1;
- 	}
- 	/*
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-new file mode 100644
-index 000000000000..416ecf3bccf5
---- /dev/null
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -0,0 +1,39 @@
-+#include "symbol.h"
-+
-+
-+int filename__read_build_id(const char *filename __used, void *bf __used,
-+			    size_t size __used)
++static void test_pci_device_reset(struct pci_dev *dev)
 +{
-+	return -1;
-+}
++	u16 pci_command;
 +
-+int sysfs__read_build_id(const char *filename __used, void *build_id __used,
-+			 size_t size __used)
-+{
-+	return -1;
-+}
++	if (!reset_devices)
++		return;
 +
-+int filename__read_debuglink(const char *filename __used,
-+			     char *debuglink __used, size_t size __used)
-+{
-+	return -1;
++	pci_read_config_word(dev, PCI_COMMAND, &pci_command);
++	if (pci_command & PCI_COMMAND_MASTER) {
++		dev_info(&dev->dev, "DEBUG: Disable Bus Master bit\n");
++		pci_command &= ~PCI_COMMAND_MASTER;
++		pci_write_config_word(dev, PCI_COMMAND, pci_command);
++	}
 +}
++DECLARE_PCI_FIXUP_EARLY(PCI_ANY_ID, PCI_ANY_ID, test_pci_device_reset);
 +
-+int dso__synthesize_plt_symbols(struct dso *dso __used, char *name __used,
-+				struct map *map __used,
-+				symbol_filter_t filter __used)
-+{
-+	return 0;
-+}
-+
-+int dso__load_sym(struct dso *dso __used, struct map *map __used,
-+		  const char *name __used, int fd __used,
-+		  symbol_filter_t filter __used, int kmodule __used,
-+		  int want_symtab __used)
-+{
-+	return 0;
-+}
-+
-+void symbol__elf_init(void)
-+{
-+}
--- 
-1.7.11.2
+ /*
+  * Decoding should be disabled for a PCI device during BAR sizing to avoid
+  * conflict. But doing so may cause problems on host bridge and perhaps other
 
