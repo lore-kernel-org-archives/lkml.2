@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab2HFJ2r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:28:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60004 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755612Ab2HFJ2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:28:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="193675612"
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH] timer: do not define __mod_timer as inline function
-Date: Mon,  6 Aug 2012 17:29:21 +0800
-Message-Id: <1344245361-24710-1-git-send-email-yuanhan.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1755716Ab2HFJ2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:28:33 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:7005 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755256Ab2HFJXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 05:23:42 -0400
+X-IronPort-AV: E=Sophos;i="4.77,719,1336320000"; 
+   d="scan'208";a="5560138"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Laura Vasilescu <laura@rosedu.org>, Jiri Kosina <jkosina@suse.cz>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        David Rientjes <rientjes@google.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [RFC V3 PATCH 07/25] procfs: use N_MEMORY instead N_HIGH_MEMORY
+Date: Mon, 6 Aug 2012 17:23:01 +0800
+Message-Id: <1344244999-5081-8-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
+ <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/06 17:23:58,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/06 17:24:05,
+	Serialize complete at 2012/08/06 17:24:05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__mod_timer() is a bit 'huge' to be defined as inline.
+N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+N_MEMORY stands for the nodes that has any memory.
 
-$ size kernel/timer*.o
-   text    data     bss     dec     hex filename
-  18908    4034    8257   31199    79df kernel/timer-before.o
-  17961    4034    8257   30252    762c kernel/timer-after.o
+The code here need to handle with the nodes which have memory, we should
+use N_MEMORY instead.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- kernel/timer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/proc/kcore.c    |    2 +-
+ fs/proc/task_mmu.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index a61c093..0be4216 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -736,7 +736,7 @@ static struct tvec_base *lock_timer_base(struct timer_list *timer,
- 	}
- }
+diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
+index 86c67ee..e96d4f1 100644
+--- a/fs/proc/kcore.c
++++ b/fs/proc/kcore.c
+@@ -249,7 +249,7 @@ static int kcore_update_ram(void)
+ 	/* Not inialized....update now */
+ 	/* find out "max pfn" */
+ 	end_pfn = 0;
+-	for_each_node_state(nid, N_HIGH_MEMORY) {
++	for_each_node_state(nid, N_MEMORY) {
+ 		unsigned long node_end;
+ 		node_end  = NODE_DATA(nid)->node_start_pfn +
+ 			NODE_DATA(nid)->node_spanned_pages;
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 4540b8f..ed3d381 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -1080,7 +1080,7 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
+ 		return NULL;
  
--static inline int
-+static int
- __mod_timer(struct timer_list *timer, unsigned long expires,
- 						bool pending_only, int pinned)
- {
+ 	nid = page_to_nid(page);
+-	if (!node_isset(nid, node_states[N_HIGH_MEMORY]))
++	if (!node_isset(nid, node_states[N_MEMORY]))
+ 		return NULL;
+ 
+ 	return page;
+@@ -1232,7 +1232,7 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	if (md->writeback)
+ 		seq_printf(m, " writeback=%lu", md->writeback);
+ 
+-	for_each_node_state(n, N_HIGH_MEMORY)
++	for_each_node_state(n, N_MEMORY)
+ 		if (md->node[n])
+ 			seq_printf(m, " N%d=%lu", n, md->node[n]);
+ out:
 -- 
-1.7.7.6
+1.7.4.4
 
