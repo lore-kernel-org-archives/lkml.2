@@ -1,197 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435Ab2HFSkg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:40:36 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:49486 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab2HFSke (ORCPT
+	id S932449Ab2HFSk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:40:57 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59418 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932437Ab2HFSkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:40:34 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Miller <davem@davemloft.net>
-Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Ariyasu <jan.ariyasu@hp.com>, Jan Ariyasu <jan.ariyasu@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@infradead.org>,
-        Xi Wang <xi.wang@gmail.com>
-References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
-	<87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com>
-Date: Mon, 06 Aug 2012 11:40:21 -0700
-In-Reply-To: <87zk67q31q.fsf_-_@xmission.com> (Eric W. Biederman's message of
-	"Mon, 06 Aug 2012 11:38:09 -0700")
-Message-ID: <87obmnq2y2.fsf_-_@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 6 Aug 2012 14:40:55 -0400
+Date: Mon, 6 Aug 2012 15:40:47 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-bluetooth@vger.kernel.org, marcel@holtmann.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Bluetooth: Another vendor specific ID for BCM20702A0
+ [0a5c:21f1]
+Message-ID: <20120806184047.GD3146@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Michal Marek <mmarek@suse.cz>, linux-bluetooth@vger.kernel.org,
+	marcel@holtmann.org, linux-kernel@vger.kernel.org
+References: <1343431747.1803.12.camel@aeonflux>
+ <1343742454-28019-1-git-send-email-mmarek@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+JBbFRnrkMFIno6frdrUHk8ciUnYYtnZo=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2377]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;David Miller <davem@davemloft.net>
-X-Spam-Relay-Country: 
-Subject: [PATCH net-next 2/9] sctp: Make the endpoint hashtable handle multiple network namespaces
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343742454-28019-1-git-send-email-mmarek@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Michal,
 
-- Use struct net in the hash calculation
-- Use sock_net(endpoint.base.sk) in the endpoint lookups.
-- On receive calculate the network namespace from skb->dev.
+* Michal Marek <mmarek@suse.cz> [2012-07-31 15:47:34 +0200]:
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> T:  Bus=02 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
+> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0a5c ProdID=21f1 Rev= 1.12
+> S:  Manufacturer=Broadcom Corp
+> S:  Product=BCM20702A0
+> S:  SerialNumber=9CB70DCFF833
+> C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+> E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+> I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+> 
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+>  drivers/bluetooth/btusb.c |    1 +
+>  1 file changed, 1 insertion(+)
+
+Can you try the following patch on 3.6-rc1? It should fix this by matching
+vendor and inteface info.
+
+	Gustavo
+
 ---
- include/net/sctp/sctp.h    |    4 ++--
- include/net/sctp/structs.h |    2 +-
- net/sctp/endpointola.c     |    4 +++-
- net/sctp/input.c           |   19 ++++++++++++-------
- 4 files changed, 18 insertions(+), 11 deletions(-)
 
-diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
-index 7c05040..87b119f 100644
---- a/include/net/sctp/sctp.h
-+++ b/include/net/sctp/sctp.h
-@@ -638,9 +638,9 @@ static inline int sctp_phashfn(struct net *net, __u16 lport)
- }
- 
- /* This is the hash function for the endpoint hash table. */
--static inline int sctp_ep_hashfn(__u16 lport)
-+static inline int sctp_ep_hashfn(struct net *net, __u16 lport)
- {
--	return lport & (sctp_ep_hashsize - 1);
-+	return (net_hash_mix(net) + lport) & (sctp_ep_hashsize - 1);
- }
- 
- /* This is the hash function for the association hash table. */
-diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
-index c089bb1..9f9de55 100644
---- a/include/net/sctp/structs.h
-+++ b/include/net/sctp/structs.h
-@@ -1426,7 +1426,7 @@ struct sctp_association *sctp_endpoint_lookup_assoc(
- int sctp_endpoint_is_peeled_off(struct sctp_endpoint *,
- 				const union sctp_addr *);
- struct sctp_endpoint *sctp_endpoint_is_match(struct sctp_endpoint *,
--					const union sctp_addr *);
-+					struct net *, const union sctp_addr *);
- int sctp_has_association(const union sctp_addr *laddr,
- 			 const union sctp_addr *paddr);
- 
-diff --git a/net/sctp/endpointola.c b/net/sctp/endpointola.c
-index 68a385d..50c87b4 100644
---- a/net/sctp/endpointola.c
-+++ b/net/sctp/endpointola.c
-@@ -302,11 +302,13 @@ void sctp_endpoint_put(struct sctp_endpoint *ep)
- 
- /* Is this the endpoint we are looking for?  */
- struct sctp_endpoint *sctp_endpoint_is_match(struct sctp_endpoint *ep,
-+					       struct net *net,
- 					       const union sctp_addr *laddr)
- {
- 	struct sctp_endpoint *retval = NULL;
- 
--	if (htons(ep->base.bind_addr.port) == laddr->v4.sin_port) {
-+	if ((htons(ep->base.bind_addr.port) == laddr->v4.sin_port) &&
-+	    net_eq(sock_net(ep->base.sk), net)) {
- 		if (sctp_bind_addr_match(&ep->base.bind_addr, laddr,
- 					 sctp_sk(ep->base.sk)))
- 			retval = ep;
-diff --git a/net/sctp/input.c b/net/sctp/input.c
-index e64d521..c0ca893 100644
---- a/net/sctp/input.c
-+++ b/net/sctp/input.c
-@@ -70,7 +70,8 @@ static struct sctp_association *__sctp_rcv_lookup(struct sk_buff *skb,
- 				      const union sctp_addr *laddr,
- 				      const union sctp_addr *paddr,
- 				      struct sctp_transport **transportp);
--static struct sctp_endpoint *__sctp_rcv_lookup_endpoint(const union sctp_addr *laddr);
-+static struct sctp_endpoint *__sctp_rcv_lookup_endpoint(struct net *net,
-+						const union sctp_addr *laddr);
- static struct sctp_association *__sctp_lookup_association(
- 					const union sctp_addr *local,
- 					const union sctp_addr *peer,
-@@ -129,6 +130,7 @@ int sctp_rcv(struct sk_buff *skb)
- 	union sctp_addr dest;
- 	int family;
- 	struct sctp_af *af;
-+	struct net *net = dev_net(skb->dev);
- 
- 	if (skb->pkt_type!=PACKET_HOST)
- 		goto discard_it;
-@@ -181,7 +183,7 @@ int sctp_rcv(struct sk_buff *skb)
- 	asoc = __sctp_rcv_lookup(skb, &src, &dest, &transport);
- 
- 	if (!asoc)
--		ep = __sctp_rcv_lookup_endpoint(&dest);
-+		ep = __sctp_rcv_lookup_endpoint(net, &dest);
- 
- 	/* Retrieve the common input handling substructure. */
- 	rcvr = asoc ? &asoc->base : &ep->base;
-@@ -723,12 +725,13 @@ discard:
- /* Insert endpoint into the hash table.  */
- static void __sctp_hash_endpoint(struct sctp_endpoint *ep)
- {
-+	struct net *net = sock_net(ep->base.sk);
- 	struct sctp_ep_common *epb;
- 	struct sctp_hashbucket *head;
- 
- 	epb = &ep->base;
- 
--	epb->hashent = sctp_ep_hashfn(epb->bind_addr.port);
-+	epb->hashent = sctp_ep_hashfn(net, epb->bind_addr.port);
- 	head = &sctp_ep_hashtable[epb->hashent];
- 
- 	sctp_write_lock(&head->lock);
-@@ -747,12 +750,13 @@ void sctp_hash_endpoint(struct sctp_endpoint *ep)
- /* Remove endpoint from the hash table.  */
- static void __sctp_unhash_endpoint(struct sctp_endpoint *ep)
- {
-+	struct net *net = sock_net(ep->base.sk);
- 	struct sctp_hashbucket *head;
- 	struct sctp_ep_common *epb;
- 
- 	epb = &ep->base;
- 
--	epb->hashent = sctp_ep_hashfn(epb->bind_addr.port);
-+	epb->hashent = sctp_ep_hashfn(net, epb->bind_addr.port);
- 
- 	head = &sctp_ep_hashtable[epb->hashent];
- 
-@@ -770,7 +774,8 @@ void sctp_unhash_endpoint(struct sctp_endpoint *ep)
- }
- 
- /* Look up an endpoint. */
--static struct sctp_endpoint *__sctp_rcv_lookup_endpoint(const union sctp_addr *laddr)
-+static struct sctp_endpoint *__sctp_rcv_lookup_endpoint(struct net *net,
-+						const union sctp_addr *laddr)
- {
- 	struct sctp_hashbucket *head;
- 	struct sctp_ep_common *epb;
-@@ -778,12 +783,12 @@ static struct sctp_endpoint *__sctp_rcv_lookup_endpoint(const union sctp_addr *l
- 	struct hlist_node *node;
- 	int hash;
- 
--	hash = sctp_ep_hashfn(ntohs(laddr->v4.sin_port));
-+	hash = sctp_ep_hashfn(net, ntohs(laddr->v4.sin_port));
- 	head = &sctp_ep_hashtable[hash];
- 	read_lock(&head->lock);
- 	sctp_for_each_hentry(epb, node, &head->chain) {
- 		ep = sctp_ep(epb);
--		if (sctp_endpoint_is_match(ep, laddr))
-+		if (sctp_endpoint_is_match(ep, net, laddr))
- 			goto hit;
- 	}
- 
--- 
-1.7.5.4
+Author: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Date:   Mon Aug 6 15:36:49 2012 -0300
 
+    Bluetooth: Use USB_VENDOR_AND_INTERFACE_INFO() for Broadcom devices
+    
+    Many Broadcom devices has a vendor specific devices class, with this rule
+    we match all existent and future controllers with this behavior.
+    
+    Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index cef3bac..504231e 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -104,6 +104,9 @@ static struct usb_device_id btusb_table[] = {
+        /* Foxconn - Hon Hai */
+        { USB_DEVICE(0x0489, 0xe033) },
+ 
++       /*Broadcom devices with vendor specific id */
++       { USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) },
++
+        { }     /* Terminating entry */
+ };
