@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab2HFNhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 09:37:46 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:42487 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755247Ab2HFNhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 09:37:45 -0400
+	id S1756027Ab2HFNic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 09:38:32 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36839 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752489Ab2HFNib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 09:38:31 -0400
+Message-ID: <501FC8CA.20303@ti.com>
+Date: Mon, 6 Aug 2012 09:38:18 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120806132410.GA6150@dhcp22.suse.cz>
-References: <CAJd=RBC9HhKh5Q0-yXi3W0x3guXJPFz4BNsniyOFmp0TjBdFqg@mail.gmail.com>
-	<20120806132410.GA6150@dhcp22.suse.cz>
-Date: Mon, 6 Aug 2012 21:37:45 +0800
-Message-ID: <CAJd=RBCuvpG49JcTUY+qw-tTdH_vFLgOfJDE3sW97+M04TR+hg@mail.gmail.com>
-Subject: Re: [patch v2] hugetlb: correct page offset index for sharing pmd
-From: Hillf Danton <dhillf@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, <catalin.marinas@arm.com>, <nico@linaro.org>,
+        <will.deacon@arm.com>
+Subject: Re: [PATCH 01/22] ARM: add mechanism for late code patching
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-2-git-send-email-cyril@ti.com> <20120806111224.GA18957@n2100.arm.linux.org.uk> <501FC44E.1040806@ti.com> <20120806132642.GC18957@n2100.arm.linux.org.uk>
+In-Reply-To: <20120806132642.GC18957@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 9:24 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Sat 04-08-12 14:08:31, Hillf Danton wrote:
->> The computation of page offset index is incorrect to be used in scanning
->> prio tree, as huge page offset is required, and is fixed with well
->> defined routine.
->>
->> Changes from v1
->>       o s/linear_page_index/linear_hugepage_index/ for clearer code
->>       o hp_idx variable added for less change
->>
->>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> ---
->>
->> --- a/arch/x86/mm/hugetlbpage.c       Fri Aug  3 20:34:58 2012
->> +++ b/arch/x86/mm/hugetlbpage.c       Fri Aug  3 20:40:16 2012
->> @@ -62,6 +62,7 @@ static void huge_pmd_share(struct mm_str
->>  {
->>       struct vm_area_struct *vma = find_vma(mm, addr);
->>       struct address_space *mapping = vma->vm_file->f_mapping;
->> +     pgoff_t hp_idx;
->>       pgoff_t idx = ((addr - vma->vm_start) >> PAGE_SHIFT) +
->>                       vma->vm_pgoff;
+On 8/6/2012 9:26 AM, Russell King - ARM Linux wrote:
+> On Mon, Aug 06, 2012 at 09:19:10AM -0400, Cyril Chemparathy wrote:
+>> With a flush_cache_all(), we could avoid having to operate a cacheline
+>> at a time, but that clobbers way more than necessary.
 >
-> So we have two indexes now. That is just plain ugly!
+> You can't do that, because flush_cache_all() on some CPUs requires the
+> proper MMU mappings to be in place, and you can't get those mappings
+> in place because you don't have the V:P offsets fixed up in the kernel.
+> Welcome to the chicken and egg problem.
+>
+>> Sure, flushing caches is expensive.  But then, so is running the
+>> patching code with caches disabled.  I guess memory access latencies
+>> drive the performance trade off here.
+>
+> There we disagree on a few orders of magnitude.  There are relatively
+> few places that need updating.  According to the kernel I have here:
+>
+>     text    data     bss     dec     hex filename
+> 7644346  454320  212984 8311650  7ed362 vmlinux
+>
+> Idx Name          Size      VMA       LMA       File off  Algn
+>    1 .text         004cd170  c00081c0  c00081c0  000081c0  2**5
+>   16 .init.pv_table 00000300  c0753a24  c0753a24  00753a24  2**0
+>
+> That's about 7MB of text, and only 192 points in that code which need
+> patching.  Even if we did this with caches on, that's still 192 places,
+> and only 192 places we'd need to flush a cache line.
+>
+> Alternatively, with your approach and 7MB of text, you need to flush
+> 238885 cache lines to cover the entire kernel.
+>
+> It would be far _cheaper_ with your approach to flush the individual
+> cache lines as you go.
 >
 
-Two indexes result in less code change here and no change
-in page_table_shareable. Plus linear_hugepage_index tells
-clearly readers that hp_idx and idx are different.
+Agreed.  Thanks.
 
-Anyway I have no strong opinion to keep
-page_table_shareable unchanged, but prefer less changes.
-
-Thanks,
-              Hillf
-
->>       struct prio_tree_iter iter;
->> @@ -72,8 +73,10 @@ static void huge_pmd_share(struct mm_str
->>       if (!vma_shareable(vma, addr))
->>               return;
->>
->> +     hp_idx = linear_hugepage_index(vma, addr);
->> +
->>       mutex_lock(&mapping->i_mmap_mutex);
->> -     vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
->> +     vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, hp_idx, hp_idx) {
->>               if (svma == vma)
->>                       continue;
->>
->> --
->
-> --
-> Michal Hocko
-> SUSE Labs
+-- 
+Thanks
+- Cyril
