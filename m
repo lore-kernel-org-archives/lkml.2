@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab2HFMXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 08:23:23 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41175 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055Ab2HFMXW (ORCPT
+	id S1756086Ab2HFMXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 08:23:52 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40028 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055Ab2HFMXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 08:23:22 -0400
-Date: Mon, 6 Aug 2012 13:23:17 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org, Andreas Heider <andreas@meetr.de>
-Subject: Re: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we
- can't get a panel mode
-Message-ID: <20120806122317.GA11339@srcf.ucam.org>
-References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
- <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
- <20120803161416.GA22563@srcf.ucam.org>
- <20120803162451.GF8165@thinkpad-t410>
- <20120803162702.GA22896@srcf.ucam.org>
- <20120804165727.GA4980@thinkpad-t410>
- <20120805211412.GG12232@phenom.ffwll.local>
- <20120805211838.GA27188@srcf.ucam.org>
- <20120805214016.GH12232@phenom.ffwll.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120805214016.GH12232@phenom.ffwll.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 6 Aug 2012 08:23:51 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
+        Ian Molton <ian.molton@codethink.co.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH 0/6] ARM: dove: DT support for Marvell Dove
+Date: Mon,  6 Aug 2012 14:23:28 +0200
+Message-Id: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 05, 2012 at 11:40:16PM +0200, Daniel Vetter wrote:
+This patch set adds DT support for Marvell Dove SoC and three boards
+equipped with this SoC. The work is based on device tree support for
+Marvell Orion based SoCs introduced in 3.6-rc1.
 
-> As long as it's only apple shipping multi-gpu machines with
-> broken/non-existing vbt, I'll happily stomach the quirk list entries.
-> They're bad, but imo the lesser evil.
+The first three patches move mach-dove closer to Marvell Kirkwood's
+setup code by unifying the clock setup routines, adding clock gating
+control, and support for Marvell's crypto engine to mach-dove.
 
-Doing this via quirks means that we'll always be broken on the hardware 
-at the point where it ships. Implementing the functionality means we 
-stand some chance of working out of the box.
+Patches 4 and 5 add a generic DT machine descriptor to mach-dove and
+corresponding DT descriptors for the SoC and already supported boards.
 
+Finally, the last patch adds a DT descriptor for the SolidRun CuBox,
+a plug computer based on Marvell Dove.
+
+This patch set relies on a DT support patch for sdhci-dove that has
+been sent to the corresponding maintainers a few days ago.
+
+Sebastian Hesselbarth (6):
+  ARM: dove: unify clock setup
+  ARM: dove: add clock gating control
+  ARM: dove: add crypto engine
+  ARM: dove: add device tree based machine descriptor
+  ARM: dove: add device tree descriptors
+  ARM: dove: SolidRun CuBox DT
+
+ arch/arm/boot/dts/dove-cm-a510.dts   |   38 ++++++++
+ arch/arm/boot/dts/dove-cubox.dts     |   42 +++++++++
+ arch/arm/boot/dts/dove-dove-db.dts   |   38 ++++++++
+ arch/arm/boot/dts/dove.dtsi          |  143 ++++++++++++++++++++++++++++++
+ arch/arm/mach-dove/Kconfig           |    7 ++
+ arch/arm/mach-dove/Makefile.boot     |    4 +
+ arch/arm/mach-dove/common.c          |  159 +++++++++++++++++++++++++++++++---
+ arch/arm/mach-dove/include/mach/pm.h |   54 ++++++++----
+ 8 files changed, 455 insertions(+), 30 deletions(-)
+ create mode 100644 arch/arm/boot/dts/dove-cm-a510.dts
+ create mode 100644 arch/arm/boot/dts/dove-cubox.dts
+ create mode 100644 arch/arm/boot/dts/dove-dove-db.dts
+ create mode 100644 arch/arm/boot/dts/dove.dtsi
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Rabeeh Khoury <rabeeh@solid-run.com>
+Cc: Ian Molton <ian.molton@codethink.co.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Maen Suleiman <maen@marvell.com>
+Cc: Olof Johansson <olof@lixom.net>
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.10.4
+
