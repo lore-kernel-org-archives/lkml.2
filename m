@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530Ab2HFOXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:23:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63254 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756493Ab2HFOXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:23:21 -0400
-Message-ID: <1344262990.3441.13.camel@ul30vt.home>
-Subject: Re: [PATCH 0/2] Fix ACS path checking
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org, dsahern@gmail.com
-Date: Mon, 06 Aug 2012 08:23:10 -0600
-In-Reply-To: <20120806122053.GL1996@amd.com>
-References: <20120804180155.6144.83332.stgit@bling.home>
-	 <20120806105010.GK1996@amd.com> <20120806122053.GL1996@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1756548Ab2HFOXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:23:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56879 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756493Ab2HFOXo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 10:23:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 0/6] ARM: dove: DT support for Marvell Dove
+Date: Mon, 6 Aug 2012 14:23:38 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+References: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com> <201208061402.22815.arnd@arndb.de> <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com>
+In-Reply-To: <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201208061423.38988.arnd@arndb.de>
+X-Provags-ID: V02:K0:pv/jIL39tAxTAyWX6d36+AG/m88cm6LQDuQKsKAb1A/
+ eEIqBddSx5xesjgw52YiUisQEgoSasA7rl69gcD5GXiJSkqgDQ
+ 2YiaxKEfB0XpV2OcB6uzFnI0IUVLHofc6CibNm8ARRAXZXbOL/
+ 4LVz32NUpMY99tgja4sOCrBONtLOmTnkN5cz1Bb6+igXWEoJ5y
+ /VdwCy6ux79ikETwRpfJMh43PIbDcowy4kTPBUqOLsCE+xBzwK
+ S+ICHbP5VVzNqD1nMIvyYXbHSo7U4nxcehqDfc5xPomSIgNRLz
+ cu456BooXXGjSepGY1YCGdbo1SBmSUxyOtVD4zRxy+D62DDYDu
+ Zi6o22fuexDacRsp4lBw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-06 at 14:20 +0200, Joerg Roedel wrote:
-> On Mon, Aug 06, 2012 at 12:50:10PM +0200, Joerg Roedel wrote:
-> > On Sat, Aug 04, 2012 at 12:08:46PM -0600, Alex Williamson wrote:
-> > Hmm, tried it here, At least pci_request_acs() still gets called. How do
-> > you detect if ACS is really enabled?
-> 
-> Okay, I found a problem. pci_request_acs needs to be called before PCI
-> probing. Does the attached patch help?
-> 
-> From 87a4363be30d5d015a984a60769f29b0607fc5fb Mon Sep 17 00:00:00 2001
-> From: Joerg Roedel <joerg.roedel@amd.com>
-> Date: Mon, 6 Aug 2012 14:18:42 +0200
-> Subject: [PATCH] iommu/amd: Fix pci_request_acs() call-place
-> 
-> The pci_request_acs() function needs to be called before PCI
-> probing to be effective. So move it to another call-place to
-> ensure that.
-> 
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  drivers/iommu/amd_iommu_init.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+On Monday 06 August 2012, Sebastian Hesselbarth wrote:
+> I suggest to keep non-DT support until we have pinctrl and gpiolib drivers
+> done. Thomas Petazzoni and I have been working on pinctrl that will be
+> posted in a few days and gpiolib driver needs some more cleanup but is
+> basically working. Until then I guess most of the other orion drivers have
+> DT support (eth and xor IIRC).
 
+Ok, sounds resonable.
 
-Yes, that's it.  Before and after:
-
-00:04.0 PCI bridge: Advanced Micro Devices [AMD] nee ATI RD890 PCI to PCI bridge (PCI express gpp port D) (prog-if 00 [Normal decode])
-	Capabilities: [190] Access Control Services
-		ACSCap:	SrcValid+ TransBlk+ ReqRedir+ CmpltRedir+ UpstreamFwd+ EgressCtrl- DirectTrans+
-		ACSCtl:	SrcValid- TransBlk- ReqRedir- CmpltRedir- UpstreamFwd- EgressCtrl- DirectTrans-
-
-	Capabilities: [190] Access Control Services
-		ACSCap:	SrcValid+ TransBlk+ ReqRedir+ CmpltRedir+ UpstreamFwd+ EgressCtrl- DirectTrans+
-		ACSCtl:	SrcValid+ TransBlk- ReqRedir+ CmpltRedir+ UpstreamFwd+ EgressCtrl- DirectTrans-
-
-The former makes iommu grouping put all my VFs in a single group below
-this device.  Correct given the ACS state, but not very useful.  Thanks,
-
-Alex
-
-Tested-by: Alex Williamson <alex.williamson@redhat.com>
-
-> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-> index 500e7f1..0a2ea31 100644
-> --- a/drivers/iommu/amd_iommu_init.c
-> +++ b/drivers/iommu/amd_iommu_init.c
-> @@ -1131,9 +1131,6 @@ static int __init amd_iommu_init_pci(void)
->  			break;
->  	}
->  
-> -	/* Make sure ACS will be enabled */
-> -	pci_request_acs();
-> -
->  	ret = amd_iommu_init_devices();
->  
->  	print_iommu_info();
-> @@ -1652,6 +1649,9 @@ static bool detect_ivrs(void)
->  
->  	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
->  
-> +	/* Make sure ACS will be enabled during PCI probe */
-> +	pci_request_acs();
-> +
->  	return true;
->  }
->  
-
-
-
+	Arnd
