@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab2HFSsW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:48:22 -0400
-Received: from imp01.mtu.ru ([62.5.255.10]:41149 "EHLO imp01.mtu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932455Ab2HFSsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:48:19 -0400
-X-Spam-Flag: NO
-Message-ID: <50201156.30704@pavlinux.ru>
-Date: Mon, 06 Aug 2012 22:47:50 +0400
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120713 Thunderbird/10.0.6
+	id S932454Ab2HFS7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:59:06 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:48415 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932380Ab2HFS7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 14:59:04 -0400
+Date: Mon, 6 Aug 2012 19:00:14 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Daniel P. Berrange" <berrange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] Forbid invocation of kexec_load() outside initial PID
+ namespace
+Message-ID: <20120806190014.GA15267@mail.hallyn.com>
+References: <1343991184-3619-1-git-send-email-berrange@redhat.com>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Pavel Machek <pavel@ucw.cz>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: Re: [linux-pm] [PATCH] ACPI: replace strlen("string") with sizeof("string")
- -1
-References: <Pine.LNX.4.44L0.1208061226460.1649-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1208061226460.1649-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343991184-3619-1-git-send-email-berrange@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-06.08.2012 20:28, Alan Stern пишет:
-> On Mon, 6 Aug 2012, Pavel Vasilyev wrote:
->
->> 06.08.2012 18:36, Alan Stern пишет:
->>> On Mon, 6 Aug 2012, Pavel Machek wrote:
->>>
->>>> On Thu 2012-07-26 21:39:38, Len Brown wrote:
->>>>> ...both give the number of chars in the string
->>>>> without the '\0', as strncmp() wants,
->>>>> but sizeof() is compile-time.
->>>>
->>>> What about introducing something like streq() to do this
->>>> automatically? This is ugly....
->>>>
->>>> #define streq(a, b) ... if (_buildin_constant(b)) ...
->>>>
->>>> ?
->>>>
->>>>> -	if (!strncmp(val, "enable", strlen("enable"))) {
->>>>> +	if (!strncmp(val, "enable", sizeof("enable") - 1)) {
->>>
->>> While you're at it, there's no point using strncmp when you know the
->>> length of one of the strings beforehand.  Just use memcmp, and don't
->>> subtract 1 from the sizeof value.
->>
->> http://www.gossamer-threads.com/lists/engine?do=post_attachment;postatt_id=41157;list=linux
->
-> Interestingly, many (all?) of the changes in that patch are wrong
-> because they don't try to match the terminating '\0'.  As a result,
-> they will match against extensions of the target string as well as the
-> target string itself.
->
+Quoting Daniel P. Berrange (berrange@redhat.com):
+> From: "Daniel P. Berrange" <berrange@redhat.com>
+> 
+> The following commit
+> 
+>     commit cf3f89214ef6a33fad60856bc5ffd7bb2fc4709b
+>     Author: Daniel Lezcano <daniel.lezcano@free.fr>
+>     Date:   Wed Mar 28 14:42:51 2012 -0700
+> 
+>     pidns: add reboot_pid_ns() to handle the reboot syscall
+> 
+> introduced custom handling of the reboot() syscall when invoked
+> from a non-initial PID namespace. The intent was that a process
+> in a container can be allowed to keep CAP_SYS_BOOT and execute
+> reboot() to shutdown/reboot just their private container, rather
+> than the host.
+> 
+> Unfortunately the kexec_load() syscall also relies on the
+> CAP_SYS_BOOT capability. So by allowing a container to keep
+> this capability to safely invoke reboot(), they mistakenly
+> also gain the ability to use kexec_load(). The solution is
+> to make kexec_load() return -EPERM if invoked from a PID
+> namespace that is not the initial namespace
+> 
+> Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
 
-strNcmp compare N bytes - http://lxr.linux.no/#linux+v3.5/lib/string.c#L270
-memcmp compare N bytes  - http://lxr.linux.no/#linux+v3.5/lib/string.c#L651
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
--- 
+(Please see my previous email explaining why I believe the pidns
+is an appropriate check)
 
-                                                          Pavel.
+> Cc: Daniel Lezcano <daniel.lezcano@free.fr>
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/kexec.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 0668d58..b152bde 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -947,6 +947,11 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
+>  	if (!capable(CAP_SYS_BOOT))
+>  		return -EPERM;
+>  
+> +	/* Processes in containers must not be allowed to load a new
+> +	 * kernel, even if they have CAP_SYS_BOOT */
+> +	if (task_active_pid_ns(current) != &init_pid_ns)
+> +		return -EPERM;
+> +
+>  	/*
+>  	 * Verify we have a legal set of flags
+>  	 * This leaves us room for future extensions.
+> -- 
+> 1.7.11.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
