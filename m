@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548Ab2HFOXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:23:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56879 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756493Ab2HFOXo (ORCPT
+	id S1756573Ab2HFOXz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:23:55 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:49623 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756550Ab2HFOXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:23:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 0/6] ARM: dove: DT support for Marvell Dove
-Date: Mon, 6 Aug 2012 14:23:38 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-References: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com> <201208061402.22815.arnd@arndb.de> <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com>
-In-Reply-To: <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com>
+	Mon, 6 Aug 2012 10:23:51 -0400
+Date: Mon, 6 Aug 2012 17:23:23 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and
+ devm_clk_get
+Message-ID: <20120806142323.GO4352@mwanda>
+References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208061423.38988.arnd@arndb.de>
-X-Provags-ID: V02:K0:pv/jIL39tAxTAyWX6d36+AG/m88cm6LQDuQKsKAb1A/
- eEIqBddSx5xesjgw52YiUisQEgoSasA7rl69gcD5GXiJSkqgDQ
- 2YiaxKEfB0XpV2OcB6uzFnI0IUVLHofc6CibNm8ARRAXZXbOL/
- 4LVz32NUpMY99tgja4sOCrBONtLOmTnkN5cz1Bb6+igXWEoJ5y
- /VdwCy6ux79ikETwRpfJMh43PIbDcowy4kTPBUqOLsCE+xBzwK
- S+ICHbP5VVzNqD1nMIvyYXbHSo7U4nxcehqDfc5xPomSIgNRLz
- cu456BooXXGjSepGY1YCGdbo1SBmSUxyOtVD4zRxy+D62DDYDu
- Zi6o22fuexDacRsp4lBw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 August 2012, Sebastian Hesselbarth wrote:
-> I suggest to keep non-DT support until we have pinctrl and gpiolib drivers
-> done. Thomas Petazzoni and I have been working on pinctrl that will be
-> posted in a few days and gpiolib driver needs some more cleanup but is
-> basically working. Until then I guess most of the other orion drivers have
-> DT support (eth and xor IIRC).
+On Sat, Aug 04, 2012 at 08:23:27PM +0200, Julia Lawall wrote:
+> @@ -922,12 +920,7 @@ static int emmaprp_probe(struct platform_device *pdev)
+>  
+>  	platform_set_drvdata(pdev, pcdev);
+>  
+> -	if (devm_request_mem_region(&pdev->dev, res_emma->start,
+> -	    resource_size(res_emma), MEM2MEM_NAME) == NULL)
+> -		goto rel_vdev;
+> -
+> -	pcdev->base_emma = devm_ioremap(&pdev->dev, res_emma->start,
+> -					resource_size(res_emma));
+> +	pcdev->base_emma = devm_request_and_ioremap(&pdev->dev, res_emma);
+>  	if (!pcdev->base_emma)
+>  		goto rel_vdev;
 
-Ok, sounds resonable.
+This was in the original code, but there is a "ret = -ENOMEM;"
+missing here, and again a couple lines down in the original code.
 
-	Arnd
+regards,
+dan carpenter
+
+
