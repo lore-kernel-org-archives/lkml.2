@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab2HFLR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 07:17:59 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43462 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755953Ab2HFLR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 07:17:57 -0400
+	id S1756007Ab2HFL0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 07:26:21 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38594 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753673Ab2HFL0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 07:26:19 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <b-cousson@ti.com>,
+        <rnayak@ti.com>, <tony@atomide.com>, <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <balbi@ti.com>, <arnd@arndb.de>
+CC: <rob@landley.net>, <linux@arm.linux.org.uk>, <ohad@wizery.com>,
+        <linus.walleij@linaro.org>, <myungjoo.ham@samsung.com>,
+        <rusty@rustcorp.com.au>, <swarren@nvidia.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [PATCH v3 2/2] arm/dts: omap4: Add ocp2scp data
+Date: Mon, 6 Aug 2012 16:55:31 +0530
+Message-ID: <1344252331-18456-3-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344252331-18456-1-git-send-email-kishon@ti.com>
+References: <1344252331-18456-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1344250002-6011-7-git-send-email-lee.jones@linaro.org>
-References: <1344250002-6011-1-git-send-email-lee.jones@linaro.org>
-	<1344250002-6011-7-git-send-email-lee.jones@linaro.org>
-Date: Mon, 6 Aug 2012 13:17:56 +0200
-Message-ID: <CACRpkdZmZtQJ_tqp8=cC2NbRvNosN8rDwfwDxocw=a=WtH0sZg@mail.gmail.com>
-Subject: Re: [PATCH 6/6] Input: ab8500-ponkey: Make the distinction between DT
- and non-DT boots
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 12:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Add ocp2scp data node in omap4 device tree file.
 
-> If we're booting with Device Tree enabled, we want the IRQ numbers to
-> be taken and translated from the Device Tree binary. If not, they
-> should be taken from the resource allocation defined in the AB8500 MFD
-> core driver.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/omap4.dtsi |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Aha that's the missing patch.
-Tested-by: Linus Walleij <linus.walleij@linaro.org>
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 04cbbcb..8a780b2 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -295,5 +295,13 @@
+ 			interrupt-parent = <&gic>;
+ 			ti,hwmods = "dmic";
+ 		};
++
++		ocp2scp {
++			compatible = "ti,omap-ocp2scp";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			ti,hwmods = "ocp2scp_usb_phy";
++		};
+ 	};
+ };
+-- 
+1.7.9.5
 
-This one should be split off from the patch series and sent as a separate
-fix to Dmitry as it badly needs to go into the -rc series through the input
-tree.
-
-Can't see what it is doing as part of this series, it has no relation to the
-other patches.
-
-Dmitry, you can replace my revert with this patch as soon as Lee send
-it to linux-input.
-
-Yours,
-Linus Walleij
