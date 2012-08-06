@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab2HFFEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 01:04:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46451 "EHLO
+	id S1752225Ab2HFFIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 01:08:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44046 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580Ab2HFFEL (ORCPT
+	with ESMTP id S1751482Ab2HFFId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 01:04:11 -0400
-Date: Sun, 5 Aug 2012 22:04:08 -0700
-From: Michel Lespinasse <walken@google.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Steven Whitehouse <swhiteho@redhat.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-ID: <20120806050408.GA12131@google.com>
-References: <20120806134318.8af35d047e255fd25398210b@canb.auug.org.au>
- <CANN689GqydNH0-gisSfUPtGKAHVajzZ4KQCTKoJ7J76dJ8zVbg@mail.gmail.com>
+	Mon, 6 Aug 2012 01:08:33 -0400
+Message-ID: <501F514C.2090909@ozlabs.ru>
+Date: Mon, 06 Aug 2012 15:08:28 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANN689GqydNH0-gisSfUPtGKAHVajzZ4KQCTKoJ7J76dJ8zVbg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@ozlabs.org
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: how to implement platform specific per process parameter?
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gfs2 calls RB_EMPTY_NODE() to check if nodes are not on an rbtree.
-The corresponding initialization function is RB_CLEAR_NODE().
-rb_init_node() was never clearly defined and is going away.
+Hi!
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- fs/gfs2/rgrp.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+There is a per core register on modern POWER processors (POWER6+) called 
+"DSCR": The DSCR (aka Data Stream Control Register) is supported on some
+server PowerPC chips and allow some control over the prefetch of data
+streams.
 
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index eaa4188..675e7cc 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -487,7 +487,7 @@ int gfs2_rs_alloc(struct gfs2_inode *ip)
- 	if (!res)
- 		error = -ENOMEM;
- 
--	rb_init_node(&res->rs_node);
-+	RB_CLEAR_NODE(&res->rs_node);
- 
- 	down_write(&ip->i_rw_mutex);
- 	if (ip->i_res)
-@@ -520,7 +520,7 @@ static void __rs_deltree(struct gfs2_inode *ip, struct gfs2_blkreserv *rs)
- 	rgd = rs->rs_rbm.rgd;
- 	trace_gfs2_rs(ip, rs, TRACE_RS_TREEDEL);
- 	rb_erase(&rs->rs_node, &rgd->rd_rstree);
--	rb_init_node(&rs->rs_node);
-+	RB_CLEAR_NODE(&rs->rs_node);
- 	BUG_ON(!rgd->rd_rs_cnt);
- 	rgd->rd_rs_cnt--;
- 
+Its "per process" support has been added by
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=efcac6589a277c10060e4be44b9455cf43838dc1
+"powerpc: Per process DSCR + some fixes (try#4)"
+
+The patch adds the DSCR value into "struct thread_struct" and 
+saves/restores it when the context is switched. Also, there is some policy 
+to initialize the register when a thread starts. So far so good.
+
+Here is the problem.
+
+Some customer(s) of this feature want an ability to change the DSCR value 
+of the already running process. I.e. we need some kernel interface which 
+would accept pid and the register value and change it.
+
+There are 4 options:
+1. [not a kernel interface] use ptrace to execute the register changing 
+command inside the specified pid. The next context switch saves the new 
+value in the thread_struct. Dirty hack.
+
+2. Add a new syscall which would receive pid + register value and do the 
+job. A bit too much.
+
+3. Add some hook in /proc filesystem but so far there were no platform 
+specific bits, right?
+
+4. Implement a static node "/sys/devices/system/cpu/dscr_control". write() 
+would parse the input stream, call scanf("%d %x", &pid, &dscr) and do the job.
+
+What is the correct approach? Thanks.
+
+
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Alexey
