@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab2HFTaj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 15:30:39 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:53073 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932494Ab2HFTah (ORCPT
+	id S964789Ab2HFTbz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 15:31:55 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39777 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932523Ab2HFTbx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 15:30:37 -0400
-Date: Mon, 6 Aug 2012 14:29:57 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Peter Huewe <peter.huewe@infineon.com>
-Cc: jmorris@namei.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, Bryan Freed <bfreed@chromium.org>,
-        David Safford <safford@linux.vnet.ibm.com>, hpa@linux.intel.com
-Subject: Re: [PATCH] char/tpm: Use struct dev_pm_ops for power management.
-Message-ID: <20120806192957.GB6821@linux.vnet.ibm.com>
-References: <20120803203836.GA11918@linux.vnet.ibm.com>
- <1344239939-5752-1-git-send-email-peter.huewe@infineon.com>
+	Mon, 6 Aug 2012 15:31:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344239939-5752-1-git-send-email-peter.huewe@infineon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080619-7606-0000-0000-000002974810
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <501FF774.6080805@kernel.org>
+References: <CA+icZUWzHUoPYL4tBi46seO=AQeo7jPdCy6NiiLc5B7gS0wC8g@mail.gmail.com>
+	<4FA5B8A4.9080006@kernel.org>
+	<CA+icZUUEfRSYrWDip_90HxFK8Lsi73px4r77pgU9zzFUO6zgSA@mail.gmail.com>
+	<501FF774.6080805@kernel.org>
+Date: Mon, 6 Aug 2012 21:31:52 +0200
+Message-ID: <CA+icZUVtNdMw5KLe6br2z28CdMWdq-ThAbcpiwE0LjPoTTe7UQ@mail.gmail.com>
+Subject: Re: Service <http://patchwork.kernel.org/> not available!
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Konstantin Ryabitsev <mricon@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, ftpadmin@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 09:58:59AM +0200, Peter Huewe wrote:
-> Make the tpm_i2c_infineon driver define its PM callbacks trough a
-> struct dev_pm_ops by using SIMPLE_DEV_PM_OPS instead of coding it
-> explicitly.
-> 
-> This simplifies the code and allows the driver to use tpm_pm_suspend()
-> and tpm_pm_resume() as its PM callbacks directly, without defining its
-> own PM callback routines.
+On Mon, Aug 6, 2012 at 6:57 PM, Konstantin Ryabitsev <mricon@kernel.org> wrote:
+> On 06/08/12 01:16 AM, Sedat Dilek wrote:
+>> it would be wonderful to get a feedback when services are available again.
+>>
+>> I just saw today a reference on linux-next ML to [1] otherwise I would
+>> not have known.
+>>
+>> - Sedat -
+>>
+>> [1] https://patchwork.kernel.org/patch/1220151/
+>
+> Hello:
+>
+> Patchwork has been restored a few weeks ago and is working -- which you
+> can verify by accessing the link you provided above.
+>
 
-  Thanks Peter. One more request - can you roll this fix into the driver
-patch itself and just add a note in the change log?  Sorry I didn't
-mention this before.
+My email was not about accessebility but informing people - my
+original posting was from May 5th as you can read.
 
-Thanks,
-Kent
+Can you tell me/us how many admins are keeping up the systems?
+Is there somewhere a website where someone can get more infos about
+the work of the <kernel.org> admins?
 
-> Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
-> ---
-> Thanks Kent and Rafael - much better this way ;)
-> 
->  drivers/char/tpm/tpm_i2c_infineon.c |   30 +-----------------------------
->  1 files changed, 1 insertions(+), 29 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-> index 1794a09..65761b6 100644
-> --- a/drivers/char/tpm/tpm_i2c_infineon.c
-> +++ b/drivers/char/tpm/tpm_i2c_infineon.c
-> @@ -655,35 +655,7 @@ static const struct i2c_device_id tpm_tis_i2c_table[] = {
->  };
-> 
->  MODULE_DEVICE_TABLE(i2c, tpm_tis_i2c_table);
-> -
-> -#ifdef CONFIG_PM
-> -/* NOTE:
-> - * Suspend does currently not work Nvidias Tegra2 Platform
-> - * but works fine on Beagleboard (arm omap).
-> - *
-> - * This function will block System Suspend if TPM is not initialized,
-> - * however the TPM is usually initialized by BIOS/u-boot or by sending
-> - * a TPM_Startup command.
-> - */
-> -static int tpm_tis_i2c_suspend(struct device *dev)
-> -{
-> -	return tpm_pm_suspend(dev, dev->power.power_state);
-> -}
-> -
-> -static int tpm_tis_i2c_resume(struct device *dev)
-> -{
-> -	return tpm_pm_resume(dev);
-> -}
-> -
-> -static const struct dev_pm_ops tpm_tis_i2c_ops = {
-> -	.suspend = tpm_tis_i2c_suspend,
-> -	.resume = tpm_tis_i2c_resume,
-> -};
-> -#else
-> -#define tpm_tis_i2c_suspend NULL
-> -#define tpm_tis_i2c_resume NULL
-> -#define tpm_tis_i2c_ops NULL
-> -#endif
-> +static SIMPLE_DEV_PM_OPS(tpm_tis_i2c_ops, tpm_pm_suspend, tpm_pm_resume);
-> 
->  static int __devinit tpm_tis_i2c_probe(struct i2c_client *client,
->  			     const struct i2c_device_id *id)
-> -- 
-> 1.7.6.msysgit.0
-> 
+- Sedat -
 
+> Best,
+> --
+> Konstantin Ryabitsev
+> Systems Administrator
+> Linux Foundation, kernel.org
+> Montréal, Québec
+>
