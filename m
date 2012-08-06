@@ -1,59 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab2HFVlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:41:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51023 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754139Ab2HFVlY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:41:24 -0400
-Date: Mon, 6 Aug 2012 22:41:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Robert Schwebel <r.schwebel@pengutronix.de>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH 4/9] ASoC: imx: Don't use {en,dis}able_fiq() calls
-Message-ID: <20120806214121.GA26698@opensource.wolfsonmicro.com>
-References: <20120805230238.GA1663@lizard> <1344207819-3415-4-git-send-email-anton.vorontsov@linaro.org> <CAKGA1bkiHj=zMJXSzoGp3fpLS3POnFXSV5y7sYYFAikqoUT9tQ@mail.gmail.com> <20120806154951.GQ16861@opensource.wolfsonmicro.com> <CAKGA1b=_AOub_pEJJGBTb6Y7wLZaSYKQjFTyMVFSr_=9VX4wpg@mail.gmail.com> <20120806193734.GA16199@opensource.wolfsonmicro.com> <20120806201609.GX25644@pengutronix.de> <CAKGA1bmMqyL4gyLYcanEH=R=HuBjRCNRLjUEWCj8wmpi3HuL0g@mail.gmail.com>
+	id S1756339Ab2HFVmx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 17:42:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53572 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755369Ab2HFVmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 17:42:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="193911976"
+Date: Tue, 7 Aug 2012 05:43:36 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: bp@amd64.org, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH 0/5 V2] x86: mce: Bugfixes, cleanups and a new
+ CMCI poll version
+Message-ID: <20120806214336.GA11726@gchen.bj.intel.com>
+Mail-Followup-To: "Luck, Tony" <tony.luck@intel.com>, bp@amd64.org,
+	x86@kernel.org, linux-kernel@vger.kernel.org
+References: <20120801005610.GA23536@gchen.bj.intel.com>
+ <501c50de151302d0d7@agluck-desktop.sc.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x+6KMIRAuhnl3hBn"
 Content-Disposition: inline
-In-Reply-To: <CAKGA1bmMqyL4gyLYcanEH=R=HuBjRCNRLjUEWCj8wmpi3HuL0g@mail.gmail.com>
-X-Cookie: You will pass away very quickly.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <501c50de151302d0d7@agluck-desktop.sc.intel.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 03:39:50PM -0500, Matt Sealey wrote:
-> On Mon, Aug 6, 2012 at 3:16 PM, Robert Schwebel
 
-> > That's not true; we still run MX25, MX27, MX35, MX28 on mainline in
-> > active projects.
+--x+6KMIRAuhnl3hBn
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I think Shawn Guo (FSL/Linaro) would also disagree, since he's just
-> posted a large amount of MXS patches to fix up the board for device
-> trees, and Arnd is pulling them.
+On Fri, Aug 03, 2012 at 03:29:50PM -0700, Luck, Tony wrote:
+> Date: Fri, 03 Aug 2012 15:29:50 -0700
+> From: "Luck, Tony" <tony.luck@intel.com>
+> To: Chen Gong <gong.chen@linux.intel.com>
+> Cc: bp@amd64.org, x86@kernel.org, linux-kernel@vger.kernel.org
+> Subject: Re: [RESEND PATCH 0/5 V2] x86: mce: Bugfixes, cleanups and a new
+>  CMCI poll version
+>=20
+> I applied this series on top of v3.6-rc1 and took it for
+> a test drive with a little storm of 20 corrected interrupts.
+>=20
+> The series worked ... but the console log was entirely unhelpful
+> in letting me know what had just happened to my system.  All I saw
+> was:
+>=20
+> mce: [Hardware Error]: Machine check events logged
+> mce: [Hardware Error]: Machine check events logged
+>     ... several seconds pass ...
+> CPU 35 MCA banks CMCI:0 CMCI:1 CMCI:3 CMCI:5 CMCI:6 CMCI:7 CMCI:8 CMCI:9 =
+CMCI:10 CMCI:11
+> mce_notify_irq: 3 callbacks suppressed
+> CPU 1 MCA banks CMCI:0 CMCI:1 CMCI:3
+> CPU 39 MCA banks CMCI:0 CMCI:1 CMCI:3
+> CPU 38 MCA banks CMCI:0 CMCI:1 CMCI:3
+> CPU 32 MCA banks CMCI:0 CMCI:1 CMCI:3
+> CPU 37 MCA banks CMCI:0 CMCI:1 CMCI:3
+> CPU 36 MCA banks CMCI:0 CMCI:1 CMCI:3
+> CPU 34 MCA banks CMCI:0 CMCI:1 CMCI:3
+> mce: [Hardware Error]: Machine check events logged
+>=20
+> No mention of the storm, no mention that we switched to polling
+> mode (and so missed some of the reports). Just the cryptic output
+> as the kernel re-established the CMCI on processors that had been
+> affected by the storm.
+>=20
+> I tried the patch below to log the start/end of the storm. But I
+> may be doing something wrong with printk_timed_ratelimit() because
+> I saw two "storm detected" and two "storm subsided" messages.
 
-MXS != i.MX.
+You saw two times because the injection speed is not quick enough so that
+the poll timer thinks during the expected time it doesn't meet new CMC, and
+then double this timer, again, no CMC... until restore for poll timer to
+INT mode. Under the real situation, thousands of CMCI come in so this
+situation wil not happen. In fact, during the test I met this kind of=20
+situations many times.
 
-> As far as I know, the FIQ usage is quite valid for the processor it
-> needs to run on (MX21/27/28, right?) in the modes it runs in (AC97 on
-> these processors, and maybe MX35 too), and I'm just trying to figure
-> out what the steps are for
+>=20
+> It would also be nice to avoid all the "CPU 1 MCA banks CMCI:0 CMCI:1 CMC=
+I:3"
+> messages.
+>=20
+> -Tony
+>=20
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu=
+/mcheck/mce_intel.c
+> index 693bc7d..236f60e 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> @@ -87,6 +87,8 @@ void mce_intel_hcpu_update(unsigned long cpu)
+> =20
+>  unsigned long mce_intel_adjust_timer(unsigned long interval)
+>  {
+> +	static unsigned long jiffie_state;
+> +
+>  	if (interval < CMCI_POLL_INTERVAL)
+>  		return interval;
+> =20
+> @@ -108,6 +110,8 @@ unsigned long mce_intel_adjust_timer(unsigned long in=
+terval)
+>  		 */
+>  		if (!atomic_read(&cmci_storm_on_cpus)) {
+>  			__this_cpu_write(cmci_storm_state, CMCI_STORM_NONE);
+> +			if (printk_timed_ratelimit(&jiffie_state, CMCI_STORM_INTERVAL/HZ*1000=
+))
+> +				pr_notice("CMCI storm subsided, switching to interrupt mode\n");
+>  			cmci_reenable();
+>  			cmci_recheck();
+>  		}
+> @@ -126,6 +130,7 @@ static bool cmci_storm_detect(void)
+>  	unsigned int cnt =3D __this_cpu_read(cmci_storm_cnt);
+>  	unsigned long ts =3D __this_cpu_read(cmci_time_stamp);
+>  	unsigned long now =3D jiffies;
+> +	static unsigned long jiffie_state;
+> =20
+>  	if (__this_cpu_read(cmci_storm_state) !=3D CMCI_STORM_NONE)
+>  		return true;
+> @@ -145,6 +150,9 @@ static bool cmci_storm_detect(void)
+>  	__this_cpu_write(cmci_storm_state, CMCI_STORM_ACTIVE);
+>  	atomic_inc(&cmci_storm_on_cpus);
+>  	mce_timer_kick(CMCI_POLL_INTERVAL);
+> +
+> +	if (printk_timed_ratelimit(&jiffie_state, CMCI_STORM_INTERVAL/HZ*1000))
+> +		pr_notice("CMCI storm detected, switching to poll mode\n");
+>  	return true;
+>  }
+> =20
 
-Oh, ick.  What is the problem that means people want to use the FIQ on
-these processors?  There's been i.MX2x audio DMA since forever, it had
-DMA in mainline before any of the later i.MXs due to them having SDMA.
-The original mainline i.MX audio support was done on i.MX27 and didn't
-have any issue here, this is the fist I've heard of a problem.
+--x+6KMIRAuhnl3hBn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-> I did note that SND_SOC_EUKREA_TLV320 enables FIQ but it also depends
-> on MX51 which makes me think this need to be split, too, so that MX51
-> boards don't have it but MX2/MX3 do.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Is that not bitrot due to it being there before SDMA support was?
+iQIcBAEBAgAGBQJQIDqIAAoJEI01n1+kOSLHtfsP+wblUDjj/TrDwHLdgBZVai+T
+aQzSmO9TG3MIr5yZ/BETi4Fc4MjaK1wrrJmCHnhUsdu2n6Pavc6vh/4dTq2EFeSr
+YN+AQm0aVlpZZq88xj8WKK5lNv9yMWkg1eXHLLJUvlSryvzbUDFNX54Zw7gQM4vx
+VQn9oSbUnKS22D6qAR9TzCRQEd2fyD2VL+et0s99bUUXWclyqSrjEhE3sEBZJLZF
+y2pBi9EbQNn2sFq5YREMuwnV43BfXuu5uUpueLjVJmzjUzmiW9W7Lg7m8e7EjyNP
++cARPCyBJy5Gl50wXRt6msMx7YCXn7JXUTR2LSTQU9nBjoTyurRz+5QReS75Q4Kr
++MjZ3qPIN5GoB6rkjnpowpmqKjyAjXZX/q36fIzpioUSyn4zqhTzflmh0uoXV7FL
+Jm6nodBg0ZD7VwG7WlH5g8IaOjOdPkQBdQTKmBdZBfrBmS0l0cT5f+ZbjDoB9jDR
+DnCfBRTF+d23SJd+umBHmcKNLXwSJVwBZKWQRx1sJc7jG5w+Td/9loYCLBwft8fN
+JubN5ZCLk8OfLTA6OpQnjQ2BmudywVNKzXo16HmTHWd2GQLlMTjnz91QrfrK2h0Z
+VUPkP3i/bxv1RSPq47FbDtaeQ5JBVm1yB2fTwTtqvT6OMhs1iNctx2p+45SjKi+z
+pd08JG0W512hr5f2khq3
+=F6LA
+-----END PGP SIGNATURE-----
+
+--x+6KMIRAuhnl3hBn--
