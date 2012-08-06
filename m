@@ -1,124 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab2HFCGf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 22:06:35 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:38803 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab2HFCGd (ORCPT
+	id S1755516Ab2HFCHL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 22:07:11 -0400
+Received: from [216.32.181.182] ([216.32.181.182]:42469 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755352Ab2HFCHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 22:06:33 -0400
-Date: Sun, 5 Aug 2012 22:06:30 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Cyril Chemparathy <cyril@ti.com>
-cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, catalin.marinas@arm.com, linux@arm.linux.org.uk,
-        will.deacon@arm.com
-Subject: Re: [PATCH 02/22] ARM: use late patch framework for phys-virt
- patching
-In-Reply-To: <501E7D41.8070303@ti.com>
-Message-ID: <alpine.LFD.2.02.1208052153540.5231@xanadu.home>
-References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-3-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208040138560.5231@xanadu.home> <501E7D41.8070303@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sun, 5 Aug 2012 22:07:09 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1202hzzz2dh87h2a8h668h839h944hd25he96hf0ah107ah)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 6 Aug 2012 10:06:58 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Matt Sealey <matt@genesi-usa.com>
+CC: Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Remove Genesi Efika MX support
+Message-ID: <20120806020656.GA18471@S2101-09.ap.freescale.net>
+References: <1343843371-14143-1-git-send-email-matt@genesi-usa.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1343843371-14143-1-git-send-email-matt@genesi-usa.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Aug 2012, Cyril Chemparathy wrote:
-
-> Hi Nicolas,
+On Wed, Aug 01, 2012 at 12:49:27PM -0500, Matt Sealey wrote:
+> In an effort to start afresh we are removing the "legacy" Efika MX support
+> from the tree in this patch series so as to break ties with any non-device-tree
+> code and minimize the possibility that there are two ways to build for our
+> boards.
 > 
-> On 8/4/2012 2:15 AM, Nicolas Pitre wrote:
-> > On Tue, 31 Jul 2012, Cyril Chemparathy wrote:
-> > 
-> > > This patch replaces the original physical offset patching implementation
-> > > with one that uses the newly added patching framework.  In the process, we
-> > > now
-> > > unconditionally initialize the __pv_phys_offset and __pv_offset globals in
-> > > the
-> > > head.S code.
-> > 
-> > Why unconditionally initializing those?  There is no reason for that.
-> > 
+> Patches to support the board again with FDT (along with a matching U-Boot)
+> are not ready for submission, but that doesn't block *this* submission. The
+> number of users of 3.5 kernels on Genesi platforms is generally thought of
+> as zero and no significant work or support has been committed to the platform
+> in a long time. In our opinion, all efforts by external developers wishing to
+> run modern kernels on Genesi Efika MX boards should be directed at device tree
+> support for the MX51 platforms.
 > 
-> We could keep this conditional on LPAE, but do you see any specific need for
-> keeping it conditional?
-
-This has nothing to do with LPAe.  This is about 
-CONFIG_ARM_PATCH_PHYS_VIRT only.  If not selected, those global 
-vaariables have no need to exist.
-
-> > Comments below.
-> > 
-> > > diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-> > > index 835898e..d165896 100644
-> > > --- a/arch/arm/kernel/head.S
-> > > +++ b/arch/arm/kernel/head.S
-> > [...]
-> > >   	.data
-> > >   	.globl	__pv_phys_offset
-> > >   	.type	__pv_phys_offset, %object
-> > >   __pv_phys_offset:
-> > >   	.long	0
-> > >   	.size	__pv_phys_offset, . - __pv_phys_offset
-> > > +
-> > > +	.globl	__pv_offset
-> > > +	.type	__pv_offset, %object
-> > >   __pv_offset:
-> > >   	.long	0
-> > > -#endif
-> > > +	.size	__pv_offset, . - __pv_offset
-> > 
-> > Please move those to C code.  They aren't of much use in this file
-> > anymore.  This will allow you to use pphys_addr_t for them as well in
-> > your subsequent patch. And more importantly get rid of that ugly
-> > pv_offset_high that you introduced iin another patch.
-> > 
+> Matt Sealey (4):
+>   efikamx: remove support for Genesi Efika MX from the build
+>   efikamx: remove Genesi Efika MX from the i.MX v6/v7 defconfig
+>   efikamx: remove Genesi Efika MX platform files from the tree
+>   efikamx: remove Efika MX-specific CHRGVBUS hack from the USB driver
 > 
-> Moving it to C-code caused problems because these get filled in prior to BSS
-> being cleared.
+>  arch/arm/configs/imx_v6_v7_defconfig  |    2 -
+>  arch/arm/mach-imx/Kconfig             |   26 --
+>  arch/arm/mach-imx/Makefile            |    3 -
+>  arch/arm/mach-imx/efika.h             |   10 -
+>  arch/arm/mach-imx/mach-mx51_efikamx.c |  300 ----------------
+>  arch/arm/mach-imx/mach-mx51_efikasb.c |  296 ---------------
+>  arch/arm/mach-imx/mx51_efika.c        |  632 ---------------------------------
+>  drivers/usb/host/ehci-mxc.c           |   20 --
+>  8 files changed, 1289 deletions(-)
+>  delete mode 100644 arch/arm/mach-imx/efika.h
+>  delete mode 100644 arch/arm/mach-imx/mach-mx51_efikamx.c
+>  delete mode 100644 arch/arm/mach-imx/mach-mx51_efikasb.c
+>  delete mode 100644 arch/arm/mach-imx/mx51_efika.c
 > 
-> We could potentially have this initialized in C with a mystery dummy value to
-> prevent it from landing in BSS.  Would that be acceptable?
+I set up a branch imx/rm-boards and queued the series there.  I expect
+I will have some patches removing imx53 board files to be queued there
+for 3.7 too.
 
-Just initialize them explicitly to zero.  They will end up in .ddata 
-section.
-> 
-> > > index df5e897..39f8fce 100644
-> > > --- a/arch/arm/kernel/module.c
-> > > +++ b/arch/arm/kernel/module.c
-> > > @@ -317,11 +317,6 @@ int module_finalize(const Elf32_Ehdr *hdr, const
-> > > Elf_Shdr *sechdrs,
-> > >   					         maps[i].txt_sec->sh_addr,
-> > >   					         maps[i].txt_sec->sh_size);
-> > >   #endif
-> > > -#ifdef CONFIG_ARM_PATCH_PHYS_VIRT
-> > > -	s = find_mod_section(hdr, sechdrs, ".pv_table");
-> > > -	if (s)
-> > > -		fixup_pv_table((void *)s->sh_addr, s->sh_size);
-> > > -#endif
-> > >   	s = find_mod_section(hdr, sechdrs, ".patch.table");
-> > >   	if (s)
-> > >   		patch_kernel((void *)s->sh_addr, s->sh_size);
-> > 
-> > The patch_kernel code and its invokation should still be conditional on
-> > CONFIG_ARM_PATCH_PHYS_VIRT.  This ability may still be configured out
-> > irrespective of the implementation used.
-> > 
-> 
-> Maybe CONFIG_ARM_PATCH_PHYS_VIRT is not quite appropriate if this is used to
-> patch up other things in addition to phys-virt stuff?
+-- 
+Regards,
+Shawn
 
-Maybe, but at the moment this is not the case.
-
-> I could have this dependent on CONFIG_ARM_INIT_PATCH (or whatever nomenclature
-> we chose for this) and have CONFIG_ARM_PATCH_PHYS_VIRT depend on it.
-
-Let's cross that bridge in time.
-
-FWIW, I don't like "init patch" much.  I feel like the "runtime" 
-qualifier more pricisely describe this code than "init".
-
-
-Nicolas
