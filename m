@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab2HFJsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:48:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754970Ab2HFJsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:48:19 -0400
-Subject: Re: linux-next: build failure after merge of the akpm tree
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20120806050408.GA12131@google.com>
-References: <20120806134318.8af35d047e255fd25398210b@canb.auug.org.au>
-	 <CANN689GqydNH0-gisSfUPtGKAHVajzZ4KQCTKoJ7J76dJ8zVbg@mail.gmail.com>
-	 <20120806050408.GA12131@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 06 Aug 2012 10:46:36 +0100
-Message-ID: <1344246396.2722.7.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755659Ab2HFJ4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:56:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64887 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754899Ab2HFJ4L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 05:56:11 -0400
+From: Hideki EIRAKU <hdk@igel.co.jp>
+To: Russell King <linux@arm.linux.org.uk>, Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        alsa-devel@alsa-project.org, Katsuya MATSUBARA <matsu@igel.co.jp>,
+        Hideki EIRAKU <hdk@igel.co.jp>
+Subject: [PATCH v3 0/4] Use dma_mmap_coherent to support IOMMU mapper
+Date: Mon,  6 Aug 2012 18:55:20 +0900
+Message-Id: <1344246924-32620-1-git-send-email-hdk@igel.co.jp>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+There is a dma_mmap_coherent() API in some architectures.  This API
+provides a mmap function for memory allocated by dma_alloc_coherent().
+Some drivers mmap a dma_addr_t returned by dma_alloc_coherent() as a
+physical address.  But such drivers do not work correctly when IOMMU
+mapper is used.
 
-Thanks for the patch - I'd not realised that I'd used the wrong function
-there... it is fixed now in the GFS2 -nmw tree,
+v3:
+- Remove an unnecessary line which sets page protection bits.
+v2:
+- Rebase on fbdev-next branch of
+  git://github.com/schandinat/linux-2.6.git.
+- Initialize .fb_mmap in both sh_mobile_lcdc_overlay_ops and
+  sh_mobile_lcdc_ops.
+- Add Laurent's clean up patch.
 
-Steve.
+Hideki EIRAKU (3):
+  ARM: dma-mapping: define ARCH_HAS_DMA_MMAP_COHERENT
+  media: videobuf2-dma-contig: use dma_mmap_coherent if available
+  fbdev: sh_mobile_lcdc: use dma_mmap_coherent if available
 
-On Sun, 2012-08-05 at 22:04 -0700, Michel Lespinasse wrote:
-> gfs2 calls RB_EMPTY_NODE() to check if nodes are not on an rbtree.
-> The corresponding initialization function is RB_CLEAR_NODE().
-> rb_init_node() was never clearly defined and is going away.
-> 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
-> ---
->  fs/gfs2/rgrp.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-> index eaa4188..675e7cc 100644
-> --- a/fs/gfs2/rgrp.c
-> +++ b/fs/gfs2/rgrp.c
-> @@ -487,7 +487,7 @@ int gfs2_rs_alloc(struct gfs2_inode *ip)
->  	if (!res)
->  		error = -ENOMEM;
->  
-> -	rb_init_node(&res->rs_node);
-> +	RB_CLEAR_NODE(&res->rs_node);
->  
->  	down_write(&ip->i_rw_mutex);
->  	if (ip->i_res)
-> @@ -520,7 +520,7 @@ static void __rs_deltree(struct gfs2_inode *ip, struct gfs2_blkreserv *rs)
->  	rgd = rs->rs_rbm.rgd;
->  	trace_gfs2_rs(ip, rs, TRACE_RS_TREEDEL);
->  	rb_erase(&rs->rs_node, &rgd->rd_rstree);
-> -	rb_init_node(&rs->rs_node);
-> +	RB_CLEAR_NODE(&rs->rs_node);
->  	BUG_ON(!rgd->rd_rs_cnt);
->  	rgd->rd_rs_cnt--;
->  
+Laurent Pinchart (1):
+  ALSA: pcm - Don't define ARCH_HAS_DMA_MMAP_COHERENT privately for ARM
 
+ arch/arm/include/asm/dma-mapping.h         |    1 +
+ drivers/media/video/videobuf2-dma-contig.c |   17 +++++++++++++++++
+ drivers/video/sh_mobile_lcdcfb.c           |   28 ++++++++++++++++++++++++++++
+ sound/core/pcm_native.c                    |    7 -------
+ 4 files changed, 46 insertions(+), 7 deletions(-)
 
