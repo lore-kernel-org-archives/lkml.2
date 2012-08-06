@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab2HFCbe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 22:31:34 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48056 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755468Ab2HFCbc (ORCPT
+	id S1755523Ab2HFCfi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 22:35:38 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:64185 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755468Ab2HFCfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 22:31:32 -0400
-Date: Mon, 6 Aug 2012 12:31:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: linux-next: manual merge of the rcu tree with Linus' tree
-Message-Id: <20120806123129.c61ea1235be871ce7028b145@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__6_Aug_2012_12_31_29_+1000_Zho/ozh+1z/U2Y2f"
+	Sun, 5 Aug 2012 22:35:36 -0400
+Date: Sun, 5 Aug 2012 22:35:33 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Cyril Chemparathy <cyril@ti.com>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Vitaly Andrianov <vitalya@ti.com>
+Subject: Re: [PATCH 09/22] ARM: LPAE: use 64-bit pgd physical address in
+ switch_mm()
+In-Reply-To: <501E8367.8070907@ti.com>
+Message-ID: <alpine.LFD.2.02.1208052220060.5231@xanadu.home>
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-10-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208040259200.5231@xanadu.home> <501E8367.8070907@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__6_Aug_2012_12_31_29_+1000_Zho/ozh+1z/U2Y2f
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 5 Aug 2012, Cyril Chemparathy wrote:
 
-Hi Paul,
+> On 8/4/2012 3:04 AM, Nicolas Pitre wrote:
+> > On Tue, 31 Jul 2012, Cyril Chemparathy wrote:
+> > 
+> > > This patch modifies the switch_mm() processor functions to use 64-bit
+> > > addresses.  We use u64 instead of phys_addr_t, in order to avoid having
+> > > config
+> > > dependent register usage when calling into switch_mm assembly code.
+> > > 
+> > > The changes in this patch are primarily adjustments for registers used for
+> > > arguments to switch_mm.  The few processor definitions that did use the
+> > > second
+> > > argument have been modified accordingly.
+> > > 
+> > > Arguments and calling conventions aside, this patch should be a no-op on
+> > > v6
+> > > and non-LPAE v7 processors.
+> > 
+> > NAK.
+> > 
+> > You just broke all big endian targets, LPAE or not.
+> > 
+> 
+> Indeed.  Thanks.
+> 
+> Would C-land word swappery on BE do?  Any other ideas on the best approach to
+> this?
 
-Today's linux-next merge of the rcu tree got a conflict in
-include/linux/sched.h between commit 907aed48f65e ("mm: allow PF_MEMALLOC
-from softirq context") from Linus' tree and commit 46fc4e7c01b7 ("rcu:
-Switch task's syscall hooks on context switch") from the rcu tree.
+First, don't use a u64 unconditionally. A phys_addr_t is best for the 
+same arguments as before.  Since this is equivalent to a u64 only when 
+LPAE is defined, you then only have to care about endian issues in 
+proc-v7-3level.S.  And in there you can deal with the issue with 
+register aliases just as it is done in lib/div64.S.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc include/linux/sched.h
-index b8c8664,a094959..0000000
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@@ -1886,13 -1879,14 +1886,21 @@@ static inline void rcu_copy_process(str
- =20
-  #endif
- =20
- +static inline void tsk_restore_flags(struct task_struct *task,
- +				unsigned long orig_flags, unsigned long flags)
- +{
- +	task->flags &=3D ~flags;
- +	task->flags |=3D orig_flags & flags;
- +}
- +
-+ static inline void rcu_switch(struct task_struct *prev,
-+ 			      struct task_struct *next)
-+ {
-+ #ifdef CONFIG_RCU_USER_QS
-+ 	rcu_user_hooks_switch(prev, next);
-+ #endif
-+ }
-+=20
-  #ifdef CONFIG_SMP
-  extern void do_set_cpus_allowed(struct task_struct *p,
-  			       const struct cpumask *new_mask);
-
---Signature=_Mon__6_Aug_2012_12_31_29_+1000_Zho/ozh+1z/U2Y2f
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQHyyBAAoJEECxmPOUX5FEaDgP/3f0ObxjsLP+qYa6RBMxGj9J
-pvyX/KwenTVW9IfqrNzuoiKsMuB2QJhNk0IWyggQ2TxnJ92aUTAcLALAqsjbYaNt
-9F6dkShQTdVOflWSajF0khQNd7AgxjvbLpTjTe49QWy92NNAA6ENVXeuZ/KdYbQk
-OV1R8mAx6lK2TCuKJb6kAW+Y0V21x/FD+YPbuzC/rjy1EatqDe2zAO7ejZ16wXPw
-2gyK6AMXLyzfhMuqV5ll4uIwrBLH8Lg/mnoY6m0l4CpFb6K1mgE1/VwbiVyAnAOW
-KI7ZIm6TqZm3H+TQRmI2X7YA36376MM0i5uoAHzjb1h/npfgQastRd706ZX7y2BI
-M7UfYrcrq+o/ouq1t/DZrVqzSDUQ0Kl5NjA6vT9hMQMqBzIAeeCdJcxH/H6s2J+w
-iN5iS8G7ASbTC8/a2bLIxUeID0EFDP0SlXneGpeG5o4zCtCRC0/IHWtSsQhDGLwf
-rsK4gmvXp1l+Ib2sb6AVo2R6YfBuiOpgwGQbD9nYE3oVkqJvDmSfnCrb302ycN40
-0x3VnOFBlDiRyWcszbmJgdknNlMNNQx1uVifXxKbHXzKYC1uCjDT2oJc8t05/xKr
-k1tQTt4nm4xjznwmRbZfB2gOEr78vyk+ZTP36PR/F+cXAf9yV6g3OhA5s+Duj2HA
-DHJDX5xi4LWRvD6b9qmI
-=ghOt
------END PGP SIGNATURE-----
-
---Signature=_Mon__6_Aug_2012_12_31_29_+1000_Zho/ozh+1z/U2Y2f--
+Nicolas
