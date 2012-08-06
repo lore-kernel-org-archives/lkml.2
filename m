@@ -1,44 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab2HFLMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 07:12:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55177 "EHLO
+	id S1755980Ab2HFLOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 07:14:25 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55184 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801Ab2HFLMl (ORCPT
+	with ESMTP id S1755801Ab2HFLOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 07:12:41 -0400
-Date: Mon, 6 Aug 2012 12:12:24 +0100
+	Mon, 6 Aug 2012 07:14:23 -0400
+Date: Mon, 6 Aug 2012 12:14:13 +0100
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Cyril Chemparathy <cyril@ti.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         arnd@arndb.de, catalin.marinas@arm.com, nico@linaro.org,
-        will.deacon@arm.com
-Subject: Re: [PATCH 01/22] ARM: add mechanism for late code patching
-Message-ID: <20120806111224.GA18957@n2100.arm.linux.org.uk>
-References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-2-git-send-email-cyril@ti.com>
+        will.deacon@arm.com, Vitaly Andrianov <vitalya@ti.com>
+Subject: Re: [PATCH 03/22] ARM: LPAE: use phys_addr_t on virt <--> phys
+	conversion
+Message-ID: <20120806111413.GB18957@n2100.arm.linux.org.uk>
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-4-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343775898-28345-2-git-send-email-cyril@ti.com>
+In-Reply-To: <1343775898-28345-4-git-send-email-cyril@ti.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 07:04:37PM -0400, Cyril Chemparathy wrote:
-> +static void __init init_patch_kernel(void)
-> +{
-> +	const void *start = &__patch_table_begin;
-> +	const void *end   = &__patch_table_end;
+On Tue, Jul 31, 2012 at 07:04:39PM -0400, Cyril Chemparathy wrote:
+> This patch fixes up the types used when converting back and forth between
+> physical and virtual addresses.
+> 
+> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> ---
+>  arch/arm/include/asm/memory.h |   17 +++++++++++------
+>  1 file changed, 11 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> index 01c710d..4a0108f 100644
+> --- a/arch/arm/include/asm/memory.h
+> +++ b/arch/arm/include/asm/memory.h
+> @@ -157,22 +157,27 @@ extern unsigned long __pv_phys_offset;
+>  
+>  extern unsigned long __pv_offset;
+>  
+> -static inline unsigned long __virt_to_phys(unsigned long x)
+> +static inline phys_addr_t __virt_to_phys(unsigned long x)
+>  {
+>  	unsigned long t;
+>  	early_patch_imm8(x, t, "add", __pv_offset);
+>  	return t;
+>  }
+>  
+> -static inline unsigned long __phys_to_virt(unsigned long x)
+> +static inline unsigned long __phys_to_virt(phys_addr_t x)
+>  {
+>  	unsigned long t;
+>  	early_patch_imm8(x, t, "sub", __pv_offset);
+>  	return t;
+>  }
+>  #else
+> -#define __virt_to_phys(x)	((x) - PAGE_OFFSET + PHYS_OFFSET)
+> -#define __phys_to_virt(x)	((x) - PHYS_OFFSET + PAGE_OFFSET)
 > +
-> +	BUG_ON(patch_kernel(start, end - start));
-> +	flush_icache_range(init_mm.start_code, init_mm.end_code);
+> +#define __virt_to_phys(x)		\
+> +	((phys_addr_t)(x) - PAGE_OFFSET + PHYS_OFFSET)
+> +
+> +#define __phys_to_virt(x)		\
+> +	((unsigned long)((phys_addr_t)(x) - PHYS_OFFSET + PAGE_OFFSET))
+> +
+>  #endif
+>  #endif
+>  
+> @@ -207,14 +212,14 @@ static inline phys_addr_t virt_to_phys(const volatile void *x)
+>  
+>  static inline void *phys_to_virt(phys_addr_t x)
+>  {
+> -	return (void *)(__phys_to_virt((unsigned long)(x)));
+> +	return (void *)__phys_to_virt(x);
+>  }
+>  
+>  /*
+>   * Drivers should NOT use these either.
+>   */
+>  #define __pa(x)			__virt_to_phys((unsigned long)(x))
+> -#define __va(x)			((void *)__phys_to_virt((unsigned long)(x)))
+> +#define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
+>  #define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
 
-Err.  You are asking the kernel to flush every single cache line
-manually throughout the kernel code.  That's a flush every 32-bytes
-over maybe a few megabytes of address space.
+This as a whole does not fill me with a great amount of enthusiasm,
+because it breaks some of the typechecking that we have here.
 
-This is one of the reasons we do the patching in assembly code before
-the caches are enabled - so we don't have to worry about the interaction
-with the CPU caches, which for this kind of application would be very
-expensive.
+The whole point of __phys_to_virt() and __virt_to_phys() is that they work
+on integer types, and warn if you dare to use them with pointers.  Adding
+a cast into them breaks that.
+
+The whole point is that the typecasting is explicitly inside phys_to_virt()
+and virt_to_phys() and not their macro counterparts.
+
+Secondly, are you sure that this patch is correct on its own?  You're
+passing a u64 into assembly only expecting a 32-bit register.  Have you
+checked it does the right thing with a 64-bit phys_addr_t on both LE
+and BE?
