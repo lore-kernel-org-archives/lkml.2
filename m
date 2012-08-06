@@ -1,102 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2HFDWz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 23:22:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33681 "EHLO mga02.intel.com"
+	id S1755628Ab2HFDmd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 23:42:33 -0400
+Received: from utservm.ut.ac.ir ([80.66.177.10]:50677 "EHLO utservm.ut.ac.ir"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755583Ab2HFDWc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 23:22:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="182024304"
-From: "Gross, Mark" <mark.gross@intel.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Julia Lawall <julia@diku.dk>
-Subject: RE: [PATCH 5/6] drivers/char/tlclk.c: fix error return code
-Thread-Topic: [PATCH 5/6] drivers/char/tlclk.c: fix error return code
-Thread-Index: AQHNcvARe9rI/aKwJkqVxEYO/gu9pJdMHwXQ
-Date: Mon, 6 Aug 2012 03:22:29 +0000
-Message-ID: <BD75D217E5BAC84080F8EFB25829763746C7A7D9@ORSMSX101.amr.corp.intel.com>
-References: <1344160356-387-1-git-send-email-Julia.Lawall@lip6.fr>
- <1344160356-387-6-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1344160356-387-6-git-send-email-Julia.Lawall@lip6.fr>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755596Ab2HFDlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 23:41:47 -0400
+X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Aug 2012 23:41:46 EDT
+Message-ID: <63703.180.215.109.223.1344224022.squirrel@utservm.ut.ac.ir>
+Date: Mon, 6 Aug 2012 08:03:42 +0430 (IRDT)
+Subject: Webmail Account Warning
+From: "Administrator" <mkhanzadeh@alumni.ut.ac.ir>
+User-Agent: SquirrelMail/1.4.4
 MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by <mark.gross@intel.com>
+Webmail Account Warning
 
---mark
-Ps sorry for the outlook munged reply.
+This mail is from Webmail Service; we wish to bring to your notice the
+Condition of your email account.
 
------Original Message-----
-From: Julia Lawall [mailto:Julia.Lawall@lip6.fr] 
-Sent: Sunday, August 05, 2012 2:53 AM
-To: Gross, Mark
-Cc: kernel-janitors@vger.kernel.org; Arnd Bergmann; Greg Kroah-Hartman; linux-kernel@vger.kernel.org; Julia Lawall
-Subject: [PATCH 5/6] drivers/char/tlclk.c: fix error return code
+We have just noticed that you have exceeded your email Database limit of
+500 MB quota and your email IP is causing conflict because it is been
+accessed in different server location. You need to Upgrade and expand your
+email quota limit before you can continue to use your email.
 
-From: Julia Lawall <julia@diku.dk>
+Update your email quota limit to 2.6 GB, use the below web link:
 
-Convert a 0 error return code to a negative one, as returned elsewhere in the function.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+https://docs.google.com/spreadsheet/viewform?formkey=dG5KYUNwUzhhbE5qamNSZU5wNE9Ea0E6MQ
 
-// <smpl>
-@@
-identifier ret;
-expression e,e1,e2,e3,e4,x;
-@@
 
-(
-if (\(ret != 0\|ret < 0\) || ...) { ... return ...; }
-|
-ret = 0
-)
-... when != ret = e1
-*x = \(kmalloc\|kzalloc\|kcalloc\|devm_kzalloc\|ioremap\|ioremap_nocache\|devm_ioremap\|devm_ioremap_nocache\)(...);
-... when != x = e2
-    when != ret = e3
-*if (x == NULL || ...)
-{
-  ... when != ret = e4
-*  return ret;
-}
-// </smpl>
+Failure to do this will result to email deactivation within 24hours
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Thank you for your understanding.
 
----
- drivers/char/tlclk.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/char/tlclk.c b/drivers/char/tlclk.c index ce29e7c..e95e0ab 100644
---- a/drivers/char/tlclk.c
-+++ b/drivers/char/tlclk.c
-@@ -784,8 +784,10 @@ static int __init tlclk_init(void)
- 	}
- 	tlclk_major = ret;
- 	alarm_events = kzalloc( sizeof(struct tlclk_alarms), GFP_KERNEL);
--	if (!alarm_events)
-+	if (!alarm_events) {
-+		ret = -ENOMEM;
- 		goto out1;
-+	}
- 
- 	/* Read telecom clock IRQ number (Set by BIOS) */
- 	if (!request_region(TLCLK_BASE, 8, "telco_clock")) {
+Copyright 2012 Help Desk
+Technical Upgrading
 
