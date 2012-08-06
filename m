@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab2HFUjh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 16:39:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56512 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991Ab2HFUjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 16:39:35 -0400
-Date: Mon, 6 Aug 2012 16:39:02 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com, hbabu@us.ibm.com,
-        ishii.hironobu@jp.fujitsu.com, martin.wilck@ts.fujitsu.com
-Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
- with iommu
-Message-ID: <20120806203902.GH25559@redhat.com>
-References: <501BB4EF.7080909@jp.fujitsu.com>
- <20120803114643.GA28330@redhat.com>
- <501F4877.5050605@jp.fujitsu.com>
+	id S1756739Ab2HFUkN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 16:40:13 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:37190 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755991Ab2HFUkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 16:40:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501F4877.5050605@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120806201609.GX25644@pengutronix.de>
+References: <20120805230238.GA1663@lizard> <1344207819-3415-4-git-send-email-anton.vorontsov@linaro.org>
+ <CAKGA1bkiHj=zMJXSzoGp3fpLS3POnFXSV5y7sYYFAikqoUT9tQ@mail.gmail.com>
+ <20120806154951.GQ16861@opensource.wolfsonmicro.com> <CAKGA1b=_AOub_pEJJGBTb6Y7wLZaSYKQjFTyMVFSr_=9VX4wpg@mail.gmail.com>
+ <20120806193734.GA16199@opensource.wolfsonmicro.com> <20120806201609.GX25644@pengutronix.de>
+From: Matt Sealey <matt@genesi-usa.com>
+Date: Mon, 6 Aug 2012 15:39:50 -0500
+Message-ID: <CAKGA1bmMqyL4gyLYcanEH=R=HuBjRCNRLjUEWCj8wmpi3HuL0g@mail.gmail.com>
+Subject: Re: [PATCH 4/9] ASoC: imx: Don't use {en,dis}able_fiq() calls
+To: Robert Schwebel <r.schwebel@pengutronix.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        Sascha Hauer <kernel@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 01:30:47PM +0900, Takao Indoh wrote:
-> Hi Vivek,
-> 
-> (2012/08/03 20:46), Vivek Goyal wrote:
-> > On Fri, Aug 03, 2012 at 08:24:31PM +0900, Takao Indoh wrote:
-> >> Hi all,
-> >>
-> >> This patch adds kernel parameter "reset_pcie_devices" which resets PCIe
-> >> devices at boot time to address DMA problem on kdump with iommu. When
-> >> this parameter is specified, a hot reset is triggered on each PCIe root
-> >> port and downstream port to reset its downstream endpoint.
-> >
-> > Hi Takao,
-> >
-> > Why not use existing "reset_devices" parameter instead of introducing
-> > a new one?
-> 
-> "reset_devices" is used for each driver to reset their own device, and
-> this patch resets all devices forcibly, so I thought they were different
-> things.
+On Mon, Aug 6, 2012 at 3:16 PM, Robert Schwebel
+<r.schwebel@pengutronix.de> wrote:
+> On Mon, Aug 06, 2012 at 08:37:34PM +0100, Mark Brown wrote:
+>> As far as I can tell nobody's really running much up to date mainline
+>> on older i.MX processors, all the work is going on the new stuff and
+>> most of the board are on either vendor BSPs or older kernels.
+>
+> That's not true; we still run MX25, MX27, MX35, MX28 on mainline in
+> active projects.
 
-Yes reset_devices currently is used for driver to reset its device. I
-thought one could very well extend its reach to reset pci express devices
-at bus level.
+I think Shawn Guo (FSL/Linaro) would also disagree, since he's just
+posted a large amount of MXS patches to fix up the board for device
+trees, and Arnd is pulling them.
 
-Having them separate is not going to be much useful from kdump
-perspective. We will end up passing both reset_devices and
-reset_pcie_devices to second kernel whill lead to bus level reset as well
-as device level reset.
+Work is ongoing, it would be awful to delete something people really
+relied on or were in progress fixing (ahem). If they get up to audio
+in the near future the audio FIQ stuff would just end up being
+resubmitted almost verbatim... that seems like unnecessary churn.
 
-Ideal situation would be that somehow detect that bus level reset has been
-done and skip device level reset (assuming bus level reset obviates the
-need of device level reset, please correct me if that's not the case). 
+As far as I know, the FIQ usage is quite valid for the processor it
+needs to run on (MX21/27/28, right?) in the modes it runs in (AC97 on
+these processors, and maybe MX35 too), and I'm just trying to figure
+out what the steps are for
 
-After pcie reset, can we store the state in a variable and drivers can
-use that variable to check if PCIe level reset was done or not. If yes,
-skip device level reset (Assuming driver knows that device is on a
-PCIe slot).
+* making sure it doesn't get built for architectures/variants it's
+certainly NOT required on (imx_v6_v7_defconfig, if it actually enabled
+audio, that is - in fact, audio should be enabled as more one of the
+boards supported defines it in the device tree) which would amount to
+two seperate patches, one for the defconfig, one for the CONFIG item.
 
-In that case we will not have to introduce new kernel command line, and
-also avoid double reset?
+I did note that SND_SOC_EUKREA_TLV320 enables FIQ but it also depends
+on MX51 which makes me think this need to be split, too, so that MX51
+boards don't have it but MX2/MX3 do.
 
-Thanks
-Vivek
+* if it is built then it's built as ARM code (redundant, as previously
+stated, but would have stopped me from swearing at my build box when I
+hit the issue yet again) which could be a patch or could be ignored.
+I'd rather discuss this here than clutter the ML with several respins
+of a patch, let's get an opinion first - to .arm or no to .arm?
+
+* make sure there's no weird FIQ stuff floating around that has so far
+relied on SND_SOC_IMX_PCM_FIQ doing select FIQ before I make it not
+compile in for other boards (since otherwise no i.MX processor selects
+FIQ if they're not using that driver, it could be simply coincidence
+nobody noticed). I don't want to be the one submitting a patch I can't
+test which mysteriously breaks every MX28 on the planet (since Rob,
+Shawn, Sascha might be the ones swearing at me instead)
+
+* making sure someone's actually testing audio as above... and
+where/if/when the MX28 audio stuff is going in the future und so
+weiter..
+
+I guess I need Sascha to pipe up and tell me what the code is needed
+for exactly again.. and someone to test the result of the changes..
+
+-- 
+Matt Sealey <matt@genesi-usa.com>
+Product Development Analyst, Genesi USA, Inc.
