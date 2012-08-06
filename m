@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab2HFPGL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 11:06:11 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:51211 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab2HFPGJ (ORCPT
+	id S932168Ab2HFPHN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 11:07:13 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:60803 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932074Ab2HFPHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 11:06:09 -0400
-Date: Mon, 6 Aug 2012 10:50:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: lenb@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel_idle: Check cpu_idle_get_driver() for NULL before
- dereferencing it.
-Message-ID: <20120806145009.GD2487@phenom.dumpdata.com>
-References: <1343918341-25985-1-git-send-email-konrad.wilk@oracle.com>
- <201208042356.35884.rjw@sisk.pl>
+	Mon, 6 Aug 2012 11:07:11 -0400
+X-IronPort-AV: E=Sophos;i="4.77,717,1336341600"; 
+   d="vcf'?scan'208";a="169163905"
+Message-ID: <501F7EDB.90208@loria.fr>
+Date: Mon, 06 Aug 2012 10:22:51 +0200
+From: Jens Gustedt <Jens.Gustedt@loria.fr>
+Reply-To: Jens.Gustedt@loria.fr
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208042356.35884.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: linux-kernel@vger.kernel.org
+Subject: linux 3.5 disappeared from www.kernel.org
+X-Enigmail-Version: 1.5a1pre
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAACRQTFRF
+ ERslNjAsLTE9Ok9wUk9TaUs8iWhSrYZkj42Rz6aD3sGZ/P/7B+vw4wAAAAlwSFlzAAALEwAACxMB
+ AJqcGAAAAAd0SU1FB9gGGQk7HLeKUa8AAAIoSURBVDjLhdOxbtswEABQyhmz8BjJ7WjRTVHAk2O3
+ S5baUNNm1EB59iAJ6m4R2osgRdfWAv0H0Za6QGPo53onOxYtIOhNgh7IuyOPrH4h2H/hvp5Q/OjC
+ djIN5lKKYRcmUxWHACCvOzCNojj0FAh5CpObJM1jpXDRyIZtX+uiREG4sGGcGgydUxpuwdYrCEqd
+ KwB23cKfV6aJkoCftzDOzKaqUPL4FN4XL8AnY6oGNGbnZy3c7HBB9YDZk1DwXgtvaKeHpixcsS+r
+ gbe4S2UOAGx0hEv8uWlyIPjs3NrqsJfOlzCwwG/K3VD2JW510TbYlgvgOy1c7fsrMYNAGB7hd7ah
+ o6KS8A5lrz3d27UKVRpDA34L9S39W6z6OvYQhhasFajsV5TjREhpwU6nOi7WfY15pH9tgdFJataq
+ ILBusN6VVNVapQjChtps6HDDiA7rBL5j1wgeTdYJ/DU5TlAISqkOaJUVJQJ0IY+aEwSI4cwqt35a
+ RVqv8L+3FGwwsqY9iULsWxHwAd36M3xI869VsQQvBDZgKM/wlOrCJKoBisnxDX7Gh4DpPdgDO77B
+ S61x3DzVge3YzbBeFYUHcA4g4V1EE5fgUDscwd1frT8TAWSmLGnae5Ix7u/nCjv7CQucN/xgcoAb
+ AcF4Br77zVskCY4bOIHPOCe4ghmI4M5bNOPDe3OB8JHV2xmG/+VOpVgugjsXDnNxxaM7c93g9T0B
+ dgHBXPQ4OP8ApiUfmpUgHuIAAAAASUVORK5CYII=
+Content-Type: multipart/mixed;
+ boundary="------------040809040207000502070003"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 04, 2012 at 11:56:35PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, August 02, 2012, Konrad Rzeszutek Wilk wrote:
-> > If the machine is booted without any cpu_idle driver set
-> > (b/c disable_cpuidle() has been called) we should follow
-> > other users of cpu_idle API and check the return value
-> > for NULL before using it.
-> > 
-> > Reported-by: Mark van Dijk <mark@internecto.net>
-> > Tested-by: Mark van Dijk <mark@internecto.net>
-> > Suggested-by: Jan Beulich <JBeulich@suse.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  drivers/idle/intel_idle.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> > index f559088..7383aa0 100644
-> > --- a/drivers/idle/intel_idle.c
-> > +++ b/drivers/idle/intel_idle.c
-> > @@ -607,7 +607,7 @@ static int __init intel_idle_init(void)
-> >  	retval = cpuidle_register_driver(&intel_idle_driver);
-> >  	if (retval) {
-> 
-> What about:
-> 
->   		struct cpuidle_driver *drv = cpuidle_get_driver();
-> 
->   		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
-> 			drv ? drv->name : "none");
-> 
-> >  		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
-> > -			cpuidle_get_driver()->name);
-> > +			cpuidle_get_driver() ? cpuidle_get_driver()->name : "none");
-> >  		return retval;
-> >  	}
-> >  
-> > 
-> 
-> Rafael
+This is a multi-part message in MIME format.
+--------------040809040207000502070003
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 
-Here it is:
+Hello,
+I think we had that the last time, too. As soon as an rc for a new
+version appears on  www.kernel.org the latest stable release disappears
+from the site. Maybe a scripting bug?
 
->From a8b7aa06cacb5f42a90a0d4a0a1a95e230d43fc6 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 2 Aug 2012 10:31:52 -0400
-Subject: [PATCH] intel_idle: Check cpu_idle_get_driver() for NULL before
- dereferencing it.
+Jens
 
-If the machine is booted without any cpu_idle driver set
-(b/c disable_cpuidle() has been called) we should follow
-other users of cpu_idle API and check the return value
-for NULL before using it.
 
-Reported-by: Mark van Dijk <mark@internecto.net>
-Tested-by: Mark van Dijk <mark@internecto.net>
-Suggested-by: Jan Beulich <JBeulich@suse.com>
-[v1: Redo per Rafael's suggestion]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/idle/intel_idle.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+--------------040809040207000502070003
+Content-Type: text/x-vcard; charset=utf-8;
+ name="Jens_Gustedt.vcf"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: attachment;
+ filename="Jens_Gustedt.vcf"
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index d0f59c3..6b313af 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -556,8 +556,9 @@ static int __init intel_idle_init(void)
- 	intel_idle_cpuidle_driver_init();
- 	retval = cpuidle_register_driver(&intel_idle_driver);
- 	if (retval) {
-+		struct cpuidle_driver *drv = cpuidle_get_driver();
- 		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
--			cpuidle_get_driver()->name);
-+			drv ? drv->name : "none");
- 		return retval;
- 	}
- 
--- 
-1.7.7.6
+BEGIN:VCARD
+VERSION:3.0
+FN:Jens Gustedt
+N:Gustedt;Jens;;;
+ORG:INRIA Nancy Grand Est
+NICKNAME:Jens
+TITLE:directeur de recherche
+URL:http://www.loria.fr/~gustedt/
+TEL;fax:+33-3-83-27-83-19
+TEL;cell:+33-651400183
+TEL;work:+33-3-83-59-30-90
+ADR;TYPE=work;CHARSET=UTF-8:;INRIA Nancy Grand Est;Bat B - AlGorille;Vandœuvre-lès-Nancy;;54200;France
+EMAIL;PREF;internet:Jens.Gustedt@loria.fr
+AGENT:BEGIN:VCARD\nVERSION:2.1\nFN:Isabelle Herlich\nN:Herlich\;Isabelle\;\;\;\nORG: INRIA\nTEL\;TYPE=work:+33-383-59-20-72\nEMAIL:Isabelle.Herlich@loria.fr\nEND:VCARD
+AGENT:BEGIN:VCARD\nVERSION:2.1\nFN\;CHARSET=UTF-8:Sylvie Musilli\nN\;CHARSET=UTF-8:Musilli\;Sylvie\;\;\;\nORG: University\nTEL\;TYPE=work:+33-383-95-85-72\nEMAIL:Sylvie.Musilli@loria.fr\nEND:VCARD
+AGENT:BEGIN:VCARD\nVERSION:2.1\nFN:Antoinette Courier\nN:Courier\;Antoinette\;\;\;\nORG: CNRS\nTEL\;TYPE=work:+33-383-59-20-09\nEMAIL:Antoinette.Courier@loria.fr\nEND:VCARD
+END:VCARD
 
+--------------040809040207000502070003--
