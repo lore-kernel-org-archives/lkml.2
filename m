@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab2HFORB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:17:01 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40116 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab2HFOQ6 (ORCPT
+	id S1756466Ab2HFOSG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:18:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57765 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756287Ab2HFOSE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:16:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <201208061402.22815.arnd@arndb.de>
-References: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<201208061402.22815.arnd@arndb.de>
-Date: Mon, 6 Aug 2012 16:16:57 +0200
-Message-ID: <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com>
-Subject: Re: [PATCH 0/6] ARM: dove: DT support for Marvell Dove
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Aug 2012 10:18:04 -0400
+Message-ID: <1344262669.27828.55.camel@twins>
+Subject: Re: [PATCH v2 8/9] rbtree: faster augmented rbtree manipulation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
+        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Date: Mon, 06 Aug 2012 16:17:49 +0200
+In-Reply-To: <1343946858-8170-9-git-send-email-walken@google.com>
+References: <1343946858-8170-1-git-send-email-walken@google.com>
+	 <1343946858-8170-9-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/6/12, Arnd Bergmann <arnd@arndb.de> wrote:
-> This looks vert nice!
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Thu, 2012-08-02 at 15:34 -0700, Michel Lespinasse wrote:
+> +static void augment_propagate(struct rb_node *rb, struct rb_node *stop)
+> +{
+> +       while (rb != stop) {
+> +               struct interval_tree_node *node =
+> +                       rb_entry(rb, struct interval_tree_node, rb);
+> +               unsigned long subtree_last = compute_subtree_last(node);
+> +               if (node->__subtree_last == subtree_last)
+> +                       break;
+> +               node->__subtree_last = subtree_last;
+> +               rb = rb_parent(&node->rb);
+> +       }
+> +}
+> +
+> +static void augment_copy(struct rb_node *rb_old, struct rb_node *rb_new)
+> +{
+> +       struct interval_tree_node *old =
+> +               rb_entry(rb_old, struct interval_tree_node, rb);
+> +       struct interval_tree_node *new =
+> +               rb_entry(rb_new, struct interval_tree_node, rb);
+> +
+> +       new->__subtree_last = old->__subtree_last;
+> +}
+> +
+> +static void augment_rotate(struct rb_node *rb_old, struct rb_node *rb_new)
+> +{
+> +       struct interval_tree_node *old =
+> +               rb_entry(rb_old, struct interval_tree_node, rb);
+> +       struct interval_tree_node *new =
+> +               rb_entry(rb_new, struct interval_tree_node, rb);
+> +
+> +       new->__subtree_last = old->__subtree_last;
+> +       old->__subtree_last = compute_subtree_last(old);
+> +} 
 
-Hi Arnd,
+I still don't get why we need the 3 callbacks when both propagate and
+rotate are simple variants of the original callback
+(compute_subtree_last, in this instance).
 
-thanks for the ack!
-
-> Has anyone tested it on cm-a510 and dove-db? Once we can reasonably
-> assume that there are no regressions compared to using the board
-> files, I think we can plan for removing the non-DT support in
-> mach-dove. If it's been tested positively, that can well be at
-> the same time as adding the DT support, otherwise I think we should
-> wait a couple of releases while having both simultaneously.
-
-Unfortunately, I has not (yet) been tested on cm-a510 nor dove-db but
-from the status of the exisiting non-DT setup files I strongly doubt that
-anyone is using current mainline kernel for mach-dove.
-
-I suggest to keep non-DT support until we have pinctrl and gpiolib drivers
-done. Thomas Petazzoni and I have been working on pinctrl that will be
-posted in a few days and gpiolib driver needs some more cleanup but is
-basically working. Until then I guess most of the other orion drivers have
-DT support (eth and xor IIRC).
-
-After that I am definitely fine with removing non-DT support although
-there is neither DT support in u-boot installed on my CuBox nor
-mach-dove support in mainline u-boot.
-
-Sebastian
+Why would every user need to replicate the propagate and rotate
+boilerplate?
