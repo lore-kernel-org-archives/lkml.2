@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281Ab2HFQMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 12:12:09 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:40428 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932260Ab2HFQMG (ORCPT
+	id S932286Ab2HFQMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 12:12:54 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:46494 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756228Ab2HFQMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 12:12:06 -0400
-Message-ID: <501FEC87.6060506@xenotime.net>
-Date: Mon, 06 Aug 2012 09:10:47 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 6 Aug 2012 12:12:53 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-i2c@vger.kernel.org,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        Mark Studebaker <mdsxyz123@yahoo.com>
-Subject: [PATCH] i2c: fix i2c-i801.c printk format warning
-References: <20120806140109.b1a33b63686ef04f30139c9e@canb.auug.org.au>
-In-Reply-To: <20120806140109.b1a33b63686ef04f30139c9e@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+In-Reply-To: <20120806141248.GN4352@mwanda>
+References: <1344100872-19640-1-git-send-email-develkernel412222@gmail.com>
+	<20120806141248.GN4352@mwanda>
+Date: Mon, 6 Aug 2012 21:57:52 +0545
+Message-ID: <CA+C2MxQ1327Y+Fn+pFwE_bizOmT5WN2EericQL9dmPEeckuM+g@mail.gmail.com>
+Subject: Re: [PATCH] staging: sm7xxfb: copy name of the device before calling smtc_alloc_fb_info
+From: Devendra Naga <develkernel412222@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Devendra Naga <devendra.aaru@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Mon, Aug 6, 2012 at 7:57 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Sat, Aug 04, 2012 at 11:06:12PM +0545, Devendra Naga wrote:
+>> as we do a strcpy(smdrv_ptr->fb_struct->fix->id, name), and the name here in
+>> sm7xxx_probe is not having any assignment, and which leads to copying of the garbage value
+>> into the id field of the fix struct of fb interface struct. fix it by copying the name before
+>> calling alloc_fbinfo
+>>
+>> Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
+>> ---
+>>  Only compile tested
+>>  This patch is not tested using the hardware... if any one is having this hardware, i request them to
+>> please test this
+>>  drivers/staging/sm7xxfb/sm7xxfb.c |    7 ++++---
+>>  1 file changed, 4 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
+>> index 1c1780c..d3957ef 100644
+>> --- a/drivers/staging/sm7xxfb/sm7xxfb.c
+>> +++ b/drivers/staging/sm7xxfb/sm7xxfb.c
+>> @@ -798,16 +798,17 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
+>>       if (err)
+>>               return err;
+>>
+>> +     sprintf(name, "sm%Xfb", ent->device);
+>> +
+>>       sfb = smtc_alloc_fb_info(pdev, name);
+>>
+>> +     sfb->chip_id = ent->device;
+>> +
+>>       if (!sfb) {
+>
+> Thanks for fixing this, and well done for spotting the bug.
+>
+Thanks Dan...
 
-Fix printk format warning.  ARRAY_SIZE() uses sizeof(),
-which is size_t, so use %zu to print it.
+> There is a dereference before the check here, but I see you resent
+> this in another thread.  Next time could you respond to the
+> original with a message which says to not apply it.
+>
+Sure but i have a doubt.
 
-drivers/i2c/busses/i2c-i801.c: In function 'i801_add_mux':
-drivers/i2c/busses/i2c-i801.c:1043:4: warning: format '%lu' expects type 'long unsigned int', but argument 3 has type 'unsigned int'
+since we do V++ after every change to the sent patch , do we really
+need to say that please dont apply this patch and there's one more
+patch coming with fix?
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Mark D. Studebaker <mdsxyz123@yahoo.com>
-Cc: Jean Delvare <khali@linux-fr.org>
----
- drivers/i2c/busses/i2c-i801.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> regards,
+> dan carpenter
+>
+>
 
---- linux-next-20120806.orig/drivers/i2c/busses/i2c-i801.c
-+++ linux-next-20120806/drivers/i2c/busses/i2c-i801.c
-@@ -1039,7 +1039,7 @@ static int __devinit i801_add_mux(struct
- 
- 	/* Find absolute GPIO pin numbers */
- 	if (ARRAY_SIZE(priv->mux_priv) < mux_config->n_gpios) {
--		dev_err(dev, "i801_priv.mux_priv too small (%lu, need %d)\n",
-+		dev_err(dev, "i801_priv.mux_priv too small (%zu, need %d)\n",
- 			ARRAY_SIZE(priv->mux_priv), mux_config->n_gpios);
- 		return -ENODEV;
- 	}
+Thanks,
