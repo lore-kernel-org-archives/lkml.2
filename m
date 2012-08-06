@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab2HFCSW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 22:18:22 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43438 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755457Ab2HFCSV (ORCPT
+	id S1755519Ab2HFCTJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 22:19:09 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:60064 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755457Ab2HFCTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 22:18:21 -0400
-Message-ID: <501F296B.4070004@wwwdotorg.org>
-Date: Sun, 05 Aug 2012 20:18:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Sun, 5 Aug 2012 22:19:07 -0400
+Date: Sun, 5 Aug 2012 22:19:04 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Cyril Chemparathy <cyril@ti.com>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, catalin.marinas@arm.com, linux@arm.linux.org.uk,
+        will.deacon@arm.com
+Subject: Re: [PATCH 04/22] ARM: LPAE: support 64-bit virt/phys patching
+In-Reply-To: <501E815D.1050707@ti.com>
+Message-ID: <alpine.LFD.2.02.1208052207040.5231@xanadu.home>
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-5-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208040226060.5231@xanadu.home> <501E815D.1050707@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Johannes Stezenbach <js@sig21.net>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: DT GPIO numbering?
-References: <20120801152240.GA16388@sig21.net> <CACRpkdZryc95WpSXddCrLvZGDsv4x-ndX9XcVzoxaDCT53AFLw@mail.gmail.com>
-In-Reply-To: <CACRpkdZryc95WpSXddCrLvZGDsv4x-ndX9XcVzoxaDCT53AFLw@mail.gmail.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2012 04:06 AM, Linus Walleij wrote:
-> On Wed, Aug 1, 2012 at 5:22 PM, Johannes Stezenbach <js@sig21.net> wrote:
-> 
->> I'm currently learning how Linux devicetree support works,
->> here is one question I couldn't find an answer for.
->>
->> I understand that within the devicetree GPIOs are referenced by phandle,
->> thus the numbers are irrelevant.  However, in sysfs the number is
->> what is used to access the GPIO, e.g. for debugging or
->> blinkenlight apps.  How does this fit together?
-> 
-> I think it simply does not fit together.
-> 
-> Grant & me has been claiming the GPIO sysfs interface is a bit
-> crazy from time to time.
-> 
-> My long-term plan would be to replace it with /dev/gpio/gpioN
-> device nodes per-gpiochip and use ioctl etc to control these
-> beasts instead. However one does not do that overnight,
-> and my life is too busy, and other refactorings also need to
-> happen :-/
+On Sun, 5 Aug 2012, Cyril Chemparathy wrote:
 
-I can't comment on the sysfs-vs-dev interface location, but I don't
-think it addresses Johannes' issue; finding out which GPIO IDs are
-provided by which devices.
+> Hi Nicolas,
+> 
+> On 8/4/2012 2:49 AM, Nicolas Pitre wrote:
+> > On Tue, 31 Jul 2012, Cyril Chemparathy wrote:
+> > 
+> > > This patch adds support for 64-bit physical addresses in virt_to_phys
+> > > patching.  This does not do real 64-bit add/sub, but instead patches in
+> > > the
+> > > upper 32-bits of the phys_offset directly into the output of virt_to_phys.
+> > 
+> > You should explain _why_ you do not a real aadd/sub.  I did deduce it
+> > but that might not be obvious to everyone.  Also this subtlety should be
+> > commented in the code as well.
+> > 
+> 
+> We could not do an ADDS + ADC here because the carry is not guaranteed to be
+> retained and passed into the ADC.  This is because the compiler is free to
+> insert all kinds of stuff between the two non-volatile asm blocks.
+> 
+> Is there another subtlety here that I have missed out on entirely?
 
-Perhaps in each device's sysfs node, there should be some information
-re: which GPIO range it provides. Right now, perhaps a text file with
-the GPIO base it it. With the new /dev interface you mention above,
-perhaps a symlink to the /dev file, or a file containing the /dev file's
-major/minor number. Or, is there such a thing already (other than
-debugfs's gpio file).
+The high bits for the valid physical memory address range for which 
+virt_to_phys and phys_to_virt can be used are always the same.  
+Therefore no aadition at all is needed, fake or real.  Only providing 
+those bits in the top word for the value returned by virt_to_phys is 
+needed.
+
+> > > In addition to adding 64-bit support, this patch also adds a
+> > > set_phys_offset()
+> > > helper that is needed on architectures that need to modify PHYS_OFFSET
+> > > during
+> > > initialization.
+> > > 
+> > > Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> > > ---
+> > >   arch/arm/include/asm/memory.h |   22 +++++++++++++++-------
+> > >   arch/arm/kernel/head.S        |    6 ++++++
+> > >   arch/arm/kernel/setup.c       |   14 ++++++++++++++
+> > >   3 files changed, 35 insertions(+), 7 deletions(-)
+> > > 
+> > > diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> > > index 4a0108f..110495c 100644
+> > > --- a/arch/arm/include/asm/memory.h
+> > > +++ b/arch/arm/include/asm/memory.h
+> > > @@ -153,23 +153,31 @@
+> > >   #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+> > > 
+> > >   extern unsigned long __pv_phys_offset;
+> > > -#define PHYS_OFFSET __pv_phys_offset
+> > > -
+> > > +extern unsigned long __pv_phys_offset_high;
+> > 
+> > As mentioned previously, this is just too ugly.  Please make
+> > __pv_phys_offset into a phys_addr_t instead and mask the low/high parts
+> > as needed in __virt_to_phys().
+> > 
+> 
+> Maybe u64 instead of phys_addr_t to keep the sizing non-variable?
+
+No.  When not using LPAE, we don't have to pay the price of a u64 value.  
+That's why the phys_addr_t type is conditionally defined.  You already 
+do  extra processing in virt_to_phys when sizeof(phys_addr_t) > 4 which 
+is perfect for dealing with this issue.
+
+
+Nicolas
