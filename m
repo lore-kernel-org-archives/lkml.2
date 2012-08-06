@@ -1,47 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab2HFSjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:39:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24746 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756404Ab2HFSjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:39:08 -0400
-Message-ID: <50200F1F.7060605@redhat.com>
-Date: Mon, 06 Aug 2012 14:38:23 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932420Ab2HFSjt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:39:49 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:52347 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756805Ab2HFSjr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 14:39:47 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Miller <davem@davemloft.net>
+Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Ariyasu <jan.ariyasu@hp.com>, Jan Ariyasu <jan.ariyasu@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@infradead.org>,
+        Xi Wang <xi.wang@gmail.com>
+References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
+	<87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com>
+Date: Mon, 06 Aug 2012 11:39:38 -0700
+In-Reply-To: <87zk67q31q.fsf_-_@xmission.com> (Eric W. Biederman's message of
+	"Mon, 06 Aug 2012 11:38:09 -0700")
+Message-ID: <87txwfq2z9.fsf_-_@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v5 1/3] mm: introduce compaction and migration for virtio
- ballooned pages
-References: <cover.1344259054.git.aquini@redhat.com> <212b5297df32cb4e3f60d5b76a8cb0629d328a4e.1344259054.git.aquini@redhat.com>
-In-Reply-To: <212b5297df32cb4e3f60d5b76a8cb0629d328a4e.1344259054.git.aquini@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1++YWt7hiZeDC1dUxWlfkSzXfciu3XJXxU=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0641]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;David Miller <davem@davemloft.net>
+X-Spam-Relay-Country: 
+Subject: [PATCH net-next 1/9] sctp: Make the port hash table use struct net in it's key.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 09:56 AM, Rafael Aquini wrote:
 
-> @@ -846,6 +861,21 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->   			goto out;
->
->   	rc = __unmap_and_move(page, newpage, force, offlining, mode);
-> +
-> +	if (unlikely(is_balloon_page(newpage)&&
-> +		     balloon_compaction_enabled())) {
+- Add struct net into the port hash table hash calculation
+- Add struct net inot the struct sctp_bind_bucket so there
+  is a memory of which network namespace a port is allocated in.
+  No need for a ref count because sctp_bind_bucket only exists
+  when there are sockets in the hash table and sockets can not
+  change their network namspace, and sockets already ref count
+  their network namespace.
+- Add struct net into the key comparison when we are testing
+  to see if we have found the port hash table entry we are
+  looking for.
 
-Could that be collapsed into one movable_balloon_page(newpage) function
-call?
+With these changes lookups in the port hash table becomes
+safe to use in multiple network namespaces.
 
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ include/net/sctp/sctp.h    |    4 ++--
+ include/net/sctp/structs.h |    1 +
+ net/sctp/socket.c          |   22 +++++++++++++---------
+ 3 files changed, 16 insertions(+), 11 deletions(-)
+
+diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
+index ff49964..7c05040 100644
+--- a/include/net/sctp/sctp.h
++++ b/include/net/sctp/sctp.h
+@@ -632,9 +632,9 @@ static inline int sctp_sanity_check(void)
+ 
+ /* Warning: The following hash functions assume a power of two 'size'. */
+ /* This is the hash function for the SCTP port hash table. */
+-static inline int sctp_phashfn(__u16 lport)
++static inline int sctp_phashfn(struct net *net, __u16 lport)
+ {
+-	return lport & (sctp_port_hashsize - 1);
++	return (net_hash_mix(net) + lport) & (sctp_port_hashsize - 1);
+ }
+ 
+ /* This is the hash function for the endpoint hash table. */
+diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+index fc5e600..c089bb1 100644
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -102,6 +102,7 @@ struct sctp_bind_bucket {
+ 	unsigned short	fastreuse;
+ 	struct hlist_node	node;
+ 	struct hlist_head	owner;
++	struct net	*net;
+ };
+ 
+ struct sctp_bind_hashbucket {
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 5e25981..4316b0f 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -5769,7 +5769,7 @@ static void sctp_unhash(struct sock *sk)
+  * a fastreuse flag (FIXME: NPI ipg).
+  */
+ static struct sctp_bind_bucket *sctp_bucket_create(
+-	struct sctp_bind_hashbucket *head, unsigned short snum);
++	struct sctp_bind_hashbucket *head, struct net *, unsigned short snum);
+ 
+ static long sctp_get_port_local(struct sock *sk, union sctp_addr *addr)
+ {
+@@ -5799,11 +5799,12 @@ static long sctp_get_port_local(struct sock *sk, union sctp_addr *addr)
+ 				rover = low;
+ 			if (inet_is_reserved_local_port(rover))
+ 				continue;
+-			index = sctp_phashfn(rover);
++			index = sctp_phashfn(sock_net(sk), rover);
+ 			head = &sctp_port_hashtable[index];
+ 			sctp_spin_lock(&head->lock);
+ 			sctp_for_each_hentry(pp, node, &head->chain)
+-				if (pp->port == rover)
++				if ((pp->port == rover) &&
++				    net_eq(sock_net(sk), pp->net))
+ 					goto next;
+ 			break;
+ 		next:
+@@ -5827,10 +5828,10 @@ static long sctp_get_port_local(struct sock *sk, union sctp_addr *addr)
+ 		 * to the port number (snum) - we detect that with the
+ 		 * port iterator, pp being NULL.
+ 		 */
+-		head = &sctp_port_hashtable[sctp_phashfn(snum)];
++		head = &sctp_port_hashtable[sctp_phashfn(sock_net(sk), snum)];
+ 		sctp_spin_lock(&head->lock);
+ 		sctp_for_each_hentry(pp, node, &head->chain) {
+-			if (pp->port == snum)
++			if ((pp->port == snum) && net_eq(pp->net, sock_net(sk)))
+ 				goto pp_found;
+ 		}
+ 	}
+@@ -5881,7 +5882,7 @@ pp_found:
+ pp_not_found:
+ 	/* If there was a hash table miss, create a new port.  */
+ 	ret = 1;
+-	if (!pp && !(pp = sctp_bucket_create(head, snum)))
++	if (!pp && !(pp = sctp_bucket_create(head, sock_net(sk), snum)))
+ 		goto fail_unlock;
+ 
+ 	/* In either case (hit or miss), make sure fastreuse is 1 only
+@@ -6113,7 +6114,7 @@ unsigned int sctp_poll(struct file *file, struct socket *sock, poll_table *wait)
+  ********************************************************************/
+ 
+ static struct sctp_bind_bucket *sctp_bucket_create(
+-	struct sctp_bind_hashbucket *head, unsigned short snum)
++	struct sctp_bind_hashbucket *head, struct net *net, unsigned short snum)
+ {
+ 	struct sctp_bind_bucket *pp;
+ 
+@@ -6123,6 +6124,7 @@ static struct sctp_bind_bucket *sctp_bucket_create(
+ 		pp->port = snum;
+ 		pp->fastreuse = 0;
+ 		INIT_HLIST_HEAD(&pp->owner);
++		pp->net = net;
+ 		hlist_add_head(&pp->node, &head->chain);
+ 	}
+ 	return pp;
+@@ -6142,7 +6144,8 @@ static void sctp_bucket_destroy(struct sctp_bind_bucket *pp)
+ static inline void __sctp_put_port(struct sock *sk)
+ {
+ 	struct sctp_bind_hashbucket *head =
+-		&sctp_port_hashtable[sctp_phashfn(inet_sk(sk)->inet_num)];
++		&sctp_port_hashtable[sctp_phashfn(sock_net(sk),
++						  inet_sk(sk)->inet_num)];
+ 	struct sctp_bind_bucket *pp;
+ 
+ 	sctp_spin_lock(&head->lock);
+@@ -6809,7 +6812,8 @@ static void sctp_sock_migrate(struct sock *oldsk, struct sock *newsk,
+ 	newsp->hmac = NULL;
+ 
+ 	/* Hook this new socket in to the bind_hash list. */
+-	head = &sctp_port_hashtable[sctp_phashfn(inet_sk(oldsk)->inet_num)];
++	head = &sctp_port_hashtable[sctp_phashfn(sock_net(oldsk),
++						 inet_sk(oldsk)->inet_num)];
+ 	sctp_local_bh_disable();
+ 	sctp_spin_lock(&head->lock);
+ 	pp = sctp_sk(oldsk)->bind_hash;
 -- 
-All rights reversed
+1.7.5.4
+
