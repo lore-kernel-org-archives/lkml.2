@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab2HFBVL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 21:21:11 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:50098 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202Ab2HFBVI (ORCPT
+	id S1755367Ab2HFBXi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 21:23:38 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45343 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab2HFBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 21:21:08 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-2d-501f1bf2c1a2
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Julia Lawall'" <Julia.Lawall@lip6.fr>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>
-Cc: kernel-janitors@vger.kernel.org,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1344099049-15212-5-git-send-email-Julia.Lawall@lip6.fr>
-In-reply-to: <1344099049-15212-5-git-send-email-Julia.Lawall@lip6.fr>
-Subject: Re: [PATCH 5/6] drivers/video/backlight/da9052_bl.c: drop devm_kfree
- of devm_kzalloc'd data
-Date: Mon, 06 Aug 2012 10:20:50 +0900
-Message-id: <000b01cd7371$b7331790$259946b0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1yYZKR08joCzjASB6kva/EtNlWDABD7PTw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jQd1P0vIBBo1H9C223pK2ONH3gdXi
-	8q45bA7MHp83yQUwRnHZpKTmZJalFunbJXBlnPh5grngKk/FoXkn2BoYZ3B1MXJySAiYSHxb
-	upgFwhaTuHBvPRuILSQwnVHiwha7LkYuIPsXo8TGt/uZQBJsAmoSX74cZgexRQT8JZrP7mEB
-	KWIWOMAo8eJCKxNEt4tEz593YJM4BVwl5tx8yQxiCwukSbx6fhWshkVAVWLyvulgg3gFbCWe
-	Tb/BCGELSvyYfA/sImYBLYnN25pYIWx5ic1r3gLN4QC6VF3i0V9diBuMJDq7G5khSkQk9r14
-	xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEh/YzqR2M
-	KxssDjEKcDAq8fB27pMNEGJNLCuuzD3EKMHBrCTCm+4sFyDEm5JYWZValB9fVJqTWnyIUZqD
-	RUmc19j7q7+QQHpiSWp2ampBahFMlomDU6qB0Yd32wGfkK2TS+Q1+3g4bhyPZCu9MXlH7aSO
-	Npm5XjfzuyUtD3BVn87blRBpvLVymc/zogkqXUcPf90z7fGB6c3VFY1GVbJmp49cUlxiZsrD
-	lHDzjr+l5g0FmUOrDzkzPBQqFTsyrbBvzqmSpLz7BszHlY3PWLeYBJ3WLE33+p6zRPJW+cQ4
-	JZbijERDLeai4kQApobzfGkCAAA=
-X-TM-AS-MML: No
+	Sun, 5 Aug 2012 21:23:36 -0400
+Date: Mon, 6 Aug 2012 11:23:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        David Howells <dhowells@redhat.com>
+Subject: linux-next: manual merge of the rr tree with the s390 tree
+Message-Id: <20120806112328.6d5b5e21c37b753a2013b05b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__6_Aug_2012_11_23_28_+1000_PRJpI6N/d=V52fId"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, August 05, 2012 1:51 AM Julia Lawall wrote:
-> 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> devm_kfree should not have to be explicitly used.
-> 
-> The semantic patch that fixes this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression x,d;
-> @@
-> 
-> x = devm_kzalloc(...)
-> ...
-> ?-devm_kfree(d,x);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+--Signature=_Mon__6_Aug_2012_11_23_28_+1000_PRJpI6N/d=V52fId
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Rusty,
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+Today's linux-next merge of the rr tree got a conflict in
+arch/s390/Kconfig between commit 867c2dcb369b ("s390/seccomp: add support
+for system call filtering using BPF") from the s390 tree and commit
+d673c23ca730 ("Make most arch asm/module.h files use
+asm-generic/module.h") from the rr tree.
 
-It looks good.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Best regard,
-Jingoo Han
+diff --cc arch/s390/Kconfig
+index 107610e,11cc724..0000000
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@@ -124,7 -123,8 +124,9 @@@ config S39
+  	select GENERIC_TIME_VSYSCALL
+  	select GENERIC_CLOCKEVENTS
+  	select KTIME_SCALAR if 32BIT
+ +	select HAVE_ARCH_SECCOMP_FILTER
++ 	select HAVE_MOD_ARCH_SPECIFIC
++ 	select MODULES_USE_ELF_RELA
+ =20
+  config SCHED_OMIT_FRAME_POINTER
+  	def_bool y
 
+--Signature=_Mon__6_Aug_2012_11_23_28_+1000_PRJpI6N/d=V52fId
+Content-Type: application/pgp-signature
 
-> 
-> ---
->  drivers/video/backlight/da9052_bl.c |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/da9052_bl.c b/drivers/video/backlight/da9052_bl.c
-> index b628d68..7c8626a 100644
-> --- a/drivers/video/backlight/da9052_bl.c
-> +++ b/drivers/video/backlight/da9052_bl.c
-> @@ -129,7 +129,6 @@ static int da9052_backlight_probe(struct platform_device *pdev)
->  				       &da9052_backlight_ops, &props);
->  	if (IS_ERR(bl)) {
->  		dev_err(&pdev->dev, "Failed to register backlight\n");
-> -		devm_kfree(&pdev->dev, wleds);
->  		return PTR_ERR(bl);
->  	}
-> 
-> @@ -149,7 +148,6 @@ static int da9052_backlight_remove(struct platform_device *pdev)
->  	wleds->state = DA9052_WLEDS_OFF;
->  	da9052_adjust_wled_brightness(wleds);
->  	backlight_device_unregister(bl);
-> -	devm_kfree(&pdev->dev, wleds);
-> 
->  	return 0;
->  }
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQHxyQAAoJEECxmPOUX5FExnAP/icBXnyoHq8KmkftDdu+ShZc
+Wbrb0iIGLJkkPPkLl7WGsgrDfykQBvlwe5/hXFQ9BLZWD96Hn7RWTtS9E8MIdzgJ
+JZZf/WChqeWiSiCgVI84SlqyCVDqr1daKtwYIjYzAUNYjD7Jv+TNrbYDjbYeffsT
+O4JtS+qd1w1wWKUdL6j+GL2Rex5skbrgQXTq7MRPAFKQnL9/IY/AZv9tRsAxnB32
+VVukCSd/aEcx8mekuYKareRPdcePMAt0KwW0hUHzQtvFMSfgV+8HRSWyCiMJxHkK
+gYyll7zASAJGK5nJmRz+ny2RmOUvCwBimfBuK1yIrEHiIM1Qd6rR51eFPqz60Mi1
+QiIYocjBsXqM+dVs80m5iJDvJN4w7VYFVpW6z4zkegHg7TIVh8JxGBMrCq4VEr2e
+fM9w3OOHdTf5MeN3T+ZWTdzJPDi3uG1F9weg0NBM+T5GScGu2z/NpAm1VT26yj4c
+UGoZ+RRKRfOHWDcEgWEYRycg+eTucKukMb08ACiIsdO//WKC85YIAZ8i+IM0Heh3
+X0xeKgNJK1jp37wWVY1p+IhcitN8X2xLwI/tR6AwhLgw7aqbPFTG7byR1Je7vx2O
+EWLtsI1ZuodYg8WzGwstWnDGF1s3cYS7fFYxjd8JWQ6AmhHrvvWB3cB6/TmSh2Sa
+l4vSo9RzIVki4loAJo53
+=TGZM
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__6_Aug_2012_11_23_28_+1000_PRJpI6N/d=V52fId--
