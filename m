@@ -1,240 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab2HFSTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:19:48 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:44845 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab2HFSTq (ORCPT
+	id S932396Ab2HFSUY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:20:24 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:48851 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932114Ab2HFSUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:19:46 -0400
-Date: Mon, 6 Aug 2012 15:19:41 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 2/3] perf: teach perf inject to merge sched_stat_* and
- sched_switch events
-Message-ID: <20120806181941.GG21441@infradead.org>
-References: <1344247319-304069-1-git-send-email-avagin@openvz.org>
- <1344247319-304069-3-git-send-email-avagin@openvz.org>
+	Mon, 6 Aug 2012 14:20:21 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Jan Ariyasu <jan.ariyasu@gmail.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Ariyasu <jan.ariyasu@hp.com>
+References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
+Date: Mon, 06 Aug 2012 11:20:08 -0700
+In-Reply-To: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com> (Jan
+	Ariyasu's message of "Sat, 4 Aug 2012 15:30:37 -0600")
+Message-ID: <87mx27rig7.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344247319-304069-3-git-send-email-avagin@openvz.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX195/T2g4xBanDKScxdXhvlEuyyCkBDzhpQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0876]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_04 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Jan Ariyasu <jan.ariyasu@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 00/13] SCTP: Enable netns
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 06, 2012 at 02:01:58PM +0400, Andrew Vagin escreveu:
-> You may want to know where and how long a task is sleeping. A callchain
-> may be found in sched_switch and a time slice in stat_iowait, so I add
-> handler in perf inject for merging this events.
-> 
-> My code saves sched_switch event for each process and when it meets
-> stat_iowait, it reports the sched_switch event, because this event
-> contains a correct callchain. By another words it replaces all
-> stat_iowait events on proper sched_switch events.
-> 
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
-> ---
->  tools/perf/builtin-inject.c |   96 ++++++++++++++++++++++++++++++++++++++++--
->  1 files changed, 91 insertions(+), 5 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-> index d04b7a4..247f41c 100644
-> --- a/tools/perf/builtin-inject.c
-> +++ b/tools/perf/builtin-inject.c
-> @@ -13,6 +13,8 @@
->  #include "util/debug.h"
->  
->  #include "util/parse-options.h"
-> +#include "util/trace-event.h"
-> +
->  
->  static char		const *input_name	= "-";
->  static const char	*output_name		= "-";
-> @@ -21,6 +23,9 @@ static int		output;
->  static u64		bytes_written;
->  
->  static bool		inject_build_ids;
-> +static bool		inject_sched_stat;
-> +
-> +struct perf_session	*session;
+Jan Ariyasu <jan.ariyasu@gmail.com> writes:
 
-Why do we need to insert even more globals?
-  
->  static int perf_event__repipe_synth(struct perf_tool *tool __used,
->  				    union perf_event *event,
-> @@ -47,7 +52,7 @@ static int perf_event__repipe_synth(struct perf_tool *tool __used,
->  
->  static int perf_event__repipe_op2_synth(struct perf_tool *tool,
->  					union perf_event *event,
-> -					struct perf_session *session __used)
-> +					struct perf_session *s __used)
+> The following set of patches enable network-namespaces for the SCTP protocol.
+>
+> The multitude of global parameters are stored in a net_generic
+> structure, and the bulk of the patches enable the protocol to access
+> the parameters on a per-namespace basis.  The first five patches
+> enable netns handling of the protocol, procfs and sysfs.
 
-What is the point of the above hunk?
+I am going to do something to muddy the waters here, that I had hoped to
+avoid when I saw your patchset.
 
->  {
->  	return perf_event__repipe_synth(tool, event, NULL);
->  }
-> @@ -59,7 +64,7 @@ static int perf_event__repipe_event_type_synth(struct perf_tool *tool,
->  }
->  
->  static int perf_event__repipe_tracing_data_synth(union perf_event *event,
-> -						 struct perf_session *session __used)
-> +						 struct perf_session *s __used)
+A few weeks ago I wanted to play with sctp and also made a network
+namespace enabled version.  I am not deeply attached to my changes,
+however when comparing the differences I realized that your code fails
+to make the lookup of associations per network namespace.
 
-Ditto
+Given that we only have source and destination port to lookup
+assoications by this almost guarantees one network namespace can
+accidentially use the association of another network namespace meerly
+by reusing the same ports.
 
->  {
->  	return perf_event__repipe_synth(NULL, event, NULL);
->  }
-> @@ -119,12 +124,12 @@ static int perf_event__repipe_task(struct perf_tool *tool,
->  }
->  
->  static int perf_event__repipe_tracing_data(union perf_event *event,
-> -					   struct perf_session *session)
-> +					   struct perf_session *s)
->  {
->  	int err;
->  
->  	perf_event__repipe_synth(NULL, event, NULL);
-> -	err = perf_event__process_tracing_data(event, session);
-> +	err = perf_event__process_tracing_data(event, s);
+The downside with my version is that it does not make all of the sctp
+tunables per network namespace the way yours does, but making all of
+the tunables per network namespace should be straight forward from
+my base.
 
-Ditto
+My patchset also misses some nice to haves like making the association
+id allocation per network namespace.  It is not important for
+correctness of the code but it might allow an information leak between
+namespaces.
 
->  
->  	return err;
->  }
-> @@ -210,6 +215,83 @@ repipe:
->  	return 0;
->  }
->  
-> +struct event_entry {
-> +	struct list_head list;
+So Jan I am going to send my patchset and hopefully you can rebase your
+changes to make all of the tunables per network namespace on top of
+mine.
 
-Is this really the head of a list? Or is this a node that will allow
-event_entry instances to be added to a head of a list? If the former,
-please rename this to "node".
+Since my patchset is half the size of your I think that is the most
+reasonable way to go.
 
-> +	u32		 pid;
-> +	union perf_event event[0];
-> +};
-> +
-> +static LIST_HEAD(samples);
-> +
-> +static int perf_event__sched_stat(struct perf_tool *tool,
-> +				      union perf_event *event,
-> +				      struct perf_sample *sample,
-> +				      struct perf_evsel *evsel __used,
-> +				      struct machine *machine)
-> +{
-> +	int type;
-> +	struct event_format *e;
-> +	const char *evname = NULL;
-> +	uint32_t size;
-> +	struct event_entry *ent;
-> +	union perf_event *event_sw = NULL;
-> +	struct perf_sample sample_sw;
-> +	int sched_process_exit;
-> +
-> +	size = event->header.size;
-> +
-> +	type = trace_parse_common_type(session->pevent, sample->raw_data);
-> +	e = pevent_find_event(session->pevent, type);
-> +	if (e)
-> +		evname = e->name;
-> +
-> +	sched_process_exit = !strcmp(evname, "sched_process_exit");
-> +
-> +	if (!strcmp(evname, "sched_switch") ||  sched_process_exit) {
-                                              extra space
-> +		list_for_each_entry(ent, &samples, list)
-> +			if (sample->pid == ent->pid)
-> +				break;
-> +
-> +		if (&ent->list != &samples) {
-> +			list_del(&ent->list);
-> +			free(ent);
-> +		}
-> +
-> +		if (sched_process_exit)
-> +			return 0;
-> +
-> +		ent = malloc(size + sizeof(struct event_entry));
+Eric
 
-Can malloc fail?
-
-> +		ent->pid = sample->pid;
-> +		memcpy(&ent->event, event, size);
-> +		list_add(&ent->list, &samples);
-> +		return 0;
-> +
-> +	} else if (!strncmp(evname, "sched_stat_", 11)) {
-> +		u32 pid;
-> +
-> +		pid = raw_field_value(e, "pid", sample->raw_data);
-> +
-> +		list_for_each_entry(ent, &samples, list) {
-> +			if (pid == ent->pid)
-> +				break;
-> +		}
-> +
-> +		if (&ent->list == &samples)
-> +			return 0;
-> +
-> +		event_sw = &ent->event[0];
-> +		perf_session__parse_sample(session, event_sw, &sample_sw);
-> +		sample_sw.period = sample->period;
-> +		sample_sw.time = sample->time;
-> +		perf_session__synthesize_sample(session, event_sw, &sample_sw);
-
-Please use perf_evsel__parse_sample, recently introduced.
-
-> +		perf_event__repipe(tool, event_sw, &sample_sw, machine);
-> +		return 0;
-> +	}
-> +
-> +	perf_event__repipe(tool, event, sample, machine);
-> +
-> +	return 0;
-> +}
->  struct perf_tool perf_inject = {
->  	.sample		= perf_event__repipe_sample,
->  	.mmap		= perf_event__repipe,
-> @@ -235,7 +317,6 @@ static void sig_handler(int sig __attribute__((__unused__)))
->  
->  static int __cmd_inject(void)
->  {
-> -	struct perf_session *session;
->  	int ret = -EINVAL;
->  
->  	signal(SIGINT, sig_handler);
-> @@ -245,6 +326,9 @@ static int __cmd_inject(void)
->  		perf_inject.mmap	 = perf_event__repipe_mmap;
->  		perf_inject.fork	 = perf_event__repipe_task;
->  		perf_inject.tracing_data = perf_event__repipe_tracing_data;
-> +	} else if (inject_sched_stat) {
-> +		perf_inject.sample	= perf_event__sched_stat;
-> +		perf_inject.ordered_samples = true;
->  	}
->  
->  	session = perf_session__new(input_name, O_RDONLY, false, true, &perf_inject);
-> @@ -272,6 +356,8 @@ static const char * const report_usage[] = {
->  static const struct option options[] = {
->  	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
->  		    "Inject build-ids into the output stream"),
-> +	OPT_BOOLEAN('s', "sched-stat", &inject_sched_stat,
-> +		    "Set source call-chains for sched:shed-stat-*"),
-
-You're adding an option, needs to be documented on
-perf/tools/Documentation/
-
->  	OPT_STRING('i', "input", &input_name, "file",
->  		    "input file name"),
->  	OPT_STRING('o', "output", &output_name, "file",
-> -- 
-> 1.7.1
