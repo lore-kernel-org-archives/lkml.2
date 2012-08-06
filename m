@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756778Ab2HFRBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 13:01:10 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:57567 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756721Ab2HFRAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 13:00:43 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alex Shi <alex.shi@intel.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH v1 4/4] x86, CPU: Preset default tlb_flushall_shift on AMD
-Date: Mon,  6 Aug 2012 19:00:39 +0200
-Message-Id: <1344272439-29080-5-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.11.rc1
-In-Reply-To: <1344272439-29080-1-git-send-email-bp@amd64.org>
-References: <1344272439-29080-1-git-send-email-bp@amd64.org>
+	id S1756761Ab2HFRDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 13:03:38 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:26347 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756718Ab2HFRDh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 13:03:37 -0400
+Message-ID: <1344272614.2486.40.camel@lorien2>
+Subject: Re: [PATCH RESEND] mm: Restructure kmem_cache_create() to move
+ debug cache integrity checks into a new function
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, cl@linux.com, glommer@parallels.com,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, shuahkhan@gmail.com
+Date: Mon, 06 Aug 2012 11:03:34 -0600
+In-Reply-To: <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
+References: <1342221125.17464.8.camel@lorien2>
+	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
+	 <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2>
+	 <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Tue, 2012-08-07 at 01:49 +0900, JoonSoo Kim wrote:
+> > diff --git a/mm/slab_common.c b/mm/slab_common.c
+> > index 12637ce..08bc2a4 100644
+> > --- a/mm/slab_common.c
+> > +++ b/mm/slab_common.c
+> > @@ -23,6 +23,41 @@ enum slab_state slab_state;
+> >  LIST_HEAD(slab_caches);
+> >  DEFINE_MUTEX(slab_mutex);
+> >
+> > +static int kmem_cache_sanity_check(const char *name, size_t size)
+> > +{
+> > +#ifdef CONFIG_DEBUG_VM
+> > +       struct kmem_cache *s = NULL;
+> > +
+> > +       list_for_each_entry(s, &slab_caches, list) {
+> > +               char tmp;
+> > +               int res;
+> > +
+> > +               /*
+> > +                * This happens when the module gets unloaded and doesn't
+> > +                * destroy its slab cache and no-one else reuses the vmalloc
+> > +                * area of the module.  Print a warning.
+> > +                */
+> > +               res = probe_kernel_address(s->name, tmp);
+> > +               if (res) {
+> > +                       pr_err("Slab cache with size %d has lost its name\n",
+> > +                              s->object_size);
+> > +                       continue;
+> > +               }
+> > +
+> > +               if (!strcmp(s->name, name)) {
+> > +                       pr_err("%s (%s): Cache name already exists.\n",
+> > +                              __func__, name);
+> > +                       dump_stack();
+> > +                       s = NULL;
+> > +                       return -EINVAL;
+> > +               }
+> > +       }
+> > +
+> > +       WARN_ON(strchr(name, ' '));     /* It confuses parsers */
+> > +#endif
+> > +       return 0;
+> > +}
+> 
+> As I know, following is more preferable than above.
+> 
+> #ifdef CONFIG_DEBUG_VM
+> static int kmem_cache_sanity_check(const char *name, size_t size);
+> #else
+> static inline int kmem_cache_sanity_check(const char *name, size_t size)
+> {
+> return 0;
+> }
+> #endif
+> 
+> Is there any reason to do like that?
+> Thanks.
 
-Run the mprotect.c microbenchmark on all our families >= K8 and preset
-the flushall shift variable accordingly.
+No reason, just something I am used to doing :) inline is a good idea. I
+can fix that easily and send v2 patch.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/amd.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+-- Shuah
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index bcd200839c90..f7e98a2c0d12 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -737,6 +737,17 @@ static unsigned int __cpuinit amd_size_cache(struct cpuinfo_x86 *c,
- }
- #endif
- 
-+static void __cpuinit cpu_set_tlb_flushall_shift(struct cpuinfo_x86 *c)
-+{
-+	if (!cpu_has_invlpg)
-+		return;
-+
-+	tlb_flushall_shift = 5;
-+
-+	if (c->x86 <= 0x11)
-+		tlb_flushall_shift = 4;
-+}
-+
- static void __cpuinit cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
- {
- 	u32 ebx, eax, ecx, edx;
-@@ -788,6 +799,8 @@ static void __cpuinit cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
- 		tlb_lli_2m[ENTRIES] = eax & mask;
- 
- 	tlb_lli_4m[ENTRIES] = tlb_lli_2m[ENTRIES] >> 1;
-+
-+	cpu_set_tlb_flushall_shift(c);
- }
- 
- static const struct cpu_dev __cpuinitconst amd_cpu_dev = {
--- 
-1.7.11.rc1
 
