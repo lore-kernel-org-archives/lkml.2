@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab2HFC1f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 22:27:35 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58566 "EHLO
+	id S1755520Ab2HFCbe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 22:31:34 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48056 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab2HFC1e (ORCPT
+	with ESMTP id S1755468Ab2HFCbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 22:27:34 -0400
-Date: Mon, 6 Aug 2012 12:27:26 +1000
+	Sun, 5 Aug 2012 22:31:32 -0400
+Date: Mon, 6 Aug 2012 12:31:29 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: linux-next: manual merge of the rcu tree with the rr tree
-Message-Id: <20120806122726.ac3e525f2d45de4470fa2703@canb.auug.org.au>
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: manual merge of the rcu tree with Linus' tree
+Message-Id: <20120806123129.c61ea1235be871ce7028b145@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__6_Aug_2012_12_27_26_+1000_jNKaJ0zHgi6eTim="
+ boundary="Signature=_Mon__6_Aug_2012_12_31_29_+1000_Zho/ozh+1z/U2Y2f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__6_Aug_2012_12_27_26_+1000_jNKaJ0zHgi6eTim=
+--Signature=_Mon__6_Aug_2012_12_31_29_+1000_Zho/ozh+1z/U2Y2f
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Paul,
 
-Today's linux-next merge of the rcu tree got a conflict in arch/Kconfig
-arch/x86/Kconfig between commit d673c23ca730 ("Make most arch
-asm/module.h files use asm-generic/module.h") from the rr tree and commits
-3dbdfc26e27f ("rcu: Settle config for userspace extended quiescent
-state") and 1ea856be75ce ("x86: Exit RCU extended QS on notify resume")
-from the rcu tree.
+Today's linux-next merge of the rcu tree got a conflict in
+include/linux/sched.h between commit 907aed48f65e ("mm: allow PF_MEMALLOC
+from softirq context") from Linus' tree and commit 46fc4e7c01b7 ("rcu:
+Switch task's syscall hooks on context switch") from the rcu tree.
 
 Just context changes.  I fixed it up (see below) and can carry the fix as
 necessary.
@@ -45,78 +42,52 @@ necessary.
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/Kconfig
-index 3450115,1c7c9be..0000000
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@@ -281,23 -274,14 +281,33 @@@ config SECCOMP_FILTE
+diff --cc include/linux/sched.h
+index b8c8664,a094959..0000000
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@@ -1886,13 -1879,14 +1886,21 @@@ static inline void rcu_copy_process(str
  =20
-  	  See Documentation/prctl/seccomp_filter.txt for details.
+  #endif
  =20
- +config HAVE_MOD_ARCH_SPECIFIC
- +	bool
- +	help
- +	  The arch uses struct mod_arch_specific to store data.  Many arches
- +	  just need a simple module loader without arch specific data - those
- +	  should not enable this.
+ +static inline void tsk_restore_flags(struct task_struct *task,
+ +				unsigned long orig_flags, unsigned long flags)
+ +{
+ +	task->flags &=3D ~flags;
+ +	task->flags |=3D orig_flags & flags;
+ +}
  +
- +config MODULES_USE_ELF_RELA
- +	bool
- +	help
- +	  Modules only use ELF RELA relocations.  Modules with ELF REL
- +	  relocations will give an error.
- +
- +config MODULES_USE_ELF_REL
- +	bool
- +	help
- +	  Modules only use ELF REL relocations.  Modules with ELF RELA
- +	  relocations will give an error.
- +
-+ config HAVE_RCU_USER_QS
-+ 	bool
-+ 	help
-+ 	  Provide kernel entry/exit hooks necessary for userspace
-+ 	  RCU extended quiescent state. Syscalls need to be wrapped inside
-+ 	  rcu_user_exit()-rcu_user_enter() through the slow path using
-+ 	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
-+ 	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
-+ 	  preemption or signal handling on irq exit still need to be protected.
++ static inline void rcu_switch(struct task_struct *prev,
++ 			      struct task_struct *next)
++ {
++ #ifdef CONFIG_RCU_USER_QS
++ 	rcu_user_hooks_switch(prev, next);
++ #endif
++ }
 +=20
-  source "kernel/gcov/Kconfig"
-diff --cc arch/x86/Kconfig
-index a00d899,38dfcc2..0000000
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@@ -97,8 -95,7 +97,9 @@@ config X8
-  	select KTIME_SCALAR if X86_32
-  	select GENERIC_STRNCPY_FROM_USER
-  	select GENERIC_STRNLEN_USER
- +	select MODULES_USE_ELF_REL if X86_32
- +	select MODULES_USE_ELF_RELA if X86_64
-+ 	select HAVE_RCU_USER_QS if X86_64
- =20
-  config INSTRUCTION_DECODER
-  	def_bool (KPROBES || PERF_EVENTS || UPROBES)
+  #ifdef CONFIG_SMP
+  extern void do_set_cpus_allowed(struct task_struct *p,
+  			       const struct cpumask *new_mask);
 
---Signature=_Mon__6_Aug_2012_12_27_26_+1000_jNKaJ0zHgi6eTim=
+--Signature=_Mon__6_Aug_2012_12_31_29_+1000_Zho/ozh+1z/U2Y2f
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQHyuOAAoJEECxmPOUX5FEy+MP/1IAi+EZ32VRSPeFypliCBD6
-Vdj32qrSOinIMs/qwO/8OwQ4MZ/aqrLsdLWTHNskaA+SMf4CR+8cd4IsII70k74P
-OP4T+zp38dW4raRpNnsmXGw437i2AcJKvryKYN9pbmUZ7OYrvahswRkiaT/Rtsjw
-eedKITHNRlBQplzFaf6fVkj+0hJBzvEZWF7Ijj4A0zjML7OhXqbCE+3jvBLt8Tzg
-kyFY0/kJXLInut5Cxk6OavmneRUQSUU+WDB98sNasn5uXSGJJzIVndMgrNq6oPck
-L4XsrK+oIbKpqr9mdEbjGbHAomFqJZshvGZA57Y3k5+qiCtqNe/poQKFWlLBlm8x
-e49AFwaWv0ZeALSIUJzH/S5agn4aDp4OJuk5kgpM/dFE9W3tvZwAkU5W0Muvv0vC
-yBdiCJ54vNYp/uSj6iaZJ5I9H0lRLwPCxcDpwpm4WZNsWDb6BKbhNCxHIdIFutgi
-8ZkTPninsPl6tZHZ9GSM5P8BIxrJXDpguE99cLTy30Yl7tGdRhq6NpC/6Gv5YaQp
-gzXFW52wDCG7z1t5eulXpn8A1Yc009NKtdvNwa17I9AaR0AIk6MR5Q0ULJvJvvZV
-tNN3mtiQOIzy7WFnHJzv2tGa7bwPGO68jkq8hg5aznULgIPCISsVt03MoqqbMHSb
-rdoaemDNJFKhbJulss7U
-=zOAq
+iQIcBAEBCAAGBQJQHyyBAAoJEECxmPOUX5FEaDgP/3f0ObxjsLP+qYa6RBMxGj9J
+pvyX/KwenTVW9IfqrNzuoiKsMuB2QJhNk0IWyggQ2TxnJ92aUTAcLALAqsjbYaNt
+9F6dkShQTdVOflWSajF0khQNd7AgxjvbLpTjTe49QWy92NNAA6ENVXeuZ/KdYbQk
+OV1R8mAx6lK2TCuKJb6kAW+Y0V21x/FD+YPbuzC/rjy1EatqDe2zAO7ejZ16wXPw
+2gyK6AMXLyzfhMuqV5ll4uIwrBLH8Lg/mnoY6m0l4CpFb6K1mgE1/VwbiVyAnAOW
+KI7ZIm6TqZm3H+TQRmI2X7YA36376MM0i5uoAHzjb1h/npfgQastRd706ZX7y2BI
+M7UfYrcrq+o/ouq1t/DZrVqzSDUQ0Kl5NjA6vT9hMQMqBzIAeeCdJcxH/H6s2J+w
+iN5iS8G7ASbTC8/a2bLIxUeID0EFDP0SlXneGpeG5o4zCtCRC0/IHWtSsQhDGLwf
+rsK4gmvXp1l+Ib2sb6AVo2R6YfBuiOpgwGQbD9nYE3oVkqJvDmSfnCrb302ycN40
+0x3VnOFBlDiRyWcszbmJgdknNlMNNQx1uVifXxKbHXzKYC1uCjDT2oJc8t05/xKr
+k1tQTt4nm4xjznwmRbZfB2gOEr78vyk+ZTP36PR/F+cXAf9yV6g3OhA5s+Duj2HA
+DHJDX5xi4LWRvD6b9qmI
+=ghOt
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__6_Aug_2012_12_27_26_+1000_jNKaJ0zHgi6eTim=--
+--Signature=_Mon__6_Aug_2012_12_31_29_+1000_Zho/ozh+1z/U2Y2f--
