@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab2HFXG5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:06:57 -0400
-Received: from wdmail02.wdc.com ([129.253.55.42]:58388 "EHLO wdmail02.wdc.com"
+	id S1756637Ab2HFXLN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:11:13 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44935 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756148Ab2HFXGy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:06:54 -0400
-X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Aug 2012 19:06:54 EDT
-X-IronPort-AV: E=Sophos;i="4.77,722,1336374000"; 
-   d="scan'208";a="2567400"
-From: Daniel Taylor <Daniel.Taylor@wdc.com>
-To: "'Alan Stern'" <stern@rowland.harvard.edu>,
-        Pavel Vasilyev <pavel@pavlinux.ru>
-CC: Pavel Machek <pavel@ucw.cz>, Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>
-Subject: RE: [linux-pm] [PATCH] ACPI: replace strlen("string") with
- sizeof("string") -1
-Thread-Topic: [linux-pm] [PATCH] ACPI: replace strlen("string") with
- sizeof("string") -1
-Thread-Index: AQHNc71OqfXYmT8bKE+m49hTuojI3JdNT7qAgAAXZYCAAAfJgIAAJusAgAAUDoD//7v3YA==
-Date: Mon, 6 Aug 2012 22:57:25 +0000
-Message-ID: <5A9BC72FD5CEC94EA024CED8E31D701A2FD84FC0@wdscexmb03.sc.wdc.com>
-References: <50201156.30704@pavlinux.ru>
- <Pine.LNX.4.44L0.1208061556010.1649-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1208061556010.1649-100000@iolanthe.rowland.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.4.44.9]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751697Ab2HFXLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 19:11:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-sh list" <linux-sh@vger.kernel.org>
+Subject: [PATCH 0/12] PM: Make ARM/shmobile PM domains initialization more straightforward
+Date: Tue, 7 Aug 2012 01:05:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Message-Id: <201208070105.23262.rjw@sisk.pl>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Silly question:  when did sizeof("string") get changed to be anything
-other than the size of the pointer ("string" is, after all, an array
-of characters)? 
+Hi all,
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org 
-> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Alan Stern
-> Sent: Monday, August 06, 2012 1:00 PM
-> To: Pavel Vasilyev
-> Cc: Pavel Machek; Len Brown; linux-acpi@vger.kernel.org; 
-> linux-pm@lists.linux-foundation.org; 
-> linux-kernel@vger.kernel.org; Len Brown
-> Subject: Re: [linux-pm] [PATCH] ACPI: replace 
-> strlen("string") with sizeof("string") -1
-> 
-> On Mon, 6 Aug 2012, Pavel Vasilyev wrote:
-> 
-> > >> 
-> http://www.gossamer-threads.com/lists/engine?do=post_attachmen
-> t;postatt_id=41157;list=linux
-> > >
-> > > Interestingly, many (all?) of the changes in that patch are wrong
-> > > because they don't try to match the terminating '\0'.  As 
-> a result,
-> > > they will match against extensions of the target string 
-> as well as the
-> > > target string itself.
-> > >
-> > 
-> > strNcmp compare N bytes - 
-> http://lxr.linux.no/#linux+v3.5/lib/string.c#L270
-> > memcmp compare N bytes  - 
-> http://lxr.linux.no/#linux+v3.5/lib/string.c#L651
-> 
-> Yes.  So if s contains "abcde" then
-> 
-> 	memcmp(s, "abc", 3) and strncmp(s, "abc", 3) will both 
-> return 0, and
-> 	memcmp(s, "abc", 4) and strncmp(s, "abc", 4) will both return 1.
-> 
-> Alan Stern
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+The majority of patches in this series were sent previously in this RFC:
+
+http://marc.info/?l=linux-pm&m=134247432010192&w=4
+
+but they do not have anything to do with DTs and clean up the code quite
+a bit, so I thought they are worth resending in a different context.
+
+Patch [8/12] is new and replaces a patch that removed some code I thought
+could never be used, which was wrong.
+
+[1/12] - Make it possible to use domain names for adding devices to PM domains.
+[2/12] - Make ARM/shmobile use domain names for adding devices to PM domains.
+[3/12] - Drop the r8a7779's "add device to domain" function.
+[4/12] - Make it possible to use domain names for adding subdomains to PM domains.
+[5/12] - Make ARM/shmobile use domain names for adding subdomains to PM domains.
+[6/12] - Add ARM/shmobile function for "batch" initialization of PM domains.
+[7/12] - Make it possible to power on a PM domain using its name.
+[8/12] - Avoid accessing A4S internals directly in the SH7372 system suspend code.
+[9/12] - Put SH7372 PM domain objects into a table and initialize them in a loop.
+[10/12] - Put R8A7740 PM domain objects into a table and initialize them in a loop.
+[11/12] - Put R8A7779 PM domain objects into a table and initialize them in a loop.
+[12/12] - Unexport rmobile_init_pm_domain() which may be a static function now.
+
+The present series is on top of this patch set sent yesterday:
+
+http://marc.info/?l=linux-pm&m=134421084022735&w=4
+
+Thanks,
+Rafael
+
