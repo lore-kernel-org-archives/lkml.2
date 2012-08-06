@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab2HFMUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 08:20:53 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:45423
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756055Ab2HFMUv (ORCPT
+	id S1756121Ab2HFMXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 08:23:23 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41175 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055Ab2HFMXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 08:20:51 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VPS-7(zz98dI179dNzz1202hzz8275bhz2dh668h839h944hd25he5bhf0ah)
-X-WSS-ID: 0M8C2AM-01-3SL-02
-X-M-MSG: 
-Date: Mon, 6 Aug 2012 14:20:53 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: <linux-pci@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
-        <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>,
-        <dsahern@gmail.com>
-Subject: Re: [PATCH 0/2] Fix ACS path checking
-Message-ID: <20120806122053.GL1996@amd.com>
-References: <20120804180155.6144.83332.stgit@bling.home>
- <20120806105010.GK1996@amd.com>
+	Mon, 6 Aug 2012 08:23:22 -0400
+Date: Mon, 6 Aug 2012 13:23:17 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        linux-kernel@vger.kernel.org, Andreas Heider <andreas@meetr.de>
+Subject: Re: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we
+ can't get a panel mode
+Message-ID: <20120806122317.GA11339@srcf.ucam.org>
+References: <1344009741-14248-1-git-send-email-seth.forshee@canonical.com>
+ <1344009741-14248-4-git-send-email-seth.forshee@canonical.com>
+ <20120803161416.GA22563@srcf.ucam.org>
+ <20120803162451.GF8165@thinkpad-t410>
+ <20120803162702.GA22896@srcf.ucam.org>
+ <20120804165727.GA4980@thinkpad-t410>
+ <20120805211412.GG12232@phenom.ffwll.local>
+ <20120805211838.GA27188@srcf.ucam.org>
+ <20120805214016.GH12232@phenom.ffwll.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120806105010.GK1996@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120805214016.GH12232@phenom.ffwll.local>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 12:50:10PM +0200, Joerg Roedel wrote:
-> On Sat, Aug 04, 2012 at 12:08:46PM -0600, Alex Williamson wrote:
-> Hmm, tried it here, At least pci_request_acs() still gets called. How do
-> you detect if ACS is really enabled?
+On Sun, Aug 05, 2012 at 11:40:16PM +0200, Daniel Vetter wrote:
 
-Okay, I found a problem. pci_request_acs needs to be called before PCI
-probing. Does the attached patch help?
+> As long as it's only apple shipping multi-gpu machines with
+> broken/non-existing vbt, I'll happily stomach the quirk list entries.
+> They're bad, but imo the lesser evil.
 
->From 87a4363be30d5d015a984a60769f29b0607fc5fb Mon Sep 17 00:00:00 2001
-From: Joerg Roedel <joerg.roedel@amd.com>
-Date: Mon, 6 Aug 2012 14:18:42 +0200
-Subject: [PATCH] iommu/amd: Fix pci_request_acs() call-place
+Doing this via quirks means that we'll always be broken on the hardware 
+at the point where it ships. Implementing the functionality means we 
+stand some chance of working out of the box.
 
-The pci_request_acs() function needs to be called before PCI
-probing to be effective. So move it to another call-place to
-ensure that.
-
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/amd_iommu_init.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index 500e7f1..0a2ea31 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1131,9 +1131,6 @@ static int __init amd_iommu_init_pci(void)
- 			break;
- 	}
- 
--	/* Make sure ACS will be enabled */
--	pci_request_acs();
--
- 	ret = amd_iommu_init_devices();
- 
- 	print_iommu_info();
-@@ -1652,6 +1649,9 @@ static bool detect_ivrs(void)
- 
- 	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
- 
-+	/* Make sure ACS will be enabled during PCI probe */
-+	pci_request_acs();
-+
- 	return true;
- }
- 
 -- 
-1.7.9.5
-
-
+Matthew Garrett | mjg59@srcf.ucam.org
