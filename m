@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab2HFJ2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:28:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:7005 "EHLO song.cn.fujitsu.com"
+	id S1755690Ab2HFJ2c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:28:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:42381 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256Ab2HFJXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755602Ab2HFJXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Aug 2012 05:23:42 -0400
 X-IronPort-AV: E=Sophos;i="4.77,719,1336320000"; 
-   d="scan'208";a="5560138"
+   d="scan'208";a="5560137"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Laura Vasilescu <laura@rosedu.org>, Jiri Kosina <jkosina@suse.cz>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        David Rientjes <rientjes@google.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: [RFC V3 PATCH 07/25] procfs: use N_MEMORY instead N_HIGH_MEMORY
-Date: Mon, 6 Aug 2012 17:23:01 +0800
-Message-Id: <1344244999-5081-8-git-send-email-laijs@cn.fujitsu.com>
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: [RFC V3 PATCH 11/25] mempolicy: use N_MEMORY instead N_HIGH_MEMORY
+Date: Mon, 6 Aug 2012 17:23:05 +0800
+Message-Id: <1344244999-5081-12-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
  <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/06 17:23:58,
+ 2012/08/06 17:24:03,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/08/06 17:24:05,
 	Serialize complete at 2012/08/06 17:24:05
@@ -40,47 +38,62 @@ The code here need to handle with the nodes which have memory, we should
 use N_MEMORY instead.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- fs/proc/kcore.c    |    2 +-
- fs/proc/task_mmu.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ mm/mempolicy.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
-index 86c67ee..e96d4f1 100644
---- a/fs/proc/kcore.c
-+++ b/fs/proc/kcore.c
-@@ -249,7 +249,7 @@ static int kcore_update_ram(void)
- 	/* Not inialized....update now */
- 	/* find out "max pfn" */
- 	end_pfn = 0;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 1d771e4..ad0381d 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -212,9 +212,9 @@ static int mpol_set_nodemask(struct mempolicy *pol,
+ 	/* if mode is MPOL_DEFAULT, pol is NULL. This is right. */
+ 	if (pol == NULL)
+ 		return 0;
+-	/* Check N_HIGH_MEMORY */
++	/* Check N_MEMORY */
+ 	nodes_and(nsc->mask1,
+-		  cpuset_current_mems_allowed, node_states[N_HIGH_MEMORY]);
++		  cpuset_current_mems_allowed, node_states[N_MEMORY]);
+ 
+ 	VM_BUG_ON(!nodes);
+ 	if (pol->mode == MPOL_PREFERRED && nodes_empty(*nodes))
+@@ -1363,7 +1363,7 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
+ 		goto out_put;
+ 	}
+ 
+-	if (!nodes_subset(*new, node_states[N_HIGH_MEMORY])) {
++	if (!nodes_subset(*new, node_states[N_MEMORY])) {
+ 		err = -EINVAL;
+ 		goto out_put;
+ 	}
+@@ -2314,7 +2314,7 @@ void __init numa_policy_init(void)
+ 	 * fall back to the largest node if they're all smaller.
+ 	 */
+ 	nodes_clear(interleave_nodes);
 -	for_each_node_state(nid, N_HIGH_MEMORY) {
 +	for_each_node_state(nid, N_MEMORY) {
- 		unsigned long node_end;
- 		node_end  = NODE_DATA(nid)->node_start_pfn +
- 			NODE_DATA(nid)->node_spanned_pages;
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 4540b8f..ed3d381 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -1080,7 +1080,7 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
- 		return NULL;
+ 		unsigned long total_pages = node_present_pages(nid);
  
- 	nid = page_to_nid(page);
--	if (!node_isset(nid, node_states[N_HIGH_MEMORY]))
-+	if (!node_isset(nid, node_states[N_MEMORY]))
- 		return NULL;
- 
- 	return page;
-@@ -1232,7 +1232,7 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
- 	if (md->writeback)
- 		seq_printf(m, " writeback=%lu", md->writeback);
- 
--	for_each_node_state(n, N_HIGH_MEMORY)
-+	for_each_node_state(n, N_MEMORY)
- 		if (md->node[n])
- 			seq_printf(m, " N%d=%lu", n, md->node[n]);
- out:
+ 		/* Preserve the largest node */
+@@ -2395,7 +2395,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 		*nodelist++ = '\0';
+ 		if (nodelist_parse(nodelist, nodes))
+ 			goto out;
+-		if (!nodes_subset(nodes, node_states[N_HIGH_MEMORY]))
++		if (!nodes_subset(nodes, node_states[N_MEMORY]))
+ 			goto out;
+ 	} else
+ 		nodes_clear(nodes);
+@@ -2429,7 +2429,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 		 * Default to online nodes with memory if no nodelist
+ 		 */
+ 		if (!nodelist)
+-			nodes = node_states[N_HIGH_MEMORY];
++			nodes = node_states[N_MEMORY];
+ 		break;
+ 	case MPOL_LOCAL:
+ 		/*
 -- 
 1.7.4.4
 
