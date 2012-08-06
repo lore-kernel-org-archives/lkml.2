@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab2HFOzr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:55:47 -0400
+	id S932131Ab2HFOzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:55:54 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:52257 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756440Ab2HFOzq (ORCPT
+	with ESMTP id S1756556Ab2HFOzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:55:46 -0400
+	Mon, 6 Aug 2012 10:55:52 -0400
 X-IronPort-AV: E=Sophos;i="4.77,720,1336363200"; 
-   d="scan'208";a="204279788"
+   d="scan'208";a="204279800"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
@@ -16,9 +16,9 @@ CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
         <catalin.marinas@arm.com>, <arnd@arndb.de>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v2 17/23] xen/arm: implement alloc/free_xenballooned_pages with alloc_pages/kfree
-Date: Mon, 6 Aug 2012 15:27:20 +0100
-Message-ID: <1344263246-28036-17-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v2 19/23] xen/arm: compile blkfront and blkback
+Date: Mon, 6 Aug 2012 15:27:22 +0100
+Message-ID: <1344263246-28036-19-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
@@ -28,39 +28,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only until we get the balloon driver to work.
-
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/arm/xen/enlighten.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+ drivers/block/xen-blkback/blkback.c  |    1 +
+ include/xen/interface/io/protocols.h |    3 +++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 87b17f0..c244583 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -140,3 +140,21 @@ static int __init xen_init_events(void)
- 	return 0;
- }
- postcore_initcall(xen_init_events);
-+
-+/* XXX: only until balloon is properly working */
-+int alloc_xenballooned_pages(int nr_pages, struct page **pages, bool highmem)
-+{
-+	*pages = alloc_pages(highmem ? GFP_HIGHUSER : GFP_KERNEL,
-+			get_order(nr_pages));
-+	if (*pages == NULL)
-+		return -ENOMEM;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(alloc_xenballooned_pages);
-+
-+void free_xenballooned_pages(int nr_pages, struct page **pages)
-+{
-+	kfree(*pages);
-+	*pages = NULL;
-+}
-+EXPORT_SYMBOL_GPL(free_xenballooned_pages);
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index 73f196c..63dd5b9 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -42,6 +42,7 @@
+ 
+ #include <xen/events.h>
+ #include <xen/page.h>
++#include <xen/xen.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
+ #include "common.h"
+diff --git a/include/xen/interface/io/protocols.h b/include/xen/interface/io/protocols.h
+index 01fc8ae..0eafaf2 100644
+--- a/include/xen/interface/io/protocols.h
++++ b/include/xen/interface/io/protocols.h
+@@ -5,6 +5,7 @@
+ #define XEN_IO_PROTO_ABI_X86_64     "x86_64-abi"
+ #define XEN_IO_PROTO_ABI_IA64       "ia64-abi"
+ #define XEN_IO_PROTO_ABI_POWERPC64  "powerpc64-abi"
++#define XEN_IO_PROTO_ABI_ARM        "arm-abi"
+ 
+ #if defined(__i386__)
+ # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_X86_32
+@@ -14,6 +15,8 @@
+ # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_IA64
+ #elif defined(__powerpc64__)
+ # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_POWERPC64
++#elif defined(__arm__)
++# define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_ARM
+ #else
+ # error arch fixup needed here
+ #endif
 -- 
 1.7.2.5
 
