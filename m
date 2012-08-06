@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab2HFCPj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 22:15:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38985 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755457Ab2HFCPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 22:15:38 -0400
-Message-ID: <501F20BC.2030107@redhat.com>
-Date: Sun, 05 Aug 2012 21:41:16 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755564Ab2HFCRI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 22:17:08 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47262 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755457Ab2HFCRH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 22:17:07 -0400
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: peterz@infradead.org, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH v2 6/9] rbtree: low level optimizations in rb_erase()
-References: <1343946858-8170-1-git-send-email-walken@google.com> <1343946858-8170-7-git-send-email-walken@google.com>
-In-Reply-To: <1343946858-8170-7-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAGh4K3+8etOJvS6PCuJJjtj978F5rtpck_Y34Owqx+yhbg3LhQ@mail.gmail.com>
+References: <CAGh4K3+8etOJvS6PCuJJjtj978F5rtpck_Y34Owqx+yhbg3LhQ@mail.gmail.com>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Mon, 6 Aug 2012 12:16:44 +1000
+Message-ID: <CAGRGNgUNAwPRfH21ifBWVY6w5YRzW9OFz0p5idaX+YZ2eF4QmQ@mail.gmail.com>
+Subject: Re: [PATCH]: Mac80211
+To: Christopher Sacchi <chris.sacchi@gmail.com>
+Cc: linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 06:34 PM, Michel Lespinasse wrote:
-> Various minor optimizations in rb_erase():
-> - Avoid multiple loading of node->__rb_parent_color when computing parent
->    and color information (possibly not in close sequence, as there might
->    be further branches in the algorithm)
-> - In the 1-child subcase of case 1, copy the __rb_parent_color field from
->    the erased node to the child instead of recomputing it from the desired
->    parent and color
-> - When searching for the erased node's successor, differentiate between
->    cases 2 and 3 based on whether any left links were followed. This avoids
->    a condition later down.
-> - In case 3, keep a pointer to the erased node's right child so we don't
->    have to refetch it later to adjust its parent.
-> - In the no-childs subcase of cases 2 and 3, place the rebalance assigment
->    last so that the compiler can remove the following if(rebalance) test.
->
-> Also, added some comments to illustrate cases 2 and 3.
->
-> Signed-off-by: Michel Lespinasse<walken@google.com>
+Hi Christopher,
 
-Acked-by: Rik van Riel <riel@redhat.com>
+On Mon, Aug 6, 2012 at 12:02 PM, Christopher Sacchi
+<chris.sacchi@gmail.com> wrote:
+> The source file needed a change  that was told in the description to
+> know that the #include needed to be fixed, and the function changed
+> another value to 0 (yes) in the description (that said FIXME.)
 
+This still doesn't explain everything.
+
+I'm guessing that the changes you're making fix some bug you've seen.
+
+Your patch description, which should be in the *same* email as the
+correctly formatted patch itself needs to tell us what bug this fixes,
+including any error messages that appear, and do so clearly and
+sensibly so that the maintainer (Johannes) can quickly and easily
+evaluate whether this patch is worth accepting.
+
+You also need to format it correctly so that if he decides to accept
+it, he can import it directly using git.
+
+To do that, you need to send a *single* email that contains the
+description and the patch, following the rules here:
+
+https://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=blob;f=Documentation/SubmittingPatches;h=c379a2a6949f1c1cac04fb6f185c633512f37061;hb=HEAD
+
+Thanks,
 
 -- 
-All rights reversed
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
