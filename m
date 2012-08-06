@@ -1,56 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab2HFCoH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 22:44:07 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:46319 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505Ab2HFCoG (ORCPT
+	id S1755555Ab2HFDDb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 23:03:31 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44515 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513Ab2HFDDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 22:44:06 -0400
-Subject: Re: [PATCH] Extcon: adc_jack: adc-jack driver to support 3.5 pi or
- simliar devices
-From: anish kumar <anish198519851985@gmail.com>
-To: myungjoo.ham@samsung.com
-Cc: =?UTF-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        ANISH KUMAR <anish.singh@samsung.com>
-In-Reply-To: <29824246.53241344219316571.JavaMail.weblogic@epml13>
-References: <29824246.53241344219316571.JavaMail.weblogic@epml13>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 05 Aug 2012 19:44:00 -0700
-Message-ID: <1344221040.1516.0.camel@anish-Inspiron-N5050>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Sun, 5 Aug 2012 23:03:30 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-23-501f34003858
+Date: Mon, 6 Aug 2012 12:04:51 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>, dan.magenheimer@oracle.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 4/5] [RFC][HACK] Add LRU_VOLATILE support to the VM
+Message-ID: <20120806030451.GA11468@bbox>
+References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
+ <1343447832-7182-5-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343447832-7182-5-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-06 at 02:15 +0000, 함명주 wrote:
-> > From: anish kumar <anish198519851985@gmail.com>
-> > 
-> > External connector devices that decides connection information based on
-> > ADC values may use adc-jack device driver. The user simply needs to
-> > provide a table of adc range and connection states. Then, extcon
-> > framework will automatically notify others.
-> > 
-> > Signed-off-by: anish kumar <anish.singh@samsung.com>
-> 
-> - Please remove "get_adc" callbacks still remaining in the header file
-> (and its comments)
-aha.Forgot to remove this.
-> 
-> - Let's not modify un-related driver code (in Kconfig, extcon-gpio)
-I think this was unintended(my mistake).Sending the patch again.
-> 
-> Except that, things look good.
-> 
-> 
-> Cheers
-> MyungJoo
-> 
-> 
+Hi John,
 
+On Fri, Jul 27, 2012 at 11:57:11PM -0400, John Stultz wrote:
+> In an attempt to push the volatile range managment even
+> deeper into the VM code, this is my first attempt at
+> implementing Minchan's idea of a LRU_VOLATILE list in
+> the mm core.
+> 
+> This list sits along side the LRU_ACTIVE_ANON, _INACTIVE_ANON,
+> _ACTIVE_FILE, _INACTIVE_FILE and _UNEVICTABLE lru lists.
+> 
+> When a range is marked volatile, the pages in that range
+> are moved to the LRU_VOLATILE list. Since volatile pages
+> can be quickly purged, this list is the first list we
+> shrink when we need to free memory.
+> 
+> When a page is marked non-volatile, it is moved from the
+> LRU_VOLATILE list to the appropriate LRU_ACTIVE_ list.
 
+I think active list promotion is not good.
+It should go to the inactive list and they get a chance to
+activate from inactive to active sooner or later if it is
+really touched.
+
+> 
+> This patch introduces the LRU_VOLATILE list, an isvolatile
+> page flag, functions to mark and unmark a single page
+> as volatile, and shrinker functions to purge volatile
+> pages.
+> 
+> This is a very raw first pass, and is neither performant
+> or likely bugfree. It works in my trivial testing, but
+> I've not pushed it very hard yet.
+> 
+> I wanted to send it out just to get some inital thoughts
+> on the approach and any suggestions should I be going too
+> far in the wrong direction.
+
+I look at this series and found several nitpicks about implemenataion
+but I think it's not a good stage about concerning it.
+
+Although naming is rather differet with I suggested, I think it's good idea.
+So let's talk about it firstly.
+I will call VOLATILE list as EReclaimale LRU list.
+
+The purpose of it is that prevent unnecessary LRU churning and
+reclaim unnecessary pages fastly so that latency-sensitive system
+don't have a big latency when memory pressure happens.
+
+Targets for the LRU list could be following as in future
+
+1. volatile pages in this patchset.
+2. ephemeral pages of tmem
+3. madivse(DONTNEED)
+4. fadvise(NOREUSE)
+5. PG_reclaimed pages
+6. clean pages if we write CFLRU(clean first LRU)
+
+So if any guys have objection, please raise your hands
+before further progress.
+
+> 
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Android Kernel Team <kernel-team@android.com>
+> CC: Robert Love <rlove@google.com>
+> CC: Mel Gorman <mel@csn.ul.ie>
+> CC: Hugh Dickins <hughd@google.com>
+> CC: Dave Hansen <dave@linux.vnet.ibm.com>
+> CC: Rik van Riel <riel@redhat.com>
+> CC: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+> CC: Dave Chinner <david@fromorbit.com>
+> CC: Neil Brown <neilb@suse.de>
+> CC: Andrea Righi <andrea@betterlinux.com>
+> CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> CC: Mike Hommey <mh@glandium.org>
+> CC: Jan Kara <jack@suse.cz>
+> CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> CC: Michel Lespinasse <walken@google.com>
+> CC: Minchan Kim <minchan@kernel.org>
+> CC: linux-mm@kvack.org <linux-mm@kvack.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  include/linux/fs.h         |    1 +
+>  include/linux/mm_inline.h  |    2 ++
+>  include/linux/mmzone.h     |    1 +
+>  include/linux/page-flags.h |    3 ++
+>  include/linux/swap.h       |    3 ++
+>  mm/memcontrol.c            |    1 +
+>  mm/page_alloc.c            |    1 +
+>  mm/swap.c                  |   71 +++++++++++++++++++++++++++++++++++++++++
+>  mm/vmscan.c                |   76 +++++++++++++++++++++++++++++++++++++++++---
+>  9 files changed, 155 insertions(+), 4 deletions(-)
+> 
+-- 
+Kind regards,
+Minchan Kim
