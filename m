@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab2HFScK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:32:10 -0400
-Received: from www17.your-server.de ([213.133.104.17]:47781 "EHLO
+	id S1756934Ab2HFScR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:32:17 -0400
+Received: from www17.your-server.de ([213.133.104.17]:47794 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab2HFScH (ORCPT
+	with ESMTP id S1756845Ab2HFScN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:32:07 -0400
-X-Greylist: delayed 1343 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Aug 2012 14:32:07 EDT
-Subject: [PATCH] net: Use PTR_RET rather than if(IS_ERR(.. [1]
+	Mon, 6 Aug 2012 14:32:13 -0400
+Subject: [PATCH] [SCSI] libsas: Use PTR_RET rather than if(IS_ERR(.. [1]
 From: Thomas Meyer <thomas@m3y3r.de>
-To: "[acme@ghostprotocols.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org]"@vger.kernel.org
+To: "[JBottomley@parallels.com, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org]"@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Date: Mon, 06 Aug 2012 19:51:16 +0200
-Message-ID: <1344275476.14513.104.camel@localhost.localdomain>
+Date: Mon, 06 Aug 2012 19:51:17 +0200
+Message-ID: <1344275477.14513.112.camel@localhost.localdomain>
 X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -31,31 +30,17 @@ http://coccinelle.lip6.fr/
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/net/appletalk/cops.c b/drivers/net/appletalk/cops.c
---- a/drivers/net/appletalk/cops.c
-+++ b/drivers/net/appletalk/cops.c
-@@ -996,9 +996,7 @@ static int __init cops_module_init(void)
- 		printk(KERN_WARNING "%s: You shouldn't autoprobe with insmod\n",
- 			cardname);
- 	cops_dev = cops_probe(-1);
--	if (IS_ERR(cops_dev))
--		return PTR_ERR(cops_dev);
--        return 0;
-+	return PTR_RET(cops_dev);
- }
+diff -u -p a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
+--- a/drivers/scsi/libsas/sas_scsi_host.c
++++ b/drivers/scsi/libsas/sas_scsi_host.c
+@@ -1093,9 +1093,7 @@ int sas_init_queue(struct sas_ha_struct
  
- static void __exit cops_module_exit(void)
-diff -u -p a/drivers/net/appletalk/ltpc.c b/drivers/net/appletalk/ltpc.c
---- a/drivers/net/appletalk/ltpc.c
-+++ b/drivers/net/appletalk/ltpc.c
-@@ -1243,9 +1243,7 @@ static int __init ltpc_module_init(void)
- 		       "ltpc: Autoprobing is not recommended for modules\n");
- 
- 	dev_ltpc = ltpc_probe();
--	if (IS_ERR(dev_ltpc))
--		return PTR_ERR(dev_ltpc);
+ 	core->queue_thread = kthread_run(sas_queue_thread, sas_ha,
+ 					 "sas_queue_%d", core->shost->host_no);
+-	if (IS_ERR(core->queue_thread))
+-		return PTR_ERR(core->queue_thread);
 -	return 0;
-+	return PTR_RET(dev_ltpc);
++	return PTR_RET(core->queue_thread);
  }
- module_init(ltpc_module_init);
- #endif
+ 
+ void sas_shutdown_queue(struct sas_ha_struct *sas_ha)
