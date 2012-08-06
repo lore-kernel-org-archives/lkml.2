@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab2HFQ2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 12:28:35 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36621 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752170Ab2HFQ2e (ORCPT
+	id S1756701Ab2HFQ3y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 12:29:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33038 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034Ab2HFQ3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 12:28:34 -0400
-Date: Mon, 6 Aug 2012 12:28:33 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Pavel Vasilyev <pavel@pavlinux.ru>
-cc: Pavel Machek <pavel@ucw.cz>, Len Brown <lenb@kernel.org>,
-        <linux-acpi@vger.kernel.org>, <linux-pm@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>
-Subject: Re: [linux-pm] [PATCH] ACPI: replace strlen("string") with
- sizeof("string") -1
-In-Reply-To: <501FEA29.1030400@pavlinux.ru>
-Message-ID: <Pine.LNX.4.44L0.1208061226460.1649-100000@iolanthe.rowland.org>
+	Mon, 6 Aug 2012 12:29:53 -0400
+Date: Mon, 6 Aug 2012 09:29:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>, devel@driverdev.osuosl.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 0/4] promote zcache from staging
+Message-ID: <20120806162948.GA27634@kroah.com>
+References: <d4656ba5-d6d1-4c36-a6c8-f6ecd193b31d@default>
+ <5016DE4E.5050300@linux.vnet.ibm.com>
+ <f47a6d86-785f-498c-8ee5-0d2df1b2616c@default>
+ <20120731155843.GP4789@phenom.dumpdata.com>
+ <20120731161916.GA4941@kroah.com>
+ <20120731175142.GE29533@phenom.dumpdata.com>
+ <20120806003816.GA11375@bbox>
+ <041cb4ce-48ae-4600-9f11-d722bc03b9cc@default>
+ <CAOJsxLHDcgxxu146QWXw0ZhMHMhFOquEFXhF55HK2mCjHzk7hw@mail.gmail.com>
+ <be1daa96-d246-46de-a178-b14b3a862eca@default>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <be1daa96-d246-46de-a178-b14b3a862eca@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Aug 2012, Pavel Vasilyev wrote:
-
-> 06.08.2012 18:36, Alan Stern пишет:
-> > On Mon, 6 Aug 2012, Pavel Machek wrote:
-> >
-> >> On Thu 2012-07-26 21:39:38, Len Brown wrote:
-> >>> ...both give the number of chars in the string
-> >>> without the '\0', as strncmp() wants,
-> >>> but sizeof() is compile-time.
-> >>
-> >> What about introducing something like streq() to do this
-> >> automatically? This is ugly....
-> >>
-> >> #define streq(a, b) ... if (_buildin_constant(b)) ...
-> >>
-> >> ?
-> >>
-> >>> -	if (!strncmp(val, "enable", strlen("enable"))) {
-> >>> +	if (!strncmp(val, "enable", sizeof("enable") - 1)) {
-> >
-> > While you're at it, there's no point using strncmp when you know the
-> > length of one of the strings beforehand.  Just use memcmp, and don't
-> > subtract 1 from the sizeof value.
+On Mon, Aug 06, 2012 at 09:21:22AM -0700, Dan Magenheimer wrote:
+> I suppose:
 > 
-> http://www.gossamer-threads.com/lists/engine?do=post_attachment;postatt_id=41157;list=linux
+>  (E) replace "demo" zcache with new code base and keep it
+>      in staging for another cycle
+> 
+> is another alternative, but I think gregkh has said no to that.
 
-Interestingly, many (all?) of the changes in that patch are wrong 
-because they don't try to match the terminating '\0'.  As a result, 
-they will match against extensions of the target string as well as the 
-target string itself.
+No I have not.  If you all feel that the existing code needs to be
+dropped and replaced with a totally new version, that's fine with me.
+It's forward progress, which is all that I ask for.
 
-Alan Stern
+Hope this helps,
 
+greg k-h
