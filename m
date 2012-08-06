@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab2HFIUP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 04:20:15 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:54561 "EHLO mail.x86-64.org"
+	id S1753919Ab2HFIhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 04:37:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3638 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab2HFIUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 04:20:12 -0400
-Date: Mon, 6 Aug 2012 10:20:09 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Andre Przywara <andre.przywara@amd.com>,
-        cpufreq@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Thomas Renninger <trenn@suse.de>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] acpi-cpufreq: Move modern AMD cpufreq support to
- acpi-cpufreq
-Message-ID: <20120806082009.GA24091@aftab.osrc.amd.com>
-References: <1343305724-2809-1-git-send-email-andre.przywara@amd.com>
- <201208052320.14712.rjw@sisk.pl>
- <501F0422.2030308@zytor.com>
+	id S1753724Ab2HFIhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 04:37:05 -0400
+Message-ID: <501F8226.9090500@redhat.com>
+Date: Mon, 06 Aug 2012 11:36:54 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501F0422.2030308@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefan Priebe <s.priebe@profihost.ag>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
+References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com> <501817C9.6090405@profihost.ag> <5018EC7D.9090702@redhat.com> <5018F5BB.9070500@profihost.ag> <5018F7E6.4020909@redhat.com> <5018F9F6.70307@profihost.ag> <5018FC9B.8040808@redhat.com> <501E4615.7060801@profihost.ag> <501E4AFD.3020806@redhat.com> <501E96BB.5060702@profihost.ag> <501EC2E2.8010802@profihost.ag>
+In-Reply-To: <501EC2E2.8010802@profihost.ag>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 05, 2012 at 04:39:14PM -0700, H. Peter Anvin wrote:
-> On 08/05/2012 02:20 PM, Rafael J. Wysocki wrote:
-> >On Thursday, July 26, 2012, Andre Przywara wrote:
-> >>The programming model for cpufreq on current AMD CPUs is almost identical
-> >>to the one used on Intel and VIA hardware. This patchset merges support
-> >>into acpi-cpufreq and removes it from powernow-k8.
-> >>
-> >>This patchset is heavily based on Matthew Garrett's V4 from last July.
-> >>The boosting part has been mostly reworked and documentation for it
-> >>has been added. Also there was a need for (yet another) BIOS quirk
-> >>on AMD desktop boards.
-> >>
-> >>Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-> >
-> >Peter, any objection to this series?
-> >
-> No.  It might be good for Borislav & Co to look it over, though, if
-> they haven't already.
+On 08/05/2012 10:00 PM, Stefan Priebe wrote:
+> Am 05.08.2012 17:52, schrieb Stefan Priebe:
+>> Am 05.08.2012 12:29, schrieb Avi Kivity:
+>>> On 08/05/2012 01:08 PM, Stefan Priebe wrote:
+>>>> Am 01.08.2012 11:53, schrieb Avi Kivity:
+>>>>> On 08/01/2012 12:42 PM, Stefan Priebe - Profihost AG wrote:
+>>>>>> Am 01.08.2012 11:33, schrieb Avi Kivity:
+>>>>>>>> So here are 3 backtraces from booting the rescue system:
+>>>>>>>> http://pastebin.com/raw.php?i=xCy2pEcP
+>>>>>>>>
+>>>>>>>> To me they all look the same.
+>>>>>>>
+>>>>>>> They are.  What version of qemu are you using?
+>>>>>>
+>>>>>> latest stable-1.1 branch (1.1.1) - which works fine with latest RHEL6
+>>>>>> kernel.
+>>>>>
+>>>>> This could be due to a kernel bug, or due to a different code path
+>>>>> taken
+>>>>> in qemu because of differing features exposed to kvm.
+>>>>>
+>>>>> Please try qemu-kvm.git master and report.
+> 
+> OK got it running it's just awfully slow and i was too impatient. It
+> crashes at the part as 1.1.1 stable.
+> 
 
-Yep, already done so.
+Slow?  what does 'info kvm' say?
 
-Thanks.
+I got master running and it wasn't particularly slow.  I'll try 1.1.1 too.
+
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+error compiling committee.c: too many arguments to function
