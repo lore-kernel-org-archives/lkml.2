@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab2HFJXe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:23:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64148 "EHLO song.cn.fujitsu.com"
+	id S1755697Ab2HFJXt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:23:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:42381 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755225Ab2HFJXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:23:31 -0400
+	id S1755592Ab2HFJXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 05:23:48 -0400
 X-IronPort-AV: E=Sophos;i="4.77,719,1336320000"; 
-   d="scan'208";a="5560128"
+   d="scan'208";a="5560142"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: [RFC V3 PATCH 05/25] node_states: introduce N_MEMORY
-Date: Mon, 6 Aug 2012 17:22:59 +0800
-Message-Id: <1344244999-5081-6-git-send-email-laijs@cn.fujitsu.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jim Cromie <jim.cromie@gmail.com>, Pawel Moll <pawel.moll@arm.com>
+Subject: [RFC V3 PATCH 15/25] init: use N_MEMORY instead N_HIGH_MEMORY
+Date: Mon, 6 Aug 2012 17:23:09 +0800
+Message-Id: <1344244999-5081-16-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1343887288-8866-1-git-send-email-laijs@cn.fujitsu.com>
  <1344244999-5081-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/06 17:23:54,
+ 2012/08/06 17:24:11,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/06 17:23:54,
-	Serialize complete at 2012/08/06 17:23:54
+ 2012/08/06 17:24:12,
+	Serialize complete at 2012/08/06 17:24:12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have N_NORMAL_MEMORY for standing for the nodes that have normal memory with
-zone_type <= ZONE_NORMAL.
+N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+N_MEMORY stands for the nodes that has any memory.
 
-And we have N_HIGH_MEMORY for standing for the nodes that have normal or high
-memory.
-
-But we don't have any word to stand for the nodes that have *any* memory.
-
-And we have N_CPU but without N_MEMORY.
-
-Current code reuse the N_HIGH_MEMORY for this purpose because any node which
-has memory must have high memory or normal memory currently.
-
-A)	But this reusing is bad for *readability*. Because the name
-	N_HIGH_MEMORY just stands for high or normal:
-
-A.example 1)
-	mem_cgroup_nr_lru_pages():
-		for_each_node_state(nid, N_HIGH_MEMORY)
-
-	The user will be confused(why this function just counts for high or
-	normal memory node? does it counts for ZONE_MOVABLE's lru pages?)
-	until someone else tell them N_HIGH_MEMORY is reused to stand for
-	nodes that have any memory.
-
-A.cont) If we introduce N_MEMORY, we can reduce this confusing
-	AND make the code more clearly:
-
-A.example 2) mm/page_cgroup.c use N_HIGH_MEMORY twice:
-
-	One is in page_cgroup_init(void):
-		for_each_node_state(nid, N_HIGH_MEMORY) {
-
-	It means if the node have memory, we will allocate page_cgroup map for
-	the node. We should use N_MEMORY instead here to gaim more clearly.
-
-	The second using is in alloc_page_cgroup():
-		if (node_state(nid, N_HIGH_MEMORY))
-			addr = vzalloc_node(size, nid);
-
-	It means if the node has high or normal memory that can be allocated
-	from kernel. We should keep N_HIGH_MEMORY here, and it will be better
-	if the "any memory" semantic of N_HIGH_MEMORY is removed.
-
-B)	This reusing is out-dated if we introduce MOVABLE-dedicated node.
-	The MOVABLE-dedicated node should not appear in
-	node_stats[N_HIGH_MEMORY] nor node_stats[N_NORMAL_MEMORY],
-	because MOVABLE-dedicated node has no high or normal memory.
-
-	In x86_64, N_HIGH_MEMORY=N_NORMAL_MEMORY, if a MOVABLE-dedicated node
-	is in node_stats[N_HIGH_MEMORY], it is also means it is in
-	node_stats[N_NORMAL_MEMORY], it causes SLUB wrong.
-
-	The slub uses
-		for_each_node_state(nid, N_NORMAL_MEMORY)
-	and creates kmem_cache_node for MOVABLE-dedicated node and cause problem.
-
-In one word, we need a N_MEMORY. We just intrude it as an alias to
-N_HIGH_MEMORY and fix all im-proper usages of N_HIGH_MEMORY in late patches.
+The code here need to handle with the nodes which have memory, we should
+use N_MEMORY instead.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- include/linux/nodemask.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ init/main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
-index 7afc363..c6ebdc9 100644
---- a/include/linux/nodemask.h
-+++ b/include/linux/nodemask.h
-@@ -380,6 +380,7 @@ enum node_states {
- #else
- 	N_HIGH_MEMORY = N_NORMAL_MEMORY,
- #endif
-+	N_MEMORY = N_HIGH_MEMORY,
- 	N_CPU,		/* The node has one or more cpus */
- 	NR_NODE_STATES
- };
+diff --git a/init/main.c b/init/main.c
+index 4121d1f..c9317aa 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -846,7 +846,7 @@ static int __init kernel_init(void * unused)
+ 	/*
+ 	 * init can allocate pages on any node
+ 	 */
+-	set_mems_allowed(node_states[N_HIGH_MEMORY]);
++	set_mems_allowed(node_states[N_MEMORY]);
+ 	/*
+ 	 * init can run on any cpu.
+ 	 */
 -- 
 1.7.4.4
 
