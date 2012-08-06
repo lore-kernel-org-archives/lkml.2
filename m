@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab2HFXk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:40:29 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52488 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486Ab2HFXk1 (ORCPT
+	id S1756933Ab2HFXzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:55:53 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:50219 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756561Ab2HFXzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:40:27 -0400
-Message-ID: <50205592.1030205@gmail.com>
-Date: Tue, 07 Aug 2012 03:38:58 +0400
-From: Max Filippov <jcmvbkbc@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 6 Aug 2012 19:55:50 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Kees Cook <keescook@chromium.org>
+Cc: James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Doug Ledford <dledford@redhat.com>, Joe Korty <joe.korty@ccur.com>,
+        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
+        Dan Rosenberg <drosenberg@vsecurity.com>
+References: <1343262548-21743-1-git-send-email-keescook@chromium.org>
+	<1343262548-21743-2-git-send-email-keescook@chromium.org>
+	<alpine.LRH.2.02.1208031425530.25196@tundra.namei.org>
+	<CAGXu5jKFm3uxwF3hhhzkUJcxJ0zOH89_bAgQGLCEf=g3CpXuHw@mail.gmail.com>
+Date: Mon, 06 Aug 2012 16:55:31 -0700
+In-Reply-To: <CAGXu5jKFm3uxwF3hhhzkUJcxJ0zOH89_bAgQGLCEf=g3CpXuHw@mail.gmail.com>
+	(Kees Cook's message of "Fri, 3 Aug 2012 10:01:10 -0700")
+Message-ID: <87hasfinik.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-xtensa@linux-xtensa.org,
-        linux-next@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@tensilica.com>,
-        Kirill Krinkin <kirill.krinkin@gmail.com>
-Subject: xtensa port maintenance
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+Y1b9ga7wykwWjyeHt5SMJUdrdkwemJUU=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Kees Cook <keescook@chromium.org>
+X-Spam-Relay-Country: 
+Subject: Re: [kernel-hardening] [PATCH 1/2] fs: add link restrictions
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Kees Cook <keescook@chromium.org> writes:
 
-AFAIK xtensa linux port is currently in bad shape: it doesn't work in the
-mainline, it fails to build in the linux-next. The latest working kernels for
-xtensa are 2.6.29...31 trees hosted at the git.linux-xtensa.org.
+> On Thu, Aug 2, 2012 at 9:26 PM, James Morris <jmorris@namei.org> wrote:
+>> On Wed, 25 Jul 2012, Kees Cook wrote:
+>>
+>>> This adds symlink and hardlink restrictions to the Linux VFS.
+>>
+>> Is Al happy with this now?
+>
+> Looks like it; thanks for checking. It's in mainline now:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=800179c9b8a1e796e441674776d11cd4c05d61d7
 
-I have a goal to make xtensa arch in the linux mainline usable.
-Currently I have a number of patches on top of Linus' tree that allow to build
-working allnoconfig, defconfig and allmodconfig kernels for ISS machine with
-dc232b and fsf core variants [1]. For the next several weeks I'm planning to
-forward-port patches accumulated in linux-xtensa.org git trees and make the
-resulting kernels rock-solid. I'd like to restore xtensa participation in the
-linux-next. Further (currently undetailed) plans are to bring modern Linux
-features to the xtensa port, e.g. device trees.
+So there was one trivial little issue with your patch.  You were
+directly comparing kuids instead of using uid_eq.  This only practically
+matters when user namespaces are enabled which is currently impossible
+in 3.6-rc1 :(
 
-I have a couple of questions regarding the path of xtensa-specific patches
-upstream:
-    - which git tree should they be targeted for? Should I set up a tree for
-      pull requests, or will patches be picked up into some existing tree?
-      (Looks like Linus' tree is the right target. AFAIK previously xtensa
-      patches went mostly through akpm tree).
+I have added the following fixup patch to my for-next branch of
+user-namespace.git
 
-    - which mailing lists should they go to?
-      (I guess that besides linux-xtensa@linux-xtensa.org list they should go
-      to linux-kernel@vger.kernel.org for general review. Anything else?)
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Fri, 3 Aug 2012 09:38:08 -0700
+Subject: [PATCH] userns:  Fix link restrictions to use uid_eq
 
-Should you wonder what I am:
-I am a member of St.Petersburg Open Source and Linux Lab [2].
-My previous contributions to Linux are related to p54spi wireless driver.
-I'm also a developer and maintainer of the target-xtensa QEMU port [3].
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ fs/namei.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-
-[1] https://github.com/jcmvbkbc/linux-xtensa
-[2] http://osll.spb.ru
-[3] http://wiki.qemu.org/Features/Xtensa
-
+diff --git a/fs/namei.c b/fs/namei.c
+index 1b46439..05480a6 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -678,7 +678,7 @@ static inline int may_follow_link(struct path *link, struct nameidata *nd)
+ 
+ 	/* Allowed if owner and follower match. */
+ 	inode = link->dentry->d_inode;
+-	if (current_cred()->fsuid == inode->i_uid)
++	if (uid_eq(current_cred()->fsuid, inode->i_uid))
+ 		return 0;
+ 
+ 	/* Allowed if parent directory not sticky and world-writable. */
+@@ -687,7 +687,7 @@ static inline int may_follow_link(struct path *link, struct nameidata *nd)
+ 		return 0;
+ 
+ 	/* Allowed if parent directory and link owner match. */
+-	if (parent->i_uid == inode->i_uid)
++	if (uid_eq(parent->i_uid, inode->i_uid))
+ 		return 0;
+ 
+ 	path_put_conditional(link, nd);
+@@ -757,7 +757,7 @@ static int may_linkat(struct path *link)
+ 	/* Source inode owner (or CAP_FOWNER) can hardlink all they like,
+ 	 * otherwise, it must be a safe source.
+ 	 */
+-	if (cred->fsuid == inode->i_uid || safe_hardlink_source(inode) ||
++	if (uid_eq(cred->fsuid, inode->i_uid) || safe_hardlink_source(inode) ||
+ 	    capable(CAP_FOWNER))
+ 		return 0;
+ 
 -- 
-Thanks.
--- Max
+1.7.5.4
+
