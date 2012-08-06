@@ -1,87 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab2HFGmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 02:42:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39393 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728Ab2HFGms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 02:42:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="176406604"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] power_supply: Added support for power supply
- attribute sources
-Thread-Topic: [PATCH v2] power_supply: Added support for power supply
- attribute sources
-Thread-Index: AQHNa1EJWIdfvnQDiEGweUQ6FfhnH5c9cnvAgA7zGKA=
-Date: Mon, 6 Aug 2012 06:42:43 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD1FB874@BGSMSX102.gar.corp.intel.com>
-References: <1343315844-18824-1-git-send-email-ramakrishna.pallala@intel.com>
- <20120726170411.GA19112@lizard>
- <D854C92F57B1B347B57E531E78D05EAD1C31C9@BGSMSX102.gar.corp.intel.com>
-In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD1C31C9@BGSMSX102.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1752926Ab2HFGo3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 02:44:29 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:36516 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752056Ab2HFGo2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 02:44:28 -0400
+Message-ID: <501F6842.8080707@metafoo.de>
+Date: Mon, 06 Aug 2012 08:46:26 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
+To: anish kumar <anish198519851985@gmail.com>
+CC: cw00.choi@samsung.com, myungjoo.ham@samsung.com, jic23@cam.ac.uk,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        anish kumar <anish.singh@samsung.com>
+Subject: Re: [PATCH] Extcon: adc_jack: adc-jack driver to support 3.5 pi or
+ simliar devices
+References: <1344228841-8342-1-git-send-email-anish198519851985@gmail.com>
+In-Reply-To: <1344228841-8342-1-git-send-email-anish198519851985@gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q766gqkC003703
 
-Hi Anton,
-
-> > On Thu, Jul 26, 2012 at 08:47:24PM +0530, Ramakrishna Pallala wrote:
-> > > On some platforms one driver(or HW chip) may not be able to provide
-> > > all the necessary attributes of the power supply connected to the
-> > > platform or may provide very limited info which can be used by
-> > > core/primary
-> > drivers.
-> > >
-> > > For example a temperature sensor chip placed near the battery can be
-> > > used to report battery ambient temperature but it does not makes
-> > > sense to register sensor driver with power supply class. Or even a
-> > > ADC driver or platform driver may report power supply properties
-> > > like voltage/current or charging status but registering all those
-> > > driver with power supply class is not a practical or ideal approach.
-> > >
-> > > This patch adds the generic support to register the drivers as power
-> > > supply attribute(properties) sources and adds an interface to read
-> > > these attributes from power supply class drivers.
-> > >
-> > > If there are multiple attribute sources of the same type then caller
-> > > has to do source selection by passing the source string in the query struct.
-> > >
-> > > Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-> > > ---
-> > [...]
-> > > +extern int power_supply_attributes_register(struct device *parent,
-> > > +				struct power_supply_attr_source *psy_attr);
-> >
-> > Can you please show some user of the new calls? If I understand
-> > correctly, you're going to call these from sensing (ADC, or some
-> > other) drivers, which would be very very wrong thing to do.
+On 08/06/2012 06:54 AM, anish kumar wrote:
+> From: anish kumar <anish198519851985@gmail.com>
 > 
-> I have submitted two patches, one on smb347_charger driver and one on
-> max17042_battery driver to demonstrate the use of these API's.
-> 
-> [PATCH] smb347_charger: Add support for battery power supply attributes
-> registration [PATCH] max17042_battery: add support for battery STATUS and
-> CHARGE_TYPE
-> 
-> Please review and let me know your comments.
+> External connector devices that decides connection information based on
+> ADC values may use adc-jack device driver. The user simply needs to
+> provide a table of adc range and connection states. Then, extcon
+> framework will automatically notify others.
 
-I haven't received any inputs from you yet.
-Can I assume these changes going to be merged?
+Hi,
 
-Thanks,
-Ram
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+some comments inline.
+
+> 
+> Signed-off-by: anish kumar <anish.singh@samsung.com>
+> ---
+>  drivers/extcon/Kconfig          |    5 +
+>  drivers/extcon/Makefile         |    1 +
+>  drivers/extcon/adc_jack.c       |  183 +++++++++++++++++++++++++++++++++++++++
+>  include/linux/extcon/adc_jack.h |  108 +++++++++++++++++++++++
+>  4 files changed, 297 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/extcon/adc_jack.c
+>  create mode 100644 include/linux/extcon/adc_jack.h
+> 
+[...]
+> diff --git a/drivers/extcon/adc_jack.c b/drivers/extcon/adc_jack.c
+> new file mode 100644
+> index 0000000..fef8334
+> --- /dev/null
+> +++ b/drivers/extcon/adc_jack.c
+> @@ -0,0 +1,183 @@
+[...]
+> +static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
+> +{
+> +	struct adc_jack_data *data = _data;
+> +
+> +	schedule_delayed_work(&data->handler, data->handling_delay);
+
+If you are just going to schedule a delayed work in the interrupt handler you
+don't necessarily need a threaded interrupt handler. I'd use
+request_any_context_irq to request the IRQ.
+
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int adc_jack_probe(struct platform_device *pdev)
+> +{
+> +	struct adc_jack_data *data;
+> +	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
+> +	int i, err = 0;
+> +
+> +	data = kzalloc(sizeof(struct adc_jack_data), GFP_KERNEL);
+
+It makes sense to use devm_kzalloc here.
+
+> +	if (!data)
+> +		return -ENOMEM;
+> +
+> +	data->edev.name = pdata->name;
+> +
+> +	if (pdata->cable_names)
+> +		data->edev.supported_cable = pdata->cable_names;
+> +	else
+> +		data->edev.supported_cable = extcon_cable_name;
+> +
+> +	/* Check the length of array and set num_cables */
+> +	for (i = 0; data->edev.supported_cable[i]; i++)
+> +		;
+> +	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
+> +		err = -EINVAL;
+> +		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
+> +			i - 1);
+> +		goto err_alloc;
+> +	}
+> +	data->num_cables = i;
+> +
+> +	if (!pdata->adc_condition ||
+> +	    !pdata->adc_condition[0].state) {
+> +		err = -EINVAL;
+> +		dev_err(&pdev->dev, "error: adc_condition not defined.\n");
+> +		goto err_alloc;
+> +	}
+> +	data->adc_condition = pdata->adc_condition;
+> +
+> +	/* Check the length of array and set num_conditions */
+> +	for (i = 0; data->adc_condition[i].state; i++)
+> +		;
+> +	data->num_conditions = i;
+> +
+> +	data->chan = iio_channel_get(dev_name(&pdev->dev),
+> +						pdata->consumer_channel);
+
+You should check the result of iio_channel_get.
+
+> +	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
+> +
+> +	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
+> +
+> +	platform_set_drvdata(pdev, data);
+> +
+> +	if (pdata->irq) {
+
+Is the driver actually useful without a interrupt? I mean it wouldn't do much
+expect always reporting a unconnected cable.
+
+> +		data->irq = pdata->irq;
+
+Usually you'd use platform device resources to set the IRQ and not platform
+data. E.g. data->irq = platform_get_irq(pdev, 0);
+
+> +
+> +		err = request_threaded_irq(data->irq, NULL,
+> +					   adc_jack_irq_thread,
+> +					   pdata->irq_flags, pdata->name,
+> +					   data);
+> +
+> +		if (err) {
+> +			dev_err(&pdev->dev, "error: irq %d\n", data->irq);
+> +			err = -EINVAL;
+> +			goto err_initwork;
+> +		}
+> +	}
+> +	err = extcon_dev_register(&data->edev, &pdev->dev);
+> +	if (err)
+> +		goto err_irq;
+> +
+> +	data->ready = true;
+
+If you request the irq after you registered the extcon_dev you don't need ready.
+
+> +
+> +	goto out;
+> +
+> +err_irq:
+> +	if (data->irq)
+> +		free_irq(data->irq, data);
+> +err_initwork:
+> +	cancel_delayed_work_sync(&data->handler);
+> +err_alloc:
+> +	kfree(data);
+> +out:
+> +	return err;
+> +}
+> +
+> +static int __devexit adc_jack_remove(struct platform_device *pdev)
+> +{
+> +	struct adc_jack_data *data = platform_get_drvdata(pdev);
+> +
+> +	extcon_dev_unregister(&data->edev);
+> +	if (data->irq)
+> +		free_irq(data->irq, data);
+> +	platform_set_drvdata(pdev, NULL);
+
+Setting the drvdata to NULL is not necessary.
+
+> +	kfree(data);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver adc_jack_driver = {
+> +	.probe		= adc_jack_probe,
+> +	.remove		= __devexit_p(adc_jack_remove),
+> +	.driver		= {
+> +		.name	= "adc-jack",
+> +		.owner	= THIS_MODULE,
+> +	},
+> +};
+> +
+> +static int __init adc_jack_init(void)
+> +{
+> +	return platform_driver_register(&adc_jack_driver);
+> +}
+> +
+> +static void __exit adc_jack_exit(void)
+> +{
+> +	platform_driver_unregister(&adc_jack_driver);
+> +}
+> +
+> +module_init(adc_jack_init);
+> +module_exit(adc_jack_exit);
+
+module_platform_driver(adc_jack_driver);
+
+> diff --git a/include/linux/extcon/adc_jack.h b/include/linux/extcon/adc_jack.h
+> new file mode 100644
+> index 0000000..4d6a1f7
+> --- /dev/null
+> +++ b/include/linux/extcon/adc_jack.h
+> @@ -0,0 +1,108 @@
+> +/*
+> + * include/linux/extcon/adc_jack.h
+> + *
+> + * Analog Jack extcon driver with ADC-based detection capability.
+> + *
+> + * Copyright (C) 2012 Samsung Electronics
+> + * MyungJoo Ham <myungjoo.ham@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#ifndef _EXTCON_ADC_JACK_H_
+> +#define _EXTCON_ADC_JACK_H_ __FILE__
+> +
+> +#include <linux/module.h>
+> +#include <linux/extcon.h>
+> +
+> +/**
+> + * struct adc_jack_data - internal data for adc_jack device driver
+> + * @edev	- extcon device.
+> + * @cable_names	- list of supported cables.
+> + * @num_cables	- size of cable_names.
+> + * @adc_condition	- list of adc value conditions.
+> + * @num_condition	- size of adc_condition.
+> + * @irq		- irq number of attach/detach event (0 if not exist).
+> + * @handling_delay	- interrupt handler will schedule extcon event
+> + *			handling at handling_delay jiffies.
+> + * @handler	- extcon event handler called by interrupt handler.
+> + * @chan	- iio channel being queried.
+> + * @ready	- true if it is safe to run handler.
+> + */
+> +struct adc_jack_data {
+> +	struct extcon_dev edev;
+> +
+> +	const char **cable_names;
+> +	int num_cables;
+> +	struct adc_jack_cond *adc_condition;
+> +	int num_conditions;
+> +
+> +	int irq;
+> +	unsigned long handling_delay; /* in jiffies */
+> +	struct delayed_work handler;
+> +
+> +	struct iio_channel *chan;
+> +
+> +	bool ready;
+> +};
+
+This struct should not go into the public header. The only one who needs this
+is the driver itself.
+
+> +
+> +/**
+> + * struct adc_jack_cond - condition to use an extcon state
+> + * @state	- the corresponding extcon state (if 0, this struct denotes
+> + *		the last adc_jack_cond element among the array)
+> + * @min_adc	- min adc value for this condition
+> + * @max_adc	- max adc value for this condition
+> + *
+> + * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
+> + * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
+> + * 1 are attached (1<<0 | 1<<1 == 0x3)
+> + *
+> + * Note that you don't need to describe condition for "no cable attached"
+> + * because when no adc_jack_cond is met, state = 0 is automatically chosen.
+> + */
+> +struct adc_jack_cond {
+> +	u32 state; /* extcon state value. 0 if invalid */
+> +	u32 min_adc;
+> +	u32 max_adc;
+> +};
+> +
+> +/**
+> + * struct adc_jack_pdata - platform data for adc jack device.
+> + * @name	- name of the extcon device. If null, "adc-jack" is used.
+> + * @consumer_channel - Unique name to identify the channel on the consumer
+> + *                   side. This typically describes the channels use within
+> + *                   the consumer. E.g. 'battery_voltage'
+> + * @cable_names	- array of cable names ending with null. If the array itself
+> + *		if null, extcon standard cable names are chosen.
+> + * @adc_contition	- array of struct adc_jack_cond conditions ending
+> + *			with .state = 0 entry. This describes how to decode
+> + *			adc values into extcon state.
+> + * @irq		- IRQ number that is triggerred by cable attach/detach
+> + *		events. If irq = 0, use should manually update extcon state
+> + *		with extcon APIs.
+> + * @irq_flags	- irq flags used for the @irq
+> + * @handling_delay_ms	- in some devices, we need to read ADC value some
+> + *			milli-seconds after the interrupt occurs. You may
+> + *			describe such delays with @handling_delay_ms, which
+> + *			is rounded-off by jiffies.
+> + */
+> +struct adc_jack_pdata {
+> +	const char *name;
+> +	const char *consumer_channel;
+> +	/*
+> +	 * NULL if standard extcon names are used.
+> +	 * The last entry should be NULL
+> +	 */
+> +	const char **cable_names;
+
+const char * const *
+
+> +	/* The last entry's state should be 0 */
+> +	struct adc_jack_cond *adc_condition;
+> +
+> +	int irq; /* Jack insertion/removal interrupt */
+> +	unsigned long irq_flags;
+> +	unsigned long handling_delay_ms; /* in ms */
+> +};
+> +
+> +#endif /* _EXTCON_ADC_JACK_H */
+
