@@ -1,97 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756955Ab2HFXPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:15:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53148 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab2HFXPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:15:42 -0400
-From: manoj.iyer@canonical.com
-To: linux-kernel@vger.kernel.org
-Cc: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
-        mjg@redhat.com, ibm-acpi@hmh.eng.br
-Subject: [PATCH] thinkpad-acpi: recognize latest V-Series using DMI_BIOS_VENDOR
-Date: Mon,  6 Aug 2012 18:15:37 -0500
-Message-Id: <1344294937-19338-1-git-send-email-manoj.iyer@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756989Ab2HFXQx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:16:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3834 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697Ab2HFXQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 19:16:51 -0400
+Date: Mon, 6 Aug 2012 19:16:33 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: device-mapper development <dm-devel@redhat.com>
+cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>,
+        vgoyal@redhat.com, yehuda@hq.newdream.net, tj@kernel.org,
+        sage@newdream.net, agk@redhat.com, drbd-dev@lists.linbit.com
+Subject: Re: [dm-devel] [PATCH v5 12/12] block: Only clone bio vecs that are
+ in use
+In-Reply-To: <1344290921-25154-13-git-send-email-koverstreet@google.com>
+Message-ID: <Pine.LNX.4.64.1208061913500.21956@file.rdu.redhat.com>
+References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
+ <1344290921-25154-13-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+Hi Kent
 
-In the latest V-series bios DMI_PRODUCT_VERSION does not contain
-the string Lenovo or Thinkpad, but is set to the model number, this
-causes the thinkpad_acpi module to fail to load. Recognize laptop
-as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
+When you change the semantics of an exported function, rename that 
+function. There may be external modules that use __bio_clone and this 
+change could silently introduce bugs in them.
 
-Test on V490u
-=============
-== After the patch ==
+Otherwise, the patchset looks fine.
 
-[ 1350.295757] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-[ 1350.295760] thinkpad_acpi: http://ibm-acpi.sf.net/
-[ 1350.295761] thinkpad_acpi: ThinkPad BIOS H7ET21WW (1.00 ), EC unknown
-[ 1350.295763] thinkpad_acpi: Lenovo LENOVO, model LV5DXXX
-[ 1350.296086] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-[ 1350.296694] thinkpad_acpi: radio switch found; radios are enabled
-[ 1350.296703] thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
-[ 1350.306466] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
-[ 1350.307082] Registered led device: tpacpi::thinklight
-[ 1350.307215] Registered led device: tpacpi::power
-[ 1350.307255] Registered led device: tpacpi::standby
-[ 1350.307294] Registered led device: tpacpi::thinkvantage
-[ 1350.308160] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
-[ 1350.308333] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
-[ 1350.312287] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input14
+Mikulas
 
-== Before the patch ==
-sudo modprobe thinkpad_acpi
-FATAL: Error inserting thinkpad_acpi (/lib/modules/3.2.0-27-generic/kernel/drivers/platform/x86/thinkpad_acpi.ko): No such device
 
-Test on B485
-=============
-This patch was also test in a B485 where the thinkpad_acpi module does not
-have any issues loading. But, I tested it to make sure this patch does not
-break on already functioning models of Lenovo products.
+On Mon, 6 Aug 2012, Kent Overstreet wrote:
 
-[13486.746359] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-[13486.746364] thinkpad_acpi: http://ibm-acpi.sf.net/
-[13486.746368] thinkpad_acpi: ThinkPad BIOS HJET15WW(1.01), EC unknown
-[13486.746373] thinkpad_acpi: Lenovo Lenovo LB485, model 814TR01
-[13486.747300] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-[13486.752435] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
-[13486.752883] Registered led device: tpacpi::thinklight
-[13486.752915] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
-[13486.753216] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
-[13486.757147] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input15
-
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
----
- drivers/platform/x86/thinkpad_acpi.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index e7f7328..d05c0a4 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -8662,7 +8662,14 @@ static int __must_check __init get_thinkpad_model_data(
- 		tp->model_str = kstrdup(s, GFP_KERNEL);
- 		if (!tp->model_str)
- 			return -ENOMEM;
--	}
-+	} else {
-+		s = dmi_get_system_info(DMI_BIOS_VENDOR);
-+		if (s && !(strnicmp(s, "Lenovo", 6))) {
-+			tp->model_str = kstrdup(s, GFP_KERNEL);
-+			if (!tp->model_str)
-+				return -ENOMEM;
-+		}
-+	} 
- 
- 	s = dmi_get_system_info(DMI_PRODUCT_NAME);
- 	tp->nummodel_str = kstrdup(s, GFP_KERNEL);
--- 
-1.7.9.5
-
+> bcache creates large bios internally, and then splits them according to
+> the device requirements before it sends them down. If a lower level
+> device tries to clone the bio, and the original bio had more than
+> BIO_MAX_PAGES, the clone will fail unecessarily.
+> 
+> We can fix this by only cloning the bio vecs that are actually in use.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> ---
+>  drivers/block/rbd.c |    2 +-
+>  drivers/md/dm.c     |    5 ++---
+>  fs/bio.c            |   13 +++++++------
+>  3 files changed, 10 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+> index 692cf05..21edfe5 100644
+> --- a/drivers/block/rbd.c
+> +++ b/drivers/block/rbd.c
+> @@ -714,7 +714,7 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
+>  	}
+>  
+>  	while (old_chain && (total < len)) {
+> -		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
+> +		tmp = bio_kmalloc(gfpmask, bio_segments(old_chain));
+>  		if (!tmp)
+>  			goto err_out;
+>  
+> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+> index 3f3c26e..193fb19 100644
+> --- a/drivers/md/dm.c
+> +++ b/drivers/md/dm.c
+> @@ -1057,11 +1057,10 @@ static struct bio *clone_bio(struct bio *bio, sector_t sector,
+>  {
+>  	struct bio *clone;
+>  
+> -	clone = bio_alloc_bioset(GFP_NOIO, bio->bi_max_vecs, bs);
+> +	clone = bio_alloc_bioset(GFP_NOIO, bv_count, bs);
+>  	__bio_clone(clone, bio);
+>  	clone->bi_sector = sector;
+> -	clone->bi_idx = idx;
+> -	clone->bi_vcnt = idx + bv_count;
+> +	clone->bi_vcnt = bv_count;
+>  	clone->bi_size = to_bytes(len);
+>  	clone->bi_flags &= ~(1 << BIO_SEG_VALID);
+>  
+> diff --git a/fs/bio.c b/fs/bio.c
+> index 38ad026..631c67e 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
+> @@ -449,8 +449,9 @@ EXPORT_SYMBOL(bio_phys_segments);
+>   */
+>  void __bio_clone(struct bio *bio, struct bio *bio_src)
+>  {
+> -	memcpy(bio->bi_io_vec, bio_src->bi_io_vec,
+> -		bio_src->bi_max_vecs * sizeof(struct bio_vec));
+> +	memcpy(bio->bi_io_vec,
+> +	       bio_iovec(bio_src),
+> +	       bio_segments(bio_src) * sizeof(struct bio_vec));
+>  
+>  	/*
+>  	 * most users will be overriding ->bi_bdev with a new target,
+> @@ -459,10 +460,10 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
+>  	bio->bi_sector = bio_src->bi_sector;
+>  	bio->bi_bdev = bio_src->bi_bdev;
+>  	bio->bi_flags |= 1 << BIO_CLONED;
+> +	bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+>  	bio->bi_rw = bio_src->bi_rw;
+> -	bio->bi_vcnt = bio_src->bi_vcnt;
+> +	bio->bi_vcnt = bio_segments(bio_src);
+>  	bio->bi_size = bio_src->bi_size;
+> -	bio->bi_idx = bio_src->bi_idx;
+>  }
+>  EXPORT_SYMBOL(__bio_clone);
+>  
+> @@ -477,7 +478,7 @@ EXPORT_SYMBOL(__bio_clone);
+>  struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
+>  			     struct bio_set *bs)
+>  {
+> -	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
+> +	struct bio *b = bio_alloc_bioset(gfp_mask, bio_segments(bio), bs);
+>  
+>  	if (!b)
+>  		return NULL;
+> @@ -507,7 +508,7 @@ EXPORT_SYMBOL(bio_clone);
+>  
+>  struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
+>  {
+> -	struct bio *b = bio_kmalloc(gfp_mask, bio->bi_max_vecs);
+> +	struct bio *b = bio_kmalloc(gfp_mask, bio_segments(bio));
+>  
+>  	if (!b)
+>  		return NULL;
+> -- 
+> 1.7.7.3
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
+> 
