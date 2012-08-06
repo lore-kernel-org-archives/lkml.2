@@ -1,172 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157Ab2HFJFY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 05:05:24 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51175 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab2HFJDw (ORCPT
+	id S1754245Ab2HFJGS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 05:06:18 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21065 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab2HFJGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 05:03:52 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-33-501f88753796
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 4/7] perf hists: Handle field separator properly
-Date: Mon,  6 Aug 2012 17:57:39 +0900
-Message-Id: <1344243462-28403-5-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1344243462-28403-1-git-send-email-namhyung@kernel.org>
-References: <1344243462-28403-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 6 Aug 2012 05:06:15 -0400
+Date: Mon, 6 Aug 2012 12:06:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Damien Cassou <damien.cassou@lifl.fr>
+Cc: David Brown <davidb@codeaurora.org>, kernel-janitors@vger.kernel.org,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-arm-msm@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] drivers/video/msm/mddi_client_nt35399.c: use devm_
+ functions
+Message-ID: <20120806090602.GL4352@mwanda>
+References: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr>
+ <1344008414-2894-5-git-send-email-damien.cassou@lifl.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344008414-2894-5-git-send-email-damien.cassou@lifl.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Fri, Aug 03, 2012 at 05:40:13PM +0200, Damien Cassou wrote:
+> @@ -233,7 +234,6 @@ static int mddi_nt35399_remove(struct platform_device *pdev)
+>  	struct panel_info *panel = platform_get_drvdata(pdev);
+> 
+>  	setup_vsync(panel, 0);
+> -	kfree(panel);
+>  	return 0;
+>  }
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
 
-When a field separator is given, the output format doesn't need to be
-fancy like aligning to column length, coloring the percent value and
-so on. And since there's a slight difference to normal format, fix it
-not to break backward compatibility.
+It's weird.  This patch doesn't apply for me unless I add a blank
+line between the "}" and the "--".  I'm not sure if that line is
+getting removed by your email client or by the kernel janitors email
+list.
 
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/hist.c | 45 ++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 42 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 6817fcb0b303..01724a9905c0 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -31,6 +31,10 @@ static int hpp_entry_overhead(struct hpp_context *ctx,
- 			      struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period / ctx->total_period;
-+
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
- }
- 
-@@ -55,6 +59,10 @@ static int hpp_entry_overhead_sys(struct hpp_context *ctx,
- 				  struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period_sys / ctx->total_period;
-+
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
- }
- 
-@@ -79,6 +87,10 @@ static int hpp_entry_overhead_us(struct hpp_context *ctx,
- 				 struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period_us / ctx->total_period;
-+
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
- }
- 
-@@ -103,6 +115,10 @@ static int hpp_entry_overhead_guest_sys(struct hpp_context *ctx,
- 					struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period_guest_sys / ctx->total_period;
-+
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
- }
- 
-@@ -127,6 +143,10 @@ static int hpp_entry_overhead_guest_us(struct hpp_context *ctx,
- 				       struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period_guest_us / ctx->total_period;
-+
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
- }
- 
-@@ -143,6 +163,9 @@ static int hpp_width_samples(struct hpp_context *ctx __used)
- static int hpp_entry_samples(struct hpp_context *ctx,
- 			     struct hist_entry *he)
- {
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%" PRIu64, he->nr_events);
-+
- 	return scnprintf(ctx->s, ctx->size, "%11" PRIu64, he->nr_events);
- }
- 
-@@ -159,6 +182,9 @@ static int hpp_width_period(struct hpp_context *ctx __used)
- static int hpp_entry_period(struct hpp_context *ctx,
- 			    struct hist_entry *he)
- {
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%" PRIu64, he->period);
-+
- 	return scnprintf(ctx->s, ctx->size, "%12" PRIu64, he->period);
- }
- 
-@@ -190,10 +216,16 @@ static int hpp_entry_delta(struct hpp_context *ctx,
- 		new_percent = 100.0 * he->period / new_total;
- 
- 	diff = new_percent - old_percent;
--	if (fabs(diff) < 0.01)
-+	if (fabs(diff) < 0.01) {
-+		if (symbol_conf.field_sep)
-+			return scnprintf(ctx->s, ctx->size, " ");
- 		return scnprintf(ctx->s, ctx->size, "       ");
-+	}
- 
- 	scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
-+
-+	if (symbol_conf.field_sep)
-+		scnprintf(ctx->s, ctx->size, "%s", buf);
- 	return scnprintf(ctx->s, ctx->size, "%7.7s", buf);
- }
- 
-@@ -212,10 +244,16 @@ static int hpp_entry_displ(struct hpp_context *ctx,
- {
- 	char buf[32];
- 
--	if (!ctx->displacement)
-+	if (!ctx->displacement) {
-+		if (symbol_conf.field_sep)
-+			return scnprintf(ctx->s, ctx->size, " ");
- 		return scnprintf(ctx->s, ctx->size, "     ");
-+	}
- 
- 	scnprintf(buf, sizeof(buf), "%+4ld", ctx->displacement);
-+
-+	if (symbol_conf.field_sep)
-+		scnprintf(ctx->s, ctx->size, "%s", buf);
- 	return scnprintf(ctx->s, ctx->size, "%6.6s", buf);
- }
- 
-@@ -641,11 +679,12 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 		.displacement	= displacement,
- 		.ptr		= pair_hists,
- 	};
-+	bool color = !symbol_conf.field_sep;
- 
- 	if (size == 0 || size > sizeof(bf))
- 		size = ctx.size = sizeof(bf);
- 
--	ret = hist_entry__period_snprintf(&ctx, he, true);
-+	ret = hist_entry__period_snprintf(&ctx, he, color);
- 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
- 
- 	ret = fprintf(fp, "%s\n", bf);
--- 
-1.7.11.2
+regards,
+dan carpenter
 
