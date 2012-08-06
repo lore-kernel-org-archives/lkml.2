@@ -1,107 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab2HFBh6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 21:37:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31773 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755168Ab2HFBh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 21:37:56 -0400
-From: Ian Kent <ikent@redhat.com>
-Subject: [PATCH] autofs4 - fix get_next_positive_subdir()
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Jan Sanislo <oystr@cs.washington.edu>
-Date: Mon, 06 Aug 2012 09:37:47 +0800
-Message-ID: <20120806013747.2915.64344.stgit@perseus.themaw.net>
-User-Agent: StGIT/0.14.3
+	id S1755436Ab2HFBpg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 21:45:36 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35239 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755286Ab2HFBpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 21:45:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <501EB3C5.1080501@gmail.com>
+References: <1333777207-4151-1-git-send-email-olof@lixom.net>
+ <20120407070206.GA17623@core.coreip.homeip.net> <4F8089A9.6080704@raumfeld.com>
+ <20120503043651.GA11830@core.coreip.homeip.net> <20120713070102.GA2223@core.coreip.homeip.net>
+ <500561AF.9090901@gmail.com> <5008296C.5070709@gmail.com> <20120723165120.GB26577@core.coreip.homeip.net>
+ <500EE314.7040708@gmail.com> <501E9DDB.3020807@gmail.com> <CAN1soZy-_MdjqS3r3Tc1XET6tPzMxDqjYq3Tn0fYLBNNUkdVAg@mail.gmail.com>
+ <501EB3C5.1080501@gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Mon, 6 Aug 2012 09:45:13 +0800
+Message-ID: <CAMPhdO8fZoFrUymb347whDpFkbgxsu8vVSqw5BSd=L4gicfXgg@mail.gmail.com>
+Subject: Re: Emulating level IRQs
+To: Daniel Mack <zonque@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Kent <raven@themaw.net>
+On Mon, Aug 6, 2012 at 1:56 AM, Daniel Mack <zonque@gmail.com> wrote:
+> On 05.08.2012 18:56, Haojian Zhuang wrote:
+>> On Mon, Aug 6, 2012 at 12:22 AM, Daniel Mack <zonque@gmail.com> wrote:
+>>> On 24.07.2012 20:01, Daniel Mack wrote:
+>>>> On 23.07.2012 18:51, Dmitry Torokhov wrote:
+>>>>> On Thu, Jul 19, 2012 at 05:36:12PM +0200, Daniel Mack wrote:
+>>>>
+>>>>>> Ok, finally I found some time. In general, the patch works fine. The
+>>>>>> only detail I had to amend was the irqflags, which were changed from
+>>>>>> IRQF_TRIGGER_RISING/IRQF_TRIGGER_FALLING to
+>>>>>> IRQF_TRIGGER_HIGH/IRQF_TRIGGER_LOW, which doesn't work as the PXA can't
+>>>>>> deal with level-based IRQs. Changing this back to RISING/FALLING makes
+>>>>>> the driver work again.
+>>>>>
+>>>>> Hmm, but that would mean we need to restore reading the data in open()
+>>>>> to make sure we re-arm IRQ in case somebody touched the screen before it
+>>>>> was opened by userspace...
+>>>>
+>>>> I had another look at this and don't really know what to do here. We
+>>>> definitely need level interrupts for this device as the interrupt line's
+>>>> level is the only that tells us when we can stop reading from the
+>>>> device. So it's not just the start condition that bites us here.
+>>>>
+>>>> I copied some people that might help find a solution.
+>>>>
+>>>> To summarize the problem: The EETI touchscreen is a device that asserts
+>>>> a GPIO line when it has events to deliver and waits for I2C commands to
+>>>> empty its buffers. When there are no more buffered events, it will
+>>>> de-assert the line.
+>>>>
+>>>> This device is connected to a PXA GPIO that is only able to deliver edge
+>>>> IRQs, and the old implemenation was to wait for an interrupt and then
+>>>> read data as long as the IRQ's corresponding GPIO was asserted. However,
+>>>> expecting that an IRQ is mappable to a GPIO is not something we should
+>>>> do, so the only clean solution is to teach the PXA GPIO controller level
+>>>> IRQs.
+>>>>
+>>>> So it boils down to the question: Is there any easy and generic way to
+>>>> emulate level irq on chips that don't support that natively?
+>>>
+>>> Otherwise, we would need some sort of generic irq_to_gpio() again, and
+>>> the interrupt line the driver listens to must have support for that sort
+>>> of mapping.
+>>>
+>>> Any opinion on this, anyone?
+>>>
+>> Since you're using gpio as input, you need to call gpio_request() and set it
+>> as input direction. And you could also transfer the gpio number into touch
+>> driver via platform data. Is it OK for you?
+>
+> No, that's not the point. What we get via the i2c runtime data is an
+> interrupt number. The driver is driven by that interrupt and doesn't
+> poll on a GPIO line, which is how it should be.
+>
+> However, in order to know when to stop reading from the device, we need
+> to monitor the GPIO line after the interrupt has arrived, and read as
+> long as the line is asserted. Then we stop reading and wait for the next
+> interrupt to arrive.
+>
+> Hence, what we need here is either a GPIO/IRQ controller that is able to
+> handle level-IRQs (which the PXA can't do), or we need to have a generic
+> way to map IRQ lines back to GPIOs.
+>
+> Of course, I could pass the GPIO in the platform data and the IRQ in the
+> I2C data and leave it to the user of the driver to keep both values in
+> sync, but I wanted to avoid that.
 
-Following a report of a crash during an automount expire I found that
-the locking in fs/autofs4/expire.c:get_next_positive_subdir() was wrong.
-Not only is the locking wrong but the function is more complex than it
-needs to be.
+I see no better way except to encode the GPIO line into the platform data.
+In order to solve the sync issue, I personally think mapping the GPIO to IRQ
+would be better here, and ignore the irq value from the I2C data. A forward
+mapping of gpio_to_irq() will be less problematic here, and for those platforms
+where gpio_to_irq() returns invalid, those platforms are probably not desirable
+for this chip.
 
-The function is meant to calculate (and dget) the next entry in the list
-of directories contained in the root of an autofs mount point (an autofs
-indirect mount to be precise). The main problem was that the d_lock of
-the owner of the list was not being taken when walking the list, which
-lead to list corruption under load. The only other lock that needs to
-be taken is against the next dentry candidate so it can be checked for
-usability.
+So my understanding, if it's correct, that we can treat the EETI chip as having
+two separate inputs: one IRQ line (for the event notification) and one GPIO line
+(for a condition where data are emptied), we could naturally have two numbers
+in the driver, but unfortunately they end up being in sync as they are
+physically
+one pin.
 
-Signed-off-by: Ian Kent <raven@themaw.net>
----
-
- fs/autofs4/expire.c |   31 +++++++++++++------------------
- 1 files changed, 13 insertions(+), 18 deletions(-)
-
-diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
-index 1feb68e..8c0e56d 100644
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -94,25 +94,21 @@ static struct dentry *get_next_positive_subdir(struct dentry *prev,
- {
- 	struct autofs_sb_info *sbi = autofs4_sbi(root->d_sb);
- 	struct list_head *next;
--	struct dentry *p, *q;
-+	struct dentry *q;
- 
- 	spin_lock(&sbi->lookup_lock);
-+	spin_lock(&root->d_lock);
- 
--	if (prev == NULL) {
--		spin_lock(&root->d_lock);
-+	if (prev)
-+		next = prev->d_u.d_child.next;
-+	else {
- 		prev = dget_dlock(root);
- 		next = prev->d_subdirs.next;
--		p = prev;
--		goto start;
- 	}
- 
--	p = prev;
--	spin_lock(&p->d_lock);
--again:
--	next = p->d_u.d_child.next;
--start:
-+cont:
- 	if (next == &root->d_subdirs) {
--		spin_unlock(&p->d_lock);
-+		spin_unlock(&root->d_lock);
- 		spin_unlock(&sbi->lookup_lock);
- 		dput(prev);
- 		return NULL;
-@@ -121,16 +117,15 @@ start:
- 	q = list_entry(next, struct dentry, d_u.d_child);
- 
- 	spin_lock_nested(&q->d_lock, DENTRY_D_LOCK_NESTED);
--	/* Negative dentry - try next */
--	if (!simple_positive(q)) {
--		spin_unlock(&p->d_lock);
--		lock_set_subclass(&q->d_lock.dep_map, 0, _RET_IP_);
--		p = q;
--		goto again;
-+	/* Already gone or negative dentry (under construction) - try next */
-+	if (q->d_count == 0 || !simple_positive(q)) {
-+		spin_unlock(&q->d_lock);
-+		next = q->d_u.d_child.next;
-+		goto cont;
- 	}
- 	dget_dlock(q);
- 	spin_unlock(&q->d_lock);
--	spin_unlock(&p->d_lock);
-+	spin_unlock(&root->d_lock);
- 	spin_unlock(&sbi->lookup_lock);
- 
- 	dput(prev);
-
+And Daniel, I haven't looked into the driver myself, I guess you might need to
+change the pin role to GPIO with GPIO API explicitly at run-time, e.g.
+gpio_direction_input() followed by gpio_get_value(), but I believe you should
+have already done that good enough as always :-)
