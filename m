@@ -1,117 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab2HFBpg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 21:45:36 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35239 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755286Ab2HFBpf (ORCPT
+	id S1755463Ab2HFBwX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 21:52:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51028 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286Ab2HFBwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 21:45:35 -0400
+	Sun, 5 Aug 2012 21:52:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <501EB3C5.1080501@gmail.com>
-References: <1333777207-4151-1-git-send-email-olof@lixom.net>
- <20120407070206.GA17623@core.coreip.homeip.net> <4F8089A9.6080704@raumfeld.com>
- <20120503043651.GA11830@core.coreip.homeip.net> <20120713070102.GA2223@core.coreip.homeip.net>
- <500561AF.9090901@gmail.com> <5008296C.5070709@gmail.com> <20120723165120.GB26577@core.coreip.homeip.net>
- <500EE314.7040708@gmail.com> <501E9DDB.3020807@gmail.com> <CAN1soZy-_MdjqS3r3Tc1XET6tPzMxDqjYq3Tn0fYLBNNUkdVAg@mail.gmail.com>
- <501EB3C5.1080501@gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Mon, 6 Aug 2012 09:45:13 +0800
-Message-ID: <CAMPhdO8fZoFrUymb347whDpFkbgxsu8vVSqw5BSd=L4gicfXgg@mail.gmail.com>
-Subject: Re: Emulating level IRQs
-To: Daniel Mack <zonque@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Date: Mon, 6 Aug 2012 01:52:20 +0000
+Message-ID: <CAGh4K3+RODO0zuDThZKKzBCLexXa1M7qYVUu6knciruZ0KWGRQ@mail.gmail.com>
+Subject: [PATCH]: Mac80211 Driver patch
+From: Christopher Sacchi <chris.sacchi@gmail.com>
+To: linux-wireless@vger.kernel.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 1:56 AM, Daniel Mack <zonque@gmail.com> wrote:
-> On 05.08.2012 18:56, Haojian Zhuang wrote:
->> On Mon, Aug 6, 2012 at 12:22 AM, Daniel Mack <zonque@gmail.com> wrote:
->>> On 24.07.2012 20:01, Daniel Mack wrote:
->>>> On 23.07.2012 18:51, Dmitry Torokhov wrote:
->>>>> On Thu, Jul 19, 2012 at 05:36:12PM +0200, Daniel Mack wrote:
->>>>
->>>>>> Ok, finally I found some time. In general, the patch works fine. The
->>>>>> only detail I had to amend was the irqflags, which were changed from
->>>>>> IRQF_TRIGGER_RISING/IRQF_TRIGGER_FALLING to
->>>>>> IRQF_TRIGGER_HIGH/IRQF_TRIGGER_LOW, which doesn't work as the PXA can't
->>>>>> deal with level-based IRQs. Changing this back to RISING/FALLING makes
->>>>>> the driver work again.
->>>>>
->>>>> Hmm, but that would mean we need to restore reading the data in open()
->>>>> to make sure we re-arm IRQ in case somebody touched the screen before it
->>>>> was opened by userspace...
->>>>
->>>> I had another look at this and don't really know what to do here. We
->>>> definitely need level interrupts for this device as the interrupt line's
->>>> level is the only that tells us when we can stop reading from the
->>>> device. So it's not just the start condition that bites us here.
->>>>
->>>> I copied some people that might help find a solution.
->>>>
->>>> To summarize the problem: The EETI touchscreen is a device that asserts
->>>> a GPIO line when it has events to deliver and waits for I2C commands to
->>>> empty its buffers. When there are no more buffered events, it will
->>>> de-assert the line.
->>>>
->>>> This device is connected to a PXA GPIO that is only able to deliver edge
->>>> IRQs, and the old implemenation was to wait for an interrupt and then
->>>> read data as long as the IRQ's corresponding GPIO was asserted. However,
->>>> expecting that an IRQ is mappable to a GPIO is not something we should
->>>> do, so the only clean solution is to teach the PXA GPIO controller level
->>>> IRQs.
->>>>
->>>> So it boils down to the question: Is there any easy and generic way to
->>>> emulate level irq on chips that don't support that natively?
->>>
->>> Otherwise, we would need some sort of generic irq_to_gpio() again, and
->>> the interrupt line the driver listens to must have support for that sort
->>> of mapping.
->>>
->>> Any opinion on this, anyone?
->>>
->> Since you're using gpio as input, you need to call gpio_request() and set it
->> as input direction. And you could also transfer the gpio number into touch
->> driver via platform data. Is it OK for you?
->
-> No, that's not the point. What we get via the i2c runtime data is an
-> interrupt number. The driver is driven by that interrupt and doesn't
-> poll on a GPIO line, which is how it should be.
->
-> However, in order to know when to stop reading from the device, we need
-> to monitor the GPIO line after the interrupt has arrived, and read as
-> long as the line is asserted. Then we stop reading and wait for the next
-> interrupt to arrive.
->
-> Hence, what we need here is either a GPIO/IRQ controller that is able to
-> handle level-IRQs (which the PXA can't do), or we need to have a generic
-> way to map IRQ lines back to GPIOs.
->
-> Of course, I could pass the GPIO in the platform data and the IRQ in the
-> I2C data and leave it to the user of the driver to keep both values in
-> sync, but I wanted to avoid that.
+Patch for Mac80211, and no this is not spam, so do not ignore my
+e-mails. This is a patch, so copy this into your favorite text editor
+and save it as test.patch. Let the maintainers read and know! By the
+way, it is under the first -- line and to the 2nd to last line. :)
+--
+--- main.c	2012-07-21 20:58:29.000000000 +0000
++++ mainnew.c	2012-08-05 20:00:37.000000000 +0000
+@@ -32,7 +32,7 @@
+ #include "led.h"
+ #include "cfg.h"
+ #include "debugfs.h"
+-
++#include "net/rfkill/rfkill.h"
+ static struct lock_class_key ieee80211_rx_skb_queue_class;
 
-I see no better way except to encode the GPIO line into the platform data.
-In order to solve the sync issue, I personally think mapping the GPIO to IRQ
-would be better here, and ignore the irq value from the I2C data. A forward
-mapping of gpio_to_irq() will be less problematic here, and for those platforms
-where gpio_to_irq() returns invalid, those platforms are probably not desirable
-for this chip.
+ void ieee80211_configure_filter(struct ieee80211_local *local)
+@@ -183,6 +183,7 @@
+ 		 *
+ 		 */
+ 		/* WARN_ON(ret); */
++		WARN_ON(1)
+ 	}
 
-So my understanding, if it's correct, that we can treat the EETI chip as having
-two separate inputs: one IRQ line (for the event notification) and one GPIO line
-(for a condition where data are emptied), we could naturally have two numbers
-in the driver, but unfortunately they end up being in sync as they are
-physically
-one pin.
-
-And Daniel, I haven't looked into the driver myself, I guess you might need to
-change the pin role to GPIO with GPIO API explicitly at run-time, e.g.
-gpio_direction_input() followed by gpio_get_value(), but I believe you should
-have already done that good enough as always :-)
+ 	return ret;
+--
+-- 
+Christopher
