@@ -1,100 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121Ab2HFAsx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 20:48:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50742 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab2HFAsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 20:48:50 -0400
-Date: Mon, 6 Aug 2012 10:48:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the cifs tree
-Message-Id: <20120806104841.07ed3708b600529ff7eb6fa6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__6_Aug_2012_10_48_41_+1000_Q0A.8HsKl6VsDv18"
+	id S1755188Ab2HFBBj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 21:01:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37500 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755084Ab2HFBBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 21:01:12 -0400
+Message-ID: <501F171F.50001@redhat.com>
+Date: Sun, 05 Aug 2012 21:00:15 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: peterz@infradead.org, daniel.santos@pobox.com, aarcange@redhat.com,
+        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH v2 3/9] rbtree: add __rb_change_child() helper function
+References: <1343946858-8170-1-git-send-email-walken@google.com> <1343946858-8170-4-git-send-email-walken@google.com>
+In-Reply-To: <1343946858-8170-4-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__6_Aug_2012_10_48_41_+1000_Q0A.8HsKl6VsDv18
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/02/2012 06:34 PM, Michel Lespinasse wrote:
+> Add __rb_change_child() as an inline helper function to replace code that
+> would otherwise be duplicated 4 times in the source.
+>
+> No changes to binary size or speed.
+>
+> Signed-off-by: Michel Lespinasse<walken@google.com>
 
-Hi all,
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-After merging the cifs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
 
-fs/cifs/Kconfig:3: syntax error
-fs/Kconfig:244: missing end statement for this entry
-fs/Kconfig:5: missing end statement for this entry
-fs/cifs/Kconfig:2: invalid statement
-fs/cifs/Kconfig:3: unexpected option "depends"
-fs/cifs/Kconfig:4: unexpected option "select"
-fs/cifs/Kconfig:5: unexpected option "select"
-fs/cifs/Kconfig:6: unexpected option "select"
-fs/cifs/Kconfig:7: unexpected option "select"
-fs/cifs/Kconfig:8: unexpected option "select"
-fs/cifs/Kconfig:9: unexpected option "select"
-fs/cifs/Kconfig:10: unexpected option "select"
-fs/cifs/Kconfig:11: unexpected option "select"
-fs/cifs/Kconfig:12: unexpected option "select"
-fs/cifs/Kconfig:13: invalid statement
-fs/cifs/Kconfig:14: unknown statement "This"
-fs/cifs/Kconfig:15: unknown statement "CIFS"
-fs/cifs/Kconfig:16: unknown statement "SMB"
-fs/cifs/Kconfig:17: unknown statement "PC"
-fs/cifs/Kconfig:18: unknown statement "file"
-fs/cifs/Kconfig:19: unknown statement "and"
-fs/cifs/Kconfig:20: unknown statement "server"
-fs/cifs/Kconfig:21: unknown statement "support"
-fs/cifs/Kconfig:22: unknown statement "well"
-fs/cifs/Kconfig:25: syntax error
-fs/cifs/Kconfig:24: unknown statement "The"
-fs/cifs/Kconfig:25: unknown statement "client"
-fs/cifs/Kconfig:26: unknown statement "support"
-fs/cifs/Kconfig:27: unknown statement "session"
-fs/cifs/Kconfig:28: unknown statement "safe"
-fs/cifs/Kconfig:29: unknown statement "signing"
-fs/cifs/Kconfig:30: unknown statement "If"
-fs/Kconfig:274: unexpected end statement
-fs/Kconfig:279: unexpected end statement
-
-Caused by commit 12f3f9b7c80c ("Remove sparse warning in cifsfs.c").
-Please, please build test after doing updates and before publishing your
-tree.
-
-I have used the cifs tree from next-20120803 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__6_Aug_2012_10_48_41_+1000_Q0A.8HsKl6VsDv18
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQHxRpAAoJEECxmPOUX5FE4ooP/jn+QY9oPxV6evy7omzvSTky
-/9mrnVDZR61plLzThUAUhUfKXWO3Q7XvSEVctWOYZakJvcbfX4omw9hOyu5uiEw6
-IGGpZSguf3S3Cz/vCp+UcsM0ui2PCiwln923IAuEaOLimLacpvpN33HoOasKLwdf
-vKx3w2WRHICR773lz+ILqToVEoZ6g+tYZWO2IT4FB2CYxESnAVB41BStvl81boyL
-wNx4uH8gueJ1l/+0cUhPmWMz9Z+yxCfCUqmvUEteWTEq1XKCisZVi/+4uo8AUA/n
-LAYi3Es4UiLe7UfqX7uRkgeMy8l7uAGOMmSsfYNw/0SzPk70BGXokWKtjWbIXNJi
-8mG+/l5xM5r3HLKXU5u0JBNIG6DZ2ceuwMfTW3Abm62YqfCwA4OadpS4fCOu421X
-O541RMViWG6VxingM8KnKQyt6mHZCazNGatilWzz8Agv5Y37fPAJFAkFgSzuOLlh
-XGkWCyyO+3Bnym+zNcIF31bKOd5REtGmkvl+HTmErOYJRbiLreQHDglkarzZfp0a
-zEr5JLayAIUWi1iX9nMd7/VLko/fxfzXPZjRvfNnT5QAJgEa4J/TDDrTKMlik6Vi
-EOy4gv4SlJqlvd+DcC7kJbKFc9Ap5nRpp8fsUulxA88C1VfY8GZqRdskdwIpLHl5
-zV0mlgI75tDNiSGv8X0F
-=yqaf
------END PGP SIGNATURE-----
-
---Signature=_Mon__6_Aug_2012_10_48_41_+1000_Q0A.8HsKl6VsDv18--
+-- 
+All rights reversed
