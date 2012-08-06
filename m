@@ -1,250 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab2HFFMB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 01:12:01 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53846 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab2HFFL6 (ORCPT
+	id S1751948Ab2HFFQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 01:16:08 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:59132 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111Ab2HFFQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 01:11:58 -0400
-Date: Mon, 6 Aug 2012 07:11:44 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
-Message-ID: <20120806051144.GA12642@avionic-0098.mockup.avionic-design.de>
-References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de>
- <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
- <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
- <CACRpkdbrdWw_HR91r72aB_S2+vxiaSBKHwW+Tsmi8pKk9VsgFg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbrdWw_HR91r72aB_S2+vxiaSBKHwW+Tsmi8pKk9VsgFg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:3zNjJXJb1b3s2F0gNRHXxGOVisRFKD9czOA0l7zoGna
- hvszG9N6aCwF/DrPvrTSPprLmYfuf3VxozK28859Wciw+av5T/
- KVjHF9/TdOEv65vybaVhMQwnMASij7sm7Ax0w/JlrYXtHH3Acl
- NJrNxbNqjFAR1chOCyQ8OtZFfdo52JymvwUAvbxZ1kUrvl882B
- 2p6cKQWldc2BtnIA8P1m3ljw0dWpelvL/S6HP7xMNaMcNP395N
- 2G329y0aykRa+Mk1azn/9RkUptehhb8svRxm3ZglLOJaT+k9xW
- XmSxGGpJxDwXEMpvjjtPOi6ppbIDKJAQR1a9eWtLqH7EIvNAMD
- jF1AK8OTpHyaXf++ipBbtOaQ61keSUvRw62+ENitwyRoRUP78+
- eA4d/wa782UyahphinK5VwlE+0IsluZyiK5ELBXJ00R05Cw52g
- I5Ytp
+	Mon, 6 Aug 2012 01:16:06 -0400
+X-AuditID: cbfee612-b7f2d6d0000007ea-6d-501f531497ef
+Date: Mon, 06 Aug 2012 05:16:04 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] Extcon: adc_jack: adc-jack driver to support 3.5 pi or
+ simliar devices
+To: anish kumar <anish198519851985@gmail.com>,
+        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        ANISH KUMAR <anish.singh@samsung.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120806051520850@myungjoo.ham
+Msgkey: 20120806051520850@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120806051520850@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <10387090.59171344230163413.JavaMail.weblogic@epml13>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t/t6boiwfIBBtMeqFtc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MFxe/sRd0VVX0PvNsYPxS1sXIySEkoC6xaMlJNhBbQsBE4s6P
+	FiYIW0ziwr31QHEuoJr5jBILmn8ygyRYBFQkzs2YBZTg4GAT0JOY+TkZJCwsEC2xa9J3VpB6
+	EYHJjBLrz11iAXGYBZYzSnx6cowdYpuSxJp9r1hAbF4BQYmTM5+wQGxTlfi7dDZUXE1i+asT
+	UFdISMyafoEVwuaVmNH+FKpeTmLa1zXMELa0xPlZGxhhrl78/TFUnF/i2O0dTCCHgvQ+uR8M
+	M2b35i9QDwtITD1zEKpVS+JE0wqoVj6JNQvfssCM2XVqOTNM7/0tc8FOYxZQlJjS/ZAdwtaS
+	+PJjHxuqtziAbEeJ00sUJzDKzUKSmYWkexaSbmQ1CxhZVjGKphYkFxQnpada6BUn5haX5qXr
+	JefnbmIER/kzoR2MyxosDjEKcDAq8fDeMpAPEGJNLCuuzD3EKMHBrCTCm+4sFyDEm5JYWZVa
+	lB9fVJqTWnyIUZqDRUmcd86LL/5CAumJJanZqakFqUUwWSYOTqkGxl3P+F4tkmVdJr8uN+ZA
+	ar1Y0c19LYF3tlW4VRx/0Z20yX7nnPObHf9NvrFJT/Camcf9+Yw8l3ke9W0xkf1iXP3f79CT
+	L3M8/I+ph3d+PZy03NEtPD7ksX2AiLjSFYsNU0Xb5PtzL5h9OpB37aJl4KIVV2P1SxfaWipL
+	nBTUeWwcFNPycddZLSWW4oxEQy3mouJEAOkNLlPuAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q765GGMH003475
 
+> From: anish kumar <anish198519851985@gmail.com>
+> 
+> External connector devices that decides connection information based on
+> ADC values may use adc-jack device driver. The user simply needs to
+> provide a table of adc range and connection states. Then, extcon
+> framework will automatically notify others.
+> 
+> Signed-off-by: anish kumar <anish.singh@samsung.com>
 
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-On Sun, Aug 05, 2012 at 12:50:54PM +0200, Linus Walleij wrote:
-> On Mon, Jul 30, 2012 at 9:47 AM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> > On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
-> >> On Mon, Jul 23, 2012 at 1:59 PM, Thierry Reding
-> >> <thierry.reding@avionic-design.de> wrote:
->=20
-> >> > +- interrupt-controller: Marks the device as an interrupt controller.
-> >> > +- nr-gpios: The number of pins supported by the controller.
-> >>
-> >> These two last things look very generic, like something every GPIO
-> >> driver could want to expose.
-> >
-> > As Arnd mentioned, interrupt-controller is a generic property required
-> > by all interrupt controller nodes. Perhaps it shouldn't be listed in the
-> > DT binding for this driver.
->=20
-> After reading Rob's etc comments I think nr-gpios should be in this
-> binding, but interrupt-controller seems like it should go into
-> Documentation/devicetree/bindings/gpio/gpio.txt
-> can you take care of this?
->=20
-> (Anyone agains, beat me up...)
-
-Yes, that makes sense. The interrupt-controller property is not
-explicitly mentioned in Documentation/devicetree at all. Perhaps the
-reason is that it is in fact a standard property and, I think, is
-already defined by IEEE 1275. I don't think it would hurt to repeat it
-explicitly for GPIO bindings in general, though.
-
-> >> > +config GPIO_ADNP
-> >> > +       tristate "Avionic Design N-bit GPIO expander"
-> >> > +       depends on I2C && OF
-> >> > +       help
-> >> > +         This option enables support for N GPIOs found on Avionic D=
-esign
-> >> > +         I2C GPIO expanders. The register space will be extended by=
- powers
-> >> > +         of two, so the controller will need to accomodate for that=
-=2E For
-> >> > +         example: if a controller provides 48 pins, 6 registers wil=
-l be
-> >> > +         enough to represent all pins, but the driver will assume a
-> >> > +         register layout for 64 pins (8 registers).
-> >> > +
-> >> > +config GPIO_ADNP_IRQ
-> >> > +       tristate "Interrupt controller support"
-> >> > +       depends on GPIO_ADNP
-> >> > +       help
-> >> > +         Say yes here to enable the Avionic Design N-bit GPIO expan=
-der to
-> >> > +         be used as an interrupt controller.
-> >>
-> >> First: please describe the usecase where the Avionic driver is used
-> >> without making use of the IRQ, and *why* it should be possible
-> >> to configure this out. E.g. is there a hardware which isn't using the
-> >> IRQ portions? If there is no non-irq usecase just drop this
-> >> config option.
-> >
-> > This expander is used in a number of Tegra-based boards and handles
-> > things like enabling or disabling power to a given IC but on other
-> > boards it is also used to handle interrupts from input devices or
-> > card-detect for example.
-> >
-> > The controller is synthesized in a CPLD, which is one of the reasons for
-> > the nr-gpios DT property. There is at least one platform that currently
-> > doesn't use the interrupt functionality. Mainly I allowed this to be
-> > configured out in order to reduce the number of interrupts required for
-> > a platform. Another reason was that at the time I first wrote this, IRQ
-> > domains hadn't been available, so the driver couldn't be built as a
-> > module if interrupt support was required. This also no longer applies.
-> >
-> > I'm actually fine either way, but I thought it'd be most flexible by
-> > keeping the IRQ support optional for the above reasons.
->=20
-> We're working on a goal of a "single zImage" (one unified ARM
-> kernel) which means your platform must be able to handle the
-> case where this is turned on anyway, so I would suggest you
-> drop the optional compile-time IRQ support, just make it
-> optional at runtime instead.
-
-I don't quite understand. Do you want me to add a module parameter to
-make it optional at runtime? Since the driver is now OF only I suppose I
-could make it optional on the interrupt-controller property as well.
-
-> > On that note, provided there is special additional circuitry, the GPIO
-> > controller is able to detect tristate on an input. I'm not aware that
-> > the pinctrl subsystem provides for that functionality yet, right?
->=20
-> pinctrl is usually about *setting* things into tristate, but I'm all
-> for adding support for getting it as well. But that depends on
-> the generic pin configurations being adopted first (still most
-> controllers have their own way of doing pin config, so this
-> cannot be represented in a generic way).
-
-As I mentioned, the only hardware where this was ever used is already
-EOL and I don't expect this functionality to be required anytime soon
-for another project.
-
-> >> > +       base =3D kzalloc(regs * 5, GFP_KERNEL);
-> >>
-> >> Why kzalloc()/kfree() when you can just use a
-> >>
-> >> static u8 base[N];
-> >>
-> >> where N is the max number of registers on any HW instead?
-> >
-> > As I explained above, the number of pins is configurable, so it'd be
-> > quite a waste to always assume a maximum of, say, 256 pins if the
-> > hardware actually only uses 8.
->=20
-> OK but atleast find a way to move this to the probe() function,
-> what happens if the debugfs file is browsed and you run out
-> of memory? Not nice, and you were using this to debug as
-> well...
-
-Alright, I can do that. Alternatively I could probably drop the
-allocations altogether and use local variables within the second loop to
-store the variables:
-
-	for (i =3D 0; i < num_regs; i++) {
-		u8 ddr, plr, ier, isr, ptr;
-
-		err =3D adnp_read(gpio, GPIO_DDR(gpio) + i, &ddr);
-		if (err < 0)
-			goto out;
-
-		...
-	}
-
-With the proper locking this shouldn't be a problem. The reason why I
-used the block-wise approach in the first place was that the register
-accesses were more "atomic". Of course without locking this is non-
-sense.
-
-> >> > +       gpio->irq_mask =3D devm_kzalloc(chip->dev, regs * 7, GFP_KER=
-NEL);
-> >> > +       if (!gpio->irq_mask)
-> >> > +               return -ENOMEM;
-> >> > +
-> >> > +       gpio->irq_mask_cur =3D gpio->irq_mask + (regs * 1);
-> >> > +       gpio->irq_level =3D gpio->irq_mask + (regs * 2);
-> >> > +       gpio->irq_rise =3D gpio->irq_mask + (regs * 3);
-> >> > +       gpio->irq_fall =3D gpio->irq_mask + (regs * 4);
-> >> > +       gpio->irq_high =3D gpio->irq_mask + (regs * 5);
-> >> > +       gpio->irq_low =3D gpio->irq_mask + (regs * 6);
-> >>
-> >> I'm not following this regs * 1, regs * 2 ... regs *7 stuff. What are =
-you doing
-> >> here? Explain with some comment atleast.
-> >
-> > Basically I need at least irq_level, irq_rise, irq_fall, irq_high and
-> > irq_low to keep track of the current level and trigger modes for each
-> > interrupt. Instead of allocating small chunks for each of these I
-> > allocate one chunk and just make the others point into that.
->=20
-> Maybe you said this would go away in this case not comments
-> of course.
-
-irq_mask and irq_mask_cur can go away I think.
-
-> But I wasn't getting the multiplication part. I understand the
-> allocation, 7 registers time the number of registers (hm, there
-> is something about the naming too....)
-
-You're right, regs should probably be called num_regs.
-
-> You're storing the things in such an awkward way: all
-> current masks for all registers sets, then all levels for
-> all register etc.
->=20
-> Instead could you store all the flags for *one* instance
-> then the next set of registers etc.
-
-I was following the register layout of the controller to keep things
-consistent.
-
-Thierry
-
---82I3+IH0IqGh5yIs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQH1IQAAoJEN0jrNd/PrOhpEoQAMEabYmr67MANtCXDh1BmxSC
-gfI9F6FN60CISre8p+0cq/guu3YQnh3uOepD2+SLOwQ6MUGCl/81R3DX3qpNHjjS
-Rvk3u/c/vFF4qL8aGxljTVqobk3qZ505BU9Dwgh7uqa85ImkPQlQlvIKshU4h7ac
-HBqNEufuct2ChiEHjqRPfbM8RRpKSuHreRmEVnfuiS8jFR87wtRjCt9xT6zFJHI+
-21rum+MzXAmp/au2WfPDsyXBlelWaiWzaHAX+JQalgozqutHz/H9iIKlhWCk4q4a
-zjeBmYSCTS4duKLGIiY12cK9Stq1+iG+EBgNXzh7RmiT4bAD4yW97HWD26oJZR/4
-ytRe8o9o7mpzXPNBtpSBNDHtZM1T5cfJLEaGKATPXab2N+IMJbYI6hneZFCglucL
-RhCmFyo+gvv1SwJIdS/xq03nuZ+babeEN/HZPgRM8nFkEeSWmgWSywkinLHN2XWW
-eIWR9yo8TxndbeeOOURkaIRI0XFPELZBTxgEsZDaTCwmgyqGzHsSxX+m4DMWZL+e
-7PrydGPzE7VDEiPq/Zl6CH89GvO0LQsRVj6P/CK/h/whHdgWniSbtfRK9asRtLVX
-6XfwsQic8cuhoeV4y8eWL3O2aL+GH8b1n+Rd9NqlJKYX233L0+t5hB8qGPxBCuVm
-1dSLST4JilRtwcRAXeyq
-=YHgI
------END PGP SIGNATURE-----
-
---82I3+IH0IqGh5yIs--
+> ---
+>  drivers/extcon/Kconfig          |    5 +
+>  drivers/extcon/Makefile         |    1 +
+>  drivers/extcon/adc_jack.c       |  183 +++++++++++++++++++++++++++++++++++++++
+>  include/linux/extcon/adc_jack.h |  108 +++++++++++++++++++++++
+>  4 files changed, 297 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/extcon/adc_jack.c
+>  create mode 100644 include/linux/extcon/adc_jack.h
+> 
+> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+> index e175c8e..596e277 100644
+> --- a/drivers/extcon/Kconfig
+> +++ b/drivers/extcon/Kconfig
+> @@ -21,6 +21,11 @@ config EXTCON_GPIO
+>  	  Say Y here to enable GPIO based extcon support. Note that GPIO
+>  	  extcon supports single state per extcon instance.
+>  
+> +config EXTCON_ADC_JACK
+> +        tristate "ADC Jack extcon support"
+> +        help
+> +          Say Y here to enable extcon device driver based on ADC values.
+> +
+>  config EXTCON_MAX77693
+>  	tristate "MAX77693 EXTCON Support"
+>  	depends on MFD_MAX77693
+> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+> index 88961b3..d95c5ea 100644
+> --- a/drivers/extcon/Makefile
+> +++ b/drivers/extcon/Makefile
+> @@ -4,6 +4,7 @@
+>  
+>  obj-$(CONFIG_EXTCON)		+= extcon_class.o
+>  obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
+> +obj-$(CONFIG_EXTCON_ADC_JACK)   += adc_jack.o
+>  obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
+>  obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+>  obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+> diff --git a/drivers/extcon/adc_jack.c b/drivers/extcon/adc_jack.c
+> new file mode 100644
+> index 0000000..fef8334
+> --- /dev/null
+> +++ b/drivers/extcon/adc_jack.c
+> @@ -0,0 +1,183 @@
+> +/*
+> + * drivers/extcon/adc_jack.c
+> + *
+> + * Analog Jack extcon driver with ADC-based detection capability.
+> + *
+> + * Copyright (C) 2012 Samsung Electronics
+> + * MyungJoo Ham <myungjoo.ham@samsung.com>
+> + *
+> + * Modified for calling to IIO to get adc by <anish.singh@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/slab.h>
+> +#include <linux/device.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/iio/consumer.h>
+> +#include <linux/extcon/adc_jack.h>
+> +#include <linux/extcon.h>
+> +
+> +static void adc_jack_handler(struct work_struct *work)
+> +{
+> +	struct adc_jack_data *data = container_of(to_delayed_work(work),
+> +						  struct adc_jack_data,
+> +						  handler);
+> +	u32 state = 0;
+> +	int ret, adc_val;
+> +	int i;
+> +
+> +	if (!data->ready)
+> +		return;
+> +
+> +	ret = iio_read_channel_raw(data->chan, &adc_val);
+> +	if (ret < 0) {
+> +		dev_err(data->edev.dev, "read channel() error: %d\n", ret);
+> +		return;
+> +	}
+> +
+> +	/* Get state from adc value with adc_condition */
+> +	for (i = 0; i < data->num_conditions; i++) {
+> +		struct adc_jack_cond *def = &data->adc_condition[i];
+> +		if (!def->state)
+> +			break;
+> +		if (def->min_adc <= adc_val && def->max_adc >= adc_val) {
+> +			state = def->state;
+> +			break;
+> +		}
+> +	}
+> +	/* if no def has met, it means state = 0 (no cables attached) */
+> +
+> +	extcon_set_state(&data->edev, state);
+> +}
+> +
+> +static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
+> +{
+> +	struct adc_jack_data *data = _data;
+> +
+> +	schedule_delayed_work(&data->handler, data->handling_delay);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int adc_jack_probe(struct platform_device *pdev)
+> +{
+> +	struct adc_jack_data *data;
+> +	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
+> +	int i, err = 0;
+> +
+> +	data = kzalloc(sizeof(struct adc_jack_data), GFP_KERNEL);
+> +	if (!data)
+> +		return -ENOMEM;
+> +
+> +	data->edev.name = pdata->name;
+> +
+> +	if (pdata->cable_names)
+> +		data->edev.supported_cable = pdata->cable_names;
+> +	else
+> +		data->edev.supported_cable = extcon_cable_name;
+> +
+> +	/* Check the length of array and set num_cables */
+> +	for (i = 0; data->edev.supported_cable[i]; i++)
+> +		;
+> +	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
+> +		err = -EINVAL;
+> +		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
+> +			i - 1);
+> +		goto err_alloc;
+> +	}
+> +	data->num_cables = i;
+> +
+> +	if (!pdata->adc_condition ||
+> +	    !pdata->adc_condition[0].state) {
+> +		err = -EINVAL;
+> +		dev_err(&pdev->dev, "error: adc_condition not defined.\n");
+> +		goto err_alloc;
+> +	}
+> +	data->adc_condition = pdata->adc_condition;
+> +
+> +	/* Check the length of array and set num_conditions */
+> +	for (i = 0; data->adc_condition[i].state; i++)
+> +		;
+> +	data->num_conditions = i;
+> +
+> +	data->chan = iio_channel_get(dev_name(&pdev->dev),
+> +						pdata->consumer_channel);
+> +	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
+> +
+> +	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
+> +
+> +	platform_set_drvdata(pdev, data);
+> +
+> +	if (pdata->irq) {
+> +		data->irq = pdata->irq;
+> +
+> +		err = request_threaded_irq(data->irq, NULL,
+> +					   adc_jack_irq_thread,
+> +					   pdata->irq_flags, pdata->name,
+> +					   data);
+> +
+> +		if (err) {
+> +			dev_err(&pdev->dev, "error: irq %d\n", data->irq);
+> +			err = -EINVAL;
+> +			goto err_initwork;
+> +		}
+> +	}
+> +	err = extcon_dev_register(&data->edev, &pdev->dev);
+> +	if (err)
+> +		goto err_irq;
+> +
+> +	data->ready = true;
+> +
+> +	goto out;
+> +
+> +err_irq:
+> +	if (data->irq)
+> +		free_irq(data->irq, data);
+> +err_initwork:
+> +	cancel_delayed_work_sync(&data->handler);
+> +err_alloc:
+> +	kfree(data);
+> +out:
+> +	return err;
+> +}
+> +
+> +static int __devexit adc_jack_remove(struct platform_device *pdev)
+> +{
+> +	struct adc_jack_data *data = platform_get_drvdata(pdev);
+> +
+> +	extcon_dev_unregister(&data->edev);
+> +	if (data->irq)
+> +		free_irq(data->irq, data);
+> +	platform_set_drvdata(pdev, NULL);
+> +	kfree(data);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver adc_jack_driver = {
+> +	.probe		= adc_jack_probe,
+> +	.remove		= __devexit_p(adc_jack_remove),
+> +	.driver		= {
+> +		.name	= "adc-jack",
+> +		.owner	= THIS_MODULE,
+> +	},
+> +};
+> +
+> +static int __init adc_jack_init(void)
+> +{
+> +	return platform_driver_register(&adc_jack_driver);
+> +}
+> +
+> +static void __exit adc_jack_exit(void)
+> +{
+> +	platform_driver_unregister(&adc_jack_driver);
+> +}
+> +
+> +module_init(adc_jack_init);
+> +module_exit(adc_jack_exit);
+> diff --git a/include/linux/extcon/adc_jack.h b/include/linux/extcon/adc_jack.h
+> new file mode 100644
+> index 0000000..4d6a1f7
+> --- /dev/null
+> +++ b/include/linux/extcon/adc_jack.h
+> @@ -0,0 +1,108 @@
+> +/*
+> + * include/linux/extcon/adc_jack.h
+> + *
+> + * Analog Jack extcon driver with ADC-based detection capability.
+> + *
+> + * Copyright (C) 2012 Samsung Electronics
+> + * MyungJoo Ham <myungjoo.ham@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#ifndef _EXTCON_ADC_JACK_H_
+> +#define _EXTCON_ADC_JACK_H_ __FILE__
+> +
+> +#include <linux/module.h>
+> +#include <linux/extcon.h>
+> +
+> +/**
+> + * struct adc_jack_data - internal data for adc_jack device driver
+> + * @edev	- extcon device.
+> + * @cable_names	- list of supported cables.
+> + * @num_cables	- size of cable_names.
+> + * @adc_condition	- list of adc value conditions.
+> + * @num_condition	- size of adc_condition.
+> + * @irq		- irq number of attach/detach event (0 if not exist).
+> + * @handling_delay	- interrupt handler will schedule extcon event
+> + *			handling at handling_delay jiffies.
+> + * @handler	- extcon event handler called by interrupt handler.
+> + * @chan	- iio channel being queried.
+> + * @ready	- true if it is safe to run handler.
+> + */
+> +struct adc_jack_data {
+> +	struct extcon_dev edev;
+> +
+> +	const char **cable_names;
+> +	int num_cables;
+> +	struct adc_jack_cond *adc_condition;
+> +	int num_conditions;
+> +
+> +	int irq;
+> +	unsigned long handling_delay; /* in jiffies */
+> +	struct delayed_work handler;
+> +
+> +	struct iio_channel *chan;
+> +
+> +	bool ready;
+> +};
+> +
+> +/**
+> + * struct adc_jack_cond - condition to use an extcon state
+> + * @state	- the corresponding extcon state (if 0, this struct denotes
+> + *		the last adc_jack_cond element among the array)
+> + * @min_adc	- min adc value for this condition
+> + * @max_adc	- max adc value for this condition
+> + *
+> + * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
+> + * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
+> + * 1 are attached (1<<0 | 1<<1 == 0x3)
+> + *
+> + * Note that you don't need to describe condition for "no cable attached"
+> + * because when no adc_jack_cond is met, state = 0 is automatically chosen.
+> + */
+> +struct adc_jack_cond {
+> +	u32 state; /* extcon state value. 0 if invalid */
+> +	u32 min_adc;
+> +	u32 max_adc;
+> +};
+> +
+> +/**
+> + * struct adc_jack_pdata - platform data for adc jack device.
+> + * @name	- name of the extcon device. If null, "adc-jack" is used.
+> + * @consumer_channel - Unique name to identify the channel on the consumer
+> + *                   side. This typically describes the channels use within
+> + *                   the consumer. E.g. 'battery_voltage'
+> + * @cable_names	- array of cable names ending with null. If the array itself
+> + *		if null, extcon standard cable names are chosen.
+> + * @adc_contition	- array of struct adc_jack_cond conditions ending
+> + *			with .state = 0 entry. This describes how to decode
+> + *			adc values into extcon state.
+> + * @irq		- IRQ number that is triggerred by cable attach/detach
+> + *		events. If irq = 0, use should manually update extcon state
+> + *		with extcon APIs.
+> + * @irq_flags	- irq flags used for the @irq
+> + * @handling_delay_ms	- in some devices, we need to read ADC value some
+> + *			milli-seconds after the interrupt occurs. You may
+> + *			describe such delays with @handling_delay_ms, which
+> + *			is rounded-off by jiffies.
+> + */
+> +struct adc_jack_pdata {
+> +	const char *name;
+> +	const char *consumer_channel;
+> +	/*
+> +	 * NULL if standard extcon names are used.
+> +	 * The last entry should be NULL
+> +	 */
+> +	const char **cable_names;
+> +	/* The last entry's state should be 0 */
+> +	struct adc_jack_cond *adc_condition;
+> +
+> +	int irq; /* Jack insertion/removal interrupt */
+> +	unsigned long irq_flags;
+> +	unsigned long handling_delay_ms; /* in ms */
+> +};
+> +
+> +#endif /* _EXTCON_ADC_JACK_H */
+> -- 
+> 1.7.1
+> 
+> 
+> 
+> 
+>        
+>   
+>          
+> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
