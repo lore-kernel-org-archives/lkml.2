@@ -1,265 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab2HFFLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 01:11:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40862 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751690Ab2HFFLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 01:11:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="176383276"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 3/3] perf/x86: Add Intel Westmere-EX uncore support
-Date: Mon,  6 Aug 2012 13:11:22 +0800
-Message-Id: <1344229882-3907-3-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1344229882-3907-1-git-send-email-zheng.z.yan@intel.com>
-References: <1344229882-3907-1-git-send-email-zheng.z.yan@intel.com>
+	id S1753768Ab2HFFMB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 01:12:01 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53846 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab2HFFL6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 01:11:58 -0400
+Date: Mon, 6 Aug 2012 07:11:44 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
+Message-ID: <20120806051144.GA12642@avionic-0098.mockup.avionic-design.de>
+References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de>
+ <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
+ <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
+ <CACRpkdbrdWw_HR91r72aB_S2+vxiaSBKHwW+Tsmi8pKk9VsgFg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbrdWw_HR91r72aB_S2+vxiaSBKHwW+Tsmi8pKk9VsgFg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:3zNjJXJb1b3s2F0gNRHXxGOVisRFKD9czOA0l7zoGna
+ hvszG9N6aCwF/DrPvrTSPprLmYfuf3VxozK28859Wciw+av5T/
+ KVjHF9/TdOEv65vybaVhMQwnMASij7sm7Ax0w/JlrYXtHH3Acl
+ NJrNxbNqjFAR1chOCyQ8OtZFfdo52JymvwUAvbxZ1kUrvl882B
+ 2p6cKQWldc2BtnIA8P1m3ljw0dWpelvL/S6HP7xMNaMcNP395N
+ 2G329y0aykRa+Mk1azn/9RkUptehhb8svRxm3ZglLOJaT+k9xW
+ XmSxGGpJxDwXEMpvjjtPOi6ppbIDKJAQR1a9eWtLqH7EIvNAMD
+ jF1AK8OTpHyaXf++ipBbtOaQ61keSUvRw62+ENitwyRoRUP78+
+ eA4d/wa782UyahphinK5VwlE+0IsluZyiK5ELBXJ00R05Cw52g
+ I5Ytp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-The Westmere-EX uncore is similar to the Nehalem-EX uncore. The
-differences are:
- - Westmere-EX uncore has 10 instances of Cbox. The MSRs for Cbox8
-   and Cbox9 in the Westmere-EX aren't contiguous with Cbox 0~7.
- - The fvid field in the ZDP_CTL_FVC register in the Mbox is
-   different. It's 5 bits in the Nehalem-EX, 6 bits in the
-   Westmere-EX.
+--82I3+IH0IqGh5yIs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 56 ++++++++++++++++++++++-----
- arch/x86/kernel/cpu/perf_event_intel_uncore.h | 45 ++++++++++-----------
- 2 files changed, 68 insertions(+), 33 deletions(-)
+On Sun, Aug 05, 2012 at 12:50:54PM +0200, Linus Walleij wrote:
+> On Mon, Jul 30, 2012 at 9:47 AM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
+> >> On Mon, Jul 23, 2012 at 1:59 PM, Thierry Reding
+> >> <thierry.reding@avionic-design.de> wrote:
+>=20
+> >> > +- interrupt-controller: Marks the device as an interrupt controller.
+> >> > +- nr-gpios: The number of pins supported by the controller.
+> >>
+> >> These two last things look very generic, like something every GPIO
+> >> driver could want to expose.
+> >
+> > As Arnd mentioned, interrupt-controller is a generic property required
+> > by all interrupt controller nodes. Perhaps it shouldn't be listed in the
+> > DT binding for this driver.
+>=20
+> After reading Rob's etc comments I think nr-gpios should be in this
+> binding, but interrupt-controller seems like it should go into
+> Documentation/devicetree/bindings/gpio/gpio.txt
+> can you take care of this?
+>=20
+> (Anyone agains, beat me up...)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 84434e2..0a55710 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -901,16 +901,21 @@ static struct attribute_group nhmex_uncore_cbox_format_group = {
- 	.attrs = nhmex_uncore_cbox_formats_attr,
- };
- 
-+/* msr offset for each instance of cbox */
-+static unsigned nhmex_cbox_msr_offsets[] = {
-+	0x0, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0, 0x240, 0x2c0,
-+};
-+
- static struct intel_uncore_type nhmex_uncore_cbox = {
- 	.name			= "cbox",
- 	.num_counters		= 6,
--	.num_boxes		= 8,
-+	.num_boxes		= 10,
- 	.perf_ctr_bits		= 48,
- 	.event_ctl		= NHMEX_C0_MSR_PMON_EV_SEL0,
- 	.perf_ctr		= NHMEX_C0_MSR_PMON_CTR0,
- 	.event_mask		= NHMEX_PMON_RAW_EVENT_MASK,
- 	.box_ctl		= NHMEX_C0_MSR_PMON_GLOBAL_CTL,
--	.msr_offset		= NHMEX_C_MSR_OFFSET,
-+	.msr_offsets		= nhmex_cbox_msr_offsets,
- 	.pair_ctr_ctl		= 1,
- 	.ops			= &nhmex_uncore_ops,
- 	.format_group		= &nhmex_uncore_cbox_format_group
-@@ -1138,6 +1143,9 @@ static struct extra_reg nhmex_uncore_mbox_extra_regs[] = {
- 	EVENT_EXTRA_END
- };
- 
-+/* Nehalem-EX or Westmere-EX ? */
-+bool uncore_nhmex;
-+
- static bool nhmex_mbox_get_shared_reg(struct intel_uncore_box *box, int idx, u64 config)
- {
- 	struct intel_uncore_extra_reg *er;
-@@ -1167,18 +1175,29 @@ static bool nhmex_mbox_get_shared_reg(struct intel_uncore_box *box, int idx, u64
- 		return false;
- 
- 	/* mask of the shared fields */
--	mask = NHMEX_M_PMON_ZDP_CTL_FVC_MASK;
-+	if (uncore_nhmex)
-+		mask = NHMEX_M_PMON_ZDP_CTL_FVC_MASK;
-+	else
-+		mask = WSMEX_M_PMON_ZDP_CTL_FVC_MASK;
- 	er = &box->shared_regs[EXTRA_REG_NHMEX_M_ZDP_CTL_FVC];
- 
- 	raw_spin_lock_irqsave(&er->lock, flags);
- 	/* add mask of the non-shared field if it's in use */
--	if (__BITS_VALUE(atomic_read(&er->ref), idx, 8))
--		mask |= NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+	if (__BITS_VALUE(atomic_read(&er->ref), idx, 8)) {
-+		if (uncore_nhmex)
-+			mask |= NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+		else
-+			mask |= WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+	}
- 
- 	if (!atomic_read(&er->ref) || !((er->config ^ config) & mask)) {
- 		atomic_add(1 << (idx * 8), &er->ref);
--		mask = NHMEX_M_PMON_ZDP_CTL_FVC_MASK |
--			NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+		if (uncore_nhmex)
-+			mask = NHMEX_M_PMON_ZDP_CTL_FVC_MASK |
-+				NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+		else
-+			mask = WSMEX_M_PMON_ZDP_CTL_FVC_MASK |
-+				WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
- 		er->config &= ~mask;
- 		er->config |= (config & mask);
- 		ret = true;
-@@ -1212,7 +1231,10 @@ u64 nhmex_mbox_alter_er(struct perf_event *event, int new_idx, bool modify)
- 
- 	/* get the non-shared control bits and shift them */
- 	idx = orig_idx - EXTRA_REG_NHMEX_M_ZDP_CTL_FVC;
--	config &= NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+	if (uncore_nhmex)
-+		config &= NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+	else
-+		config &= WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
- 	if (new_idx > orig_idx) {
- 		idx = new_idx - orig_idx;
- 		config <<= 3 * idx;
-@@ -1222,6 +1244,10 @@ u64 nhmex_mbox_alter_er(struct perf_event *event, int new_idx, bool modify)
- 	}
- 
- 	/* add the shared control bits back */
-+	if (uncore_nhmex)
-+		config |= NHMEX_M_PMON_ZDP_CTL_FVC_MASK & reg1->config;
-+	else
-+		config |= WSMEX_M_PMON_ZDP_CTL_FVC_MASK & reg1->config;
- 	config |= NHMEX_M_PMON_ZDP_CTL_FVC_MASK & reg1->config;
- 	if (modify) {
- 		/* adjust the main event selector */
-@@ -1480,6 +1506,12 @@ static struct uncore_event_desc nhmex_uncore_mbox_events[] = {
- 	{ /* end: all zeroes */ },
- };
- 
-+static struct uncore_event_desc wsmex_uncore_mbox_events[] = {
-+	INTEL_UNCORE_EVENT_DESC(bbox_cmds_read, "inc_sel=0xd,fvc=0x5000"),
-+	INTEL_UNCORE_EVENT_DESC(bbox_cmds_write, "inc_sel=0xd,fvc=0x5040"),
-+	{ /* end: all zeroes */ },
-+};
-+
- static struct intel_uncore_ops nhmex_uncore_mbox_ops = {
- 	NHMEX_UNCORE_OPS_COMMON_INIT(),
- 	.enable_event	= nhmex_mbox_msr_enable_event,
-@@ -2791,7 +2823,13 @@ static int __init uncore_cpu_init(void)
- 			snbep_uncore_cbox.num_boxes = max_cores;
- 		msr_uncores = snbep_msr_uncores;
- 		break;
--	case 46:
-+	case 46: /* Nehalem-EX */
-+		uncore_nhmex = true;
-+	case 47: /* Westmere-EX aka. Xeon E7 */
-+		if (!uncore_nhmex)
-+			nhmex_uncore_mbox.event_descs = wsmex_uncore_mbox_events;
-+		if (nhmex_uncore_cbox.num_boxes > max_cores)
-+			nhmex_uncore_cbox.num_boxes = max_cores;
- 		msr_uncores = nhmex_msr_uncores;
- 		break;
- 	default:
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 8384e9b..5b81c18 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -276,18 +276,12 @@
- 		 NHMEX_M_PMON_CTL_INC_SEL_MASK |	\
- 		 NHMEX_M_PMON_CTL_SET_FLAG_SEL_MASK)
- 
--
--#define NHMEX_M_PMON_ZDP_CTL_FVC_FVID_MASK	0x1f
--#define NHMEX_M_PMON_ZDP_CTL_FVC_BCMD_MASK	(0x7 << 5)
--#define NHMEX_M_PMON_ZDP_CTL_FVC_RSP_MASK	(0x7 << 8)
--#define NHMEX_M_PMON_ZDP_CTL_FVC_PBOX_INIT_ERR	(1 << 23)
--#define NHMEX_M_PMON_ZDP_CTL_FVC_MASK			\
--		(NHMEX_M_PMON_ZDP_CTL_FVC_FVID_MASK |	\
--		 NHMEX_M_PMON_ZDP_CTL_FVC_BCMD_MASK |	\
--		 NHMEX_M_PMON_ZDP_CTL_FVC_RSP_MASK  |	\
--		 NHMEX_M_PMON_ZDP_CTL_FVC_PBOX_INIT_ERR)
-+#define NHMEX_M_PMON_ZDP_CTL_FVC_MASK		(((1 << 11) - 1) | (1 << 23))
- #define NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(n)	(0x7 << (11 + 3 * (n)))
- 
-+#define WSMEX_M_PMON_ZDP_CTL_FVC_MASK		(((1 << 12) - 1) | (1 << 24))
-+#define WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(n)	(0x7 << (12 + 3 * (n)))
-+
- /*
-  * use the 9~13 bits to select event If the 7th bit is not set,
-  * otherwise use the 19~21 bits to select event.
-@@ -369,6 +363,7 @@ struct intel_uncore_type {
- 	unsigned num_shared_regs:8;
- 	unsigned single_fixed:1;
- 	unsigned pair_ctr_ctl:1;
-+	unsigned *msr_offsets;
- 	struct event_constraint unconstrainted;
- 	struct event_constraint *constraints;
- 	struct intel_uncore_pmu *pmus;
-@@ -486,29 +481,31 @@ unsigned uncore_pci_perf_ctr(struct intel_uncore_box *box, int idx)
- 	return idx * 8 + box->pmu->type->perf_ctr;
- }
- 
--static inline
--unsigned uncore_msr_box_ctl(struct intel_uncore_box *box)
-+static inline unsigned uncore_msr_box_offset(struct intel_uncore_box *box)
-+{
-+	struct intel_uncore_pmu *pmu = box->pmu;
-+	return pmu->type->msr_offsets ?
-+		pmu->type->msr_offsets[pmu->pmu_idx] :
-+		pmu->type->msr_offset * pmu->pmu_idx;
-+}
-+
-+static inline unsigned uncore_msr_box_ctl(struct intel_uncore_box *box)
- {
- 	if (!box->pmu->type->box_ctl)
- 		return 0;
--	return box->pmu->type->box_ctl +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+	return box->pmu->type->box_ctl + uncore_msr_box_offset(box);
- }
- 
--static inline
--unsigned uncore_msr_fixed_ctl(struct intel_uncore_box *box)
-+static inline unsigned uncore_msr_fixed_ctl(struct intel_uncore_box *box)
- {
- 	if (!box->pmu->type->fixed_ctl)
- 		return 0;
--	return box->pmu->type->fixed_ctl +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+	return box->pmu->type->fixed_ctl + uncore_msr_box_offset(box);
- }
- 
--static inline
--unsigned uncore_msr_fixed_ctr(struct intel_uncore_box *box)
-+static inline unsigned uncore_msr_fixed_ctr(struct intel_uncore_box *box)
- {
--	return box->pmu->type->fixed_ctr +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+	return box->pmu->type->fixed_ctr + uncore_msr_box_offset(box);
- }
- 
- static inline
-@@ -516,7 +513,7 @@ unsigned uncore_msr_event_ctl(struct intel_uncore_box *box, int idx)
- {
- 	return box->pmu->type->event_ctl +
- 		(box->pmu->type->pair_ctr_ctl ? 2 * idx : idx) +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+		uncore_msr_box_offset(box);
- }
- 
- static inline
-@@ -524,7 +521,7 @@ unsigned uncore_msr_perf_ctr(struct intel_uncore_box *box, int idx)
- {
- 	return box->pmu->type->perf_ctr +
- 		(box->pmu->type->pair_ctr_ctl ? 2 * idx : idx) +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+		uncore_msr_box_offset(box);
- }
- 
- static inline
--- 
-1.7.11.2
+Yes, that makes sense. The interrupt-controller property is not
+explicitly mentioned in Documentation/devicetree at all. Perhaps the
+reason is that it is in fact a standard property and, I think, is
+already defined by IEEE 1275. I don't think it would hurt to repeat it
+explicitly for GPIO bindings in general, though.
 
+> >> > +config GPIO_ADNP
+> >> > +       tristate "Avionic Design N-bit GPIO expander"
+> >> > +       depends on I2C && OF
+> >> > +       help
+> >> > +         This option enables support for N GPIOs found on Avionic D=
+esign
+> >> > +         I2C GPIO expanders. The register space will be extended by=
+ powers
+> >> > +         of two, so the controller will need to accomodate for that=
+=2E For
+> >> > +         example: if a controller provides 48 pins, 6 registers wil=
+l be
+> >> > +         enough to represent all pins, but the driver will assume a
+> >> > +         register layout for 64 pins (8 registers).
+> >> > +
+> >> > +config GPIO_ADNP_IRQ
+> >> > +       tristate "Interrupt controller support"
+> >> > +       depends on GPIO_ADNP
+> >> > +       help
+> >> > +         Say yes here to enable the Avionic Design N-bit GPIO expan=
+der to
+> >> > +         be used as an interrupt controller.
+> >>
+> >> First: please describe the usecase where the Avionic driver is used
+> >> without making use of the IRQ, and *why* it should be possible
+> >> to configure this out. E.g. is there a hardware which isn't using the
+> >> IRQ portions? If there is no non-irq usecase just drop this
+> >> config option.
+> >
+> > This expander is used in a number of Tegra-based boards and handles
+> > things like enabling or disabling power to a given IC but on other
+> > boards it is also used to handle interrupts from input devices or
+> > card-detect for example.
+> >
+> > The controller is synthesized in a CPLD, which is one of the reasons for
+> > the nr-gpios DT property. There is at least one platform that currently
+> > doesn't use the interrupt functionality. Mainly I allowed this to be
+> > configured out in order to reduce the number of interrupts required for
+> > a platform. Another reason was that at the time I first wrote this, IRQ
+> > domains hadn't been available, so the driver couldn't be built as a
+> > module if interrupt support was required. This also no longer applies.
+> >
+> > I'm actually fine either way, but I thought it'd be most flexible by
+> > keeping the IRQ support optional for the above reasons.
+>=20
+> We're working on a goal of a "single zImage" (one unified ARM
+> kernel) which means your platform must be able to handle the
+> case where this is turned on anyway, so I would suggest you
+> drop the optional compile-time IRQ support, just make it
+> optional at runtime instead.
+
+I don't quite understand. Do you want me to add a module parameter to
+make it optional at runtime? Since the driver is now OF only I suppose I
+could make it optional on the interrupt-controller property as well.
+
+> > On that note, provided there is special additional circuitry, the GPIO
+> > controller is able to detect tristate on an input. I'm not aware that
+> > the pinctrl subsystem provides for that functionality yet, right?
+>=20
+> pinctrl is usually about *setting* things into tristate, but I'm all
+> for adding support for getting it as well. But that depends on
+> the generic pin configurations being adopted first (still most
+> controllers have their own way of doing pin config, so this
+> cannot be represented in a generic way).
+
+As I mentioned, the only hardware where this was ever used is already
+EOL and I don't expect this functionality to be required anytime soon
+for another project.
+
+> >> > +       base =3D kzalloc(regs * 5, GFP_KERNEL);
+> >>
+> >> Why kzalloc()/kfree() when you can just use a
+> >>
+> >> static u8 base[N];
+> >>
+> >> where N is the max number of registers on any HW instead?
+> >
+> > As I explained above, the number of pins is configurable, so it'd be
+> > quite a waste to always assume a maximum of, say, 256 pins if the
+> > hardware actually only uses 8.
+>=20
+> OK but atleast find a way to move this to the probe() function,
+> what happens if the debugfs file is browsed and you run out
+> of memory? Not nice, and you were using this to debug as
+> well...
+
+Alright, I can do that. Alternatively I could probably drop the
+allocations altogether and use local variables within the second loop to
+store the variables:
+
+	for (i =3D 0; i < num_regs; i++) {
+		u8 ddr, plr, ier, isr, ptr;
+
+		err =3D adnp_read(gpio, GPIO_DDR(gpio) + i, &ddr);
+		if (err < 0)
+			goto out;
+
+		...
+	}
+
+With the proper locking this shouldn't be a problem. The reason why I
+used the block-wise approach in the first place was that the register
+accesses were more "atomic". Of course without locking this is non-
+sense.
+
+> >> > +       gpio->irq_mask =3D devm_kzalloc(chip->dev, regs * 7, GFP_KER=
+NEL);
+> >> > +       if (!gpio->irq_mask)
+> >> > +               return -ENOMEM;
+> >> > +
+> >> > +       gpio->irq_mask_cur =3D gpio->irq_mask + (regs * 1);
+> >> > +       gpio->irq_level =3D gpio->irq_mask + (regs * 2);
+> >> > +       gpio->irq_rise =3D gpio->irq_mask + (regs * 3);
+> >> > +       gpio->irq_fall =3D gpio->irq_mask + (regs * 4);
+> >> > +       gpio->irq_high =3D gpio->irq_mask + (regs * 5);
+> >> > +       gpio->irq_low =3D gpio->irq_mask + (regs * 6);
+> >>
+> >> I'm not following this regs * 1, regs * 2 ... regs *7 stuff. What are =
+you doing
+> >> here? Explain with some comment atleast.
+> >
+> > Basically I need at least irq_level, irq_rise, irq_fall, irq_high and
+> > irq_low to keep track of the current level and trigger modes for each
+> > interrupt. Instead of allocating small chunks for each of these I
+> > allocate one chunk and just make the others point into that.
+>=20
+> Maybe you said this would go away in this case not comments
+> of course.
+
+irq_mask and irq_mask_cur can go away I think.
+
+> But I wasn't getting the multiplication part. I understand the
+> allocation, 7 registers time the number of registers (hm, there
+> is something about the naming too....)
+
+You're right, regs should probably be called num_regs.
+
+> You're storing the things in such an awkward way: all
+> current masks for all registers sets, then all levels for
+> all register etc.
+>=20
+> Instead could you store all the flags for *one* instance
+> then the next set of registers etc.
+
+I was following the register layout of the controller to keep things
+consistent.
+
+Thierry
+
+--82I3+IH0IqGh5yIs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQH1IQAAoJEN0jrNd/PrOhpEoQAMEabYmr67MANtCXDh1BmxSC
+gfI9F6FN60CISre8p+0cq/guu3YQnh3uOepD2+SLOwQ6MUGCl/81R3DX3qpNHjjS
+Rvk3u/c/vFF4qL8aGxljTVqobk3qZ505BU9Dwgh7uqa85ImkPQlQlvIKshU4h7ac
+HBqNEufuct2ChiEHjqRPfbM8RRpKSuHreRmEVnfuiS8jFR87wtRjCt9xT6zFJHI+
+21rum+MzXAmp/au2WfPDsyXBlelWaiWzaHAX+JQalgozqutHz/H9iIKlhWCk4q4a
+zjeBmYSCTS4duKLGIiY12cK9Stq1+iG+EBgNXzh7RmiT4bAD4yW97HWD26oJZR/4
+ytRe8o9o7mpzXPNBtpSBNDHtZM1T5cfJLEaGKATPXab2N+IMJbYI6hneZFCglucL
+RhCmFyo+gvv1SwJIdS/xq03nuZ+babeEN/HZPgRM8nFkEeSWmgWSywkinLHN2XWW
+eIWR9yo8TxndbeeOOURkaIRI0XFPELZBTxgEsZDaTCwmgyqGzHsSxX+m4DMWZL+e
+7PrydGPzE7VDEiPq/Zl6CH89GvO0LQsRVj6P/CK/h/whHdgWniSbtfRK9asRtLVX
+6XfwsQic8cuhoeV4y8eWL3O2aL+GH8b1n+Rd9NqlJKYX233L0+t5hB8qGPxBCuVm
+1dSLST4JilRtwcRAXeyq
+=YHgI
+-----END PGP SIGNATURE-----
+
+--82I3+IH0IqGh5yIs--
