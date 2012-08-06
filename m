@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab2HFIij (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 04:38:39 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11131 "EHLO
+	id S1754017Ab2HFIiw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 04:38:52 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11177 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab2HFIih convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753851Ab2HFIiu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 04:38:37 -0400
+	Mon, 6 Aug 2012 04:38:50 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 06 Aug 2012 01:38:33 -0700
+	by hqnvupgp07.nvidia.com on Mon, 06 Aug 2012 01:33:14 -0700
 From: Venu Byravarasu <vbyravarasu@nvidia.com>
 To: Anthony Olech <anthony.olech.opensource@diasemi.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
+        Andrew Morton <akpm@linux-foundation.org>
 CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Steven Toth <stoth@kernellabs.com>,
-        Michael Krufky <mkrufky@kernellabs.com>,
+        Paul Gortmaker <p_gortmaker@yahoo.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
         LKML <linux-kernel@vger.kernel.org>,
         David Dajun Chen <david.chen@diasemi.com>
-Date: Mon, 6 Aug 2012 14:08:24 +0530
-Subject: RE: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
-Thread-Topic: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
-Thread-Index: Ac1zp2ZR18IaKsJIQJ+ol12Cst8WQgAA/ASA
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDCAC4BAA@BGMAIL02.nvidia.com>
-References: <201208060742.q767gwDA005770@ubuntu>
-In-Reply-To: <201208060742.q767gwDA005770@ubuntu>
+Date: Mon, 6 Aug 2012 14:08:12 +0530
+Subject: RE: [NEW DRIVER V2 4/7] DA9058 RTC driver
+Thread-Topic: [NEW DRIVER V2 4/7] DA9058 RTC driver
+Thread-Index: Ac1zpu97Arhoj29oS8CBj1aswGMeXgAA1ReA
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDCAC4BA9@BGMAIL02.nvidia.com>
+References: <201208060739.q767djnO005723@ubuntu>
+In-Reply-To: <201208060739.q767djnO005723@ubuntu>
 Accept-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
@@ -38,191 +38,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
 > -----Original Message-----
 > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
 > owner@vger.kernel.org] On Behalf Of Anthony Olech
 > Sent: Monday, August 06, 2012 2:14 AM
-> To: Samuel Ortiz
-> Cc: Mark Brown; Arnd Bergmann; Mauro Carvalho Chehab; Steven Toth;
-> Michael Krufky; LKML; David Dajun Chen
-> Subject: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
+> To: Andrew Morton
+> Cc: Mark Brown; Paul Gortmaker; Samuel Ortiz; Alessandro Zummo; rtc-
+> linux@googlegroups.com; LKML; David Dajun Chen
+> Subject: [NEW DRIVER V2 4/7] DA9058 RTC driver
 > 
-> This is the MFD core driver for the Dialog DA9058 PMIC.
-> This driver, via MFD CELLs, causes all the component drivers to be
-> loaded, if it is a module, and initialized via their probe methods.
-> It also provides access to the ADC functions on the PMIC.
-> All the other component drivers depend on this one.
+> This is the RTC component driver of the Dialog DA9058 PMIC.
+> This driver is just one component of the whole DA9058 PMIC driver.
+> It depends on the core DA9058 MFD driver.
 > 
-> +#endif /* __DA9058_PDATA_H */
-> diff --git a/include/linux/mfd/da9058/registers.h
-> b/include/linux/mfd/da9058/registers.h
-> new file mode 100644
-> index 0000000..0fd6aef
-> --- /dev/null
-> +++ b/include/linux/mfd/da9058/registers.h
-> @@ -0,0 +1,480 @@
-> +/*
-> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + */
+> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+> ---
 > +
-> +#ifndef __DA9058_REGISTERS_H
-> +#define __DA9058_REGISTERS_H
+> +static int da9058_rtc_check_param(struct rtc_time *rtc_tm)
+> +{
+> +	if ((rtc_tm->tm_sec > DA9058_RTC_SECONDS_LIMIT) || (rtc_tm-
+> >tm_sec < 0))
+> +		return -EIO;
 > +
-> +#define DA9058_PAGECON0_REG			0
+> +	if ((rtc_tm->tm_min > DA9058_RTC_MINUTES_LIMIT) || (rtc_tm-
+> >tm_min < 0))
+> +		return -EIO;
+> +
+> +	if ((rtc_tm->tm_hour > DA9058_RTC_HOURS_LIMIT) || (rtc_tm-
+> >tm_hour < 0))
+> +		return -EIO;
+> +
+> +	if (rtc_tm->tm_mday == 0)
+> +		return -EIO;
 
-You can remove _REG after each register name.
+Why limit check is not done for mday, like it is done for other params? 
 
-> +#define DA9058_STATUSA_REG			1
-> +#define DA9058_STATUSB_REG			2
-> +#define DA9058_STATUSC_REG			3
-> +#define DA9058_STATUSD_REG			4
-
- 
-
-> +/* RTC fields */
-> +#define DA9058_RTC_SECS_MASK			0x3F
+> +
+> +	if ((rtc_tm->tm_mon > DA9058_RTC_MONTHS_LIMIT) || (rtc_tm-
+> >tm_mon <= 0))
+> +		return -EIO;
+> +
+> +	if ((rtc_tm->tm_year > DA9058_RTC_YEARS_LIMIT) || (rtc_tm-
+> >tm_year < 0))
+> +		return -EIO;
+> +
+> +	return 0;
+> +}
+> +
+> +static int da9058_rtc_readtime(struct device *dev, struct rtc_time *tm)
+> +{
+> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
+> +	struct da9058 *da9058 = rtc->da9058;
+> +	unsigned int rtc_time[6];
+> +	int ret;
+> +
+> +	ret = da9058_bulk_read(da9058, DA9058_COUNTS_REG, rtc_time, 6);
+> +	if (ret)
+> +		return ret;
+> +
+> +	tm->tm_sec = rtc_time[0] & DA9058_RTC_SECS_MASK;
 
 Usually most of the PMIC RTCs provide RTC time registers in BCD
 Format. Plz make sure that is not the case with your device, 
 otherwise these masks may not be valid.
+
+> +	tm->tm_min = rtc_time[1] & DA9058_RTC_MINS_MASK;
+> +
+> +	tm->tm_hour = rtc_time[2] & DA9058_RTC_HRS_MASK;
+
  
-> +#define DA9058_RTC_MINS_MASK			0x3F
-> +#define DA9058_RTC_HRS_MASK			0x1F
-> +#define DA9058_RTC_DAY_MASK			0x1F
-> +#define DA9058_RTC_MTH_MASK			0x0F
-> +#define DA9058_RTC_YRS_MASK			0x3F
-> +#define DA9058_RTC_ALMSECS_MASK			0x3F
-> +#define DA9058_RTC_ALMMINS_MASK			0x3F
-> +#define DA9058_RTC_ALMHRS_MASK			0x1F
-> +#define DA9058_RTC_ALMDAY_MASK			0x1F
-> +#define DA9058_RTC_ALMMTH_MASK			0x0F
-> +#define DA9058_RTC_ALMYRS_MASK			0x3F
-> +/* RTC TIMER SECONDS REGISTER */
-> +#define DA9058_COUNTS_COUNTSEC			(63<<0)
-> +/* RTC TIMER MINUTES REGISTER */
-> +#define DA9058_COUNTMI_COUNTMIN			(63<<0)
-> +/* RTC TIMER HOUR REGISTER */
-> +#define DA9058_COUNTH_COUNTHOUR			(31<<0)
-> +/* RTC TIMER DAYS REGISTER */
-> +#define DA9058_COUNTD_COUNTDAY			(31<<0)
-> +/* RTC TIMER MONTHS REGISTER */
-> +#define DA9058_COUNTMO_COUNTMONTH		(15<<0)
-> +/* RTC TIMER YEARS REGISTER */
-> +#define DA9058_COUNTY_MONITOR			(1<<6)
-> +#define DA9058_COUNTY_COUNTYEAR			(63<<0)
-> +/* RTC ALARM SECONDS REGISTER */
-> +#define DA9058_ALARMMI_COUNTSEC			(63<<0)
-> +/* RTC ALARM MINUTES REGISTER */
-> +#define DA9058_ALARMMI_TICKTYPE			(1<<7)
-> +#define DA9058_ALARMMI_ALARMMIN			(63<<0)
-> +/* RTC ALARM HOURS REGISTER */
-> +#define DA9058_ALARMH_ALARMHOUR			(31<<0)
-> +/* RTC ALARM DAYS REGISTER */
-> +#define DA9058_ALARMD_ALARMDAY			(31<<0)
-> +/* RTC ALARM MONTHS REGISTER */
-> +#define DA9058_ALARMMO_ALARMMONTH		(15<<0)
-> +/* RTC ALARM YEARS REGISTER */
-> +#define DA9058_ALARMY_TICKON			(1<<7)
-> +#define DA9058_ALARMY_ALARMON			(1<<6)
-> +#define DA9058_ALARMY_ALARMYEAR			(63<<0)
-> +/* CHIP IDENTIFICATION REGISTER */
-> +#define DA9058_CHIPID_MRC			(15<<4)
-> +#define DA9058_CHIPID_TRC			(15<<0)
-> +/* CONFIGURATION IDENTIFICATION REGISTER */
-> +#define DA9058_CONFIGID_CONFID			(7<<0)
-> +/* OTP CONTROL REGISTER */
-> +#define DA9058_OTPCONT_GPWRITEDIS		(1<<7)
-> +#define DA9058_OTPCONT_OTPCONFLOCK		(1<<6)
-> +#define DA9058_OTPCONT_OTPGPLOCK		(1<<5)
-> +#define DA9058_OTPCONT_OTPCONFG			(1<<3)
-> +#define DA9058_OTPCONT_OTPGP			(1<<2)
-> +#define DA9058_OTPCONT_OTPRP			(1<<1)
-> +#define DA9058_OTPCONT_OTPTRANSFER		(1<<0)
-> +/* RTC OSCILLATOR TRIM REGISTER */
-> +#define DA9058_OSCTRIM_TRIM32K			(255<<0)
-> +/* GP ID REGISTERs 0 - 9 */
-> +#define DA9058_GPID0_GP0			(255<<0)
-> +#define DA9058_GPID1_GP1			(255<<0)
-> +#define DA9058_GPID2_GP2			(255<<0)
-> +#define DA9058_GPID3_GP3			(255<<0)
-> +#define DA9058_GPID4_GP4			(255<<0)
-> +#define DA9058_GPID5_GP5			(255<<0)
-> +#define DA9058_GPID6_GP6			(255<<0)
-> +#define DA9058_GPID7_GP7			(255<<0)
-> +#define DA9058_GPID8_GP8			(255<<0)
-> +#define DA9058_GPID9_GP9			(255<<0)
+
 > +
-> +#endif /* __DA9058_REGISTERS_H */
-> diff --git a/include/linux/mfd/da9058/regulator.h
-> b/include/linux/mfd/da9058/regulator.h
-> new file mode 100644
-> index 0000000..686c607
-> --- /dev/null
-> +++ b/include/linux/mfd/da9058/regulator.h
-> @@ -0,0 +1,33 @@
-> +/*
-> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + */
+> +	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon,
+> +						tm->tm_year);
+> +	tm->tm_year += 100;
+> +	tm->tm_mon -= 1;
 > +
-> +#ifndef __DA9058_REGULATOR_H
-> +#define __DA9058_REGULATOR_H
+> +	return 0;
+> +}
 > +
-> +struct da9058_regulator_pdata {
-> +	char *regulator_name;
-> +	int regulator_id;
-> +	int min_uV;
-> +	int max_uV;
-> +	int control_voltage_step;
-> +	int control_register;
-> +	int control_enable_mask;
-> +	int ramp_register;
-> +	int ramp_enable_mask;
-> +	int fixed_voltage;
-> +	unsigned int valid_ops_mask;
-> +	unsigned int valid_modes_mask;
-> +	unsigned int always_on:1;
-> +	unsigned int boot_on:1;
-> +	int num_consumer_supplies;
-> +	struct regulator_consumer_supply *consumer_supplies;
+> +static int da9058_rtc_settime(struct device *dev, struct rtc_time *tm)
+> +{
+> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
+> +	struct da9058 *da9058 = rtc->da9058;
+> +	unsigned int rtc_ctrl, val, rtc_time[6];
+> +	int ret;
+> +
+> +	tm->tm_year -= 111;
+
+Why 111 is subtracted here and only 100 is added in read_time()
+above? If this is what you really wanted to have, it would be
+better to add few comments justifying these magic numbers. 
+
+> +	tm->tm_mon += 1;
+
+
+> +static irqreturn_t da9058_rtc_timer_alarm_handler(int irq, void *data)
+> +{
+> +	struct da9058_rtc *rtc = data;
+> +
+> +	da9058_rtc_stop_alarm(rtc);
+> +	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
+> +
+
+Whether start RTC is not needed here explicitly?
+
+> +	return IRQ_HANDLED;
+> +}
+> +
+
+
+> +	rtc->tick_irq = DA9058_IRQ_ETICK;
+> +	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
+> +							rtc->tick_irq),
+> +				NULL, da9058_rtc_tick_alarm_handler,
+> +				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+> +				"DA9058 RTC Tick Alarm", rtc);
+> +	if (ret) {
+> +		dev_err(&pdev->dev,
+> +			"Failed to get rtc timer alarm IRQ %d: %d\n",
+> +			DA9058_IRQ_ETICK, ret);
+> +		goto err4;
+> +	}
+> +
+> +	ret = 0;
+> +	goto exit;
+
+You can have return 0 here, instead of above two statements.
+ 
+> +
+> +err4:
+> +	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
+> +err3:
+> +err2:
+> +	rtc_device_unregister(rtc->rtc_dev);
+> +err1:
+> +err0:
+> +	platform_set_drvdata(pdev, NULL);
+> +exit:
+> +	return ret;
+> +}
+> +
+> +static int __devexit da9058_rtc_remove(struct platform_device *pdev)
+> +{
+> +	struct da9058_rtc *rtc = platform_get_drvdata(pdev);
+> +	struct da9058 *da9058 = rtc->da9058;
+> +
+> +	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
+> +	free_irq(da9058_to_virt_irq_num(da9058, rtc->tick_irq), rtc);
+> +
+> +	rtc_device_unregister(rtc->rtc_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver da9058_rtc_driver = {
+> +	.probe = da9058_rtc_probe,
+> +	.remove = __devexit_p(da9058_rtc_remove),
+> +	.driver = {
+> +		.name = "da9058-rtc",
+
+Some of the rtc drivers had name as rtc-deviceName and others have deviceName-rtc.
+Can some experts comment which one is correct practice?
+
+
+> +		.owner = THIS_MODULE,
+> +	},
 > +};
 > +
-> +#endif /* __DA9058_REGULATOR_H */
-> diff --git a/include/linux/mfd/da9058/rtc.h
-> b/include/linux/mfd/da9058/rtc.h
-> new file mode 100644
-> index 0000000..aa597df
-> --- /dev/null
-> +++ b/include/linux/mfd/da9058/rtc.h
-> @@ -0,0 +1,17 @@
-> +/*
-> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + */
+> +module_platform_driver(da9058_rtc_driver);
 > +
-> +#ifndef __DA9058_RTC_H
-> +#define __DA9058_RTC_H
-> +
-> +struct da9058_rtc_pdata {
-> +};
-> +
-> +#endif /* __DA9058_RTC_H */
+> +MODULE_DESCRIPTION("Dialog DA9058 PMIC Real Time Clock Driver");
+> +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:da9058-rtc");
 > --
 > end-of-patch for NEW DRIVER V2
 > 
