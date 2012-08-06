@@ -1,59 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab2HFIhH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 04:37:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3638 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab2HFIhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 04:37:05 -0400
-Message-ID: <501F8226.9090500@redhat.com>
-Date: Mon, 06 Aug 2012 11:36:54 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753952Ab2HFIij (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 04:38:39 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11131 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab2HFIih convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 04:38:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 06 Aug 2012 01:38:33 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Steven Toth <stoth@kernellabs.com>,
+        Michael Krufky <mkrufky@kernellabs.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Date: Mon, 6 Aug 2012 14:08:24 +0530
+Subject: RE: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
+Thread-Topic: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
+Thread-Index: Ac1zp2ZR18IaKsJIQJ+ol12Cst8WQgAA/ASA
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDCAC4BAA@BGMAIL02.nvidia.com>
+References: <201208060742.q767gwDA005770@ubuntu>
+In-Reply-To: <201208060742.q767gwDA005770@ubuntu>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Stefan Priebe <s.priebe@profihost.ag>
-CC: mtosatti@redhat.com, kvm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
-References: <5017C8A0.60506@profihost.ag> <5017F19E.4070308@redhat.com> <501817C9.6090405@profihost.ag> <5018EC7D.9090702@redhat.com> <5018F5BB.9070500@profihost.ag> <5018F7E6.4020909@redhat.com> <5018F9F6.70307@profihost.ag> <5018FC9B.8040808@redhat.com> <501E4615.7060801@profihost.ag> <501E4AFD.3020806@redhat.com> <501E96BB.5060702@profihost.ag> <501EC2E2.8010802@profihost.ag>
-In-Reply-To: <501EC2E2.8010802@profihost.ag>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2012 10:00 PM, Stefan Priebe wrote:
-> Am 05.08.2012 17:52, schrieb Stefan Priebe:
->> Am 05.08.2012 12:29, schrieb Avi Kivity:
->>> On 08/05/2012 01:08 PM, Stefan Priebe wrote:
->>>> Am 01.08.2012 11:53, schrieb Avi Kivity:
->>>>> On 08/01/2012 12:42 PM, Stefan Priebe - Profihost AG wrote:
->>>>>> Am 01.08.2012 11:33, schrieb Avi Kivity:
->>>>>>>> So here are 3 backtraces from booting the rescue system:
->>>>>>>> http://pastebin.com/raw.php?i=xCy2pEcP
->>>>>>>>
->>>>>>>> To me they all look the same.
->>>>>>>
->>>>>>> They are.  What version of qemu are you using?
->>>>>>
->>>>>> latest stable-1.1 branch (1.1.1) - which works fine with latest RHEL6
->>>>>> kernel.
->>>>>
->>>>> This could be due to a kernel bug, or due to a different code path
->>>>> taken
->>>>> in qemu because of differing features exposed to kvm.
->>>>>
->>>>> Please try qemu-kvm.git master and report.
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Anthony Olech
+> Sent: Monday, August 06, 2012 2:14 AM
+> To: Samuel Ortiz
+> Cc: Mark Brown; Arnd Bergmann; Mauro Carvalho Chehab; Steven Toth;
+> Michael Krufky; LKML; David Dajun Chen
+> Subject: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
 > 
-> OK got it running it's just awfully slow and i was too impatient. It
-> crashes at the part as 1.1.1 stable.
+> This is the MFD core driver for the Dialog DA9058 PMIC.
+> This driver, via MFD CELLs, causes all the component drivers to be
+> loaded, if it is a module, and initialized via their probe methods.
+> It also provides access to the ADC functions on the PMIC.
+> All the other component drivers depend on this one.
 > 
+> +#endif /* __DA9058_PDATA_H */
+> diff --git a/include/linux/mfd/da9058/registers.h
+> b/include/linux/mfd/da9058/registers.h
+> new file mode 100644
+> index 0000000..0fd6aef
+> --- /dev/null
+> +++ b/include/linux/mfd/da9058/registers.h
+> @@ -0,0 +1,480 @@
+> +/*
+> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + */
+> +
+> +#ifndef __DA9058_REGISTERS_H
+> +#define __DA9058_REGISTERS_H
+> +
+> +#define DA9058_PAGECON0_REG			0
 
-Slow?  what does 'info kvm' say?
+You can remove _REG after each register name.
 
-I got master running and it wasn't particularly slow.  I'll try 1.1.1 too.
+> +#define DA9058_STATUSA_REG			1
+> +#define DA9058_STATUSB_REG			2
+> +#define DA9058_STATUSC_REG			3
+> +#define DA9058_STATUSD_REG			4
 
+ 
 
--- 
-error compiling committee.c: too many arguments to function
+> +/* RTC fields */
+> +#define DA9058_RTC_SECS_MASK			0x3F
+
+Usually most of the PMIC RTCs provide RTC time registers in BCD
+Format. Plz make sure that is not the case with your device, 
+otherwise these masks may not be valid.
+ 
+> +#define DA9058_RTC_MINS_MASK			0x3F
+> +#define DA9058_RTC_HRS_MASK			0x1F
+> +#define DA9058_RTC_DAY_MASK			0x1F
+> +#define DA9058_RTC_MTH_MASK			0x0F
+> +#define DA9058_RTC_YRS_MASK			0x3F
+> +#define DA9058_RTC_ALMSECS_MASK			0x3F
+> +#define DA9058_RTC_ALMMINS_MASK			0x3F
+> +#define DA9058_RTC_ALMHRS_MASK			0x1F
+> +#define DA9058_RTC_ALMDAY_MASK			0x1F
+> +#define DA9058_RTC_ALMMTH_MASK			0x0F
+> +#define DA9058_RTC_ALMYRS_MASK			0x3F
+> +/* RTC TIMER SECONDS REGISTER */
+> +#define DA9058_COUNTS_COUNTSEC			(63<<0)
+> +/* RTC TIMER MINUTES REGISTER */
+> +#define DA9058_COUNTMI_COUNTMIN			(63<<0)
+> +/* RTC TIMER HOUR REGISTER */
+> +#define DA9058_COUNTH_COUNTHOUR			(31<<0)
+> +/* RTC TIMER DAYS REGISTER */
+> +#define DA9058_COUNTD_COUNTDAY			(31<<0)
+> +/* RTC TIMER MONTHS REGISTER */
+> +#define DA9058_COUNTMO_COUNTMONTH		(15<<0)
+> +/* RTC TIMER YEARS REGISTER */
+> +#define DA9058_COUNTY_MONITOR			(1<<6)
+> +#define DA9058_COUNTY_COUNTYEAR			(63<<0)
+> +/* RTC ALARM SECONDS REGISTER */
+> +#define DA9058_ALARMMI_COUNTSEC			(63<<0)
+> +/* RTC ALARM MINUTES REGISTER */
+> +#define DA9058_ALARMMI_TICKTYPE			(1<<7)
+> +#define DA9058_ALARMMI_ALARMMIN			(63<<0)
+> +/* RTC ALARM HOURS REGISTER */
+> +#define DA9058_ALARMH_ALARMHOUR			(31<<0)
+> +/* RTC ALARM DAYS REGISTER */
+> +#define DA9058_ALARMD_ALARMDAY			(31<<0)
+> +/* RTC ALARM MONTHS REGISTER */
+> +#define DA9058_ALARMMO_ALARMMONTH		(15<<0)
+> +/* RTC ALARM YEARS REGISTER */
+> +#define DA9058_ALARMY_TICKON			(1<<7)
+> +#define DA9058_ALARMY_ALARMON			(1<<6)
+> +#define DA9058_ALARMY_ALARMYEAR			(63<<0)
+> +/* CHIP IDENTIFICATION REGISTER */
+> +#define DA9058_CHIPID_MRC			(15<<4)
+> +#define DA9058_CHIPID_TRC			(15<<0)
+> +/* CONFIGURATION IDENTIFICATION REGISTER */
+> +#define DA9058_CONFIGID_CONFID			(7<<0)
+> +/* OTP CONTROL REGISTER */
+> +#define DA9058_OTPCONT_GPWRITEDIS		(1<<7)
+> +#define DA9058_OTPCONT_OTPCONFLOCK		(1<<6)
+> +#define DA9058_OTPCONT_OTPGPLOCK		(1<<5)
+> +#define DA9058_OTPCONT_OTPCONFG			(1<<3)
+> +#define DA9058_OTPCONT_OTPGP			(1<<2)
+> +#define DA9058_OTPCONT_OTPRP			(1<<1)
+> +#define DA9058_OTPCONT_OTPTRANSFER		(1<<0)
+> +/* RTC OSCILLATOR TRIM REGISTER */
+> +#define DA9058_OSCTRIM_TRIM32K			(255<<0)
+> +/* GP ID REGISTERs 0 - 9 */
+> +#define DA9058_GPID0_GP0			(255<<0)
+> +#define DA9058_GPID1_GP1			(255<<0)
+> +#define DA9058_GPID2_GP2			(255<<0)
+> +#define DA9058_GPID3_GP3			(255<<0)
+> +#define DA9058_GPID4_GP4			(255<<0)
+> +#define DA9058_GPID5_GP5			(255<<0)
+> +#define DA9058_GPID6_GP6			(255<<0)
+> +#define DA9058_GPID7_GP7			(255<<0)
+> +#define DA9058_GPID8_GP8			(255<<0)
+> +#define DA9058_GPID9_GP9			(255<<0)
+> +
+> +#endif /* __DA9058_REGISTERS_H */
+> diff --git a/include/linux/mfd/da9058/regulator.h
+> b/include/linux/mfd/da9058/regulator.h
+> new file mode 100644
+> index 0000000..686c607
+> --- /dev/null
+> +++ b/include/linux/mfd/da9058/regulator.h
+> @@ -0,0 +1,33 @@
+> +/*
+> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + */
+> +
+> +#ifndef __DA9058_REGULATOR_H
+> +#define __DA9058_REGULATOR_H
+> +
+> +struct da9058_regulator_pdata {
+> +	char *regulator_name;
+> +	int regulator_id;
+> +	int min_uV;
+> +	int max_uV;
+> +	int control_voltage_step;
+> +	int control_register;
+> +	int control_enable_mask;
+> +	int ramp_register;
+> +	int ramp_enable_mask;
+> +	int fixed_voltage;
+> +	unsigned int valid_ops_mask;
+> +	unsigned int valid_modes_mask;
+> +	unsigned int always_on:1;
+> +	unsigned int boot_on:1;
+> +	int num_consumer_supplies;
+> +	struct regulator_consumer_supply *consumer_supplies;
+> +};
+> +
+> +#endif /* __DA9058_REGULATOR_H */
+> diff --git a/include/linux/mfd/da9058/rtc.h
+> b/include/linux/mfd/da9058/rtc.h
+> new file mode 100644
+> index 0000000..aa597df
+> --- /dev/null
+> +++ b/include/linux/mfd/da9058/rtc.h
+> @@ -0,0 +1,17 @@
+> +/*
+> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + */
+> +
+> +#ifndef __DA9058_RTC_H
+> +#define __DA9058_RTC_H
+> +
+> +struct da9058_rtc_pdata {
+> +};
+> +
+> +#endif /* __DA9058_RTC_H */
+> --
+> end-of-patch for NEW DRIVER V2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
