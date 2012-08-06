@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab2HFXL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:11:57 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:44971 "EHLO ogre.sisk.pl"
+	id S932307Ab2HFXLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:11:55 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44975 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932225Ab2HFXLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:11:51 -0400
+	id S932230Ab2HFXLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 19:11:52 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [PATCH 8/12] PM / shmobile: Do not access sh7372 A4S domain internals directly
-Date: Tue, 7 Aug 2012 01:11:51 +0200
+Subject: [PATCH 7/12] PM / Domains: Add power-on function using names to identify domains
+Date: Tue, 7 Aug 2012 01:11:14 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Linux PM list <linux-pm@vger.kernel.org>,
@@ -20,76 +20,117 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208070111.51313.rjw@sisk.pl>
+Message-Id: <201208070111.15171.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The sh7372_enter_suspend() routine checks the status field of the
-generic PM domain object corresponding to the A4S domain in order to
-check if it can turn that domain off when entering system sleep.
-However, it shouldn't rely on the specific values of the generic
-data structures this way, so make it use its own mechanism to
-recognize when it is safe to turn that domain off.
-
-For this purpos, introduce a boolean variable a4s_suspend_ready
-that will be set by the A4S' suspend routine and unset by its
-resume routine executed by rmobile_pd_power_down() and
-__rmobile_pd_power_up(), respectively.
+It sometimes is necessary to turn on a given PM domain when only
+the name of it is known and the domain pointer is not readily
+available.  For this reason, add a new helper function,
+pm_genpd_name_poweron(), allowing the caller to turn on a PM domain
+using its name for identification.  To avoid code duplication,
+move the domain lookup code to a separate function.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/mach-shmobile/pm-sh7372.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/base/power/domain.c |   46 +++++++++++++++++++++++++++++---------------
+ include/linux/pm_domain.h   |    5 ++++
+ 2 files changed, 36 insertions(+), 15 deletions(-)
 
-Index: linux/arch/arm/mach-shmobile/pm-sh7372.c
+Index: linux/drivers/base/power/domain.c
 ===================================================================
---- linux.orig/arch/arm/mach-shmobile/pm-sh7372.c
-+++ linux/arch/arm/mach-shmobile/pm-sh7372.c
-@@ -110,21 +110,33 @@ struct rmobile_pm_domain sh7372_pd_a3ri
- 	.bit_shift = 8,
- };
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -53,6 +53,24 @@
+ static LIST_HEAD(gpd_list);
+ static DEFINE_MUTEX(gpd_list_lock);
  
-+static bool a4s_suspend_ready;
-+
- static int sh7372_pd_a4s_suspend(void)
- {
- 	/*
- 	 * The A4S domain contains the CPU core and therefore it should
--	 * only be turned off if the CPU is in use.
-+	 * only be turned off if the CPU is not in use.  This may happen
-+	 * during system suspend, when SYSC is going to be used for generating
-+	 * resume signals and a4s_suspend_ready is set to let
-+	 * sh7372_enter_suspend() know that it can turn A4S off.
- 	 */
-+	a4s_suspend_ready = true;
- 	return -EBUSY;
- }
- 
-+static void sh7372_pd_a4s_resume(void)
++static struct generic_pm_domain *pm_genpd_lookup_name(const char *domain_name)
 +{
-+	a4s_suspend_ready = false;
++	struct generic_pm_domain *genpd = NULL, *gpd;
++
++	if (IS_ERR_OR_NULL(domain_name))
++		return NULL;
++
++	mutex_lock(&gpd_list_lock);
++	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
++		if (!strcmp(gpd->name, domain_name)) {
++			genpd = gpd;
++			break;
++		}
++	}
++	mutex_unlock(&gpd_list_lock);
++	return genpd;
 +}
 +
- struct rmobile_pm_domain sh7372_pd_a4s = {
- 	.genpd.name = "A4S",
- 	.bit_shift = 10,
- 	.gov = &pm_domain_always_on_gov,
- 	.no_debug = true,
- 	.suspend = sh7372_pd_a4s_suspend,
-+	.resume = sh7372_pd_a4s_resume,
- };
+ #ifdef CONFIG_PM
  
- static int sh7372_a3sp_pd_suspend(void)
-@@ -390,8 +402,7 @@ static int sh7372_enter_suspend(suspend_
+ struct generic_pm_domain *dev_to_genpd(struct device *dev)
+@@ -262,6 +280,18 @@ int pm_genpd_poweron(struct generic_pm_d
+ 	return ret;
+ }
  
- 	/* check active clocks to determine potential wakeup sources */
- 	if (sh7372_sysc_valid(&msk, &msk2)) {
--		if (!console_suspend_enabled &&
--		    sh7372_pd_a4s.genpd.status == GPD_STATE_POWER_OFF) {
-+		if (!console_suspend_enabled && a4s_suspend_ready) {
- 			/* convert INTC mask/sense to SYSC mask/sense */
- 			sh7372_setup_sysc(msk, msk2);
++/**
++ * pm_genpd_name_poweron - Restore power to a given PM domain and its masters.
++ * @domain_name: Name of the PM domain to power up.
++ */
++int pm_genpd_name_poweron(const char *domain_name)
++{
++	struct generic_pm_domain *genpd;
++
++	genpd = pm_genpd_lookup_name(domain_name);
++	return genpd ? pm_genpd_poweron(genpd) : -EINVAL;
++}
++
+ #endif /* CONFIG_PM */
  
+ #ifdef CONFIG_PM_RUNTIME
+@@ -1475,21 +1505,7 @@ int __pm_genpd_of_add_device(struct devi
+ int __pm_genpd_name_add_device(const char *domain_name, struct device *dev,
+ 			       struct gpd_timing_data *td)
+ {
+-	struct generic_pm_domain *genpd = NULL, *gpd;
+-
+-	if (IS_ERR_OR_NULL(domain_name) || IS_ERR_OR_NULL(dev))
+-		return -EINVAL;
+-
+-	mutex_lock(&gpd_list_lock);
+-	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
+-		if (!strcmp(gpd->name, domain_name)) {
+-			genpd = gpd;
+-			break;
+-		}
+-	}
+-	mutex_unlock(&gpd_list_lock);
+-
+-	return __pm_genpd_add_device(genpd, dev, td);
++	return __pm_genpd_add_device(pm_genpd_lookup_name(domain_name), dev, td);
+ }
+ 
+ /**
+Index: linux/include/linux/pm_domain.h
+===================================================================
+--- linux.orig/include/linux/pm_domain.h
++++ linux/include/linux/pm_domain.h
+@@ -161,6 +161,7 @@ extern void pm_genpd_init(struct generic
+ 			  struct dev_power_governor *gov, bool is_off);
+ 
+ extern int pm_genpd_poweron(struct generic_pm_domain *genpd);
++extern int pm_genpd_name_poweron(const char *domain_name);
+ 
+ extern bool default_stop_ok(struct device *dev);
+ 
+@@ -239,6 +240,10 @@ static inline int pm_genpd_poweron(struc
+ {
+ 	return -ENOSYS;
+ }
++static inline int pm_genpd_name_poweron(const char *domain_name)
++{
++	return -ENOSYS;
++}
+ static inline bool default_stop_ok(struct device *dev)
+ {
+ 	return false;
 
