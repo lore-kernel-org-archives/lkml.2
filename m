@@ -1,137 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2HFDDb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 23:03:31 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44515 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513Ab2HFDDa (ORCPT
+	id S1755576Ab2HFDOH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 23:14:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33499 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513Ab2HFDOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 23:03:30 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-23-501f34003858
-Date: Mon, 6 Aug 2012 12:04:51 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, dan.magenheimer@oracle.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 4/5] [RFC][HACK] Add LRU_VOLATILE support to the VM
-Message-ID: <20120806030451.GA11468@bbox>
-References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
- <1343447832-7182-5-git-send-email-john.stultz@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343447832-7182-5-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 5 Aug 2012 23:14:05 -0400
+Date: Mon, 6 Aug 2012 13:13:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: linux-next: manual merge of the signal tree with the rcu tree
+Message-Id: <20120806131355.e3d3e892fe26b4832e752692@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__6_Aug_2012_13_13_55_+1000_zMXOBGB6jjKkXO_3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+--Signature=_Mon__6_Aug_2012_13_13_55_+1000_zMXOBGB6jjKkXO_3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jul 27, 2012 at 11:57:11PM -0400, John Stultz wrote:
-> In an attempt to push the volatile range managment even
-> deeper into the VM code, this is my first attempt at
-> implementing Minchan's idea of a LRU_VOLATILE list in
-> the mm core.
-> 
-> This list sits along side the LRU_ACTIVE_ANON, _INACTIVE_ANON,
-> _ACTIVE_FILE, _INACTIVE_FILE and _UNEVICTABLE lru lists.
-> 
-> When a range is marked volatile, the pages in that range
-> are moved to the LRU_VOLATILE list. Since volatile pages
-> can be quickly purged, this list is the first list we
-> shrink when we need to free memory.
-> 
-> When a page is marked non-volatile, it is moved from the
-> LRU_VOLATILE list to the appropriate LRU_ACTIVE_ list.
+Hi Al,
 
-I think active list promotion is not good.
-It should go to the inactive list and they get a chance to
-activate from inactive to active sooner or later if it is
-really touched.
+Today's linux-next merge of the signal tree got a conflict in
+arch/x86/kernel/signal.c between commit 1ea856be75ce ("x86: Exit RCU
+extended QS on notify resume") from the rcu tree and commit 02bf6b04fcd5
+("x86: switch uses of TIF_IRET to TIF_NOTIFY_RESUME, kill TIF_IRET") from
+the signal tree.
 
-> 
-> This patch introduces the LRU_VOLATILE list, an isvolatile
-> page flag, functions to mark and unmark a single page
-> as volatile, and shrinker functions to purge volatile
-> pages.
-> 
-> This is a very raw first pass, and is neither performant
-> or likely bugfree. It works in my trivial testing, but
-> I've not pushed it very hard yet.
-> 
-> I wanted to send it out just to get some inital thoughts
-> on the approach and any suggestions should I be going too
-> far in the wrong direction.
+Just context changes.  I have fixed it up (see below) and can carry the
+fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I look at this series and found several nitpicks about implemenataion
-but I think it's not a good stage about concerning it.
+diff --cc arch/x86/kernel/signal.c
+index bca0ab9,16f61c4..0000000
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@@ -802,12 -797,6 +802,8 @@@ do_notify_resume(struct pt_regs *regs,=20
+  	}
+  	if (thread_info_flags & _TIF_USER_RETURN_NOTIFY)
+  		fire_user_return_notifiers();
+ +
+- #ifdef CONFIG_X86_32
+- 	clear_thread_flag(TIF_IRET);
+- #endif /* CONFIG_X86_32 */
+-=20
+ +	rcu_user_enter();
+  }
+ =20
+  void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
 
-Although naming is rather differet with I suggested, I think it's good idea.
-So let's talk about it firstly.
-I will call VOLATILE list as EReclaimale LRU list.
+--Signature=_Mon__6_Aug_2012_13_13_55_+1000_zMXOBGB6jjKkXO_3
+Content-Type: application/pgp-signature
 
-The purpose of it is that prevent unnecessary LRU churning and
-reclaim unnecessary pages fastly so that latency-sensitive system
-don't have a big latency when memory pressure happens.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Targets for the LRU list could be following as in future
+iQIcBAEBCAAGBQJQHzZzAAoJEECxmPOUX5FE+kcQAIdghI9SHdntej/Xa4W91ROv
+9g+hSlwMDMUHgP9cOb9nLXMpbdxPX71OEqX9p+DLYBgWVFue0kddifcQb+nuY/uT
+ijld8dM3gYYDpQanNPV1ePPqy6jy2CZGlciB3eOMRxKSBuGpYKQjwA84kazG7ZAw
+8w7hGkTqGMI863Hu2pzDXCyhGBy8zB2z75lmkhH7reKUp0OHNkQrlIWZEvTIkwJQ
+mtzQFSY4dgwShnJQRbVc22dpIykcMQVyKS5qZSZsdhBubDvM06o2eNHwd/x1gK6a
+fXE/klZyX7Ke+daLJNFlIevJsMZqHBKU+BiaPVNyI/QVMBscP2YPJZT6NTE0vD3H
+UtnTPH4JRVc8R5BeGrf1/x8218g9Axp4fM2U8ULeKNPLyb04by3sYFklq+/BXyv3
+zitZIVxK1ZhIaW2bcrqa8+sztSL2NuuoTAQanQCyCCU9YqyORWZLxGXZydeJJVce
+V1kp8sQiHSCSGQrU/jK99zZ+tlfBkemXX9omXE3cHCAJ7C0Q5hOnGujpKryLU9I3
+8nUxMzznppMiwCHbcbALGRrwLjSTMk6YG43SJao5FKrYYtK+2s7fySbf3dLg1iqm
+yjGCQz/gEj0E296mDiZo+Owp/s3OCFe8DXyoXOxmZADg6AHet/z1RfPhta8rU9EX
+6DP4zd4NR+IfgipKItdS
+=aEoY
+-----END PGP SIGNATURE-----
 
-1. volatile pages in this patchset.
-2. ephemeral pages of tmem
-3. madivse(DONTNEED)
-4. fadvise(NOREUSE)
-5. PG_reclaimed pages
-6. clean pages if we write CFLRU(clean first LRU)
-
-So if any guys have objection, please raise your hands
-before further progress.
-
-> 
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Android Kernel Team <kernel-team@android.com>
-> CC: Robert Love <rlove@google.com>
-> CC: Mel Gorman <mel@csn.ul.ie>
-> CC: Hugh Dickins <hughd@google.com>
-> CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-> CC: Dave Chinner <david@fromorbit.com>
-> CC: Neil Brown <neilb@suse.de>
-> CC: Andrea Righi <andrea@betterlinux.com>
-> CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> CC: Mike Hommey <mh@glandium.org>
-> CC: Jan Kara <jack@suse.cz>
-> CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-> CC: Michel Lespinasse <walken@google.com>
-> CC: Minchan Kim <minchan@kernel.org>
-> CC: linux-mm@kvack.org <linux-mm@kvack.org>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> ---
->  include/linux/fs.h         |    1 +
->  include/linux/mm_inline.h  |    2 ++
->  include/linux/mmzone.h     |    1 +
->  include/linux/page-flags.h |    3 ++
->  include/linux/swap.h       |    3 ++
->  mm/memcontrol.c            |    1 +
->  mm/page_alloc.c            |    1 +
->  mm/swap.c                  |   71 +++++++++++++++++++++++++++++++++++++++++
->  mm/vmscan.c                |   76 +++++++++++++++++++++++++++++++++++++++++---
->  9 files changed, 155 insertions(+), 4 deletions(-)
-> 
--- 
-Kind regards,
-Minchan Kim
+--Signature=_Mon__6_Aug_2012_13_13_55_+1000_zMXOBGB6jjKkXO_3--
