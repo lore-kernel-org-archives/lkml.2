@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab2HFT7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 15:59:40 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36727 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756857Ab2HFT7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 15:59:38 -0400
-Date: Mon, 6 Aug 2012 15:59:37 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Pavel Vasilyev <pavel@pavlinux.ru>
-cc: Pavel Machek <pavel@ucw.cz>, Len Brown <lenb@kernel.org>,
-        <linux-acpi@vger.kernel.org>, <linux-pm@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>
-Subject: Re: [linux-pm] [PATCH] ACPI: replace strlen("string") with
- sizeof("string") -1
-In-Reply-To: <50201156.30704@pavlinux.ru>
-Message-ID: <Pine.LNX.4.44L0.1208061556010.1649-100000@iolanthe.rowland.org>
+	id S932561Ab2HFUBd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 16:01:33 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:55586 "EHLO isis.lip6.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752121Ab2HFUBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 16:01:31 -0400
+X-Greylist: delayed 460 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Aug 2012 16:01:31 EDT
+X-pt: isis.lip6.fr
+Message-ID: <20120806215320.21253wg8t8q1evok@webmail.lip6.fr>
+Date: Mon, 06 Aug 2012 21:53:20 +0200
+From: Julia.Lawall@lip6.fr
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc
+ and devm_clk_get
+References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr>
+ <20120806142323.GO4352@mwanda> <20120806142650.GT4403@mwanda>
+ <501FD69D.7070702@metafoo.de>
+In-Reply-To: <501FD69D.7070702@metafoo.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=ISO-8859-15;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (isis.lip6.fr [132.227.60.2]); Mon, 06 Aug 2012 21:53:21 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Aug 2012, Pavel Vasilyev wrote:
+Quoting Lars-Peter Clausen <lars@metafoo.de>:
 
-> >> http://www.gossamer-threads.com/lists/engine?do=post_attachment;postatt_id=41157;list=linux
-> >
-> > Interestingly, many (all?) of the changes in that patch are wrong
-> > because they don't try to match the terminating '\0'.  As a result,
-> > they will match against extensions of the target string as well as the
-> > target string itself.
-> >
-> 
-> strNcmp compare N bytes - http://lxr.linux.no/#linux+v3.5/lib/string.c#L270
-> memcmp compare N bytes  - http://lxr.linux.no/#linux+v3.5/lib/string.c#L651
+> On 08/06/2012 04:26 PM, Dan Carpenter wrote:
+>> On Mon, Aug 06, 2012 at 05:23:23PM +0300, Dan Carpenter wrote:
+>>> On Sat, Aug 04, 2012 at 08:23:27PM +0200, Julia Lawall wrote:
+>>>> @@ -922,12 +920,7 @@ static int emmaprp_probe(struct  
+>>>> platform_device *pdev)
+>>>>
+>>>>  	platform_set_drvdata(pdev, pcdev);
+>>>>
+>>>> -	if (devm_request_mem_region(&pdev->dev, res_emma->start,
+>>>> -	    resource_size(res_emma), MEM2MEM_NAME) == NULL)
+>>>> -		goto rel_vdev;
+>>>> -
+>>>> -	pcdev->base_emma = devm_ioremap(&pdev->dev, res_emma->start,
+>>>> -					resource_size(res_emma));
+>>>> +	pcdev->base_emma = devm_request_and_ioremap(&pdev->dev, res_emma);
+>>>>  	if (!pcdev->base_emma)
+>>>>  		goto rel_vdev;
+>>>
+>>> This was in the original code, but there is a "ret = -ENOMEM;"
+>>> missing here, and again a couple lines down in the original code.
+>>>
+>>
+>> Or should that be -EIO instead of -ENOMEM?  I'm not sure.
+>
+> -ENXIO is usually used in such a case.
 
-Yes.  So if s contains "abcde" then
+Thanks for the feedback.  I won't be able to access my work machine  
+until the end of the week, so I will fix it then.
 
-	memcmp(s, "abc", 3) and strncmp(s, "abc", 3) will both return 0, and
-	memcmp(s, "abc", 4) and strncmp(s, "abc", 4) will both return 1.
+julia
 
-Alan Stern
+
 
