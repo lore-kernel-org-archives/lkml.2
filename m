@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab2HFPL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 11:11:56 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:55874 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932153Ab2HFPLz (ORCPT
+	id S932218Ab2HFPN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 11:13:56 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49391 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab2HFPNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 11:11:55 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Axel Lin <axel.lin@gmail.com>
-Subject: [PATCH] regulator: ab3100: add missing voltage table
-Date: Mon, 6 Aug 2012 17:11:40 +0200
-Message-ID: <1344265900-17726-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Mon, 6 Aug 2012 11:13:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Date: Mon, 6 Aug 2012 11:13:53 -0400
+Message-ID: <CAGh4K3L_nY5B22g5oMBuoY=a1OB7U10yH1ZJvn0dG_O5TVz6+Q@mail.gmail.com>
+Subject: [PATCH]: Autosleep patch.
+From: Christopher Sacchi <chris.sacchi@gmail.com>
+To: linux-wireless@vger.kernel.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+This patch (listed below), changes an old function in autosleep.c in
+kernel version 3.5. It's code is listed from the first -- line to the
+2nd to last -- line.
+This patch was checked with checkpatch.pl with no errors:
+--
+--- power/autosleep.c	2012-07-21 20:58:29.000000000 +0000
++++ power/autosleepnew.c	2012-08-06 10:52:26.000000000 +0000
+@@ -30,7 +30,7 @@ static void try_to_suspend(struct work_s
+ 	if (!pm_get_wakeup_count(&initial_count, true))
+ 		goto out;
 
-The conversion to voltage tables in
+-	mutex_lock(&autosleep_lock);
++	mutex_lock_interruptable();
 
-commit a3beb74261f26142019847128b2441b0301797ac
-"regulator: ab3100: Use regulator_list_voltage_table()"
+ 	if (!pm_save_wakeup_count(initial_count)) {
+ 		mutex_unlock(&autosleep_lock);
+Signed-off-by: Christopher P. Sacchi <chris.sacchi@gmail.com>
+--
 
-missed to add the voltage table to the buck. Fix this and
-it works like a charm.
-
-Cc: Axel Lin <axel.lin@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/regulator/ab3100.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-index 182b553..c151fd5 100644
---- a/drivers/regulator/ab3100.c
-+++ b/drivers/regulator/ab3100.c
-@@ -486,6 +486,7 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
- 		.id   = AB3100_BUCK,
- 		.ops  = &regulator_ops_variable_sleepable,
- 		.n_voltages = ARRAY_SIZE(ldo_e_buck_typ_voltages),
-+		.volt_table = ldo_e_buck_typ_voltages,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 		.enable_time = 1000,
 -- 
-1.7.11.3
-
+Christopher
