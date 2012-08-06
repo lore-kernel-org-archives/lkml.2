@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab2HFSBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:01:32 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:3199 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756834Ab2HFSBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:01:31 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <50200660.3090607@broadcom.com>
-Date: Mon, 6 Aug 2012 20:01:04 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714
- Thunderbird/14.0
+	id S1756861Ab2HFSCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:02:24 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33673 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753674Ab2HFSCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 14:02:23 -0400
+Date: Mon, 6 Aug 2012 14:02:19 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Cyril Chemparathy <cyril@ti.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de, catalin.marinas@arm.com,
+        will.deacon@arm.com
+Subject: Re: [PATCH 01/22] ARM: add mechanism for late code patching
+In-Reply-To: <20120806132642.GC18957@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.02.1208061356480.5231@xanadu.home>
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-2-git-send-email-cyril@ti.com> <20120806111224.GA18957@n2100.arm.linux.org.uk> <501FC44E.1040806@ti.com> <20120806132642.GC18957@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Christopher Sacchi" <chris.sacchi@gmail.com>
-cc: linux-wireless@vger.kernel.org,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]: Mac80211 driver and I checked the patch
-References: <CAGh4K3Lym9yETNbMutfjNuANrgwtvfrGes6emr3Mvhx47D3B2g@mail.gmail.com>
- <502005FD.10102@broadcom.com>
-In-Reply-To: <502005FD.10102@broadcom.com>
-X-Enigmail-Version: 1.5a1pre
-X-WSS-ID: 7C3ED98549816601619-02-01
-Content-Type: text/plain;
- charset=iso-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 07:59 PM, Arend van Spriel wrote:
-> On 08/06/2012 01:49 PM, Christopher Sacchi wrote:
->> > The source file needed a change  that was told in the description to
->> > know that the #include needed to be fixed, and the function changed
->> > another value to 0 (yes) in the description (that said FIXME.) The
->> > patch fixes a typo-like error and has been checked with checkpatch.pl
->> > in the scripts directory.
+On Mon, 6 Aug 2012, Russell King - ARM Linux wrote:
+
+> On Mon, Aug 06, 2012 at 09:19:10AM -0400, Cyril Chemparathy wrote:
+> > With a flush_cache_all(), we could avoid having to operate a cacheline  
+> > at a time, but that clobbers way more than necessary.
 > 
->> > Here's the patch:
-> Do need a heads-up stating the obvious.
+> You can't do that, because flush_cache_all() on some CPUs requires the
+> proper MMU mappings to be in place, and you can't get those mappings
+> in place because you don't have the V:P offsets fixed up in the kernel.
+> Welcome to the chicken and egg problem.
 
-I meant "Do not need" :-p
+This problem is fixed in this case by having the p2v and v2p code sites 
+using an out-of-line non optimized computation until those sites are 
+runtime patched with the inlined optimized computation we have today.
 
-Gr. AvS
 
+Nicolas
