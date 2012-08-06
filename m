@@ -1,100 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab2HFE7t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 00:59:49 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:36870 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab2HFE7r (ORCPT
+	id S1752350Ab2HFFBR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 01:01:17 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52380 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab2HFFBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 00:59:47 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-31-501f4f3be5ff
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Ashish Jangam'" <ashish.jangam@kpitcummins.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002c01cd738e$14a880b0$3df98210$%han@samsung.com>
- <CAK9yfHyw=6-e28mHrhyhTuC2uykeqQzpsGRfXcWmcaON=NvcPw@mail.gmail.com>
-In-reply-to: <CAK9yfHyw=6-e28mHrhyhTuC2uykeqQzpsGRfXcWmcaON=NvcPw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] backlight: da9052: Use usleep_range() instead of
- msleep() for small sleeps
-Date: Mon, 06 Aug 2012 13:59:38 +0900
-Message-id: <002f01cd7390$4873b5c0$d95b2140$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1zjqJaz9epAlLWSUWGm/wzhCYkHgAASUBA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAV1rf/kAgw+zJCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAldG157pLAWHeSp+HVvP3MB4g7OLkZNDQsBE4mDLczYIW0ziwr31
-	QDYXh5DAIkaJzf19TBDObCaJPT83MoFUsQmoSXz5cpgdxBYR0JFYsWstWBGzwHVGiQd3F7JC
-	dLQwSpx608oCUsUpECxxdf8hsB3CAqkS17ZsA5vEIqAq0bZkJ2MXIwcHr4CtxONVeiBhXgFB
-	iR+T74G1MgtoSWze1sQKYctLbF7zlhmkXEJAXeLRX10QU0TASGJKpz1EhYjEvhfvGCcwCs1C
-	MmgWkkGzkAyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgQH4mtYNxZYPFIUYB
-	DkYlHt6bBvIBQqyJZcWVuYcYJTiYlUR4053lAoR4UxIrq1KL8uOLSnNSiw8xSnOwKInzGnt/
-	9RcSSE8sSc1OTS1ILYLJMnFwSjUwnovI8L1yZENucK/dxu2nZ0Wp521/burevYdVO79ip9jz
-	Vfqm+8ov/mPwbQtf9UqbxTg/vO/WQ/PjG2a36q4L/x2pX1ZnfYHNb+FxZ7NfBueWX//nu6jQ
-	/rq3znbnczM2Ghf+uND3mlltcdXqKVWrD33dcWad0qQ7savL43fbbJN6vsHH/3nPRyWW4oxE
-	Qy3mouJEAMH2PAZgAgAA
-X-TM-AS-MML: No
+	Mon, 6 Aug 2012 01:01:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120806134318.8af35d047e255fd25398210b@canb.auug.org.au>
+References: <20120806134318.8af35d047e255fd25398210b@canb.auug.org.au>
+Date: Sun, 5 Aug 2012 22:01:14 -0700
+Message-ID: <CANN689GqydNH0-gisSfUPtGKAHVajzZ4KQCTKoJ7J76dJ8zVbg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+From: Michel Lespinasse <walken@google.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Steven Whitehouse <swhiteho@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 06, 2012 1:48 PM Sachin Kamat wrote:
-> 
-> Hi Jingoo,
-> 
-> On 6 August 2012 10:13, Jingoo Han <jg1.han@samsung.com> wrote:
-> > Since msleep might not sleep for the desired amount when less
-> > than 20ms, use usleep_range.
-> >
-> > Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> > Cc: Richard Purdie <rpurdie@rpsys.net>
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > ---
-> >  drivers/video/backlight/da9052_bl.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/video/backlight/da9052_bl.c b/drivers/video/backlight/da9052_bl.c
-> > index b628d68..10485c9 100644
-> > --- a/drivers/video/backlight/da9052_bl.c
-> > +++ b/drivers/video/backlight/da9052_bl.c
-> > @@ -72,7 +72,7 @@ static int da9052_adjust_wled_brightness(struct da9052_bl *wleds)
-> >         if (ret < 0)
-> >                 return ret;
-> >
-> > -       msleep(10);
-> > +       usleep_range(10000, 11000);
-> 
-> Can't we just use usleep(10000) instead?
+On Sun, Aug 5, 2012 at 8:43 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Caused by commit 5599fe1ab023 ("rbtree: empty nodes have no color") from
+> the akpm tree interacting with commit cde7c325077b ("GFS2: Add structure
+> to contain rgrp, bitmap, offset tuple") from the gfs2 tree.
+>
+> I have applied the following merge fix patch (which is probably not
+> sufficient).
 
+You are right that this is insufficient - gfs2 is using
+RB_EMPTY_NODE() to check for nodes not being inserted on any rbtree,
+so it must use RB_CLEAR_NODE() for initialization.
 
-usleep() is not available.
-For more details, refer to Documentation/timers/timers-howto.txt.
+Will attach a patch as a reply to this.
 
+I am surprised how fast these rb_init_node() calls are spreading.
+Should I send Linus a patch removing that function so he could include
+it in v3.6 and avoid having to deal with all these new uses ?
 
-> 
-> 
-> >
-> >         if (wleds->brightness) {
-> >                 ret = da9052_reg_write(wleds->da9052, wled_bank[wleds->led_reg],
-> > --
-> > 1.7.1
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
-> --
-> With warm regards,
-> Sachin
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
