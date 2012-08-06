@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab2HFKRW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 06:17:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14705 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755654Ab2HFKRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 06:17:20 -0400
-Message-ID: <501F99A8.9050006@redhat.com>
-Date: Mon, 06 Aug 2012 13:17:12 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754013Ab2HFKVU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 06:21:20 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36292 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab2HFKVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 06:21:17 -0400
+Date: Mon, 6 Aug 2012 12:21:14 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Len Brown <lenb@kernel.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Vasilyev <pavel@pavlinux.ru>
+Subject: Re: [linux-pm] [PATCH] ACPI: replace strlen("string") with
+ sizeof("string") -1
+Message-ID: <20120806102114.GA31404@elf.ucw.cz>
+References: <Pine.LNX.4.44L0.1206301023540.29029-100000@netrider.rowland.org>
+ <5011F15A.3060007@kernel.org>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-References: <20120724203628.21081.56884.stgit@bling.home> <20120724204320.21081.32333.stgit@bling.home>
-In-Reply-To: <20120724204320.21081.32333.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5011F15A.3060007@kernel.org>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 11:43 PM, Alex Williamson wrote:
-> This new ioctl enables an eventfd to be triggered when an EOI is
-> written for a specified irqchip pin.  The first user of this will
-> be external device assignment through VFIO, using a level irqfd
-> for asserting a PCI INTx interrupt and this interface for de-assert
-> and notification once the interrupt is serviced.
-> 
-> Here we make use of the reference counting of the _irq_source
-> object allowing us to share it with an irqfd and cleanup regardless
-> of the release order.
+On Thu 2012-07-26 21:39:38, Len Brown wrote:
+> ...both give the number of chars in the string
+> without the '\0', as strncmp() wants,
+> but sizeof() is compile-time.
 
-The name is slightly misleading.  eoifd doesn't trigger on EOI (which is
-an APIC->IOAPIC interface) but rather when an interrupt controller
-resamples an input line.  This happens for the IOAPIC when an EOI is
-received for a vector that is configured for level interrupts and not
-masked, or similarly for a PIC (but this is not triggered by an APIC EOI).
+What about introducing something like streq() to do this
+automatically? This is ugly....
 
-It's not a huge difference, but let's document it.
+#define streq(a, b) ... if (_buildin_constant(b)) ...
 
->  
-> +4.77 KVM_EOIFD
-> +
-> +Capability: KVM_CAP_EOIFD
-> +Architectures: x86
-> +Type: vm ioctl
-> +Parameters: struct kvm_eoifd (in)
-> +Returns: 0 on success, < 0 on error
-> +
-> +KVM_EOIFD allows userspace to receive interrupt EOI notification
-> +through an eventfd.  kvm_eoifd.fd specifies the eventfd used for
-> +notification.  KVM_EOIFD_FLAG_DEASSIGN is used to de-assign an eoifd
-> +once assigned.  KVM_EOIFD also requires additional bits set in
-> +kvm_eoifd.flags to bind to the proper interrupt line.  The
-> +KVM_EOIFD_FLAG_LEVEL_IRQFD indicates that kvm_eoifd.key is provided
-> +and is a key from a level triggered interrupt (configured from
-> +KVM_IRQFD using KVM_IRQFD_FLAG_LEVEL).  The EOI notification is bound
-> +to the same GSI and irqchip input as the irqfd.  Both kvm_eoifd.key
-> +and KVM_EOIFD_FLAG_LEVEL_IRQFD must be specified on assignment and
-> +de-assignment of KVM_EOIFD.  A level irqfd may only be bound to a
-> +single eoifd.  KVM_CAP_EOIFD_LEVEL_IRQFD indicates support of
-> +KVM_EOIFD_FLAG_LEVEL_IRQFD.
+?
 
-Why do we need to couple eoifd and irqfd?
+> -	if (!strncmp(val, "enable", strlen("enable"))) {
+> +	if (!strncmp(val, "enable", sizeof("enable") - 1)) {
 
-
-
+								Pavel
 -- 
-error compiling committee.c: too many arguments to function
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
