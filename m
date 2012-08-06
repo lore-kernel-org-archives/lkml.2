@@ -1,421 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab2HFFQI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 01:16:08 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:59132 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab2HFFQG (ORCPT
+	id S1752208Ab2HFFVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 01:21:08 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42253 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714Ab2HFFVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 01:16:06 -0400
-X-AuditID: cbfee612-b7f2d6d0000007ea-6d-501f531497ef
-Date: Mon, 06 Aug 2012 05:16:04 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] Extcon: adc_jack: adc-jack driver to support 3.5 pi or
- simliar devices
-To: anish kumar <anish198519851985@gmail.com>,
-        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        ANISH KUMAR <anish.singh@samsung.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120806051520850@myungjoo.ham
-Msgkey: 20120806051520850@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120806051520850@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <10387090.59171344230163413.JavaMail.weblogic@epml13>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t/t6boiwfIBBtMeqFtc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MFxe/sRd0VVX0PvNsYPxS1sXIySEkoC6xaMlJNhBbQsBE4s6P
-	FiYIW0ziwr31QHEuoJr5jBILmn8ygyRYBFQkzs2YBZTg4GAT0JOY+TkZJCwsEC2xa9J3VpB6
-	EYHJjBLrz11iAXGYBZYzSnx6cowdYpuSxJp9r1hAbF4BQYmTM5+wQGxTlfi7dDZUXE1i+asT
-	UFdISMyafoEVwuaVmNH+FKpeTmLa1zXMELa0xPlZGxhhrl78/TFUnF/i2O0dTCCHgvQ+uR8M
-	M2b35i9QDwtITD1zEKpVS+JE0wqoVj6JNQvfssCM2XVqOTNM7/0tc8FOYxZQlJjS/ZAdwtaS
-	+PJjHxuqtziAbEeJ00sUJzDKzUKSmYWkexaSbmQ1CxhZVjGKphYkFxQnpada6BUn5haX5qXr
-	JefnbmIER/kzoR2MyxosDjEKcDAq8fDeMpAPEGJNLCuuzD3EKMHBrCTCm+4sFyDEm5JYWZVa
-	lB9fVJqTWnyIUZqDRUmcd86LL/5CAumJJanZqakFqUUwWSYOTqkGxl3P+F4tkmVdJr8uN+ZA
-	ar1Y0c19LYF3tlW4VRx/0Z20yX7nnPObHf9NvrFJT/Camcf9+Yw8l3ke9W0xkf1iXP3f79CT
-	L3M8/I+ph3d+PZy03NEtPD7ksX2AiLjSFYsNU0Xb5PtzL5h9OpB37aJl4KIVV2P1SxfaWipL
-	nBTUeWwcFNPycddZLSWW4oxEQy3mouJEAOkNLlPuAgAA
-X-TM-AS-MML: No
+	Mon, 6 Aug 2012 01:21:06 -0400
+Message-ID: <501F543C.9030009@gmail.com>
+Date: Mon, 06 Aug 2012 07:21:00 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: devicetree-discuss@lists.ozlabs.org, eric.piel@tremplin-utc.net,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com
+Subject: Re: [PATCH v3 1/2] lis3: add generic DT matching code
+References: <1343633775-6268-1-git-send-email-zonque@gmail.com> <501E9CE2.20500@gmail.com> <501F4DA4.6010506@gmail.com>
+In-Reply-To: <501F4DA4.6010506@gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q765GGMH003475
 
-> From: anish kumar <anish198519851985@gmail.com>
+On 06.08.2012 06:52, Rob Herring wrote:
+> On 08/05/2012 11:18 AM, Daniel Mack wrote:
+>> Ping, anyone?
+>>
+>> On 30.07.2012 09:36, Daniel Mack wrote:
+>>> This patch adds logic to parse lis3 properties from a device tree node
+>>> and store them in a freshly allocated lis3lv02d_platform_data.
+>>>
+>>> Note that the actual match tables are left out here. This part should
+>>> happen in the drivers that bind to the individual busses (SPI/I2C/PCI).
+>>>
+>>> Also adds some DT bindinds documentation.
+>>>
+>>> Signed-off-by: Daniel Mack <zonque@gmail.com>
+>>> ---
+>>> Changes from v2:
+>>>  - kzalloc braino
+>>>
+>>> Changes from v1:
+>>>  - some typos in properties fixed
+>>>
+>>>
+>>>  Documentation/devicetree/bindings/misc/lis302.txt |  74 ++++++++++++
+>>>  drivers/misc/lis3lv02d/lis3lv02d.c                | 137 ++++++++++++++++++++++
+>>>  drivers/misc/lis3lv02d/lis3lv02d.h                |   4 +
+>>>  3 files changed, 215 insertions(+)
+>>>  create mode 100644 Documentation/devicetree/bindings/misc/lis302.txt
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/misc/lis302.txt b/Documentation/devicetree/bindings/misc/lis302.txt
+>>> new file mode 100644
+>>> index 0000000..66230fd
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/misc/lis302.txt
+>>> @@ -0,0 +1,74 @@
+>>> +LIS302 accelerometer devicetree bindings
+>>> +
+>>> +This device is matched via its bus drivers, and has a number of properties
+>>> +that apply in on the generic device (independent from the bus).
+>>> +
+>>> +
+>>> +Required properties for the SPI bindings:
+>>> + - compatible: 		should be set to "st,lis3lv02d_spi"
+>>> + - reg:			the chipselect index
+>>> + - spi-max-frequency:	maximal bus speed, should be set to 1000000 unless
+>>> +			constrained by external circuitry
+>>> + - interrupts:		the interrupt generated by the device
+>>> +
+>>> +
+>>> +Optional properties for all bus drivers:
+>>> +
+>>> + - st,click-single-{x,y,z}:	if present, tells the device to issue an
+>>> +				interrupt on single click events on the
+>>> +				x/y/z axis.
+>>> + - st,click-double-{x,y,z}:	if present, tells the device to issue an
+>>> +				interrupt on double click events on the
+>>> +				x/y/z axis.
+>>> + - st,click-thresh-{x,y,z}:	set the x/y/z axis threshold
+>>> + - st,click-click-time-limit:	click time limit, from 0 to 127.5msec
+>>> +				with step of 0.5 msec
+>>> + - st,click-latency:		click latency, from 0 to 255 msec with
+>>> +				step of 1 msec.
+>>> + - st,click-window:		click window, from 0 to 255 msec with
+>>> +				step of 1 msec.
 > 
-> External connector devices that decides connection information based on
-> ADC values may use adc-jack device driver. The user simply needs to
-> provide a table of adc range and connection states. Then, extcon
-> framework will automatically notify others.
+> These should append "-msec" to define what units they are in.
 > 
-> Signed-off-by: anish kumar <anish.singh@samsung.com>
+>>> + - st,irq{1,2}-disable:		disable IRQ 1/2
+>>> + - st,irq{1,2}-ff-wu-1:		raise IRQ 1/2 on FF_WU_1 condition
+>>> + - st,irq{1,2}-ff-wu-2:		raise IRQ 1/2 on FF_WU_2 condition
+>>> + - st,irq{1,2}-data-ready:	raise IRQ 1/2 on data ready contition
+>>> + - st,irq{1,2}-click:		raise IRQ 1/2 on click condition
+>>> + - st,irq-open-drain:		consider IRQ lines open-drain
+>>> + - st,irq-active-low:		make IRQ lines active low
+>>> + - st,wu-duration-1:		duration register for Free-Fall/Wake-Up
+>>> +				interrupt 1
+>>> + - st,wu-duration-2:		duration register for Free-Fall/Wake-Up
+>>> +				interrupt 2
+>>> + - st,wakeup-{x,y,z}-{lo,hi}:	set wakeup condition on x/y/z axis for
+>>> +				upper/lower limit
+>>> + - st,highpass-cutoff-hz=:	1, 2, 4 or 8 for 1Hz, 2Hz, 4Hz or 8Hz of
+>>> +				highpass cut-off frequency
+>>> + - st,hipass{1,2}-disable:	disable highpass 1/2.
+>>> + - st,default-rate=:		set the default rate
+>>> + - st,axis-{x,y,z}=:		set the axis to map to the three coordinates
+> 
+> Wow, that's a lot of properties...
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Yes, but that reflects the hardware's capabilities :)
 
-> ---
->  drivers/extcon/Kconfig          |    5 +
->  drivers/extcon/Makefile         |    1 +
->  drivers/extcon/adc_jack.c       |  183 +++++++++++++++++++++++++++++++++++++++
->  include/linux/extcon/adc_jack.h |  108 +++++++++++++++++++++++
->  4 files changed, 297 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/extcon/adc_jack.c
->  create mode 100644 include/linux/extcon/adc_jack.h
+>>> +
+>>> +
+>>> +Example for a SPI device node:
+>>> +
+>>> +	lis302@0 {
+>>> +		compatible = "st,lis302dl-spi";
+>>> +		reg = <0>;
+>>> +		spi-max-frequency = <1000000>;
+>>> +		interrupt-parent = <&gpio>;
+>>> +		interrupts = <104 0>;
+>>> +
+>>> +		st,click-single-x;
+>>> +		st,click-single-y;
+>>> +		st,click-single-z;
+>>> +		st,click-thresh-x = <10>;
+>>> +		st,click-thresh-y = <10>;
+>>> +		st,click-thresh-z = <10>;
+>>> +		st,irq1-click;
+>>> +		st,irq2-click;
+>>> +		st,wakeup-x-lo;
+>>> +		st,wakeup-x-hi;
+>>> +		st,wakeup-y-lo;
+>>> +		st,wakeup-y-hi;
+>>> +		st,wakeup-z-lo;
+>>> +		st,wakeup-z-hi;
+>>> +	};
+>>> +
+>>> diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
+>>> index a981e2a..1411fdc 100644
+>>> --- a/drivers/misc/lis3lv02d/lis3lv02d.c
+>>> +++ b/drivers/misc/lis3lv02d/lis3lv02d.c
+>>> @@ -39,6 +39,7 @@
+>>>  #include <linux/miscdevice.h>
+>>>  #include <linux/pm_runtime.h>
+>>>  #include <linux/atomic.h>
+>>> +#include <linux/of_device.h>
+>>>  #include "lis3lv02d.h"
+>>>  
+>>>  #define DRIVER_NAME     "lis3lv02d"
+>>> @@ -912,6 +913,138 @@ static void lis3lv02d_8b_configure(struct lis3lv02d *lis3,
+>>>  	}
+>>>  }
+>>>  
+>>> +#ifdef CONFIG_OF
+>>> +static int lis3lv02d_init_dt(struct lis3lv02d *lis3)
+>>> +{
+>>> +	struct lis3lv02d_platform_data *pdata;
+>>> +	struct device_node *np = lis3->of_node;
+>>> +	u32 tmp;
+>>> +
+>>> +	if (!lis3->of_node)
+>>> +		return 0;
+>>> +
+>>> +	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
+>>> +	if (!pdata)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	if (of_get_property(np, "st,click-single-x", NULL))
+>>> +		pdata->click_flags |= LIS3_CLICK_SINGLE_X;
+>>> +	if (of_get_property(np, "st,click-double-x", NULL))
+>>> +		pdata->click_flags |= LIS3_CLICK_DOUBLE_X;
+>>> +
+>>> +	if (of_get_property(np, "st,click-single-y", NULL))
+>>> +		pdata->click_flags |= LIS3_CLICK_SINGLE_Y;
+>>> +	if (of_get_property(np, "st,click-double-y", NULL))
+>>> +		pdata->click_flags |= LIS3_CLICK_DOUBLE_Y;
+>>> +
+>>> +	if (of_get_property(np, "st,click-single-z", NULL))
+>>> +		pdata->click_flags |= LIS3_CLICK_SINGLE_Z;
+>>> +	if (of_get_property(np, "st,click-double-z", NULL))
+>>> +		pdata->click_flags |= LIS3_CLICK_DOUBLE_Z;
+>>> +
+>>> +	if (!of_property_read_u32(np, "st,click-threshold-x", &tmp))
+>>> +		pdata->click_thresh_x = tmp;
+>>> +	if (!of_property_read_u32(np, "st,click-threshold-y", &tmp))
+>>> +		pdata->click_thresh_y = tmp;
+>>> +	if (!of_property_read_u32(np, "st,click-threshold-z", &tmp))
+>>> +		pdata->click_thresh_z = tmp;
+>>> +
+>>> +	if (!of_property_read_u32(np, "st,click-time-limit", &tmp))
+>>> +		pdata->click_time_limit = tmp;
 > 
-> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-> index e175c8e..596e277 100644
-> --- a/drivers/extcon/Kconfig
-> +++ b/drivers/extcon/Kconfig
-> @@ -21,6 +21,11 @@ config EXTCON_GPIO
->  	  Say Y here to enable GPIO based extcon support. Note that GPIO
->  	  extcon supports single state per extcon instance.
->  
-> +config EXTCON_ADC_JACK
-> +        tristate "ADC Jack extcon support"
-> +        help
-> +          Say Y here to enable extcon device driver based on ADC values.
-> +
->  config EXTCON_MAX77693
->  	tristate "MAX77693 EXTCON Support"
->  	depends on MFD_MAX77693
-> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-> index 88961b3..d95c5ea 100644
-> --- a/drivers/extcon/Makefile
-> +++ b/drivers/extcon/Makefile
-> @@ -4,6 +4,7 @@
->  
->  obj-$(CONFIG_EXTCON)		+= extcon_class.o
->  obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
-> +obj-$(CONFIG_EXTCON_ADC_JACK)   += adc_jack.o
->  obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
->  obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
->  obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
-> diff --git a/drivers/extcon/adc_jack.c b/drivers/extcon/adc_jack.c
-> new file mode 100644
-> index 0000000..fef8334
-> --- /dev/null
-> +++ b/drivers/extcon/adc_jack.c
-> @@ -0,0 +1,183 @@
-> +/*
-> + * drivers/extcon/adc_jack.c
-> + *
-> + * Analog Jack extcon driver with ADC-based detection capability.
-> + *
-> + * Copyright (C) 2012 Samsung Electronics
-> + * MyungJoo Ham <myungjoo.ham@samsung.com>
-> + *
-> + * Modified for calling to IIO to get adc by <anish.singh@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/slab.h>
-> +#include <linux/device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/iio/consumer.h>
-> +#include <linux/extcon/adc_jack.h>
-> +#include <linux/extcon.h>
-> +
-> +static void adc_jack_handler(struct work_struct *work)
-> +{
-> +	struct adc_jack_data *data = container_of(to_delayed_work(work),
-> +						  struct adc_jack_data,
-> +						  handler);
-> +	u32 state = 0;
-> +	int ret, adc_val;
-> +	int i;
-> +
-> +	if (!data->ready)
-> +		return;
-> +
-> +	ret = iio_read_channel_raw(data->chan, &adc_val);
-> +	if (ret < 0) {
-> +		dev_err(data->edev.dev, "read channel() error: %d\n", ret);
-> +		return;
-> +	}
-> +
-> +	/* Get state from adc value with adc_condition */
-> +	for (i = 0; i < data->num_conditions; i++) {
-> +		struct adc_jack_cond *def = &data->adc_condition[i];
-> +		if (!def->state)
-> +			break;
-> +		if (def->min_adc <= adc_val && def->max_adc >= adc_val) {
-> +			state = def->state;
-> +			break;
-> +		}
-> +	}
-> +	/* if no def has met, it means state = 0 (no cables attached) */
-> +
-> +	extcon_set_state(&data->edev, state);
-> +}
-> +
-> +static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
-> +{
-> +	struct adc_jack_data *data = _data;
-> +
-> +	schedule_delayed_work(&data->handler, data->handling_delay);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int adc_jack_probe(struct platform_device *pdev)
-> +{
-> +	struct adc_jack_data *data;
-> +	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
-> +	int i, err = 0;
-> +
-> +	data = kzalloc(sizeof(struct adc_jack_data), GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	data->edev.name = pdata->name;
-> +
-> +	if (pdata->cable_names)
-> +		data->edev.supported_cable = pdata->cable_names;
-> +	else
-> +		data->edev.supported_cable = extcon_cable_name;
-> +
-> +	/* Check the length of array and set num_cables */
-> +	for (i = 0; data->edev.supported_cable[i]; i++)
-> +		;
-> +	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
-> +		err = -EINVAL;
-> +		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
-> +			i - 1);
-> +		goto err_alloc;
-> +	}
-> +	data->num_cables = i;
-> +
-> +	if (!pdata->adc_condition ||
-> +	    !pdata->adc_condition[0].state) {
-> +		err = -EINVAL;
-> +		dev_err(&pdev->dev, "error: adc_condition not defined.\n");
-> +		goto err_alloc;
-> +	}
-> +	data->adc_condition = pdata->adc_condition;
-> +
-> +	/* Check the length of array and set num_conditions */
-> +	for (i = 0; data->adc_condition[i].state; i++)
-> +		;
-> +	data->num_conditions = i;
-> +
-> +	data->chan = iio_channel_get(dev_name(&pdev->dev),
-> +						pdata->consumer_channel);
-> +	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
-> +
-> +	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
-> +
-> +	platform_set_drvdata(pdev, data);
-> +
-> +	if (pdata->irq) {
-> +		data->irq = pdata->irq;
-> +
-> +		err = request_threaded_irq(data->irq, NULL,
-> +					   adc_jack_irq_thread,
-> +					   pdata->irq_flags, pdata->name,
-> +					   data);
-> +
-> +		if (err) {
-> +			dev_err(&pdev->dev, "error: irq %d\n", data->irq);
-> +			err = -EINVAL;
-> +			goto err_initwork;
-> +		}
-> +	}
-> +	err = extcon_dev_register(&data->edev, &pdev->dev);
-> +	if (err)
-> +		goto err_irq;
-> +
-> +	data->ready = true;
-> +
-> +	goto out;
-> +
-> +err_irq:
-> +	if (data->irq)
-> +		free_irq(data->irq, data);
-> +err_initwork:
-> +	cancel_delayed_work_sync(&data->handler);
-> +err_alloc:
-> +	kfree(data);
-> +out:
-> +	return err;
-> +}
-> +
-> +static int __devexit adc_jack_remove(struct platform_device *pdev)
-> +{
-> +	struct adc_jack_data *data = platform_get_drvdata(pdev);
-> +
-> +	extcon_dev_unregister(&data->edev);
-> +	if (data->irq)
-> +		free_irq(data->irq, data);
-> +	platform_set_drvdata(pdev, NULL);
-> +	kfree(data);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver adc_jack_driver = {
-> +	.probe		= adc_jack_probe,
-> +	.remove		= __devexit_p(adc_jack_remove),
-> +	.driver		= {
-> +		.name	= "adc-jack",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init adc_jack_init(void)
-> +{
-> +	return platform_driver_register(&adc_jack_driver);
-> +}
-> +
-> +static void __exit adc_jack_exit(void)
-> +{
-> +	platform_driver_unregister(&adc_jack_driver);
-> +}
-> +
-> +module_init(adc_jack_init);
-> +module_exit(adc_jack_exit);
-> diff --git a/include/linux/extcon/adc_jack.h b/include/linux/extcon/adc_jack.h
-> new file mode 100644
-> index 0000000..4d6a1f7
-> --- /dev/null
-> +++ b/include/linux/extcon/adc_jack.h
-> @@ -0,0 +1,108 @@
-> +/*
-> + * include/linux/extcon/adc_jack.h
-> + *
-> + * Analog Jack extcon driver with ADC-based detection capability.
-> + *
-> + * Copyright (C) 2012 Samsung Electronics
-> + * MyungJoo Ham <myungjoo.ham@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#ifndef _EXTCON_ADC_JACK_H_
-> +#define _EXTCON_ADC_JACK_H_ __FILE__
-> +
-> +#include <linux/module.h>
-> +#include <linux/extcon.h>
-> +
-> +/**
-> + * struct adc_jack_data - internal data for adc_jack device driver
-> + * @edev	- extcon device.
-> + * @cable_names	- list of supported cables.
-> + * @num_cables	- size of cable_names.
-> + * @adc_condition	- list of adc value conditions.
-> + * @num_condition	- size of adc_condition.
-> + * @irq		- irq number of attach/detach event (0 if not exist).
-> + * @handling_delay	- interrupt handler will schedule extcon event
-> + *			handling at handling_delay jiffies.
-> + * @handler	- extcon event handler called by interrupt handler.
-> + * @chan	- iio channel being queried.
-> + * @ready	- true if it is safe to run handler.
-> + */
-> +struct adc_jack_data {
-> +	struct extcon_dev edev;
-> +
-> +	const char **cable_names;
-> +	int num_cables;
-> +	struct adc_jack_cond *adc_condition;
-> +	int num_conditions;
-> +
-> +	int irq;
-> +	unsigned long handling_delay; /* in jiffies */
-> +	struct delayed_work handler;
-> +
-> +	struct iio_channel *chan;
-> +
-> +	bool ready;
-> +};
-> +
-> +/**
-> + * struct adc_jack_cond - condition to use an extcon state
-> + * @state	- the corresponding extcon state (if 0, this struct denotes
-> + *		the last adc_jack_cond element among the array)
-> + * @min_adc	- min adc value for this condition
-> + * @max_adc	- max adc value for this condition
-> + *
-> + * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
-> + * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
-> + * 1 are attached (1<<0 | 1<<1 == 0x3)
-> + *
-> + * Note that you don't need to describe condition for "no cable attached"
-> + * because when no adc_jack_cond is met, state = 0 is automatically chosen.
-> + */
-> +struct adc_jack_cond {
-> +	u32 state; /* extcon state value. 0 if invalid */
-> +	u32 min_adc;
-> +	u32 max_adc;
-> +};
-> +
-> +/**
-> + * struct adc_jack_pdata - platform data for adc jack device.
-> + * @name	- name of the extcon device. If null, "adc-jack" is used.
-> + * @consumer_channel - Unique name to identify the channel on the consumer
-> + *                   side. This typically describes the channels use within
-> + *                   the consumer. E.g. 'battery_voltage'
-> + * @cable_names	- array of cable names ending with null. If the array itself
-> + *		if null, extcon standard cable names are chosen.
-> + * @adc_contition	- array of struct adc_jack_cond conditions ending
-> + *			with .state = 0 entry. This describes how to decode
-> + *			adc values into extcon state.
-> + * @irq		- IRQ number that is triggerred by cable attach/detach
-> + *		events. If irq = 0, use should manually update extcon state
-> + *		with extcon APIs.
-> + * @irq_flags	- irq flags used for the @irq
-> + * @handling_delay_ms	- in some devices, we need to read ADC value some
-> + *			milli-seconds after the interrupt occurs. You may
-> + *			describe such delays with @handling_delay_ms, which
-> + *			is rounded-off by jiffies.
-> + */
-> +struct adc_jack_pdata {
-> +	const char *name;
-> +	const char *consumer_channel;
-> +	/*
-> +	 * NULL if standard extcon names are used.
-> +	 * The last entry should be NULL
-> +	 */
-> +	const char **cable_names;
-> +	/* The last entry's state should be 0 */
-> +	struct adc_jack_cond *adc_condition;
-> +
-> +	int irq; /* Jack insertion/removal interrupt */
-> +	unsigned long irq_flags;
-> +	unsigned long handling_delay_ms; /* in ms */
-> +};
-> +
-> +#endif /* _EXTCON_ADC_JACK_H */
-> -- 
-> 1.7.1
+> These can be just:
 > 
-> 
-> 
-> 
->        
->   
->          
-> 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 	of_property_read_u32(np, "st,click-time-limit", &pdata->click_time_limit);
+
+Yes, but pdata->click_time_limit isn't an u32, which causes a build
+warning. We might consider introducing helpers to solve this more
+generically.
+
+
+Daniel
+
