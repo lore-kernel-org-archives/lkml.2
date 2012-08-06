@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab2HFUjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 16:39:06 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:39913 "EHLO e7.ny.us.ibm.com"
+	id S932183Ab2HFUjh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 16:39:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56512 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991Ab2HFUjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 16:39:03 -0400
-Message-ID: <50202B2F.5000003@linaro.org>
-Date: Mon, 06 Aug 2012 13:38:07 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1755991Ab2HFUjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 16:39:35 -0400
+Date: Mon, 6 Aug 2012 16:39:02 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com, hbabu@us.ibm.com,
+        ishii.hironobu@jp.fujitsu.com, martin.wilck@ts.fujitsu.com
+Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+Message-ID: <20120806203902.GH25559@redhat.com>
+References: <501BB4EF.7080909@jp.fujitsu.com>
+ <20120803114643.GA28330@redhat.com>
+ <501F4877.5050605@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, dan.magenheimer@oracle.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 4/5] [RFC][HACK] Add LRU_VOLATILE support to the VM
-References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org> <1343447832-7182-5-git-send-email-john.stultz@linaro.org> <20120806030451.GA11468@bbox>
-In-Reply-To: <20120806030451.GA11468@bbox>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080620-5806-0000-0000-000018164A37
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501F4877.5050605@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2012 08:04 PM, Minchan Kim wrote:
-> Hi John,
->
-> On Fri, Jul 27, 2012 at 11:57:11PM -0400, John Stultz wrote:
->> In an attempt to push the volatile range managment even
->> deeper into the VM code, this is my first attempt at
->> implementing Minchan's idea of a LRU_VOLATILE list in
->> the mm core.
->>
->> This list sits along side the LRU_ACTIVE_ANON, _INACTIVE_ANON,
->> _ACTIVE_FILE, _INACTIVE_FILE and _UNEVICTABLE lru lists.
->>
->> When a range is marked volatile, the pages in that range
->> are moved to the LRU_VOLATILE list. Since volatile pages
->> can be quickly purged, this list is the first list we
->> shrink when we need to free memory.
->>
->> When a page is marked non-volatile, it is moved from the
->> LRU_VOLATILE list to the appropriate LRU_ACTIVE_ list.
-> I think active list promotion is not good.
-> It should go to the inactive list and they get a chance to
-> activate from inactive to active sooner or later if it is
-> really touched.
+On Mon, Aug 06, 2012 at 01:30:47PM +0900, Takao Indoh wrote:
+> Hi Vivek,
+> 
+> (2012/08/03 20:46), Vivek Goyal wrote:
+> > On Fri, Aug 03, 2012 at 08:24:31PM +0900, Takao Indoh wrote:
+> >> Hi all,
+> >>
+> >> This patch adds kernel parameter "reset_pcie_devices" which resets PCIe
+> >> devices at boot time to address DMA problem on kdump with iommu. When
+> >> this parameter is specified, a hot reset is triggered on each PCIe root
+> >> port and downstream port to reset its downstream endpoint.
+> >
+> > Hi Takao,
+> >
+> > Why not use existing "reset_devices" parameter instead of introducing
+> > a new one?
+> 
+> "reset_devices" is used for each driver to reset their own device, and
+> this patch resets all devices forcibly, so I thought they were different
+> things.
 
-Ok. Thanks, I'll change it so we move to the inactive list then.
+Yes reset_devices currently is used for driver to reset its device. I
+thought one could very well extend its reach to reset pci express devices
+at bus level.
 
+Having them separate is not going to be much useful from kdump
+perspective. We will end up passing both reset_devices and
+reset_pcie_devices to second kernel whill lead to bus level reset as well
+as device level reset.
 
->> This patch introduces the LRU_VOLATILE list, an isvolatile
->> page flag, functions to mark and unmark a single page
->> as volatile, and shrinker functions to purge volatile
->> pages.
->>
->> This is a very raw first pass, and is neither performant
->> or likely bugfree. It works in my trivial testing, but
->> I've not pushed it very hard yet.
->>
->> I wanted to send it out just to get some inital thoughts
->> on the approach and any suggestions should I be going too
->> far in the wrong direction.
-> I look at this series and found several nitpicks about implemenataion
-> but I think it's not a good stage about concerning it.
+Ideal situation would be that somehow detect that bus level reset has been
+done and skip device level reset (assuming bus level reset obviates the
+need of device level reset, please correct me if that's not the case). 
 
-Although while I know the design may still need significant change, I'd 
-still appreciate nitpicks, as they might help me better understand the 
-mm code and any mistakes I'm making.
+After pcie reset, can we store the state in a variable and drivers can
+use that variable to check if PCIe level reset was done or not. If yes,
+skip device level reset (Assuming driver knows that device is on a
+PCIe slot).
 
+In that case we will not have to introduce new kernel command line, and
+also avoid double reset?
 
-> Although naming is rather differet with I suggested, I think it's good idea.
-> So let's talk about it firstly.
-> I will call VOLATILE list as EReclaimale LRU list.
-Yea, I didn't want to call it ERECLAIMABLE since for this iteration I 
-was limiting the scope just to volatile pages. I'm totally fine renaming 
-it as the scope widens.
-
-thanks
--john
-
+Thanks
+Vivek
