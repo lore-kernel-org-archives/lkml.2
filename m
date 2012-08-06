@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab2HFOmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:42:15 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34362 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754782Ab2HFOmO (ORCPT
+	id S932118Ab2HFOnA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:43:00 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36547 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754782Ab2HFOm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:42:14 -0400
+	Mon, 6 Aug 2012 10:42:59 -0400
+Date: Mon, 6 Aug 2012 10:42:58 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Gleixner <tglx@linutronix.de>
+cc: Todd Poynor <toddpoynor@google.com>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <arve@android.com>
+Subject: Re: [PATCH v2] PM / Sleep: Print name of wakeup source that aborts
+ suspend
+In-Reply-To: <201208061315.13302.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1208061037110.1649-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20120806143016.GK16861@opensource.wolfsonmicro.com>
-References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
-	<20120806143016.GK16861@opensource.wolfsonmicro.com>
-Date: Mon, 6 Aug 2012 22:42:12 +0800
-Message-ID: <CAN1soZwCr=L3Xdi7HS9dQMxo4DzzbQv2kXo9R_U6QAf7v=B10Q@mail.gmail.com>
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 10:30 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Aug 06, 2012 at 12:32:48AM +0800, Haojian Zhuang wrote:
->
->> Since IORESOURCE_IO is used for PCI devices, it doesn't fit on
->> 88PM860x PMIC device that lies on I2C bus. So use IORESOURCE_MEM
->> instead.
->
-> This isn't much more appropriate - _MEM is for memory ranges so isn't
-> directly relevant to register addresses either.  If anything _IO is
-> slightly nearer.
+On Mon, 6 Aug 2012, Rafael J. Wysocki wrote:
 
-I use register resource to distinguish different components now. For
-example, component driver
-needs to access the registers in PMIC. These registers offsets are set
-in 88pm860x-core.c.
-So I think that it may not be called _IO.
+> On Monday, August 06, 2012, Alan Stern wrote:
+> > On Sun, 5 Aug 2012, Rafael J. Wysocki wrote:
+> > 
+> > > > v2
+> > > > use ktime_to_ns() instead of comparisons on .tv64 field
+> > 
+> > What is the reason for this?  It apparently adds complexity and code 
+> > (on non-64-bit systems) to no purpose.
+> 
+> I don't think accessing the internals of ktime_t is appropriate,
+> even though avoiding that may result in some computational cost.
 
-Regards
-Haojian
+I asked this question because I recently added some code that does the
+very same thing, using the .tv64 field instead of doing any
+conversions.
+
+Thomas, is there any general advice on how to compare two ktime_t
+values?  Is it acceptable for general code to use the .tv64 field for
+this?  The comments in ktime.h say that the encoding was chosen partly
+for this very reason.
+
+Alan Stern
+
