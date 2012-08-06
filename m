@@ -1,141 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989Ab2HFXQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:16:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3834 "EHLO mx1.redhat.com"
+	id S1756879Ab2HFXTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:19:40 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:41755 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab2HFXQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:16:51 -0400
-Date: Mon, 6 Aug 2012 19:16:33 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: device-mapper development <dm-devel@redhat.com>
-cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>,
-        vgoyal@redhat.com, yehuda@hq.newdream.net, tj@kernel.org,
-        sage@newdream.net, agk@redhat.com, drbd-dev@lists.linbit.com
-Subject: Re: [dm-devel] [PATCH v5 12/12] block: Only clone bio vecs that are
- in use
-In-Reply-To: <1344290921-25154-13-git-send-email-koverstreet@google.com>
-Message-ID: <Pine.LNX.4.64.1208061913500.21956@file.rdu.redhat.com>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-13-git-send-email-koverstreet@google.com>
+	id S1751697Ab2HFXTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 19:19:39 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: regulator: Policy for setting current limits
+Date: Tue, 7 Aug 2012 01:19:34 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Axel Lin <axel.lin@gmail.com>
+References: <201208060127.57074.heiko@sntech.de> <20120806115632.GB16861@opensource.wolfsonmicro.com>
+In-Reply-To: <20120806115632.GB16861@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201208070119.35129.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kent
-
-When you change the semantics of an exported function, rename that 
-function. There may be external modules that use __bio_clone and this 
-change could silently introduce bugs in them.
-
-Otherwise, the patchset looks fine.
-
-Mikulas
-
-
-On Mon, 6 Aug 2012, Kent Overstreet wrote:
-
-> bcache creates large bios internally, and then splits them according to
-> the device requirements before it sends them down. If a lower level
-> device tries to clone the bio, and the original bio had more than
-> BIO_MAX_PAGES, the clone will fail unecessarily.
+Am Montag, 6. August 2012, 13:56:33 schrieb Mark Brown:
+> On Mon, Aug 06, 2012 at 01:27:56AM +0200, Heiko Stübner wrote:
+> > 500). Therefore if 500mA are the upper limit but the regulator also
+> > supports lower values, these lower values always get selected (100mA in
+> > my case). In contrast pda_power sets the target current as both lower
+> > and upper limit.
 > 
-> We can fix this by only cloning the bio vecs that are actually in use.
+> This isn't good, it means that the regulator has to be able to deliver
+> exactly the limit requested.
 > 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> ---
->  drivers/block/rbd.c |    2 +-
->  drivers/md/dm.c     |    5 ++---
->  fs/bio.c            |   13 +++++++------
->  3 files changed, 10 insertions(+), 10 deletions(-)
+> > (a) let the gpio-regulator select the max current (in contrast to the
+> > minimum voltage)
+> > (b) change gpio-vbus to also use the target current as min and max value
+> > (c) something else
 > 
-> diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-> index 692cf05..21edfe5 100644
-> --- a/drivers/block/rbd.c
-> +++ b/drivers/block/rbd.c
-> @@ -714,7 +714,7 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
->  	}
->  
->  	while (old_chain && (total < len)) {
-> -		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
-> +		tmp = bio_kmalloc(gfpmask, bio_segments(old_chain));
->  		if (!tmp)
->  			goto err_out;
->  
-> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-> index 3f3c26e..193fb19 100644
-> --- a/drivers/md/dm.c
-> +++ b/drivers/md/dm.c
-> @@ -1057,11 +1057,10 @@ static struct bio *clone_bio(struct bio *bio, sector_t sector,
->  {
->  	struct bio *clone;
->  
-> -	clone = bio_alloc_bioset(GFP_NOIO, bio->bi_max_vecs, bs);
-> +	clone = bio_alloc_bioset(GFP_NOIO, bv_count, bs);
->  	__bio_clone(clone, bio);
->  	clone->bi_sector = sector;
-> -	clone->bi_idx = idx;
-> -	clone->bi_vcnt = idx + bv_count;
-> +	clone->bi_vcnt = bv_count;
->  	clone->bi_size = to_bytes(len);
->  	clone->bi_flags &= ~(1 << BIO_SEG_VALID);
->  
-> diff --git a/fs/bio.c b/fs/bio.c
-> index 38ad026..631c67e 100644
-> --- a/fs/bio.c
-> +++ b/fs/bio.c
-> @@ -449,8 +449,9 @@ EXPORT_SYMBOL(bio_phys_segments);
->   */
->  void __bio_clone(struct bio *bio, struct bio *bio_src)
->  {
-> -	memcpy(bio->bi_io_vec, bio_src->bi_io_vec,
-> -		bio_src->bi_max_vecs * sizeof(struct bio_vec));
-> +	memcpy(bio->bi_io_vec,
-> +	       bio_iovec(bio_src),
-> +	       bio_segments(bio_src) * sizeof(struct bio_vec));
->  
->  	/*
->  	 * most users will be overriding ->bi_bdev with a new target,
-> @@ -459,10 +460,10 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
->  	bio->bi_sector = bio_src->bi_sector;
->  	bio->bi_bdev = bio_src->bi_bdev;
->  	bio->bi_flags |= 1 << BIO_CLONED;
-> +	bio->bi_flags &= ~(1 << BIO_SEG_VALID);
->  	bio->bi_rw = bio_src->bi_rw;
-> -	bio->bi_vcnt = bio_src->bi_vcnt;
-> +	bio->bi_vcnt = bio_segments(bio_src);
->  	bio->bi_size = bio_src->bi_size;
-> -	bio->bi_idx = bio_src->bi_idx;
->  }
->  EXPORT_SYMBOL(__bio_clone);
->  
-> @@ -477,7 +478,7 @@ EXPORT_SYMBOL(__bio_clone);
->  struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
->  			     struct bio_set *bs)
->  {
-> -	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
-> +	struct bio *b = bio_alloc_bioset(gfp_mask, bio_segments(bio), bs);
->  
->  	if (!b)
->  		return NULL;
-> @@ -507,7 +508,7 @@ EXPORT_SYMBOL(bio_clone);
->  
->  struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
->  {
-> -	struct bio *b = bio_kmalloc(gfp_mask, bio->bi_max_vecs);
-> +	struct bio *b = bio_kmalloc(gfp_mask, bio_segments(bio));
->  
->  	if (!b)
->  		return NULL;
-> -- 
-> 1.7.7.3
-> 
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
-> 
+> Regulators should be tending to the maximum in the available range and
+> consumers should specify the widest range possible so both a and b.
+
+Is this true for all regulators (i.e. voltage and currency regulators)?
+
+Because 4dbd8f63f07a (regulator: gpio-regulator: Set the smallest 
+voltage/current in the specified range) implemented the exact oposite.
+
+Thanks
+Heiko
