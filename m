@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab2HFQHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 12:07:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56118 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756618Ab2HFQHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 12:07:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="203216356"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>
-Subject: RE: [PATCH] pstore: fix printk format warning
-Thread-Topic: [PATCH] pstore: fix printk format warning
-Thread-Index: AQHNcd70KHCHMcBmtEmnpeB+nJsyNpdM9sDQ
-Date: Mon, 6 Aug 2012 16:07:00 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19373F0F@ORSMSX104.amr.corp.intel.com>
-References: <CA+55aFy4vnD5-8SWF_WDC3oTGotzkDg2_4=YHXd6qMiJ=OKekw@mail.gmail.com>
- <501C66A8.5000902@xenotime.net> <20120804011531.GA22175@lizard>
-In-Reply-To: <20120804011531.GA22175@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S932266Ab2HFQLh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 12:11:37 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:50178 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932221Ab2HFQLg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 12:11:36 -0400
 MIME-Version: 1.0
+Message-ID: <ad942d93-489f-4bf4-96bc-8f65b1a23ea1@default>
+Date: Mon, 6 Aug 2012 09:10:26 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: RE: [RFC/PATCH] zcache/ramster rewrite and promotion
+References: <c31aaed4-9d50-4cdf-b794-367fc5850483@default>
+ <CAOJsxLEhW=b3En737d5751xufW2BLehPc2ZGGG1NEtRVSo3=jg@mail.gmail.com>
+ <b9bee363-321e-409a-bc8e-65ffed8a1dc5@default>
+ <CAOJsxLHe6egmMWdEAGj7DGHHX-hqYMhVWDggny9CsT0H-DOL-g@mail.gmail.com>
+ <f54214e7-cee4-4cbf-aad1-6c1f91867879@default>
+ <CAOJsxLHyPj6KrVkB5nj-9vFBXKmn5BN4ArN_7MDmTeVEG3N3Gw@mail.gmail.com>
+In-Reply-To: <CAOJsxLHyPj6KrVkB5nj-9vFBXKmn5BN4ArN_7MDmTeVEG3N3Gw@mail.gmail.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6661.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q76G7CFR006481
 
-> Btw, I see no maintainers for the pstore, and it surely no longer
-> belongs to staging. Tony, I can send patches to you, or I can create
-> a git tree (actually, I already had it for my own convenience).. So
-> how about the following patch?
+> From: Pekka Enberg [mailto:penberg@kernel.org]
+> Subject: Re: [RFC/PATCH] zcache/ramster rewrite and promotion
+> 
+> On Mon, Aug 6, 2012 at 5:07 PM, Dan Magenheimer
+> <dan.magenheimer@oracle.com> wrote:
+> > I'm OK with placing it wherever kernel developers want to put
+> > it, as long as the reason is not NIMBY-ness. [1]  My preference
+> > is to keep all the parts together, at least for the review phase,
+> > but if there is a consensus that it belongs someplace else,
+> > I will be happy to move it.
+> 
+> I'd go for core code in mm/zcache.c and mm/ramster.c, and move the
+> clustering code under net/ramster or drivers/ramster.
 
-Acked-by: Tony Luck <tony.luck@intel.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hi Pekka --
+
+Thanks for the quick feedback!
+
+Hmmm.. there's also zbud.c and tmem.c which are critical components
+of both zcache and ramster.  And there are header files as well which
+will need to either be in mm/ or somewhere in include/linux/
+
+Is there a reason or rule that mm/ can't have subdirectories?
+
+Since zcache has at least three .c files plus ramster.c, and
+since mm/frontswap.c and mm/cleancache.c are the foundation on
+which all of these are built, I was thinking grouping all six
+(plus headers) in the same mm/tmem/ subdirectory was a good
+way to keep mm/ from continuing to get more cluttered... not counting
+new zcache and ramster files, there are now 74 .c files in mm/!
+(Personally, I think a directory has too many files in it if
+"ls" doesn't fit in a 25x80 window.)
+
+Thoughts?
+Dan
