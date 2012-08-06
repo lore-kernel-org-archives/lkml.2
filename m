@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab2HFBej (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 21:34:39 -0400
+	id S1755480Ab2HFBfM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 21:35:12 -0400
 Received: from mga11.intel.com ([192.55.52.93]:16530 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755133Ab2HFBeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 21:34:37 -0400
+	id S1755414Ab2HFBei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Aug 2012 21:34:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="193560356"
+   d="scan'208";a="193560360"
 From: Huang Ying <ying.huang@intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Huang Ying <ying.huang@intel.com>,
         Alan Stern <stern@rowland.harvard.edu>
-Subject: [BUGFIX -v2 2/4] PCI/PM: Keep parent bridge active when probing device
-Date: Mon,  6 Aug 2012 09:34:28 +0800
-Message-Id: <1344216870-21105-3-git-send-email-ying.huang@intel.com>
+Subject: [BUGFIX -v2 3/4] PCI/PM: Fix config reg access for D3cold and bridge suspending
+Date: Mon,  6 Aug 2012 09:34:29 +0800
+Message-Id: <1344216870-21105-4-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344216870-21105-1-git-send-email-ying.huang@intel.com>
 References: <1344216870-21105-1-git-send-email-ying.huang@intel.com>
@@ -27,48 +27,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch fixes the following bug:
 
-http://marc.info/?l=linux-pci&m=134329923124234&w=2
+http://marc.info/?l=linux-pci&m=134338059022620&w=2
 
-The root cause of the bug is as follow.
-
-If a device is not bound with the corresponding driver, the device
-runtime PM will be disabled and the device will be put into suspended
-state.  So that, the bridge/PCIe port connected to it may be put into
-suspended and low power state.  When do probing for the device later,
-because the bridge/PCIe port connected to it is in low power state,
-the IO access to device may fail.
+Where lspci does not work properly if a device and the corresponding
+parent bridge (such as PCIe port) is suspended.  This is because the
+device configuration space registers will be not accessible if the
+corresponding parent bridge is suspended or the device is put into
+D3cold state.
 
 To solve the issue, the bridge/PCIe port connected to the device is
-put into active state before probing.
+put into active state before read/write configuration space registers.
+If the device is in D3cold state, it will be put into active state
+too.
+
+To avoid resume/suspend PCIe port for each configuration register
+read/write, a small delay is added before the PCIe port to go
+suspended.
 
 Reported-by: Bjorn Mork <bjorn@mork.no>
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/pci/pci-driver.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/pci/pci-sysfs.c        |   37 +++++++++++++++++++++++++++++++++++++
+ drivers/pci/pcie/portdrv_pci.c |    9 +++++++++
+ 2 files changed, 46 insertions(+)
 
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -280,8 +280,12 @@ static long local_pci_probe(void *_ddi)
- {
- 	struct drv_dev_and_id *ddi = _ddi;
- 	struct device *dev = &ddi->dev->dev;
-+	struct device *parent = dev->parent;
- 	int rc;
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -458,6 +458,35 @@ boot_vga_show(struct device *dev, struct
+ }
+ struct device_attribute vga_attr = __ATTR_RO(boot_vga);
  
-+	/* The parent bridge must be in active state when probing */
++static void
++pci_config_pm_runtime_get(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
 +	if (parent)
 +		pm_runtime_get_sync(parent);
- 	/* Unbound PCI devices are always set to disabled and suspended.
- 	 * During probe, the device is set to enabled and active and the
- 	 * usage count is incremented.  If the driver supports runtime PM,
-@@ -298,6 +302,8 @@ static long local_pci_probe(void *_ddi)
- 		pm_runtime_set_suspended(dev);
- 		pm_runtime_put_noidle(dev);
- 	}
++	pm_runtime_get_noresume(dev);
++	/*
++	 * pdev->current_state is set to PCI_D3cold during suspending,
++	 * so wait until suspending completes
++	 */
++	pm_runtime_barrier(dev);
++	if (pdev->current_state == PCI_D3cold)
++		pm_runtime_resume(dev);
++}
++
++static void
++pci_config_pm_runtime_put(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
++	pm_runtime_put(dev);
 +	if (parent)
-+		pm_runtime_put(parent);
- 	return rc;
++		pm_runtime_put_sync(parent);
++}
++
+ static ssize_t
+ pci_read_config(struct file *filp, struct kobject *kobj,
+ 		struct bin_attribute *bin_attr,
+@@ -484,6 +513,8 @@ pci_read_config(struct file *filp, struc
+ 		size = count;
+ 	}
+ 
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((off & 1) && size) {
+ 		u8 val;
+ 		pci_user_read_config_byte(dev, off, &val);
+@@ -529,6 +560,8 @@ pci_read_config(struct file *filp, struc
+ 		--size;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	return count;
  }
  
+@@ -549,6 +582,8 @@ pci_write_config(struct file* filp, stru
+ 		count = size;
+ 	}
+ 	
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((off & 1) && size) {
+ 		pci_user_write_config_byte(dev, off, data[off - init_off]);
+ 		off++;
+@@ -587,6 +622,8 @@ pci_write_config(struct file* filp, stru
+ 		--size;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	return count;
+ }
+ 
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -140,9 +140,17 @@ static int pcie_port_runtime_resume(stru
+ {
+ 	return 0;
+ }
++
++static int pcie_port_runtime_idle(struct device *dev)
++{
++	/* Delay for a short while to prevent too frequent suspend/resume */
++	pm_schedule_suspend(dev, 10);
++	return -EBUSY;
++}
+ #else
+ #define pcie_port_runtime_suspend	NULL
+ #define pcie_port_runtime_resume	NULL
++#define pcie_port_runtime_idle		NULL
+ #endif
+ 
+ static const struct dev_pm_ops pcie_portdrv_pm_ops = {
+@@ -155,6 +163,7 @@ static const struct dev_pm_ops pcie_port
+ 	.resume_noirq	= pcie_port_resume_noirq,
+ 	.runtime_suspend = pcie_port_runtime_suspend,
+ 	.runtime_resume = pcie_port_runtime_resume,
++	.runtime_idle	= pcie_port_runtime_idle,
+ };
+ 
+ #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
