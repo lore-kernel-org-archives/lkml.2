@@ -1,92 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab2HFVEE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 17:04:04 -0400
+	id S1756886Ab2HFVET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 17:04:19 -0400
 Received: from mga14.intel.com ([143.182.124.37]:34602 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977Ab2HFVED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 17:04:03 -0400
+	id S1756604Ab2HFVEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 17:04:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="130905915"
+   d="scan'208";a="130905922"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 1/3] mei: use KBUILD_MODNAME when allocating resources from the OS
-Date: Tue,  7 Aug 2012 00:03:54 +0300
-Message-Id: <1344287036-22649-1-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 2/3] mei: style : reformat PCI device IDs
+Date: Tue,  7 Aug 2012 00:03:55 +0300
+Message-Id: <1344287036-22649-2-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1344287036-22649-1-git-send-email-tomas.winkler@intel.com>
+References: <1344287036-22649-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+1. reformat PCI ids list in hw.h for better readability
+2. update some code and brand names
+
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/main.c |   14 ++++++--------
- 1 files changed, 6 insertions(+), 8 deletions(-)
+ drivers/misc/mei/hw.h |   79 ++++++++++++++++++++++++-------------------------
+ 1 files changed, 39 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index b0903bd..c7d19f8 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -41,8 +41,6 @@
- #include <linux/mei.h>
- #include "interface.h"
- 
--static const char mei_driver_name[] = "mei";
--
- /* The device pointer */
- /* Currently this driver works as long as there is only a single AMT device. */
- struct pci_dev *mei_device;
-@@ -933,7 +931,7 @@ static int __devinit mei_probe(struct pci_dev *pdev,
- 	/* set PCI host mastering  */
- 	pci_set_master(pdev);
- 	/* pci request regions for mei driver */
--	err = pci_request_regions(pdev, mei_driver_name);
-+	err = pci_request_regions(pdev, KBUILD_MODNAME);
- 	if (err) {
- 		dev_err(&pdev->dev, "failed to get pci regions.\n");
- 		goto disable_device;
-@@ -958,12 +956,12 @@ static int __devinit mei_probe(struct pci_dev *pdev,
- 		err = request_threaded_irq(pdev->irq,
- 			NULL,
- 			mei_interrupt_thread_handler,
--			IRQF_ONESHOT, mei_driver_name, dev);
-+			IRQF_ONESHOT, KBUILD_MODNAME, dev);
- 	else
- 		err = request_threaded_irq(pdev->irq,
- 			mei_interrupt_quick_handler,
- 			mei_interrupt_thread_handler,
--			IRQF_SHARED, mei_driver_name, dev);
-+			IRQF_SHARED, KBUILD_MODNAME, dev);
- 
- 	if (err) {
- 		dev_err(&pdev->dev, "request_threaded_irq failure. irq = %d\n",
-@@ -1123,12 +1121,12 @@ static int mei_pci_resume(struct device *device)
- 		err = request_threaded_irq(pdev->irq,
- 			NULL,
- 			mei_interrupt_thread_handler,
--			IRQF_ONESHOT, mei_driver_name, dev);
-+			IRQF_ONESHOT, KBUILD_MODNAME, dev);
- 	else
- 		err = request_threaded_irq(pdev->irq,
- 			mei_interrupt_quick_handler,
- 			mei_interrupt_thread_handler,
--			IRQF_SHARED, mei_driver_name, dev);
-+			IRQF_SHARED, KBUILD_MODNAME, dev);
- 
- 	if (err) {
- 		dev_err(&pdev->dev, "request_threaded_irq failed: irq = %d.\n",
-@@ -1155,7 +1153,7 @@ static SIMPLE_DEV_PM_OPS(mei_pm_ops, mei_pci_suspend, mei_pci_resume);
-  *  PCI driver structure
+diff --git a/drivers/misc/mei/hw.h b/drivers/misc/mei/hw.h
+index 24c4c96..b3b4c6d 100644
+--- a/drivers/misc/mei/hw.h
++++ b/drivers/misc/mei/hw.h
+@@ -40,46 +40,45 @@
+ /*
+  * MEI device IDs
   */
- static struct pci_driver mei_driver = {
--	.name = mei_driver_name,
-+	.name = KBUILD_MODNAME,
- 	.id_table = mei_pci_tbl,
- 	.probe = mei_probe,
- 	.remove = __devexit_p(mei_remove),
+-#define    MEI_DEV_ID_82946GZ	0x2974  /* 82946GZ/GL */
+-#define    MEI_DEV_ID_82G35	0x2984  /* 82G35 Express */
+-#define    MEI_DEV_ID_82Q965	0x2994  /* 82Q963/Q965 */
+-#define    MEI_DEV_ID_82G965	0x29A4  /* 82P965/G965 */
+-
+-#define    MEI_DEV_ID_82GM965	0x2A04  /* Mobile PM965/GM965 */
+-#define    MEI_DEV_ID_82GME965	0x2A14  /* Mobile GME965/GLE960 */
+-
+-#define    MEI_DEV_ID_ICH9_82Q35 0x29B4  /* 82Q35 Express */
+-#define    MEI_DEV_ID_ICH9_82G33 0x29C4  /* 82G33/G31/P35/P31 Express */
+-#define    MEI_DEV_ID_ICH9_82Q33 0x29D4  /* 82Q33 Express */
+-#define    MEI_DEV_ID_ICH9_82X38 0x29E4  /* 82X38/X48 Express */
+-#define    MEI_DEV_ID_ICH9_3200  0x29F4  /* 3200/3210 Server */
+-
+-#define    MEI_DEV_ID_ICH9_6	0x28B4  /* Bearlake */
+-#define    MEI_DEV_ID_ICH9_7	0x28C4  /* Bearlake */
+-#define    MEI_DEV_ID_ICH9_8	0x28D4  /* Bearlake */
+-#define    MEI_DEV_ID_ICH9_9    0x28E4  /* Bearlake */
+-#define    MEI_DEV_ID_ICH9_10	0x28F4  /* Bearlake */
+-
+-#define    MEI_DEV_ID_ICH9M_1	0x2A44  /* Cantiga */
+-#define    MEI_DEV_ID_ICH9M_2	0x2A54  /* Cantiga */
+-#define    MEI_DEV_ID_ICH9M_3	0x2A64  /* Cantiga */
+-#define    MEI_DEV_ID_ICH9M_4	0x2A74  /* Cantiga */
+-
+-#define    MEI_DEV_ID_ICH10_1	0x2E04  /* Eaglelake */
+-#define    MEI_DEV_ID_ICH10_2	0x2E14  /* Eaglelake */
+-#define    MEI_DEV_ID_ICH10_3	0x2E24  /* Eaglelake */
+-#define    MEI_DEV_ID_ICH10_4	0x2E34  /* Eaglelake */
+-
+-#define    MEI_DEV_ID_IBXPK_1	0x3B64  /* Calpella */
+-#define    MEI_DEV_ID_IBXPK_2	0x3B65  /* Calpella */
+-
+-#define    MEI_DEV_ID_CPT_1	0x1C3A    /* Cougerpoint */
+-#define    MEI_DEV_ID_PBG_1	0x1D3A    /* PBG */
+-
+-#define    MEI_DEV_ID_PPT_1	0x1E3A    /* Pantherpoint PPT */
+-#define    MEI_DEV_ID_PPT_2	0x1CBA    /* Pantherpoint PPT */
+-#define    MEI_DEV_ID_PPT_3	0x1DBA    /* Pantherpoint PPT */
+-
++#define MEI_DEV_ID_82946GZ    0x2974  /* 82946GZ/GL */
++#define MEI_DEV_ID_82G35      0x2984  /* 82G35 Express */
++#define MEI_DEV_ID_82Q965     0x2994  /* 82Q963/Q965 */
++#define MEI_DEV_ID_82G965     0x29A4  /* 82P965/G965 */
++
++#define MEI_DEV_ID_82GM965    0x2A04  /* Mobile PM965/GM965 */
++#define MEI_DEV_ID_82GME965   0x2A14  /* Mobile GME965/GLE960 */
++
++#define MEI_DEV_ID_ICH9_82Q35 0x29B4  /* 82Q35 Express */
++#define MEI_DEV_ID_ICH9_82G33 0x29C4  /* 82G33/G31/P35/P31 Express */
++#define MEI_DEV_ID_ICH9_82Q33 0x29D4  /* 82Q33 Express */
++#define MEI_DEV_ID_ICH9_82X38 0x29E4  /* 82X38/X48 Express */
++#define MEI_DEV_ID_ICH9_3200  0x29F4  /* 3200/3210 Server */
++
++#define MEI_DEV_ID_ICH9_6     0x28B4  /* Bearlake */
++#define MEI_DEV_ID_ICH9_7     0x28C4  /* Bearlake */
++#define MEI_DEV_ID_ICH9_8     0x28D4  /* Bearlake */
++#define MEI_DEV_ID_ICH9_9     0x28E4  /* Bearlake */
++#define MEI_DEV_ID_ICH9_10    0x28F4  /* Bearlake */
++
++#define MEI_DEV_ID_ICH9M_1    0x2A44  /* Cantiga */
++#define MEI_DEV_ID_ICH9M_2    0x2A54  /* Cantiga */
++#define MEI_DEV_ID_ICH9M_3    0x2A64  /* Cantiga */
++#define MEI_DEV_ID_ICH9M_4    0x2A74  /* Cantiga */
++
++#define MEI_DEV_ID_ICH10_1    0x2E04  /* Eaglelake */
++#define MEI_DEV_ID_ICH10_2    0x2E14  /* Eaglelake */
++#define MEI_DEV_ID_ICH10_3    0x2E24  /* Eaglelake */
++#define MEI_DEV_ID_ICH10_4    0x2E34  /* Eaglelake */
++
++#define MEI_DEV_ID_IBXPK_1    0x3B64  /* Calpella */
++#define MEI_DEV_ID_IBXPK_2    0x3B65  /* Calpella */
++
++#define MEI_DEV_ID_CPT_1      0x1C3A  /* Couger Point */
++#define MEI_DEV_ID_PBG_1      0x1D3A  /* C600/X79 Patsburg */
++
++#define MEI_DEV_ID_PPT_1      0x1E3A  /* Panther Point */
++#define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
++#define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
+ 
+ /*
+  * MEI HW Section
 -- 
 1.7.4.4
 
