@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab2HFKkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 06:40:53 -0400
-Received: from [216.32.180.184] ([216.32.180.184]:22057 "EHLO
-	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755855Ab2HFKks (ORCPT
+	id S1755851Ab2HFKmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 06:42:42 -0400
+Received: from [216.32.180.16] ([216.32.180.16]:7479 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754659Ab2HFKmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 06:40:48 -0400
+	Mon, 6 Aug 2012 06:42:40 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
@@ -16,11 +16,11 @@ To: <linux-crypto@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
         <dan.j.williams@gmail.com>, <vinod.koul@intel.com>
 CC: <kim.phillips@freescale.com>, <herbert@gondor.hengli.com.au>,
         <davem@davemloft.net>, <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
-        Qiang Liu <qiang.liu@freescale.com>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH v6 3/8] fsl-dma: add fsl_dma_free_descriptor() to reduce code duplication
-Date: Mon, 6 Aug 2012 18:13:23 +0800
-Message-ID: <1344248003-9193-1-git-send-email-qiang.liu@freescale.com>
+        Qiang Liu <qiang.liu@freescale.com>, Li Yang <leoli@freescale.com>,
+        Timur Tabi <timur@freescale.com>
+Subject: [PATCH 6/8] fsl-dma: use spin_lock_bh to instead of spin_lock_irqsave
+Date: Mon, 6 Aug 2012 18:14:45 +0800
+Message-ID: <1344248085-9315-1-git-send-email-qiang.liu@freescale.com>
 X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -31,87 +31,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Qiang Liu <qiang.liu@freescale.com>
 
-There are several places where descriptors are freed using identical
-code. Put this code into a function to reduce code duplication.
+The use of spin_lock_irqsave() is a stronger locking mechanism than is
+required throughout the driver. The minimum locking required should be
+used instead. Interrupts will be turned off and context will be saved,
+there is needless to use irqsave.
+
+Change all instances of spin_lock_irqsave() to spin_lock_bh().
+All manipulation of protected fields is done using tasklet context or
+weaker, which makes spin_lock_bh() the correct choice.
 
 Cc: Dan Williams <dan.j.williams@intel.com>
 Cc: Dan Williams <dan.j.williams@gmail.com>
 Cc: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+Cc: Li Yang <leoli@freescale.com>
+Cc: Timur Tabi <timur@freescale.com>
+Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
+Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
- drivers/dma/fsldma.c |   38 ++++++++++++++++++++------------------
- 1 files changed, 20 insertions(+), 18 deletions(-)
+ drivers/dma/fsldma.c |   30 ++++++++++++------------------
+ 1 files changed, 12 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 4f2f212..d4720d3 100644
+index 938d8c1..3f809df 100644
 --- a/drivers/dma/fsldma.c
 +++ b/drivers/dma/fsldma.c
-@@ -427,6 +427,21 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
- }
+@@ -405,10 +405,9 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+ 	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
+ 	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
+ 	struct fsl_desc_sw *child;
+-	unsigned long flags;
+ 	dma_cookie_t cookie;
 
- /**
-+ * fsl_dma_free_descriptor - Free descriptor from channel's DMA pool.
-+ * @chan : Freescale DMA channel
-+ * @desc: descriptor to be freed
-+ */
-+static void fsl_dma_free_descriptor(struct fsldma_chan *chan,
-+		struct fsl_desc_sw *desc)
-+{
-+	list_del(&desc->node);
-+#ifdef FSL_DMA_LD_DEBUG
-+	chan_dbg(chan, "LD %p free\n", desc);
-+#endif
-+	dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
-+}
-+
-+/**
-  * fsl_dma_alloc_descriptor - Allocate descriptor from channel's DMA pool.
-  * @chan : Freescale DMA channel
-  *
-@@ -500,13 +515,8 @@ static void fsldma_free_desc_list(struct fsldma_chan *chan,
+-	spin_lock_irqsave(&chan->desc_lock, flags);
++	spin_lock_bh(&chan->desc_lock);
+
+ 	/*
+ 	 * assign cookies to all of the software descriptors
+@@ -421,7 +420,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+ 	/* put this transaction onto the tail of the pending queue */
+ 	append_ld_queue(chan, desc);
+
+-	spin_unlock_irqrestore(&chan->desc_lock, flags);
++	spin_unlock_bh(&chan->desc_lock);
+
+ 	return cookie;
+ }
+@@ -761,15 +760,14 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
+ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
  {
- 	struct fsl_desc_sw *desc, *_desc;
+ 	struct fsldma_chan *chan = to_fsl_chan(dchan);
+-	unsigned long flags;
 
--	list_for_each_entry_safe(desc, _desc, list, node) {
--		list_del(&desc->node);
--#ifdef FSL_DMA_LD_DEBUG
--		chan_dbg(chan, "LD %p free\n", desc);
--#endif
--		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
--	}
-+	list_for_each_entry_safe(desc, _desc, list, node)
-+		fsl_dma_free_descriptor(chan, desc);
- }
+ 	chan_dbg(chan, "free all channel resources\n");
+-	spin_lock_irqsave(&chan->desc_lock, flags);
++	spin_lock_bh(&chan->desc_lock);
+ 	fsldma_cleanup_descriptors(chan);
+ 	fsldma_free_desc_list(chan, &chan->ld_pending);
+ 	fsldma_free_desc_list(chan, &chan->ld_running);
+ 	fsldma_free_desc_list(chan, &chan->ld_completed);
+-	spin_unlock_irqrestore(&chan->desc_lock, flags);
++	spin_unlock_bh(&chan->desc_lock);
 
- static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
-@@ -514,13 +524,8 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
+ 	dma_pool_destroy(chan->desc_pool);
+ 	chan->desc_pool = NULL;
+@@ -988,7 +986,6 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
  {
- 	struct fsl_desc_sw *desc, *_desc;
+ 	struct dma_slave_config *config;
+ 	struct fsldma_chan *chan;
+-	unsigned long flags;
+ 	int size;
 
--	list_for_each_entry_safe_reverse(desc, _desc, list, node) {
--		list_del(&desc->node);
--#ifdef FSL_DMA_LD_DEBUG
--		chan_dbg(chan, "LD %p free\n", desc);
--#endif
--		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
--	}
-+	list_for_each_entry_safe_reverse(desc, _desc, list, node)
-+		fsl_dma_free_descriptor(chan, desc);
+ 	if (!dchan)
+@@ -998,7 +995,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+
+ 	switch (cmd) {
+ 	case DMA_TERMINATE_ALL:
+-		spin_lock_irqsave(&chan->desc_lock, flags);
++		spin_lock_bh(&chan->desc_lock);
+
+ 		/* Halt the DMA engine */
+ 		dma_halt(chan);
+@@ -1009,7 +1006,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+ 		fsldma_free_desc_list(chan, &chan->ld_completed);
+ 		chan->idle = true;
+
+-		spin_unlock_irqrestore(&chan->desc_lock, flags);
++		spin_unlock_bh(&chan->desc_lock);
+ 		return 0;
+
+ 	case DMA_SLAVE_CONFIG:
+@@ -1051,11 +1048,10 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+ static void fsl_dma_memcpy_issue_pending(struct dma_chan *dchan)
+ {
+ 	struct fsldma_chan *chan = to_fsl_chan(dchan);
+-	unsigned long flags;
+
+-	spin_lock_irqsave(&chan->desc_lock, flags);
++	spin_lock_bh(&chan->desc_lock);
+ 	fsl_chan_xfer_ld_queue(chan);
+-	spin_unlock_irqrestore(&chan->desc_lock, flags);
++	spin_unlock_bh(&chan->desc_lock);
  }
 
  /**
-@@ -855,10 +860,7 @@ static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
- 			dma_unmap_page(dev, src, len, DMA_TO_DEVICE);
- 	}
+@@ -1068,15 +1064,14 @@ static enum dma_status fsl_tx_status(struct dma_chan *dchan,
+ {
+ 	struct fsldma_chan *chan = to_fsl_chan(dchan);
+ 	enum dma_status ret;
+-	unsigned long flags;
 
--#ifdef FSL_DMA_LD_DEBUG
--	chan_dbg(chan, "LD %p free\n", desc);
--#endif
--	dma_pool_free(chan->desc_pool, desc, txd->phys);
-+	fsl_dma_free_descriptor(chan, desc);
+ 	ret = dma_cookie_status(dchan, cookie, txstate);
+ 	if (ret == DMA_SUCCESS)
+ 		return ret;
+
+-	spin_lock_irqsave(&chan->desc_lock, flags);
++	spin_lock_bh(&chan->desc_lock);
+ 	fsldma_cleanup_descriptors(chan);
+-	spin_unlock_irqrestore(&chan->desc_lock, flags);
++	spin_unlock_bh(&chan->desc_lock);
+
+ 	return dma_cookie_status(dchan, cookie, txstate);
  }
+@@ -1155,11 +1150,10 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
+ static void dma_do_tasklet(unsigned long data)
+ {
+ 	struct fsldma_chan *chan = (struct fsldma_chan *)data;
+-	unsigned long flags;
 
- /**
+ 	chan_dbg(chan, "tasklet entry\n");
+
+-	spin_lock_irqsave(&chan->desc_lock, flags);
++	spin_lock_bh(&chan->desc_lock);
+
+ 	/* the hardware is now idle and ready for more */
+ 	chan->idle = true;
+@@ -1167,7 +1161,7 @@ static void dma_do_tasklet(unsigned long data)
+ 	/* Run all cleanup for descriptors which have been completed */
+ 	fsldma_cleanup_descriptors(chan);
+
+-	spin_unlock_irqrestore(&chan->desc_lock, flags);
++	spin_unlock_bh(&chan->desc_lock);
+
+ 	chan_dbg(chan, "tasklet exit\n");
+ }
 --
 1.7.5.1
 
