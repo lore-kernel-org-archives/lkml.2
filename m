@@ -1,319 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2HFHi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 03:38:28 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:60438 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab2HFHi0 (ORCPT
+	id S1753599Ab2HFHig (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 03:38:36 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:54903 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753112Ab2HFHie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 03:38:26 -0400
-Message-Id: <201208060736.q767ahXP005572@ubuntu>
-From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Sun, 5 Aug 2012 21:43:44 +0100
-Subject: [NEW DRIVER V2 7/7] DA9058 REGULATOR driver
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Randy Dunlop <randy.dunlap@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Cc: David Dajun Chen <david.chen@diasemi.com>
+	Mon, 6 Aug 2012 03:38:34 -0400
+Date: Mon, 6 Aug 2012 09:38:11 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Grant Likely <grant.likely@secretlab.ca>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86/dt: use linear irq domain for ioapic(s).
+Message-ID: <20120806073811.GA3261@breakpoint.cc>
+References: <1343890270-13007-1-git-send-email-thierry.reding@avionic-design.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343890270-13007-1-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the REGULATOR component driver of the Dialog DA9058 PMIC.
-This driver is just one component of the whole DA9058 PMIC driver.
-It depends on the core DA9058 MFD driver.
+The former conversion to irq_domain_add_legacy() did not fully work
+since we miss the irq decs for NR_IRQS_LEGACY+.
+Ideally we could use irq_domain_add_simple() or the no-map variant (and
+program the virq <-> line mapping directly into ioapic) but this would
+require a different irq lookup in "do_IRQ()" and won't work with ACPI
+without changes. So this is probably easiest for everyone.
 
-Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- drivers/regulator/Kconfig            |   11 ++
- drivers/regulator/Makefile           |    1 +
- drivers/regulator/da9058-regulator.c |  239 ++++++++++++++++++++++++++++++++++
- 3 files changed, 251 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/da9058-regulator.c
+ arch/x86/kernel/devicetree.c |   52 ++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 43 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index c86b886..1fc04f9 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -64,6 +64,17 @@ config REGULATOR_USERSPACE_CONSUMER
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index 3ae2ced..df225fc 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -342,6 +342,48 @@ const struct irq_domain_ops ioapic_irq_domain_ops = {
+ 	.xlate = ioapic_xlate,
+ };
  
-           If unsure, say no.
- 
-+config REGULATOR_DA9058
-+	tristate "Support regulators on Dialog Semiconductor DA9058 PMIC"
-+	depends on MFD_DA9058
-+	help
-+	  Say y here to support the BUCKs and LDOs regulators found on
-+	  Dialog Semiconductor DA9058 PMIC.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called da9058-regulator.
-+
-+
- config REGULATOR_GPIO
- 	tristate "GPIO regulator support"
- 	depends on GENERIC_GPIO
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 977fd46..f4d0bff 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
- obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
- obj-$(CONFIG_REGULATOR_GPIO) += gpio-regulator.o
- obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
-+obj-$(CONFIG_REGULATOR_DA9058) += da9058-regulator.o
- obj-$(CONFIG_REGULATOR_LP3971) += lp3971.o
- obj-$(CONFIG_REGULATOR_LP3972) += lp3972.o
- obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
-diff --git a/drivers/regulator/da9058-regulator.c b/drivers/regulator/da9058-regulator.c
-new file mode 100644
-index 0000000..33c3a22
---- /dev/null
-+++ b/drivers/regulator/da9058-regulator.c
-@@ -0,0 +1,239 @@
-+/*
-+ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/core.h>
-+
-+#include <linux/mfd/da9058/version.h>
-+#include <linux/mfd/da9058/registers.h>
-+#include <linux/mfd/da9058/core.h>
-+#include <linux/mfd/da9058/regulator.h>
-+
-+struct da9058_regulator {
-+	struct da9058 *da9058;
-+	int ramp_register;
-+	int ramp_enable_mask;
-+	int fixed_voltage;
-+	struct platform_device *pdev;
-+	struct regulator_dev *reg_dev;
-+	struct regulator_desc desc;
-+	struct regulator_init_data init;
-+};
-+
-+static int da9058_buck_ramp_voltage(struct regulator_dev *rdev,
-+					unsigned int old_selector,
-+					unsigned int new_selector)
++static void dt_add_ioapic_domain(unsigned int ioapic_num,
++		struct device_node *np)
 +{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct da9058 *da9058 = regulator->da9058;
++	struct irq_domain *id;
++	struct mp_ioapic_gsi *gsi_cfg;
 +	int ret;
++	int num;
 +
-+	if (regulator->ramp_register == 0)
-+		return -EINVAL;
++	gsi_cfg = mp_ioapic_gsi_routing(ioapic_num);
++	num = gsi_cfg->gsi_end - gsi_cfg->gsi_base + 1;
 +
-+	if (regulator->ramp_enable_mask == 0)
-+		return -EINVAL;
++	id = irq_domain_add_linear(np, num,
++			&ioapic_irq_domain_ops,
++			(void *)ioapic_num);
++	BUG_ON(!id);
++	if (gsi_cfg->gsi_base == 0) {
++		/*
++		 * The first NR_IRQS_LEGACY irq descs are allocated in
++		 * early_irq_init() and need just a mapping. The
++		 * remaining irqs need both. All of them are preallocated
++		 * and assigned so we can keep the 1:1 mapping which the ioapic
++		 * is having.
++		 */
++		ret = irq_domain_associate_many(id, 0, 0, NR_IRQS_LEGACY);
++		if (ret)
++			pr_err("Error mapping legacy irqs: %d\n", ret);
 +
-+	ret = da9058_set_bits(da9058, regulator->ramp_register,
-+					regulator->ramp_enable_mask);
-+
-+	if (ret)
-+		return ret;
-+
-+	return 2200; /* micro Seconds needed to ramp to new voltage*/
-+}
-+
-+static int da9058_get_fixed_regulator_voltage(struct regulator_dev *rdev)
-+{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+
-+	if (regulator_is_enabled_regmap(rdev))
-+		return regulator->fixed_voltage;
-+	else
-+		return 0;
-+}
-+
-+static struct regulator_ops da9058_buck_regulator_ops = {
-+	.map_voltage = regulator_map_voltage_linear,
-+	.list_voltage = regulator_list_voltage_linear,
-+	.set_voltage_time_sel = da9058_buck_ramp_voltage,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+};
-+
-+static struct regulator_ops da9058_ldo_regulator_ops = {
-+	.map_voltage = regulator_map_voltage_linear,
-+	.list_voltage = regulator_list_voltage_linear,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+};
-+
-+static struct regulator_ops da9058_fixed_regulator_ops = {
-+	.get_voltage = da9058_get_fixed_regulator_voltage,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+};
-+
-+static int da9058_regulator_probe(struct platform_device *pdev)
-+{
-+	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
-+	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_regulator_pdata *rpdata;
-+	struct da9058_regulator *reg;
-+	struct regulator_dev *rdev;
-+	struct regulator_config config = { };
-+	int ret;
-+	unsigned int val;
-+
-+	if (cell == NULL)
-+		return -ENODEV;
-+
-+	rpdata = cell->platform_data;
-+
-+	if (rpdata == NULL)
-+		return -EINVAL;
-+
-+	if (rpdata->control_register == 0)
-+		return -EINVAL;
-+
-+	if (rpdata->control_enable_mask == 0)
-+		return -EINVAL;
-+
-+	reg = devm_kzalloc(&pdev->dev, sizeof(struct da9058_regulator),
-+				GFP_KERNEL);
-+	if (!reg)
-+		return -ENOMEM;
-+
-+	platform_set_drvdata(pdev, reg);
-+
-+	reg->da9058 = da9058;
-+	reg->pdev = pdev;
-+	reg->ramp_register = rpdata->ramp_register;
-+	reg->ramp_enable_mask = rpdata->ramp_enable_mask;
-+	reg->fixed_voltage = rpdata->fixed_voltage;
-+
-+	reg->desc.name = rpdata->regulator_name;
-+	reg->desc.id = rpdata->regulator_id;
-+	reg->desc.type = REGULATOR_VOLTAGE;
-+
-+	reg->desc.n_voltages = 1 + (rpdata->max_uV - rpdata->min_uV) /
-+					rpdata->control_voltage_step;
-+	reg->desc.owner = THIS_MODULE;
-+	reg->desc.enable_reg = rpdata->control_register;
-+	reg->desc.enable_mask = rpdata->control_enable_mask;
-+	reg->desc.vsel_reg = rpdata->control_register;
-+	reg->desc.vsel_mask = DA9058_MAX_VSEL;
-+
-+	if (rpdata->control_voltage_step == 0) {
-+		reg->desc.ops = &da9058_fixed_regulator_ops;
++		if (num > NR_IRQS_LEGACY) {
++			ret = irq_create_strict_mappings(id, NR_IRQS_LEGACY,
++					NR_IRQS_LEGACY, num - NR_IRQS_LEGACY);
++			if (ret)
++				pr_err("Error creating mapping for the "
++						"remaining  irqs: %d\n", ret);
++		}
++		irq_set_default_host(id);
 +	} else {
-+		reg->desc.min_uV = rpdata->min_uV;
-+		reg->desc.uV_step = rpdata->control_voltage_step;
-+
-+		if (reg->ramp_register)
-+			reg->desc.ops = &da9058_buck_regulator_ops;
-+		else
-+			reg->desc.ops = &da9058_ldo_regulator_ops;
++		ret = irq_create_strict_mappings(id, gsi_cfg->gsi_base, 0, num);
++		if (ret)
++			pr_err("Error creating irq mapping: %d\n", ret);
 +	}
-+
-+	reg->init.constraints.name = rpdata->regulator_name;
-+	reg->init.constraints.min_uV = rpdata->min_uV;
-+	reg->init.constraints.max_uV = rpdata->max_uV;
-+	reg->init.constraints.valid_ops_mask = rpdata->valid_ops_mask;
-+	reg->init.constraints.valid_modes_mask = rpdata->valid_modes_mask;
-+	reg->init.constraints.boot_on = rpdata->boot_on;
-+	reg->init.constraints.always_on = rpdata->always_on;
-+	reg->init.num_consumer_supplies = rpdata->num_consumer_supplies;
-+	reg->init.consumer_supplies = rpdata->consumer_supplies;
-+
-+	config.dev = pdev->dev.parent;
-+	config.init_data = &reg->init;
-+	config.driver_data = reg;
-+	config.regmap = da9058->regmap;
-+
-+	rdev = regulator_register(&reg->desc, &config);
-+
-+	if (IS_ERR(rdev)) {
-+		dev_err(&pdev->dev, "failed to register %s\n",
-+			rpdata->regulator_name);
-+		ret = PTR_ERR(rdev);
-+		goto err;
-+	}
-+	reg->reg_dev = rdev;
-+
-+	/* before we do anything check the lock bit */
-+	ret = da9058_reg_read(da9058, DA9058_SUPPLY_REG, &val);
-+	if (ret)
-+		goto unlock_failed;
-+
-+	if (val & DA9058_SUPPLY_VLOCK)
-+		ret = da9058_clear_bits(da9058, DA9058_SUPPLY_REG,
-+					DA9058_SUPPLY_VLOCK);
-+	if (ret)
-+		goto unlock_failed;
-+
-+	return 0;
-+
-+unlock_failed:
-+	regulator_unregister(rdev);
-+err:
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return ret;
 +}
 +
-+static int da9058_regulator_remove(struct platform_device *pdev)
-+{
-+	struct regulator_dev *rdev = platform_get_drvdata(pdev);
-+
-+	regulator_unregister(rdev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver da9058_regulator_driver = {
-+	.probe = da9058_regulator_probe,
-+	.remove = da9058_regulator_remove,
-+	.driver = {
-+		.name = "da9058-regulator",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init da9058_regulator_init(void)
-+{
-+	return platform_driver_register(&da9058_regulator_driver);
-+}
-+
-+subsys_initcall(da9058_regulator_init);
-+
-+static void __exit da9058_regulator_exit(void)
-+{
-+	platform_driver_unregister(&da9058_regulator_driver);
-+}
-+
-+module_exit(da9058_regulator_exit);
-+
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC voltage and current regulator");
-+MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-regulator");
+ static void __init ioapic_add_ofnode(struct device_node *np)
+ {
+ 	struct resource r;
+@@ -356,15 +398,7 @@ static void __init ioapic_add_ofnode(struct device_node *np)
+ 
+ 	for (i = 0; i < nr_ioapics; i++) {
+ 		if (r.start == mpc_ioapic_addr(i)) {
+-			struct irq_domain *id;
+-			struct mp_ioapic_gsi *gsi_cfg;
+-
+-			gsi_cfg = mp_ioapic_gsi_routing(i);
+-
+-			id = irq_domain_add_legacy(np, 32, gsi_cfg->gsi_base, 0,
+-						   &ioapic_irq_domain_ops,
+-						   (void*)i);
+-			BUG_ON(!id);
++			dt_add_ioapic_domain(i, np);
+ 			return;
+ 		}
+ 	}
 -- 
-end-of-patch for NEW DRIVER V2
+1.7.10.4
 
