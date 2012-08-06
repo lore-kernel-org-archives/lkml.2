@@ -1,94 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab2HFCTJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Aug 2012 22:19:09 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:60064 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755457Ab2HFCTH (ORCPT
+	id S1755511Ab2HFC0D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Aug 2012 22:26:03 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7583 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755468Ab2HFC0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Aug 2012 22:19:07 -0400
-Date: Sun, 5 Aug 2012 22:19:04 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Cyril Chemparathy <cyril@ti.com>
-cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, catalin.marinas@arm.com, linux@arm.linux.org.uk,
-        will.deacon@arm.com
-Subject: Re: [PATCH 04/22] ARM: LPAE: support 64-bit virt/phys patching
-In-Reply-To: <501E815D.1050707@ti.com>
-Message-ID: <alpine.LFD.2.02.1208052207040.5231@xanadu.home>
-References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-5-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208040226060.5231@xanadu.home> <501E815D.1050707@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sun, 5 Aug 2012 22:26:00 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 05 Aug 2012 19:20:57 -0700
+Message-ID: <501F2BAA.8000808@nvidia.com>
+Date: Mon, 6 Aug 2012 11:27:54 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <50170EA0.1010408@wwwdotorg.org> <501A338D.7080105@nvidia.com> <20120802082157.GA14866@avionic-0098.adnet.avionic-design.de> <20120802181111.GM4537@opensource.wolfsonmicro.com> <501B2642.4080805@nvidia.com> <20120804141155.GJ10523@opensource.wolfsonmicro.com>
+In-Reply-To: <20120804141155.GJ10523@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Aug 2012, Cyril Chemparathy wrote:
+On 08/04/2012 11:12 PM, Mark Brown wrote:
+> On Fri, Aug 03, 2012 at 10:15:46AM +0900, Alex Courbot wrote:
+>> On Fri 03 Aug 2012 03:11:12 AM JST, Mark Brown wrote:
+>
+>>> I missed some of the earlier bits of the thread here but why can't we do
+>>> device based lookups?
+>
+>> That is because the phandles would not be properties of the device
+>> node but rather of its sub-nodes:
+>
+>> backlight {
+>>      compatible = "pwm-backlight";
+>>      ...
+>>      power-on-sequence {
+>>          step@0 {
+>>              regulator = <&backlight_reg>;
+>>              enable;
+>>          };
+>>
+>
+>> So here simply using regulator_get on the backlight device would not work.
+>
+> Ah, right.  DT isn't being terribly helpful here...  I think the thing
+> I'd expect to work here is that you have a reference back to the supply
+> property of the backlight device rather than direct to the regulator so
+> you end up writing "enable supply X" rather than "enable regulator X".
+>
+> Not quite sure how exactly you'd accomplish that - I guess if
+> regulator_get() would recursively follow phandles until it hits a node
+> that'd do the trick?
 
-> Hi Nicolas,
-> 
-> On 8/4/2012 2:49 AM, Nicolas Pitre wrote:
-> > On Tue, 31 Jul 2012, Cyril Chemparathy wrote:
-> > 
-> > > This patch adds support for 64-bit physical addresses in virt_to_phys
-> > > patching.  This does not do real 64-bit add/sub, but instead patches in
-> > > the
-> > > upper 32-bits of the phys_offset directly into the output of virt_to_phys.
-> > 
-> > You should explain _why_ you do not a real aadd/sub.  I did deduce it
-> > but that might not be obvious to everyone.  Also this subtlety should be
-> > commented in the code as well.
-> > 
-> 
-> We could not do an ADDS + ADC here because the carry is not guaranteed to be
-> retained and passed into the ADC.  This is because the compiler is free to
-> insert all kinds of stuff between the two non-volatile asm blocks.
-> 
-> Is there another subtlety here that I have missed out on entirely?
+Do you mean that regulator_get() would parse sub-nodes looking for a 
+match? That seems rather dangerous and error-prone, especially if one 
+has actual devices within the sub-nodes - their regulators could be 
+stolen by the parent device.
 
-The high bits for the valid physical memory address range for which 
-virt_to_phys and phys_to_virt can be used are always the same.  
-Therefore no aadition at all is needed, fake or real.  Only providing 
-those bits in the top word for the value returned by virt_to_phys is 
-needed.
+I think we only have two choices for this:
 
-> > > In addition to adding 64-bit support, this patch also adds a
-> > > set_phys_offset()
-> > > helper that is needed on architectures that need to modify PHYS_OFFSET
-> > > during
-> > > initialization.
-> > > 
-> > > Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-> > > ---
-> > >   arch/arm/include/asm/memory.h |   22 +++++++++++++++-------
-> > >   arch/arm/kernel/head.S        |    6 ++++++
-> > >   arch/arm/kernel/setup.c       |   14 ++++++++++++++
-> > >   3 files changed, 35 insertions(+), 7 deletions(-)
-> > > 
-> > > diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-> > > index 4a0108f..110495c 100644
-> > > --- a/arch/arm/include/asm/memory.h
-> > > +++ b/arch/arm/include/asm/memory.h
-> > > @@ -153,23 +153,31 @@
-> > >   #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
-> > > 
-> > >   extern unsigned long __pv_phys_offset;
-> > > -#define PHYS_OFFSET __pv_phys_offset
-> > > -
-> > > +extern unsigned long __pv_phys_offset_high;
-> > 
-> > As mentioned previously, this is just too ugly.  Please make
-> > __pv_phys_offset into a phys_addr_t instead and mask the low/high parts
-> > as needed in __virt_to_phys().
-> > 
-> 
-> Maybe u64 instead of phys_addr_t to keep the sizing non-variable?
+1) Stick to the scheme where resources are declared at the device level, 
+such as they can be referenced by name in the sub-nodes (basically what 
+I did in this patch):
 
-No.  When not using LPAE, we don't have to pay the price of a u64 value.  
-That's why the phys_addr_t type is conditionally defined.  You already 
-do  extra processing in virt_to_phys when sizeof(phys_addr_t) > 4 which 
-is perfect for dealing with this issue.
+backlight {
+      compatible = "pwm-backlight";
+      ...
+      backlight-supply = <&backlight_reg>;
 
+      power-on-sequence {
+          step@0 {
+              regulator = "backlight";
+              enable;
+          };
 
-Nicolas
+This would translate by a get_regulator(dev, "backlight") in the code 
+which would be properly resolved.
+
+2) Export a lower-level DT API for resolving phandles directly from a 
+property, similar to of_get_named_gpio. We would then have 
+of_get_named_regulator and of_get_named_pwm.
+
+If 2) is deemed acceptable, then I think we should go for it as it would 
+provide the most compact and readable DT syntax. Otherwise 1) is still 
+acceptable IMHO, as it should at least make sense to people already 
+familiar with how the DT works.
+
+Opinions from DT experts?
+
+Alex.
+
