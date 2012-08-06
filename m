@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964789Ab2HFTbz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 15:31:55 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39777 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932523Ab2HFTbx convert rfc822-to-8bit (ORCPT
+	id S964803Ab2HFTcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 15:32:04 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46948 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964791Ab2HFTb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 15:31:53 -0400
+	Mon, 6 Aug 2012 15:31:59 -0400
+Message-ID: <50201BB5.9050005@jp.fujitsu.com>
+Date: Mon, 06 Aug 2012 15:32:05 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <501FF774.6080805@kernel.org>
-References: <CA+icZUWzHUoPYL4tBi46seO=AQeo7jPdCy6NiiLc5B7gS0wC8g@mail.gmail.com>
-	<4FA5B8A4.9080006@kernel.org>
-	<CA+icZUUEfRSYrWDip_90HxFK8Lsi73px4r77pgU9zzFUO6zgSA@mail.gmail.com>
-	<501FF774.6080805@kernel.org>
-Date: Mon, 6 Aug 2012 21:31:52 +0200
-Message-ID: <CA+icZUVtNdMw5KLe6br2z28CdMWdq-ThAbcpiwE0LjPoTTe7UQ@mail.gmail.com>
-Subject: Re: Service <http://patchwork.kernel.org/> not available!
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Konstantin Ryabitsev <mricon@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, ftpadmin@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: jwboyer@gmail.com
+CC: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, akpm@google.com, davej@redhat.com, mgorman@suse.de,
+        cl@linux.com, stable@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [PATCH 0/6][resend] mempolicy memory corruption fixlet
+References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com> <CA+5PVA4CE0kwD1FmV=081wfCObVYe5GFYBQFO9_kVL4JWJBqpA@mail.gmail.com>
+In-Reply-To: <CA+5PVA4CE0kwD1FmV=081wfCObVYe5GFYBQFO9_kVL4JWJBqpA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 6:57 PM, Konstantin Ryabitsev <mricon@kernel.org> wrote:
-> On 06/08/12 01:16 AM, Sedat Dilek wrote:
->> it would be wonderful to get a feedback when services are available again.
+On 7/31/2012 8:33 AM, Josh Boyer wrote:
+> On Mon, Jun 11, 2012 at 5:17 AM,  <kosaki.motohiro@gmail.com> wrote:
+>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 >>
->> I just saw today a reference on linux-next ML to [1] otherwise I would
->> not have known.
+>> Hi
 >>
->> - Sedat -
+>> This is trivial fixes of mempolicy meory corruption issues. There
+>> are independent patches each ather. and, they don't change userland
+>> ABIs.
 >>
->> [1] https://patchwork.kernel.org/patch/1220151/
->
-> Hello:
->
-> Patchwork has been restored a few weeks ago and is working -- which you
-> can verify by accessing the link you provided above.
->
+>> Thanks.
+>>
+>> changes from v1: fix some typo of changelogs s.
+>>
+>> -----------------------------------------------
+>> KOSAKI Motohiro (6):
+>>   Revert "mm: mempolicy: Let vma_merge and vma_split handle
+>>     vma->vm_policy linkages"
+>>   mempolicy: Kill all mempolicy sharing
+>>   mempolicy: fix a race in shared_policy_replace()
+>>   mempolicy: fix refcount leak in mpol_set_shared_policy()
+>>   mempolicy: fix a memory corruption by refcount imbalance in
+>>     alloc_pages_vma()
+>>   MAINTAINERS: Added MEMPOLICY entry
+>>
+>>  MAINTAINERS    |    7 +++
+>>  mm/mempolicy.c |  151 ++++++++++++++++++++++++++++++++++++++++----------------
+>>  mm/shmem.c     |    9 ++--
+>>  3 files changed, 120 insertions(+), 47 deletions(-)
+> 
+> I don't see these patches queued anywhere.  They aren't in linux-next,
+> mmotm, or Linus' tree.  Did these get dropped?  Is the revert still
+> needed?
 
-My email was not about accessebility but informing people - my
-original posting was from May 5th as you can read.
+Sorry. my fault. yes, it is needed. currently, Some LTP was fail since
+Mel's "mm: mempolicy: Let vma_merge and vma_split handle vma->vm_policy linkages" patch.
 
-Can you tell me/us how many admins are keeping up the systems?
-Is there somewhere a website where someone can get more infos about
-the work of the <kernel.org> admins?
 
-- Sedat -
 
-> Best,
-> --
-> Konstantin Ryabitsev
-> Systems Administrator
-> Linux Foundation, kernel.org
-> Montréal, Québec
->
+
