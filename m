@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab2HFLtq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 07:49:46 -0400
-Received: from fias.uni-frankfurt.de ([141.2.248.1]:54834 "EHLO
-	fias.uni-frankfurt.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755998Ab2HFLtn convert rfc822-to-8bit (ORCPT
+	id S1756065Ab2HFLvA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 07:51:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60267 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755998Ab2HFLvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 07:49:43 -0400
-Message-ID: <1344253781.6624.0.camel@blech>
-Subject: Re: UIO: missing resource mapping
-From: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Andreas Schallenberg <embedded@gmx.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
-Date: Mon, 06 Aug 2012 13:49:41 +0200
-In-Reply-To: <20120718234750.GA2594@local>
-References: <4FFE7C1F.7080702@gmx.net> <20120712194432.GA2592@local>
-	 <20120712231632.GC9317@redhat.com> <1342166955.6607.5.camel@blech>
-	 <20120713132223.GA10959@redhat.com> <1342190571.6607.36.camel@blech>
-	 <20120713181953.GA11527@redhat.com> <1342462572.17531.18.camel@blech>
-	 <20120716215823.GA7879@local> <1342608047.4194.0.camel@blech>
-	 <20120718234750.GA2594@local>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
+	Mon, 6 Aug 2012 07:51:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 2/6] mfd: Provide the PRCMU with its own IRQ domain
+Date: Mon, 6 Aug 2012 11:50:52 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        dmitry.torokhov@gmail.com, sameo@linux.intel.com
+References: <1344250002-6011-1-git-send-email-lee.jones@linaro.org> <1344250002-6011-3-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1344250002-6011-3-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208061150.53076.arnd@arndb.de>
+X-Provags-ID: V02:K0:i8Y23CisuHn3qCtzT3ykxgN6mY8XtXNaokUfyvtqYvV
+ Cl6chkFfGaa+lcKiJR3PDYNMsFOpRnLDOdlVh70Hj00UVNbgMW
+ acnLSBE+gqUfSqqvCVGhRCf/HJ7gMXcSL9j5JC07WHKSBhfzn5
+ d4Q+CYNnUgnGgyEtAynTTOV7VOnVJSXbE8gNlctElsJACgPPAY
+ Y3UNMyNk6dTVcw0xiZXqwpY0cQMff08dg/6Zfta/3qTFPQEzyG
+ UHxFOC2drcQNqHfO0eToM3F2fWIrnXKqxuNIwjrZrQq9Ql3Od+
+ 7QP1xdzAuHarj7c0ytVRtf7Dy7puMk/ziErYz5mvoszkjB3HAf
+ ulEjRynfRXtxeOg3nTBs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Hans
+On Monday 06 August 2012, Lee Jones wrote:
 
-Am Donnerstag, den 19.07.2012, 01:47 +0200 schrieb Hans J. Koch:
-> You'll hear from me soon, thanks for your work! Comments and reviews
-> from others are welcome... 
+>  
+> +struct irq_domain *db8500_irq_domain;
+> +
+ 
+Should this be static?
 
-Is there any progress on this topic?
+> @@ -2583,7 +2585,7 @@ static void prcmu_irq_mask(struct irq_data *d)
+>  
+>         spin_lock_irqsave(&mb0_transfer.dbb_irqs_lock, flags);
+>  
+> -       mb0_transfer.req.dbb_irqs &= ~prcmu_irq_bit[d->irq - IRQ_PRCMU_BASE];
+> +       mb0_transfer.req.dbb_irqs &= ~prcmu_irq_bit[d->hwirq];
+>  
+>         spin_unlock_irqrestore(&mb0_transfer.dbb_irqs_lock, flags);
 
--- 
-Gruß
-  Dominic
+Ah, so the hwirq number *is* used directly here, unlike what I thought
+when we first discussed it. I suppose that means we don't need the
+xlate function after all (and you did not add one).
 
-Frankfurt Institute for Advanced Studies (FIAS)
-Ruth-Moufang-Straße 1
-D-60438 Frankfurt am Main
-Germany
-
-Phone:  +49 69 79844114
-
+	Arnd
