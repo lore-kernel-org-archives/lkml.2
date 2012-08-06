@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab2HFRHY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 13:07:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51997 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab2HFRHU (ORCPT
+	id S1756773Ab2HFRMk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 13:12:40 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:35833
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756570Ab2HFRMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 13:07:20 -0400
-From: Stefan Bader <stefan.bader@canonical.com>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "drm: integer overflow in drm_mode_dirtyfb_ioctl()" has been added to staging queue
-Date: Mon,  6 Aug 2012 19:07:16 +0200
-Message-Id: <1344272836-32514-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 6 Aug 2012 13:12:38 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <thierry.reding@avionic-design.de>
+CC: <shawn.guo@linaro.org>, <kernel@pengutronix.de>,
+        <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH 1/2] pwm: pwm-mxs: Provide information that driver is registered
+Date: Mon, 6 Aug 2012 14:12:29 -0300
+Message-ID: <1344273150-22927-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+It is useful to have a message indicating that the pwm driver has
+been successfully registered.
 
-    drm: integer overflow in drm_mode_dirtyfb_ioctl()
-
-to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
-
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
-  or
-  http://kernel.ubuntu.com/git?p=smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
-
-If you, or anyone else, feels it should not be added to the drm33-longterm tree,
-please reply to this email not later than 8 days after this email was sent.
-
-Thanks.
--Stefan
-
-------
-
->From a5cd335165e31db9dbab636fd29895d41da55dd2 Mon Sep 17 00:00:00 2001
-From: Xi Wang <xi.wang@gmail.com>
-Date: Wed, 23 Nov 2011 01:12:01 -0500
-Subject: [PATCH] drm: integer overflow in drm_mode_dirtyfb_ioctl()
-
-There is a potential integer overflow in drm_mode_dirtyfb_ioctl()
-if userspace passes in a large num_clips.  The call to kmalloc would
-allocate a small buffer, and the call to fb->funcs->dirty may result
-in a memory corruption.
-
-Reported-by: Haogang Chen <haogangchen@gmail.com>
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Cc: stable@kernel.org
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-
-(cherry-picked from commit a5cd335165e31db9dbab636fd29895d41da55dd2 upstream)
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
- drivers/gpu/drm/drm_crtc.c |    4 ++++
- include/drm/drm_mode.h     |    2 ++
- 2 files changed, 6 insertions(+)
+ drivers/pwm/pwm-mxs.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index 405c63b..8323fc3 100644
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -1873,6 +1873,10 @@ int drm_mode_dirtyfb_ioctl(struct drm_device *dev,
- 	}
-
- 	if (num_clips && clips_ptr) {
-+		if (num_clips < 0 || num_clips > DRM_MODE_FB_DIRTY_MAX_CLIPS) {
-+			ret = -EINVAL;
-+			goto out_err1;
-+		}
- 		clips = kzalloc(num_clips * sizeof(*clips), GFP_KERNEL);
- 		if (!clips) {
- 			ret = -ENOMEM;
-diff --git a/include/drm/drm_mode.h b/include/drm/drm_mode.h
-index d30bedf..ddd46db 100644
---- a/include/drm/drm_mode.h
-+++ b/include/drm/drm_mode.h
-@@ -235,6 +235,8 @@ struct drm_mode_fb_cmd {
- #define DRM_MODE_FB_DIRTY_ANNOTATE_FILL 0x02
- #define DRM_MODE_FB_DIRTY_FLAGS         0x03
-
-+#define DRM_MODE_FB_DIRTY_MAX_CLIPS     256
+diff --git a/drivers/pwm/pwm-mxs.c b/drivers/pwm/pwm-mxs.c
+index e585264..2873a21 100644
+--- a/drivers/pwm/pwm-mxs.c
++++ b/drivers/pwm/pwm-mxs.c
+@@ -171,6 +171,8 @@ static int mxs_pwm_probe(struct platform_device *pdev)
+ 
+ 	stmp_reset_block(mxs->base);
+ 
++	dev_info(&pdev->dev, "driver registered\n");
 +
- /*
-  * Mark a region of a framebuffer as dirty.
-  *
---
-1.7.9.5
+ 	return 0;
+ }
+ 
+-- 
+1.7.1
+
 
