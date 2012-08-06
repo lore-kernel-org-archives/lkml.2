@@ -1,428 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab2HFSnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 14:43:16 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:53370 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab2HFSnO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 14:43:14 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Miller <davem@davemloft.net>
-Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Ariyasu <jan.ariyasu@hp.com>, Jan Ariyasu <jan.ariyasu@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@infradead.org>,
-        Xi Wang <xi.wang@gmail.com>
-References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
-	<87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com>
-Date: Mon, 06 Aug 2012 11:43:06 -0700
-In-Reply-To: <87zk67q31q.fsf_-_@xmission.com> (Eric W. Biederman's message of
-	"Mon, 06 Aug 2012 11:38:09 -0700")
-Message-ID: <877gtbq2th.fsf_-_@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S932382Ab2HFSnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 14:43:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27903 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932273Ab2HFSnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 14:43:45 -0400
+Date: Mon, 6 Aug 2012 12:49:14 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: eparis@redhat.com, paulmck@linux.vnet.ibm.com, paul@paul-moore.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Fix sel_netnode_insert suspicious rcu dereference.
+Message-ID: <20120806164914.GA25940@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
+	paulmck@linux.vnet.ibm.com, paul@paul-moore.com,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <20120605051238.GA30614@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19hxdzFOmX48gnWUUA+l6zHmtPeAoT9/LE=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;David Miller <davem@davemloft.net>
-X-Spam-Relay-Country: 
-Subject: [PATCH net-next 5/9] sctp: Make the ctl_sock per network namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120605051238.GA30614@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 05, 2012 at 01:12:39AM -0400, Dave Jones wrote:
+ > I reported this a year ago (https://lkml.org/lkml/2011/4/20/308).
+ > It's still a problem apparently ...
 
-- Kill sctp_get_ctl_sock, it is useless now.
-- Pass struct net where needed so net->sctp.ctl_sock is accessible.
+And another two months pass in silence.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- include/net/netns/sctp.h |    8 +++++++
- include/net/sctp/sctp.h  |    1 -
- net/sctp/input.c         |    4 +-
- net/sctp/protocol.c      |   47 ++++++++++++++++++---------------------------
- net/sctp/sm_statefuns.c  |   45 ++++++++++++++++++++++++++++++-------------
- 5 files changed, 60 insertions(+), 45 deletions(-)
+This is happening to other people too.
+https://bugzilla.redhat.com/show_bug.cgi?id=846037
 
-diff --git a/include/net/netns/sctp.h b/include/net/netns/sctp.h
-index cbd684e..29e36b4 100644
---- a/include/net/netns/sctp.h
-+++ b/include/net/netns/sctp.h
-@@ -1,7 +1,15 @@
- #ifndef __NETNS_SCTP_H__
- #define __NETNS_SCTP_H__
- 
-+struct sock;
-+
- struct netns_sctp {
-+	/* This is the global socket data structure used for responding to
-+	 * the Out-of-the-blue (OOTB) packets.  A control sock will be created
-+	 * for this socket at the initialization time.
-+	 */
-+	struct sock *ctl_sock;
-+
- 	/* This is the global local address list.
- 	 * We actively maintain this complete list of addresses on
- 	 * the system by catching address add/delete events.
-diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
-index 00c9205..550a81b 100644
---- a/include/net/sctp/sctp.h
-+++ b/include/net/sctp/sctp.h
-@@ -114,7 +114,6 @@
- /*
-  * sctp/protocol.c
-  */
--extern struct sock *sctp_get_ctl_sock(void);
- extern int sctp_copy_local_addr_list(struct net *, struct sctp_bind_addr *,
- 				     sctp_scope_t, gfp_t gfp,
- 				     int flags);
-diff --git a/net/sctp/input.c b/net/sctp/input.c
-index a7e9a85..c9a0449 100644
---- a/net/sctp/input.c
-+++ b/net/sctp/input.c
-@@ -204,7 +204,7 @@ int sctp_rcv(struct sk_buff *skb)
- 			sctp_endpoint_put(ep);
- 			ep = NULL;
- 		}
--		sk = sctp_get_ctl_sock();
-+		sk = net->sctp.ctl_sock;
- 		ep = sctp_sk(sk)->ep;
- 		sctp_endpoint_hold(ep);
- 		rcvr = &ep->base;
-@@ -795,7 +795,7 @@ static struct sctp_endpoint *__sctp_rcv_lookup_endpoint(struct net *net,
- 			goto hit;
- 	}
- 
--	ep = sctp_sk((sctp_get_ctl_sock()))->ep;
-+	ep = sctp_sk(net->sctp.ctl_sock)->ep;
- 
- hit:
- 	sctp_endpoint_hold(ep);
-diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
-index 291e682..6193d20 100644
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -78,12 +78,6 @@ struct proc_dir_entry	*proc_net_sctp;
- struct idr sctp_assocs_id;
- DEFINE_SPINLOCK(sctp_assocs_id_lock);
- 
--/* This is the global socket data structure used for responding to
-- * the Out-of-the-blue (OOTB) packets.  A control sock will be created
-- * for this socket at the initialization time.
-- */
--static struct sock *sctp_ctl_sock;
--
- static struct sctp_pf *sctp_pf_inet6_specific;
- static struct sctp_pf *sctp_pf_inet_specific;
- static struct sctp_af *sctp_af_v4_specific;
-@@ -96,12 +90,6 @@ long sysctl_sctp_mem[3];
- int sysctl_sctp_rmem[3];
- int sysctl_sctp_wmem[3];
- 
--/* Return the address of the control sock. */
--struct sock *sctp_get_ctl_sock(void)
--{
--	return sctp_ctl_sock;
--}
--
- /* Set up the proc fs entry for the SCTP protocol. */
- static __init int sctp_proc_init(void)
- {
-@@ -822,7 +810,7 @@ static int sctp_inetaddr_event(struct notifier_block *this, unsigned long ev,
-  * Initialize the control inode/socket with a control endpoint data
-  * structure.  This endpoint is reserved exclusively for the OOTB processing.
-  */
--static int sctp_ctl_sock_init(void)
-+static int sctp_ctl_sock_init(struct net *net)
- {
- 	int err;
- 	sa_family_t family = PF_INET;
-@@ -830,14 +818,14 @@ static int sctp_ctl_sock_init(void)
- 	if (sctp_get_pf_specific(PF_INET6))
- 		family = PF_INET6;
- 
--	err = inet_ctl_sock_create(&sctp_ctl_sock, family,
--				   SOCK_SEQPACKET, IPPROTO_SCTP, &init_net);
-+	err = inet_ctl_sock_create(&net->sctp.ctl_sock, family,
-+				   SOCK_SEQPACKET, IPPROTO_SCTP, net);
- 
- 	/* If IPv6 socket could not be created, try the IPv4 socket */
- 	if (err < 0 && family == PF_INET6)
--		err = inet_ctl_sock_create(&sctp_ctl_sock, AF_INET,
-+		err = inet_ctl_sock_create(&net->sctp.ctl_sock, AF_INET,
- 					   SOCK_SEQPACKET, IPPROTO_SCTP,
--					   &init_net);
-+					   net);
- 
- 	if (err < 0) {
- 		pr_err("Failed to create the SCTP control socket\n");
-@@ -1196,6 +1184,14 @@ static void sctp_v4_del_protocol(void)
- 
- static int sctp_net_init(struct net *net)
- {
-+	int status;
-+
-+	/* Initialize the control inode/socket for handling OOTB packets.  */
-+	if ((status = sctp_ctl_sock_init(net))) {
-+		pr_err("Failed to initialize the SCTP control sock\n");
-+		goto err_ctl_sock_init;
-+	}
-+
- 	/* Initialize the local address list. */
- 	INIT_LIST_HEAD(&net->sctp.local_addr_list);
- 	spin_lock_init(&net->sctp.local_addr_lock);
-@@ -1210,6 +1206,9 @@ static int sctp_net_init(struct net *net)
- 		    (unsigned long)net);
- 
- 	return 0;
-+
-+err_ctl_sock_init:
-+	return status;
- }
- 
- static void sctp_net_exit(struct net *net)
-@@ -1217,6 +1216,9 @@ static void sctp_net_exit(struct net *net)
- 	/* Free the local address list */
- 	sctp_free_addr_wq(net);
- 	sctp_free_local_addr_list(net);
-+
-+	/* Free the control endpoint.  */
-+	inet_ctl_sock_destroy(net->sctp.ctl_sock);
- }
- 
- static struct pernet_operations sctp_net_ops = {
-@@ -1438,12 +1440,6 @@ SCTP_STATIC __init int sctp_init(void)
- 	if (status)
- 		goto err_v6_protosw_init;
- 
--	/* Initialize the control inode/socket for handling OOTB packets.  */
--	if ((status = sctp_ctl_sock_init())) {
--		pr_err("Failed to initialize the SCTP control sock\n");
--		goto err_ctl_sock_init;
--	}
--
- 	status = register_pernet_subsys(&sctp_net_ops);
- 	if (status)
- 		goto err_register_pernet_subsys;
-@@ -1465,8 +1461,6 @@ err_v6_add_protocol:
- err_add_protocol:
- 	unregister_pernet_subsys(&sctp_net_ops);
- err_register_pernet_subsys:
--	inet_ctl_sock_destroy(sctp_ctl_sock);
--err_ctl_sock_init:
- 	sctp_v6_protosw_exit();
- err_v6_protosw_init:
- 	sctp_v4_protosw_exit();
-@@ -1506,9 +1500,6 @@ SCTP_STATIC __exit void sctp_exit(void)
- 	sctp_v6_del_protocol();
- 	sctp_v4_del_protocol();
- 
--	/* Free the control endpoint.  */
--	inet_ctl_sock_destroy(sctp_ctl_sock);
--
- 	unregister_pernet_subsys(&sctp_net_ops);
- 
- 	/* Free protosw registrations */
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 9fca103..f2daf61 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -74,7 +74,8 @@ static struct sctp_packet *sctp_abort_pkt_new(const struct sctp_endpoint *ep,
- static int sctp_eat_data(const struct sctp_association *asoc,
- 			 struct sctp_chunk *chunk,
- 			 sctp_cmd_seq_t *commands);
--static struct sctp_packet *sctp_ootb_pkt_new(const struct sctp_association *asoc,
-+static struct sctp_packet *sctp_ootb_pkt_new(struct net *net,
-+					     const struct sctp_association *asoc,
- 					     const struct sctp_chunk *chunk);
- static void sctp_send_stale_cookie_err(const struct sctp_endpoint *ep,
- 				       const struct sctp_association *asoc,
-@@ -301,6 +302,7 @@ sctp_disposition_t sctp_sf_do_5_1B_init(const struct sctp_endpoint *ep,
- 	struct sctp_chunk *err_chunk;
- 	struct sctp_packet *packet;
- 	sctp_unrecognized_param_t *unk_param;
-+	struct net *net;
- 	int len;
- 
- 	/* 6.10 Bundling
-@@ -318,7 +320,8 @@ sctp_disposition_t sctp_sf_do_5_1B_init(const struct sctp_endpoint *ep,
- 	/* If the packet is an OOTB packet which is temporarily on the
- 	 * control endpoint, respond with an ABORT.
- 	 */
--	if (ep == sctp_sk((sctp_get_ctl_sock()))->ep) {
-+	net = sock_net(ep->base.sk);
-+	if (ep == sctp_sk(net->sctp.ctl_sock)->ep) {
- 		SCTP_INC_STATS(SCTP_MIB_OUTOFBLUES);
- 		return sctp_sf_tabort_8_4_8(ep, asoc, type, arg, commands);
- 	}
-@@ -646,11 +649,13 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(const struct sctp_endpoint *ep,
- 	int error = 0;
- 	struct sctp_chunk *err_chk_p;
- 	struct sock *sk;
-+	struct net *net;
- 
- 	/* If the packet is an OOTB packet which is temporarily on the
- 	 * control endpoint, respond with an ABORT.
- 	 */
--	if (ep == sctp_sk((sctp_get_ctl_sock()))->ep) {
-+	net = sock_net(ep->base.sk);
-+	if (ep == sctp_sk(net->sctp.ctl_sock)->ep) {
- 		SCTP_INC_STATS(SCTP_MIB_OUTOFBLUES);
- 		return sctp_sf_tabort_8_4_8(ep, asoc, type, arg, commands);
- 	}
-@@ -1171,7 +1176,7 @@ sctp_disposition_t sctp_sf_backbeat_8_3(const struct sctp_endpoint *ep,
- /* Helper function to send out an abort for the restart
-  * condition.
-  */
--static int sctp_sf_send_restart_abort(union sctp_addr *ssa,
-+static int sctp_sf_send_restart_abort(struct net *net, union sctp_addr *ssa,
- 				      struct sctp_chunk *init,
- 				      sctp_cmd_seq_t *commands)
- {
-@@ -1197,7 +1202,7 @@ static int sctp_sf_send_restart_abort(union sctp_addr *ssa,
- 	errhdr->length = htons(len);
- 
- 	/* Assign to the control socket. */
--	ep = sctp_sk((sctp_get_ctl_sock()))->ep;
-+	ep = sctp_sk(net->sctp.ctl_sock)->ep;
- 
- 	/* Association is NULL since this may be a restart attack and we
- 	 * want to send back the attacker's vtag.
-@@ -1240,6 +1245,7 @@ static int sctp_sf_check_restart_addrs(const struct sctp_association *new_asoc,
- 				       struct sctp_chunk *init,
- 				       sctp_cmd_seq_t *commands)
- {
-+	struct net *net = sock_net(new_asoc->base.sk);
- 	struct sctp_transport *new_addr;
- 	int ret = 1;
- 
-@@ -1258,7 +1264,7 @@ static int sctp_sf_check_restart_addrs(const struct sctp_association *new_asoc,
- 			    transports) {
- 		if (!list_has_sctp_addr(&asoc->peer.transport_addr_list,
- 					&new_addr->ipaddr)) {
--			sctp_sf_send_restart_abort(&new_addr->ipaddr, init,
-+			sctp_sf_send_restart_abort(net, &new_addr->ipaddr, init,
- 						   commands);
- 			ret = 0;
- 			break;
-@@ -1650,10 +1656,11 @@ sctp_disposition_t sctp_sf_do_5_2_3_initack(const struct sctp_endpoint *ep,
- 					    const sctp_subtype_t type,
- 					    void *arg, sctp_cmd_seq_t *commands)
- {
-+	struct net *net = sock_net(ep->base.sk);
- 	/* Per the above section, we'll discard the chunk if we have an
- 	 * endpoint.  If this is an OOTB INIT-ACK, treat it as such.
- 	 */
--	if (ep == sctp_sk((sctp_get_ctl_sock()))->ep)
-+	if (ep == sctp_sk(net->sctp.ctl_sock)->ep)
- 		return sctp_sf_ootb(ep, asoc, type, arg, commands);
- 	else
- 		return sctp_sf_discard_chunk(ep, asoc, type, arg, commands);
-@@ -3163,8 +3170,10 @@ static sctp_disposition_t sctp_sf_tabort_8_4_8(const struct sctp_endpoint *ep,
- 	struct sctp_packet *packet = NULL;
- 	struct sctp_chunk *chunk = arg;
- 	struct sctp_chunk *abort;
-+	struct net *net;
- 
--	packet = sctp_ootb_pkt_new(asoc, chunk);
-+	net = sock_net(ep->base.sk);
-+	packet = sctp_ootb_pkt_new(net, asoc, chunk);
- 
- 	if (packet) {
- 		/* Make an ABORT. The T bit will be set if the asoc
-@@ -3425,8 +3434,10 @@ static sctp_disposition_t sctp_sf_shut_8_4_5(const struct sctp_endpoint *ep,
- 	struct sctp_packet *packet = NULL;
- 	struct sctp_chunk *chunk = arg;
- 	struct sctp_chunk *shut;
-+	struct net *net;
- 
--	packet = sctp_ootb_pkt_new(asoc, chunk);
-+	net = sock_net(ep->base.sk);
-+	packet = sctp_ootb_pkt_new(net, asoc, chunk);
- 
- 	if (packet) {
- 		/* Make an SHUTDOWN_COMPLETE.
-@@ -4262,6 +4273,7 @@ static sctp_disposition_t sctp_sf_abort_violation(
- 	struct sctp_packet *packet = NULL;
- 	struct sctp_chunk *chunk =  arg;
- 	struct sctp_chunk *abort = NULL;
-+	struct net *net;
- 
- 	/* SCTP-AUTH, Section 6.3:
- 	 *    It should be noted that if the receiver wants to tear
-@@ -4282,6 +4294,7 @@ static sctp_disposition_t sctp_sf_abort_violation(
- 	if (!abort)
- 		goto nomem;
- 
-+	net = sock_net(ep->base.sk);
- 	if (asoc) {
- 		/* Treat INIT-ACK as a special case during COOKIE-WAIT. */
- 		if (chunk->chunk_hdr->type == SCTP_CID_INIT_ACK &&
-@@ -4319,7 +4332,7 @@ static sctp_disposition_t sctp_sf_abort_violation(
- 			SCTP_DEC_STATS(SCTP_MIB_CURRESTAB);
- 		}
- 	} else {
--		packet = sctp_ootb_pkt_new(asoc, chunk);
-+		packet = sctp_ootb_pkt_new(net, asoc, chunk);
- 
- 		if (!packet)
- 			goto nomem_pkt;
-@@ -5825,8 +5838,10 @@ static struct sctp_packet *sctp_abort_pkt_new(const struct sctp_endpoint *ep,
- {
- 	struct sctp_packet *packet;
- 	struct sctp_chunk *abort;
-+	struct net *net;
- 
--	packet = sctp_ootb_pkt_new(asoc, chunk);
-+	net = sock_net(ep->base.sk);
-+	packet = sctp_ootb_pkt_new(net, asoc, chunk);
- 
- 	if (packet) {
- 		/* Make an ABORT.
-@@ -5858,7 +5873,8 @@ static struct sctp_packet *sctp_abort_pkt_new(const struct sctp_endpoint *ep,
- }
- 
- /* Allocate a packet for responding in the OOTB conditions.  */
--static struct sctp_packet *sctp_ootb_pkt_new(const struct sctp_association *asoc,
-+static struct sctp_packet *sctp_ootb_pkt_new(struct net *net,
-+					     const struct sctp_association *asoc,
- 					     const struct sctp_chunk *chunk)
- {
- 	struct sctp_packet *packet;
-@@ -5919,7 +5935,7 @@ static struct sctp_packet *sctp_ootb_pkt_new(const struct sctp_association *asoc
- 	 * the source address.
- 	 */
- 	sctp_transport_route(transport, (union sctp_addr *)&chunk->dest,
--			     sctp_sk(sctp_get_ctl_sock()));
-+			     sctp_sk(net->sctp.ctl_sock));
- 
- 	packet = sctp_packet_init(&transport->packet, transport, sport, dport);
- 	packet = sctp_packet_config(packet, vtag, 0);
-@@ -5946,7 +5962,8 @@ static void sctp_send_stale_cookie_err(const struct sctp_endpoint *ep,
- 	struct sctp_packet *packet;
- 
- 	if (err_chunk) {
--		packet = sctp_ootb_pkt_new(asoc, chunk);
-+		struct net *net = sock_net(ep->base.sk);
-+		packet = sctp_ootb_pkt_new(net, asoc, chunk);
- 		if (packet) {
- 			struct sctp_signed_cookie *cookie;
- 
--- 
-1.7.5.4
+Can someone please apply this patch, or at least point out what's wrong with it ?
 
+	Dave
+
+ 
+ > ===============================
+ > [ INFO: suspicious RCU usage. ]
+ > 3.5.0-rc1+ #63 Not tainted
+ > -------------------------------
+ > security/selinux/netnode.c:178 suspicious rcu_dereference_check() usage!
+ > 
+ > other info that might help us debug this:
+ > 
+ > 
+ > rcu_scheduler_active = 1, debug_locks = 0
+ > 1 lock held by trinity-child1/8750:
+ >  #0:  (sel_netnode_lock){+.....}, at: [<ffffffff812d8f8a>] sel_netnode_sid+0x16a/0x3e0
+ > 
+ > stack backtrace:
+ > Pid: 8750, comm: trinity-child1 Not tainted 3.5.0-rc1+ #63
+ > Call Trace:
+ >  [<ffffffff810cec2d>] lockdep_rcu_suspicious+0xfd/0x130
+ >  [<ffffffff812d91d1>] sel_netnode_sid+0x3b1/0x3e0
+ >  [<ffffffff812d8e20>] ? sel_netnode_find+0x1a0/0x1a0
+ >  [<ffffffff812d24a6>] selinux_socket_bind+0xf6/0x2c0
+ >  [<ffffffff810cd1dd>] ? trace_hardirqs_off+0xd/0x10
+ >  [<ffffffff810cdb55>] ? lock_release_holdtime.part.9+0x15/0x1a0
+ >  [<ffffffff81093841>] ? lock_hrtimer_base+0x31/0x60
+ >  [<ffffffff812c9536>] security_socket_bind+0x16/0x20
+ >  [<ffffffff815550ca>] sys_bind+0x7a/0x100
+ >  [<ffffffff816c03d5>] ? sysret_check+0x22/0x5d
+ >  [<ffffffff810d392d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
+ >  [<ffffffff8133b09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ >  [<ffffffff816c03a9>] system_call_fastpath+0x16/0x1b
+ > 
+ > This patch below does what Paul McKenney suggested in the previous thread.
+ > 
+ > Signed-off-by: Dave Jones <davej@redhat.com>
+ > 
+ > diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
+ > index 28f911c..c5454c0 100644
+ > --- a/security/selinux/netnode.c
+ > +++ b/security/selinux/netnode.c
+ > @@ -174,7 +174,8 @@ static void sel_netnode_insert(struct sel_netnode *node)
+ >  	if (sel_netnode_hash[idx].size == SEL_NETNODE_HASH_BKT_LIMIT) {
+ >  		struct sel_netnode *tail;
+ >  		tail = list_entry(
+ > -			rcu_dereference(sel_netnode_hash[idx].list.prev),
+ > +			rcu_dereference_protected(sel_netnode_hash[idx].list.prev,
+ > +						  lockdep_is_held(&sel_netnode_lock)),
+ >  			struct sel_netnode, list);
+ >  		list_del_rcu(&tail->list);
+ >  		kfree_rcu(tail, rcu);
+ > --
+ > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+ > the body of a message to majordomo@vger.kernel.org
+ > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ > Please read the FAQ at  http://www.tux.org/lkml/
+---end quoted text---
