@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab2HFOnA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:43:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36547 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754782Ab2HFOm7 (ORCPT
+	id S932127Ab2HFOto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:49:44 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41926 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932074Ab2HFOtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:42:59 -0400
-Date: Mon, 6 Aug 2012 10:42:58 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Gleixner <tglx@linutronix.de>
-cc: Todd Poynor <toddpoynor@google.com>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <arve@android.com>
-Subject: Re: [PATCH v2] PM / Sleep: Print name of wakeup source that aborts
- suspend
-In-Reply-To: <201208061315.13302.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1208061037110.1649-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 6 Aug 2012 10:49:43 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18jtNZfE/EjmNoujYzqhJyXvpFrZ4WPo1luhEp2j8
+	Qzeuir4ntqiU1a
+Message-ID: <1344264419.6853.19.camel@marge.simpson.net>
+Subject: Re: unfair scheduling with tbb application observed, could it be a
+ kernel issue?
+From: Mike Galbraith <efault@gmx.de>
+To: Pedro Larroy <pedro.larroy.lists@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 06 Aug 2012 16:46:59 +0200
+In-Reply-To: <1344263912.6853.14.camel@marge.simpson.net>
+References: <CAC_CU1hzuSAeHG7-5g5kOa=MMh3KnJZNwWr+ySkJQyxixck4WA@mail.gmail.com>
+	 <1344263139.6853.10.camel@marge.simpson.net>
+	 <CAC_CU1iP0y9pVPPWVuER3kZbFGbBwS6Q2w1mJ6Ke6VNLqJOgbA@mail.gmail.com>
+	 <1344263912.6853.14.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Aug 2012, Rafael J. Wysocki wrote:
-
-> On Monday, August 06, 2012, Alan Stern wrote:
-> > On Sun, 5 Aug 2012, Rafael J. Wysocki wrote:
-> > 
-> > > > v2
-> > > > use ktime_to_ns() instead of comparisons on .tv64 field
-> > 
-> > What is the reason for this?  It apparently adds complexity and code 
-> > (on non-64-bit systems) to no purpose.
+On Mon, 2012-08-06 at 16:38 +0200, Mike Galbraith wrote: 
+> On Mon, 2012-08-06 at 16:28 +0200, Pedro Larroy wrote: 
+> > I didn't enable cgroups explicitly, and don't have userspace tools for
+> > that installed.
 > 
-> I don't think accessing the internals of ktime_t is appropriate,
-> even though avoiding that may result in some computational cost.
+> You don't userspace tools.  cat /proc/<pid>/cgroup will show the group.
+           ^need
 
-I asked this question because I recently added some code that does the
-very same thing, using the .tv64 field instead of doing any
-conversions.
+Did you mean "didn't explicitly enable" as in..
 
-Thomas, is there any general advice on how to compare two ktime_t
-values?  Is it acceptable for general code to use the .tv64 field for
-this?  The comments in ktime.h say that the encoding was chosen partly
-for this very reason.
+marge:~ # zcat /proc/config.gz|grep CONFIG_CGROUP_SCHED
+# CONFIG_CGROUP_SCHED is not set
 
-Alan Stern
+-Mike
 
