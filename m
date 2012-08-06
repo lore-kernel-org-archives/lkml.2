@@ -1,151 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab2HFXON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:14:13 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:44941 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752887Ab2HFXLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:11:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [PATCH 1/12] PM / Domains: Make it possible to use domain names when adding devices
-Date: Tue, 7 Aug 2012 01:06:11 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-References: <201208070105.23262.rjw@sisk.pl>
-In-Reply-To: <201208070105.23262.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208070106.12060.rjw@sisk.pl>
+	id S1756955Ab2HFXPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 19:15:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53148 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab2HFXPm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 19:15:42 -0400
+From: manoj.iyer@canonical.com
+To: linux-kernel@vger.kernel.org
+Cc: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
+        mjg@redhat.com, ibm-acpi@hmh.eng.br
+Subject: [PATCH] thinkpad-acpi: recognize latest V-Series using DMI_BIOS_VENDOR
+Date: Mon,  6 Aug 2012 18:15:37 -0500
+Message-Id: <1344294937-19338-1-git-send-email-manoj.iyer@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Manoj Iyer <manoj.iyer@canonical.com>
 
-Add a new helper function __pm_genpd_name_add_device() allowing
-a device to be added to a (registered) generic PM domain identified
-by name.  Add a wrapper around it, pm_genpd_name_add_device(),
-passing NULL as the last argument and reorganize pm_domains.h for the
-new functions to be defined consistently with the existing ones.
+In the latest V-series bios DMI_PRODUCT_VERSION does not contain
+the string Lenovo or Thinkpad, but is set to the model number, this
+causes the thinkpad_acpi module to fail to load. Recognize laptop
+as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
 
-These functions are useful for adding devices to PM domains whose
-representations are stored in tables, when the caller doesn't know
-the index of the domain to add the device to, but it knows the
-domain's name.
+Test on V490u
+=============
+== After the patch ==
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+[ 1350.295757] thinkpad_acpi: ThinkPad ACPI Extras v0.24
+[ 1350.295760] thinkpad_acpi: http://ibm-acpi.sf.net/
+[ 1350.295761] thinkpad_acpi: ThinkPad BIOS H7ET21WW (1.00 ), EC unknown
+[ 1350.295763] thinkpad_acpi: Lenovo LENOVO, model LV5DXXX
+[ 1350.296086] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+[ 1350.296694] thinkpad_acpi: radio switch found; radios are enabled
+[ 1350.296703] thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
+[ 1350.306466] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
+[ 1350.307082] Registered led device: tpacpi::thinklight
+[ 1350.307215] Registered led device: tpacpi::power
+[ 1350.307255] Registered led device: tpacpi::standby
+[ 1350.307294] Registered led device: tpacpi::thinkvantage
+[ 1350.308160] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
+[ 1350.308333] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
+[ 1350.312287] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input14
+
+== Before the patch ==
+sudo modprobe thinkpad_acpi
+FATAL: Error inserting thinkpad_acpi (/lib/modules/3.2.0-27-generic/kernel/drivers/platform/x86/thinkpad_acpi.ko): No such device
+
+Test on B485
+=============
+This patch was also test in a B485 where the thinkpad_acpi module does not
+have any issues loading. But, I tested it to make sure this patch does not
+break on already functioning models of Lenovo products.
+
+[13486.746359] thinkpad_acpi: ThinkPad ACPI Extras v0.24
+[13486.746364] thinkpad_acpi: http://ibm-acpi.sf.net/
+[13486.746368] thinkpad_acpi: ThinkPad BIOS HJET15WW(1.01), EC unknown
+[13486.746373] thinkpad_acpi: Lenovo Lenovo LB485, model 814TR01
+[13486.747300] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+[13486.752435] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
+[13486.752883] Registered led device: tpacpi::thinklight
+[13486.752915] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
+[13486.753216] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
+[13486.757147] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input15
+
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
 ---
- drivers/base/power/domain.c |   27 +++++++++++++++++++++++++++
- include/linux/pm_domain.h   |   42 +++++++++++++++++++++++++++++-------------
- 2 files changed, 56 insertions(+), 13 deletions(-)
+ drivers/platform/x86/thinkpad_acpi.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-Index: linux/drivers/base/power/domain.c
-===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -1465,6 +1465,33 @@ int __pm_genpd_of_add_device(struct devi
- 	return __pm_genpd_add_device(genpd, dev, td);
- }
- 
-+
-+/**
-+ * __pm_genpd_name_add_device - Find I/O PM domain and add a device to it.
-+ * @domain_name: Name of the PM domain to add the device to.
-+ * @dev: Device to be added.
-+ * @td: Set of PM QoS timing parameters to attach to the device.
-+ */
-+int __pm_genpd_name_add_device(const char *domain_name, struct device *dev,
-+			       struct gpd_timing_data *td)
-+{
-+	struct generic_pm_domain *genpd = NULL, *gpd;
-+
-+	if (IS_ERR_OR_NULL(domain_name) || IS_ERR_OR_NULL(dev))
-+		return -EINVAL;
-+
-+	mutex_lock(&gpd_list_lock);
-+	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
-+		if (!strcmp(gpd->name, domain_name)) {
-+			genpd = gpd;
-+			break;
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index e7f7328..d05c0a4 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -8662,7 +8662,14 @@ static int __must_check __init get_thinkpad_model_data(
+ 		tp->model_str = kstrdup(s, GFP_KERNEL);
+ 		if (!tp->model_str)
+ 			return -ENOMEM;
+-	}
++	} else {
++		s = dmi_get_system_info(DMI_BIOS_VENDOR);
++		if (s && !(strnicmp(s, "Lenovo", 6))) {
++			tp->model_str = kstrdup(s, GFP_KERNEL);
++			if (!tp->model_str)
++				return -ENOMEM;
 +		}
-+	}
-+	mutex_unlock(&gpd_list_lock);
-+
-+	return __pm_genpd_add_device(genpd, dev, td);
-+}
-+
- /**
-  * pm_genpd_remove_device - Remove a device from an I/O PM domain.
-  * @genpd: PM domain to remove the device from.
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -138,17 +138,9 @@ extern int __pm_genpd_of_add_device(stru
- 				    struct device *dev,
- 				    struct gpd_timing_data *td);
++	} 
  
--static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
--				      struct device *dev)
--{
--	return __pm_genpd_add_device(genpd, dev, NULL);
--}
--
--static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
--					 struct device *dev)
--{
--	return __pm_genpd_of_add_device(genpd_node, dev, NULL);
--}
-+extern int __pm_genpd_name_add_device(const char *domain_name,
-+				      struct device *dev,
-+				      struct gpd_timing_data *td);
- 
- extern int pm_genpd_remove_device(struct generic_pm_domain *genpd,
- 				  struct device *dev);
-@@ -187,8 +179,14 @@ static inline int __pm_genpd_add_device(
- {
- 	return -ENOSYS;
- }
--static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
--				      struct device *dev)
-+static inline int __pm_genpd_of_add_device(struct device_node *genpd_node,
-+					   struct device *dev)
-+{
-+	return -ENOSYS;
-+}
-+static inline int __pm_genpd_name_add_device(char *domain_name,
-+					     struct device *dev,
-+					     struct gpd_timing_data *td)
- {
- 	return -ENOSYS;
- }
-@@ -242,6 +240,24 @@ static inline bool default_stop_ok(struc
- #define pm_domain_always_on_gov NULL
- #endif
- 
-+static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
-+				      struct device *dev)
-+{
-+	return __pm_genpd_add_device(genpd, dev, NULL);
-+}
-+
-+static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
-+					 struct device *dev)
-+{
-+	return __pm_genpd_of_add_device(genpd_node, dev, NULL);
-+}
-+
-+static inline int pm_genpd_name_add_device(const char *domain_name,
-+					   struct device *dev)
-+{
-+	return __pm_genpd_name_add_device(domain_name, dev, NULL);
-+}
-+
- static inline int pm_genpd_remove_callbacks(struct device *dev)
- {
- 	return __pm_genpd_remove_callbacks(dev, true);
+ 	s = dmi_get_system_info(DMI_PRODUCT_NAME);
+ 	tp->nummodel_str = kstrdup(s, GFP_KERNEL);
+-- 
+1.7.9.5
 
