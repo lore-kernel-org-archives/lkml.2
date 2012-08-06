@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266Ab2HFQLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 12:11:37 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50178 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab2HFQLg convert rfc822-to-8bit (ORCPT
+	id S932281Ab2HFQMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 12:12:09 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:40428 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932260Ab2HFQMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 12:11:36 -0400
+	Mon, 6 Aug 2012 12:12:06 -0400
+Message-ID: <501FEC87.6060506@xenotime.net>
+Date: Mon, 06 Aug 2012 09:10:47 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Message-ID: <ad942d93-489f-4bf4-96bc-8f65b1a23ea1@default>
-Date: Mon, 6 Aug 2012 09:10:26 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: RE: [RFC/PATCH] zcache/ramster rewrite and promotion
-References: <c31aaed4-9d50-4cdf-b794-367fc5850483@default>
- <CAOJsxLEhW=b3En737d5751xufW2BLehPc2ZGGG1NEtRVSo3=jg@mail.gmail.com>
- <b9bee363-321e-409a-bc8e-65ffed8a1dc5@default>
- <CAOJsxLHe6egmMWdEAGj7DGHHX-hqYMhVWDggny9CsT0H-DOL-g@mail.gmail.com>
- <f54214e7-cee4-4cbf-aad1-6c1f91867879@default>
- <CAOJsxLHyPj6KrVkB5nj-9vFBXKmn5BN4ArN_7MDmTeVEG3N3Gw@mail.gmail.com>
-In-Reply-To: <CAOJsxLHyPj6KrVkB5nj-9vFBXKmn5BN4ArN_7MDmTeVEG3N3Gw@mail.gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-i2c@vger.kernel.org,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        Mark Studebaker <mdsxyz123@yahoo.com>
+Subject: [PATCH] i2c: fix i2c-i801.c printk format warning
+References: <20120806140109.b1a33b63686ef04f30139c9e@canb.auug.org.au>
+In-Reply-To: <20120806140109.b1a33b63686ef04f30139c9e@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Pekka Enberg [mailto:penberg@kernel.org]
-> Subject: Re: [RFC/PATCH] zcache/ramster rewrite and promotion
-> 
-> On Mon, Aug 6, 2012 at 5:07 PM, Dan Magenheimer
-> <dan.magenheimer@oracle.com> wrote:
-> > I'm OK with placing it wherever kernel developers want to put
-> > it, as long as the reason is not NIMBY-ness. [1]  My preference
-> > is to keep all the parts together, at least for the review phase,
-> > but if there is a consensus that it belongs someplace else,
-> > I will be happy to move it.
-> 
-> I'd go for core code in mm/zcache.c and mm/ramster.c, and move the
-> clustering code under net/ramster or drivers/ramster.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Hi Pekka --
+Fix printk format warning.  ARRAY_SIZE() uses sizeof(),
+which is size_t, so use %zu to print it.
 
-Thanks for the quick feedback!
+drivers/i2c/busses/i2c-i801.c: In function 'i801_add_mux':
+drivers/i2c/busses/i2c-i801.c:1043:4: warning: format '%lu' expects type 'long unsigned int', but argument 3 has type 'unsigned int'
 
-Hmmm.. there's also zbud.c and tmem.c which are critical components
-of both zcache and ramster.  And there are header files as well which
-will need to either be in mm/ or somewhere in include/linux/
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mark D. Studebaker <mdsxyz123@yahoo.com>
+Cc: Jean Delvare <khali@linux-fr.org>
+---
+ drivers/i2c/busses/i2c-i801.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Is there a reason or rule that mm/ can't have subdirectories?
-
-Since zcache has at least three .c files plus ramster.c, and
-since mm/frontswap.c and mm/cleancache.c are the foundation on
-which all of these are built, I was thinking grouping all six
-(plus headers) in the same mm/tmem/ subdirectory was a good
-way to keep mm/ from continuing to get more cluttered... not counting
-new zcache and ramster files, there are now 74 .c files in mm/!
-(Personally, I think a directory has too many files in it if
-"ls" doesn't fit in a 25x80 window.)
-
-Thoughts?
-Dan
+--- linux-next-20120806.orig/drivers/i2c/busses/i2c-i801.c
++++ linux-next-20120806/drivers/i2c/busses/i2c-i801.c
+@@ -1039,7 +1039,7 @@ static int __devinit i801_add_mux(struct
+ 
+ 	/* Find absolute GPIO pin numbers */
+ 	if (ARRAY_SIZE(priv->mux_priv) < mux_config->n_gpios) {
+-		dev_err(dev, "i801_priv.mux_priv too small (%lu, need %d)\n",
++		dev_err(dev, "i801_priv.mux_priv too small (%zu, need %d)\n",
+ 			ARRAY_SIZE(priv->mux_priv), mux_config->n_gpios);
+ 		return -ENODEV;
+ 	}
