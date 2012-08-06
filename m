@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab2HFO0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:26:55 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:45874 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab2HFO0y (ORCPT
+	id S1756551Ab2HFO25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:28:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62840 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756493Ab2HFO24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:26:54 -0400
-Date: Mon, 6 Aug 2012 17:26:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and
- devm_clk_get
-Message-ID: <20120806142650.GT4403@mwanda>
-References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr>
- <20120806142323.GO4352@mwanda>
+	Mon, 6 Aug 2012 10:28:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120806142323.GO4352@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1344263139.6853.10.camel@marge.simpson.net>
+References: <CAC_CU1hzuSAeHG7-5g5kOa=MMh3KnJZNwWr+ySkJQyxixck4WA@mail.gmail.com>
+	<1344263139.6853.10.camel@marge.simpson.net>
+Date: Mon, 6 Aug 2012 16:28:55 +0200
+Message-ID: <CAC_CU1iP0y9pVPPWVuER3kZbFGbBwS6Q2w1mJ6Ke6VNLqJOgbA@mail.gmail.com>
+Subject: Re: unfair scheduling with tbb application observed, could it be a
+ kernel issue?
+From: Pedro Larroy <pedro.larroy.lists@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 05:23:23PM +0300, Dan Carpenter wrote:
-> On Sat, Aug 04, 2012 at 08:23:27PM +0200, Julia Lawall wrote:
-> > @@ -922,12 +920,7 @@ static int emmaprp_probe(struct platform_device *pdev)
-> >  
-> >  	platform_set_drvdata(pdev, pcdev);
-> >  
-> > -	if (devm_request_mem_region(&pdev->dev, res_emma->start,
-> > -	    resource_size(res_emma), MEM2MEM_NAME) == NULL)
-> > -		goto rel_vdev;
-> > -
-> > -	pcdev->base_emma = devm_ioremap(&pdev->dev, res_emma->start,
-> > -					resource_size(res_emma));
-> > +	pcdev->base_emma = devm_request_and_ioremap(&pdev->dev, res_emma);
-> >  	if (!pcdev->base_emma)
-> >  		goto rel_vdev;
-> 
-> This was in the original code, but there is a "ret = -ENOMEM;"
-> missing here, and again a couple lines down in the original code.
-> 
+I didn't enable cgroups explicitly, and don't have userspace tools for
+that installed.
 
-Or should that be -EIO instead of -ENOMEM?  I'm not sure.
+Thanks.
 
-regards,
-dan carpenter
+Pedro.
 
+On Mon, Aug 6, 2012 at 4:25 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Mon, 2012-08-06 at 16:04 +0200, Pedro Larroy wrote:
+>> Hi
+>>
+>> I think we are observing unfair scheduling of processes that use intel
+>> TBB thread scheduler, as we have several processes with nice of 19 and
+>> ioniced idle, and somehow the process with nice 0 should be getting
+>> more than 1000% cpu
+> ..
+>> Tasks: 559 total,  37 running, 522 sleeping,   0 stopped,   0 zombie
+>> Cpu(s): 67.8%us, 16.0%sy, 13.0%ni,  1.7%id,  0.6%wa,  0.0%hi,  1.0%si,  0.0%st
+>> Mem:  98998032k total, 97444688k used,  1553344k free,    53772k buffers
+>> Swap:  4198316k total,   704860k used,  3493456k free, 73270776k cached
+>>
+>>   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+>> 14373 disco     39  19 8734m 6.9g  12m R  107  7.3  36:09.72 mmcc
+>> 15293 disco     39  19 3174m 1.4g  12m R  101  1.5  19:33.79 mmcc
+>> 20341 disco     39  19 2735m 1.1g  12m R  101  1.1   8:40.38 mmcc
+>> 18241 disco     39  19 3040m 1.3g  11m R  100  1.4  14:27.91 mmcc
+>> 15204 disco     39  19 5418m 3.7g  12m R   99  3.9  20:53.89 mmcc
+>> 24901 larroy    20   0  327m 296m 4276 R   88  0.3   0:04.14 cc1plus
+>> 24942 larroy    20   0  193m 159m 4008 R   87  0.2   0:01.47 cc1plus
+>> 24862 larroy    20   0  417m 388m 7992 R   84  0.4   0:07.02 cc1plus
+>> 24959 larroy    20   0  184m 153m 4008 R   80  0.2   0:01.32 cc1plus
+>> 24935 larroy    20   0  254m 222m 4024 R   77  0.2   0:02.44 cc1plus
+>> 24919 larroy    20   0  336m 301m 4036 R   76  0.3   0:03.61 cc1plus
+>> 24972 larroy    20   0 43160  15m 2332 R   76  0.0   0:00.95 cc1plus
+>> 24918 larroy    20   0  287m 255m 4024 R   70  0.3   0:02.99 cc1plus
+>> 24962 larroy    20   0 44872  17m 2332 R   69  0.0   0:01.23 cc1plus
+>> 24976 larroy    20   0 41212  14m 2332 R   66  0.0   0:00.67 cc1plus
+>> 24501 larroy    20   0  687m 657m 8044 R   64  0.7   0:22.97 cc1plus
+>> 24933 larroy    20   0  211m 177m 4008 R   62  0.2   0:01.79 cc1plus
+>> 24899 larroy    20   0  327m 296m 4276 R   57  0.3   0:04.25 cc1plus
+>
+> Are tasks running in per user cgroups or such?  If so, you'd need to
+> adjust group shares.
+>
+> -Mike
+>
