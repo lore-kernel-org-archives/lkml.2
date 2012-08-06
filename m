@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab2HFO4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 10:56:48 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:13167 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932186Ab2HFO4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 10:56:46 -0400
+	id S932226Ab2HFO4m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 10:56:42 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:61106 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932083Ab2HFO4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 10:56:39 -0400
 X-IronPort-AV: E=Sophos;i="4.77,720,1336363200"; 
-   d="scan'208";a="33702183"
+   d="scan'208";a="204279898"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
@@ -15,9 +16,9 @@ CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
         <catalin.marinas@arm.com>, <arnd@arndb.de>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v2 21/23] xen: update xen_add_to_physmap interface
-Date: Mon, 6 Aug 2012 15:27:24 +0100
-Message-ID: <1344263246-28036-21-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v2 18/23] xen: allow privcmd for HVM guests
+Date: Mon, 6 Aug 2012 15:27:21 +0100
+Message-ID: <1344263246-28036-18-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
@@ -27,44 +28,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update struct xen_add_to_physmap to be in sync with Xen's version of the
-structure.
-The size field was introduced by:
-
-changeset:   24164:707d27fe03e7
-user:        Jean Guyader <jean.guyader@eu.citrix.com>
-date:        Fri Nov 18 13:42:08 2011 +0000
-summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
-
-According to the comment:
-
-"This new field .size is located in the 16 bits padding between .domid
-and .space in struct xen_add_to_physmap to stay compatible with older
-versions."
+This patch removes the "return -ENOSYS" for auto_translated_physmap
+guests from privcmd_mmap, thus it allows ARM guests to issue privcmd
+mmap calls. However privcmd mmap calls are still going to fail for HVM
+and hybrid guests on x86 because the xen_remap_domain_mfn_range
+implementation is currently PV only.
 
 Changes in v2:
 
-- remove erroneous comment in the commit message.
+- better commit message;
+- return -EINVAL from xen_remap_domain_mfn_range if
+  auto_translated_physmap.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- include/xen/interface/memory.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/xen/mmu.c    |    3 +++
+ drivers/xen/privcmd.c |    4 ----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index b5c3098..b66d04c 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -163,6 +163,9 @@ struct xen_add_to_physmap {
-     /* Which domain to change the mapping for. */
-     domid_t domid;
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 3a73785..885a223 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2310,6 +2310,9 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+ 	unsigned long range;
+ 	int err = 0;
  
-+    /* Number of pages to go through for gmfn_range */
-+    uint16_t    size;
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return -EINVAL;
 +
-     /* Source mapping space. */
- #define XENMAPSPACE_shared_info 0 /* shared info page */
- #define XENMAPSPACE_grant_table 1 /* grant table page */
+ 	prot = __pgprot(pgprot_val(prot) | _PAGE_IOMAP);
+ 
+ 	BUG_ON(!((vma->vm_flags & (VM_PFNMAP | VM_RESERVED | VM_IO)) ==
+diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
+index ccee0f1..85226cb 100644
+--- a/drivers/xen/privcmd.c
++++ b/drivers/xen/privcmd.c
+@@ -380,10 +380,6 @@ static struct vm_operations_struct privcmd_vm_ops = {
+ 
+ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+-	/* Unsupported for auto-translate guests. */
+-	if (xen_feature(XENFEAT_auto_translated_physmap))
+-		return -ENOSYS;
+-
+ 	/* DONTCOPY is essential for Xen because copy_page_range doesn't know
+ 	 * how to recreate these mappings */
+ 	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY | VM_PFNMAP;
 -- 
 1.7.2.5
 
