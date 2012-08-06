@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab2HFMc3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 08:32:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756101Ab2HFMc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 08:32:27 -0400
-Message-ID: <1344256306.14728.29.camel@cr0>
-Subject: Re: [PATCH 1/7] netpoll: use GFP_ATOMIC in slave_enable_netpoll()
- and __netpoll_setup()
-From: Cong Wang <amwang@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Joe Perches <joe@perches.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
-Date: Mon, 06 Aug 2012 20:31:46 +0800
-In-Reply-To: <1344246244.26674.0.camel@edumazet-glaptop>
-References: <1343403484-29347-1-git-send-email-amwang@redhat.com>
-	 <1343403484-29347-2-git-send-email-amwang@redhat.com>
-	 <1343985428.9299.868.camel@edumazet-glaptop> <1343986487.20871.2.camel@cr0>
-	 <1343988623.9299.932.camel@edumazet-glaptop>
-	 <1344244118.14728.28.camel@cr0> <1344246244.26674.0.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755873Ab2HFMg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 08:36:29 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:37019 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab2HFMg2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 08:36:28 -0400
+Date: Mon, 6 Aug 2012 13:36:23 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, dmitry.torokhov@gmail.com, sameo@linux.intel.com
+Subject: Re: [PATCH 6/6] Input: ab8500-ponkey: Make the distinction between
+ DT and non-DT boots
+Message-ID: <20120806123622.GA10524@gmail.com>
+References: <1344250002-6011-1-git-send-email-lee.jones@linaro.org>
+ <1344250002-6011-7-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344250002-6011-7-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-06 at 11:44 +0200, Eric Dumazet wrote:
-> On Mon, 2012-08-06 at 17:08 +0800, Cong Wang wrote:
-> > On Fri, 2012-08-03 at 12:10 +0200, Eric Dumazet wrote: 
-> > > 
-> > > I did this , just take it ;)
-> > 
-> > Do we have to pass gfp to ->ndo_netpoll_setup() too? It seems no, so far
-> > I don't think we have to do that.
-> > 
-> > Thanks.
-> > 
+On Mon, Aug 06, 2012 at 11:46:42AM +0100, Lee Jones wrote:
+> If we're booting with Device Tree enabled, we want the IRQ numbers to
+> be taken and translated from the Device Tree binary. If not, they
+> should be taken from the resource allocation defined in the AB8500 MFD
+> core driver.
 > 
-> It is needed.
-> 
-> ->ndo_netpoll_setup() is called from __netpoll_setup()
-> 
-> So it would make no sense to allow GFP_KERNEL allocations in
-> ndo_netpoll_setup() hgandlers if we called __netpoll_setup() with
-> GFP_ATOMIC gfp
-> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/input/misc/ab8500-ponkey.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 
-I see your point. Thanks!
-
-
+Revoked, sent elsewhere.
