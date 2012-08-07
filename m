@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab2HGPsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:48:12 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:48045
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754521Ab2HGPoL (ORCPT
+	id S1755180Ab2HGPsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:48:10 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:6614 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754575Ab2HGPoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:44:11 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Tue, 7 Aug 2012 11:44:12 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M8E6DH-01-1YQ-02
+X-WSS-ID: 0M8E6DG-02-5T1-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
 CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 08/19] x86, io_apic: Convert setup_ioapic_entry to function pointer
-Date: Tue, 7 Aug 2012 17:43:38 +0200
-Message-ID: <1344354229-8526-9-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 15/19] x86, irq: Move irq_remapped() check into free_remapped_irq
+Date: Tue, 7 Aug 2012 17:43:45 +0200
+Message-ID: <1344354229-8526-16-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
 References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
@@ -29,111 +29,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pointer is changed to a different function when IRQ
-remapping is enabled.
+The function is called unconditionally now in IO-APIC code
+removing another irq_remapped() check from x86 core code.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/io_apic.h  |    4 ++++
- arch/x86/include/asm/x86_init.h |    5 +++++
- arch/x86/kernel/apic/io_apic.c  |   14 +++++---------
- arch/x86/kernel/x86_init.c      |    1 +
- drivers/iommu/irq_remapping.c   |    1 +
- 5 files changed, 16 insertions(+), 9 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    4 ++--
+ drivers/iommu/irq_remapping.c  |    5 ++++-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 32ce9d2..2cefc56 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -149,6 +149,10 @@ extern int io_apic_set_pci_routing(struct device *dev, int irq,
- void setup_IO_APIC_irq_extra(u32 gsi);
- extern void ioapic_insert_resources(void);
- 
-+extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
-+				     unsigned int, int,
-+				     struct io_apic_irq_attr *);
-+
- int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
- 
- extern int save_ioapic_entries(void);
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index f5f712b..bc13022 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -189,6 +189,8 @@ struct x86_msi_ops {
- 	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
- };
- 
-+struct IO_APIC_route_entry;
-+struct io_apic_irq_attr;
- struct irq_data;
- struct cpumask;
- 
-@@ -202,6 +204,9 @@ struct x86_io_apic_ops {
- 	int		(*set_affinity)(struct irq_data *data,
- 					const struct cpumask *mask,
- 					bool force);
-+	int		(*setup_entry)(int irq, struct IO_APIC_route_entry *entry,
-+				       unsigned int destination, int vector,
-+				       struct io_apic_irq_attr *attr);
- };
- 
- extern struct x86_init_ops x86_init;
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 11e3a38..44e1cb0 100644
+index 32faf20..6a7c6c9 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1319,14 +1319,10 @@ static void ioapic_register_intr(unsigned int irq, struct irq_cfg *cfg,
- 				      fasteoi ? "fasteoi" : "edge");
- }
+@@ -2981,8 +2981,8 @@ void destroy_irq(unsigned int irq)
  
--static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
--			       unsigned int destination, int vector,
--			       struct io_apic_irq_attr *attr)
-+int native_setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
-+			      unsigned int destination, int vector,
-+			      struct io_apic_irq_attr *attr)
- {
--	if (irq_remapping_enabled)
--		return setup_ioapic_remapped_entry(irq, entry, destination,
--						   vector, attr);
--
- 	memset(entry, 0, sizeof(*entry));
+ 	irq_set_status_flags(irq, IRQ_NOREQUEST|IRQ_NOPROBE);
  
- 	entry->delivery_mode = apic->irq_delivery_mode;
-@@ -1374,8 +1370,8 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
- 		    attr->ioapic, mpc_ioapic_id(attr->ioapic), attr->ioapic_pin,
- 		    cfg->vector, irq, attr->trigger, attr->polarity, dest);
- 
--	if (setup_ioapic_entry(irq, &entry, dest, cfg->vector, attr)) {
--		pr_warn("Failed to setup ioapic entry for ioapic %d, pin %d\n",
-+	if (x86_io_apic_ops.setup_entry(irq, &entry, dest, cfg->vector, attr)) {
-+		pr_warn("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
- 			mpc_ioapic_id(attr->ioapic), attr->ioapic_pin);
- 		__clear_irq_vector(irq, cfg);
- 
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 8806d0b..3cd6bf7 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -129,4 +129,5 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.disable		= native_disable_io_apic,
- 	.print_entries		= native_io_apic_print_entries,
- 	.set_affinity		= native_ioapic_set_affinity,
-+	.setup_entry		= native_setup_ioapic_entry,
- };
+-	if (irq_remapped(cfg))
+-		free_remapped_irq(irq);
++	free_remapped_irq(irq);
++
+ 	raw_spin_lock_irqsave(&vector_lock, flags);
+ 	__clear_irq_vector(irq, cfg);
+ 	raw_spin_unlock_irqrestore(&vector_lock, flags);
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index ccf87e5..5b28e28 100644
+index 3957fb2..f2affc7 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -91,6 +91,7 @@ static void __init irq_remapping_modify_x86_ops(void)
+@@ -229,10 +229,13 @@ int set_remapped_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 
+ void free_remapped_irq(int irq)
  {
- 	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
- 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
-+	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
- 	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
- 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
++	struct irq_cfg *cfg = irq_get_chip_data(irq);
++
+ 	if (!remap_ops || !remap_ops->free_irq)
+ 		return;
+ 
+-	remap_ops->free_irq(irq);
++	if (cfg && irq_remapped(cfg))
++		remap_ops->free_irq(irq);
  }
+ 
+ void compose_remapped_msi_msg(struct pci_dev *pdev,
 -- 
 1.7.9.5
 
