@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031053Ab2HGWn5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:43:57 -0400
+	id S1757421Ab2HGWoj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:44:39 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030989Ab2HGWmt (ORCPT
+	with ESMTP id S1030882Ab2HGWmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:42:49 -0400
+	Tue, 7 Aug 2012 18:42:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        rucsoftsec@gmail.com, Alan Cox <alan@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 088/109] caif: fix NULL pointer check
-Date: Tue,  7 Aug 2012 15:35:47 -0700
-Message-Id: <20120807222050.819416882@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 102/109] ALSA: hda - Support dock on Lenovo Thinkpad T530 with ALC269VC
+Date: Tue,  7 Aug 2012 15:36:01 -0700
+Message-Id: <20120807222052.016979064@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,31 +29,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Takashi Iwai <tiwai@suse.de>
 
-From: Alan Cox <alan@linux.intel.com>
+commit 707fba3fa76a4c8855552f5d4c1a12430c09bce8 upstream.
 
-[ Upstream commit c66b9b7d365444b433307ebb18734757cb668a02 ]
+Lenovo Thinkpad T530 with ALC269VC codec has a dock port but BIOS
+doesn't set up the pins properly.  Enable the pins as well as on
+Thinkpad X230 Tablet.
 
-Reported-by: <rucsoftsec@gmail.com>
-Resolves-bug: http://bugzilla.kernel.org/show_bug?44441
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Mario <anyc@hadiko.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/caif/caif_serial.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/drivers/net/caif/caif_serial.c
-+++ b/drivers/net/caif/caif_serial.c
-@@ -325,6 +325,9 @@ static int ldisc_open(struct tty_struct
- 
- 	sprintf(name, "cf%s", tty->name);
- 	dev = alloc_netdev(sizeof(*ser), name, caifdev_setup);
-+	if (!dev)
-+		return -ENOMEM;
-+
- 	ser = netdev_priv(dev);
- 	ser->tty = tty_kref_get(tty);
- 	ser->dev = dev;
+---
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6156,6 +6156,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21ca, "Thinkpad L412", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21e9, "Thinkpad Edge 15", ALC269_FIXUP_SKU_IGNORE),
++	SND_PCI_QUIRK(0x17aa, 0x21f6, "Thinkpad T530", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x2203, "Thinkpad X230 Tablet", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_QUANTA_MUTE),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Lenovo Ideapd", ALC269_FIXUP_PCM_44K),
 
 
