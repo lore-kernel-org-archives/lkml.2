@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093Ab2HGXNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:13:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
+	id S933072Ab2HGXNh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:13:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932993Ab2HGWiH (ORCPT
+	with ESMTP id S932945Ab2HGWiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:07 -0400
+	Tue, 7 Aug 2012 18:38:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Antonio Quartulli <ordex@autistici.org>,
-        Sven Eckelmann <sven@narfation.org>
-Subject: [ 029/109] batman-adv: fix skb->data assignment
-Date: Tue,  7 Aug 2012 15:34:48 -0700
-Message-Id: <20120807222045.656376771@linuxfoundation.org>
+        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 035/109] iwlwifi: fix debug print in iwl_sta_calc_ht_flags
+Date: Tue,  7 Aug 2012 15:34:54 -0700
+Message-Id: <20120807222046.175979684@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,37 +32,32 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Antonio Quartulli <ordex@autistici.org>
+From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
 
-commit d2b6cc8e460494251442a877fcbc150faa175b4f upstream.
+commit a35e270881a5db1ec9ac8bc6d61ebc3e85c14f33 upstream.
 
-skb_linearize(skb) possibly rearranges the skb internal data and then changes
-the skb->data pointer value. For this reason any other pointer in the code that
-was assigned skb->data before invoking skb_linearise(skb) must be re-assigned.
+We missed passing an argument to the
+debug print. Fix it.
 
-In the current tt_query message handling code this is not done and therefore, in
-case of skb linearization, the pointer used to handle the packet header ends up
-in pointing to poisoned memory. The packet is then dropped but the
-translation-table mechanism is corrupted.
-
-Signed-off-by: Antonio Quartulli <ordex@autistici.org>
-Signed-off-by: Sven Eckelmann <sven@narfation.org>
+Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/batman-adv/routing.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/batman-adv/routing.c
-+++ b/net/batman-adv/routing.c
-@@ -627,6 +627,8 @@ int recv_tt_query(struct sk_buff *skb, s
- 			if (unlikely(skb_headlen(skb) <
- 				     sizeof(struct tt_query_packet) + tt_len))
- 				goto out;
-+			/* skb_linearize() possibly changed skb->data */
-+			tt_query = (struct tt_query_packet *)skb->data;
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
+@@ -191,6 +191,7 @@ static void iwl_sta_calc_ht_flags(struct
+ 	mimo_ps_mode = (sta_ht_inf->cap & IEEE80211_HT_CAP_SM_PS) >> 2;
  
- 			handle_tt_response(bat_priv, tt_query);
- 		} else {
+ 	IWL_DEBUG_INFO(priv, "STA %pM SM PS mode: %s\n",
++			sta->addr,
+ 			(mimo_ps_mode == WLAN_HT_CAP_SM_PS_STATIC) ?
+ 			"static" :
+ 			(mimo_ps_mode == WLAN_HT_CAP_SM_PS_DYNAMIC) ?
 
 
