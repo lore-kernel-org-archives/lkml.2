@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964913Ab2HGWgl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:36:41 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:58680 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964892Ab2HGWgg (ORCPT
+	id S1757509Ab2HGXTf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:19:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964915Ab2HGWgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:36:36 -0400
+	Tue, 7 Aug 2012 18:36:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Timur Tabi <timur@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: [ 008/109] powerpc/85xx: use the BRx registers to enable indirect mode on the P1022DS
-Date: Tue,  7 Aug 2012 15:34:27 -0700
-Message-Id: <20120807222043.803258472@linuxfoundation.org>
+        Dan Melnic <dan.melnic@amd.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Jack Wang <jack_wang@usish.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 010/109] SCSI: libsas: fix sas_discover_devices return code handling
+Date: Tue,  7 Aug 2012 15:34:29 -0700
+Message-Id: <20120807222043.976747485@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,226 +32,125 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Timur Tabi <timur@freescale.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 6bd825f02966be8ba544047cab313d6032c23819 upstream.
+commit b17caa174a7e1fd2e17b26e210d4ee91c4c28b37 upstream.
 
-In order to enable the DIU video controller on the P1022DS, the FPGA needs
-to be switched to "indirect mode", where the localbus is disabled and
-the FPGA is accessed via writes to localbus chip select signals CS0 and CS1.
+commit 198439e4 [SCSI] libsas: do not set res = 0 in sas_ex_discover_dev()
+commit 19252de6 [SCSI] libsas: fix wide port hotplug issues
 
-To obtain the address of CS0 and CS1, the platform driver uses an "indirect
-pixis mode" device tree node.  This node assumes that the localbus 'ranges'
-property is sorted in chip-select order.  That is, reg value 0 maps to
-CS0, reg value 1 maps to CS1, etc.  This is how the 'ranges' property is
-supposed to be arranged.
+The above commits seem to have confused the return value of
+sas_ex_discover_dev which is non-zero on failure and
+sas_ex_join_wide_port which just indicates short circuiting discovery on
+already established ports.  The result is random discovery failures
+depending on configuration.
 
-Unfortunately, the 'ranges' property is often mis-arranged, and not just on
-the P1022DS.  Linux normally does not care, since it does not program the
-localbus.  But the indirect-mode code on the P1022DS does care.
+Calls to sas_ex_join_wide_port are the source of the trouble as its
+return value is errantly assigned to 'res'.  Convert it to bool and stop
+returning its result up the stack.
 
-The "proper" fix is to have U-Boot fix the 'ranges' property, but this would
-be too cumbersome.  The names and 'reg' properties of all the localbus
-devices would also need to be updated, and determining which localbus device
-maps to which chip select is board-specific.
-
-Instead, we determine the CS0/CS1 base addresses the same way that U-boot
-does -- by reading the BRx registers directly and mapping them to physical
-addresses.  This code is simpler and more reliable, and it does not require
-a U-boot or device tree change.
-
-Since the indirect pixis device tree node is no longer needed, the node is
-deleted from the DTS.
-
-Signed-off-by: Timur Tabi <timur@freescale.com>
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Tested-by: Dan Melnic <dan.melnic@amd.com>
+Reported-by: Dan Melnic <dan.melnic@amd.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Reviewed-by: Jack Wang <jack_wang@usish.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/boot/dts/p1022ds.dtsi     |   16 ----
- arch/powerpc/platforms/85xx/p1022_ds.c |  106 ++++++++++++++++++++++++++++-----
- 2 files changed, 93 insertions(+), 29 deletions(-)
+ drivers/scsi/libsas/sas_expander.c |   39 +++++++++++--------------------------
+ 1 file changed, 12 insertions(+), 27 deletions(-)
 
---- a/arch/powerpc/boot/dts/p1022ds.dtsi
-+++ b/arch/powerpc/boot/dts/p1022ds.dtsi
-@@ -33,22 +33,6 @@
-  */
- 
- &board_lbc {
--	/*
--	 * This node is used to access the pixis via "indirect" mode,
--	 * which is done by writing the pixis register index to chip
--	 * select 0 and the value to/from chip select 1.  Indirect
--	 * mode is the only way to access the pixis when DIU video
--	 * is enabled.  Note that this assumes that the first column
--	 * of the 'ranges' property above is the chip select number.
--	 */
--	board-control@0,0 {
--		compatible = "fsl,p1022ds-indirect-pixis";
--		reg = <0x0 0x0 1	/* CS0 */
--		       0x1 0x0 1>;	/* CS1 */
--		interrupt-parent = <&mpic>;
--		interrupts = <8 0 0 0>;
--	};
--
- 	nor@0,0 {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
---- a/arch/powerpc/platforms/85xx/p1022_ds.c
-+++ b/arch/powerpc/platforms/85xx/p1022_ds.c
-@@ -27,6 +27,7 @@
- #include <sysdev/fsl_pci.h>
- #include <asm/udbg.h>
- #include <asm/fsl_guts.h>
-+#include <asm/fsl_lbc.h>
- #include "smp.h"
- 
- #include "mpc85xx.h"
-@@ -142,17 +143,73 @@ static void p1022ds_set_gamma_table(enum
- {
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -868,7 +868,7 @@ static struct domain_device *sas_ex_disc
  }
  
-+struct fsl_law {
-+	u32	lawbar;
-+	u32	reserved1;
-+	u32	lawar;
-+	u32	reserved[5];
-+};
-+
-+#define LAWBAR_MASK	0x00F00000
-+#define LAWBAR_SHIFT	12
-+
-+#define LAWAR_EN	0x80000000
-+#define LAWAR_TGT_MASK	0x01F00000
-+#define LAW_TRGT_IF_LBC	(0x04 << 20)
-+
-+#define LAWAR_MASK	(LAWAR_EN | LAWAR_TGT_MASK)
-+#define LAWAR_MATCH	(LAWAR_EN | LAW_TRGT_IF_LBC)
-+
-+#define BR_BA		0xFFFF8000
-+
-+/*
-+ * Map a BRx value to a physical address
-+ *
-+ * The localbus BRx registers only store the lower 32 bits of the address.  To
-+ * obtain the upper four bits, we need to scan the LAW table.  The entry which
-+ * maps to the localbus will contain the upper four bits.
-+ */
-+static phys_addr_t lbc_br_to_phys(const void *ecm, unsigned int count, u32 br)
-+{
-+#ifndef CONFIG_PHYS_64BIT
-+	/*
-+	 * If we only have 32-bit addressing, then the BRx address *is* the
-+	 * physical address.
-+	 */
-+	return br & BR_BA;
-+#else
-+	const struct fsl_law *law = ecm + 0xc08;
-+	unsigned int i;
-+
-+	for (i = 0; i < count; i++) {
-+		u64 lawbar = in_be32(&law[i].lawbar);
-+		u32 lawar = in_be32(&law[i].lawar);
-+
-+		if ((lawar & LAWAR_MASK) == LAWAR_MATCH)
-+			/* Extract the upper four bits */
-+			return (br & BR_BA) | ((lawbar & LAWBAR_MASK) << 12);
-+	}
-+
-+	return 0;
-+#endif
-+}
-+
- /**
-  * p1022ds_set_monitor_port: switch the output to a different monitor port
-- *
-  */
- static void p1022ds_set_monitor_port(enum fsl_diu_monitor_port port)
+ /* See if this phy is part of a wide port */
+-static int sas_ex_join_wide_port(struct domain_device *parent, int phy_id)
++static bool sas_ex_join_wide_port(struct domain_device *parent, int phy_id)
  {
- 	struct device_node *guts_node;
--	struct device_node *indirect_node = NULL;
-+	struct device_node *lbc_node = NULL;
-+	struct device_node *law_node = NULL;
- 	struct ccsr_guts __iomem *guts;
-+	struct fsl_lbc_regs *lbc = NULL;
-+	void *ecm = NULL;
- 	u8 __iomem *lbc_lcs0_ba = NULL;
- 	u8 __iomem *lbc_lcs1_ba = NULL;
-+	phys_addr_t cs0_addr, cs1_addr;
-+	const __be32 *iprop;
-+	unsigned int num_laws;
- 	u8 b;
- 
- 	/* Map the global utilities registers. */
-@@ -168,25 +225,43 @@ static void p1022ds_set_monitor_port(enu
- 		goto exit;
+ 	struct ex_phy *phy = &parent->ex_dev.ex_phy[phy_id];
+ 	int i;
+@@ -884,11 +884,11 @@ static int sas_ex_join_wide_port(struct
+ 			sas_port_add_phy(ephy->port, phy->phy);
+ 			phy->port = ephy->port;
+ 			phy->phy_state = PHY_DEVICE_DISCOVERED;
+-			return 0;
++			return true;
+ 		}
  	}
  
--	indirect_node = of_find_compatible_node(NULL, NULL,
--					     "fsl,p1022ds-indirect-pixis");
--	if (!indirect_node) {
--		pr_err("p1022ds: missing pixis indirect mode node\n");
-+	lbc_node = of_find_compatible_node(NULL, NULL, "fsl,p1022-elbc");
-+	if (!lbc_node) {
-+		pr_err("p1022ds: missing localbus node\n");
-+		goto exit;
-+	}
-+
-+	lbc = of_iomap(lbc_node, 0);
-+	if (!lbc) {
-+		pr_err("p1022ds: could not map localbus node\n");
- 		goto exit;
+-	return -ENODEV;
++	return false;
+ }
+ 
+ static struct domain_device *sas_ex_discover_expander(
+@@ -1030,8 +1030,7 @@ static int sas_ex_discover_dev(struct do
+ 		return res;
  	}
  
--	lbc_lcs0_ba = of_iomap(indirect_node, 0);
--	if (!lbc_lcs0_ba) {
--		pr_err("p1022ds: could not map localbus chip select 0\n");
-+	law_node = of_find_compatible_node(NULL, NULL, "fsl,ecm-law");
-+	if (!law_node) {
-+		pr_err("p1022ds: missing local access window node\n");
- 		goto exit;
+-	res = sas_ex_join_wide_port(dev, phy_id);
+-	if (!res) {
++	if (sas_ex_join_wide_port(dev, phy_id)) {
+ 		SAS_DPRINTK("Attaching ex phy%d to wide port %016llx\n",
+ 			    phy_id, SAS_ADDR(ex_phy->attached_sas_addr));
+ 		return res;
+@@ -1077,8 +1076,7 @@ static int sas_ex_discover_dev(struct do
+ 			if (SAS_ADDR(ex->ex_phy[i].attached_sas_addr) ==
+ 			    SAS_ADDR(child->sas_addr)) {
+ 				ex->ex_phy[i].phy_state= PHY_DEVICE_DISCOVERED;
+-				res = sas_ex_join_wide_port(dev, i);
+-				if (!res)
++				if (sas_ex_join_wide_port(dev, i))
+ 					SAS_DPRINTK("Attaching ex phy%d to wide port %016llx\n",
+ 						    i, SAS_ADDR(ex->ex_phy[i].attached_sas_addr));
+ 
+@@ -1943,32 +1941,20 @@ static int sas_discover_new(struct domai
+ {
+ 	struct ex_phy *ex_phy = &dev->ex_dev.ex_phy[phy_id];
+ 	struct domain_device *child;
+-	bool found = false;
+-	int res, i;
++	int res;
+ 
+ 	SAS_DPRINTK("ex %016llx phy%d new device attached\n",
+ 		    SAS_ADDR(dev->sas_addr), phy_id);
+ 	res = sas_ex_phy_discover(dev, phy_id);
+ 	if (res)
+-		goto out;
+-	/* to support the wide port inserted */
+-	for (i = 0; i < dev->ex_dev.num_phys; i++) {
+-		struct ex_phy *ex_phy_temp = &dev->ex_dev.ex_phy[i];
+-		if (i == phy_id)
+-			continue;
+-		if (SAS_ADDR(ex_phy_temp->attached_sas_addr) ==
+-		    SAS_ADDR(ex_phy->attached_sas_addr)) {
+-			found = true;
+-			break;
+-		}
+-	}
+-	if (found) {
+-		sas_ex_join_wide_port(dev, phy_id);
++		return res;
++
++	if (sas_ex_join_wide_port(dev, phy_id))
+ 		return 0;
+-	}
++
+ 	res = sas_ex_discover_devices(dev, phy_id);
+-	if (!res)
+-		goto out;
++	if (res)
++		return res;
+ 	list_for_each_entry(child, &dev->ex_dev.children, siblings) {
+ 		if (SAS_ADDR(child->sas_addr) ==
+ 		    SAS_ADDR(ex_phy->attached_sas_addr)) {
+@@ -1978,7 +1964,6 @@ static int sas_discover_new(struct domai
+ 			break;
+ 		}
  	}
- 
--	lbc_lcs1_ba = of_iomap(indirect_node, 1);
--	if (!lbc_lcs1_ba) {
--		pr_err("p1022ds: could not map localbus chip select 1\n");
-+	ecm = of_iomap(law_node, 0);
-+	if (!ecm) {
-+		pr_err("p1022ds: could not map local access window node\n");
- 		goto exit;
- 	}
- 
-+	iprop = of_get_property(law_node, "fsl,num-laws", 0);
-+	if (!iprop) {
-+		pr_err("p1022ds: LAW node is missing fsl,num-laws property\n");
-+		goto exit;
-+	}
-+	num_laws = be32_to_cpup(iprop);
-+
-+	cs0_addr = lbc_br_to_phys(ecm, num_laws, in_be32(&lbc->bank[0].br));
-+	cs1_addr = lbc_br_to_phys(ecm, num_laws, in_be32(&lbc->bank[1].br));
-+
-+	lbc_lcs0_ba = ioremap(cs0_addr, 1);
-+	lbc_lcs1_ba = ioremap(cs1_addr, 1);
-+
- 	/* Make sure we're in indirect mode first. */
- 	if ((in_be32(&guts->pmuxcr) & PMUXCR_ELBCDIU_MASK) !=
- 	    PMUXCR_ELBCDIU_DIU) {
-@@ -254,10 +329,15 @@ exit:
- 		iounmap(lbc_lcs1_ba);
- 	if (lbc_lcs0_ba)
- 		iounmap(lbc_lcs0_ba);
-+	if (lbc)
-+		iounmap(lbc);
-+	if (ecm)
-+		iounmap(ecm);
- 	if (guts)
- 		iounmap(guts);
- 
--	of_node_put(indirect_node);
-+	of_node_put(law_node);
-+	of_node_put(lbc_node);
- 	of_node_put(guts_node);
+-out:
+ 	return res;
  }
  
 
