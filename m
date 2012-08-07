@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab2HGHrq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 03:47:46 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20034 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209Ab2HGHro (ORCPT
+	id S1751457Ab2HGHzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 03:55:09 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:55844 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab2HGHzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 03:47:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ihY/QS7T6WLxRw689n8C4
-Date: Tue, 7 Aug 2012 00:47:40 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: omap2-mcspi: In case of dma errors fall back to
- pio
-Message-ID: <20120807074740.GR11011@atomide.com>
-References: <1343197229-15188-1-git-send-email-shubhrajyoti@ti.com>
+	Tue, 7 Aug 2012 03:55:07 -0400
+Message-ID: <5020C931.6030503@linux.vnet.ibm.com>
+Date: Tue, 07 Aug 2012 13:22:17 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343197229-15188-1-git-send-email-shubhrajyoti@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Alexander Graf <agraf@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>, KVM <kvm@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, X86 <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] Documentation : hypercalls
+References: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12080707-5490-0000-0000-000001EA8672
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Shubhrajyoti D <shubhrajyoti@ti.com> [120724 23:26]:
-> In case there are dma errors currently the driver exits.
-> Make the spi driver fall back to pio mode in case of dma errors.
-> 
-> If the DMA engine is not selected the driver
-> exits.This patch makes the spi fall back to pio in that case.
-> 
-> Also adds a field dma_unusable to struct omap2_mcspi.
->  
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> ---
->  drivers/spi/spi-omap2-mcspi.c |   21 +++++++++++++--------
->  1 files changed, 13 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-> index bc47781..f243a39 100644
-> --- a/drivers/spi/spi-omap2-mcspi.c
-> +++ b/drivers/spi/spi-omap2-mcspi.c
-> @@ -129,6 +129,7 @@ struct omap2_mcspi {
->  	struct omap2_mcspi_dma	*dma_channels;
->  	struct device		*dev;
->  	struct omap2_mcspi_regs ctx;
-> +	int dma_unusable;
->  };
+On 08/07/2012 01:09 PM, Raghavendra K T wrote:
+> This is the hypercall documentation patch series
+> First patch covers KVM specific hypercall information.
+>
+> second patch has typo fix for vmcall instruction
+> comment in kvm_para.h
+>
+> Third patch includes a very useful documentation on PowerPC
+> hypercalls originally written by Alex
 
-Don't you need to check separately for rx and tx dma? There's a slight
-chance that you get a channel for one but not for the other..
-
-Tony
