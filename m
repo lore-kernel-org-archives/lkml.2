@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030472Ab2HGWi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:38:28 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40991 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030445Ab2HGWiU (ORCPT
+	id S933076Ab2HGXLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:11:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030475Ab2HGWi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:20 -0400
+	Tue, 7 Aug 2012 18:38:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 041/109] s390/mm: fix fault handling for page table walk case
-Date: Tue,  7 Aug 2012 15:35:00 -0700
-Message-Id: <20120807222046.714709548@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Jan Kara <jack@suse.cz>
+Subject: [ 044/109] udf: Improve table length check to avoid possible overflow
+Date: Tue,  7 Aug 2012 15:35:03 -0700
+Message-Id: <20120807222046.970058242@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,69 +29,33 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 008c2e8f247f0a8db1e8e26139da12f3a3abcda0 upstream.
+commit 57b9655d01ef057a523e810d29c37ac09b80eead upstream.
 
-Make sure the kernel does not incorrectly create a SIGBUS signal during
-user space accesses:
+When a partition table length is corrupted to be close to 1 << 32, the
+check for its length may overflow on 32-bit systems and we will think
+the length is valid. Later on the kernel can crash trying to read beyond
+end of buffer. Fix the check to avoid possible overflow.
 
-For user space accesses in the switched addressing mode case the kernel
-may walk page tables and access user address space via the kernel
-mapping. If a page table entry is invalid the function __handle_fault()
-gets called in order to emulate a page fault and trigger all the usual
-actions like paging in a missing page etc. by calling handle_mm_fault().
-
-If handle_mm_fault() returns with an error fixup handling is necessary.
-For the switched addressing mode case all errors need to be mapped to
--EFAULT, so that the calling uaccess function can return -EFAULT to
-user space.
-
-Unfortunately the __handle_fault() incorrectly calls do_sigbus() if
-VM_FAULT_SIGBUS is set. This however should only happen if a page fault
-was triggered by a user space instruction. For kernel mode uaccesses
-the correct action is to only return -EFAULT.
-So user space may incorrectly see SIGBUS signals because of this bug.
-
-For current machines this would only be possible for the switched
-addressing mode case in conjunction with futex operations.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/mm/fault.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ fs/udf/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -443,6 +443,7 @@ int __handle_fault(unsigned long uaddr,
- 	struct pt_regs regs;
- 	int access, fault;
- 
-+	/* Emulate a uaccess fault from kernel mode. */
- 	regs.psw.mask = psw_kernel_bits | PSW_MASK_DAT | PSW_MASK_MCHECK;
- 	if (!irqs_disabled())
- 		regs.psw.mask |= PSW_MASK_IO | PSW_MASK_EXT;
-@@ -452,12 +453,12 @@ int __handle_fault(unsigned long uaddr,
- 	regs.int_parm_long = (uaddr & PAGE_MASK) | 2;
- 	access = write ? VM_WRITE : VM_READ;
- 	fault = do_exception(&regs, access);
--	if (unlikely(fault)) {
--		if (fault & VM_FAULT_OOM)
--			return -EFAULT;
--		else if (fault & VM_FAULT_SIGBUS)
--			do_sigbus(&regs);
--	}
-+	/*
-+	 * Since the fault happened in kernel mode while performing a uaccess
-+	 * all we need to do now is emulating a fixup in case "fault" is not
-+	 * zero.
-+	 * For the calling uaccess functions this results always in -EFAULT.
-+	 */
- 	return fault ? -EFAULT : 0;
- }
- 
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -1283,7 +1283,7 @@ static int udf_load_logicalvol(struct su
+ 	BUG_ON(ident != TAG_IDENT_LVD);
+ 	lvd = (struct logicalVolDesc *)bh->b_data;
+ 	table_len = le32_to_cpu(lvd->mapTableLength);
+-	if (sizeof(*lvd) + table_len > sb->s_blocksize) {
++	if (table_len > sb->s_blocksize - sizeof(*lvd)) {
+ 		udf_err(sb, "error loading logical volume descriptor: "
+ 			"Partition table too long (%u > %lu)\n", table_len,
+ 			sb->s_blocksize - sizeof(*lvd));
 
 
