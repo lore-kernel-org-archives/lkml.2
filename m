@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab2HGAfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 20:35:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59129 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab2HGAfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 20:35:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="182442190"
-Message-ID: <502062C8.4050006@intel.com>
-Date: Tue, 07 Aug 2012 08:35:20 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1756858Ab2HGAg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 20:36:27 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35614 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756424Ab2HGAgZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 20:36:25 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <502062FB.7030502@jp.fujitsu.com>
+Date: Tue, 7 Aug 2012 09:36:11 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH v1 2/4] x86, CPU: Push TLB detection CPUID check down
-References: <1344272439-29080-1-git-send-email-bp@amd64.org> <1344272439-29080-3-git-send-email-bp@amd64.org>
-In-Reply-To: <1344272439-29080-3-git-send-email-bp@amd64.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <lenb@kernel.org>, <toshi.kani@hp.com>, <liuj97@gmail.com>
+CC: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4] create sun sysfs file
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 01:00 AM, Borislav Petkov wrote:
+Even if a device has _SUN method, there is no way to know the slot unique-ID.
+Thus the patch creates "sun" file in sysfs so that we can recognize it.
 
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Push the max CPUID leaf check into the ->detect_tlb function and remove
-> general test case from the generic path.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
+---
+ drivers/acpi/scan.c     |   24 ++++++++++++++++++++++++
+ include/acpi/acpi_bus.h |    1 +
+ 2 files changed, 25 insertions(+)
 
-Acked-by: Alex Shi <alex.shi@intel.com>
-
-> ---
->  arch/x86/kernel/cpu/common.c | 3 +--
->  arch/x86/kernel/cpu/intel.c  | 4 ++++
->  2 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index d239977f361f..080f4a737e3e 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -940,8 +940,7 @@ void __init identify_boot_cpu(void)
->  #else
->  	vgetcpu_set_mode();
->  #endif
-> -	if (boot_cpu_data.cpuid_level >= 2)
-> -		cpu_detect_tlb(&boot_cpu_data);
-> +	cpu_detect_tlb(&boot_cpu_data);
->  }
->  
->  void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
-> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-> index 0a4ce2980a5a..198e019a531a 100644
-> --- a/arch/x86/kernel/cpu/intel.c
-> +++ b/arch/x86/kernel/cpu/intel.c
-> @@ -648,6 +648,10 @@ static void __cpuinit intel_detect_tlb(struct cpuinfo_x86 *c)
->  	int i, j, n;
->  	unsigned int regs[4];
->  	unsigned char *desc = (unsigned char *)regs;
-> +
-> +	if (c->cpuid_level < 2)
-> +		return;
-> +
->  	/* Number of times to iterate */
->  	n = cpuid_eax(2) & 0xFF;
->  
-
+Index: linux-3.5/include/acpi/acpi_bus.h
+===================================================================
+--- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-30 10:06:49.722171575 +0900
++++ linux-3.5/include/acpi/acpi_bus.h	2012-08-07 08:57:45.678204360 +0900
+@@ -209,6 +209,7 @@ struct acpi_device_pnp {
+ 	struct list_head ids;		/* _HID and _CIDs */
+ 	acpi_device_name device_name;	/* Driver-determined */
+ 	acpi_device_class device_class;	/*        "          */
++	unsigned long sun;		/* _SUN */
+ };
+ 
+ #define acpi_device_bid(d)	((d)->pnp.bus_id)
+Index: linux-3.5/drivers/acpi/scan.c
+===================================================================
+--- linux-3.5.orig/drivers/acpi/scan.c	2012-07-30 10:06:49.713171688 +0900
++++ linux-3.5/drivers/acpi/scan.c	2012-08-07 09:01:38.196203659 +0900
+@@ -192,10 +192,20 @@ end:
+ }
+ static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
+ 
++static ssize_t
++acpi_device_sun_show(struct device *dev, struct device_attribute *attr,
++		     char *buf) {
++	struct acpi_device *acpi_dev = to_acpi_device(dev);
++
++	return sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
++}
++static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
++
+ static int acpi_device_setup_files(struct acpi_device *dev)
+ {
+ 	acpi_status status;
+ 	acpi_handle temp;
++	unsigned long long sun;
+ 	int result = 0;
+ 
+ 	/*
+@@ -217,6 +227,16 @@ static int acpi_device_setup_files(struc
+ 			goto end;
+ 	}
+ 
++	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
++	if (ACPI_SUCCESS(status)) {
++		dev->pnp.sun = (unsigned long)sun;
++		result = device_create_file(&dev->dev, &dev_attr_sun);
++		if (result)
++			goto end;
++	} else {
++		dev->pnp.sun = (unsigned long)-1;
++	}
++
+         /*
+          * If device has _EJ0, 'eject' file is created that is used to trigger
+          * hot-removal function from userland.
+@@ -241,6 +261,10 @@ static void acpi_device_remove_files(str
+ 	if (ACPI_SUCCESS(status))
+ 		device_remove_file(&dev->dev, &dev_attr_eject);
+ 
++	status = acpi_get_handle(dev->handle, "_SUN", &temp);
++	if (ACPI_SUCCESS(status))
++		device_remove_file(&dev->dev, &dev_attr_sun);
++
+ 	device_remove_file(&dev->dev, &dev_attr_modalias);
+ 	device_remove_file(&dev->dev, &dev_attr_hid);
+ 	if (dev->handle)
 
