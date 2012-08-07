@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031184Ab2HGWqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:46:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
+	id S1031213Ab2HGWqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:46:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64574 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031033Ab2HGWqa (ORCPT
+	with ESMTP id S1031187Ab2HGWqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:30 -0400
+	Tue, 7 Aug 2012 18:46:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 22/49] drm/radeon: fix hotplug of DP to DVI|HDMI passive adapters (v2)
-Date: Tue,  7 Aug 2012 15:44:40 -0700
-Message-Id: <20120807222028.877678537@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 26/49] ext4: pass a char * to ext4_count_free() instead of a buffer_head ptr
+Date: Tue,  7 Aug 2012 15:44:44 -0700
+Message-Id: <20120807222029.243721453@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -31,65 +29,78 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 266dcba541a1ef7e5d82d9e67c67fde2910636e8 upstream.
+commit f6fb99cadcd44660c68e13f6eab28333653621e6 upstream.
 
-No need to retrain the link for passive adapters.
+Make it possible for ext4_count_free to operate on buffers and not
+just data in buffer_heads.
 
-v2: agd5f
-- no passive DP to VGA adapters, update comments
-- assign radeon_connector_atom_dig after we are sure
-  we have a digital connector as analog connectors
-  have different private data.
-- get new sink type before checking for retrain.  No
-  need to check if it's no longer a DP connection.
-
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |   27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+ fs/ext4/balloc.c |    3 ++-
+ fs/ext4/bitmap.c |    8 +++-----
+ fs/ext4/ext4.h   |    2 +-
+ fs/ext4/ialloc.c |    3 ++-
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -66,14 +66,27 @@ void radeon_connector_hotplug(struct drm
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -514,7 +514,8 @@ ext4_fsblk_t ext4_count_free_blocks(stru
+ 		if (bitmap_bh == NULL)
+ 			continue;
  
- 	/* just deal with DP (not eDP) here. */
- 	if (connector->connector_type == DRM_MODE_CONNECTOR_DisplayPort) {
--		int saved_dpms = connector->dpms;
-+		struct radeon_connector_atom_dig *dig_connector =
-+			radeon_connector->con_priv;
+-		x = ext4_count_free(bitmap_bh, sb->s_blocksize);
++		x = ext4_count_free(bitmap_bh->b_data,
++				    EXT4_BLOCKS_PER_GROUP(sb) / 8);
+ 		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
+ 			i, ext4_free_blks_count(sb, gdp), x);
+ 		bitmap_count += x;
+--- a/fs/ext4/bitmap.c
++++ b/fs/ext4/bitmap.c
+@@ -15,15 +15,13 @@
  
--		/* Only turn off the display it it's physically disconnected */
--		if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
--			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
--		else if (radeon_dp_needs_link_train(radeon_connector))
--			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
--		connector->dpms = saved_dpms;
-+		/* if existing sink type was not DP no need to retrain */
-+		if (dig_connector->dp_sink_type != CONNECTOR_OBJECT_ID_DISPLAYPORT)
-+			return;
-+
-+		/* first get sink type as it may be reset after (un)plug */
-+		dig_connector->dp_sink_type = radeon_dp_getsinktype(radeon_connector);
-+		/* don't do anything if sink is not display port, i.e.,
-+		 * passive dp->(dvi|hdmi) adaptor
-+		 */
-+		if (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
-+			int saved_dpms = connector->dpms;
-+			/* Only turn off the display if it's physically disconnected */
-+			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
-+				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
-+			else if (radeon_dp_needs_link_train(radeon_connector))
-+				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
-+			connector->dpms = saved_dpms;
-+		}
- 	}
+ static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
+ 
+-unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
++unsigned int ext4_count_free(char *bitmap, unsigned int numchars)
+ {
+ 	unsigned int i, sum = 0;
+ 
+-	if (!map)
+-		return 0;
+ 	for (i = 0; i < numchars; i++)
+-		sum += nibblemap[map->b_data[i] & 0xf] +
+-			nibblemap[(map->b_data[i] >> 4) & 0xf];
++		sum += nibblemap[bitmap[i] & 0xf] +
++			nibblemap[(bitmap[i] >> 4) & 0xf];
+ 	return sum;
  }
  
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1713,7 +1713,7 @@ struct mmpd_data {
+ # define NORET_AND	noreturn,
+ 
+ /* bitmap.c */
+-extern unsigned int ext4_count_free(struct buffer_head *, unsigned);
++extern unsigned int ext4_count_free(char *bitmap, unsigned numchars);
+ 
+ /* balloc.c */
+ extern unsigned int ext4_block_group(struct super_block *sb,
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -1193,7 +1193,8 @@ unsigned long ext4_count_free_inodes(str
+ 		if (!bitmap_bh)
+ 			continue;
+ 
+-		x = ext4_count_free(bitmap_bh, EXT4_INODES_PER_GROUP(sb) / 8);
++		x = ext4_count_free(bitmap_bh->b_data,
++				    EXT4_INODES_PER_GROUP(sb) / 8);
+ 		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
+ 			(unsigned long) i, ext4_free_inodes_count(sb, gdp), x);
+ 		bitmap_count += x;
 
 
