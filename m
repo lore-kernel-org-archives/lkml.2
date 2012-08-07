@@ -1,114 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab2HGPoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:44:07 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:10649 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752208Ab2HGPoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:44:05 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M8E6DB-02-5SQ-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <x86@kernel.org>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 01/19] x86, apic: Move irq_remapping_enabled checks into IRQ-remapping code
-Date: Tue, 7 Aug 2012 17:43:31 +0200
-Message-ID: <1344354229-8526-2-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
-References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
+	id S1754139Ab2HGPuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:50:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45529 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753335Ab2HGPuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 11:50:08 -0400
+Date: Tue, 7 Aug 2012 17:46:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] ptrace: DEBUGCTLMSR_BTF fixes
+Message-ID: <20120807154635.GA14753@redhat.com>
+References: <20120803162912.GA19767@redhat.com> <501FED75.5060206@linutronix.de> <20120807151512.GB13476@redhat.com> <50213685.3010208@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50213685.3010208@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the three easy to move checks in the x86' apic.c file
-into the IRQ-remapping code.
+On 08/07, Sebastian Andrzej Siewior wrote:
+>
+> On 08/07/2012 05:15 PM, Oleg Nesterov wrote:
+>>> So I think __switch_to_extra() should set the bit before putting the
+>>> task on the CPU.
+>>
+>> Why?
+>
+> Pardon me? __switch_to_extra() enables BTF before putting the task on
+> CPU. This is fine. I was trying to say that there is no need to touch
+> the debug register in debugger's context since __switch_to_extra() does
+> it.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/kernel/apic/apic.c   |    9 +++------
- drivers/iommu/irq_remapping.c |   11 +++++++++--
- 2 files changed, 12 insertions(+), 8 deletions(-)
+And this is what the changelog says and the patch does? Confused.
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 24deb30..41681b3 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1444,8 +1444,7 @@ void __init bsp_end_local_APIC_setup(void)
- 	 * Now that local APIC setup is completed for BP, configure the fault
- 	 * handling for interrupt remapping.
- 	 */
--	if (irq_remapping_enabled)
--		irq_remap_enable_fault_handling();
-+	irq_remap_enable_fault_handling();
- 
- }
- 
-@@ -2218,8 +2217,7 @@ static int lapic_suspend(void)
- 	local_irq_save(flags);
- 	disable_local_APIC();
- 
--	if (irq_remapping_enabled)
--		irq_remapping_disable();
-+	irq_remapping_disable();
- 
- 	local_irq_restore(flags);
- 	return 0;
-@@ -2287,8 +2285,7 @@ static void lapic_resume(void)
- 	apic_write(APIC_ESR, 0);
- 	apic_read(APIC_ESR);
- 
--	if (irq_remapping_enabled)
--		irq_remapping_reenable(x2apic_mode);
-+	irq_remapping_reenable(x2apic_mode);
- 
- 	local_irq_restore(flags);
- }
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 151690d..283a43f 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -82,7 +82,9 @@ int __init irq_remapping_enable(void)
- 
- void irq_remapping_disable(void)
- {
--	if (!remap_ops || !remap_ops->disable)
-+	if (!irq_remapping_enabled ||
-+	    !remap_ops ||
-+	    !remap_ops->disable)
- 		return;
- 
- 	remap_ops->disable();
-@@ -90,7 +92,9 @@ void irq_remapping_disable(void)
- 
- int irq_remapping_reenable(int mode)
- {
--	if (!remap_ops || !remap_ops->reenable)
-+	if (!irq_remapping_enabled ||
-+	    !remap_ops ||
-+	    !remap_ops->reenable)
- 		return 0;
- 
- 	return remap_ops->reenable(mode);
-@@ -98,6 +102,9 @@ int irq_remapping_reenable(int mode)
- 
- int __init irq_remap_enable_fault_handling(void)
- {
-+	if (!irq_remapping_enabled)
-+		return 0;
-+
- 	if (!remap_ops || !remap_ops->enable_faulting)
- 		return -ENODEV;
- 
--- 
-1.7.9.5
+>>> If this bit is enabled on the wrong CPU then in will
+>>> remain set forever if single steeping has not been / will not be
+>>> enabled.
+>>
+>> I don't follow, could you explain in details?
+>
+> The SMP case where the debugger runs on CPU0 and tracee on CPU1.
+> Without your "current != child" check the enable_block_step() enables
+> block stepping on CPU0 and switch_to_extra() on CPU1.
 
+Sure, and after the patch it doesn't touch BTF if current != child.
+
+>> Just in case, X86_EFLAGS_TF sits in task_pt_regs(next), it has no
+>> effect until the task returns to usermode. We only need to ensure
+>> DEBUGCTLMSR_BTF was set/cleared correctly when it actually returns.
+>
+> Exactly. And __switch_to_extra() is perfect for the job (if we ignore
+> uprobes for a moment).
+
+Exactly.
+
+
+
+Ah. I guess I simply misunderstood your original email. Sorry. Somehow
+I thought you think that __switch_to_extra() needs fixes too.
+
+Sorry for noise.
+
+Oleg.
 
