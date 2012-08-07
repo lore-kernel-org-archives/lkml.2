@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab2HGI2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 04:28:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55962 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab2HGI23 (ORCPT
+	id S1752800Ab2HGIcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 04:32:33 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38232 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab2HGIc3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 04:28:29 -0400
-Date: Tue, 7 Aug 2012 09:28:13 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
-        rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-Message-ID: <20120807082813.GB24257@flint.arm.linux.org.uk>
-References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com> <20120806143016.GK16861@opensource.wolfsonmicro.com> <CAN1soZwCr=L3Xdi7HS9dQMxo4DzzbQv2kXo9R_U6QAf7v=B10Q@mail.gmail.com> <20120806154619.GO16861@opensource.wolfsonmicro.com> <CAN1soZzytOwxnS8oNMhFs1rfwVPwFnZoVsXeaMUc4Kf_TnunkA@mail.gmail.com> <20120806155805.GR16861@opensource.wolfsonmicro.com> <20120806192209.GA14594@flint.arm.linux.org.uk> <20120806195352.GC16199@opensource.wolfsonmicro.com> <20120806213124.GB14594@flint.arm.linux.org.uk> <1344327742.2698.15.camel@pasglop>
+	Tue, 7 Aug 2012 04:32:29 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] backlight: lp855x: remove goto err_dev
+Thread-Topic: [PATCH 3/3] backlight: lp855x: remove goto err_dev
+Thread-Index: Ac1ztr/7coLsb16/SeONd+CmjHJZPQAvsEsA
+Date: Tue, 7 Aug 2012 08:32:12 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FEBF3@DQHE02.ent.ti.com>
+References: <004001cd73b6$c011da50$40358ef0$%han@samsung.com>
+In-Reply-To: <004001cd73b6$c011da50$40358ef0$%han@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.104]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344327742.2698.15.camel@pasglop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 06:22:22PM +1000, Benjamin Herrenschmidt wrote:
-> On Mon, 2012-08-06 at 22:31 +0100, Russell King wrote:
-> > 
-> > So, if we made this a numeric index, then we have 32 resource types
-> > to deal with, and no need to bugger around with re-using an existing
-> > type for something else.
-> > 
-> > This makes sense, MEM, IRQ and DMA are all mutually exclusive, as
-> > should be MEM and IO (because they can't coexist in two resource trees
-> > at the same time.)  BUS only gets used in a hand-full of places and
-> > not with any other flags.
-> > 
-> > So, looks like we can have 27 new resource types fairly easily.
-> 
-> Besides we can easily use a single IORESOURCE_OTHER for most things
-> really, if we prefer, make it IORESOURCE_IO | IORESOURCE_MEM and have
-> platform device avoid that combo...
+> This patch removes goto err_dev, which makes code a bit smaller.
 
-That will work just the same way that I'm suggesting.  We can keep
-the existing bit-based numbers, and:
+Thanks !
+IMO, goto statements are meaningful on _probe().
+However, 'goto err_sysfs' also can be removed if the size of code is critical.
 
-#define IORESOURCE_OTHER	0x00000300
+drivers/video/backlight/lp855x_bl.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-and the platform code will avoid using the standard resource trees,
-because it does things correctly here:
-
-                        if (resource_type(r) == IORESOURCE_MEM)
-                                p = &iomem_resource;
-                        else if (resource_type(r) == IORESOURCE_IO)
-                                p = &ioport_resource;
-
-Same for the resource getting functions.  Hardly surprising this, because
-I wrote this code...
-
-So, no need to touch any existing users or change their behaviour in
-any way.
-
+diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+index 72a0e0c..7e4198c 100644
+--- a/drivers/video/backlight/lp855x_bl.c
++++ b/drivers/video/backlight/lp855x_bl.c
+@@ -268,29 +268,25 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 	if (ret) {
+ 		dev_err(lp->dev, "i2c communication err: %d", ret);
+ 		if (mode == REGISTER_BASED)
+-			goto err_dev;
++			return ret;
+ 	}
+ 
+ 	ret = lp855x_backlight_register(lp);
+ 	if (ret) {
+ 		dev_err(lp->dev,
+ 			"failed to register backlight. err: %d\n", ret);
+-		goto err_dev;
++		return ret;
+ 	}
+ 
+ 	ret = sysfs_create_group(&lp->dev->kobj, &lp855x_attr_group);
+ 	if (ret) {
+ 		dev_err(lp->dev, "failed to register sysfs. err: %d\n", ret);
+-		goto err_sysfs;
++		lp855x_backlight_unregister(lp);
++		return ret;
+ 	}
+ 
+ 	backlight_update_status(lp->bl);
+ 	return 0;
+-
+-err_sysfs:
+-	lp855x_backlight_unregister(lp);
+-err_dev:
+-	return ret;
+ }
+ 
+ static int __devexit lp855x_remove(struct i2c_client *cl)
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+1.7.2.5
+
+Best Regards,
+Milo
+
+
