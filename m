@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757712Ab2HGXkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:40:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330Ab2HGW2J (ORCPT
+	id S932318Ab2HGW2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:28:06 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58490 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932298Ab2HGW2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:28:09 -0400
+	Tue, 7 Aug 2012 18:28:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 023/122] ASoC: wm8962: Redo early init of the part on resume
-Date: Tue,  7 Aug 2012 15:25:11 -0700
-Message-Id: <20120807221950.313743089@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [ 020/122] ARM: dt: tegra trimslice: add vbus-gpio property
+Date: Tue,  7 Aug 2012 15:25:08 -0700
+Message-Id: <20120807221950.048650407@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,32 +29,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit e4dd76788c7e5b27165890d712c8c4f6f0abd645 upstream.
+commit 01ad8063a5db9ac8320f197577a34b423ba64eca upstream.
 
-Ensure robust startup of the part by going through the reset procedure
-prior to resyncing the full register cache, avoiding potential intermittent
-faults in some designs.
+On TrimSlice, Tegra's USB1 port may be routed to either an external micro
+USB port, or an internal USB->SATA bridge for SSD or HDD. This muxing is
+controlled by a GPIO. Whilst not strictly a VBUS GPIO, the TrimSlice
+board files caused this GPIO to be set appropriately to enable the SATA
+bridge by passing it as the VBUS GPIO to the USB driver. Echo this same
+configuration in device tree to enable the SATA bridge.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+An alternative might be to implement a full USB bus mux driver. However,
+that seems over-complex right now.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8962.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/boot/dts/tegra-trimslice.dts |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -3722,6 +3722,9 @@ static int wm8962_runtime_resume(struct
- 	}
+--- a/arch/arm/boot/dts/tegra-trimslice.dts
++++ b/arch/arm/boot/dts/tegra-trimslice.dts
+@@ -276,6 +276,7 @@
  
- 	regcache_cache_only(wm8962->regmap, false);
-+
-+	wm8962_reset(wm8962);
-+
- 	regcache_sync(wm8962->regmap);
+ 	usb@c5000000 {
+ 		status = "okay";
++		nvidia,vbus-gpio = <&gpio 170 0>; /* gpio PV2 */
+ 	};
  
- 	regmap_update_bits(wm8962->regmap, WM8962_ANTI_POP,
+ 	usb@c5004000 {
 
 
