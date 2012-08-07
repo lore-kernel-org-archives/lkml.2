@@ -1,202 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab2HGROx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:14:53 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42490 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab2HGROw (ORCPT
+	id S1755226Ab2HGRRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:17:25 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:56545 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab2HGRRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:14:52 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org, rdunlap@xenotime.net
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH/v2] Fix typo in various Kconfig
-Date: Wed,  8 Aug 2012 02:15:29 +0900
-Message-Id: <1344359729-18887-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.12.rc1.17.g9a7365c
-In-Reply-To: <1344347699-26434-1-git-send-email-standby24x7@gmail.com>
-References: <1344347699-26434-1-git-send-email-standby24x7@gmail.com>
+	Tue, 7 Aug 2012 13:17:23 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Miller <davem@davemloft.net>
+Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Ariyasu <jan.ariyasu@hp.com>, Jan Ariyasu <jan.ariyasu@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@infradead.org>,
+        Xi Wang <xi.wang@gmail.com>
+References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
+	<87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com>
+Date: Tue, 07 Aug 2012 10:17:02 -0700
+In-Reply-To: <87zk67q31q.fsf_-_@xmission.com> (Eric W. Biederman's message of
+	"Mon, 06 Aug 2012 11:38:09 -0700")
+Message-ID: <87ipcud3ld.fsf_-_@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+vRu5EI8Dr1GuK7Wf4WDl3LAvYvZihBDs=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0073]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;David Miller <davem@davemloft.net>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH net-next 0/7] sctp: network namespace support Part 2: per net tunables
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in various Kconfig files.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- arch/arm/mach-tegra/Kconfig      |  2 +-
- arch/blackfin/mach-bf609/Kconfig |  2 +-
- arch/openrisc/Kconfig            |  2 +-
- crypto/Kconfig                   |  2 +-
- drivers/media/video/Kconfig      |  2 +-
- drivers/thermal/Kconfig          |  2 +-
- drivers/tty/serial/8250/Kconfig  |  2 +-
- drivers/usb/host/Kconfig         |  4 ++--
- lib/Kconfig.debug                | 10 +++++-----
- 9 files changed, 14 insertions(+), 14 deletions(-)
+Since I am motivated to get things done, and since there has been much
+grumbling about my patches not implementing tunables, I have added
+tunable support on top of my last patchset.
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index 9077aaa..453f259 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -56,7 +56,7 @@ config TEGRA_AHB
- 	help
- 	  Adds AHB configuration functionality for NVIDIA Tegra SoCs,
- 	  which controls AHB bus master arbitration and some
--	  perfomance parameters(priority, prefech size).
-+	  performance parameters(priority, prefetch size).
- 
- comment "Tegra board type"
- 
-diff --git a/arch/blackfin/mach-bf609/Kconfig b/arch/blackfin/mach-bf609/Kconfig
-index 101b33e..95a4f1b 100644
---- a/arch/blackfin/mach-bf609/Kconfig
-+++ b/arch/blackfin/mach-bf609/Kconfig
-@@ -56,7 +56,7 @@ config SEC_IRQ_PRIORITY_LEVELS
- 	default 7
- 	range 0 7
- 	help
--	  Devide the total number of interrupt priority levels into sub-levels.
-+	  Divide the total number of interrupt priority levels into sub-levels.
- 	  There is 2 ^ (SEC_IRQ_PRIORITY_LEVELS + 1) different levels.
- 
- endmenu
-diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
-index 05f2ba4..0ac66f6 100644
---- a/arch/openrisc/Kconfig
-+++ b/arch/openrisc/Kconfig
-@@ -144,7 +144,7 @@ config DEBUG_STACKOVERFLOW
- 	help
- 	  Make extra checks for space available on stack in some
-           critical functions. This will cause kernel to run a bit slower,
--	  but will catch most of kernel stack overruns and exit gracefuly.
-+	  but will catch most of kernel stack overruns and exit gracefully.
- 
- 	  Say Y if you are unsure.
- 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index cbcc0e2..f8b54bb 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -840,7 +840,7 @@ config CRYPTO_SERPENT_SSE2_X86_64
- 	  Keys are allowed to be from 0 to 256 bits in length, in steps
- 	  of 8 bits.
- 
--	  This module provides Serpent cipher algorithm that processes eigth
-+	  This module provides Serpent cipher algorithm that processes eight
- 	  blocks parallel using SSE2 instruction set.
- 
- 	  See also:
-diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
-index c128fac..ce3972a 100644
---- a/drivers/media/video/Kconfig
-+++ b/drivers/media/video/Kconfig
-@@ -625,7 +625,7 @@ config VIDEO_UPD64083
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called upd64083.
- 
--comment "Miscelaneous helper chips"
-+comment "Miscellaneous helper chips"
- 
- config VIDEO_THS7303
- 	tristate "THS7303 Video Amplifier"
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 48c50be..decd7a0 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -51,7 +51,7 @@ config EXYNOS_THERMAL
- 	tristate "Temperature sensor on Samsung EXYNOS"
- 	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5) && THERMAL
- 	help
--	  If you say yes here you get support for TMU (Thermal Managment
-+	  If you say yes here you get support for TMU (Thermal Management
- 	  Unit) on SAMSUNG EXYNOS series of SoC.
- 	  This driver can also be built as a module. If so, the module
- 	  will be called exynos4-tmu
-diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
-index a27dd05..9395800 100644
---- a/drivers/tty/serial/8250/Kconfig
-+++ b/drivers/tty/serial/8250/Kconfig
-@@ -271,7 +271,7 @@ config SERIAL_8250_DW
- 	  present in the Synopsys DesignWare APB UART.
- 
- config SERIAL_8250_EM
--	tristate "Support for Emma Mobile intergrated serial port"
-+	tristate "Support for Emma Mobile integrated serial port"
- 	depends on SERIAL_8250 && ARM && HAVE_CLK
- 	help
- 	  Selecting this option will add support for the integrated serial
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 075d2ec..7cac2e8 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -418,7 +418,7 @@ config USB_OHCI_HCD_PLATFORM
- 	default n
- 	---help---
- 	  Adds an OHCI host driver for a generic platform device, which
--	  provieds a memory space and an irq.
-+	  provides a memory space and an irq.
- 
- 	  If unsure, say N.
- 
-@@ -428,7 +428,7 @@ config USB_EHCI_HCD_PLATFORM
- 	default n
- 	---help---
- 	  Adds an EHCI host driver for a generic platform device, which
--	  provieds a memory space and an irq.
-+	  provides a memory space and an irq.
- 
- 	  If unsure, say N.
- 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 290408e..42ba688 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1089,7 +1089,7 @@ config NOTIFIER_ERROR_INJECTION
- 	depends on DEBUG_KERNEL
- 	select DEBUG_FS
- 	help
--	  This option provides the ability to inject artifical errors to
-+	  This option provides the ability to inject artificial errors to
- 	  specified notifier chain callbacks. It is useful to test the error
- 	  handling of notifier call chain failures.
- 
-@@ -1100,7 +1100,7 @@ config CPU_NOTIFIER_ERROR_INJECT
- 	depends on HOTPLUG_CPU && NOTIFIER_ERROR_INJECTION
- 	help
- 	  This option provides a kernel module that can be used to test
--	  the error handling of the cpu notifiers by injecting artifical
-+	  the error handling of the cpu notifiers by injecting artificial
- 	  errors to CPU notifier chain callbacks.  It is controlled through
- 	  debugfs interface under /sys/kernel/debug/notifier-error-inject/cpu
- 
-@@ -1124,7 +1124,7 @@ config PM_NOTIFIER_ERROR_INJECT
- 	depends on PM && NOTIFIER_ERROR_INJECTION
- 	default m if PM_DEBUG
- 	help
--	  This option provides the ability to inject artifical errors to
-+	  This option provides the ability to inject artificial errors to
- 	  PM notifier chain callbacks.  It is controlled through debugfs
- 	  interface /sys/kernel/debug/notifier-error-inject/pm
- 
-@@ -1147,7 +1147,7 @@ config MEMORY_NOTIFIER_ERROR_INJECT
- 	tristate "Memory hotplug notifier error injection module"
- 	depends on MEMORY_HOTPLUG_SPARSE && NOTIFIER_ERROR_INJECTION
- 	help
--	  This option provides the ability to inject artifical errors to
-+	  This option provides the ability to inject artificial errors to
- 	  memory hotplug notifier chain callbacks.  It is controlled through
- 	  debugfs interface under /sys/kernel/debug/notifier-error-inject/memory
- 
-@@ -1170,7 +1170,7 @@ config PSERIES_RECONFIG_NOTIFIER_ERROR_INJECT
- 	tristate "pSeries reconfig notifier error injection module"
- 	depends on PPC_PSERIES && NOTIFIER_ERROR_INJECTION
- 	help
--	  This option provides the ability to inject artifical errors to
-+	  This option provides the ability to inject artificial errors to
- 	  pSeries reconfig notifier chain callbacks.  It is controlled
- 	  through debugfs interface under
- 	  /sys/kernel/debug/notifier-error-inject/pSeries-reconfig/
--- 
-1.7.12.rc1.17.g9a7365c
+I have performed basic testing on the these patches and nothing
+appears amis.
+
+The sm statemachine is a major tease as it has all of these association
+and endpoint pointers in the common set of function parameters that turn
+out to be NULL at the most inconvinient times.  So I added to the common
+parameter list a struct net pointer, that is never NULL. 
+
+ include/net/netns/sctp.h   |   96 +++++++-
+ include/net/sctp/sctp.h    |   16 +-
+ include/net/sctp/sm.h      |    8 +-
+ include/net/sctp/structs.h |  126 +---------
+ net/sctp/associola.c       |   18 +-
+ net/sctp/auth.c            |   20 ++-
+ net/sctp/bind_addr.c       |    6 +-
+ net/sctp/endpointola.c     |   13 +-
+ net/sctp/input.c           |    6 +-
+ net/sctp/primitive.c       |    4 +-
+ net/sctp/protocol.c        |  137 +++++-----
+ net/sctp/sm_make_chunk.c   |   61 +++--
+ net/sctp/sm_sideeffect.c   |   26 ++-
+ net/sctp/sm_statefuns.c    |  631 ++++++++++++++++++++++++--------------------
+ net/sctp/sm_statetable.c   |   17 +-
+ net/sctp/socket.c          |   92 ++++---
+ net/sctp/sysctl.c          |  200 ++++++++------
+ net/sctp/transport.c       |   23 +-
+ 18 files changed, 817 insertions(+), 683 deletions(-)
+
+Eric W. Biederman (7):
+      sctp: Add infrastructure for per net sysctls
+      sctp: Push struct net down to sctp_chunk_event_lookup
+      sctp: Push struct net down into sctp_transport_init
+      sctp: Push struct net down into sctp_in_scope
+      sctp: Push struct net down into all of the state machine functions
+      sctp: Push struct net down into sctp_verify_ext_param
+      sctp: Making sysctl tunables per net
+
+Eric
+
 
