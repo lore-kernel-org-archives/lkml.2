@@ -1,217 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab2HGRfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:35:24 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:36296 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752994Ab2HGRfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:35:23 -0400
-Message-ID: <5021518B.5030700@xenotime.net>
-Date: Tue, 07 Aug 2012 10:34:03 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1755623Ab2HGRfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:35:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45924 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755499Ab2HGRfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 13:35:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="204234916"
+Date: Tue, 7 Aug 2012 10:35:32 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Denis Turischev <denis@compulab.co.il>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 2/2] xhci: EHCI/XHCI ports switching on Intense-PC.
+Message-ID: <20120807173532.GD10298@xanatos>
+References: <5004454E.9030903@compulab.co.il>
+ <20120717045416.GJ7599@xanatos>
+ <50065E5A.2040103@compulab.co.il>
+ <20120718165916.GA30828@xanatos>
+ <500D3998.7010705@compulab.co.il>
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/v2] Fix typo in various Kconfig
-References: <1344347699-26434-1-git-send-email-standby24x7@gmail.com> <1344359729-18887-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1344359729-18887-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500D3998.7010705@compulab.co.il>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 10:15 AM, Masanari Iida wrote:
+Hi Denis,
 
-> Correct spelling typo in various Kconfig files.
+I found a couple issues with your second patch.  There are non-PCI xHCI
+host controllers, so we can't assume the xHCI host is a PCI host.  So
+this code can't run in the generic xHCI shutdown method:
+
+>  void xhci_shutdown(struct usb_hcd *hcd)
+>  {
+> +	struct pci_dev *pdev;
+> +	const char *brd_name;
+>  	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> +	pdev = to_pci_dev(hcd->self.controller);
+> +
+> +	if (usb_is_intel_switchable_xhci(pdev)) {
+> +		brd_name = dmi_get_system_info(DMI_BOARD_NAME);
+> +
+> +		/* quirk for Compulab's Intense-PC board */
+> +		if (brd_name && strstr(brd_name, "Intense-PC"))
+> +			usb_disable_xhci_ports(pdev);
+> +	}
+> +
+>  	spin_lock_irq(&xhci->lock);
+>  	xhci_halt(xhci);
+>  	spin_unlock_irq(&xhci->lock);
 
+I think the to_pci_dev call will oops if this isn't a PCI host.  Plus,
+I've found out from the BIOS and chipset folks that this quirk needs to
+be more broadly applied.  I'll send you a revised patch.  Can you test
+it and make sure it works for you?
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks.
-
-
-> ---
->  arch/arm/mach-tegra/Kconfig      |  2 +-
->  arch/blackfin/mach-bf609/Kconfig |  2 +-
->  arch/openrisc/Kconfig            |  2 +-
->  crypto/Kconfig                   |  2 +-
->  drivers/media/video/Kconfig      |  2 +-
->  drivers/thermal/Kconfig          |  2 +-
->  drivers/tty/serial/8250/Kconfig  |  2 +-
->  drivers/usb/host/Kconfig         |  4 ++--
->  lib/Kconfig.debug                | 10 +++++-----
->  9 files changed, 14 insertions(+), 14 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-> index 9077aaa..453f259 100644
-> --- a/arch/arm/mach-tegra/Kconfig
-> +++ b/arch/arm/mach-tegra/Kconfig
-> @@ -56,7 +56,7 @@ config TEGRA_AHB
->  	help
->  	  Adds AHB configuration functionality for NVIDIA Tegra SoCs,
->  	  which controls AHB bus master arbitration and some
-> -	  perfomance parameters(priority, prefech size).
-> +	  performance parameters(priority, prefetch size).
->  
->  comment "Tegra board type"
->  
-> diff --git a/arch/blackfin/mach-bf609/Kconfig b/arch/blackfin/mach-bf609/Kconfig
-> index 101b33e..95a4f1b 100644
-> --- a/arch/blackfin/mach-bf609/Kconfig
-> +++ b/arch/blackfin/mach-bf609/Kconfig
-> @@ -56,7 +56,7 @@ config SEC_IRQ_PRIORITY_LEVELS
->  	default 7
->  	range 0 7
->  	help
-> -	  Devide the total number of interrupt priority levels into sub-levels.
-> +	  Divide the total number of interrupt priority levels into sub-levels.
->  	  There is 2 ^ (SEC_IRQ_PRIORITY_LEVELS + 1) different levels.
->  
->  endmenu
-> diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
-> index 05f2ba4..0ac66f6 100644
-> --- a/arch/openrisc/Kconfig
-> +++ b/arch/openrisc/Kconfig
-> @@ -144,7 +144,7 @@ config DEBUG_STACKOVERFLOW
->  	help
->  	  Make extra checks for space available on stack in some
->            critical functions. This will cause kernel to run a bit slower,
-> -	  but will catch most of kernel stack overruns and exit gracefuly.
-> +	  but will catch most of kernel stack overruns and exit gracefully.
->  
->  	  Say Y if you are unsure.
->  
-> diff --git a/crypto/Kconfig b/crypto/Kconfig
-> index cbcc0e2..f8b54bb 100644
-> --- a/crypto/Kconfig
-> +++ b/crypto/Kconfig
-> @@ -840,7 +840,7 @@ config CRYPTO_SERPENT_SSE2_X86_64
->  	  Keys are allowed to be from 0 to 256 bits in length, in steps
->  	  of 8 bits.
->  
-> -	  This module provides Serpent cipher algorithm that processes eigth
-> +	  This module provides Serpent cipher algorithm that processes eight
->  	  blocks parallel using SSE2 instruction set.
->  
->  	  See also:
-> diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
-> index c128fac..ce3972a 100644
-> --- a/drivers/media/video/Kconfig
-> +++ b/drivers/media/video/Kconfig
-> @@ -625,7 +625,7 @@ config VIDEO_UPD64083
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called upd64083.
->  
-> -comment "Miscelaneous helper chips"
-> +comment "Miscellaneous helper chips"
->  
->  config VIDEO_THS7303
->  	tristate "THS7303 Video Amplifier"
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index 48c50be..decd7a0 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -51,7 +51,7 @@ config EXYNOS_THERMAL
->  	tristate "Temperature sensor on Samsung EXYNOS"
->  	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5) && THERMAL
->  	help
-> -	  If you say yes here you get support for TMU (Thermal Managment
-> +	  If you say yes here you get support for TMU (Thermal Management
->  	  Unit) on SAMSUNG EXYNOS series of SoC.
->  	  This driver can also be built as a module. If so, the module
->  	  will be called exynos4-tmu
-> diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
-> index a27dd05..9395800 100644
-> --- a/drivers/tty/serial/8250/Kconfig
-> +++ b/drivers/tty/serial/8250/Kconfig
-> @@ -271,7 +271,7 @@ config SERIAL_8250_DW
->  	  present in the Synopsys DesignWare APB UART.
->  
->  config SERIAL_8250_EM
-> -	tristate "Support for Emma Mobile intergrated serial port"
-> +	tristate "Support for Emma Mobile integrated serial port"
->  	depends on SERIAL_8250 && ARM && HAVE_CLK
->  	help
->  	  Selecting this option will add support for the integrated serial
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> index 075d2ec..7cac2e8 100644
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -418,7 +418,7 @@ config USB_OHCI_HCD_PLATFORM
->  	default n
->  	---help---
->  	  Adds an OHCI host driver for a generic platform device, which
-> -	  provieds a memory space and an irq.
-> +	  provides a memory space and an irq.
->  
->  	  If unsure, say N.
->  
-> @@ -428,7 +428,7 @@ config USB_EHCI_HCD_PLATFORM
->  	default n
->  	---help---
->  	  Adds an EHCI host driver for a generic platform device, which
-> -	  provieds a memory space and an irq.
-> +	  provides a memory space and an irq.
->  
->  	  If unsure, say N.
->  
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 290408e..42ba688 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -1089,7 +1089,7 @@ config NOTIFIER_ERROR_INJECTION
->  	depends on DEBUG_KERNEL
->  	select DEBUG_FS
->  	help
-> -	  This option provides the ability to inject artifical errors to
-> +	  This option provides the ability to inject artificial errors to
->  	  specified notifier chain callbacks. It is useful to test the error
->  	  handling of notifier call chain failures.
->  
-> @@ -1100,7 +1100,7 @@ config CPU_NOTIFIER_ERROR_INJECT
->  	depends on HOTPLUG_CPU && NOTIFIER_ERROR_INJECTION
->  	help
->  	  This option provides a kernel module that can be used to test
-> -	  the error handling of the cpu notifiers by injecting artifical
-> +	  the error handling of the cpu notifiers by injecting artificial
->  	  errors to CPU notifier chain callbacks.  It is controlled through
->  	  debugfs interface under /sys/kernel/debug/notifier-error-inject/cpu
->  
-> @@ -1124,7 +1124,7 @@ config PM_NOTIFIER_ERROR_INJECT
->  	depends on PM && NOTIFIER_ERROR_INJECTION
->  	default m if PM_DEBUG
->  	help
-> -	  This option provides the ability to inject artifical errors to
-> +	  This option provides the ability to inject artificial errors to
->  	  PM notifier chain callbacks.  It is controlled through debugfs
->  	  interface /sys/kernel/debug/notifier-error-inject/pm
->  
-> @@ -1147,7 +1147,7 @@ config MEMORY_NOTIFIER_ERROR_INJECT
->  	tristate "Memory hotplug notifier error injection module"
->  	depends on MEMORY_HOTPLUG_SPARSE && NOTIFIER_ERROR_INJECTION
->  	help
-> -	  This option provides the ability to inject artifical errors to
-> +	  This option provides the ability to inject artificial errors to
->  	  memory hotplug notifier chain callbacks.  It is controlled through
->  	  debugfs interface under /sys/kernel/debug/notifier-error-inject/memory
->  
-> @@ -1170,7 +1170,7 @@ config PSERIES_RECONFIG_NOTIFIER_ERROR_INJECT
->  	tristate "pSeries reconfig notifier error injection module"
->  	depends on PPC_PSERIES && NOTIFIER_ERROR_INJECTION
->  	help
-> -	  This option provides the ability to inject artifical errors to
-> +	  This option provides the ability to inject artificial errors to
->  	  pSeries reconfig notifier chain callbacks.  It is controlled
->  	  through debugfs interface under
->  	  /sys/kernel/debug/notifier-error-inject/pSeries-reconfig/
-
-
-
--- 
-~Randy
+Sarah Sharp
