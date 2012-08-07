@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab2HGW3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:29:40 -0400
+	id S932591Ab2HGW32 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:29:28 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459Ab2HGW3f (ORCPT
+	with ESMTP id S932574Ab2HGW3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:29:35 -0400
+	Tue, 7 Aug 2012 18:29:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel J Blueman <daniel@quora.org>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Ilan Peer <ilan.peer@intel.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [ 050/122] iwlwifi: Check BSS ctx active before call mac80211
-Date: Tue,  7 Aug 2012 15:25:38 -0700
-Message-Id: <20120807221952.721102185@linuxfoundation.org>
+Subject: [ 046/122] mac80211: fix crash with single-queue drivers
+Date: Tue,  7 Aug 2012 15:25:34 -0700
+Message-Id: <20120807221952.349761527@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -32,40 +30,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ilan Peer <ilan.peer@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit e19ebcab01cc130fa832764d453b263460ec3b91 upstream.
+commit a6f38ac3cc853189705006cc1e0f17ce8467a1df upstream.
 
-It is possible that the BSS context is not active (for example
-when the current mode is set to GO), or that the vif->type is
-different than station. In such a case we cannot
-call mac80211 to report the average rssi for the interface
-(the function assumes that the vif is valid and that the type
-is station).
+Larry (and some others I think) reported that with
+single-queue drivers mac80211 crashes when waking
+the queues. This happens because we allocate just
+a single queue for each virtual interface in case
+the driver doesn't have at least 4 queues, but the
+code stopping/waking the virtual interface queues
+wasn't taking this into account.
 
-Reported-by: Daniel J Blueman <daniel@quora.org>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Ilan Peer <ilan.peer@intel.com>
+Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
+Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-lib.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/mac80211/util.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-@@ -617,6 +617,11 @@ static bool iwlagn_fill_txpower_mode(str
- 	struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
- 	int ave_rssi;
- 
-+	if (!ctx->vif || (ctx->vif->type != NL80211_IFTYPE_STATION)) {
-+		IWL_DEBUG_INFO(priv, "BSS ctx not active or not in sta mode\n");
-+		return false;
-+	}
+--- a/net/mac80211/util.c
++++ b/net/mac80211/util.c
+@@ -268,6 +268,10 @@ EXPORT_SYMBOL(ieee80211_ctstoself_durati
+ void ieee80211_propagate_queue_wake(struct ieee80211_local *local, int queue)
+ {
+ 	struct ieee80211_sub_if_data *sdata;
++	int n_acs = IEEE80211_NUM_ACS;
 +
- 	ave_rssi = ieee80211_ave_rssi(ctx->vif);
- 	if (!ave_rssi) {
- 		/* no rssi data, no changes to reduce tx power */
++	if (local->hw.queues < IEEE80211_NUM_ACS)
++		n_acs = 1;
+ 
+ 	list_for_each_entry_rcu(sdata, &local->interfaces, list) {
+ 		int ac;
+@@ -279,7 +283,7 @@ void ieee80211_propagate_queue_wake(stru
+ 		    local->queue_stop_reasons[sdata->vif.cab_queue] != 0)
+ 			continue;
+ 
+-		for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
++		for (ac = 0; ac < n_acs; ac++) {
+ 			int ac_queue = sdata->vif.hw_queue[ac];
+ 
+ 			if (ac_queue == queue ||
+@@ -341,6 +345,7 @@ static void __ieee80211_stop_queue(struc
+ {
+ 	struct ieee80211_local *local = hw_to_local(hw);
+ 	struct ieee80211_sub_if_data *sdata;
++	int n_acs = IEEE80211_NUM_ACS;
+ 
+ 	trace_stop_queue(local, queue, reason);
+ 
+@@ -352,11 +357,14 @@ static void __ieee80211_stop_queue(struc
+ 
+ 	__set_bit(reason, &local->queue_stop_reasons[queue]);
+ 
++	if (local->hw.queues < IEEE80211_NUM_ACS)
++		n_acs = 1;
++
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(sdata, &local->interfaces, list) {
+ 		int ac;
+ 
+-		for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
++		for (ac = 0; ac < n_acs; ac++) {
+ 			if (sdata->vif.hw_queue[ac] == queue ||
+ 			    sdata->vif.cab_queue == queue)
+ 				netif_stop_subqueue(sdata->dev, ac);
 
 
