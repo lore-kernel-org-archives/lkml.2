@@ -1,75 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab2HGPTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:19:06 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:10833 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab2HGPTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:19:03 -0400
-X-IronPort-AV: E=Sophos;i="4.77,727,1336374000"; 
-   d="scan'208";a="674180207"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wdauchy@gmail.com" <wdauchy@gmail.com>
-Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-Thread-Topic: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-Thread-Index: AQHNdKJvypEw9t3CEUmeaLKAlM+spZdO1J0AgAAFvwCAAAB9gIAAAqyAgAACoYCAAAPbgIAACAKA
-Date: Tue, 7 Aug 2012 15:19:01 +0000
-Message-ID: <1344352739.5781.12.camel@lade.trondhjem.org>
-References: <20120807134156.GP1996@amd.com> <50211E42.6040808@netapp.com>
-	 <20120807141548.GG1917@8bytes.org> <5021237D.1010107@netapp.com>
-	 <20120807142707.GH1917@8bytes.org> <502127EF.3030209@netapp.com>
-	 <20120807145019.GI1917@8bytes.org>
-In-Reply-To: <20120807145019.GI1917@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <BC22A37BC469E44E8CF8A540CBFD102F@tahoe.netapp.com>
+	id S1753291Ab2HGPTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:19:16 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49977 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960Ab2HGPTN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 11:19:13 -0400
+Message-ID: <502131EB.4000100@gmail.com>
+Date: Tue, 07 Aug 2012 17:19:07 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Emulating level IRQs
+References: <20120503043651.GA11830@core.coreip.homeip.net> <20120713070102.GA2223@core.coreip.homeip.net> <500561AF.9090901@gmail.com> <5008296C.5070709@gmail.com> <20120723165120.GB26577@core.coreip.homeip.net> <500EE314.7040708@gmail.com> <501E9DDB.3020807@gmail.com> <CAN1soZy-_MdjqS3r3Tc1XET6tPzMxDqjYq3Tn0fYLBNNUkdVAg@mail.gmail.com> <501EB3C5.1080501@gmail.com> <CAMPhdO8fZoFrUymb347whDpFkbgxsu8vVSqw5BSd=L4gicfXgg@mail.gmail.com> <20120806163615.GG29272@sirena.org.uk>
+In-Reply-To: <20120806163615.GG29272@sirena.org.uk>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/mixed;
+ boundary="------------060203050107000801000403"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q77FJAmL012971
 
-On Tue, 2012-08-07 at 16:50 +0200, Joerg Roedel wrote:
-> On Tue, Aug 07, 2012 at 10:36:31AM -0400, Bryan Schumaker wrote:
-> > Your stack trace is showing v4 calls on the failing box, those
-> > definitely shouldn't be happening if you're using v3.  Can you double
-> > check /etc/fstab and /proc/mounts on a working kernel to be sure?
+This is a multi-part message in MIME format.
+--------------060203050107000801000403
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+
+On 06.08.2012 18:36, Mark Brown wrote:
+> On Mon, Aug 06, 2012 at 09:45:13AM +0800, Eric Miao wrote:
 > 
-> So the bug is probably (for whatever reason) that the nfs4 path is
-> called for an nfs3 mount :)
+>> So my understanding, if it's correct, that we can treat the EETI chip as having
+>> two separate inputs: one IRQ line (for the event notification) and one GPIO line
+>> (for a condition where data are emptied), we could naturally have two numbers
+>> in the driver, but unfortunately they end up being in sync as they are
+>> physically
+>> one pin.
+> 
+> ...unless the interrupt controller supports level IRQs at which point we
+> don't need the GPIO, of course :/ .
 
-If your /etc/nfsmount.conf doesn't contain a line of the form
+Exactly. My question was rather - like the subject says ;) - if there is
+a way to emulate level IRQs on controllers that can't do that natively.
 
-Defaultvers=4
+But ok, I followed Eric's suggestion now and implemented it that way.
+This also works fine for me.
 
-then the mount utility will try NFSv4 by default. That is not a bug, it
-is a deliberate feature of recent versions of nfs-utils.
+Dmitry, are you fine with that patch?
 
-> Anyway, I attach /proc/mounts and /etc/fstab from that box running a
-> v3.5-rc5 kernel (where it works).
 
-I'm guessing that the fact you are not running idmapper is causing the
-NFSv4 mount to fail on the older kernels, and so the mount program is
-falling back to an NFSv3 mount.
+Many thanks for the input, everyone!
+Daniel
 
-We need to fix v3.6 so that it does the same.
 
+
+--------------060203050107000801000403
+Content-Type: text/x-patch;
+ name="0001-Input-eeti_ts-pass-gpio-value-instead-of-IRQ.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-Input-eeti_ts-pass-gpio-value-instead-of-IRQ.patch"
+
+>From bfb14c1a0417435ebcf5bdebbb94ae6812cb4aee Mon Sep 17 00:00:00 2001
+From: Daniel Mack <zonque@gmail.com>
+Date: Tue, 7 Aug 2012 17:02:59 +0200
+Subject: [PATCH] Input: eeti_ts: pass gpio value instead of IRQ
+
+The EETI touchscreen asserts its IRQ line as soon as it has data in its
+internal buffers. The line is automatically deasserted once all data has
+been read via I2C. Hence, the driver has to monitor the GPIO line and
+cannot simply rely on the interrupt handler reception.
+
+In the current implementation of the driver, irq_to_gpio() is used to
+determine the GPIO number from the i2c_client's IRQ value.
+
+As irq_to_gpio() is not available on all platforms, this patch changes
+this and makes the driver ignore the passed in IRQ. Instead, a GPIO is
+added to the platform_data struct and gpio_to_irq is used to derive the
+IRQ from that GPIO. If this fails, bail out. The driver is only able to
+work in environments where the touchscreen GPIO can be mapped to an
+IRQ.
+
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+---
+ drivers/input/touchscreen/eeti_ts.c | 21 +++++++++++++--------
+ include/linux/input/eeti_ts.h       |  1 +
+ 2 files changed, 14 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/input/touchscreen/eeti_ts.c b/drivers/input/touchscreen/eeti_ts.c
+index 503c709..908407e 100644
+--- a/drivers/input/touchscreen/eeti_ts.c
++++ b/drivers/input/touchscreen/eeti_ts.c
+@@ -48,7 +48,7 @@ struct eeti_ts_priv {
+ 	struct input_dev *input;
+ 	struct work_struct work;
+ 	struct mutex mutex;
+-	int irq, irq_active_high;
++	int irq_gpio, irq, irq_active_high;
+ };
+ 
+ #define EETI_TS_BITDEPTH	(11)
+@@ -62,7 +62,7 @@ struct eeti_ts_priv {
+ 
+ static inline int eeti_ts_irq_active(struct eeti_ts_priv *priv)
+ {
+-	return gpio_get_value(irq_to_gpio(priv->irq)) == priv->irq_active_high;
++	return gpio_get_value(priv->irq_gpio) == priv->irq_active_high;
+ }
+ 
+ static void eeti_ts_read(struct work_struct *work)
+@@ -157,7 +157,7 @@ static void eeti_ts_close(struct input_dev *dev)
+ static int __devinit eeti_ts_probe(struct i2c_client *client,
+ 				   const struct i2c_device_id *idp)
+ {
+-	struct eeti_ts_platform_data *pdata;
++	struct eeti_ts_platform_data *pdata = client->dev.platform_data;
+ 	struct eeti_ts_priv *priv;
+ 	struct input_dev *input;
+ 	unsigned int irq_flags;
+@@ -199,9 +199,12 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
+ 
+ 	priv->client = client;
+ 	priv->input = input;
+-	priv->irq = client->irq;
++	priv->irq_gpio = pdata->irq_gpio;
++	priv->irq = gpio_to_irq(pdata->irq_gpio);
+ 
+-	pdata = client->dev.platform_data;
++	err = gpio_request_one(pdata->irq_gpio, GPIOF_IN, client->name);
++	if (err < 0)
++		goto err1;
+ 
+ 	if (pdata)
+ 		priv->irq_active_high = pdata->irq_active_high;
+@@ -215,13 +218,13 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
+ 
+ 	err = input_register_device(input);
+ 	if (err)
+-		goto err1;
++		goto err2;
+ 
+ 	err = request_irq(priv->irq, eeti_ts_isr, irq_flags,
+ 			  client->name, priv);
+ 	if (err) {
+ 		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
+-		goto err2;
++		goto err3;
+ 	}
+ 
+ 	/*
+@@ -233,9 +236,11 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
+ 	device_init_wakeup(&client->dev, 0);
+ 	return 0;
+ 
+-err2:
++err3:
+ 	input_unregister_device(input);
+ 	input = NULL; /* so we dont try to free it below */
++err2:
++	gpio_free(pdata->irq_gpio);
+ err1:
+ 	input_free_device(input);
+ 	kfree(priv);
+diff --git a/include/linux/input/eeti_ts.h b/include/linux/input/eeti_ts.h
+index f875b31..16625d7 100644
+--- a/include/linux/input/eeti_ts.h
++++ b/include/linux/input/eeti_ts.h
+@@ -2,6 +2,7 @@
+ #define LINUX_INPUT_EETI_TS_H
+ 
+ struct eeti_ts_platform_data {
++	int irq_gpio;
+ 	unsigned int irq_active_high;
+ };
+ 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+1.7.11.2
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--------------060203050107000801000403--
