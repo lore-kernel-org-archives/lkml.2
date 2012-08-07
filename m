@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031038Ab2HGWnZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:43:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	id S1031053Ab2HGWn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:43:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031020Ab2HGWnR (ORCPT
+	with ESMTP id S1030989Ab2HGWmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:43:17 -0400
+	Tue, 7 Aug 2012 18:42:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 103/109] ASoC: wm8962: Allow VMID time to fully ramp
-Date: Tue,  7 Aug 2012 15:36:02 -0700
-Message-Id: <20120807222052.110701465@linuxfoundation.org>
+        rucsoftsec@gmail.com, Alan Cox <alan@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 088/109] caif: fix NULL pointer check
+Date: Tue,  7 Aug 2012 15:35:47 -0700
+Message-Id: <20120807222050.819416882@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,30 +30,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 9d40e5582c9c4cfb6977ba2a0ca9c2ed82c56f21 upstream.
+From: Alan Cox <alan@linux.intel.com>
 
-Required for reliable power up from cold.
+[ Upstream commit c66b9b7d365444b433307ebb18734757cb668a02 ]
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Reported-by: <rucsoftsec@gmail.com>
+Resolves-bug: http://bugzilla.kernel.org/show_bug?44441
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/soc/codecs/wm8962.c |    3 +++
+ drivers/net/caif/caif_serial.c |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -2488,6 +2488,9 @@ static int wm8962_set_bias_level(struct
- 		/* VMID 2*250k */
- 		snd_soc_update_bits(codec, WM8962_PWR_MGMT_1,
- 				    WM8962_VMID_SEL_MASK, 0x100);
-+
-+		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF)
-+			msleep(100);
- 		break;
+--- a/drivers/net/caif/caif_serial.c
++++ b/drivers/net/caif/caif_serial.c
+@@ -325,6 +325,9 @@ static int ldisc_open(struct tty_struct
  
- 	case SND_SOC_BIAS_OFF:
+ 	sprintf(name, "cf%s", tty->name);
+ 	dev = alloc_netdev(sizeof(*ser), name, caifdev_setup);
++	if (!dev)
++		return -ENOMEM;
++
+ 	ser = netdev_priv(dev);
+ 	ser->tty = tty_kref_get(tty);
+ 	ser->dev = dev;
 
 
