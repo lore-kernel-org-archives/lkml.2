@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030797Ab2HGWk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:40:56 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59402 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030711Ab2HGWku (ORCPT
+	id S1030812Ab2HGWlC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:41:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030795Ab2HGWk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:40:50 -0400
+	Tue, 7 Aug 2012 18:40:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hangbin Liu <liuhangbin@gmail.com>,
+        Mathias Krause <minipli@googlemail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 090/109] tcp: Add TCP_USER_TIMEOUT negative value check
-Date: Tue,  7 Aug 2012 15:35:49 -0700
-Message-Id: <20120807222050.987274088@linuxfoundation.org>
+Subject: [ 094/109] net/tun: fix ioctl() based info leaks
+Date: Tue,  7 Aug 2012 15:35:53 -0700
+Message-Id: <20120807222051.335989141@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -31,36 +31,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Hangbin Liu <liuhangbin@gmail.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 42493570100b91ef663c4c6f0c0fdab238f9d3c2 ]
+[ Upstream commits a117dacde0288f3ec60b6e5bcedae8fa37ee0dfc
+  and 8bbb181308bc348e02bfdbebdedd4e4ec9d452ce ]
 
-TCP_USER_TIMEOUT is a TCP level socket option that takes an unsigned int. But
-patch "tcp: Add TCP_USER_TIMEOUT socket option"(dca43c75) didn't check the negative
-values. If a user assign -1 to it, the socket will set successfully and wait
-for 4294967295 miliseconds. This patch add a negative value check to avoid
-this issue.
+The tun module leaks up to 36 bytes of memory by not fully initializing
+a structure located on the stack that gets copied to user memory by the
+TUNGETIFF and SIOCGIFHWADDR ioctl()s.
 
-Signed-off-by: Hangbin Liu <liuhangbin@gmail.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/tun.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2408,7 +2408,10 @@ static int do_tcp_setsockopt(struct sock
- 		/* Cap the max timeout in ms TCP will retry/retrans
- 		 * before giving up and aborting (ETIMEDOUT) a connection.
- 		 */
--		icsk->icsk_user_timeout = msecs_to_jiffies(val);
-+		if (val < 0)
-+			err = -EINVAL;
-+		else
-+			icsk->icsk_user_timeout = msecs_to_jiffies(val);
- 		break;
- 	default:
- 		err = -ENOPROTOOPT;
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1255,10 +1255,12 @@ static long __tun_chr_ioctl(struct file
+ 	int vnet_hdr_sz;
+ 	int ret;
+ 
+-	if (cmd == TUNSETIFF || _IOC_TYPE(cmd) == 0x89)
++	if (cmd == TUNSETIFF || _IOC_TYPE(cmd) == 0x89) {
+ 		if (copy_from_user(&ifr, argp, ifreq_len))
+ 			return -EFAULT;
+-
++	} else {
++		memset(&ifr, 0, sizeof(ifr));
++	}
+ 	if (cmd == TUNGETFEATURES) {
+ 		/* Currently this just means: "what IFF flags are valid?".
+ 		 * This is needed because we never checked for invalid flags on
 
 
