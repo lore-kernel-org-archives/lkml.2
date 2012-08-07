@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186Ab2HGWaS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:30:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
+	id S1757234Ab2HGWab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:30:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757156Ab2HGWaN (ORCPT
+	with ESMTP id S1757209Ab2HGWa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:30:13 -0400
+	Tue, 7 Aug 2012 18:30:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>, Jan Kara <jack@suse.cz>
-Subject: [ 062/122] udf: Improve table length check to avoid possible overflow
-Date: Tue,  7 Aug 2012 15:25:50 -0700
-Message-Id: <20120807221953.899292191@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>, Huang Ying <ying.huang@intel.com>,
+        Gary Hade <garyhade@us.ibm.com>, Len Brown <len.brown@intel.com>
+Subject: [ 066/122] ACPI, APEI: Fixup common access width firmware bug
+Date: Tue,  7 Aug 2012 15:25:54 -0700
+Message-Id: <20120807221954.356297920@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,33 +30,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit 57b9655d01ef057a523e810d29c37ac09b80eead upstream.
+commit f712c71f7b2b43b894d1e92e1b77385fcad8815f upstream.
 
-When a partition table length is corrupted to be close to 1 << 32, the
-check for its length may overflow on 32-bit systems and we will think
-the length is valid. Later on the kernel can crash trying to read beyond
-end of buffer. Fix the check to avoid possible overflow.
+Many firmwares have a common register definition bug where 8-bit
+access width is specified for a 32-bit register. Ideally this should
+be fixed in the BIOS, but earlier versions of the kernel did not
+complain, so fix that up silently.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Jan Kara <jack@suse.cz>
+This closes kernel bug #43282:
+https://bugzilla.kernel.org/show_bug.cgi?id=43282
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Huang Ying <ying.huang@intel.com>
+Acked-by: Gary Hade <garyhade@us.ibm.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/apei/apei-base.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1283,7 +1283,7 @@ static int udf_load_logicalvol(struct su
- 	BUG_ON(ident != TAG_IDENT_LVD);
- 	lvd = (struct logicalVolDesc *)bh->b_data;
- 	table_len = le32_to_cpu(lvd->mapTableLength);
--	if (sizeof(*lvd) + table_len > sb->s_blocksize) {
-+	if (table_len > sb->s_blocksize - sizeof(*lvd)) {
- 		udf_err(sb, "error loading logical volume descriptor: "
- 			"Partition table too long (%u > %lu)\n", table_len,
- 			sb->s_blocksize - sizeof(*lvd));
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -586,6 +586,11 @@ static int apei_check_gar(struct acpi_ge
+ 	}
+ 	*access_bit_width = 1UL << (access_size_code + 2);
+ 
++	/* Fixup common BIOS bug */
++	if (bit_width == 32 && bit_offset == 0 && (*paddr & 0x03) == 0 &&
++	    *access_bit_width < 32)
++		*access_bit_width = 32;
++
+ 	if ((bit_width + bit_offset) > *access_bit_width) {
+ 		pr_warning(FW_BUG APEI_PFX
+ 			   "Invalid bit width + offset in GAR [0x%llx/%u/%u/%u/%u]\n",
 
 
