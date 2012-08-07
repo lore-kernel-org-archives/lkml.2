@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab2HGQAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:00:50 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35542 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2HGQAt (ORCPT
+	id S1755450Ab2HGQDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:03:54 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35899 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750734Ab2HGQDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:00:49 -0400
-Date: Tue, 7 Aug 2012 17:05:04 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/2] perf tools: Support for events bash completion
-Message-ID: <20120807170504.35646bf8@pyramind.ukuu.org.uk>
-In-Reply-To: <50212AA4.604@gmail.com>
-References: <1344345586-15068-1-git-send-email-fweisbec@gmail.com>
-	<1344345586-15068-3-git-send-email-fweisbec@gmail.com>
-	<50212AA4.604@gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Aug 2012 12:03:52 -0400
+Date: Tue, 7 Aug 2012 17:03:37 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
+ page to userspace
+Message-ID: <20120807160337.GC16877@mudshark.cambridge.arm.com>
+References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
+ <20120709122523.GC4627@tiehlicka.suse.cz>
+ <20120709141324.GK7315@mudshark.cambridge.arm.com>
+ <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
+ <20120710094513.GB9108@mudshark.cambridge.arm.com>
+ <20120710104234.GI9108@mudshark.cambridge.arm.com>
+ <20120711174802.GG13498@mudshark.cambridge.arm.com>
+ <20120712111659.GF21013@tiehlicka.suse.cz>
+ <20120712112645.GG2816@mudshark.cambridge.arm.com>
+ <20120712115708.GG21013@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120712115708.GG21013@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >   		COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
-> > +	# List possible events for -e option
-> > +	elif [[ $prev == "-e" && "${COMP_WORDS[1]}" == @(record|stat|top) ]]; then
-> > +		cmds=$(perf list --raw-dump)
-> > +		COMPREPLY=( $( compgen -W '$cmds' -- $cur ) )
+<resurrecting this thread>
+
+On Thu, Jul 12, 2012 at 12:57:08PM +0100, Michal Hocko wrote:
+> On Thu 12-07-12 12:26:45, Will Deacon wrote:
+> > Well, the comment in linux/page-flags.h does state that:
+> > 
+> >  * PG_arch_1 is an architecture specific page state bit.  The generic code
+> >  * guarantees that this bit is cleared for a page when it first is entered into
+> >  * the page cache.
+> > 
+> > so it's not completely clear cut that the architecture should be responsible
+> > for clearing this bit when allocating pages from the hugepage pool.
+> 
+> I think the wording is quite clear. It guarantees it gets cleared not
+> clears it. So it is up to an arch specific functions called from the
+> generic code to do that.
+
+If we have to do this in arch-specific functions then:
+
+	1. Where should we do it?
+	2. Why don't we also do this for normal (non-huge) pages?
+
+I looked at what happens for non-huge pages and the page flags are
+cleared by *generic* code in free_pages_check:
 
 
-Surely $cur should be quoted here...
+  /*
+   * Flags checked when a page is prepped for return by the page allocator.
+   * Pages being prepped should not have any flags set.  It they are set,
+   * there has been a kernel bug or struct page corruption.
+   */
+  #define PAGE_FLAGS_CHECK_AT_PREP	((1 << NR_PAGEFLAGS) - 1)
 
-Alan
+  static inline int free_pages_check(struct page *page)
+  {
+  	[...]
+  	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
+  		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+  	return 0;
+  }
+
+
+Which guarantees to the arch-code that any new pages coming back from the
+allocator will have PG_arch_1 clear. Why can't we just do something similar
+for the hugepage pool?
+
+Sorry to nag, but the discrepancy seems both unnecessary and unsolvable
+at the arch level with the current hooks.
+
+Will
