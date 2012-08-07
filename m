@@ -1,347 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab2HGMbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 08:31:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53660 "EHLO mx2.suse.de"
+	id S1754017Ab2HGMbW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:31:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53641 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab2HGMbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 08:31:24 -0400
+	id S1753177Ab2HGMbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 08:31:21 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
         Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/6] mm: compaction: Capture a suitable high-order page immediately when it is made available
-Date: Tue,  7 Aug 2012 13:31:15 +0100
-Message-Id: <1344342677-5845-5-git-send-email-mgorman@suse.de>
+Subject: [RFC PATCH 0/6] Improve hugepage allocation success rates under load
+Date: Tue,  7 Aug 2012 13:31:11 +0100
+Message-Id: <1344342677-5845-1-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1344342677-5845-1-git-send-email-mgorman@suse.de>
-References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While compaction is moving pages to free up large contiguous blocks for
-allocation it races with other allocation requests that may steal these
-blocks or break them up. This patch alters direct compaction to capture a
-suitable free page as soon as it becomes available to reduce this race. It
-uses similar logic to split_free_page() to ensure that watermarks are
-still obeyed.
+Allocation success rates have been far lower since 3.4 due to commit
+[fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. This
+commit was introduced for good reasons and it was known in advance that
+the success rates would suffer but it was justified on the grounds that
+the high allocation success rates were achieved by aggressive reclaim.
+Success rates are expected to suffer even more in 3.6 due to commit
+[7db8889a: mm: have order > 0 compaction start off where it left] which
+testing has shown to severely reduce allocation success rates under load -
+to 0% in one case.  There is a proposed change to that patch in this series
+and it would be ideal if Jim Schutt could retest the workload that led to
+commit [7db8889a: mm: have order > 0 compaction start off where it left].
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/compaction.h |    4 +--
+This series aims to improve the allocation success rates without regressing
+the benefits of commit fe2c2a10. The series is based on 3.5 and includes
+the commit 7db8889a to illustrate what impact it has to success rates.
+
+Patch 1 updates a stale comment seeing as I was in the general area.
+
+Patch 2 updates reclaim/compaction to reclaim pages scaled on the number
+	of recent failures.
+
+Patch 3 has kswapd use similar logic to direct reclaim when deciding whether
+	to continue reclaiming for reclaim/compaction or not.
+
+Patch 4 captures suitable high-order pages freed by compaction to reduce
+	races with parallel allocation requests.
+
+Patch 5 is an upstream commit that has compaction restart free page scanning
+	from an old position instead of always starting from the end of the
+	zone
+
+Patch 6 adjusts patch 5 to restores allocation success rates.
+
+STRESS-HIGHALLOC
+		 3.5.0-vanilla	  patches:1-2	    patches:1-3       patches:1-4       patches:1-5       patches:1-6
+Pass 1          36.00 ( 0.00%)    61.00 (25.00%)    49.00 (13.00%)    57.00 (21.00%)     0.00 (-36.00%)    62.00 (26.00%)
+Pass 2          46.00 ( 0.00%)    61.00 (15.00%)    55.00 ( 9.00%)    62.00 (16.00%)     0.00 (-46.00%)    63.00 (17.00%)
+while Rested    84.00 ( 0.00%)    85.00 ( 1.00%)    84.00 ( 0.00%)    86.00 ( 2.00%)    86.00 ( 2.00%)    86.00 ( 2.00%)
+
+From
+http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__stress-highalloc-performance-ext3/hydra/comparison.html
+I know that the allocation success rates in 3.3.6 was 78% in comparison
+to 36% in 3.5. With the full series applied, the success rates are up
+to 62% which is still much less but it does not reclaim excessively.
+Note what patch 5 which is the upstream commit fe2c2a10 did to allocation
+success rates.
+
+MMTests Statistics: vmstat
+Page Ins                                     3037580     3167260     3002720     3120080     2885540     3159024
+Page Outs                                    8026888     8028472     8023292     8031056     8025324     8026676
+Swap Ins                                           0           0           0           0           0           0
+Swap Outs                                          0           0           0           0           0           8
+
+Note that swap in/out rates remain at 0. In 3.3.6 with 78% success rates
+there were 71881 pages swapped out.
+
+Direct pages scanned                           97106       59600       43926      108327        2109      171530
+Kswapd pages scanned                         1231288     1419472     1388888     1443504     1180916     1377362
+Kswapd pages reclaimed                       1231221     1419248     1358130     1427561     1164936     1372875
+Direct pages reclaimed                         97100       59486       24233       88990        2109      171235
+Kswapd efficiency                                99%         99%         97%         98%         98%         99%
+Kswapd velocity                             1001.153    1129.622    1098.647    1080.758     955.967    1084.657
+Direct efficiency                                99%         99%         55%         82%        100%         99%
+Direct velocity                               78.956      47.430      34.747      81.105       1.707     135.078
+
+kswapd velocity stays at around 1000 pages/second which is reasonable. In
+kernel 3.3.6, it was 8140 pages/second.
+
+ include/linux/compaction.h |    4 +-
  include/linux/mm.h         |    1 +
- mm/compaction.c            |   71 +++++++++++++++++++++++++++++++++++++-------
- mm/internal.h              |    1 +
- mm/page_alloc.c            |   63 +++++++++++++++++++++++++++++----------
- 5 files changed, 111 insertions(+), 29 deletions(-)
+ include/linux/mmzone.h     |    4 ++
+ mm/compaction.c            |  142 +++++++++++++++++++++++++++++++++++++-------
+ mm/internal.h              |    7 +++
+ mm/page_alloc.c            |   68 ++++++++++++++++-----
+ mm/vmscan.c                |   29 ++++++++-
+ 7 files changed, 213 insertions(+), 42 deletions(-)
 
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index 51a90b7..5673459 100644
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -22,7 +22,7 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
- extern int fragmentation_index(struct zone *zone, unsigned int order);
- extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *mask,
--			bool sync);
-+			bool sync, struct page **page);
- extern int compact_pgdat(pg_data_t *pgdat, int order);
- extern unsigned long compaction_suitable(struct zone *zone, int order);
- 
-@@ -64,7 +64,7 @@ static inline bool compaction_deferred(struct zone *zone, int order)
- #else
- static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
--			bool sync)
-+			bool sync, struct page **page)
- {
- 	return COMPACT_CONTINUE;
- }
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b36d08c..0812e86 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -454,6 +454,7 @@ void put_pages_list(struct list_head *pages);
- 
- void split_page(struct page *page, unsigned int order);
- int split_free_page(struct page *page);
-+int capture_free_page(struct page *page, int alloc_order, int migratetype);
- 
- /*
-  * Compound pages have a destructor function.  Provide a
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 95ca967..63af8d2 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -50,6 +50,41 @@ static inline bool migrate_async_suitable(int migratetype)
- 	return is_migrate_cma(migratetype) || migratetype == MIGRATE_MOVABLE;
- }
- 
-+static void compact_capture_page(struct compact_control *cc)
-+{
-+	unsigned long flags;
-+	int mtype;
-+
-+	if (!cc->page || *cc->page)
-+		return;
-+
-+	/* Speculatively examine the free lists without zone lock */
-+	for (mtype = 0; mtype < MIGRATE_PCPTYPES; mtype++) {
-+		int order;
-+		for (order = cc->order; order < MAX_ORDER; order++) {
-+			struct page *page;
-+			struct free_area *area;
-+			area = &(cc->zone->free_area[order]);
-+			if (list_empty(&area->free_list[mtype]))
-+				continue;
-+
-+			/* Take the lock and attempt capture of the page */
-+			spin_lock_irqsave(&cc->zone->lock, flags);
-+			if (!list_empty(&area->free_list[mtype])) {
-+				page = list_entry(area->free_list[mtype].next,
-+							struct page, lru);
-+				if (capture_free_page(page, cc->order, mtype)) {
-+					spin_unlock_irqrestore(&cc->zone->lock,
-+									flags);
-+					*cc->page = page;
-+					return;
-+				}
-+			}
-+			spin_unlock_irqrestore(&cc->zone->lock, flags);
-+		}
-+	}
-+}
-+
- /*
-  * Isolate free pages onto a private freelist. Caller must hold zone->lock.
-  * If @strict is true, will abort returning 0 on any invalid PFNs or non-free
-@@ -561,7 +596,6 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- static int compact_finished(struct zone *zone,
- 			    struct compact_control *cc)
- {
--	unsigned int order;
- 	unsigned long watermark;
- 
- 	if (fatal_signal_pending(current))
-@@ -586,14 +620,22 @@ static int compact_finished(struct zone *zone,
- 		return COMPACT_CONTINUE;
- 
- 	/* Direct compactor: Is a suitable page free? */
--	for (order = cc->order; order < MAX_ORDER; order++) {
--		/* Job done if page is free of the right migratetype */
--		if (!list_empty(&zone->free_area[order].free_list[cc->migratetype]))
--			return COMPACT_PARTIAL;
--
--		/* Job done if allocation would set block type */
--		if (order >= pageblock_order && zone->free_area[order].nr_free)
-+	if (cc->page) {
-+		/* Was a suitable page captured? */
-+		if (*cc->page)
- 			return COMPACT_PARTIAL;
-+	} else {
-+		unsigned int order;
-+		for (order = cc->order; order < MAX_ORDER; order++) {
-+			struct free_area *area = &zone->free_area[cc->order];
-+			/* Job done if page is free of the right migratetype */
-+			if (!list_empty(&area->free_list[cc->migratetype]))
-+				return COMPACT_PARTIAL;
-+
-+			/* Job done if allocation would set block type */
-+			if (cc->order >= pageblock_order && area->nr_free)
-+				return COMPACT_PARTIAL;
-+		}
- 	}
- 
- 	return COMPACT_CONTINUE;
-@@ -708,6 +750,10 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 				goto out;
- 			}
- 		}
-+
-+		/* Capture a page now if it is a suitable size */
-+		if (cc->migratetype == MIGRATE_MOVABLE)
-+			compact_capture_page(cc);
- 	}
- 
- out:
-@@ -720,7 +766,7 @@ out:
- 
- static unsigned long compact_zone_order(struct zone *zone,
- 				 int order, gfp_t gfp_mask,
--				 bool sync)
-+				 bool sync, struct page **page)
- {
- 	struct compact_control cc = {
- 		.nr_freepages = 0,
-@@ -729,6 +775,7 @@ static unsigned long compact_zone_order(struct zone *zone,
- 		.migratetype = allocflags_to_migratetype(gfp_mask),
- 		.zone = zone,
- 		.sync = sync,
-+		.page = page,
- 	};
- 	INIT_LIST_HEAD(&cc.freepages);
- 	INIT_LIST_HEAD(&cc.migratepages);
-@@ -750,7 +797,7 @@ int sysctl_extfrag_threshold = 500;
-  */
- unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
--			bool sync)
-+			bool sync, struct page **page)
- {
- 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
- 	int may_enter_fs = gfp_mask & __GFP_FS;
-@@ -770,7 +817,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 								nodemask) {
- 		int status;
- 
--		status = compact_zone_order(zone, order, gfp_mask, sync);
-+		status = compact_zone_order(zone, order, gfp_mask, sync, page);
- 		rc = max(status, rc);
- 
- 		/* If a normal allocation would succeed, stop compacting */
-@@ -825,6 +872,7 @@ int compact_pgdat(pg_data_t *pgdat, int order)
- 	struct compact_control cc = {
- 		.order = order,
- 		.sync = false,
-+		.page = NULL,
- 	};
- 
- 	return __compact_pgdat(pgdat, &cc);
-@@ -835,6 +883,7 @@ static int compact_node(int nid)
- 	struct compact_control cc = {
- 		.order = -1,
- 		.sync = true,
-+		.page = NULL,
- 	};
- 
- 	return __compact_pgdat(NODE_DATA(nid), &cc);
-diff --git a/mm/internal.h b/mm/internal.h
-index 2ba87fb..9156714 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -124,6 +124,7 @@ struct compact_control {
- 	int order;			/* order a direct compactor needs */
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
- 	struct zone *zone;
-+	struct page **page;		/* Page captured of requested size */
- };
- 
- unsigned long
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4a4f921..adc3aa8 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1374,16 +1374,11 @@ void split_page(struct page *page, unsigned int order)
- }
- 
- /*
-- * Similar to split_page except the page is already free. As this is only
-- * being used for migration, the migratetype of the block also changes.
-- * As this is called with interrupts disabled, the caller is responsible
-- * for calling arch_alloc_page() and kernel_map_page() after interrupts
-- * are enabled.
-- *
-- * Note: this is probably too low level an operation for use in drivers.
-- * Please consult with lkml before using this in your driver.
-+ * Similar to the split_page family of functions except that the page
-+ * required at the given order and being isolated now to prevent races
-+ * with parallel allocators
-  */
--int split_free_page(struct page *page)
-+int capture_free_page(struct page *page, int alloc_order, int migratetype)
- {
- 	unsigned int order;
- 	unsigned long watermark;
-@@ -1405,10 +1400,11 @@ int split_free_page(struct page *page)
- 	rmv_page_order(page);
- 	__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
- 
--	/* Split into individual pages */
--	set_page_refcounted(page);
--	split_page(page, order);
-+	if (alloc_order != order)
-+		expand(zone, page, alloc_order, order,
-+			&zone->free_area[order], migratetype);
- 
-+	/* Set the pageblock if the captured page is at least a pageblock */
- 	if (order >= pageblock_order - 1) {
- 		struct page *endpage = page + (1 << order) - 1;
- 		for (; page < endpage; page += pageblock_nr_pages) {
-@@ -1419,7 +1415,35 @@ int split_free_page(struct page *page)
- 		}
- 	}
- 
--	return 1 << order;
-+	return 1UL << order;
-+}
-+
-+/*
-+ * Similar to split_page except the page is already free. As this is only
-+ * being used for migration, the migratetype of the block also changes.
-+ * As this is called with interrupts disabled, the caller is responsible
-+ * for calling arch_alloc_page() and kernel_map_page() after interrupts
-+ * are enabled.
-+ *
-+ * Note: this is probably too low level an operation for use in drivers.
-+ * Please consult with lkml before using this in your driver.
-+ */
-+int split_free_page(struct page *page)
-+{
-+	unsigned int order;
-+	int nr_pages;
-+
-+	BUG_ON(!PageBuddy(page));
-+	order = page_order(page);
-+
-+	nr_pages = capture_free_page(page, order, 0);
-+	if (!nr_pages)
-+		return 0;
-+
-+	/* Split into individual pages */
-+	set_page_refcounted(page);
-+	split_page(page, order);
-+	return nr_pages;
- }
- 
- /*
-@@ -2065,7 +2089,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	bool *deferred_compaction,
- 	unsigned long *did_some_progress)
- {
--	struct page *page;
-+	struct page *page = NULL;
- 
- 	if (!order)
- 		return NULL;
-@@ -2077,10 +2101,16 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 
- 	current->flags |= PF_MEMALLOC;
- 	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
--						nodemask, sync_migration);
-+					nodemask, sync_migration, &page);
- 	current->flags &= ~PF_MEMALLOC;
--	if (*did_some_progress != COMPACT_SKIPPED) {
- 
-+	/* If compaction captured a page, prep and use it */
-+	if (page) {
-+		prep_new_page(page, order, gfp_mask);
-+		goto got_page;
-+	}
-+
-+	if (*did_some_progress != COMPACT_SKIPPED) {
- 		/* Page migration frees to the PCP lists but we want merging */
- 		drain_pages(get_cpu());
- 		put_cpu();
-@@ -2090,6 +2120,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 				alloc_flags, preferred_zone,
- 				migratetype);
- 		if (page) {
-+got_page:
- 			preferred_zone->compact_considered = 0;
- 			preferred_zone->compact_defer_shift = 0;
- 			if (order >= preferred_zone->compact_order_failed)
 -- 
 1.7.9.2
 
