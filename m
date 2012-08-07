@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab2HGWze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:55:34 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61848 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030982Ab2HGWqU (ORCPT
+	id S1031151Ab2HGW4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:56:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031123Ab2HGWqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:20 -0400
+	Tue, 7 Aug 2012 18:46:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 19/49] Btrfs: call the ordered free operation without any locks held
-Date: Tue,  7 Aug 2012 15:44:37 -0700
-Message-Id: <20120807222028.606735219@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Rob Landley <rob@landley.net>
+Subject: [ 16/49] stable: update references to older 2.6 versions for 3.x
+Date: Tue,  7 Aug 2012 15:44:34 -0700
+Message-Id: <20120807222028.330778459@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -29,45 +30,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Chris Mason <chris.mason@fusionio.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit e9fbcb42201c862fd6ab45c48ead4f47bb2dea9d upstream.
+commit 2584f5212d97b664be250ad5700a2d0fee31a10d upstream.
 
-Each ordered operation has a free callback, and this was called with the
-worker spinlock held.  Josef made the free callback also call iput,
-which we can't do with the spinlock.
+Also add information on where the respective trees are.
 
-This drops the spinlock for the free operation and grabs it again before
-moving through the rest of the list.  We'll circle back around to this
-and find a cleaner way that doesn't bounce the lock around so much.
-
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Acked-by: Rob Landley <rob@landley.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/async-thread.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ Documentation/stable_kernel_rules.txt |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/fs/btrfs/async-thread.c
-+++ b/fs/btrfs/async-thread.c
-@@ -212,10 +212,17 @@ static noinline int run_ordered_completi
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -1,4 +1,4 @@
+-Everything you ever wanted to know about Linux 2.6 -stable releases.
++Everything you ever wanted to know about Linux -stable releases.
  
- 		work->ordered_func(work);
+ Rules on what kind of patches are accepted, and which ones are not, into the
+ "-stable" tree:
+@@ -41,10 +41,10 @@ Procedure for submitting patches to the
+    cherry-picked than this can be specified in the following format in
+    the sign-off area:
  
--		/* now take the lock again and call the freeing code */
-+		/* now take the lock again and drop our item from the list */
- 		spin_lock(&workers->order_lock);
- 		list_del(&work->order_list);
-+		spin_unlock(&workers->order_lock);
+-     Cc: <stable@vger.kernel.org> # .32.x: a1f84a3: sched: Check for idle
+-     Cc: <stable@vger.kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
+-     Cc: <stable@vger.kernel.org> # .32.x: fd21073: sched: Fix affinity logic
+-     Cc: <stable@vger.kernel.org> # .32.x
++     Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
++     Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
++     Cc: <stable@vger.kernel.org> # 3.3.x: fd21073: sched: Fix affinity logic
++     Cc: <stable@vger.kernel.org> # 3.3.x
+     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+ 
+    The tag sequence has the meaning of:
+@@ -78,6 +78,15 @@ Review cycle:
+    security kernel team, and not go through the normal review cycle.
+    Contact the kernel security team for more details on this procedure.
+ 
++Trees:
 +
-+		/*
-+		 * we don't want to call the ordered free functions
-+		 * with the lock held though
-+		 */
- 		work->ordered_free(work);
-+		spin_lock(&workers->order_lock);
- 	}
++ - The queues of patches, for both completed versions and in progress
++   versions can be found at:
++	http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
++ - The finalized and tagged releases of all stable kernels can be found
++   in separate branches per version at:
++	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
++
  
- 	spin_unlock(&workers->order_lock);
+ Review committee:
+ 
 
 
