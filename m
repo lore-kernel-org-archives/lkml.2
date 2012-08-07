@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab2HGWDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:03:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14193 "EHLO
+	id S1756888Ab2HGWDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:03:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2180 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340Ab2HGWDG (ORCPT
+	with ESMTP id S1753097Ab2HGWDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 18:03:06 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=THOoekfSB54A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=dJtu6xiJMSMGMT0oQlcA:9 a=QEXdDO2ut3YA:10 a=i4N6s4qCs0cYbZdwA5IA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=4zfdXA-DTvgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=qASrxVBPkHghr9_Qt7cA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=kOtm0b_gU3yns-b3:21 a=0KYM3duNxGdMGCC7:21 a=JKcAZs163Lqj66Pk0vcA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120807220106.459308722@goodmis.org>
+Message-Id: <20120807220304.049053227@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 18:01:06 -0400
+Date: Tue, 07 Aug 2012 18:01:09 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/3] [GIT PULL] tracing: updates
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Wang Tianhong <wangthbj@linux.vnet.ibm.com>
+Subject: [PATCH 3/3] tracing/trivial: Fix some typos in kernel/trace
+References: <20120807220106.459308722@goodmis.org>
+Content-Disposition: inline; filename=0003-tracing-trivial-Fix-some-typos-in-kernel-trace.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
+From: Wang Tianhong <wangthbj@linux.vnet.ibm.com>
 
-Ingo,
+Fix some typos in kernel/trace.
 
-I based this branch off of my tip/perf/core that I sent a pull request
-for earlier.
+Link: http://lkml.kernel.org/r/1343887320.2228.9.camel@louis-ThinkPad-T410
 
-Please pull the latest tip/perf/core-2 tree, which can be found at:
+Signed-off-by: Wang Tianhong <wangthbj@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ring_buffer.c |    4 ++--
+ kernel/trace/trace.c       |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/core-2
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 49491fa..b32ed0e 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2816,7 +2816,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_enable);
+  * to the buffer after this will fail and return NULL.
+  *
+  * This is different than ring_buffer_record_disable() as
+- * it works like an on/off switch, where as the disable() verison
++ * it works like an on/off switch, where as the disable() version
+  * must be paired with a enable().
+  */
+ void ring_buffer_record_off(struct ring_buffer *buffer)
+@@ -2839,7 +2839,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_off);
+  * ring_buffer_record_off().
+  *
+  * This is different than ring_buffer_record_enable() as
+- * it works like an on/off switch, where as the enable() verison
++ * it works like an on/off switch, where as the enable() version
+  * must be paired with a disable().
+  */
+ void ring_buffer_record_on(struct ring_buffer *buffer)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a120f98..d1a8d07 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -426,15 +426,15 @@ __setup("trace_buf_size=3D", set_buf_size);
+=20
+ static int __init set_tracing_thresh(char *str)
+ {
+-	unsigned long threshhold;
++	unsigned long threshold;
+ 	int ret;
+=20
+ 	if (!str)
+ 		return 0;
+-	ret =3D strict_strtoul(str, 0, &threshhold);
++	ret =3D strict_strtoul(str, 0, &threshold);
+ 	if (ret < 0)
+ 		return 0;
+-	tracing_thresh =3D threshhold * 1000;
++	tracing_thresh =3D threshold * 1000;
+ 	return 1;
+ }
+ __setup("tracing_thresh=3D", set_tracing_thresh);
+--=20
+1.7.10.4
 
-Head SHA1: 87abb3b15c62033409f5bf2ffb5620c94f91cf2c
 
-
-Jiri Olsa (1):
-      tracing/filter: Add missing initialization
-
-Steven Rostedt (1):
-      tracing: Fix wakeup_rt self test on virtual machines
-
-Wang Tianhong (1):
-      tracing/trivial: Fix some typos in kernel/trace
-
-----
- kernel/trace/ring_buffer.c         |    4 ++--
- kernel/trace/trace.c               |    6 +++---
- kernel/trace/trace_events_filter.c |    2 +-
- kernel/trace/trace_selftest.c      |   27 +++++++++++++--------------
- 4 files changed, 19 insertions(+), 20 deletions(-)
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -63,19 +99,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQIZCUAAoJEIy3vGnGbaoAohMP+weoLActOsjggETnblTLg0MT
-HNqJq9d1wNAr7LMgupPN4ccuwzK9l/5PjR4a7c9Af3yV0S+w827YauKHeImMX59e
-GjXonoHEfqlCUNwsLKMWn/KS37S9Q5cabZEEkbp6BuWCGg18kMGowE5QLVP98P3R
-WvYs0+VNOH9SnAU+4Ieg72TaFbm4p1oHGFfQ5ttTCuVrtOoglghN3Fj5RjGKkIpM
-HMZn3JwSk/H+BUZOFG5E/wTgkmPVXH9du5iO/GWOU4W6ZDC+1ejmUTyJrk6SNKsP
-FaBjTOkkdp6sbL+O/qiDpiZvphY7zUCE7wgnHUO5H3IeIGif+ufsnqdPnOUocAiY
-DYfHft2O2EQOwlln3VWqnQrJRqiZrg8nt09AJfJZdunDTidPulOeJEAlr+BUadYC
-6QsUK6K4u/Gg1+MDgZ9UbnrwPlSgKMGl5flKJZxWPPlFHWD0MDTKDRWHLssy8Lmt
-zliUF9Ti8ryvsjgSSSjfkg966Yuk840xX+dALt/8VIiYwwDpXmREGC4rsl5RH3lC
-LgTuF+PQdMofd+3N1fuQip10exfxx15tTeBp7SAO33LDvN5weZUlBlnPGYB32R7j
-NxAyaW3MmDnEp5yycUS5sho55lhHklA8se9S55kuiCMymmghH+cgeyc+uvl/Y5IX
-ZTl7dibQVCFFaLyCaTWi
-=Ec8n
+iQIcBAABAgAGBQJQIZCYAAoJEIy3vGnGbaoA4JsQAM1MUFjmiFUSGZHfvZeDcaDp
+u2PfyrdofXlxrGZ/Wwh8O4aVf1xw7LVy13HrRWNKfPJsQOIpvqEr/5iaYX2RKfnA
+EBgetZb4FlbU80J7ZiUkZ1CxXrJ4gm2x1HaF1EmLLUNPaqV+cGmWPZKf20MhsmUs
+PY53yWf8UY1KdZ79KUysoCxcPcSGSIx2G9NzAJmmsuSBIZhUfeNt1iX6rDuKAAgZ
+ypg2gApSu7JLgGEGM7OMM2GGzQIPLhckQXMzoqGWUKtUR7mUzYoXrC/W3k1gIfCh
+Kp9eyVg2oJVgX2tmEyXOQwBybosf5n4zTsrj7BzMR9jd3wg6yy/F5OQztamgtrrE
+TpXpk4JqCythIAlDwp/nT2/9qsc9kECg9fWbJHFNekZl+vpmoQlS9OPxTWmeiaJB
+8d6AueLRQL6O4FQauGU7kW4tFPFfVbnLWoeothamE7jwag3yLmpItnN42JLkrjnC
+q+HVeTnegN2EKzxCFrCXCKHbH+JtXsmlw7mZQ9wbXhnr1K7Z3DTh7WqRrnDiWejX
+adOGhcHtoW3muX3wNHMtcHMSRwJNLXc8457dpHFOJS8Vf+PiO1P86yz9HGkxwdNK
+DFYpOSKlWYugXWlJuqajsfcOHVkMFuh0TJm4Z4o/cth1Up+2QAPno5eo+4l/+0HH
+LhfYTK2J0qW92yYbsXbB
+=jOg2
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
