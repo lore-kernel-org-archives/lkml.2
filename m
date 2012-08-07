@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab2HGM4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 08:56:13 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:41798 "EHLO relay.sw.ru"
+	id S1754628Ab2HGM4M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:56:12 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:30634 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752959Ab2HGM4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751690Ab2HGM4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 08:56:09 -0400
 From: Andrew Vagin <avagin@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 1/4] perf: teach "perf inject" to work with files (v2)
-Date: Tue,  7 Aug 2012 16:56:02 +0400
-Message-Id: <1344344165-369636-2-git-send-email-avagin@openvz.org>
+Subject: [PATCH 4/4] perf: mark a dso if it's used
+Date: Tue,  7 Aug 2012 16:56:05 +0400
+Message-Id: <1344344165-369636-5-git-send-email-avagin@openvz.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1344344165-369636-1-git-send-email-avagin@openvz.org>
 References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
@@ -21,114 +21,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this patch "perf inject" can only handle data from pipe.
-
-I want to use "perf inject" for reworking events. Look at my following patch.
-
-v2: add information about new options in tools/perf/Documentation/
+Otherwise they will be not written in an output file.
 
 Signed-off-by: Andrew Vagin <avagin@openvz.org>
 ---
- tools/perf/Documentation/perf-inject.txt |    6 +++++
- tools/perf/builtin-inject.c              |   33 ++++++++++++++++++++++++++++-
- 2 files changed, 37 insertions(+), 2 deletions(-)
+ tools/perf/builtin-inject.c |   10 ++++++++--
+ tools/perf/util/build-id.c  |    2 +-
+ tools/perf/util/build-id.h  |    5 +++++
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
-index 025630d..6be2101 100644
---- a/tools/perf/Documentation/perf-inject.txt
-+++ b/tools/perf/Documentation/perf-inject.txt
-@@ -29,6 +29,12 @@ OPTIONS
- -v::
- --verbose::
- 	Be more verbose.
-+-i::
-+--input=::
-+        Input file name. (default: stdin)
-+-o::
-+--output=::
-+        Output file name. (default: stdout)
- 
- SEE ALSO
- --------
 diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 3beab48..4c9cdbb 100644
+index 9b3393a..be2edae 100644
 --- a/tools/perf/builtin-inject.c
 +++ b/tools/perf/builtin-inject.c
-@@ -14,7 +14,12 @@
+@@ -15,6 +15,7 @@
  
  #include "util/parse-options.h"
+ #include "util/trace-event.h"
++#include "util/build-id.h"
  
--static char		const *input_name = "-";
-+static const char	*input_name	= "-";
-+static const char	*output_name	= "-";
-+static int		pipe_output;
-+static int		output;
-+static u64		bytes_written;
-+
- static bool		inject_build_ids;
+ static const char	*input_name	= "-";
+ static const char	*output_name	= "-";
+@@ -282,10 +283,12 @@ static int perf_event__sched_stat(struct perf_tool *tool,
+ 		sample_sw.time = sample->time;
+ 		perf_evsel__synthesize_sample(evsel, event_sw, &sample_sw, false);
  
- static int perf_event__repipe_synth(struct perf_tool *tool __used,
-@@ -27,12 +32,14 @@ static int perf_event__repipe_synth(struct perf_tool *tool __used,
- 	size = event->header.size;
- 
- 	while (size) {
--		int ret = write(STDOUT_FILENO, buf, size);
-+		int ret = write(output, buf, size);
- 		if (ret < 0)
- 			return -errno;
- 
- 		size -= ret;
- 		buf += ret;
-+
-+		bytes_written += ret;
++		build_id__mark_dso_hit(tool, event_sw, &sample_sw, evsel, machine);
+ 		perf_event__repipe(tool, event_sw, &sample_sw, machine);
+ 		return 0;
  	}
  
++	build_id__mark_dso_hit(tool, event, sample, evsel, machine);
+ 	perf_event__repipe(tool, event, sample, machine);
+ 
  	return 0;
-@@ -244,8 +251,14 @@ static int __cmd_inject(void)
- 	if (session == NULL)
- 		return -ENOMEM;
+@@ -320,11 +323,14 @@ static int __cmd_inject(void)
  
-+	if (!pipe_output)
-+		lseek(output, session->header.data_offset, SEEK_SET);
- 	ret = perf_session__process_events(session, &perf_inject);
+ 	signal(SIGINT, sig_handler);
  
-+	if (!pipe_output) {
-+		session->header.data_size = bytes_written;
-+		perf_session__write_header(session, session->evlist, output, true);
-+	}
- 	perf_session__delete(session);
- 
- 	return ret;
-@@ -259,6 +272,10 @@ static const char * const report_usage[] = {
- static const struct option options[] = {
- 	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
- 		    "Inject build-ids into the output stream"),
-+	OPT_STRING('i', "input", &input_name, "file",
-+		    "input file name"),
-+	OPT_STRING('o', "output", &output_name, "file",
-+		    "output file name"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		 "be more verbose (show build ids, etc)"),
- 	OPT_END()
-@@ -274,6 +291,18 @@ int cmd_inject(int argc, const char **argv, const char *prefix __used)
- 	if (argc)
- 		usage_with_options(report_usage, options);
- 
-+	if (!strcmp(output_name, "-")) {
-+		pipe_output = 1;
-+		output = STDOUT_FILENO;
-+	} else {
-+		output = open(output_name, O_CREAT | O_WRONLY | O_TRUNC,
-+							S_IRUSR | S_IWUSR);
-+		if (output < 0) {
-+			perror("failed to create output file");
-+			exit(-1);
-+		}
+-	if (inject_build_ids) {
+-		perf_inject.sample	 = perf_event__inject_buildid;
++	if (inject_build_ids | inject_sched_stat) {
+ 		perf_inject.mmap	 = perf_event__repipe_mmap;
+ 		perf_inject.fork	 = perf_event__repipe_task;
+ 		perf_inject.tracing_data = perf_event__repipe_tracing_data;
 +	}
 +
- 	if (symbol__init() < 0)
- 		return -1;
++	if (inject_build_ids) {
++		perf_inject.sample	 = perf_event__inject_buildid;
+ 	} else if (inject_sched_stat) {
+ 		perf_inject.sample	 = perf_event__sched_stat;
+ 		perf_inject.ordered_samples = true;
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index fd9a594..9ce0e11 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -16,7 +16,7 @@
+ #include "session.h"
+ #include "tool.h"
  
+-static int build_id__mark_dso_hit(struct perf_tool *tool __used,
++int build_id__mark_dso_hit(struct perf_tool *tool __used,
+ 				  union perf_event *event,
+ 				  struct perf_sample *sample __used,
+ 				  struct perf_evsel *evsel __used,
+diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
+index a993ba8..032a968 100644
+--- a/tools/perf/util/build-id.h
++++ b/tools/perf/util/build-id.h
+@@ -7,4 +7,9 @@ extern struct perf_tool build_id__mark_dso_hit_ops;
+ 
+ char *dso__build_id_filename(struct dso *self, char *bf, size_t size);
+ 
++int build_id__mark_dso_hit(struct perf_tool *tool __used,
++				  union perf_event *event,
++				  struct perf_sample *sample __used,
++				  struct perf_evsel *evsel __used,
++				  struct machine *machine);
+ #endif
 -- 
 1.7.1
 
