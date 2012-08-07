@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031133Ab2HGWqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:46:13 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:38383 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031120Ab2HGWqI (ORCPT
+	id S1031157Ab2HGWqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:46:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031033Ab2HGWqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:08 -0400
+	Tue, 7 Aug 2012 18:46:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 15/49] ftrace: Disable function tracing during suspend/resume and hibernation, again
-Date: Tue,  7 Aug 2012 15:44:33 -0700
-Message-Id: <20120807222028.235905771@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [ 18/49] ACPI/AC: prevent OOPS on some boxes due to missing check power_supply_register() return value check
+Date: Tue,  7 Aug 2012 15:44:36 -0700
+Message-Id: <20120807222028.519296642@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -30,108 +29,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 443772d408a25af62498793f6f805ce3c559309a upstream.
+commit f197ac13f6eeb351b31250b9ab7d0da17434ea36 upstream.
 
-If function tracing is enabled for some of the low-level suspend/resume
-functions, it leads to triple fault during resume from suspend, ultimately
-ending up in a reboot instead of a resume (or a total refusal to come out
-of suspended state, on some machines).
+In the ac.c, power_supply_register()'s return value is not checked.
 
-This issue was explained in more detail in commit f42ac38c59e0a03d (ftrace:
-disable tracing for suspend to ram). However, the changes made by that commit
-got reverted by commit cbe2f5a6e84eebb (tracing: allow tracing of
-suspend/resume & hibernation code again). So, unfortunately since things are
-not yet robust enough to allow tracing of low-level suspend/resume functions,
-suspend/resume is still broken when ftrace is enabled.
+As a result, the driver's add() ops may return success
+even though the device failed to initialize.
 
-So fix this by disabling function tracing during suspend/resume & hibernation.
+For example, some BIOS may describe two ACADs in the same DSDT.
+The second ACAD device will fail to register,
+but ACPI driver's add() ops returns sucessfully.
+The ACPI device will receive ACPI notification and cause OOPS.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+https://bugzilla.redhat.com/show_bug.cgi?id=772730
+
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/power/hibernate.c |    6 ++++++
- kernel/power/suspend.c   |    3 +++
- 2 files changed, 9 insertions(+)
+ drivers/acpi/ac.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -344,6 +344,7 @@ int hibernation_snapshot(int platform_mo
- 		goto Complete_devices;
+--- a/drivers/acpi/ac.c
++++ b/drivers/acpi/ac.c
+@@ -292,7 +292,9 @@ static int acpi_ac_add(struct acpi_devic
+ 	ac->charger.properties = ac_props;
+ 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
+ 	ac->charger.get_property = get_ac_property;
+-	power_supply_register(&ac->device->dev, &ac->charger);
++	result = power_supply_register(&ac->device->dev, &ac->charger);
++	if (result)
++		goto end;
  
- 	suspend_console();
-+	ftrace_stop();
- 	pm_restrict_gfp_mask();
- 	error = dpm_suspend(PMSG_FREEZE);
- 	if (error)
-@@ -369,6 +370,7 @@ int hibernation_snapshot(int platform_mo
- 	if (error || !in_suspend)
- 		pm_restore_gfp_mask();
- 
-+	ftrace_start();
- 	resume_console();
- 
-  Complete_devices:
-@@ -471,6 +473,7 @@ int hibernation_restore(int platform_mod
- 
- 	pm_prepare_console();
- 	suspend_console();
-+	ftrace_stop();
- 	pm_restrict_gfp_mask();
- 	error = dpm_suspend_start(PMSG_QUIESCE);
- 	if (!error) {
-@@ -478,6 +481,7 @@ int hibernation_restore(int platform_mod
- 		dpm_resume_end(PMSG_RECOVER);
- 	}
- 	pm_restore_gfp_mask();
-+	ftrace_start();
- 	resume_console();
- 	pm_restore_console();
- 	return error;
-@@ -504,6 +508,7 @@ int hibernation_platform_enter(void)
- 
- 	entering_platform_hibernation = true;
- 	suspend_console();
-+	ftrace_stop();
- 	error = dpm_suspend_start(PMSG_HIBERNATE);
- 	if (error) {
- 		if (hibernation_ops->recover)
-@@ -547,6 +552,7 @@ int hibernation_platform_enter(void)
-  Resume_devices:
- 	entering_platform_hibernation = false;
- 	dpm_resume_end(PMSG_RESTORE);
-+	ftrace_start();
- 	resume_console();
- 
-  Close:
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -23,6 +23,7 @@
- #include <linux/slab.h>
- #include <linux/suspend.h>
- #include <linux/syscore_ops.h>
-+#include <linux/ftrace.h>
- #include <trace/events/power.h>
- 
- #include "power.h"
-@@ -210,6 +211,7 @@ int suspend_devices_and_enter(suspend_st
- 			goto Close;
- 	}
- 	suspend_console();
-+	ftrace_stop();
- 	suspend_test_start();
- 	error = dpm_suspend_start(PMSG_SUSPEND);
- 	if (error) {
-@@ -226,6 +228,7 @@ int suspend_devices_and_enter(suspend_st
- 	suspend_test_start();
- 	dpm_resume_end(PMSG_RESUME);
- 	suspend_test_finish("resume devices");
-+	ftrace_start();
- 	resume_console();
-  Close:
- 	if (suspend_ops->end)
+ 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
+ 	       acpi_device_name(device), acpi_device_bid(device),
 
 
