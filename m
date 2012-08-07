@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab2HGNWE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 09:22:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9341 "EHLO mx1.redhat.com"
+	id S1754889Ab2HGNWK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 09:22:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18265 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754659Ab2HGNWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 09:22:01 -0400
+	id S1754659Ab2HGNWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 09:22:06 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -13,43 +13,47 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Benjamin Redelings <benjamin.redelings@nescent.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 09/12] perf tools: Add libunwind dependency for DWARF CFI unwinding
-Date: Tue,  7 Aug 2012 15:20:44 +0200
-Message-Id: <1344345647-11536-10-git-send-email-jolsa@redhat.com>
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>
+Subject: [PATCH 06/12] perf: Add attribute to filter out callchains
+Date: Tue,  7 Aug 2012 15:20:41 +0200
+Message-Id: <1344345647-11536-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1344345647-11536-1-git-send-email-jolsa@redhat.com>
 References: <1344345647-11536-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding libunwind to be linked with perf if available. It's required
-for the to get dwarf cfi unwinding support.
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Also building perf with the dwarf call frame informations by default,
-so that we can unwind callchains in perf itself.
+Introducing following bits to the the perf_event_attr struct:
+  - exclude_callchain_kernel to filter out kernel callchain
+    from the sample dump
+  - exclude_callchain_user to filter out user callchain
+    from the sample dump
 
-Adding LIBUNWIND_DIR Makefile variable allowing user to specify
-the directory with libunwind to be linked. This is used for
-debug purposes.
+We need to be able to disable standard user callchain dump
+when we use the dwarf cfi callchain mode, because frame
+pointer based user callchains are useless in this mode.
 
-Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
+Implementing also exclude_callchain_kernel to have complete
+set of options.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Cyrill Gorcunov <gorcunov@openvz.org>
 Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -57,121 +61,89 @@ Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Cc: Ulrich Drepper <drepper@gmail.com>
+[ Added kernel callchains filtering ]
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile                 | 30 +++++++++++++++++++++++++++++-
- tools/perf/config/feature-tests.mak | 25 +++++++++++++++++++++++++
- 2 files changed, 54 insertions(+), 1 deletion(-)
+ include/linux/perf_event.h |  5 ++++-
+ kernel/events/callchain.c  | 38 ++++++++++++++++++++++++--------------
+ 2 files changed, 28 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f5bf476..076ba2f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -38,6 +38,9 @@ include config/utilities.mak
- # Define NO_NEWT if you do not want TUI support.
- #
- # Define NO_DEMANGLE if you do not want C++ symbol demangling.
-+#
-+# Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
-+# backtrace post unwind.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index d1d25f6..297ca3d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -268,7 +268,10 @@ struct perf_event_attr {
+ 				exclude_host   :  1, /* don't count in host   */
+ 				exclude_guest  :  1, /* don't count in guest  */
  
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-@@ -59,6 +62,7 @@ AR = $(CROSS_COMPILE)ar
- ifeq ($(ARCH),i386)
- 	ARCH := x86
- 	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
-@@ -72,6 +76,7 @@ ifeq ($(ARCH),x86_64)
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
- 	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
- endif
+-				__reserved_1   : 43;
++				exclude_callchain_kernel : 1, /* exclude kernel callchains */
++				exclude_callchain_user   : 1, /* exclude user callchains */
++
++				__reserved_1   : 41;
  
- # Treat warnings as errors unless directed not to
-@@ -92,7 +97,7 @@ ifdef PARSER_DEBUG
- 	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
- endif
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
+diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+index 98d4597..c772061 100644
+--- a/kernel/events/callchain.c
++++ b/kernel/events/callchain.c
+@@ -159,6 +159,11 @@ perf_callchain(struct perf_event *event, struct pt_regs *regs)
+ 	int rctx;
+ 	struct perf_callchain_entry *entry;
  
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
-+CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
-@@ -461,6 +466,21 @@ ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
- endif # Dwarf support
- endif # NO_DWARF
++	int kernel = !event->attr.exclude_callchain_kernel;
++	int user   = !event->attr.exclude_callchain_user;
++
++	if (!kernel && !user)
++		return NULL;
  
-+ifndef NO_LIBUNWIND
-+# for linking with debug library, run like:
-+# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
-+ifdef LIBUNWIND_DIR
-+	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
-+	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
-+endif
-+
-+FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-+ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
-+	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
-+	NO_LIBUNWIND := 1
-+endif # Libunwind support
-+endif # NO_LIBUNWIND
-+
- -include arch/$(ARCH)/Makefile
+ 	entry = get_callchain_entry(&rctx);
+ 	if (rctx == -1)
+@@ -169,24 +174,29 @@ perf_callchain(struct perf_event *event, struct pt_regs *regs)
  
- ifneq ($(OUTPUT),)
-@@ -492,6 +512,14 @@ else
- endif # PERF_HAVE_DWARF_REGS
- endif # NO_DWARF
+ 	entry->nr = 0;
  
-+ifdef NO_LIBUNWIND
-+	BASIC_CFLAGS += -DNO_LIBUNWIND_SUPPORT
-+else
-+	EXTLIBS += $(LIBUNWIND_LIBS)
-+	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
-+	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
-+endif
+-	if (!user_mode(regs)) {
++	if (kernel && !user_mode(regs)) {
+ 		perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 		perf_callchain_kernel(entry, regs);
+-		if (current->mm)
+-			regs = task_pt_regs(current);
+-		else
+-			regs = NULL;
+ 	}
+ 
+-	if (regs) {
+-		/*
+-		 * Disallow cross-task user callchains.
+-		 */
+-		if (event->ctx->task && event->ctx->task != current)
+-			goto exit_put;
+-
+-		perf_callchain_store(entry, PERF_CONTEXT_USER);
+-		perf_callchain_user(entry, regs);
++	if (user) {
++		if (!user_mode(regs)) {
++			if  (current->mm)
++				regs = task_pt_regs(current);
++			else
++				regs = NULL;
++		}
 +
- ifdef NO_NEWT
- 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
- else
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 6c18785..2f1156a 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -154,3 +154,28 @@ int main(void)
- 	return 0;
- }
- endef
++		if (regs) {
++			/*
++			 * Disallow cross-task user callchains.
++			 */
++			if (event->ctx->task && event->ctx->task != current)
++				goto exit_put;
 +
-+ifndef NO_LIBUNWIND
-+define SOURCE_LIBUNWIND
-+#include <libunwind.h>
-+#include <stdlib.h>
-+
-+extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
-+                                      unw_word_t ip,
-+                                      unw_dyn_info_t *di,
-+                                      unw_proc_info_t *pi,
-+                                      int need_unwind_info, void *arg);
-+
-+
-+#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
-+
-+int main(void)
-+{
-+	unw_addr_space_t addr_space;
-+	addr_space = unw_create_addr_space(NULL, 0);
-+	unw_init_remote(NULL, addr_space, NULL);
-+	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
-+	return 0;
-+}
-+endef
-+endif
++			perf_callchain_store(entry, PERF_CONTEXT_USER);
++			perf_callchain_user(entry, regs);
++		}
+ 	}
+ 
+ exit_put:
 -- 
 1.7.11.2
 
