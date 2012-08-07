@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab2HGPrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:47:23 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:51427
+	id S1755444Ab2HGPsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:48:15 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:42801
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754664Ab2HGPoN (ORCPT
+	by vger.kernel.org with ESMTP id S1753811Ab2HGPoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:44:13 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Tue, 7 Aug 2012 11:44:11 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M8E6DH-01-1YR-02
+X-WSS-ID: 0M8E6DG-02-5T3-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
 CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 10/19] x86, io_apic: Introduce function pointer for setup_timer_IRQ0_pin
-Date: Tue, 7 Aug 2012 17:43:40 +0200
-Message-ID: <1344354229-8526-11-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 05/19] x86, hpet: Introduce x86_msi_ops.setup_hpet_msi
+Date: Tue, 7 Aug 2012 17:43:35 +0200
+Message-ID: <1344354229-8526-6-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
 References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
@@ -29,122 +29,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function must be a NOP with interrupt remapping
-enabled. So use a funtion pointer for it which points to an
-empty function when irq_remapping_enabled == true.
+This function pointer can be overwritten by the IRQ
+remapping code. The irq_remapping_enabled check can be
+removed from default_setup_hpet_msi.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/io_apic.h  |    5 +++++
- arch/x86/include/asm/x86_init.h |    3 +++
- arch/x86/kernel/apic/io_apic.c  |   11 ++++-------
- arch/x86/kernel/x86_init.c      |    1 +
- drivers/iommu/irq_remapping.c   |    7 +++++++
- 5 files changed, 20 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/hpet.h     |    4 ++--
+ arch/x86/include/asm/x86_init.h |    1 +
+ arch/x86/kernel/apic/io_apic.c  |    7 +------
+ arch/x86/kernel/hpet.c          |    2 +-
+ arch/x86/kernel/x86_init.c      |   10 ++++++----
+ drivers/iommu/irq_remapping.c   |    3 ++-
+ 6 files changed, 13 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 2cefc56..d74d5f4 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -152,6 +152,11 @@ extern void ioapic_insert_resources(void);
- extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
- 				     unsigned int, int,
- 				     struct io_apic_irq_attr *);
-+extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
-+				     unsigned int, int,
-+				     struct io_apic_irq_attr *);
-+extern void __init native_setup_timer_pin(unsigned int ioapic_idx,
-+					  unsigned int pin, int vector);
+diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
+index 2c392d6..7642824 100644
+--- a/arch/x86/include/asm/hpet.h
++++ b/arch/x86/include/asm/hpet.h
+@@ -82,9 +82,9 @@ extern void hpet_msi_write(struct hpet_dev *hdev, struct msi_msg *msg);
+ extern void hpet_msi_read(struct hpet_dev *hdev, struct msi_msg *msg);
  
- int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
- 
+ #ifdef CONFIG_PCI_MSI
+-extern int arch_setup_hpet_msi(unsigned int irq, unsigned int id);
++extern int default_setup_hpet_msi(unsigned int irq, unsigned int id);
+ #else
+-static inline int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
++static inline int default_setup_hpet_msi(unsigned int irq, unsigned int id)
+ {
+ 	return -EINVAL;
+ }
 diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index bc13022..ffe5860 100644
+index be8e9a6..1f49c8a 100644
 --- a/arch/x86/include/asm/x86_init.h
 +++ b/arch/x86/include/asm/x86_init.h
-@@ -207,6 +207,9 @@ struct x86_io_apic_ops {
- 	int		(*setup_entry)(int irq, struct IO_APIC_route_entry *entry,
- 				       unsigned int destination, int vector,
- 				       struct io_apic_irq_attr *attr);
-+	void		(*setup_timer_pin)(unsigned int ioapic_idx,
-+					   unsigned int pin, int vector);
-+
+@@ -186,6 +186,7 @@ struct x86_msi_ops {
+ 	void (*teardown_msi_irq)(unsigned int irq);
+ 	void (*teardown_msi_irqs)(struct pci_dev *dev);
+ 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
++	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
  };
  
- extern struct x86_init_ops x86_init;
+ struct x86_io_apic_ops {
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 5e12614..d17ae46 100644
+index c3a05e9..56a2427 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1473,15 +1473,12 @@ void setup_IO_APIC_irq_extra(u32 gsi)
- /*
-  * Set up the timer pin, possibly with the 8259A-master behind.
-  */
--static void __init setup_timer_IRQ0_pin(unsigned int ioapic_idx,
--					unsigned int pin, int vector)
-+void __init native_setup_timer_pin(unsigned int ioapic_idx,
-+				   unsigned int pin, int vector)
+@@ -3297,17 +3297,12 @@ static struct irq_chip hpet_msi_type = {
+ 	.irq_retrigger = ioapic_retrigger_irq,
+ };
+ 
+-int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
++int default_setup_hpet_msi(unsigned int irq, unsigned int id)
  {
- 	struct IO_APIC_route_entry entry;
- 	unsigned int dest;
+ 	struct irq_chip *chip = &hpet_msi_type;
+ 	struct msi_msg msg;
+ 	int ret;
  
--	if (irq_remapping_enabled)
--		return;
+-	if (irq_remapping_enabled) {
+-		if (!setup_hpet_msi_remapped(irq, id))
+-			return -1;
+-	}
 -
- 	memset(&entry, 0, sizeof(entry));
+ 	ret = msi_compose_msg(NULL, irq, &msg, id);
+ 	if (ret < 0)
+ 		return ret;
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index 1460a5d..22d4fe5 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -478,7 +478,7 @@ static int hpet_msi_next_event(unsigned long delta,
  
- 	/*
-@@ -2791,7 +2788,7 @@ static inline void __init check_timer(void)
- 		 */
- 		if (no_pin1) {
- 			add_pin_to_irq_node(cfg, node, apic1, pin1);
--			setup_timer_IRQ0_pin(apic1, pin1, cfg->vector);
-+			x86_io_apic_ops.setup_timer_pin(apic1, pin1, cfg->vector);
- 		} else {
- 			/* for edge trigger, setup_ioapic_irq already
- 			 * leave it unmasked.
-@@ -2823,7 +2820,7 @@ static inline void __init check_timer(void)
- 		 * legacy devices should be connected to IO APIC #0
- 		 */
- 		replace_pin_at_irq_node(cfg, node, apic1, pin1, apic2, pin2);
--		setup_timer_IRQ0_pin(apic2, pin2, cfg->vector);
-+		x86_io_apic_ops.setup_timer_pin(apic2, pin2, cfg->vector);
- 		legacy_pic->unmask(0);
- 		if (timer_irq_works()) {
- 			apic_printk(APIC_QUIET, KERN_INFO "....... works.\n");
+ static int hpet_setup_msi_irq(unsigned int irq)
+ {
+-	if (arch_setup_hpet_msi(irq, hpet_blockid)) {
++	if (x86_msi.setup_hpet_msi(irq, hpet_blockid)) {
+ 		destroy_irq(irq);
+ 		return -EINVAL;
+ 	}
 diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 3cd6bf7..eba02e5 100644
+index dc19c50..339e108 100644
 --- a/arch/x86/kernel/x86_init.c
 +++ b/arch/x86/kernel/x86_init.c
-@@ -130,4 +130,5 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.print_entries		= native_io_apic_print_entries,
- 	.set_affinity		= native_ioapic_set_affinity,
- 	.setup_entry		= native_setup_ioapic_entry,
-+	.setup_timer_pin	= native_setup_timer_pin,
+@@ -19,6 +19,7 @@
+ #include <asm/time.h>
+ #include <asm/irq.h>
+ #include <asm/io_apic.h>
++#include <asm/hpet.h>
+ #include <asm/pat.h>
+ #include <asm/tsc.h>
+ #include <asm/iommu.h>
+@@ -113,10 +114,11 @@ struct x86_platform_ops x86_platform = {
+ 
+ EXPORT_SYMBOL_GPL(x86_platform);
+ struct x86_msi_ops x86_msi = {
+-	.setup_msi_irqs = native_setup_msi_irqs,
+-	.teardown_msi_irq = native_teardown_msi_irq,
+-	.teardown_msi_irqs = default_teardown_msi_irqs,
+-	.restore_msi_irqs = default_restore_msi_irqs,
++	.setup_msi_irqs		= native_setup_msi_irqs,
++	.teardown_msi_irq	= native_teardown_msi_irq,
++	.teardown_msi_irqs	= default_teardown_msi_irqs,
++	.restore_msi_irqs	= default_restore_msi_irqs,
++	.setup_hpet_msi		= default_setup_hpet_msi,
  };
+ 
+ struct x86_io_apic_ops x86_io_apic_ops = {
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 827f8a1..71824fc 100644
+index f72a5e8..f439151 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -87,11 +87,18 @@ error:
- 	return ret;
- }
+@@ -36,7 +36,8 @@ static void irq_remapping_disable_io_apic(void)
  
-+static void __init irq_remapping_setup_timer_pin(unsigned int ioapic_idx,
-+						 unsigned int pin, int vector)
-+{
-+	/* Not needed with interrupt remapping */
-+}
-+
  static void __init irq_remapping_modify_x86_ops(void)
  {
- 	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
- 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
- 	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
-+	x86_io_apic_ops.setup_timer_pin	= irq_remapping_setup_timer_pin;
- 	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
- 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+-	x86_io_apic_ops.disable	=	irq_remapping_disable_io_apic;
++	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
++	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
  }
+ 
+ static __init int setup_nointremap(char *str)
 -- 
 1.7.9.5
 
