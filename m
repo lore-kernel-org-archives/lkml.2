@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030415Ab2HGWcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:32:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030363Ab2HGWcq (ORCPT
+	id S1030432Ab2HGWc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:32:57 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:35918 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030363Ab2HGWcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:46 -0400
+	Tue, 7 Aug 2012 18:32:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Mack <zonque@gmail.com>, Andreas Koch <andreas@akdesigninc.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 110/122] ALSA: snd-usb: fix clock source validity index
-Date: Tue,  7 Aug 2012 15:26:38 -0700
-Message-Id: <20120807221959.808905542@linuxfoundation.org>
+Subject: [ 112/122] ALSA: hda - Fix invalid D3 of headphone DAC on VT202x codecs
+Date: Tue,  7 Aug 2012 15:26:40 -0700
+Message-Id: <20120807222000.056928677@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,38 +29,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit aff252a848ce21b431ba822de3dab9c4c94571cb upstream.
+commit 6162552b0de6ba80937c3dd53e084967851cd199 upstream.
 
-uac_clock_source_is_valid() uses the control selector value to access
-the bmControls bitmap of the clock source unit. This is wrong, as
-control selector values start from 1, while the bitmap uses all
-available bits.
+We've got a bug report about the silent output from the headphone on a
+mobo with VT2021, and spotted out that this was because of the wrong
+D3 state on the DAC for the headphone output.  The bug is triggered by
+the incomplete check for this DAC in set_widgets_power_state_vt1718S().
+It checks only the connectivity of the primary output (0x27) but
+doesn't consider the path from the headphone pin (0x28).
 
-In other words, "Clock Validity Control" is stored in D3..2, not D5..4
-of the clock selector unit's bmControls.
+Now this patch fixes the problem by checking both pins for DAC 0x0b.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Andreas Koch <andreas@akdesigninc.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/clock.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_via.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/sound/usb/clock.c
-+++ b/sound/usb/clock.c
-@@ -111,7 +111,8 @@ static bool uac_clock_source_is_valid(st
- 		return 0;
+--- a/sound/pci/hda/patch_via.c
++++ b/sound/pci/hda/patch_via.c
+@@ -3226,7 +3226,7 @@ static void set_widgets_power_state_vt17
+ {
+ 	struct via_spec *spec = codec->spec;
+ 	int imux_is_smixer;
+-	unsigned int parm;
++	unsigned int parm, parm2;
+ 	/* MUX6 (1eh) = stereo mixer */
+ 	imux_is_smixer =
+ 	snd_hda_codec_read(codec, 0x1e, 0, AC_VERB_GET_CONNECT_SEL, 0x00) == 5;
+@@ -3249,7 +3249,7 @@ static void set_widgets_power_state_vt17
+ 	parm = AC_PWRST_D3;
+ 	set_pin_power_state(codec, 0x27, &parm);
+ 	update_power_state(codec, 0x1a, parm);
+-	update_power_state(codec, 0xb, parm);
++	parm2 = parm; /* for pin 0x0b */
  
- 	/* If a clock source can't tell us whether it's valid, we assume it is */
--	if (!uac2_control_is_readable(cs_desc->bmControls, UAC2_CS_CONTROL_CLOCK_VALID))
-+	if (!uac2_control_is_readable(cs_desc->bmControls,
-+				      UAC2_CS_CONTROL_CLOCK_VALID - 1))
- 		return 1;
+ 	/* PW2 (26h), AOW2 (ah) */
+ 	parm = AC_PWRST_D3;
+@@ -3264,6 +3264,9 @@ static void set_widgets_power_state_vt17
+ 	if (!spec->hp_independent_mode) /* check for redirected HP */
+ 		set_pin_power_state(codec, 0x28, &parm);
+ 	update_power_state(codec, 0x8, parm);
++	if (!spec->hp_independent_mode && parm2 != AC_PWRST_D3)
++		parm = parm2;
++	update_power_state(codec, 0xb, parm);
+ 	/* MW9 (21h), Mw2 (1ah), AOW0 (8h) */
+ 	update_power_state(codec, 0x21, imux_is_smixer ? AC_PWRST_D0 : parm);
  
- 	err = snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), UAC2_CS_CUR,
 
 
