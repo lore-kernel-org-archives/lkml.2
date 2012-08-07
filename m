@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003Ab2HGWiJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:38:09 -0400
+	id S1030422Ab2HGWiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:38:14 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932989Ab2HGWiE (ORCPT
+	with ESMTP id S932989Ab2HGWiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:04 -0400
+	Tue, 7 Aug 2012 18:38:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 036/109] rtlwifi: rtl8192cu: Change buffer allocation for synchronous reads
-Date: Tue,  7 Aug 2012 15:34:55 -0700
-Message-Id: <20120807222046.271339876@linuxfoundation.org>
+Subject: [ 038/109] mwifiex: correction in mcs index check
+Date: Tue,  7 Aug 2012 15:34:57 -0700
+Message-Id: <20120807222046.438204308@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,72 +30,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 3ce4d85b76010525adedcc2555fa164bf706a2f3 upstream.
+commit fe020120cb863ba918c6d603345342a880272c4d upstream.
 
-In commit a7959c1, the USB part of rtlwifi was switched to convert
-_usb_read_sync() to using a preallocated buffer rather than one
-that has been acquired using kmalloc. Although this routine is named
-as though it were synchronous, there seem to be simultaneous users,
-and the selection of the index to the data buffer is not multi-user
-safe. This situation is addressed by adding a new spinlock. The routine
-cannot sleep, thus a mutex is not allowed.
+mwifiex driver supports 2x2 chips as well. Hence valid mcs values
+are 0 to 15. The check for mcs index is corrected in this patch.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+For example: if 40MHz is enabled and mcs index is 11, "iw link"
+command would show "tx bitrate: 108.0 MBit/s" without this patch.
+Now it shows "tx bitrate: 108.0 MBit/s MCS 11 40Mhz" with the patch.
+
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/usb.c  |   14 +++++++++++---
- drivers/net/wireless/rtlwifi/wifi.h |    1 +
- 2 files changed, 12 insertions(+), 3 deletions(-)
+ drivers/net/wireless/mwifiex/cfg80211.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -131,15 +131,19 @@ static u32 _usb_read_sync(struct rtl_pri
- 	u8 request;
- 	u16 wvalue;
- 	u16 index;
--	__le32 *data = &rtlpriv->usb_data[rtlpriv->usb_data_index];
-+	__le32 *data;
-+	unsigned long flags;
+--- a/drivers/net/wireless/mwifiex/cfg80211.c
++++ b/drivers/net/wireless/mwifiex/cfg80211.c
+@@ -544,9 +544,9 @@ mwifiex_dump_station_info(struct mwifiex
  
-+	spin_lock_irqsave(&rtlpriv->locks.usb_lock, flags);
-+	if (++rtlpriv->usb_data_index >= RTL_USB_MAX_RX_COUNT)
-+		rtlpriv->usb_data_index = 0;
-+	data = &rtlpriv->usb_data[rtlpriv->usb_data_index];
-+	spin_unlock_irqrestore(&rtlpriv->locks.usb_lock, flags);
- 	request = REALTEK_USB_VENQT_CMD_REQ;
- 	index = REALTEK_USB_VENQT_CMD_IDX; /* n/a */
- 
- 	wvalue = (u16)addr;
- 	_usbctrl_vendorreq_sync_read(udev, request, wvalue, index, data, len);
--	if (++rtlpriv->usb_data_index >= RTL_USB_MAX_RX_COUNT)
--		rtlpriv->usb_data_index = 0;
- 	return le32_to_cpu(*data);
- }
- 
-@@ -951,6 +955,10 @@ int __devinit rtl_usb_probe(struct usb_i
- 				    GFP_KERNEL);
- 	if (!rtlpriv->usb_data)
- 		return -ENOMEM;
-+
-+	/* this spin lock must be initialized early */
-+	spin_lock_init(&rtlpriv->locks.usb_lock);
-+
- 	rtlpriv->usb_data_index = 0;
- 	init_completion(&rtlpriv->firmware_loading_complete);
- 	SET_IEEE80211_DEV(hw, &intf->dev);
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -1555,6 +1555,7 @@ struct rtl_locks {
- 	spinlock_t rf_ps_lock;
- 	spinlock_t rf_lock;
- 	spinlock_t waitq_lock;
-+	spinlock_t usb_lock;
- 
- 	/*Dual mac*/
- 	spinlock_t cck_and_rw_pagea_lock;
+ 	/*
+ 	 * Bit 0 in tx_htinfo indicates that current Tx rate is 11n rate. Valid
+-	 * MCS index values for us are 0 to 7.
++	 * MCS index values for us are 0 to 15.
+ 	 */
+-	if ((priv->tx_htinfo & BIT(0)) && (priv->tx_rate < 8)) {
++	if ((priv->tx_htinfo & BIT(0)) && (priv->tx_rate < 16)) {
+ 		sinfo->txrate.mcs = priv->tx_rate;
+ 		sinfo->txrate.flags |= RATE_INFO_FLAGS_MCS;
+ 		/* 40MHz rate */
 
 
