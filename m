@@ -1,134 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab2HGJoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:44:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55377 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170Ab2HGJoD (ORCPT
+	id S1753574Ab2HGJrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:47:42 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53309 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab2HGJrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:44:03 -0400
-From: Jonas Gorski <jonas.gorski@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Ralf Baechle <ralf@linux-mips.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Subject: [PATCH] MIPS: fix module.c build for 32 bit
-Date: Tue,  7 Aug 2012 11:41:13 +0200
-Message-Id: <1344332473-19842-1-git-send-email-jonas.gorski@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 7 Aug 2012 05:47:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120806153503.GH10524@gmail.com>
+References: <1344266253-14050-1-git-send-email-lee.jones@linaro.org>
+	<20120806153503.GH10524@gmail.com>
+Date: Tue, 7 Aug 2012 11:47:38 +0200
+Message-ID: <CACRpkdZjbyQbht+UpXrrVGhAzGYPjb=HRZhJ+TvsEXhGeviJLA@mail.gmail.com>
+Subject: Re: [PATCH 1/1 v2] i2c: Add default configuration into the Nomadik
+ I2C driver.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, w.sang@pengutronix.de, linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following build failure introduced by "Make most arch
-asm/module.h files use asm-generic/module.h".
+On Mon, Aug 6, 2012 at 5:35 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-  CC      arch/mips/kernel/module.o
-arch/mips/kernel/module.c:250:14: error: 'reloc_handlers_rela' defined but not used [-Werror=unused-variable]
-cc1: all warnings being treated as errors
+> Looks like I introduced a merge error on the last patch. Trying again:
 
-make[6]: *** [arch/mips/kernel/module.o] Error 1
+>  .../mali/mali400ko/driver/src/devicedrv/mali/arch  |    1 +
+(...)
+> diff --git a/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch b/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch
+> new file mode 120000
+> index 0000000..427334b
+> --- /dev/null
+> +++ b/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch
+> @@ -0,0 +1 @@
+> +/home/ljkenny/projects/linaro/snowball/snowball/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch-ux500
+> \ No newline at end of file
 
-Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
+NACK, what is this stuff? It's even out-of-tree code.
 
----
-I don't mind this patch being squashed into the original patch. The
-patch isn't in any stable git yet, so I assume any git id would be
-outdated soon anyway.
+Please be careful with git add -A, I prefer to use git add <pathspec>
+I suspect that may be why this happened...
 
-Linus, I CC'd you because there already is a pending pull request for
-this patch.
+Please fix it up and send a v3.
 
-David, it would have been nice if the mentioned patch had made it to 
-linux-mips. I just caught this more or less by accident by building
-linux-next.
-
- arch/mips/kernel/module.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/arch/mips/kernel/module.c b/arch/mips/kernel/module.c
-index 1500c80..afbd717 100644
---- a/arch/mips/kernel/module.c
-+++ b/arch/mips/kernel/module.c
-@@ -65,12 +65,14 @@ static int apply_r_mips_32_rel(struct module *me, u32 *location, Elf_Addr v)
- 	return 0;
- }
- 
-+#ifdef CONFIG_MODULES_USE_ELF_RELA
- static int apply_r_mips_32_rela(struct module *me, u32 *location, Elf_Addr v)
- {
- 	*location = v;
- 
- 	return 0;
- }
-+#endif
- 
- static int apply_r_mips_26_rel(struct module *me, u32 *location, Elf_Addr v)
- {
-@@ -93,6 +95,7 @@ static int apply_r_mips_26_rel(struct module *me, u32 *location, Elf_Addr v)
- 	return 0;
- }
- 
-+#ifdef CONFIG_MODULES_USE_ELF_RELA
- static int apply_r_mips_26_rela(struct module *me, u32 *location, Elf_Addr v)
- {
- 	if (v % 4) {
-@@ -112,6 +115,7 @@ static int apply_r_mips_26_rela(struct module *me, u32 *location, Elf_Addr v)
- 
- 	return 0;
- }
-+#endif
- 
- static int apply_r_mips_hi16_rel(struct module *me, u32 *location, Elf_Addr v)
- {
-@@ -134,6 +138,7 @@ static int apply_r_mips_hi16_rel(struct module *me, u32 *location, Elf_Addr v)
- 	return 0;
- }
- 
-+#ifdef CONFIG_MODULES_USE_ELF_RELA
- static int apply_r_mips_hi16_rela(struct module *me, u32 *location, Elf_Addr v)
- {
- 	*location = (*location & 0xffff0000) |
-@@ -141,6 +146,7 @@ static int apply_r_mips_hi16_rela(struct module *me, u32 *location, Elf_Addr v)
- 
- 	return 0;
- }
-+#endif
- 
- static int apply_r_mips_lo16_rel(struct module *me, u32 *location, Elf_Addr v)
- {
-@@ -206,6 +212,7 @@ out_danger:
- 	return -ENOEXEC;
- }
- 
-+#ifdef CONFIG_MODULES_USE_ELF_RELA
- static int apply_r_mips_lo16_rela(struct module *me, u32 *location, Elf_Addr v)
- {
- 	*location = (*location & 0xffff0000) | (v & 0xffff);
-@@ -237,6 +244,7 @@ static int apply_r_mips_highest_rela(struct module *me, u32 *location,
- 
- 	return 0;
- }
-+#endif
- 
- static int (*reloc_handlers_rel[]) (struct module *me, u32 *location,
- 				Elf_Addr v) = {
-@@ -247,6 +255,7 @@ static int (*reloc_handlers_rel[]) (struct module *me, u32 *location,
- 	[R_MIPS_LO16]		= apply_r_mips_lo16_rel
- };
- 
-+#ifdef CONFIG_MODULES_USE_ELF_RELA
- static int (*reloc_handlers_rela[]) (struct module *me, u32 *location,
- 				Elf_Addr v) = {
- 	[R_MIPS_NONE]		= apply_r_mips_none,
-@@ -258,6 +267,7 @@ static int (*reloc_handlers_rela[]) (struct module *me, u32 *location,
- 	[R_MIPS_HIGHER]		= apply_r_mips_higher_rela,
- 	[R_MIPS_HIGHEST]	= apply_r_mips_highest_rela
- };
-+#endif
- 
- int apply_relocate(Elf_Shdr *sechdrs, const char *strtab,
- 		   unsigned int symindex, unsigned int relsec,
--- 
-1.7.2.5
-
+Yours,
+Linus Walleij
