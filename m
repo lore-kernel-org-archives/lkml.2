@@ -1,74 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab2HGW1E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:27:04 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52651 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755746Ab2HGW1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:27:01 -0400
-Message-ID: <50219628.1080909@linaro.org>
-Date: Tue, 07 Aug 2012 15:26:48 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Paul Moore <paul@paul-moore.com>
-CC: lkml <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov
-Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
-References: <50215A7E.8000701@linaro.org> <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com> <50218F7E.1060004@linaro.org> <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com>
-In-Reply-To: <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080722-7182-0000-0000-00000235EC71
+	id S1756893Ab2HGW1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:27:10 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:57002 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756843Ab2HGW1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 18:27:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Al Viro <viro@zeniv.linux.org.uk>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 002/122] iscsi-target: Drop bogus struct file usage for iSCSI/SCTP
+Date: Tue,  7 Aug 2012 15:24:50 -0700
+Message-Id: <20120807221948.448043618@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
+References: <20120807221948.220495155@linuxfoundation.org>
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 03:01 PM, Paul Moore wrote:
-> On Tue, Aug 7, 2012 at 5:58 PM, John Stultz <john.stultz@linaro.org> wrote:
->> On 08/07/2012 02:50 PM, Paul Moore wrote:
->>> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org>
->>> wrote:
->>>> Hi,
->>>>       With my kvm environment using 3.6-rc1+, I'm seeing NULL pointer
->>>> dereferences in selinux_ip_postroute_compat(). It looks like the sksec
->>>> value
->>>> is null and we die in the following line:
->>>>
->>>>       if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
->>>>
->>>> This triggers every time I shutdown the machine, but has also triggered
->>>> randomly after a few hours.
->>>>
->>>> This is on an ubuntu 12.04 image, not using selinux.
->>> NOTE: Adding the SELinux list to the CC line
->> Thanks!
->>
->>> Hi,
->>>
->>> I'm trying to understand this and I was hoping you could you clarify a
->>> few things for me:
->>>
->>> * Is the panic in the Ubuntu 12.04 guest, or the host?  If the host,
->>> could you share what distribution you are using?
->> Sorry, its a 12.04 guest.  I think the host is Ubuntu 12.04 as well.
->>
->>
->>> * When you say you are not using SELinux, could you be more specific?
->>> It seems odd that you are not using SELinux but the panic is happening
->>> in a SELinux hook.
->> I just mean that, being Ubuntu,  the system (userland) isn't configured to
->> use selinux.  SELinux is just enabled in the kernel config.
-> Thanks for the quick response, I'll setup an Ubuntu guest and see if I
-> can reproduce this ... something is odd.  Anything non-standard about
-> your guest install or anything else you think might be helpful?
-Don't think so.  Just a standard 64bit ubuntu 12.04 install.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Since I'm booting kernel/initrd from the commandline, the initrd *may* 
-be older then 12.04, I can't quite remember when I copied that out of 
-the image. I'll see if it still triggers if I copy the current initrd out.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-thanks
--john
+------------------
+
+From: Al Viro <viro@ZenIV.linux.org.uk>
+
+commit bf6932f44a7b3fa7e2246a8b18a44670e5eab6c2 upstream.
+
+>From Al Viro:
+
+	BTW, speaking of struct file treatment related to sockets -
+        there's this piece of code in iscsi:
+        /*
+         * The SCTP stack needs struct socket->file.
+         */
+        if ((np->np_network_transport == ISCSI_SCTP_TCP) ||
+            (np->np_network_transport == ISCSI_SCTP_UDP)) {
+                if (!new_sock->file) {
+                        new_sock->file = kzalloc(
+                                        sizeof(struct file), GFP_KERNEL);
+
+For one thing, as far as I can see it'not true - sctp does *not* depend on
+socket->file being non-NULL; it does, in one place, check socket->file->f_flags
+for O_NONBLOCK, but there it treats NULL socket->file as "flag not set".
+Which is the case here anyway - the fake struct file created in
+__iscsi_target_login_thread() (and in iscsi_target_setup_login_socket(), with
+the same excuse) do *not* get that flag set.
+
+Moreover, it's a bloody serious violation of a bunch of asserts in VFS;
+all struct file instances should come from filp_cachep, via get_empty_filp()
+(or alloc_file(), which is a wrapper for it).  FWIW, I'm very tempted to
+do this and be done with the entire mess:
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/target/iscsi/iscsi_target.c       |   22 +----------
+ drivers/target/iscsi/iscsi_target_core.h  |    2 -
+ drivers/target/iscsi/iscsi_target_login.c |   60 +-----------------------------
+ 3 files changed, 6 insertions(+), 78 deletions(-)
+
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -429,19 +429,8 @@ int iscsit_reset_np_thread(
+ 
+ int iscsit_del_np_comm(struct iscsi_np *np)
+ {
+-	if (!np->np_socket)
+-		return 0;
+-
+-	/*
+-	 * Some network transports allocate their own struct sock->file,
+-	 * see  if we need to free any additional allocated resources.
+-	 */
+-	if (np->np_flags & NPF_SCTP_STRUCT_FILE) {
+-		kfree(np->np_socket->file);
+-		np->np_socket->file = NULL;
+-	}
+-
+-	sock_release(np->np_socket);
++	if (np->np_socket)
++		sock_release(np->np_socket);
+ 	return 0;
+ }
+ 
+@@ -4077,13 +4066,8 @@ int iscsit_close_connection(
+ 	kfree(conn->conn_ops);
+ 	conn->conn_ops = NULL;
+ 
+-	if (conn->sock) {
+-		if (conn->conn_flags & CONNFLAG_SCTP_STRUCT_FILE) {
+-			kfree(conn->sock->file);
+-			conn->sock->file = NULL;
+-		}
++	if (conn->sock)
+ 		sock_release(conn->sock);
+-	}
+ 	conn->thread_set = NULL;
+ 
+ 	pr_debug("Moving to TARG_CONN_STATE_FREE.\n");
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -224,7 +224,6 @@ enum iscsi_timer_flags_table {
+ /* Used for struct iscsi_np->np_flags */
+ enum np_flags_table {
+ 	NPF_IP_NETWORK		= 0x00,
+-	NPF_SCTP_STRUCT_FILE	= 0x01 /* Bugfix */
+ };
+ 
+ /* Used for struct iscsi_np->np_thread_state */
+@@ -503,7 +502,6 @@ struct iscsi_conn {
+ 	u16			local_port;
+ 	int			net_size;
+ 	u32			auth_id;
+-#define CONNFLAG_SCTP_STRUCT_FILE			0x01
+ 	u32			conn_flags;
+ 	/* Used for iscsi_tx_login_rsp() */
+ 	u32			login_itt;
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -795,22 +795,6 @@ int iscsi_target_setup_login_socket(
+ 	}
+ 	np->np_socket = sock;
+ 	/*
+-	 * The SCTP stack needs struct socket->file.
+-	 */
+-	if ((np->np_network_transport == ISCSI_SCTP_TCP) ||
+-	    (np->np_network_transport == ISCSI_SCTP_UDP)) {
+-		if (!sock->file) {
+-			sock->file = kzalloc(sizeof(struct file), GFP_KERNEL);
+-			if (!sock->file) {
+-				pr_err("Unable to allocate struct"
+-						" file for SCTP\n");
+-				ret = -ENOMEM;
+-				goto fail;
+-			}
+-			np->np_flags |= NPF_SCTP_STRUCT_FILE;
+-		}
+-	}
+-	/*
+ 	 * Setup the np->np_sockaddr from the passed sockaddr setup
+ 	 * in iscsi_target_configfs.c code..
+ 	 */
+@@ -869,21 +853,15 @@ int iscsi_target_setup_login_socket(
+ 
+ fail:
+ 	np->np_socket = NULL;
+-	if (sock) {
+-		if (np->np_flags & NPF_SCTP_STRUCT_FILE) {
+-			kfree(sock->file);
+-			sock->file = NULL;
+-		}
+-
++	if (sock)
+ 		sock_release(sock);
+-	}
+ 	return ret;
+ }
+ 
+ static int __iscsi_target_login_thread(struct iscsi_np *np)
+ {
+ 	u8 buffer[ISCSI_HDR_LEN], iscsi_opcode, zero_tsih = 0;
+-	int err, ret = 0, set_sctp_conn_flag, stop;
++	int err, ret = 0, stop;
+ 	struct iscsi_conn *conn = NULL;
+ 	struct iscsi_login *login;
+ 	struct iscsi_portal_group *tpg = NULL;
+@@ -894,7 +872,6 @@ static int __iscsi_target_login_thread(s
+ 	struct sockaddr_in6 sock_in6;
+ 
+ 	flush_signals(current);
+-	set_sctp_conn_flag = 0;
+ 	sock = np->np_socket;
+ 
+ 	spin_lock_bh(&np->np_thread_lock);
+@@ -917,35 +894,12 @@ static int __iscsi_target_login_thread(s
+ 		spin_unlock_bh(&np->np_thread_lock);
+ 		goto out;
+ 	}
+-	/*
+-	 * The SCTP stack needs struct socket->file.
+-	 */
+-	if ((np->np_network_transport == ISCSI_SCTP_TCP) ||
+-	    (np->np_network_transport == ISCSI_SCTP_UDP)) {
+-		if (!new_sock->file) {
+-			new_sock->file = kzalloc(
+-					sizeof(struct file), GFP_KERNEL);
+-			if (!new_sock->file) {
+-				pr_err("Unable to allocate struct"
+-						" file for SCTP\n");
+-				sock_release(new_sock);
+-				/* Get another socket */
+-				return 1;
+-			}
+-			set_sctp_conn_flag = 1;
+-		}
+-	}
+-
+ 	iscsi_start_login_thread_timer(np);
+ 
+ 	conn = kzalloc(sizeof(struct iscsi_conn), GFP_KERNEL);
+ 	if (!conn) {
+ 		pr_err("Could not allocate memory for"
+ 			" new connection\n");
+-		if (set_sctp_conn_flag) {
+-			kfree(new_sock->file);
+-			new_sock->file = NULL;
+-		}
+ 		sock_release(new_sock);
+ 		/* Get another socket */
+ 		return 1;
+@@ -955,9 +909,6 @@ static int __iscsi_target_login_thread(s
+ 	conn->conn_state = TARG_CONN_STATE_FREE;
+ 	conn->sock = new_sock;
+ 
+-	if (set_sctp_conn_flag)
+-		conn->conn_flags |= CONNFLAG_SCTP_STRUCT_FILE;
+-
+ 	pr_debug("Moving to TARG_CONN_STATE_XPT_UP.\n");
+ 	conn->conn_state = TARG_CONN_STATE_XPT_UP;
+ 
+@@ -1205,13 +1156,8 @@ old_sess_out:
+ 		iscsi_release_param_list(conn->param_list);
+ 		conn->param_list = NULL;
+ 	}
+-	if (conn->sock) {
+-		if (conn->conn_flags & CONNFLAG_SCTP_STRUCT_FILE) {
+-			kfree(conn->sock->file);
+-			conn->sock->file = NULL;
+-		}
++	if (conn->sock)
+ 		sock_release(conn->sock);
+-	}
+ 	kfree(conn);
+ 
+ 	if (tpg) {
+
 
