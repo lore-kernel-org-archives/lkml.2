@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab2HGW1R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:27:17 -0400
+	id S932231Ab2HGW1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:27:43 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895Ab2HGW1M (ORCPT
+	with ESMTP id S932201Ab2HGW1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:27:12 -0400
+	Tue, 7 Aug 2012 18:27:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Aaron Lu <aaron.lu@amd.com>, Philip Rakity <prakity@marvell.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 004/122] mmc: sdhci: fix incorrect command used in tuning
-Date: Tue,  7 Aug 2012 15:24:52 -0700
-Message-Id: <20120807221948.619881749@linuxfoundation.org>
+        Dariusz Majchrzak <dariusz.majchrzak@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 014/122] SCSI: fix hot unplug vs async scan race
+Date: Tue,  7 Aug 2012 15:25:02 -0700
+Message-Id: <20120807221949.521172935@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,60 +31,118 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Aaron Lu <aaron.lu@amd.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 473b095a72a95ba719905b1f2e82cd18d099a427 upstream.
+commit 3b661a92e869ebe2358de8f4b3230ad84f7fce51 upstream.
 
-For SD hosts using retuning mode 1, when retuning timer expired, it will
-need to do retuning in sdhci_request before processing the actual
-request. But the retuning command is fixed: cmd19 for SD card and cmd21
-for eMMC card, so we can't use the original request's command to do the
-tuning.
+The following crash results from cases where the end_device has been
+removed before scsi_sysfs_add_sdev has had a chance to run.
 
-And since the tuning command depends on the card type attached to the
-host, we will need to know the card type to use the correct tuning
-command.
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000098
+ IP: [<ffffffff8115e100>] sysfs_create_dir+0x32/0xb6
+ ...
+ Call Trace:
+  [<ffffffff8125e4a8>] kobject_add_internal+0x120/0x1e3
+  [<ffffffff81075149>] ? trace_hardirqs_on+0xd/0xf
+  [<ffffffff8125e641>] kobject_add_varg+0x41/0x50
+  [<ffffffff8125e70b>] kobject_add+0x64/0x66
+  [<ffffffff8131122b>] device_add+0x12d/0x63a
+  [<ffffffff814b65ea>] ? _raw_spin_unlock_irqrestore+0x47/0x56
+  [<ffffffff8107de15>] ? module_refcount+0x89/0xa0
+  [<ffffffff8132f348>] scsi_sysfs_add_sdev+0x4e/0x28a
+  [<ffffffff8132dcbb>] do_scan_async+0x9c/0x145
 
-Signed-off-by: Aaron Lu <aaron.lu@amd.com>
-Reviewed-by: Philip Rakity <prakity@marvell.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+...teach scsi_sysfs_add_devices() to check for deleted devices() before
+trying to add them, and teach scsi_remove_target() how to remove targets
+that have not been added via device_add().
+
+Reported-by: Dariusz Majchrzak <dariusz.majchrzak@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_scan.c  |    3 +++
+ drivers/scsi/scsi_sysfs.c |   41 ++++++++++++++++++++++++++---------------
+ 2 files changed, 29 insertions(+), 15 deletions(-)
 
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -27,6 +27,7 @@
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -1717,6 +1717,9 @@ static void scsi_sysfs_add_devices(struc
+ {
+ 	struct scsi_device *sdev;
+ 	shost_for_each_device(sdev, shost) {
++		/* target removed before the device could be added */
++		if (sdev->sdev_state == SDEV_DEL)
++			continue;
+ 		if (!scsi_host_scan_allowed(shost) ||
+ 		    scsi_sysfs_add_sdev(sdev) != 0)
+ 			__scsi_remove_device(sdev);
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -1000,7 +1000,6 @@ static void __scsi_remove_target(struct
+ 	struct scsi_device *sdev;
  
- #include <linux/mmc/mmc.h>
- #include <linux/mmc/host.h>
-+#include <linux/mmc/card.h>
+ 	spin_lock_irqsave(shost->host_lock, flags);
+-	starget->reap_ref++;
+  restart:
+ 	list_for_each_entry(sdev, &shost->__devices, siblings) {
+ 		if (sdev->channel != starget->channel ||
+@@ -1014,14 +1013,6 @@ static void __scsi_remove_target(struct
+ 		goto restart;
+ 	}
+ 	spin_unlock_irqrestore(shost->host_lock, flags);
+-	scsi_target_reap(starget);
+-}
+-
+-static int __remove_child (struct device * dev, void * data)
+-{
+-	if (scsi_is_target_device(dev))
+-		__scsi_remove_target(to_scsi_target(dev));
+-	return 0;
+ }
  
- #include "sdhci.h"
+ /**
+@@ -1034,14 +1025,34 @@ static int __remove_child (struct device
+  */
+ void scsi_remove_target(struct device *dev)
+ {
+-	if (scsi_is_target_device(dev)) {
+-		__scsi_remove_target(to_scsi_target(dev));
+-		return;
++	struct Scsi_Host *shost = dev_to_shost(dev->parent);
++	struct scsi_target *starget, *found;
++	unsigned long flags;
++
++ restart:
++	found = NULL;
++	spin_lock_irqsave(shost->host_lock, flags);
++	list_for_each_entry(starget, &shost->__targets, siblings) {
++		if (starget->state == STARGET_DEL)
++			continue;
++		if (starget->dev.parent == dev || &starget->dev == dev) {
++			found = starget;
++			found->reap_ref++;
++			break;
++		}
+ 	}
++	spin_unlock_irqrestore(shost->host_lock, flags);
  
-@@ -1245,6 +1246,7 @@ static void sdhci_request(struct mmc_hos
- 	struct sdhci_host *host;
- 	bool present;
- 	unsigned long flags;
-+	u32 tuning_opcode;
+-	get_device(dev);
+-	device_for_each_child(dev, NULL, __remove_child);
+-	put_device(dev);
++	if (found) {
++		__scsi_remove_target(found);
++		scsi_target_reap(found);
++		/* in the case where @dev has multiple starget children,
++		 * continue removing.
++		 *
++		 * FIXME: does such a case exist?
++		 */
++		goto restart;
++	}
+ }
+ EXPORT_SYMBOL(scsi_remove_target);
  
- 	host = mmc_priv(mmc);
- 
-@@ -1292,8 +1294,12 @@ static void sdhci_request(struct mmc_hos
- 		 */
- 		if ((host->flags & SDHCI_NEEDS_RETUNING) &&
- 		    !(present_state & (SDHCI_DOING_WRITE | SDHCI_DOING_READ))) {
-+			/* eMMC uses cmd21 while sd and sdio use cmd19 */
-+			tuning_opcode = mmc->card->type == MMC_TYPE_MMC ?
-+				MMC_SEND_TUNING_BLOCK_HS200 :
-+				MMC_SEND_TUNING_BLOCK;
- 			spin_unlock_irqrestore(&host->lock, flags);
--			sdhci_execute_tuning(mmc, mrq->cmd->opcode);
-+			sdhci_execute_tuning(mmc, tuning_opcode);
- 			spin_lock_irqsave(&host->lock, flags);
- 
- 			/* Restore original mmc_request structure */
 
 
