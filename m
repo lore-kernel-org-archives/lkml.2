@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030807Ab2HGXDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:03:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
+	id S1030768Ab2HGXDm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:03:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030731Ab2HGWk2 (ORCPT
+	with ESMTP id S1030656Ab2HGWkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:40:28 -0400
+	Tue, 7 Aug 2012 18:40:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>, Eric Dumazet <edumazet@google.com>,
+        Zongyun Lai <zlai@vmware.com>, Jeffrey Huang <huangjw@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 082/109] sch_sfb: Fix missing NULL check
-Date: Tue,  7 Aug 2012 15:35:41 -0700
-Message-Id: <20120807222050.289944679@linuxfoundation.org>
+Subject: [ 081/109] bnx2: Fix bug in bnx2_free_tx_skbs().
+Date: Tue,  7 Aug 2012 15:35:40 -0700
+Message-Id: <20120807222050.208061310@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -31,30 +32,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Alan Cox <alan@linux.intel.com>
+From: Michael Chan <mchan@broadcom.com>
 
-[ Upstream commit 7ac2908e4b2edaec60e9090ddb4d9ceb76c05e7d ]
+[ Upstream commit c1f5163de417dab01fa9daaf09a74bbb19303f3c ]
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44461
+In rare cases, bnx2x_free_tx_skbs() can unmap the wrong DMA address
+when it gets to the last entry of the tx ring.  We were not using
+the proper macro to skip the last entry when advancing the tx index.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Zongyun Lai <zlai@vmware.com>
+Reviewed-by: Jeffrey Huang <huangjw@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_sfb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/broadcom/bnx2.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/sched/sch_sfb.c
-+++ b/net/sched/sch_sfb.c
-@@ -570,6 +570,8 @@ static int sfb_dump(struct Qdisc *sch, s
+--- a/drivers/net/ethernet/broadcom/bnx2.c
++++ b/drivers/net/ethernet/broadcom/bnx2.c
+@@ -5372,7 +5372,7 @@ bnx2_free_tx_skbs(struct bnx2 *bp)
+ 			int k, last;
  
- 	sch->qstats.backlog = q->qdisc->qstats.backlog;
- 	opts = nla_nest_start(skb, TCA_OPTIONS);
-+	if (opts == NULL)
-+		goto nla_put_failure;
- 	NLA_PUT(skb, TCA_SFB_PARMS, sizeof(opt), &opt);
- 	return nla_nest_end(skb, opts);
+ 			if (skb == NULL) {
+-				j++;
++				j = NEXT_TX_BD(j);
+ 				continue;
+ 			}
  
+@@ -5384,8 +5384,8 @@ bnx2_free_tx_skbs(struct bnx2 *bp)
+ 			tx_buf->skb = NULL;
+ 
+ 			last = tx_buf->nr_frags;
+-			j++;
+-			for (k = 0; k < last; k++, j++) {
++			j = NEXT_TX_BD(j);
++			for (k = 0; k < last; k++, j = NEXT_TX_BD(j)) {
+ 				tx_buf = &txr->tx_buf_ring[TX_RING_IDX(j)];
+ 				dma_unmap_page(&bp->pdev->dev,
+ 					dma_unmap_addr(tx_buf, mapping),
 
 
