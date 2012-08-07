@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab2HGWgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:36:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
+	id S1757513Ab2HGXV1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:21:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030402Ab2HGWct (ORCPT
+	with ESMTP id S1757340Ab2HGWgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:49 -0400
+	Tue, 7 Aug 2012 18:36:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 111/122] ALSA: mpu401: Fix missing initialization of irq field
-Date: Tue,  7 Aug 2012 15:26:39 -0700
-Message-Id: <20120807221959.927229658@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 001/109] target: Add generation of LOGICAL BLOCK ADDRESS OUT OF RANGE
+Date: Tue,  7 Aug 2012 15:34:20 -0700
+Message-Id: <20120807222043.211771124@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
-References: <20120807221948.220495155@linuxfoundation.org>
+In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
+References: <20120807222043.089735600@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg KH <gregkh@linuxfoundation.org>
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit bc733d495267a23ef8660220d696c6e549ce30b3 upstream.
+commit e2397c704429025bc6b331a970f699e52f34283e upstream.
 
-The irq field of struct snd_mpu401 is supposed to be initialized to -1.
-Since it's set to zero as of now, a probing error before the irq
-installation results in a kernel warning "Trying to free already-free
-IRQ 0".
+Many SCSI commands are defined to return a CHECK CONDITION / ILLEGAL
+REQUEST with ASC set to LOGICAL BLOCK ADDRESS OUT OF RANGE if the
+initiator sends a command that accesses a too-big LBA.  Add an enum
+value and case entries so that target code can return this status.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=44821
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/drivers/mpu401/mpu401_uart.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/target_core_transport.c |   10 ++++++++++
+ include/target/target_core_base.h      |    1 +
+ 2 files changed, 11 insertions(+)
 
---- a/sound/drivers/mpu401/mpu401_uart.c
-+++ b/sound/drivers/mpu401/mpu401_uart.c
-@@ -554,6 +554,7 @@ int snd_mpu401_uart_new(struct snd_card
- 	spin_lock_init(&mpu->output_lock);
- 	spin_lock_init(&mpu->timer_lock);
- 	mpu->hardware = hardware;
-+	mpu->irq = -1;
- 	if (! (info_flags & MPU401_INFO_INTEGRATED)) {
- 		int res_size = hardware == MPU401_HW_PC98II ? 4 : 2;
- 		mpu->res = request_region(port, res_size, "MPU401 UART");
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1976,6 +1976,7 @@ void transport_generic_request_failure(s
+ 	case TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE:
+ 	case TCM_UNKNOWN_MODE_PAGE:
+ 	case TCM_WRITE_PROTECTED:
++	case TCM_ADDRESS_OUT_OF_RANGE:
+ 	case TCM_CHECK_CONDITION_ABORT_CMD:
+ 	case TCM_CHECK_CONDITION_UNIT_ATTENTION:
+ 	case TCM_CHECK_CONDITION_NOT_READY:
+@@ -4656,6 +4657,15 @@ int transport_send_check_condition_and_s
+ 		/* WRITE PROTECTED */
+ 		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x27;
+ 		break;
++	case TCM_ADDRESS_OUT_OF_RANGE:
++		/* CURRENT ERROR */
++		buffer[offset] = 0x70;
++		buffer[offset+SPC_ADD_SENSE_LEN_OFFSET] = 10;
++		/* ILLEGAL REQUEST */
++		buffer[offset+SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
++		/* LOGICAL BLOCK ADDRESS OUT OF RANGE */
++		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x21;
++		break;
+ 	case TCM_CHECK_CONDITION_UNIT_ATTENTION:
+ 		/* CURRENT ERROR */
+ 		buffer[offset] = 0x70;
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -229,6 +229,7 @@ enum tcm_sense_reason_table {
+ 	TCM_CHECK_CONDITION_UNIT_ATTENTION	= 0x0e,
+ 	TCM_CHECK_CONDITION_NOT_READY		= 0x0f,
+ 	TCM_RESERVATION_CONFLICT		= 0x10,
++	TCM_ADDRESS_OUT_OF_RANGE		= 0x11,
+ };
+ 
+ enum target_sc_flags_table {
 
 
