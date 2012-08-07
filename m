@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098Ab2HGXNu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:13:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42716 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932960Ab2HGWhz (ORCPT
+	id S932998Ab2HGXOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:14:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932951Ab2HGWhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:37:55 -0400
+	Tue, 7 Aug 2012 18:37:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 033/109] tun: fix a crash bug and a memory leak
-Date: Tue,  7 Aug 2012 15:34:52 -0700
-Message-Id: <20120807222046.007998429@linuxfoundation.org>
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: [ 032/109] TPM: chip disabled state erronously being reported as error
+Date: Tue,  7 Aug 2012 15:34:51 -0700
+Message-Id: <20120807222045.919552904@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,79 +29,62 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 
-commit b09e786bd1dd66418b69348cb110f3a64764626a upstream.
+commit 24ebe6670de3d1f0dca11c9eb372134c7ab05503 upstream.
 
-This patch fixes a crash
-tun_chr_close -> netdev_run_todo -> tun_free_netdev -> sk_release_kernel ->
-sock_release -> iput(SOCK_INODE(sock))
-introduced by commit 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d
+tpm_do_selftest() attempts to read a PCR in order to
+decide if one can rely on the TPM being used or not.
+The function that's used by __tpm_pcr_read() does not
+expect the TPM to be disabled or deactivated, and if so,
+reports an error.
 
-The problem is that this socket is embedded in struct tun_struct, it has
-no inode, iput is called on invalid inode, which modifies invalid memory
-and optionally causes a crash.
+It's fine if the TPM returns this error when trying to
+use it for the first time after a power cycle, but it's
+definitely not if it already returned success for a
+previous attempt to read one of its PCRs.
 
-sock_release also decrements sockets_in_use, this causes a bug that
-"sockets: used" field in /proc/*/net/sockstat keeps on decreasing when
-creating and closing tun devices.
+The tpm_do_selftest() was modified so that the driver only
+reports this return code as an error when it really is.
 
-This patch introduces a flag SOCK_EXTERNALLY_ALLOCATED that instructs
-sock_release to not free the inode and not decrement sockets_in_use,
-fixing both memory corruption and sockets_in_use underflow.
-
-It should be backported to 3.3 an 3.4 stabke.
-
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/tun.c   |    3 +++
- include/linux/net.h |    1 +
- net/socket.c        |    3 +++
- 3 files changed, 7 insertions(+)
+ drivers/char/tpm/tpm.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -358,6 +358,8 @@ static void tun_free_netdev(struct net_d
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -827,10 +827,10 @@ EXPORT_SYMBOL_GPL(tpm_pcr_extend);
+ int tpm_do_selftest(struct tpm_chip *chip)
  {
- 	struct tun_struct *tun = netdev_priv(dev);
+ 	int rc;
+-	u8 digest[TPM_DIGEST_SIZE];
+ 	unsigned int loops;
+ 	unsigned int delay_msec = 1000;
+ 	unsigned long duration;
++	struct tpm_cmd_t cmd;
  
-+	BUG_ON(!test_bit(SOCK_EXTERNALLY_ALLOCATED, &tun->socket.flags));
+ 	duration = tpm_calc_ordinal_duration(chip,
+ 	                                     TPM_ORD_CONTINUE_SELFTEST);
+@@ -845,7 +845,15 @@ int tpm_do_selftest(struct tpm_chip *chi
+ 		return rc;
+ 
+ 	do {
+-		rc = __tpm_pcr_read(chip, 0, digest);
++		/* Attempt to read a PCR value */
++		cmd.header.in = pcrread_header;
++		cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
++		rc = tpm_transmit(chip, (u8 *) &cmd, READ_PCR_RESULT_SIZE);
 +
- 	sk_release_kernel(tun->socket.sk);
- }
- 
-@@ -1115,6 +1117,7 @@ static int tun_set_iff(struct net *net,
- 		tun->flags = flags;
- 		tun->txflt.count = 0;
- 		tun->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
-+		set_bit(SOCK_EXTERNALLY_ALLOCATED, &tun->socket.flags);
- 
- 		err = -ENOMEM;
- 		sk = sk_alloc(&init_net, AF_UNSPEC, GFP_KERNEL, &tun_proto);
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -72,6 +72,7 @@ struct net;
- #define SOCK_NOSPACE		2
- #define SOCK_PASSCRED		3
- #define SOCK_PASSSEC		4
-+#define SOCK_EXTERNALLY_ALLOCATED 5
- 
- #ifndef ARCH_HAS_SOCKET_TYPES
- /**
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -522,6 +522,9 @@ void sock_release(struct socket *sock)
- 	if (rcu_dereference_protected(sock->wq, 1)->fasync_list)
- 		printk(KERN_ERR "sock_release: fasync list not empty!\n");
- 
-+	if (test_bit(SOCK_EXTERNALLY_ALLOCATED, &sock->flags))
-+		return;
++		if (rc < TPM_HEADER_SIZE)
++			return -EFAULT;
 +
- 	percpu_sub(sockets_in_use, 1);
- 	if (!sock->file) {
- 		iput(SOCK_INODE(sock));
++		rc = be32_to_cpu(cmd.header.out.return_code);
+ 		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
+ 			dev_info(chip->dev,
+ 				 "TPM is disabled/deactivated (0x%X)\n", rc);
 
 
