@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab2HGW3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:29:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
+	id S932644Ab2HGW3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:29:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932596Ab2HGW32 (ORCPT
+	with ESMTP id S932459Ab2HGW3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:29:28 -0400
+	Tue, 7 Aug 2012 18:29:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 048/122] mac80211: fix read outside array bounds
-Date: Tue,  7 Aug 2012 15:25:36 -0700
-Message-Id: <20120807221952.533581233@linuxfoundation.org>
+        Daniel J Blueman <daniel@quora.org>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Ilan Peer <ilan.peer@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 050/122] iwlwifi: Check BSS ctx active before call mac80211
+Date: Tue,  7 Aug 2012 15:25:38 -0700
+Message-Id: <20120807221952.721102185@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,31 +32,40 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Ilan Peer <ilan.peer@intel.com>
 
-commit 353d09c6ceedc1cb0c54fe5002c0ca80b6ee6e4f upstream.
+commit e19ebcab01cc130fa832764d453b263460ec3b91 upstream.
 
-ieee802_1d_to_ac is defined as a const int[8],
-but the tid parameter has a range from 0 to 15.
+It is possible that the BSS context is not active (for example
+when the current mode is set to GO), or that the vif->type is
+different than station. In such a case we cannot
+call mac80211 to report the average rssi for the interface
+(the function assumes that the vif is valid and that the type
+is station).
 
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Daniel J Blueman <daniel@quora.org>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Ilan Peer <ilan.peer@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/tx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-agn-lib.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -2733,7 +2733,7 @@ EXPORT_SYMBOL(ieee80211_get_buffered_bc)
- void ieee80211_tx_skb_tid(struct ieee80211_sub_if_data *sdata,
- 			  struct sk_buff *skb, int tid)
- {
--	int ac = ieee802_1d_to_ac[tid];
-+	int ac = ieee802_1d_to_ac[tid & 7];
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+@@ -617,6 +617,11 @@ static bool iwlagn_fill_txpower_mode(str
+ 	struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+ 	int ave_rssi;
  
- 	skb_set_mac_header(skb, 0);
- 	skb_set_network_header(skb, 0);
++	if (!ctx->vif || (ctx->vif->type != NL80211_IFTYPE_STATION)) {
++		IWL_DEBUG_INFO(priv, "BSS ctx not active or not in sta mode\n");
++		return false;
++	}
++
+ 	ave_rssi = ieee80211_ave_rssi(ctx->vif);
+ 	if (!ave_rssi) {
+ 		/* no rssi data, no changes to reduce tx power */
 
 
