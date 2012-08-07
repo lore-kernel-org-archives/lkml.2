@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab2HGW2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:28:06 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58490 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932298Ab2HGW2A (ORCPT
+	id S1757732Ab2HGXlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:41:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932306Ab2HGW2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:28:00 -0400
+	Tue, 7 Aug 2012 18:28:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [ 020/122] ARM: dt: tegra trimslice: add vbus-gpio property
-Date: Tue,  7 Aug 2012 15:25:08 -0700
-Message-Id: <20120807221950.048650407@linuxfoundation.org>
+        Misael Lopez Cruz <misael.lopez@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 021/122] ASoC: dapm: Fix locking during codec shutdown
+Date: Tue,  7 Aug 2012 15:25:09 -0700
+Message-Id: <20120807221950.136517303@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,37 +30,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Liam Girdwood <lrg@ti.com>
 
-commit 01ad8063a5db9ac8320f197577a34b423ba64eca upstream.
+commit 01005a729a17ab419f61a366e22f3419e7a2c3fe upstream.
 
-On TrimSlice, Tegra's USB1 port may be routed to either an external micro
-USB port, or an internal USB->SATA bridge for SSD or HDD. This muxing is
-controlled by a GPIO. Whilst not strictly a VBUS GPIO, the TrimSlice
-board files caused this GPIO to be set appropriately to enable the SATA
-bridge by passing it as the VBUS GPIO to the USB driver. Echo this same
-configuration in device tree to enable the SATA bridge.
+Codec shutdown performs a DAPM power sequence that might cause conflicts
+and/or race conditions if another stream power event is running simultaneously.
+Use card's dapm mutex to protect any potential race condition between them.
 
-An alternative might be to implement a full USB bus mux driver. However,
-that seems over-complex right now.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
+Signed-off-by: Liam Girdwood <lrg@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/tegra-trimslice.dts |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/soc-dapm.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/arm/boot/dts/tegra-trimslice.dts
-+++ b/arch/arm/boot/dts/tegra-trimslice.dts
-@@ -276,6 +276,7 @@
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -3538,10 +3538,13 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_free);
  
- 	usb@c5000000 {
- 		status = "okay";
-+		nvidia,vbus-gpio = <&gpio 170 0>; /* gpio PV2 */
- 	};
+ static void soc_dapm_shutdown_codec(struct snd_soc_dapm_context *dapm)
+ {
++	struct snd_soc_card *card = dapm->card;
+ 	struct snd_soc_dapm_widget *w;
+ 	LIST_HEAD(down_list);
+ 	int powerdown = 0;
  
- 	usb@c5004000 {
++	mutex_lock(&card->dapm_mutex);
++
+ 	list_for_each_entry(w, &dapm->card->widgets, list) {
+ 		if (w->dapm != dapm)
+ 			continue;
+@@ -3564,6 +3567,8 @@ static void soc_dapm_shutdown_codec(stru
+ 			snd_soc_dapm_set_bias_level(dapm,
+ 						    SND_SOC_BIAS_STANDBY);
+ 	}
++
++	mutex_unlock(&card->dapm_mutex);
+ }
+ 
+ /*
 
 
