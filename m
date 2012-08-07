@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab2HGWhf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:37:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932899Ab2HGWha (ORCPT
+	id S932957Ab2HGWhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:37:52 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:65028 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932923Ab2HGWhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:37:30 -0400
+	Tue, 7 Aug 2012 18:37:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gerd Hoffmann <kraxel@redhat.com>
-Subject: [ 025/109] Revert "usb/uas: make sure data urb is gone if we receive status before that"
-Date: Tue,  7 Aug 2012 15:34:44 -0700
-Message-Id: <20120807222045.303693188@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 028/109] locks: fix checking of fcntl_setlease argument
+Date: Tue,  7 Aug 2012 15:34:47 -0700
+Message-Id: <20120807222045.567347419@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,214 +29,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: "J. Bruce Fields" <bfields@fieldses.org>
 
-commit c621a81edecdee85da32c566c21836332c764fda upstream.
+commit 0ec4f431eb56d633da3a55da67d5c4b88886ccc7 upstream.
 
-This reverts commit e4d8318a85779b25b880187b1b1c44e797bd7d4b.
+The only checks of the long argument passed to fcntl(fd,F_SETLEASE,.)
+are done after converting the long to an int.  Thus some illegal values
+may be let through and cause problems in later code.
 
-This patch makes uas.c call usb_unlink_urb on data urbs.  The data urbs
-get freed in the completion callback.  This is illegal according to the
-usb_unlink_urb documentation.
+[ They actually *don't* cause problems in mainline, as of Dave Jones's
+  commit 8d657eb3b438 "Remove easily user-triggerable BUG from
+  generic_setlease", but we should fix this anyway.  And this patch will
+  be necessary to fix real bugs on earlier kernels. ]
 
-This patch also makes the code expect the data completion callback
-being called before the status completion callback.  This isn't
-guaranteed to be the case, even though the actual data transfer should
-be finished by the time the status is received.
-
-Background:  The ehci irq handler for example only know that there are
-finished transfers, it then has go check the QHs & TDs to see which
-transfers did actually finish.  It has no way to figure in which order
-the transfers did complete.  The xhci driver can call the callbacks in
-completion order thanks to the event queue.  This does nicely explain
-why the driver is solid on a (usb2) xhci port whereas it goes crazy on
-ehci in my testing.
-
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/uas.c |   90 +++++++---------------------------------------
- 1 file changed, 15 insertions(+), 75 deletions(-)
+ fs/locks.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -58,9 +58,6 @@ enum {
- 	SUBMIT_DATA_OUT_URB	= (1 << 5),
- 	ALLOC_CMD_URB		= (1 << 6),
- 	SUBMIT_CMD_URB		= (1 << 7),
--	COMPLETED_DATA_IN	= (1 << 8),
--	COMPLETED_DATA_OUT	= (1 << 9),
--	DATA_COMPLETES_CMD	= (1 << 10),
- };
- 
- /* Overrides scsi_pointer */
-@@ -114,7 +111,6 @@ static void uas_sense(struct urb *urb, s
- {
- 	struct sense_iu *sense_iu = urb->transfer_buffer;
- 	struct scsi_device *sdev = cmnd->device;
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 
- 	if (urb->actual_length > 16) {
- 		unsigned len = be16_to_cpup(&sense_iu->len);
-@@ -132,15 +128,13 @@ static void uas_sense(struct urb *urb, s
- 	}
- 
- 	cmnd->result = sense_iu->status;
--	if (!(cmdinfo->state & DATA_COMPLETES_CMD))
--		cmnd->scsi_done(cmnd);
-+	cmnd->scsi_done(cmnd);
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -308,7 +308,7 @@ static int flock_make_lock(struct file *
+ 	return 0;
  }
  
- static void uas_sense_old(struct urb *urb, struct scsi_cmnd *cmnd)
+-static int assign_type(struct file_lock *fl, int type)
++static int assign_type(struct file_lock *fl, long type)
  {
- 	struct sense_iu_old *sense_iu = urb->transfer_buffer;
- 	struct scsi_device *sdev = cmnd->device;
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 
- 	if (urb->actual_length > 8) {
- 		unsigned len = be16_to_cpup(&sense_iu->len) - 2;
-@@ -158,8 +152,7 @@ static void uas_sense_old(struct urb *ur
- 	}
- 
- 	cmnd->result = sense_iu->status;
--	if (!(cmdinfo->state & DATA_COMPLETES_CMD))
--		cmnd->scsi_done(cmnd);
-+	cmnd->scsi_done(cmnd);
+ 	switch (type) {
+ 	case F_RDLCK:
+@@ -445,7 +445,7 @@ static const struct lock_manager_operati
+ /*
+  * Initialize a lease, use the default lock manager operations
+  */
+-static int lease_init(struct file *filp, int type, struct file_lock *fl)
++static int lease_init(struct file *filp, long type, struct file_lock *fl)
+  {
+ 	if (assign_type(fl, type) != 0)
+ 		return -EINVAL;
+@@ -463,7 +463,7 @@ static int lease_init(struct file *filp,
  }
  
- static void uas_xfer_data(struct urb *urb, struct scsi_cmnd *cmnd,
-@@ -184,7 +177,6 @@ static void uas_stat_cmplt(struct urb *u
- 	struct Scsi_Host *shost = urb->context;
- 	struct uas_dev_info *devinfo = (void *)shost->hostdata[0];
- 	struct scsi_cmnd *cmnd;
--	struct uas_cmd_info *cmdinfo;
- 	u16 tag;
- 	int ret;
- 
-@@ -210,32 +202,12 @@ static void uas_stat_cmplt(struct urb *u
- 			dev_err(&urb->dev->dev, "failed submit status urb\n");
- 		return;
- 	}
--	cmdinfo = (void *)&cmnd->SCp;
- 
- 	switch (iu->iu_id) {
- 	case IU_ID_STATUS:
- 		if (devinfo->cmnd == cmnd)
- 			devinfo->cmnd = NULL;
- 
--		if (!(cmdinfo->state & COMPLETED_DATA_IN) &&
--				cmdinfo->data_in_urb) {
--		       if (devinfo->use_streams) {
--			       cmdinfo->state |= DATA_COMPLETES_CMD;
--			       usb_unlink_urb(cmdinfo->data_in_urb);
--		       } else {
--			       usb_free_urb(cmdinfo->data_in_urb);
--		       }
--		}
--		if (!(cmdinfo->state & COMPLETED_DATA_OUT) &&
--				cmdinfo->data_out_urb) {
--			if (devinfo->use_streams) {
--				cmdinfo->state |= DATA_COMPLETES_CMD;
--				usb_unlink_urb(cmdinfo->data_in_urb);
--			} else {
--				usb_free_urb(cmdinfo->data_out_urb);
--			}
--		}
--
- 		if (urb->actual_length < 16)
- 			devinfo->uas_sense_old = 1;
- 		if (devinfo->uas_sense_old)
-@@ -264,59 +236,27 @@ static void uas_stat_cmplt(struct urb *u
- 		dev_err(&urb->dev->dev, "failed submit status urb\n");
- }
- 
--static void uas_data_out_cmplt(struct urb *urb)
--{
--	struct scsi_cmnd *cmnd = urb->context;
--	struct scsi_data_buffer *sdb = scsi_out(cmnd);
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
--
--	cmdinfo->state |= COMPLETED_DATA_OUT;
--
--	sdb->resid = sdb->length - urb->actual_length;
--	usb_free_urb(urb);
--
--	if (cmdinfo->state & DATA_COMPLETES_CMD)
--		cmnd->scsi_done(cmnd);
--}
--
--static void uas_data_in_cmplt(struct urb *urb)
-+static void uas_data_cmplt(struct urb *urb)
+ /* Allocate a file_lock initialised to this type of lease */
+-static struct file_lock *lease_alloc(struct file *filp, int type)
++static struct file_lock *lease_alloc(struct file *filp, long type)
  {
--	struct scsi_cmnd *cmnd = urb->context;
--	struct scsi_data_buffer *sdb = scsi_in(cmnd);
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
--
--	cmdinfo->state |= COMPLETED_DATA_IN;
--
-+	struct scsi_data_buffer *sdb = urb->context;
- 	sdb->resid = sdb->length - urb->actual_length;
- 	usb_free_urb(urb);
--
--	if (cmdinfo->state & DATA_COMPLETES_CMD)
--		cmnd->scsi_done(cmnd);
- }
- 
- static struct urb *uas_alloc_data_urb(struct uas_dev_info *devinfo, gfp_t gfp,
--		unsigned int pipe, struct scsi_cmnd *cmnd,
--		enum dma_data_direction dir)
-+				unsigned int pipe, u16 stream_id,
-+				struct scsi_data_buffer *sdb,
-+				enum dma_data_direction dir)
- {
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 	struct usb_device *udev = devinfo->udev;
- 	struct urb *urb = usb_alloc_urb(0, gfp);
--	struct scsi_data_buffer *sdb;
--	usb_complete_t complete_fn;
--	u16 stream_id = cmdinfo->stream;
- 
- 	if (!urb)
- 		goto out;
--	if (dir == DMA_FROM_DEVICE) {
--		sdb = scsi_in(cmnd);
--		complete_fn = uas_data_in_cmplt;
--	} else {
--		sdb = scsi_out(cmnd);
--		complete_fn = uas_data_out_cmplt;
--	}
--	usb_fill_bulk_urb(urb, udev, pipe, NULL, sdb->length,
--			complete_fn, cmnd);
--	urb->stream_id = stream_id;
-+	usb_fill_bulk_urb(urb, udev, pipe, NULL, sdb->length, uas_data_cmplt,
-+									sdb);
-+	if (devinfo->use_streams)
-+		urb->stream_id = stream_id;
- 	urb->num_sgs = udev->bus->sg_tablesize ? sdb->table.nents : 0;
- 	urb->sg = sdb->table.sgl;
-  out:
-@@ -418,8 +358,8 @@ static int uas_submit_urbs(struct scsi_c
- 
- 	if (cmdinfo->state & ALLOC_DATA_IN_URB) {
- 		cmdinfo->data_in_urb = uas_alloc_data_urb(devinfo, gfp,
--					devinfo->data_in_pipe, cmnd,
--					DMA_FROM_DEVICE);
-+					devinfo->data_in_pipe, cmdinfo->stream,
-+					scsi_in(cmnd), DMA_FROM_DEVICE);
- 		if (!cmdinfo->data_in_urb)
- 			return SCSI_MLQUEUE_DEVICE_BUSY;
- 		cmdinfo->state &= ~ALLOC_DATA_IN_URB;
-@@ -436,8 +376,8 @@ static int uas_submit_urbs(struct scsi_c
- 
- 	if (cmdinfo->state & ALLOC_DATA_OUT_URB) {
- 		cmdinfo->data_out_urb = uas_alloc_data_urb(devinfo, gfp,
--					devinfo->data_out_pipe, cmnd,
--					DMA_TO_DEVICE);
-+					devinfo->data_out_pipe, cmdinfo->stream,
-+					scsi_out(cmnd), DMA_TO_DEVICE);
- 		if (!cmdinfo->data_out_urb)
- 			return SCSI_MLQUEUE_DEVICE_BUSY;
- 		cmdinfo->state &= ~ALLOC_DATA_OUT_URB;
+ 	struct file_lock *fl = locks_alloc_lock();
+ 	int error = -ENOMEM;
 
 
