@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2HGNYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 09:24:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12922 "EHLO mx1.redhat.com"
+	id S1754957Ab2HGNYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 09:24:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51185 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477Ab2HGNVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754542Ab2HGNVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 09:21:23 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
@@ -20,145 +20,31 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>
-Subject: [PATCHv10 00/12] perf: Add backtrace post dwarf unwind 
-Date: Tue,  7 Aug 2012 15:20:35 +0200
-Message-Id: <1344345647-11536-1-git-send-email-jolsa@redhat.com>
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 01/12] perf: Unified API to record selective sets of arch registers
+Date: Tue,  7 Aug 2012 15:20:36 +0200
+Message-Id: <1344345647-11536-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1344345647-11536-1-git-send-email-jolsa@redhat.com>
+References: <1344345647-11536-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-patches available also as tarball in here:
-http://people.redhat.com/~jolsa/perf_post_unwind_v10.tar.bz2
+This brings a new API to help the selective dump of registers on
+event sampling, and its implementation for x86 arch.
 
-v10 changes:
-   - omit copy_from_user_nmi_nochk function
-   - record -g option fix for unlimited arg len
+Added HAVE_PERF_REGS config option to determine if the architecture
+provides perf registers ABI.
 
-v9 changes:
-   - rebased to current tip tree
+The information about desired registers will be passed in u64 mask.
+It's up to the architecture to map the registers into the mask bits.
 
-v8 changes:
-   - patch 2 - added dump registers ABI specification as suggested
-               by Stephane
-   - v7 patches 9,10,16,17 already in
+For the x86 arch implementation, both 32 and 64 bit registers
+bits are defined within single enum to ensure 64 bit system can
+provide register dump for compat task if needed in the future.
 
-v7 changes:
-   - omitted v6 patches 9 and 15
-     They need more work and will be sent separately. I dont want to hold off whole
-     patchset because of them. We could miss some related backtraces (syscall, vdso)
-     in this version.
-   - v6 patch 11, 14, 20 already in
-
-v6 changes:
-   patch 01/23 - unrelated - ftrace stuff
-   patch 03/23 - added PERF_SAMPLE_REGS_USER bit
-               - added regs_user initialization
-   patch 07/23 - added PERF_SAMPLE_STACK_USER bit
-               - sample_stack_user changed to u32 and
-                 added size check
-   new patches 1,9,10,20
-
-v5 changes:
-   patch 1/19 - having just one enum set of the perf registers
-   patch 2/19 - using for_each_set_bit for scanning the mask
-              - single regs enum for both 32 and 64 bits versions
-              - using regs mask != 0 trigger to trigger the regs dump
-   patch 5/19 - adding perf_output_skip so we can skip undumped part of the stack in RB
-   patch 6/19 - using stack size != 0 trigger to trigger the stack dump
-              - do not zero the memory for non retrieved part of the stack dump
-   patch 7/19 - adding exclude_callchain_kernel attribute
-   patch 8/19 - this could be taken without the rest of the series
-
-v4 changes:
-   - no real change from v3, just rebase
-   - v3 patch 06/17 got already merged
-
-v3 changes:
-   patch 01/17
-   - added HAVE_PERF_REGS config option
-   patch 02/17, 04/17
-   - regs and stack perf interface is more general now
-   patch 06/17
-   - unrelated online fix for i386 compilation
-   patch 16/17
-   - few namespace fixies
-
----
-Adding the post unwinding user stack backtrace using dwarf unwind
-via libunwind. The original work was done by Frederic. I mostly took
-his patches and make them compile in current kernel code plus I added
-some stuff here and there.
-
-The main idea is to store user registers and portion of user
-stack when the sample data during the record phase. Then during
-the report, when the data is presented, perform the actual dwarf
-dwarf unwind.
-
-attached patches:
-  01/12 perf: Unified API to record selective sets of arch registers
-  02/12 perf: Add ability to attach user level registers dump to sample
-  03/12 perf: Factor __output_copy to be usable with specific copy function
-  04/12 perf: Add perf_output_skip function to skip bytes in sample
-  05/12 perf: Add ability to attach user stack dump to sample
-  06/12 perf: Add attribute to filter out callchains
-  07/12 perf tools: Adding PERF_ATTR_SIZE_VER2 to the header swap check
-  08/12 perf tools: Add interface to arch registers sets
-  09/12 perf tools: Add libunwind dependency for DWARF CFI unwinding
-  10/12 perf tools: Support user regs and stack in sample parsing
-  11/12 perf tools: Support for DWARF CFI unwinding on post processing
-  12/12 perf tools: Support for DWARF mode callchain
-
-
-I tested on Fedora. There was not much gain on i386, because the
-binaries are compiled with frame pointers. Thought the dwarf
-backtrace is more accurate and unwraps calls in more details
-(functions that do not set the frame pointers).
-
-I could see some improvement on x86_64, where I got full backtrace
-where current code could got just the first address out of the
-instruction pointer.
-
-Example on x86_64:
-[dwarf]
-   perf record -g dwarf -e syscalls:sys_enter_write date
-
-   100.00%     date  libc-2.14.90.so  [.] __GI___libc_write
-               |
-               --- __GI___libc_write
-                   _IO_file_write@@GLIBC_2.2.5
-                   new_do_write
-                   _IO_do_write@@GLIBC_2.2.5
-                   _IO_file_overflow@@GLIBC_2.2.5
-                   0x4022cd
-                   0x401ee6
-                   __libc_start_main
-                   0x4020b9
-
-
-[frame pointer]
-   perf record -g fp -e syscalls:sys_enter_write date
-
-   100.00%     date  libc-2.14.90.so  [.] __GI___libc_write
-               |
-               --- __GI___libc_write
-
-Also I tested on coreutils binaries mainly, but I could see
-getting wider backtraces with dwarf unwind for more complex
-application like firefox.
-
-Attached patches should work on both x86 and x86_64.
-
-The unwind backtrace can be interrupted by following reasons:
-    - bug in unwind information of processed shared library
-    - bug in unwind processing code (most likely ;) )
-    - insufficient dump stack size
-    - until full syscall register storage and vdso support
-      we could miss some related backtraces 
-
-jirka
-
+Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
@@ -174,38 +60,223 @@ Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Cc: Ulrich Drepper <drepper@gmail.com>
+[ Added missing linux/errno.h include ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/Kconfig                             |  13 ++
- arch/x86/Kconfig                         |   2 +
- arch/x86/include/asm/perf_event.h        |   2 +
- arch/x86/include/asm/perf_regs.h         |  33 ++++++
- arch/x86/kernel/Makefile                 |   2 +
- arch/x86/kernel/perf_regs.c              | 105 ++++++++++++++++
- include/linux/perf_event.h               |  60 +++++++++-
- include/linux/perf_regs.h                |  25 ++++
- kernel/events/callchain.c                |  38 +++---
- kernel/events/core.c                     | 214 +++++++++++++++++++++++++++++++++
- kernel/events/internal.h                 |  82 +++++++++----
- kernel/events/ring_buffer.c              |  10 +-
- tools/perf/Makefile                      |  45 ++++++-
- tools/perf/arch/x86/Makefile             |   3 +
- tools/perf/arch/x86/include/perf_regs.h  |  80 +++++++++++++
- tools/perf/arch/x86/util/unwind.c        | 111 +++++++++++++++++
- tools/perf/builtin-record.c              | 114 +++++++++++++++++-
- tools/perf/builtin-report.c              |  18 +--
- tools/perf/builtin-script.c              |   6 +-
- tools/perf/builtin-top.c                 |   6 +-
- tools/perf/config/feature-tests.mak      |  25 ++++
- tools/perf/perf.h                        |   9 +-
- tools/perf/util/event.h                  |  12 ++
- tools/perf/util/evsel.c                  |  41 ++++++-
- tools/perf/util/header.c                 |   3 +
- tools/perf/util/include/linux/compiler.h |   1 +
- tools/perf/util/map.h                    |   5 +-
- tools/perf/util/perf_regs.h              |  14 +++
- tools/perf/util/session.c                | 107 ++++++++++++++---
- tools/perf/util/session.h                |   6 +-
- tools/perf/util/trace-event.h            |   2 +
- tools/perf/util/unwind.c                 | 567 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/unwind.h                 |  34 ++++++
- 33 files changed, 1713 insertions(+), 82 deletions(-)
+ arch/Kconfig                     |  6 +++
+ arch/x86/Kconfig                 |  1 +
+ arch/x86/include/asm/perf_regs.h | 33 +++++++++++++++
+ arch/x86/kernel/Makefile         |  2 +
+ arch/x86/kernel/perf_regs.c      | 90 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/perf_regs.h        | 19 +++++++++
+ 6 files changed, 151 insertions(+)
+ create mode 100644 arch/x86/include/asm/perf_regs.h
+ create mode 100644 arch/x86/kernel/perf_regs.c
+ create mode 100644 include/linux/perf_regs.h
+
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 72f2fa1..68d827b 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -222,6 +222,12 @@ config HAVE_PERF_EVENTS_NMI
+ 	  subsystem.  Also has support for calculating CPU cycle events
+ 	  to determine how many clock cycles in a given period.
+ 
++config HAVE_PERF_REGS
++	bool
++	help
++	  Support selective register dumps for perf events. This includes
++	  bit-mapping of each registers and a unique architecture id.
++
+ config HAVE_ARCH_JUMP_LABEL
+ 	bool
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 50c660d..b657353 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -60,6 +60,7 @@ config X86
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+ 	select PERF_EVENTS
+ 	select HAVE_PERF_EVENTS_NMI
++	select HAVE_PERF_REGS
+ 	select ANON_INODES
+ 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
+ 	select HAVE_CMPXCHG_LOCAL if !M386
+diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
+new file mode 100644
+index 0000000..3f2207b
+--- /dev/null
++++ b/arch/x86/include/asm/perf_regs.h
+@@ -0,0 +1,33 @@
++#ifndef _ASM_X86_PERF_REGS_H
++#define _ASM_X86_PERF_REGS_H
++
++enum perf_event_x86_regs {
++	PERF_REG_X86_AX,
++	PERF_REG_X86_BX,
++	PERF_REG_X86_CX,
++	PERF_REG_X86_DX,
++	PERF_REG_X86_SI,
++	PERF_REG_X86_DI,
++	PERF_REG_X86_BP,
++	PERF_REG_X86_SP,
++	PERF_REG_X86_IP,
++	PERF_REG_X86_FLAGS,
++	PERF_REG_X86_CS,
++	PERF_REG_X86_SS,
++	PERF_REG_X86_DS,
++	PERF_REG_X86_ES,
++	PERF_REG_X86_FS,
++	PERF_REG_X86_GS,
++	PERF_REG_X86_R8,
++	PERF_REG_X86_R9,
++	PERF_REG_X86_R10,
++	PERF_REG_X86_R11,
++	PERF_REG_X86_R12,
++	PERF_REG_X86_R13,
++	PERF_REG_X86_R14,
++	PERF_REG_X86_R15,
++
++	PERF_REG_X86_32_MAX = PERF_REG_X86_GS + 1,
++	PERF_REG_X86_64_MAX = PERF_REG_X86_R15 + 1,
++};
++#endif /* _ASM_X86_PERF_REGS_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8215e56..8d7a619 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -100,6 +100,8 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+ obj-$(CONFIG_OF)			+= devicetree.o
+ obj-$(CONFIG_UPROBES)			+= uprobes.o
+ 
++obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
++
+ ###
+ # 64 bit specific files
+ ifeq ($(CONFIG_X86_64),y)
+diff --git a/arch/x86/kernel/perf_regs.c b/arch/x86/kernel/perf_regs.c
+new file mode 100644
+index 0000000..3d692352
+--- /dev/null
++++ b/arch/x86/kernel/perf_regs.c
+@@ -0,0 +1,90 @@
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/bug.h>
++#include <linux/stddef.h>
++#include <asm/perf_regs.h>
++#include <asm/ptrace.h>
++
++#ifdef CONFIG_X86_32
++#define PERF_REG_X86_MAX PERF_REG_X86_32_MAX
++#else
++#define PERF_REG_X86_MAX PERF_REG_X86_64_MAX
++#endif
++
++#define PT_REGS_OFFSET(id, r) [id] = offsetof(struct pt_regs, r)
++
++static unsigned int pt_regs_offset[PERF_REG_X86_MAX] = {
++	PT_REGS_OFFSET(PERF_REG_X86_AX, ax),
++	PT_REGS_OFFSET(PERF_REG_X86_BX, bx),
++	PT_REGS_OFFSET(PERF_REG_X86_CX, cx),
++	PT_REGS_OFFSET(PERF_REG_X86_DX, dx),
++	PT_REGS_OFFSET(PERF_REG_X86_SI, si),
++	PT_REGS_OFFSET(PERF_REG_X86_DI, di),
++	PT_REGS_OFFSET(PERF_REG_X86_BP, bp),
++	PT_REGS_OFFSET(PERF_REG_X86_SP, sp),
++	PT_REGS_OFFSET(PERF_REG_X86_IP, ip),
++	PT_REGS_OFFSET(PERF_REG_X86_FLAGS, flags),
++	PT_REGS_OFFSET(PERF_REG_X86_CS, cs),
++	PT_REGS_OFFSET(PERF_REG_X86_SS, ss),
++#ifdef CONFIG_X86_32
++	PT_REGS_OFFSET(PERF_REG_X86_DS, ds),
++	PT_REGS_OFFSET(PERF_REG_X86_ES, es),
++	PT_REGS_OFFSET(PERF_REG_X86_FS, fs),
++	PT_REGS_OFFSET(PERF_REG_X86_GS, gs),
++#else
++	/*
++	 * The pt_regs struct does not store
++	 * ds, es, fs, gs in 64 bit mode.
++	 */
++	(unsigned int) -1,
++	(unsigned int) -1,
++	(unsigned int) -1,
++	(unsigned int) -1,
++#endif
++#ifdef CONFIG_X86_64
++	PT_REGS_OFFSET(PERF_REG_X86_R8, r8),
++	PT_REGS_OFFSET(PERF_REG_X86_R9, r9),
++	PT_REGS_OFFSET(PERF_REG_X86_R10, r10),
++	PT_REGS_OFFSET(PERF_REG_X86_R11, r11),
++	PT_REGS_OFFSET(PERF_REG_X86_R12, r12),
++	PT_REGS_OFFSET(PERF_REG_X86_R13, r13),
++	PT_REGS_OFFSET(PERF_REG_X86_R14, r14),
++	PT_REGS_OFFSET(PERF_REG_X86_R15, r15),
++#endif
++};
++
++u64 perf_reg_value(struct pt_regs *regs, int idx)
++{
++	if (WARN_ON_ONCE(idx > ARRAY_SIZE(pt_regs_offset)))
++		return 0;
++
++	return regs_get_register(regs, pt_regs_offset[idx]);
++}
++
++#define REG_RESERVED (~((1ULL << PERF_REG_X86_MAX) - 1ULL))
++
++#ifdef CONFIG_X86_32
++int perf_reg_validate(u64 mask)
++{
++	if (!mask || mask & REG_RESERVED)
++		return -EINVAL;
++
++	return 0;
++}
++#else /* CONFIG_X86_64 */
++#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
++		       (1ULL << PERF_REG_X86_ES) | \
++		       (1ULL << PERF_REG_X86_FS) | \
++		       (1ULL << PERF_REG_X86_GS))
++
++int perf_reg_validate(u64 mask)
++{
++	if (!mask || mask & REG_RESERVED)
++		return -EINVAL;
++
++	if (mask & REG_NOSUPPORT)
++		return -EINVAL;
++
++	return 0;
++}
++#endif /* CONFIG_X86_32 */
+diff --git a/include/linux/perf_regs.h b/include/linux/perf_regs.h
+new file mode 100644
+index 0000000..a2f1a98
+--- /dev/null
++++ b/include/linux/perf_regs.h
+@@ -0,0 +1,19 @@
++#ifndef _LINUX_PERF_REGS_H
++#define _LINUX_PERF_REGS_H
++
++#ifdef CONFIG_HAVE_PERF_REGS
++#include <asm/perf_regs.h>
++u64 perf_reg_value(struct pt_regs *regs, int idx);
++int perf_reg_validate(u64 mask);
++#else
++static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
++{
++	return 0;
++}
++
++static inline int perf_reg_validate(u64 mask)
++{
++	return mask ? -ENOSYS : 0;
++}
++#endif /* CONFIG_HAVE_PERF_REGS */
++#endif /* _LINUX_PERF_REGS_H */
+-- 
+1.7.11.2
+
