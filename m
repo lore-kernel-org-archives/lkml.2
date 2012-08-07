@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab2HGQ2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:28:47 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49076 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab2HGQ2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:28:46 -0400
-Date: Tue, 7 Aug 2012 17:28:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Ashish Jangam'" <ashish.jangam@kpitcummins.com>
-Subject: Re: [PATCH 1/3] backlight: da9052: Use usleep_range() instead of
- msleep() for small sleeps
-Message-ID: <20120807162821.GA14711@sirena.org.uk>
-References: <002c01cd738e$14a880b0$3df98210$%han@samsung.com>
- <CAK9yfHyw=6-e28mHrhyhTuC2uykeqQzpsGRfXcWmcaON=NvcPw@mail.gmail.com>
- <002f01cd7390$4873b5c0$d95b2140$%han@samsung.com>
+	id S1754294Ab2HGQdG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:33:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48655 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751523Ab2HGQdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 12:33:04 -0400
+Message-ID: <5021432F.2030907@zytor.com>
+Date: Tue, 07 Aug 2012 09:32:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <002f01cd7390$4873b5c0$d95b2140$%han@samsung.com>
-X-Cookie: Now, let's SEND OUT for QUICHE!!
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: zhenzhong.duan@oracle.com
+CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>
+Subject: Re: [PATCH] Parallelize mtrr init between cpus
+References: <5020C3D7.2070407@oracle.com>
+In-Reply-To: <5020C3D7.2070407@oracle.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 01:59:38PM +0900, Jingoo Han wrote:
-> On Monday, August 06, 2012 1:48 PM Sachin Kamat wrote:
+On 08/07/2012 12:29 AM, zhenzhong.duan wrote:
+> Current code serialize mtrr init with set_atomicity_lock.
+> Mtrr init is quite slow when we bootup on a hvm with large mem, vcpus
+> and pci passthroughed devices(eg. 24 vcpus + 90G mem).
+> It took about ~30 mins to bootup, after patch, it took ~2 min.
 
-> > > +       usleep_range(10000, 11000);
+When you're saying "HVM" do you mean "Xen HVM"?  How does it behave on
+native hardware?
 
-> > Can't we just use usleep(10000) instead?
+	-hpa
 
-> usleep() is not available.
-> For more details, refer to Documentation/timers/timers-howto.txt.
-
-Given how common this pattern is is it not more sensible to just
-provide usleep() even if just as an inline that's something like
-
-   void usleep(unsigned long t)
-   {
-   	usleep_range(t, t + (t / 10));
-   }
-
-since the usleep_range() isn't ideal for clarity (and usually the upper
-bound isn't a particular concern for the driver, it just wants the usual
-"delay for at least x" semantics).
