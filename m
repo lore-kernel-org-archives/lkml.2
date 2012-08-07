@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab2HGW2w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:28:52 -0400
+	id S932491Ab2HGW27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:28:59 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932456Ab2HGW2r (ORCPT
+	with ESMTP id S932477Ab2HGW2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:28:47 -0400
+	Tue, 7 Aug 2012 18:28:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 033/122] USB: Fix LPM disable/enable during device reset.
-Date: Tue,  7 Aug 2012 15:25:21 -0700
-Message-Id: <20120807221951.222501057@linuxfoundation.org>
+        John McCarron <john.mccarron@canonical.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 036/122] ALSA: hda - add dock support for Thinkpad X230 Tablet
+Date: Tue,  7 Aug 2012 15:25:24 -0700
+Message-Id: <20120807221951.481161993@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,119 +31,103 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 6d1d051330ee096f575523647fbd8ffe703600b5 upstream.
+commit 108cc108a3bb42fe4705df1317ff98e1e29428a6 upstream.
 
-The USB 3.0 specification says that sending a Set Feature or Clear
-Feature for U1/U2 Enable is not a valid request when the device is in
-the Default or Addressed state.  It is only valid when the device is in
-the Configured state.
+Also add a model/fixup string "lenovo-dock", so that other Thinkpad
+users will be able to test this fixup easily, to see if it enables
+dock I/O for them as well.
 
-The original LPM patch attempted to disable LPM after the device had
-been reset by hub_port_init(), before it had the configuration
-reinstalled.  The TI hub I tested with did not fail the Clear Feature
-U1/U2 Enable request that khubd sent while it was in the addressed
-state, which is why I didn't catch it.
-
-Move the LPM disable before the device reset, so that we can send the
-Clear Feature U1/U2 Enable successfully, and balance the LPM disable
-count.
-
-Also delete any calls to usb_enable_lpm() on error paths that lead to
-re-enumeration.  The calls will fail because the device isn't
-configured, and it's not useful to balance the LPM disable count because
-the usb_device is about to be destroyed before re-enumeration.
-
-Fix the early exit path ("done" label) to call usb_enable_lpm() to
-balance the LPM disable count.
-
-Note that calling usb_reset_and_verify_device() with an unconfigured
-device may fail on the first call to usb_disable_lpm().  That's because
-the LPM disable count is initialized to 0 (LPM enabled), and
-usb_disable_lpm() will attempt to send a Clear Feature U1/U2 request to
-a device in the Addressed state.  The next patch will fix that.
-
-This commit should be backported to kernels as old as 3.5, that contain
-the commit 8306095fd2c1100e8244c09bf560f97aca5a311d "USB: Disable USB
-3.0 LPM in critical sections."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+BugLink: https://bugs.launchpad.net/bugs/1026953
+Tested-by: John McCarron <john.mccarron@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   26 ++++++++++++--------------
- 1 file changed, 12 insertions(+), 14 deletions(-)
+ Documentation/sound/alsa/HD-Audio-Models.txt |    3 ++-
+ sound/pci/hda/patch_realtek.c                |   27 +++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4672,6 +4672,16 @@ static int usb_reset_and_verify_device(s
- 	}
- 	parent_hub = hdev_to_hub(parent_hdev);
+--- a/Documentation/sound/alsa/HD-Audio-Models.txt
++++ b/Documentation/sound/alsa/HD-Audio-Models.txt
+@@ -21,10 +21,11 @@ ALC267/268
+ ==========
+   N/A
  
-+	/* Disable LPM while we reset the device and reinstall the alt settings.
-+	 * Device-initiated LPM settings, and system exit latency settings are
-+	 * cleared when the device is reset, so we have to set them up again.
-+	 */
-+	ret = usb_unlocked_disable_lpm(udev);
-+	if (ret) {
-+		dev_err(&udev->dev, "%s Failed to disable LPM\n.", __func__);
-+		goto re_enumerate;
-+	}
-+
- 	set_bit(port1, parent_hub->busy_bits);
- 	for (i = 0; i < SET_CONFIG_TRIES; ++i) {
+-ALC269
++ALC269/270/275/276/280/282
+ ======
+   laptop-amic	Laptops with analog-mic input
+   laptop-dmic	Laptops with digital-mic input
++  lenovo-dock   Enables docking station I/O for some Lenovos
  
-@@ -4699,22 +4709,11 @@ static int usb_reset_and_verify_device(s
- 		goto done;
- 
- 	mutex_lock(hcd->bandwidth_mutex);
--	/* Disable LPM while we reset the device and reinstall the alt settings.
--	 * Device-initiated LPM settings, and system exit latency settings are
--	 * cleared when the device is reset, so we have to set them up again.
--	 */
--	ret = usb_disable_lpm(udev);
--	if (ret) {
--		dev_err(&udev->dev, "%s Failed to disable LPM\n.", __func__);
--		mutex_unlock(hcd->bandwidth_mutex);
--		goto done;
--	}
- 	ret = usb_hcd_alloc_bandwidth(udev, udev->actconfig, NULL, NULL);
- 	if (ret < 0) {
- 		dev_warn(&udev->dev,
- 				"Busted HC?  Not enough HCD resources for "
- 				"old configuration.\n");
--		usb_enable_lpm(udev);
- 		mutex_unlock(hcd->bandwidth_mutex);
- 		goto re_enumerate;
- 	}
-@@ -4726,7 +4725,6 @@ static int usb_reset_and_verify_device(s
- 		dev_err(&udev->dev,
- 			"can't restore configuration #%d (error=%d)\n",
- 			udev->actconfig->desc.bConfigurationValue, ret);
--		usb_enable_lpm(udev);
- 		mutex_unlock(hcd->bandwidth_mutex);
- 		goto re_enumerate;
-   	}
-@@ -4765,17 +4763,17 @@ static int usb_reset_and_verify_device(s
- 				desc->bInterfaceNumber,
- 				desc->bAlternateSetting,
- 				ret);
--			usb_unlocked_enable_lpm(udev);
- 			goto re_enumerate;
- 		}
- 	}
- 
-+done:
- 	/* Now that the alt settings are re-installed, enable LPM. */
- 	usb_unlocked_enable_lpm(udev);
--done:
- 	return 0;
-  
- re_enumerate:
-+	/* LPM state doesn't matter when we're about to destroy the device. */
- 	hub_port_logical_disconnect(parent_hub, port1);
- 	return -ENODEV;
+ ALC662/663/272
+ ==============
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5704,6 +5704,15 @@ static int alc269_resume(struct hda_code
  }
+ #endif /* CONFIG_PM */
+ 
++static void alc269_fixup_pincfg_no_hp_to_lineout(struct hda_codec *codec,
++						 const struct alc_fixup *fix, int action)
++{
++	struct alc_spec *spec = codec->spec;
++
++	if (action == ALC_FIXUP_ACT_PRE_PROBE)
++		spec->parse_flags = HDA_PINCFG_NO_HP_FIXUP;
++}
++
+ static void alc269_fixup_hweq(struct hda_codec *codec,
+ 			       const struct alc_fixup *fix, int action)
+ {
+@@ -5828,6 +5837,8 @@ enum {
+ 	ALC269VB_FIXUP_AMIC,
+ 	ALC269VB_FIXUP_DMIC,
+ 	ALC269_FIXUP_MIC2_MUTE_LED,
++	ALC269_FIXUP_LENOVO_DOCK,
++	ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT,
+ };
+ 
+ static const struct alc_fixup alc269_fixups[] = {
+@@ -5952,6 +5963,20 @@ static const struct alc_fixup alc269_fix
+ 		.type = ALC_FIXUP_FUNC,
+ 		.v.func = alc269_fixup_mic2_mute,
+ 	},
++	[ALC269_FIXUP_LENOVO_DOCK] = {
++		.type = ALC_FIXUP_PINS,
++		.v.pins = (const struct alc_pincfg[]) {
++			{ 0x19, 0x23a11040 }, /* dock mic */
++			{ 0x1b, 0x2121103f }, /* dock headphone */
++			{ }
++		},
++		.chained = true,
++		.chain_id = ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT
++	},
++	[ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT] = {
++		.type = ALC_FIXUP_FUNC,
++		.v.func = alc269_fixup_pincfg_no_hp_to_lineout,
++	},
+ };
+ 
+ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+@@ -5975,6 +6000,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21ca, "Thinkpad L412", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21e9, "Thinkpad Edge 15", ALC269_FIXUP_SKU_IGNORE),
++	SND_PCI_QUIRK(0x17aa, 0x2203, "Thinkpad X230 Tablet", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_QUANTA_MUTE),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Lenovo Ideapd", ALC269_FIXUP_PCM_44K),
+ 	SND_PCI_QUIRK(0x17aa, 0x9e54, "LENOVO NB", ALC269_FIXUP_LENOVO_EAPD),
+@@ -6033,6 +6059,7 @@ static const struct snd_pci_quirk alc269
+ static const struct alc_model_fixup alc269_fixup_models[] = {
+ 	{.id = ALC269_FIXUP_AMIC, .name = "laptop-amic"},
+ 	{.id = ALC269_FIXUP_DMIC, .name = "laptop-dmic"},
++	{.id = ALC269_FIXUP_LENOVO_DOCK, .name = "lenovo-dock"},
+ 	{}
+ };
+ 
 
 
