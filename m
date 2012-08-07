@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756932Ab2HGXoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:44:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
+	id S1756572Ab2HGW1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:27:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756842Ab2HGW1J (ORCPT
+	with ESMTP id S1753707Ab2HGW07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:27:09 -0400
+	Tue, 7 Aug 2012 18:26:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Drake <dsd@laptop.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 003/122] mmc: sdhci-pci: CaFe has broken card detection
-Date: Tue,  7 Aug 2012 15:24:51 -0700
-Message-Id: <20120807221948.539172903@linuxfoundation.org>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [ 000/122] 3.5.1-stable review
+Date: Tue,  7 Aug 2012 15:24:48 -0700
+Message-Id: <20120807221948.220495155@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
-References: <20120807221948.220495155@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +22,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg KH <gregkh@linuxfoundation.org>
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+--------------
+Note, I still have a lot more patches in the "to-apply" queue for the
+3.5-stable, and other stable trees, I am pushing this update out now due
+to the size of it.  It will take a few releases to get caught up with
+all of the patches tagged and requested for the stable kernel trees.
+--------------
 
-------------------
+This is the start of the stable review cycle for the 3.5.1 release.
+There are 122 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-From: Daniel Drake <dsd@laptop.org>
+Responses should be made by Thu Aug  9 22:19:44 UTC 2012.
+Anything received after that time might be too late.
 
-commit 55fc05b7414274f17795cd0e8a3b1546f3649d5e upstream.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.5.1-rc1.gz
+and the diffstat can be found below.
 
-At http://dev.laptop.org/ticket/11980 we have determined that the
-Marvell CaFe SDHCI controller reports bad card presence during
-resume. It reports that no card is present even when it is.
-This is a regression -- resume worked back around 2.6.37.
+thanks,
 
-Around 400ms after resuming, a "card inserted" interrupt is
-generated, at which point it starts reporting presence.
+greg k-h
 
-Work around this hardware oddity by setting the
-SDHCI_QUIRK_BROKEN_CARD_DETECTION flag.
-Thanks to Chris Ball for helping with diagnosis.
-
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/mmc/host/sdhci-pci.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -157,6 +157,7 @@ static const struct sdhci_pci_fixes sdhc
- static const struct sdhci_pci_fixes sdhci_cafe = {
- 	.quirks		= SDHCI_QUIRK_NO_SIMULT_VDD_AND_POWER |
- 			  SDHCI_QUIRK_NO_BUSY_IRQ |
-+			  SDHCI_QUIRK_BROKEN_CARD_DETECTION |
- 			  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
- };
- 
+-------------
+ Documentation/sound/alsa/HD-Audio-Models.txt    |    3 +-
+ Documentation/stable_kernel_rules.txt           |   19 ++-
+ Makefile                                        |    4 +-
+ arch/arm/boot/dts/tegra-trimslice.dts           |    2 +
+ arch/arm/mach-omap2/opp.c                       |    3 +-
+ arch/m68k/kernel/sys_m68k.c                     |    8 +-
+ arch/mips/kernel/kspd.c                         |    2 +-
+ arch/powerpc/boot/dts/p1022ds.dtsi              |   16 ---
+ arch/powerpc/include/asm/reg.h                  |    3 +-
+ arch/powerpc/kernel/ftrace.c                    |   12 +-
+ arch/powerpc/platforms/85xx/p1022_ds.c          |  106 ++++++++++++--
+ arch/powerpc/platforms/pseries/eeh_event.c      |    6 +-
+ arch/s390/include/asm/mmu_context.h             |   14 +-
+ arch/s390/include/asm/processor.h               |    2 +
+ arch/s390/kernel/processor.c                    |    2 +
+ arch/s390/kernel/smp.c                          |    3 -
+ arch/s390/mm/fault.c                            |   13 +-
+ arch/s390/mm/mmap.c                             |   12 +-
+ arch/s390/mm/pgtable.c                          |    5 -
+ arch/x86/kernel/cpu/mcheck/mce.c                |    6 +-
+ arch/x86/kernel/microcode_core.c                |   26 +++-
+ drivers/acpi/ac.c                               |    4 +-
+ drivers/acpi/apei/apei-base.c                   |    5 +
+ drivers/base/power/main.c                       |   10 +-
+ drivers/char/tpm/tpm.c                          |   12 +-
+ drivers/gpu/drm/nouveau/nouveau_drv.h           |    2 -
+ drivers/gpu/drm/nouveau/nouveau_irq.c           |    4 -
+ drivers/gpu/drm/nouveau/nouveau_software.h      |    1 +
+ drivers/gpu/drm/nouveau/nva3_copy.fuc           |    4 +-
+ drivers/gpu/drm/nouveau/nva3_copy.fuc.h         |   94 +++++++++++-
+ drivers/gpu/drm/nouveau/nvc0_copy.fuc.h         |   87 +++++++++++-
+ drivers/gpu/drm/radeon/atombios_dp.c            |   10 +-
+ drivers/gpu/drm/radeon/atombios_encoders.c      |   12 +-
+ drivers/gpu/drm/radeon/radeon_connectors.c      |   35 +++--
+ drivers/gpu/drm/radeon/radeon_cs.c              |    2 +-
+ drivers/gpu/drm/radeon/radeon_cursor.c          |    8 +-
+ drivers/gpu/drm/radeon/radeon_object.c          |    3 +-
+ drivers/hid/hid-multitouch.c                    |   13 +-
+ drivers/iommu/amd_iommu.c                       |   17 ++-
+ drivers/iommu/amd_iommu_v2.c                    |    2 +
+ drivers/md/dm-thin.c                            |    7 +-
+ drivers/mmc/host/sdhci-pci.c                    |    1 +
+ drivers/mmc/host/sdhci.c                        |    8 +-
+ drivers/net/caif/caif_serial.c                  |    3 +
+ drivers/net/ethernet/atheros/atl1c/atl1c_hw.h   |    5 +
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |   16 ++-
+ drivers/net/ethernet/broadcom/tg3.c             |   10 +-
+ drivers/net/ethernet/emulex/benet/be_ethtool.c  |    5 +-
+ drivers/net/ethernet/emulex/benet/be_main.c     |    2 +-
+ drivers/net/ethernet/realtek/r8169.c            |   27 +---
+ drivers/net/tun.c                               |    9 +-
+ drivers/net/usb/kaweth.c                        |    2 +-
+ drivers/net/wireless/b43/b43.h                  |    7 -
+ drivers/net/wireless/b43/main.c                 |   32 ++---
+ drivers/net/wireless/iwlwifi/iwl-agn-lib.c      |    5 +
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c      |    1 +
+ drivers/net/wireless/mwifiex/cfg80211.c         |    4 +-
+ drivers/net/wireless/rt2x00/rt2800usb.c         |    3 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c    |    6 +-
+ drivers/net/wireless/rtlwifi/usb.c              |   14 +-
+ drivers/net/wireless/rtlwifi/wifi.h             |    1 +
+ drivers/s390/net/qeth_l3_main.c                 |    4 +
+ drivers/scsi/hosts.c                            |    7 +-
+ drivers/scsi/libsas/sas_expander.c              |   47 +++---
+ drivers/scsi/scsi_error.c                       |   14 ++
+ drivers/scsi/scsi_lib.c                         |   43 ++----
+ drivers/scsi/scsi_priv.h                        |    1 -
+ drivers/scsi/scsi_scan.c                        |    3 +
+ drivers/scsi/scsi_sysfs.c                       |   46 +++---
+ drivers/spi/spi-pl022.c                         |    5 +
+ drivers/staging/zsmalloc/zsmalloc-main.c        |   33 +----
+ drivers/target/iscsi/iscsi_target.c             |   22 +--
+ drivers/target/iscsi/iscsi_target_core.h        |    2 -
+ drivers/target/iscsi/iscsi_target_login.c       |   60 +-------
+ drivers/target/target_core_transport.c          |   10 ++
+ drivers/usb/core/devio.c                        |   10 +-
+ drivers/usb/core/hub.c                          |   26 ++--
+ drivers/usb/core/message.c                      |    8 +-
+ drivers/usb/core/usb.c                          |    1 +
+ drivers/usb/early/ehci-dbgp.c                   |    2 +-
+ drivers/usb/gadget/u_ether.c                    |   12 +-
+ drivers/usb/serial/option.c                     |    2 +
+ drivers/usb/storage/uas.c                       |   90 ++----------
+ fs/btrfs/async-thread.c                         |    9 +-
+ fs/cifs/cifsglob.h                              |    6 +-
+ fs/cifs/connect.c                               |    9 +-
+ fs/cifs/file.c                                  |   17 ++-
+ fs/exec.c                                       |    2 +-
+ fs/ext4/balloc.c                                |    3 +-
+ fs/ext4/bitmap.c                                |   12 +-
+ fs/ext4/ext4.h                                  |    6 +-
+ fs/ext4/extents.c                               |   46 +++---
+ fs/ext4/ialloc.c                                |    3 +-
+ fs/ext4/inode.c                                 |   41 ++++--
+ fs/ext4/namei.c                                 |   11 +-
+ fs/ext4/resize.c                                |    7 +-
+ fs/ext4/super.c                                 |  174 ++++++++++++++++-------
+ fs/ext4/xattr.c                                 |   11 +-
+ fs/locks.c                                      |    6 +-
+ fs/nfs/file.c                                   |    7 +-
+ fs/nfs/idmap.c                                  |   26 +++-
+ fs/nfsd/nfs4state.c                             |    4 +-
+ fs/nfsd/nfs4xdr.c                               |    2 +-
+ fs/select.c                                     |   10 +-
+ fs/udf/super.c                                  |    2 +-
+ include/linux/cpu.h                             |    5 +-
+ include/linux/mm.h                              |    1 +
+ include/linux/net.h                             |    1 +
+ include/linux/posix_types.h                     |   18 +--
+ include/linux/time.h                            |    8 --
+ include/linux/usb.h                             |    1 -
+ include/target/target_core_base.h               |    1 +
+ kernel/cgroup.c                                 |    2 +-
+ kernel/exit.c                                   |    2 +-
+ kernel/futex.c                                  |   17 ++-
+ kernel/power/hibernate.c                        |    6 +
+ kernel/power/suspend.c                          |    3 +
+ kernel/power/wakelock.c                         |    7 +
+ kernel/printk.c                                 |   33 +++--
+ kernel/workqueue.c                              |   38 ++++-
+ mm/memory-failure.c                             |   14 +-
+ net/batman-adv/routing.c                        |    2 +
+ net/compat.c                                    |    4 +-
+ net/core/rtnetlink.c                            |    8 +-
+ net/ipv4/tcp.c                                  |    5 +-
+ net/ipv4/tcp_input.c                            |    4 +-
+ net/mac80211/mlme.c                             |    4 +-
+ net/mac80211/tx.c                               |    2 +-
+ net/mac80211/util.c                             |   12 +-
+ net/socket.c                                    |    3 +
+ net/sunrpc/sched.c                              |    2 +
+ net/sunrpc/xprtrdma/transport.c                 |    3 +-
+ net/sunrpc/xprtsock.c                           |   10 ++
+ net/wanrouter/wanmain.c                         |   51 +++----
+ security/selinux/hooks.c                        |    2 +-
+ security/smack/smackfs.c                        |    8 +-
+ sound/drivers/mpu401/mpu401_uart.c              |    1 +
+ sound/pci/hda/hda_codec.c                       |    7 +
+ sound/pci/hda/patch_hdmi.c                      |   12 +-
+ sound/pci/hda/patch_realtek.c                   |   29 ++++
+ sound/pci/hda/patch_sigmatel.c                  |   22 ++-
+ sound/pci/hda/patch_via.c                       |    7 +-
+ sound/soc/codecs/wm8962.c                       |    6 +
+ sound/soc/codecs/wm8994.c                       |    2 +-
+ sound/soc/soc-dapm.c                            |   15 +-
+ sound/usb/clock.c                               |    3 +-
+ 146 files changed, 1273 insertions(+), 730 deletions(-)
 
 
