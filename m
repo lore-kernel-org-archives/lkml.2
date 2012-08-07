@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031240Ab2HGWq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:46:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
+	id S1031259Ab2HGWrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:47:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60358 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031227Ab2HGWq4 (ORCPT
+	with ESMTP id S1031227Ab2HGWq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:56 -0400
+	Tue, 7 Aug 2012 18:46:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 29/49] sch_sfb: Fix missing NULL check
-Date: Tue,  7 Aug 2012 15:44:47 -0700
-Message-Id: <20120807222029.497996532@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Sridhar Samudrala <sri@us.ibm.com>, davej@redhat.com,
+        linux-sctp@vger.kernel.org
+Subject: [ 30/49] sctp: Fix list corruption resulting from freeing an association on a list
+Date: Tue,  7 Aug 2012 15:44:48 -0700
+Message-Id: <20120807222029.587343926@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -31,30 +34,182 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Alan Cox <alan@linux.intel.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 7ac2908e4b2edaec60e9090ddb4d9ceb76c05e7d ]
+[ Upstream commit 2eebc1e188e9e45886ee00662519849339884d6d ]
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44461
+A few days ago Dave Jones reported this oops:
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+[22766.294255] general protection fault: 0000 [#1] PREEMPT SMP
+[22766.295376] CPU 0
+[22766.295384] Modules linked in:
+[22766.387137]  ffffffffa169f292 6b6b6b6b6b6b6b6b ffff880147c03a90
+ffff880147c03a74
+[22766.387135] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000
+[22766.387136] Process trinity-watchdo (pid: 10896, threadinfo ffff88013e7d2000,
+[22766.387137] Stack:
+[22766.387140]  ffff880147c03a10
+[22766.387140]  ffffffffa169f2b6
+[22766.387140]  ffff88013ed95728
+[22766.387143]  0000000000000002
+[22766.387143]  0000000000000000
+[22766.387143]  ffff880003fad062
+[22766.387144]  ffff88013c120000
+[22766.387144]
+[22766.387145] Call Trace:
+[22766.387145]  <IRQ>
+[22766.387150]  [<ffffffffa169f292>] ? __sctp_lookup_association+0x62/0xd0
+[sctp]
+[22766.387154]  [<ffffffffa169f2b6>] __sctp_lookup_association+0x86/0xd0 [sctp]
+[22766.387157]  [<ffffffffa169f597>] sctp_rcv+0x207/0xbb0 [sctp]
+[22766.387161]  [<ffffffff810d4da8>] ? trace_hardirqs_off_caller+0x28/0xd0
+[22766.387163]  [<ffffffff815827e3>] ? nf_hook_slow+0x133/0x210
+[22766.387166]  [<ffffffff815902fc>] ? ip_local_deliver_finish+0x4c/0x4c0
+[22766.387168]  [<ffffffff8159043d>] ip_local_deliver_finish+0x18d/0x4c0
+[22766.387169]  [<ffffffff815902fc>] ? ip_local_deliver_finish+0x4c/0x4c0
+[22766.387171]  [<ffffffff81590a07>] ip_local_deliver+0x47/0x80
+[22766.387172]  [<ffffffff8158fd80>] ip_rcv_finish+0x150/0x680
+[22766.387174]  [<ffffffff81590c54>] ip_rcv+0x214/0x320
+[22766.387176]  [<ffffffff81558c07>] __netif_receive_skb+0x7b7/0x910
+[22766.387178]  [<ffffffff8155856c>] ? __netif_receive_skb+0x11c/0x910
+[22766.387180]  [<ffffffff810d423e>] ? put_lock_stats.isra.25+0xe/0x40
+[22766.387182]  [<ffffffff81558f83>] netif_receive_skb+0x23/0x1f0
+[22766.387183]  [<ffffffff815596a9>] ? dev_gro_receive+0x139/0x440
+[22766.387185]  [<ffffffff81559280>] napi_skb_finish+0x70/0xa0
+[22766.387187]  [<ffffffff81559cb5>] napi_gro_receive+0xf5/0x130
+[22766.387218]  [<ffffffffa01c4679>] e1000_receive_skb+0x59/0x70 [e1000e]
+[22766.387242]  [<ffffffffa01c5aab>] e1000_clean_rx_irq+0x28b/0x460 [e1000e]
+[22766.387266]  [<ffffffffa01c9c18>] e1000e_poll+0x78/0x430 [e1000e]
+[22766.387268]  [<ffffffff81559fea>] net_rx_action+0x1aa/0x3d0
+[22766.387270]  [<ffffffff810a495f>] ? account_system_vtime+0x10f/0x130
+[22766.387273]  [<ffffffff810734d0>] __do_softirq+0xe0/0x420
+[22766.387275]  [<ffffffff8169826c>] call_softirq+0x1c/0x30
+[22766.387278]  [<ffffffff8101db15>] do_softirq+0xd5/0x110
+[22766.387279]  [<ffffffff81073bc5>] irq_exit+0xd5/0xe0
+[22766.387281]  [<ffffffff81698b03>] do_IRQ+0x63/0xd0
+[22766.387283]  [<ffffffff8168ee2f>] common_interrupt+0x6f/0x6f
+[22766.387283]  <EOI>
+[22766.387284]
+[22766.387285]  [<ffffffff8168eed9>] ? retint_swapgs+0x13/0x1b
+[22766.387285] Code: c0 90 5d c3 66 0f 1f 44 00 00 4c 89 c8 5d c3 0f 1f 00 55 48
+89 e5 48 83
+ec 20 48 89 5d e8 4c 89 65 f0 4c 89 6d f8 66 66 66 66 90 <0f> b7 87 98 00 00 00
+48 89 fb
+49 89 f5 66 c1 c0 08 66 39 46 02
+[22766.387307]
+[22766.387307] RIP
+[22766.387311]  [<ffffffffa168a2c9>] sctp_assoc_is_match+0x19/0x90 [sctp]
+[22766.387311]  RSP <ffff880147c039b0>
+[22766.387142]  ffffffffa16ab120
+[22766.599537] ---[ end trace 3f6dae82e37b17f5 ]---
+[22766.601221] Kernel panic - not syncing: Fatal exception in interrupt
+
+It appears from his analysis and some staring at the code that this is likely
+occuring because an association is getting freed while still on the
+sctp_assoc_hashtable.  As a result, we get a gpf when traversing the hashtable
+while a freed node corrupts part of the list.
+
+Nominally I would think that an mibalanced refcount was responsible for this,
+but I can't seem to find any obvious imbalance.  What I did note however was
+that the two places where we create an association using
+sctp_primitive_ASSOCIATE (__sctp_connect and sctp_sendmsg), have failure paths
+which free a newly created association after calling sctp_primitive_ASSOCIATE.
+sctp_primitive_ASSOCIATE brings us into the sctp_sf_do_prm_asoc path, which
+issues a SCTP_CMD_NEW_ASOC side effect, which in turn adds a new association to
+the aforementioned hash table.  the sctp command interpreter that process side
+effects has not way to unwind previously processed commands, so freeing the
+association from the __sctp_connect or sctp_sendmsg error path would lead to a
+freed association remaining on this hash table.
+
+I've fixed this but modifying sctp_[un]hash_established to use hlist_del_init,
+which allows us to proerly use hlist_unhashed to check if the node is on a
+hashlist safely during a delete.  That in turn alows us to safely call
+sctp_unhash_established in the __sctp_connect and sctp_sendmsg error paths
+before freeing them, regardles of what the associations state is on the hash
+list.
+
+I noted, while I was doing this, that the __sctp_unhash_endpoint was using
+hlist_unhsashed in a simmilar fashion, but never nullified any removed nodes
+pointers to make that function work properly, so I fixed that up in a simmilar
+fashion.
+
+I attempted to test this using a virtual guest running the SCTP_RR test from
+netperf in a loop while running the trinity fuzzer, both in a loop.  I wasn't
+able to recreate the problem prior to this fix, nor was I able to trigger the
+failure after (neither of which I suppose is suprising).  Given the trace above
+however, I think its likely that this is what we hit.
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: davej@redhat.com
+CC: davej@redhat.com
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Vlad Yasevich <vyasevich@gmail.com>
+CC: Sridhar Samudrala <sri@us.ibm.com>
+CC: linux-sctp@vger.kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_sfb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/sctp/input.c  |    7 ++-----
+ net/sctp/socket.c |   12 ++++++++++--
+ 2 files changed, 12 insertions(+), 7 deletions(-)
 
---- a/net/sched/sch_sfb.c
-+++ b/net/sched/sch_sfb.c
-@@ -556,6 +556,8 @@ static int sfb_dump(struct Qdisc *sch, s
+--- a/net/sctp/input.c
++++ b/net/sctp/input.c
+@@ -737,15 +737,12 @@ static void __sctp_unhash_endpoint(struc
  
- 	sch->qstats.backlog = q->qdisc->qstats.backlog;
- 	opts = nla_nest_start(skb, TCA_OPTIONS);
-+	if (opts == NULL)
-+		goto nla_put_failure;
- 	NLA_PUT(skb, TCA_SFB_PARMS, sizeof(opt), &opt);
- 	return nla_nest_end(skb, opts);
+ 	epb = &ep->base;
+ 
+-	if (hlist_unhashed(&epb->node))
+-		return;
+-
+ 	epb->hashent = sctp_ep_hashfn(epb->bind_addr.port);
+ 
+ 	head = &sctp_ep_hashtable[epb->hashent];
+ 
+ 	sctp_write_lock(&head->lock);
+-	__hlist_del(&epb->node);
++	hlist_del_init(&epb->node);
+ 	sctp_write_unlock(&head->lock);
+ }
+ 
+@@ -826,7 +823,7 @@ static void __sctp_unhash_established(st
+ 	head = &sctp_assoc_hashtable[epb->hashent];
+ 
+ 	sctp_write_lock(&head->lock);
+-	__hlist_del(&epb->node);
++	hlist_del_init(&epb->node);
+ 	sctp_write_unlock(&head->lock);
+ }
+ 
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -1160,8 +1160,14 @@ out_free:
+ 	SCTP_DEBUG_PRINTK("About to exit __sctp_connect() free asoc: %p"
+ 			  " kaddrs: %p err: %d\n",
+ 			  asoc, kaddrs, err);
+-	if (asoc)
++	if (asoc) {
++		/* sctp_primitive_ASSOCIATE may have added this association
++		 * To the hash table, try to unhash it, just in case, its a noop
++		 * if it wasn't hashed so we're safe
++		 */
++		sctp_unhash_established(asoc);
+ 		sctp_association_free(asoc);
++	}
+ 	return err;
+ }
+ 
+@@ -1871,8 +1877,10 @@ SCTP_STATIC int sctp_sendmsg(struct kioc
+ 	goto out_unlock;
+ 
+ out_free:
+-	if (new_asoc)
++	if (new_asoc) {
++		sctp_unhash_established(asoc);
+ 		sctp_association_free(asoc);
++	}
+ out_unlock:
+ 	sctp_release_sock(sk);
  
 
 
