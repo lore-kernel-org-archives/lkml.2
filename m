@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031299Ab2HGWr2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:47:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60358 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031272Ab2HGWrP (ORCPT
+	id S1031327Ab2HGWri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:47:38 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44605 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031300Ab2HGWre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:47:15 -0400
+	Tue, 7 Aug 2012 18:47:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hangbin Liu <liuhangbin@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 35/49] tcp: Add TCP_USER_TIMEOUT negative value check
-Date: Tue,  7 Aug 2012 15:44:53 -0700
-Message-Id: <20120807222030.012580131@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 42/49] ALSA: mpu401: Fix missing initialization of irq field
+Date: Tue,  7 Aug 2012 15:45:00 -0700
+Message-Id: <20120807222030.624700755@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -30,37 +29,32 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Takashi Iwai <tiwai@suse.de>
 
-From: Hangbin Liu <liuhangbin@gmail.com>
+commit bc733d495267a23ef8660220d696c6e549ce30b3 upstream.
 
-[ Upstream commit 42493570100b91ef663c4c6f0c0fdab238f9d3c2 ]
+The irq field of struct snd_mpu401 is supposed to be initialized to -1.
+Since it's set to zero as of now, a probing error before the irq
+installation results in a kernel warning "Trying to free already-free
+IRQ 0".
 
-TCP_USER_TIMEOUT is a TCP level socket option that takes an unsigned int. But
-patch "tcp: Add TCP_USER_TIMEOUT socket option"(dca43c75) didn't check the negative
-values. If a user assign -1 to it, the socket will set successfully and wait
-for 4294967295 miliseconds. This patch add a negative value check to avoid
-this issue.
-
-Signed-off-by: Hangbin Liu <liuhangbin@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=44821
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2394,7 +2394,10 @@ static int do_tcp_setsockopt(struct sock
- 		/* Cap the max timeout in ms TCP will retry/retrans
- 		 * before giving up and aborting (ETIMEDOUT) a connection.
- 		 */
--		icsk->icsk_user_timeout = msecs_to_jiffies(val);
-+		if (val < 0)
-+			err = -EINVAL;
-+		else
-+			icsk->icsk_user_timeout = msecs_to_jiffies(val);
- 		break;
- 	default:
- 		err = -ENOPROTOOPT;
+---
+ sound/drivers/mpu401/mpu401_uart.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/drivers/mpu401/mpu401_uart.c
++++ b/sound/drivers/mpu401/mpu401_uart.c
+@@ -554,6 +554,7 @@ int snd_mpu401_uart_new(struct snd_card
+ 	spin_lock_init(&mpu->output_lock);
+ 	spin_lock_init(&mpu->timer_lock);
+ 	mpu->hardware = hardware;
++	mpu->irq = -1;
+ 	if (! (info_flags & MPU401_INFO_INTEGRATED)) {
+ 		int res_size = hardware == MPU401_HW_PC98II ? 4 : 2;
+ 		mpu->res = request_region(port, res_size, "MPU401 UART");
 
 
