@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2HGJrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:47:42 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:53309 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab2HGJrj (ORCPT
+	id S1753301Ab2HGJrl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:47:41 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:33507 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab2HGJrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 05:47:39 -0400
+Message-ID: <5020E423.9080004@linux.vnet.ibm.com>
+Date: Tue, 07 Aug 2012 17:47:15 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120806153503.GH10524@gmail.com>
-References: <1344266253-14050-1-git-send-email-lee.jones@linaro.org>
-	<20120806153503.GH10524@gmail.com>
-Date: Tue, 7 Aug 2012 11:47:38 +0200
-Message-ID: <CACRpkdZjbyQbht+UpXrrVGhAzGYPjb=HRZhJ+TvsEXhGeviJLA@mail.gmail.com>
-Subject: Re: [PATCH 1/1 v2] i2c: Add default configuration into the Nomadik
- I2C driver.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, w.sang@pengutronix.de, linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v5 00/12] KVM: introduce readonly memslot
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12080709-4790-0000-0000-00000406FE76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 5:35 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Changelog:
+- introduce KVM_PFN_ERR_RO_FAULT instead of dummy page
+- introduce KVM_HVA_ERR_BAD and optimize error hva indicators
 
-> Looks like I introduced a merge error on the last patch. Trying again:
+The test case can be found at:
+http://lkml.indiana.edu/hypermail/linux/kernel/1207.2/00819/migrate-perf.tar.bz2
 
->  .../mali/mali400ko/driver/src/devicedrv/mali/arch  |    1 +
-(...)
-> diff --git a/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch b/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch
-> new file mode 120000
-> index 0000000..427334b
-> --- /dev/null
-> +++ b/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch
-> @@ -0,0 +1 @@
-> +/home/ljkenny/projects/linaro/snowball/snowball/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch-ux500
-> \ No newline at end of file
+In current code, if we map a readonly memory space from host to guest
+and the page is not currently mapped in the host, we will get a fault-pfn
+and async is not allowed, then the vm will crash.
 
-NACK, what is this stuff? It's even out-of-tree code.
+As Avi's suggestion, We introduce readonly memory region to map ROM/ROMD
+to the guest, read access is happy for readonly memslot, write access on
+readonly memslot will cause KVM_EXIT_MMIO exit.
 
-Please be careful with git add -A, I prefer to use git add <pathspec>
-I suspect that may be why this happened...
-
-Please fix it up and send a v3.
-
-Yours,
-Linus Walleij
