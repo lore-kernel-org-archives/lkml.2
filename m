@@ -1,70 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab2HGU4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:56:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65277 "EHLO mga02.intel.com"
+	id S1756490Ab2HGU5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:57:23 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:36779 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756303Ab2HGU4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 16:56:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="177153963"
-Subject: Re: IRQ remapping problem on Macbook Air 5,1
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Joerg Roedel <joro@8bytes.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, Yinghai Lu <yinghai@kernel.org>
-Date: Tue, 07 Aug 2012 13:53:33 -0700
-In-Reply-To: <20120807205519.GC23829@thinkpad-t410>
-References: <20120807194837.GB23829@thinkpad-t410>
-	 <20120807201030.GJ1917@8bytes.org>
-	 <1344372472.27383.8.camel@sbsiddha-desk.sc.intel.com>
-	 <20120807205519.GC23829@thinkpad-t410>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1344372814.27383.12.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1753390Ab2HGU5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 16:57:21 -0400
+Date: Tue, 7 Aug 2012 22:57:17 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Borislav Petkov <bp@amd64.org>,
+        Robert Richter <robert.richter@amd.com>, mingo@kernel.org,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: do_IRQ: 1.55 No irq handler for vector (irq -1)
+Message-ID: <20120807205717.GC11226@aftab.osrc.amd.com>
+References: <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
+ <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
+ <20120807153149.GI3732@erda.amd.com>
+ <20120807154134.GA7456@aftab.osrc.amd.com>
+ <1344356662.2041.48.camel@sbsiddha-desk.sc.intel.com>
+ <87pq72a951.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pq72a951.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-07 at 15:55 -0500, Seth Forshee wrote:
-> On Tue, Aug 07, 2012 at 01:47:52PM -0700, Suresh Siddha wrote:
-> > On Tue, 2012-08-07 at 22:10 +0200, Joerg Roedel wrote:
-> > > Hi Seth,
-> > > 
-> > > On Tue, Aug 07, 2012 at 02:48:37PM -0500, Seth Forshee wrote:
-> > > > This machine has a bug in its ACPI tables that's causing it to fail to
-> > > > boot unless intremap=off is passed to the kernel. The MADT defines a
-> > > > single IOAPIC with id 2, but the remapping unit defined in DMAR matches
-> > > > id 0. Thus interrupt remapping fails, and the kernel panics with the
-> > > > message "timer doesn't work through Interrupt-remapped IO-APIC." If I
-> > > > force the use of the non-matching ir hardware for the IOAPIC everything
-> > > > seems to works fine. dmesg for the working boot is below.
-> > > 
-> > > There are AMD systems with similar problems. For example I had a system
-> > > with 2 IO-APICs but only one was described in the IOMMU ACPI table.
-> > 
-> > This issue should be caught by the current check in
-> > parse_ioapics_under_ir()
-> > 
-> > if (ir_supported && ir_ioapic_num != nr_ioapics) {
-> > ...
+On Tue, Aug 07, 2012 at 10:45:30AM -0700, Eric W. Biederman wrote:
+> >> [    0.170256] AMD PMU driver.
+> >> [    0.170451] ... version:                0
+> >> [    0.170683] ... bit width:              48
+> >> [    0.170906] ... generic registers:      6
+> >> [    0.171125] ... value mask:             0000ffffffffffff
+> >> [    0.171399] ... max period:             00007fffffffffff
+> >> [    0.171673] ... fixed-purpose events:   0
+> >> [    0.171902] ... event mask:             000000000000003f
+> >> [    0.172687] MCE: In-kernel MCE decoding enabled.
+> >> [    0.184214] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support
+> >> [    0.186687] do_IRQ: 1.55 No irq handler for vector (irq -1)				<---
+> >> [    0.198126] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support
+> >> [    0.200579] do_IRQ: 2.55 No irq handler for vector (irq -1)				<---
+> >> [    0.173040] smpboot: Booting Node   0, Processors  #1 #2 #3 OK
+> >> [    0.212083] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support
+> >> [    0.214538] do_IRQ: 3.55 No irq handler for vector (irq -1)				<---
+> >> [    0.214864] Brought up 4 CPUs
+> >> 
+> >> of it now having IRQ handler for vector 55.
+> >> 
+> >> And guess what: reverting those three above make the message go away
+> >> too.
+> >> 
+> >
+> > Boris, Robert, Can you please send me the complete dmesg
+> > and /proc/interrupts on a successful boot?
 > 
-> No, there's one IOMMU and one IOAPIC, so this check doesn't catch it.
-> The problem is that the ids in the ACPI tables for the devices don't
-> match.
+> Hmm.  I wonder if this is one of those cases where the apics don't honor
+> the masks in lowest priority delivery mode and simply deliver to some
+> cpu in the same die.
+
+The funny thing is, they deliver to all CPUs except the BSP.
+
+Or maybe the BSP gets that IRQ too but it actually has a handler
+registered?
+
+Btw, I'm stabbing in the dark here - I have been purposefully and
+willfully keeping away from all the APIC debacle until now. I guess that
+carefree time is over :(.
+
+> Certainly outside of x2apic mode I have seen that happen and that is why
+> the reservation in lowest priroity delivery mode was for the same vector
+> across all cpus.
 > 
+> This certainly looks like we have one irq going across multiple cpus
+> and the software simply appears unprepared for the irq to show up where
+> the irq is showing up.
 
-Seth, I am referring to the issue that Joerg raised. Not referring to
-your current issue.
+The interesting thing is that this happens once per core early during
+boot and not anymore. I dropped the printk_ratelimit() in do_IRQ and
+still got those lines only once in dmesg.
 
-thanks,
-suresh
+The other funny thing is, irq 55 is not in /proc/interrupts:
 
+           CPU0       CPU1       CPU2       CPU3
+  0:         44          0          0          0   IO-APIC-edge      timer
+  1:          2          1          2          4   IO-APIC-edge      i8042
+  8:          6          7          6          6   IO-APIC-edge      rtc0
+  9:         22         25         24         21   IO-APIC-fasteoi   acpi
+ 12:         31         23         30         30   IO-APIC-edge      i8042
+ 16:         82         82         81        117   IO-APIC-fasteoi   snd_hda_intel
+ 17:          0          1          1          0   IO-APIC-fasteoi   ehci_hcd:usb1, ehci_hcd:usb2
+ 18:          3          6          8          8   IO-APIC-fasteoi   ohci_hcd:usb3, ohci_hcd:usb4, ohci_hcd:usb5
+ 40:          0          0          0          0   PCI-MSI-edge      PCIe PME
+ 41:          0          0          0          0   PCI-MSI-edge      PCIe PME
+ 42:          0          0          0          0   PCI-MSI-edge      PCIe PME
+ 43:          0          0          0          0   PCI-MSI-edge      PCIe PME
+ 44:        675        662        676        690   PCI-MSI-edge      ahci
+ 45:         41         44         38         41   PCI-MSI-edge      snd_hda_intel
+ 46:      13484      13499      13501      13536   PCI-MSI-edge      eth0
+NMI:          0          0          0          0   Non-maskable interrupts
+LOC:      20719      21487      18015      16445   Local timer interrupts
+SPU:          0          0          0          0   Spurious interrupts
+PMI:          0          0          0          0   Performance monitoring interrupts
+IWI:          0          0          0          0   IRQ work interrupts
+RTR:          0          0          0          0   APIC ICR read retries
+RES:      13744      12640      13425      12334   Rescheduling interrupts
+CAL:        571        790        539        801   Function call interrupts
+TLB:          0          0          0          0   TLB shootdowns
+TRM:          0          0          0          0   Thermal event interrupts
+THR:          0          0          0          0   Threshold APIC interrupts
+MCE:          0          0          0          0   Machine check exceptions
+MCP:         66         66         66         66   Machine check polls
+ERR:          0
+MIS:          0
+
+so what is that thing?
+
+I'll read up on lowest prio delivery mode tomorrow.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
