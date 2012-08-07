@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab2HGWal (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:30:41 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:57779 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab2HGWad (ORCPT
+	id S932706Ab2HGWaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:30:46 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34616 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932684Ab2HGWan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:30:33 -0400
+	Tue, 7 Aug 2012 18:30:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Jones <davej@redhat.com>, Kay Sievers <kay@vrfy.org>
-Subject: [ 068/122] kmsg - properly print over-long continuation lines
-Date: Tue,  7 Aug 2012 15:25:56 -0700
-Message-Id: <20120807221954.598022422@linuxfoundation.org>
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 071/122] cifs: ensure that we always do cifsFileInfo_get under the spinlock
+Date: Tue,  7 Aug 2012 15:25:59 -0700
+Message-Id: <20120807221954.959761503@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,146 +30,101 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Kay Sievers <kay@vrfy.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 70498253186586e5dca7bc3ebd3415203b059fbc upstream.
+commit 764a1b1acecedfe204cb2e80d8e2cc7c6df1b0b8 upstream.
 
-Reserve PREFIX_MAX bytes in the LOG_LINE_MAX line when buffering a
-continuation line, to be able to properly prefix the LOG_LINE_MAX
-line with the syslog prefix and timestamp when printing it.
+The readpages bug is a regression that was introduced in 6993f74a5.
+This also fixes a couple of similar bugs in the uncached read and write
+codepaths.
 
-Reported-By: Dave Jones <davej@redhat.com>
-Signed-off-by: Kay Sievers <kay@vrfy.org>
+Also, prevent this sort of thing in the future by having cifsFileInfo_get
+take the spinlock itself, and adding a _locked variant for use in places
+that are already holding the lock. The _put code has always done that
+so this makes for a less confusing interface.
+
+Reviewed-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/printk.c |   33 +++++++++++++++++++--------------
- 1 file changed, 19 insertions(+), 14 deletions(-)
+ fs/cifs/cifsglob.h |    6 +++---
+ fs/cifs/file.c     |   17 ++++++++++++-----
+ 2 files changed, 15 insertions(+), 8 deletions(-)
 
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -235,7 +235,8 @@ static u32 log_next_idx;
- static u64 clear_seq;
- static u32 clear_idx;
- 
--#define LOG_LINE_MAX 1024
-+#define PREFIX_MAX		32
-+#define LOG_LINE_MAX		1024 - PREFIX_MAX
- 
- /* record buffer */
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-@@ -876,7 +877,7 @@ static size_t msg_print_text(const struc
- 
- 		if (buf) {
- 			if (print_prefix(msg, syslog, NULL) +
--			    text_len + 1>= size - len)
-+			    text_len + 1 >= size - len)
- 				break;
- 
- 			if (prefix)
-@@ -907,7 +908,7 @@ static int syslog_print(char __user *buf
- 	struct log *msg;
- 	int len = 0;
- 
--	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
-+	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
- 	if (!text)
- 		return -ENOMEM;
- 
-@@ -930,7 +931,8 @@ static int syslog_print(char __user *buf
- 
- 		skip = syslog_partial;
- 		msg = log_from_idx(syslog_idx);
--		n = msg_print_text(msg, syslog_prev, true, text, LOG_LINE_MAX);
-+		n = msg_print_text(msg, syslog_prev, true, text,
-+				   LOG_LINE_MAX + PREFIX_MAX);
- 		if (n - syslog_partial <= size) {
- 			/* message fits into buffer, move forward */
- 			syslog_idx = log_next(syslog_idx);
-@@ -969,7 +971,7 @@ static int syslog_print_all(char __user
- 	char *text;
- 	int len = 0;
- 
--	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
-+	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
- 	if (!text)
- 		return -ENOMEM;
- 
-@@ -1022,7 +1024,8 @@ static int syslog_print_all(char __user
- 			struct log *msg = log_from_idx(idx);
- 			int textlen;
- 
--			textlen = msg_print_text(msg, prev, true, text, LOG_LINE_MAX);
-+			textlen = msg_print_text(msg, prev, true, text,
-+						 LOG_LINE_MAX + PREFIX_MAX);
- 			if (textlen < 0) {
- 				len = textlen;
- 				break;
-@@ -1352,15 +1355,15 @@ static struct cont {
- 	bool flushed:1;			/* buffer sealed and committed */
- } cont;
- 
--static void cont_flush(void)
-+static void cont_flush(enum log_flags flags)
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -657,13 +657,13 @@ struct cifs_io_parms {
+  * Take a reference on the file private data. Must be called with
+  * cifs_file_list_lock held.
+  */
+-static inline
+-struct cifsFileInfo *cifsFileInfo_get(struct cifsFileInfo *cifs_file)
++static inline void
++cifsFileInfo_get_locked(struct cifsFileInfo *cifs_file)
  {
- 	if (cont.flushed)
- 		return;
- 	if (cont.len == 0)
- 		return;
- 
--	log_store(cont.facility, cont.level, LOG_NOCONS, cont.ts_nsec,
--		  NULL, 0, cont.buf, cont.len);
-+	log_store(cont.facility, cont.level, LOG_NOCONS | flags,
-+		  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
- 
- 	cont.flushed = true;
+ 	++cifs_file->count;
+-	return cifs_file;
  }
-@@ -1371,7 +1374,8 @@ static bool cont_add(int facility, int l
- 		return false;
  
- 	if (cont.len + len > sizeof(cont.buf)) {
--		cont_flush();
-+		/* the line gets too long, split it up in separate records */
-+		cont_flush(LOG_CONT);
- 		return false;
++struct cifsFileInfo *cifsFileInfo_get(struct cifsFileInfo *cifs_file);
+ void cifsFileInfo_put(struct cifsFileInfo *cifs_file);
+ 
+ /*
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -284,6 +284,15 @@ cifs_new_fileinfo(__u16 fileHandle, stru
+ 
+ static void cifs_del_lock_waiters(struct cifsLockInfo *lock);
+ 
++struct cifsFileInfo *
++cifsFileInfo_get(struct cifsFileInfo *cifs_file)
++{
++	spin_lock(&cifs_file_list_lock);
++	cifsFileInfo_get_locked(cifs_file);
++	spin_unlock(&cifs_file_list_lock);
++	return cifs_file;
++}
++
+ /*
+  * Release a reference on the file private data. This may involve closing
+  * the filehandle out on the server. Must be called without holding
+@@ -1563,7 +1572,7 @@ struct cifsFileInfo *find_readable_file(
+ 			if (!open_file->invalidHandle) {
+ 				/* found a good file */
+ 				/* lock it so it will not be closed on us */
+-				cifsFileInfo_get(open_file);
++				cifsFileInfo_get_locked(open_file);
+ 				spin_unlock(&cifs_file_list_lock);
+ 				return open_file;
+ 			} /* else might as well continue, and look for
+@@ -1615,7 +1624,7 @@ refind_writable:
+ 		if (OPEN_FMODE(open_file->f_flags) & FMODE_WRITE) {
+ 			if (!open_file->invalidHandle) {
+ 				/* found a good writable file */
+-				cifsFileInfo_get(open_file);
++				cifsFileInfo_get_locked(open_file);
+ 				spin_unlock(&cifs_file_list_lock);
+ 				return open_file;
+ 			} else {
+@@ -1632,7 +1641,7 @@ refind_writable:
+ 
+ 	if (inv_file) {
+ 		any_available = false;
+-		cifsFileInfo_get(inv_file);
++		cifsFileInfo_get_locked(inv_file);
  	}
  
-@@ -1507,7 +1511,7 @@ asmlinkage int vprintk_emit(int facility
- 		 * or another task also prints continuation lines.
- 		 */
- 		if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
--			cont_flush();
-+			cont_flush(0);
- 
- 		/* buffer line if possible, otherwise store it right away */
- 		if (!cont_add(facility, level, text, text_len))
-@@ -1525,7 +1529,7 @@ asmlinkage int vprintk_emit(int facility
- 		if (cont.len && cont.owner == current) {
- 			if (!(lflags & LOG_PREFIX))
- 				stored = cont_add(facility, level, text, text_len);
--			cont_flush();
-+			cont_flush(0);
+ 	spin_unlock(&cifs_file_list_lock);
+@@ -3082,8 +3091,6 @@ static int cifs_readpages(struct file *f
+ 			break;
  		}
  
- 		if (!stored)
-@@ -1618,7 +1622,8 @@ EXPORT_SYMBOL(printk);
- 
- #else
- 
--#define LOG_LINE_MAX 0
-+#define LOG_LINE_MAX		0
-+#define PREFIX_MAX		0
- static struct cont {
- 	size_t len;
- 	size_t cons;
-@@ -1923,7 +1928,7 @@ static enum log_flags console_prev;
-  */
- void console_unlock(void)
- {
--	static char text[LOG_LINE_MAX];
-+	static char text[LOG_LINE_MAX + PREFIX_MAX];
- 	static u64 seen_seq;
- 	unsigned long flags;
- 	bool wake_klogd = false;
+-		spin_lock(&cifs_file_list_lock);
+-		spin_unlock(&cifs_file_list_lock);
+ 		rdata->cfile = cifsFileInfo_get(open_file);
+ 		rdata->mapping = mapping;
+ 		rdata->offset = offset;
 
 
