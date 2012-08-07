@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab2HGPpY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:45:24 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56590 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab2HGPpT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:45:19 -0400
-Date: Tue, 7 Aug 2012 16:44:58 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
-        rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-Message-ID: <20120807154458.GK24257@flint.arm.linux.org.uk>
-References: <20120806220032.GD26698@opensource.wolfsonmicro.com> <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com> <20120807103851.GS16861@opensource.wolfsonmicro.com> <20120807111331.GC24257@flint.arm.linux.org.uk> <20120807112844.GZ16861@opensource.wolfsonmicro.com> <20120807113121.GD24257@flint.arm.linux.org.uk> <20120807113652.GA6282@flint.arm.linux.org.uk> <20120807114556.GC16861@opensource.wolfsonmicro.com> <20120807115140.GH24257@flint.arm.linux.org.uk> <CAMuHMdUezhMNL19JUK9-uSqTr3=bU7yAci0ovFd5dSdksW1etQ@mail.gmail.com>
+	id S1755237Ab2HGPpf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:45:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34773 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755080Ab2HGPpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 11:45:31 -0400
+Date: Tue, 7 Aug 2012 16:45:26 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jim Schutt <jaschut@sandia.gov>
+Cc: Rik van Riel <riel@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+        Minchan Kim <minchan@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] mm: have order > 0 compaction start near a pageblock
+ with free pages
+Message-ID: <20120807154526.GH29814@suse.de>
+References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
+ <1344342677-5845-7-git-send-email-mgorman@suse.de>
+ <50212A05.2070503@redhat.com>
+ <20120807145233.GG29814@suse.de>
+ <50213228.1030107@sandia.gov>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdUezhMNL19JUK9-uSqTr3=bU7yAci0ovFd5dSdksW1etQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <50213228.1030107@sandia.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 05:22:45PM +0200, Geert Uytterhoeven wrote:
-> And as Arnd pointed out, if resources will be used for various new buses,
-> "IORESOURCE_FOO" or "IORESOURCE_OTHER" is a bit vague.
-> What about conflicts where one driver means i2c addresses and another
-> one means gpio addresses? The resource system will reject them?
+On Tue, Aug 07, 2012 at 09:20:08AM -0600, Jim Schutt wrote:
+> On 08/07/2012 08:52 AM, Mel Gorman wrote:
+> >On Tue, Aug 07, 2012 at 10:45:25AM -0400, Rik van Riel wrote:
+> >>On 08/07/2012 08:31 AM, Mel Gorman wrote:
+> >>>commit [7db8889a: mm: have order>   0 compaction start off where it left]
+> >>>introduced a caching mechanism to reduce the amount work the free page
+> >>>scanner does in compaction. However, it has a problem. Consider two process
+> >>>simultaneously scanning free pages
+> >>>
+> >>>				    			C
+> >>>Process A		M     S     			F
+> >>>		|---------------------------------------|
+> >>>Process B		M 	FS
+> >>
+> >>Argh. Good spotting.
+> >>
+> >>>This is not optimal and it can still race but the compact_cached_free_pfn
+> >>>will be pointing to or very near a pageblock with free pages.
+> >>
+> >>Agreed on the "not optimal", but I also cannot think of a better
+> >>idea right now. Getting this fixed for 3.6 is important, we can
+> >>think of future optimizations in San Diego.
+> >>
+> >
+> >Sounds like a plan.
+> >
+> >>>Signed-off-by: Mel Gorman<mgorman@suse.de>
+> >>
+> >>Reviewed-by: Rik van Riel<riel@redhat.com>
+> >>
+> >
+> >Thanks very much.
+> >
+> >Jim, what are the chances of getting this series tested with your large
+> >data workload? As it's on top of 3.5, it should be less scary than
+> >testing 3.6-rc1 but if you are comfortable testing 3.6-rc1 then please
+> >test with just this patch on top.
+> >
+> 
+> As it turns out I'm already testing 3.6-rc1, as I'm on
+> the trail of a Ceph client messaging bug.  I think I've
+> about got that figured out, and am working on a patch, but
+> I need it fixed in order to generate enough load to trigger
+> the problem that your patch addresses.
+> 
 
-I changed the subsequent patch to use IORESOURCE_REG - at least that
-better describes what it's for.  Maybe IORESOURCE_REGRANGE would be
-better (so it can be used for any register range resource on any bus
-type) ?
+Grand, good luck with the Ceph bug.
 
-However, one issue that I hope has already been addressed is what space
-the ranges are in, and how does a sub-driver get to know that.  To put
-it another way, how does a sub-driver get to know about the 'base' for
-these register ranges.  I hope that problem has been thought about in
-MFD land _before_ the approach of passing around register ranges
-through resources was allowed to happen.
+> Which is a long-winded way of saying:  no problem, I'll
+> roll this into my current testing, but I'll need another
+> day or two before I'm likely to be able to generate a
+> high enough load to test effectively.  OK?
+> 
+
+That is perfectly reasonable, thanks.
+
+> Also FWIW, it occurs to me that you might be interested
+> to know that my load also involves lots of network load
+> where I'm using jumbo frames.  I suspect that puts even
+> more stress on higher page order allocations, right?
+> 
+
+It might. It depends on whether the underlying driver needs contiguous
+pages to handle jumbo frame, if it can do scatter/gather IO or some
+combination like trying for a contiguous page but using scatter/gather as
+a fallback. Certainly it is interesting and I will keep it in mind.
 
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Mel Gorman
+SUSE Labs
