@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab2HGW1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:27:10 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:57002 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756843Ab2HGW1H (ORCPT
+	id S1757027Ab2HGW13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:27:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756984Ab2HGW1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:27:07 -0400
+	Tue, 7 Aug 2012 18:27:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 002/122] iscsi-target: Drop bogus struct file usage for iSCSI/SCTP
-Date: Tue,  7 Aug 2012 15:24:50 -0700
-Message-Id: <20120807221948.448043618@linuxfoundation.org>
+        Timur Tabi <timur@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: [ 009/122] powerpc/85xx: use the BRx registers to enable indirect mode on the P1022DS
+Date: Tue,  7 Aug 2012 15:24:57 -0700
+Message-Id: <20120807221949.077601036@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -31,222 +30,227 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Timur Tabi <timur@freescale.com>
 
-commit bf6932f44a7b3fa7e2246a8b18a44670e5eab6c2 upstream.
+commit 6bd825f02966be8ba544047cab313d6032c23819 upstream.
 
->From Al Viro:
+In order to enable the DIU video controller on the P1022DS, the FPGA needs
+to be switched to "indirect mode", where the localbus is disabled and
+the FPGA is accessed via writes to localbus chip select signals CS0 and CS1.
 
-	BTW, speaking of struct file treatment related to sockets -
-        there's this piece of code in iscsi:
-        /*
-         * The SCTP stack needs struct socket->file.
-         */
-        if ((np->np_network_transport == ISCSI_SCTP_TCP) ||
-            (np->np_network_transport == ISCSI_SCTP_UDP)) {
-                if (!new_sock->file) {
-                        new_sock->file = kzalloc(
-                                        sizeof(struct file), GFP_KERNEL);
+To obtain the address of CS0 and CS1, the platform driver uses an "indirect
+pixis mode" device tree node.  This node assumes that the localbus 'ranges'
+property is sorted in chip-select order.  That is, reg value 0 maps to
+CS0, reg value 1 maps to CS1, etc.  This is how the 'ranges' property is
+supposed to be arranged.
 
-For one thing, as far as I can see it'not true - sctp does *not* depend on
-socket->file being non-NULL; it does, in one place, check socket->file->f_flags
-for O_NONBLOCK, but there it treats NULL socket->file as "flag not set".
-Which is the case here anyway - the fake struct file created in
-__iscsi_target_login_thread() (and in iscsi_target_setup_login_socket(), with
-the same excuse) do *not* get that flag set.
+Unfortunately, the 'ranges' property is often mis-arranged, and not just on
+the P1022DS.  Linux normally does not care, since it does not program the
+localbus.  But the indirect-mode code on the P1022DS does care.
 
-Moreover, it's a bloody serious violation of a bunch of asserts in VFS;
-all struct file instances should come from filp_cachep, via get_empty_filp()
-(or alloc_file(), which is a wrapper for it).  FWIW, I'm very tempted to
-do this and be done with the entire mess:
+The "proper" fix is to have U-Boot fix the 'ranges' property, but this would
+be too cumbersome.  The names and 'reg' properties of all the localbus
+devices would also need to be updated, and determining which localbus device
+maps to which chip select is board-specific.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Instead, we determine the CS0/CS1 base addresses the same way that U-boot
+does -- by reading the BRx registers directly and mapping them to physical
+addresses.  This code is simpler and more reliable, and it does not require
+a U-boot or device tree change.
+
+Since the indirect pixis device tree node is no longer needed, the node is
+deleted from the DTS.
+
+Signed-off-by: Timur Tabi <timur@freescale.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c       |   22 +----------
- drivers/target/iscsi/iscsi_target_core.h  |    2 -
- drivers/target/iscsi/iscsi_target_login.c |   60 +-----------------------------
- 3 files changed, 6 insertions(+), 78 deletions(-)
+ arch/powerpc/boot/dts/p1022ds.dtsi     |   16 ----
+ arch/powerpc/platforms/85xx/p1022_ds.c |  106 ++++++++++++++++++++++++++++-----
+ 2 files changed, 93 insertions(+), 29 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -429,19 +429,8 @@ int iscsit_reset_np_thread(
+--- a/arch/powerpc/boot/dts/p1022ds.dtsi
++++ b/arch/powerpc/boot/dts/p1022ds.dtsi
+@@ -33,22 +33,6 @@
+  */
  
- int iscsit_del_np_comm(struct iscsi_np *np)
- {
--	if (!np->np_socket)
--		return 0;
--
+ &board_lbc {
 -	/*
--	 * Some network transports allocate their own struct sock->file,
--	 * see  if we need to free any additional allocated resources.
+-	 * This node is used to access the pixis via "indirect" mode,
+-	 * which is done by writing the pixis register index to chip
+-	 * select 0 and the value to/from chip select 1.  Indirect
+-	 * mode is the only way to access the pixis when DIU video
+-	 * is enabled.  Note that this assumes that the first column
+-	 * of the 'ranges' property above is the chip select number.
 -	 */
--	if (np->np_flags & NPF_SCTP_STRUCT_FILE) {
--		kfree(np->np_socket->file);
--		np->np_socket->file = NULL;
--	}
+-	board-control@0,0 {
+-		compatible = "fsl,p1022ds-indirect-pixis";
+-		reg = <0x0 0x0 1	/* CS0 */
+-		       0x1 0x0 1>;	/* CS1 */
+-		interrupt-parent = <&mpic>;
+-		interrupts = <8 0 0 0>;
+-	};
 -
--	sock_release(np->np_socket);
-+	if (np->np_socket)
-+		sock_release(np->np_socket);
- 	return 0;
+ 	nor@0,0 {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+--- a/arch/powerpc/platforms/85xx/p1022_ds.c
++++ b/arch/powerpc/platforms/85xx/p1022_ds.c
+@@ -27,6 +27,7 @@
+ #include <sysdev/fsl_pci.h>
+ #include <asm/udbg.h>
+ #include <asm/fsl_guts.h>
++#include <asm/fsl_lbc.h>
+ #include "smp.h"
+ 
+ #include "mpc85xx.h"
+@@ -142,17 +143,73 @@ static void p1022ds_set_gamma_table(enum
+ {
  }
  
-@@ -4077,13 +4066,8 @@ int iscsit_close_connection(
- 	kfree(conn->conn_ops);
- 	conn->conn_ops = NULL;
++struct fsl_law {
++	u32	lawbar;
++	u32	reserved1;
++	u32	lawar;
++	u32	reserved[5];
++};
++
++#define LAWBAR_MASK	0x00F00000
++#define LAWBAR_SHIFT	12
++
++#define LAWAR_EN	0x80000000
++#define LAWAR_TGT_MASK	0x01F00000
++#define LAW_TRGT_IF_LBC	(0x04 << 20)
++
++#define LAWAR_MASK	(LAWAR_EN | LAWAR_TGT_MASK)
++#define LAWAR_MATCH	(LAWAR_EN | LAW_TRGT_IF_LBC)
++
++#define BR_BA		0xFFFF8000
++
++/*
++ * Map a BRx value to a physical address
++ *
++ * The localbus BRx registers only store the lower 32 bits of the address.  To
++ * obtain the upper four bits, we need to scan the LAW table.  The entry which
++ * maps to the localbus will contain the upper four bits.
++ */
++static phys_addr_t lbc_br_to_phys(const void *ecm, unsigned int count, u32 br)
++{
++#ifndef CONFIG_PHYS_64BIT
++	/*
++	 * If we only have 32-bit addressing, then the BRx address *is* the
++	 * physical address.
++	 */
++	return br & BR_BA;
++#else
++	const struct fsl_law *law = ecm + 0xc08;
++	unsigned int i;
++
++	for (i = 0; i < count; i++) {
++		u64 lawbar = in_be32(&law[i].lawbar);
++		u32 lawar = in_be32(&law[i].lawar);
++
++		if ((lawar & LAWAR_MASK) == LAWAR_MATCH)
++			/* Extract the upper four bits */
++			return (br & BR_BA) | ((lawbar & LAWBAR_MASK) << 12);
++	}
++
++	return 0;
++#endif
++}
++
+ /**
+  * p1022ds_set_monitor_port: switch the output to a different monitor port
+- *
+  */
+ static void p1022ds_set_monitor_port(enum fsl_diu_monitor_port port)
+ {
+ 	struct device_node *guts_node;
+-	struct device_node *indirect_node = NULL;
++	struct device_node *lbc_node = NULL;
++	struct device_node *law_node = NULL;
+ 	struct ccsr_guts __iomem *guts;
++	struct fsl_lbc_regs *lbc = NULL;
++	void *ecm = NULL;
+ 	u8 __iomem *lbc_lcs0_ba = NULL;
+ 	u8 __iomem *lbc_lcs1_ba = NULL;
++	phys_addr_t cs0_addr, cs1_addr;
++	const __be32 *iprop;
++	unsigned int num_laws;
+ 	u8 b;
  
--	if (conn->sock) {
--		if (conn->conn_flags & CONNFLAG_SCTP_STRUCT_FILE) {
--			kfree(conn->sock->file);
--			conn->sock->file = NULL;
--		}
-+	if (conn->sock)
- 		sock_release(conn->sock);
--	}
- 	conn->thread_set = NULL;
- 
- 	pr_debug("Moving to TARG_CONN_STATE_FREE.\n");
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -224,7 +224,6 @@ enum iscsi_timer_flags_table {
- /* Used for struct iscsi_np->np_flags */
- enum np_flags_table {
- 	NPF_IP_NETWORK		= 0x00,
--	NPF_SCTP_STRUCT_FILE	= 0x01 /* Bugfix */
- };
- 
- /* Used for struct iscsi_np->np_thread_state */
-@@ -503,7 +502,6 @@ struct iscsi_conn {
- 	u16			local_port;
- 	int			net_size;
- 	u32			auth_id;
--#define CONNFLAG_SCTP_STRUCT_FILE			0x01
- 	u32			conn_flags;
- 	/* Used for iscsi_tx_login_rsp() */
- 	u32			login_itt;
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -795,22 +795,6 @@ int iscsi_target_setup_login_socket(
+ 	/* Map the global utilities registers. */
+@@ -168,25 +225,43 @@ static void p1022ds_set_monitor_port(enu
+ 		goto exit;
  	}
- 	np->np_socket = sock;
- 	/*
--	 * The SCTP stack needs struct socket->file.
--	 */
--	if ((np->np_network_transport == ISCSI_SCTP_TCP) ||
--	    (np->np_network_transport == ISCSI_SCTP_UDP)) {
--		if (!sock->file) {
--			sock->file = kzalloc(sizeof(struct file), GFP_KERNEL);
--			if (!sock->file) {
--				pr_err("Unable to allocate struct"
--						" file for SCTP\n");
--				ret = -ENOMEM;
--				goto fail;
--			}
--			np->np_flags |= NPF_SCTP_STRUCT_FILE;
--		}
--	}
--	/*
- 	 * Setup the np->np_sockaddr from the passed sockaddr setup
- 	 * in iscsi_target_configfs.c code..
- 	 */
-@@ -869,21 +853,15 @@ int iscsi_target_setup_login_socket(
  
- fail:
- 	np->np_socket = NULL;
--	if (sock) {
--		if (np->np_flags & NPF_SCTP_STRUCT_FILE) {
--			kfree(sock->file);
--			sock->file = NULL;
--		}
--
-+	if (sock)
- 		sock_release(sock);
--	}
- 	return ret;
+-	indirect_node = of_find_compatible_node(NULL, NULL,
+-					     "fsl,p1022ds-indirect-pixis");
+-	if (!indirect_node) {
+-		pr_err("p1022ds: missing pixis indirect mode node\n");
++	lbc_node = of_find_compatible_node(NULL, NULL, "fsl,p1022-elbc");
++	if (!lbc_node) {
++		pr_err("p1022ds: missing localbus node\n");
++		goto exit;
++	}
++
++	lbc = of_iomap(lbc_node, 0);
++	if (!lbc) {
++		pr_err("p1022ds: could not map localbus node\n");
+ 		goto exit;
+ 	}
+ 
+-	lbc_lcs0_ba = of_iomap(indirect_node, 0);
+-	if (!lbc_lcs0_ba) {
+-		pr_err("p1022ds: could not map localbus chip select 0\n");
++	law_node = of_find_compatible_node(NULL, NULL, "fsl,ecm-law");
++	if (!law_node) {
++		pr_err("p1022ds: missing local access window node\n");
+ 		goto exit;
+ 	}
+ 
+-	lbc_lcs1_ba = of_iomap(indirect_node, 1);
+-	if (!lbc_lcs1_ba) {
+-		pr_err("p1022ds: could not map localbus chip select 1\n");
++	ecm = of_iomap(law_node, 0);
++	if (!ecm) {
++		pr_err("p1022ds: could not map local access window node\n");
+ 		goto exit;
+ 	}
+ 
++	iprop = of_get_property(law_node, "fsl,num-laws", 0);
++	if (!iprop) {
++		pr_err("p1022ds: LAW node is missing fsl,num-laws property\n");
++		goto exit;
++	}
++	num_laws = be32_to_cpup(iprop);
++
++	cs0_addr = lbc_br_to_phys(ecm, num_laws, in_be32(&lbc->bank[0].br));
++	cs1_addr = lbc_br_to_phys(ecm, num_laws, in_be32(&lbc->bank[1].br));
++
++	lbc_lcs0_ba = ioremap(cs0_addr, 1);
++	lbc_lcs1_ba = ioremap(cs1_addr, 1);
++
+ 	/* Make sure we're in indirect mode first. */
+ 	if ((in_be32(&guts->pmuxcr) & PMUXCR_ELBCDIU_MASK) !=
+ 	    PMUXCR_ELBCDIU_DIU) {
+@@ -254,10 +329,15 @@ exit:
+ 		iounmap(lbc_lcs1_ba);
+ 	if (lbc_lcs0_ba)
+ 		iounmap(lbc_lcs0_ba);
++	if (lbc)
++		iounmap(lbc);
++	if (ecm)
++		iounmap(ecm);
+ 	if (guts)
+ 		iounmap(guts);
+ 
+-	of_node_put(indirect_node);
++	of_node_put(law_node);
++	of_node_put(lbc_node);
+ 	of_node_put(guts_node);
  }
  
- static int __iscsi_target_login_thread(struct iscsi_np *np)
- {
- 	u8 buffer[ISCSI_HDR_LEN], iscsi_opcode, zero_tsih = 0;
--	int err, ret = 0, set_sctp_conn_flag, stop;
-+	int err, ret = 0, stop;
- 	struct iscsi_conn *conn = NULL;
- 	struct iscsi_login *login;
- 	struct iscsi_portal_group *tpg = NULL;
-@@ -894,7 +872,6 @@ static int __iscsi_target_login_thread(s
- 	struct sockaddr_in6 sock_in6;
- 
- 	flush_signals(current);
--	set_sctp_conn_flag = 0;
- 	sock = np->np_socket;
- 
- 	spin_lock_bh(&np->np_thread_lock);
-@@ -917,35 +894,12 @@ static int __iscsi_target_login_thread(s
- 		spin_unlock_bh(&np->np_thread_lock);
- 		goto out;
- 	}
--	/*
--	 * The SCTP stack needs struct socket->file.
--	 */
--	if ((np->np_network_transport == ISCSI_SCTP_TCP) ||
--	    (np->np_network_transport == ISCSI_SCTP_UDP)) {
--		if (!new_sock->file) {
--			new_sock->file = kzalloc(
--					sizeof(struct file), GFP_KERNEL);
--			if (!new_sock->file) {
--				pr_err("Unable to allocate struct"
--						" file for SCTP\n");
--				sock_release(new_sock);
--				/* Get another socket */
--				return 1;
--			}
--			set_sctp_conn_flag = 1;
--		}
--	}
--
- 	iscsi_start_login_thread_timer(np);
- 
- 	conn = kzalloc(sizeof(struct iscsi_conn), GFP_KERNEL);
- 	if (!conn) {
- 		pr_err("Could not allocate memory for"
- 			" new connection\n");
--		if (set_sctp_conn_flag) {
--			kfree(new_sock->file);
--			new_sock->file = NULL;
--		}
- 		sock_release(new_sock);
- 		/* Get another socket */
- 		return 1;
-@@ -955,9 +909,6 @@ static int __iscsi_target_login_thread(s
- 	conn->conn_state = TARG_CONN_STATE_FREE;
- 	conn->sock = new_sock;
- 
--	if (set_sctp_conn_flag)
--		conn->conn_flags |= CONNFLAG_SCTP_STRUCT_FILE;
--
- 	pr_debug("Moving to TARG_CONN_STATE_XPT_UP.\n");
- 	conn->conn_state = TARG_CONN_STATE_XPT_UP;
- 
-@@ -1205,13 +1156,8 @@ old_sess_out:
- 		iscsi_release_param_list(conn->param_list);
- 		conn->param_list = NULL;
- 	}
--	if (conn->sock) {
--		if (conn->conn_flags & CONNFLAG_SCTP_STRUCT_FILE) {
--			kfree(conn->sock->file);
--			conn->sock->file = NULL;
--		}
-+	if (conn->sock)
- 		sock_release(conn->sock);
--	}
- 	kfree(conn);
- 
- 	if (tpg) {
 
 
