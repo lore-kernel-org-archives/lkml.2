@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932781Ab2HGDs6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:48:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59743 "EHLO
+	id S932765Ab2HGDs4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:48:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59736 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757356Ab2HGDif (ORCPT
+	by vger.kernel.org with ESMTP id S1757352Ab2HGDif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Aug 2012 23:38:35 -0400
-Message-Id: <20120807032804.517490410@decadent.org.uk>
+Message-Id: <20120807032805.522973792@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:53 +0100
+Date: Tue, 07 Aug 2012 04:29:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Mack <zonque@gmail.com>,
-        Andreas Koch <andreas@akdesigninc.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 58/70] ALSA: snd-usb: fix clock source validity index
+        alan@lxorguk.ukuu.org.uk, Neil Horman <nhorman@tuxdriver.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>
+Subject: [ 65/70] drop_monitor: Make updating data->skb smp safe
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +29,186 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit aff252a848ce21b431ba822de3dab9c4c94571cb upstream.
+commit 3885ca785a3618593226687ced84f3f336dc3860 upstream.
 
-uac_clock_source_is_valid() uses the control selector value to access
-the bmControls bitmap of the clock source unit. This is wrong, as
-control selector values start from 1, while the bitmap uses all
-available bits.
+Eric Dumazet pointed out to me that the drop_monitor protocol has some holes in
+its smp protections.  Specifically, its possible to replace data->skb while its
+being written.  This patch corrects that by making data->skb an rcu protected
+variable.  That will prevent it from being overwritten while a tracepoint is
+modifying it.
 
-In other words, "Clock Validity Control" is stored in D3..2, not D5..4
-of the clock selector unit's bmControls.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Andreas Koch <andreas@akdesigninc.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/clock.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/core/drop_monitor.c |   70 ++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 54 insertions(+), 16 deletions(-)
 
-diff --git a/sound/usb/clock.c b/sound/usb/clock.c
-index 379baad..5e634a2 100644
---- a/sound/usb/clock.c
-+++ b/sound/usb/clock.c
-@@ -111,7 +111,8 @@ static bool uac_clock_source_is_valid(struct snd_usb_audio *chip, int source_id)
- 		return 0;
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index a221a5b..7592943 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -46,7 +46,7 @@ static DEFINE_MUTEX(trace_state_mutex);
  
- 	/* If a clock source can't tell us whether it's valid, we assume it is */
--	if (!uac2_control_is_readable(cs_desc->bmControls, UAC2_CS_CONTROL_CLOCK_VALID))
-+	if (!uac2_control_is_readable(cs_desc->bmControls,
-+				      UAC2_CS_CONTROL_CLOCK_VALID - 1))
- 		return 1;
+ struct per_cpu_dm_data {
+ 	struct work_struct dm_alert_work;
+-	struct sk_buff *skb;
++	struct sk_buff __rcu *skb;
+ 	atomic_t dm_hit_count;
+ 	struct timer_list send_timer;
+ };
+@@ -73,35 +73,58 @@ static int dm_hit_limit = 64;
+ static int dm_delay = 1;
+ static unsigned long dm_hw_check_delta = 2*HZ;
+ static LIST_HEAD(hw_stats_list);
++static int initialized = 0;
  
- 	err = snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), UAC2_CS_CUR,
+ static void reset_per_cpu_data(struct per_cpu_dm_data *data)
+ {
+ 	size_t al;
+ 	struct net_dm_alert_msg *msg;
+ 	struct nlattr *nla;
++	struct sk_buff *skb;
++	struct sk_buff *oskb = rcu_dereference_protected(data->skb, 1);
+ 
+ 	al = sizeof(struct net_dm_alert_msg);
+ 	al += dm_hit_limit * sizeof(struct net_dm_drop_point);
+ 	al += sizeof(struct nlattr);
+ 
+-	data->skb = genlmsg_new(al, GFP_KERNEL);
+-	genlmsg_put(data->skb, 0, 0, &net_drop_monitor_family,
+-			0, NET_DM_CMD_ALERT);
+-	nla = nla_reserve(data->skb, NLA_UNSPEC, sizeof(struct net_dm_alert_msg));
+-	msg = nla_data(nla);
+-	memset(msg, 0, al);
+-	atomic_set(&data->dm_hit_count, dm_hit_limit);
++	skb = genlmsg_new(al, GFP_KERNEL);
++
++	if (skb) {
++		genlmsg_put(skb, 0, 0, &net_drop_monitor_family,
++				0, NET_DM_CMD_ALERT);
++		nla = nla_reserve(skb, NLA_UNSPEC,
++				  sizeof(struct net_dm_alert_msg));
++		msg = nla_data(nla);
++		memset(msg, 0, al);
++	} else if (initialized)
++		schedule_work_on(smp_processor_id(), &data->dm_alert_work);
++
++	/*
++	 * Don't need to lock this, since we are guaranteed to only
++	 * run this on a single cpu at a time.
++	 * Note also that we only update data->skb if the old and new skb
++	 * pointers don't match.  This ensures that we don't continually call
++	 * synchornize_rcu if we repeatedly fail to alloc a new netlink message.
++	 */
++	if (skb != oskb) {
++		rcu_assign_pointer(data->skb, skb);
++
++		synchronize_rcu();
++
++		atomic_set(&data->dm_hit_count, dm_hit_limit);
++	}
++
+ }
+ 
+ static void send_dm_alert(struct work_struct *unused)
+ {
+ 	struct sk_buff *skb;
+-	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
++	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
+ 
+ 	/*
+ 	 * Grab the skb we're about to send
+ 	 */
+-	skb = data->skb;
++	skb = rcu_dereference_protected(data->skb, 1);
+ 
+ 	/*
+ 	 * Replace it with a new one
+@@ -111,8 +134,10 @@ static void send_dm_alert(struct work_struct *unused)
+ 	/*
+ 	 * Ship it!
+ 	 */
+-	genlmsg_multicast(skb, 0, NET_DM_GRP_ALERT, GFP_KERNEL);
++	if (skb)
++		genlmsg_multicast(skb, 0, NET_DM_GRP_ALERT, GFP_KERNEL);
+ 
++	put_cpu_var(dm_cpu_data);
+ }
+ 
+ /*
+@@ -123,9 +148,11 @@ static void send_dm_alert(struct work_struct *unused)
+  */
+ static void sched_send_work(unsigned long unused)
+ {
+-	struct per_cpu_dm_data *data =  &__get_cpu_var(dm_cpu_data);
++	struct per_cpu_dm_data *data =  &get_cpu_var(dm_cpu_data);
++
++	schedule_work_on(smp_processor_id(), &data->dm_alert_work);
+ 
+-	schedule_work(&data->dm_alert_work);
++	put_cpu_var(dm_cpu_data);
+ }
+ 
+ static void trace_drop_common(struct sk_buff *skb, void *location)
+@@ -134,9 +161,16 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
+ 	struct nlmsghdr *nlh;
+ 	struct nlattr *nla;
+ 	int i;
+-	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
++	struct sk_buff *dskb;
++	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
+ 
+ 
++	rcu_read_lock();
++	dskb = rcu_dereference(data->skb);
++
++	if (!dskb)
++		goto out;
++
+ 	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
+ 		/*
+ 		 * we're already at zero, discard this hit
+@@ -144,7 +178,7 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
+ 		goto out;
+ 	}
+ 
+-	nlh = (struct nlmsghdr *)data->skb->data;
++	nlh = (struct nlmsghdr *)dskb->data;
+ 	nla = genlmsg_data(nlmsg_data(nlh));
+ 	msg = nla_data(nla);
+ 	for (i = 0; i < msg->entries; i++) {
+@@ -158,7 +192,7 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
+ 	/*
+ 	 * We need to create a new entry
+ 	 */
+-	__nla_reserve_nohdr(data->skb, sizeof(struct net_dm_drop_point));
++	__nla_reserve_nohdr(dskb, sizeof(struct net_dm_drop_point));
+ 	nla->nla_len += NLA_ALIGN(sizeof(struct net_dm_drop_point));
+ 	memcpy(msg->points[msg->entries].pc, &location, sizeof(void *));
+ 	msg->points[msg->entries].count = 1;
+@@ -170,6 +204,8 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
+ 	}
+ 
+ out:
++	rcu_read_unlock();
++	put_cpu_var(dm_cpu_data);
+ 	return;
+ }
+ 
+@@ -375,6 +411,8 @@ static int __init init_net_drop_monitor(void)
+ 		data->send_timer.function = sched_send_work;
+ 	}
+ 
++	initialized = 1;
++
+ 	goto out;
+ 
+ out_unreg:
 
 
