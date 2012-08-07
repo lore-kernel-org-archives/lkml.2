@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab2HGUDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:03:07 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:36541 "EHLO
+	id S1756585Ab2HGUDD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:03:03 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:36540 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756479Ab2HGT7o (ORCPT
+	with ESMTP id S1756490Ab2HGT7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 15:59:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 19/41] TTY: move allocations to tty_alloc_driver
-Date: Tue,  7 Aug 2012 21:47:44 +0200
-Message-Id: <1344368886-24033-20-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        J Freyensee <james_p_freyensee@linux.intel.com>
+Subject: [PATCH 09/41] misc: pti, fix fail paths
+Date: Tue,  7 Aug 2012 21:47:34 +0200
+Message-Id: <1344368886-24033-10-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -20,167 +21,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So now, that we have flags and know everything needed, keep a promise
-and move all the tables and ports allocation from tty_register_driver
-to tty_alloc_driver.
+Fail paths in ->probe and pti_init are incomplete. Fix that by adding
+proper clean-up paths.
 
-Not only that it makes sense, but we need this for
-tty_port_link_device which needs tty_driver->ports but is to be called
-before tty_register_driver.
+Note that we used to leak tty_driver on module unload. This is fixed
+here too.
+
+tty_unregister_driver needs not retval checking, so remove that.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- drivers/tty/tty_io.c |   73 +++++++++++++++++++++++---------------------------
- 1 file changed, 33 insertions(+), 40 deletions(-)
+ drivers/misc/pti.c |   53 +++++++++++++++++++++++++---------------------------
+ 1 file changed, 25 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index e024521..8181cb5 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -3059,6 +3059,7 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
- 		unsigned long flags)
- {
- 	struct tty_driver *driver;
-+	int err;
- 
- 	if (!lines)
- 		return ERR_PTR(-EINVAL);
-@@ -3072,9 +3073,34 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
- 	driver->num = lines;
- 	driver->owner = owner;
- 	driver->flags = flags;
--	/* later we'll move allocation of tables here */
-+
-+	if (!(flags & TTY_DRIVER_DEVPTS_MEM)) {
-+		driver->ttys = kcalloc(lines, sizeof(*driver->ttys),
-+				GFP_KERNEL);
-+		driver->termios = kcalloc(lines, sizeof(*driver->termios),
-+				GFP_KERNEL);
-+		if (!driver->ttys || !driver->termios) {
-+			err = -ENOMEM;
-+			goto err_free_all;
-+		}
-+	}
-+
-+	if (!(flags & TTY_DRIVER_EXCESSIVE_LINES)) {
-+		driver->ports = kcalloc(lines, sizeof(*driver->ports),
-+				GFP_KERNEL);
-+		if (!driver->ports) {
-+			err = -ENOMEM;
-+			goto err_free_all;
-+		}
-+	}
- 
- 	return driver;
-+err_free_all:
-+	kfree(driver->ports);
-+	kfree(driver->ttys);
-+	kfree(driver->termios);
-+	kfree(driver);
-+	return ERR_PTR(err);
- }
- EXPORT_SYMBOL(__tty_alloc_driver);
- 
-@@ -3083,7 +3109,6 @@ static void destruct_tty_driver(struct kref *kref)
- 	struct tty_driver *driver = container_of(kref, struct tty_driver, kref);
- 	int i;
- 	struct ktermios *tp;
--	void *p;
- 
- 	if (driver->flags & TTY_DRIVER_INSTALLED) {
- 		/*
-@@ -3100,14 +3125,12 @@ static void destruct_tty_driver(struct kref *kref)
- 			if (!(driver->flags & TTY_DRIVER_DYNAMIC_DEV))
- 				tty_unregister_device(driver, i);
- 		}
--		p = driver->ttys;
- 		proc_tty_unregister_driver(driver);
--		driver->ttys = NULL;
--		driver->termios = NULL;
--		kfree(p);
- 		cdev_del(&driver->cdev);
- 	}
- 	kfree(driver->ports);
-+	kfree(driver->termios);
-+	kfree(driver->ttys);
- 	kfree(driver);
- }
- 
-@@ -3138,27 +3161,8 @@ int tty_register_driver(struct tty_driver *driver)
- 	int error;
- 	int i;
- 	dev_t dev;
--	void **p = NULL;
- 	struct device *d;
- 
--	if (!(driver->flags & TTY_DRIVER_DEVPTS_MEM) && driver->num) {
--		p = kzalloc(driver->num * 2 * sizeof(void *), GFP_KERNEL);
--		if (!p)
--			return -ENOMEM;
--	}
--	/*
--	 * There is too many lines in PTY and we won't need the array there
--	 * since it has an ->install hook where it assigns ports properly.
--	 */
--	if (driver->type != TTY_DRIVER_TYPE_PTY) {
--		driver->ports = kcalloc(driver->num, sizeof(struct tty_port *),
--				GFP_KERNEL);
--		if (!driver->ports) {
--			error = -ENOMEM;
--			goto err_free_p;
--		}
--	}
--
- 	if (!driver->major) {
- 		error = alloc_chrdev_region(&dev, driver->minor_start,
- 						driver->num, driver->name);
-@@ -3171,15 +3175,7 @@ int tty_register_driver(struct tty_driver *driver)
- 		error = register_chrdev_region(dev, driver->num, driver->name);
- 	}
- 	if (error < 0)
--		goto err_free_p;
--
--	if (p) {
--		driver->ttys = (struct tty_struct **)p;
--		driver->termios = (struct ktermios **)(p + driver->num);
--	} else {
--		driver->ttys = NULL;
--		driver->termios = NULL;
--	}
+diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
+index be6e679..90de855 100644
+--- a/drivers/misc/pti.c
++++ b/drivers/misc/pti.c
+@@ -811,7 +811,7 @@ static int __devinit pti_pci_probe(struct pci_dev *pdev,
+ 			__func__, __LINE__);
+ 		pr_err("%s(%d): Error value returned: %d\n",
+ 			__func__, __LINE__, retval);
+-		return retval;
 +		goto err;
- 
- 	cdev_init(&driver->cdev, &tty_fops);
- 	driver->cdev.owner = driver->owner;
-@@ -3196,7 +3192,7 @@ int tty_register_driver(struct tty_driver *driver)
- 			d = tty_register_device(driver, i, NULL);
- 			if (IS_ERR(d)) {
- 				error = PTR_ERR(d);
--				goto err;
-+				goto err_unreg_devs;
- 			}
- 		}
  	}
-@@ -3204,7 +3200,7 @@ int tty_register_driver(struct tty_driver *driver)
- 	driver->flags |= TTY_DRIVER_INSTALLED;
- 	return 0;
  
--err:
-+err_unreg_devs:
- 	for (i--; i >= 0; i--)
- 		tty_unregister_device(driver, i);
+ 	retval = pci_enable_device(pdev);
+@@ -819,17 +819,16 @@ static int __devinit pti_pci_probe(struct pci_dev *pdev,
+ 		dev_err(&pdev->dev,
+ 			"%s: pci_enable_device() returned error %d\n",
+ 			__func__, retval);
+-		return retval;
++		goto err_unreg_misc;
+ 	}
  
-@@ -3214,10 +3210,7 @@ err:
+ 	drv_data = kzalloc(sizeof(*drv_data), GFP_KERNEL);
+-
+ 	if (drv_data == NULL) {
+ 		retval = -ENOMEM;
+ 		dev_err(&pdev->dev,
+ 			"%s(%d): kmalloc() returned NULL memory.\n",
+ 			__func__, __LINE__);
+-		return retval;
++		goto err_disable_pci;
+ 	}
+ 	drv_data->pti_addr = pci_resource_start(pdev, pci_bar);
  
- err_unreg_char:
- 	unregister_chrdev_region(dev, driver->num);
--	driver->ttys = NULL;
--	driver->termios = NULL;
--err_free_p: /* destruct_tty_driver will free driver->ports */
--	kfree(p);
+@@ -838,18 +837,15 @@ static int __devinit pti_pci_probe(struct pci_dev *pdev,
+ 		dev_err(&pdev->dev,
+ 			"%s(%d): pci_request_region() returned error %d\n",
+ 			__func__, __LINE__, retval);
+-		kfree(drv_data);
+-		return retval;
++		goto err_free_dd;
+ 	}
+ 	drv_data->aperture_base = drv_data->pti_addr+APERTURE_14;
+ 	drv_data->pti_ioaddr =
+ 		ioremap_nocache((u32)drv_data->aperture_base,
+ 		APERTURE_LEN);
+ 	if (!drv_data->pti_ioaddr) {
+-		pci_release_region(pdev, pci_bar);
+ 		retval = -ENOMEM;
+-		kfree(drv_data);
+-		return retval;
++		goto err_rel_reg;
+ 	}
+ 
+ 	pci_set_drvdata(pdev, drv_data);
+@@ -862,6 +858,16 @@ static int __devinit pti_pci_probe(struct pci_dev *pdev,
+ 
+ 	register_console(&pti_console);
+ 
++	return 0;
++err_rel_reg:
++	pci_release_region(pdev, pci_bar);
++err_free_dd:
++	kfree(drv_data);
++err_disable_pci:
++	pci_disable_device(pdev);
++err_unreg_misc:
++	misc_deregister(&pti_char_driver);
 +err:
- 	return error;
+ 	return retval;
  }
- EXPORT_SYMBOL(tty_register_driver);
+ 
+@@ -937,25 +943,24 @@ static int __init pti_init(void)
+ 		pr_err("%s(%d): Error value returned: %d\n",
+ 			__func__, __LINE__, retval);
+ 
+-		pti_tty_driver = NULL;
+-		return retval;
++		goto put_tty;
+ 	}
+ 
+ 	retval = pci_register_driver(&pti_pci_driver);
+-
+ 	if (retval) {
+ 		pr_err("%s(%d): PCI registration failed of pti driver\n",
+ 			__func__, __LINE__);
+ 		pr_err("%s(%d): Error value returned: %d\n",
+ 			__func__, __LINE__, retval);
+-
+-		tty_unregister_driver(pti_tty_driver);
+-		pr_err("%s(%d): Unregistering TTY part of pti driver\n",
+-			__func__, __LINE__);
+-		pti_tty_driver = NULL;
+-		return retval;
++		goto unreg_tty;
+ 	}
+ 
++	return 0;
++unreg_tty:
++	tty_unregister_driver(pti_tty_driver);
++put_tty:
++	put_tty_driver(pti_tty_driver);
++	pti_tty_driver = NULL;
+ 	return retval;
+ }
+ 
+@@ -964,17 +969,9 @@ static int __init pti_init(void)
+  */
+ static void __exit pti_exit(void)
+ {
+-	int retval;
+-
+-	retval = tty_unregister_driver(pti_tty_driver);
+-	if (retval) {
+-		pr_err("%s(%d): TTY unregistration failed of pti driver\n",
+-			__func__, __LINE__);
+-		pr_err("%s(%d): Error value returned: %d\n",
+-			__func__, __LINE__, retval);
+-	}
+-
++	tty_unregister_driver(pti_tty_driver);
+ 	pci_unregister_driver(&pti_pci_driver);
++	put_tty_driver(pti_tty_driver);
+ }
+ 
+ module_init(pti_init);
 -- 
 1.7.10.4
 
