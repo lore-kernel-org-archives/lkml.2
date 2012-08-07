@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab2HGLKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 07:10:09 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:60639 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704Ab2HGLKI (ORCPT
+	id S1754179Ab2HGLKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 07:10:30 -0400
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:50990 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539Ab2HGLK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 07:10:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <501EFED2.1070901@jp.fujitsu.com>
-References: <501BC8BE.6000405@jp.fujitsu.com>
-	<501C0CB6.7070409@colorfullife.com>
-	<501EFED2.1070901@jp.fujitsu.com>
-Date: Tue, 7 Aug 2012 13:10:07 +0200
-Message-ID: <CALgW_8V=E0kuArcFCUXTOuNiay794Nd8tge=T65q0Fxp2Wnaow@mail.gmail.com>
-Subject: Re: [PATCH] ipc/sem.c: prevent ENOMEM in semop() w/ SEM_UNDO flag
-From: Manfred Spraul <manfred@colorfullife.com>
-To: Seiichi Ikarashi <s.ikarashi@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Aug 2012 07:10:27 -0400
+Date: Tue, 7 Aug 2012 20:09:53 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: akpm@linux-foundation.org
+Cc: bhutchings@solarflare.com, grundler@parisc-linux.org, arnd@arndb.de,
+        benh@kernel.crashing.org, avi@redhat.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        takuya.yoshikawa@gmail.com
+Subject: [PATCH 2/5] drivers/net/ethernet/dec/tulip: Use standard
+ __set_bit_le() function
+Message-Id: <20120807200953.0d0cd0a1.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120807200759.26ca8faa.yoshikawa.takuya@oss.ntt.co.jp>
+References: <20120807200759.26ca8faa.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seiichi,
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 
-2012/8/6 Seiichi Ikarashi <s.ikarashi@jp.fujitsu.com>
->
->
->  A real case was as follows.
->      semget(IPC_PRIVATE, 70000, IPC_CREAT | IPC_EXCL);
->      sops[0].sem_num = 0;
->      sops[0].sem_op  = 1;
->      sops[0].sem_flg = SEM_UNDO;
->      semop(semid, sops, 1);
->
+To introduce generic set_bit_le() later, we remove our own definition
+and use a proper non-atomic bitops function: __set_bit_le().
 
-I think this can't work: sops[].sem_num is defined as "unsigned short".
-Thus more than 65500 semaphores in one semaphore set do not make
-any sense.
-"unsigned short" is also specified in the opengroup standard:
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Acked-by: Grant Grundler <grundler@parisc-linux.org>
+---
+ drivers/net/ethernet/dec/tulip/de2104x.c    |    7 ++-----
+ drivers/net/ethernet/dec/tulip/tulip_core.c |    7 ++-----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
-http://pubs.opengroup.org/onlinepubs/7908799/xsh/syssem.h.html
+diff --git a/drivers/net/ethernet/dec/tulip/de2104x.c b/drivers/net/ethernet/dec/tulip/de2104x.c
+index 61cc093..77335853 100644
+--- a/drivers/net/ethernet/dec/tulip/de2104x.c
++++ b/drivers/net/ethernet/dec/tulip/de2104x.c
+@@ -661,9 +661,6 @@ static netdev_tx_t de_start_xmit (struct sk_buff *skb,
+    new frame, not around filling de->setup_frame.  This is non-deterministic
+    when re-entered but still correct. */
+ 
+-#undef set_bit_le
+-#define set_bit_le(i,p) do { ((char *)(p))[(i)/8] |= (1<<((i)%8)); } while(0)
+-
+ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
+ {
+ 	struct de_private *de = netdev_priv(dev);
+@@ -673,12 +670,12 @@ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
+ 	u16 *eaddrs;
+ 
+ 	memset(hash_table, 0, sizeof(hash_table));
+-	set_bit_le(255, hash_table); 			/* Broadcast entry */
++	__set_bit_le(255, hash_table);			/* Broadcast entry */
+ 	/* This should work on big-endian machines as well. */
+ 	netdev_for_each_mc_addr(ha, dev) {
+ 		int index = ether_crc_le(ETH_ALEN, ha->addr) & 0x1ff;
+ 
+-		set_bit_le(index, hash_table);
++		__set_bit_le(index, hash_table);
+ 	}
+ 
+ 	for (i = 0; i < 32; i++) {
+diff --git a/drivers/net/ethernet/dec/tulip/tulip_core.c b/drivers/net/ethernet/dec/tulip/tulip_core.c
+index c4f37ac..885700a 100644
+--- a/drivers/net/ethernet/dec/tulip/tulip_core.c
++++ b/drivers/net/ethernet/dec/tulip/tulip_core.c
+@@ -1010,9 +1010,6 @@ static int private_ioctl (struct net_device *dev, struct ifreq *rq, int cmd)
+    new frame, not around filling tp->setup_frame.  This is non-deterministic
+    when re-entered but still correct. */
+ 
+-#undef set_bit_le
+-#define set_bit_le(i,p) do { ((char *)(p))[(i)/8] |= (1<<((i)%8)); } while(0)
+-
+ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
+ {
+ 	struct tulip_private *tp = netdev_priv(dev);
+@@ -1022,12 +1019,12 @@ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
+ 	u16 *eaddrs;
+ 
+ 	memset(hash_table, 0, sizeof(hash_table));
+-	set_bit_le(255, hash_table); 			/* Broadcast entry */
++	__set_bit_le(255, hash_table);			/* Broadcast entry */
+ 	/* This should work on big-endian machines as well. */
+ 	netdev_for_each_mc_addr(ha, dev) {
+ 		int index = ether_crc_le(ETH_ALEN, ha->addr) & 0x1ff;
+ 
+-		set_bit_le(index, hash_table);
++		__set_bit_le(index, hash_table);
+ 	}
+ 	for (i = 0; i < 32; i++) {
+ 		*setup_frm++ = hash_table[i];
+-- 
+1.7.5.4
 
-Thus: The hard limit is 65535. Perhaps slightly less, I haven't checked
-if (-1) is used somewhere to indicate an error.
-
-Is it possible to split the semaphores into multiple semphore ids?
-e.g. 70 ids, each with 1000 semaphores?
-
-The atomicity would be lost (e.g. all SEM_UNDO operations within
-one id are performed at once. With 70 ids, the SEM_UNDOs are not
-atomic anymore)
-
->
->    #define SEMMSL  250             /* <= 8 000 max num of semaphores per id */
->
-
-As far as I can see your patch removes the last part of the code that
-caused the restriction to 8.000 semaphores per id.
-
-Thus I'd propose that your patch changes this line to
-
-+ #define SEMMSL  250             /* <= 65 500 max num of semaphores per id */
-
-And:
-I would add a comment into the patch description all semaphores
-from one id share a single kernel spinlock. This could be changed, but
-it would
-a) add complexity for all users and
-b) change user space visible behavior
-Thus I would prefer to avoid to implement it unless there are real
-applications that need this implementation.
-
---
-  Manfred
