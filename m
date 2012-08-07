@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab2HGNPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 09:15:06 -0400
-Received: from relay.ihostexchange.net ([66.46.182.57]:12718 "EHLO
+	id S1754740Ab2HGNPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 09:15:24 -0400
+Received: from relay.ihostexchange.net ([66.46.182.57]:12749 "EHLO
 	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab2HGNPE convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753661Ab2HGNPS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 09:15:04 -0400
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 09:15:03 EDT
+	Tue, 7 Aug 2012 09:15:18 -0400
 From: Ferruh Yigit <fery@cypress.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 CC: Kevin McNeely <kev@cypress.com>, Ferruh YIGIT <fery@cypress.com>,
@@ -17,9 +16,9 @@ CC: Kevin McNeely <kev@cypress.com>, Ferruh YIGIT <fery@cypress.com>,
         Ashish Jangam <ashish.jangam@kpitcummins.com>,
         Olivier Sobrie <olivier@sobrie.be>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] Input: cyttsp4 - bus driver for Cypress TMA4XX touchscreen devices
-Date: Tue, 7 Aug 2012 16:09:30 +0300
-Message-ID: <1344344978-30453-1-git-send-email-fery@cypress.com>
+Subject: [PATCH 4/4] Input: cyttsp4 - I2C driver for Cypress TMA4XX touchscreen devices
+Date: Tue, 7 Aug 2012 16:10:47 +0300
+Message-ID: <1344345051-30578-1-git-send-email-fery@cypress.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <Ferruh Yigit <fery@cypress.com>
 References: <Ferruh Yigit <fery@cypress.com>
@@ -32,72 +31,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ferruh YIGIT <fery@cypress.com>
 
-This driver is for Cypress TrueTouch(tm) Standard Product controllers,
-Generation4 devices.
+Cypress TrueTouch(tm) Standard Product controllers, Generation4 devices,
+I2C adapter module.
 
-Driver consist of four main modules:
-
-Bus driver: Linux bus driver implementation, binds other modules.
-Core driver: Core module that communicate with TTSP controller.
-MT driver: MultiTouch driver, converts touch information to host specific
-touch events
-Adapter driver: Communication adapter between host and controller, like
-I2C or SPI.
-
-This is Cyttsp4 TTSP Bus Driver,
-Provides binding between Adapter, Core, and TTSP Modules.
-
-A complete set of corresponding Adapter, Core, and TTSP module
-devices and drivers must be registered with the TTSP Bus handler
+This driver adds communication support with TTSP controller using I2C
+bus.
 
 Signed-off-by: Ferruh YIGIT <fery@cypress.com>
 ---
- drivers/input/touchscreen/Kconfig       |    9 +
- drivers/input/touchscreen/Makefile      |    1 +
- drivers/input/touchscreen/cyttsp4_bus.c |  608 +++++++++++++++++++++++++++++++
- include/linux/cyttsp4_bus.h             |  271 ++++++++++++++
- 4 files changed, 889 insertions(+)
- create mode 100644 drivers/input/touchscreen/cyttsp4_bus.c
- create mode 100644 include/linux/cyttsp4_bus.h
+ drivers/input/touchscreen/Kconfig       |   13 ++
+ drivers/input/touchscreen/Makefile      |    3 +
+ drivers/input/touchscreen/cyttsp4_i2c.c |  246 +++++++++++++++++++++++++++++++
+ drivers/input/touchscreen/cyttsp4_i2c.h |   35 +++++
+ 4 files changed, 297 insertions(+)
+ create mode 100644 drivers/input/touchscreen/cyttsp4_i2c.c
+ create mode 100644 drivers/input/touchscreen/cyttsp4_i2c.h
 
 diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 1ba232c..4a65736 100644
+index 57a38f8..58f5d0b 100644
 --- a/drivers/input/touchscreen/Kconfig
 +++ b/drivers/input/touchscreen/Kconfig
-@@ -179,6 +179,15 @@ config TOUCHSCREEN_CYTTSP_SPI
-          To compile this driver as a module, choose M here: the
-          module will be called cyttsp_spi.
+@@ -192,6 +192,7 @@ config TOUCHSCREEN_CYPRESS_CYTTSP4
+        tristate "Cypress TrueTouch Gen4 Touchscreen Driver"
+        default m
+        select CYPRESS_CYTTSP4_BUS
++       select TOUCHSCREEN_CYPRESS_CYTTSP4_I2C
+        select TOUCHSCREEN_CYPRESS_CYTTSP4_MT_B
+        help
+          Core driver for Cypress TrueTouch(tm) Standard Product
+@@ -223,6 +224,18 @@ config TOUCHSCREEN_CYPRESS_CYTTSP4_VDEBUG
 
-+config CYPRESS_CYTTSP4_BUS
-+       bool "Cypress TTSP core bus"
-+       default n
+          Say Y here to enable verbose debug output.
+
++config TOUCHSCREEN_CYPRESS_CYTTSP4_I2C
++       tristate "Cypress TrueTouch Gen4 I2C"
++       depends on TOUCHSCREEN_CYPRESS_CYTTSP4
++       select I2C
++       default m
 +       help
-+         This option enables support Cypress TTSP core bus.
-+         This support is needed for various device and drivers
-+         using Cypress TrueTouch(TM) Standard Product
-+         protocol.
++         Cypress TrueTouch(tm) Standard Product Generation4
++         I2C bus interface.
 +
- config TOUCHSCREEN_DA9034
-        tristate "Touchscreen support for Dialog Semiconductor DA9034"
-        depends on PMIC_DA903X
++         Say Y here to enable I2C bus interface to TTSP
++         touchscreen controller.
++
+ config TOUCHSCREEN_CYPRESS_CYTTSP4_MT_B
+        tristate "Cypress TrueTouch Gen4 MultiTouch Protocol B"
+        depends on TOUCHSCREEN_CYPRESS_CYTTSP4
 diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-index 178eb12..ab84aec 100644
+index 8feae16..c5e5fc6 100644
 --- a/drivers/input/touchscreen/Makefile
 +++ b/drivers/input/touchscreen/Makefile
-@@ -73,3 +73,4 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)    += mainstone-wm97xx.o
- obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)      += zylonite-wm97xx.o
- obj-$(CONFIG_TOUCHSCREEN_W90X900)      += w90p910_ts.o
+@@ -75,11 +75,13 @@ obj-$(CONFIG_TOUCHSCREEN_W90X900)   += w90p910_ts.o
  obj-$(CONFIG_TOUCHSCREEN_TPS6507X)     += tps6507x-ts.o
-+obj-$(CONFIG_CYPRESS_CYTTSP4_BUS) += cyttsp4_bus.o
-diff --git a/drivers/input/touchscreen/cyttsp4_bus.c b/drivers/input/touchscreen/cyttsp4_bus.c
+ obj-$(CONFIG_CYPRESS_CYTTSP4_BUS) += cyttsp4_bus.o
+ obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4)      += cyttsp4_core.o
++obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_I2C)  += cyttsp4_i2c.o
+ obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_MT_B) += cyttsp4_mt_b.o
+ cyttsp4_mt_b-y := cyttsp4_mtb.o cyttsp4_mt_common.o
+ ifeq ($(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_DEBUG),y)
+ CFLAGS_cyttsp4_core.o += -DDEBUG
+ CFLAGS_cyttsp4_bus.o += -DDEBUG
++CFLAGS_cyttsp4_i2c.o += -DDEBUG
+ CFLAGS_cyttsp4_mtb.o += -DDEBUG
+ CFLAGS_cyttsp4_mt_b.o += -DDEBUG
+ CFLAGS_cyttsp4_mt_common.o += -DDEBUG
+@@ -88,6 +90,7 @@ endif
+ ifeq ($(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_VDEBUG),y)
+ CFLAGS_cyttsp4_core.o += -DVERBOSE_DEBUG
+ CFLAGS_cyttsp4_bus.o += -DVERBOSE_DEBUG
++CFLAGS_cyttsp4_i2c.o += -DVERBOSE_DEBUG
+ CFLAGS_cyttsp4_mtb.o += -DVERBOSE_DEBUG
+ CFLAGS_cyttsp4_mt_b.o += -DVERBOSE_DEBUG
+ CFLAGS_cyttsp4_mt_common.o += -DVERBOSE_DEBUG
+diff --git a/drivers/input/touchscreen/cyttsp4_i2c.c b/drivers/input/touchscreen/cyttsp4_i2c.c
 new file mode 100644
-index 0000000..2e97088
+index 0000000..e330219
 --- /dev/null
-+++ b/drivers/input/touchscreen/cyttsp4_bus.c
-@@ -0,0 +1,608 @@
++++ b/drivers/input/touchscreen/cyttsp4_i2c.c
+@@ -0,0 +1,246 @@
 +/*
-+ * cyttsp4_bus.c
-+ * Cypress TrueTouch(TM) Standard Product V4 Bus Driver.
++ * cyttsp4_i2c.c
++ * Cypress TrueTouch(TM) Standard Product V4 I2C Driver module.
 + * For use with Cypress Txx4xx parts.
 + * Supported parts include:
 + * TMA4XX
@@ -106,8 +121,8 @@ index 0000000..2e97088
 + * Copyright (C) 2012 Cypress Semiconductor
 + * Copyright (C) 2011 Sony Ericsson Mobile Communications AB.
 + *
-+ * Author: Aleksej Makarov aleksej.makarov@sonyericsson.com
-+ * Modified by: Cypress Semiconductor for complete set of TTSP Bus interfaces.
++ * Author: Aleksej Makarov <aleksej.makarov@sonyericsson.com>
++ * Modified by: Cypress Semiconductor for test with device
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License
@@ -128,590 +143,228 @@ index 0000000..2e97088
 + */
 +
 +#include <linux/cyttsp4_bus.h>
++#include "cyttsp4_i2c.h"
 +
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/list.h>
++#include <linux/delay.h>
++#include <linux/hrtimer.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/module.h>
 +#include <linux/mutex.h>
 +#include <linux/pm_runtime.h>
 +#include <linux/slab.h>
-+#include <linux/limits.h>
 +
-+static DEFINE_MUTEX(core_lock);
-+static LIST_HEAD(adapter_list);
-+static LIST_HEAD(core_dev_list);
-+static LIST_HEAD(cyttsp4_dev_list);
++#define CY_I2C_DATA_SIZE  (3 * 256)
 +
-+struct bus_type cyttsp4_bus_type;
-+
-+static void cyttsp4_dev_release(struct device *dev)
-+{
-+       dev_vdbg(dev, "%s: Enter\n", __func__);
-+       put_device(dev->parent);
-+}
-+
-+static struct device_type cyttsp4_dev_type = {
-+       .release = cyttsp4_dev_release
++struct cyttsp4_i2c {
++       struct i2c_client *client;
++       u8 wr_buf[CY_I2C_DATA_SIZE];
++       struct hrtimer timer;
++       struct mutex lock;
++       atomic_t timeout;
 +};
 +
-+static struct device_type cyttsp4_core_type = {
-+       .release = cyttsp4_dev_release
++static int cyttsp4_i2c_read_block_data(struct cyttsp4_i2c *ts_i2c, u8 addr,
++       size_t length, void *values)
++{
++       int rc;
++
++       /* write addr */
++       rc = i2c_master_send(ts_i2c->client, &addr, sizeof(addr));
++       if (rc < 0)
++               return rc;
++       else if (rc != sizeof(addr))
++               return -EIO;
++
++       /* read data */
++       rc = i2c_master_recv(ts_i2c->client, values, length);
++
++       return (rc < 0) ? rc : rc != length ? -EIO : 0;
++}
++
++static int cyttsp4_i2c_write_block_data(struct cyttsp4_i2c *ts_i2c, u8 addr,
++       size_t length, const void *values)
++{
++       int rc;
++
++       if (sizeof(ts_i2c->wr_buf) < (length + 1))
++               return -ENOMEM;
++
++       ts_i2c->wr_buf[0] = addr;
++       memcpy(&ts_i2c->wr_buf[1], values, length);
++       length += 1;
++
++       /* write data */
++       rc = i2c_master_send(ts_i2c->client, ts_i2c->wr_buf, length);
++
++       return (rc < 0) ? rc : rc != length ? -EIO : 0;
++}
++
++static int cyttsp4_i2c_write(struct cyttsp4_adapter *adap, u8 addr,
++       const void *buf, int size)
++{
++       struct cyttsp4_i2c *ts = dev_get_drvdata(adap->dev);
++       int rc;
++
++       pm_runtime_get_noresume(adap->dev);
++       mutex_lock(&ts->lock);
++       rc = cyttsp4_i2c_write_block_data(ts, addr, size, buf);
++       mutex_unlock(&ts->lock);
++       pm_runtime_put_noidle(adap->dev);
++
++       return rc;
++}
++
++static int cyttsp4_i2c_read(struct cyttsp4_adapter *adap, u8 addr,
++       void *buf, int size)
++{
++       struct cyttsp4_i2c *ts = dev_get_drvdata(adap->dev);
++       int rc;
++
++       pm_runtime_get_noresume(adap->dev);
++       mutex_lock(&ts->lock);
++       rc = cyttsp4_i2c_read_block_data(ts, addr, size, buf);
++       mutex_unlock(&ts->lock);
++       pm_runtime_put_noidle(adap->dev);
++
++       return rc;
++}
++
++static struct cyttsp4_ops ops = {
++       .write = cyttsp4_i2c_write,
++       .read = cyttsp4_i2c_read,
 +};
 +
-+static int _cyttsp4_register_dev(struct cyttsp4_device *pdev,
-+               struct cyttsp4_core *core)
++static int __devinit cyttsp4_i2c_probe(struct i2c_client *client,
++       const struct i2c_device_id *i2c_id)
 +{
-+       int ret;
++       struct cyttsp4_i2c *ts_i2c;
++       struct device *dev = &client->dev;
++       char const *adap_id = dev_get_platdata(dev);
++       char const *id;
++       int rc;
 +
-+       if (!pdev->dev.parent)
-+               pdev->dev.parent = get_device(&core->dev);
-+       /* Assign (new) core */
-+       pdev->core = core;
-+       /* Check whether this device is registered before */
-+       if (pdev->dev.bus == &cyttsp4_bus_type &&
-+                       pdev->dev.type == &cyttsp4_dev_type)
-+               return 0;
++       dev_info(dev, "%s: Starting %s probe...\n", __func__, CYTTSP4_I2C_NAME);
 +
-+       pdev->dev.bus = &cyttsp4_bus_type;
-+       pdev->dev.type = &cyttsp4_dev_type;
-+       dev_set_name(&pdev->dev, "%s.%s", pdev->name,  core->id);
++       dev_dbg(dev, "%s: debug on\n", __func__);
++       dev_vdbg(dev, "%s: verbose debug on\n", __func__);
 +
-+       ret = device_register(&pdev->dev);
-+       dev_dbg(&pdev->dev,
-+               "%s: Registering device '%s'. Parent at '%s', err = %d\n",
-+                __func__, dev_name(&pdev->dev),
-+                dev_name(pdev->dev.parent), ret);
-+       if (ret) {
-+               dev_err(&pdev->dev, "%s: failed to register device, err %d\n",
-+                       __func__, ret);
-+               pdev->dev.bus = NULL;
-+               pdev->dev.type = NULL;
-+               pdev->core = NULL;
++       if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++               dev_err(dev, "%s: fail check I2C functionality\n", __func__);
++               rc = -EIO;
++               goto error_alloc_data_failed;
 +       }
-+       return ret;
-+}
 +
-+static int _cyttsp4_register_core(struct cyttsp4_core *pdev,
-+               struct cyttsp4_adapter *adap)
-+{
-+       int ret;
-+
-+       if (!pdev->dev.parent)
-+               pdev->dev.parent = get_device(adap->dev);
-+       /* Assign (new) adapter */
-+       pdev->adap = adap;
-+       /* Check whether this core is registered before */
-+       if (pdev->dev.bus == &cyttsp4_bus_type &&
-+                       pdev->dev.type == &cyttsp4_core_type)
-+               return 0;
-+
-+       pdev->dev.bus = &cyttsp4_bus_type;
-+       pdev->dev.type = &cyttsp4_core_type;
-+       dev_set_name(&pdev->dev, "%s.%s", pdev->id,  adap->id);
-+
-+       ret = device_register(&pdev->dev);
-+       dev_dbg(&pdev->dev,
-+               "%s: Registering device '%s'. Parent at '%s', err = %d\n",
-+                __func__, dev_name(&pdev->dev),
-+                dev_name(pdev->dev.parent), ret);
-+       if (ret) {
-+               dev_err(&pdev->dev, "%s: failed to register device, err %d\n",
-+                       __func__, ret);
-+               pdev->dev.bus = NULL;
-+               pdev->dev.type = NULL;
-+               pdev->adap = NULL;
-+       }
-+       return ret;
-+}
-+
-+static struct cyttsp4_adapter *find_adapter(char const *adap_id)
-+{
-+       struct cyttsp4_adapter *a;
-+
-+       list_for_each_entry(a, &adapter_list, node)
-+               if (!strncmp(a->id, adap_id, NAME_MAX))
-+                       return a;
-+       return NULL;
-+}
-+
-+static struct cyttsp4_core *find_core(char const *core_id)
-+{
-+       struct cyttsp4_core *d;
-+
-+       list_for_each_entry(d, &core_dev_list, node)
-+               if (!strncmp(d->id, core_id, NAME_MAX) && d->dev.driver)
-+                       return d;
-+       return NULL;
-+}
-+
-+static void rescan_devices(struct cyttsp4_core *core)
-+{
-+       struct cyttsp4_device *d;
-+
-+       list_for_each_entry(d, &cyttsp4_dev_list, node)
-+               if (!d->core && !strncmp(core->id, d->core_id, NAME_MAX))
-+                       _cyttsp4_register_dev(d, core);
-+}
-+
-+static void rescan_cores(struct cyttsp4_adapter *adap)
-+{
-+       struct cyttsp4_core *d;
-+
-+       list_for_each_entry(d, &core_dev_list, node)
-+               if (!d->adap && !strncmp(adap->id, d->adap_id, NAME_MAX))
-+                       _cyttsp4_register_core(d, adap);
-+}
-+
-+int cyttsp4_register_device(struct cyttsp4_device *pdev)
-+{
-+       int ret = 0;
-+       struct cyttsp4_core *core;
-+
-+       if (!pdev)
-+               return -EINVAL;
-+       mutex_lock(&core_lock);
-+       list_add(&pdev->node, &cyttsp4_dev_list);
-+       pr_debug("%s: '%s' added to cyttsp4_dev_list\n", __func__, pdev->name);
-+       core = find_core(pdev->core_id);
-+       if (core)
-+               ret = _cyttsp4_register_dev(pdev, core);
-+       mutex_unlock(&core_lock);
-+       return ret;
-+}
-+EXPORT_SYMBOL_GPL(cyttsp4_register_device);
-+
-+static int cyttsp4_match_dev(struct device *dev, void *data)
-+{
-+       return dev == (struct device *)data;
-+}
-+
-+void cyttsp4_unregister_device(struct cyttsp4_device *pdev)
-+{
-+       if (!pdev)
-+               return;
-+       mutex_lock(&core_lock);
-+       if (bus_find_device(&cyttsp4_bus_type, NULL, &pdev->dev,
-+                       cyttsp4_match_dev)) {
-+               dev_dbg(&pdev->dev, "%s: Unregistering device '%s'.\n",
-+                       __func__, dev_name(&pdev->dev));
-+               /* Put reference taken by bus_find_device() */
-+               put_device(&pdev->dev);
-+               device_unregister(&pdev->dev);
-+       }
-+       list_del(&pdev->node);
-+       pr_debug("%s: '%s' removed from cyttsp4_dev_list\n", __func__,
-+               pdev->name);
-+       mutex_unlock(&core_lock);
-+}
-+EXPORT_SYMBOL_GPL(cyttsp4_unregister_device);
-+
-+int cyttsp4_register_core_device(struct cyttsp4_core *pdev)
-+{
-+       int ret = 0;
-+       struct cyttsp4_adapter *adap;
-+
-+       if (!pdev)
-+               return -EINVAL;
-+       mutex_lock(&core_lock);
-+       if (find_core(pdev->id)) {
-+               pr_debug("%s: core id '%s' already exists\n",
-+                               __func__, pdev->id);
-+               ret = -EINVAL;
-+               goto fail;
-+       }
-+       list_add(&pdev->node, &core_dev_list);
-+       pr_debug("%s: '%s' added to core_dev_list\n", __func__, pdev->name);
-+       adap = find_adapter(pdev->adap_id);
-+       if (adap) {
-+               pr_debug("%s: adapter for '%s' is '%s'\n", __func__,
-+                               pdev->id, dev_name(adap->dev));
-+               ret = _cyttsp4_register_core(pdev, adap);
-+               if (!ret)
-+                       rescan_devices(pdev);
-+       }
-+fail:
-+       mutex_unlock(&core_lock);
-+       return ret;
-+}
-+EXPORT_SYMBOL_GPL(cyttsp4_register_core_device);
-+
-+int cyttsp4_add_adapter(char const *id, struct cyttsp4_ops const *ops,
-+               struct device *parent)
-+{
-+       int rc = 0;
-+       struct cyttsp4_adapter *a;
-+
-+       if (!parent) {
-+               dev_err(parent, "%s: need parent for '%s'\n", __func__, id);
-+               return -EINVAL;
-+       }
-+       mutex_lock(&core_lock);
-+       if (find_adapter(id)) {
-+               dev_err(parent, "%s: adapter '%s' already exists\n",
-+                               __func__, id);
-+               rc = -EINVAL;
-+               goto fail;
-+       }
-+       a = kzalloc(sizeof(*a), GFP_KERNEL);
-+       if (!a) {
-+               dev_err(parent, "%s: failed to allocate adapter '%s'\n",
-+                               __func__, id);
++       ts_i2c = kzalloc(sizeof(struct cyttsp4_i2c), GFP_KERNEL);
++       if (ts_i2c == NULL) {
++               dev_err(dev, "%s: Error, kzalloc.\n", __func__);
 +               rc = -ENOMEM;
-+               goto fail;
-+       }
-+       memcpy(a->id, id, sizeof(a->id));
-+       a->id[sizeof(a->id) - 1] = 0;
-+       a->read = ops->read;
-+       a->write = ops->write;
-+       a->dev = parent;
-+       list_add(&a->node, &adapter_list);
-+       dev_dbg(parent, "%s: '%s' added to adapter_list\n", __func__, id);
-+       rescan_cores(a);
-+fail:
-+       mutex_unlock(&core_lock);
-+       return rc;
-+}
-+EXPORT_SYMBOL_GPL(cyttsp4_add_adapter);
-+
-+int cyttsp4_del_adapter(char const *id)
-+{
-+       int rc = 0;
-+       struct cyttsp4_adapter *adap;
-+       struct cyttsp4_core *core_dev;
-+
-+       mutex_lock(&core_lock);
-+       adap = find_adapter(id);
-+       if (!adap) {
-+               pr_err("%s: adapter '%s' does not exist\n",
-+                       __func__, id);
-+               rc = -EINVAL;
-+               goto fail;
++               goto error_alloc_data_failed;
 +       }
 +
-+       list_for_each_entry(core_dev, &core_dev_list, node)
-+               if (core_dev->adap == adap)
-+                       core_dev->adap = NULL;
++       mutex_init(&ts_i2c->lock);
++       ts_i2c->client = client;
++       client->dev.bus = &i2c_bus_type;
++       i2c_set_clientdata(client, ts_i2c);
++       dev_set_drvdata(&client->dev, ts_i2c);
 +
-+       list_del(&adap->node);
-+       kfree(adap);
-+       pr_debug("%s: '%s' removed from adapter_list\n", __func__, id);
-+fail:
-+       mutex_unlock(&core_lock);
-+       return rc;
-+}
-+EXPORT_SYMBOL_GPL(cyttsp4_del_adapter);
-+
-+static struct cyttsp4_device *verify_device_type(struct device *dev)
-+{
-+       return dev->type == &cyttsp4_dev_type ? to_cyttsp4_device(dev) : NULL;
-+}
-+
-+static struct cyttsp4_core *verify_core_type(struct device *dev)
-+{
-+       return dev->type == &cyttsp4_core_type ? to_cyttsp4_core(dev) : NULL;
-+}
-+
-+static int cyttsp4_match_device(struct cyttsp4_device *dev, const char *name)
-+{
-+       return strncmp(dev->name, name, NAME_MAX) == 0;
-+}
-+
-+static int cyttsp4_match_core_device(struct cyttsp4_core *core,
-+               const char *name)
-+{
-+       return strncmp(core->name, name, NAME_MAX) == 0;
-+}
-+
-+static int cyttsp4_device_match(struct device *dev, struct device_driver *drv)
-+{
-+       struct cyttsp4_device *cyttsp4_dev = verify_device_type(dev);
-+       struct cyttsp4_core *cyttsp4_core;
-+       int match;
-+
-+       if (cyttsp4_dev) {
-+               match = cyttsp4_match_device(cyttsp4_dev, drv->name);
-+               goto exit;
-+       }
-+       cyttsp4_core = verify_core_type(dev);
-+       if (cyttsp4_core) {
-+               match = cyttsp4_match_core_device(cyttsp4_core, drv->name);
-+               goto exit;
-+       }
-+       match = 0;
-+exit:
-+       dev_dbg(dev, "%s: %s matching '%s' driver\n", __func__,
-+                       match ? "is" : "isn't", drv->name);
-+       return match;
-+}
-+
-+static ssize_t modalias_show(struct device *dev, struct device_attribute *a,
-+                            char *buf)
-+{
-+       struct cyttsp4_device *cyttsp4_dev = verify_device_type(dev);
-+       struct cyttsp4_core *cyttsp4_core;
-+
-+       char const *name;
-+       int len;
-+
-+       if (cyttsp4_dev) {
-+               name = cyttsp4_dev->name;
-+               goto exit;
-+       }
-+       cyttsp4_core = verify_core_type(dev);
-+       if (cyttsp4_core) {
-+               name = cyttsp4_core->id;
-+               goto exit;
-+       }
-+       name = "none";
-+exit:
-+       len = snprintf(buf, PAGE_SIZE, "ttsp4:%s\n", name);
-+       return (len >= PAGE_SIZE) ? (PAGE_SIZE - 1) : len;
-+}
-+
-+static struct device_attribute cyttsp4_dev_attrs[] = {
-+       __ATTR_RO(modalias),
-+       __ATTR_NULL,
-+};
-+
-+#ifdef CONFIG_SUSPEND
-+static int cyttsp4_pm_suspend(struct device *dev)
-+{
-+       struct device_driver *drv = dev->driver;
-+
-+       dev_dbg(dev, "%s\n", __func__);
-+       if (drv && drv->pm && drv->pm->suspend)
-+               return drv->pm->suspend(dev);
-+       return 0;
-+}
-+
-+static int cyttsp4_pm_resume(struct device *dev)
-+{
-+       struct device_driver *drv = dev->driver;
-+
-+       dev_dbg(dev, "%s\n", __func__);
-+       if (drv && drv->pm && drv->pm->resume)
-+               return drv->pm->suspend(dev);
-+       return 0;
-+}
-+#else /* !CONFIG_SUSPEND */
-+#define cyttsp4_pm_suspend             NULL
-+#define cyttsp4_pm_resume              NULL
-+#endif /* !CONFIG_SUSPEND */
-+
-+#ifdef CONFIG_PM_RUNTIME
-+#define cyttsp4_pm_rt_suspend          pm_generic_runtime_suspend
-+#define cyytsp4_pm_rt_resume           pm_generic_runtime_resume
-+#define cyytsp4_pm_rt_idle             pm_generic_runtime_idle
-+#else /* !CONFIG_PM_RUNTIME */
-+#define cyttsp4_pm_rt_suspend          NULL
-+#define cyytsp4_pm_rt_resume           NULL
-+#define cyytsp4_pm_rt_idle             NULL
-+#endif /* !CONFIG_PM_RUNTIME */
-+
-+static const struct dev_pm_ops cyttsp4_dev_pm_ops = {
-+       .suspend = cyttsp4_pm_suspend,
-+       .resume = cyttsp4_pm_resume,
-+       .runtime_suspend = cyttsp4_pm_rt_suspend,
-+       .runtime_resume = cyytsp4_pm_rt_resume,
-+       .runtime_idle = cyytsp4_pm_rt_idle,
-+};
-+
-+struct bus_type cyttsp4_bus_type = {
-+       .name           = "ttsp4",
-+       .dev_attrs      = cyttsp4_dev_attrs,
-+       .match          = cyttsp4_device_match,
-+       .uevent         = NULL,
-+       .pm             = &cyttsp4_dev_pm_ops,
-+};
-+EXPORT_SYMBOL_GPL(cyttsp4_bus_type);
-+
-+static int cyttsp4_drv_remove(struct device *_dev)
-+{
-+       struct cyttsp4_driver *drv = to_cyttsp4_driver(_dev->driver);
-+       struct cyttsp4_device *dev = to_cyttsp4_device(_dev);
-+       return drv->remove(dev);
-+}
-+
-+static int cyttsp4_core_drv_remove(struct device *_dev)
-+{
-+       struct cyttsp4_core_driver *drv = to_cyttsp4_core_driver(_dev->driver);
-+       struct cyttsp4_core *dev = to_cyttsp4_core(_dev);
-+       return drv->remove(dev);
-+}
-+
-+static int cyttsp4_drv_probe(struct device *_dev)
-+{
-+       int rc = -ENODEV;
-+       struct cyttsp4_driver *drv = to_cyttsp4_driver(_dev->driver);
-+       struct cyttsp4_device *dev = to_cyttsp4_device(_dev);
-+
-+       rc = drv->probe(dev);
-+       dev_dbg(_dev, "%s: for %s = %d\n", __func__, dev->name, rc);
-+       return rc;
-+}
-+
-+static int cyttsp4_core_drv_probe(struct device *_dev)
-+{
-+       int rc = -ENODEV;
-+       struct cyttsp4_core_driver *drv = to_cyttsp4_core_driver(_dev->driver);
-+       struct cyttsp4_core *dev = to_cyttsp4_core(_dev);
-+
-+       rc = drv->probe(dev);
-+       dev_dbg(_dev, "%s: for %s = %d\n", __func__, dev->name, rc);
-+       if (!rc)
-+               rescan_devices(dev);
-+       return rc;
-+}
-+
-+int cyttsp4_register_driver(struct cyttsp4_driver *drv)
-+{
-+       int ret = 0;
-+
-+#ifdef CONFIG_MODULES
-+       struct cyttsp4_device *d;
-+
-+       /*
-+        * We need to ensure that the driver of this device's
-+        * core device should exist (dependency)
-+        * To do so, we traverse through the device, its core
-+        * device and the driver of its core device, which requires
-+        * the device itself should be registered with the system
-+        */
-+       mutex_lock(&core_lock);
-+       list_for_each_entry(d, &cyttsp4_dev_list, node) {
-+               if (!cyttsp4_match_device(d, drv->driver.name))
-+                       continue;
-+               if (d->core) {
-+                       if (d->core->dev.driver)
-+                               ret = ref_module(drv->driver.owner,
-+                                       d->core->dev.driver->owner);
-+                       else
-+                               /* Core device exists but not core driver */
-+                               ret = -ENODEV;
-+               }
-+               break;
-+       }
-+       mutex_unlock(&core_lock);
-+
-+       if (ret) {
-+               if (ret == -ENODEV)
-+                       pr_err("%s: Core driver module does not exist\n",
-+                               __func__);
-+               else
-+                       pr_err("%s: Error getting ref to core driver module\n",
-+                               __func__);
-+               goto fail;
-+       }
-+#endif
-+
-+       drv->driver.bus = &cyttsp4_bus_type;
-+       if (drv->probe)
-+               drv->driver.probe = cyttsp4_drv_probe;
-+       if (drv->remove)
-+               drv->driver.remove = cyttsp4_drv_remove;
-+       ret = driver_register(&drv->driver);
-+fail:
-+       pr_debug("%s: '%s' returned %d\n", __func__, drv->driver.name, ret);
-+       return ret;
-+}
-+EXPORT_SYMBOL_GPL(cyttsp4_register_driver);
-+
-+int cyttsp4_register_core_driver(struct cyttsp4_core_driver *drv)
-+{
-+       int ret = 0;
-+
-+#ifdef CONFIG_MODULES
-+       struct cyttsp4_core *d;
-+
-+       /*
-+        * We need to ensure that the driver of this core device's
-+        * adapter should exist (dependency)
-+        * To do so, we traverse through the core device, its adapter
-+        * and the driver of its adapter, which requires the core
-+        * device itself should be registered with the system
-+        */
-+       mutex_lock(&core_lock);
-+       list_for_each_entry(d, &core_dev_list, node) {
-+               if (!cyttsp4_match_core_device(d, drv->driver.name))
-+                       continue;
-+               if (d->adap) {
-+                       if (d->adap->dev && d->adap->dev->driver) {
-+                               ret = ref_module(drv->driver.owner,
-+                                       d->adap->dev->driver->owner);
-+                       } else {
-+                               /* Core dev exist but not adap device
-+                                * Do not let until adap module inserted */
-+                               ret = -ENODEV;
-+                       }
-+               }
-+               break;
-+       }
-+       mutex_unlock(&core_lock);
-+
-+       if (ret) {
-+               if (ret == -ENODEV)
-+                       pr_err("%s: Adapter driver module does not exist\n",
-+                               __func__);
-+               else
-+                       pr_err("%s: Error getting ref to adapter driver module\n",
-+                               __func__);
-+               goto fail;
-+       }
-+#endif
-+
-+       drv->driver.bus = &cyttsp4_bus_type;
-+       if (drv->probe)
-+               drv->driver.probe = cyttsp4_core_drv_probe;
-+       if (drv->remove)
-+               drv->driver.remove = cyttsp4_core_drv_remove;
-+       ret = driver_register(&drv->driver);
-+fail:
-+       pr_debug("%s: '%s' returned %d\n", __func__, drv->driver.name, ret);
-+       return ret;
-+}
-+EXPORT_SYMBOL_GPL(cyttsp4_register_core_driver);
-+
-+void cyttsp4_unregister_driver(struct cyttsp4_driver *drv)
-+{
-+       driver_unregister(&drv->driver);
-+}
-+EXPORT_SYMBOL_GPL(cyttsp4_unregister_driver);
-+
-+void cyttsp4_unregister_core_driver(struct cyttsp4_core_driver *drv)
-+{
-+       driver_unregister(&drv->driver);
-+}
-+EXPORT_SYMBOL_GPL(cyttsp4_unregister_core_driver);
-+
-+int __init cyttsp4_bus_init(void)
-+{
-+       int error;
-+       error =  bus_register(&cyttsp4_bus_type);
-+       if (error)
-+               pr_err("%s: error %d\n", __func__, error);
++       if (adap_id)
++               id = adap_id;
 +       else
-+               pr_debug("%s: ok\n", __func__);
-+       return error;
++               id = CYTTSP4_I2C_NAME;
++
++       dev_dbg(dev, "%s: add adap='%s' (CYTTSP4_I2C_NAME=%s)\n", __func__, id,
++               CYTTSP4_I2C_NAME);
++
++       pm_runtime_enable(&client->dev);
++
++       rc = cyttsp4_add_adapter(id, &ops, dev);
++       if (rc) {
++               dev_err(dev, "%s: Error on probe %s\n", __func__,
++                       CYTTSP4_I2C_NAME);
++               goto add_adapter_err;
++       }
++
++       dev_info(dev, "%s: Successful probe %s\n", __func__, CYTTSP4_I2C_NAME);
++
++       return 0;
++
++add_adapter_err:
++       pm_runtime_disable(&client->dev);
++       dev_set_drvdata(&client->dev, NULL);
++       i2c_set_clientdata(client, NULL);
++       kfree(ts_i2c);
++error_alloc_data_failed:
++       return rc;
 +}
 +
-+static void __exit cyttsp4_bus_exit(void)
++/* registered in driver struct */
++static int __devexit cyttsp4_i2c_remove(struct i2c_client *client)
 +{
-+       pr_debug("%s: ok\n", __func__);
++       struct device *dev = &client->dev;
++       struct cyttsp4_i2c *ts_i2c = dev_get_drvdata(dev);
++       char const *adap_id = dev_get_platdata(dev);
++       char const *id;
++
++       if (adap_id)
++               id = adap_id;
++       else
++               id = CYTTSP4_I2C_NAME;
++
++       dev_info(dev, "%s\n", __func__);
++       cyttsp4_del_adapter(id);
++       pm_runtime_disable(&client->dev);
++       dev_set_drvdata(&client->dev, NULL);
++       i2c_set_clientdata(client, NULL);
++       kfree(ts_i2c);
++       return 0;
 +}
 +
-+subsys_initcall(cyttsp4_bus_init);
-+module_exit(cyttsp4_bus_exit);
++static const struct i2c_device_id cyttsp4_i2c_id[] = {
++       { CYTTSP4_I2C_NAME, 0 },  { }
++};
++
++static struct i2c_driver cyttsp4_i2c_driver = {
++       .driver = {
++               .name = CYTTSP4_I2C_NAME,
++               .owner = THIS_MODULE,
++       },
++       .probe = cyttsp4_i2c_probe,
++       .remove = __devexit_p(cyttsp4_i2c_remove),
++       .id_table = cyttsp4_i2c_id,
++};
++
++static int __init cyttsp4_i2c_init(void)
++{
++       int rc = i2c_add_driver(&cyttsp4_i2c_driver);
++
++       pr_info("%s: Cypress TTSP I2C Touchscreen Driver (Built %s @ %s) rc=%d\n",
++                __func__, __DATE__, __TIME__, rc);
++       return rc;
++}
++module_init(cyttsp4_i2c_init);
++
++static void __exit cyttsp4_i2c_exit(void)
++{
++       i2c_del_driver(&cyttsp4_i2c_driver);
++       pr_info("%s: module exit\n", __func__);
++}
++module_exit(cyttsp4_i2c_exit);
++
++MODULE_ALIAS(CYTTSP4_I2C_NAME);
 +MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Aleksej Makarov <aleksej.makarov@sonyericsson.com>");
-diff --git a/include/linux/cyttsp4_bus.h b/include/linux/cyttsp4_bus.h
++MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard Product (TTSP) I2C driver");
++MODULE_AUTHOR("Cypress");
++MODULE_DEVICE_TABLE(i2c, cyttsp4_i2c_id);
+diff --git a/drivers/input/touchscreen/cyttsp4_i2c.h b/drivers/input/touchscreen/cyttsp4_i2c.h
 new file mode 100644
-index 0000000..b1f64ef
+index 0000000..94fd104
 --- /dev/null
-+++ b/include/linux/cyttsp4_bus.h
-@@ -0,0 +1,271 @@
++++ b/drivers/input/touchscreen/cyttsp4_i2c.h
+@@ -0,0 +1,35 @@
 +/*
-+ * cyttsp4_bus.h
-+ * Cypress TrueTouch(TM) Standard Product V4 Bus Driver.
++ * cyttsp4_i2c.h
++ * Cypress TrueTouch(TM) Standard Product V4 I2C driver module.
 + * For use with Cypress Txx4xx parts.
 + * Supported parts include:
 + * TMA4XX
@@ -719,9 +372,6 @@ index 0000000..b1f64ef
 + *
 + * Copyright (C) 2012 Cypress Semiconductor
 + * Copyright (C) 2011 Sony Ericsson Mobile Communications AB.
-+ *
-+ * Author: Aleksej Makarov <aleksej.makarov@sonyericsson.com>
-+ * Modified by: Cypress Semiconductor to add device functions
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License
@@ -741,245 +391,12 @@ index 0000000..b1f64ef
 + *
 + */
 +
-+#ifndef _LINUX_CYTTSP4_BUS_H
-+#define _LINUX_CYTTSP4_BUS_H
++#ifndef _LINUX_CYTTSP4_I2C_H
++#define _LINUX_CYTTSP4_I2C_H
 +
-+#include <linux/device.h>
-+#include <linux/list.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/limits.h>
++#define CYTTSP4_I2C_NAME "cyttsp4_i2c_adapter"
 +
-+
-+extern struct bus_type cyttsp4_bus_type;
-+
-+struct cyttsp4_driver;
-+struct cyttsp4_device;
-+struct cyttsp4_adapter;
-+
-+enum cyttsp4_atten_type {
-+       CY_ATTEN_IRQ,
-+       CY_ATTEN_STARTUP,
-+       CY_ATTEN_EXCLUSIVE,
-+       CY_ATTEN_NUM_ATTEN,
-+};
-+
-+typedef int (*cyttsp4_atten_func) (struct cyttsp4_device *);
-+
-+struct cyttsp4_ops {
-+       int (*write)(struct cyttsp4_adapter *dev, u8 addr,
-+               const void *buf, int size);
-+       int (*read)(struct cyttsp4_adapter *dev, u8 addr, void *buf, int size);
-+};
-+
-+struct cyttsp4_adapter {
-+       struct list_head node;
-+       char id[NAME_MAX];
-+       struct device *dev;
-+       int (*write)(struct cyttsp4_adapter *dev, u8 addr,
-+               const void *buf, int size);
-+       int (*read)(struct cyttsp4_adapter *dev, u8 addr, void *buf, int size);
-+};
-+#define to_cyttsp4_adapter(d) container_of(d, struct cyttsp4_adapter, dev)
-+
-+struct cyttsp4_core {
-+       struct list_head node;
-+       char const *name;
-+       char const *id;
-+       char const *adap_id;
-+       struct device dev;
-+       struct cyttsp4_adapter *adap;
-+};
-+#define to_cyttsp4_core(d) container_of(d, struct cyttsp4_core, dev)
-+
-+struct cyttsp4_device {
-+       struct list_head node;
-+       char const *name;
-+       char const *core_id;
-+       struct device dev;
-+       struct cyttsp4_core *core;
-+};
-+#define to_cyttsp4_device(d) container_of(d, struct cyttsp4_device, dev)
-+
-+struct cyttsp4_core_driver {
-+       struct device_driver driver;
-+       int (*probe)(struct cyttsp4_core *core);
-+       int (*remove)(struct cyttsp4_core *core);
-+       int (*subscribe_attention)(struct cyttsp4_device *ttsp,
-+                               enum cyttsp4_atten_type type,
-+                               cyttsp4_atten_func func,
-+                               int flags);
-+       int (*unsubscribe_attention)(struct cyttsp4_device *ttsp,
-+                               enum cyttsp4_atten_type type,
-+                               cyttsp4_atten_func func,
-+                               int flags);
-+       int (*request_exclusive)(struct cyttsp4_device *ttsp, int t);
-+       int (*release_exclusive)(struct cyttsp4_device *ttsp);
-+       int (*request_reset)(struct cyttsp4_device *ttsp);
-+       int (*request_restart)(struct cyttsp4_device *ttsp);
-+       int (*request_set_mode)(struct cyttsp4_device *ttsp, int mode);
-+       struct cyttsp4_sysinfo *(*request_sysinfo)(struct cyttsp4_device *ttsp);
-+       int (*request_handshake)(struct cyttsp4_device *ttsp, u8 mode);
-+       int (*request_exec_cmd)(struct cyttsp4_device *ttsp, u8 mode,
-+                       u8 *cmd_buf, size_t cmd_size, u8 *return_buf,
-+                       size_t return_buf_size, int timeout);
-+       int (*request_stop_wd)(struct cyttsp4_device *ttsp);
-+       int (*request_toggle_lowpower)(struct cyttsp4_device *ttsp, u8 mode);
-+       int (*write)(struct cyttsp4_device *ttsp, int mode,
-+               u8 addr, const void *buf, int size);
-+       int (*read)(struct cyttsp4_device *ttsp, int mode,
-+               u8 addr, void *buf, int size);
-+};
-+#define to_cyttsp4_core_driver(d) \
-+       container_of(d, struct cyttsp4_core_driver, driver)
-+
-+struct cyttsp4_driver {
-+       struct device_driver driver;
-+       int (*probe)(struct cyttsp4_device *dev);
-+       int (*remove)(struct cyttsp4_device *fev);
-+};
-+#define to_cyttsp4_driver(d) container_of(d, struct cyttsp4_driver, driver)
-+
-+extern int cyttsp4_register_driver(struct cyttsp4_driver *drv);
-+extern void cyttsp4_unregister_driver(struct cyttsp4_driver *drv);
-+
-+extern int cyttsp4_register_core_driver(struct cyttsp4_core_driver *drv);
-+extern void cyttsp4_unregister_core_driver(struct cyttsp4_core_driver *drv);
-+
-+extern int cyttsp4_register_device(struct cyttsp4_device *pdev);
-+extern void cyttsp4_unregister_device(struct cyttsp4_device *pdev);
-+
-+extern int cyttsp4_register_core_device(struct cyttsp4_core *pdev);
-+
-+extern int cyttsp4_add_adapter(char const *id, struct cyttsp4_ops const *ops,
-+               struct device *parent);
-+
-+extern int cyttsp4_del_adapter(char const *id);
-+
-+static inline int cyttsp4_read(struct cyttsp4_device *ttsp, int mode, u8 addr,
-+               void *buf, int size)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->read(ttsp, mode, addr, buf, size);
-+}
-+
-+static inline int cyttsp4_write(struct cyttsp4_device *ttsp, int mode, u8 addr,
-+               const void *buf, int size)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->write(ttsp, mode, addr, buf, size);
-+}
-+
-+static inline int cyttsp4_adap_read(struct cyttsp4_adapter *adap, u8 addr,
-+               void *buf, int size)
-+{
-+       return adap->read(adap, addr, buf, size);
-+}
-+
-+static inline int cyttsp4_adap_write(struct cyttsp4_adapter *adap, u8 addr,
-+               const void *buf, int size)
-+{
-+       return adap->write(adap, addr, buf, size);
-+}
-+
-+static inline int cyttsp4_subscribe_attention(struct cyttsp4_device *ttsp,
-+               enum cyttsp4_atten_type type, cyttsp4_atten_func func,
-+               int flags)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->subscribe_attention(ttsp, type, func, flags);
-+}
-+
-+static inline int cyttsp4_unsubscribe_attention(struct cyttsp4_device *ttsp,
-+               enum cyttsp4_atten_type type, cyttsp4_atten_func func,
-+               int flags)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->unsubscribe_attention(ttsp, type, func, flags);
-+}
-+
-+static inline int cyttsp4_request_exclusive(struct cyttsp4_device *ttsp, int t)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->request_exclusive(ttsp, t);
-+}
-+
-+static inline int cyttsp4_release_exclusive(struct cyttsp4_device *ttsp)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->release_exclusive(ttsp);
-+}
-+
-+static inline int cyttsp4_request_reset(struct cyttsp4_device *ttsp)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->request_reset(ttsp);
-+}
-+
-+static inline int cyttsp4_request_restart(struct cyttsp4_device *ttsp)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->request_restart(ttsp);
-+}
-+
-+static inline int cyttsp4_request_set_mode(struct cyttsp4_device *ttsp,
-+               int mode)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->request_set_mode(ttsp, mode);
-+}
-+
-+static inline struct cyttsp4_sysinfo *cyttsp4_request_sysinfo(
-+               struct cyttsp4_device *ttsp)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->request_sysinfo(ttsp);
-+}
-+
-+static inline int cyttsp4_request_handshake(struct cyttsp4_device *ttsp,
-+               u8 mode)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->request_handshake(ttsp, mode);
-+}
-+
-+static inline int cyttsp4_request_exec_cmd(struct cyttsp4_device *ttsp,
-+               u8 mode, u8 *cmd_buf, size_t cmd_size, u8 *return_buf,
-+               size_t return_buf_size, int timeout)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->request_exec_cmd(ttsp, mode, cmd_buf, cmd_size, return_buf,
-+                       return_buf_size, timeout);
-+}
-+
-+static inline int cyttsp4_request_stop_wd(struct cyttsp4_device *ttsp)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->request_stop_wd(ttsp);
-+}
-+
-+static inline int cyttsp4_request_toggle_lowpower(struct cyttsp4_device *ttsp,
-+               u8 mode)
-+{
-+       struct cyttsp4_core *cd = ttsp->core;
-+       struct cyttsp4_core_driver *d = to_cyttsp4_core_driver(cd->dev.driver);
-+       return d->request_toggle_lowpower(ttsp, mode);
-+}
-+
-+#endif /* _LINUX_CYTTSP4_BUS_H */
++#endif /* _LINUX_CYTTSP4_I2C_H */
 --
 1.7.9.5
 
