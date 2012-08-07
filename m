@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128Ab2HGTxY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:53:24 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:52857 "EHLO
+	id S932152Ab2HGTx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:53:28 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:52863 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab2HGTxW (ORCPT
+	with ESMTP id S932072Ab2HGTx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:53:22 -0400
+	Tue, 7 Aug 2012 15:53:26 -0400
+X-Greylist: delayed 311 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 15:53:25 EDT
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Samuel Ortiz <samuel@sortiz.org>
-Subject: [PATCH 37/41] TTY: ircomm_tty, add tty install
-Date: Tue,  7 Aug 2012 21:48:02 +0200
-Message-Id: <1344368886-24033-38-git-send-email-jslaby@suse.cz>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: [PATCH 33/41] TTY: con3215, add tty install
+Date: Tue,  7 Aug 2012 21:47:58 +0200
+Message-Id: <1344368886-24033-34-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -27,99 +30,62 @@ This has two outcomes:
   tty
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Samuel Ortiz <samuel@sortiz.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org
 ---
- net/irda/ircomm/ircomm_tty.c |   41 +++++++++++++++++++++++++----------------
- 1 file changed, 25 insertions(+), 16 deletions(-)
+ drivers/s390/char/con3215.c |   21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
-index 7a0d611..9668990 100644
---- a/net/irda/ircomm/ircomm_tty.c
-+++ b/net/irda/ircomm/ircomm_tty.c
-@@ -52,6 +52,8 @@
- #include <net/irda/ircomm_tty_attach.h>
- #include <net/irda/ircomm_tty.h>
+diff --git a/drivers/s390/char/con3215.c b/drivers/s390/char/con3215.c
+index 1655498..9ffb6d5 100644
+--- a/drivers/s390/char/con3215.c
++++ b/drivers/s390/char/con3215.c
+@@ -942,6 +942,19 @@ static int __init con3215_init(void)
+ console_initcall(con3215_init);
+ #endif
  
-+static int ircomm_tty_install(struct tty_driver *driver,
-+		struct tty_struct *tty);
- static int  ircomm_tty_open(struct tty_struct *tty, struct file *filp);
- static void ircomm_tty_close(struct tty_struct * tty, struct file *filp);
- static int  ircomm_tty_write(struct tty_struct * tty,
-@@ -82,6 +84,7 @@ static struct tty_driver *driver;
- static hashbin_t *ircomm_tty = NULL;
- 
- static const struct tty_operations ops = {
-+	.install	 = ircomm_tty_install,
- 	.open            = ircomm_tty_open,
- 	.close           = ircomm_tty_close,
- 	.write           = ircomm_tty_write,
-@@ -374,21 +377,11 @@ static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
- 	return retval;
- }
- 
--/*
-- * Function ircomm_tty_open (tty, filp)
-- *
-- *    This routine is called when a particular tty device is opened. This
-- *    routine is mandatory; if this routine is not filled in, the attempted
-- *    open will fail with ENODEV.
-- */
--static int ircomm_tty_open(struct tty_struct *tty, struct file *filp)
++static int tty3215_install(struct tty_driver *driver, struct tty_struct *tty)
++{
++	struct raw3215_info *raw;
 +
-+static int ircomm_tty_install(struct tty_driver *driver, struct tty_struct *tty)
- {
- 	struct ircomm_tty_cb *self;
- 	unsigned int line = tty->index;
--	unsigned long	flags;
--	int ret;
--
--	IRDA_DEBUG(2, "%s()\n", __func__ );
- 
- 	/* Check if instance already exists */
- 	self = hashbin_lock_find(ircomm_tty, line, NULL);
-@@ -425,14 +418,30 @@ static int ircomm_tty_open(struct tty_struct *tty, struct file *filp)
- 		tty->termios.c_oflag = 0;
- 
- 		/* Insert into hash */
--		/* FIXME there is a window from find to here */
- 		hashbin_insert(ircomm_tty, (irda_queue_t *) self, line, NULL);
- 	}
++	raw = raw3215[tty->index];
++	if (raw == NULL)
++		return -ENODEV;
 +
-+	return tty_port_install(&self->port, driver, tty);
++	tty->driver_data = raw;
++
++	return tty_port_install(&raw->port, driver, tty);
 +}
 +
-+/*
-+ * Function ircomm_tty_open (tty, filp)
-+ *
-+ *    This routine is called when a particular tty device is opened. This
-+ *    routine is mandatory; if this routine is not filled in, the attempted
-+ *    open will fail with ENODEV.
-+ */
-+static int ircomm_tty_open(struct tty_struct *tty, struct file *filp)
-+{
-+	struct ircomm_tty_cb *self = tty->driver_data;
-+	unsigned long	flags;
-+	int ret;
-+
-+	IRDA_DEBUG(2, "%s()\n", __func__ );
-+
- 	/* ++ is not atomic, so this should be protected - Jean II */
- 	spin_lock_irqsave(&self->port.lock, flags);
- 	self->port.count++;
+ /*
+  * tty3215_open
+  *
+@@ -949,14 +962,9 @@ console_initcall(con3215_init);
+  */
+ static int tty3215_open(struct tty_struct *tty, struct file * filp)
+ {
+-	struct raw3215_info *raw;
++	struct raw3215_info *raw = tty->driver_data;
+ 	int retval;
+ 
+-	raw = raw3215[tty->index];
+-	if (raw == NULL)
+-		return -ENODEV;
 -
--	tty->driver_data = self;
- 	spin_unlock_irqrestore(&self->port.lock, flags);
- 	tty_port_tty_set(&self->port, tty);
+-	tty->driver_data = raw;
+ 	tty_port_tty_set(&raw->port, tty);
  
-@@ -472,7 +481,7 @@ static int ircomm_tty_open(struct tty_struct *tty, struct file *filp)
- 	}
+ 	tty->low_latency = 0;  /* don't use bottom half for pushing chars */
+@@ -1117,6 +1125,7 @@ static void tty3215_start(struct tty_struct *tty)
+ }
  
- 	/* Check if this is a "normal" ircomm device, or an irlpt device */
--	if (line < 0x10) {
-+	if (self->line < 0x10) {
- 		self->service_type = IRCOMM_3_WIRE | IRCOMM_9_WIRE;
- 		self->settings.service_type = IRCOMM_9_WIRE; /* 9 wire as default */
- 		/* Jan Kiszka -> add DSR/RI -> Conform to IrCOMM spec */
+ static const struct tty_operations tty3215_ops = {
++	.install = tty3215_install,
+ 	.open = tty3215_open,
+ 	.close = tty3215_close,
+ 	.write = tty3215_write,
 -- 
 1.7.10.4
 
