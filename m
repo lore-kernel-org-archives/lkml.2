@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab2HGQry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:47:54 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:39621 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751210Ab2HGQrx (ORCPT
+	id S1755584Ab2HGQsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:48:36 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64805 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab2HGQse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:47:53 -0400
-Message-ID: <50214669.2020200@xenotime.net>
-Date: Tue, 07 Aug 2012 09:46:33 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 7 Aug 2012 12:48:34 -0400
+Date: Tue, 7 Aug 2012 17:48:22 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: Matt Sealey <matt@genesi-usa.com>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/9] ASoC: imx: Don't use {en,dis}able_fiq() calls
+Message-ID: <20120807164822.GA2135@linaro.org>
+References: <20120805230238.GA1663@lizard>
+ <1344207819-3415-4-git-send-email-anton.vorontsov@linaro.org>
+ <CAKGA1bkiHj=zMJXSzoGp3fpLS3POnFXSV5y7sYYFAikqoUT9tQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH] [trivial] Fix typo in various Kconfig
-References: <1344347699-26434-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1344347699-26434-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKGA1bkiHj=zMJXSzoGp3fpLS3POnFXSV5y7sYYFAikqoUT9tQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 06:54 AM, Masanari Iida wrote:
-
-> Correct spelling typo in various Kconfig files.
+On Mon, Aug 06, 2012 at 10:19:50AM -0500, Matt Sealey wrote:
+> On Sun, Aug 5, 2012 at 6:03 PM, Anton Vorontsov
+> <anton.vorontsov@linaro.org> wrote:
+> > The driver uses platform-specific mxc_set_irq_fiq() with the VIRQ cookie
+> > passed to it, so it's pretty clear that the driver is absolutely sure
+> > that the FIQ is routed via platform-specific IC, and that the cookie can
+> > be used to mask/unmask FIQs. So, let's switch to the genirq routines,
+> > since we're about to remove FIQ-specific variants.
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  arch/arm/mach-omap2/Kconfig      |  2 +-
->  arch/arm/mach-tegra/Kconfig      |  2 +-
->  arch/blackfin/mach-bf609/Kconfig |  2 +-
->  arch/openrisc/Kconfig            |  2 +-
->  crypto/Kconfig                   |  2 +-
->  drivers/hwspinlock/Kconfig       |  2 +-
->  drivers/md/Kconfig               |  2 +-
->  drivers/media/video/Kconfig      |  2 +-
->  drivers/thermal/Kconfig          |  2 +-
->  drivers/tty/serial/8250/Kconfig  |  2 +-
->  drivers/usb/host/Kconfig         |  4 ++--
->  lib/Kconfig.debug                | 10 +++++-----
->  12 files changed, 17 insertions(+), 17 deletions(-)
+> I have a semi-related question about this;
 > 
+> Firstly, I was planning on (re-)submitting a patch for the
+> arch/arm/plat-mxc/ssi-fiq.S code which made it build in ARM mode
+> (since the code isn't Thumb compatible for various reasons) as it was
+> a blocker for a Thumb2-compiled kernel. Since the code was only needed
+> on ARM-capable processors it wouldn't cause a problem. Sascha signed
+> off on this a long while back and I've been testing it on all my
+> internal kernel versions, and I don't see any ill effects (that said I
+> don't have an i.MX28 or so to really verify it, I can't see why it
+> would not work). I realise this is redundant right now, anyway, since
+> it's only really enabled on imx_v4_v5 configs and they don't support
+> Thumb2 kernels anyway. What might be worth submitting is a switch to
+> add the ".arm" directive anyway simply for correctness since it could
+> never be compiled for Thumb anyway. We all know what gnu as is like.
+> 
+> Looking at it again on the back of these patches, I noticed the
+> ssi-fiq.S code is compiled in when SND_IMX_SOC is enabled - of course,
+> it's only needed in the kernel if SND_SOC_IMX_PCM_FIQ is enabled (the
+> code that uses the FIQ stuff is only compiled then) but here on the
+> Efika MX builds it's being built, and I noticed it when it broke my
+> build because of the above. I'm therefore going to submit a patch
+> which changes the ifdef SND_SOC_IMX to ifdef SND_SOC_IMX_PCM_FIQ so
+> it's not compiled in unless absolutely necessary. However, there was a
+> rumble that this code may disappear or be reworked in the future
+> making this also quite redundant. Since it's not in the
+> imx_v6_v7_defconfig anyway, I'm sure this only didn't get noticed
+> because nobody's building Thumb2 kernels and nobody is trying configs
+> with audio enabled anyway..
+> 
+> This begs the question, could there be something somewhere hidden deep
+> in the kernel that is enabled by default or in some config somewhere
+> that requires "select FIQ" in it's Kconfig entry, but isn't being
+> enabled? On i.MX the only thing turning it on is that code, but other
+> ARM arch enable it by default. Since things have been moved to more
+> generic routines I can't in my mind guarantee that such a patch would
+> be well tested here since I would be relying on symbols missing or
+> defines not there anymore.. I have no real way to ensure that it would
+> work on boards I don't have.
+> 
+> So, is the first patch (ssi-fiq.S .arm) worth it? I think the
+> SND_SOC_IMX_PCM_FIQ patch is worth it for v6_v7 systems anyway, but
+> maybe this should have been caught sooner, so should I update the
+> defconfig to enable some kind of audio bus support (Babbage has it in
+> the DT so is a needful thing for testing, I figure..)? And does anyone
+> forsee any problems with that option changing and the only "user" of
+> "FIQ" in the Kconfigs going away now all the FIQ-specific symbols went
+> away outside of the generic irq subsystem?
 
+I hit this issue some time ago when I was trying to do a Thumb2 build
+of this kernel.
 
+I don't remember having to fix the generic FIQ code just for this,
+but I had a patch somewhere to swap r13 with another register in
+ssi-fiq.S.  I think that use of r13 in ways not permitted for Thumb
+was the only problem I found.  I can try to dig it out if you want.
 
-We normally accept either British or American spellings,
-so these don't need to be changed.  The rest are OK.
+In any case, it didn't seem worth pushing at the time, because it
+seemed that the SSI FIQ code was not relevant to any v7 or later
+platform -- so building that code for Thumb presumably doesn't make
+sense.
 
-Thanks.
-
-> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-> index dd2db02..60b026a 100644
-> --- a/arch/arm/mach-omap2/Kconfig
-> +++ b/arch/arm/mach-omap2/Kconfig
-> @@ -399,7 +399,7 @@ config OMAP4_ERRATA_I688
->  	  before issuing WFI. This condition will be met if one Strongly ordered
->  	  access is performed to the target right before executing the WFI.
->  	  In MPU case, L3 T2ASYNC FIFO and DDR T2ASYNC FIFO needs to be drained.
-> -	  IO barrier ensure that there is no synchronisation loss on initiators
-> +	  IO barrier ensure that there is no synchronization loss on initiators
->  	  operating on both interconnect port simultaneously.
->  endmenu
->  
-> diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
-> index c7c3128..8ae898b 100644
-> --- a/drivers/hwspinlock/Kconfig
-> +++ b/drivers/hwspinlock/Kconfig
-> @@ -24,7 +24,7 @@ config HSEM_U8500
->  	select HWSPINLOCK
->  	help
->  	  Say y here to support the STE Hardware Semaphore functionality, which
-> -	  provides a synchronisation mechanism for the various processor on the
-> +	  provides a synchronization mechanism for the various processor on the
->  	  SoC.
->  
->  	  If unsure, say N.
-> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
-> index d949b78..97f3f0b 100644
-> --- a/drivers/md/Kconfig
-> +++ b/drivers/md/Kconfig
-> @@ -40,7 +40,7 @@ config MD_AUTODETECT
->  
->  	  If you don't use raid and say Y, this autodetection can cause 
->  	  a several-second delay in the boot time due to various
-> -	  synchronisation steps that are part of this step.
-> +	  synchronization steps that are part of this step.
->  
->  	  If unsure, say Y.
->  
-
-
-
--- 
-~Randy
+Cheers
+---Dave
