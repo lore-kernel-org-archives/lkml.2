@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964864Ab2HGXbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:31:44 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:63658 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932610Ab2HGWaa (ORCPT
+	id S1757213Ab2HGWa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:30:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757163Ab2HGWaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:30:30 -0400
+	Tue, 7 Aug 2012 18:30:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [ 059/122] cgroup: cgroup_rm_files() was calling simple_unlink() with the wrong inode
-Date: Tue,  7 Aug 2012 15:25:47 -0700
-Message-Id: <20120807221953.610036857@linuxfoundation.org>
+        Christian Ohm <chr.ohm@gmx.net>, Ben Hutchings <ben@decadent.org.uk>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 064/122] staging: zsmalloc: Finish conversion to a separate module
+Date: Tue,  7 Aug 2012 15:25:52 -0700
+Message-Id: <20120807221954.113402511@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,39 +30,91 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit ce27e317ba22b359bde02216afab934dac3af095 upstream.
+commit 069f101fa463351f528773d73b74e9b606b3f66a upstream.
 
-While refactoring cgroup file removal path, 05ef1d7c4a "cgroup:
-introduce struct cfent" incorrectly changed the @dir argument of
-simple_unlink() to the inode of the file being deleted instead of that
-of the containing directory.
+ZSMALLOC is tristate, but the code has no MODULE_LICENSE and since it
+depends on GPL-only symbols it cannot be loaded as a module.  This in
+turn breaks zram which now depends on it.  I assume it's meant to be
+Dual BSD/GPL like the other z-stuff.
 
-The effect of this bug is minor - ctime and mtime of the parent
-weren't properly updated on file deletion.
+There is also no module_exit, which will make it impossible to unload.
+Add the appropriate module_init and module_exit declarations suggested
+by comments.
 
-Fix it by using @cgrp->dentry->d_inode instead.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-Acked-by: Li Zefan <lizefan@huawei.com>
+Reported-by: Christian Ohm <chr.ohm@gmx.net>
+References: http://bugs.debian.org/677273
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/zsmalloc/zsmalloc-main.c |   33 ++++++-------------------------
+ 1 file changed, 7 insertions(+), 26 deletions(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -954,7 +954,7 @@ static int cgroup_rm_file(struct cgroup
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -425,12 +425,6 @@ static struct page *find_get_zspage(stru
+ }
  
- 		dget(d);
- 		d_delete(d);
--		simple_unlink(d->d_inode, d);
-+		simple_unlink(cgrp->dentry->d_inode, d);
- 		list_del_init(&cfe->node);
- 		dput(d);
  
+-/*
+- * If this becomes a separate module, register zs_init() with
+- * module_init(), zs_exit with module_exit(), and remove zs_initialized
+-*/
+-static int zs_initialized;
+-
+ static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
+ 				void *pcpu)
+ {
+@@ -489,7 +483,7 @@ fail:
+ 
+ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+ {
+-	int i, error, ovhd_size;
++	int i, ovhd_size;
+ 	struct zs_pool *pool;
+ 
+ 	if (!name)
+@@ -516,28 +510,9 @@ struct zs_pool *zs_create_pool(const cha
+ 
+ 	}
+ 
+-	/*
+-	 * If this becomes a separate module, register zs_init with
+-	 * module_init, and remove this block
+-	*/
+-	if (!zs_initialized) {
+-		error = zs_init();
+-		if (error)
+-			goto cleanup;
+-		zs_initialized = 1;
+-	}
+-
+ 	pool->flags = flags;
+ 	pool->name = name;
+ 
+-	error = 0; /* Success */
+-
+-cleanup:
+-	if (error) {
+-		zs_destroy_pool(pool);
+-		pool = NULL;
+-	}
+-
+ 	return pool;
+ }
+ EXPORT_SYMBOL_GPL(zs_create_pool);
+@@ -753,3 +728,9 @@ u64 zs_get_total_size_bytes(struct zs_po
+ 	return npages << PAGE_SHIFT;
+ }
+ EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
++
++module_init(zs_init);
++module_exit(zs_exit);
++
++MODULE_LICENSE("Dual BSD/GPL");
++MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
 
 
