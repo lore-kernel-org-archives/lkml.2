@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030542Ab2HGXKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:10:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
+	id S1030555Ab2HGXLB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:11:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030525Ab2HGWip (ORCPT
+	with ESMTP id S1030521Ab2HGWim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:45 -0400
+	Tue, 7 Aug 2012 18:38:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lan Tianyu <tianyu.lan@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [ 049/109] ACPI/AC: prevent OOPS on some boxes due to missing check power_supply_register() return value check
-Date: Tue,  7 Aug 2012 15:35:08 -0700
-Message-Id: <20120807222047.386438475@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>, Huang Ying <ying.huang@intel.com>,
+        Gary Hade <garyhade@us.ibm.com>, Len Brown <len.brown@intel.com>
+Subject: [ 048/109] ACPI, APEI: Fixup common access width firmware bug
+Date: Tue,  7 Aug 2012 15:35:07 -0700
+Message-Id: <20120807222047.297200063@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,42 +30,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit f197ac13f6eeb351b31250b9ab7d0da17434ea36 upstream.
+commit f712c71f7b2b43b894d1e92e1b77385fcad8815f upstream.
 
-In the ac.c, power_supply_register()'s return value is not checked.
+Many firmwares have a common register definition bug where 8-bit
+access width is specified for a 32-bit register. Ideally this should
+be fixed in the BIOS, but earlier versions of the kernel did not
+complain, so fix that up silently.
 
-As a result, the driver's add() ops may return success
-even though the device failed to initialize.
+This closes kernel bug #43282:
+https://bugzilla.kernel.org/show_bug.cgi?id=43282
 
-For example, some BIOS may describe two ACADs in the same DSDT.
-The second ACAD device will fail to register,
-but ACPI driver's add() ops returns sucessfully.
-The ACPI device will receive ACPI notification and cause OOPS.
-
-https://bugzilla.redhat.com/show_bug.cgi?id=772730
-
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Huang Ying <ying.huang@intel.com>
+Acked-by: Gary Hade <garyhade@us.ibm.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ac.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/acpi/apei/apei-base.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/acpi/ac.c
-+++ b/drivers/acpi/ac.c
-@@ -292,7 +292,9 @@ static int acpi_ac_add(struct acpi_devic
- 	ac->charger.properties = ac_props;
- 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
- 	ac->charger.get_property = get_ac_property;
--	power_supply_register(&ac->device->dev, &ac->charger);
-+	result = power_supply_register(&ac->device->dev, &ac->charger);
-+	if (result)
-+		goto end;
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -586,6 +586,11 @@ static int apei_check_gar(struct acpi_ge
+ 	}
+ 	*access_bit_width = 1UL << (access_size_code + 2);
  
- 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
- 	       acpi_device_name(device), acpi_device_bid(device),
++	/* Fixup common BIOS bug */
++	if (bit_width == 32 && bit_offset == 0 && (*paddr & 0x03) == 0 &&
++	    *access_bit_width < 32)
++		*access_bit_width = 32;
++
+ 	if ((bit_width + bit_offset) > *access_bit_width) {
+ 		pr_warning(FW_BUG APEI_PFX
+ 			   "Invalid bit width + offset in GAR [0x%llx/%u/%u/%u/%u]\n",
 
 
