@@ -1,179 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab2HGHMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 03:12:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64303 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab2HGHMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 03:12:15 -0400
-Date: Tue, 7 Aug 2012 00:12:11 -0700
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: [PATCH] rbtree: add RB_DECLARE_CALLBACKS() macro
-Message-ID: <20120807071211.GA1278@google.com>
-References: <1343946858-8170-1-git-send-email-walken@google.com>
- <1343946858-8170-9-git-send-email-walken@google.com>
- <1344262669.27828.55.camel@twins>
- <1344267537.27828.93.camel@twins>
- <CANN689HKPKeZ-sqqwXGPhv=Jno4c=v=ffeOxLPkOFmMzEVXexw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752388Ab2HGHOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 03:14:15 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:49199 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab2HGHON (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:2>);
+	Tue, 7 Aug 2012 03:14:13 -0400
+Message-Id: <5020DC5F02000078000931C2@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 07 Aug 2012 08:14:07 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "=?UTF-8?B?SsOpcsO0bWVDYXJyZXRlcm8=?=" <cJ-ko@zougloub.eu>
+Cc: "Ingo Molnar" <mingo@kernel.org>,
+        "Matt Fleming" <matt.fleming@linux.intel.com>,
+        "Matthew Garrett" <mjg59@srcf.ucam.org>, <linux-efi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, "H. PeterAnvin" <hpa@zytor.com>
+Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform
+ wall clock" prevents my machine from booting
+References: <20120805172903.5f8bb24c@zougloub.eu>
+ <501EF3A2.20200@zytor.com> <501F83F20200007800092C1C@nat28.tlf.novell.com>
+ <20120806125216.GA11863@srcf.ucam.org>
+ <501FDDD30200007800092DDE@nat28.tlf.novell.com>
+ <20120806091627.2ad5ed2e@zougloub.eu>
+ <20120806223208.5301be0d@zougloub.eu>
+ <20120806230629.153d33bd@zougloub.eu>
+In-Reply-To: <20120806230629.153d33bd@zougloub.eu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Disposition: inline
-In-Reply-To: <CANN689HKPKeZ-sqqwXGPhv=Jno4c=v=ffeOxLPkOFmMzEVXexw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This proposed patch goes after 9/9 of my previous submission and makes it
-easier to define the augmented rbtree callbacks.
+>>> On 07.08.12 at 05:06, JérômeCarretero <cJ-ko@zougloub.eu> wrote:
+> On Mon, 6 Aug 2012 22:32:08 -0400
+> Jérôme Carretero <cJ-ko@zougloub.eu> wrote:
+> 
+>> For troubleshooting purposes I edited over your patch.
+>> So far:
+>> [...]
+>> Maybe I can get more...
+> 
+> With the following:
+> 
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index 2dc29f5..46729f3 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -97,8 +97,9 @@ static efi_status_t virt_efi_get_time(efi_time_t *tm, 
+> efi_time_cap_t *tc)
+>         unsigned long flags;
+>         efi_status_t status;
+>  
+> +       printk("%s: get_time=0x%p\n", __func__, 
+> efi.systab->runtime->get_time);
+>         spin_lock_irqsave(&rtc_lock, flags);
+> -       status = efi_call_virt2(get_time, tm, tc);
+> +       status = EFI_SUCCESS + 1;// efi_call_virt2(get_time, tm, tc);
+>         spin_unlock_irqrestore(&rtc_lock, flags);
+>         return status;
+>  }
+> @@ -270,8 +271,10 @@ static unsigned long efi_get_time(void)
+>         efi_time_cap_t cap;
+>  
+>         status = efi.get_time(&eft, &cap);
+> -       if (status != EFI_SUCCESS)
+> -               pr_err("Oops: efitime: can't read time!\n");
+> +       if (status != EFI_SUCCESS) {
+> +               /* fall back to RTC time */
+> +               return mach_get_cmos_time();
+> +       }
+>  
+>         return mktime(eft.year, eft.month, eft.day, eft.hour,
+>                       eft.minute, eft.second);
+> 
+> The system boots, at that point...
 
-Peter, does this fix the concern you raised over patch 8/9 ?
+That's not surprising. The question really is what goes wrong
+when the call is being made - page fault, some other fault, or
+silent hang. A page fault would point to an incorrect memory
+map as the prime candidate for causing the problem. My
+primary suspect would be #NM, i.e. the implementation using
+floating point (SSE to be precise) instructions when they're
+unavailable.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- arch/x86/mm/pat_rbtree.c |   37 ++-----------------------------------
- include/linux/rbtree.h   |   30 ++++++++++++++++++++++++++++++
- lib/rbtree_test.c        |   34 ++--------------------------------
- 3 files changed, 34 insertions(+), 67 deletions(-)
+> I would say my BIOS is broken,
+> but it can be expected that others can have the same issue.
 
-diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
-index 7e1515b..4d11695 100644
---- a/arch/x86/mm/pat_rbtree.c
-+++ b/arch/x86/mm/pat_rbtree.c
-@@ -69,41 +69,8 @@ static u64 compute_subtree_max_end(struct memtype *data)
- 	return max_end;
- }
- 
--/* Update 'subtree_max_end' for node and its parents */
--static void memtype_rb_propagate_cb(struct rb_node *node, struct rb_node *stop)
--{
--	while (node != stop) {
--		struct memtype *data = container_of(node, struct memtype, rb);
--		u64 subtree_max_end = compute_subtree_max_end(data);
--		if (data->subtree_max_end == subtree_max_end)
--			break;
--		data->subtree_max_end = subtree_max_end;
--		node = rb_parent(&data->rb);
--	}
--}
--
--static void memtype_rb_copy_cb(struct rb_node *old, struct rb_node *new)
--{
--	struct memtype *old_data = container_of(old, struct memtype, rb);
--	struct memtype *new_data = container_of(new, struct memtype, rb);
--
--	new_data->subtree_max_end = old_data->subtree_max_end;
--}
--
--/* Update 'subtree_max_end' after tree rotation. old and new are the
-- * former and current subtree roots */
--static void memtype_rb_rotate_cb(struct rb_node *old, struct rb_node *new)
--{
--	struct memtype *old_data = container_of(old, struct memtype, rb);
--	struct memtype *new_data = container_of(new, struct memtype, rb);
--
--	new_data->subtree_max_end = old_data->subtree_max_end;
--	old_data->subtree_max_end = compute_subtree_max_end(old_data);
--}
--
--static const struct rb_augment_callbacks memtype_rb_augment_cb = {
--	memtype_rb_propagate_cb, memtype_rb_copy_cb, memtype_rb_rotate_cb
--};
-+RB_DECLARE_CALLBACKS(static, memtype_rb_augment_cb, struct memtype, rb,
-+		     u64, subtree_max_end, compute_subtree_max_end)
- 
- /* Find the first (lowest start addr) overlapping range from rb tree */
- static struct memtype *memtype_rb_lowest_match(struct rb_root *root,
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index 4ace31b..8d1e83b 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -79,6 +79,36 @@ rb_insert_augmented(struct rb_node *node, struct rb_root *root,
- 	__rb_insert_augmented(node, root, augment->rotate);
- }
- 
-+#define RB_DECLARE_CALLBACKS(rbstatic, rbname, rbstruct, rbfield,	      \
-+			     rbtype, rbaugmented, rbcompute)		      \
-+static void rbname ## _propagate(struct rb_node *rb, struct rb_node *stop)    \
-+{									      \
-+	while (rb != stop) {						      \
-+		rbstruct *node = rb_entry(rb, rbstruct, rbfield);	      \
-+		rbtype augmented = rbcompute(node);			      \
-+		if (node->rbaugmented == augmented)			      \
-+			break;						      \
-+		node->rbaugmented = augmented;				      \
-+		rb = rb_parent(&node->rbfield);				      \
-+	}								      \
-+}									      \
-+static void rbname ## _copy(struct rb_node *rb_old, struct rb_node *rb_new)   \
-+{									      \
-+	rbstruct *old = rb_entry(rb_old, rbstruct, rbfield);		      \
-+	rbstruct *new = rb_entry(rb_new, rbstruct, rbfield);		      \
-+	new->rbaugmented = old->rbaugmented;				      \
-+}									      \
-+static void rbname ## _rotate(struct rb_node *rb_old, struct rb_node *rb_new) \
-+{									      \
-+	rbstruct *old = rb_entry(rb_old, rbstruct, rbfield);		      \
-+	rbstruct *new = rb_entry(rb_new, rbstruct, rbfield);		      \
-+	new->rbaugmented = old->rbaugmented;				      \
-+	old->rbaugmented = rbcompute(old);				      \
-+}									      \
-+rbstatic const struct rb_augment_callbacks rbname = {			      \
-+	rbname ## _propagate, rbname ## _copy, rbname ## _rotate	      \
-+};
-+
- 
- /* Find logical next and previous nodes in a tree */
- extern struct rb_node *rb_next(const struct rb_node *);
-diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
-index e28345d..b20e999 100644
---- a/lib/rbtree_test.c
-+++ b/lib/rbtree_test.c
-@@ -61,38 +61,8 @@ static inline u32 augment_recompute(struct test_node *node)
- 	return max;
- }
- 
--static void augment_propagate(struct rb_node *rb, struct rb_node *stop)
--{
--	while (rb != stop) {
--		struct test_node *node = rb_entry(rb, struct test_node, rb);
--		u32 augmented = augment_recompute(node);
--		if (node->augmented == augmented)
--			break;
--		node->augmented = augmented;
--		rb = rb_parent(&node->rb);
--	}
--}
--
--static void augment_copy(struct rb_node *rb_old, struct rb_node *rb_new)
--{
--	struct test_node *old = rb_entry(rb_old, struct test_node, rb);
--	struct test_node *new = rb_entry(rb_new, struct test_node, rb);
--	new->augmented = old->augmented;
--}
--
--static void augment_rotate(struct rb_node *rb_old, struct rb_node *rb_new)
--{
--	struct test_node *old = rb_entry(rb_old, struct test_node, rb);
--	struct test_node *new = rb_entry(rb_new, struct test_node, rb);
--
--	/* Rotation doesn't change subtree's augmented value */
--	new->augmented = old->augmented;
--	old->augmented = augment_recompute(old);
--}
--
--static const struct rb_augment_callbacks augment_callbacks = {
--	augment_propagate, augment_copy, augment_rotate
--};
-+RB_DECLARE_CALLBACKS(static, augment_callbacks, struct test_node, rb,
-+		     u32, augmented, augment_recompute)
- 
- static void insert_augmented(struct test_node *node, struct rb_root *root)
- {
--- 
-1.7.7.3
+Likely. The question is whether we could make Linux be spec
+compliant on sane systems _and_ tolerate broken ones like
+this. But whether e.g. adding a command line option (or DMI-
+based quirk) is appropriate depends on whether this really is
+a firmware issue or a flaw in the patch.
+
+Jan
