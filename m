@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031031Ab2HGW7F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:59:05 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33320 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031019Ab2HGWp3 (ORCPT
+	id S1031289Ab2HGW7C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:59:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031021Ab2HGWpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:45:29 -0400
-From: Matt Sealey <matt@genesi-usa.com>
-To: Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: Steev Klimaszewski <steev@genesi-usa.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Sealey <matt@genesi-usa.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: [PATCH 0/2] ARM: imx: change building of SSI FIQ support for i.MX processors
-Date: Tue,  7 Aug 2012 17:45:12 -0500
-Message-Id: <1344379514-30076-1-git-send-email-matt@genesi-usa.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 7 Aug 2012 18:45:31 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Tiejun Chen <tiejun.chen@windriver.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 03/49] powerpc: Add "memory" attribute for mfmsr()
+Date: Tue,  7 Aug 2012 15:44:21 -0700
+Message-Id: <20120807222027.155319365@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
+References: <20120807222026.848194739@linuxfoundation.org>
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patches to fix Thumb2 kernel building and change the dependency for SSI FIQ
-support to a more specific option to prevent it from being needlessly built
-in the first place on more frugal kernel configurations.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-A better solution might be to rewrite the function in Thumb-compatible assembly
-but the target processors do not support Thumb2 kernels anyway, and the last
-time it was suggested the updated code was nacked by Russell. Since its built
-as a side-effect on ARMv6/v7 i.MX processors, these could be considered somewhat
-Needful Things(tm) by people wanting Thumb2 kernels based on imx_v6_v7_defconfig
-or wanting to remove certain boards from their configs.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Matt Sealey (2):
-  ARM: build ssi-fiq.S in ARM mode to prevent CONFIG_THUMB2_KERNEL
-    build breakage
-  ARM: only build ssi-fiq.S et al if CONFIG_SND_IMX_SOC_PCM_FIQ is
-    selected
+------------------
 
- arch/arm/plat-mxc/Makefile  |    2 +-
- arch/arm/plat-mxc/ssi-fiq.S |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+From: Tiejun Chen <tiejun.chen@windriver.com>
 
--- 
-1.7.9.5
+commit b416c9a10baae6a177b4f9ee858b8d309542fbef upstream.
+
+Add "memory" attribute in inline assembly language as a compiler
+barrier to make sure 4.6.x GCC don't reorder mfmsr().
+
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/include/asm/reg.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -1000,7 +1000,8 @@
+ /* Macros for setting and retrieving special purpose registers */
+ #ifndef __ASSEMBLY__
+ #define mfmsr()		({unsigned long rval; \
+-			asm volatile("mfmsr %0" : "=r" (rval)); rval;})
++			asm volatile("mfmsr %0" : "=r" (rval) : \
++						: "memory"); rval;})
+ #ifdef CONFIG_PPC_BOOK3S_64
+ #define __mtmsrd(v, l)	asm volatile("mtmsrd %0," __stringify(l) \
+ 				     : : "r" (v) : "memory")
+
 
