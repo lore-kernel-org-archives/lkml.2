@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030555Ab2HGXLB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:11:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	id S933065Ab2HGXL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:11:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030521Ab2HGWim (ORCPT
+	with ESMTP id S1030499Ab2HGWif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:42 -0400
+	Tue, 7 Aug 2012 18:38:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <jdelvare@suse.de>, Huang Ying <ying.huang@intel.com>,
-        Gary Hade <garyhade@us.ibm.com>, Len Brown <len.brown@intel.com>
-Subject: [ 048/109] ACPI, APEI: Fixup common access width firmware bug
-Date: Tue,  7 Aug 2012 15:35:07 -0700
-Message-Id: <20120807222047.297200063@linuxfoundation.org>
+        Christian Ohm <chr.ohm@gmx.net>, Ben Hutchings <ben@decadent.org.uk>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 046/109] staging: zsmalloc: Finish conversion to a separate module
+Date: Tue,  7 Aug 2012 15:35:05 -0700
+Message-Id: <20120807222047.141020981@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,41 +30,91 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit f712c71f7b2b43b894d1e92e1b77385fcad8815f upstream.
+commit 069f101fa463351f528773d73b74e9b606b3f66a upstream.
 
-Many firmwares have a common register definition bug where 8-bit
-access width is specified for a 32-bit register. Ideally this should
-be fixed in the BIOS, but earlier versions of the kernel did not
-complain, so fix that up silently.
+ZSMALLOC is tristate, but the code has no MODULE_LICENSE and since it
+depends on GPL-only symbols it cannot be loaded as a module.  This in
+turn breaks zram which now depends on it.  I assume it's meant to be
+Dual BSD/GPL like the other z-stuff.
 
-This closes kernel bug #43282:
-https://bugzilla.kernel.org/show_bug.cgi?id=43282
+There is also no module_exit, which will make it impossible to unload.
+Add the appropriate module_init and module_exit declarations suggested
+by comments.
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Acked-by: Huang Ying <ying.huang@intel.com>
-Acked-by: Gary Hade <garyhade@us.ibm.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Reported-by: Christian Ohm <chr.ohm@gmx.net>
+References: http://bugs.debian.org/677273
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/apei/apei-base.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/staging/zsmalloc/zsmalloc-main.c |   33 ++++++-------------------------
+ 1 file changed, 7 insertions(+), 26 deletions(-)
 
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -586,6 +586,11 @@ static int apei_check_gar(struct acpi_ge
- 	}
- 	*access_bit_width = 1UL << (access_size_code + 2);
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -426,12 +426,6 @@ static struct page *find_get_zspage(stru
+ }
  
-+	/* Fixup common BIOS bug */
-+	if (bit_width == 32 && bit_offset == 0 && (*paddr & 0x03) == 0 &&
-+	    *access_bit_width < 32)
-+		*access_bit_width = 32;
+ 
+-/*
+- * If this becomes a separate module, register zs_init() with
+- * module_init(), zs_exit with module_exit(), and remove zs_initialized
+-*/
+-static int zs_initialized;
+-
+ static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
+ 				void *pcpu)
+ {
+@@ -490,7 +484,7 @@ fail:
+ 
+ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+ {
+-	int i, error, ovhd_size;
++	int i, ovhd_size;
+ 	struct zs_pool *pool;
+ 
+ 	if (!name)
+@@ -517,28 +511,9 @@ struct zs_pool *zs_create_pool(const cha
+ 
+ 	}
+ 
+-	/*
+-	 * If this becomes a separate module, register zs_init with
+-	 * module_init, and remove this block
+-	*/
+-	if (!zs_initialized) {
+-		error = zs_init();
+-		if (error)
+-			goto cleanup;
+-		zs_initialized = 1;
+-	}
+-
+ 	pool->flags = flags;
+ 	pool->name = name;
+ 
+-	error = 0; /* Success */
+-
+-cleanup:
+-	if (error) {
+-		zs_destroy_pool(pool);
+-		pool = NULL;
+-	}
+-
+ 	return pool;
+ }
+ EXPORT_SYMBOL_GPL(zs_create_pool);
+@@ -749,3 +724,9 @@ u64 zs_get_total_size_bytes(struct zs_po
+ 	return npages << PAGE_SHIFT;
+ }
+ EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
 +
- 	if ((bit_width + bit_offset) > *access_bit_width) {
- 		pr_warning(FW_BUG APEI_PFX
- 			   "Invalid bit width + offset in GAR [0x%llx/%u/%u/%u/%u]\n",
++module_init(zs_init);
++module_exit(zs_exit);
++
++MODULE_LICENSE("Dual BSD/GPL");
++MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
 
 
