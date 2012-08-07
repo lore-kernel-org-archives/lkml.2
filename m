@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933076Ab2HGXLr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:11:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	id S933082Ab2HGXMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:12:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030475Ab2HGWi3 (ORCPT
+	with ESMTP id S1030465Ab2HGWi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:29 -0400
+	Tue, 7 Aug 2012 18:38:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>, Jan Kara <jack@suse.cz>
-Subject: [ 044/109] udf: Improve table length check to avoid possible overflow
-Date: Tue,  7 Aug 2012 15:35:03 -0700
-Message-Id: <20120807222046.970058242@linuxfoundation.org>
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 043/109] iommu/amd: Fix hotplug with iommu=pt
+Date: Tue,  7 Aug 2012 15:35:02 -0700
+Message-Id: <20120807222046.882690945@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,33 +29,52 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 57b9655d01ef057a523e810d29c37ac09b80eead upstream.
+commit 2c9195e990297068d0f1f1bd8e2f1d09538009da upstream.
 
-When a partition table length is corrupted to be close to 1 << 32, the
-check for its length may overflow on 32-bit systems and we will think
-the length is valid. Later on the kernel can crash trying to read beyond
-end of buffer. Fix the check to avoid possible overflow.
+This did not work because devices are not put into the
+pt_domain. Fix this.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1283,7 +1283,7 @@ static int udf_load_logicalvol(struct su
- 	BUG_ON(ident != TAG_IDENT_LVD);
- 	lvd = (struct logicalVolDesc *)bh->b_data;
- 	table_len = le32_to_cpu(lvd->mapTableLength);
--	if (sizeof(*lvd) + table_len > sb->s_blocksize) {
-+	if (table_len > sb->s_blocksize - sizeof(*lvd)) {
- 		udf_err(sb, "error loading logical volume descriptor: "
- 			"Partition table too long (%u > %lu)\n", table_len,
- 			sb->s_blocksize - sizeof(*lvd));
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -2254,6 +2254,18 @@ static int device_change_notifier(struct
+ 
+ 		iommu_init_device(dev);
+ 
++		/*
++		 * dev_data is still NULL and
++		 * got initialized in iommu_init_device
++		 */
++		dev_data = get_dev_data(dev);
++
++		if (iommu_pass_through || dev_data->iommu_v2) {
++			dev_data->passthrough = true;
++			attach_device(dev, pt_domain);
++			break;
++		}
++
+ 		domain = domain_for_device(dev);
+ 
+ 		/* allocate a protection domain if a device is added */
+@@ -2271,10 +2283,7 @@ static int device_change_notifier(struct
+ 
+ 		dev_data = get_dev_data(dev);
+ 
+-		if (!dev_data->passthrough)
+-			dev->archdata.dma_ops = &amd_iommu_dma_ops;
+-		else
+-			dev->archdata.dma_ops = &nommu_dma_ops;
++		dev->archdata.dma_ops = &amd_iommu_dma_ops;
+ 
+ 		break;
+ 	case BUS_NOTIFY_DEL_DEVICE:
 
 
