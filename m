@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab2HGAYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 20:24:41 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:15604 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab2HGAYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 20:24:39 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-13-50206045a534
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Dongjin Kim'" <tobetter@gmail.com>
-Cc: "'Dongjin Kim'" <dongjin.kim@agreeyamobility.net>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
- <1344261462-14183-5-git-send-email-dongjin.kim@agreeyamobility.net>
-In-reply-to: <1344261462-14183-5-git-send-email-dongjin.kim@agreeyamobility.net>
-Subject: Re: [PATCH] video: s3c-fb: Fix compile error/warning if CONFIG_OF is
- not selected
-Date: Tue, 07 Aug 2012 09:24:37 +0900
-Message-id: <000a01cd7433$07555780$16000680$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1z25zXI16PJR25RMC/i2JGQmyb0gAVtKzw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jQV3XBIUAgztLdC1O9H1gtbi8aw6b
-	A5PH501yAYxRXDYpqTmZZalF+nYJXBk/l/xmLTjKUbHz8VO2BsaPbF2MnBwSAiYSpybeYIew
-	xSQu3FsPFOfiEBKYzihxZMt+RgjnF6PE7rmnwTrYBNQkvnw5DNYhAmQ3/u1kBSliFrjAKDFl
-	2lwWkISQwFRGiRe3KkBsToEAidXvDjKC2MICMRJHelvBalgEVCWmL9kCFucVsJVobG1mhbAF
-	JX5MvgdWwyygJbF+53EmCFteYvOat8xdjBxAp6pLPPqrC3GDkcTmK1egSkQk9r14xziBUWgW
-	kkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEB/Uz6R2MqxosDjEK
-	cDAq8fDOVFEIEGJNLCuuzD3EKMHBrCTCe8cXKMSbklhZlVqUH19UmpNafIhRmoNFSZzXxPur
-	v5BAemJJanZqakFqEUyWiYNTqoExp+a1wNSCGVxBSx/+sfE8XHunfWelzd4HfIftHpxS2Vd9
-	z+lXVv9lvc5LlpeWSCowi/Vsmrjl3puI7e6LbD9svHVQYjLLXeMb52Mmz1bPm/Wn+Kw8g+52
-	d66QqTcPlyiK+67XnnxYZs1b/dlK7tI3pII6Eqpu+l8J7j/2UlvfbN6SJWecfbb7KbEUZyQa
-	ajEXFScCAJjY0iFmAgAA
-X-TM-AS-MML: No
+	id S1756255Ab2HGAfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 20:35:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59129 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457Ab2HGAfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 20:35:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="182442190"
+Message-ID: <502062C8.4050006@intel.com>
+Date: Tue, 07 Aug 2012 08:35:20 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH v1 2/4] x86, CPU: Push TLB detection CPUID check down
+References: <1344272439-29080-1-git-send-email-bp@amd64.org> <1344272439-29080-3-git-send-email-bp@amd64.org>
+In-Reply-To: <1344272439-29080-3-git-send-email-bp@amd64.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 06, 2012 10:58 PM Dongjin Kim wrote:
+On 08/07/2012 01:00 AM, Borislav Petkov wrote:
+
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> Change-Id: I5d7ff6f0070a10225d5b064b362d3d8f214787fd
-> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
+> Push the max CPUID leaf check into the ->detect_tlb function and remove
+> general test case from the generic path.
+> 
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+
+
+Acked-by: Alex Shi <alex.shi@intel.com>
+
 > ---
->  drivers/video/s3c-fb.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
+>  arch/x86/kernel/cpu/common.c | 3 +--
+>  arch/x86/kernel/cpu/intel.c  | 4 ++++
+>  2 files changed, 5 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
-> index 8c8adb5..268be0c 100644
-> --- a/drivers/video/s3c-fb.c
-> +++ b/drivers/video/s3c-fb.c
-> @@ -1527,13 +1527,11 @@ static int s3c_fb_dt_parse_gpios(struct device *dev, struct s3c_fb *sfb,
-> 
->  static void s3c_fb_dt_free_gpios(struct s3c_fb *sfb)
->  {
-> -	return 0;
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> index d239977f361f..080f4a737e3e 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -940,8 +940,7 @@ void __init identify_boot_cpu(void)
+>  #else
+>  	vgetcpu_set_mode();
+>  #endif
+> -	if (boot_cpu_data.cpuid_level >= 2)
+> -		cpu_detect_tlb(&boot_cpu_data);
+> +	cpu_detect_tlb(&boot_cpu_data);
 >  }
-> 
-> -static int s3c_fb_dt_parse_pdata(struct device *dev,
-> -					struct s3c_fb_platdata **pdata)
-> +static struct s3c_fb_platdata *s3c_fb_dt_parse_pdata(struct device *dev)
->  {
-> -	return 0;
-> +	return NULL;
->  }
->  #endif /* CONFIG_OF */
+>  
+>  void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> index 0a4ce2980a5a..198e019a531a 100644
+> --- a/arch/x86/kernel/cpu/intel.c
+> +++ b/arch/x86/kernel/cpu/intel.c
+> @@ -648,6 +648,10 @@ static void __cpuinit intel_detect_tlb(struct cpuinfo_x86 *c)
+>  	int i, j, n;
+>  	unsigned int regs[4];
+>  	unsigned char *desc = (unsigned char *)regs;
+> +
+> +	if (c->cpuid_level < 2)
+> +		return;
+> +
+>  	/* Number of times to iterate */
+>  	n = cpuid_eax(2) & 0xFF;
+>  
 
-
-Um, DT is not yet merged to s3c-fb driver.
-s3c_fb_dt_parse_pdata() and s3c_fb_dt_free_gpios() are not available.
-
-So, this patch is unnecessary.
-
-Best regards,
-Jingoo Han
-
-
-> 
-> --
-> 1.7.9.5
 
