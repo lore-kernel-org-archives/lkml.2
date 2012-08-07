@@ -1,107 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805Ab2HGEhY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 00:37:24 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:49164 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750702Ab2HGEhX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 00:37:23 -0400
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: Arun MURTHY <arun.murthy@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Date: Tue, 7 Aug 2012 06:36:57 +0200
-Subject: RE: [PATCH 0/4] modem_shm: U8500 SHaRed Memory driver(SHRM)
-Thread-Topic: [PATCH 0/4] modem_shm: U8500 SHaRed Memory driver(SHRM)
-Thread-Index: Ac1uTtHhxD7Iz2+FSvezZQBz65sVyAGB1yPQ
-Message-ID: <F45880696056844FA6A73F415B568C695B0E6E71EE@EXDCVYMBSTM006.EQ1STM.local>
-References: <1343651301-5526-1-git-send-email-arun.murthy@stericsson.com>
-In-Reply-To: <1343651301-5526-1-git-send-email-arun.murthy@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751438Ab2HGEi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 00:38:58 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56539 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab2HGEi4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 00:38:56 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAJuYYwT2rrJkrkOSekV+DjpVAHas33_gUGULTjzsYtcq1UAyoQ@mail.gmail.com>
+References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
+	<CAJuYYwSjnQ6z0iUaLCV9guC7yyKH3_pbd1QZe3ELKF-fYNfaqQ@mail.gmail.com>
+	<A6A3B7488C419F488E5B13FFD03C08AD2F4362EE@SN2PRD0510MB370.namprd05.prod.outlook.com>
+	<CAOesGMh=6QrCmL4EqnSqTxi1nH+8Wn+x=z9BYq8QJCznH3a=zQ@mail.gmail.com>
+	<A6A3B7488C419F488E5B13FFD03C08AD2F43688D@SN2PRD0510MB370.namprd05.prod.outlook.com>
+	<CAOesGMj6BafLCpZjmtyn_ASbpeic_8E0CdYjQGOf3A4_NHfy=Q@mail.gmail.com>
+	<CAJuYYwT2rrJkrkOSekV+DjpVAHas33_gUGULTjzsYtcq1UAyoQ@mail.gmail.com>
+Date: Tue, 7 Aug 2012 13:38:53 +0900
+X-Google-Sender-Auth: p0axFtK8yC-ukpgGZX9TZAQkFg8
+Message-ID: <CAH9JG2Wg=6Y=qirPM_BaHEgKQ2bbJtuXHiqdgU8XToGM4HBtWw@mail.gmail.com>
+Subject: =?EUC-KR?B?UmU6IMi4vcU6IMi4vcU6IFtQQVRDSF0gT0RST0lELVg6IGhrZGs0NDEyOiBBZGQg?=
+	=?EUC-KR?B?bmV3IGhhcmR3YXJlIGJhc2VkIG9uIEV4eW5vczQ0MTI=?=
+From: Kyungmin Park <kmpark@infradead.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>,
+        Dongjin Kim <Dongjin.Kim@agreeyamobility.net>,
+        Dongjin Kim <tobetter@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Jon Medhurst <tixy@yxit.co.uk>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In u8500 platform the communication between the APE(Application
-> Processor) and
-> the modem subsystem(CMT) is by means of a shared DDR. The series of
-> patches
-> include a protocol called ShaRed Memory(SHRM) protocol for
-> communicating
-> between the APE and the CMT.
-> Interrupt generation registers in CMT and PRCMU on APE side are used to
-> support
-> the shrm protocol.
-> 
-> Arun Murthy (4):
->   modem_shm: Add Modem Access Framework
->   modem_shm: Register u8500 client for MAF
->   modem_shm: u8500-shm: U8500 Shared Memory Driver
->   Doc: Add u8500_shrm document
-> 
->  Documentation/DocBook/Makefile                   |    2 +-
->  Documentation/DocBook/shrm.tmpl                  |  125 ++
->  Documentation/modem_shm/u8500_shrm.txt           |  254 ++++
->  drivers/Kconfig                                  |    2 +
->  drivers/Makefile                                 |    1 +
->  drivers/modem_shm/Kconfig                        |   22 +
->  drivers/modem_shm/Makefile                       |    3 +
->  drivers/modem_shm/modem_access.c                 |  419 ++++++
->  drivers/modem_shm/modem_u8500.c                  |   96 ++
->  drivers/modem_shm/u8500_shm/Kconfig              |   43 +
->  drivers/modem_shm/u8500_shm/Makefile             |    7 +
->  drivers/modem_shm/u8500_shm/shrm_char.c          |  895 ++++++++++++
->  drivers/modem_shm/u8500_shm/shrm_driver.c        |  732 ++++++++++
->  drivers/modem_shm/u8500_shm/shrm_fifo.c          |  837 ++++++++++++
->  drivers/modem_shm/u8500_shm/shrm_net.c           |  312 +++++
->  drivers/modem_shm/u8500_shm/shrm_protocol.c      | 1590
-> ++++++++++++++++++++++
->  include/linux/modem_shm/modem.h                  |   64 +
->  include/linux/modem_shm/modem_client.h           |   55 +
->  include/linux/modem_shm/u8500_shm/shrm.h         |   23 +
->  include/linux/modem_shm/u8500_shm/shrm_config.h  |  114 ++
->  include/linux/modem_shm/u8500_shm/shrm_driver.h  |  225 +++
->  include/linux/modem_shm/u8500_shm/shrm_ioctl.h   |   43 +
->  include/linux/modem_shm/u8500_shm/shrm_net.h     |   46 +
->  include/linux/modem_shm/u8500_shm/shrm_private.h |  183 +++
->  24 files changed, 6092 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/DocBook/shrm.tmpl
->  create mode 100644 Documentation/modem_shm/u8500_shrm.txt
->  create mode 100644 drivers/modem_shm/Kconfig
->  create mode 100644 drivers/modem_shm/Makefile
->  create mode 100644 drivers/modem_shm/modem_access.c
->  create mode 100644 drivers/modem_shm/modem_u8500.c
->  create mode 100644 drivers/modem_shm/u8500_shm/Kconfig
->  create mode 100644 drivers/modem_shm/u8500_shm/Makefile
->  create mode 100644 drivers/modem_shm/u8500_shm/shrm_char.c
->  create mode 100644 drivers/modem_shm/u8500_shm/shrm_driver.c
->  create mode 100644 drivers/modem_shm/u8500_shm/shrm_fifo.c
->  create mode 100644 drivers/modem_shm/u8500_shm/shrm_net.c
->  create mode 100644 drivers/modem_shm/u8500_shm/shrm_protocol.c
->  create mode 100644 include/linux/modem_shm/modem.h
->  create mode 100644 include/linux/modem_shm/modem_client.h
->  create mode 100644 include/linux/modem_shm/u8500_shm/shrm.h
->  create mode 100644 include/linux/modem_shm/u8500_shm/shrm_config.h
->  create mode 100644 include/linux/modem_shm/u8500_shm/shrm_driver.h
->  create mode 100644 include/linux/modem_shm/u8500_shm/shrm_ioctl.h
->  create mode 100644 include/linux/modem_shm/u8500_shm/shrm_net.h
->  create mode 100644 include/linux/modem_shm/u8500_shm/shrm_private.h
-> 
-> --
-> 1.7.4.3
+On 8/7/12, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+> On 7 August 2012 07:58, Olof Johansson <olof@lixom.net> wrote:
+>> Hi,
+>>
+>> On Mon, Aug 6, 2012 at 7:05 PM, Dongjin Kim
+>> <Dongjin.Kim@agreeyamobility.net> wrote:
+>>> Hello,
+>>>
+>>> I am trying to understand what I have to do for device tree.
+>>>
+>>> In order to create dts file for ODROID-X hardware, it seems I may need
+>>> dts file of EXYNOS4412 SoC.
+>>> But maybe exynos4412.dtsi is not merged yet or not exist, like
+>>> exynos4210.dtsi or exynos5250.dtsi.
+>>> Obviously it seems not easy to create such a file without SoC datasheet,
+>>> and I do not have it.
+>>>
+>>> So do I wait for the file to be merged by Samsung or better to create
+>>> initial dts file cloned from exynos4210.dtsi and modify to have verified
+>>> nodes with the source/header files?
+>>
+>> Ideally they already have one waiting to be submitted, but that might
+>> not be the case. Given that the origenboard design with 4412 is not
+>> yet shipping, I'm guessing the Linaro Samsung engineers might not have
+>> done much work on 4412 yet. Kukjin? Thomas?
+>>
+>>> What's your suggestion?
+>>
+>> The alternative is to use the data you have available -- i.e. sources
+>> and patches, and craft the device tree from there. The design of 4412
+>> is a derivative from 4210, so that's a good start. Next step would be
+>> to describe the board on top of the SoC, peripherals, etc. Take a look
+>> at how the origen board support was added, and so on.
+>>
+>> I ordered an odroid-x several weeks ago but I haven't have a confirmed
+>> shipping date yet. :( I'm not sure how long it'll be before I can help
+>> out, unfortunately.
+>>
+>>
+>> -Olof
+>
+> Most of the Exynos4210 device tree support can be reused for
+> Exynos4412 as well. Looking at the hardware differences between the
+> two, it might be better to create a new exynos4.dtsi file (kind of
+> creating it out of the existing exynos4210.dtsi) which will have all
+> the common bits across all SoC's in the Exynos4 family.
+>
+> Further, there can be exynos4210.dtsi and exynos4412.dtsi which would
+> specify SoC specific differences such as the GIC cpu-offset property
+> and the additional groups available in the interrupt combiner.
+>
+> There are differences in the gpio/pinmux controllers as well which
+> have to be described using device tree. The current gpio/pinmux device
+> tree support depends entirely on the gpio-samsung driver which handles
+> both gpio and pinmux but requires listing all the banks available in
+> Exynos4412. I would prefer not to do that since we are switching over
+> to using a pin controller driver and I am currently working on this
+> driver.
+>
+> The pin controller driver is important without which the
+> gpio/pinmux/pinconf setting for devices such as i2c and sdhci
+> controller cannot be setup. The basic pinctrl driver for Exynos4 has
+> already been posted and now I am working on adding gpio and wakeup
+> interrupt support into that driver (hoping to complete it this week).
+>
+> So the probable steps in getting started with using device tree for
+> Exynos4412 would be
+>
+> 1. Create a new exynos4.dtsi file with all the Exynos4 common
+> properties for all dt supported controllers.
+> 2. Update the exynos4210.dtsi file accordingly and add the new
+> exynos4412.dtsi file.
+> 3. With this, it will be possible to boot the kernel and test
+> peripherals that do not depend on gpio/pinmux (rtc, wdt, etc).
+> 4. When the Exynos4 pinctrl driver is available, start adding device
+> nodes for i2c and sdhci controllers.
+> 5. Incrementally add device tree coverage for the board and other
+> peripherals on Exynos4412.
+Nice!
+Good plan as I thnk.
 
-
-Any Comments?
-
-Thanks and Regards,
-Arun R Murthy
--------------
-
+Thank you,
+Kyungmin Park
