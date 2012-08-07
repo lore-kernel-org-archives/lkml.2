@@ -1,80 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab2HGT1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:27:23 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:65052 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755964Ab2HGT1V (ORCPT
+	id S932079Ab2HGT3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:29:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:65245 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab2HGT26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:27:21 -0400
-Message-ID: <50216C98.9020900@metafoo.de>
-Date: Tue, 07 Aug 2012 21:29:28 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
+	Tue, 7 Aug 2012 15:28:58 -0400
 MIME-Version: 1.0
-To: anish kumar <anish198519851985@gmail.com>
-CC: myungjoo.ham@samsung.com, cw00.choi@samsung.com, jic23@cam.ac.uk,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        anish kumar <anish.singh@samsung.com>
-Subject: Re: [PATCH] [PATCH V3]Extcon: adc_jack: adc-jack driver to support
- 3.5 pi or simliar devices
-References: <1344322783-28253-1-git-send-email-anish198519851985@gmail.com>
-In-Reply-To: <1344322783-28253-1-git-send-email-anish198519851985@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Tue, 7 Aug 2012 12:28:37 -0700
+X-Google-Sender-Auth: qm-Uzfge-MZBYzJBdZoOGOrk-9c
+Message-ID: <CAB=NE6WZWEO=b5Usx4RKDLC--TvLWnOom0P+HmXsxh7QZQQXQA@mail.gmail.com>
+Subject: Using vanilla kernels headers to do backport testing -- issues with memcpy()
+To: Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 08:59 AM, anish kumar wrote:
-> From: anish kumar <anish198519851985@gmail.com>
-> 
-> External connector devices that decides connection information based on
-> ADC values may use adc-jack device driver. The user simply needs to
-> provide a table of adc range and connection states. Then, extcon
-> framework will automatically notify others.
-> 
-> Changes in V1:
-> added Lars-Peter Clausen suggested changes:
-> Using macros to get rid of boiler plate code such as devm_kzalloc
-> and module_platform_driver.Other changes suggested are related to
-> coding guidelines.
-> 
-> Changes in V2:
-> Removed some unnecessary checks and changed the way we are un-regitering
-> extcon and freeing the irq while removing.
-> 
-> Changes in this version:
-> Renamed the files to comply with extcon naming.
-> 
-> Signed-off-by: anish kumar <anish.singh@samsung.com>
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+A while ago we reviewed the idea of whether or not to use a set of
+distribution vanilla kernels to allow us to do compilation testing of
+modules on the compat backport project [0] with the benefit being that
+at least one Linux distribution was doing this work already and given
+that this work was using plain vanilla kernels directly from
+kernel.org, with no modifications. The other option that existed was
+that each distro could provide their own set of kernel packages along
+with their own kernel headers but it didn't seem like other Linux
+distributions were doing this and the information was not easy to
+gather. So we went with the Ubuntu vanilla kernels and Ozan later
+figured out a way to extract deb packages in a distribution agnostic
+manner [1] and later added an option to enable a way to install and
+use this for ckmake which test compiles against 21 kernels without
+requiring root [2].
 
-Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+This works swell as it allows anyone on any Linux distribution to test
+compile against a series of older kernels, today 21 older kernels and
+all vanilla kernels which means we get to focus and prioritize
+upstream.
 
-I missed one thing though in the previous reviews, sorry about that.
+This has started working well except for the fact that as of the >=
+v3.4 vanilla kernel releases, there are a few files which are binary
+in the kernel headers which use dynamic libraries. Of interest to us
+here are the ones required to build external modules. An example:
 
-> ---
->  drivers/extcon/Kconfig                 |    5 +
->  drivers/extcon/Makefile                |    1 +
->  drivers/extcon/extcon-adc-jack.c       |  193 ++++++++++++++++++++++++++++++++
->  include/linux/extcon/extcon-adc-jack.h |   73 ++++++++++++
->  4 files changed, 272 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/extcon/extcon-adc-jack.c
->  create mode 100644 include/linux/extcon/extcon-adc-jack.h
-> +
-> +static int __devexit adc_jack_remove(struct platform_device *pdev)
-> +{
-> +	struct adc_jack_data *data = platform_get_drvdata(pdev);
-> +
-> +	free_irq(data->irq, data);
+/lib/modules/3.4.4-030404-generic/build/scripts/genksyms/genksyms
 
-We should probably make sure that the work is not pending or running here.
+It just so happens to be that the folks building these packages are
+using a glibc >= 2.14 and although the *only* symbol I see being
+required from glibc >= 2.14 being memcpy():
 
-> +	extcon_dev_unregister(&data->edev);
-> +
-> +	return 0;
-> +}
+mcgrof@garbanzo ~/compat (git::master)$ objdump -T
+/home/mcgrof/compat-ksrc/lib/modules/3.4.4-030404-generic/build/scripts/genksyms/genksyms
+
+/home/mcgrof/compat-ksrc/lib/modules/3.4.4-030404-generic/build/scripts/genksyms/genksyms:
+    file format elf64-x86-64
+
+DYNAMIC SYMBOL TABLE:
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.3.4 __snprintf_chk
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 free
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.3.4 __vfprintf_chk
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 __errno_location
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 ferror
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 isatty
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fread
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fclose
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 strlen
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.4   __stack_chk_fail
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 getopt_long
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 strchr
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 _IO_putc
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fputs
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fgetc
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fputc
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 __strdup
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 __libc_start_main
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 strcmp
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 feof
+0000000000000000  w   D  *UND*  0000000000000000              __gmon_start__
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 strtol
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 clearerr
 
 
+Bleh:
+
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.14  memcpy
+
+
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fileno
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 malloc
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 _IO_getc
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 ungetc
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 realloc
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.3.4 __printf_chk
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fopen
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 perror
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 exit
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fwrite
+0000000000000000      DF *UND*  0000000000000000  GLIBC_2.3.4 __fprintf_chk
+000000000060b160 g    DO .bss   0000000000000008  GLIBC_2.2.5 stdout
+000000000060b168 g    DO .bss   0000000000000008  GLIBC_2.2.5 stdin
+000000000060b178 g    DO .bss   0000000000000008  GLIBC_2.2.5 stderr
+000000000060b170 g    DO .bss   0000000000000008  GLIBC_2.2.5 optarg
+
+It would be reasonable to simply require the users of ckmake to update
+their libc version but even Debian sid does not yet seem to have libc
+>= 2.14, not sure of others. The gains for requiring a glibc >= 2.14
+only for memcpy() would seem rather small for this particular case so
+I wanted to review the options to fix this.
+
+---------------
+1) Get the kernel headers to statically link against the required libraries
+
+This options would enable any Linux distribution to use the packages provided
+
+2) Add a LD_PRELOAD hack for mempcy() for running ckmake and friends
+on the compat package
+
+This doesn't seem so.. clean, but its the only thing I can currently control.
+
+3) Simply require libc > 2.14 for folks who really want to help do
+backport testing for kernels >= 3.4
+
+I suppose this is the easiest but we likely could run into other
+similar issues later.
+
+---------------
+
+Are there other options?
+
+[0] https://lkml.org/lkml/2012/2/6/558
+[1] https://github.com/mcgrof/compat/commit/fdbea5a6ce2cba6d6c8fb3eb998cffa5a9e3bf78
+[2] https://github.com/mcgrof/compat/commit/e7d88d67040bbaa79720fa1b2dfc4fc24e4d004f
+
+  Luis
