@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab2HGL4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 07:56:14 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:38652 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab2HGL4M (ORCPT
+	id S1754479Ab2HGL5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 07:57:25 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59636 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754310Ab2HGL5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 07:56:12 -0400
+	Tue, 7 Aug 2012 07:57:24 -0400
+Date: Tue, 7 Aug 2012 12:56:47 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Nicolas Pitre <nico@fluxnic.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: RFC: mutex: hung tasks on SMP platforms with asm-generic/mutex-xchg.h
+Message-ID: <20120807115647.GA12828@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVh_D1yTYiPoRks8-sjoNb_dr5xpRbxv+AJLseUd2Kk0Q@mail.gmail.com>
-References: <50205592.1030205@gmail.com>
-	<5020AA5B.4080407@zankel.net>
-	<CAMuHMdVh_D1yTYiPoRks8-sjoNb_dr5xpRbxv+AJLseUd2Kk0Q@mail.gmail.com>
-Date: Tue, 7 Aug 2012 15:56:11 +0400
-Message-ID: <CAMo8BfLw0Rt8Z-Tn0k40szP1ZPtwGcV27aEp3MOVEBNx+C3tgA@mail.gmail.com>
-Subject: Re: xtensa port maintenance
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Chris Zankel <chris@zankel.net>, linux-kernel@vger.kernel.org,
-        linux-xtensa@linux-xtensa.org, linux-next@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Marc Gauthier <marc@tensilica.com>,
-        Kirill Krinkin <kirill.krinkin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 3:36 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Hi Chris,
->
-> On Tue, Aug 7, 2012 at 7:40 AM, Chris Zankel <chris@zankel.net> wrote:
->> On 08/06/2012 04:38 PM, Max Filippov wrote:
->>> AFAIK xtensa linux port is currently in bad shape: it doesn't work in the
->>> mainline, it fails to build in the linux-next. The latest working kernels
->>> for
->>> xtensa are 2.6.29...31 trees hosted at the git.linux-xtensa.org.
->>
->> I wouldn't say it's in bad shape, I just built an vmlinux image from the
->> latest tree (3.6.0-rc1), but it might not be very stable. One of the major
->> issues is not really the kernel but  there's actually no way to build a
->> fairly recent version of the toolchain. I have been using a somewhat more
->> recent buildroot version than what is on xtensa-linux.org, but even that
->> version of buildroot is rather old now and needed a few patches.
->
-> Are the errors
->
-> | dangerous relocation: l32r: literal placed after use: .literal.unlikely
-> (http://kisskb.ellerman.id.au/kisskb/buildresult/6845615/)
->
-> preventing linking of vmlinux toolchain issues?
+Hello,
 
-They may be considered as such (toolchain now adds *.unlikely sections which
-was not the case previously), or may not, depending on what one would expect
-from the toolchain. I have a fix for that issue:
-https://github.com/jcmvbkbc/linux-xtensa/commit/edd7c14132388d5c09c57cf12c76c6631a1e0277
+ARM recently moved to asm-generic/mutex-xchg.h for its mutex implementation
+after our previous implementation was found to be missing some crucial
+memory barriers. However, I'm seeing some problems running hackbench on
+SMP platforms due to the way in which the MUTEX_SPIN_ON_OWNER code operates.
 
--- 
-Thanks.
--- Max
+The symptoms are that a bunch of hackbench tasks are left waiting on an
+unlocked mutex and therefore never get woken up to claim it. I think this
+boils down to the following sequence:
+
+
+        Task A        Task B        Task C        Lock value
+0                                                     1
+1       lock()                                        0
+2                     lock()                          0
+3                     spin(A)                         0
+4       unlock()                                      1
+5                                   lock()            0
+6                     cmpxchg(1,0)                    0
+7                     contended()                    -1
+8       lock()                                        0
+9       spin(C)                                       0
+10                                  unlock()          1
+11      cmpxchg(1,0)                                  0
+12      unlock()                                      1
+
+
+At this point, the lock is unlocked, but Task B is in an uninterruptible
+sleep with nobody to wake it up.
+
+The following patch fixes the problem by ensuring we put the lock into
+the contended state if we acquire it from the spin loop on the slowpath
+but I'd like to be sure that this won't cause problems with other mutex
+implementations:
+
+
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index a307cc9..27b7887 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -170,7 +170,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+                if (owner && !mutex_spin_on_owner(lock, owner))
+                        break;
+ 
+-               if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
++               if (atomic_cmpxchg(&lock->count, 1, -1) == 1) {
+                        lock_acquired(&lock->dep_map, ip);
+                        mutex_set_owner(lock);
+                        preempt_enable();
+
+
+All comments welcome.
+
+Cheers,
+
+Will
