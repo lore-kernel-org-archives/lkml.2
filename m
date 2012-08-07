@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082Ab2HGXMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:12:08 -0400
+	id S933089Ab2HGXMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:12:35 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030465Ab2HGWi0 (ORCPT
+	with ESMTP id S1030426Ab2HGWiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:26 -0400
+	Tue, 7 Aug 2012 18:38:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 043/109] iommu/amd: Fix hotplug with iommu=pt
-Date: Tue,  7 Aug 2012 15:35:02 -0700
-Message-Id: <20120807222046.882690945@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 040/109] s390/mm: downgrade page table after fork of a 31 bit process
+Date: Tue,  7 Aug 2012 15:34:59 -0700
+Message-Id: <20120807222046.628273608@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,52 +29,130 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 2c9195e990297068d0f1f1bd8e2f1d09538009da upstream.
+commit 0f6f281b731d20bfe75c13f85d33f3f05b440222 upstream.
 
-This did not work because devices are not put into the
-pt_domain. Fix this.
+The downgrade of the 4 level page table created by init_new_context is
+currently done only in start_thread31. If a 31 bit process forks the
+new mm uses a 4 level page table, including the task size of 2<<42
+that goes along with it. This is incorrect as now a 31 bit process
+can map memory beyond 2GB. Define arch_dup_mmap to do the downgrade
+after fork.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ arch/s390/include/asm/mmu_context.h |   14 +++++++++++++-
+ arch/s390/include/asm/processor.h   |    2 ++
+ arch/s390/mm/mmap.c                 |   12 ++++++++++--
+ arch/s390/mm/pgtable.c              |    5 -----
+ 4 files changed, 25 insertions(+), 8 deletions(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -2254,6 +2254,18 @@ static int device_change_notifier(struct
+--- a/arch/s390/include/asm/mmu_context.h
++++ b/arch/s390/include/asm/mmu_context.h
+@@ -13,7 +13,6 @@
+ #include <asm/uaccess.h>
+ #include <asm/tlbflush.h>
+ #include <asm/ctl_reg.h>
+-#include <asm-generic/mm_hooks.h>
  
- 		iommu_init_device(dev);
+ static inline int init_new_context(struct task_struct *tsk,
+ 				   struct mm_struct *mm)
+@@ -93,4 +92,17 @@ static inline void activate_mm(struct mm
+         switch_mm(prev, next, current);
+ }
  
-+		/*
-+		 * dev_data is still NULL and
-+		 * got initialized in iommu_init_device
-+		 */
-+		dev_data = get_dev_data(dev);
++static inline void arch_dup_mmap(struct mm_struct *oldmm,
++				 struct mm_struct *mm)
++{
++#ifdef CONFIG_64BIT
++	if (oldmm->context.asce_limit < mm->context.asce_limit)
++		crst_table_downgrade(mm, oldmm->context.asce_limit);
++#endif
++}
 +
-+		if (iommu_pass_through || dev_data->iommu_v2) {
-+			dev_data->passthrough = true;
-+			attach_device(dev, pt_domain);
-+			break;
-+		}
++static inline void arch_exit_mmap(struct mm_struct *mm)
++{
++}
 +
- 		domain = domain_for_device(dev);
+ #endif /* __S390_MMU_CONTEXT_H */
+--- a/arch/s390/include/asm/processor.h
++++ b/arch/s390/include/asm/processor.h
+@@ -129,7 +129,9 @@ struct stack_frame {
+ 	regs->psw.mask	= psw_user_bits | PSW_MASK_BA;			\
+ 	regs->psw.addr	= new_psw | PSW_ADDR_AMODE;			\
+ 	regs->gprs[15]	= new_stackp;					\
++	__tlb_flush_mm(current->mm);					\
+ 	crst_table_downgrade(current->mm, 1UL << 31);			\
++	update_mm(current->mm, current);				\
+ } while (0)
  
- 		/* allocate a protection domain if a device is added */
-@@ -2271,10 +2283,7 @@ static int device_change_notifier(struct
+ /* Forward declaration, a strange C thing */
+--- a/arch/s390/mm/mmap.c
++++ b/arch/s390/mm/mmap.c
+@@ -105,9 +105,15 @@ void arch_pick_mmap_layout(struct mm_str
  
- 		dev_data = get_dev_data(dev);
+ int s390_mmap_check(unsigned long addr, unsigned long len)
+ {
++	int rc;
++
+ 	if (!is_compat_task() &&
+-	    len >= TASK_SIZE && TASK_SIZE < (1UL << 53))
+-		return crst_table_upgrade(current->mm, 1UL << 53);
++	    len >= TASK_SIZE && TASK_SIZE < (1UL << 53)) {
++		rc = crst_table_upgrade(current->mm, 1UL << 53);
++		if (rc)
++			return rc;
++		update_mm(current->mm, current);
++	}
+ 	return 0;
+ }
  
--		if (!dev_data->passthrough)
--			dev->archdata.dma_ops = &amd_iommu_dma_ops;
--		else
--			dev->archdata.dma_ops = &nommu_dma_ops;
-+		dev->archdata.dma_ops = &amd_iommu_dma_ops;
+@@ -127,6 +133,7 @@ s390_get_unmapped_area(struct file *filp
+ 		rc = crst_table_upgrade(mm, 1UL << 53);
+ 		if (rc)
+ 			return (unsigned long) rc;
++		update_mm(mm, current);
+ 		area = arch_get_unmapped_area(filp, addr, len, pgoff, flags);
+ 	}
+ 	return area;
+@@ -149,6 +156,7 @@ s390_get_unmapped_area_topdown(struct fi
+ 		rc = crst_table_upgrade(mm, 1UL << 53);
+ 		if (rc)
+ 			return (unsigned long) rc;
++		update_mm(mm, current);
+ 		area = arch_get_unmapped_area_topdown(filp, addr, len,
+ 						      pgoff, flags);
+ 	}
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -85,7 +85,6 @@ repeat:
+ 		crst_table_free(mm, table);
+ 	if (mm->context.asce_limit < limit)
+ 		goto repeat;
+-	update_mm(mm, current);
+ 	return 0;
+ }
  
- 		break;
- 	case BUS_NOTIFY_DEL_DEVICE:
+@@ -93,9 +92,6 @@ void crst_table_downgrade(struct mm_stru
+ {
+ 	pgd_t *pgd;
+ 
+-	if (mm->context.asce_limit <= limit)
+-		return;
+-	__tlb_flush_mm(mm);
+ 	while (mm->context.asce_limit > limit) {
+ 		pgd = mm->pgd;
+ 		switch (pgd_val(*pgd) & _REGION_ENTRY_TYPE_MASK) {
+@@ -118,7 +114,6 @@ void crst_table_downgrade(struct mm_stru
+ 		mm->task_size = mm->context.asce_limit;
+ 		crst_table_free(mm, (unsigned long *) pgd);
+ 	}
+-	update_mm(mm, current);
+ }
+ #endif
+ 
 
 
