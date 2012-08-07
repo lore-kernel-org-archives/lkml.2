@@ -1,87 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab2HGIcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 04:32:33 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38232 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab2HGIc3 convert rfc822-to-8bit (ORCPT
+	id S1752169Ab2HGIgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 04:36:54 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:36952 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab2HGIgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 04:32:29 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] backlight: lp855x: remove goto err_dev
-Thread-Topic: [PATCH 3/3] backlight: lp855x: remove goto err_dev
-Thread-Index: Ac1ztr/7coLsb16/SeONd+CmjHJZPQAvsEsA
-Date: Tue, 7 Aug 2012 08:32:12 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FEBF3@DQHE02.ent.ti.com>
-References: <004001cd73b6$c011da50$40358ef0$%han@samsung.com>
-In-Reply-To: <004001cd73b6$c011da50$40358ef0$%han@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.104]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Aug 2012 04:36:52 -0400
 MIME-Version: 1.0
+In-Reply-To: <CANYdXnqCY+Uc=ROvQHv4kRe-g2zoEjfpzV0P83exfXYm-qCBaA@mail.gmail.com>
+References: <CANYdXnqCY+Uc=ROvQHv4kRe-g2zoEjfpzV0P83exfXYm-qCBaA@mail.gmail.com>
+Date: Tue, 7 Aug 2012 10:36:51 +0200
+Message-ID: <CAFLxGvy_X0r4njVMdUe1jnGciZYmcQr6d_ZpqOkZzQGc72yW2g@mail.gmail.com>
+Subject: Re: A question on serial driver
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Shashidhar Hiremath <shashidharh@vayavyalabs.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch removes goto err_dev, which makes code a bit smaller.
+On Tue, Aug 7, 2012 at 10:22 AM, Shashidhar Hiremath
+<shashidharh@vayavyalabs.com> wrote:
+> Hi,
+>  I have written a console driver where I also do the serial driver
+> registration and handling. The driver seems to work fine till the
+> login point(reads and writes). The driver for some reason does not
+> print the content  I type on console after login prompt. Any reason
+> why this might be happening ?
 
-Thanks !
-IMO, goto statements are meaningful on _probe().
-However, 'goto err_sysfs' also can be removed if the size of code is critical.
+login and getty do a lot of TTY black magic, maybe you forgot to implement
+something like hangup()...
+Use strace to find out what the login programs are doing.
 
-drivers/video/backlight/lp855x_bl.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
-index 72a0e0c..7e4198c 100644
---- a/drivers/video/backlight/lp855x_bl.c
-+++ b/drivers/video/backlight/lp855x_bl.c
-@@ -268,29 +268,25 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
- 	if (ret) {
- 		dev_err(lp->dev, "i2c communication err: %d", ret);
- 		if (mode == REGISTER_BASED)
--			goto err_dev;
-+			return ret;
- 	}
- 
- 	ret = lp855x_backlight_register(lp);
- 	if (ret) {
- 		dev_err(lp->dev,
- 			"failed to register backlight. err: %d\n", ret);
--		goto err_dev;
-+		return ret;
- 	}
- 
- 	ret = sysfs_create_group(&lp->dev->kobj, &lp855x_attr_group);
- 	if (ret) {
- 		dev_err(lp->dev, "failed to register sysfs. err: %d\n", ret);
--		goto err_sysfs;
-+		lp855x_backlight_unregister(lp);
-+		return ret;
- 	}
- 
- 	backlight_update_status(lp->bl);
- 	return 0;
--
--err_sysfs:
--	lp855x_backlight_unregister(lp);
--err_dev:
--	return ret;
- }
- 
- static int __devexit lp855x_remove(struct i2c_client *cl)
 -- 
-1.7.2.5
-
-Best Regards,
-Milo
-
-
+Thanks,
+//richard
