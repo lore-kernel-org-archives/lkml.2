@@ -1,86 +1,455 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab2HGMKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 08:10:13 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:57144 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab2HGMKL convert rfc822-to-8bit (ORCPT
+	id S1754155Ab2HGMMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:12:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56254 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab2HGMMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 08:10:11 -0400
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Guenter Roeck <linux@roeck-us.net>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Randy Dunlop <randy.dunlap@oracle.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: RE: [lm-sensors] [NEW DRIVER V2 6/7] DA9058 HWMON driver
-Thread-Topic: [lm-sensors] [NEW DRIVER V2 6/7] DA9058 HWMON driver
-Thread-Index: AQHNc6accF08VrIBJUGahvl22subKZdM/NyAgAFC1EA=
-Date: Tue, 7 Aug 2012 12:10:08 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB51032C3BBB@NB-EX-MBX02.diasemi.com>
-References: <201208060737.q767biox005703@ubuntu>
- <20120806173943.GA29475@roeck-us.net>
-In-Reply-To: <20120806173943.GA29475@roeck-us.net>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.23]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Aug 2012 08:12:12 -0400
+Date: Tue, 7 Aug 2012 13:11:57 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
+        rpurdie@rpsys.net, bryan.wu@canonical.com,
+        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
+Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
+Message-ID: <20120807121157.GA10166@flint.arm.linux.org.uk>
+References: <20120806195352.GC16199@opensource.wolfsonmicro.com> <20120806213124.GB14594@flint.arm.linux.org.uk> <20120806220032.GD26698@opensource.wolfsonmicro.com> <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com> <20120807103851.GS16861@opensource.wolfsonmicro.com> <20120807111331.GC24257@flint.arm.linux.org.uk> <20120807112844.GZ16861@opensource.wolfsonmicro.com> <20120807113121.GD24257@flint.arm.linux.org.uk> <20120807113801.GB16861@opensource.wolfsonmicro.com> <20120807114415.GG24257@flint.arm.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120807114415.GG24257@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Guenter Roeck [mailto:linux@roeck-us.net]
-> Sent: 06 August 2012 18:40
-> To: Opensource [Anthony Olech]
-> Cc: Guenter Roeck; Jean Delvare; Randy Dunlop; Mark Brown; David Dajun
-> Chen; LKML; lm-sensors@lm-sensors.org
-> Subject: Re: [lm-sensors] [NEW DRIVER V2 6/7] DA9058 HWMON driver
-> On Sun, Aug 05, 2012 at 09:43:44PM +0100, Anthony Olech wrote:
-> > This is the HWMON component driver of the Dialog DA9058 PMIC.
-> > This driver is just one component of the whole DA9058 PMIC driver.
-> > It depends on the core DA9058 MFD driver.
-> > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> > Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
-> [ ... ]
-> > +static SENSOR_DEVICE_ATTR(vbat_mV, S_IRUGO, da9058_read_vbat, NULL,
-> > +0); static SENSOR_DEVICE_ATTR(adc_mV, S_IRUGO,
-> da9058_read_misc_channel, NULL,
-> > +				DA9058_ADCMAN_MUXSEL_ADCIN);
-> > +static SENSOR_DEVICE_ATTR(vfpin_mV, S_IRUGO, da9058_read_vfpin,
-> NULL,
-> > +0); static SENSOR_DEVICE_ATTR(vfpin_mode, S_IRUGO,
-> da9058_vfpin_mode,
-> > +NULL, 0); static SENSOR_DEVICE_ATTR(tbat_mV, S_IRUGO,
-> > +da9058_read_tbat, NULL, 0); static SENSOR_DEVICE_ATTR(tjunc_in,
-> > +S_IRUGO, da9058_read_tjunc, NULL, 0); static
-> SENSOR_DEVICE_ATTR(adc_mode, S_IWUSR | S_IRUGO,
-> da9058_get_adc_mode,
-> > +				da9058_set_adc_mode, 0);
-> Please use standard sysfs attribute names for temperature and voltage attributes.
+On Tue, Aug 07, 2012 at 12:44:15PM +0100, Russell King wrote:
+> On Tue, Aug 07, 2012 at 12:38:02PM +0100, Mark Brown wrote:
+> > On Tue, Aug 07, 2012 at 12:31:21PM +0100, Russell King wrote:
+> > > On Tue, Aug 07, 2012 at 12:28:44PM +0100, Mark Brown wrote:
+> > 
+> > > > The changes you're suggesting are extremely invasive for stable
+> > > > especially given that we have a simple, driver local, fix available
+> > 
+> > > *Rubbish*.
+> > 
+> > This isn't helpful or constructive...
+> > 
+> > Which bit of the above are you referring to here?  If it's the having a
+> > fix bit then as pointed out repeatedly now in this and the previous
+> > thread we've got the separete resource tree approach implemented in
+> > stable right now making actual systems run.
+> 
+> All of your above statement.  It is, basically, completely wrong, and
+> shows that you haven't thought about the solution I'm proposing at all.
+> 
+> I've shown you in simple steps how easy it is.  It is not invasive.  It
+> is not complex.  It is local to the affected drivers.  So, all your
+> points above are plain wrong.  Hence "rubbish".
 
-I could not find a naming convention, so I will try to abstract one from all the
-HWMON driver that have your name in them. I noted when searching that
-I missed out a file in also that Documentation/hwmon. I will correct both
-issues in my next submission attempt.
+And, because you WILL NOT tell me which are the affected drivers, I've
+assumed in the patch below that you're referring to the wm831x drivers.
+So here's the patch in full for this driver.  Oh look how simple and
+non-invasive it is.
 
-> For configuration (XXX_mode), please use devicetreee and/or platform data,
-> not sysfs attributes.
+$ git grep IORESOURCE_REG
+drivers/mfd/wm831x-core.c:              .flags = IORESOURCE_REG,
+... repeated ...
+drivers/mfd/wm831x-core.c:              .flags = IORESOURCE_REG,
+drivers/regulator/wm831x-dcdc.c:        res = platform_get_resource(pdev, IORESO
+drivers/regulator/wm831x-dcdc.c:        res = platform_get_resource(pdev, IORESO
+drivers/regulator/wm831x-dcdc.c:        res = platform_get_resource(pdev, IORESO
+drivers/regulator/wm831x-isink.c:       res = platform_get_resource(pdev, IORESO
+drivers/regulator/wm831x-ldo.c: res = platform_get_resource(pdev, IORESOURCE_REG
+drivers/regulator/wm831x-ldo.c: res = platform_get_resource(pdev, IORESOURCE_REG
+drivers/regulator/wm831x-ldo.c: res = platform_get_resource(pdev, IORESOURCE_REG
+include/linux/ioport.h:#define IORESOURCE_REG           0x00000300      /* Regis
+$
 
-As far as I can see both devicetreee and platform data allow configuration
-data to be passed into the driver at "probe" time, they don't allow an operating
-mode to be changed dynamically. That is what I thought sysfs allowed. Thus
-your comments seem to imply that you do not want to allow the mode to be
-changed dynamically. If that is the case then I can remove the dynamic mode
-setting, leaving it fixed by platform data.
+So no identifier clashes.
 
-Thanks,
-Tony Olech
+No, I haven't tested it, I don't have the hardware.  That's your job
+as the driver maintainer.
+
+The only open questions on this are:
+1. Is there another driver you are concerned about.
+2. Choosing a better name.
+
+But I won't put question marks at the end of those because you never seem
+to answer questions.  You will just produce yet more justifications why
+this approach is not one you're willing to accept.  So I really don't know
+why I wasted my time to produce this patch.
+
+ drivers/mfd/wm831x-core.c        |   66 +++++++++++--------------------------
+ drivers/regulator/wm831x-dcdc.c  |   12 +++---
+ drivers/regulator/wm831x-isink.c |    4 +-
+ drivers/regulator/wm831x-ldo.c   |   12 +++---
+ include/linux/ioport.h           |    1 +
+ 5 files changed, 35 insertions(+), 60 deletions(-)
+
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index 946698f..2e5d58e 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -614,18 +614,11 @@ int wm831x_set_bits(struct wm831x *wm831x, unsigned short reg,
+ }
+ EXPORT_SYMBOL_GPL(wm831x_set_bits);
+ 
+-static struct resource wm831x_io_parent = {
+-	.start = 0,
+-	.end   = 0xffffffff,
+-	.flags = IORESOURCE_IO,
+-};
+-
+ static struct resource wm831x_dcdc1_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC1_CONTROL_1,
+ 		.end   = WM831X_DC1_DVS_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -644,10 +637,9 @@ static struct resource wm831x_dcdc1_resources[] = {
+ 
+ static struct resource wm831x_dcdc2_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC2_CONTROL_1,
+ 		.end   = WM831X_DC2_DVS_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -665,10 +657,9 @@ static struct resource wm831x_dcdc2_resources[] = {
+ 
+ static struct resource wm831x_dcdc3_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC3_CONTROL_1,
+ 		.end   = WM831X_DC3_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -680,10 +671,9 @@ static struct resource wm831x_dcdc3_resources[] = {
+ 
+ static struct resource wm831x_dcdc4_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC4_CONTROL,
+ 		.end   = WM831X_DC4_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -695,10 +685,9 @@ static struct resource wm831x_dcdc4_resources[] = {
+ 
+ static struct resource wm8320_dcdc4_buck_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC4_CONTROL,
+ 		.end   = WM832X_DC4_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -718,10 +707,9 @@ static struct resource wm831x_gpio_resources[] = {
+ 
+ static struct resource wm831x_isink1_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_CURRENT_SINK_1,
+ 		.end   = WM831X_CURRENT_SINK_1,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.start = WM831X_IRQ_CS1,
+@@ -732,10 +720,9 @@ static struct resource wm831x_isink1_resources[] = {
+ 
+ static struct resource wm831x_isink2_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_CURRENT_SINK_2,
+ 		.end   = WM831X_CURRENT_SINK_2,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.start = WM831X_IRQ_CS2,
+@@ -746,10 +733,9 @@ static struct resource wm831x_isink2_resources[] = {
+ 
+ static struct resource wm831x_ldo1_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO1_CONTROL,
+ 		.end   = WM831X_LDO1_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -761,10 +747,9 @@ static struct resource wm831x_ldo1_resources[] = {
+ 
+ static struct resource wm831x_ldo2_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO2_CONTROL,
+ 		.end   = WM831X_LDO2_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -776,10 +761,9 @@ static struct resource wm831x_ldo2_resources[] = {
+ 
+ static struct resource wm831x_ldo3_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO3_CONTROL,
+ 		.end   = WM831X_LDO3_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -791,10 +775,9 @@ static struct resource wm831x_ldo3_resources[] = {
+ 
+ static struct resource wm831x_ldo4_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO4_CONTROL,
+ 		.end   = WM831X_LDO4_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -806,10 +789,9 @@ static struct resource wm831x_ldo4_resources[] = {
+ 
+ static struct resource wm831x_ldo5_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO5_CONTROL,
+ 		.end   = WM831X_LDO5_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -821,10 +803,9 @@ static struct resource wm831x_ldo5_resources[] = {
+ 
+ static struct resource wm831x_ldo6_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO6_CONTROL,
+ 		.end   = WM831X_LDO6_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -836,10 +817,9 @@ static struct resource wm831x_ldo6_resources[] = {
+ 
+ static struct resource wm831x_ldo7_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO7_CONTROL,
+ 		.end   = WM831X_LDO7_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -851,10 +831,9 @@ static struct resource wm831x_ldo7_resources[] = {
+ 
+ static struct resource wm831x_ldo8_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO8_CONTROL,
+ 		.end   = WM831X_LDO8_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -866,10 +845,9 @@ static struct resource wm831x_ldo8_resources[] = {
+ 
+ static struct resource wm831x_ldo9_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO9_CONTROL,
+ 		.end   = WM831X_LDO9_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -881,10 +859,9 @@ static struct resource wm831x_ldo9_resources[] = {
+ 
+ static struct resource wm831x_ldo10_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO10_CONTROL,
+ 		.end   = WM831X_LDO10_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -896,10 +873,9 @@ static struct resource wm831x_ldo10_resources[] = {
+ 
+ static struct resource wm831x_ldo11_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO11_ON_CONTROL,
+ 		.end   = WM831X_LDO11_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ };
+ 
+@@ -998,19 +974,17 @@ static struct resource wm831x_rtc_resources[] = {
+ 
+ static struct resource wm831x_status1_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_STATUS_LED_1,
+ 		.end   = WM831X_STATUS_LED_1,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ };
+ 
+ static struct resource wm831x_status2_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_STATUS_LED_2,
+ 		.end   = WM831X_STATUS_LED_2,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ };
+ 
+diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
+index 7413885..64111f4 100644
+--- a/drivers/regulator/wm831x-dcdc.c
++++ b/drivers/regulator/wm831x-dcdc.c
+@@ -476,9 +476,9 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
+ 
+ 	dcdc->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+@@ -651,9 +651,9 @@ static __devinit int wm831x_buckp_probe(struct platform_device *pdev)
+ 
+ 	dcdc->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+@@ -795,9 +795,9 @@ static __devinit int wm831x_boostp_probe(struct platform_device *pdev)
+ 
+ 	dcdc->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+diff --git a/drivers/regulator/wm831x-isink.c b/drivers/regulator/wm831x-isink.c
+index 0d207c2..2646a19 100644
+--- a/drivers/regulator/wm831x-isink.c
++++ b/drivers/regulator/wm831x-isink.c
+@@ -172,9 +172,9 @@ static __devinit int wm831x_isink_probe(struct platform_device *pdev)
+ 
+ 	isink->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
+index 5cb70ca..da73daf 100644
+--- a/drivers/regulator/wm831x-ldo.c
++++ b/drivers/regulator/wm831x-ldo.c
+@@ -269,9 +269,9 @@ static __devinit int wm831x_gp_ldo_probe(struct platform_device *pdev)
+ 
+ 	ldo->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+@@ -520,9 +520,9 @@ static __devinit int wm831x_aldo_probe(struct platform_device *pdev)
+ 
+ 	ldo->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+@@ -675,9 +675,9 @@ static __devinit int wm831x_alive_ldo_probe(struct platform_device *pdev)
+ 
+ 	ldo->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index 589e0e7..bfee885 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -31,6 +31,7 @@ struct resource {
+ #define IORESOURCE_TYPE_BITS	0x00001f00	/* Resource type */
+ #define IORESOURCE_IO		0x00000100
+ #define IORESOURCE_MEM		0x00000200
++#define IORESOURCE_REG		0x00000300	/* Register offsets */
+ #define IORESOURCE_IRQ		0x00000400
+ #define IORESOURCE_DMA		0x00000800
+ #define IORESOURCE_BUS		0x00001000
+
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
