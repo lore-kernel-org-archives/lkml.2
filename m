@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab2HGDqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:46:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59839 "EHLO
+	id S1757413Ab2HGDip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:38:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59721 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964809Ab2HGDiy (ORCPT
+	by vger.kernel.org with ESMTP id S1757341Ab2HGDib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:54 -0400
-Message-Id: <20120807032802.358047510@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:31 -0400
+Message-Id: <20120807032805.943189866@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:38 +0100
+Date: Tue, 07 Aug 2012 04:29:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Stevie Trujillo <stevie.trujillo@gmail.com>,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Subject: [ 43/70] lib/vsprintf.c: kptr_restrict: fix pK-error in SysRq
- show-all-timers(Q)
+        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
+        <dcb314@hotmail.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 68/70] pch_uart: Fix missing break for 16 byte fifo
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,44 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 3715c5309f6d175c3053672b73fd4f73be16fd07 upstream.
+commit 9bc03743fff0770dc5a5324ba92e67cc377f16ca upstream.
 
-When using ALT+SysRq+Q all the pointers are replaced with "pK-error" like
-this:
+Otherwise we fall back to the wrong value.
 
-	[23153.208033]   .base:               pK-error
-
-with echo h > /proc/sysrq-trigger it works:
-
-	[23107.776363]   .base:       ffff88023e60d540
-
-The intent behind this behavior was to return "pK-error" in cases where
-the %pK format specifier was used in interrupt context, because the
-CAP_SYSLOG check wouldn't be meaningful.  Clearly this should only apply
-when kptr_restrict is actually enabled though.
-
-Reported-by: Stevie Trujillo <stevie.trujillo@gmail.com>
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: <dcb314@hotmail.com>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44091
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- lib/vsprintf.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/tty/serial/pch_uart.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -886,7 +886,8 @@ char *pointer(const char *fmt, char *buf
- 		 * %pK cannot be used in IRQ context because its test
- 		 * for CAP_SYSLOG would be meaningless.
- 		 */
--		if (in_irq() || in_serving_softirq() || in_nmi()) {
-+		if (kptr_restrict && (in_irq() || in_serving_softirq() ||
-+				      in_nmi())) {
- 			if (spec.field_width == -1)
- 				spec.field_width = 2 * sizeof(void *);
- 			return string(buf, end, "pK-error", spec);
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index d291518..c5bc23d 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1266,6 +1266,7 @@ static int pch_uart_startup(struct uart_port *port)
+ 		break;
+ 	case 16:
+ 		fifo_size = PCH_UART_HAL_FIFO16;
++		break;
+ 	case 1:
+ 	default:
+ 		fifo_size = PCH_UART_HAL_FIFO_DIS;
 
 
