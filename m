@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab2HGOvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 10:51:00 -0400
-Received: from nm22-vm4.bullet.mail.sg3.yahoo.com ([106.10.151.51]:40419 "HELO
-	nm22-vm4.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754488Ab2HGOu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 10:50:58 -0400
-X-Yahoo-Newman-Id: 35121.21787.bm@smtp205.mail.sg3.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: u.K9Q.cVM1me3_rO4WgYzxjNfh3Pgt0V2Xjbcdvt_qpPQIJ
- dueiOlQJxZsjnnN47aNxvl1brOrMx7MyigaUzUmC8hQORtOlU5ugnsATFoT0
- 8otzFB0B_clAYYlJUlY8eIb0cu_69wEWc6FlYmUG4bfXgF1Yce89dqu4203v
- v6HZJN2Z3bzqY2rF40.LZQfTZuDjEgD1p4U1djv1i.i_krInX2ITRr1IpCrc
- mTvwvmcH3ofDYdlWn.rPsKPNk9wLdBkjVnp0WAFhtn.5iiUhbcUrSoCE.ykc
- eAo4hllWSFcwh2hgF_2b.PeCwfKtxI6MB7Bhcqf.21AWIPzI9djiGrZ0TExo
- P_LAiRAYUuSf4EdLzvoB6qt5NG0.wlr2KyncohH1OYbZP62XmUSgLQe4AFMv
- jE1Hb9m1DwQXDGTUOKNLB_Q--
-X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
-Date: Tue, 7 Aug 2012 20:27:38 +0530
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-To: ebiederm@xmission.com
-Cc: linux-kernel@vger.kernel.org, ahiliation@yahoo.co.in
-Subject: Re: [PATCH] net:appletalk:ddp:fixed coding style issue again
- relating to
-Message-ID: <20120807145738.GA5175@debian.Jeff>
+	id S1755231Ab2HGOwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 10:52:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60968 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755191Ab2HGOwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 10:52:40 -0400
+Date: Tue, 7 Aug 2012 15:52:33 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linux-MM <linux-mm@kvack.org>, Minchan Kim <minchan@kernel.org>,
+        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] mm: have order > 0 compaction start near a pageblock
+ with free pages
+Message-ID: <20120807145233.GG29814@suse.de>
+References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
+ <1344342677-5845-7-git-send-email-mgorman@suse.de>
+ <50212A05.2070503@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <50212A05.2070503@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/ Is putting "rc = put_user(amount, (int __user *)argp);" on the same
-/ indentation level as "amount = skb->len - sizeof(struct ddpehdr);"
-/ really what you want to do?
+On Tue, Aug 07, 2012 at 10:45:25AM -0400, Rik van Riel wrote:
+> On 08/07/2012 08:31 AM, Mel Gorman wrote:
+> >commit [7db8889a: mm: have order>  0 compaction start off where it left]
+> >introduced a caching mechanism to reduce the amount work the free page
+> >scanner does in compaction. However, it has a problem. Consider two process
+> >simultaneously scanning free pages
+> >
+> >				    			C
+> >Process A		M     S     			F
+> >		|---------------------------------------|
+> >Process B		M 	FS
+> 
+> Argh. Good spotting.
+> 
+> >This is not optimal and it can still race but the compact_cached_free_pfn
+> >will be pointing to or very near a pageblock with free pages.
+> 
+> Agreed on the "not optimal", but I also cannot think of a better
+> idea right now. Getting this fixed for 3.6 is important, we can
+> think of future optimizations in San Diego.
+> 
 
-No. I was trying to place those lines at one
-indentation back from their current position.
+Sounds like a plan.
 
+> >Signed-off-by: Mel Gorman<mgorman@suse.de>
+> 
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> 
 
-Thanks
+Thanks very much.
 
-/Jeffrin.
+Jim, what are the chances of getting this series tested with your large
+data workload? As it's on top of 3.5, it should be less scary than
+testing 3.6-rc1 but if you are comfortable testing 3.6-rc1 then please
+test with just this patch on top.
 
 -- 
-software engineer
-Bohr Lab
-department of computer science
-Rajagiri school of engineering and technology.
+Mel Gorman
+SUSE Labs
