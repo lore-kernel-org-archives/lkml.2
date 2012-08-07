@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab2HGW2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:28:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932426Ab2HGW2f (ORCPT
+	id S932424Ab2HGW2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:28:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38566 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932379Ab2HGW23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:28:35 -0400
+	Tue, 7 Aug 2012 18:28:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gerd Hoffmann <kraxel@redhat.com>
-Subject: [ 031/122] Revert "usb/uas: make sure data urb is gone if we receive status before that"
-Date: Tue,  7 Aug 2012 15:25:19 -0700
-Message-Id: <20120807221951.037825200@linuxfoundation.org>
+        Kevin Cernekee <cernekee@gmail.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 029/122] usb: gadget: Fix g_ether interface link status
+Date: Tue,  7 Aug 2012 15:25:17 -0700
+Message-Id: <20120807221950.849213000@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,214 +29,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: Kevin Cernekee <cernekee@gmail.com>
 
-commit c621a81edecdee85da32c566c21836332c764fda upstream.
+commit 31bde1ceaa873bcaecd49e829bfabceacc4c512d upstream.
 
-This reverts commit e4d8318a85779b25b880187b1b1c44e797bd7d4b.
+A "usb0" interface that has never been connected to a host has an unknown
+operstate, and therefore the IFF_RUNNING flag is (incorrectly) asserted
+when queried by ifconfig, ifplugd, etc.  This is a result of calling
+netif_carrier_off() too early in the probe function; it should be called
+after register_netdev().
 
-This patch makes uas.c call usb_unlink_urb on data urbs.  The data urbs
-get freed in the completion callback.  This is illegal according to the
-usb_unlink_urb documentation.
+Similar problems have been fixed in many other drivers, e.g.:
 
-This patch also makes the code expect the data completion callback
-being called before the status completion callback.  This isn't
-guaranteed to be the case, even though the actual data transfer should
-be finished by the time the status is received.
+    e826eafa6 (bonding: Call netif_carrier_off after register_netdevice)
+    0d672e9f8 (drivers/net: Call netif_carrier_off at the end of the probe)
+    6a3c869a6 (cxgb4: fix reported state of interfaces without link)
 
-Background:  The ehci irq handler for example only know that there are
-finished transfers, it then has go check the QHs & TDs to see which
-transfers did actually finish.  It has no way to figure in which order
-the transfers did complete.  The xhci driver can call the callbacks in
-completion order thanks to the event queue.  This does nicely explain
-why the driver is solid on a (usb2) xhci port whereas it goes crazy on
-ehci in my testing.
+Fix is to move netif_carrier_off() to the end of the function.
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/uas.c |   90 +++++++---------------------------------------
- 1 file changed, 15 insertions(+), 75 deletions(-)
+ drivers/usb/gadget/u_ether.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -58,9 +58,6 @@ enum {
- 	SUBMIT_DATA_OUT_URB	= (1 << 5),
- 	ALLOC_CMD_URB		= (1 << 6),
- 	SUBMIT_CMD_URB		= (1 << 7),
--	COMPLETED_DATA_IN	= (1 << 8),
--	COMPLETED_DATA_OUT	= (1 << 9),
--	DATA_COMPLETES_CMD	= (1 << 10),
- };
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -798,12 +798,6 @@ int gether_setup_name(struct usb_gadget
  
- /* Overrides scsi_pointer */
-@@ -114,7 +111,6 @@ static void uas_sense(struct urb *urb, s
- {
- 	struct sense_iu *sense_iu = urb->transfer_buffer;
- 	struct scsi_device *sdev = cmnd->device;
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
+ 	SET_ETHTOOL_OPS(net, &ops);
  
- 	if (urb->actual_length > 16) {
- 		unsigned len = be16_to_cpup(&sense_iu->len);
-@@ -132,15 +128,13 @@ static void uas_sense(struct urb *urb, s
+-	/* two kinds of host-initiated state changes:
+-	 *  - iff DATA transfer is active, carrier is "on"
+-	 *  - tx queueing enabled if open *and* carrier is "on"
+-	 */
+-	netif_carrier_off(net);
+-
+ 	dev->gadget = g;
+ 	SET_NETDEV_DEV(net, &g->dev);
+ 	SET_NETDEV_DEVTYPE(net, &gadget_type);
+@@ -817,6 +811,12 @@ int gether_setup_name(struct usb_gadget
+ 		INFO(dev, "HOST MAC %pM\n", dev->host_mac);
+ 
+ 		the_dev = dev;
++
++		/* two kinds of host-initiated state changes:
++		 *  - iff DATA transfer is active, carrier is "on"
++		 *  - tx queueing enabled if open *and* carrier is "on"
++		 */
++		netif_carrier_off(net);
  	}
  
- 	cmnd->result = sense_iu->status;
--	if (!(cmdinfo->state & DATA_COMPLETES_CMD))
--		cmnd->scsi_done(cmnd);
-+	cmnd->scsi_done(cmnd);
- }
- 
- static void uas_sense_old(struct urb *urb, struct scsi_cmnd *cmnd)
- {
- 	struct sense_iu_old *sense_iu = urb->transfer_buffer;
- 	struct scsi_device *sdev = cmnd->device;
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 
- 	if (urb->actual_length > 8) {
- 		unsigned len = be16_to_cpup(&sense_iu->len) - 2;
-@@ -158,8 +152,7 @@ static void uas_sense_old(struct urb *ur
- 	}
- 
- 	cmnd->result = sense_iu->status;
--	if (!(cmdinfo->state & DATA_COMPLETES_CMD))
--		cmnd->scsi_done(cmnd);
-+	cmnd->scsi_done(cmnd);
- }
- 
- static void uas_xfer_data(struct urb *urb, struct scsi_cmnd *cmnd,
-@@ -184,7 +177,6 @@ static void uas_stat_cmplt(struct urb *u
- 	struct Scsi_Host *shost = urb->context;
- 	struct uas_dev_info *devinfo = (void *)shost->hostdata[0];
- 	struct scsi_cmnd *cmnd;
--	struct uas_cmd_info *cmdinfo;
- 	u16 tag;
- 	int ret;
- 
-@@ -210,32 +202,12 @@ static void uas_stat_cmplt(struct urb *u
- 			dev_err(&urb->dev->dev, "failed submit status urb\n");
- 		return;
- 	}
--	cmdinfo = (void *)&cmnd->SCp;
- 
- 	switch (iu->iu_id) {
- 	case IU_ID_STATUS:
- 		if (devinfo->cmnd == cmnd)
- 			devinfo->cmnd = NULL;
- 
--		if (!(cmdinfo->state & COMPLETED_DATA_IN) &&
--				cmdinfo->data_in_urb) {
--		       if (devinfo->use_streams) {
--			       cmdinfo->state |= DATA_COMPLETES_CMD;
--			       usb_unlink_urb(cmdinfo->data_in_urb);
--		       } else {
--			       usb_free_urb(cmdinfo->data_in_urb);
--		       }
--		}
--		if (!(cmdinfo->state & COMPLETED_DATA_OUT) &&
--				cmdinfo->data_out_urb) {
--			if (devinfo->use_streams) {
--				cmdinfo->state |= DATA_COMPLETES_CMD;
--				usb_unlink_urb(cmdinfo->data_in_urb);
--			} else {
--				usb_free_urb(cmdinfo->data_out_urb);
--			}
--		}
--
- 		if (urb->actual_length < 16)
- 			devinfo->uas_sense_old = 1;
- 		if (devinfo->uas_sense_old)
-@@ -264,59 +236,27 @@ static void uas_stat_cmplt(struct urb *u
- 		dev_err(&urb->dev->dev, "failed submit status urb\n");
- }
- 
--static void uas_data_out_cmplt(struct urb *urb)
--{
--	struct scsi_cmnd *cmnd = urb->context;
--	struct scsi_data_buffer *sdb = scsi_out(cmnd);
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
--
--	cmdinfo->state |= COMPLETED_DATA_OUT;
--
--	sdb->resid = sdb->length - urb->actual_length;
--	usb_free_urb(urb);
--
--	if (cmdinfo->state & DATA_COMPLETES_CMD)
--		cmnd->scsi_done(cmnd);
--}
--
--static void uas_data_in_cmplt(struct urb *urb)
-+static void uas_data_cmplt(struct urb *urb)
- {
--	struct scsi_cmnd *cmnd = urb->context;
--	struct scsi_data_buffer *sdb = scsi_in(cmnd);
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
--
--	cmdinfo->state |= COMPLETED_DATA_IN;
--
-+	struct scsi_data_buffer *sdb = urb->context;
- 	sdb->resid = sdb->length - urb->actual_length;
- 	usb_free_urb(urb);
--
--	if (cmdinfo->state & DATA_COMPLETES_CMD)
--		cmnd->scsi_done(cmnd);
- }
- 
- static struct urb *uas_alloc_data_urb(struct uas_dev_info *devinfo, gfp_t gfp,
--		unsigned int pipe, struct scsi_cmnd *cmnd,
--		enum dma_data_direction dir)
-+				unsigned int pipe, u16 stream_id,
-+				struct scsi_data_buffer *sdb,
-+				enum dma_data_direction dir)
- {
--	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 	struct usb_device *udev = devinfo->udev;
- 	struct urb *urb = usb_alloc_urb(0, gfp);
--	struct scsi_data_buffer *sdb;
--	usb_complete_t complete_fn;
--	u16 stream_id = cmdinfo->stream;
- 
- 	if (!urb)
- 		goto out;
--	if (dir == DMA_FROM_DEVICE) {
--		sdb = scsi_in(cmnd);
--		complete_fn = uas_data_in_cmplt;
--	} else {
--		sdb = scsi_out(cmnd);
--		complete_fn = uas_data_out_cmplt;
--	}
--	usb_fill_bulk_urb(urb, udev, pipe, NULL, sdb->length,
--			complete_fn, cmnd);
--	urb->stream_id = stream_id;
-+	usb_fill_bulk_urb(urb, udev, pipe, NULL, sdb->length, uas_data_cmplt,
-+									sdb);
-+	if (devinfo->use_streams)
-+		urb->stream_id = stream_id;
- 	urb->num_sgs = udev->bus->sg_tablesize ? sdb->table.nents : 0;
- 	urb->sg = sdb->table.sgl;
-  out:
-@@ -418,8 +358,8 @@ static int uas_submit_urbs(struct scsi_c
- 
- 	if (cmdinfo->state & ALLOC_DATA_IN_URB) {
- 		cmdinfo->data_in_urb = uas_alloc_data_urb(devinfo, gfp,
--					devinfo->data_in_pipe, cmnd,
--					DMA_FROM_DEVICE);
-+					devinfo->data_in_pipe, cmdinfo->stream,
-+					scsi_in(cmnd), DMA_FROM_DEVICE);
- 		if (!cmdinfo->data_in_urb)
- 			return SCSI_MLQUEUE_DEVICE_BUSY;
- 		cmdinfo->state &= ~ALLOC_DATA_IN_URB;
-@@ -436,8 +376,8 @@ static int uas_submit_urbs(struct scsi_c
- 
- 	if (cmdinfo->state & ALLOC_DATA_OUT_URB) {
- 		cmdinfo->data_out_urb = uas_alloc_data_urb(devinfo, gfp,
--					devinfo->data_out_pipe, cmnd,
--					DMA_TO_DEVICE);
-+					devinfo->data_out_pipe, cmdinfo->stream,
-+					scsi_out(cmnd), DMA_TO_DEVICE);
- 		if (!cmdinfo->data_out_urb)
- 			return SCSI_MLQUEUE_DEVICE_BUSY;
- 		cmdinfo->state &= ~ALLOC_DATA_OUT_URB;
+ 	return status;
 
 
