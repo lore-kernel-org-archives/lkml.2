@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964837Ab2HGDxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:53:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59624 "EHLO
+	id S964808Ab2HGDxB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:53:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59647 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757279Ab2HGDiM (ORCPT
+	by vger.kernel.org with ESMTP id S1757295Ab2HGDiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:12 -0400
-Message-Id: <20120807032758.406509328@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:13 -0400
+Message-Id: <20120807032756.884754501@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:11 +0100
+Date: Tue, 07 Aug 2012 04:28:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 16/70] random: create add_device_randomness() interface
+        alan@lxorguk.ukuu.org.uk,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 05/70] stable: update references to older 2.6 versions for 3.x
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,92 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit a2080a67abe9e314f9e9c2cc3a4a176e8a8f8793 upstream.
+commit 2584f5212d97b664be250ad5700a2d0fee31a10d upstream.
 
-Add a new interface, add_device_randomness() for adding data to the
-random pool that is likely to differ between two devices (or possibly
-even per boot).  This would be things like MAC addresses or serial
-numbers, or the read-out of the RTC. This does *not* add any actual
-entropy to the pool, but it initializes the pool to different values
-for devices that might otherwise be identical and have very little
-entropy available to them (particularly common in the embedded world).
+Also add information on where the respective trees are.
 
-[ Modified by tytso to mix in a timestamp, since there may be some
-  variability caused by the time needed to detect/configure the hardware
-  in question. ]
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Acked-by: Rob Landley <rob@landley.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/random.c  |   28 ++++++++++++++++++++++++++++
- include/linux/random.h |    1 +
- 2 files changed, 29 insertions(+)
+ Documentation/stable_kernel_rules.txt |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 315feb1..df3358a 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -125,11 +125,20 @@
-  * The current exported interfaces for gathering environmental noise
-  * from the devices are:
-  *
-+ *	void add_device_randomness(const void *buf, unsigned int size);
-  * 	void add_input_randomness(unsigned int type, unsigned int code,
-  *                                unsigned int value);
-  *	void add_interrupt_randomness(int irq, int irq_flags);
-  * 	void add_disk_randomness(struct gendisk *disk);
-  *
-+ * add_device_randomness() is for adding data to the random pool that
-+ * is likely to differ between two devices (or possibly even per boot).
-+ * This would be things like MAC addresses or serial numbers, or the
-+ * read-out of the RTC. This does *not* add any actual entropy to the
-+ * pool, but it initializes the pool to different values for devices
-+ * that might otherwise be identical and have very little entropy
-+ * available to them (particularly common in the embedded world).
-+ *
-  * add_input_randomness() uses the input layer interrupt timing, as well as
-  * the event type information from the hardware.
-  *
-@@ -646,6 +655,25 @@ static void set_timer_rand_state(unsigned int irq,
- }
- #endif
+diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
+index f0ab5cf..2edf833 100644
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -1,4 +1,4 @@
+-Everything you ever wanted to know about Linux 2.6 -stable releases.
++Everything you ever wanted to know about Linux -stable releases.
  
-+/*
-+ * Add device- or boot-specific data to the input and nonblocking
-+ * pools to help initialize them to unique values.
-+ *
-+ * None of this adds any entropy, it is meant to avoid the
-+ * problem of the nonblocking pool having similar initial state
-+ * across largely identical devices.
-+ */
-+void add_device_randomness(const void *buf, unsigned int size)
-+{
-+	unsigned long time = get_cycles() ^ jiffies;
+ Rules on what kind of patches are accepted, and which ones are not, into the
+ "-stable" tree:
+@@ -36,10 +36,10 @@ Procedure for submitting patches to the -stable tree:
+    cherry-picked than this can be specified in the following format in
+    the sign-off area:
+ 
+-     Cc: <stable@vger.kernel.org> # .32.x: a1f84a3: sched: Check for idle
+-     Cc: <stable@vger.kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
+-     Cc: <stable@vger.kernel.org> # .32.x: fd21073: sched: Fix affinity logic
+-     Cc: <stable@vger.kernel.org> # .32.x
++     Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
++     Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
++     Cc: <stable@vger.kernel.org> # 3.3.x: fd21073: sched: Fix affinity logic
++     Cc: <stable@vger.kernel.org> # 3.3.x
+     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+ 
+    The tag sequence has the meaning of:
+@@ -73,6 +73,15 @@ Review cycle:
+    security kernel team, and not go through the normal review cycle.
+    Contact the kernel security team for more details on this procedure.
+ 
++Trees:
 +
-+	mix_pool_bytes(&input_pool, buf, size, NULL);
-+	mix_pool_bytes(&input_pool, &time, sizeof(time), NULL);
-+	mix_pool_bytes(&nonblocking_pool, buf, size, NULL);
-+	mix_pool_bytes(&nonblocking_pool, &time, sizeof(time), NULL);
-+}
-+EXPORT_SYMBOL(add_device_randomness);
++ - The queues of patches, for both completed versions and in progress
++   versions can be found at:
++	http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
++ - The finalized and tagged releases of all stable kernels can be found
++   in separate branches per version at:
++	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
 +
- static struct timer_rand_state input_timer_state;
  
- /*
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 6ef39d7..e14b438 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -50,6 +50,7 @@ struct rnd_state {
+ Review committee:
  
- extern void rand_initialize_irq(int irq);
- 
-+extern void add_device_randomness(const void *, unsigned int);
- extern void add_input_randomness(unsigned int type, unsigned int code,
- 				 unsigned int value);
- extern void add_interrupt_randomness(int irq, int irq_flags);
 
 
