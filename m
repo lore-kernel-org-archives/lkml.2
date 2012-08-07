@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab2HGOZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 10:25:24 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:43631 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab2HGOZW (ORCPT
+	id S1754960Ab2HGO04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 10:26:56 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56093 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754638Ab2HGO0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 10:25:22 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Jeffrin Jose <ahiliation@yahoo.co.in>
-Cc: acme@ghostprotocols.net, davem@davemloft.net, bhutchings@solarflare.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1344348020-4966-1-git-send-email-ahiliation@yahoo.co.in>
-Date: Tue, 07 Aug 2012 07:25:07 -0700
-In-Reply-To: <1344348020-4966-1-git-send-email-ahiliation@yahoo.co.in>
-	(Jeffrin Jose's message of "Tue, 7 Aug 2012 19:30:20 +0530")
-Message-ID: <874noeeq4c.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 7 Aug 2012 10:26:55 -0400
+Message-ID: <502125D2.3060809@gmail.com>
+Date: Tue, 07 Aug 2012 16:27:30 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/iIvXASuuxsVwp+eqb3X5Pz7SLCBYXu1s=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0208]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Jeffrin Jose <ahiliation@yahoo.co.in>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] net:appletalk:ddp:fixed coding style issue again relating to
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, tglx@linutronix.de,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        james.l.morris@oracle.com, keyrings@linux-nfs.org
+Subject: Re: tasklist_lock lockdep warnings on 3.6
+References: <500F954B.4010206@gmail.com> <CA+1xoqc86YFLOdBKPGjsb_moxjSdwoT_2Z6in8Co5YtEfKgNfw@mail.gmail.com> <20120802132605.GA27474@redhat.com> <501A8BD0.1000603@gmail.com>
+In-Reply-To: <501A8BD0.1000603@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeffrin Jose <ahiliation@yahoo.co.in> writes:
+On 08/02/2012 04:16 PM, Sasha Levin wrote:
+> On 08/02/2012 03:26 PM, Dave Jones wrote:
+>> On Mon, Jul 30, 2012 at 04:50:46PM +0200, Sasha Levin wrote:
+>>  > ping?
+>>  > 
+>>  > I'm still seeing this on linux-next.
+>>
+>> Likewise, except I'm seeing it in Linus' tree since shortly after this merge window
+>> began. (https://lkml.org/lkml/2012/7/24/443).
+>>
+>> I've spent all of this last week doing multiple attempts at bisecting this without success.
+>> (It doesn't always show up, and even after running the test for over an hour before
+>> marking a build 'good')
+>>
+>> Anyone ?
+>>
+>> 	Dave
+> 
+> I've been able to hit this issue pretty much every time by hitting sysrq-t after about 10 seconds of fuzzing. It shows up in the middle of the sysrq-t spew.
+> 
+> Unfortunately I didn't have time yet to try and bisect it.
+> 
 
->  	case TIOCINQ: {
->  			/*
->  			 * These two are safe on a single CPU system as only
->  			 * user tasks fiddle here
->  			 */
-> -			struct sk_buff *skb = skb_peek(&sk->sk_receive_queue);
-> -			long amount = 0;
-> +		struct sk_buff *skb = skb_peek(&sk->sk_receive_queue);
-> +		long amount = 0;
->  
-> -			if (skb)
-> -				amount = skb->len - sizeof(struct ddpehdr);
-> +		if (skb)
-> +			amount = skb->len - sizeof(struct ddpehdr);
->  			rc = put_user(amount, (int __user *)argp);
->  			break;
->  		}
+So I've bisected it. The bisection was automatic most of the time, but I've confirmed that this is indeed the offending commit manually.
 
-Is putting "rc = put_user(amount, (int __user *)argp);" on the same
-indentation level as "amount = skb->len - sizeof(struct ddpehdr);"
-really what you want to do?
+d35abdb28824cf74f0a106a0f9c6f3ff700a35bf is the first bad commit
+commit d35abdb28824cf74f0a106a0f9c6f3ff700a35bf
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Sat Jun 30 11:55:24 2012 +0400
 
-Eric
+    hold task_lock around checks in keyctl
 
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+
+Relevant parties Cc'ed.
