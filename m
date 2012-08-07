@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab2HGRsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:48:11 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:35591 "EHLO mail.x86-64.org"
+	id S1755689Ab2HGRs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:48:56 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:35563 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755424Ab2HGRo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:44:27 -0400
+	id S1754808Ab2HGRo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 13:44:26 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: X86-ML <x86@kernel.org>
 Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
         Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH v0 05/12] x86, microcode: Straighten out Kconfig text
-Date: Tue,  7 Aug 2012 19:44:14 +0200
-Message-Id: <1344361461-10076-6-git-send-email-bp@amd64.org>
+Subject: [PATCH v0 03/12] x86, microcode: Drop uci->mc check on resume path
+Date: Tue,  7 Aug 2012 19:44:12 +0200
+Message-Id: <1344361461-10076-4-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.11.rc1
 In-Reply-To: <1344361461-10076-1-git-send-email-bp@amd64.org>
 References: <1344361461-10076-1-git-send-email-bp@amd64.org>
@@ -24,61 +24,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Update and clarify Kconfig help text along with menu names.
+Remove the uci->mc check on the cpu resume path because the low-level
+drivers do that anyway.
+
+More importantly, though, this fixes a contrived and obscure but still
+important case. Imagine the following:
+
+* boot machine, no new microcode in /lib/firmware
+
+* a subset of the CPUs is offlined
+
+* in the meantime, user puts new fresh microcode container into
+/lib/firmware and reloads it by doing
+$ echo 1 > /sys/devices/system/cpu/microcode/reload
+
+* offlined cores come back online and they don't get the newer microcode
+applied due to this check.
+
+Later patches take care of the issue on AMD.
+
+While at it, cleanup code around it.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/Kconfig | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ arch/x86/kernel/microcode_core.c | 16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 8ec3a1aa4abd..1ccccc6efb37 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -982,25 +982,25 @@ config X86_REBOOTFIXUPS
- 	  Say N otherwise.
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index 63a956865022..706a5c9b8eb2 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -369,13 +369,10 @@ static void microcode_fini_cpu(int cpu)
  
- config MICROCODE
--	tristate "/dev/cpu/microcode - microcode support"
-+	tristate "CPU microcode loading support"
- 	select FW_LOADER
- 	---help---
+ static enum ucode_state microcode_resume_cpu(int cpu)
+ {
+-	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+-
+-	if (!uci->mc)
+-		return UCODE_NFOUND;
+-
+ 	pr_debug("CPU%d updated upon resume\n", cpu);
+-	apply_microcode_on_target(cpu);
 +
- 	  If you say Y here, you will be able to update the microcode on
- 	  certain Intel and AMD processors. The Intel support is for the
--	  IA32 family, e.g. Pentium Pro, Pentium II, Pentium III,
--	  Pentium 4, Xeon etc. The AMD support is for family 0x10 and
--	  0x11 processors, e.g. Opteron, Phenom and Turion 64 Ultra.
--	  You will obviously need the actual microcode binary data itself
--	  which is not shipped with the Linux kernel.
-+	  IA32 family, e.g. Pentium Pro, Pentium II, Pentium III, Pentium 4,
-+	  Xeon etc. The AMD support is for families 0x10 and later. You will
-+	  obviously need the actual microcode binary data itself which is not
-+	  shipped with the Linux kernel.
++	if (apply_microcode_on_target(cpu))
++		return UCODE_ERROR;
  
- 	  This option selects the general module only, you need to select
- 	  at least one vendor specific module as well.
+ 	return UCODE_OK;
+ }
+@@ -404,14 +401,11 @@ static enum ucode_state microcode_init_cpu(int cpu)
+ static enum ucode_state microcode_update_cpu(int cpu)
+ {
+ 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+-	enum ucode_state ustate;
  
--	  To compile this driver as a module, choose M here: the
--	  module will be called microcode.
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called microcode.
+ 	if (uci->valid)
+-		ustate = microcode_resume_cpu(cpu);
+-	else
+-		ustate = microcode_init_cpu(cpu);
++		return microcode_resume_cpu(cpu);
  
- config MICROCODE_INTEL
--	bool "Intel microcode patch loading support"
-+	bool "Intel microcode loading support"
- 	depends on MICROCODE
- 	default MICROCODE
- 	select FW_LOADER
-@@ -1013,7 +1013,7 @@ config MICROCODE_INTEL
- 	  <http://www.urbanmyth.org/microcode/>.
+-	return ustate;
++	return microcode_init_cpu(cpu);
+ }
  
- config MICROCODE_AMD
--	bool "AMD microcode patch loading support"
-+	bool "AMD microcode loading support"
- 	depends on MICROCODE
- 	select FW_LOADER
- 	---help---
+ static int mc_device_add(struct device *dev, struct subsys_interface *sif)
 -- 
 1.7.11.rc1
 
