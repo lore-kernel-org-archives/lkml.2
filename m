@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030432Ab2HGWc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:32:57 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:35918 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030363Ab2HGWcw (ORCPT
+	id S1030463Ab2HGWdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:33:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030438Ab2HGWdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:52 -0400
+	Tue, 7 Aug 2012 18:33:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 112/122] ALSA: hda - Fix invalid D3 of headphone DAC on VT202x codecs
-Date: Tue,  7 Aug 2012 15:26:40 -0700
-Message-Id: <20120807222000.056928677@linuxfoundation.org>
+Subject: [ 115/122] ALSA: hda - Fix mute-LED GPIO initialization for IDT codecs
+Date: Tue,  7 Aug 2012 15:26:43 -0700
+Message-Id: <20120807222000.448660945@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -31,53 +31,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 6162552b0de6ba80937c3dd53e084967851cd199 upstream.
+commit 1f43f6c1bc8d740e75b4177eb29110858bb5fea2 upstream.
 
-We've got a bug report about the silent output from the headphone on a
-mobo with VT2021, and spotted out that this was because of the wrong
-D3 state on the DAC for the headphone output.  The bug is triggered by
-the incomplete check for this DAC in set_widgets_power_state_vt1718S().
-It checks only the connectivity of the primary output (0x27) but
-doesn't consider the path from the headphone pin (0x28).
+The IDT codecs initializes the GPIO setup for mute LEDs via
+snd_hda_sync_vmaster_hook().  This works in most cases except for the
+very first call, which is called before PCM and control creations.
+Thus before Master switch is set manually via alsactl, the mute LED
+may show the wrong state, depending on the polarity.
 
-Now this patch fixes the problem by checking both pins for DAC 0x0b.
+Now it's fixed by calling the LED-status update function manually when
+no vmaster is set yet.
 
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_via.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -3226,7 +3226,7 @@ static void set_widgets_power_state_vt17
- {
- 	struct via_spec *spec = codec->spec;
- 	int imux_is_smixer;
--	unsigned int parm;
-+	unsigned int parm, parm2;
- 	/* MUX6 (1eh) = stereo mixer */
- 	imux_is_smixer =
- 	snd_hda_codec_read(codec, 0x1e, 0, AC_VERB_GET_CONNECT_SEL, 0x00) == 5;
-@@ -3249,7 +3249,7 @@ static void set_widgets_power_state_vt17
- 	parm = AC_PWRST_D3;
- 	set_pin_power_state(codec, 0x27, &parm);
- 	update_power_state(codec, 0x1a, parm);
--	update_power_state(codec, 0xb, parm);
-+	parm2 = parm; /* for pin 0x0b */
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -4420,7 +4420,12 @@ static int stac92xx_init(struct hda_code
+ 	snd_hda_jack_report_sync(codec);
  
- 	/* PW2 (26h), AOW2 (ah) */
- 	parm = AC_PWRST_D3;
-@@ -3264,6 +3264,9 @@ static void set_widgets_power_state_vt17
- 	if (!spec->hp_independent_mode) /* check for redirected HP */
- 		set_pin_power_state(codec, 0x28, &parm);
- 	update_power_state(codec, 0x8, parm);
-+	if (!spec->hp_independent_mode && parm2 != AC_PWRST_D3)
-+		parm = parm2;
-+	update_power_state(codec, 0xb, parm);
- 	/* MW9 (21h), Mw2 (1ah), AOW0 (8h) */
- 	update_power_state(codec, 0x21, imux_is_smixer ? AC_PWRST_D0 : parm);
+ 	/* sync mute LED */
+-	snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
++	if (spec->gpio_led) {
++		if (spec->vmaster_mute.hook)
++			snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
++		else /* the very first init call doesn't have vmaster yet */
++			stac92xx_update_led_status(codec, false);
++	}
  
+ 	/* sync the power-map */
+ 	if (spec->num_pwrs)
 
 
