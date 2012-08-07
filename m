@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030784Ab2HGWks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:40:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030711Ab2HGWkl (ORCPT
+	id S1030797Ab2HGWk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:40:56 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59402 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030711Ab2HGWku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:40:41 -0400
+	Tue, 7 Aug 2012 18:40:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jesper Juhl <jj@chaosbits.net>,
+        Hangbin Liu <liuhangbin@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 086/109] net: Fix references to out-of-scope variables in put_cmsg_compat()
-Date: Tue,  7 Aug 2012 15:35:45 -0700
-Message-Id: <20120807222050.636634471@linuxfoundation.org>
+Subject: [ 090/109] tcp: Add TCP_USER_TIMEOUT negative value check
+Date: Tue,  7 Aug 2012 15:35:49 -0700
+Message-Id: <20120807222050.987274088@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -31,47 +31,36 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Jesper Juhl <jj@chaosbits.net>
+From: Hangbin Liu <liuhangbin@gmail.com>
 
-[ Upstream commit 818810472b129004c16fc51bf0a570b60776bfb7 ]
+[ Upstream commit 42493570100b91ef663c4c6f0c0fdab238f9d3c2 ]
 
-In net/compat.c::put_cmsg_compat() we may assign 'data' the address of
-either the 'ctv' or 'cts' local variables inside the 'if
-(!COMPAT_USE_64BIT_TIME)' branch.
+TCP_USER_TIMEOUT is a TCP level socket option that takes an unsigned int. But
+patch "tcp: Add TCP_USER_TIMEOUT socket option"(dca43c75) didn't check the negative
+values. If a user assign -1 to it, the socket will set successfully and wait
+for 4294967295 miliseconds. This patch add a negative value check to avoid
+this issue.
 
-Those variables go out of scope at the end of the 'if' statement, so
-when we use 'data' further down in 'copy_to_user(CMSG_COMPAT_DATA(cm),
-data, cmlen - sizeof(struct compat_cmsghdr))' there's no telling what
-it may be refering to - not good.
-
-Fix the problem by simply giving 'ctv' and 'cts' function scope.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Hangbin Liu <liuhangbin@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/compat.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/tcp.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -221,6 +221,8 @@ int put_cmsg_compat(struct msghdr *kmsg,
- {
- 	struct compat_cmsghdr __user *cm = (struct compat_cmsghdr __user *) kmsg->msg_control;
- 	struct compat_cmsghdr cmhdr;
-+	struct compat_timeval ctv;
-+	struct compat_timespec cts[3];
- 	int cmlen;
- 
- 	if (cm == NULL || kmsg->msg_controllen < sizeof(*cm)) {
-@@ -229,8 +231,6 @@ int put_cmsg_compat(struct msghdr *kmsg,
- 	}
- 
- 	if (!COMPAT_USE_64BIT_TIME) {
--		struct compat_timeval ctv;
--		struct compat_timespec cts[3];
- 		if (level == SOL_SOCKET && type == SCM_TIMESTAMP) {
- 			struct timeval *tv = (struct timeval *)data;
- 			ctv.tv_sec = tv->tv_sec;
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2408,7 +2408,10 @@ static int do_tcp_setsockopt(struct sock
+ 		/* Cap the max timeout in ms TCP will retry/retrans
+ 		 * before giving up and aborting (ETIMEDOUT) a connection.
+ 		 */
+-		icsk->icsk_user_timeout = msecs_to_jiffies(val);
++		if (val < 0)
++			err = -EINVAL;
++		else
++			icsk->icsk_user_timeout = msecs_to_jiffies(val);
+ 		break;
+ 	default:
+ 		err = -ENOPROTOOPT;
 
 
