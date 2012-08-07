@@ -1,69 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab2HGUKg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:10:36 -0400
-Received: from 8bytes.org ([85.214.48.195]:52433 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752883Ab2HGUKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 16:10:35 -0400
-Date: Tue, 7 Aug 2012 22:10:30 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Seth Forshee <seth.forshee@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: IRQ remapping problem on Macbook Air 5,1
-Message-ID: <20120807201030.GJ1917@8bytes.org>
-References: <20120807194837.GB23829@thinkpad-t410>
+	id S1756512Ab2HGUNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:13:54 -0400
+Received: from mail16.primus.ca ([216.254.141.183]:36128 "EHLO
+	mail-02.primus.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755692Ab2HGUNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 16:13:53 -0400
+X-Greylist: delayed 4370 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 16:13:53 EDT
+Message-ID: <502165EA.4070602@bell.net>
+Date: Tue, 07 Aug 2012 15:00:58 -0400
+From: John David Anglin <dave.anglin@bell.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120807194837.GB23829@thinkpad-t410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Aug  7 22:10:32 2012
-X-DSPAM-Confidence: 0.9978
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5021763820421431517015
+To: Mikulas Patocka <mpatocka@redhat.com>
+CC: James.Bottomley@hansenpartnership.com, linux-parisc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.4-rc7
+References: <CA+55aFzsygnrJwLUPV8Vg4RPmwxXLuY-uo70fBLEZR8+barT5A@mail.gmail.com> <4FB011E7.1000604@linux.vnet.ibm.com> <BLU0-SMTP22F4864AE1F54838C150D797150@phx.gbl> <4FB0197F.6010000@linux.vnet.ibm.com> <BLU0-SMTP85D30AAA2BF2CF07B1039897150@phx.gbl> <BLU0-SMTP4CED805E93EF3D8DA2198971A0@phx.gbl> <Pine.LNX.4.64.1208012054450.6361@file.rdu.redhat.com> <BLU0-SMTP1253492C7F871CBBDAC05297CB0@phx.gbl> <Pine.LNX.4.64.1208071439090.6535@file.rdu.redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1208071439090.6535@file.rdu.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated: danglin-lux@magma.ca - 216-58-40-249.cpe.distributel.net ([192.168.0.181]) [216.58.40.249]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
+On 8/7/2012 2:41 PM, Mikulas Patocka wrote:
+> Which restart patch do you mean?
+http://www.spinics.net/lists/linux-parisc/msg04229.html
 
-On Tue, Aug 07, 2012 at 02:48:37PM -0500, Seth Forshee wrote:
-> This machine has a bug in its ACPI tables that's causing it to fail to
-> boot unless intremap=off is passed to the kernel. The MADT defines a
-> single IOAPIC with id 2, but the remapping unit defined in DMAR matches
-> id 0. Thus interrupt remapping fails, and the kernel panics with the
-> message "timer doesn't work through Interrupt-remapped IO-APIC." If I
-> force the use of the non-matching ir hardware for the IOAPIC everything
-> seems to works fine. dmesg for the working boot is below.
+Dave
 
-There are AMD systems with similar problems. For example I had a system
-with 2 IO-APICs but only one was described in the IOMMU ACPI table.
-
-> I'm looking at how to make this machine able to boot by default. OS X
-> obviously boots, and Windows presumably boots as well since Apple
-> officially supports running Windows on its hardware.
-
-These operating systems probably don't support interrupt remapping, or
-the IOMMU at all.
-
-> I've got a patch to leave IRQ remapping disabled whenever any IOAPIC
-> does not have a matching ir hardware unit. This gets it to boot, but I
-> thought I'd check and see whether anyone had any better ideas for how to
-> fix this.
-
-This is exactly how I fixed this issue on the AMD side too. Mind to
-submit the patch?
-
-
-Thanks,
-
-	Joerg
-
+-- 
+John David Anglin    dave.anglin@bell.net
 
