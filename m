@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030549Ab2HGWiw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:38:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	id S1030564Ab2HGWi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:38:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030535Ab2HGWis (ORCPT
+	with ESMTP id S1030535Ab2HGWiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:48 -0400
+	Tue, 7 Aug 2012 18:38:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 050/109] Btrfs: call the ordered free operation without any locks held
-Date: Tue,  7 Aug 2012 15:35:09 -0700
-Message-Id: <20120807222047.468579355@linuxfoundation.org>
+        Vinit Shenoy <vinit.shenoy@st.com>,
+        Virupax Sadashivpetimath 
+	<virupax.sadashivpetimath@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 052/109] spi/pl022: disable port when unused
+Date: Tue,  7 Aug 2012 15:35:11 -0700
+Message-Id: <20120807222047.648676630@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,45 +32,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Chris Mason <chris.mason@fusionio.com>
+From: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
 
-commit e9fbcb42201c862fd6ab45c48ead4f47bb2dea9d upstream.
+commit fd316941cfee1fbd12746afea83720fb7823888a upstream.
 
-Each ordered operation has a free callback, and this was called with the
-worker spinlock held.  Josef made the free callback also call iput,
-which we can't do with the spinlock.
+Commit ffbbdd21329f3e15eeca6df2d4bc11c04d9d91c0
+"spi: create a message queueing infrastructure"
+Accidentally deleted the logic to disable the port
+when unused leading to higher power consumption.
+Fix this up.
 
-This drops the spinlock for the free operation and grabs it again before
-moving through the rest of the list.  We'll circle back around to this
-and find a cleaner way that doesn't bounce the lock around so much.
-
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Cc: Vinit Shenoy <vinit.shenoy@st.com>
+Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/async-thread.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/spi/spi-pl022.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/btrfs/async-thread.c
-+++ b/fs/btrfs/async-thread.c
-@@ -206,10 +206,17 @@ static noinline void run_ordered_complet
- 
- 		work->ordered_func(work);
- 
--		/* now take the lock again and call the freeing code */
-+		/* now take the lock again and drop our item from the list */
- 		spin_lock(&workers->order_lock);
- 		list_del(&work->order_list);
-+		spin_unlock(&workers->order_lock);
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@ -489,6 +489,11 @@ static void giveback(struct pl022 *pl022
+ 	pl022->cur_transfer = NULL;
+ 	pl022->cur_chip = NULL;
+ 	spi_finalize_current_message(pl022->master);
 +
-+		/*
-+		 * we don't want to call the ordered free functions
-+		 * with the lock held though
-+		 */
- 		work->ordered_free(work);
-+		spin_lock(&workers->order_lock);
- 	}
++	/* disable the SPI/SSP operation */
++	writew((readw(SSP_CR1(pl022->virtbase)) &
++		(~SSP_CR1_MASK_SSE)), SSP_CR1(pl022->virtbase));
++
+ }
  
- 	spin_unlock(&workers->order_lock);
+ /**
 
 
