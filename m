@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030853Ab2HGWl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:41:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33528 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030840Ab2HGWlV (ORCPT
+	id S1030868Ab2HGWlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:41:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030840Ab2HGWlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:41:21 -0400
+	Tue, 7 Aug 2012 18:41:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 101/109] ALSA: hda - Fix mute-LED GPIO initialization for IDT codecs
-Date: Tue,  7 Aug 2012 15:36:00 -0700
-Message-Id: <20120807222051.928694094@linuxfoundation.org>
+        Colin Ian King <colin.king@canonical.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 095/109] USB: echi-dbgp: increase the controller wait time to come out of halt.
+Date: Tue,  7 Aug 2012 15:35:54 -0700
+Message-Id: <20120807222051.421131178@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,42 +30,35 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Colin Ian King <colin.king@canonical.com>
 
-commit 1f43f6c1bc8d740e75b4177eb29110858bb5fea2 upstream.
+commit f96a4216e85050c0a9d41a41ecb0ae9d8e39b509 upstream.
 
-The IDT codecs initializes the GPIO setup for mute LEDs via
-snd_hda_sync_vmaster_hook().  This works in most cases except for the
-very first call, which is called before PCM and control creations.
-Thus before Master switch is set manually via alsactl, the mute LED
-may show the wrong state, depending on the polarity.
+The default 10 microsecond delay for the controller to come out of
+halt in dbgp_ehci_startup is too short, so increase it to 1 millisecond.
 
-Now it's fixed by calling the LED-status update function manually when
-no vmaster is set yet.
+This is based on emperical testing on various USB debug ports on
+modern machines such as a Lenovo X220i and an Ivybridge development
+platform that needed to wait ~450-950 microseconds.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/usb/early/ehci-dbgp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -4437,7 +4437,13 @@ static int stac92xx_init(struct hda_code
- 	snd_hda_jack_report_sync(codec);
+--- a/drivers/usb/early/ehci-dbgp.c
++++ b/drivers/usb/early/ehci-dbgp.c
+@@ -450,7 +450,7 @@ static int dbgp_ehci_startup(void)
+ 	writel(FLAG_CF, &ehci_regs->configured_flag);
  
- 	/* sync mute LED */
--	snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
-+	if (spec->gpio_led) {
-+		if (spec->vmaster_mute.hook)
-+			snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
-+		else /* the very first init call doesn't have vmaster yet */
-+			stac92xx_update_led_status(codec, false);
-+	}
-+
- 	if (spec->dac_list)
- 		stac92xx_power_down(codec);
- 	return 0;
+ 	/* Wait until the controller is no longer halted */
+-	loop = 10;
++	loop = 1000;
+ 	do {
+ 		status = readl(&ehci_regs->status);
+ 		if (!(status & STS_HALT))
 
 
