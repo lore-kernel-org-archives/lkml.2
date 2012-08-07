@@ -1,126 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab2HGABr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 20:01:47 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43644 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412Ab2HGABq (ORCPT
+	id S1757007Ab2HGAEV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 20:04:21 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:36659 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756161Ab2HGAEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 20:01:46 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50205ADE.5080203@jp.fujitsu.com>
-Date: Tue, 7 Aug 2012 09:01:34 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 6 Aug 2012 20:04:20 -0400
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <lenb@kernel.org>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] create sun sysfs file
-References: <5015DC4B.2000802@jp.fujitsu.com> <1343661483.3010.584.camel@misato.fc.hp.com>
-In-Reply-To: <1343661483.3010.584.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1344262930.27828.57.camel@twins>
+References: <1343946858-8170-1-git-send-email-walken@google.com>
+	<1343946858-8170-4-git-send-email-walken@google.com>
+	<1344262930.27828.57.camel@twins>
+Date: Mon, 6 Aug 2012 17:04:18 -0700
+Message-ID: <CANN689GZQ4pYuqzB9ZQ0QBatvsDgj60_ciG5MBHqsKdb5CYtyQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/9] rbtree: add __rb_change_child() helper function
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
+        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+On Mon, Aug 6, 2012 at 7:22 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2012-08-02 at 15:34 -0700, Michel Lespinasse wrote:
+>> +static inline void
+>
+> I would make that __always_inline, just to make sure GCC doesn't go
+> creative on us.
 
-2012/07/31 0:18, Toshi Kani wrote:
-> On Mon, 2012-07-30 at 09:58 +0900, Yasuaki Ishimatsu wrote:
->> Even if a device has _SUN method, there is no way to know the slot unique-ID.
->> Thus the patch creates "sun" file in sysfs so that we can recognize it.
->>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
-> Hi Yasuaki,
->
-> Thanks for the quick update.  Looks good.
->
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+How strongly do you care ? I'm not sure it makes sense to change it
+unless we also change every other inline function in that file. I'd
+rather not do that until we hear of gcc actually breaking things.
 
-Thanks you for reviewing my patch.
+(BTW, did you know that sometimes gcc generates different code when
+you change from inline to always_inline, even though things were
+already inlined before ? I really hate dealing with gcc crap like
+that, makes me want to forget about inline functions and just do it
+all with preprocessor abuse...)
 
-Thanks,
-Yasuaki Ishimatsu
-
->
-> -Toshi
->
->> ---
->>   drivers/acpi/scan.c     |   25 +++++++++++++++++++++++++
->>   include/acpi/acpi_bus.h |    1 +
->>   2 files changed, 26 insertions(+)
->>
->> Index: linux-3.5/include/acpi/acpi_bus.h
->> ===================================================================
->> --- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-27 10:20:22.722553439 +0900
->> +++ linux-3.5/include/acpi/acpi_bus.h	2012-07-27 10:20:25.741555954 +0900
->> @@ -209,6 +209,7 @@ struct acpi_device_pnp {
->>   	struct list_head ids;		/* _HID and _CIDs */
->>   	acpi_device_name device_name;	/* Driver-determined */
->>   	acpi_device_class device_class;	/*        "          */
->> +	unsigned long sun;		/* _SUN */
->>   };
->>
->>   #define acpi_device_bid(d)	((d)->pnp.bus_id)
->> Index: linux-3.5/drivers/acpi/scan.c
->> ===================================================================
->> --- linux-3.5.orig/drivers/acpi/scan.c	2012-07-27 10:20:22.721522499 +0900
->> +++ linux-3.5/drivers/acpi/scan.c	2012-07-30 09:52:32.581887304 +0900
->> @@ -192,10 +192,21 @@ end:
->>   }
->>   static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
->>
->> +static ssize_t
->> +acpi_device_sun_show(struct device *dev, struct device_attribute *attr, char *buf) {
->> +	struct acpi_device *acpi_dev = to_acpi_device(dev);
->> +	int result;
->> +
->> +	result = sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
->> +	return result;
->> +}
->> +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
->> +
->>   static int acpi_device_setup_files(struct acpi_device *dev)
->>   {
->>   	acpi_status status;
->>   	acpi_handle temp;
->> +	unsigned long long sun;
->>   	int result = 0;
->>
->>   	/*
->> @@ -217,6 +228,16 @@ static int acpi_device_setup_files(struc
->>   			goto end;
->>   	}
->>
->> +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
->> +	if (ACPI_SUCCESS(status)) {
->> +		dev->pnp.sun = (unsigned long)sun;
->> +		result = device_create_file(&dev->dev, &dev_attr_sun);
->> +		if (result)
->> +			goto end;
->> +	} else {
->> +		dev->pnp.sun = (unsigned long)-1;
->> +	}
->> +
->>           /*
->>            * If device has _EJ0, 'eject' file is created that is used to trigger
->>            * hot-removal function from userland.
->> @@ -241,6 +262,10 @@ static void acpi_device_remove_files(str
->>   	if (ACPI_SUCCESS(status))
->>   		device_remove_file(&dev->dev, &dev_attr_eject);
->>
->> +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
->> +	if (ACPI_SUCCESS(status))
->> +		device_remove_file(&dev->dev, &dev_attr_sun);
->> +
->>   	device_remove_file(&dev->dev, &dev_attr_modalias);
->>   	device_remove_file(&dev->dev, &dev_attr_hid);
->>   	if (dev->handle)
->>
->
->
-
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
