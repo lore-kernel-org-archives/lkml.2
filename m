@@ -1,140 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab2HGT3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:29:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:65245 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab2HGT26 (ORCPT
+	id S1756128Ab2HGTcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:32:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46062 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab2HGTck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:28:58 -0400
+	Tue, 7 Aug 2012 15:32:40 -0400
+Message-ID: <50216D52.3030402@gmail.com>
+Date: Tue, 07 Aug 2012 21:32:34 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Tue, 7 Aug 2012 12:28:37 -0700
-X-Google-Sender-Auth: qm-Uzfge-MZBYzJBdZoOGOrk-9c
-Message-ID: <CAB=NE6WZWEO=b5Usx4RKDLC--TvLWnOom0P+HmXsxh7QZQQXQA@mail.gmail.com>
-Subject: Using vanilla kernels headers to do backport testing -- issues with memcpy()
-To: Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH 0/6] ARM: dove: DT support for Marvell Dove
+References: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com> <201208061402.22815.arnd@arndb.de> <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com> <20120807165350.GG18957@n2100.arm.linux.org.uk>
+In-Reply-To: <20120807165350.GG18957@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A while ago we reviewed the idea of whether or not to use a set of
-distribution vanilla kernels to allow us to do compilation testing of
-modules on the compat backport project [0] with the benefit being that
-at least one Linux distribution was doing this work already and given
-that this work was using plain vanilla kernels directly from
-kernel.org, with no modifications. The other option that existed was
-that each distro could provide their own set of kernel packages along
-with their own kernel headers but it didn't seem like other Linux
-distributions were doing this and the information was not easy to
-gather. So we went with the Ubuntu vanilla kernels and Ozan later
-figured out a way to extract deb packages in a distribution agnostic
-manner [1] and later added an option to enable a way to install and
-use this for ckmake which test compiles against 21 kernels without
-requiring root [2].
+On 08/07/2012 06:53 PM, Russell King - ARM Linux wrote:
+> I've recently pushed a fix into mainline (and stable) for VFP support
+> with Thumb instructions.  I noticed that the Cubox kernel had a different
+> fix, this "different" fix will need to be removed when Cubox folk update
+> to the next kernel from mainline.
 
-This works swell as it allows anyone on any Linux distribution to test
-compile against a series of older kernels, today 21 older kernels and
-all vanilla kernels which means we get to focus and prioritize
-upstream.
+Russell,
 
-This has started working well except for the fact that as of the >=
-v3.4 vanilla kernel releases, there are a few files which are binary
-in the kernel headers which use dynamic libraries. Of interest to us
-here are the ones required to build external modules. An example:
+I read about that fix but honestly, that is way to deep into ARM
+architecture for me. All I realized while having my Cubox is that the
+supplied kernel tree is very messy and on Debian wheezy/armhf almost
+all applications started over ssh -X fail with segfault. I was hoping
+that bringing the cubox into mainline kernel tree will help here -
+and luckily the (hacking) community is growing!
 
-/lib/modules/3.4.4-030404-generic/build/scripts/genksyms/genksyms
+> Video support, not great.  The supplied Ubuntu Lucid stuff install
+> (including the latest dev kernel from the solid-run folk) doesn't work
+> with any of the tree HDMI devices I've tried it with:
 
-It just so happens to be that the folks building these packages are
-using a glibc >= 2.14 and although the *only* symbol I see being
-required from glibc >= 2.14 being memcpy():
+HDMI is another topic that I want to work on as soon as the main SoC
+stuff is ported over to mainline. HDMI output actually is done by some
+nxp HDMI transmitter that translates the rgb 888 video from lcd controller
+on dove. AFAIR the HDMI transmitter code is "open", i.e. free to clean up
+and port. I haven't looked closely into lcd yet but on Cubox the lcd pixclk
+comes from an external clk chip (si5351a) that I have a quite ready driver
+for. The existing driver does a table based setup of the plls and does not
+hit 148.5 MHz precisely. The driver I wrote is based on an AN from SiLabs
+and is also already based on common clk framework.
 
-mcgrof@garbanzo ~/compat (git::master)$ objdump -T
-/home/mcgrof/compat-ksrc/lib/modules/3.4.4-030404-generic/build/scripts/genksyms/genksyms
+> . A LCD PC monitor with HDMI input.  If the monitor is disconnected, the
+>    Cubox booted, and the monitor connected, you get a picture, but you
+>    lose the top, left, bottom and right of the display off the side of the
+>    monitor.  No amount of adjusting on the monitor fixes this.
 
-/home/mcgrof/compat-ksrc/lib/modules/3.4.4-030404-generic/build/scripts/genksyms/genksyms:
-    file format elf64-x86-64
+There have been many reports of people no being able to get proper resolutions
+with the original kernel setup. I know there are people working on gfx support
+and xbmc. Maybe you hit the solid-run.com forums and have a look there.
 
-DYNAMIC SYMBOL TABLE:
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.3.4 __snprintf_chk
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 free
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.3.4 __vfprintf_chk
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 __errno_location
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 ferror
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 isatty
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fread
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fclose
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 strlen
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.4   __stack_chk_fail
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 getopt_long
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 strchr
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 _IO_putc
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fputs
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fgetc
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fputc
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 __strdup
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 __libc_start_main
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 strcmp
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 feof
-0000000000000000  w   D  *UND*  0000000000000000              __gmon_start__
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 strtol
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 clearerr
+> What is obvious is that there is no HDMI hotplug support and reconfiguring
+> of the display.  So, I've been investigating the Linux DRM/DRI support -
+> both the kernel and X11 side, and I have something that is getting close
+> to being ready.  Last night I finally disabled the kernel dovefb driver,
+> and have X11 using solely my new DRM driver.
 
+Great, keep me posted and I ll be happy to test it.
 
-Bleh:
+> However, this won't be using the on-chip mpeg decoding (yet).  CPU
+> usage sits at around 30% while vlc playback is running.
 
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.14  memcpy
+The bad thing with GLES and video decoding is that it all relies on
+some dirty closed source user space libraries. But again, as I am not
+that familiar with gfx and decoding drivers, I didn't look into that.
 
-
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fileno
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 malloc
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 _IO_getc
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 ungetc
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 realloc
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.3.4 __printf_chk
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fopen
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 perror
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 exit
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.2.5 fwrite
-0000000000000000      DF *UND*  0000000000000000  GLIBC_2.3.4 __fprintf_chk
-000000000060b160 g    DO .bss   0000000000000008  GLIBC_2.2.5 stdout
-000000000060b168 g    DO .bss   0000000000000008  GLIBC_2.2.5 stdin
-000000000060b178 g    DO .bss   0000000000000008  GLIBC_2.2.5 stderr
-000000000060b170 g    DO .bss   0000000000000008  GLIBC_2.2.5 optarg
-
-It would be reasonable to simply require the users of ckmake to update
-their libc version but even Debian sid does not yet seem to have libc
->= 2.14, not sure of others. The gains for requiring a glibc >= 2.14
-only for memcpy() would seem rather small for this particular case so
-I wanted to review the options to fix this.
-
----------------
-1) Get the kernel headers to statically link against the required libraries
-
-This options would enable any Linux distribution to use the packages provided
-
-2) Add a LD_PRELOAD hack for mempcy() for running ckmake and friends
-on the compat package
-
-This doesn't seem so.. clean, but its the only thing I can currently control.
-
-3) Simply require libc > 2.14 for folks who really want to help do
-backport testing for kernels >= 3.4
-
-I suppose this is the easiest but we likely could run into other
-similar issues later.
-
----------------
-
-Are there other options?
-
-[0] https://lkml.org/lkml/2012/2/6/558
-[1] https://github.com/mcgrof/compat/commit/fdbea5a6ce2cba6d6c8fb3eb998cffa5a9e3bf78
-[2] https://github.com/mcgrof/compat/commit/e7d88d67040bbaa79720fa1b2dfc4fc24e4d004f
-
-  Luis
+Sebastian
