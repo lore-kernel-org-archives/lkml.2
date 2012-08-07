@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030480Ab2HGWdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:33:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
+	id S1030490Ab2HGWdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:33:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030465Ab2HGWdH (ORCPT
+	with ESMTP id S1030482Ab2HGWdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:33:07 -0400
+	Tue, 7 Aug 2012 18:33:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 117/122] ASoC: wm8962: Allow VMID time to fully ramp
-Date: Tue,  7 Aug 2012 15:26:45 -0700
-Message-Id: <20120807222000.680758246@linuxfoundation.org>
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Thorsten Glaser <tg@debian.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 119/122] m68k: Make sys_atomic_cmpxchg_32 work on classic m68k
+Date: Tue,  7 Aug 2012 15:26:47 -0700
+Message-Id: <20120807222000.933320441@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,30 +31,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-commit 9d40e5582c9c4cfb6977ba2a0ca9c2ed82c56f21 upstream.
+commit 9e2760d18b3cf179534bbc27692c84879c61b97c upstream.
 
-Required for reliable power up from cold.
+User space access must always go through uaccess accessors, since on
+classic m68k user space and kernel space are completely separate.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Tested-by: Thorsten Glaser <tg@debian.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8962.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/m68k/kernel/sys_m68k.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -2501,6 +2501,9 @@ static int wm8962_set_bias_level(struct
- 		/* VMID 2*250k */
- 		snd_soc_update_bits(codec, WM8962_PWR_MGMT_1,
- 				    WM8962_VMID_SEL_MASK, 0x100);
-+
-+		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF)
-+			msleep(100);
- 		break;
+--- a/arch/m68k/kernel/sys_m68k.c
++++ b/arch/m68k/kernel/sys_m68k.c
+@@ -479,9 +479,13 @@ sys_atomic_cmpxchg_32(unsigned long newv
+ 			goto bad_access;
+ 		}
  
- 	case SND_SOC_BIAS_OFF:
+-		mem_value = *mem;
++		/*
++		 * No need to check for EFAULT; we know that the page is
++		 * present and writable.
++		 */
++		__get_user(mem_value, mem);
+ 		if (mem_value == oldval)
+-			*mem = newval;
++			__put_user(newval, mem);
+ 
+ 		pte_unmap_unlock(pte, ptl);
+ 		up_read(&mm->mmap_sem);
 
 
