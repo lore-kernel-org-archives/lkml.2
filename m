@@ -1,86 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab2HGOxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 10:53:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:28960 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755412Ab2HGOxn (ORCPT
+	id S1755459Ab2HGOyK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 10:54:10 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51851 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653Ab2HGOyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 10:53:43 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-a2-50212bf6cd0f
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: "'Hideki EIRAKU'" <hdk@igel.co.jp>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Pawel Osciak'" <pawel@osciak.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "'Jaroslav Kysela'" <perex@perex.cz>, "'Takashi Iwai'" <tiwai@suse.de>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        alsa-devel@alsa-project.org, "'Katsuya MATSUBARA'" <matsu@igel.co.jp>
-References: <1344246924-32620-1-git-send-email-hdk@igel.co.jp>
- <1344246924-32620-4-git-send-email-hdk@igel.co.jp>
-In-reply-to: <1344246924-32620-4-git-send-email-hdk@igel.co.jp>
-Subject: RE: [PATCH v3 3/4] media: videobuf2-dma-contig: use dma_mmap_coherent
- if available
-Date: Tue, 07 Aug 2012 16:53:25 +0200
-Organization: SPRC
-Message-id: <012701cd74ac$6a617060$3f245120$%szyprowski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1zub2OnhGLLwQMTPWuQmtZYBCmagA6SHEA
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jAd1v2ooBBgu7BCxO9H1gtbi8aw6b
-	Rc+GrawOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZfQ82cZWsJy7Ys0m1wbG3ZxdjJwcEgImEutf
-	nWKDsMUkLtxbD2RzcQgJLGKUOD7pBhOE85NRonnJIlaQKjYBQ4mut11gVSICbcwS1+fPYwdx
-	mAVOMkpcffSZEaRKSKBY4sftvewgNqeAvcS8tyeYQWxhgViJ3oN7WUBsFgFViRv7rgLVcHDw
-	CwhJTJylABLmFXCROHTsNSOELSjxY/I9sHJmAS2J9TuPM0HY8hKb17xlBmmVEFCXePRXFyQs
-	ImAk8WryPmaIEhGJuw3PWScwCs9CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FxDveLE3OLS
-	vHS95PzcTYzgoH8mtYNxZYPFIUYBDkYlHt4JsgoBQqyJZcWVuYcYJTiYlUR4D+8ECvGmJFZW
-	pRblxxeV5qQWH2KU5mBREuc19v7qLySQnliSmp2aWpBaBJNl4uCUamBkKlIyiiqtPVw/wf36
-	JjPuJj479U+B9y2yJq+128HlkK7MlO+iYvTMQO3+lNXnTm5q2dxjfMjkps5NFgeOQ+wsu2p3
-	RzCdZCp9d+7OSRnBjb/KuWZ06Ahrrvf5328zochnj2xv47HwpKb0a/etP894d/rJVOFd+uw3
-	Sh7dzHaqV825X35phrMSS3FGoqEWc1FxIgDaOcLWdgIAAA==
-X-TM-AS-MML: No
+	Tue, 7 Aug 2012 10:54:08 -0400
+Message-ID: <50212C34.8030204@gmail.com>
+Date: Tue, 07 Aug 2012 16:54:44 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: mq: INFO: possible circular locking dependency detected
+References: <501D0093.2090108@gmail.com> <20120806063433.GW23464@ZenIV.linux.org.uk>
+In-Reply-To: <20120806063433.GW23464@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Monday, August 06, 2012 11:55 AM Hideki EIRAKU wrote:
-
-> Previously the vb2_dma_contig_mmap() function was using a dma_addr_t as a
-> physical address.  The two addressses are not necessarily the same.
-> For example, when using the IOMMU funtion on certain platforms, dma_addr_t
-> addresses are not directly mappable physical address.
-> dma_mmap_coherent() maps the address correctly.
-> It is available on ARM platforms.
+On 08/06/2012 08:34 AM, Al Viro wrote:
+> On Sat, Aug 04, 2012 at 12:59:31PM +0200, Sasha Levin wrote:
+>> Hi all,
+>>
+>> While fuzzing with trinity inside a KVM tools guest, using latest -next kernel, I've stumbled on the dump below.
+>>
+>> I think this is the result of commit 765927b2 ("switch dentry_open() to struct path, make it grab references itself").
 > 
-> Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
+> 	Not quite, actually - back then the order didn't matter;
+> unfortunately, I'd missed that place when porting Jan's series,
+> which made these ordered.
+> 
+> 	Anyway, see today's vfs.git#for-linus; that should be dealt with
+> there.
+> 
 
-I'm sorry for bringing this issue now, once you have already created v3 of your
-patches, but similar patch has been already proposed some time ago. It is already
-processed together with general videobuf2-dma-contig redesign and dma-buf extensions
-by Tomasz Stanislawski.
-
-See post http://thread.gmane.org/gmane.comp.video.dri.devel/70402/focus=49461 and
-http://thread.gmane.org/gmane.linux.drivers.video-input-infrastructure/49438 
-
-It doesn't use conditional code inside videobuf2 allocator and rely entirely on 
-dma-mapping subsystem to provide a working dma_mmap_coherent/writecombine/attrs() 
-function. When it was posted, it relied on the dma-mapping extensions, which now
-have been finally merged to v3.6-rc1. Now I wonder if there are any architectures, 
-which don't use dma_map_ops based dma-mapping framework, which might use 
-videobuf2-dma-conting module. 
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+Yup, that did it.
