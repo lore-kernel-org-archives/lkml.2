@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030647Ab2HGWkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:40:11 -0400
+	id S1030720Ab2HGWkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:40:21 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030652Ab2HGWju (ORCPT
+	with ESMTP id S1030705Ab2HGWkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:50 -0400
+	Tue, 7 Aug 2012 18:40:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Howells <dhowells@redhat.com>, Steve Dickson <steved@redhat.com>,
+        Jeff Layton <jlayton@redhat.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 070/109] NFS: Fix a number of bugs in the idmapper
-Date: Tue,  7 Aug 2012 15:35:29 -0700
-Message-Id: <20120807222049.238646520@linuxfoundation.org>
+Subject: [ 069/109] nfs: skip commit in releasepage if were freeing memory for fs-related reasons
+Date: Tue,  7 Aug 2012 15:35:28 -0700
+Message-Id: <20120807222049.148699699@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,182 +30,173 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit a427b9ec4eda8cd6e641ea24541d30b641fc3140 upstream.
+commit 5cf02d09b50b1ee1c2d536c9cf64af5a7d433f56 upstream.
 
-Fix a number of bugs in the NFS idmapper code:
+We've had some reports of a deadlock where rpciod ends up with a stack
+trace like this:
 
- (1) Only registered key types can be passed to the core keys code, so
-     register the legacy idmapper key type.
+    PID: 2507   TASK: ffff88103691ab40  CPU: 14  COMMAND: "rpciod/14"
+     #0 [ffff8810343bf2f0] schedule at ffffffff814dabd9
+     #1 [ffff8810343bf3b8] nfs_wait_bit_killable at ffffffffa038fc04 [nfs]
+     #2 [ffff8810343bf3c8] __wait_on_bit at ffffffff814dbc2f
+     #3 [ffff8810343bf418] out_of_line_wait_on_bit at ffffffff814dbcd8
+     #4 [ffff8810343bf488] nfs_commit_inode at ffffffffa039e0c1 [nfs]
+     #5 [ffff8810343bf4f8] nfs_release_page at ffffffffa038bef6 [nfs]
+     #6 [ffff8810343bf528] try_to_release_page at ffffffff8110c670
+     #7 [ffff8810343bf538] shrink_page_list.clone.0 at ffffffff81126271
+     #8 [ffff8810343bf668] shrink_inactive_list at ffffffff81126638
+     #9 [ffff8810343bf818] shrink_zone at ffffffff8112788f
+    #10 [ffff8810343bf8c8] do_try_to_free_pages at ffffffff81127b1e
+    #11 [ffff8810343bf958] try_to_free_pages at ffffffff8112812f
+    #12 [ffff8810343bfa08] __alloc_pages_nodemask at ffffffff8111fdad
+    #13 [ffff8810343bfb28] kmem_getpages at ffffffff81159942
+    #14 [ffff8810343bfb58] fallback_alloc at ffffffff8115a55a
+    #15 [ffff8810343bfbd8] ____cache_alloc_node at ffffffff8115a2d9
+    #16 [ffff8810343bfc38] kmem_cache_alloc at ffffffff8115b09b
+    #17 [ffff8810343bfc78] sk_prot_alloc at ffffffff81411808
+    #18 [ffff8810343bfcb8] sk_alloc at ffffffff8141197c
+    #19 [ffff8810343bfce8] inet_create at ffffffff81483ba6
+    #20 [ffff8810343bfd38] __sock_create at ffffffff8140b4a7
+    #21 [ffff8810343bfd98] xs_create_sock at ffffffffa01f649b [sunrpc]
+    #22 [ffff8810343bfdd8] xs_tcp_setup_socket at ffffffffa01f6965 [sunrpc]
+    #23 [ffff8810343bfe38] worker_thread at ffffffff810887d0
+    #24 [ffff8810343bfee8] kthread at ffffffff8108dd96
+    #25 [ffff8810343bff48] kernel_thread at ffffffff8100c1ca
 
-     This is a requirement because the unregister function cleans up keys
-     belonging to that key type so that there aren't dangling pointers to the
-     module left behind - including the key->type pointer.
+rpciod is trying to allocate memory for a new socket to talk to the
+server. The VM ends up calling ->releasepage to get more memory, and it
+tries to do a blocking commit. That commit can't succeed however without
+a connected socket, so we deadlock.
 
- (2) Rename the legacy key type.  You can't have two key types with the same
-     name, and (1) would otherwise require that.
+Fix this by setting PF_FSTRANS on the workqueue task prior to doing the
+socket allocation, and having nfs_release_page check for that flag when
+deciding whether to do a commit call. Also, set PF_FSTRANS
+unconditionally in rpc_async_schedule since that function can also do
+allocations sometimes.
 
- (3) complete_request_key() must be called in the error path of
-     nfs_idmap_legacy_upcall().
-
- (4) There is one idmap struct for each nfs_client struct.  This means that
-     idmap->idmap_key_cons is shared without the use of a lock.  This is a
-     problem because key_instantiate_and_link() - as called indirectly by
-     idmap_pipe_downcall() - releases anyone waiting for the key to be
-     instantiated.
-
-     What happens is that idmap_pipe_downcall() running in the rpc.idmapd
-     thread, releases the NFS filesystem in whatever thread that is running in
-     to continue.  This may then make another idmapper call, overwriting
-     idmap_key_cons before idmap_pipe_downcall() gets the chance to call
-     complete_request_key().
-
-     I *think* that reading idmap_key_cons only once, before
-     key_instantiate_and_link() is called, and then caching the result in a
-     variable is sufficient.
-
-Bug (4) is the cause of:
-
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<          (null)>]           (null)
-PGD 0
-Oops: 0010 [#1] SMP
-CPU 1
-Modules linked in: ppdev parport_pc lp parport ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack nfs fscache xt_CHECKSUM auth_rpcgss iptable_mangle nfs_acl bridge stp llc lockd be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i libcxgbi cxgb3 mdio ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi snd_hda_codec_realtek snd_usb_audio snd_hda_intel snd_hda_codec snd_seq snd_pcm snd_hwdep snd_usbmidi_lib snd_rawmidi snd_timer uvcvideo videobuf2_core videodev media videobuf2_vmalloc snd_seq_device videobuf2_memops e1000e vhost_net iTCO_wdt joydev coretemp snd soundcore macvtap macvlan i2c_i801 snd_page_alloc tun iTCO_vendor_support microcode kvm_intel kvm sunrpc hid_logitech_dj usb_storage i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-Pid: 1229, comm: rpc.idmapd Not tainted 3.4.2-1.fc16.x86_64 #1 Gateway DX4710-UB801A/G33M05G1
-RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
-RSP: 0018:ffff8801a3645d40  EFLAGS: 00010246
-RAX: ffff880077707e30 RBX: ffff880077707f50 RCX: ffff8801a18ccd80
-RDX: 0000000000000006 RSI: ffff8801a3645e75 RDI: ffff880077707f50
-RBP: ffff8801a3645d88 R08: ffff8801a430f9c0 R09: ffff8801a3645db0
-R10: 000000000000000a R11: 0000000000000246 R12: ffff8801a18ccd80
-R13: ffff8801a3645e75 R14: ffff8801a430f9c0 R15: 0000000000000006
-FS:  00007fb6fb51a700(0000) GS:ffff8801afc80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000001a49b0000 CR4: 00000000000027e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process rpc.idmapd (pid: 1229, threadinfo ffff8801a3644000, task ffff8801a3bf9710)
-Stack:
- ffffffff81260878 ffff8801a3645db0 ffff8801a3645db0 ffff880077707a90
- ffff880077707f50 ffff8801a18ccd80 0000000000000006 ffff8801a3645e75
- ffff8801a430f9c0 ffff8801a3645dd8 ffffffff81260983 ffff8801a3645de8
-Call Trace:
- [<ffffffff81260878>] ? __key_instantiate_and_link+0x58/0x100
- [<ffffffff81260983>] key_instantiate_and_link+0x63/0xa0
- [<ffffffffa057062b>] idmap_pipe_downcall+0x1cb/0x1e0 [nfs]
- [<ffffffffa0107f57>] rpc_pipe_write+0x67/0x90 [sunrpc]
- [<ffffffff8117f833>] vfs_write+0xb3/0x180
- [<ffffffff8117fb5a>] sys_write+0x4a/0x90
- [<ffffffff81600329>] system_call_fastpath+0x16/0x1b
-Code:  Bad RIP value.
-RIP  [<          (null)>]           (null)
- RSP <ffff8801a3645d40>
-CR2: 0000000000000000
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: Steve Dickson <steved@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/idmap.c |   26 ++++++++++++++++++++------
- 1 file changed, 20 insertions(+), 6 deletions(-)
+ fs/nfs/file.c                   |    7 +++++--
+ net/sunrpc/sched.c              |    2 ++
+ net/sunrpc/xprtrdma/transport.c |    3 ++-
+ net/sunrpc/xprtsock.c           |   10 ++++++++++
+ 4 files changed, 19 insertions(+), 3 deletions(-)
 
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -205,12 +205,18 @@ static int nfs_idmap_init_keyring(void)
- 	if (ret < 0)
- 		goto failed_put_key;
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -451,8 +451,11 @@ static int nfs_release_page(struct page
  
-+	ret = register_key_type(&key_type_id_resolver_legacy);
-+	if (ret < 0)
-+		goto failed_reg_legacy;
-+
- 	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
- 	cred->thread_keyring = keyring;
- 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
- 	id_resolver_cache = cred;
- 	return 0;
+ 	dfprintk(PAGECACHE, "NFS: release_page(%p)\n", page);
  
-+failed_reg_legacy:
-+	unregister_key_type(&key_type_id_resolver);
- failed_put_key:
- 	key_put(keyring);
- failed_put_cred:
-@@ -222,6 +228,7 @@ static void nfs_idmap_quit_keyring(void)
- {
- 	key_revoke(id_resolver_cache->thread_keyring);
- 	unregister_key_type(&key_type_id_resolver);
-+	unregister_key_type(&key_type_id_resolver_legacy);
- 	put_cred(id_resolver_cache);
- }
- 
-@@ -385,7 +392,7 @@ static const struct rpc_pipe_ops idmap_u
- };
- 
- static struct key_type key_type_id_resolver_legacy = {
--	.name		= "id_resolver",
-+	.name		= "id_legacy",
- 	.instantiate	= user_instantiate,
- 	.match		= user_match,
- 	.revoke		= user_revoke,
-@@ -658,6 +665,7 @@ static int nfs_idmap_legacy_upcall(struc
- 	if (ret < 0)
- 		goto out2;
- 
-+	BUG_ON(idmap->idmap_key_cons != NULL);
- 	idmap->idmap_key_cons = cons;
- 
- 	ret = rpc_queue_upcall(idmap->idmap_pipe, msg);
-@@ -671,8 +679,7 @@ out2:
- out1:
- 	kfree(msg);
- out0:
--	key_revoke(cons->key);
--	key_revoke(cons->authkey);
-+	complete_request_key(cons, ret);
- 	return ret;
- }
- 
-@@ -706,11 +713,18 @@ idmap_pipe_downcall(struct file *filp, c
- {
- 	struct rpc_inode *rpci = RPC_I(filp->f_path.dentry->d_inode);
- 	struct idmap *idmap = (struct idmap *)rpci->private;
--	struct key_construction *cons = idmap->idmap_key_cons;
-+	struct key_construction *cons;
- 	struct idmap_msg im;
- 	size_t namelen_in;
- 	int ret;
- 
-+	/* If instantiation is successful, anyone waiting for key construction
-+	 * will have been woken up and someone else may now have used
-+	 * idmap_key_cons - so after this point we may no longer touch it.
+-	/* Only do I/O if gfp is a superset of GFP_KERNEL */
+-	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
++	/* Only do I/O if gfp is a superset of GFP_KERNEL, and we're not
++	 * doing this memory reclaim for a fs-related allocation.
 +	 */
-+	cons = ACCESS_ONCE(idmap->idmap_key_cons);
-+	idmap->idmap_key_cons = NULL;
-+
- 	if (mlen != sizeof(im)) {
- 		ret = -ENOSPC;
- 		goto out;
-@@ -723,7 +737,7 @@ idmap_pipe_downcall(struct file *filp, c
++	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL &&
++	    !(current->flags & PF_FSTRANS)) {
+ 		int how = FLUSH_SYNC;
  
- 	if (!(im.im_status & IDMAP_STATUS_SUCCESS)) {
- 		ret = mlen;
--		complete_request_key(idmap->idmap_key_cons, -ENOKEY);
-+		complete_request_key(cons, -ENOKEY);
- 		goto out_incomplete;
- 	}
+ 		/* Don't let kswapd deadlock waiting for OOM RPC calls */
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -790,7 +790,9 @@ void rpc_execute(struct rpc_task *task)
  
-@@ -740,7 +754,7 @@ idmap_pipe_downcall(struct file *filp, c
- 	}
+ static void rpc_async_schedule(struct work_struct *work)
+ {
++	current->flags |= PF_FSTRANS;
+ 	__rpc_execute(container_of(work, struct rpc_task, u.tk_work));
++	current->flags &= ~PF_FSTRANS;
+ }
+ 
+ /**
+--- a/net/sunrpc/xprtrdma/transport.c
++++ b/net/sunrpc/xprtrdma/transport.c
+@@ -200,6 +200,7 @@ xprt_rdma_connect_worker(struct work_str
+ 	int rc = 0;
+ 
+ 	if (!xprt->shutdown) {
++		current->flags |= PF_FSTRANS;
+ 		xprt_clear_connected(xprt);
+ 
+ 		dprintk("RPC:       %s: %sconnect\n", __func__,
+@@ -212,10 +213,10 @@ xprt_rdma_connect_worker(struct work_str
  
  out:
--	complete_request_key(idmap->idmap_key_cons, ret);
-+	complete_request_key(cons, ret);
- out_incomplete:
- 	return ret;
+ 	xprt_wake_pending_tasks(xprt, rc);
+-
+ out_clear:
+ 	dprintk("RPC:       %s: exit\n", __func__);
+ 	xprt_clear_connecting(xprt);
++	current->flags &= ~PF_FSTRANS;
  }
+ 
+ /*
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1895,6 +1895,8 @@ static void xs_local_setup_socket(struct
+ 	if (xprt->shutdown)
+ 		goto out;
+ 
++	current->flags |= PF_FSTRANS;
++
+ 	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
+ 	status = __sock_create(xprt->xprt_net, AF_LOCAL,
+ 					SOCK_STREAM, 0, &sock, 1);
+@@ -1928,6 +1930,7 @@ static void xs_local_setup_socket(struct
+ out:
+ 	xprt_clear_connecting(xprt);
+ 	xprt_wake_pending_tasks(xprt, status);
++	current->flags &= ~PF_FSTRANS;
+ }
+ 
+ static void xs_udp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
+@@ -1970,6 +1973,8 @@ static void xs_udp_setup_socket(struct w
+ 	if (xprt->shutdown)
+ 		goto out;
+ 
++	current->flags |= PF_FSTRANS;
++
+ 	/* Start by resetting any existing state */
+ 	xs_reset_transport(transport);
+ 	sock = xs_create_sock(xprt, transport,
+@@ -1988,6 +1993,7 @@ static void xs_udp_setup_socket(struct w
+ out:
+ 	xprt_clear_connecting(xprt);
+ 	xprt_wake_pending_tasks(xprt, status);
++	current->flags &= ~PF_FSTRANS;
+ }
+ 
+ /*
+@@ -2113,6 +2119,8 @@ static void xs_tcp_setup_socket(struct w
+ 	if (xprt->shutdown)
+ 		goto out;
+ 
++	current->flags |= PF_FSTRANS;
++
+ 	if (!sock) {
+ 		clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
+ 		sock = xs_create_sock(xprt, transport,
+@@ -2162,6 +2170,7 @@ static void xs_tcp_setup_socket(struct w
+ 	case -EINPROGRESS:
+ 	case -EALREADY:
+ 		xprt_clear_connecting(xprt);
++		current->flags &= ~PF_FSTRANS;
+ 		return;
+ 	case -EINVAL:
+ 		/* Happens, for instance, if the user specified a link
+@@ -2174,6 +2183,7 @@ out_eagain:
+ out:
+ 	xprt_clear_connecting(xprt);
+ 	xprt_wake_pending_tasks(xprt, status);
++	current->flags &= ~PF_FSTRANS;
+ }
+ 
+ /**
 
 
