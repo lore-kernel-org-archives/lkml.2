@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031029Ab2HGWnS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:43:18 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41393 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030864Ab2HGWnP (ORCPT
+	id S1031038Ab2HGWnZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:43:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031020Ab2HGWnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:43:15 -0400
+	Tue, 7 Aug 2012 18:43:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 097/109] ALSA: mpu401: Fix missing initialization of irq field
-Date: Tue,  7 Aug 2012 15:35:56 -0700
-Message-Id: <20120807222051.588033120@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 103/109] ASoC: wm8962: Allow VMID time to fully ramp
+Date: Tue,  7 Aug 2012 15:36:02 -0700
+Message-Id: <20120807222052.110701465@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,32 +29,30 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit bc733d495267a23ef8660220d696c6e549ce30b3 upstream.
+commit 9d40e5582c9c4cfb6977ba2a0ca9c2ed82c56f21 upstream.
 
-The irq field of struct snd_mpu401 is supposed to be initialized to -1.
-Since it's set to zero as of now, a probing error before the irq
-installation results in a kernel warning "Trying to free already-free
-IRQ 0".
+Required for reliable power up from cold.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=44821
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/drivers/mpu401/mpu401_uart.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/wm8962.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/drivers/mpu401/mpu401_uart.c
-+++ b/sound/drivers/mpu401/mpu401_uart.c
-@@ -554,6 +554,7 @@ int snd_mpu401_uart_new(struct snd_card
- 	spin_lock_init(&mpu->output_lock);
- 	spin_lock_init(&mpu->timer_lock);
- 	mpu->hardware = hardware;
-+	mpu->irq = -1;
- 	if (! (info_flags & MPU401_INFO_INTEGRATED)) {
- 		int res_size = hardware == MPU401_HW_PC98II ? 4 : 2;
- 		mpu->res = request_region(port, res_size, "MPU401 UART");
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -2488,6 +2488,9 @@ static int wm8962_set_bias_level(struct
+ 		/* VMID 2*250k */
+ 		snd_soc_update_bits(codec, WM8962_PWR_MGMT_1,
+ 				    WM8962_VMID_SEL_MASK, 0x100);
++
++		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF)
++			msleep(100);
+ 		break;
+ 
+ 	case SND_SOC_BIAS_OFF:
 
 
