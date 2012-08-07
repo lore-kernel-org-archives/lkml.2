@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab2HGPJm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:09:42 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52616 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab2HGPJl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:09:41 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 7 Aug 2012 08:09:49 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Randy Dunlop <randy.dunlap@oracle.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [NEW DRIVER V2 6/7] DA9058 HWMON driver
-Message-ID: <20120807150949.GA25007@roeck-us.net>
-References: <201208060737.q767biox005703@ubuntu>
- <20120806173943.GA29475@roeck-us.net>
- <24DF37198A1E704D9811D8F72B87EB51032C3BBB@NB-EX-MBX02.diasemi.com>
+	id S1751599Ab2HGPM7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:12:59 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:5660 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751225Ab2HGPM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 11:12:57 -0400
+X-IronPort-AV: E=Sophos;i="4.77,727,1336374000"; 
+   d="scan'208";a="674177552"
+Message-ID: <50213076.7060003@netapp.com>
+Date: Tue, 07 Aug 2012 11:12:54 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <24DF37198A1E704D9811D8F72B87EB51032C3BBB@NB-EX-MBX02.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joerg Roedel <joro@8bytes.org>
+CC: Joerg Roedel <joerg.roedel@amd.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wdauchy@gmail.com
+Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+References: <20120807134156.GP1996@amd.com> <50211E42.6040808@netapp.com> <20120807141548.GG1917@8bytes.org> <5021237D.1010107@netapp.com> <20120807142707.GH1917@8bytes.org> <502127EF.3030209@netapp.com> <20120807145019.GI1917@8bytes.org>
+In-Reply-To: <20120807145019.GI1917@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 12:10:08PM +0000, Opensource [Anthony Olech] wrote:
-> > -----Original Message-----
-> > From: Guenter Roeck [mailto:linux@roeck-us.net]
-> > Sent: 06 August 2012 18:40
-> > To: Opensource [Anthony Olech]
-> > Cc: Guenter Roeck; Jean Delvare; Randy Dunlop; Mark Brown; David Dajun
-> > Chen; LKML; lm-sensors@lm-sensors.org
-> > Subject: Re: [lm-sensors] [NEW DRIVER V2 6/7] DA9058 HWMON driver
-> > On Sun, Aug 05, 2012 at 09:43:44PM +0100, Anthony Olech wrote:
-> > > This is the HWMON component driver of the Dialog DA9058 PMIC.
-> > > This driver is just one component of the whole DA9058 PMIC driver.
-> > > It depends on the core DA9058 MFD driver.
-> > > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> > > Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
-> > [ ... ]
-> > > +static SENSOR_DEVICE_ATTR(vbat_mV, S_IRUGO, da9058_read_vbat, NULL,
-> > > +0); static SENSOR_DEVICE_ATTR(adc_mV, S_IRUGO,
-> > da9058_read_misc_channel, NULL,
-> > > +				DA9058_ADCMAN_MUXSEL_ADCIN);
-> > > +static SENSOR_DEVICE_ATTR(vfpin_mV, S_IRUGO, da9058_read_vfpin,
-> > NULL,
-> > > +0); static SENSOR_DEVICE_ATTR(vfpin_mode, S_IRUGO,
-> > da9058_vfpin_mode,
-> > > +NULL, 0); static SENSOR_DEVICE_ATTR(tbat_mV, S_IRUGO,
-> > > +da9058_read_tbat, NULL, 0); static SENSOR_DEVICE_ATTR(tjunc_in,
-> > > +S_IRUGO, da9058_read_tjunc, NULL, 0); static
-> > SENSOR_DEVICE_ATTR(adc_mode, S_IWUSR | S_IRUGO,
-> > da9058_get_adc_mode,
-> > > +				da9058_set_adc_mode, 0);
-> > Please use standard sysfs attribute names for temperature and voltage attributes.
+On 08/07/2012 10:50 AM, Joerg Roedel wrote:
+> On Tue, Aug 07, 2012 at 10:36:31AM -0400, Bryan Schumaker wrote:
+>> Your stack trace is showing v4 calls on the failing box, those
+>> definitely shouldn't be happening if you're using v3.  Can you double
+>> check /etc/fstab and /proc/mounts on a working kernel to be sure?
 > 
-> I could not find a naming convention, so I will try to abstract one from all the
+> So the bug is probably (for whatever reason) that the nfs4 path is
+> called for an nfs3 mount :)
 
-Documentation/hwmon/sysfs-interface might be a good start.
+That's what I'm thinking.  If you're not using v4, what happens if you turn CONFIG_NFS_V4 off in your .config for the broken machine?  I still haven't been able to trigger the bug, even with your .config, so I'm going to keep poking at it.
 
-> HWMON driver that have your name in them. I noted when searching that
-> I missed out a file in also that Documentation/hwmon. I will correct both
-> issues in my next submission attempt.
+- Bryan
+
+> Anyway, I attach /proc/mounts and /etc/fstab from that box running a
+> v3.5-rc5 kernel (where it works).
+
+Thanks.  I don't see anything weird in there.  You're using the same settings for the other machine, too?
+
 > 
-> > For configuration (XXX_mode), please use devicetreee and/or platform data,
-> > not sysfs attributes.
 > 
-> As far as I can see both devicetreee and platform data allow configuration
-> data to be passed into the driver at "probe" time, they don't allow an operating
-> mode to be changed dynamically. That is what I thought sysfs allowed. Thus
-> your comments seem to imply that you do not want to allow the mode to be
-> changed dynamically. If that is the case then I can remove the dynamic mode
-
-Correct.
-
-> setting, leaving it fixed by platform data.
+> 	Joerg
 > 
 
-I would also suggest to read and follow Documentation/hwmon/submitting-patches.
-
-Thanks,
-Guenter
