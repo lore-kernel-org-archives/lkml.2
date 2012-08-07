@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab2HGWBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:01:40 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:49336 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab2HGWBj (ORCPT
+	id S1756938Ab2HGWDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:03:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2180 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755746Ab2HGWDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:01:39 -0400
-MIME-Version: 1.0
-X-Originating-IP: [76.119.162.148]
-In-Reply-To: <50218F7E.1060004@linaro.org>
-References: <50215A7E.8000701@linaro.org>
-	<CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com>
-	<50218F7E.1060004@linaro.org>
-Date: Tue, 7 Aug 2012 18:01:38 -0400
-Message-ID: <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com>
-Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
-From: Paul Moore <paul@paul-moore.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Aug 2012 18:03:06 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=ISOGykE_-WwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=Riw51vTmaxRSkVkzproA:9 a=QEXdDO2ut3YA:10 a=YTw0oxLd7MoA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=sJ8EIqf13u-BO86J3RYA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120807220303.733846871@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 07 Aug 2012 18:01:08 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 2/3] tracing/filter: Add missing initialization
+References: <20120807220106.459308722@goodmis.org>
+Content-Disposition: inline; filename=0002-tracing-filter-Add-missing-initialization.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 5:58 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On 08/07/2012 02:50 PM, Paul Moore wrote:
->>
->> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org>
->> wrote:
->>>
->>> Hi,
->>>      With my kvm environment using 3.6-rc1+, I'm seeing NULL pointer
->>> dereferences in selinux_ip_postroute_compat(). It looks like the sksec
->>> value
->>> is null and we die in the following line:
->>>
->>>      if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
->>>
->>> This triggers every time I shutdown the machine, but has also triggered
->>> randomly after a few hours.
->>>
->>> This is on an ubuntu 12.04 image, not using selinux.
->>
->> NOTE: Adding the SELinux list to the CC line
->
-> Thanks!
->
->> Hi,
->>
->> I'm trying to understand this and I was hoping you could you clarify a
->> few things for me:
->>
->> * Is the panic in the Ubuntu 12.04 guest, or the host?  If the host,
->> could you share what distribution you are using?
->
-> Sorry, its a 12.04 guest.  I think the host is Ubuntu 12.04 as well.
->
->
->> * When you say you are not using SELinux, could you be more specific?
->> It seems odd that you are not using SELinux but the panic is happening
->> in a SELinux hook.
->
-> I just mean that, being Ubuntu,  the system (userland) isn't configured to
-> use selinux.  SELinux is just enabled in the kernel config.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the quick response, I'll setup an Ubuntu guest and see if I
-can reproduce this ... something is odd.  Anything non-standard about
-your guest install or anything else you think might be helpful?
+From: Jiri Olsa <jolsa@redhat.com>
 
--- 
-paul moore
-www.paul-moore.com
+Add missing initialization for ret variable. Its initialization
+is based on the re_cnt variable, which is being set deep down
+in the ftrace_function_filter_re function.
+
+I'm not sure compilers would be smart enough to see this in near
+future, so killing the warning this way.
+
+Link: http://lkml.kernel.org/r/1340120894-9465-2-git-send-email-jolsa@redha=
+t.com
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_events_filter.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
+_filter.c
+index 431dba8..c154797 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -2002,7 +2002,7 @@ static int ftrace_function_set_regexp(struct ftrace_o=
+ps *ops, int filter,
+ static int __ftrace_function_set_filter(int filter, char *buf, int len,
+ 					struct function_filter_data *data)
+ {
+-	int i, re_cnt, ret;
++	int i, re_cnt, ret =3D -EINVAL;
+ 	int *reset;
+ 	char **re;
+=20
+--=20
+1.7.10.4
+
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQIZCXAAoJEIy3vGnGbaoAVbAP/2QfCYK/oHWzcRsXmGtKjP4m
+kTElyJQdUAS9KraSBOjFLvtYyn72k40kBpdQkj/h25I8uj4ZniTJCHX3Tf19icvz
+CZtu8sUQOmvC0ou9/x3BVzBfBgFmOXTZKVFm3I0uP+e8u/PjBobUAN+l1LJdQj89
+g+IkPCfbgfpd+XMtRJ7DamI9+1mXRUVN/FiVPmp8BTi6MIUbeDpehYLc7OfRrXzr
+6ihEQrKBT7RiuW8LS1vtK7zdKiDWJqJGRNsWSEnOuaWQgz2ieAZ3E5jPHVX63Lih
+LZX7wBtAzS0dk2a+nfLgenHw8LA/EwG/ikmnW1ahcJhVkeKm18rH0XRIuGP1BAsX
+A/dUz6a8adC+71EhG6f6XxktbgOw2L6KOGiAU5Ru/3Ne55Cz277owhNLpt7gupav
+CMl21kBX+0+GsrmoLCbKxq1Prj8dEMfqgt/JSEVvTBu6eXfOhcm96tN+/MwI0/X+
+Ig8xgxbl5O6ymswV4HKUBCWMr10MCl5BwJ32/HnnuBwaMKUKCW5SrRmZI9sBv7bY
+e4v6YJJSubd/8K31IZSrFM2kHwxLznC3zWq82A0QEuAAvahXoE8mFKdVW8Y2pPnh
+qhkP7O49O8QzGi6Uth7H1bhLR62L9IWALQhEFwlIz3prTIeTnrNysd/y8L0FzJYo
+7b5lf90N8FsgWK7zN/g9
+=IeCU
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
