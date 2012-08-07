@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab2HGLiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 07:38:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59866 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751690Ab2HGLiD (ORCPT
+	id S1754010Ab2HGLlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 07:41:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55488 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab2HGLlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 07:38:03 -0400
-Date: Tue, 7 Aug 2012 12:38:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
-        rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-Message-ID: <20120807113801.GB16861@opensource.wolfsonmicro.com>
-References: <20120806155805.GR16861@opensource.wolfsonmicro.com>
- <20120806192209.GA14594@flint.arm.linux.org.uk>
- <20120806195352.GC16199@opensource.wolfsonmicro.com>
- <20120806213124.GB14594@flint.arm.linux.org.uk>
- <20120806220032.GD26698@opensource.wolfsonmicro.com>
- <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com>
- <20120807103851.GS16861@opensource.wolfsonmicro.com>
- <20120807111331.GC24257@flint.arm.linux.org.uk>
- <20120807112844.GZ16861@opensource.wolfsonmicro.com>
- <20120807113121.GD24257@flint.arm.linux.org.uk>
+	Tue, 7 Aug 2012 07:41:20 -0400
+Date: Tue, 7 Aug 2012 12:41:15 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, w.sang@pengutronix.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 1/1 v2] i2c: Add default configuration into the Nomadik
+ I2C driver.
+Message-ID: <20120807114113.GA5684@gmail.com>
+References: <1344266253-14050-1-git-send-email-lee.jones@linaro.org>
+ <20120806153503.GH10524@gmail.com>
+ <CACRpkdZjbyQbht+UpXrrVGhAzGYPjb=HRZhJ+TvsEXhGeviJLA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120807113121.GD24257@flint.arm.linux.org.uk>
-X-Cookie: You will be married within a year.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZjbyQbht+UpXrrVGhAzGYPjb=HRZhJ+TvsEXhGeviJLA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 12:31:21PM +0100, Russell King wrote:
-> On Tue, Aug 07, 2012 at 12:28:44PM +0100, Mark Brown wrote:
+> > diff --git a/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch b/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch
+> > new file mode 120000
+> > index 0000000..427334b
+> > --- /dev/null
+> > +++ b/drivers/gpu/mali/mali400ko/driver/src/devicedrv/mali/arch
+> > @@ -0,0 +1 @@
+> 
+> NACK, what is this stuff? It's even out-of-tree code.
 
-> > The changes you're suggesting are extremely invasive for stable
-> > especially given that we have a simple, driver local, fix available
+Whoa, no idea! Good spot though, I missed this completely.
 
-> *Rubbish*.
+> Please be careful with git add -A, I prefer to use git add <pathspec>
+> I suspect that may be why this happened...
 
-This isn't helpful or constructive...
+I don't use `git add -A`, ever. If I'm adding files, I usually use 
+`git commit -s -- <pathspec>`, or `git commit -a` if I'm sure I require
+all the necessary changes. I guess I could have accidentally collected 
+it using `git add -i` whist fixing it up, or a similar misdemeanor.
 
-Which bit of the above are you referring to here?  If it's the having a
-fix bit then as pointed out repeatedly now in this and the previous
-thread we've got the separete resource tree approach implemented in
-stable right now making actual systems run.
+> Please fix it up and send a v3.
+
+Of course.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
