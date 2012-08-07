@@ -1,109 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2HGQQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:16:41 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:43938 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737Ab2HGQQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:16:40 -0400
-Message-ID: <50213F56.7030609@cs.wisc.edu>
-Date: Tue, 07 Aug 2012 11:16:22 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>
-CC: Chanho Min <chanho0207@gmail.com>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
-References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com> <501CE4E5.20604@acm.org> <501D51D1.2010806@cs.wisc.edu> <501D83A1.7040900@acm.org> <501DA3F0.4090009@cs.wisc.edu> <50200561.4020100@acm.org>
-In-Reply-To: <50200561.4020100@acm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753118Ab2HGQSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:18:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35590 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab2HGQSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 12:18:36 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [RFC PATCH v1 00/22] introduce PCI bus lock to serialize PCI hotplug operations
+Date: Wed,  8 Aug 2012 00:10:40 +0800
+Message-Id: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 12:56 PM, Bart Van Assche wrote:
-> On 08/04/12 22:36, Mike Christie wrote:
->> On 08/04/2012 03:18 PM, Bart Van Assche wrote:
->>> On 08/04/12 16:46, Mike Christie wrote:
->>>> I think we have to have scsi-ml do a get_device when a sdev is added to
->>>> the starved entry and then do a put_device when it is removed (must do
->>>> these under the host lock for the starved entry case too). I am not sure
->>>> if that is just a hack/papering-over of the problem and there are more
->>>> issues like this.
->>>
->>> That would result in a more complex patch than the patch at the start of
->>> this thread, isn't it ?
->>
->> Yaah, but the original patch in this thread is still racey isn't it?
-> 
-> Indeed. How about the patch below ? Scsi devices are removed from
-> starved_list after blk_cleanup_queue() and before put_device(). That
-> guarantees that inside scsi_run_queue() get_device() under host lock
-> will succeed.
-> 
-> ---
->  drivers/scsi/scsi_lib.c   |    5 +++++
->  drivers/scsi/scsi_sysfs.c |    7 ++++++-
->  2 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index ffd7773..bd7daec 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -452,10 +452,15 @@ static void scsi_run_queue(struct request_queue *q)
->  			continue;
->  		}
->  
-> +		get_device(&sdev->sdev_gendev);
->  		spin_unlock(shost->host_lock);
-> +
->  		spin_lock(sdev->request_queue->queue_lock);
->  		__blk_run_queue(sdev->request_queue);
->  		spin_unlock(sdev->request_queue->queue_lock);
-> +
-> +		put_device(&sdev->sdev_gendev);
-> +
->  		spin_lock(shost->host_lock);
->  	}
->  	/* put any unprocessed entries back */
-> diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-> index 093d4f6..44f232e 100644
-> --- a/drivers/scsi/scsi_sysfs.c
-> +++ b/drivers/scsi/scsi_sysfs.c
-> @@ -348,7 +348,6 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
->  	starget->reap_ref++;
->  	list_del(&sdev->siblings);
->  	list_del(&sdev->same_target_siblings);
-> -	list_del(&sdev->starved_entry);
->  	spin_unlock_irqrestore(sdev->host->host_lock, flags);
->  
->  	cancel_work_sync(&sdev->event_work);
-> @@ -956,6 +955,8 @@ int scsi_sysfs_add_sdev(struct scsi_device *sdev)
->  void __scsi_remove_device(struct scsi_device *sdev)
->  {
->  	struct device *dev = &sdev->sdev_gendev;
-> +	struct Scsi_Host *shost = sdev->host;
-> +	unsigned long flags;
->  
->  	if (sdev->is_visible) {
->  		if (scsi_device_set_state(sdev, SDEV_CANCEL) != 0)
-> @@ -977,6 +978,10 @@ void __scsi_remove_device(struct scsi_device *sdev)
->  	blk_cleanup_queue(sdev->request_queue);
->  	cancel_work_sync(&sdev->requeue_work);
->  
-> +	spin_lock_irqsave(shost->host_lock, flags);
-> +	list_del(&sdev->starved_entry);
-> +	spin_unlock_irqrestore(shost->host_lock, flags);
-> +
->  	if (sdev->host->hostt->slave_destroy)
->  		sdev->host->hostt->slave_destroy(sdev);
->  	transport_destroy_device(dev);
-> 
+From: Jiang Liu <liuj97@gmail.com>
 
-I think the patch will work now.
+This is the second take to resolve race conditions when hot-plugging PCI
+devices/host bridges. Instead of using a globla lock to serialize all hotplug
+operations as in previous version, now we introduce a state machine and bit
+lock mechanism for PCI buses to serialize hotplug operations. For discussions
+related to previous version, please refer to:
+http://comments.gmane.org/gmane.linux.kernel.pci/15007
 
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
+This patch-set is still in early stages, so sending it out just requesting
+for comments. Any comments are welcomed, especially about whether it's the
+right/suitable way to solve these race condition issues.
+
+patch 1-5:
+	Preparing for coming PCI bus lock
+patch 6-7: 
+	Core of the new PCI bus lock mechanism.
+patch 8-13:
+	Enhance PCI core to support PCI bus lock mechanism.
+patch 14-18:
+	Enhance several PCI hotplug drivers to use PCI bus lock to serialize
+	hotplug operations.
+patch 19-20:
+	Enable PCI bus lock mechanism for x86 and IA64, still need to enable
+	PCI bus lock for other archs.
+patch 21-22:
+	Cleanups for unsed code.
+
+There are multiple methods to trigger PCI hotplug requests/operations
+concurrently, such as:
+1. Sysfs interfaces exported by the PCI core subsystem
+	/sys/devices/pcissss:bb/ssss:bb:dd.f/.../remove
+	/sys/devices/pcissss:bb/ssss:bb:dd.f/.../rescan
+	/sys/devices/pcissss:bb/ssss:bb:dd.f/.../pci_bus/ssss:bb/rescan
+	/sys/bus/pci/rescan
+2. Sysfs interfaces exported by the PCI hotplug subsystem
+	/sys/bus/pci/slots/xx/power
+3. PCI hotplug events triggered by PCI Hotplug Controllers
+4. ACPI hotplug events for PCI host bridges
+5. Driver binding/unbinding events
+	binding/unbinding pci drivers with SR-IOV support
+
+With current implementation, the PCI core subsystem doesn't support
+concurrent hotplug operations yet. The existing pci_bus_sem lock only
+protects several lists in struct pci_bus, such as children list,
+devices list, but it doesn't protect the pci_bus or pci_dev structure
+themselves.
+
+Let's take pci_remove_bus_device() as an example, which are used by
+PCI hotplug drivers to hot-remove PCI devices.  Currently all these
+are free running without any protection, so it can't support reentrance.
+pci_remove_bus_device()
+    ->pci_stop_bus_device()
+        ->pci_stop_bus_device()
+            ->pci_stop_bus_devices()
+        ->pci_stop_dev()
+
+Jiang Liu (22):
+  PCI: use pci_get_domain_bus_and_slot() to avoid race conditions
+  PCI: trivial cleanups for drivers/pci/remove.c
+  PCI: change PCI device management code to better follow device model
+  PCI: split PCI bus device registration into two stages
+  PCI: introduce pci_bus_{get|put}() to manage PCI bus reference count
+  PCI: use a global lock to serialize PCI root bridge hotplug
+    operations
+  PCI: introduce PCI bus lock to serialize PCI hotplug operations
+  PCI: introduce hotplug safe search interfaces for PCI bus/device
+  PCI: enhance PCI probe logic to support PCI bus lock mechanism
+  PCI: enhance PCI bus specific logic to support PCI bus lock mechanism
+  PCI: enhance PCI resource assignment logic to support PCI bus lock
+    mechanism
+  PCI: enhance PCI remove logic to support PCI bus lock mechanism
+  PCI: make each PCI device hold a reference to its parent PCI bus
+  PCI/sysfs: use PCI bus lock to avoid race conditions
+  PCI/eeepc: use PCI bus lock to avoid race conditions
+  PCI/asus-wmi: use PCI bus lock to avoid race conditions
+  PCI/pciehp: use PCI bus lock to avoid race conditions
+  PCI/acpiphp: use PCI bus lock to avoid race conditions
+  PCI/x86: enable PCI bus lock mechanism for x86 platforms
+  PCI/IA64: enable PCI bus lock mechanism for IA64 platforms
+  PCI: cleanups for PCI bus lock implementation
+  PCI: unexport pci_root_buses
+
+ arch/ia64/pci/pci.c                  |    2 +
+ arch/ia64/sn/kernel/io_common.c      |    4 +-
+ arch/ia64/sn/kernel/io_init.c        |    1 +
+ arch/ia64/sn/pci/tioca_provider.c    |    4 +-
+ arch/x86/pci/acpi.c                  |    6 +-
+ arch/x86/pci/common.c                |   12 +++
+ drivers/acpi/pci_root.c              |    8 +-
+ drivers/edac/i7core_edac.c           |   16 ++-
+ drivers/gpu/drm/drm_fops.c           |    6 +-
+ drivers/gpu/vga/vgaarb.c             |   15 +--
+ drivers/pci/bus.c                    |  188 +++++++++++++++++++++++++++++-----
+ drivers/pci/host-bridge.c            |   19 ++++
+ drivers/pci/hotplug/acpiphp_glue.c   |   13 ++-
+ drivers/pci/hotplug/cpcihp_generic.c |    8 +-
+ drivers/pci/hotplug/pciehp_pci.c     |   15 +++
+ drivers/pci/hotplug/sgi_hotplug.c    |    2 +
+ drivers/pci/iov.c                    |   11 +-
+ drivers/pci/pci-sysfs.c              |   37 ++++---
+ drivers/pci/probe.c                  |   83 +++++++++++----
+ drivers/pci/remove.c                 |  176 +++++++++++++++++--------------
+ drivers/pci/search.c                 |   53 ++++++++--
+ drivers/pci/setup-bus.c              |   65 +++++++++---
+ drivers/pci/xen-pcifront.c           |   10 +-
+ drivers/platform/x86/asus-wmi.c      |   23 ++++-
+ drivers/platform/x86/eeepc-laptop.c  |   20 ++--
+ include/linux/pci.h                  |   56 +++++++++-
+ 26 files changed, 629 insertions(+), 224 deletions(-)
+
+-- 
+1.7.9.5
+
