@@ -1,139 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab2HGQSi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:18:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35590 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab2HGQSg (ORCPT
+	id S1755320Ab2HGQSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:18:49 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:54735 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab2HGQSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:18:36 -0400
+	Tue, 7 Aug 2012 12:18:46 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
         Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+Cc: Jiang Liu <jiang.liu@huawei.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         "Rafael J . Wysocki" <rjw@sisk.pl>,
         Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [RFC PATCH v1 00/22] introduce PCI bus lock to serialize PCI hotplug operations
-Date: Wed,  8 Aug 2012 00:10:40 +0800
-Message-Id: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Subject: [RFC PATCH v1 01/22] PCI: use pci_get_domain_bus_and_slot() to avoid race conditions
+Date: Wed,  8 Aug 2012 00:10:41 +0800
+Message-Id: <1344355862-2726-2-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
+References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <liuj97@gmail.com>
+There's a typical usage pattern to search a PCI device under a specific
+PCI bus (domian, busno) as below:
+struct pci_bus *pci_bus = pci_find_bus(domain, busno);
+struct pci_dev *pci_dev = pci_get_slot(pci_bus, devfn);
 
-This is the second take to resolve race conditions when hot-plugging PCI
-devices/host bridges. Instead of using a globla lock to serialize all hotplug
-operations as in previous version, now we introduce a state machine and bit
-lock mechanism for PCI buses to serialize hotplug operations. For discussions
-related to previous version, please refer to:
-http://comments.gmane.org/gmane.linux.kernel.pci/15007
+The above code has a race window between pci_find_bus() and pci_get_slot()
+if PCI hotplug operations happen between them which removes the pci_bus.
+So use PCI hotplug safe interface pci_get_domain_bus_and_slot() instead,
+which also reduces code complexity.
 
-This patch-set is still in early stages, so sending it out just requesting
-for comments. Any comments are welcomed, especially about whether it's the
-right/suitable way to solve these race condition issues.
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+---
+ arch/ia64/sn/kernel/io_common.c      |    4 +---
+ drivers/gpu/vga/vgaarb.c             |   15 +++------------
+ drivers/pci/hotplug/cpcihp_generic.c |    8 ++------
+ drivers/pci/iov.c                    |    8 ++------
+ drivers/pci/xen-pcifront.c           |   10 ++--------
+ 5 files changed, 10 insertions(+), 35 deletions(-)
 
-patch 1-5:
-	Preparing for coming PCI bus lock
-patch 6-7: 
-	Core of the new PCI bus lock mechanism.
-patch 8-13:
-	Enhance PCI core to support PCI bus lock mechanism.
-patch 14-18:
-	Enhance several PCI hotplug drivers to use PCI bus lock to serialize
-	hotplug operations.
-patch 19-20:
-	Enable PCI bus lock mechanism for x86 and IA64, still need to enable
-	PCI bus lock for other archs.
-patch 21-22:
-	Cleanups for unsed code.
-
-There are multiple methods to trigger PCI hotplug requests/operations
-concurrently, such as:
-1. Sysfs interfaces exported by the PCI core subsystem
-	/sys/devices/pcissss:bb/ssss:bb:dd.f/.../remove
-	/sys/devices/pcissss:bb/ssss:bb:dd.f/.../rescan
-	/sys/devices/pcissss:bb/ssss:bb:dd.f/.../pci_bus/ssss:bb/rescan
-	/sys/bus/pci/rescan
-2. Sysfs interfaces exported by the PCI hotplug subsystem
-	/sys/bus/pci/slots/xx/power
-3. PCI hotplug events triggered by PCI Hotplug Controllers
-4. ACPI hotplug events for PCI host bridges
-5. Driver binding/unbinding events
-	binding/unbinding pci drivers with SR-IOV support
-
-With current implementation, the PCI core subsystem doesn't support
-concurrent hotplug operations yet. The existing pci_bus_sem lock only
-protects several lists in struct pci_bus, such as children list,
-devices list, but it doesn't protect the pci_bus or pci_dev structure
-themselves.
-
-Let's take pci_remove_bus_device() as an example, which are used by
-PCI hotplug drivers to hot-remove PCI devices.  Currently all these
-are free running without any protection, so it can't support reentrance.
-pci_remove_bus_device()
-    ->pci_stop_bus_device()
-        ->pci_stop_bus_device()
-            ->pci_stop_bus_devices()
-        ->pci_stop_dev()
-
-Jiang Liu (22):
-  PCI: use pci_get_domain_bus_and_slot() to avoid race conditions
-  PCI: trivial cleanups for drivers/pci/remove.c
-  PCI: change PCI device management code to better follow device model
-  PCI: split PCI bus device registration into two stages
-  PCI: introduce pci_bus_{get|put}() to manage PCI bus reference count
-  PCI: use a global lock to serialize PCI root bridge hotplug
-    operations
-  PCI: introduce PCI bus lock to serialize PCI hotplug operations
-  PCI: introduce hotplug safe search interfaces for PCI bus/device
-  PCI: enhance PCI probe logic to support PCI bus lock mechanism
-  PCI: enhance PCI bus specific logic to support PCI bus lock mechanism
-  PCI: enhance PCI resource assignment logic to support PCI bus lock
-    mechanism
-  PCI: enhance PCI remove logic to support PCI bus lock mechanism
-  PCI: make each PCI device hold a reference to its parent PCI bus
-  PCI/sysfs: use PCI bus lock to avoid race conditions
-  PCI/eeepc: use PCI bus lock to avoid race conditions
-  PCI/asus-wmi: use PCI bus lock to avoid race conditions
-  PCI/pciehp: use PCI bus lock to avoid race conditions
-  PCI/acpiphp: use PCI bus lock to avoid race conditions
-  PCI/x86: enable PCI bus lock mechanism for x86 platforms
-  PCI/IA64: enable PCI bus lock mechanism for IA64 platforms
-  PCI: cleanups for PCI bus lock implementation
-  PCI: unexport pci_root_buses
-
- arch/ia64/pci/pci.c                  |    2 +
- arch/ia64/sn/kernel/io_common.c      |    4 +-
- arch/ia64/sn/kernel/io_init.c        |    1 +
- arch/ia64/sn/pci/tioca_provider.c    |    4 +-
- arch/x86/pci/acpi.c                  |    6 +-
- arch/x86/pci/common.c                |   12 +++
- drivers/acpi/pci_root.c              |    8 +-
- drivers/edac/i7core_edac.c           |   16 ++-
- drivers/gpu/drm/drm_fops.c           |    6 +-
- drivers/gpu/vga/vgaarb.c             |   15 +--
- drivers/pci/bus.c                    |  188 +++++++++++++++++++++++++++++-----
- drivers/pci/host-bridge.c            |   19 ++++
- drivers/pci/hotplug/acpiphp_glue.c   |   13 ++-
- drivers/pci/hotplug/cpcihp_generic.c |    8 +-
- drivers/pci/hotplug/pciehp_pci.c     |   15 +++
- drivers/pci/hotplug/sgi_hotplug.c    |    2 +
- drivers/pci/iov.c                    |   11 +-
- drivers/pci/pci-sysfs.c              |   37 ++++---
- drivers/pci/probe.c                  |   83 +++++++++++----
- drivers/pci/remove.c                 |  176 +++++++++++++++++--------------
- drivers/pci/search.c                 |   53 ++++++++--
- drivers/pci/setup-bus.c              |   65 +++++++++---
- drivers/pci/xen-pcifront.c           |   10 +-
- drivers/platform/x86/asus-wmi.c      |   23 ++++-
- drivers/platform/x86/eeepc-laptop.c  |   20 ++--
- include/linux/pci.h                  |   56 +++++++++-
- 26 files changed, 629 insertions(+), 224 deletions(-)
-
+diff --git a/arch/ia64/sn/kernel/io_common.c b/arch/ia64/sn/kernel/io_common.c
+index fbb5f2f..8630875 100644
+--- a/arch/ia64/sn/kernel/io_common.c
++++ b/arch/ia64/sn/kernel/io_common.c
+@@ -229,7 +229,6 @@ void sn_pci_fixup_slot(struct pci_dev *dev, struct pcidev_info *pcidev_info,
+ {
+ 	int segment = pci_domain_nr(dev->bus);
+ 	struct pcibus_bussoft *bs;
+-	struct pci_bus *host_pci_bus;
+ 	struct pci_dev *host_pci_dev;
+ 	unsigned int bus_no, devfn;
+ 
+@@ -245,8 +244,7 @@ void sn_pci_fixup_slot(struct pci_dev *dev, struct pcidev_info *pcidev_info,
+ 
+ 	bus_no = (pcidev_info->pdi_slot_host_handle >> 32) & 0xff;
+ 	devfn = pcidev_info->pdi_slot_host_handle & 0xffffffff;
+- 	host_pci_bus = pci_find_bus(segment, bus_no);
+- 	host_pci_dev = pci_get_slot(host_pci_bus, devfn);
++	host_pci_dev = pci_get_domain_bus_and_slot(segment, bus_no, devfn);
+ 
+ 	pcidev_info->host_pci_dev = host_pci_dev;
+ 	pcidev_info->pdi_linux_pcidev = dev;
+diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
+index 3df8fc0..b6852b7 100644
+--- a/drivers/gpu/vga/vgaarb.c
++++ b/drivers/gpu/vga/vgaarb.c
+@@ -1066,7 +1066,6 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
+ 		}
+ 
+ 	} else if (strncmp(curr_pos, "target ", 7) == 0) {
+-		struct pci_bus *pbus;
+ 		unsigned int domain, bus, devfn;
+ 		struct vga_device *vgadev;
+ 
+@@ -1085,19 +1084,11 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
+ 			pr_debug("vgaarb: %s ==> %x:%x:%x.%x\n", curr_pos,
+ 				domain, bus, PCI_SLOT(devfn), PCI_FUNC(devfn));
+ 
+-			pbus = pci_find_bus(domain, bus);
+-			pr_debug("vgaarb: pbus %p\n", pbus);
+-			if (pbus == NULL) {
+-				pr_err("vgaarb: invalid PCI domain and/or bus address %x:%x\n",
+-					domain, bus);
+-				ret_val = -ENODEV;
+-				goto done;
+-			}
+-			pdev = pci_get_slot(pbus, devfn);
++			pdev = pci_get_domain_bus_and_slot(domain, bus, devfn);
+ 			pr_debug("vgaarb: pdev %p\n", pdev);
+ 			if (!pdev) {
+-				pr_err("vgaarb: invalid PCI address %x:%x\n",
+-					bus, devfn);
++				pr_err("vgaarb: invalid PCI address %x:%x:%x\n",
++					domain, bus, devfn);
+ 				ret_val = -ENODEV;
+ 				goto done;
+ 			}
+diff --git a/drivers/pci/hotplug/cpcihp_generic.c b/drivers/pci/hotplug/cpcihp_generic.c
+index 81af764..a6a71c4 100644
+--- a/drivers/pci/hotplug/cpcihp_generic.c
++++ b/drivers/pci/hotplug/cpcihp_generic.c
+@@ -154,12 +154,8 @@ static int __init cpcihp_generic_init(void)
+ 	if(!r)
+ 		return -EBUSY;
+ 
+-	bus = pci_find_bus(0, bridge_busnr);
+-	if (!bus) {
+-		err("Invalid bus number %d", bridge_busnr);
+-		return -EINVAL;
+-	}
+-	dev = pci_get_slot(bus, PCI_DEVFN(bridge_slot, 0));
++	dev = pci_get_domain_bus_and_slot(0, bridge_busnr,
++					  PCI_DEVFN(bridge_slot, 0));
+ 	if(!dev || dev->hdr_type != PCI_HEADER_TYPE_BRIDGE) {
+ 		err("Invalid bridge device %s", bridge);
+ 		pci_dev_put(dev);
+diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+index 74bbaf8..c7d2969 100644
+--- a/drivers/pci/iov.c
++++ b/drivers/pci/iov.c
+@@ -152,15 +152,11 @@ failed1:
+ static void virtfn_remove(struct pci_dev *dev, int id, int reset)
+ {
+ 	char buf[VIRTFN_ID_LEN];
+-	struct pci_bus *bus;
+ 	struct pci_dev *virtfn;
+ 	struct pci_sriov *iov = dev->sriov;
+ 
+-	bus = pci_find_bus(pci_domain_nr(dev->bus), virtfn_bus(dev, id));
+-	if (!bus)
+-		return;
+-
+-	virtfn = pci_get_slot(bus, virtfn_devfn(dev, id));
++	virtfn = pci_get_domain_bus_and_slot(pci_domain_nr(dev->bus),
++			virtfn_bus(dev, id), virtfn_devfn(dev, id));
+ 	if (!virtfn)
+ 		return;
+ 
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index d6cc62c..def8d0b 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -982,7 +982,6 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
+ 	int err = 0;
+ 	int i, num_devs;
+ 	unsigned int domain, bus, slot, func;
+-	struct pci_bus *pci_bus;
+ 	struct pci_dev *pci_dev;
+ 	char str[64];
+ 
+@@ -1032,13 +1031,8 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
+ 			goto out;
+ 		}
+ 
+-		pci_bus = pci_find_bus(domain, bus);
+-		if (!pci_bus) {
+-			dev_dbg(&pdev->xdev->dev, "Cannot get bus %04x:%02x\n",
+-				domain, bus);
+-			continue;
+-		}
+-		pci_dev = pci_get_slot(pci_bus, PCI_DEVFN(slot, func));
++		pci_dev = pci_get_domain_bus_and_slot(domain, bus,
++				PCI_DEVFN(slot, func));
+ 		if (!pci_dev) {
+ 			dev_dbg(&pdev->xdev->dev,
+ 				"Cannot get PCI device %04x:%02x:%02x.%d\n",
 -- 
 1.7.9.5
 
