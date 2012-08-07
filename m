@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751105Ab2HGQIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:08:14 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:54044 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2HGQIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:08:12 -0400
-Message-ID: <50213D69.3060904@gmail.com>
-Date: Tue, 07 Aug 2012 12:08:09 -0400
-From: Salar Ali Mumtaz <salaarali@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xconfig: Display dependency values in debug_info
-References: <1343256982-11421-1-git-send-email-salaarali@gmail.com> <50107EB7.8000009@xenotime.net> <CA+jpPM=nrbpDJpaka6xAp4dbEOQjJrtwQWtUXwi_gGS9b4yK-A@mail.gmail.com> <50117812.5080302@xenotime.net>
-In-Reply-To: <50117812.5080302@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751746Ab2HGQKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:10:09 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60665 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751077Ab2HGQKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 12:10:08 -0400
+Message-ID: <1344355807.2026.41.camel@joe2Laptop>
+Subject: Re: [PATCH] net:appletalk:ddp:fixed coding style issue again
+ relating to
+From: Joe Perches <joe@perches.com>
+To: Jeffrin Jose <ahiliation@yahoo.co.in>
+Cc: ebiederm@xmission.com, linux-kernel@vger.kernel.org
+Date: Tue, 07 Aug 2012 09:10:07 -0700
+In-Reply-To: <20120807145738.GA5175@debian.Jeff>
+References: <20120807145738.GA5175@debian.Jeff>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-07-26 01:02 PM, Randy Dunlap wrote:
+On Tue, 2012-08-07 at 20:27 +0530, Jeffrin Jose wrote:
+> / Is putting "rc = put_user(amount, (int __user *)argp);" on the same
+> / indentation level as "amount = skb->len - sizeof(struct ddpehdr);"
+> / really what you want to do?
 
-> The added y/n/m are clear, but the "!FRV FRV" is confusing,
-> isn't it?
-> 
-> 
+> No. I was trying to place those lines at one
+> indentation back from their current position.
 
-Is this notation clear ?
+If you are using checkpatch as a guide, run
+"./scripts/checkpatch.pl -f --strict net/appletalk/ddp.c"
+after you patch it and also correct any problems found in
+the area you want to update too.
 
-Kernel support for ELF binaries (BINFMT_ELF)
+A second option is to use emacs with the proper linux
+style indentation.
 
-type: boolean
-unknown property: symbol
-    dep: ( MMU [=y] && (BROKEN [n] || !FRV [= ""]) ) [=y]
-prompt: Kernel support for ELF binaries
-    dep: ( MMU [=y] && (BROKEN [n] || !FRV [= ""]) ) [=y]
-default: y
-    dep: ( MMU [=y] && (BROKEN [n] || !FRV [= ""]) ) [=y]
+(See: Documentation/CodingStyle, Chapter 9: You've made a mess of it)
+
+Another option is not to patch the file at all.
+
+Also, don't submit multiple patches, resubmit 1 single patch
+with all the appropriate corrections.
 
 
-If not, could you suggest a better way to represent this information?
-
-Thanks.
