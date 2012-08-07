@@ -1,117 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab2HGPyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:54:49 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34475 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753528Ab2HGPys (ORCPT
+	id S1755256Ab2HGP7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:59:22 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45205 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab2HGP7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:54:48 -0400
-Date: Tue, 7 Aug 2012 16:54:45 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
-        rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-Message-ID: <20120807155445.GO16861@opensource.wolfsonmicro.com>
-References: <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com>
- <20120807103851.GS16861@opensource.wolfsonmicro.com>
- <20120807111331.GC24257@flint.arm.linux.org.uk>
- <20120807112844.GZ16861@opensource.wolfsonmicro.com>
- <20120807113121.GD24257@flint.arm.linux.org.uk>
- <20120807113652.GA6282@flint.arm.linux.org.uk>
- <20120807114556.GC16861@opensource.wolfsonmicro.com>
- <20120807115140.GH24257@flint.arm.linux.org.uk>
- <20120807125820.GD16861@opensource.wolfsonmicro.com>
- <20120807134750.GI24257@flint.arm.linux.org.uk>
+	Tue, 7 Aug 2012 11:59:20 -0400
+Message-ID: <50213B55.1020305@gmail.com>
+Date: Tue, 07 Aug 2012 09:59:17 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120807134750.GI24257@flint.arm.linux.org.uk>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/2] perf tools: Basic bash completion support
+References: <1344345586-15068-1-git-send-email-fweisbec@gmail.com> <20120807132252.GA12858@somewhere.redhat.com> <502123A4.8040007@gmail.com> <20120807154555.GB12858@somewhere.redhat.com>
+In-Reply-To: <20120807154555.GB12858@somewhere.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 02:47:50PM +0100, Russell King wrote:
+On 8/7/12 9:45 AM, Frederic Weisbecker wrote:
 
-> If you want to be constructive, then actually take a bloody look at my
-> suggestion, try it out and report back whether it works.  Stop attacking
-> my proposal in whatever weak ways you can, especially in ways that I've
-> already dismissed as being totally irrelevant.
+> Does the below work for you? I'll respin with that change.
 
-I have looked at your suggestion, and I have repeatedly agreed that your
-suggestion is the best suggestion going forwards.  I don't think there
-is any way in which I could be clearer on that.
+It does.
 
-> > My concern there (and that of others who've looked at adding a new
-> > resource type) is that this value can also be written as
-
-> >   #define IORESOURCE_FOO (IORESOURCE_IO | IORESOURCE_MEM)
-
-> > and the selection of values chosen for the resource types clearly looks
-> > like it's supposed to be interpreted as a bitmask for some reason.  This
-> > is the main reason nobody touched the code already, it sets off alarm
-> > bells from a code review point of view.
-
-> Sigh.  Here we go a fucking again.  I've already covered this.  But
-> in case you haven't read, here it is again.
-
-> And that combination is illegal today.  But the amount of code which
-> the value will be exposed to is limited to _just_ the platform code,
-> which, for the parts affeced, I'm the author of.  And I've read it
-> before creating the patch to make sure it will work as I expect it
-> do.
-
-Well, I guess we have to agree to disagree on that.  I'm just very much
-more conservative than you about what I'd be willing to put into a
-stable release - my instincts on this are very strongly towards avoiding
-any possibility of introducing unintended side effects and one way of
-doing that is minimising the scope of any change.  Even where things
-should be correct and look correct minimising the risk of exposing any
-latent bugs (including those in systems derived from the stable release)
-is a major consideration for me with any sort of stable fix.  Clearly
-any code that's affected is buggy but having people be able to trust
-stable releases is a very big factor.
-
-This is all that we're disagreeing on, everyone including me agrees that
-your change is clearly the best change going forwards but I'm much more
-paranoid about stable releases than you are.
-
-> > You've only asked this once that I've seen, in the mail where you posted
-> > your patch (which is a helpful step forward, thanks!) which very recent.
-> > It's possible that you've asked this elsewhere, though I did just scan
-> > through a good chunk of the mails and didn't see the question.
-
-> Twice I asked.  The first time was with the IORESOURCE_FOO mail, which
-> you had time to read, and reply to - and your reply was yet another
-> "why we can't do it this way" whinge.  Yes, you had time to read it,
-> you had time to answer it with reasons why not, but not to give any
-> useful information back.
-
-Hrm, if you're referring to <20120807111331.GC24257@flint.arm.linux.org.uk>
-I don't actually seem to be able to see the question in your mail.
-
-> Instead, you'll notice that many of my replies have been outlining
-> solutions to the problem, and *actually* contain patches to address
-> the issue.  Yours?  All whinges about why not.
-
-The main reason I haven't send any patches was that by the time we were
-satisfied that this was OK people were already sending code changes so
-it seemed like that was in hand (and indeed you have sent a patch for
-this).
-
-> > As I keep saying I don't think there's been any disagreement that adding
-> > one or more new resource types is the best approach going forward, the
-> > only issues have been around what happens in stable and someone having
-> > the time to add the new resource type.
-
-> "someone having the time to add the new resource type" ?  Oh for fuck sake
-> Mark, what the hell are you talking about?  How long does it take to apply
-> a bloody patch?
-
-It's the bit with confirming that we're OK not treating the resource
-types as a bitmask that's time consuming; until this thread nobody had
-gone through and checked that this would be OK.
+David
