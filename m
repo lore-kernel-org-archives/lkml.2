@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964805Ab2HGW36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:29:58 -0400
+	id S964877Ab2HGXec (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:34:32 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964783Ab2HGW3z (ORCPT
+	with ESMTP id S932654Ab2HGW3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:29:55 -0400
+	Tue, 7 Aug 2012 18:29:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 056/122] s390/idle: fix sequence handling vs cpu hotplug
-Date: Tue,  7 Aug 2012 15:25:44 -0700
-Message-Id: <20120807221953.319685539@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 053/122] rtlwifi: rtl8192cu: Change buffer allocation for synchronous reads
+Date: Tue,  7 Aug 2012 15:25:41 -0700
+Message-Id: <20120807221953.011297941@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,75 +30,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 0008204ffe85d23382d6fd0f971f3f0fbe70bae2 upstream.
+commit 3ce4d85b76010525adedcc2555fa164bf706a2f3 upstream.
 
-The s390 idle accounting code uses a sequence counter which gets used
-when the per cpu idle statistics get updated and read.
+In commit a7959c1, the USB part of rtlwifi was switched to convert
+_usb_read_sync() to using a preallocated buffer rather than one
+that has been acquired using kmalloc. Although this routine is named
+as though it were synchronous, there seem to be simultaneous users,
+and the selection of the index to the data buffer is not multi-user
+safe. This situation is addressed by adding a new spinlock. The routine
+cannot sleep, thus a mutex is not allowed.
 
-One assumption on read access is that only when the sequence counter is
-even and did not change while reading all values the result is valid.
-On cpu hotplug however the per cpu data structure gets initialized via
-a cpu hotplug notifier on CPU_ONLINE.
-CPU_ONLINE however is too late, since the onlined cpu is already running
-and might access the per cpu data. Worst case is that the data structure
-gets initialized while an idle thread is updating its idle statistics.
-This will result in an uneven sequence counter after an update.
-
-As a result user space tools like top, which access /proc/stat in order
-to get idle stats, will busy loop waiting for the sequence counter to
-become even again, which will never happen until the queried cpu will
-update its idle statistics again. And even then the sequence counter
-will only have an even value for a couple of cpu cycles.
-
-Fix this by moving the initialization of the per cpu idle statistics
-to cpu_init(). I prefer that solution in favor of changing the
-notifier to CPU_UP_PREPARE, which would be a different solution to
-the problem.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/processor.c |    2 ++
- arch/s390/kernel/smp.c       |    3 ---
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rtlwifi/usb.c  |   14 +++++++++++---
+ drivers/net/wireless/rtlwifi/wifi.h |    1 +
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
---- a/arch/s390/kernel/processor.c
-+++ b/arch/s390/kernel/processor.c
-@@ -26,12 +26,14 @@ static DEFINE_PER_CPU(struct cpuid, cpu_
- void __cpuinit cpu_init(void)
- {
- 	struct cpuid *id = &per_cpu(cpu_id, smp_processor_id());
-+	struct s390_idle_data *idle = &__get_cpu_var(s390_idle);
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -131,15 +131,19 @@ static u32 _usb_read_sync(struct rtl_pri
+ 	u8 request;
+ 	u16 wvalue;
+ 	u16 index;
+-	__le32 *data = &rtlpriv->usb_data[rtlpriv->usb_data_index];
++	__le32 *data;
++	unsigned long flags;
  
- 	get_cpu_id(id);
- 	atomic_inc(&init_mm.mm_count);
- 	current->active_mm = &init_mm;
- 	BUG_ON(current->mm);
- 	enter_lazy_tlb(&init_mm, current);
-+	memset(idle, 0, sizeof(*idle));
++	spin_lock_irqsave(&rtlpriv->locks.usb_lock, flags);
++	if (++rtlpriv->usb_data_index >= RTL_USB_MAX_RX_COUNT)
++		rtlpriv->usb_data_index = 0;
++	data = &rtlpriv->usb_data[rtlpriv->usb_data_index];
++	spin_unlock_irqrestore(&rtlpriv->locks.usb_lock, flags);
+ 	request = REALTEK_USB_VENQT_CMD_REQ;
+ 	index = REALTEK_USB_VENQT_CMD_IDX; /* n/a */
+ 
+ 	wvalue = (u16)addr;
+ 	_usbctrl_vendorreq_sync_read(udev, request, wvalue, index, data, len);
+-	if (++rtlpriv->usb_data_index >= RTL_USB_MAX_RX_COUNT)
+-		rtlpriv->usb_data_index = 0;
+ 	return le32_to_cpu(*data);
  }
  
- /*
---- a/arch/s390/kernel/smp.c
-+++ b/arch/s390/kernel/smp.c
-@@ -984,14 +984,11 @@ static int __cpuinit smp_cpu_notify(stru
- 	unsigned int cpu = (unsigned int)(long)hcpu;
- 	struct cpu *c = &pcpu_devices[cpu].cpu;
- 	struct device *s = &c->dev;
--	struct s390_idle_data *idle;
- 	int err = 0;
+@@ -951,6 +955,10 @@ int __devinit rtl_usb_probe(struct usb_i
+ 				    GFP_KERNEL);
+ 	if (!rtlpriv->usb_data)
+ 		return -ENOMEM;
++
++	/* this spin lock must be initialized early */
++	spin_lock_init(&rtlpriv->locks.usb_lock);
++
+ 	rtlpriv->usb_data_index = 0;
+ 	init_completion(&rtlpriv->firmware_loading_complete);
+ 	SET_IEEE80211_DEV(hw, &intf->dev);
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -1555,6 +1555,7 @@ struct rtl_locks {
+ 	spinlock_t rf_ps_lock;
+ 	spinlock_t rf_lock;
+ 	spinlock_t waitq_lock;
++	spinlock_t usb_lock;
  
- 	switch (action) {
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
--		idle = &per_cpu(s390_idle, cpu);
--		memset(idle, 0, sizeof(struct s390_idle_data));
- 		err = sysfs_create_group(&s->kobj, &cpu_online_attr_group);
- 		break;
- 	case CPU_DEAD:
+ 	/*Dual mac*/
+ 	spinlock_t cck_and_rw_pagea_lock;
 
 
