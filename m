@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964918Ab2HGDjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:39:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59929 "EHLO
+	id S964905Ab2HGDja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:39:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59923 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964864Ab2HGDjE (ORCPT
+	by vger.kernel.org with ESMTP id S964862Ab2HGDjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:39:04 -0400
-Message-Id: <20120807032759.521009923@decadent.org.uk>
+	Mon, 6 Aug 2012 23:39:05 -0400
+Message-Id: <20120807032759.737149489@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:19 +0100
+Date: Tue, 07 Aug 2012 04:28:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Darren Hart <dvhart@linux.intel.com>,
-        Dave Jones <davej@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 24/70] futex: Test for pi_mutex on fault in futex_wait_requeue_pi()
+        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 25/70] futex: Fix bug in WARN_ON for NULL q.pi_state
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,16 +30,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Darren Hart <dvhart@linux.intel.com>
 
-commit b6070a8d9853eda010a549fa9a09eb8d7269b929 upstream.
+commit f27071cb7fe3e1d37a9dbe6c0dfc5395cd40fa43 upstream.
 
-If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
-for pi_mutex != NULL before testing the owner against current
-and possibly unlocking it.
+The WARN_ON in futex_wait_requeue_pi() for a NULL q.pi_state was testing
+the address (&q.pi_state) of the pointer instead of the value
+(q.pi_state) of the pointer. Correct it accordingly.
 
 Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 Cc: Dave Jones <davej@redhat.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Link: http://lkml.kernel.org/r/dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com
+Link: http://lkml.kernel.org/r/1c85d97f6e5f79ec389a4ead3e367363c74bd09a.1342809673.git.dvhart@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
@@ -49,17 +46,17 @@ Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/futex.c b/kernel/futex.c
-index e2b0fb9..05018bf 100644
+index 05018bf..5551ada 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -2370,7 +2370,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	 * fault, unlock the rt_mutex and return the fault to userspace.
- 	 */
- 	if (ret == -EFAULT) {
--		if (rt_mutex_owner(pi_mutex) == current)
-+		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
- 			rt_mutex_unlock(pi_mutex);
- 	} else if (ret == -EINTR) {
- 		/*
+@@ -2343,7 +2343,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 		 * signal.  futex_unlock_pi() will not destroy the lock_ptr nor
+ 		 * the pi_state.
+ 		 */
+-		WARN_ON(!&q.pi_state);
++		WARN_ON(!q.pi_state);
+ 		pi_mutex = &q.pi_state->pi_mutex;
+ 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+ 		debug_rt_mutex_free_waiter(&rt_waiter);
 
 
