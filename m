@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031313Ab2HGWrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:47:33 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44605 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031300Ab2HGWr2 (ORCPT
+	id S1031355Ab2HGWuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:50:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031252Ab2HGWrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:47:28 -0400
+	Tue, 7 Aug 2012 18:47:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Colin Ian King <colin.king@canonical.com>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [ 40/49] USB: echi-dbgp: increase the controller wait time to come out of halt.
-Date: Tue,  7 Aug 2012 15:44:58 -0700
-Message-Id: <20120807222030.467356295@linuxfoundation.org>
+        Daniel Mack <zonque@gmail.com>, Andreas Koch <andreas@akdesigninc.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 41/49] ALSA: snd-usb: fix clock source validity index
+Date: Tue,  7 Aug 2012 15:44:59 -0700
+Message-Id: <20120807222030.552691996@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -30,35 +30,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Colin Ian King <colin.king@canonical.com>
+From: Daniel Mack <zonque@gmail.com>
 
-commit f96a4216e85050c0a9d41a41ecb0ae9d8e39b509 upstream.
+commit aff252a848ce21b431ba822de3dab9c4c94571cb upstream.
 
-The default 10 microsecond delay for the controller to come out of
-halt in dbgp_ehci_startup is too short, so increase it to 1 millisecond.
+uac_clock_source_is_valid() uses the control selector value to access
+the bmControls bitmap of the clock source unit. This is wrong, as
+control selector values start from 1, while the bitmap uses all
+available bits.
 
-This is based on emperical testing on various USB debug ports on
-modern machines such as a Lenovo X220i and an Ivybridge development
-platform that needed to wait ~450-950 microseconds.
+In other words, "Clock Validity Control" is stored in D3..2, not D5..4
+of the clock selector unit's bmControls.
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-by: Andreas Koch <andreas@akdesigninc.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/early/ehci-dbgp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/usb/clock.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/early/ehci-dbgp.c
-+++ b/drivers/usb/early/ehci-dbgp.c
-@@ -450,7 +450,7 @@ static int dbgp_ehci_startup(void)
- 	writel(FLAG_CF, &ehci_regs->configured_flag);
+--- a/sound/usb/clock.c
++++ b/sound/usb/clock.c
+@@ -111,7 +111,8 @@ static bool uac_clock_source_is_valid(st
+ 		return 0;
  
- 	/* Wait until the controller is no longer halted */
--	loop = 10;
-+	loop = 1000;
- 	do {
- 		status = readl(&ehci_regs->status);
- 		if (!(status & STS_HALT))
+ 	/* If a clock source can't tell us whether it's valid, we assume it is */
+-	if (!uac2_control_is_readable(cs_desc->bmControls, UAC2_CS_CONTROL_CLOCK_VALID))
++	if (!uac2_control_is_readable(cs_desc->bmControls,
++				      UAC2_CS_CONTROL_CLOCK_VALID - 1))
+ 		return 1;
+ 
+ 	err = snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), UAC2_CS_CUR,
 
 
