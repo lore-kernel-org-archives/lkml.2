@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964882Ab2HGXcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:32:20 -0400
+	id S964793Ab2HGXck (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:32:40 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757190Ab2HGWaX (ORCPT
+	with ESMTP id S1757158Ab2HGWaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:30:23 -0400
+	Tue, 7 Aug 2012 18:30:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 065/122] workqueue: perform cpu down operations from low priority cpu_notifier()
-Date: Tue,  7 Aug 2012 15:25:53 -0700
-Message-Id: <20120807221954.223825322@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Rob Landley <rob@landley.net>
+Subject: [ 063/122] stable: update references to older 2.6 versions for 3.x
+Date: Tue,  7 Aug 2012 15:25:51 -0700
+Message-Id: <20120807221953.992001781@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,115 +30,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit 6575820221f7a4dd6eadecf7bf83cdd154335eda upstream.
+commit 2584f5212d97b664be250ad5700a2d0fee31a10d upstream.
 
-Currently, all workqueue cpu hotplug operations run off
-CPU_PRI_WORKQUEUE which is higher than normal notifiers.  This is to
-ensure that workqueue is up and running while bringing up a CPU before
-other notifiers try to use workqueue on the CPU.
+Also add information on where the respective trees are.
 
-Per-cpu workqueues are supposed to remain working and bound to the CPU
-for normal CPU_DOWN_PREPARE notifiers.  This holds mostly true even
-with workqueue offlining running with higher priority because
-workqueue CPU_DOWN_PREPARE only creates a bound trustee thread which
-runs the per-cpu workqueue without concurrency management without
-explicitly detaching the existing workers.
-
-However, if the trustee needs to create new workers, it creates
-unbound workers which may wander off to other CPUs while
-CPU_DOWN_PREPARE notifiers are in progress.  Furthermore, if the CPU
-down is cancelled, the per-CPU workqueue may end up with workers which
-aren't bound to the CPU.
-
-While reliably reproducible with a convoluted artificial test-case
-involving scheduling and flushing CPU burning work items from CPU down
-notifiers, this isn't very likely to happen in the wild, and, even
-when it happens, the effects are likely to be hidden by the following
-successful CPU down.
-
-Fix it by using different priorities for up and down notifiers - high
-priority for up operations and low priority for down operations.
-
-Workqueue cpu hotplug operations will soon go through further cleanup.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Acked-by: Rob Landley <rob@landley.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/cpu.h |    5 +++--
- kernel/workqueue.c  |   38 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 40 insertions(+), 3 deletions(-)
+ Documentation/stable_kernel_rules.txt |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -73,8 +73,9 @@ enum {
- 	/* migration should happen before other stuff but after perf */
- 	CPU_PRI_PERF		= 20,
- 	CPU_PRI_MIGRATION	= 10,
--	/* prepare workqueues for other notifiers */
--	CPU_PRI_WORKQUEUE	= 5,
-+	/* bring up workqueues before normal notifiers and down after */
-+	CPU_PRI_WORKQUEUE_UP	= 5,
-+	CPU_PRI_WORKQUEUE_DOWN	= -5,
- };
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -1,4 +1,4 @@
+-Everything you ever wanted to know about Linux 2.6 -stable releases.
++Everything you ever wanted to know about Linux -stable releases.
  
- #define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3590,6 +3590,41 @@ static int __devinit workqueue_cpu_callb
- 	return notifier_from_errno(0);
- }
+ Rules on what kind of patches are accepted, and which ones are not, into the
+ "-stable" tree:
+@@ -42,10 +42,10 @@ Procedure for submitting patches to the
+    cherry-picked than this can be specified in the following format in
+    the sign-off area:
  
-+/*
-+ * Workqueues should be brought up before normal priority CPU notifiers.
-+ * This will be registered high priority CPU notifier.
-+ */
-+static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
-+					       unsigned long action,
-+					       void *hcpu)
-+{
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_UP_PREPARE:
-+	case CPU_UP_CANCELED:
-+	case CPU_DOWN_FAILED:
-+	case CPU_ONLINE:
-+		return workqueue_cpu_callback(nfb, action, hcpu);
-+	}
-+	return NOTIFY_OK;
-+}
+-     Cc: <stable@vger.kernel.org> # .32.x: a1f84a3: sched: Check for idle
+-     Cc: <stable@vger.kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
+-     Cc: <stable@vger.kernel.org> # .32.x: fd21073: sched: Fix affinity logic
+-     Cc: <stable@vger.kernel.org> # .32.x
++     Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
++     Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
++     Cc: <stable@vger.kernel.org> # 3.3.x: fd21073: sched: Fix affinity logic
++     Cc: <stable@vger.kernel.org> # 3.3.x
+     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+ 
+    The tag sequence has the meaning of:
+@@ -79,6 +79,15 @@ Review cycle:
+    security kernel team, and not go through the normal review cycle.
+    Contact the kernel security team for more details on this procedure.
+ 
++Trees:
 +
-+/*
-+ * Workqueues should be brought down after normal priority CPU notifiers.
-+ * This will be registered as low priority CPU notifier.
-+ */
-+static int __devinit workqueue_cpu_down_callback(struct notifier_block *nfb,
-+						 unsigned long action,
-+						 void *hcpu)
-+{
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_DOWN_PREPARE:
-+	case CPU_DYING:
-+	case CPU_POST_DEAD:
-+		return workqueue_cpu_callback(nfb, action, hcpu);
-+	}
-+	return NOTIFY_OK;
-+}
++ - The queues of patches, for both completed versions and in progress
++   versions can be found at:
++	http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
++ - The finalized and tagged releases of all stable kernels can be found
++   in separate branches per version at:
++	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
 +
- #ifdef CONFIG_SMP
  
- struct work_for_cpu {
-@@ -3783,7 +3818,8 @@ static int __init init_workqueues(void)
- 	unsigned int cpu;
- 	int i;
+ Review committee:
  
--	cpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
-+	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
-+	cpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
- 
- 	/* initialize gcwqs */
- 	for_each_gcwq_cpu(cpu) {
 
 
