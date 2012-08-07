@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030490Ab2HGWdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:33:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	id S1030503Ab2HGWda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:33:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030482Ab2HGWdN (ORCPT
+	with ESMTP id S1030492Ab2HGWd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:33:13 -0400
+	Tue, 7 Aug 2012 18:33:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Thorsten Glaser <tg@debian.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [ 119/122] m68k: Make sys_atomic_cmpxchg_32 work on classic m68k
-Date: Tue,  7 Aug 2012 15:26:47 -0700
-Message-Id: <20120807222000.933320441@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 116/122] ALSA: hda - Support dock on Lenovo Thinkpad T530 with ALC269VC
+Date: Tue,  7 Aug 2012 15:26:44 -0700
+Message-Id: <20120807222000.601041241@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -31,39 +29,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 9e2760d18b3cf179534bbc27692c84879c61b97c upstream.
+commit 707fba3fa76a4c8855552f5d4c1a12430c09bce8 upstream.
 
-User space access must always go through uaccess accessors, since on
-classic m68k user space and kernel space are completely separate.
+Lenovo Thinkpad T530 with ALC269VC codec has a dock port but BIOS
+doesn't set up the pins properly.  Enable the pins as well as on
+Thinkpad X230 Tablet.
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Tested-by: Thorsten Glaser <tg@debian.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Reported-and-tested-by: Mario <anyc@hadiko.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/kernel/sys_m68k.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/m68k/kernel/sys_m68k.c
-+++ b/arch/m68k/kernel/sys_m68k.c
-@@ -479,9 +479,13 @@ sys_atomic_cmpxchg_32(unsigned long newv
- 			goto bad_access;
- 		}
- 
--		mem_value = *mem;
-+		/*
-+		 * No need to check for EFAULT; we know that the page is
-+		 * present and writable.
-+		 */
-+		__get_user(mem_value, mem);
- 		if (mem_value == oldval)
--			*mem = newval;
-+			__put_user(newval, mem);
- 
- 		pte_unmap_unlock(pte, ptl);
- 		up_read(&mm->mmap_sem);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6000,6 +6000,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21ca, "Thinkpad L412", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21e9, "Thinkpad Edge 15", ALC269_FIXUP_SKU_IGNORE),
++	SND_PCI_QUIRK(0x17aa, 0x21f6, "Thinkpad T530", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x2203, "Thinkpad X230 Tablet", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_QUANTA_MUTE),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Lenovo Ideapd", ALC269_FIXUP_PCM_44K),
 
 
