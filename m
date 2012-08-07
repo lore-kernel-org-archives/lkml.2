@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab2HGQ43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:56:29 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:40626 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755018Ab2HGQ41 (ORCPT
+	id S1755674Ab2HGQ4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:56:41 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56723 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755645Ab2HGQ4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:56:27 -0400
-Message-ID: <5021486B.6020907@xenotime.net>
-Date: Tue, 07 Aug 2012 09:55:07 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 7 Aug 2012 12:56:38 -0400
+Date: Tue, 7 Aug 2012 17:53:50 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH 0/6] ARM: dove: DT support for Marvell Dove
+Message-ID: <20120807165350.GG18957@n2100.arm.linux.org.uk>
+References: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com> <201208061402.22815.arnd@arndb.de> <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com>
 MIME-Version: 1.0
-To: Salar Ali Mumtaz <salaarali@gmail.com>
-CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xconfig: Display dependency values in debug_info
-References: <1343256982-11421-1-git-send-email-salaarali@gmail.com> <50107EB7.8000009@xenotime.net> <CA+jpPM=nrbpDJpaka6xAp4dbEOQjJrtwQWtUXwi_gGS9b4yK-A@mail.gmail.com> <50117812.5080302@xenotime.net> <50213D69.3060904@gmail.com>
-In-Reply-To: <50213D69.3060904@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 09:08 AM, Salar Ali Mumtaz wrote:
+On Mon, Aug 06, 2012 at 04:16:57PM +0200, Sebastian Hesselbarth wrote:
+> After that I am definitely fine with removing non-DT support although
+> there is neither DT support in u-boot installed on my CuBox nor
+> mach-dove support in mainline u-boot.
 
-> On 12-07-26 01:02 PM, Randy Dunlap wrote:
-> 
->> The added y/n/m are clear, but the "!FRV FRV" is confusing,
->> isn't it?
->>
->>
-> 
-> Is this notation clear ?
-> 
-> Kernel support for ELF binaries (BINFMT_ELF)
-> 
-> type: boolean
-> unknown property: symbol
->     dep: ( MMU [=y] && (BROKEN [n] || !FRV [= ""]) ) [=y]
-> prompt: Kernel support for ELF binaries
->     dep: ( MMU [=y] && (BROKEN [n] || !FRV [= ""]) ) [=y]
-> default: y
->     dep: ( MMU [=y] && (BROKEN [n] || !FRV [= ""]) ) [=y]
+As I have a Cubox, this is of interest to me.  However, not related to
+your patches, here's some news I have on the Cubox.
 
+Firstly, a big thanks to Nicolas Pitre for sending me this cute little
+box.  Finally, I see my idea of having an ARM based Linux box as a
+media player becoming a reality (I thought maybe the OMAP3430LDP would
+do it, or maybe the OMAP4430SDP, but progress on OMAP platforms is
+dreadfully slow - and complicated...)
 
+I've recently pushed a fix into mainline (and stable) for VFP support
+with Thumb instructions.  I noticed that the Cubox kernel had a different
+fix, this "different" fix will need to be removed when Cubox folk update
+to the next kernel from mainline.
 
-In Kconfig language, is "" the same as 'n' ?
-If so, I'm OK with your proposal above.
+Video support, not great.  The supplied Ubuntu Lucid stuff install
+(including the latest dev kernel from the solid-run folk) doesn't work
+with any of the tree HDMI devices I've tried it with:
 
+. A Plasma TV refused to recognise the cubox existing.  Works with a PC
+  running Linux.
+. A LCD PC monitor with HDMI input.  If the monitor is disconnected, the
+  Cubox booted, and the monitor connected, you get a picture, but you
+  lose the top, left, bottom and right of the display off the side of the
+  monitor.  No amount of adjusting on the monitor fixes this.
+. A cheap LCD TV with HDMI input, 1080i (but not properly 1080p capable)
+  only works when the Cubox is booted with the TV turned on and HDMI
+  input selected.  If the Cubox is booted with the TV off or HDMI input
+  deselected, it fails.  Even so, like the LCD PC monitor, the image is
+  far too big.  I suspect there's something wrong with the HDMI chip
+  setup.
 
-> If not, could you suggest a better way to represent this information?
-> 
-> Thanks.
+What is obvious is that there is no HDMI hotplug support and reconfiguring
+of the display.  So, I've been investigating the Linux DRM/DRI support -
+both the kernel and X11 side, and I have something that is getting close
+to being ready.  Last night I finally disabled the kernel dovefb driver,
+and have X11 using solely my new DRM driver.
 
+This gives us several advantages, not only does the DRM layer generate
+hotplug events, but it also doesn't need such a large amount of "video
+memory" reserved.  It can dynamically allocate objects for graphics
+operations, and such like.  This, along side CMA should allow us to get
+rid of quite a bit of the statically claimed RAM areas.  Another
+advantage is that we can automatically reconfigure the X11 display on
+hotplug to the capabilities of the attached monitor.  This works nicely
+here. :)
 
+	This brings up another off-topic point (not just about the
+	cubox) - I think more people should be looking at the DRM
+	stuff when they're creating video drivers.
 
-thanks,
--- 
-~Randy
+The next thing to talk about is video overlay via the X11 Xvideo extension.
+Yuck, this is not nice.  It relies upon using the X11 Xvideo SHM support,
+using the shared memory as a two way buffer.  This buffer which is supposed
+to contain graphic data passed from the app to X is instead used to pass
+control and address pointers between the decoding application and the
+kernel dovefb driver (!) and back again to the decoding application.  Note
+that it doesn't even declare a different format for this kind of thing,
+it merely relies on magic numbers and a checksum.
+
+The side effect of that is applications using the Xvideo extension
+properly do not work very well, partly because the formats they want to
+use aren't presented by the dovefb X11 driver.
+
+Now, when trying vlc on the cubox, it failed totally (the Qt libraries
+from Ubuntu Lucid are built with neon support, and the Armada510 has
+no Neon support - it is VFPv3 with only 16 double registers.)
+Rebuilding libQtGui without Neon support fixes this (the cubox is currently
+rebuilding the Qt package at the moment, which is going to take a while).
+Next problem is there's something up with mpeg audio decoding, but ogg
+decoding in vlc is fine.
+
+With Qt fixed, DRM, and a better X11 driver, I now have vlc able to
+reasonably display full screen video on the Cubox - and like on my PC,
+it appears to play back at a destination resolution of 624x576 (so SD)
+and then scales to the size you want the video to be.  Same for totem
+with the same source material.
+
+However, this won't be using the on-chip mpeg decoding (yet).  CPU
+usage sits at around 30% while vlc playback is running.
