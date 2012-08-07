@@ -1,47 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab2HGJ6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:58:53 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34929 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab2HGJ6w (ORCPT
+	id S1754095Ab2HGJ7j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:59:39 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:57102 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753617Ab2HGJ7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:58:52 -0400
-Date: Tue, 7 Aug 2012 11:03:23 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sjur =?ISO-8859-1?B?QnLmbmRlbGFuZA==?= <sjurbren@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [RESEND PATCHv5 09/11] modem_shm: Character device for SHM
- channel access.
-Message-ID: <20120807110323.65732799@pyramind.ukuu.org.uk>
-In-Reply-To: <CAJK669YEbAq7xue9rAK9ikiUNm_ZVQZ4CaPhSr22xU56a_2B0g@mail.gmail.com>
-References: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
-	<1327999726-8774-10-git-send-email-sjur.brandeland@stericsson.com>
-	<20120802112542.6ae3dd8f@pyramind.ukuu.org.uk>
-	<CAJK669YEbAq7xue9rAK9ikiUNm_ZVQZ4CaPhSr22xU56a_2B0g@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Aug 2012 05:59:37 -0400
+X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 05:59:37 EDT
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 42CB082073
+From: Andrea Righi <andrea@betterlinux.com>
+To: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] audit: fix wrong timeout value in audit_log_start
+Date: Tue,  7 Aug 2012 11:51:42 +0200
+Message-Id: <1344333102-8419-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I am working on a re-spin of the entire patch-set for Modem-SHM using
-> the RemoteProc framework from Ohad Ben Cohen and using Virtio as
-> transport mechanism between modem and host. I hope to be able to
-> use Virtio Console for the tty.The use-case tty/char device is for
-> transfering boot images to the modem and fetch crash logs.
+audit_log_start() does not properly check timeout values when
+audit_backlog_limit is exceeded, for example it is possible to use
+negative timeout values with schedule_timeout() triggering error
+messages like this:
 
-That would seem a sensible approach.
+  schedule_timeout: wrong timeout value ffffffffffff54e4
 
-> For normal operation of the modem the CAIF protocol is used. I'm writing
-> on a new CAIF-Virtio driver for this that works with the RemoteProc
-> framework.
+Be sure to never set negative values for the timeout.
 
-Ok.
+Also, do a small refactoring to improve code readability.
 
-Alan
+Reported-by: Sean Jenkins <sean@bluehost.com>
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+---
+ kernel/audit.c |   46 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 30 insertions(+), 16 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index ea3b7b6..362d9b4 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1123,6 +1123,28 @@ static inline void audit_get_stamp(struct audit_context *ctx,
+ 	}
+ }
+ 
++/* Wait for auditd to drain the queue a little */
++static void audit_log_congestion_wait(unsigned long timeout_start)
++{
++	DECLARE_WAITQUEUE(wait, current);
++
++	set_current_state(TASK_INTERRUPTIBLE);
++	add_wait_queue(&audit_backlog_wait, &wait);
++
++	if (audit_backlog_limit &&
++	    skb_queue_len(&audit_skb_queue) > audit_backlog_limit) {
++		unsigned long deadline, now = ACCESS_ONCE(jiffies);
++
++		WARN_ON(time_after(timeout_start, now));
++		deadline = timeout_start + audit_backlog_wait_time;
++		if (time_before(now, deadline))
++			schedule_timeout(deadline - now);
++	}
++
++	__set_current_state(TASK_RUNNING);
++	remove_wait_queue(&audit_backlog_wait, &wait);
++}
++
+ /* Obtain an audit buffer.  This routine does locking to obtain the
+  * audit buffer, but then no locking is required for calls to
+  * audit_log_*format.  If the tsk is a task that is currently in a
+@@ -1166,22 +1188,14 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+ 		reserve = 5; /* Allow atomic callers to go up to five
+ 				entries over the normal backlog limit */
+ 
+-	while (audit_backlog_limit
+-	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
+-		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time
+-		    && time_before(jiffies, timeout_start + audit_backlog_wait_time)) {
+-
+-			/* Wait for auditd to drain the queue a little */
+-			DECLARE_WAITQUEUE(wait, current);
+-			set_current_state(TASK_INTERRUPTIBLE);
+-			add_wait_queue(&audit_backlog_wait, &wait);
+-
+-			if (audit_backlog_limit &&
+-			    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
+-				schedule_timeout(timeout_start + audit_backlog_wait_time - jiffies);
+-
+-			__set_current_state(TASK_RUNNING);
+-			remove_wait_queue(&audit_backlog_wait, &wait);
++	while (audit_backlog_limit &&
++	       skb_queue_len(&audit_skb_queue) >
++				audit_backlog_limit + reserve) {
++		if ((gfp_mask & __GFP_WAIT) &&
++		    audit_backlog_wait_time &&
++		    time_is_after_jiffies(timeout_start +
++					audit_backlog_wait_time)) {
++			audit_log_congestion_wait(timeout_start);
+ 			continue;
+ 		}
+ 		if (audit_rate_check() && printk_ratelimit())
+-- 
+1.7.9.5
+
