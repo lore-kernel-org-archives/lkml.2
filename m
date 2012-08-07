@@ -1,82 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab2HGG5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 02:57:04 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45816 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab2HGG47 (ORCPT
+	id S1751778Ab2HGHAB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 03:00:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43475 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab2HGG77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 02:56:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344261462-14183-2-git-send-email-dongjin.kim@agreeyamobility.net>
-References: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
-	<1344261462-14183-2-git-send-email-dongjin.kim@agreeyamobility.net>
-Date: Tue, 7 Aug 2012 12:26:57 +0530
-Message-ID: <CAK9yfHz_q22JgkULR9V8bR5W_TXVRn5qs5u2MiJJpa-Br_YQUQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: EXYNOS: Add HDMIPHY I2C adaptor
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Dongjin Kim <tobetter@gmail.com>
-Cc: Dongjin Kim <dongjin.kim@agreeyamobility.net>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Aug 2012 02:59:59 -0400
+From: anish kumar <anish198519851985@gmail.com>
+To: myungjoo.ham@samsung.com, lars@metafoo.de
+Cc: cw00.choi@samsung.com, jic23@cam.ac.uk, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, anish kumar <anish198519851985@gmail.com>,
+        anish kumar <anish.singh@samsung.com>
+Subject: [PATCH] [PATCH V3]Extcon: adc_jack: adc-jack driver to support 3.5 pi or simliar devices
+Date: Mon,  6 Aug 2012 23:59:43 -0700
+Message-Id: <1344322783-28253-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dongjin,
+From: anish kumar <anish198519851985@gmail.com>
 
-A patch series to add HDMI platform data support is already under consideration.
+External connector devices that decides connection information based on
+ADC values may use adc-jack device driver. The user simply needs to
+provide a table of adc range and connection states. Then, extcon
+framework will automatically notify others.
 
-http://comments.gmane.org/gmane.linux.kernel.samsung-soc/11352
+Changes in V1:
+added Lars-Peter Clausen suggested changes:
+Using macros to get rid of boiler plate code such as devm_kzalloc
+and module_platform_driver.Other changes suggested are related to
+coding guidelines.
 
+Changes in V2:
+Removed some unnecessary checks and changed the way we are un-regitering
+extcon and freeing the irq while removing.
 
+Changes in this version:
+Renamed the files to comply with extcon naming.
 
-On 6 August 2012 19:27, Dongjin Kim <tobetter@gmail.com> wrote:
-> This patch assign the I2C channel for HDMIPHY for Exynos4x12
-> in s5p_i2c_hdmiphy_set_platdata() and s5p_hdmi_set_platdata()
->
-> Change-Id: I7e66c8f9327e2f7dce7440efb8583b506d65831a
-> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
-> ---
->  arch/arm/plat-samsung/devs.c |    4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
-> index a199e55..54614d0 100644
-> --- a/arch/arm/plat-samsung/devs.c
-> +++ b/arch/arm/plat-samsung/devs.c
-> @@ -752,6 +752,8 @@ void __init s5p_i2c_hdmiphy_set_platdata(struct s3c2410_platform_i2c *pd)
->
->                 if (soc_is_exynos4210())
->                         pd->bus_num = 8;
-> +               else if (soc_is_exynos4212() || soc_is_exynos4412())
-> +                       pd->bus_num = 8;
->                 else if (soc_is_s5pv210())
->                         pd->bus_num = 3;
->                 else
-> @@ -771,6 +773,8 @@ void __init s5p_hdmi_set_platdata(struct i2c_board_info *hdmiphy_info,
->
->         if (soc_is_exynos4210())
->                 pd->hdmiphy_bus = 8;
-> +       else if (soc_is_exynos4212() || soc_is_exynos4412())
-> +               pd->hdmiphy_bus = 8;
->         else if (soc_is_s5pv210())
->                 pd->hdmiphy_bus = 3;
->         else
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: anish kumar <anish.singh@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+---
+ drivers/extcon/Kconfig                 |    5 +
+ drivers/extcon/Makefile                |    1 +
+ drivers/extcon/extcon-adc-jack.c       |  193 ++++++++++++++++++++++++++++++++
+ include/linux/extcon/extcon-adc-jack.h |   73 ++++++++++++
+ 4 files changed, 272 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/extcon/extcon-adc-jack.c
+ create mode 100644 include/linux/extcon/extcon-adc-jack.h
 
-
-
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index e175c8e..596e277 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -21,6 +21,11 @@ config EXTCON_GPIO
+ 	  Say Y here to enable GPIO based extcon support. Note that GPIO
+ 	  extcon supports single state per extcon instance.
+ 
++config EXTCON_ADC_JACK
++        tristate "ADC Jack extcon support"
++        help
++          Say Y here to enable extcon device driver based on ADC values.
++
+ config EXTCON_MAX77693
+ 	tristate "MAX77693 EXTCON Support"
+ 	depends on MFD_MAX77693
+diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+index 88961b3..bc7111e 100644
+--- a/drivers/extcon/Makefile
++++ b/drivers/extcon/Makefile
+@@ -4,6 +4,7 @@
+ 
+ obj-$(CONFIG_EXTCON)		+= extcon_class.o
+ obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
++obj-$(CONFIG_EXTCON_ADC_JACK)   += extcon-adc-jack.o
+ obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
+ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+ obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
+new file mode 100644
+index 0000000..c58ec5e
+--- /dev/null
++++ b/drivers/extcon/extcon-adc-jack.c
+@@ -0,0 +1,193 @@
++/*
++ * drivers/extcon/extcon-adc-jack.c
++ *
++ * Analog Jack extcon driver with ADC-based detection capability.
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * MyungJoo Ham <myungjoo.ham@samsung.com>
++ *
++ * Modified for calling to IIO to get adc by <anish.singh@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/slab.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/workqueue.h>
++#include <linux/iio/consumer.h>
++#include <linux/extcon/extcon-adc-jack.h>
++#include <linux/extcon.h>
++
++/**
++ * struct adc_jack_data - internal data for adc_jack device driver
++ * @edev        - extcon device.
++ * @cable_names - list of supported cables.
++ * @num_cables  - size of cable_names.
++ * @adc_condition       - list of adc value conditions.
++ * @num_condition       - size of adc_condition.
++ * @irq         - irq number of attach/detach event (0 if not exist).
++ * @handling_delay      - interrupt handler will schedule extcon event
++ *                      handling at handling_delay jiffies.
++ * @handler     - extcon event handler called by interrupt handler.
++ * @chan	- iio channel being queried.
++ */
++struct adc_jack_data {
++	struct extcon_dev edev;
++
++	const char **cable_names;
++	int num_cables;
++	struct adc_jack_cond *adc_condition;
++	int num_conditions;
++
++	int irq;
++	unsigned long handling_delay; /* in jiffies */
++	struct delayed_work handler;
++
++	struct iio_channel *chan;
++};
++
++static void adc_jack_handler(struct work_struct *work)
++{
++	struct adc_jack_data *data = container_of(to_delayed_work(work),
++						  struct adc_jack_data,
++						  handler);
++	u32 state = 0;
++	int ret, adc_val;
++	int i;
++
++	ret = iio_read_channel_raw(data->chan, &adc_val);
++	if (ret < 0) {
++		dev_err(data->edev.dev, "read channel() error: %d\n", ret);
++		return;
++	}
++
++	/* Get state from adc value with adc_condition */
++	for (i = 0; i < data->num_conditions; i++) {
++		struct adc_jack_cond *def = &data->adc_condition[i];
++		if (!def->state)
++			break;
++		if (def->min_adc <= adc_val && def->max_adc >= adc_val) {
++			state = def->state;
++			break;
++		}
++	}
++	/* if no def has met, it means state = 0 (no cables attached) */
++
++	extcon_set_state(&data->edev, state);
++}
++
++static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
++{
++	struct adc_jack_data *data = _data;
++
++	schedule_delayed_work(&data->handler, data->handling_delay);
++	return IRQ_HANDLED;
++}
++
++static int __devinit adc_jack_probe(struct platform_device *pdev)
++{
++	struct adc_jack_data *data;
++	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
++	int i, err = 0;
++
++	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	data->edev.name = pdata->name;
++
++	if (pdata->cable_names)
++		data->edev.supported_cable = pdata->cable_names;
++	else
++		data->edev.supported_cable = extcon_cable_name;
++
++	/* Check the length of array and set num_cables */
++	for (i = 0; data->edev.supported_cable[i]; i++)
++		;
++	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
++		err = -EINVAL;
++		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
++			i - 1);
++		goto out;
++	}
++	data->num_cables = i;
++
++	if (!pdata->adc_condition ||
++	    !pdata->adc_condition[0].state) {
++		err = -EINVAL;
++		dev_err(&pdev->dev, "error: adc_condition not defined.\n");
++		goto out;
++	}
++	data->adc_condition = pdata->adc_condition;
++
++	/* Check the length of array and set num_conditions */
++	for (i = 0; data->adc_condition[i].state; i++)
++		;
++	data->num_conditions = i;
++
++	data->chan = iio_channel_get(dev_name(&pdev->dev),
++						pdata->consumer_channel);
++	if (IS_ERR(data->chan)) {
++		err = PTR_ERR(data->chan);
++		goto out;
++	}
++
++	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
++
++	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
++
++	platform_set_drvdata(pdev, data);
++
++	err = extcon_dev_register(&data->edev, &pdev->dev);
++	if (err)
++		goto out;
++
++	data->irq = platform_get_irq(pdev, 0);
++	if (!data->irq) {
++		dev_err(&pdev->dev, "platform_get_irq failed\n");
++		err = -ENODEV;
++		goto err_irq;
++	}
++
++	err = request_any_context_irq(data->irq, adc_jack_irq_thread,
++				pdata->irq_flags, pdata->name, data);
++
++	if (err) {
++		dev_err(&pdev->dev, "error: irq %d\n", data->irq);
++		err = -EINVAL;
++		goto err_irq;
++	}
++
++	goto out;
++
++err_irq:
++	extcon_dev_unregister(&data->edev);
++out:
++	return err;
++}
++
++static int __devexit adc_jack_remove(struct platform_device *pdev)
++{
++	struct adc_jack_data *data = platform_get_drvdata(pdev);
++
++	free_irq(data->irq, data);
++	extcon_dev_unregister(&data->edev);
++
++	return 0;
++}
++
++static struct platform_driver adc_jack_driver = {
++	.probe		= adc_jack_probe,
++	.remove		= __devexit_p(adc_jack_remove),
++	.driver		= {
++		.name	= "adc-jack",
++		.owner	= THIS_MODULE,
++	},
++};
++
++module_platform_driver(adc_jack_driver);
+diff --git a/include/linux/extcon/extcon-adc-jack.h b/include/linux/extcon/extcon-adc-jack.h
+new file mode 100644
+index 0000000..c350615
+--- /dev/null
++++ b/include/linux/extcon/extcon-adc-jack.h
+@@ -0,0 +1,73 @@
++/*
++ * include/linux/extcon/extcon-adc-jack.h
++ *
++ * Analog Jack extcon driver with ADC-based detection capability.
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * MyungJoo Ham <myungjoo.ham@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef _EXTCON_ADC_JACK_H_
++#define _EXTCON_ADC_JACK_H_ __FILE__
++
++#include <linux/module.h>
++#include <linux/extcon.h>
++
++/**
++ * struct adc_jack_cond - condition to use an extcon state
++ * @state	- the corresponding extcon state (if 0, this struct denotes
++ *		the last adc_jack_cond element among the array)
++ * @min_adc	- min adc value for this condition
++ * @max_adc	- max adc value for this condition
++ *
++ * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
++ * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
++ * 1 are attached (1<<0 | 1<<1 == 0x3)
++ *
++ * Note that you don't need to describe condition for "no cable attached"
++ * because when no adc_jack_cond is met, state = 0 is automatically chosen.
++ */
++struct adc_jack_cond {
++	u32 state; /* extcon state value. 0 if invalid */
++	u32 min_adc;
++	u32 max_adc;
++};
++
++/**
++ * struct adc_jack_pdata - platform data for adc jack device.
++ * @name	- name of the extcon device. If null, "adc-jack" is used.
++ * @consumer_channel - Unique name to identify the channel on the consumer
++ *                   side. This typically describes the channels use within
++ *                   the consumer. E.g. 'battery_voltage'
++ * @cable_names	- array of cable names ending with null. If the array itself
++ *		if null, extcon standard cable names are chosen.
++ * @adc_contition	- array of struct adc_jack_cond conditions ending
++ *			with .state = 0 entry. This describes how to decode
++ *			adc values into extcon state.
++ * @irq_flags	- irq flags used for the @irq
++ * @handling_delay_ms	- in some devices, we need to read ADC value some
++ *			milli-seconds after the interrupt occurs. You may
++ *			describe such delays with @handling_delay_ms, which
++ *			is rounded-off by jiffies.
++ */
++struct adc_jack_pdata {
++	const char *name;
++	const char *consumer_channel;
++	/*
++	 * NULL if standard extcon names are used.
++	 * The last entry should be NULL
++	 */
++	const char **cable_names;
++	/* The last entry's state should be 0 */
++	struct adc_jack_cond *adc_condition;
++
++	unsigned long irq_flags;
++	unsigned long handling_delay_ms; /* in ms */
++};
++
++#endif /* _EXTCON_ADC_JACK_H */
 -- 
-With warm regards,
-Sachin
+1.7.1
+
