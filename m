@@ -1,105 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab2HGQsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:48:36 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64805 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528Ab2HGQse (ORCPT
+	id S1755606Ab2HGQs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:48:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47885 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753513Ab2HGQs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:48:34 -0400
-Date: Tue, 7 Aug 2012 17:48:22 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/9] ASoC: imx: Don't use {en,dis}able_fiq() calls
-Message-ID: <20120807164822.GA2135@linaro.org>
-References: <20120805230238.GA1663@lizard>
- <1344207819-3415-4-git-send-email-anton.vorontsov@linaro.org>
- <CAKGA1bkiHj=zMJXSzoGp3fpLS3POnFXSV5y7sYYFAikqoUT9tQ@mail.gmail.com>
+	Tue, 7 Aug 2012 12:48:58 -0400
+Date: Tue, 7 Aug 2012 17:48:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
+        rpurdie@rpsys.net, bryan.wu@canonical.com,
+        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
+Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
+Message-ID: <20120807164855.GS16861@opensource.wolfsonmicro.com>
+References: <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com>
+ <20120807103851.GS16861@opensource.wolfsonmicro.com>
+ <20120807111331.GC24257@flint.arm.linux.org.uk>
+ <20120807112844.GZ16861@opensource.wolfsonmicro.com>
+ <20120807113121.GD24257@flint.arm.linux.org.uk>
+ <20120807113652.GA6282@flint.arm.linux.org.uk>
+ <20120807114556.GC16861@opensource.wolfsonmicro.com>
+ <20120807115140.GH24257@flint.arm.linux.org.uk>
+ <CAMuHMdUezhMNL19JUK9-uSqTr3=bU7yAci0ovFd5dSdksW1etQ@mail.gmail.com>
+ <20120807154458.GK24257@flint.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKGA1bkiHj=zMJXSzoGp3fpLS3POnFXSV5y7sYYFAikqoUT9tQ@mail.gmail.com>
+In-Reply-To: <20120807154458.GK24257@flint.arm.linux.org.uk>
+X-Cookie: You will be married within a year.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 10:19:50AM -0500, Matt Sealey wrote:
-> On Sun, Aug 5, 2012 at 6:03 PM, Anton Vorontsov
-> <anton.vorontsov@linaro.org> wrote:
-> > The driver uses platform-specific mxc_set_irq_fiq() with the VIRQ cookie
-> > passed to it, so it's pretty clear that the driver is absolutely sure
-> > that the FIQ is routed via platform-specific IC, and that the cookie can
-> > be used to mask/unmask FIQs. So, let's switch to the genirq routines,
-> > since we're about to remove FIQ-specific variants.
-> 
-> I have a semi-related question about this;
-> 
-> Firstly, I was planning on (re-)submitting a patch for the
-> arch/arm/plat-mxc/ssi-fiq.S code which made it build in ARM mode
-> (since the code isn't Thumb compatible for various reasons) as it was
-> a blocker for a Thumb2-compiled kernel. Since the code was only needed
-> on ARM-capable processors it wouldn't cause a problem. Sascha signed
-> off on this a long while back and I've been testing it on all my
-> internal kernel versions, and I don't see any ill effects (that said I
-> don't have an i.MX28 or so to really verify it, I can't see why it
-> would not work). I realise this is redundant right now, anyway, since
-> it's only really enabled on imx_v4_v5 configs and they don't support
-> Thumb2 kernels anyway. What might be worth submitting is a switch to
-> add the ".arm" directive anyway simply for correctness since it could
-> never be compiled for Thumb anyway. We all know what gnu as is like.
-> 
-> Looking at it again on the back of these patches, I noticed the
-> ssi-fiq.S code is compiled in when SND_IMX_SOC is enabled - of course,
-> it's only needed in the kernel if SND_SOC_IMX_PCM_FIQ is enabled (the
-> code that uses the FIQ stuff is only compiled then) but here on the
-> Efika MX builds it's being built, and I noticed it when it broke my
-> build because of the above. I'm therefore going to submit a patch
-> which changes the ifdef SND_SOC_IMX to ifdef SND_SOC_IMX_PCM_FIQ so
-> it's not compiled in unless absolutely necessary. However, there was a
-> rumble that this code may disappear or be reworked in the future
-> making this also quite redundant. Since it's not in the
-> imx_v6_v7_defconfig anyway, I'm sure this only didn't get noticed
-> because nobody's building Thumb2 kernels and nobody is trying configs
-> with audio enabled anyway..
-> 
-> This begs the question, could there be something somewhere hidden deep
-> in the kernel that is enabled by default or in some config somewhere
-> that requires "select FIQ" in it's Kconfig entry, but isn't being
-> enabled? On i.MX the only thing turning it on is that code, but other
-> ARM arch enable it by default. Since things have been moved to more
-> generic routines I can't in my mind guarantee that such a patch would
-> be well tested here since I would be relying on symbols missing or
-> defines not there anymore.. I have no real way to ensure that it would
-> work on boards I don't have.
-> 
-> So, is the first patch (ssi-fiq.S .arm) worth it? I think the
-> SND_SOC_IMX_PCM_FIQ patch is worth it for v6_v7 systems anyway, but
-> maybe this should have been caught sooner, so should I update the
-> defconfig to enable some kind of audio bus support (Babbage has it in
-> the DT so is a needful thing for testing, I figure..)? And does anyone
-> forsee any problems with that option changing and the only "user" of
-> "FIQ" in the Kconfigs going away now all the FIQ-specific symbols went
-> away outside of the generic irq subsystem?
+On Tue, Aug 07, 2012 at 04:44:58PM +0100, Russell King wrote:
 
-I hit this issue some time ago when I was trying to do a Thumb2 build
-of this kernel.
+> However, one issue that I hope has already been addressed is what space
+> the ranges are in, and how does a sub-driver get to know that.  To put
+> it another way, how does a sub-driver get to know about the 'base' for
+> these register ranges.  I hope that problem has been thought about in
+> MFD land _before_ the approach of passing around register ranges
+> through resources was allowed to happen.
 
-I don't remember having to fix the generic FIQ code just for this,
-but I had a patch somewhere to swap r13 with another register in
-ssi-fiq.S.  I think that use of r13 in ways not permitted for Thumb
-was the only problem I found.  I can try to dig it out if you want.
+That's been thought through - the subdevice drivers already have to rely
+heavily on the fact that they know about their parent and part of that
+contract is that the base address for these resources is always address
+zero in the register space of the MFD and there's never more than one
+resource in the tree.  Nothing will ever do anything like reserve the
+resources, they just get looked up to retrieve the base address for the
+relevant range.
 
-In any case, it didn't seem worth pushing at the time, because it
-seemed that the SSI FIQ code was not relevant to any v7 or later
-platform -- so building that code for Thumb presumably doesn't make
-sense.
-
-Cheers
----Dave
+Someone could do a device which does something different but nobody
+wanted to yet and it's very unclear that anyone would, if they did then
+they'd have to deal with the issues that will result.
