@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964905Ab2HGDja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:39:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59923 "EHLO
+	id S932639Ab2HGDkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:40:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59877 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964862Ab2HGDjF (ORCPT
+	by vger.kernel.org with ESMTP id S964852Ab2HGDjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:39:05 -0400
-Message-Id: <20120807032759.737149489@decadent.org.uk>
+	Mon, 6 Aug 2012 23:39:02 -0400
+Message-Id: <20120807032800.662729482@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:20 +0100
+Date: Tue, 07 Aug 2012 04:28:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Darren Hart <dvhart@linux.intel.com>,
-        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 25/70] futex: Fix bug in WARN_ON for NULL q.pi_state
+        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 31/70] x86, nops: Missing break resulting in incorrect selection on Intel
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,35 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit f27071cb7fe3e1d37a9dbe6c0dfc5395cd40fa43 upstream.
+commit d6250a3f12edb3a86db9598ffeca3de8b4a219e9 upstream.
 
-The WARN_ON in futex_wait_requeue_pi() for a NULL q.pi_state was testing
-the address (&q.pi_state) of the pointer instead of the value
-(q.pi_state) of the pointer. Correct it accordingly.
+The Intel case falls through into the generic case which then changes
+the values.  For cases like the P6 it doesn't do the right thing so
+this seems to be a screwup.
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/1c85d97f6e5f79ec389a4ead3e367363c74bd09a.1342809673.git.dvhart@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-lww2uirad4skzjlmrm0vru8o@git.kernel.org
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/futex.c |    2 +-
+ arch/x86/kernel/alternative.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 05018bf..5551ada 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2343,7 +2343,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 		 * signal.  futex_unlock_pi() will not destroy the lock_ptr nor
- 		 * the pi_state.
- 		 */
--		WARN_ON(!&q.pi_state);
-+		WARN_ON(!q.pi_state);
- 		pi_mutex = &q.pi_state->pi_mutex;
- 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
- 		debug_rt_mutex_free_waiter(&rt_waiter);
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 1f84794..73ef56c 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -219,7 +219,7 @@ void __init arch_init_ideal_nops(void)
+ 			ideal_nops = intel_nops;
+ #endif
+ 		}
+-
++		break;
+ 	default:
+ #ifdef CONFIG_X86_64
+ 		ideal_nops = k8_nops;
 
 
