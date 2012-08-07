@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031387Ab2HGWr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:47:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60358 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031370Ab2HGWrx (ORCPT
+	id S1031304Ab2HGWsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:48:01 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:62912 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031388Ab2HGWr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:47:53 -0400
+	Tue, 7 Aug 2012 18:47:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 48/49] futex: Fix bug in WARN_ON for NULL q.pi_state
-Date: Tue,  7 Aug 2012 15:45:06 -0700
-Message-Id: <20120807222031.146314293@linuxfoundation.org>
+Subject: [ 49/49] futex: Forbid uaddr == uaddr2 in futex_wait_requeue_pi()
+Date: Tue,  7 Aug 2012 15:45:07 -0700
+Message-Id: <20120807222031.235187617@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -32,32 +32,54 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Darren Hart <dvhart@linux.intel.com>
 
-commit f27071cb7fe3e1d37a9dbe6c0dfc5395cd40fa43 upstream.
+commit 6f7b0a2a5c0fb03be7c25bd1745baa50582348ef upstream.
 
-The WARN_ON in futex_wait_requeue_pi() for a NULL q.pi_state was testing
-the address (&q.pi_state) of the pointer instead of the value
-(q.pi_state) of the pointer. Correct it accordingly.
+If uaddr == uaddr2, then we have broken the rule of only requeueing
+from a non-pi futex to a pi futex with this call. If we attempt this,
+as the trinity test suite manages to do, we miss early wakeups as
+q.key is equal to key2 (because they are the same uaddr). We will then
+attempt to dereference the pi_mutex (which would exist had the futex_q
+been properly requeued to a pi futex) and trigger a NULL pointer
+dereference.
 
 Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/1c85d97f6e5f79ec389a4ead3e367363c74bd09a.1342809673.git.dvhart@linux.intel.com
+Link: http://lkml.kernel.org/r/ad82bfe7f7d130247fbe2b5b4275654807774227.1342809673.git.dvhart@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/futex.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/futex.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -2343,7 +2343,7 @@ static int futex_wait_requeue_pi(u32 __u
- 		 * signal.  futex_unlock_pi() will not destroy the lock_ptr nor
- 		 * the pi_state.
- 		 */
--		WARN_ON(!&q.pi_state);
-+		WARN_ON(!q.pi_state);
- 		pi_mutex = &q.pi_state->pi_mutex;
- 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
- 		debug_rt_mutex_free_waiter(&rt_waiter);
+@@ -2231,11 +2231,11 @@ int handle_early_requeue_pi_wakeup(struc
+  * @uaddr2:	the pi futex we will take prior to returning to user-space
+  *
+  * The caller will wait on uaddr and will be requeued by futex_requeue() to
+- * uaddr2 which must be PI aware.  Normal wakeup will wake on uaddr2 and
+- * complete the acquisition of the rt_mutex prior to returning to userspace.
+- * This ensures the rt_mutex maintains an owner when it has waiters; without
+- * one, the pi logic wouldn't know which task to boost/deboost, if there was a
+- * need to.
++ * uaddr2 which must be PI aware and unique from uaddr.  Normal wakeup will wake
++ * on uaddr2 and complete the acquisition of the rt_mutex prior to returning to
++ * userspace.  This ensures the rt_mutex maintains an owner when it has waiters;
++ * without one, the pi logic would not know which task to boost/deboost, if
++ * there was a need to.
+  *
+  * We call schedule in futex_wait_queue_me() when we enqueue and return there
+  * via the following:
+@@ -2272,6 +2272,9 @@ static int futex_wait_requeue_pi(u32 __u
+ 	struct futex_q q = futex_q_init;
+ 	int res, ret;
+ 
++	if (uaddr == uaddr2)
++		return -EINVAL;
++
+ 	if (!bitset)
+ 		return -EINVAL;
+ 
 
 
