@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2HGDin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:38:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59715 "EHLO
+	id S932725Ab2HGDrl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:47:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59788 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757337Ab2HGDia (ORCPT
+	by vger.kernel.org with ESMTP id S1757389Ab2HGDil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:30 -0400
-Message-Id: <20120807032803.781098237@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:41 -0400
+Message-Id: <20120807032804.072854329@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:48 +0100
+Date: Tue, 07 Aug 2012 04:28:50 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 53/70] ASoC: wm8962: Allow VMID time to fully ramp
+        alan@lxorguk.ukuu.org.uk, Xishi Qiu <qiuxishi@huawei.com>,
+        Jiang Liu <liuj97@gmail.com>, Tony Luck <tony.luck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Keping Chen <chenkeping@huawei.com>
+Subject: [ 55/70] mm: setup pageblock_order before its used by sparsemem
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,31 +34,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Xishi Qiu <qiuxishi@huawei.com>
 
-commit 9d40e5582c9c4cfb6977ba2a0ca9c2ed82c56f21 upstream.
+commit ca57df79d4f64e1a4886606af4289d40636189c5 upstream.
 
-Required for reliable power up from cold.
+On architectures with CONFIG_HUGETLB_PAGE_SIZE_VARIABLE set, such as
+Itanium, pageblock_order is a variable with default value of 0.  It's set
+to the right value by set_pageblock_order() in function
+free_area_init_core().
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+But pageblock_order may be used by sparse_init() before free_area_init_core()
+is called along path:
+sparse_init()
+    ->sparse_early_usemaps_alloc_node()
+	->usemap_size()
+	    ->SECTION_BLOCKFLAGS_BITS
+		->((1UL << (PFN_SECTION_SHIFT - pageblock_order)) *
+NR_PAGEBLOCK_BITS)
+
+The uninitialized pageblock_size will cause memory wasting because
+usemap_size() returns a much bigger value then it's really needed.
+
+For example, on an Itanium platform,
+sparse_init() pageblock_order=0 usemap_size=24576
+free_area_init_core() before pageblock_order=0, usemap_size=24576
+free_area_init_core() after pageblock_order=12, usemap_size=8
+
+That means 24K memory has been wasted for each section, so fix it by calling
+set_pageblock_order() from sparse_init().
+
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Keping Chen <chenkeping@huawei.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/codecs/wm8962.c |    3 +++
- 1 file changed, 3 insertions(+)
+ mm/internal.h   |    2 ++
+ mm/page_alloc.c |    4 ++--
+ mm/sparse.c     |    3 +++
+ 3 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
-index eaf6586..aa9ce9d 100644
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -2501,6 +2501,9 @@ static int wm8962_set_bias_level(struct snd_soc_codec *codec,
- 		/* VMID 2*250k */
- 		snd_soc_update_bits(codec, WM8962_PWR_MGMT_1,
- 				    WM8962_VMID_SEL_MASK, 0x100);
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -309,3 +309,5 @@ extern u64 hwpoison_filter_flags_mask;
+ extern u64 hwpoison_filter_flags_value;
+ extern u64 hwpoison_filter_memcg;
+ extern u32 hwpoison_filter_enable;
 +
-+		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF)
-+			msleep(100);
- 		break;
++extern void set_pageblock_order(void);
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4282,7 +4282,7 @@ static inline void setup_usemap(struct p
+ #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
  
- 	case SND_SOC_BIAS_OFF:
+ /* Initialise the number of pages represented by NR_PAGEBLOCK_BITS */
+-static inline void __init set_pageblock_order(void)
++void __init set_pageblock_order(void)
+ {
+ 	unsigned int order;
+ 
+@@ -4310,7 +4310,7 @@ static inline void __init set_pageblock_
+  * include/linux/pageblock-flags.h for the values of pageblock_order based on
+  * the kernel config
+  */
+-static inline void set_pageblock_order(void)
++void __init set_pageblock_order(void)
+ {
+ }
+ 
+--- a/mm/sparse.c
++++ b/mm/sparse.c
+@@ -486,6 +486,9 @@ void __init sparse_init(void)
+ 	struct page **map_map;
+ #endif
+ 
++	/* Setup pageblock_order for HUGETLB_PAGE_SIZE_VARIABLE */
++	set_pageblock_order();
++
+ 	/*
+ 	 * map is using big page (aka 2M in x86 64 bit)
+ 	 * usemap is less one page (aka 24 bytes)
 
 
