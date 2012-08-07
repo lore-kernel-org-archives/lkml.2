@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058Ab2HGXHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:07:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	id S1757455Ab2HGXII (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:08:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030594Ab2HGWjb (ORCPT
+	with ESMTP id S1030524Ab2HGWj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:31 -0400
+	Tue, 7 Aug 2012 18:39:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Law <law@redhat.com>, Josh Boyer <jwboyer@redhat.com>
-Subject: [ 064/109] posix_types.h: Cleanup stale __NFDBITS and related definitions
-Date: Tue,  7 Aug 2012 15:35:23 -0700
-Message-Id: <20120807222048.721853192@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 063/109] drm/radeon: fix dpms on/off on trinity/aruba v2
+Date: Tue,  7 Aug 2012 15:35:22 -0700
+Message-Id: <20120807222048.629366205@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,173 +31,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 8ded2bbc1845e19c771eb55209aab166ef011243 upstream.
+commit fcedac670c3da0d17aaa5db1708694971e8024a9 upstream.
 
-Recently, glibc made a change to suppress sign-conversion warnings in
-FD_SET (glibc commit ceb9e56b3d1).  This uncovered an issue with the
-kernel's definition of __NFDBITS if applications #include
-<linux/types.h> after including <sys/select.h>.  A build failure would
-be seen when passing the -Werror=sign-compare and -D_FORTIFY_SOURCE=2
-flags to gcc.
+The external encoder need to be setup again before enabling the
+transmiter. This seems to be only needed on some trinity/aruba
+to fix dpms on.
 
-It was suggested that the kernel should either match the glibc
-definition of __NFDBITS or remove that entirely.  The current in-kernel
-uses of __NFDBITS can be replaced with BITS_PER_LONG, and there are no
-uses of the related __FDELT and __FDMASK defines.  Given that, we'll
-continue the cleanup that was started with commit 8b3d1cda4f5f
-("posix_types: Remove fd_set macros") and drop the remaining unused
-macros.
+v2: Add comment, only setup again on dce6 ie aruba or newer.
 
-Additionally, linux/time.h has similar macros defined that expand to
-nothing so we'll remove those at the same time.
-
-Reported-by: Jeff Law <law@redhat.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-[ .. and fix up whitespace as per akpm ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/kspd.c     |    2 +-
- fs/exec.c                   |    2 +-
- fs/select.c                 |   10 +++++-----
- include/linux/posix_types.h |   18 +++---------------
- include/linux/time.h        |    8 --------
- kernel/exit.c               |    2 +-
- security/selinux/hooks.c    |    2 +-
- 7 files changed, 12 insertions(+), 32 deletions(-)
+ drivers/gpu/drm/radeon/atombios_encoders.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/arch/mips/kernel/kspd.c
-+++ b/arch/mips/kernel/kspd.c
-@@ -323,7 +323,7 @@ static void sp_cleanup(void)
- 	fdt = files_fdtable(files);
- 	for (;;) {
- 		unsigned long set;
--		i = j * __NFDBITS;
-+		i = j * BITS_PER_LONG;
- 		if (i >= fdt->max_fds)
- 			break;
- 		set = fdt->open_fds[j++];
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1024,7 +1024,7 @@ static void flush_old_files(struct files
- 		unsigned long set, i;
- 
- 		j++;
--		i = j * __NFDBITS;
-+		i = j * BITS_PER_LONG;
- 		fdt = files_fdtable(files);
- 		if (i >= fdt->max_fds)
- 			break;
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -345,8 +345,8 @@ static int max_select_fd(unsigned long n
- 	struct fdtable *fdt;
- 
- 	/* handle last in-complete long-word first */
--	set = ~(~0UL << (n & (__NFDBITS-1)));
--	n /= __NFDBITS;
-+	set = ~(~0UL << (n & (BITS_PER_LONG-1)));
-+	n /= BITS_PER_LONG;
- 	fdt = files_fdtable(current->files);
- 	open_fds = fdt->open_fds + n;
- 	max = 0;
-@@ -373,7 +373,7 @@ get_max:
- 			max++;
- 			set >>= 1;
- 		} while (set);
--		max += n * __NFDBITS;
-+		max += n * BITS_PER_LONG;
- 	}
- 
- 	return max;
-@@ -435,11 +435,11 @@ int do_select(int n, fd_set_bits *fds, s
- 			in = *inp++; out = *outp++; ex = *exp++;
- 			all_bits = in | out | ex;
- 			if (all_bits == 0) {
--				i += __NFDBITS;
-+				i += BITS_PER_LONG;
- 				continue;
- 			}
- 
--			for (j = 0; j < __NFDBITS; ++j, ++i, bit <<= 1) {
-+			for (j = 0; j < BITS_PER_LONG; ++j, ++i, bit <<= 1) {
- 				int fput_needed;
- 				if (i >= n)
- 					break;
---- a/include/linux/posix_types.h
-+++ b/include/linux/posix_types.h
-@@ -15,26 +15,14 @@
-  */
- 
- /*
-- * Those macros may have been defined in <gnu/types.h>. But we always
-- * use the ones here. 
-+ * This macro may have been defined in <gnu/types.h>. But we always
-+ * use the one here.
-  */
--#undef __NFDBITS
--#define __NFDBITS	(8 * sizeof(unsigned long))
--
- #undef __FD_SETSIZE
- #define __FD_SETSIZE	1024
- 
--#undef __FDSET_LONGS
--#define __FDSET_LONGS	(__FD_SETSIZE/__NFDBITS)
--
--#undef __FDELT
--#define	__FDELT(d)	((d) / __NFDBITS)
--
--#undef __FDMASK
--#define	__FDMASK(d)	(1UL << ((d) % __NFDBITS))
--
- typedef struct {
--	unsigned long fds_bits [__FDSET_LONGS];
-+	unsigned long fds_bits[__FD_SETSIZE / (8 * sizeof(long))];
- } __kernel_fd_set;
- 
- /* Type of a signal handler.  */
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -258,14 +258,6 @@ static __always_inline void timespec_add
- 
- #endif /* __KERNEL__ */
- 
--#define NFDBITS			__NFDBITS
--
--#define FD_SETSIZE		__FD_SETSIZE
--#define FD_SET(fd,fdsetp)	__FD_SET(fd,fdsetp)
--#define FD_CLR(fd,fdsetp)	__FD_CLR(fd,fdsetp)
--#define FD_ISSET(fd,fdsetp)	__FD_ISSET(fd,fdsetp)
--#define FD_ZERO(fdsetp)		__FD_ZERO(fdsetp)
--
- /*
-  * Names of the interval timers, and structure
-  * defining a timer setting:
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -471,7 +471,7 @@ static void close_files(struct files_str
- 	rcu_read_unlock();
- 	for (;;) {
- 		unsigned long set;
--		i = j * __NFDBITS;
-+		i = j * BITS_PER_LONG;
- 		if (i >= fdt->max_fds)
- 			break;
- 		set = fdt->open_fds[j++];
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -2162,7 +2162,7 @@ static inline void flush_unauthorized_fi
- 		int fd;
- 
- 		j++;
--		i = j * __NFDBITS;
-+		i = j * BITS_PER_LONG;
- 		fdt = files_fdtable(files);
- 		if (i >= fdt->max_fds)
- 			break;
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1392,10 +1392,18 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 	case DRM_MODE_DPMS_ON:
+ 		/* some early dce3.2 boards have a bug in their transmitter control table */
+ 		if ((rdev->family == CHIP_RV710) || (rdev->family == CHIP_RV730) ||
+-		    ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev))
++		    ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev)) {
++			if (ASIC_IS_DCE6(rdev)) {
++				/* It seems we need to call ATOM_ENCODER_CMD_SETUP again
++				 * before reenabling encoder on DPMS ON, otherwise we never
++				 * get picture
++				 */
++				atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_SETUP, 0);
++			}
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
+-		else
++		} else {
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
++		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
+ 			if (connector->connector_type == DRM_MODE_CONNECTOR_eDP) {
+ 				atombios_set_edp_panel_power(connector,
 
 
