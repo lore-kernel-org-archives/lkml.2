@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820Ab2HGDvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:51:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59730 "EHLO
+	id S932806Ab2HGDu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:50:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59733 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757346Ab2HGDic (ORCPT
+	by vger.kernel.org with ESMTP id S1757350Ab2HGDic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Aug 2012 23:38:32 -0400
-Message-Id: <20120807032757.729008929@decadent.org.uk>
+Message-Id: <20120807032804.810686774@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:06 +0100
+Date: Tue, 07 Aug 2012 04:28:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>,
-        "Theodore Tso" <tytso@mit.edu>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Matt Mackall <mpm@selenic.com>, Tony Luck <tony.luck@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 11/70] random: Use arch_get_random_int instead of cycle counter if avail
+        alan@lxorguk.ukuu.org.uk, Boaz Harrosh <bharrosh@panasas.com>
+Subject: [ 60/70] ore: Fix out-of-bounds access in _ios_obj()
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,67 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit cf833d0b9937874b50ef2867c4e8badfd64948ce upstream.
+commit 9e62bb4458ad2cf28bd701aa5fab380b846db326 upstream.
 
-We still don't use rdrand in /dev/random, which just seems stupid. We
-accept the *cycle*counter* as a random input, but we don't accept
-rdrand? That's just broken.
+_ios_obj() is accessed by group_index not device_table index.
 
-Sure, people can do things in user space (write to /dev/random, use
-rdrand in addition to /dev/random themselves etc etc), but that
-*still* seems to be a particularly stupid reason for saying "we
-shouldn't bother to try to do better in /dev/random".
+The oc->comps array is only a group_full of devices at a time
+it is not like ore_comp_dev() which is indexed by a global
+device_table index.
 
-And even if somebody really doesn't trust rdrand as a source of random
-bytes, it seems singularly stupid to trust the cycle counter *more*.
+This did not BUG until now because exofs only uses a single
+COMP for all devices. But with other FSs like PanFS this is
+not true.
 
-So I'd suggest the attached patch. I'm not going to even bother
-arguing that we should add more bits to the entropy estimate, because
-that's not the point - I don't care if /dev/random fills up slowly or
-not, I think it's just stupid to not use the bits we can get from
-rdrand and mix them into the strong randomness pool.
+This bug was only in the write_path, all other users were
+using it correctly
 
-Link: http://lkml.kernel.org/r/CA%2B55aFwn59N1=m651QAyTy-1gO1noGbK18zwKDwvwqnravA84A@mail.gmail.com
-Acked-by: "David S. Miller" <davem@davemloft.net>
-Acked-by: "Theodore Ts'o" <tytso@mit.edu>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[This is a bug since 3.2 Kernel]
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/random.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/exofs/ore.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 6035ab8..85da874 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -624,8 +624,8 @@ static struct timer_rand_state input_timer_state;
- static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- {
- 	struct {
--		cycles_t cycles;
- 		long jiffies;
-+		unsigned cycles;
- 		unsigned num;
- 	} sample;
- 	long delta, delta2, delta3;
-@@ -637,7 +637,11 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 		goto out;
+diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
+index 24a49d4..1585db1 100644
+--- a/fs/exofs/ore.c
++++ b/fs/exofs/ore.c
+@@ -837,11 +837,11 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
+ 				bio->bi_rw |= REQ_WRITE;
+ 			}
  
- 	sample.jiffies = jiffies;
--	sample.cycles = get_cycles();
-+
-+	/* Use arch random value, fall back to cycles */
-+	if (!arch_get_random_int(&sample.cycles))
-+		sample.cycles = get_cycles();
-+
- 	sample.num = num;
- 	mix_pool_bytes(&input_pool, &sample, sizeof(sample));
+-			osd_req_write(or, _ios_obj(ios, dev), per_dev->offset,
+-				      bio, per_dev->length);
++			osd_req_write(or, _ios_obj(ios, cur_comp),
++				      per_dev->offset, bio, per_dev->length);
+ 			ORE_DBGMSG("write(0x%llx) offset=0x%llx "
+ 				      "length=0x%llx dev=%d\n",
+-				     _LLU(_ios_obj(ios, dev)->id),
++				     _LLU(_ios_obj(ios, cur_comp)->id),
+ 				     _LLU(per_dev->offset),
+ 				     _LLU(per_dev->length), dev);
+ 		} else if (ios->kern_buff) {
+@@ -853,20 +853,20 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
+ 			       (ios->si.unit_off + ios->length >
+ 				ios->layout->stripe_unit));
+ 
+-			ret = osd_req_write_kern(or, _ios_obj(ios, per_dev->dev),
++			ret = osd_req_write_kern(or, _ios_obj(ios, cur_comp),
+ 						 per_dev->offset,
+ 						 ios->kern_buff, ios->length);
+ 			if (unlikely(ret))
+ 				goto out;
+ 			ORE_DBGMSG2("write_kern(0x%llx) offset=0x%llx "
+ 				      "length=0x%llx dev=%d\n",
+-				     _LLU(_ios_obj(ios, dev)->id),
++				     _LLU(_ios_obj(ios, cur_comp)->id),
+ 				     _LLU(per_dev->offset),
+ 				     _LLU(ios->length), per_dev->dev);
+ 		} else {
+-			osd_req_set_attributes(or, _ios_obj(ios, dev));
++			osd_req_set_attributes(or, _ios_obj(ios, cur_comp));
+ 			ORE_DBGMSG2("obj(0x%llx) set_attributes=%d dev=%d\n",
+-				     _LLU(_ios_obj(ios, dev)->id),
++				     _LLU(_ios_obj(ios, cur_comp)->id),
+ 				     ios->out_attr_len, dev);
+ 		}
  
 
 
