@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab2HGSm7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 14:42:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54937 "EHLO
+	id S1756217Ab2HGSm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 14:42:58 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54938 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756174Ab2HGSmz (ORCPT
+	by vger.kernel.org with ESMTP id S1756117Ab2HGSm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 14:42:55 -0400
+	Tue, 7 Aug 2012 14:42:56 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@gmail.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 5/7] mfd: wm831x: Convert to IORESOURCE_REG
-Date: Tue,  7 Aug 2012 19:42:47 +0100
-Message-Id: <1344364969-32489-5-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 4/7] resources: Document IORESOURCE_IO
+Date: Tue,  7 Aug 2012 19:42:46 +0100
+Message-Id: <1344364969-32489-4-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
@@ -23,363 +23,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was originally written by Russell King who unfortunately found
-himself unable to take the patch futher.
+Help clarify that this is specifically for PCI/ISA I/O ports and not for
+any other similar thing.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/wm831x-core.c        |   66 ++++++++++++--------------------------
- drivers/regulator/wm831x-dcdc.c  |   12 +++----
- drivers/regulator/wm831x-isink.c |    4 +--
- drivers/regulator/wm831x-ldo.c   |   12 +++----
- 4 files changed, 34 insertions(+), 60 deletions(-)
+ include/linux/ioport.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index 946698f..2e5d58e 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -614,18 +614,11 @@ int wm831x_set_bits(struct wm831x *wm831x, unsigned short reg,
- }
- EXPORT_SYMBOL_GPL(wm831x_set_bits);
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index bfee885..85ac9b9b 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -29,7 +29,7 @@ struct resource {
+ #define IORESOURCE_BITS		0x000000ff	/* Bus-specific bits */
  
--static struct resource wm831x_io_parent = {
--	.start = 0,
--	.end   = 0xffffffff,
--	.flags = IORESOURCE_IO,
--};
--
- static struct resource wm831x_dcdc1_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC1_CONTROL_1,
- 		.end   = WM831X_DC1_DVS_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -644,10 +637,9 @@ static struct resource wm831x_dcdc1_resources[] = {
- 
- static struct resource wm831x_dcdc2_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC2_CONTROL_1,
- 		.end   = WM831X_DC2_DVS_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -665,10 +657,9 @@ static struct resource wm831x_dcdc2_resources[] = {
- 
- static struct resource wm831x_dcdc3_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC3_CONTROL_1,
- 		.end   = WM831X_DC3_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -680,10 +671,9 @@ static struct resource wm831x_dcdc3_resources[] = {
- 
- static struct resource wm831x_dcdc4_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC4_CONTROL,
- 		.end   = WM831X_DC4_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -695,10 +685,9 @@ static struct resource wm831x_dcdc4_resources[] = {
- 
- static struct resource wm8320_dcdc4_buck_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC4_CONTROL,
- 		.end   = WM832X_DC4_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -718,10 +707,9 @@ static struct resource wm831x_gpio_resources[] = {
- 
- static struct resource wm831x_isink1_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_CURRENT_SINK_1,
- 		.end   = WM831X_CURRENT_SINK_1,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.start = WM831X_IRQ_CS1,
-@@ -732,10 +720,9 @@ static struct resource wm831x_isink1_resources[] = {
- 
- static struct resource wm831x_isink2_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_CURRENT_SINK_2,
- 		.end   = WM831X_CURRENT_SINK_2,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.start = WM831X_IRQ_CS2,
-@@ -746,10 +733,9 @@ static struct resource wm831x_isink2_resources[] = {
- 
- static struct resource wm831x_ldo1_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO1_CONTROL,
- 		.end   = WM831X_LDO1_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -761,10 +747,9 @@ static struct resource wm831x_ldo1_resources[] = {
- 
- static struct resource wm831x_ldo2_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO2_CONTROL,
- 		.end   = WM831X_LDO2_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -776,10 +761,9 @@ static struct resource wm831x_ldo2_resources[] = {
- 
- static struct resource wm831x_ldo3_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO3_CONTROL,
- 		.end   = WM831X_LDO3_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -791,10 +775,9 @@ static struct resource wm831x_ldo3_resources[] = {
- 
- static struct resource wm831x_ldo4_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO4_CONTROL,
- 		.end   = WM831X_LDO4_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -806,10 +789,9 @@ static struct resource wm831x_ldo4_resources[] = {
- 
- static struct resource wm831x_ldo5_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO5_CONTROL,
- 		.end   = WM831X_LDO5_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -821,10 +803,9 @@ static struct resource wm831x_ldo5_resources[] = {
- 
- static struct resource wm831x_ldo6_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO6_CONTROL,
- 		.end   = WM831X_LDO6_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -836,10 +817,9 @@ static struct resource wm831x_ldo6_resources[] = {
- 
- static struct resource wm831x_ldo7_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO7_CONTROL,
- 		.end   = WM831X_LDO7_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -851,10 +831,9 @@ static struct resource wm831x_ldo7_resources[] = {
- 
- static struct resource wm831x_ldo8_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO8_CONTROL,
- 		.end   = WM831X_LDO8_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -866,10 +845,9 @@ static struct resource wm831x_ldo8_resources[] = {
- 
- static struct resource wm831x_ldo9_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO9_CONTROL,
- 		.end   = WM831X_LDO9_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -881,10 +859,9 @@ static struct resource wm831x_ldo9_resources[] = {
- 
- static struct resource wm831x_ldo10_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO10_CONTROL,
- 		.end   = WM831X_LDO10_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -896,10 +873,9 @@ static struct resource wm831x_ldo10_resources[] = {
- 
- static struct resource wm831x_ldo11_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO11_ON_CONTROL,
- 		.end   = WM831X_LDO11_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- };
- 
-@@ -998,19 +974,17 @@ static struct resource wm831x_rtc_resources[] = {
- 
- static struct resource wm831x_status1_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_STATUS_LED_1,
- 		.end   = WM831X_STATUS_LED_1,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- };
- 
- static struct resource wm831x_status2_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_STATUS_LED_2,
- 		.end   = WM831X_STATUS_LED_2,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- };
- 
-diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
-index 7413885..64111f4 100644
---- a/drivers/regulator/wm831x-dcdc.c
-+++ b/drivers/regulator/wm831x-dcdc.c
-@@ -476,9 +476,9 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 
- 	dcdc->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -651,9 +651,9 @@ static __devinit int wm831x_buckp_probe(struct platform_device *pdev)
- 
- 	dcdc->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -795,9 +795,9 @@ static __devinit int wm831x_boostp_probe(struct platform_device *pdev)
- 
- 	dcdc->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-diff --git a/drivers/regulator/wm831x-isink.c b/drivers/regulator/wm831x-isink.c
-index 0d207c2..2646a19 100644
---- a/drivers/regulator/wm831x-isink.c
-+++ b/drivers/regulator/wm831x-isink.c
-@@ -172,9 +172,9 @@ static __devinit int wm831x_isink_probe(struct platform_device *pdev)
- 
- 	isink->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
-index 56a6de3..f6c81ec 100644
---- a/drivers/regulator/wm831x-ldo.c
-+++ b/drivers/regulator/wm831x-ldo.c
-@@ -271,9 +271,9 @@ static __devinit int wm831x_gp_ldo_probe(struct platform_device *pdev)
- 
- 	ldo->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -524,9 +524,9 @@ static __devinit int wm831x_aldo_probe(struct platform_device *pdev)
- 
- 	ldo->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -679,9 +679,9 @@ static __devinit int wm831x_alive_ldo_probe(struct platform_device *pdev)
- 
- 	ldo->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
+ #define IORESOURCE_TYPE_BITS	0x00001f00	/* Resource type */
+-#define IORESOURCE_IO		0x00000100
++#define IORESOURCE_IO		0x00000100	/* PCI/ISA I/O ports */
+ #define IORESOURCE_MEM		0x00000200
+ #define IORESOURCE_REG		0x00000300	/* Register offsets */
+ #define IORESOURCE_IRQ		0x00000400
 -- 
 1.7.10.4
 
