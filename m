@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab2HGDzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:55:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59617 "EHLO
+	id S1757416Ab2HGD4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:56:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59608 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757270Ab2HGDiJ (ORCPT
+	by vger.kernel.org with ESMTP id S1757263Ab2HGDiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:09 -0400
-Message-Id: <20120807032756.313313678@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:08 -0400
+Message-Id: <20120807032757.447370951@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:27:56 +0100
+Date: Tue, 07 Aug 2012 04:28:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <peterz@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
-        Stefan Bader <stefan.bader@canonical.com>
-Subject: [ 01/70] sched: Fix race in task_group()
+        alan@lxorguk.ukuu.org.uk,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 09/70] [media] ene_ir: Fix driver initialisation
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,158 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Luis Henriques <luis.henriques@canonical.com>
 
-commit 8323f26ce3425460769605a6aece7a174edaa7d1 upstream
+commit b31b021988fed9e3741a46918f14ba9b063811db upstream.
 
-Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
-Don't call task_group() too many times in set_task_rq()"), he
-found the reason to be that the multiple task_group()
-invocations in set_task_rq() returned different values.
+commit 9ef449c6b31bb6a8e6dedc24de475a3b8c79be20 ("[media] rc: Postpone ISR
+registration") fixed an early ISR registration on several drivers.  It did
+however also introduced a bug by moving the invocation of pnp_port_start()
+to the end of the probe function.
 
-Looking at all that I found a lack of serialization and plain
-wrong comments.
+This patch fixes this issue by moving the invocation of pnp_port_start() to
+an earlier stage in the probe function.
 
-The below tries to fix it using an extra pointer which is
-updated under the appropriate scheduler locks. Its not pretty,
-but I can't really see another way given how all the cgroup
-stuff works.
-
-Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-(backported to previous file names and layout)
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Cc: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/init_task.h |   12 +++++++++++-
- include/linux/sched.h     |    5 ++++-
- kernel/sched.c            |   32 ++++++++++++++++++--------------
- 3 files changed, 33 insertions(+), 16 deletions(-)
+ drivers/media/rc/ene_ir.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 32574ee..13b2684 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -117,8 +117,17 @@ extern struct group_info init_groups;
+diff --git a/drivers/media/rc/ene_ir.c b/drivers/media/rc/ene_ir.c
+index bef5296..647dd95 100644
+--- a/drivers/media/rc/ene_ir.c
++++ b/drivers/media/rc/ene_ir.c
+@@ -1018,6 +1018,8 @@ static int ene_probe(struct pnp_dev *pnp_dev, const struct pnp_device_id *id)
  
- extern struct cred init_cred;
+ 	spin_lock_init(&dev->hw_lock);
  
-+extern struct task_group root_task_group;
++	dev->hw_io = pnp_port_start(pnp_dev, 0);
 +
-+#ifdef CONFIG_CGROUP_SCHED
-+# define INIT_CGROUP_SCHED(tsk)						\
-+	.sched_task_group = &root_task_group,
-+#else
-+# define INIT_CGROUP_SCHED(tsk)
-+#endif
-+
- #ifdef CONFIG_PERF_EVENTS
--# define INIT_PERF_EVENTS(tsk)					\
-+# define INIT_PERF_EVENTS(tsk)						\
- 	.perf_event_mutex = 						\
- 		 __MUTEX_INITIALIZER(tsk.perf_event_mutex),		\
- 	.perf_event_list = LIST_HEAD_INIT(tsk.perf_event_list),
-@@ -155,6 +164,7 @@ extern struct cred init_cred;
- 	},								\
- 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
- 	INIT_PUSHABLE_TASKS(tsk)					\
-+	INIT_CGROUP_SCHED(tsk)						\
- 	.ptraced	= LIST_HEAD_INIT(tsk.ptraced),			\
- 	.ptrace_entry	= LIST_HEAD_INIT(tsk.ptrace_entry),		\
- 	.real_parent	= &tsk,						\
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5afa2a3..d404c12 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1235,6 +1235,9 @@ struct task_struct {
- 	const struct sched_class *sched_class;
- 	struct sched_entity se;
- 	struct sched_rt_entity rt;
-+#ifdef CONFIG_CGROUP_SCHED
-+	struct task_group *sched_task_group;
-+#endif
+ 	pnp_set_drvdata(pnp_dev, dev);
+ 	dev->pnp_dev = pnp_dev;
  
- #ifdef CONFIG_PREEMPT_NOTIFIERS
- 	/* list of struct preempt_notifier: */
-@@ -2645,7 +2648,7 @@ extern int sched_group_set_rt_period(struct task_group *tg,
- extern long sched_group_rt_period(struct task_group *tg);
- extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
- #endif
--#endif
-+#endif /* CONFIG_CGROUP_SCHED */
+@@ -1072,7 +1074,6 @@ static int ene_probe(struct pnp_dev *pnp_dev, const struct pnp_device_id *id)
  
- extern int task_can_switch_user(struct user_struct *up,
- 					struct task_struct *tsk);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 52ac69b..cd9c72e 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -746,22 +746,19 @@ static inline int cpu_of(struct rq *rq)
- /*
-  * Return the group to which this tasks belongs.
-  *
-- * We use task_subsys_state_check() and extend the RCU verification with
-- * pi->lock and rq->lock because cpu_cgroup_attach() holds those locks for each
-- * task it moves into the cgroup. Therefore by holding either of those locks,
-- * we pin the task to the current cgroup.
-+ * We cannot use task_subsys_state() and friends because the cgroup
-+ * subsystem changes that value before the cgroup_subsys::attach() method
-+ * is called, therefore we cannot pin it and might observe the wrong value.
-+ *
-+ * The same is true for autogroup's p->signal->autogroup->tg, the autogroup
-+ * core changes this before calling sched_move_task().
-+ *
-+ * Instead we use a 'copy' which is updated from sched_move_task() while
-+ * holding both task_struct::pi_lock and rq::lock.
-  */
- static inline struct task_group *task_group(struct task_struct *p)
- {
--	struct task_group *tg;
--	struct cgroup_subsys_state *css;
--
--	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
--			lockdep_is_held(&p->pi_lock) ||
--			lockdep_is_held(&task_rq(p)->lock));
--	tg = container_of(css, struct task_group, css);
--
--	return autogroup_task_group(p, tg);
-+	return p->sched_task_group;
- }
- 
- /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
-@@ -2372,7 +2369,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- 	 * a task's CPU. ->pi_lock for waking tasks, rq->lock for runnable tasks.
- 	 *
- 	 * sched_move_task() holds both and thus holding either pins the cgroup,
--	 * see set_task_rq().
-+	 * see task_group().
- 	 *
- 	 * Furthermore, all task_rq users should acquire both locks, see
- 	 * task_rq_lock().
-@@ -8892,6 +8889,7 @@ void sched_destroy_group(struct task_group *tg)
-  */
- void sched_move_task(struct task_struct *tsk)
- {
-+	struct task_group *tg;
- 	int on_rq, running;
- 	unsigned long flags;
- 	struct rq *rq;
-@@ -8906,6 +8904,12 @@ void sched_move_task(struct task_struct *tsk)
- 	if (unlikely(running))
- 		tsk->sched_class->put_prev_task(rq, tsk);
- 
-+	tg = container_of(task_subsys_state_check(tsk, cpu_cgroup_subsys_id,
-+				lockdep_is_held(&tsk->sighand->siglock)),
-+			  struct task_group, css);
-+	tg = autogroup_task_group(tsk, tg);
-+	tsk->sched_task_group = tg;
-+
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	if (tsk->sched_class->task_move_group)
- 		tsk->sched_class->task_move_group(tsk, on_rq);
-
+ 	/* claim the resources */
+ 	error = -EBUSY;
+-	dev->hw_io = pnp_port_start(pnp_dev, 0);
+ 	if (!request_region(dev->hw_io, ENE_IO_SIZE, ENE_DRIVER_NAME)) {
+ 		dev->hw_io = -1;
+ 		dev->irq = -1;
 
 
