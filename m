@@ -1,97 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab2HGPqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:46:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42778 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155Ab2HGPqD (ORCPT
+	id S1755163Ab2HGPqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:46:33 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:18281
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754763Ab2HGPoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:46:03 -0400
-Date: Tue, 7 Aug 2012 17:45:58 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/2] perf tools: Basic bash completion support
-Message-ID: <20120807154555.GB12858@somewhere.redhat.com>
-References: <1344345586-15068-1-git-send-email-fweisbec@gmail.com>
- <20120807132252.GA12858@somewhere.redhat.com>
- <502123A4.8040007@gmail.com>
+	Tue, 7 Aug 2012 11:44:15 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M8E6DI-02-5T5-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <x86@kernel.org>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg call-back
+Date: Tue, 7 Aug 2012 17:43:47 +0200
+Message-ID: <1344354229-8526-18-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
+References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502123A4.8040007@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 08:18:12AM -0600, David Ahern wrote:
-> On 8/7/12 7:22 AM, Frederic Weisbecker wrote:
-> >On Tue, Aug 07, 2012 at 03:19:44PM +0200, Frederic Weisbecker wrote:
-> >>Hey,
-> >>
-> >>Basic bash completion support. Only support perf subcommands and most -e basic
-> >>event descriptor (no grouping).
-> >>
-> >>I just have a small issue with tracepoints because of their ":" in the middle.
-> >>It auto completes as long as we haven't yet reached the semicolon. Otherwise
-> >>we need to add a double quote in the beginning of the expression. I'm quite
-> >>a newbie in bash completion though, so I might find a subtelty later to solve
-> >>this.
-> >
-> >Tips: for testing, you need to "make install" and update the bash completion
-> >scripts:
-> >
-> >	# make install
-> >	$ . /etc/bash_completion
-> >
-> 
-> ANd you need to make sure the PATH hits the updated binary and not
-> the default other wise you end up with:
-> 
-> /tmp/pbuild/perf recUnknown option: --list-cmds
-> 
->  Usage: perf [--version] [--help] COMMAND [ARGS]
-> Unknown option: --list-cmds
-> 
-> It's calling /usr/bin/perf with --list-cmds, versus the perf command
-> I am running (/tmp/pbuild/perf). Any way to teach the completion to
-> use the perf binary that the user is running?
+This call-back points to the right function for initializing
+the msi_msg structure.
 
-Ah good point.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/include/asm/io_apic.h  |    3 +++
+ arch/x86/include/asm/x86_init.h |    4 +++
+ arch/x86/kernel/apic/io_apic.c  |   57 ++++++++++++++++++++-------------------
+ arch/x86/kernel/x86_init.c      |    1 +
+ drivers/iommu/irq_remapping.c   |    9 ++++---
+ 5 files changed, 44 insertions(+), 30 deletions(-)
 
-Does the below work for you? I'll respin with that change.
-
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 25f4d99..cba72a9 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -3,18 +3,20 @@
- have perf &&
- _perf()
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index f294eba..5ffa634 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -160,6 +160,9 @@ extern void __init native_setup_timer_pin(unsigned int ioapic_idx,
+ 					  unsigned int pin, int vector);
+ extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
+ 
++extern void native_compose_msi_msg(struct pci_dev *pdev,
++				   unsigned int irq, unsigned int dest,
++				   struct msi_msg *msg, u8 hpet_id);
+ int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
+ 
+ extern int save_ioapic_entries(void);
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index ffe5860..1430af0 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -180,9 +180,13 @@ struct x86_platform_ops {
+ };
+ 
+ struct pci_dev;
++struct msi_msg;
+ 
+ struct x86_msi_ops {
+ 	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
++	void (*compose_msi_msg)(struct pci_dev *dev, unsigned int irq,
++				unsigned int dest, struct msi_msg *msg,
++			       u8 hpet_id);
+ 	void (*teardown_msi_irq)(unsigned int irq);
+ 	void (*teardown_msi_irqs)(struct pci_dev *dev);
+ 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index ec37ec2..94e2f9d 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2990,36 +2990,16 @@ void destroy_irq(unsigned int irq)
+  * MSI message composition
+  */
+ #ifdef CONFIG_PCI_MSI
+-static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+-			   struct msi_msg *msg, u8 hpet_id)
++void native_compose_msi_msg(struct pci_dev *pdev,
++			    unsigned int irq, unsigned int dest,
++			    struct msi_msg *msg, u8 hpet_id)
  {
--	local cur
-+	local cur cmd
+-	struct irq_cfg *cfg;
+-	int err;
+-	unsigned dest;
+-
+-	if (disable_apic)
+-		return -ENXIO;
++	struct irq_cfg *cfg = irq_cfg(irq);
  
- 	COMPREPLY=()
- 	_get_comp_words_by_ref cur prev
+-	cfg = irq_cfg(irq);
+-	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+-	if (err)
+-		return err;
+-
+-	err = apic->cpu_mask_to_apicid_and(cfg->domain,
+-					   apic->target_cpus(), &dest);
+-	if (err)
+-		return err;
+-
+-	if (irq_remapped(cfg)) {
+-		compose_remapped_msi_msg(pdev, irq, dest, msg, hpet_id);
+-		return err;
+-	}
++	msg->address_hi = MSI_ADDR_BASE_HI;
  
-+	cmd=${COMP_WORDS[0]}
+ 	if (x2apic_enabled())
+-		msg->address_hi = MSI_ADDR_BASE_HI |
+-				  MSI_ADDR_EXT_DEST_ID(dest);
+-	else
+-		msg->address_hi = MSI_ADDR_BASE_HI;
++		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
+ 
+ 	msg->address_lo =
+ 		MSI_ADDR_BASE_LO |
+@@ -3038,8 +3018,31 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+ 			MSI_DATA_DELIVERY_FIXED:
+ 			MSI_DATA_DELIVERY_LOWPRI) |
+ 		MSI_DATA_VECTOR(cfg->vector);
++}
+ 
+-	return err;
++static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
++			   struct msi_msg *msg, u8 hpet_id)
++{
++	struct irq_cfg *cfg;
++	int err;
++	unsigned dest;
 +
- 	# List perf subcommands
- 	if [ $COMP_CWORD -eq 1 ]; then
--		cmds=$(perf --list-cmds)
-+		cmds=$($cmd --list-cmds)
- 		COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
- 	# List possible events for -e option
- 	elif [[ $prev == "-e" && "${COMP_WORDS[1]}" == @(record|stat|top) ]]; then
--		cmds=$(perf list --raw-dump)
-+		cmds=$($cmd list --raw-dump)
- 		COMPREPLY=( $( compgen -W '$cmds' -- $cur ) )
- 	# Fall down to list regular files
- 	else
++	if (disable_apic)
++		return -ENXIO;
++
++	cfg = irq_cfg(irq);
++	err = assign_irq_vector(irq, cfg, apic->target_cpus());
++	if (err)
++		return err;
++
++	err = apic->cpu_mask_to_apicid_and(cfg->domain,
++					   apic->target_cpus(), &dest);
++	if (err)
++		return err;
++
++	x86_msi.compose_msi_msg(pdev, irq, dest, msg, hpet_id);
++
++	return 0;
+ }
+ 
+ static int
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index eba02e5..af5874e 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -115,6 +115,7 @@ struct x86_platform_ops x86_platform = {
+ EXPORT_SYMBOL_GPL(x86_platform);
+ struct x86_msi_ops x86_msi = {
+ 	.setup_msi_irqs		= native_setup_msi_irqs,
++	.compose_msi_msg	= native_compose_msi_msg,
+ 	.teardown_msi_irq	= native_teardown_msi_irq,
+ 	.teardown_msi_irqs	= default_teardown_msi_irqs,
+ 	.restore_msi_irqs	= default_restore_msi_irqs,
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index d9cd920f..e61a174 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -102,6 +102,7 @@ static void __init irq_remapping_modify_x86_ops(void)
+ 	x86_io_apic_ops.setup_timer_pin	= irq_remapping_setup_timer_pin;
+ 	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
+ 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
++	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
+ }
+ 
+ static __init int setup_nointremap(char *str)
+@@ -242,10 +243,12 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
+ 			      unsigned int irq, unsigned int dest,
+ 			      struct msi_msg *msg, u8 hpet_id)
+ {
+-	if (!remap_ops || !remap_ops->compose_msi_msg)
+-		return;
++	struct irq_cfg *cfg = irq_get_chip_data(irq);
+ 
+-	remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
++	if (cfg && !irq_remapped(cfg))
++		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
++	else if (remap_ops && remap_ops->compose_msi_msg)
++		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+ }
+ 
+ static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+-- 
+1.7.9.5
+
 
