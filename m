@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab2HGPqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:46:33 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:18281
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754763Ab2HGPoP (ORCPT
+	id S1755301Ab2HGPqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:46:30 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:37575 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752994Ab2HGPoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:44:15 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+	Tue, 7 Aug 2012 11:44:16 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M8E6DI-02-5T5-02
+X-WSS-ID: 0M8E6DG-01-1YK-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
 CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg call-back
-Date: Tue, 7 Aug 2012 17:43:47 +0200
-Message-ID: <1344354229-8526-18-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 14/19] x86, io-apic: Remove !irq_remapped() check from __target_IO_APIC_irq()
+Date: Tue, 7 Aug 2012 17:43:44 +0200
+Message-ID: <1344354229-8526-15-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
 References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
@@ -29,170 +29,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This call-back points to the right function for initializing
-the msi_msg structure.
+This function is only called from default_ioapic_set_affinity()
+which is only used when interrupt remapping is disabled. So
+the check will always evaluate as true and can be removed.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/io_apic.h  |    3 +++
- arch/x86/include/asm/x86_init.h |    4 +++
- arch/x86/kernel/apic/io_apic.c  |   57 ++++++++++++++++++++-------------------
- arch/x86/kernel/x86_init.c      |    1 +
- drivers/iommu/irq_remapping.c   |    9 ++++---
- 5 files changed, 44 insertions(+), 30 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index f294eba..5ffa634 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -160,6 +160,9 @@ extern void __init native_setup_timer_pin(unsigned int ioapic_idx,
- 					  unsigned int pin, int vector);
- extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
- 
-+extern void native_compose_msi_msg(struct pci_dev *pdev,
-+				   unsigned int irq, unsigned int dest,
-+				   struct msi_msg *msg, u8 hpet_id);
- int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
- 
- extern int save_ioapic_entries(void);
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index ffe5860..1430af0 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -180,9 +180,13 @@ struct x86_platform_ops {
- };
- 
- struct pci_dev;
-+struct msi_msg;
- 
- struct x86_msi_ops {
- 	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
-+	void (*compose_msi_msg)(struct pci_dev *dev, unsigned int irq,
-+				unsigned int dest, struct msi_msg *msg,
-+			       u8 hpet_id);
- 	void (*teardown_msi_irq)(unsigned int irq);
- 	void (*teardown_msi_irqs)(struct pci_dev *dev);
- 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index ec37ec2..94e2f9d 100644
+index 9664919..32faf20 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2990,36 +2990,16 @@ void destroy_irq(unsigned int irq)
-  * MSI message composition
-  */
- #ifdef CONFIG_PCI_MSI
--static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
--			   struct msi_msg *msg, u8 hpet_id)
-+void native_compose_msi_msg(struct pci_dev *pdev,
-+			    unsigned int irq, unsigned int dest,
-+			    struct msi_msg *msg, u8 hpet_id)
- {
--	struct irq_cfg *cfg;
--	int err;
--	unsigned dest;
--
--	if (disable_apic)
--		return -ENXIO;
-+	struct irq_cfg *cfg = irq_cfg(irq);
+@@ -2298,12 +2298,8 @@ static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq
  
--	cfg = irq_cfg(irq);
--	err = assign_irq_vector(irq, cfg, apic->target_cpus());
--	if (err)
--		return err;
--
--	err = apic->cpu_mask_to_apicid_and(cfg->domain,
--					   apic->target_cpus(), &dest);
--	if (err)
--		return err;
--
--	if (irq_remapped(cfg)) {
--		compose_remapped_msi_msg(pdev, irq, dest, msg, hpet_id);
--		return err;
--	}
-+	msg->address_hi = MSI_ADDR_BASE_HI;
- 
- 	if (x2apic_enabled())
--		msg->address_hi = MSI_ADDR_BASE_HI |
--				  MSI_ADDR_EXT_DEST_ID(dest);
--	else
--		msg->address_hi = MSI_ADDR_BASE_HI;
-+		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
- 
- 	msg->address_lo =
- 		MSI_ADDR_BASE_LO |
-@@ -3038,8 +3018,31 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
- 			MSI_DATA_DELIVERY_FIXED:
- 			MSI_DATA_DELIVERY_LOWPRI) |
- 		MSI_DATA_VECTOR(cfg->vector);
-+}
- 
--	return err;
-+static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
-+			   struct msi_msg *msg, u8 hpet_id)
-+{
-+	struct irq_cfg *cfg;
-+	int err;
-+	unsigned dest;
+ 		apic = entry->apic;
+ 		pin = entry->pin;
+-		/*
+-		 * With interrupt-remapping, destination information comes
+-		 * from interrupt-remapping table entry.
+-		 */
+-		if (!irq_remapped(cfg))
+-			io_apic_write(apic, 0x11 + pin*2, dest);
 +
-+	if (disable_apic)
-+		return -ENXIO;
-+
-+	cfg = irq_cfg(irq);
-+	err = assign_irq_vector(irq, cfg, apic->target_cpus());
-+	if (err)
-+		return err;
-+
-+	err = apic->cpu_mask_to_apicid_and(cfg->domain,
-+					   apic->target_cpus(), &dest);
-+	if (err)
-+		return err;
-+
-+	x86_msi.compose_msi_msg(pdev, irq, dest, msg, hpet_id);
-+
-+	return 0;
- }
- 
- static int
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index eba02e5..af5874e 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -115,6 +115,7 @@ struct x86_platform_ops x86_platform = {
- EXPORT_SYMBOL_GPL(x86_platform);
- struct x86_msi_ops x86_msi = {
- 	.setup_msi_irqs		= native_setup_msi_irqs,
-+	.compose_msi_msg	= native_compose_msi_msg,
- 	.teardown_msi_irq	= native_teardown_msi_irq,
- 	.teardown_msi_irqs	= default_teardown_msi_irqs,
- 	.restore_msi_irqs	= default_restore_msi_irqs,
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index d9cd920f..e61a174 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -102,6 +102,7 @@ static void __init irq_remapping_modify_x86_ops(void)
- 	x86_io_apic_ops.setup_timer_pin	= irq_remapping_setup_timer_pin;
- 	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
- 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
-+	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
- }
- 
- static __init int setup_nointremap(char *str)
-@@ -242,10 +243,12 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
- 			      unsigned int irq, unsigned int dest,
- 			      struct msi_msg *msg, u8 hpet_id)
- {
--	if (!remap_ops || !remap_ops->compose_msi_msg)
--		return;
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
- 
--	remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
-+	if (cfg && !irq_remapped(cfg))
-+		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
-+	else if (remap_ops && remap_ops->compose_msi_msg)
-+		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
- }
- 
- static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
++		io_apic_write(apic, 0x11 + pin*2, dest);
+ 		reg = io_apic_read(apic, 0x10 + pin*2);
+ 		reg &= ~IO_APIC_REDIR_VECTOR_MASK;
+ 		reg |= vector;
 -- 
 1.7.9.5
 
