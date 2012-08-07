@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415Ab2HGWjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:39:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030586Ab2HGWjK (ORCPT
+	id S1030610Ab2HGWje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:39:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40075 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757408Ab2HGWj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:10 -0400
+	Tue, 7 Aug 2012 18:39:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <deathsimple@vodafone.de>,
         Jerome Glisse <jglisse@redhat.com>,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: =?UTF-8?q?=5B=20057/109=5D=20drm/radeon=3A=20fix=20fence=20related=20segfault=20in=20CS?=
-Date: Tue,  7 Aug 2012 15:35:16 -0700
-Message-Id: <20120807222048.101526832@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 062/109] drm/radeon: on hotplug force link training to happen (v2)
+Date: Tue,  7 Aug 2012 15:35:21 -0700
+Message-Id: <20120807222048.538055899@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,33 +31,48 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Christian König <deathsimple@vodafone.de>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 93bf888c5c730605e3470f5d2381f296eda88d79 upstream.
+commit ca2ccde5e2f24a792caa4cca919fc5c6f65d1887 upstream.
 
-Don't return success if scheduling the IB fails, otherwise
-we end up with an oops in ttm_eu_fence_buffer_objects.
+To have DP behave like VGA/DVI we need to retrain the link
+on hotplug. For this to happen we need to force link
+training to happen by setting connector dpms to off
+before asking it turning it on again.
 
-Signed-off-by: Christian König <deathsimple@vodafone.de>
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+v2: agd5f
+- drop the dp_get_link_status() change in atombios_dp.c
+  for now.  We still need the dpms OFF change.
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_cs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -377,7 +377,7 @@ static int radeon_cs_ib_chunk(struct rad
- 	if (r) {
- 		DRM_ERROR("Failed to schedule IB !\n");
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -79,10 +79,16 @@ void radeon_connector_hotplug(struct drm
+ 		if (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
+ 			int saved_dpms = connector->dpms;
+ 			/* Only turn off the display if it's physically disconnected */
+-			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
++			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd)) {
+ 				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
+-			else if (radeon_dp_needs_link_train(radeon_connector))
++			} else if (radeon_dp_needs_link_train(radeon_connector)) {
++				/* set it to OFF so that drm_helper_connector_dpms()
++				 * won't return immediately since the current state
++				 * is ON at this point.
++				 */
++				connector->dpms = DRM_MODE_DPMS_OFF;
+ 				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
++			}
+ 			connector->dpms = saved_dpms;
+ 		}
  	}
--	return 0;
-+	return r;
- }
- 
- static int radeon_bo_vm_update_pte(struct radeon_cs_parser *parser,
 
 
