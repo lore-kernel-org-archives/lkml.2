@@ -1,143 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab2HGTzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:55:18 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:49863 "EHLO
+	id S1756411Ab2HGTzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:55:22 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:49866 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756332Ab2HGTzN (ORCPT
+	with ESMTP id S1756262Ab2HGTzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:55:13 -0400
+	Tue, 7 Aug 2012 15:55:20 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 00/41] TTY buffer in tty_port -- prep no. 4
-Date: Tue,  7 Aug 2012 21:47:25 +0200
-Message-Id: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 27/41] TTY: synclink_cs, sanitize fail paths
+Date: Tue,  7 Aug 2012 21:47:52 +0200
+Message-Id: <1344368886-24033-28-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
+References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We will need to change the order of tty and pcmcia drivers
+initializations (see the reason later in this series). And the fail
+path handling is currently performed in a separate function that as
+well takes care of proper deinitialization in module_exit. It is hard
+to read and will need to be adjusted by our changes anyway. Instead,
+get rid of this helper function and do the fail paths handling
+directly in the init function. (And move the body of the function to
+module_exit.)
 
-this is the fourth, and hopefully the last, series of patches which
-allow tty buffers to be moved from tty_struct (present from open to
-close/hangup) to tty_port (present as long as the device). This will
-allow us to get rid of the tty refcounting in the interrupt service
-routines and other hot paths after we are done. This is because we
-will not need to handle races among ISRs, timers, hangups and others,
-because tty_port lives as long as an interrupt/timer tick may occur.
-Unlike tty_struct.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/char/pcmcia/synclink_cs.c |   41 +++++++++++++------------------------
+ 1 file changed, 14 insertions(+), 27 deletions(-)
 
-In this series, the fourth batch of drivers is converted to use
-tty_port. Last time I promised that all drivers have a tty_port. It
-was not really true. Now it should be. Here we also continued
-assigning tty_port to tty_struct->port. And we should be done with
-that here too. I.e. for all in-kernel drivers we have tty->port set
-after driver->ops->install returns. So the TTY layer now finally has
-an access to a tty_port in all of the drivers.
-
-Now we can start moving tty buffers to tty_port and get rid of all the
-refcounting as was mentioned above.
-
-As usual, standard x86 stuff was runtime-tested. The rest is only
-checked to be compilation-errors free.
-
-Jiri Slaby (41):
-  TTY: pty, stop passing NULL to free_tty_struct
-  TTY: 68328serial, fix compilation
-  TTY: n_gsm, use tty_port_install
-  misc: pti, add const to pci_device_id table
-  misc: pti, pci drvdata cannot be NULL in ->remove
-  misc: pti, stop using iomap's unmap on ioremap space
-  misc: pti, move ->remove to the PCI code
-  misc: pti, do the opposite of ->probe in ->remove
-  misc: pti, fix fail paths
-  misc: pti, fix tty_port count
-  misc: pti, use tty_port_register_device
-  mxser: allow overlapping vector
-  TTY: ttyprintk, unregister tty driver on failure
-  TTY: ttyprintk, don't touch behind tty->write_buf
-  TTY: ttyprintk, initialize tty_port earlier
-  TTY: tty3270, free tty driver properly
-  TTY: pass flags to alloc_tty_driver
-  TTY: pty, switch to tty_alloc_driver
-  TTY: move allocations to tty_alloc_driver
-  TTY: add support for unnumbered device nodes
-  TTY: move cdev_add to tty_register_device
-  TTY: use tty_port_register_device
-  TTY: automatically create nodes for some drivers
-  TTY: tty_port, add some documentation
-  TTY: add tty_port_link_device
-  TTY: use tty_port_link_device
-  TTY: synclink_cs, sanitize fail paths
-  TTY: synclink_cs, use dynamic tty devices
-  TTY: synclink_cs, final cleanup in synclink_cs_init
-  TTY: moxa, convert to dynamic device
-  TTY: nfcon, add tty_port and link it
-  TTY: con3215, unset raw3215[line]
-  TTY: con3215, add tty install
-  TTY: i4l, add tty install
-  TTY: synclink, add tty install
-  TTY: synclinkmp, add tty install
-  TTY: ircomm_tty, add tty install
-  TTY: tty3270, add tty install
-  TTY: hvc_console, add tty install
-  TTY: hvcs, clean hvcs_open a bit
-  TTY: hvcs, add tty install
-
- arch/alpha/kernel/srmcons.c             |    1 +
- arch/ia64/hp/sim/simserial.c            |    1 +
- arch/m68k/emu/nfcon.c                   |    4 +
- arch/parisc/kernel/pdc_cons.c           |    1 +
- arch/um/drivers/line.c                  |    3 +-
- arch/xtensa/platforms/iss/console.c     |    1 +
- drivers/char/pcmcia/synclink_cs.c       |  105 ++++++++++-----------
- drivers/char/ttyprintk.c                |   29 +++---
- drivers/isdn/capi/capi.c                |    3 +-
- drivers/isdn/gigaset/interface.c        |    3 +-
- drivers/isdn/i4l/isdn_tty.c             |   25 +++--
- drivers/misc/pti.c                      |  128 ++++++++++++-------------
- drivers/mmc/card/sdio_uart.c            |    4 +-
- drivers/net/usb/hso.c                   |    7 +-
- drivers/s390/char/con3215.c             |   28 ++++--
- drivers/s390/char/sclp_tty.c            |    1 +
- drivers/s390/char/sclp_vt220.c          |    1 +
- drivers/s390/char/tty3270.c             |   34 +++++--
- drivers/staging/ipack/devices/ipoctal.c |    2 +-
- drivers/tty/amiserial.c                 |    9 +-
- drivers/tty/bfin_jtag_comm.c            |    1 +
- drivers/tty/cyclades.c                  |   16 ++--
- drivers/tty/ehv_bytechan.c              |    9 +-
- drivers/tty/hvc/hvc_console.c           |   31 +++++--
- drivers/tty/hvc/hvcs.c                  |   82 +++++++++-------
- drivers/tty/hvc/hvsi.c                  |    2 +
- drivers/tty/ipwireless/tty.c            |    2 +-
- drivers/tty/isicom.c                    |    3 +-
- drivers/tty/moxa.c                      |   24 ++++-
- drivers/tty/mxser.c                     |   41 ++++++--
- drivers/tty/n_gsm.c                     |   30 ++++--
- drivers/tty/nozomi.c                    |    4 +-
- drivers/tty/pty.c                       |   36 +++++---
- drivers/tty/rocket.c                    |    4 +-
- drivers/tty/serial/68328serial.c        |   23 +++--
- drivers/tty/serial/crisv10.c            |   11 ++-
- drivers/tty/serial/ifx6x60.c            |    4 +-
- drivers/tty/serial/msm_smd_tty.c        |    8 +-
- drivers/tty/serial/serial_core.c        |    3 +-
- drivers/tty/synclink.c                  |   44 +++++----
- drivers/tty/synclink_gt.c               |    7 +-
- drivers/tty/synclinkmp.c                |   28 ++++--
- drivers/tty/tty_io.c                    |  154 ++++++++++++++++++++-----------
- drivers/tty/tty_port.c                  |   43 ++++++++-
- drivers/usb/class/cdc-acm.c             |    3 +-
- drivers/usb/gadget/u_serial.c           |    3 +-
- include/linux/tty.h                     |    2 +
- include/linux/tty_driver.h              |   35 ++++++-
- net/bluetooth/rfcomm/tty.c              |    4 +-
- net/irda/ircomm/ircomm_tty.c            |   41 ++++----
- 50 files changed, 692 insertions(+), 396 deletions(-)
-
+diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
+index d0cbd29..0606586 100644
+--- a/drivers/char/pcmcia/synclink_cs.c
++++ b/drivers/char/pcmcia/synclink_cs.c
+@@ -2798,23 +2798,6 @@ static const struct tty_operations mgslpc_ops = {
+ 	.proc_fops = &mgslpc_proc_fops,
+ };
+ 
+-static void synclink_cs_cleanup(void)
+-{
+-	int rc;
+-
+-	while(mgslpc_device_list)
+-		mgslpc_remove_device(mgslpc_device_list);
+-
+-	if (serial_driver) {
+-		if ((rc = tty_unregister_driver(serial_driver)))
+-			printk("%s(%d) failed to unregister tty driver err=%d\n",
+-			       __FILE__,__LINE__,rc);
+-		put_tty_driver(serial_driver);
+-	}
+-
+-	pcmcia_unregister_driver(&mgslpc_driver);
+-}
+-
+ static int __init synclink_cs_init(void)
+ {
+     int rc;
+@@ -2830,7 +2813,7 @@ static int __init synclink_cs_init(void)
+     serial_driver = alloc_tty_driver(MAX_DEVICE_COUNT);
+     if (!serial_driver) {
+ 	    rc = -ENOMEM;
+-	    goto error;
++	    goto err_pcmcia_drv;
+     }
+ 
+     /* Initialize the tty_driver structure */
+@@ -2850,25 +2833,29 @@ static int __init synclink_cs_init(void)
+     if ((rc = tty_register_driver(serial_driver)) < 0) {
+ 	    printk("%s(%d):Couldn't register serial driver\n",
+ 		   __FILE__,__LINE__);
+-	    put_tty_driver(serial_driver);
+-	    serial_driver = NULL;
+-	    goto error;
++	    goto err_put_tty;
+     }
+ 
+     printk("%s %s, tty major#%d\n",
+ 	   driver_name, driver_version,
+ 	   serial_driver->major);
+ 
+-    return 0;
+-
+-error:
+-    synclink_cs_cleanup();
+-    return rc;
++	return 0;
++err_put_tty:
++	put_tty_driver(serial_driver);
++err_pcmcia_drv:
++	pcmcia_unregister_driver(&mgslpc_driver);
++	return rc;
+ }
+ 
+ static void __exit synclink_cs_exit(void)
+ {
+-	synclink_cs_cleanup();
++	while (mgslpc_device_list)
++		mgslpc_remove_device(mgslpc_device_list);
++
++	tty_unregister_driver(serial_driver);
++	put_tty_driver(serial_driver);
++	pcmcia_unregister_driver(&mgslpc_driver);
+ }
+ 
+ module_init(synclink_cs_init);
 -- 
 1.7.10.4
 
