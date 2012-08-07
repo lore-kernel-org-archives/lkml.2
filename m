@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab2HGWa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:30:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
+	id S932780Ab2HGXah (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:30:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932712Ab2HGWav (ORCPT
+	with ESMTP id S932721Ab2HGWaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:30:51 -0400
+	Tue, 7 Aug 2012 18:30:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 074/122] tg3: add device id of Apple Thunderbolt Ethernet device
-Date: Tue,  7 Aug 2012 15:26:02 -0700
-Message-Id: <20120807221955.325087670@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [ 067/122] ACPI/AC: prevent OOPS on some boxes due to missing check power_supply_register() return value check
+Date: Tue,  7 Aug 2012 15:25:55 -0700
+Message-Id: <20120807221954.472961316@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,31 +29,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Greg KH <gregkh@linuxfoundation.org>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 02eca3f5f5e458c3a5d7b772bc8042ee2a4ebedf upstream.
+commit f197ac13f6eeb351b31250b9ab7d0da17434ea36 upstream.
 
-The Apple Thunderbolt ethernet device is already listed in the driver,
-but not hooked up in the MODULE_DEVICE_TABLE().  This fixes that and
-allows it to work properly.
+In the ac.c, power_supply_register()'s return value is not checked.
 
+As a result, the driver's add() ops may return success
+even though the device failed to initialize.
+
+For example, some BIOS may describe two ACADs in the same DSDT.
+The second ACAD device will fail to register,
+but ACPI driver's add() ops returns sucessfully.
+The ACPI device will receive ACPI notification and cause OOPS.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=772730
+
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Acked-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/ac.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -298,6 +298,7 @@ static DEFINE_PCI_DEVICE_TABLE(tg3_pci_t
- 	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_57795)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_5719)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_5720)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_57762)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, PCI_DEVICE_ID_SYSKONNECT_9DXX)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, PCI_DEVICE_ID_SYSKONNECT_9MXX)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC1000)},
+--- a/drivers/acpi/ac.c
++++ b/drivers/acpi/ac.c
+@@ -292,7 +292,9 @@ static int acpi_ac_add(struct acpi_devic
+ 	ac->charger.properties = ac_props;
+ 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
+ 	ac->charger.get_property = get_ac_property;
+-	power_supply_register(&ac->device->dev, &ac->charger);
++	result = power_supply_register(&ac->device->dev, &ac->charger);
++	if (result)
++		goto end;
+ 
+ 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
+ 	       acpi_device_name(device), acpi_device_bid(device),
 
 
