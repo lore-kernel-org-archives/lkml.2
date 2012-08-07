@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab2HGXRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:17:42 -0400
+	id S1757491Ab2HGXRk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:17:40 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757378Ab2HGWhE (ORCPT
+	with ESMTP id S932832Ab2HGWhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:37:04 -0400
+	Tue, 7 Aug 2012 18:37:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Misael Lopez Cruz <misael.lopez@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 017/109] ASoC: dapm: Fix locking during codec shutdown
-Date: Tue,  7 Aug 2012 15:34:36 -0700
-Message-Id: <20120807222044.607925717@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: [ 018/109] ASoC: dapm: Fix _PRE and _POST events for DAPM performance improvements
+Date: Tue,  7 Aug 2012 15:34:37 -0700
+Message-Id: <20120807222044.697355149@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,47 +30,43 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Liam Girdwood <lrg@ti.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 01005a729a17ab419f61a366e22f3419e7a2c3fe upstream.
+commit 0ff97ebf0804d2e519d578fcb4db03f104d2ca8c upstream.
 
-Codec shutdown performs a DAPM power sequence that might cause conflicts
-and/or race conditions if another stream power event is running simultaneously.
-Use card's dapm mutex to protect any potential race condition between them.
+Ever since the DAPM performance improvements we've been marking all widgets
+as not dirty after each DAPM run. Since _PRE and _POST events aren't part
+of the DAPM graph this has rendered them non-functional, they will never be
+marked dirty again and thus will never be run again.
 
-Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
-Signed-off-by: Liam Girdwood <lrg@ti.com>
+Fix this by skipping them when marking widgets as not dirty.
+
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-dapm.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ sound/soc/soc-dapm.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
 --- a/sound/soc/soc-dapm.c
 +++ b/sound/soc/soc-dapm.c
-@@ -3210,10 +3210,13 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_free);
- 
- static void soc_dapm_shutdown_codec(struct snd_soc_dapm_context *dapm)
- {
-+	struct snd_soc_card *card = dapm->card;
- 	struct snd_soc_dapm_widget *w;
- 	LIST_HEAD(down_list);
- 	int powerdown = 0;
- 
-+	mutex_lock(&card->dapm_mutex);
-+
- 	list_for_each_entry(w, &dapm->card->widgets, list) {
- 		if (w->dapm != dapm)
- 			continue;
-@@ -3236,6 +3239,8 @@ static void soc_dapm_shutdown_codec(stru
- 			snd_soc_dapm_set_bias_level(dapm,
- 						    SND_SOC_BIAS_STANDBY);
+@@ -1442,7 +1442,15 @@ static int dapm_power_widgets(struct snd
  	}
-+
-+	mutex_unlock(&card->dapm_mutex);
- }
  
- /*
+ 	list_for_each_entry(w, &card->widgets, list) {
+-		list_del_init(&w->dirty);
++		switch (w->id) {
++		case snd_soc_dapm_pre:
++		case snd_soc_dapm_post:
++			/* These widgets always need to be powered */
++			break;
++		default:
++			list_del_init(&w->dirty);
++			break;
++		}
+ 
+ 		if (w->power) {
+ 			d = w->dapm;
 
 
