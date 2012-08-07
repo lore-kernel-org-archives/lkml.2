@@ -1,102 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab2HGXFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:05:35 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:42302 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030676Ab2HGWkE (ORCPT
+	id S1030637Ab2HGWkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:40:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030585Ab2HGWj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:40:04 -0400
-Message-ID: <502198B4.8040503@linaro.org>
-Date: Tue, 07 Aug 2012 15:37:40 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Paul Moore <paul@paul-moore.com>, lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov
-Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
-References: <50215A7E.8000701@linaro.org> <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com> <50218F7E.1060004@linaro.org> <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com> <20120807221731.GA25441@mail.hallyn.com>
-In-Reply-To: <20120807221731.GA25441@mail.hallyn.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080722-2356-0000-0000-0000011317B0
+	Tue, 7 Aug 2012 18:39:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 072/109] ext4: pass a char * to ext4_count_free() instead of a buffer_head ptr
+Date: Tue,  7 Aug 2012 15:35:31 -0700
+Message-Id: <20120807222049.410233054@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
+References: <20120807222043.089735600@linuxfoundation.org>
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 03:17 PM, Serge E. Hallyn wrote:
-> Quoting Paul Moore (paul@paul-moore.com):
->> On Tue, Aug 7, 2012 at 5:58 PM, John Stultz <john.stultz@linaro.org> wrote:
->>> On 08/07/2012 02:50 PM, Paul Moore wrote:
->>>> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org>
->>>> wrote:
->>>>> Hi,
->>>>>       With my kvm environment using 3.6-rc1+, I'm seeing NULL pointer
->>>>> dereferences in selinux_ip_postroute_compat(). It looks like the sksec
->>>>> value
->>>>> is null and we die in the following line:
->>>>>
->>>>>       if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
->>>>>
->>>>> This triggers every time I shutdown the machine, but has also triggered
->>>>> randomly after a few hours.
->>>>>
->>>>> This is on an ubuntu 12.04 image, not using selinux.
->>>> NOTE: Adding the SELinux list to the CC line
->>> Thanks!
->>>
->>>> Hi,
->>>>
->>>> I'm trying to understand this and I was hoping you could you clarify a
->>>> few things for me:
->>>>
->>>> * Is the panic in the Ubuntu 12.04 guest, or the host?  If the host,
->>>> could you share what distribution you are using?
->>> Sorry, its a 12.04 guest.  I think the host is Ubuntu 12.04 as well.
->>>
->>>
->>>> * When you say you are not using SELinux, could you be more specific?
->>>> It seems odd that you are not using SELinux but the panic is happening
->>>> in a SELinux hook.
->>> I just mean that, being Ubuntu,  the system (userland) isn't configured to
->>> use selinux.  SELinux is just enabled in the kernel config.
->> Thanks for the quick response, I'll setup an Ubuntu guest and see if I
->> can reproduce this ... something is odd.  Anything non-standard about
->> your guest install or anything else you think might be helpful?
-> The problem seems to be that selinux_nf_ip_init() was called, which
-> registers the selinux_ipv4_ops (and ipv6).  Those should not get registered
-> if selinux ends up not being loaded (as in, if apparmor is loaded first),
-> since as you've found here the selinux lsm hooks won't be called to set
-> call selinux_sk_alloc_security().
-This sounds about right:
-root@testvm:~# dmesg | grep SELinux
-[    0.004578] SELinux:  Initializing.
-[    0.005704] SELinux:  Starting in permissive mode
-[    2.235034] SELinux:  Registering netfilter hooks
+From: Greg KH <gregkh@linuxfoundation.org>
 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> I assume what's happening is that CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE was
-> set to 1, but selinux ended up being set to disabled after the
-> __initcall(selinux_nf_ip_init) ran?  Weird.
-This looks right as well:
+------------------
 
-# zcat config.gz | grep SELINUX
-CONFIG_SECURITY_SELINUX=y
-CONFIG_SECURITY_SELINUX_BOOTPARAM=y
-CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=1
-CONFIG_SECURITY_SELINUX_DISABLE=y
-CONFIG_SECURITY_SELINUX_DEVELOP=y
-CONFIG_SECURITY_SELINUX_AVC_STATS=y
-CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1
-# CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
-CONFIG_DEFAULT_SECURITY_SELINUX=y
+From: Theodore Ts'o <tytso@mit.edu>
 
+commit f6fb99cadcd44660c68e13f6eab28333653621e6 upstream.
 
-Since the problem isn't completely obvious, I'm starting a bisection to 
-narrow this down some more.
+Make it possible for ext4_count_free to operate on buffers and not
+just data in buffer_heads.
 
-thanks
--john
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/balloc.c |    3 ++-
+ fs/ext4/bitmap.c |    8 +++-----
+ fs/ext4/ext4.h   |    2 +-
+ fs/ext4/ialloc.c |    3 ++-
+ 4 files changed, 8 insertions(+), 8 deletions(-)
+
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -584,7 +584,8 @@ ext4_fsblk_t ext4_count_free_clusters(st
+ 		if (bitmap_bh == NULL)
+ 			continue;
+ 
+-		x = ext4_count_free(bitmap_bh, sb->s_blocksize);
++		x = ext4_count_free(bitmap_bh->b_data,
++				    EXT4_BLOCKS_PER_GROUP(sb) / 8);
+ 		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
+ 			i, ext4_free_group_clusters(sb, gdp), x);
+ 		bitmap_count += x;
+--- a/fs/ext4/bitmap.c
++++ b/fs/ext4/bitmap.c
+@@ -15,15 +15,13 @@
+ 
+ static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
+ 
+-unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
++unsigned int ext4_count_free(char *bitmap, unsigned int numchars)
+ {
+ 	unsigned int i, sum = 0;
+ 
+-	if (!map)
+-		return 0;
+ 	for (i = 0; i < numchars; i++)
+-		sum += nibblemap[map->b_data[i] & 0xf] +
+-			nibblemap[(map->b_data[i] >> 4) & 0xf];
++		sum += nibblemap[bitmap[i] & 0xf] +
++			nibblemap[(bitmap[i] >> 4) & 0xf];
+ 	return sum;
+ }
+ 
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1783,7 +1783,7 @@ struct mmpd_data {
+ # define NORET_AND	noreturn,
+ 
+ /* bitmap.c */
+-extern unsigned int ext4_count_free(struct buffer_head *, unsigned);
++extern unsigned int ext4_count_free(char *bitmap, unsigned numchars);
+ 
+ /* balloc.c */
+ extern unsigned int ext4_block_group(struct super_block *sb,
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -1013,7 +1013,8 @@ unsigned long ext4_count_free_inodes(str
+ 		if (!bitmap_bh)
+ 			continue;
+ 
+-		x = ext4_count_free(bitmap_bh, EXT4_INODES_PER_GROUP(sb) / 8);
++		x = ext4_count_free(bitmap_bh->b_data,
++				    EXT4_INODES_PER_GROUP(sb) / 8);
+ 		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
+ 			(unsigned long) i, ext4_free_inodes_count(sb, gdp), x);
+ 		bitmap_count += x;
+
 
