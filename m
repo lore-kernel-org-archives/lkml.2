@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab2HGMbX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 08:31:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53648 "EHLO mx2.suse.de"
+	id S1754243Ab2HGMb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:31:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53675 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab2HGMbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 08:31:21 -0400
+	id S1754196Ab2HGMbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 08:31:25 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
         Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/6] mm: compaction: Update comment in try_to_compact_pages
-Date: Tue,  7 Aug 2012 13:31:12 +0100
-Message-Id: <1344342677-5845-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 6/6] mm: have order > 0 compaction start near a pageblock with free pages
+Date: Tue,  7 Aug 2012 13:31:17 +0100
+Message-Id: <1344342677-5845-7-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1344342677-5845-1-git-send-email-mgorman@suse.de>
 References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
@@ -21,33 +21,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment about order applied when the check was
-order > PAGE_ALLOC_COSTLY_ORDER which has not been the case since
-[c5a73c3d: thp: use compaction for all allocation orders]. Fixing
-the comment while I'm in the general area.
+commit [7db8889a: mm: have order > 0 compaction start off where it left]
+introduced a caching mechanism to reduce the amount work the free page
+scanner does in compaction. However, it has a problem. Consider two process
+simultaneously scanning free pages
+
+				    			C
+Process A		M     S     			F
+		|---------------------------------------|
+Process B		M 	FS
+
+C is zone->compact_cached_free_pfn
+S is cc->start_pfree_pfn
+M is cc->migrate_pfn
+F is cc->free_pfn
+
+In this diagram, Process A has just reached its migrate scanner, wrapped
+around and updated compact_cached_free_pfn accordingly.
+
+Simultaneously, Process B finishes isolating in a block and updates
+compact_cached_free_pfn again to the location of its free scanner.
+
+Process A moves to "end_of_zone - one_pageblock" and runs this check
+
+                if (cc->order > 0 && (!cc->wrapped ||
+                                      zone->compact_cached_free_pfn >
+                                      cc->start_free_pfn))
+                        pfn = min(pfn, zone->compact_cached_free_pfn);
+
+compact_cached_free_pfn is above where it started so the free scanner skips
+almost the entire space it should have scanned. When there are multiple
+processes compacting it can end in a situation where the entire zone is
+not being scanned at all.  Further, it is possible for two processes to
+ping-pong update to compact_cached_free_pfn which is just random.
+
+Overall, the end result wrecks allocation success rates.
+
+There is not an obvious way around this problem without introducing new
+locking and state so this patch takes a different approach.
+
+First, it gets rid of the skip logic because it's not clear that it matters
+if two free scanners happen to be in the same block but with racing updates
+it's too easy for it to skip over blocks it should not.
+
+Second, it updates compact_cached_free_pfn in a more limited set of
+circumstances.
+
+If a scanner has wrapped, it updates compact_cached_free_pfn to the end
+	of the zone. Each time a wrapped scanner isoaltes a page, it
+	updates compact_cached_free_pfn. The intention is that after
+	wrapping, the compact_cached_free_pfn will be at the highest
+	pageblock with free pages when compaction completes.
+
+If a scanner has not wrapped when compaction completes and
+	compact_cached_free_pfn is set the end of the the zone, initialise
+	it once.
+
+This is not optimal and it can still race but the compact_cached_free_pfn
+will be pointing to or very near a pageblock with free pages.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/compaction.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ mm/compaction.c |   54 ++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 28 insertions(+), 26 deletions(-)
 
 diff --git a/mm/compaction.c b/mm/compaction.c
-index b39ede1..95ca967 100644
+index be310f1..df50f73 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -759,11 +759,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	struct zone *zone;
- 	int rc = COMPACT_SKIPPED;
+@@ -419,6 +419,20 @@ static bool suitable_migration_target(struct page *page)
+ }
  
--	/*
--	 * Check whether it is worth even starting compaction. The order check is
--	 * made because an assumption is made that the page allocator can satisfy
--	 * the "cheaper" orders without taking special steps
--	 */
-+	/* Check if the GFP flags allow compaction */
- 	if (!order || !may_enter_fs || !may_perform_io)
- 		return rc;
+ /*
++ * Returns the start pfn of the last page block in a zone.  This is the starting
++ * point for full compaction of a zone.  Compaction searches for free pages from
++ * the end of each zone, while isolate_freepages_block scans forward inside each
++ * page block.
++ */
++static unsigned long start_free_pfn(struct zone *zone)
++{
++	unsigned long free_pfn;
++	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
++	free_pfn &= ~(pageblock_nr_pages-1);
++	return free_pfn;
++}
++
++/*
+  * Based on information in the current compact_control, find blocks
+  * suitable for isolating free pages from and then isolate them.
+  */
+@@ -457,17 +471,6 @@ static void isolate_freepages(struct zone *zone,
+ 					pfn -= pageblock_nr_pages) {
+ 		unsigned long isolated;
  
+-		/*
+-		 * Skip ahead if another thread is compacting in the area
+-		 * simultaneously. If we wrapped around, we can only skip
+-		 * ahead if zone->compact_cached_free_pfn also wrapped to
+-		 * above our starting point.
+-		 */
+-		if (cc->order > 0 && (!cc->wrapped ||
+-				      zone->compact_cached_free_pfn >
+-				      cc->start_free_pfn))
+-			pfn = min(pfn, zone->compact_cached_free_pfn);
+-
+ 		if (!pfn_valid(pfn))
+ 			continue;
+ 
+@@ -510,7 +513,15 @@ static void isolate_freepages(struct zone *zone,
+ 		 */
+ 		if (isolated) {
+ 			high_pfn = max(high_pfn, pfn);
+-			if (cc->order > 0)
++
++			/*
++			 * If the free scanner has wrapped, update
++			 * compact_cached_free_pfn to point to the highest
++			 * pageblock with free pages. This reduces excessive
++			 * scanning of full pageblocks near the end of the
++			 * zone
++			 */
++			if (cc->order > 0 && cc->wrapped)
+ 				zone->compact_cached_free_pfn = high_pfn;
+ 		}
+ 	}
+@@ -520,6 +531,11 @@ static void isolate_freepages(struct zone *zone,
+ 
+ 	cc->free_pfn = high_pfn;
+ 	cc->nr_freepages = nr_freepages;
++
++	/* If compact_cached_free_pfn is reset then set it now */
++	if (cc->order > 0 && !cc->wrapped &&
++			zone->compact_cached_free_pfn == start_free_pfn(zone))
++		zone->compact_cached_free_pfn = high_pfn;
+ }
+ 
+ /*
+@@ -607,20 +623,6 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	return ISOLATE_SUCCESS;
+ }
+ 
+-/*
+- * Returns the start pfn of the last page block in a zone.  This is the starting
+- * point for full compaction of a zone.  Compaction searches for free pages from
+- * the end of each zone, while isolate_freepages_block scans forward inside each
+- * page block.
+- */
+-static unsigned long start_free_pfn(struct zone *zone)
+-{
+-	unsigned long free_pfn;
+-	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
+-	free_pfn &= ~(pageblock_nr_pages-1);
+-	return free_pfn;
+-}
+-
+ static int compact_finished(struct zone *zone,
+ 			    struct compact_control *cc)
+ {
 -- 
 1.7.9.2
 
