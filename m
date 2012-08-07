@@ -1,455 +1,1126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab2HGMMN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 08:12:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56254 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab2HGMMM (ORCPT
+	id S1754253Ab2HGMMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:12:55 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:50690 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752663Ab2HGMMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 08:12:12 -0400
-Date: Tue, 7 Aug 2012 13:11:57 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
-        rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-Message-ID: <20120807121157.GA10166@flint.arm.linux.org.uk>
-References: <20120806195352.GC16199@opensource.wolfsonmicro.com> <20120806213124.GB14594@flint.arm.linux.org.uk> <20120806220032.GD26698@opensource.wolfsonmicro.com> <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com> <20120807103851.GS16861@opensource.wolfsonmicro.com> <20120807111331.GC24257@flint.arm.linux.org.uk> <20120807112844.GZ16861@opensource.wolfsonmicro.com> <20120807113121.GD24257@flint.arm.linux.org.uk> <20120807113801.GB16861@opensource.wolfsonmicro.com> <20120807114415.GG24257@flint.arm.linux.org.uk>
+	Tue, 7 Aug 2012 08:12:53 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Patrice Chotard <patrice.chotard@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl/nomadik: add ASIC DB8450 pinctrl driver
+Date: Tue, 7 Aug 2012 14:12:18 +0200
+Message-ID: <1344341538-32223-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120807114415.GG24257@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 12:44:15PM +0100, Russell King wrote:
-> On Tue, Aug 07, 2012 at 12:38:02PM +0100, Mark Brown wrote:
-> > On Tue, Aug 07, 2012 at 12:31:21PM +0100, Russell King wrote:
-> > > On Tue, Aug 07, 2012 at 12:28:44PM +0100, Mark Brown wrote:
-> > 
-> > > > The changes you're suggesting are extremely invasive for stable
-> > > > especially given that we have a simple, driver local, fix available
-> > 
-> > > *Rubbish*.
-> > 
-> > This isn't helpful or constructive...
-> > 
-> > Which bit of the above are you referring to here?  If it's the having a
-> > fix bit then as pointed out repeatedly now in this and the previous
-> > thread we've got the separete resource tree approach implemented in
-> > stable right now making actual systems run.
-> 
-> All of your above statement.  It is, basically, completely wrong, and
-> shows that you haven't thought about the solution I'm proposing at all.
-> 
-> I've shown you in simple steps how easy it is.  It is not invasive.  It
-> is not complex.  It is local to the affected drivers.  So, all your
-> points above are plain wrong.  Hence "rubbish".
+From: Patrice Chotard <patrice.chotard@stericsson.com>
 
-And, because you WILL NOT tell me which are the affected drivers, I've
-assumed in the patch below that you're referring to the wm831x drivers.
-So here's the patch in full for this driver.  Oh look how simple and
-non-invasive it is.
+This implements a subdriver for the DB8540 ASIC for the
+Nomadik pin controller.
 
-$ git grep IORESOURCE_REG
-drivers/mfd/wm831x-core.c:              .flags = IORESOURCE_REG,
-... repeated ...
-drivers/mfd/wm831x-core.c:              .flags = IORESOURCE_REG,
-drivers/regulator/wm831x-dcdc.c:        res = platform_get_resource(pdev, IORESO
-drivers/regulator/wm831x-dcdc.c:        res = platform_get_resource(pdev, IORESO
-drivers/regulator/wm831x-dcdc.c:        res = platform_get_resource(pdev, IORESO
-drivers/regulator/wm831x-isink.c:       res = platform_get_resource(pdev, IORESO
-drivers/regulator/wm831x-ldo.c: res = platform_get_resource(pdev, IORESOURCE_REG
-drivers/regulator/wm831x-ldo.c: res = platform_get_resource(pdev, IORESOURCE_REG
-drivers/regulator/wm831x-ldo.c: res = platform_get_resource(pdev, IORESOURCE_REG
-include/linux/ioport.h:#define IORESOURCE_REG           0x00000300      /* Regis
-$
+Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/Kconfig                  |   4 +
+ drivers/pinctrl/Makefile                 |   1 +
+ drivers/pinctrl/pinctrl-nomadik-db8540.c | 999 +++++++++++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-nomadik.c        |   3 +
+ drivers/pinctrl/pinctrl-nomadik.h        |  14 +
+ 5 files changed, 1021 insertions(+)
+ create mode 100644 drivers/pinctrl/pinctrl-nomadik-db8540.c
 
-So no identifier clashes.
-
-No, I haven't tested it, I don't have the hardware.  That's your job
-as the driver maintainer.
-
-The only open questions on this are:
-1. Is there another driver you are concerned about.
-2. Choosing a better name.
-
-But I won't put question marks at the end of those because you never seem
-to answer questions.  You will just produce yet more justifications why
-this approach is not one you're willing to accept.  So I really don't know
-why I wasted my time to produce this patch.
-
- drivers/mfd/wm831x-core.c        |   66 +++++++++++--------------------------
- drivers/regulator/wm831x-dcdc.c  |   12 +++---
- drivers/regulator/wm831x-isink.c |    4 +-
- drivers/regulator/wm831x-ldo.c   |   12 +++---
- include/linux/ioport.h           |    1 +
- 5 files changed, 35 insertions(+), 60 deletions(-)
-
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index 946698f..2e5d58e 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -614,18 +614,11 @@ int wm831x_set_bits(struct wm831x *wm831x, unsigned short reg,
- }
- EXPORT_SYMBOL_GPL(wm831x_set_bits);
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 54e3588..062f1a3 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -90,6 +90,10 @@ config PINCTRL_DB8500
+ 	bool "DB8500 pin controller driver"
+ 	depends on PINCTRL_NOMADIK && ARCH_U8500
  
--static struct resource wm831x_io_parent = {
--	.start = 0,
--	.end   = 0xffffffff,
--	.flags = IORESOURCE_IO,
--};
--
- static struct resource wm831x_dcdc1_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC1_CONTROL_1,
- 		.end   = WM831X_DC1_DVS_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -644,10 +637,9 @@ static struct resource wm831x_dcdc1_resources[] = {
++config PINCTRL_DB8540
++	bool "DB8540 pin controller driver"
++	depends on PINCTRL_NOMADIK && ARCH_U8500
++
+ config PINCTRL_PXA168
+ 	bool "PXA168 pin controller driver"
+ 	depends on ARCH_MMP
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index f40b1f8..b44538e 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_PINCTRL_IMX23)	+= pinctrl-imx23.o
+ obj-$(CONFIG_PINCTRL_IMX28)	+= pinctrl-imx28.o
+ obj-$(CONFIG_PINCTRL_NOMADIK)	+= pinctrl-nomadik.o
+ obj-$(CONFIG_PINCTRL_DB8500)	+= pinctrl-nomadik-db8500.o
++obj-$(CONFIG_PINCTRL_DB8540)	+= pinctrl-nomadik-db8540.o
+ obj-$(CONFIG_PINCTRL_PXA168)	+= pinctrl-pxa168.o
+ obj-$(CONFIG_PINCTRL_PXA910)	+= pinctrl-pxa910.o
+ obj-$(CONFIG_PINCTRL_SINGLE)	+= pinctrl-single.o
+diff --git a/drivers/pinctrl/pinctrl-nomadik-db8540.c b/drivers/pinctrl/pinctrl-nomadik-db8540.c
+new file mode 100644
+index 0000000..3daf665
+--- /dev/null
++++ b/drivers/pinctrl/pinctrl-nomadik-db8540.c
+@@ -0,0 +1,999 @@
++#include <linux/kernel.h>
++#include <linux/pinctrl/pinctrl.h>
++#include "pinctrl-nomadik.h"
++
++/* All the pins that can be used for GPIO and some other functions */
++#define _GPIO(offset)		(offset)
++
++#define DB8540_PIN_AH6		_GPIO(0)
++#define DB8540_PIN_AG7		_GPIO(1)
++#define DB8540_PIN_AF2		_GPIO(2)
++#define DB8540_PIN_AD3		_GPIO(3)
++#define DB8540_PIN_AF6		_GPIO(4)
++#define DB8540_PIN_AG6		_GPIO(5)
++#define DB8540_PIN_AD5		_GPIO(6)
++#define DB8540_PIN_AF7		_GPIO(7)
++#define DB8540_PIN_AG5		_GPIO(8)
++#define DB8540_PIN_AH5		_GPIO(9)
++#define DB8540_PIN_AE4		_GPIO(10)
++#define DB8540_PIN_AD1		_GPIO(11)
++#define DB8540_PIN_AD2		_GPIO(12)
++#define DB8540_PIN_AC2		_GPIO(13)
++#define DB8540_PIN_AC4		_GPIO(14)
++#define DB8540_PIN_AC3		_GPIO(15)
++#define DB8540_PIN_AH7		_GPIO(16)
++#define DB8540_PIN_AE7		_GPIO(17)
++/* Hole */
++#define DB8540_PIN_AF8		_GPIO(22)
++#define DB8540_PIN_AH11		_GPIO(23)
++#define DB8540_PIN_AG11		_GPIO(24)
++#define DB8540_PIN_AF11		_GPIO(25)
++#define DB8540_PIN_AH10		_GPIO(26)
++#define DB8540_PIN_AG10		_GPIO(27)
++#define DB8540_PIN_AF10		_GPIO(28)
++/* Hole */
++#define DB8540_PIN_AD4		_GPIO(33)
++#define DB8540_PIN_AF3		_GPIO(34)
++#define DB8540_PIN_AF5		_GPIO(35)
++#define DB8540_PIN_AG4		_GPIO(36)
++#define DB8540_PIN_AF9		_GPIO(37)
++#define DB8540_PIN_AE8		_GPIO(38)
++/* Hole */
++#define DB8540_PIN_M26		_GPIO(64)
++#define DB8540_PIN_M25		_GPIO(65)
++#define DB8540_PIN_M27		_GPIO(66)
++#define DB8540_PIN_N25		_GPIO(67)
++/* Hole */
++#define DB8540_PIN_M28		_GPIO(70)
++#define DB8540_PIN_N26		_GPIO(71)
++#define DB8540_PIN_M22		_GPIO(72)
++#define DB8540_PIN_N22		_GPIO(73)
++#define DB8540_PIN_N27		_GPIO(74)
++#define DB8540_PIN_N28		_GPIO(75)
++#define DB8540_PIN_P22		_GPIO(76)
++#define DB8540_PIN_P28		_GPIO(77)
++#define DB8540_PIN_P26		_GPIO(78)
++#define DB8540_PIN_T22		_GPIO(79)
++#define DB8540_PIN_R27		_GPIO(80)
++#define DB8540_PIN_P27		_GPIO(81)
++#define DB8540_PIN_R26		_GPIO(82)
++#define DB8540_PIN_R25		_GPIO(83)
++#define DB8540_PIN_U22		_GPIO(84)
++#define DB8540_PIN_T27		_GPIO(85)
++#define DB8540_PIN_T25		_GPIO(86)
++#define DB8540_PIN_T26		_GPIO(87)
++/* Hole */
++#define DB8540_PIN_AF20		_GPIO(116)
++#define DB8540_PIN_AG21		_GPIO(117)
++#define DB8540_PIN_AH19		_GPIO(118)
++#define DB8540_PIN_AE19		_GPIO(119)
++#define DB8540_PIN_AG18		_GPIO(120)
++#define DB8540_PIN_AH17		_GPIO(121)
++#define DB8540_PIN_AF19		_GPIO(122)
++#define DB8540_PIN_AF18		_GPIO(123)
++#define DB8540_PIN_AE18		_GPIO(124)
++#define DB8540_PIN_AG17		_GPIO(125)
++#define DB8540_PIN_AF17		_GPIO(126)
++#define DB8540_PIN_AE17		_GPIO(127)
++#define DB8540_PIN_AC27		_GPIO(128)
++#define DB8540_PIN_AD27		_GPIO(129)
++#define DB8540_PIN_AE28		_GPIO(130)
++#define DB8540_PIN_AG26		_GPIO(131)
++#define DB8540_PIN_AF25		_GPIO(132)
++#define DB8540_PIN_AE27		_GPIO(133)
++#define DB8540_PIN_AF27		_GPIO(134)
++#define DB8540_PIN_AG28		_GPIO(135)
++#define DB8540_PIN_AF28		_GPIO(136)
++#define DB8540_PIN_AG25		_GPIO(137)
++#define DB8540_PIN_AG24		_GPIO(138)
++#define DB8540_PIN_AD25		_GPIO(139)
++#define DB8540_PIN_AH25		_GPIO(140)
++#define DB8540_PIN_AF26		_GPIO(141)
++#define DB8540_PIN_AF23		_GPIO(142)
++#define DB8540_PIN_AG23		_GPIO(143)
++#define DB8540_PIN_AE25		_GPIO(144)
++#define DB8540_PIN_AH24		_GPIO(145)
++#define DB8540_PIN_AJ25		_GPIO(146)
++#define DB8540_PIN_AG27		_GPIO(147)
++#define DB8540_PIN_AH23		_GPIO(148)
++#define DB8540_PIN_AE26		_GPIO(149)
++#define DB8540_PIN_AE24		_GPIO(150)
++#define DB8540_PIN_AJ24		_GPIO(151)
++#define DB8540_PIN_AE21		_GPIO(152)
++#define DB8540_PIN_AG22		_GPIO(153)
++#define DB8540_PIN_AF21		_GPIO(154)
++#define DB8540_PIN_AF24		_GPIO(155)
++#define DB8540_PIN_AH22		_GPIO(156)
++#define DB8540_PIN_AJ23		_GPIO(157)
++#define DB8540_PIN_AH21		_GPIO(158)
++#define DB8540_PIN_AG20		_GPIO(159)
++#define DB8540_PIN_AE23		_GPIO(160)
++#define DB8540_PIN_AH20		_GPIO(161)
++#define DB8540_PIN_AG19		_GPIO(162)
++#define DB8540_PIN_AF22		_GPIO(163)
++#define DB8540_PIN_AJ21		_GPIO(164)
++#define DB8540_PIN_AD26		_GPIO(165)
++#define DB8540_PIN_AD28		_GPIO(166)
++#define DB8540_PIN_AC28		_GPIO(167)
++#define DB8540_PIN_AC26		_GPIO(168)
++/* Hole */
++#define DB8540_PIN_J3		_GPIO(192)
++#define DB8540_PIN_H1		_GPIO(193)
++#define DB8540_PIN_J2		_GPIO(194)
++#define DB8540_PIN_H2		_GPIO(195)
++#define DB8540_PIN_H3		_GPIO(196)
++#define DB8540_PIN_H4		_GPIO(197)
++#define DB8540_PIN_G2		_GPIO(198)
++#define DB8540_PIN_G3		_GPIO(199)
++#define DB8540_PIN_G4		_GPIO(200)
++#define DB8540_PIN_F2		_GPIO(201)
++#define DB8540_PIN_C6		_GPIO(202)
++#define DB8540_PIN_B6		_GPIO(203)
++#define DB8540_PIN_B7		_GPIO(204)
++#define DB8540_PIN_A7		_GPIO(205)
++#define DB8540_PIN_D7		_GPIO(206)
++#define DB8540_PIN_D8		_GPIO(207)
++#define DB8540_PIN_F3		_GPIO(208)
++#define DB8540_PIN_E2		_GPIO(209)
++#define DB8540_PIN_C7		_GPIO(210)
++#define DB8540_PIN_B8		_GPIO(211)
++#define DB8540_PIN_C10		_GPIO(212)
++#define DB8540_PIN_C8		_GPIO(213)
++#define DB8540_PIN_C9		_GPIO(214)
++/* Hole */
++#define DB8540_PIN_B9		_GPIO(219)
++#define DB8540_PIN_A10		_GPIO(220)
++#define DB8540_PIN_D9		_GPIO(221)
++#define DB8540_PIN_B11		_GPIO(222)
++#define DB8540_PIN_B10		_GPIO(223)
++#define DB8540_PIN_E10		_GPIO(224)
++#define DB8540_PIN_B12		_GPIO(225)
++#define DB8540_PIN_D10		_GPIO(226)
++#define DB8540_PIN_D11		_GPIO(227)
++#define DB8540_PIN_AJ6		_GPIO(228)
++#define DB8540_PIN_B13		_GPIO(229)
++#define DB8540_PIN_C12		_GPIO(230)
++#define DB8540_PIN_B14		_GPIO(231)
++#define DB8540_PIN_E11		_GPIO(232)
++/* Hole */
++#define DB8540_PIN_D12		_GPIO(256)
++#define DB8540_PIN_D15		_GPIO(257)
++#define DB8540_PIN_C13		_GPIO(258)
++#define DB8540_PIN_C14		_GPIO(259)
++#define DB8540_PIN_C18		_GPIO(260)
++#define DB8540_PIN_C16		_GPIO(261)
++#define DB8540_PIN_B16		_GPIO(262)
++#define DB8540_PIN_D18		_GPIO(263)
++#define DB8540_PIN_C15		_GPIO(264)
++#define DB8540_PIN_C17		_GPIO(265)
++#define DB8540_PIN_B17		_GPIO(266)
++#define DB8540_PIN_D17		_GPIO(267)
++
++/*
++ * The names of the pins are denoted by GPIO number and ball name, even
++ * though they can be used for other things than GPIO, this is the first
++ * column in the table of the data sheet and often used on schematics and
++ * such.
++ */
++static const struct pinctrl_pin_desc nmk_db8540_pins[] = {
++	PINCTRL_PIN(DB8540_PIN_AH6, "GPIO0_AH6"),
++	PINCTRL_PIN(DB8540_PIN_AG7, "GPIO1_AG7"),
++	PINCTRL_PIN(DB8540_PIN_AF2, "GPIO2_AF2"),
++	PINCTRL_PIN(DB8540_PIN_AD3, "GPIO3_AD3"),
++	PINCTRL_PIN(DB8540_PIN_AF6, "GPIO4_AF6"),
++	PINCTRL_PIN(DB8540_PIN_AG6, "GPIO5_AG6"),
++	PINCTRL_PIN(DB8540_PIN_AD5, "GPIO6_AD5"),
++	PINCTRL_PIN(DB8540_PIN_AF7, "GPIO7_AF7"),
++	PINCTRL_PIN(DB8540_PIN_AG5, "GPIO8_AG5"),
++	PINCTRL_PIN(DB8540_PIN_AH5, "GPIO9_AH5"),
++	PINCTRL_PIN(DB8540_PIN_AE4, "GPIO10_AE4"),
++	PINCTRL_PIN(DB8540_PIN_AD1, "GPIO11_AD1"),
++	PINCTRL_PIN(DB8540_PIN_AD2, "GPIO12_AD2"),
++	PINCTRL_PIN(DB8540_PIN_AC2, "GPIO13_AC2"),
++	PINCTRL_PIN(DB8540_PIN_AC4, "GPIO14_AC4"),
++	PINCTRL_PIN(DB8540_PIN_AC3, "GPIO15_AC3"),
++	PINCTRL_PIN(DB8540_PIN_AH7, "GPIO16_AH7"),
++	PINCTRL_PIN(DB8540_PIN_AE7, "GPIO17_AE7"),
++	/* Hole */
++	PINCTRL_PIN(DB8540_PIN_AF8, "GPIO22_AF8"),
++	PINCTRL_PIN(DB8540_PIN_AH11, "GPIO23_AH11"),
++	PINCTRL_PIN(DB8540_PIN_AG11, "GPIO24_AG11"),
++	PINCTRL_PIN(DB8540_PIN_AF11, "GPIO25_AF11"),
++	PINCTRL_PIN(DB8540_PIN_AH10, "GPIO26_AH10"),
++	PINCTRL_PIN(DB8540_PIN_AG10, "GPIO27_AG10"),
++	PINCTRL_PIN(DB8540_PIN_AF10, "GPIO28_AF10"),
++	/* Hole */
++	PINCTRL_PIN(DB8540_PIN_AD4, "GPIO33_AD4"),
++	PINCTRL_PIN(DB8540_PIN_AF3, "GPIO34_AF3"),
++	PINCTRL_PIN(DB8540_PIN_AF5, "GPIO35_AF5"),
++	PINCTRL_PIN(DB8540_PIN_AG4, "GPIO36_AG4"),
++	PINCTRL_PIN(DB8540_PIN_AF9, "GPIO37_AF9"),
++	PINCTRL_PIN(DB8540_PIN_AE8, "GPIO38_AE8"),
++	/* Hole */
++	PINCTRL_PIN(DB8540_PIN_M26, "GPIO64_M26"),
++	PINCTRL_PIN(DB8540_PIN_M25, "GPIO65_M25"),
++	PINCTRL_PIN(DB8540_PIN_M27, "GPIO66_M27"),
++	PINCTRL_PIN(DB8540_PIN_N25, "GPIO67_N25"),
++	/* Hole */
++	PINCTRL_PIN(DB8540_PIN_M28, "GPIO70_M28"),
++	PINCTRL_PIN(DB8540_PIN_N26, "GPIO71_N26"),
++	PINCTRL_PIN(DB8540_PIN_M22, "GPIO72_M22"),
++	PINCTRL_PIN(DB8540_PIN_N22, "GPIO73_N22"),
++	PINCTRL_PIN(DB8540_PIN_N27, "GPIO74_N27"),
++	PINCTRL_PIN(DB8540_PIN_N28, "GPIO75_N28"),
++	PINCTRL_PIN(DB8540_PIN_P22, "GPIO76_P22"),
++	PINCTRL_PIN(DB8540_PIN_P28, "GPIO77_P28"),
++	PINCTRL_PIN(DB8540_PIN_P26, "GPIO78_P26"),
++	PINCTRL_PIN(DB8540_PIN_T22, "GPIO79_T22"),
++	PINCTRL_PIN(DB8540_PIN_R27, "GPIO80_R27"),
++	PINCTRL_PIN(DB8540_PIN_P27, "GPIO81_P27"),
++	PINCTRL_PIN(DB8540_PIN_R26, "GPIO82_R26"),
++	PINCTRL_PIN(DB8540_PIN_R25, "GPIO83_R25"),
++	PINCTRL_PIN(DB8540_PIN_U22, "GPIO84_U22"),
++	PINCTRL_PIN(DB8540_PIN_T27, "GPIO85_T27"),
++	PINCTRL_PIN(DB8540_PIN_T25, "GPIO86_T25"),
++	PINCTRL_PIN(DB8540_PIN_T26, "GPIO87_T26"),
++	/* Hole */
++	PINCTRL_PIN(DB8540_PIN_AF20, "GPIO116_AF20"),
++	PINCTRL_PIN(DB8540_PIN_AG21, "GPIO117_AG21"),
++	PINCTRL_PIN(DB8540_PIN_AH19, "GPIO118_AH19"),
++	PINCTRL_PIN(DB8540_PIN_AE19, "GPIO119_AE19"),
++	PINCTRL_PIN(DB8540_PIN_AG18, "GPIO120_AG18"),
++	PINCTRL_PIN(DB8540_PIN_AH17, "GPIO121_AH17"),
++	PINCTRL_PIN(DB8540_PIN_AF19, "GPIO122_AF19"),
++	PINCTRL_PIN(DB8540_PIN_AF18, "GPIO123_AF18"),
++	PINCTRL_PIN(DB8540_PIN_AE18, "GPIO124_AE18"),
++	PINCTRL_PIN(DB8540_PIN_AG17, "GPIO125_AG17"),
++	PINCTRL_PIN(DB8540_PIN_AF17, "GPIO126_AF17"),
++	PINCTRL_PIN(DB8540_PIN_AE17, "GPIO127_AE17"),
++	PINCTRL_PIN(DB8540_PIN_AC27, "GPIO128_AC27"),
++	PINCTRL_PIN(DB8540_PIN_AD27, "GPIO129_AD27"),
++	PINCTRL_PIN(DB8540_PIN_AE28, "GPIO130_AE28"),
++	PINCTRL_PIN(DB8540_PIN_AG26, "GPIO131_AG26"),
++	PINCTRL_PIN(DB8540_PIN_AF25, "GPIO132_AF25"),
++	PINCTRL_PIN(DB8540_PIN_AE27, "GPIO133_AE27"),
++	PINCTRL_PIN(DB8540_PIN_AF27, "GPIO134_AF27"),
++	PINCTRL_PIN(DB8540_PIN_AG28, "GPIO135_AG28"),
++	PINCTRL_PIN(DB8540_PIN_AF28, "GPIO136_AF28"),
++	PINCTRL_PIN(DB8540_PIN_AG25, "GPIO137_AG25"),
++	PINCTRL_PIN(DB8540_PIN_AG24, "GPIO138_AG24"),
++	PINCTRL_PIN(DB8540_PIN_AD25, "GPIO139_AD25"),
++	PINCTRL_PIN(DB8540_PIN_AH25, "GPIO140_AH25"),
++	PINCTRL_PIN(DB8540_PIN_AF26, "GPIO141_AF26"),
++	PINCTRL_PIN(DB8540_PIN_AF23, "GPIO142_AF23"),
++	PINCTRL_PIN(DB8540_PIN_AG23, "GPIO143_AG23"),
++	PINCTRL_PIN(DB8540_PIN_AE25, "GPIO144_AE25"),
++	PINCTRL_PIN(DB8540_PIN_AH24, "GPIO145_AH24"),
++	PINCTRL_PIN(DB8540_PIN_AJ25, "GPIO146_AJ25"),
++	PINCTRL_PIN(DB8540_PIN_AG27, "GPIO147_AG27"),
++	PINCTRL_PIN(DB8540_PIN_AH23, "GPIO148_AH23"),
++	PINCTRL_PIN(DB8540_PIN_AE26, "GPIO149_AE26"),
++	PINCTRL_PIN(DB8540_PIN_AE24, "GPIO150_AE24"),
++	PINCTRL_PIN(DB8540_PIN_AJ24, "GPIO151_AJ24"),
++	PINCTRL_PIN(DB8540_PIN_AE21, "GPIO152_AE21"),
++	PINCTRL_PIN(DB8540_PIN_AG22, "GPIO153_AG22"),
++	PINCTRL_PIN(DB8540_PIN_AF21, "GPIO154_AF21"),
++	PINCTRL_PIN(DB8540_PIN_AF24, "GPIO155_AF24"),
++	PINCTRL_PIN(DB8540_PIN_AH22, "GPIO156_AH22"),
++	PINCTRL_PIN(DB8540_PIN_AJ23, "GPIO157_AJ23"),
++	PINCTRL_PIN(DB8540_PIN_AH21, "GPIO158_AH21"),
++	PINCTRL_PIN(DB8540_PIN_AG20, "GPIO159_AG20"),
++	PINCTRL_PIN(DB8540_PIN_AE23, "GPIO160_AE23"),
++	PINCTRL_PIN(DB8540_PIN_AH20, "GPIO161_AH20"),
++	PINCTRL_PIN(DB8540_PIN_AG19, "GPIO162_AG19"),
++	PINCTRL_PIN(DB8540_PIN_AF22, "GPIO163_AF22"),
++	PINCTRL_PIN(DB8540_PIN_AJ21, "GPIO164_AJ21"),
++	PINCTRL_PIN(DB8540_PIN_AD26, "GPIO165_AD26"),
++	PINCTRL_PIN(DB8540_PIN_AD28, "GPIO166_AD28"),
++	PINCTRL_PIN(DB8540_PIN_AC28, "GPIO167_AC28"),
++	PINCTRL_PIN(DB8540_PIN_AC26, "GPIO168_AC26"),
++	/* Hole */
++	PINCTRL_PIN(DB8540_PIN_J3, "GPIO192_J3"),
++	PINCTRL_PIN(DB8540_PIN_H1, "GPIO193_H1"),
++	PINCTRL_PIN(DB8540_PIN_J2, "GPIO194_J2"),
++	PINCTRL_PIN(DB8540_PIN_H2, "GPIO195_H2"),
++	PINCTRL_PIN(DB8540_PIN_H3, "GPIO196_H3"),
++	PINCTRL_PIN(DB8540_PIN_H4, "GPIO197_H4"),
++	PINCTRL_PIN(DB8540_PIN_G2, "GPIO198_G2"),
++	PINCTRL_PIN(DB8540_PIN_G3, "GPIO199_G3"),
++	PINCTRL_PIN(DB8540_PIN_G4, "GPIO200_G4"),
++	PINCTRL_PIN(DB8540_PIN_F2, "GPIO201_F2"),
++	PINCTRL_PIN(DB8540_PIN_C6, "GPIO202_C6"),
++	PINCTRL_PIN(DB8540_PIN_B6, "GPIO203_B6"),
++	PINCTRL_PIN(DB8540_PIN_B7, "GPIO204_B7"),
++	PINCTRL_PIN(DB8540_PIN_A7, "GPIO205_A7"),
++	PINCTRL_PIN(DB8540_PIN_D7, "GPIO206_D7"),
++	PINCTRL_PIN(DB8540_PIN_D8, "GPIO207_D8"),
++	PINCTRL_PIN(DB8540_PIN_F3, "GPIO208_F3"),
++	PINCTRL_PIN(DB8540_PIN_E2, "GPIO209_E2"),
++	PINCTRL_PIN(DB8540_PIN_C7, "GPIO210_C7"),
++	PINCTRL_PIN(DB8540_PIN_B8, "GPIO211_B8"),
++	PINCTRL_PIN(DB8540_PIN_C10, "GPIO212_C10"),
++	PINCTRL_PIN(DB8540_PIN_C8, "GPIO213_C8"),
++	PINCTRL_PIN(DB8540_PIN_C9, "GPIO214_C9"),
++	/* Hole */
++	PINCTRL_PIN(DB8540_PIN_B9, "GPIO219_B9"),
++	PINCTRL_PIN(DB8540_PIN_A10, "GPIO220_A10"),
++	PINCTRL_PIN(DB8540_PIN_D9, "GPIO221_D9"),
++	PINCTRL_PIN(DB8540_PIN_B11, "GPIO222_B11"),
++	PINCTRL_PIN(DB8540_PIN_B10, "GPIO223_B10"),
++	PINCTRL_PIN(DB8540_PIN_E10, "GPIO224_E10"),
++	PINCTRL_PIN(DB8540_PIN_B12, "GPIO225_B12"),
++	PINCTRL_PIN(DB8540_PIN_D10, "GPIO226_D10"),
++	PINCTRL_PIN(DB8540_PIN_D11, "GPIO227_D11"),
++	PINCTRL_PIN(DB8540_PIN_AJ6, "GPIO228_AJ6"),
++	PINCTRL_PIN(DB8540_PIN_B13, "GPIO229_B13"),
++	PINCTRL_PIN(DB8540_PIN_C12, "GPIO230_C12"),
++	PINCTRL_PIN(DB8540_PIN_B14, "GPIO231_B14"),
++	PINCTRL_PIN(DB8540_PIN_E11, "GPIO232_E11"),
++	/* Hole */
++	PINCTRL_PIN(DB8540_PIN_D12, "GPIO256_D12"),
++	PINCTRL_PIN(DB8540_PIN_D15, "GPIO257_D15"),
++	PINCTRL_PIN(DB8540_PIN_C13, "GPIO258_C13"),
++	PINCTRL_PIN(DB8540_PIN_C14, "GPIO259_C14"),
++	PINCTRL_PIN(DB8540_PIN_C18, "GPIO260_C18"),
++	PINCTRL_PIN(DB8540_PIN_C16, "GPIO261_C16"),
++	PINCTRL_PIN(DB8540_PIN_B16, "GPIO262_B16"),
++	PINCTRL_PIN(DB8540_PIN_D18, "GPIO263_D18"),
++	PINCTRL_PIN(DB8540_PIN_C15, "GPIO264_C15"),
++	PINCTRL_PIN(DB8540_PIN_C17, "GPIO265_C17"),
++	PINCTRL_PIN(DB8540_PIN_B17, "GPIO266_B17"),
++	PINCTRL_PIN(DB8540_PIN_D17, "GPIO267_D17"),
++};
++
++#define DB8540_GPIO_RANGE(a, b, c) { .name = "db8540", .id = a, .base = b, \
++			.pin_base = b, .npins = c }
++
++/*
++ * This matches the 32-pin gpio chips registered by the GPIO portion. This
++ * cannot be const since we assign the struct gpio_chip * pointer at runtime.
++ */
++static struct pinctrl_gpio_range nmk_db8540_ranges[] = {
++	DB8540_GPIO_RANGE(0, 0, 18),
++	DB8540_GPIO_RANGE(0, 22, 7),
++	DB8540_GPIO_RANGE(1, 33, 6),
++	DB8540_GPIO_RANGE(2, 64, 4),
++	DB8540_GPIO_RANGE(2, 70, 18),
++	DB8540_GPIO_RANGE(3, 116, 12),
++	DB8540_GPIO_RANGE(4, 128, 32),
++	DB8540_GPIO_RANGE(5, 160, 9),
++	DB8540_GPIO_RANGE(6, 192, 23),
++	DB8540_GPIO_RANGE(6, 219, 5),
++	DB8540_GPIO_RANGE(7, 224, 9),
++	DB8540_GPIO_RANGE(8, 256, 12),
++};
++
++/*
++ * Read the pin group names like this:
++ * u0_a_1    = first groups of pins for uart0 on alt function a
++ * i2c2_b_2  = second group of pins for i2c2 on alt function b
++ *
++ * The groups are arranged as sets per altfunction column, so we can
++ * mux in one group at a time by selecting the same altfunction for them
++ * all. When functions require pins on different altfunctions, you need
++ * to combine several groups.
++ */
++
++/* Altfunction A column */
++static const unsigned u0_a_1_pins[] = { DB8540_PIN_AH6, DB8540_PIN_AG7,
++					DB8540_PIN_AF2, DB8540_PIN_AD3 };
++static const unsigned u1rxtx_a_1_pins[] = { DB8540_PIN_AF6, DB8540_PIN_AG6 };
++static const unsigned u1ctsrts_a_1_pins[] = { DB8540_PIN_AD5, DB8540_PIN_AF7 };
++/* Image processor I2C line, this is driven by image processor firmware */
++static const unsigned ipi2c_a_1_pins[] = { DB8540_PIN_AG5, DB8540_PIN_AH5 };
++static const unsigned ipi2c_a_2_pins[] = { DB8540_PIN_AE4, DB8540_PIN_AD1 };
++/* MSP0 can only be on these pins, but TXD and RXD can be flipped */
++static const unsigned msp0txrx_a_1_pins[] = { DB8540_PIN_AD2, DB8540_PIN_AC3 };
++static const unsigned msp0tfstck_a_1_pins[] = { DB8540_PIN_AC2,
++	DB8540_PIN_AC4 };
++static const unsigned msp0rfsrck_a_1_pins[] = { DB8540_PIN_AH7,
++	DB8540_PIN_AE7 };
++/* Basic pins of the MMC/SD card 0 interface */
++static const unsigned mc0_a_1_pins[] = { DB8540_PIN_AH11, DB8540_PIN_AG11,
++	DB8540_PIN_AF11, DB8540_PIN_AH10, DB8540_PIN_AG10, DB8540_PIN_AF10};
++/* MSP1 can only be on these pins, but TXD and RXD can be flipped */
++static const unsigned msp1txrx_a_1_pins[] = { DB8540_PIN_AD4, DB8540_PIN_AG4 };
++static const unsigned msp1_a_1_pins[] = { DB8540_PIN_AF3, DB8540_PIN_AF5 };
++
++static const unsigned modobsclk_a_1_pins[] = { DB8540_PIN_AF9 };
++static const unsigned clkoutreq_a_1_pins[] = { DB8540_PIN_AE8 };
++/* LCD interface */
++static const unsigned lcdb_a_1_pins[] = { DB8540_PIN_M26, DB8540_PIN_M25,
++	DB8540_PIN_M27, DB8540_PIN_N25 };
++static const unsigned lcdvsi0_a_1_pins[] = { DB8540_PIN_AJ24 };
++static const unsigned lcdvsi1_a_1_pins[] = { DB8540_PIN_AE21 };
++static const unsigned lcd_d0_d7_a_1_pins[] = { DB8540_PIN_M28, DB8540_PIN_N26,
++	DB8540_PIN_M22, DB8540_PIN_N22, DB8540_PIN_N27, DB8540_PIN_N28,
++	DB8540_PIN_P22, DB8540_PIN_P28 };
++/* D8 thru D11 often used as TVOUT lines */
++static const unsigned lcd_d8_d11_a_1_pins[] = { DB8540_PIN_P26, DB8540_PIN_T22,
++	DB8540_PIN_R27, DB8540_PIN_P27 };
++static const unsigned lcd_d12_d23_a_1_pins[] = { DB8540_PIN_R26, DB8540_PIN_R25,
++	DB8540_PIN_U22, DB8540_PIN_T27, DB8540_PIN_AG22, DB8540_PIN_AF21,
++	DB8540_PIN_AF24, DB8540_PIN_AH22, DB8540_PIN_AJ23, DB8540_PIN_AH21,
++	DB8540_PIN_AG20, DB8540_PIN_AE23 };
++static const unsigned kp_a_1_pins[] = { DB8540_PIN_AH20, DB8540_PIN_AG19,
++	DB8540_PIN_AF22, DB8540_PIN_AJ21, DB8540_PIN_T25, DB8540_PIN_T26 };
++/* MC2 has 8 data lines and no direction control, so only for (e)MMC */
++static const unsigned mc2_a_1_pins[] = { DB8540_PIN_AC27, DB8540_PIN_AD27,
++	DB8540_PIN_AE28, DB8540_PIN_AG26, DB8540_PIN_AF25, DB8540_PIN_AE27,
++	DB8540_PIN_AF27, DB8540_PIN_AG28, DB8540_PIN_AF28, DB8540_PIN_AG25,
++	DB8540_PIN_AG24 };
++static const unsigned ssp1_a_1_pins[] = {  DB8540_PIN_AD25, DB8540_PIN_AH25,
++	DB8540_PIN_AF26, DB8540_PIN_AF23 };
++static const unsigned ssp0_a_1_pins[] = { DB8540_PIN_AG23, DB8540_PIN_AE25,
++	DB8540_PIN_AH24, DB8540_PIN_AJ25 };
++static const unsigned i2c0_a_1_pins[] = { DB8540_PIN_AG27, DB8540_PIN_AH23 };
++/*
++ * Image processor GPIO pins are named "ipgpio" and have their own
++ * numberspace
++ */
++static const unsigned ipgpio0_a_1_pins[] = { DB8540_PIN_AE26 };
++static const unsigned ipgpio1_a_1_pins[] = { DB8540_PIN_AE24 };
++/* modem i2s interface */
++static const unsigned modi2s_a_1_pins[] = { DB8540_PIN_AD26, DB8540_PIN_AD28,
++	DB8540_PIN_AC28, DB8540_PIN_AC26 };
++static const unsigned spi2_a_1_pins[] = { DB8540_PIN_AF20, DB8540_PIN_AG21,
++	DB8540_PIN_AH19, DB8540_PIN_AE19 };
++static const unsigned u2txrx_a_1_pins[] = { DB8540_PIN_AG18, DB8540_PIN_AH17 };
++static const unsigned u2ctsrts_a_1_pins[] = { DB8540_PIN_AF19,
++	DB8540_PIN_AF18 };
++static const unsigned modsmb_a_1_pins[] = { DB8540_PIN_AF17, DB8540_PIN_AE17 };
++static const unsigned msp2sck_a_1_pins[] = { DB8540_PIN_J3 };
++static const unsigned msp2txdtcktfs_a_1_pins[] = { DB8540_PIN_H1, DB8540_PIN_J2,
++	DB8540_PIN_H2 };
++static const unsigned msp2rxd_a_1_pins[] = { DB8540_PIN_H3 };
++static const unsigned mc4_a_1_pins[] = { DB8540_PIN_H4, DB8540_PIN_G2,
++	DB8540_PIN_G3, DB8540_PIN_G4, DB8540_PIN_F2, DB8540_PIN_C6,
++	DB8540_PIN_B6, DB8540_PIN_B7, DB8540_PIN_A7, DB8540_PIN_D7,
++	DB8540_PIN_D8 };
++static const unsigned mc1_a_1_pins[] = { DB8540_PIN_F3, DB8540_PIN_E2,
++	DB8540_PIN_C7, DB8540_PIN_B8, DB8540_PIN_C10, DB8540_PIN_C8,
++	DB8540_PIN_C9 };
++/* mc1_a_2_pins exclude MC1_FBCLK */
++static const unsigned mc1_a_2_pins[] = { DB8540_PIN_F3,	DB8540_PIN_C7,
++	DB8540_PIN_B8, DB8540_PIN_C10, DB8540_PIN_C8,
++	DB8540_PIN_C9 };
++static const unsigned hsir_a_1_pins[] = { DB8540_PIN_B9, DB8540_PIN_A10,
++	DB8540_PIN_D9 };
++static const unsigned hsit_a_1_pins[] = { DB8540_PIN_B11, DB8540_PIN_B10,
++	DB8540_PIN_E10, DB8540_PIN_B12, DB8540_PIN_D10 };
++static const unsigned hsit_a_2_pins[] = { DB8540_PIN_B11, DB8540_PIN_B10,
++	DB8540_PIN_E10, DB8540_PIN_B12 };
++static const unsigned clkout_a_1_pins[] = { DB8540_PIN_D11, DB8540_PIN_AJ6 };
++static const unsigned clkout_a_2_pins[] = { DB8540_PIN_B13, DB8540_PIN_C12 };
++static const unsigned msp4_a_1_pins[] = { DB8540_PIN_B14, DB8540_PIN_E11 };
++static const unsigned usb_a_1_pins[] = { DB8540_PIN_D12, DB8540_PIN_D15,
++	DB8540_PIN_C13, DB8540_PIN_C14, DB8540_PIN_C18, DB8540_PIN_C16,
++	DB8540_PIN_B16, DB8540_PIN_D18, DB8540_PIN_C15, DB8540_PIN_C17,
++	DB8540_PIN_B17, DB8540_PIN_D17 };
++/* Altfunction B colum */
++static const unsigned apetrig_b_1_pins[] = { DB8540_PIN_AH6, DB8540_PIN_AG7 };
++static const unsigned modtrig_b_1_pins[] = { DB8540_PIN_AF2, DB8540_PIN_AD3 };
++static const unsigned i2c4_b_1_pins[] = { DB8540_PIN_AF6, DB8540_PIN_AG6 };
++static const unsigned i2c1_b_1_pins[] = { DB8540_PIN_AD5, DB8540_PIN_AF7 };
++static const unsigned i2c2_b_1_pins[] = { DB8540_PIN_AG5, DB8540_PIN_AH5 };
++static const unsigned i2c2_b_2_pins[] = { DB8540_PIN_AE4, DB8540_PIN_AD1 };
++static const unsigned msp0txrx_b_1_pins[] = { DB8540_PIN_AD2, DB8540_PIN_AC3 };
++static const unsigned i2c1_b_2_pins[] = { DB8540_PIN_AH7, DB8540_PIN_AE7 };
++static const unsigned stmmod_b_1_pins[] = { DB8540_PIN_AH11, DB8540_PIN_AF11,
++	DB8540_PIN_AH10, DB8540_PIN_AG10, DB8540_PIN_AF10 };
++static const unsigned moduartstmmux_b_1_pins[] = { DB8540_PIN_AG11 };
++static const unsigned msp1txrx_b_1_pins[] = { DB8540_PIN_AD4, DB8540_PIN_AG4 };
++static const unsigned kp_b_1_pins[] = { DB8540_PIN_AJ24, DB8540_PIN_AE21,
++	DB8540_PIN_M26, DB8540_PIN_M25, DB8540_PIN_M27, DB8540_PIN_N25,
++	DB8540_PIN_M28, DB8540_PIN_N26, DB8540_PIN_M22, DB8540_PIN_N22,
++	DB8540_PIN_N27, DB8540_PIN_N28, DB8540_PIN_P22, DB8540_PIN_P28,
++	DB8540_PIN_P26, DB8540_PIN_T22, DB8540_PIN_R27, DB8540_PIN_P27,
++	DB8540_PIN_R26, DB8540_PIN_R25 };
++static const unsigned u2txrx_b_1_pins[] = { DB8540_PIN_U22, DB8540_PIN_T27 };
++static const unsigned sm_b_1_pins[] = { DB8540_PIN_AG22, DB8540_PIN_AF21,
++	DB8540_PIN_AF24, DB8540_PIN_AH22, DB8540_PIN_AJ23, DB8540_PIN_AH21,
++	DB8540_PIN_AG20, DB8540_PIN_AE23, DB8540_PIN_AH20, DB8540_PIN_AF22,
++	DB8540_PIN_AJ21, DB8540_PIN_AC27, DB8540_PIN_AD27, DB8540_PIN_AE28,
++	DB8540_PIN_AG26, DB8540_PIN_AF25, DB8540_PIN_AE27, DB8540_PIN_AF27,
++	DB8540_PIN_AG28, DB8540_PIN_AF28, DB8540_PIN_AG25, DB8540_PIN_AG24,
++	DB8540_PIN_AD25 };
++static const unsigned smcs0_b_1_pins[] = { DB8540_PIN_AG19 };
++static const unsigned smcs1_b_1_pins[] = { DB8540_PIN_AE26 };
++static const unsigned ipgpio7_b_1_pins[] = { DB8540_PIN_AH25 };
++static const unsigned ipgpio2_b_1_pins[] = { DB8540_PIN_AF26 };
++static const unsigned ipgpio3_b_1_pins[] = { DB8540_PIN_AF23 };
++static const unsigned i2c6_b_1_pins[] = { DB8540_PIN_AG23, DB8540_PIN_AE25 };
++static const unsigned i2c5_b_1_pins[] = { DB8540_PIN_AH24, DB8540_PIN_AJ25 };
++static const unsigned u3txrx_b_1_pins[] = { DB8540_PIN_AF20, DB8540_PIN_AG21 };
++static const unsigned u3ctsrts_b_1_pins[] = { DB8540_PIN_AH19,
++	DB8540_PIN_AE19 };
++static const unsigned i2c5_b_2_pins[] = { DB8540_PIN_AG18, DB8540_PIN_AH17 };
++static const unsigned i2c4_b_2_pins[] = { DB8540_PIN_AF19, DB8540_PIN_AF18 };
++static const unsigned u4txrx_b_1_pins[] = { DB8540_PIN_AE18, DB8540_PIN_AG17 };
++static const unsigned u4ctsrts_b_1_pins[] = { DB8540_PIN_AF17,
++	DB8540_PIN_AE17 };
++static const unsigned ddrtrig_b_1_pins[] = { DB8540_PIN_J3 };
++static const unsigned msp4_b_1_pins[] = { DB8540_PIN_H3 };
++static const unsigned pwl_b_1_pins[] = { DB8540_PIN_C6 };
++static const unsigned spi1_b_1_pins[] = { DB8540_PIN_E2, DB8540_PIN_C10,
++	DB8540_PIN_C8, DB8540_PIN_C9 };
++static const unsigned mc3_b_1_pins[] = { DB8540_PIN_B9, DB8540_PIN_A10,
++	DB8540_PIN_D9, DB8540_PIN_B11, DB8540_PIN_B10, DB8540_PIN_E10,
++	DB8540_PIN_B12 };
++static const unsigned pwl_b_2_pins[] = { DB8540_PIN_D10 };
++static const unsigned pwl_b_3_pins[] = { DB8540_PIN_B13 };
++static const unsigned pwl_b_4_pins[] = { DB8540_PIN_C12 };
++static const unsigned u2txrx_b_2_pins[] = { DB8540_PIN_B17, DB8540_PIN_D17 };
++
++/* Altfunction C column */
++static const unsigned ipgpio6_c_1_pins[] = { DB8540_PIN_AG6 };
++static const unsigned ipgpio0_c_1_pins[] = { DB8540_PIN_AD5 };
++static const unsigned ipgpio1_c_1_pins[] = { DB8540_PIN_AF7 };
++static const unsigned ipgpio3_c_1_pins[] = { DB8540_PIN_AE4 };
++static const unsigned ipgpio2_c_1_pins[] = { DB8540_PIN_AD1 };
++static const unsigned u0_c_1_pins[] = { DB8540_PIN_AD4, DB8540_PIN_AF3,
++	DB8540_PIN_AF5, DB8540_PIN_AG4 };
++static const unsigned smcleale_c_1_pins[] = { DB8540_PIN_AJ24,
++	DB8540_PIN_AE21 };
++static const unsigned ipgpio4_c_1_pins[] = { DB8540_PIN_M26 };
++static const unsigned ipgpio5_c_1_pins[] = { DB8540_PIN_M25 };
++static const unsigned ipgpio6_c_2_pins[] = { DB8540_PIN_M27 };
++static const unsigned ipgpio7_c_1_pins[] = { DB8540_PIN_N25 };
++static const unsigned stmape_c_1_pins[] = { DB8540_PIN_M28, DB8540_PIN_N26,
++	DB8540_PIN_M22, DB8540_PIN_N22, DB8540_PIN_N27 };
++static const unsigned u2rxtx_c_1_pins[] = { DB8540_PIN_N28, DB8540_PIN_P22 };
++static const unsigned modobsresout_c_1_pins[] = { DB8540_PIN_P28 };
++static const unsigned ipgpio2_c_2_pins[] = { DB8540_PIN_P26 };
++static const unsigned ipgpio3_c_2_pins[] = { DB8540_PIN_T22 };
++static const unsigned ipgpio4_c_2_pins[] = { DB8540_PIN_R27 };
++static const unsigned ipgpio5_c_2_pins[] = { DB8540_PIN_P27 };
++static const unsigned modaccgpo_c_1_pins[] = { DB8540_PIN_R26, DB8540_PIN_R25,
++	DB8540_PIN_U22 };
++static const unsigned modobspwrrst_c_1_pins[] = { DB8540_PIN_T27 };
++static const unsigned mc5_c_1_pins[] = { DB8540_PIN_AG22, DB8540_PIN_AF21,
++	DB8540_PIN_AF24, DB8540_PIN_AH22, DB8540_PIN_AJ23, DB8540_PIN_AH21,
++	DB8540_PIN_AG20, DB8540_PIN_AE23, DB8540_PIN_AH20, DB8540_PIN_AF22,
++	DB8540_PIN_AJ21};
++static const unsigned smps0_c_1_pins[] = { DB8540_PIN_AG19 };
++static const unsigned moduart1_c_1_pins[] = { DB8540_PIN_T25, DB8540_PIN_T26 };
++static const unsigned mc2rstn_c_1_pins[] = { DB8540_PIN_AE28 };
++static const unsigned i2c5_c_1_pins[] = { DB8540_PIN_AG28, DB8540_PIN_AF28 };
++static const unsigned ipgpio0_c_2_pins[] = { DB8540_PIN_AG25 };
++static const unsigned ipgpio1_c_2_pins[] = { DB8540_PIN_AG24 };
++static const unsigned kp_c_1_pins[] = { DB8540_PIN_AD25, DB8540_PIN_AH25,
++	DB8540_PIN_AF26, DB8540_PIN_AF23 };
++static const unsigned modrf_c_1_pins[] = { DB8540_PIN_AG23, DB8540_PIN_AE25,
++	DB8540_PIN_AH24 };
++static const unsigned smps1_c_1_pins[] = { DB8540_PIN_AE26 };
++static const unsigned i2c5_c_2_pins[] = { DB8540_PIN_AH19, DB8540_PIN_AE19 };
++static const unsigned u4ctsrts_c_1_pins[] = { DB8540_PIN_AG18,
++	DB8540_PIN_AH17 };
++static const unsigned u3rxtx_c_1_pins[] = { DB8540_PIN_AF19, DB8540_PIN_AF18 };
++static const unsigned msp4_c_1_pins[] = { DB8540_PIN_J3 };
++static const unsigned mc4rstn_c_1_pins[] = { DB8540_PIN_C6 };
++static const unsigned spi0_c_1_pins[] = { DB8540_PIN_A10, DB8540_PIN_B10,
++	DB8540_PIN_E10, DB8540_PIN_B12 };
++static const unsigned i2c3_c_1_pins[] = { DB8540_PIN_B13, DB8540_PIN_C12 };
++
++/* Other alt C1 column */
++static const unsigned spi3_oc1_1_pins[] = { DB8540_PIN_AG5, DB8540_PIN_AH5,
++	DB8540_PIN_AE4, DB8540_PIN_AD1 };
++static const unsigned stmape_oc1_1_pins[] = { DB8540_PIN_AH11, DB8540_PIN_AF11,
++	DB8540_PIN_AH10, DB8540_PIN_AG10, DB8540_PIN_AF10 };
++static const unsigned u2_oc1_1_pins[] = { DB8540_PIN_AG11 };
++static const unsigned remap0_oc1_1_pins[] = { DB8540_PIN_AJ24 };
++static const unsigned remap1_oc1_1_pins[] = { DB8540_PIN_AE21 };
++static const unsigned modobsrefclk_oc1_1_pins[] = { DB8540_PIN_M26 };
++static const unsigned modobspwrctrl_oc1_1_pins[] = { DB8540_PIN_M25 };
++static const unsigned modobsclkout_oc1_1_pins[] = { DB8540_PIN_M27 };
++static const unsigned moduart1_oc1_1_pins[] = { DB8540_PIN_N25 };
++static const unsigned modprcmudbg_oc1_1_pins[] = { DB8540_PIN_M28,
++	DB8540_PIN_N26, DB8540_PIN_M22, DB8540_PIN_N22, DB8540_PIN_N27,
++	DB8540_PIN_P22, DB8540_PIN_P28, DB8540_PIN_P26, DB8540_PIN_T22,
++	DB8540_PIN_R26, DB8540_PIN_R25, DB8540_PIN_U22, DB8540_PIN_T27,
++	DB8540_PIN_AH20, DB8540_PIN_AG19, DB8540_PIN_AF22, DB8540_PIN_AJ21,
++	DB8540_PIN_T25};
++static const unsigned modobsresout_oc1_1_pins[] = { DB8540_PIN_N28 };
++static const unsigned modaccgpo_oc1_1_pins[] = { DB8540_PIN_R27, DB8540_PIN_P27,
++	DB8540_PIN_T26 };
++static const unsigned kp_oc1_1_pins[] = { DB8540_PIN_AG22, DB8540_PIN_AF21,
++	DB8540_PIN_AF24, DB8540_PIN_AH22, DB8540_PIN_AJ23, DB8540_PIN_AH21,
++	DB8540_PIN_AG20, DB8540_PIN_AE23 };
++static const unsigned modxmip_oc1_1_pins[] = { DB8540_PIN_AD25, DB8540_PIN_AH25,
++	DB8540_PIN_AG23, DB8540_PIN_AE25 };
++static const unsigned i2c6_oc1_1_pins[] = { DB8540_PIN_AE26, DB8540_PIN_AE24 };
++static const unsigned u2txrx_oc1_1_pins[] = { DB8540_PIN_B7, DB8540_PIN_A7 };
++static const unsigned u2ctsrts_oc1_1_pins[] = { DB8540_PIN_D7, DB8540_PIN_D8 };
++
++/* Other alt C2 column */
++static const unsigned sbag_oc2_1_pins[] = { DB8540_PIN_AH11, DB8540_PIN_AG11,
++	DB8540_PIN_AF11, DB8540_PIN_AH10, DB8540_PIN_AG10, DB8540_PIN_AF10 };
++static const unsigned hxclk_oc2_1_pins[] = { DB8540_PIN_M25 };
++static const unsigned modaccuart_oc2_1_pins[] = { DB8540_PIN_N25 };
++static const unsigned stmmod_oc2_1_pins[] = { DB8540_PIN_M28, DB8540_PIN_N26,
++	DB8540_PIN_M22, DB8540_PIN_N22, DB8540_PIN_N27 };
++static const unsigned moduartstmmux_oc2_1_pins[] = { DB8540_PIN_N28 };
++static const unsigned hxgpio_oc2_1_pins[] = { DB8540_PIN_P22, DB8540_PIN_P28,
++	DB8540_PIN_P26, DB8540_PIN_T22, DB8540_PIN_R27, DB8540_PIN_P27,
++	DB8540_PIN_R26, DB8540_PIN_R25 };
++static const unsigned sbag_oc2_2_pins[] = { DB8540_PIN_U22, DB8540_PIN_T27,
++	DB8540_PIN_AG22, DB8540_PIN_AF21, DB8540_PIN_AF24, DB8540_PIN_AH22 };
++static const unsigned modobsservice_oc2_1_pins[] = { DB8540_PIN_AJ23 };
++static const unsigned moduart0_oc2_1_pins[] = { DB8540_PIN_AG20,
++	DB8540_PIN_AE23 };
++static const unsigned stmape_oc2_1_pins[] = { DB8540_PIN_AH20, DB8540_PIN_AG19,
++	DB8540_PIN_AF22, DB8540_PIN_AJ21, DB8540_PIN_T25 };
++static const unsigned u2_oc2_1_pins[] = { DB8540_PIN_T26, DB8540_PIN_AH21 };
++static const unsigned modxmip_oc2_1_pins[] = { DB8540_PIN_AE26,
++	DB8540_PIN_AE24 };
++
++/* Other alt C3 column */
++static const unsigned modaccgpo_oc3_1_pins[] = { DB8540_PIN_AG11 };
++static const unsigned tpui_oc3_1_pins[] = { DB8540_PIN_M26, DB8540_PIN_M25,
++	DB8540_PIN_M27, DB8540_PIN_N25, DB8540_PIN_M28, DB8540_PIN_N26,
++	DB8540_PIN_M22, DB8540_PIN_N22, DB8540_PIN_N27, DB8540_PIN_N28,
++	DB8540_PIN_P22, DB8540_PIN_P28, DB8540_PIN_P26, DB8540_PIN_T22,
++	DB8540_PIN_R27, DB8540_PIN_P27, DB8540_PIN_R26, DB8540_PIN_R25,
++	DB8540_PIN_U22, DB8540_PIN_T27, DB8540_PIN_AG22, DB8540_PIN_AF21,
++	DB8540_PIN_AF24, DB8540_PIN_AH22, DB8540_PIN_AJ23, DB8540_PIN_AH21,
++	DB8540_PIN_AG20, DB8540_PIN_AE23, DB8540_PIN_AH20, DB8540_PIN_AG19,
++	DB8540_PIN_AF22, DB8540_PIN_AJ21, DB8540_PIN_T25, DB8540_PIN_T26 };
++
++/* Other alt C4 column */
++static const unsigned hwobs_oc4_1_pins[] = { DB8540_PIN_M26, DB8540_PIN_M25,
++	DB8540_PIN_M27, DB8540_PIN_N25, DB8540_PIN_M28, DB8540_PIN_N26,
++	DB8540_PIN_M22, DB8540_PIN_N22, DB8540_PIN_N27, DB8540_PIN_N28,
++	DB8540_PIN_P22, DB8540_PIN_P28, DB8540_PIN_P26, DB8540_PIN_T22,
++	DB8540_PIN_R27, DB8540_PIN_P27, DB8540_PIN_R26, DB8540_PIN_R25 };
++static const unsigned moduart1txrx_oc4_1_pins[] = { DB8540_PIN_U22,
++	DB8540_PIN_T27 };
++static const unsigned moduart1rtscts_oc4_1_pins[] = { DB8540_PIN_AG22,
++	DB8540_PIN_AF21 };
++static const unsigned modaccuarttxrx_oc4_1_pins[] = { DB8540_PIN_AF24,
++	DB8540_PIN_AH22 };
++static const unsigned modaccuartrtscts_oc4_1_pins[] = { DB8540_PIN_AJ23,
++	DB8540_PIN_AH21 };
++static const unsigned stmmod_oc4_1_pins[] = { DB8540_PIN_AH20, DB8540_PIN_AG19,
++	DB8540_PIN_AF22, DB8540_PIN_AJ21, DB8540_PIN_T25 };
++static const unsigned moduartstmmux_oc4_1_pins[] = { DB8540_PIN_T26 };
++
++#define DB8540_PIN_GROUP(a, b) { .name = #a, .pins = a##_pins,		\
++			.npins = ARRAY_SIZE(a##_pins), .altsetting = b }
++
++static const struct nmk_pingroup nmk_db8540_groups[] = {
++	/* Altfunction A column */
++	DB8540_PIN_GROUP(u0_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(u1rxtx_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(u1ctsrts_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(ipi2c_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(ipi2c_a_2, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(msp0txrx_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(msp0tfstck_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(msp0rfsrck_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(mc0_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(msp1txrx_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(msp1_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(modobsclk_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(clkoutreq_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(lcdb_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(lcdvsi0_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(lcdvsi1_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(lcd_d0_d7_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(lcd_d8_d11_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(lcd_d12_d23_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(kp_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(mc2_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(ssp1_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(ssp0_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(i2c0_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(ipgpio0_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(ipgpio1_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(modi2s_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(spi2_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(u2txrx_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(u2ctsrts_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(modsmb_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(msp2sck_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(msp2txdtcktfs_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(msp2rxd_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(mc4_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(mc1_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(hsir_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(hsit_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(hsit_a_2, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(clkout_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(clkout_a_2, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(msp4_a_1, NMK_GPIO_ALT_A),
++	DB8540_PIN_GROUP(usb_a_1, NMK_GPIO_ALT_A),
++	/* Altfunction B column */
++	DB8540_PIN_GROUP(apetrig_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(modtrig_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(i2c4_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(i2c1_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(i2c2_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(i2c2_b_2, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(msp0txrx_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(i2c1_b_2, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(stmmod_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(moduartstmmux_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(msp1txrx_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(kp_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(u2txrx_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(sm_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(smcs0_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(smcs1_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(ipgpio7_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(ipgpio2_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(ipgpio3_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(i2c6_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(i2c5_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(u3txrx_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(u3ctsrts_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(i2c5_b_2, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(i2c4_b_2, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(u4txrx_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(u4ctsrts_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(ddrtrig_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(msp4_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(pwl_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(spi1_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(mc3_b_1, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(pwl_b_2, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(pwl_b_3, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(pwl_b_4, NMK_GPIO_ALT_B),
++	DB8540_PIN_GROUP(u2txrx_b_2, NMK_GPIO_ALT_B),
++	/* Altfunction C column */
++	DB8540_PIN_GROUP(ipgpio6_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio0_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio1_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio3_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio2_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(u0_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(smcleale_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio4_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio5_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio6_c_2, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio7_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(stmape_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(u2rxtx_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modobsresout_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio2_c_2, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio3_c_2, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio4_c_2, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio5_c_2, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modaccgpo_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modobspwrrst_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(mc5_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(smps0_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(moduart1_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(mc2rstn_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(i2c5_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio0_c_2, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(ipgpio1_c_2, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(kp_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modrf_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(smps1_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(i2c5_c_2, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(u4ctsrts_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(u3rxtx_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(msp4_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(mc4rstn_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(spi0_c_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(i2c3_c_1, NMK_GPIO_ALT_C),
++
++	/* Other alt C1 column, these are still configured as alt C */
++	DB8540_PIN_GROUP(spi3_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(stmape_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(u2_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(remap0_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(remap1_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modobsrefclk_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modobspwrctrl_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modobsclkout_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(moduart1_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modprcmudbg_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modobsresout_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modaccgpo_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(kp_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modxmip_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(i2c6_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(u2txrx_oc1_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(u2ctsrts_oc1_1, NMK_GPIO_ALT_C),
++
++	/* Other alt C2 column, these are still configured as alt C */
++	DB8540_PIN_GROUP(sbag_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(hxclk_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modaccuart_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(stmmod_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(moduartstmmux_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(hxgpio_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(sbag_oc2_2, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modobsservice_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(moduart0_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(stmape_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(u2_oc2_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modxmip_oc2_1, NMK_GPIO_ALT_C),
++
++	/* Other alt C3 column, these are still configured as alt C */
++	DB8540_PIN_GROUP(modaccgpo_oc3_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(tpui_oc3_1, NMK_GPIO_ALT_C),
++
++	/* Other alt C4 column, these are still configured as alt C */
++	DB8540_PIN_GROUP(hwobs_oc4_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(moduart1txrx_oc4_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(moduart1rtscts_oc4_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modaccuarttxrx_oc4_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(modaccuartrtscts_oc4_1, NMK_GPIO_ALT_C),
++	DB8540_PIN_GROUP(stmmod_oc4_1, NMK_GPIO_ALT_C),
++
++};
++
++/* We use this macro to define the groups applicable to a function */
++#define DB8540_FUNC_GROUPS(a, b...)	   \
++static const char * const a##_groups[] = { b };
++
++DB8540_FUNC_GROUPS(apetrig, "apetrig_b_1");
++DB8540_FUNC_GROUPS(clkout, "clkoutreq_a_1", "clkout_a_1", "clkout_a_2");
++DB8540_FUNC_GROUPS(ddrtrig, "ddrtrig_b_1");
++DB8540_FUNC_GROUPS(hsi, "hsir_a_1", "hsit_a_1", "hsit_a_2");
++DB8540_FUNC_GROUPS(hwobs, "hwobs_oc4_1");
++DB8540_FUNC_GROUPS(hx, "hxclk_oc2_1", "hxgpio_oc2_1");
++DB8540_FUNC_GROUPS(i2c0, "i2c0_a_1");
++DB8540_FUNC_GROUPS(i2c1, "i2c1_b_1", "i2c1_b_2");
++DB8540_FUNC_GROUPS(i2c2, "i2c2_b_1", "i2c2_b_2");
++DB8540_FUNC_GROUPS(i2c3, "i2c3_c_1", "i2c4_b_1");
++DB8540_FUNC_GROUPS(i2c4, "i2c4_b_2");
++DB8540_FUNC_GROUPS(i2c5, "i2c5_b_1", "i2c5_b_2", "i2c5_c_1", "i2c5_c_2");
++DB8540_FUNC_GROUPS(i2c6, "i2c6_b_1", "i2c6_oc1_1");
++/* The image processor has 8 GPIO pins that can be muxed out */
++DB8540_FUNC_GROUPS(ipgpio, "ipgpio0_a_1", "ipgpio0_c_1", "ipgpio0_c_2",
++		"ipgpio1_a_1", "ipgpio1_c_1", "ipgpio1_c_2",
++		"ipgpio2_b_1", "ipgpio2_c_1", "ipgpio2_c_2",
++		"ipgpio3_b_1", "ipgpio3_c_1", "ipgpio3_c_2",
++		"ipgpio4_c_1", "ipgpio4_c_2",
++		"ipgpio5_c_1", "ipgpio5_c_2",
++		"ipgpio6_c_1", "ipgpio6_c_2",
++		"ipgpio7_b_1", "ipgpio7_c_1");
++DB8540_FUNC_GROUPS(ipi2c, "ipi2c_a_1", "ipi2c_a_2");
++DB8540_FUNC_GROUPS(kp, "kp_a_1", "kp_b_1", "kp_c_1", "kp_oc1_1");
++DB8540_FUNC_GROUPS(lcd, "lcd_d0_d7_a_1", "lcd_d12_d23_a_1", "lcd_d8_d11_a_1",
++		"lcdvsi0_a_1", "lcdvsi1_a_1");
++DB8540_FUNC_GROUPS(lcdb, "lcdb_a_1");
++DB8540_FUNC_GROUPS(mc0, "mc0_a_1");
++DB8540_FUNC_GROUPS(mc1, "mc1_a_1", "mc1_a_2");
++DB8540_FUNC_GROUPS(mc2, "mc2_a_1", "mc2rstn_c_1");
++DB8540_FUNC_GROUPS(mc3, "mc3_b_1");
++DB8540_FUNC_GROUPS(mc4, "mc4_a_1", "mc4rstn_c_1");
++DB8540_FUNC_GROUPS(mc5, "mc5_c_1");
++DB8540_FUNC_GROUPS(modaccgpo, "modaccgpo_c_1", "modaccgpo_oc1_1",
++		"modaccgpo_oc3_1");
++DB8540_FUNC_GROUPS(modaccuart, "modaccuart_oc2_1", "modaccuarttxrx_oc4_1",
++		"modaccuartrtccts_oc4_1");
++DB8540_FUNC_GROUPS(modi2s, "modi2s_a_1");
++DB8540_FUNC_GROUPS(modobs, "modobsclk_a_1", "modobsclkout_oc1_1",
++		"modobspwrctrl_oc1_1", "modobspwrrst_c_1",
++		"modobsrefclk_oc1_1", "modobsresout_c_1",
++		"modobsresout_oc1_1", "modobsservice_oc2_1");
++DB8540_FUNC_GROUPS(modprcmudbg, "modprcmudbg_oc1_1");
++DB8540_FUNC_GROUPS(modrf, "modrf_c_1");
++DB8540_FUNC_GROUPS(modsmb, "modsmb_a_1");
++DB8540_FUNC_GROUPS(modtrig, "modtrig_b_1");
++DB8540_FUNC_GROUPS(moduart, "moduart1_c_1", "moduart1_oc1_1",
++		"moduart1txrx_oc4_1", "moduart1rtscts_oc4_1", "moduart0_oc2_1");
++DB8540_FUNC_GROUPS(moduartstmmux, "moduartstmmux_b_1", "moduartstmmux_oc2_1",
++		"moduartstmmux_oc4_1");
++DB8540_FUNC_GROUPS(modxmip, "modxmip_oc1_1", "modxmip_oc2_1");
++/*
++ * MSP0 can only be on a certain set of pins, but the TX/RX pins can be
++ * switched around by selecting the altfunction A or B.
++ */
++DB8540_FUNC_GROUPS(msp0, "msp0rfsrck_a_1", "msp0tfstck_a_1", "msp0txrx_a_1",
++		"msp0txrx_b_1");
++DB8540_FUNC_GROUPS(msp1, "msp1_a_1", "msp1txrx_a_1", "msp1txrx_b_1");
++DB8540_FUNC_GROUPS(msp2, "msp2sck_a_1", "msp2txdtcktfs_a_1", "msp2rxd_a_1");
++DB8540_FUNC_GROUPS(msp4, "msp4_a_1", "msp4_b_1", "msp4_c_1");
++DB8540_FUNC_GROUPS(pwl, "pwl_b_1", "pwl_b_2", "pwl_b_3", "pwl_b_4");
++DB8540_FUNC_GROUPS(remap, "remap0_oc1_1", "remap1_oc1_1");
++DB8540_FUNC_GROUPS(sbag, "sbag_oc2_1", "sbag_oc2_2");
++/* Select between CS0 on alt B or PS1 on alt C */
++DB8540_FUNC_GROUPS(sm, "sm_b_1", "smcleale_c_1", "smcs0_b_1", "smcs1_b_1",
++		"smps0_c_1", "smps1_c_1");
++DB8540_FUNC_GROUPS(spi0, "spi0_c_1");
++DB8540_FUNC_GROUPS(spi1, "spi1_b_1");
++DB8540_FUNC_GROUPS(spi2, "spi2_a_1");
++DB8540_FUNC_GROUPS(spi3, "spi3_oc1_1");
++DB8540_FUNC_GROUPS(ssp0, "ssp0_a_1");
++DB8540_FUNC_GROUPS(ssp1, "ssp1_a_1");
++DB8540_FUNC_GROUPS(stmape, "stmape_c_1", "stmape_oc1_1", "stmape_oc2_1");
++DB8540_FUNC_GROUPS(stmmod, "stmmod_b_1", "stmmod_oc2_1", "stmmod_oc4_1");
++DB8540_FUNC_GROUPS(tpui, "tpui_oc3_1");
++DB8540_FUNC_GROUPS(u0, "u0_a_1", "u0_c_1");
++DB8540_FUNC_GROUPS(u1, "u1ctsrts_a_1", "u1rxtx_a_1");
++DB8540_FUNC_GROUPS(u2, "u2_oc1_1", "u2_oc2_1", "u2ctsrts_a_1", "u2ctsrts_oc1_1",
++		"u2rxtx_c_1", "u2txrx_a_1", "u2txrx_b_1", "u2txrx_b_2",
++		"u2txrx_oc1_1");
++DB8540_FUNC_GROUPS(u3, "u3ctsrts_b_1", "u3rxtx_c_1", "u3txrxa_b_1");
++DB8540_FUNC_GROUPS(u4, "u4ctsrts_b_1", "u4ctsrts_c_1", "u4txrx_b_1");
++DB8540_FUNC_GROUPS(usb, "usb_a_1");
++
++
++#define FUNCTION(fname)					\
++	{						\
++		.name = #fname,				\
++		.groups = fname##_groups,		\
++		.ngroups = ARRAY_SIZE(fname##_groups),	\
++	}
++
++static const struct nmk_function nmk_db8540_functions[] = {
++	FUNCTION(apetrig),
++	FUNCTION(clkout),
++	FUNCTION(ddrtrig),
++	FUNCTION(hsi),
++	FUNCTION(hwobs),
++	FUNCTION(hx),
++	FUNCTION(i2c0),
++	FUNCTION(i2c1),
++	FUNCTION(i2c2),
++	FUNCTION(i2c3),
++	FUNCTION(i2c4),
++	FUNCTION(i2c5),
++	FUNCTION(i2c6),
++	FUNCTION(ipgpio),
++	FUNCTION(ipi2c),
++	FUNCTION(kp),
++	FUNCTION(lcd),
++	FUNCTION(lcdb),
++	FUNCTION(mc0),
++	FUNCTION(mc1),
++	FUNCTION(mc2),
++	FUNCTION(mc3),
++	FUNCTION(mc4),
++	FUNCTION(mc5),
++	FUNCTION(modaccgpo),
++	FUNCTION(modaccuart),
++	FUNCTION(modi2s),
++	FUNCTION(modobs),
++	FUNCTION(modprcmudbg),
++	FUNCTION(modrf),
++	FUNCTION(modsmb),
++	FUNCTION(modtrig),
++	FUNCTION(moduart),
++	FUNCTION(modxmip),
++	FUNCTION(msp0),
++	FUNCTION(msp1),
++	FUNCTION(msp2),
++	FUNCTION(msp4),
++	FUNCTION(pwl),
++	FUNCTION(remap),
++	FUNCTION(sbag),
++	FUNCTION(sm),
++	FUNCTION(spi0),
++	FUNCTION(spi1),
++	FUNCTION(spi2),
++	FUNCTION(spi3),
++	FUNCTION(ssp0),
++	FUNCTION(ssp1),
++	FUNCTION(stmape),
++	FUNCTION(stmmod),
++	FUNCTION(tpui),
++	FUNCTION(u0),
++	FUNCTION(u1),
++	FUNCTION(u2),
++	FUNCTION(u3),
++	FUNCTION(u4),
++	FUNCTION(usb)
++};
++
++static const struct nmk_pinctrl_soc_data nmk_db8540_soc = {
++	.gpio_ranges = nmk_db8540_ranges,
++	.gpio_num_ranges = ARRAY_SIZE(nmk_db8540_ranges),
++	.pins = nmk_db8540_pins,
++	.npins = ARRAY_SIZE(nmk_db8540_pins),
++	.functions = nmk_db8540_functions,
++	.nfunctions = ARRAY_SIZE(nmk_db8540_functions),
++	.groups = nmk_db8540_groups,
++	.ngroups = ARRAY_SIZE(nmk_db8540_groups),
++};
++
++void __devinit
++nmk_pinctrl_db8540_init(const struct nmk_pinctrl_soc_data **soc)
++{
++	*soc = &nmk_db8540_soc;
++}
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 53b0d49..736a160 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -1722,6 +1722,8 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+ 	/* Poke in other ASIC variants here */
+ 	if (version == PINCTRL_NMK_DB8500)
+ 		nmk_pinctrl_db8500_init(&npct->soc);
++	if (platid->driver_data == PINCTRL_NMK_DB8540)
++		nmk_pinctrl_db8540_init(&npct->soc);
  
- static struct resource wm831x_dcdc2_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC2_CONTROL_1,
- 		.end   = WM831X_DC2_DVS_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -665,10 +657,9 @@ static struct resource wm831x_dcdc2_resources[] = {
- 
- static struct resource wm831x_dcdc3_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC3_CONTROL_1,
- 		.end   = WM831X_DC3_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -680,10 +671,9 @@ static struct resource wm831x_dcdc3_resources[] = {
- 
- static struct resource wm831x_dcdc4_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC4_CONTROL,
- 		.end   = WM831X_DC4_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -695,10 +685,9 @@ static struct resource wm831x_dcdc4_resources[] = {
- 
- static struct resource wm8320_dcdc4_buck_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_DC4_CONTROL,
- 		.end   = WM832X_DC4_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -718,10 +707,9 @@ static struct resource wm831x_gpio_resources[] = {
- 
- static struct resource wm831x_isink1_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_CURRENT_SINK_1,
- 		.end   = WM831X_CURRENT_SINK_1,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.start = WM831X_IRQ_CS1,
-@@ -732,10 +720,9 @@ static struct resource wm831x_isink1_resources[] = {
- 
- static struct resource wm831x_isink2_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_CURRENT_SINK_2,
- 		.end   = WM831X_CURRENT_SINK_2,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.start = WM831X_IRQ_CS2,
-@@ -746,10 +733,9 @@ static struct resource wm831x_isink2_resources[] = {
- 
- static struct resource wm831x_ldo1_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO1_CONTROL,
- 		.end   = WM831X_LDO1_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -761,10 +747,9 @@ static struct resource wm831x_ldo1_resources[] = {
- 
- static struct resource wm831x_ldo2_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO2_CONTROL,
- 		.end   = WM831X_LDO2_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -776,10 +761,9 @@ static struct resource wm831x_ldo2_resources[] = {
- 
- static struct resource wm831x_ldo3_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO3_CONTROL,
- 		.end   = WM831X_LDO3_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -791,10 +775,9 @@ static struct resource wm831x_ldo3_resources[] = {
- 
- static struct resource wm831x_ldo4_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO4_CONTROL,
- 		.end   = WM831X_LDO4_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -806,10 +789,9 @@ static struct resource wm831x_ldo4_resources[] = {
- 
- static struct resource wm831x_ldo5_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO5_CONTROL,
- 		.end   = WM831X_LDO5_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -821,10 +803,9 @@ static struct resource wm831x_ldo5_resources[] = {
- 
- static struct resource wm831x_ldo6_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO6_CONTROL,
- 		.end   = WM831X_LDO6_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -836,10 +817,9 @@ static struct resource wm831x_ldo6_resources[] = {
- 
- static struct resource wm831x_ldo7_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO7_CONTROL,
- 		.end   = WM831X_LDO7_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -851,10 +831,9 @@ static struct resource wm831x_ldo7_resources[] = {
- 
- static struct resource wm831x_ldo8_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO8_CONTROL,
- 		.end   = WM831X_LDO8_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -866,10 +845,9 @@ static struct resource wm831x_ldo8_resources[] = {
- 
- static struct resource wm831x_ldo9_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO9_CONTROL,
- 		.end   = WM831X_LDO9_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -881,10 +859,9 @@ static struct resource wm831x_ldo9_resources[] = {
- 
- static struct resource wm831x_ldo10_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO10_CONTROL,
- 		.end   = WM831X_LDO10_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- 	{
- 		.name  = "UV",
-@@ -896,10 +873,9 @@ static struct resource wm831x_ldo10_resources[] = {
- 
- static struct resource wm831x_ldo11_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_LDO11_ON_CONTROL,
- 		.end   = WM831X_LDO11_SLEEP_CONTROL,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
+ 	/*
+ 	 * We need all the GPIO drivers to probe FIRST, or we will not be able
+@@ -1773,6 +1775,7 @@ static struct platform_driver nmk_gpio_driver = {
+ static const struct platform_device_id nmk_pinctrl_id[] = {
+ 	{ "pinctrl-stn8815", PINCTRL_NMK_STN8815 },
+ 	{ "pinctrl-db8500", PINCTRL_NMK_DB8500 },
++	{ "pinctrl-db8540", PINCTRL_NMK_DB8540 },
  };
  
-@@ -998,19 +974,17 @@ static struct resource wm831x_rtc_resources[] = {
+ static struct platform_driver nmk_pinctrl_driver = {
+diff --git a/drivers/pinctrl/pinctrl-nomadik.h b/drivers/pinctrl/pinctrl-nomadik.h
+index bc91aed..e88320f 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.h
++++ b/drivers/pinctrl/pinctrl-nomadik.h
+@@ -6,6 +6,7 @@
+ /* Package definitions */
+ #define PINCTRL_NMK_STN8815	0
+ #define PINCTRL_NMK_DB8500	1
++#define PINCTRL_NMK_DB8540	2
  
- static struct resource wm831x_status1_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_STATUS_LED_1,
- 		.end   = WM831X_STATUS_LED_1,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- };
+ /**
+  * struct nmk_function - Nomadik pinctrl mux function
+@@ -74,4 +75,17 @@ nmk_pinctrl_db8500_init(const struct nmk_pinctrl_soc_data **soc)
  
- static struct resource wm831x_status2_resources[] = {
- 	{
--		.parent = &wm831x_io_parent,
- 		.start = WM831X_STATUS_LED_2,
- 		.end   = WM831X_STATUS_LED_2,
--		.flags = IORESOURCE_IO,
-+		.flags = IORESOURCE_REG,
- 	},
- };
+ #endif
  
-diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
-index 7413885..64111f4 100644
---- a/drivers/regulator/wm831x-dcdc.c
-+++ b/drivers/regulator/wm831x-dcdc.c
-@@ -476,9 +476,9 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 
- 	dcdc->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -651,9 +651,9 @@ static __devinit int wm831x_buckp_probe(struct platform_device *pdev)
- 
- 	dcdc->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -795,9 +795,9 @@ static __devinit int wm831x_boostp_probe(struct platform_device *pdev)
- 
- 	dcdc->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-diff --git a/drivers/regulator/wm831x-isink.c b/drivers/regulator/wm831x-isink.c
-index 0d207c2..2646a19 100644
---- a/drivers/regulator/wm831x-isink.c
-+++ b/drivers/regulator/wm831x-isink.c
-@@ -172,9 +172,9 @@ static __devinit int wm831x_isink_probe(struct platform_device *pdev)
- 
- 	isink->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
-index 5cb70ca..da73daf 100644
---- a/drivers/regulator/wm831x-ldo.c
-+++ b/drivers/regulator/wm831x-ldo.c
-@@ -269,9 +269,9 @@ static __devinit int wm831x_gp_ldo_probe(struct platform_device *pdev)
- 
- 	ldo->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -520,9 +520,9 @@ static __devinit int wm831x_aldo_probe(struct platform_device *pdev)
- 
- 	ldo->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -675,9 +675,9 @@ static __devinit int wm831x_alive_ldo_probe(struct platform_device *pdev)
- 
- 	ldo->wm831x = wm831x;
- 
--	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource\n");
-+		dev_err(&pdev->dev, "No REG resource\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 589e0e7..bfee885 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -31,6 +31,7 @@ struct resource {
- #define IORESOURCE_TYPE_BITS	0x00001f00	/* Resource type */
- #define IORESOURCE_IO		0x00000100
- #define IORESOURCE_MEM		0x00000200
-+#define IORESOURCE_REG		0x00000300	/* Register offsets */
- #define IORESOURCE_IRQ		0x00000400
- #define IORESOURCE_DMA		0x00000800
- #define IORESOURCE_BUS		0x00001000
-
-
++#ifdef CONFIG_PINCTRL_DB8540
++
++void nmk_pinctrl_db8540_init(const struct nmk_pinctrl_soc_data **soc);
++
++#else
++
++static inline void
++nmk_pinctrl_db8540_init(const struct nmk_pinctrl_soc_data **soc)
++{
++}
++
++#endif
++
+ #endif /* PINCTRL_PINCTRL_NOMADIK_H */
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+1.7.11.3
+
