@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031099Ab2HGWp7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:45:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
+	id S1031119Ab2HGWqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:46:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031088Ab2HGWpy (ORCPT
+	with ESMTP id S1031104Ab2HGWqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:45:54 -0400
+	Tue, 7 Aug 2012 18:46:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ray Chen <ray.chen@canonical.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 11/49] ALSA: hda - Add support for Realtek ALC282
-Date: Tue,  7 Aug 2012 15:44:29 -0700
-Message-Id: <20120807222027.876555541@linuxfoundation.org>
+        Kevin Cernekee <cernekee@gmail.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 13/49] usb: gadget: Fix g_ether interface link status
+Date: Tue,  7 Aug 2012 15:44:31 -0700
+Message-Id: <20120807222028.050350415@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -31,32 +29,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Kevin Cernekee <cernekee@gmail.com>
 
-commit 4e01ec636e64707d202a1ca21a47bbc6d53085b7 upstream.
+commit 31bde1ceaa873bcaecd49e829bfabceacc4c512d upstream.
 
-This codec has a separate dmic path (separate dmic only ADC),
-and thus it looks mostly like ALC275.
+A "usb0" interface that has never been connected to a host has an unknown
+operstate, and therefore the IFF_RUNNING flag is (incorrectly) asserted
+when queried by ifconfig, ifplugd, etc.  This is a result of calling
+netif_carrier_off() too early in the probe function; it should be called
+after register_netdev().
 
-BugLink: https://bugs.launchpad.net/bugs/1025377
-Tested-by: Ray Chen <ray.chen@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Similar problems have been fixed in many other drivers, e.g.:
+
+    e826eafa6 (bonding: Call netif_carrier_off after register_netdevice)
+    0d672e9f8 (drivers/net: Call netif_carrier_off at the end of the probe)
+    6a3c869a6 (cxgb4: fix reported state of interfaces without link)
+
+Fix is to move netif_carrier_off() to the end of the function.
+
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/gadget/u_ether.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -20133,6 +20133,7 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0275, .name = "ALC275", .patch = patch_alc269 },
- 	{ .id = 0x10ec0276, .name = "ALC276", .patch = patch_alc269 },
- 	{ .id = 0x10ec0280, .name = "ALC280", .patch = patch_alc269 },
-+	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
- 	  .patch = patch_alc861 },
- 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -803,12 +803,6 @@ int gether_setup(struct usb_gadget *g, u
+ 
+ 	SET_ETHTOOL_OPS(net, &ops);
+ 
+-	/* two kinds of host-initiated state changes:
+-	 *  - iff DATA transfer is active, carrier is "on"
+-	 *  - tx queueing enabled if open *and* carrier is "on"
+-	 */
+-	netif_carrier_off(net);
+-
+ 	dev->gadget = g;
+ 	SET_NETDEV_DEV(net, &g->dev);
+ 	SET_NETDEV_DEVTYPE(net, &gadget_type);
+@@ -822,6 +816,12 @@ int gether_setup(struct usb_gadget *g, u
+ 		INFO(dev, "HOST MAC %pM\n", dev->host_mac);
+ 
+ 		the_dev = dev;
++
++		/* two kinds of host-initiated state changes:
++		 *  - iff DATA transfer is active, carrier is "on"
++		 *  - tx queueing enabled if open *and* carrier is "on"
++		 */
++		netif_carrier_off(net);
+ 	}
+ 
+ 	return status;
 
 
