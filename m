@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab2HGV43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 17:56:29 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:18935 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab2HGV42 (ORCPT
+	id S1756866Ab2HGV6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 17:58:45 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:35298 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755525Ab2HGV6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 17:56:28 -0400
-Date: Tue, 7 Aug 2012 23:56:26 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?ISO-8859-15?Q?R=E9mi_Denis-Courmont?= <rdenis@simphalempin.com>,
-        Remi Denis-Courmont <courmisch@gmail.com>
-Subject: [PATCH] cdc-phonet: Don't leak in usbpn_open
-Message-ID: <alpine.LNX.2.00.1208072354030.3227@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 7 Aug 2012 17:58:44 -0400
+Message-ID: <50218F7E.1060004@linaro.org>
+Date: Tue, 07 Aug 2012 14:58:22 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Paul Moore <paul@paul-moore.com>
+CC: lkml <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov
+Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
+References: <50215A7E.8000701@linaro.org> <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com>
+In-Reply-To: <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080721-7282-0000-0000-00000BBE4C0D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We allocate memory for 'req' with usb_alloc_urb() and then test
-'if (!req || rx_submit(pnd, req, GFP_KERNEL | __GFP_COLD))'.
-If we enter that branch due to '!req' then there is no problem. But if
-we enter the branch due to 'req' being != 0 and the 'rx_submit()' call
-being false, then we'll leak the memory we allocated.
-Deal with the leak by always calling 'usb_free_urb(req)' when entering
-the branch. If 'req' happens to be 0 then the call is harmless, if it
-is not 0 then we free the memory we allocated but don't need.
+On 08/07/2012 02:50 PM, Paul Moore wrote:
+> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> Hi,
+>>      With my kvm environment using 3.6-rc1+, I'm seeing NULL pointer
+>> dereferences in selinux_ip_postroute_compat(). It looks like the sksec value
+>> is null and we die in the following line:
+>>
+>>      if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
+>>
+>> This triggers every time I shutdown the machine, but has also triggered
+>> randomly after a few hours.
+>>
+>> This is on an ubuntu 12.04 image, not using selinux.
+> NOTE: Adding the SELinux list to the CC line
+Thanks!
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/net/usb/cdc-phonet.c | 1 +
- 1 file changed, 1 insertion(+)
+>
+> Hi,
+>
+> I'm trying to understand this and I was hoping you could you clarify a
+> few things for me:
+>
+> * Is the panic in the Ubuntu 12.04 guest, or the host?  If the host,
+> could you share what distribution you are using?
+Sorry, its a 12.04 guest.  I think the host is Ubuntu 12.04 as well.
 
-  Only compile tested due to lack of hardware.
+> * When you say you are not using SELinux, could you be more specific?
+> It seems odd that you are not using SELinux but the panic is happening
+> in a SELinux hook.
+I just mean that, being Ubuntu,  the system (userland) isn't configured 
+to use selinux.  SELinux is just enabled in the kernel config.
 
-diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
-index 6461004..7d78669 100644
---- a/drivers/net/usb/cdc-phonet.c
-+++ b/drivers/net/usb/cdc-phonet.c
-@@ -232,6 +232,7 @@ static int usbpn_open(struct net_device *dev)
- 		struct urb *req = usb_alloc_urb(0, GFP_KERNEL);
- 
- 		if (!req || rx_submit(pnd, req, GFP_KERNEL | __GFP_COLD)) {
-+			usb_free_urb(req);
- 			usbpn_close(dev);
- 			return -ENOMEM;
- 		}
--- 
-1.7.11.4
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+thanks
+-john
 
