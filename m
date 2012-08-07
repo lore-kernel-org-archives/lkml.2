@@ -1,508 +1,846 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173Ab2HGEai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 00:30:38 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47930 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab2HGEaf (ORCPT
+	id S1751189Ab2HGEgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 00:36:10 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:62585 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab2HGEgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 00:30:35 -0400
-Date: Tue, 7 Aug 2012 14:30:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Aug 7
-Message-Id: <20120807143018.0a1525fd9e980cafd90282b0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__7_Aug_2012_14_30_18_+1000_0nzOI=AiYNrs9tov"
+	Tue, 7 Aug 2012 00:36:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <1344261462-14183-3-git-send-email-dongjin.kim@agreeyamobility.net>
+References: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
+	<1344261462-14183-3-git-send-email-dongjin.kim@agreeyamobility.net>
+Date: Tue, 7 Aug 2012 13:36:07 +0900
+X-Google-Sender-Auth: GoJMKDPznHRMETp3RWHzpKjWg6A
+Message-ID: <CAH9JG2Xjjp4JtHGWu681ycDCbz=zYJ2mEvW1H2pFMWJxncuM9Q@mail.gmail.com>
+Subject: Re: [PATCH] ARM: EXYNOS: Add USB HSIC device
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: Dongjin Kim <tobetter@gmail.com>
+Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, linux-samsung-soc@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Hauke Mehrtens <hauke@hauke-m.de>, Neil Zhang <zhangwm@marvell.com>,
+        Jongpill Lee <boyko.lee@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Dongjin Kim <dongjin.kim@agreeyamobility.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__7_Aug_2012_14_30_18_+1000_0nzOI=AiYNrs9tov
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi all,
+Now another person try to use drivers/usb/phy for it.
+"usb: phy: samsung: Introducing usb phy driver for hsotg"
+Can you use it instead of previous one?
 
-OK, so the merge window is closed.  Time to clean up your trees and then
-start adding new stuff to them.
+Thank you,
+Kyungmin Park
 
-Changes since 20120806:
-
-The cifs tree lost its build failure.
-
-The spi-mb tree lost its build failure.
-
-The tty tree still has its build failures for which I have disabled 2
-staging drivers and applied a patch.  It lost its conflicts.
-
-I have still reverted 3 commits from the signal tree at the request of the
-arm maintainer.  It also gained a conflict against the rcu tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc,
-sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 193 trees (counting Linus' and 26 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (42a579a Merge branches 'timers-urgent-for-linus' and=
- 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/t=
-ip/tip)
-Merging fixes/master (9023a40 Merge tag 'mmc-fixes-for-3.5-rc4' of git://gi=
-t.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
-Merging kbuild-current/rc-fixes (f8f5701 Linux 3.5-rc1)
-Merging arm-current/fixes (b74253f ARM: 7479/1: mm: avoid NULL dereference =
-when flushing gate_vma with VIVT caches)
-Merging m68k-current/for-linus (9e2760d m68k: Make sys_atomic_cmpxchg_32 wo=
-rk on classic m68k)
-Merging powerpc-merge/merge (ad36cb0 powerpc/kvm/book3s_32: Fix MTMSR_EERI =
-macro)
-Merging sparc/master (a27032e sparc64: do not clobber personality flags in =
-sys_sparc64_personality())
-Merging net/master (5d299f3 net: ipv6: fix TCP early demux)
-Merging sound-current/for-linus (8dfaa57 ALSA: hda - Fix regression of HDMI=
- codec probing)
-Merging pci-current/for-linus (314489b Merge tag 'fixes-for-linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc)
-Merging wireless/master (50e2a30 iwlwifi: disable greenfield transmissions =
-as a workaround)
-Merging driver-core.current/driver-core-linus (0d7614f Linux 3.6-rc1)
-Merging tty.current/tty-linus (0d7614f Linux 3.6-rc1)
-Merging usb.current/usb-linus (0d7614f Linux 3.6-rc1)
-Merging staging.current/staging-linus (0d7614f Linux 3.6-rc1)
-Merging char-misc.current/char-misc-linus (0d7614f Linux 3.6-rc1)
-Merging input-current/for-linus (cf45b5a Merge branch 'next' into for-linus)
-Merging md-current/for-linus (58e94ae md/raid1: close some possible races o=
-n write errors during resync)
-Merging audit-current/for-linus (c158a35 audit: no leading space in audit_l=
-og_d_path prefix)
-Merging crypto-current/master (76f16f8 crypto: hifn_795x - fix 64bit divisi=
-on and undefined __divdi3 on 32bit archs)
-Merging ide/master (39a50b4 Merge branch 'hfsplus')
-Merging dwmw2/master (244dc4e Merge git://git.infradead.org/users/dwmw2/ran=
-dom-2.6)
-Merging sh-current/sh-fixes-for-linus (4403310 SH: Convert out[bwl] macros =
-to inline functions)
-Merging irqdomain-current/irqdomain/merge (15e06bf irqdomain: Fix debugfs f=
-ormatting)
-Merging devicetree-current/devicetree/merge (4e8383b of: release node fix f=
-or of_parse_phandle_with_args)
-Merging spi-current/spi/merge (d1c185b of/spi: Fix SPI module loading by us=
-ing proper "spi:" modalias prefixes.)
-Merging gpio-current/gpio/merge (96b7064 gpio/tca6424: merge I2C transactio=
-ns, remove cast)
-Merging arm/for-next (1a9b499 Merge branch 'upstream' of git://git.linux-mi=
-ps.org/pub/scm/ralf/upstream-linus)
-Merging arm-perf/for-next/perf (dee8c1b ARM: perf: remove arm_perf_pmu_ids =
-global enumeration)
-Merging davinci/davinci-next (fe0d422 Linux 3.0-rc6)
-Merging xilinx/arm-next (b85a3ef ARM: Xilinx: Adding Xilinx board support)
-Merging blackfin/for-linus (719154c bf60x: fix build warning)
-Merging c6x/for-linux-next (28a33cb Linux 3.5)
-Merging cris/for-next (2608747 CRIS: Remove VCS simulator specific code)
-Merging hexagon/linux-next (5042ab9 various Kconfig cleanup and old platfor=
-m build code removal)
-Merging ia64/next (a119365 [IA64] Redefine ATOMIC_INIT and ATOMIC64_INIT to=
- drop the casts)
-Merging m68k/for-next (9e2760d m68k: Make sys_atomic_cmpxchg_32 work on cla=
-ssic m68k)
-Merging m68knommu/for-next (0d7614f Linux 3.6-rc1)
-Merging microblaze/next (a01ee16 Merge branch 'for-linus' of git://git.open=
--osd.org/linux-open-osd)
-Merging mips/mips-for-linux-next (3a0b96c Merge branch 'next/lantiq' into m=
-ips-for-linux-next)
-Merging openrisc/for-upstream (207e715 openrisc: use scratch regs in atomic=
- syscall)
-Merging parisc/for-next (5b24c42 [PARISC] fix personality flag check in cop=
-y_thread())
-Merging powerpc/next (bdc0077 Merge tag 'scsi-misc' of git://git.kernel.org=
-/pub/scm/linux/kernel/git/jejb/scsi)
-Merging 4xx/next (2074b1d powerpc: Fix irq distribution)
-Merging mpc5xxx/next (4d2f4e1 powerpc: Option FB_FSL_DIU is not really opti=
-onal for mpc512x)
-Merging galak/next (4d71e7b powerpc/booke: Add CPU_FTR_EMB_HV check for e55=
-00.)
-Merging s390/features (a96400d s390: do not clobber personality flags in sy=
-s_32_personality())
-Merging sh/sh-latest (08298f0 sh: explicitly include sh_dma.h in setup-sh77=
-22.c)
-Merging sparc-next/master (31a6710 Fix blocking allocations called very ear=
-ly during bootup)
-Merging tile/master (bdc0077 Merge tag 'scsi-misc' of git://git.kernel.org/=
-pub/scm/linux/kernel/git/jejb/scsi)
-Merging unicore32/unicore32 (e4baa56 UniCore32-bugfix: Remove definitions i=
-n asm/bug.h to solve difference between native and cross compiler)
-Merging ceph/master (1fe5e99 rbd: create rbd_refresh_helper())
-Merging cifs/for-next (30e5913 Remove sparse warning in cifsfs.c)
-Merging configfs/linux-next (b930c26 Merge branch 'for-linus' of git://git.=
-kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (0d7614f Linux 3.6-rc1)
-Merging ext3/for_next (0143fc5 udf: avoid info leak on export)
-Merging ext4/dev (03179fe ext4: undo ext4_calc_metadata_amount if we fail t=
-o claim space)
-Merging fuse/for-next (fb6ccff fuse: verify all ioctl retry iov elements)
-Merging gfs2/master (4b0fbdd GFS2: Use RB_CLEAR_NODE() rather than rb_init_=
-node())
-Merging logfs/master (9f0bbd8 logfs: query block device for number of pages=
- to send with bio)
-Merging nfs/linux-next (ddb6105 pnfs: Don't BUG on info received from Serve=
-r)
-Merging nfsd/nfsd-next (2c142ba NFSd: make boot_time variable per network n=
-amespace)
-Merging ocfs2/linux-next (2dfd060 aio: make kiocb->private NUll in init_syn=
-c_kiocb())
-Merging omfs/for-next (976d167 Linux 3.1-rc9)
-Merging squashfs/master (4b0180a Squashfs: add mount time sanity check for =
-block_size and block_log match)
-Merging v9fs/for-next (5fcb08b 9p: BUG before corrupting memory)
-Merging ubifs/linux-next (7074e5e UBIFS: remove invalid reference to list i=
-terator variable)
-Merging xfs/for-next (0d7614f Linux 3.6-rc1)
-Merging vfs/for-next (dbc6e02 delousing target_core_file a bit)
-Merging pci/next (0d7614f Linux 3.6-rc1)
-Merging hid/for-next (e8ff13b Merge branch 'for-linus' of git://git.kernel.=
-org/pub/scm/linux/kernel/git/jikos/hid)
-Merging quilt/i2c (a918790 i2c: Convert struct i2c_msg initialization to C9=
-9 format)
-Merging i2c-embedded/i2c-embedded/for-next (5db20c4 Revert "i2c: tegra: con=
-vert normal suspend/resume to *_noirq")
-Merging quilt/jdelvare-hwmon (7a48eb8 hwmon: (coretemp) Use get_online_cpus=
- to avoid races involving CPU hotplug)
-Merging hwmon-staging/hwmon-next (0d7614f Linux 3.6-rc1)
-Merging v4l-dvb/master (add6e13 Merge /home/v4l/v4l/patchwork)
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-Merging kbuild/for-next (85b170e Merge branches 'kbuild/kconfig' and 'kbuil=
-d/misc' into kbuild/for-next)
-Merging kconfig/for-next (4503379 localmodconfig: Add debug environment var=
-iable LOCALMODCONFIG_DEBUG)
-Merging libata/NEXT (354b2ea libata-acpi: fix up for acpi_pm_device_sleep_s=
-tate API)
-Merging infiniband/for-next (0d7614f Linux 3.6-rc1)
-Merging acpi/next (9d0b01a Merge branches 'delete-gts-bfs', 'misc', 'novell=
--bugzilla-757888-numa' and 'osc-pcie' into base)
-Merging cpuidle/cpuidle-next (3cf7997 acpi: intel_idle : break dependency b=
-etween modules)
-CONFLICT (add/add): Merge conflict in drivers/cpuidle/coupled.c
-Merging cpupowerutils/master (f166033 cpupower tools: add install target to=
- the debug tools' makefiles)
-Merging ieee1394/for-next (e3cbd92 firewire: core: document is_local sysfs =
-attribute)
-Merging ubi/linux-next (87e773c UBI: harmonize the update of ubi->beb_rsvd_=
-pebs)
-Merging dlm/next (c572b7f dlm: fix deadlock between dlm_send and dlm_contro=
-ld)
-Merging scsi/for-next (641aa03 Merge branch 'misc' into for-next)
-CONFLICT (content): Merge conflict in drivers/ata/libata-core.c
-Merging target-updates/for-next (bf6932f iscsi-target: Drop bogus struct fi=
-le usage for iSCSI/SCTP)
-Merging target-merge/for-next-merge (1247c37 tcm_vhost: Initial merge for v=
-host level target fabric driver)
-Merging ibft/linux-next (935a9fe ibft: Fix finding IBFT ACPI table on UEFI)
-Merging isci/all (6734092 isci: add a couple __iomem annotations)
-Merging slave-dma/next (c87a9fc Merge branch 'fixes_for-3.6' into next)
-Merging dmaengine/next (a2bd114 netdma: adding alignment check for NETDMA o=
-ps)
-Merging net-next/master (aae06bf tcp: ecn: dont delay ACKS after CE)
-Merging wireless-next/master (b877f4c mwifiex: add AES_CMAC support in key_=
-material cmd)
-Merging bluetooth/master (cd17dec Bluetooth: Refactor in hci_le_conn_comple=
-te_evt)
-Merging mtd/master (4800399 mtd: m25p80: Add support for serial flash STM/M=
-icron N25Q032)
-Merging l2-mtd/master (cd0a30d mtd: m25p80: Fix the Spansion chip detection)
-CONFLICT (content): Merge conflict in arch/arm/mach-imx/clk-imx6q.c
-Merging crypto/master (35a1fc1 powerpc/crypto: add 842 crypto driver)
-Merging drm/drm-next (e2f895f Merge branch 'exynos-drm-next' of git://git.i=
-nfradead.org/users/kmpark/linux-samsung into drm-next)
-Merging sound/for-next (793ea49 ALSA: print small buffers via %*ph[C])
-Merging sound-asoc/for-next (f062e2b ASoC: tpa6130a2: Use module_i2c_driver)
-Merging quilt/rr (d673c23 Make most arch asm/module.h files use asm-generic=
-/module.h)
-CONFLICT (content): Merge conflict in arch/s390/Kconfig
-Merging input/next (2b94e25 Input: random formatting fixes)
-Merging input-mt/for-next (0d7614f Linux 3.6-rc1)
-Merging cgroup/for-next (4b2ebf0 Merge branch 'for-3.6' into for-next)
-Merging block/for-next (85b9f66 block: Add blk_bio_map_sg() helper)
-Merging quilt/device-mapper (37cd960 Merge tag 'for-linus-v3.6-rc1' of git:=
-//oss.sgi.com/xfs/xfs)
-Merging embedded/master (4744b43 embedded: fix vc_translate operator preced=
-ence)
-Merging firmware/master (6e03a20 firmware: speed up request_firmware(), v3)
-Merging pcmcia/master (80af9e6 pcmcia at91_cf: fix raw gpio number usage)
-Merging mmc/mmc-next (f8c51a8 mmc: bfin_sdh: fix dma_desc_array build error)
-Merging kgdb/kgdb-next (27c79c1 USB: echi-dbgp: increase the controller wai=
-t time to come out of halt.)
-Merging slab/for-next (73a1180 mm: Fix build warning in kmem_cache_create())
-Merging uclinux/for-next (5e442a4 Revert "proc: fix races against execve() =
-of /proc/PID/fd**")
-Merging md/for-next (63f33b8 DM RAID: Add support for MD RAID10)
-Merging mfd/for-next (3c1534c mfd: Ensure AB8500 platform data is passed th=
-rough db8500-prcmu to MFD Core)
-Merging battery/master (ecc2edd olpc-battery: update CHARGE_FULL_DESIGN pro=
-perty for BYD LiFe batteries)
-Merging fbdev/fbdev-next (a023907 da8xx-fb: fix compile issue due to missin=
-g include)
-Merging viafb/viafb-next (838ac78 viafb: avoid refresh and mode lookup in s=
-et_par)
-Merging omap_dss2/for-next (974a658 Merge "Apply LCD manager related parame=
-ters" from Archit)
-Merging regulator/for-next (d5da1a2 Merge branch 'regulator-core' into regu=
-lator-next)
-Merging security/next (9f99798 ptrace: mark __ptrace_may_access() static)
-Merging selinux/master (c2d7b24 Merge tag 'v3.4' into 20120409)
-Merging lblnet/master (7e27d6e Linux 2.6.35-rc3)
-Merging watchdog/master (06a3fa7 watchdog: fix watchdog-test.c build warnin=
-g)
-Merging dwmw2-iommu/master (c3b92c8 Linux 3.1)
-Merging iommu/next (79c80e4 Merge branches 'iommu/fixes' and 'arm/tegra' in=
-to next)
-Merging vfio/next (a1706d8 vfio: Include vfio.h in installed headers)
-Merging osd/linux-next (d8e8b68 pnfs: Don't BUG on info received from Serve=
-r)
-Merging jc_docs/docs-next (5c050fb docs: update the development process doc=
-ument)
-Merging trivial/for-next (e1c9ac4 Revert "backlight: fix memory leak on obs=
-cure error path")
-Merging audit/for-next (dcd6c92 Linux 3.3-rc1)
-Merging pm/linux-next (0e8332c PM / Sleep: Print name of wakeup source that=
- aborts suspend)
-Merging apm/for-next (f283d22 APM: fix deadlock in APM_IOC_SUSPEND ioctl)
-Merging fsnotify/for-next (1aec9c0 inotify: automatically restart syscalls)
-Merging edac/linux_next (a92cdec Merge branch 'devel' into next)
-Merging edac-amd/for-next (305f1c3 Merge branch '3.3-pci_device_id' into ed=
-ac-for-next)
-CONFLICT (content): Merge conflict in drivers/edac/amd64_edac.c
-CONFLICT (content): Merge conflict in Documentation/edac.txt
-Merging devicetree/devicetree/next (efd68e7 devicetree: add helper inline f=
-or retrieving a node's full name)
-Merging dt-rh/for-next (5d61b16 of: Allow busses with #size-cells=3D0)
-Merging spi/spi/next (d8e328b spi: Add "spi:" prefix to modalias attribute =
-of spi devices)
-Merging spi-mb/spi-next (8f65201 spi: Refactor spi-orion to use SPI framewo=
-rk queue.)
-Merging tip/auto-latest (2065f53 Merge branch 'tools/kvm')
-Merging rcu/rcu/next (d1d61c1 Merge branches 'bigrt.2012.07.31a', 'doctortu=
-re.2012.08.03a', 'fixes.2012.08.03a', 'hotplug.2012.08.03a' and 'idle.2012.=
-07.31a' into dev.3.7.2012.08.03a)
-CONFLICT (content): Merge conflict in include/linux/sched.h
-CONFLICT (content): Merge conflict in arch/x86/Kconfig
-CONFLICT (content): Merge conflict in arch/Kconfig
-Merging cputime/cputime (c3e0ef9 [S390] fix cputime overflow in uptime_proc=
-_show)
-Merging uprobes/for-next (0326f5a uprobes/core: Handle breakpoint and singl=
-estep exceptions)
-Merging kmemleak/kmemleak (4878677 kmemleak: do not leak object after tree =
-insertion error)
-Merging kvm/linux-next (c48f149 KVM: inline kvm_apic_present() and kvm_lapi=
-c_enabled())
-Merging kvm-ppc/kvm-ppc-next (6ad0085 KVM: PPC: Book3S_32: Fix MTMSR_EERI m=
-acro)
-Merging oprofile/for-next (c16fa4f Linux 3.3)
-Merging xen/upstream/xen (af3a3ab Merge git://git.kernel.org/pub/scm/linux/=
-kernel/git/steve/gfs2-3.0-fixes)
-Merging xen-two/linux-next (64b0a47 Merge commit 'v3.5-rc7' into linux-next)
-Merging xen-pvhvm/linux-next (b056b6a xen: suspend: remove xen_hvm_suspend)
-Merging percpu/for-next (61011677 Merge tag 'dlm-3.5' of git://git.kernel.o=
-rg/pub/scm/linux/kernel/git/teigland/linux-dlm)
-Merging workqueues/for-next (6fec10a workqueue: fix spurious CPU locality W=
-ARN from process_one_work())
-Merging drivers-x86/linux-next (00d3959 thinkpad_acpi: Free hotkey_keycode_=
-map after unregistering tpacpi_inputdev)
-Merging hwpoison/hwpoison (46e387b Merge branch 'hwpoison-hugepages' into h=
-wpoison)
-Merging sysctl/master (4e474a0 sysctl: protect poll() in entries that may g=
-o away)
-Merging regmap/for-next (906577b Merge branches 'regmap-irq' and 'regmap-ca=
-che' into regmap-next)
-Merging hsi/for-next (43139a6 HSI: hsi_char: Update ioctl-number.txt)
-Merging leds/for-next (d92773c leds-clevo-mail: Fix Clevo M5x0V DMI strings)
-Merging driver-core/driver-core-next (0d7614f Linux 3.6-rc1)
-Merging tty/tty-next (c87985a Merge tty-next into 3.6-rc1)
-Applying: disable SERIAL_IPOCTAL broken by tty updates
-Applying: disable USB_SERIAL_QUATECH2 broken by tty update
-Applying: tty: fix up usb serial console for termios change.
-Merging usb/usb-next (0d7614f Linux 3.6-rc1)
-Merging staging/staging-next (0d7614f Linux 3.6-rc1)
-Merging char-misc/char-misc-next (0d7614f Linux 3.6-rc1)
-Merging tmem/linux-next (78821b2 Merge branch 'stable/for-linus-3.6' into l=
-inux-next)
-Merging writeback/writeback-for-next (331cbde writeback: Fix some comment e=
-rrors)
-Merging arm-dt/devicetree/arm-next (ede338f dt: add documentation of ARM dt=
- boot interface)
-Merging hwspinlock/linux-next (8b37fcf hwspinlock: add MAINTAINERS entries)
-Merging pinctrl/for-next (0e3ac20 pinctrl/pinctrl-u300: remove unneeded dev=
-m_kfree call)
-Merging vhost/linux-next (e0953c8 tun: experimental zero copy tx support)
-CONFLICT (content): Merge conflict in drivers/net/tun.c
-Merging memblock/memblock-kill-early_node_map (7bd0b0f memblock: Reimplemen=
-t memblock allocation using reverse free area iterator)
-Merging remoteproc/for-next (6bb697b MAINTAINERS: add remoteproc's git)
-Merging irqdomain/irqdomain/next (f5a1ad0 irqdomain: Improve diagnostics wh=
-en a domain mapping fails)
-Merging gpio/gpio/next (3e11f7b gpio/generic: initialize basic_mmio_gpio sh=
-adow variables properly)
-Merging gpio-lw/for-next (71d340b Merge branch 'devel' into for-next)
-Merging arm-soc/for-next (cea43ab Merge branch 'next/boards' into for-next)
-Merging ep93xx/ep93xx-for-next (fbad878 Merge branch 'ep93xx-cleanup' into =
-ep93xx-for-next)
-Merging renesas/next (45c7a01 Merge branch 'renesas-marzen' into renesas-bo=
-ard)
-Merging s5p/for-next (6701bca Merge branch 'next/board-samsung-3' into for-=
-next)
-Merging tegra/for-next (7d5668c Merge branch 'for-3.7/common-clk' into for-=
-next)
-Merging kvmtool/master (0e442ef kvm tools: don't bother tracking is_dir)
-Merging dma-mapping/dma-mapping-next (0d7614f Linux 3.6-rc1)
-Merging pwm/for-next (19891b2 pwm: pwm-tiehrpwm: PWM driver support for EHR=
-PWM)
-Merging dma-buf/for-next (ca24a14 Merge branch 'fixes' of git://git.linaro.=
-org/people/rmk/linux-arm)
-Merging userns/for-next (81abe27 userns:  Fix link restrictions to use uid_=
-eq)
-Merging ktest/for-next (648a182 ktest: Allow a test to override REBOOT_ON_S=
-UCCESS)
-Merging signal/from-sfr (2e117f2 Revert "arm: pull all work_pending logics =
-into C function")
-CONFLICT (content): Merge conflict in arch/x86/kernel/signal.c
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/entry_64.S
-CONFLICT (content): Merge conflict in arch/arm/include/asm/thread_info.h
-Merging clk/clk-next (137f8a7 clk: fix compile for OF && !COMMON_CLK)
-Merging random/dev (d2e7c96 random: mix in architectural randomness in extr=
-act_buf())
-Merging scsi-post-merge/merge-base:master ()
-$ git checkout akpm
-Applying: cciss: fix incorrect scsi status reporting
-Applying: acpi_memhotplug.c: fix memory leak when memory device is unbound =
-from the module acpi_memhotplug
-Applying: acpi_memhotplug.c: free memory device if acpi_memory_enable_devic=
-e() failed
-Applying: acpi_memhotplug.c: remove memory info from list before freeing it
-Applying: acpi_memhotplug.c: don't allow to eject the memory device if it i=
-s being used
-Applying: acpi_memhotplug.c: bind the memory device when the driver is bein=
-g loaded
-Applying: acpi_memhotplug.c: auto bind the memory device which is hotplugge=
-d before the driver is loaded
-Applying: arch/x86/platform/iris/iris.c: register a platform device and a p=
-latform driver
-Applying: arch/x86/include/asm/spinlock.h: fix comment
-Applying: mn10300: only add -mmem-funcs to KBUILD_CFLAGS if gcc supports it
-Applying: drivers/dma/dmaengine.c: lower the priority of 'failed to get' dm=
-a channel message
-Applying: timeconst.pl: remove deprecated defined(@array)
-Applying: time: don't inline EXPORT_SYMBOL functions
-Applying: thermal: fix potential out-of-bounds memory access
-Applying: thermal: add Renesas R-Car thermal sensor support
-Applying: thermal: add generic cpufreq cooling implementation
-Applying: hwmon: exynos4: move thermal sensor driver to driver/thermal dire=
-ctory
-Applying: thermal: exynos5: add exynos5 thermal sensor driver support
-Applying: thermal: exynos: register the tmu sensor with the kernel thermal =
-layer
-Applying: ARM: exynos: add thermal sensor driver platform data support
-Applying: ocfs2: use find_last_bit()
-Applying: ocfs2: use bitmap_weight()
-Applying: drivers/scsi/atp870u.c: fix bad use of udelay
-Applying: vfs: increment iversion when a file is truncated
-Applying: fs: push rcu_barrier() from deactivate_locked_super() to filesyst=
-ems
-Applying: mm/slab: remove duplicate check
-Applying: slab: do not call compound_head() in page_get_cache()
-Applying: hugetlb: avoid taking i_mmap_mutex in unmap_single_vma() for huge=
-tlb
-Applying: shmem: provide vm_ops when also providing a mem policy
-Applying: tmpfs: interleave the starting node of /dev/shmem
-Applying: frv: kill used but uninitialized variable
-Applying: ipc/mqueue: remove unnecessary rb_init_node() calls
-Applying: rbtree: reference Documentation/rbtree.txt for usage instructions
-Applying: rbtree: empty nodes have no color
-Applying: rbtree: fix incorrect rbtree node insertion in fs/proc/proc_sysct=
-l.c
-Applying: rbtree: move some implementation details from rbtree.h to rbtree.c
-Applying: rbtree: fix jffs2 build issue due to renamed __rb_parent_color fi=
-eld
-Applying: rbtree: performance and correctness test
-Applying: rbtree: break out of rb_insert_color loop after tree rotation
-Applying: rbtree: adjust root color in rb_insert_color() only when necessary
-Applying: rbtree: low level optimizations in rb_insert_color()
-Applying: rbtree: adjust node color in __rb_erase_color() only when necessa=
-ry
-Applying: rbtree: optimize case selection logic in __rb_erase_color()
-Applying: rbtree: low level optimizations in __rb_erase_color()
-Applying: rbtree: coding style adjustments
-Applying: rbtree: rb_erase updates and comments
-Applying: rbtree: optimize fetching of sibling node
-Applying: nsproxy: move free_nsproxy() out of do_exit() path
-Applying: fat (exportfs): move NFS support code
-Applying: fat (exportfs): fix dentry reconnection
-Applying: ipc/sem.c: alternatives to preempt_disable()
-Merging quilt/akpm (5389031 ipc/sem.c: alternatives to preempt_disable())
-Applying: libceph: remove rb_node initialisation
-
---Signature=_Tue__7_Aug_2012_14_30_18_+1000_0nzOI=AiYNrs9tov
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQIJnaAAoJEECxmPOUX5FEwAoP/3AOiknjA8Z+Hb6JAjWtUgmm
-ls71x9wMZ1g9Z8kW2Bgux9YCDdlE55+5TYbp8MAPHXxrtgxlj/cO43vo93Jbtq16
-aF/n6/EOL7uzpT0+XVvykTwZl4ZQiIxX7QBr/5EPYrEhLyBpDnknB8LdOKGD3aBi
-lfsa/nDXyO3sFX0FxVqAxcFEiLpWf4flCU/Q6n9zqecxQ5YFE+rS+ld1rGKJPdc4
-KCzs+UhKtMWjuJXygTFMmB9YtVXebfpUAd1JaOs7D8e4s9Dp6pPG00KSHR8QY4aT
-DL1pmulJn5LCW/TrgzUO3+3FW8FNlMIlyJd6xKM6yKsHj1R8ooWR9deMUmcVDgoO
-qzpUdm5Au6jSgyMoSabT0OVN9KQOLDFV5azyx0C+1wZOlFDFELI+DYlbyihlnWP6
-cVAxcbfxErQ5B4RX2aAfJoxmdMiqtI0hjG82/iA6gGtaNE9QISjPIozt/HVIfHaB
-OtRgjDkftpzcw/U6eLcE5mfKNuluneyYrpl6m+GiboixZ3r9XSAV8H9KN5xVhKio
-rHwMY5X3rQvxt3xdIgAdiOcpGOO47bB9lHZlrDvmm36WRR0yiDIoAfqa86avXWT8
-a4ed6QGBf1548dmlIUmwJ29j/cChEuAgPknchKOlCE1gZEZkG8uMCCAV6kBhmBO9
-j9aCwO9ss3rRK8ZLsG3t
-=zRZ4
------END PGP SIGNATURE-----
-
---Signature=_Tue__7_Aug_2012_14_30_18_+1000_0nzOI=AiYNrs9tov--
+On 8/6/12, Dongjin Kim <tobetter@gmail.com> wrote:
+> This patch support to control USB HSIC of EXYNOS4,
+> edited based on Samsung's GT-i9100 ICS Opensource Update7.
+>
+> Change-Id: Ifba33c6a5166abf3644794eee6abe528bd71f521
+> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
+> ---
+>  arch/arm/mach-exynos/common.c                    |    5 +
+>  arch/arm/mach-exynos/include/mach/regs-pmu.h     |   12 +
+>  arch/arm/mach-exynos/include/mach/regs-usb-phy.h |   97 +++++
+>  arch/arm/mach-exynos/setup-usb-phy.c             |  493
+> ++++++++++++++++------
+>  drivers/usb/host/Kconfig                         |   14 +
+>  5 files changed, 501 insertions(+), 120 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+> index 4eb39cd..94d58af 100644
+> --- a/arch/arm/mach-exynos/common.c
+> +++ b/arch/arm/mach-exynos/common.c
+> @@ -179,6 +179,11 @@ static struct map_desc exynos4_iodesc[] __initdata = {
+>  		.length		= SZ_4K,
+>  		.type		= MT_DEVICE,
+>  	}, {
+> +		.virtual	= (unsigned long)S5P_VA_GPIO2,
+> +		.pfn		= __phys_to_pfn(EXYNOS4_PA_GPIO2),
+> +		.length		= SZ_4K,
+> +		.type		= MT_DEVICE,
+> +	}, {
+>  		.virtual	= (unsigned long)S5P_VA_DMC0,
+>  		.pfn		= __phys_to_pfn(EXYNOS4_PA_DMC0),
+>  		.length		= SZ_64K,
+> diff --git a/arch/arm/mach-exynos/include/mach/regs-pmu.h
+> b/arch/arm/mach-exynos/include/mach/regs-pmu.h
+> index 0bb21e2..d98c2fe 100644
+> --- a/arch/arm/mach-exynos/include/mach/regs-pmu.h
+> +++ b/arch/arm/mach-exynos/include/mach/regs-pmu.h
+> @@ -185,6 +185,15 @@
+>  #define S5P_PMU_LCD1_CONF		S5P_PMUREG(0x3CA0)
+>
+>  /* Only for EXYNOS4x12 */
+> +#define S5P_USB_PHY_CONTROL			S5P_PMUREG(0x0704)
+> +#define S5P_USB_PHY_ENABLE			(0x1 << 0)
+> +
+> +#define S5P_HSIC_1_PHY_CONTROL			S5P_PMUREG(0x0708)
+> +#define S5P_HSIC_1_PHY_ENABLE			(0x1 << 0)
+> +
+> +#define S5P_HSIC_2_PHY_CONTROL			S5P_PMUREG(0x070C)
+> +#define S5P_HSIC_2_PHY_ENABLE			(0x1 << 0)
+> +
+>  #define S5P_ISP_ARM_LOWPWR			S5P_PMUREG(0x1050)
+>  #define S5P_DIS_IRQ_ISP_ARM_LOCAL_LOWPWR	S5P_PMUREG(0x1054)
+>  #define S5P_DIS_IRQ_ISP_ARM_CENTRAL_LOWPWR	S5P_PMUREG(0x1058)
+> @@ -242,6 +251,9 @@
+>
+>  #define EXYNOS5_SYS_WDTRESET					(1 << 20)
+>
+> +#define EXYNOS5_USBDEV_PHY_CONTROL			S5P_PMUREG(0x0704)
+> +#define EXYNOS5_USBHOST_PHY_CONTROL			S5P_PMUREG(0x0708)
+> +
+>  #define EXYNOS5_ARM_CORE0_SYS_PWR_REG				S5P_PMUREG(0x1000)
+>  #define EXYNOS5_DIS_IRQ_ARM_CORE0_LOCAL_SYS_PWR_REG		S5P_PMUREG(0x1004)
+>  #define EXYNOS5_DIS_IRQ_ARM_CORE0_CENTRAL_SYS_PWR_REG		S5P_PMUREG(0x1008)
+> diff --git a/arch/arm/mach-exynos/include/mach/regs-usb-phy.h
+> b/arch/arm/mach-exynos/include/mach/regs-usb-phy.h
+> index 0727773..79021a0 100644
+> --- a/arch/arm/mach-exynos/include/mach/regs-usb-phy.h
+> +++ b/arch/arm/mach-exynos/include/mach/regs-usb-phy.h
+> @@ -43,6 +43,43 @@
+>  #define EXYNOS4210_CLKSEL_12M		(0x2 << 0)
+>  #define EXYNOS4210_CLKSEL_24M		(0x3 << 0)
+>
+> +#define EXYNOS4210_HSIC1_NORMAL_MASK            (0x3 << 11)
+> +#define EXYNOS4210_HSIC1_SLEEP                  (1 << 12)
+> +#define EXYNOS4210_HSIC1_FORCE_SUSPEND          (1 << 11)
+> +#define EXYNOS4210_HSIC0_NORMAL_MASK            (0x3 << 9)
+> +#define EXYNOS4210_HSIC0_SLEEP                  (1 << 10)
+> +#define EXYNOS4210_HSIC0_FORCE_SUSPEND          (1 << 9)
+> +
+> +#define EXYNOS4210_HOST_LINK_PORT_SWRST_MASK    (0xf << 6)
+> +#define EXYNOS4210_HOST_LINK_PORT2_SWRST        (1 << 9)
+> +#define EXYNOS4210_HOST_LINK_PORT1_SWRST        (1 << 8)
+> +#define EXYNOS4210_HOST_LINK_PORT0_SWRST        (1 << 7)
+> +#define EXYNOS4210_HOST_LINK_ALL_SWRST          (1 << 6)
+> +#define EXYNOS4210_PHY1_SWRST_MASK              (0x7 << 3)
+> +#define EXYNOS4210_PHY1_HSIC_SWRST              (1 << 5)
+> +#define EXYNOS4210_PHY1_STD_SWRST               (1 << 4)
+> +#define EXYNOS4210_PHY1_ALL_SWRST               (1 << 3)
+> +
+> +#define EXYNOS4X12_HSIC1_NORMAL_MASK		(0x7 << 12)
+> +#define EXYNOS4X12_HSIC1_SLEEP			(1 << 14)
+> +#define EXYNOS4X12_HSIC1_ANALOG_POWERDOWN	(1 << 13)
+> +#define EXYNOS4X12_HSIC1_FORCE_SUSPEND		(1 << 12)
+> +#define EXYNOS4X12_HSIC0_NORMAL_MASK		(0x7 << 9)
+> +#define EXYNOS4X12_HSIC0_SLEEP			(1 << 11)
+> +#define EXYNOS4X12_HSIC0_ANALOG_POWERDOWN	(1 << 10)
+> +#define EXYNOS4X12_HSIC0_FORCE_SUSPEND		(1 << 9)
+> +
+> +#define EXYNOS4X12_HOST_LINK_PORT_SWRST_MASK	(0xf << 7)
+> +#define EXYNOS4X12_HOST_LINK_PORT2_SWRST	(1 << 10)
+> +#define EXYNOS4X12_HOST_LINK_PORT1_SWRST	(1 << 9)
+> +#define EXYNOS4X12_HOST_LINK_PORT0_SWRST	(1 << 8)
+> +#define EXYNOS4X12_HOST_LINK_ALL_SWRST		(1 << 7)
+> +#define EXYNOS4X12_PHY1_SWRST_MASK		(0xf << 3)
+> +#define EXYNOS4X12_PHY1_HSIC1_SWRST		(1 << 6)
+> +#define EXYNOS4X12_PHY1_HSIC0_SWRST		(1 << 5)
+> +#define EXYNOS4X12_PHY1_SWRST			(1 << 4)
+> +#define EXYNOS4X12_HOST_PHY_SWRST		(1 << 3)
+> +
+>  #define EXYNOS4X12_CLKSEL_MASK		(0x7 << 0)
+>  #define EXYNOS4X12_CLKSEL_9600K		(0x0 << 0)
+>  #define EXYNOS4X12_CLKSEL_10M		(0x1 << 0)
+> @@ -71,4 +108,64 @@
+>  #define EXYNOS4_PHY1CON			EXYNOS4_HSOTG_PHYREG(0x34)
+>  #define FPENABLEN			(1 << 0)
+>
+> +/* For Exynos5 */
+> +#define EXYNOS5_PHY_HOST_CTRL0                  EXYNOS4_HSOTG_PHYREG(0x00)
+> +#define HOST_CTRL0_PHYSWRSTALL                  (0x1 << 31)
+> +#define HOST_CTRL0_REFCLKSEL(val)               (val << 19)
+> +#define EXYNOS5_CLKSEL_50M                      (0x7)
+> +#define EXYNOS5_CLKSEL_24M                      (0x5)
+> +#define EXYNOS5_CLKSEL_20M                      (0x4)
+> +#define EXYNOS5_CLKSEL_19200K                   (0x3)
+> +#define EXYNOS5_CLKSEL_12M                      (0x2)
+> +#define EXYNOS5_CLKSEL_10M                      (0x1)
+> +#define EXYNOS5_CLKSEL_9600K                    (0x0)
+> +#define HOST_CTRL0_CLKSEL_SHIFT                 (16)
+> +#define HOST_CTRL0_FSEL_MASK                    (0x7 << 16)
+> +
+> +#define HOST_CTRL0_COMMONON_N                   (0x1 << 9)
+> +#define HOST_CTRL0_SIDDQ                        (0x1 << 6)
+> +#define HOST_CTRL0_FORCESLEEP                   (0x1 << 5)
+> +#define HOST_CTRL0_FORCESUSPEND                 (0x1 << 4)
+> +#define HOST_CTRL0_WORDINTERFACE                (0x1 << 3)
+> +#define HOST_CTRL0_UTMISWRST                    (0x1 << 2)
+> +#define HOST_CTRL0_LINKSWRST                    (0x1 << 1)
+> +#define HOST_CTRL0_PHYSWRST                     (0x1 << 0)
+> +
+> +#define EXYNOS5_PHY_HOST_TUNE0                  EXYNOS4_HSOTG_PHYREG(0x04)
+> +#define EXYNOS5_PHY_HOST_TEST0                  EXYNOS4_HSOTG_PHYREG(0x08)
+> +
+> +#define EXYNOS5_PHY_HSIC_CTRL1                  EXYNOS4_HSOTG_PHYREG(0x10)
+> +#define EXYNOS5_PHY_HSIC_CTRL2                  EXYNOS4_HSOTG_PHYREG(0x20)
+> +#define HSIC_CTRL_REFCLKSEL(val)                ((val&0x3) << 23)
+> +#define HSIC_CTRL_REFCLKDIV(val)                ((val&0x7f) << 16)
+> +#define HSIC_CTRL_SIDDQ                         (0x1 << 6)
+> +#define HSIC_CTRL_FORCESLEEP                    (0x1 << 5)
+> +#define HSIC_CTRL_FORCESUSPEND                  (0x1 << 4)
+> +#define HSIC_CTRL_WORDINTERFACE                 (0x1 << 3)
+> +#define HSIC_CTRL_UTMISWRST                     (0x1 << 2)
+> +#define HSIC_CTRL_PHYSWRST                      (0x1 << 0)
+> +
+> +#define EXYNOS5_PHY_HOST_EHCICTRL               EXYNOS4_HSOTG_PHYREG(0x30)
+> +#define EHCICTRL_ENAINCRXALIGN                  (0x1 << 29)
+> +#define EHCICTRL_ENAINCR4                       (0x1 << 28)
+> +#define EHCICTRL_ENAINCR8                       (0x1 << 27)
+> +#define EHCICTRL_ENAINCR16                      (0x1 << 26)
+> +
+> +#define EXYNOS5_PHY_HOST_OHCICTRL               EXYNOS4_HSOTG_PHYREG(0x34)
+> +
+> +#define EXYNOS5_PHY_OTG_SYS                     EXYNOS4_HSOTG_PHYREG(0x38)
+> +#define OTG_SYS_PHYLINK_SW_RESET                (0x1 << 14)
+> +#define OTG_SYS_LINK_SW_RST_UOTG                (0x1 << 13)
+> +#define OTG_SYS_PHY0_SW_RST                     (0x1 << 12)
+> +#define OTG_SYS_REF_CLK_SEL(val)                ((val&0x3) << 9)
+> +#define OTG_SYS_REF_CLK_SEL_MASK                (0x3 << 9)
+> +#define OTG_SYS_IP_PULLUP_UOTG                  (0x1 << 8)
+> +#define OTG_SYS_COMMON_ON                       (0x1 << 7)
+> +#define OTG_SYS_CLKSEL_SHIFT                    (4)
+> +#define OTG_SYS_CTRL0_FSEL_MASK                 (0x7 << 4)
+> +#define OTG_SYS_FORCE_SLEEP                     (0x1 << 3)
+> +#define OTG_SYS_OTGDISABLE                      (0x1 << 2)
+> +#define OTG_SYS_SIDDQ_UOTG                      (0x1 << 1)
+> +#define OTG_SYS_FORCE_SUSPEND                   (0x1 << 0)
+> +
+>  #endif /* __PLAT_S5P_REGS_USB_PHY_H */
+> diff --git a/arch/arm/mach-exynos/setup-usb-phy.c
+> b/arch/arm/mach-exynos/setup-usb-phy.c
+> index b81cc56..c725745 100644
+> --- a/arch/arm/mach-exynos/setup-usb-phy.c
+> +++ b/arch/arm/mach-exynos/setup-usb-phy.c
+> @@ -1,5 +1,6 @@
+>  /*
+>   * Copyright (C) 2011 Samsung Electronics Co.Ltd
+> + * Author: Yulgon Kim <yulgon.kim@samsung.com>
+>   * Author: Joonyoung Shim <jy0922.shim@samsung.com>
+>   *
+>   *  This program is free software; you can redistribute  it and/or modify
+> it
+> @@ -19,205 +20,457 @@
+>  #include <plat/cpu.h>
+>  #include <plat/usb-phy.h>
+>
+> +#define ETC6PUD		(S5P_VA_GPIO2 + 0x228)
+> +#define EXYNOS4_USB_CFG	(S3C_VA_SYS + 0x21C)
+> +
+> +#define PHY_ENABLE	(1 << 0)
+> +#define PHY_DISABLE	(0)
+> +
+> +enum usb_host_type {
+> +	HOST_PHY_EHCI	= (0x1 << 0),
+> +	HOST_PHY_OHCI	= (0x1 << 1),
+> +};
+> +
+> +enum usb_phy_type {
+> +	USB_PHY		= (0x1 << 0),
+> +	USB_PHY0	= (0x1 << 0),
+> +	USB_PHY1	= (0x1 << 1),
+> +	USB_PHY_HSIC0	= (0x1 << 1),
+> +	USB_PHY_HSIC1	= (0x1 << 2),
+> +};
+> +
+>  static atomic_t host_usage;
+> +static DEFINE_MUTEX(phy_lock);
+> +static struct clk *phy_clk;
+>
+>  static int exynos4_usb_host_phy_is_on(void)
+>  {
+>  	return (readl(EXYNOS4_PHYPWR) & PHY1_STD_ANALOG_POWERDOWN) ? 0 : 1;
+>  }
+>
+> -static void exynos4210_usb_phy_clkset(struct platform_device *pdev)
+> +static int exynos4_usb_phy20_is_on(void)
+>  {
+> -	struct clk *xusbxti_clk;
+> -	u32 phyclk;
+> +	return exynos4_usb_host_phy_is_on();
+> +}
+> +
+> +static int exynos_usb_phy_clock_enable(struct platform_device *pdev)
+> +{
+> +	int err;
+> +
+> +	if (!phy_clk) {
+> +		if (soc_is_exynos4210() ||
+> +				soc_is_exynos4212() || soc_is_exynos4412())
+> +			phy_clk = clk_get(&pdev->dev, "otg");
+> +		else
+> +			phy_clk = clk_get(&pdev->dev, "usbhost");
+> +
+> +		if (IS_ERR(phy_clk)) {
+> +			dev_err(&pdev->dev, "Failed to get phy clock\n");
+> +			return PTR_ERR(phy_clk);
+> +		}
+> +	}
+> +
+> +	err = clk_enable(phy_clk);
+> +
+> +	return err;
+> +}
+>
+> -	xusbxti_clk = clk_get(&pdev->dev, "xusbxti");
+> -	if (xusbxti_clk && !IS_ERR(xusbxti_clk)) {
+> -		if (soc_is_exynos4210()) {
+> -			/* set clock frequency for PLL */
+> -			phyclk = readl(EXYNOS4_PHYCLK) & ~EXYNOS4210_CLKSEL_MASK;
+> -
+> -			switch (clk_get_rate(xusbxti_clk)) {
+> -			case 12 * MHZ:
+> -				phyclk |= EXYNOS4210_CLKSEL_12M;
+> -				break;
+> -			case 48 * MHZ:
+> -				phyclk |= EXYNOS4210_CLKSEL_48M;
+> -				break;
+> -			default:
+> -			case 24 * MHZ:
+> -				phyclk |= EXYNOS4210_CLKSEL_24M;
+> -				break;
+> -			}
+> -			writel(phyclk, EXYNOS4_PHYCLK);
+> -		} else if (soc_is_exynos4212() || soc_is_exynos4412()) {
+> -			/* set clock frequency for PLL */
+> -			phyclk = readl(EXYNOS4_PHYCLK) & ~EXYNOS4X12_CLKSEL_MASK;
+> -
+> -			switch (clk_get_rate(xusbxti_clk)) {
+> -			case 9600 * KHZ:
+> -				phyclk |= EXYNOS4X12_CLKSEL_9600K;
+> -				break;
+> -			case 10 * MHZ:
+> -				phyclk |= EXYNOS4X12_CLKSEL_10M;
+> -				break;
+> -			case 12 * MHZ:
+> -				phyclk |= EXYNOS4X12_CLKSEL_12M;
+> -				break;
+> -			case 19200 * KHZ:
+> -				phyclk |= EXYNOS4X12_CLKSEL_19200K;
+> -				break;
+> -			case 20 * MHZ:
+> -				phyclk |= EXYNOS4X12_CLKSEL_20M;
+> -				break;
+> -			default:
+> -			case 24 * MHZ:
+> -				/* default reference clock */
+> -				phyclk |= EXYNOS4X12_CLKSEL_24M;
+> -				break;
+> -			}
+> -			writel(phyclk, EXYNOS4_PHYCLK);
+> +static int exynos_usb_phy_clock_disable(struct platform_device *pdev)
+> +{
+> +	if (!phy_clk) {
+> +		if (soc_is_exynos4210() ||
+> +				soc_is_exynos4212() || soc_is_exynos4412())
+> +			phy_clk = clk_get(&pdev->dev, "otg");
+> +		else
+> +			phy_clk = clk_get(&pdev->dev, "usbhost");
+> +		if (IS_ERR(phy_clk)) {
+> +			dev_err(&pdev->dev, "Failed to get phy clock\n");
+> +			return PTR_ERR(phy_clk);
+>  		}
+> -		clk_put(xusbxti_clk);
+>  	}
+> +
+> +	clk_disable(phy_clk);
+> +
+> +	return 0;
+>  }
+>
+> -static int exynos4210_usb_phy0_init(struct platform_device *pdev)
+> +static u32 exynos_usb_phy_set_clock(struct platform_device *pdev)
+>  {
+> +	struct clk *ref_clk;
+> +	u32 refclk_freq = 0;
+> +
+> +	if (soc_is_exynos4210() || soc_is_exynos4212() || soc_is_exynos4412())
+> +		ref_clk = clk_get(&pdev->dev, "xusbxti");
+> +	else
+> +		ref_clk = clk_get(&pdev->dev, "ext_xtal");
+> +
+> +	if (IS_ERR(ref_clk)) {
+> +		dev_err(&pdev->dev, "Failed to get reference clock\n");
+> +		return PTR_ERR(ref_clk);
+> +	}
+> +
+> +	if (soc_is_exynos4210()) {
+> +		switch (clk_get_rate(ref_clk)) {
+> +		case 12 * MHZ:
+> +			refclk_freq = EXYNOS4210_CLKSEL_12M;
+> +			break;
+> +		case 48 * MHZ:
+> +			refclk_freq = EXYNOS4210_CLKSEL_48M;
+> +			break;
+> +		case 24 * MHZ:
+> +		default:
+> +			/* default reference clock */
+> +			refclk_freq = EXYNOS4210_CLKSEL_24M;
+> +			break;
+> +		}
+> +	} else if (soc_is_exynos4212() | soc_is_exynos4412()) {
+> +		switch (clk_get_rate(ref_clk)) {
+> +		case 96 * 100000:
+> +			refclk_freq = EXYNOS4X12_CLKSEL_9600K;
+> +			break;
+> +		case 10 * MHZ:
+> +			refclk_freq = EXYNOS4X12_CLKSEL_10M;
+> +			break;
+> +		case 12 * MHZ:
+> +			refclk_freq = EXYNOS4X12_CLKSEL_12M;
+> +			break;
+> +		case 192 * 100000:
+> +			refclk_freq = EXYNOS4X12_CLKSEL_19200K;
+> +			break;
+> +		case 20 * MHZ:
+> +			refclk_freq = EXYNOS4X12_CLKSEL_20M;
+> +			break;
+> +		case 24 * MHZ:
+> +		default:
+> +			/* default reference clock */
+> +			refclk_freq = EXYNOS4X12_CLKSEL_24M;
+> +			break;
+> +		}
+> +	} else {
+> +		switch (clk_get_rate(ref_clk)) {
+> +		case 96 * 100000:
+> +			refclk_freq = EXYNOS5_CLKSEL_9600K;
+> +			break;
+> +		case 10 * MHZ:
+> +			refclk_freq = EXYNOS5_CLKSEL_10M;
+> +			break;
+> +		case 12 * MHZ:
+> +			refclk_freq = EXYNOS5_CLKSEL_12M;
+> +			break;
+> +		case 192 * 100000:
+> +			refclk_freq = EXYNOS5_CLKSEL_19200K;
+> +			break;
+> +		case 20 * MHZ:
+> +			refclk_freq = EXYNOS5_CLKSEL_20M;
+> +			break;
+> +		case 50 * MHZ:
+> +			refclk_freq = EXYNOS5_CLKSEL_50M;
+> +			break;
+> +		case 24 * MHZ:
+> +		default:
+> +			/* default reference clock */
+> +			refclk_freq = EXYNOS5_CLKSEL_24M;
+> +			break;
+> +		}
+> +	}
+> +	clk_put(ref_clk);
+> +
+> +	return refclk_freq;
+> +}
+> +
+> +static void exynos_usb_phy_control(enum usb_phy_type phy_type , int on)
+> +{
+> +	if (soc_is_exynos4210()) {
+> +		if (phy_type & USB_PHY0)
+> +			writel(on, S5P_USBDEVICE_PHY_CONTROL);
+> +		if (phy_type & USB_PHY1)
+> +			writel(on, S5P_USBHOST_PHY_CONTROL);
+> +	} else if (soc_is_exynos4212() | soc_is_exynos4412()) {
+> +		if (phy_type & USB_PHY)
+> +			writel(on, S5P_USB_PHY_CONTROL);
+> +#ifdef CONFIG_USB_S5P_HSIC0
+> +		if (phy_type & USB_PHY_HSIC0)
+> +			writel(on, S5P_HSIC_1_PHY_CONTROL);
+> +#endif
+> +#ifdef CONFIG_USB_S5P_HSIC1
+> +		if (phy_type & USB_PHY_HSIC1)
+> +			writel(on, S5P_HSIC_2_PHY_CONTROL);
+> +#endif
+> +	} else {
+> +		if (phy_type & USB_PHY0)
+> +			writel(on, EXYNOS5_USBDEV_PHY_CONTROL);
+> +		if (phy_type & USB_PHY1)
+> +			writel(on, EXYNOS5_USBHOST_PHY_CONTROL);
+> +	}
+> +}
+> +
+> +static int exynos4_usb_phy0_init(struct platform_device *pdev)
+> +{
+> +	u32 phypwr;
+> +	u32 phyclk;
+>  	u32 rstcon;
+>
+> -	writel(readl(S5P_USBDEVICE_PHY_CONTROL) | S5P_USBDEVICE_PHY_ENABLE,
+> -			S5P_USBDEVICE_PHY_CONTROL);
+> +	exynos_usb_phy_control(USB_PHY0, PHY_ENABLE);
+>
+> -	exynos4210_usb_phy_clkset(pdev);
+> +	/* set clock frequency for PLL */
+> +	phyclk = exynos_usb_phy_set_clock(pdev);
+> +	phyclk &= ~(PHY0_COMMON_ON_N);
+> +	writel(phyclk, EXYNOS4_PHYCLK);
+>
+> -	/* set to normal PHY0 */
+> -	writel((readl(EXYNOS4_PHYPWR) & ~PHY0_NORMAL_MASK), EXYNOS4_PHYPWR);
+> +	/* set to normal of PHY0 */
+> +	phypwr = readl(EXYNOS4_PHYPWR) & ~PHY0_NORMAL_MASK;
+> +	writel(phypwr, EXYNOS4_PHYPWR);
+>
+> -	/* reset PHY0 and Link */
+> +	/* reset all ports of both PHY and Link */
+>  	rstcon = readl(EXYNOS4_RSTCON) | PHY0_SWRST_MASK;
+>  	writel(rstcon, EXYNOS4_RSTCON);
+>  	udelay(10);
+> -
+>  	rstcon &= ~PHY0_SWRST_MASK;
+>  	writel(rstcon, EXYNOS4_RSTCON);
+>
+>  	return 0;
+>  }
+>
+> -static int exynos4210_usb_phy0_exit(struct platform_device *pdev)
+> +static int exynos4_usb_phy0_exit(struct platform_device *pdev)
+>  {
+> -	writel((readl(EXYNOS4_PHYPWR) | PHY0_ANALOG_POWERDOWN |
+> -				PHY0_OTG_DISABLE), EXYNOS4_PHYPWR);
+> +	/* unset to normal of PHY0 */
+> +	writel((readl(EXYNOS4_PHYPWR) | PHY0_NORMAL_MASK),
+> +			EXYNOS4_PHYPWR);
+>
+> -	writel(readl(S5P_USBDEVICE_PHY_CONTROL) & ~S5P_USBDEVICE_PHY_ENABLE,
+> -			S5P_USBDEVICE_PHY_CONTROL);
+> +	exynos_usb_phy_control(USB_PHY0, PHY_DISABLE);
+>
+>  	return 0;
+>  }
+>
+> -static int exynos4210_usb_phy1_init(struct platform_device *pdev)
+> +static int exynos4_usb_phy1_init(struct platform_device *pdev)
+>  {
+> -	struct clk *otg_clk;
+> +	u32 phypwr;
+> +	u32 phyclk;
+>  	u32 rstcon;
+> -	int err;
+>
+>  	atomic_inc(&host_usage);
+>
+> -	otg_clk = clk_get(&pdev->dev, "otg");
+> -	if (IS_ERR(otg_clk)) {
+> -		dev_err(&pdev->dev, "Failed to get otg clock\n");
+> -		return PTR_ERR(otg_clk);
+> +	if (exynos4_usb_host_phy_is_on()) {
+> +		dev_err(&pdev->dev, "Already power on PHY\n");
+> +		return 0;
+>  	}
+>
+> -	err = clk_enable(otg_clk);
+> -	if (err) {
+> -		clk_put(otg_clk);
+> -		return err;
+> -	}
+> +	/*
+> +	 *  set XuhostOVERCUR to in-active by controlling ET6PUD[15:14]
+> +	 *  0x0 : pull-up/down disabled
+> +	 *  0x1 : pull-down enabled
+> +	 *  0x2 : reserved
+> +	 *  0x3 : pull-up enabled
+> +	 */
+> +	writel((__raw_readl(ETC6PUD) & ~(0x3 << 14)) | (0x3 << 14),
+> +		ETC6PUD);
+>
+> -	if (exynos4_usb_host_phy_is_on())
+> -		return 0;
+> +	exynos_usb_phy_control(USB_PHY1, PHY_ENABLE);
+>
+> -	writel(readl(S5P_USBHOST_PHY_CONTROL) | S5P_USBHOST_PHY_ENABLE,
+> -			S5P_USBHOST_PHY_CONTROL);
+> +	/* set clock frequency for PLL */
+> +	phyclk = exynos_usb_phy_set_clock(pdev);
+> +	phyclk &= ~(PHY1_COMMON_ON_N);
+> +	writel(phyclk, EXYNOS4_PHYCLK);
+>
+> -	exynos4210_usb_phy_clkset(pdev);
+> +	/* set to normal HSIC 0 and 1 of PHY1 */
+> +	phypwr = readl(EXYNOS4_PHYPWR);
+> +	phypwr &= ~(PHY1_STD_NORMAL_MASK
+> +		| EXYNOS4210_HSIC0_NORMAL_MASK);
+> +	writel(phypwr, EXYNOS4_PHYPWR);
+>
+>  	/* floating prevention logic: disable */
+>  	writel((readl(EXYNOS4_PHY1CON) | FPENABLEN), EXYNOS4_PHY1CON);
+>
+> -	/* set to normal HSIC 0 and 1 of PHY1 */
+> -	writel((readl(EXYNOS4_PHYPWR) & ~PHY1_HSIC_NORMAL_MASK),
+> -			EXYNOS4_PHYPWR);
+> -
+> -	/* set to normal standard USB of PHY1 */
+> -	writel((readl(EXYNOS4_PHYPWR) & ~PHY1_STD_NORMAL_MASK), EXYNOS4_PHYPWR);
+> -
+>  	/* reset all ports of both PHY and Link */
+> -	rstcon = readl(EXYNOS4_RSTCON) | HOST_LINK_PORT_SWRST_MASK |
+> -		PHY1_SWRST_MASK;
+> +	rstcon = readl(EXYNOS4_RSTCON)
+> +		| EXYNOS4210_HOST_LINK_PORT_SWRST_MASK
+> +		| EXYNOS4210_PHY1_SWRST_MASK;
+>  	writel(rstcon, EXYNOS4_RSTCON);
+>  	udelay(10);
+>
+> -	rstcon &= ~(HOST_LINK_PORT_SWRST_MASK | PHY1_SWRST_MASK);
+> +	rstcon &= ~(EXYNOS4210_HOST_LINK_PORT_SWRST_MASK
+> +		| EXYNOS4210_PHY1_SWRST_MASK);
+>  	writel(rstcon, EXYNOS4_RSTCON);
+>  	udelay(80);
+>
+> -	clk_disable(otg_clk);
+> -	clk_put(otg_clk);
+> +	return 0;
+> +}
+> +
+> +static int exynos4_usb_phy1_exit(struct platform_device *pdev)
+> +{
+> +	u32 phypwr;
+> +
+> +	if (atomic_dec_return(&host_usage) > 0) {
+> +		dev_info(&pdev->dev, "still being used\n");
+> +		return -EBUSY;
+> +	}
+> +
+> +	phypwr = readl(EXYNOS4_PHYPWR)
+> +		| PHY1_STD_NORMAL_MASK
+> +		| EXYNOS4210_HSIC0_NORMAL_MASK;
+> +	writel(phypwr, EXYNOS4_PHYPWR);
+> +
+> +	exynos_usb_phy_control(USB_PHY1, PHY_DISABLE);
+>
+>  	return 0;
+>  }
+>
+> -static int exynos4210_usb_phy1_exit(struct platform_device *pdev)
+> +static int exynos4_usb_phy20_init(struct platform_device *pdev)
+>  {
+> -	struct clk *otg_clk;
+> -	int err;
+> +	u32 phypwr, phyclk, rstcon;
+>
+> -	if (atomic_dec_return(&host_usage) > 0)
+> -		return 0;
+> +	atomic_inc(&host_usage);
+>
+> -	otg_clk = clk_get(&pdev->dev, "otg");
+> -	if (IS_ERR(otg_clk)) {
+> -		dev_err(&pdev->dev, "Failed to get otg clock\n");
+> -		return PTR_ERR(otg_clk);
+> +	if (exynos4_usb_phy20_is_on()) {
+> +		dev_err(&pdev->dev, "Already power on PHY\n");
+> +		return 0;
+>  	}
+>
+> -	err = clk_enable(otg_clk);
+> -	if (err) {
+> -		clk_put(otg_clk);
+> -		return err;
+> +	/*
+> +	 *  set XuhostOVERCUR to in-active by controlling ET6PUD[15:14]
+> +	 *  0x0 : pull-up/down disabled
+> +	 *  0x1 : pull-down enabled
+> +	 *  0x2 : reserved
+> +	 *  0x3 : pull-up enabled
+> +	 */
+> +	writel((__raw_readl(ETC6PUD) & ~(0x3 << 14)) | (0x3 << 14),
+> +		ETC6PUD);
+> +
+> +	exynos_usb_phy_control(USB_PHY
+> +		| USB_PHY_HSIC0,
+> +		PHY_ENABLE);
+> +
+> +	/* set clock frequency for PLL */
+> +	phyclk = exynos_usb_phy_set_clock(pdev);
+> +	/* COMMON Block configuration during suspend */
+> +	phyclk &= ~(PHY0_COMMON_ON_N | PHY1_COMMON_ON_N);
+> +	writel(phyclk, EXYNOS4_PHYCLK);
+> +
+> +	/* set to normal of Device */
+> +	phypwr = readl(EXYNOS4_PHYPWR) & ~PHY0_NORMAL_MASK;
+> +	writel(phypwr, EXYNOS4_PHYPWR);
+> +
+> +	/* set to normal of Host */
+> +	phypwr = readl(EXYNOS4_PHYPWR);
+> +	phypwr &= ~(PHY1_STD_NORMAL_MASK
+> +		| EXYNOS4X12_HSIC0_NORMAL_MASK);
+> +	writel(phypwr, EXYNOS4_PHYPWR);
+> +
+> +	/* reset both PHY and Link of Device */
+> +	rstcon = readl(EXYNOS4_RSTCON) | PHY0_SWRST_MASK;
+> +	writel(rstcon, EXYNOS4_RSTCON);
+> +	udelay(10);
+> +	rstcon &= ~PHY0_SWRST_MASK;
+> +	writel(rstcon, EXYNOS4_RSTCON);
+> +
+> +	/* reset both PHY and Link of Host */
+> +	rstcon = readl(EXYNOS4_RSTCON)
+> +		| EXYNOS4X12_HOST_LINK_PORT_SWRST_MASK
+> +		| EXYNOS4X12_PHY1_SWRST_MASK;
+> +	writel(rstcon, EXYNOS4_RSTCON);
+> +	udelay(10);
+> +
+> +	rstcon &= ~(EXYNOS4X12_HOST_LINK_PORT_SWRST_MASK
+> +		| EXYNOS4X12_PHY1_SWRST_MASK);
+> +	writel(rstcon, EXYNOS4_RSTCON);
+> +	udelay(80);
+> +
+> +	return 0;
+> +}
+> +
+> +static int exynos4_usb_phy20_exit(struct platform_device *pdev)
+> +{
+> +	u32 phypwr;
+> +
+> +	if (atomic_dec_return(&host_usage) > 0) {
+> +		dev_info(&pdev->dev, "still being used\n");
+> +		return -EBUSY;
+>  	}
+>
+> -	writel((readl(EXYNOS4_PHYPWR) | PHY1_STD_ANALOG_POWERDOWN),
+> +	/* unset to normal of Device */
+> +	writel((readl(EXYNOS4_PHYPWR) | PHY0_NORMAL_MASK),
+>  			EXYNOS4_PHYPWR);
+>
+> -	writel(readl(S5P_USBHOST_PHY_CONTROL) & ~S5P_USBHOST_PHY_ENABLE,
+> -			S5P_USBHOST_PHY_CONTROL);
+> +	/* unset to normal of Host */
+> +	phypwr = readl(EXYNOS4_PHYPWR)
+> +		| PHY1_STD_NORMAL_MASK
+> +		| EXYNOS4X12_HSIC0_NORMAL_MASK;
+> +	writel(phypwr, EXYNOS4_PHYPWR);
+>
+> -	clk_disable(otg_clk);
+> -	clk_put(otg_clk);
+> +	exynos_usb_phy_control(USB_PHY
+> +		| USB_PHY_HSIC0,
+> +		PHY_DISABLE);
+> +
+> +	return 0;
+> +}
+> +
+> +static int exynos_usb_dev_phy20_init(struct platform_device *pdev)
+> +{
+> +	if (soc_is_exynos4212() || soc_is_exynos4412())
+> +		exynos4_usb_phy20_init(pdev);
+> +
+> +	writel(0, EXYNOS4_USB_CFG);
+> +
+> +	return 0;
+> +}
+> +
+> +static int exynos_usb_dev_phy20_exit(struct platform_device *pdev)
+> +{
+> +	if (soc_is_exynos4212() || soc_is_exynos4412())
+> +		exynos4_usb_phy20_exit(pdev);
+>
+>  	return 0;
+>  }
+>
+>  int s5p_usb_phy_init(struct platform_device *pdev, int type)
+>  {
+> -	if (type == S5P_USB_PHY_DEVICE)
+> -		return exynos4210_usb_phy0_init(pdev);
+> -	else if (type == S5P_USB_PHY_HOST)
+> -		return exynos4210_usb_phy1_init(pdev);
+> +	int ret = -EINVAL;
+> +
+> +	if (exynos_usb_phy_clock_enable(pdev))
+> +		return ret;
+> +
+> +	mutex_lock(&phy_lock);
+> +	if (type == S5P_USB_PHY_HOST) {
+> +		if (soc_is_exynos4210())
+> +			ret = exynos4_usb_phy1_init(pdev);
+> +		else if (soc_is_exynos4212() || soc_is_exynos4412())
+> +			ret = exynos4_usb_phy20_init(pdev);
+> +	} else if (type == S5P_USB_PHY_DEVICE) {
+> +		if (soc_is_exynos4210())
+> +			ret = exynos4_usb_phy0_init(pdev);
+> +		else
+> +			ret = exynos_usb_dev_phy20_init(pdev);
+> +	}
+> +
+> +	mutex_unlock(&phy_lock);
+> +	exynos_usb_phy_clock_disable(pdev);
+>
+> -	return -EINVAL;
+> +	return ret;
+>  }
+>
+>  int s5p_usb_phy_exit(struct platform_device *pdev, int type)
+>  {
+> -	if (type == S5P_USB_PHY_DEVICE)
+> -		return exynos4210_usb_phy0_exit(pdev);
+> -	else if (type == S5P_USB_PHY_HOST)
+> -		return exynos4210_usb_phy1_exit(pdev);
+> +	int ret = -EINVAL;
+> +
+> +	if (exynos_usb_phy_clock_enable(pdev))
+> +		return ret;
+> +
+> +	mutex_lock(&phy_lock);
+> +
+> +	if (type == S5P_USB_PHY_HOST) {
+> +		if (soc_is_exynos4210())
+> +			ret = exynos4_usb_phy1_exit(pdev);
+> +		else if (soc_is_exynos4212() || soc_is_exynos4412())
+> +			ret = exynos4_usb_phy20_exit(pdev);
+> +	} else if (type == S5P_USB_PHY_DEVICE) {
+> +		if (soc_is_exynos4210())
+> +			ret = exynos4_usb_phy0_exit(pdev);
+> +		else
+> +			ret = exynos_usb_dev_phy20_exit(pdev);
+> +	}
+> +
+> +	mutex_unlock(&phy_lock);
+> +	exynos_usb_phy_clock_disable(pdev);
+>
+> -	return -EINVAL;
+> +	return ret;
+>  }
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index 075d2ec..5f69041 100644
+> --- a/drivers/usb/host/Kconfig
+> +++ b/drivers/usb/host/Kconfig
+> @@ -199,6 +199,20 @@ config USB_EHCI_S5P
+>         help
+>  	 Enable support for the S5P SOC's on-chip EHCI controller.
+>
+> +config USB_S5P_HSIC0
+> +    boolean "S5P HSIC0 support"
+> +    depends on USB_EHCI_HCD && PLAT_S5P && USB_EHCI_S5P
+> +    default n
+> +    help
+> +      Enable support for the S5P SOC's on-chip HSIC PHY.
+> +
+> +config USB_S5P_HSIC1
+> +    boolean "S5P HSIC1 support"
+> +    depends on USB_EHCI_HCD && PLAT_S5P && USB_EHCI_S5P
+> +    default n
+> +    help
+> +      Enable support for the S5P SOC's on-chip HSIC PHY.
+> +
+>  config USB_EHCI_MV
+>  	bool "EHCI support for Marvell on-chip controller"
+>  	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)
+> --
+> 1.7.9.5
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
