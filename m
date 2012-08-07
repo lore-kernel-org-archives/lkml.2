@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab2HGXJf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:09:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
+	id S1757470Ab2HGXJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:09:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030567Ab2HGWjD (ORCPT
+	with ESMTP id S1030554Ab2HGWi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:03 -0400
+	Tue, 7 Aug 2012 18:38:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 055/109] tg3: Fix Read DMA workaround for 5719 A0.
-Date: Tue,  7 Aug 2012 15:35:14 -0700
-Message-Id: <20120807222047.913258424@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Rob Landley <rob@landley.net>
+Subject: [ 045/109] stable: update references to older 2.6 versions for 3.x
+Date: Tue,  7 Aug 2012 15:35:04 -0700
+Message-Id: <20120807222047.052977107@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,31 +30,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michael Chan <mchan@broadcom.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit 10ce95d6ef36c65df7dcd3b8fcf86913f8b298bd upstream.
+commit 2584f5212d97b664be250ad5700a2d0fee31a10d upstream.
 
-The workaround was mis-applied to all 5719 and 5720 chips.
+Also add information on where the respective trees are.
 
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Acked-by: Rob Landley <rob@landley.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ Documentation/stable_kernel_rules.txt |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -8949,8 +8949,7 @@ static int tg3_reset_hw(struct tg3 *tp,
- 	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_57780 ||
- 	    tg3_flag(tp, 57765_PLUS)) {
- 		val = tr32(TG3_RDMA_RSRVCTRL_REG);
--		if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719 ||
--		    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5720) {
-+		if (tp->pci_chip_rev_id == CHIPREV_ID_5719_A0) {
- 			val &= ~(TG3_RDMA_RSRVCTRL_TXMRGN_MASK |
- 				 TG3_RDMA_RSRVCTRL_FIFO_LWM_MASK |
- 				 TG3_RDMA_RSRVCTRL_FIFO_HWM_MASK);
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -1,4 +1,4 @@
+-Everything you ever wanted to know about Linux 2.6 -stable releases.
++Everything you ever wanted to know about Linux -stable releases.
+ 
+ Rules on what kind of patches are accepted, and which ones are not, into the
+ "-stable" tree:
+@@ -42,10 +42,10 @@ Procedure for submitting patches to the
+    cherry-picked than this can be specified in the following format in
+    the sign-off area:
+ 
+-     Cc: <stable@vger.kernel.org> # .32.x: a1f84a3: sched: Check for idle
+-     Cc: <stable@vger.kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
+-     Cc: <stable@vger.kernel.org> # .32.x: fd21073: sched: Fix affinity logic
+-     Cc: <stable@vger.kernel.org> # .32.x
++     Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
++     Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
++     Cc: <stable@vger.kernel.org> # 3.3.x: fd21073: sched: Fix affinity logic
++     Cc: <stable@vger.kernel.org> # 3.3.x
+     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+ 
+    The tag sequence has the meaning of:
+@@ -79,6 +79,15 @@ Review cycle:
+    security kernel team, and not go through the normal review cycle.
+    Contact the kernel security team for more details on this procedure.
+ 
++Trees:
++
++ - The queues of patches, for both completed versions and in progress
++   versions can be found at:
++	http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
++ - The finalized and tagged releases of all stable kernels can be found
++   in separate branches per version at:
++	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
++
+ 
+ Review committee:
+ 
 
 
