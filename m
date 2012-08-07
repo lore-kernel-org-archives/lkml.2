@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030374Ab2HGWcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:32:31 -0400
+	id S1030387Ab2HGWcj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:32:39 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030290Ab2HGWc1 (ORCPT
+	with ESMTP id S1030290Ab2HGWcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:27 -0400
+	Tue, 7 Aug 2012 18:32:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hangbin Liu <liuhangbin@gmail.com>,
+        Max Matveev <makc@redhat.com>, Jiri Benc <jbenc@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 104/122] tcp: Add TCP_USER_TIMEOUT negative value check
-Date: Tue,  7 Aug 2012 15:26:32 -0700
-Message-Id: <20120807221959.036968262@linuxfoundation.org>
+Subject: [ 106/122] net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI handling
+Date: Tue,  7 Aug 2012 15:26:34 -0700
+Message-Id: <20120807221959.307047294@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -31,36 +31,56 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Hangbin Liu <liuhangbin@gmail.com>
+From: Jiri Benc <jbenc@redhat.com>
 
-[ Upstream commit 42493570100b91ef663c4c6f0c0fdab238f9d3c2 ]
+[ Upstream commit b1beb681cba5358f62e6187340660ade226a5fcc ]
 
-TCP_USER_TIMEOUT is a TCP level socket option that takes an unsigned int. But
-patch "tcp: Add TCP_USER_TIMEOUT socket option"(dca43c75) didn't check the negative
-values. If a user assign -1 to it, the socket will set successfully and wait
-for 4294967295 miliseconds. This patch add a negative value check to avoid
-this issue.
+When device flags are set using rtnetlink, IFF_PROMISC and IFF_ALLMULTI
+flags are handled specially. Function dev_change_flags sets IFF_PROMISC and
+IFF_ALLMULTI bits in dev->gflags according to the passed value but
+do_setlink passes a result of rtnl_dev_combine_flags which takes those bits
+from dev->flags.
 
-Signed-off-by: Hangbin Liu <liuhangbin@gmail.com>
+This can be easily trigerred by doing:
+
+tcpdump -i eth0 &
+ip l s up eth0
+
+ip sets IFF_UP flag in ifi_flags and ifi_change, which is combined with
+IFF_PROMISC by rtnl_dev_combine_flags, causing __dev_change_flags to set
+IFF_PROMISC in gflags.
+
+Reported-by: Max Matveev <makc@redhat.com>
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/core/rtnetlink.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2625,7 +2625,10 @@ static int do_tcp_setsockopt(struct sock
- 		/* Cap the max timeout in ms TCP will retry/retrans
- 		 * before giving up and aborting (ETIMEDOUT) a connection.
- 		 */
--		icsk->icsk_user_timeout = msecs_to_jiffies(val);
-+		if (val < 0)
-+			err = -EINVAL;
-+		else
-+			icsk->icsk_user_timeout = msecs_to_jiffies(val);
- 		break;
- 	default:
- 		err = -ENOPROTOOPT;
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -674,6 +674,12 @@ static void set_operstate(struct net_dev
+ 	}
+ }
+ 
++static unsigned int rtnl_dev_get_flags(const struct net_device *dev)
++{
++	return (dev->flags & ~(IFF_PROMISC | IFF_ALLMULTI)) |
++	       (dev->gflags & (IFF_PROMISC | IFF_ALLMULTI));
++}
++
+ static unsigned int rtnl_dev_combine_flags(const struct net_device *dev,
+ 					   const struct ifinfomsg *ifm)
+ {
+@@ -682,7 +688,7 @@ static unsigned int rtnl_dev_combine_fla
+ 	/* bugwards compatibility: ifi_change == 0 is treated as ~0 */
+ 	if (ifm->ifi_change)
+ 		flags = (flags & ifm->ifi_change) |
+-			(dev->flags & ~ifm->ifi_change);
++			(rtnl_dev_get_flags(dev) & ~ifm->ifi_change);
+ 
+ 	return flags;
+ }
 
 
