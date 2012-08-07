@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab2HGUCe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:02:34 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:36549 "EHLO
+	id S932226Ab2HGUCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:02:32 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:36550 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438Ab2HGT7p (ORCPT
+	with ESMTP id S1756447Ab2HGT7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 15:59:45 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 12/41] mxser: allow overlapping vector
-Date: Tue,  7 Aug 2012 21:47:37 +0200
-Message-Id: <1344368886-24033-13-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        J Freyensee <james_p_freyensee@linux.intel.com>
+Subject: [PATCH 10/41] misc: pti, fix tty_port count
+Date: Tue,  7 Aug 2012 21:47:35 +0200
+Message-Id: <1344368886-24033-11-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -20,86 +21,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For many cards, this saves some IO space because interrupt status port
-has precedence over the rest of ports on the card. Hence it can be
-mapped to a hole in I/O ports.
-
-Here we add a kernel parameter which allows that if a user wants to.
-But they need to explicitly enable it by a module parameter.
+We now have *one* tty_port for both TTYs. How this was supposed to
+work? Change it to have a tty_port for each of TTYs.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- drivers/tty/mxser.c |   35 +++++++++++++++++++++++++++++++----
- 1 file changed, 31 insertions(+), 4 deletions(-)
+ drivers/misc/pti.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
-index c162ee9..e64fe40 100644
---- a/drivers/tty/mxser.c
-+++ b/drivers/tty/mxser.c
-@@ -2337,11 +2337,36 @@ static struct tty_port_operations mxser_port_ops = {
-  * The MOXA Smartio/Industio serial driver boot-time initialization code!
-  */
+diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
+index 90de855..fe76f9d 100644
+--- a/drivers/misc/pti.c
++++ b/drivers/misc/pti.c
+@@ -60,7 +60,7 @@ struct pti_tty {
+ };
  
-+static bool allow_overlapping_vector;
-+module_param(allow_overlapping_vector, bool, 444);
-+MODULE_PARM_DESC(allow_overlapping_vector, "whether we allow ISA cards to be configured such that vector overlabs IO ports (default=no)");
-+
-+static bool mxser_overlapping_vector(struct mxser_board *brd)
-+{
-+	return allow_overlapping_vector &&
-+		brd->vector >= brd->ports[0].ioaddr &&
-+		brd->vector < brd->ports[0].ioaddr + 8 * brd->info->nports;
-+}
-+
-+static int mxser_request_vector(struct mxser_board *brd)
-+{
-+	if (mxser_overlapping_vector(brd))
-+		return 0;
-+	return request_region(brd->vector, 1, "mxser(vector)") ? 0 : -EIO;
-+}
-+
-+static void mxser_release_vector(struct mxser_board *brd)
-+{
-+	if (mxser_overlapping_vector(brd))
-+		return;
-+	release_region(brd->vector, 1);
-+}
-+
- static void mxser_release_ISA_res(struct mxser_board *brd)
- {
- 	free_irq(brd->irq, brd);
- 	release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
--	release_region(brd->vector, 1);
-+	mxser_release_vector(brd);
+ struct pti_dev {
+-	struct tty_port port;
++	struct tty_port port[PTITTY_MINOR_NUM];
+ 	unsigned long pti_addr;
+ 	unsigned long aperture_base;
+ 	void __iomem *pti_ioaddr;
+@@ -427,7 +427,7 @@ static int pti_tty_driver_open(struct tty_struct *tty, struct file *filp)
+ 	 * also removes a locking requirement for the actual write
+ 	 * procedure.
+ 	 */
+-	return tty_port_open(&drv_data->port, tty, filp);
++	return tty_port_open(&drv_data->port[tty->index], tty, filp);
  }
  
- static int __devinit mxser_initbrd(struct mxser_board *brd,
-@@ -2396,7 +2421,7 @@ static int __devinit mxser_initbrd(struct mxser_board *brd,
- 
- static int __init mxser_get_ISA_conf(int cap, struct mxser_board *brd)
+ /**
+@@ -443,7 +443,7 @@ static int pti_tty_driver_open(struct tty_struct *tty, struct file *filp)
+  */
+ static void pti_tty_driver_close(struct tty_struct *tty, struct file *filp)
  {
--	int id, i, bits;
-+	int id, i, bits, ret;
- 	unsigned short regs[16], irq;
- 	unsigned char scratch, scratch2;
+-	tty_port_close(&drv_data->port, tty, filp);
++	tty_port_close(&drv_data->port[tty->index], tty, filp);
+ }
  
-@@ -2492,13 +2517,15 @@ static int __init mxser_get_ISA_conf(int cap, struct mxser_board *brd)
- 				8 * brd->info->nports - 1);
- 		return -EIO;
- 	}
--	if (!request_region(brd->vector, 1, "mxser(vector)")) {
-+
-+	ret = mxser_request_vector(brd);
-+	if (ret) {
- 		release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
- 		printk(KERN_ERR "mxser: can't request interrupt vector region: "
- 				"0x%.8lx-0x%.8lx\n",
- 				brd->ports[0].ioaddr, brd->ports[0].ioaddr +
- 				8 * brd->info->nports - 1);
--		return -EIO;
-+		return ret;
- 	}
- 	return brd->info->nports;
+ /**
+@@ -799,6 +799,7 @@ static const struct tty_port_operations tty_port_ops = {
+ static int __devinit pti_pci_probe(struct pci_dev *pdev,
+ 		const struct pci_device_id *ent)
+ {
++	unsigned int a;
+ 	int retval = -EINVAL;
+ 	int pci_bar = 1;
+ 
+@@ -850,11 +851,13 @@ static int __devinit pti_pci_probe(struct pci_dev *pdev,
+ 
+ 	pci_set_drvdata(pdev, drv_data);
+ 
+-	tty_port_init(&drv_data->port);
+-	drv_data->port.ops = &tty_port_ops;
++	for (a = 0; a < PTITTY_MINOR_NUM; a++) {
++		struct tty_port *port = &drv_data->port[a];
++		tty_port_init(port);
++		port->ops = &tty_port_ops;
+ 
+-	tty_register_device(pti_tty_driver, 0, &pdev->dev);
+-	tty_register_device(pti_tty_driver, 1, &pdev->dev);
++		tty_register_device(pti_tty_driver, a, &pdev->dev);
++	}
+ 
+ 	register_console(&pti_console);
  
 -- 
 1.7.10.4
