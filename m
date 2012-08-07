@@ -1,237 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2HGS2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 14:28:05 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:23791 "EHLO
+	id S1756148Ab2HGS2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 14:28:24 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:23961 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab2HGS2D (ORCPT
+	with ESMTP id S1753016Ab2HGS2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 14:28:03 -0400
-Date: Tue, 7 Aug 2012 14:18:21 -0400
+	Tue, 7 Aug 2012 14:28:22 -0400
+Date: Tue, 7 Aug 2012 14:18:39 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         Ian.Campbell@citrix.com, tim@xen.org,
         linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
         catalin.marinas@arm.com, arnd@arndb.de
-Subject: Re: [PATCH v2 08/23] xen/arm: Introduce xen_pfn_t for pfn and mfn
- types
-Message-ID: <20120807181821.GL15053@phenom.dumpdata.com>
+Subject: Re: [PATCH v2 09/23] xen/arm: Introduce xen_ulong_t for unsigned long
+Message-ID: <20120807181839.GM15053@phenom.dumpdata.com>
 References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
- <1344263246-28036-8-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1344263246-28036-9-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344263246-28036-8-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1344263246-28036-9-git-send-email-stefano.stabellini@eu.citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 03:27:11PM +0100, Stefano Stabellini wrote:
-> All the original Xen headers have xen_pfn_t as mfn and pfn type, however
-> when they have been imported in Linux, xen_pfn_t has been replaced with
+On Mon, Aug 06, 2012 at 03:27:12PM +0100, Stefano Stabellini wrote:
+> All the original Xen headers have xen_ulong_t as unsigned long type, however
+> when they have been imported in Linux, xen_ulong_t has been replaced with
 > unsigned long. That might work for x86 and ia64 but it does not for arm.
-> Bring back xen_pfn_t and let each architecture define xen_pfn_t as they
+> Bring back xen_ulong_t and let each architecture define xen_ulong_t as they
 > see fit.
+> 
+> Also explicitly size pointers (__DEFINE_GUEST_HANDLE) to 64 bit.
 
-Ack.
+Looks ok to me.
 > 
 > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > ---
->  arch/arm/include/asm/xen/interface.h  |    4 ++++
->  arch/ia64/include/asm/xen/interface.h |    5 ++++-
->  arch/x86/include/asm/xen/interface.h  |    5 +++++
->  include/xen/interface/grant_table.h   |    4 ++--
->  include/xen/interface/memory.h        |    6 +++---
->  include/xen/interface/platform.h      |    4 ++--
+>  arch/arm/include/asm/xen/interface.h  |    8 ++++++--
+>  arch/ia64/include/asm/xen/interface.h |    1 +
+>  arch/x86/include/asm/xen/interface.h  |    1 +
+>  include/xen/interface/memory.h        |   12 ++++++------
+>  include/xen/interface/physdev.h       |    4 ++--
+>  include/xen/interface/version.h       |    2 +-
 >  include/xen/interface/xen.h           |    6 +++---
->  include/xen/privcmd.h                 |    2 --
->  8 files changed, 23 insertions(+), 13 deletions(-)
+>  7 files changed, 20 insertions(+), 14 deletions(-)
 > 
 > diff --git a/arch/arm/include/asm/xen/interface.h b/arch/arm/include/asm/xen/interface.h
-> index ab99270..f904dcc 100644
+> index f904dcc..1d3030c 100644
 > --- a/arch/arm/include/asm/xen/interface.h
 > +++ b/arch/arm/include/asm/xen/interface.h
-> @@ -25,6 +25,9 @@
+> @@ -9,8 +9,11 @@
+>  
+>  #include <linux/types.h>
+>  
+> +#define uint64_aligned_t uint64_t __attribute__((aligned(8)))
+> +
+>  #define __DEFINE_GUEST_HANDLE(name, type) \
+> -	typedef type * __guest_handle_ ## name
+> +	typedef struct { union { type *p; uint64_aligned_t q; }; }  \
+> +        __guest_handle_ ## name
+>  
+>  #define DEFINE_GUEST_HANDLE_STRUCT(name) \
+>  	__DEFINE_GUEST_HANDLE(name, struct name)
+> @@ -21,13 +24,14 @@
+>  	do {						\
+>  		if (sizeof(hnd) == 8)			\
+>  			*(uint64_t *)&(hnd) = 0;	\
+> -		(hnd) = val;				\
+> +		(hnd).p = val;				\
 >  	} while (0)
 >  
 >  #ifndef __ASSEMBLY__
-> +/* Explicitly size integers that represent pfns in the interface with
-> + * Xen so that we can have one ABI that works for 32 and 64 bit guests. */
-> +typedef uint64_t xen_pfn_t;
+>  /* Explicitly size integers that represent pfns in the interface with
+>   * Xen so that we can have one ABI that works for 32 and 64 bit guests. */
+>  typedef uint64_t xen_pfn_t;
+> +typedef uint64_t xen_ulong_t;
 >  /* Guest handles for primitive C types. */
 >  __DEFINE_GUEST_HANDLE(uchar, unsigned char);
 >  __DEFINE_GUEST_HANDLE(uint,  unsigned int);
-> @@ -35,6 +38,7 @@ DEFINE_GUEST_HANDLE(long);
->  DEFINE_GUEST_HANDLE(void);
->  DEFINE_GUEST_HANDLE(uint64_t);
->  DEFINE_GUEST_HANDLE(uint32_t);
-> +DEFINE_GUEST_HANDLE(xen_pfn_t);
->  
->  /* Maximum number of virtual CPUs in multi-processor guests. */
->  #define MAX_VIRT_CPUS 1
 > diff --git a/arch/ia64/include/asm/xen/interface.h b/arch/ia64/include/asm/xen/interface.h
-> index 09d5f7f..686464e 100644
+> index 686464e..7c83445 100644
 > --- a/arch/ia64/include/asm/xen/interface.h
 > +++ b/arch/ia64/include/asm/xen/interface.h
-> @@ -67,6 +67,10 @@
->  #define set_xen_guest_handle(hnd, val)	do { (hnd).p = val; } while (0)
->  
->  #ifndef __ASSEMBLY__
-> +/* Explicitly size integers that represent pfns in the public interface
-> + * with Xen so that we could have one ABI that works for 32 and 64 bit
-> + * guests. */
-> +typedef unsigned long xen_pfn_t;
+> @@ -71,6 +71,7 @@
+>   * with Xen so that we could have one ABI that works for 32 and 64 bit
+>   * guests. */
+>  typedef unsigned long xen_pfn_t;
+> +typedef unsigned long xen_ulong_t;
 >  /* Guest handles for primitive C types. */
 >  __DEFINE_GUEST_HANDLE(uchar, unsigned char);
 >  __DEFINE_GUEST_HANDLE(uint, unsigned int);
-> @@ -79,7 +83,6 @@ DEFINE_GUEST_HANDLE(void);
->  DEFINE_GUEST_HANDLE(uint64_t);
->  DEFINE_GUEST_HANDLE(uint32_t);
->  
-> -typedef unsigned long xen_pfn_t;
->  DEFINE_GUEST_HANDLE(xen_pfn_t);
->  #define PRI_xen_pfn	"lx"
->  #endif
 > diff --git a/arch/x86/include/asm/xen/interface.h b/arch/x86/include/asm/xen/interface.h
-> index a93db16..555f94d 100644
+> index 555f94d..28fc621 100644
 > --- a/arch/x86/include/asm/xen/interface.h
 > +++ b/arch/x86/include/asm/xen/interface.h
-> @@ -47,6 +47,10 @@
->  #endif
->  
->  #ifndef __ASSEMBLY__
-> +/* Explicitly size integers that represent pfns in the public interface
-> + * with Xen so that on ARM we can have one ABI that works for 32 and 64
-> + * bit guests. */
-> +typedef unsigned long xen_pfn_t;
+> @@ -51,6 +51,7 @@
+>   * with Xen so that on ARM we can have one ABI that works for 32 and 64
+>   * bit guests. */
+>  typedef unsigned long xen_pfn_t;
+> +typedef unsigned long xen_ulong_t;
 >  /* Guest handles for primitive C types. */
 >  __DEFINE_GUEST_HANDLE(uchar, unsigned char);
 >  __DEFINE_GUEST_HANDLE(uint,  unsigned int);
-> @@ -57,6 +61,7 @@ DEFINE_GUEST_HANDLE(long);
->  DEFINE_GUEST_HANDLE(void);
->  DEFINE_GUEST_HANDLE(uint64_t);
->  DEFINE_GUEST_HANDLE(uint32_t);
-> +DEFINE_GUEST_HANDLE(xen_pfn_t);
->  #endif
->  
->  #ifndef HYPERVISOR_VIRT_START
-> diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
-> index a17d844..7da811b 100644
-> --- a/include/xen/interface/grant_table.h
-> +++ b/include/xen/interface/grant_table.h
-> @@ -338,7 +338,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_dump_table);
->  #define GNTTABOP_transfer                4
->  struct gnttab_transfer {
->      /* IN parameters. */
-> -    unsigned long mfn;
-> +    xen_pfn_t mfn;
->      domid_t       domid;
->      grant_ref_t   ref;
->      /* OUT parameters. */
-> @@ -375,7 +375,7 @@ struct gnttab_copy {
->  	struct {
->  		union {
->  			grant_ref_t ref;
-> -			unsigned long   gmfn;
-> +			xen_pfn_t   gmfn;
->  		} u;
->  		domid_t  domid;
->  		uint16_t offset;
 > diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> index eac3ce1..abbbff0 100644
+> index abbbff0..b5c3098 100644
 > --- a/include/xen/interface/memory.h
 > +++ b/include/xen/interface/memory.h
-> @@ -31,7 +31,7 @@ struct xen_memory_reservation {
->       *   OUT: GMFN bases of extents that were allocated
->       *   (NB. This command also updates the mach_to_phys translation table)
->       */
-> -    GUEST_HANDLE(ulong) extent_start;
-> +    GUEST_HANDLE(xen_pfn_t) extent_start;
+> @@ -34,7 +34,7 @@ struct xen_memory_reservation {
+>      GUEST_HANDLE(xen_pfn_t) extent_start;
 >  
 >      /* Number of extents, and size/alignment of each (2^extent_order pages). */
->      unsigned long  nr_extents;
-> @@ -130,7 +130,7 @@ struct xen_machphys_mfn_list {
->       * any large discontiguities in the machine address space, 2MB gaps in
->       * the machphys table will be represented by an MFN base of zero.
->       */
-> -    GUEST_HANDLE(ulong) extent_start;
-> +    GUEST_HANDLE(xen_pfn_t) extent_start;
+> -    unsigned long  nr_extents;
+> +    xen_ulong_t  nr_extents;
+>      unsigned int   extent_order;
 >  
 >      /*
->       * Number of extents written to the above array. This will be smaller
-> @@ -172,7 +172,7 @@ struct xen_add_to_physmap {
->      unsigned long idx;
+> @@ -92,7 +92,7 @@ struct xen_memory_exchange {
+>       *     command will be non-zero.
+>       *  5. THIS FIELD MUST BE INITIALISED TO ZERO BY THE CALLER!
+>       */
+> -    unsigned long nr_exchanged;
+> +    xen_ulong_t nr_exchanged;
+>  };
+>  
+>  DEFINE_GUEST_HANDLE_STRUCT(xen_memory_exchange);
+> @@ -148,8 +148,8 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_machphys_mfn_list);
+>   */
+>  #define XENMEM_machphys_mapping     12
+>  struct xen_machphys_mapping {
+> -    unsigned long v_start, v_end; /* Start and end virtual addresses.   */
+> -    unsigned long max_mfn;        /* Maximum MFN that can be looked up. */
+> +    xen_ulong_t v_start, v_end; /* Start and end virtual addresses.   */
+> +    xen_ulong_t max_mfn;        /* Maximum MFN that can be looked up. */
+>  };
+>  DEFINE_GUEST_HANDLE_STRUCT(xen_machphys_mapping_t);
+>  
+> @@ -169,7 +169,7 @@ struct xen_add_to_physmap {
+>      unsigned int space;
+>  
+>      /* Index into source mapping space. */
+> -    unsigned long idx;
+> +    xen_ulong_t idx;
 >  
 >      /* GPFN where the source mapping page should appear. */
-> -    unsigned long gpfn;
-> +    xen_pfn_t gpfn;
->  };
->  DEFINE_GUEST_HANDLE_STRUCT(xen_add_to_physmap);
+>      xen_pfn_t gpfn;
+> @@ -186,7 +186,7 @@ struct xen_translate_gpfn_list {
+>      domid_t domid;
 >  
-> diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
-> index 486653f..0bea470 100644
-> --- a/include/xen/interface/platform.h
-> +++ b/include/xen/interface/platform.h
-> @@ -54,7 +54,7 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_settime_t);
->  #define XENPF_add_memtype         31
->  struct xenpf_add_memtype {
->  	/* IN variables. */
-> -	unsigned long mfn;
-> +	xen_pfn_t mfn;
->  	uint64_t nr_mfns;
->  	uint32_t type;
->  	/* OUT variables. */
-> @@ -84,7 +84,7 @@ struct xenpf_read_memtype {
->  	/* IN variables. */
->  	uint32_t reg;
->  	/* OUT variables. */
-> -	unsigned long mfn;
-> +	xen_pfn_t mfn;
->  	uint64_t nr_mfns;
->  	uint32_t type;
+>      /* Length of list. */
+> -    unsigned long nr_gpfns;
+> +    xen_ulong_t nr_gpfns;
+>  
+>      /* List of GPFNs to translate. */
+>      GUEST_HANDLE(ulong) gpfn_list;
+> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+> index 9ce788d..bc3ae14 100644
+> --- a/include/xen/interface/physdev.h
+> +++ b/include/xen/interface/physdev.h
+> @@ -56,7 +56,7 @@ struct physdev_eoi {
+>  #define PHYSDEVOP_pirq_eoi_gmfn_v2       28
+>  struct physdev_pirq_eoi_gmfn {
+>      /* IN */
+> -    unsigned long gmfn;
+> +    xen_ulong_t gmfn;
 >  };
+>  
+>  /*
+> @@ -108,7 +108,7 @@ struct physdev_set_iobitmap {
+>  #define PHYSDEVOP_apic_write		 9
+>  struct physdev_apic {
+>  	/* IN */
+> -	unsigned long apic_physbase;
+> +	xen_ulong_t apic_physbase;
+>  	uint32_t reg;
+>  	/* IN or OUT */
+>  	uint32_t value;
+> diff --git a/include/xen/interface/version.h b/include/xen/interface/version.h
+> index e8b6519..30280c9 100644
+> --- a/include/xen/interface/version.h
+> +++ b/include/xen/interface/version.h
+> @@ -45,7 +45,7 @@ struct xen_changeset_info {
+>  
+>  #define XENVER_platform_parameters 5
+>  struct xen_platform_parameters {
+> -    unsigned long virt_start;
+> +    xen_ulong_t virt_start;
+>  };
+>  
+>  #define XENVER_get_features 6
 > diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
-> index 3871e47..42834a3 100644
+> index 42834a3..ec32115 100644
 > --- a/include/xen/interface/xen.h
 > +++ b/include/xen/interface/xen.h
-> @@ -188,7 +188,7 @@ struct mmuext_op {
->  	unsigned int cmd;
->  	union {
->  		/* [UN]PIN_TABLE, NEW_BASEPTR, NEW_USER_BASEPTR */
-> -		unsigned long mfn;
-> +		xen_pfn_t mfn;
->  		/* INVLPG_LOCAL, INVLPG_ALL, SET_LDT */
->  		unsigned long linear_addr;
->  	} arg1;
-> @@ -428,11 +428,11 @@ struct start_info {
->  	unsigned long nr_pages;     /* Total pages allocated to this domain.  */
->  	unsigned long shared_info;  /* MACHINE address of shared info struct. */
->  	uint32_t flags;             /* SIF_xxx flags.                         */
-> -	unsigned long store_mfn;    /* MACHINE page number of shared page.    */
-> +	xen_pfn_t store_mfn;        /* MACHINE page number of shared page.    */
->  	uint32_t store_evtchn;      /* Event channel for store communication. */
->  	union {
->  		struct {
-> -			unsigned long mfn;  /* MACHINE page number of console page.   */
-> +			xen_pfn_t mfn;      /* MACHINE page number of console page.   */
->  			uint32_t  evtchn;   /* Event channel for console page.        */
->  		} domU;
->  		struct {
-> diff --git a/include/xen/privcmd.h b/include/xen/privcmd.h
-> index 4d58881..45c1aa1 100644
-> --- a/include/xen/privcmd.h
-> +++ b/include/xen/privcmd.h
-> @@ -37,8 +37,6 @@
->  #include <linux/compiler.h>
->  #include <xen/interface/xen.h>
+> @@ -274,9 +274,9 @@ DEFINE_GUEST_HANDLE_STRUCT(mmu_update);
+>   * NB. The fields are natural register size for this architecture.
+>   */
+>  struct multicall_entry {
+> -    unsigned long op;
+> -    long result;
+> -    unsigned long args[6];
+> +    xen_ulong_t op;
+> +    xen_ulong_t result;
+> +    xen_ulong_t args[6];
+>  };
+>  DEFINE_GUEST_HANDLE_STRUCT(multicall_entry);
 >  
-> -typedef unsigned long xen_pfn_t;
-> -
->  struct privcmd_hypercall {
->  	__u64 op;
->  	__u64 arg[5];
 > -- 
 > 1.7.2.5
