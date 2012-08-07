@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757166Ab2HGCGF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 22:06:05 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:51313
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753755Ab2HGCGC (ORCPT
+	id S1757199Ab2HGCHu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 22:07:50 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34924 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756810Ab2HGCHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 22:06:02 -0400
-X-Forefront-Antispam-Report: CIP:157.56.234.117;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: PS-3(z5109h5105hz98dI9371Ic89bh1432Izz1202hzz8275ch8275dhz2fh2a8h668h839h93fhd25hf0ah107ah)
-From: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>
-To: Olof Johansson <olof@lixom.net>
-CC: Thomas Abraham <thomas.abraham@linaro.org>,
-        Dongjin Kim <tobetter@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Jon Medhurst <tixy@yxit.co.uk>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        =?utf-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: =?utf-8?B?7ZqM7IugOiDtmozsi6A6IFtQQVRDSF0gT0RST0lELVg6IGhrZGs0NDEyOiBB?=
- =?utf-8?Q?dd_new_hardware_based_on_Exynos4412?=
-Thread-Topic: =?utf-8?B?7ZqM7IugOiBbUEFUQ0hdIE9EUk9JRC1YOiBoa2RrNDQxMjogQWRkIG5ldyBo?=
- =?utf-8?Q?ardware_based_on_Exynos4412?=
-Thread-Index: AQHNc92ANlJ7ZpF870uQj1SyfcsbLJdNDJaAgAAH5miAAAeygIAAd4uI
-Date: Tue, 7 Aug 2012 02:05:56 +0000
-Message-ID: <A6A3B7488C419F488E5B13FFD03C08AD2F43688D@SN2PRD0510MB370.namprd05.prod.outlook.com>
-References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
-	<CAJuYYwSjnQ6z0iUaLCV9guC7yyKH3_pbd1QZe3ELKF-fYNfaqQ@mail.gmail.com>
-	<A6A3B7488C419F488E5B13FFD03C08AD2F4362EE@SN2PRD0510MB370.namprd05.prod.outlook.com>,<CAOesGMh=6QrCmL4EqnSqTxi1nH+8Wn+x=z9BYq8QJCznH3a=zQ@mail.gmail.com>
-In-Reply-To: <CAOesGMh=6QrCmL4EqnSqTxi1nH+8Wn+x=z9BYq8QJCznH3a=zQ@mail.gmail.com>
-Accept-Language: ko-KR, en-US
-Content-Language: ko-KR
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [210.113.108.23]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 6 Aug 2012 22:07:49 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: agreeyamobility.net
+In-Reply-To: <1343824834.3859.2.camel@phoenix>
+References: <1343824834.3859.2.camel@phoenix>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Tue, 7 Aug 2012 10:07:27 +0800
+X-Google-Sender-Auth: ktUp9aBYRnYziWiwUYyMJL38kgI
+Message-ID: <CAK5ve-+dvpQqj1q9QF8nfST0Ff=W7WCO=_jYdGi7gOjsWO+93w@mail.gmail.com>
+Subject: Re: [PATCH RFT] leds: lp8788: Fix updating scale configuration bits
+To: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Axel Lin <axel.lin@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7726BI8009295
 
-Hello,
-
-I am trying to understand what I have to do for device tree.
-
-In order to create dts file for ODROID-X hardware, it seems I may need dts file of EXYNOS4412 SoC.
-But maybe exynos4412.dtsi is not merged yet or not exist, like exynos4210.dtsi or exynos5250.dtsi.
-Obviously it seems not easy to create such a file without SoC datasheet, and I do not have it.
-
-So do I wait for the file to be merged by Samsung or better to create initial dts file cloned from exynos4210.dtsi and modify to have verified nodes with the source/header files?
-
-What's your suggestion?
-
-Regards,
-Dongjin.
-________________________________________
-ë³´ë‚¸ ì‚¬ëŒ: Olof Johansson [olof@lixom.net]
-ë³´ë‚¸ ë‚ ì§œ: 2012ë…„ 8ì›” 7ì¼ í™”ìš”ì¼ ì˜¤ì „ 3:33
-ë°›ëŠ” ì‚¬ëŒ: Dongjin Kim
-ì°¸ì¡°: Thomas Abraham; Dongjin Kim; Kukjin Kim; Russell King; Tony Lindgren; Jon Medhurst; Shawn Guo; Uwe Kleine-KÃ¶nig; linux-arm-kernel@lists.infradead.org; linux-samsung-soc@vger.kernel.org; linux-kernel@vger.kernel.org
-ì œëª©: Re: íšŒì‹ : [PATCH] ODROID-X: hkdk4412: Add new hardware based on Exynos4412
-
-Hi,
-
-On Mon, Aug 6, 2012 at 11:16 AM, Dongjin Kim
-<Dongjin.Kim@agreeyamobility.net> wrote:
-> Hello Tomas,
+On Wed, Aug 1, 2012 at 8:40 PM, Axel Lin <axel.lin@gmail.com> wrote:
+> We need to do left shift (cfg->num + LP8788_ISINK_SCALE_OFFSET) bits for
+> updating scale configuration.
 >
-> I am agree with you to look at using device tree and I have some plan for it.
-> But as of now I am focusing to bring up the hardware itself with mainline kernel and merge into it.
-> I also need some time to look at the requirement of device tree, because I am not familiar with it yet.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> Hi Milo,
+> Current code of updating scale configuration bits looks wrong to me
+> because the mask does not match the val.
+> I don't have this hardware, can you test this patch?
 >
-> Any advice will be welcomed.
 
-Basic rule (that has some flexibility for legacy platforms) is that
-the net movement of board support should move from board files to
-device-tree based. Introduction of a brand new board like this is a
-prime example of something that should be using device tree from day
-1.
+Milo, I think this patch from Axel is reasonable. could you please
+take a look at this?
+
+-Bryan
+
+> Thanks,
+> Axel
+>  drivers/leds/leds-lp8788.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/leds/leds-lp8788.c b/drivers/leds/leds-lp8788.c
+> index 53bd136..0ade6eb 100644
+> --- a/drivers/leds/leds-lp8788.c
+> +++ b/drivers/leds/leds-lp8788.c
+> @@ -63,7 +63,7 @@ static int lp8788_led_init_device(struct lp8788_led *led,
+>         /* scale configuration */
+>         addr = LP8788_ISINK_CTRL;
+>         mask = 1 << (cfg->num + LP8788_ISINK_SCALE_OFFSET);
+> -       val = cfg->scale << cfg->num;
+> +       val = cfg->scale << (cfg->num + LP8788_ISINK_SCALE_OFFSET);
+>         ret = lp8788_update_bits(led->lp, addr, mask, val);
+>         if (ret)
+>                 return ret;
+> --
+> 1.7.9.5
+>
+>
+>
 
 
--Olof
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
