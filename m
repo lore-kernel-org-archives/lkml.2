@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab2HGUu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:50:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6321 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755857Ab2HGUu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 16:50:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="194378605"
-Subject: Re: IRQ remapping problem on Macbook Air 5,1
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Seth Forshee <seth.forshee@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, Yinghai Lu <yinghai@kernel.org>
-Date: Tue, 07 Aug 2012 13:47:52 -0700
-In-Reply-To: <20120807201030.GJ1917@8bytes.org>
-References: <20120807194837.GB23829@thinkpad-t410>
-	 <20120807201030.GJ1917@8bytes.org>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1344372472.27383.8.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1756615Ab2HGUvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:51:16 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:16940 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756328Ab2HGUu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 16:50:58 -0400
+Date: Tue, 7 Aug 2012 22:50:56 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: tpmdd-devel@lists.sourceforge.net, Sirrix AG <tpmdd@sirrix.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Rajiv Andrade <mail@srajiv.net>,
+        Kent Yoder <key@linux.vnet.ibm.com>,
+        Seiji Munetoh <munetoh@jp.ibm.com>, Stefan Berger <stefanb@us.ibm.com>,
+        Reiner Sailer <sailer@watson.ibm.com>, Kylene Hall <kjhall@us.ibm.com>
+Subject: [PATCH] tpm: Do not dereference NULL pointer if acpi_os_map_memory()
+ fails.
+Message-ID: <alpine.LNX.2.00.1208072247490.3227@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-07 at 22:10 +0200, Joerg Roedel wrote:
-> Hi Seth,
-> 
-> On Tue, Aug 07, 2012 at 02:48:37PM -0500, Seth Forshee wrote:
-> > This machine has a bug in its ACPI tables that's causing it to fail to
-> > boot unless intremap=off is passed to the kernel. The MADT defines a
-> > single IOAPIC with id 2, but the remapping unit defined in DMAR matches
-> > id 0. Thus interrupt remapping fails, and the kernel panics with the
-> > message "timer doesn't work through Interrupt-remapped IO-APIC." If I
-> > force the use of the non-matching ir hardware for the IOAPIC everything
-> > seems to works fine. dmesg for the working boot is below.
-> 
-> There are AMD systems with similar problems. For example I had a system
-> with 2 IO-APICs but only one was described in the IOMMU ACPI table.
+In drivers/char/tpm/tpm_bios.c::read_log() we call
+acpi_os_map_memory(). That call may fail for a number of reasons
+(invallid address, out of memory etc). If the call fails it returns
+NULL and we just pass that to memcpy() unconditionally, which will go
+bad when it tries to dereference the pointer.
 
-This issue should be caught by the current check in
-parse_ioapics_under_ir()
+Unfortunately we just get NULL back, so we can't really tell the user
+exactely what went wrong, but we can at least avoid crashing and
+return an error (-EIO seemed more generic and more suitable here than
+-ENOMEM or something else, so I picked that).
 
-if (ir_supported && ir_ioapic_num != nr_ioapics) {
-...
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/char/tpm/tpm_bios.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-> 
-> > I'm looking at how to make this machine able to boot by default. OS X
-> > obviously boots, and Windows presumably boots as well since Apple
-> > officially supports running Windows on its hardware.
-> 
-> These operating systems probably don't support interrupt remapping, or
-> the IOMMU at all.
+  Compile tested only.
 
-Some of them use interrupt-remapping only if the bios has pre-enabled
-x2apic/interrupt-remapping etc. But Linux tries to enable
-x2apic/interrupt-remapping even if bios doesn't.
+diff --git a/drivers/char/tpm/tpm_bios.c b/drivers/char/tpm/tpm_bios.c
+index 0636520..0c5c274 100644
+--- a/drivers/char/tpm/tpm_bios.c
++++ b/drivers/char/tpm/tpm_bios.c
+@@ -410,6 +410,11 @@ static int read_log(struct tpm_bios_log *log)
+ 	log->bios_event_log_end = log->bios_event_log + len;
+ 
+ 	virt = acpi_os_map_memory(start, len);
++	if (!virt) {
++		printk("%s: ERROR - Unable to map memory\n",
++			__func__);
++		return -EIO;
++	}
+ 
+ 	memcpy(log->bios_event_log, virt, len);
+ 
+-- 
+1.7.11.4
 
-> 
-> > I've got a patch to leave IRQ remapping disabled whenever any IOAPIC
-> > does not have a matching ir hardware unit. This gets it to boot, but I
-> > thought I'd check and see whether anyone had any better ideas for how to
-> > fix this.
-> 
-> This is exactly how I fixed this issue on the AMD side too. Mind to
-> submit the patch?
 
-yes, we should be able to extend the check in parse_ioapics_under_ir()
-to check for this condition.
-
-thanks,
-suresh
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
