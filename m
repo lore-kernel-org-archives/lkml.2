@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab2HGJca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:32:30 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51024 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab2HGJc2 (ORCPT
+	id S1753892Ab2HGJdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:33:07 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:16193 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843Ab2HGJdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:32:28 -0400
+	Tue, 7 Aug 2012 05:33:05 -0400
+X-IronPort-AV: E=Sophos;i="4.77,726,1336348800"; 
+   d="scan'208";a="13880072"
+From: Frediano Ziglio <frediano.ziglio@citrix.com>
+To: "sfrench@samba.org" <sfrench@samba.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>
+CC: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        "samba-technical@lists.samba.org" <samba-technical@lists.samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 7 Aug 2012 10:33:03 +0100
+Subject: [PATCH v2] Convert properly UTF-8 to UTF-16
+Thread-Topic: [PATCH v2] Convert properly UTF-8 to UTF-16
+Thread-Index: Ac10f6SdiORhkvcgQE+GQCEbsaygiA==
+Message-ID: <7CE799CC0E4DE04B88D5FDF226E18AC2CDFFB08D16@LONPMAILBOX01.citrite.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdY6gmyhjaMyjk4XP99rLb=B7jGpc2tpGcDh6O4UdgxXVg@mail.gmail.com>
-References: <1341369105.10587.8.camel@phoenix>
-	<20120704154821.GG4111@opensource.wolfsonmicro.com>
-	<CAF+7xW=jtskjYqpqfAnnYmXRH5m944nDBhZQp7q8+EtEshJXBw@mail.gmail.com>
-	<CACRpkdY6gmyhjaMyjk4XP99rLb=B7jGpc2tpGcDh6O4UdgxXVg@mail.gmail.com>
-Date: Tue, 7 Aug 2012 11:32:27 +0200
-Message-ID: <CACRpkdaAJ0XWUSbd2qXKg4DPU6U-0iOEDFqWpMBRT6DWwtncTg@mail.gmail.com>
-Subject: Re: [PATCH RFT] regulator: ab8500: Set enable enable_time in regulator_desc
-From: Linus Walleij <linus.walleij@linaro.org>
-To: axel.lin@gmail.com
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Marcus COOPER <marcus.cooper@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q779XES3011505
 
-On Mon, Aug 6, 2012 at 5:50 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Aug 6, 2012 at 5:46 PM, Axel Lin <axel.lin@gmail.com> wrote:
->> 2012/7/4 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->>> On Wed, Jul 04, 2012 at 10:31:45AM +0800, Axel Lin wrote:
->>>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->>>> ---
->>>> Hi Linus,
->>>> While working on this patch, I found in original code:
->>>> ab8500_regulator_ops set enable_time callback to ab8500_regulator_enable_time,
->>>> but does not set the delay in ab8500_regulator_info.
->>>> I'm not sure the delay value is 0 for ab8500_regulator_ops, or the setting is
->>>> just missing.
->>>> Anyway, there is no behavior change by this patch.
->>>
->>> Surely if the delay is not set in info then it'll introduce a delay
->>> which wasn't there before (but which may well be a bug fix)?
->>
->> Ping...
->>
->> Hi Linus,
->> Any comments on this patch?
->
-> Looks good to me:
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-> I need to check the proper rise times with the maintainers.
 
-I remember this now. Only that one regulator has a non-negligeble
-rise time, so for that reason it's set to that value. Atleast so I was
-told once upon a time when I implemented it, so this patch
-should be fine.
+wchar_t is currently 16bit so converting a utf8 encoded characters not
+in plane 0 (>= 0x10000) to wchar_t (that is calling char2uni) lead to a
+-EINVAL return. This patch detect utf8 in cifs_strtoUTF16 and add special
+code calling utf8s_to_utf16s.
 
-Yours,
-Linus Walleij
+Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+---
+ fs/cifs/cifs_unicode.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
+
+diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
+index 7dab9c0..1166b95 100644
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -203,6 +203,27 @@ cifs_strtoUTF16(__le16 *to, const char *from, int len,
+ 	int i;
+ 	wchar_t wchar_to; /* needed to quiet sparse */
+ 
++	/* special case for utf8 to handle no plane0 chars */
++	if (!strcmp(codepage->charset, "utf8")) {
++		/*
++		 * convert utf8 -> utf16, we assume we have enough space
++		 * as caller should have assumed conversion does not overflow
++		 * in destination len is length in wchar_t units (16bits)
++		 */
++		i  = utf8s_to_utf16s(from, len, UTF16_LITTLE_ENDIAN,
++				       (wchar_t *) to, len);
++
++		/* if success terminate and exit */
++		if (i >= 0)
++			goto success;
++		/*
++		 * if fails fall back to UCS encoding as this
++		 * function should not return negative values
++		 * currently can fail only if source contains
++		 * invalid encoded characters
++		 */
++	}
++
+ 	for (i = 0; len && *from; i++, from += charlen, len -= charlen) {
+ 		charlen = codepage->char2uni(from, len, &wchar_to);
+ 		if (charlen < 1) {
+@@ -215,6 +236,7 @@ cifs_strtoUTF16(__le16 *to, const char *from, int len,
+ 		put_unaligned_le16(wchar_to, &to[i]);
+ 	}
+ 
++success:
+ 	put_unaligned_le16(0, &to[i]);
+ 	return i;
+ }
+-- 
+1.7.5.4
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
