@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab2HGAr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 20:47:27 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:52325
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757177Ab2HGArX (ORCPT
+	id S1756941Ab2HGAto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 20:49:44 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:57595 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756132Ab2HGAtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 20:47:23 -0400
-X-Forefront-Antispam-Report: CIP:157.56.234.117;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: PS-4(zz98dI9371Ic89bh1432I4015Izz1202hzz8275ch8275bh8275dhz2fh2a8h668h839hd24hf0ah107ah)
-From: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Dongjin Kim'" <tobetter@gmail.com>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: RE: [PATCH] video: s3c-fb: Fix compile error/warning if CONFIG_OF
- is not selected
-Thread-Topic: [PATCH] video: s3c-fb: Fix compile error/warning if CONFIG_OF
- is not selected
-Thread-Index: AQHNc9udW+oqsH1UsEm+AFchXJHhXJdNflaAgAAGU8s=
-Date: Tue, 7 Aug 2012 00:47:15 +0000
-Message-ID: <frxrb1h2wwxmdtvwst6uk43m.1344300433108@email.android.com>
-References: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
- <1344261462-14183-5-git-send-email-dongjin.kim@agreeyamobility.net>,<000a01cd7433$07555780$16000680$%han@samsung.com>
-In-Reply-To: <000a01cd7433$07555780$16000680$%han@samsung.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [61.43.181.89]
-Content-Type: text/plain; charset="ks_c_5601-1987"
+	Mon, 6 Aug 2012 20:49:42 -0400
+Message-ID: <502065D7.3020704@xenotime.net>
+Date: Mon, 06 Aug 2012 17:48:23 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-X-OriginatorOrg: agreeyamobility.net
+To: Christopher Sacchi <chris.sacchi@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]: BeFs parser.h support in linux kernel v3.5
+References: <CAGh4K3+krr7Zy97VeFm80U3xsidaWwHLWcbKb-WZ4x+3vH4Sug@mail.gmail.com>
+In-Reply-To: <CAGh4K3+krr7Zy97VeFm80U3xsidaWwHLWcbKb-WZ4x+3vH4Sug@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q770lVHa009044
 
-Sorry, seems its my bad.
+On 08/06/2012 05:07 PM, Christopher Sacchi wrote:
 
-I took couple of commits from linaro kernel git for s3c-fb driver testing on my hardware and encountered the compile problem. Now I got your meaning, DT is not merged yet.
-
-Thanks,
-Dongjin.
------ ¿øº» ¸Ş½ÃÁö -----
-º¸³½ »ç¶÷:Jingoo Han <jg1.han@samsung.com>
-¹Ş´Â »ç¶÷:'Dongjin Kim' <tobetter@gmail.com>
-ÂüÁ¶:Dongjin Kim <Dongjin.Kim@agreeyamobility.net>, 'Florian Tobias Schandinat' <FlorianSchandinat@gmx.de>, "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 'Jingoo Han' <jg1.han@samsung.com>
-º¸³½ ½Ã°£:2012. 8. 7. 9:24 ¿ÀÀü
-Á¦¸ñ:Re: [PATCH] video: s3c-fb: Fix compile error/warning if CONFIG_OF is not selected
-
-
-
-On Monday, August 06, 2012 10:58 PM Dongjin Kim wrote:
->
-> Change-Id: I5d7ff6f0070a10225d5b064b362d3d8f214787fd
-> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
-> ---
->  drivers/video/s3c-fb.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
-> index 8c8adb5..268be0c 100644
-> --- a/drivers/video/s3c-fb.c
-> +++ b/drivers/video/s3c-fb.c
-> @@ -1527,13 +1527,11 @@ static int s3c_fb_dt_parse_gpios(struct device *dev, struct s3c_fb *sfb,
->
->  static void s3c_fb_dt_free_gpios(struct s3c_fb *sfb)
->  {
-> -     return 0;
->  }
->
-> -static int s3c_fb_dt_parse_pdata(struct device *dev,
-> -                                     struct s3c_fb_platdata **pdata)
-> +static struct s3c_fb_platdata *s3c_fb_dt_parse_pdata(struct device *dev)
->  {
-> -     return 0;
-> +     return NULL;
->  }
->  #endif /* CONFIG_OF */
-
-
-Um, DT is not yet merged to s3c-fb driver.
-s3c_fb_dt_parse_pdata() and s3c_fb_dt_free_gpios() are not available.
-
-So, this patch is unnecessary.
-
-Best regards,
-Jingoo Han
-
-
->
+> This patch adds a new header, in the to-do list. There are no style issues.
+> Here's the patch:
 > --
-> 1.7.9.5
+> Signed-off-by: Christopher P. Sacchi <chris.sacchi@gmail.com>
+> --- befs.h      2012-07-21 20:58:29.000000000 +0000
+> +++ befs.h      2012-08-06 19:52:05.000000000 +0000
+> @@ -9,6 +9,7 @@
+>  #define _LINUX_BEFS_H
+> 
+>  #include "befs_fs_types.h"
+> +#include "linux-3.5/include/parser.h"
+> 
+>  /* used in debug.c */
+>  #define BEFS_VERSION "0.9.3"
+> 
+> --
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+filesystem patches should also go to linux-fsdevel@vger.kernel.org .
+
+
+from TODO file:
+* See if Alexander Viro's option parser made it into the kernel tree. 
+	Use that if we can. (include/linux/parser.h)
+
+Yes, the option parser made it into the kernel tree several years ago,
+but just adding the header doesn't make befs use the option parser,
+so the patch is not enough.  And the header patch should be:
+
+#include <linux/parser.h>
+
+
+
+-- 
+~Randy
