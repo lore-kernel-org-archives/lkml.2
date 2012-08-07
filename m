@@ -1,99 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab2HGJui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:50:38 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43233 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab2HGJuf (ORCPT
+	id S1753958Ab2HGJvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:51:37 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:59078 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab2HGJvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:50:35 -0400
-Message-ID: <5020E4E2.2090406@linux.vnet.ibm.com>
-Date: Tue, 07 Aug 2012 17:50:26 +0800
+	Tue, 7 Aug 2012 05:51:36 -0400
+Message-ID: <5020E509.8070901@linux.vnet.ibm.com>
+Date: Tue, 07 Aug 2012 17:51:05 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v5 04/12] KVM: introduce gfn_to_hva_read/kvm_read_hva/kvm_read_hva_atomic
+Subject: [PATCH v5 05/12] KVM: reorganize hva_to_pfn
 References: <5020E423.9080004@linux.vnet.ibm.com>
 In-Reply-To: <5020E423.9080004@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12080709-8256-0000-0000-0000039D3EA4
+x-cbid: 12080709-2000-0000-0000-000008A059E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of functions is only used to read data from host space, in the
-later patch, we will only get a readonly hva in gfn_to_hva_read, and
-the function name is a good hint to let gfn_to_hva_read to pair with
-kvm_read_hva()/kvm_read_hva_atomic()
+We do too many things in hva_to_pfn, this patch reorganize the code,
+let it be better readable
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- virt/kvm/kvm_main.c |   29 +++++++++++++++++++++++++----
- 1 files changed, 25 insertions(+), 4 deletions(-)
+ virt/kvm/kvm_main.c |  159 +++++++++++++++++++++++++++++++--------------------
+ 1 files changed, 97 insertions(+), 62 deletions(-)
 
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 543f9b7..26ffc87 100644
+index 26ffc87..dd01bcb 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -1002,6 +1002,27 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+@@ -1043,83 +1043,118 @@ static inline int check_user_page_hwpoison(unsigned long addr)
+ 	return rc == -EHWPOISON;
  }
- EXPORT_SYMBOL_GPL(gfn_to_hva);
 
+-static pfn_t hva_to_pfn(unsigned long addr, bool atomic, bool *async,
+-			bool write_fault, bool *writable)
 +/*
-+ * The hva returned by this function is only allowed to be read.
-+ * It should pair with kvm_read_hva() or kvm_read_hva_atomic().
++ * The atomic path to get the writable pfn which will be stored in @pfn,
++ * true indicates success, otherwise false is returned.
 + */
-+static unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn)
-+{
-+	return gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL);
-+}
-+
-+static int kvm_read_hva(void *data, void __user *hva, int len)
-+{
-+	return __copy_from_user(data, hva, len);
-+
-+}
-+
-+static int kvm_read_hva_atomic(void *data, void __user *hva, int len)
-+{
-+	return __copy_from_user_inatomic(data, hva, len);
-+
-+}
-+
- int get_user_page_nowait(struct task_struct *tsk, struct mm_struct *mm,
- 	unsigned long start, int write, struct page **page)
++static bool hva_to_pfn_fast(unsigned long addr, bool atomic, bool *async,
++			    bool write_fault, bool *writable, pfn_t *pfn)
  {
-@@ -1274,10 +1295,10 @@ int kvm_read_guest_page(struct kvm *kvm, gfn_t gfn, void *data, int offset,
- 	int r;
- 	unsigned long addr;
+ 	struct page *page[1];
+-	int npages = 0;
+-	pfn_t pfn;
++	int npages;
 
--	addr = gfn_to_hva(kvm, gfn);
-+	addr = gfn_to_hva_read(kvm, gfn);
- 	if (kvm_is_error_hva(addr))
- 		return -EFAULT;
--	r = __copy_from_user(data, (void __user *)addr + offset, len);
-+	r = kvm_read_hva(data, (void __user *)addr + offset, len);
- 	if (r)
- 		return -EFAULT;
- 	return 0;
-@@ -1312,11 +1333,11 @@ int kvm_read_guest_atomic(struct kvm *kvm, gpa_t gpa, void *data,
- 	gfn_t gfn = gpa >> PAGE_SHIFT;
- 	int offset = offset_in_page(gpa);
+-	/* we can do it either atomically or asynchronously, not both */
+-	BUG_ON(atomic && async);
++	if (!(async || atomic))
++		return false;
 
--	addr = gfn_to_hva(kvm, gfn);
-+	addr = gfn_to_hva_read(kvm, gfn);
- 	if (kvm_is_error_hva(addr))
- 		return -EFAULT;
- 	pagefault_disable();
--	r = __copy_from_user_inatomic(data, (void __user *)addr + offset, len);
-+	r = kvm_read_hva_atomic(data, (void __user *)addr + offset, len);
- 	pagefault_enable();
- 	if (r)
- 		return -EFAULT;
+-	BUG_ON(!write_fault && !writable);
++	npages = __get_user_pages_fast(addr, 1, 1, page);
++	if (npages == 1) {
++		*pfn = page_to_pfn(page[0]);
+
+-	if (writable)
+-		*writable = true;
++		if (writable)
++			*writable = true;
++		return true;
++	}
++
++	return false;
++}
+
+-	if (atomic || async)
+-		npages = __get_user_pages_fast(addr, 1, 1, page);
++/*
++ * The slow path to get the pfn of the specified host virtual address,
++ * 1 indicates success, -errno is returned if error is detected.
++ */
++static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
++			   bool *writable, pfn_t *pfn)
++{
++	struct page *page[1];
++	int npages = 0;
+
+-	if (unlikely(npages != 1) && !atomic) {
+-		might_sleep();
++	might_sleep();
+
+-		if (writable)
+-			*writable = write_fault;
+-
+-		if (async) {
+-			down_read(&current->mm->mmap_sem);
+-			npages = get_user_page_nowait(current, current->mm,
+-						     addr, write_fault, page);
+-			up_read(&current->mm->mmap_sem);
+-		} else
+-			npages = get_user_pages_fast(addr, 1, write_fault,
+-						     page);
+-
+-		/* map read fault as writable if possible */
+-		if (unlikely(!write_fault) && npages == 1) {
+-			struct page *wpage[1];
+-
+-			npages = __get_user_pages_fast(addr, 1, 1, wpage);
+-			if (npages == 1) {
+-				*writable = true;
+-				put_page(page[0]);
+-				page[0] = wpage[0];
+-			}
+-			npages = 1;
++	if (writable)
++		*writable = write_fault;
++
++	if (async) {
++		down_read(&current->mm->mmap_sem);
++		npages = get_user_page_nowait(current, current->mm,
++					      addr, write_fault, page);
++		up_read(&current->mm->mmap_sem);
++	} else
++		npages = get_user_pages_fast(addr, 1, write_fault,
++					     page);
++	if (npages != 1)
++		return npages;
++
++	/* map read fault as writable if possible */
++	if (unlikely(!write_fault)) {
++		struct page *wpage[1];
++
++		npages = __get_user_pages_fast(addr, 1, 1, wpage);
++		if (npages == 1) {
++			*writable = true;
++			put_page(page[0]);
++			page[0] = wpage[0];
+ 		}
++
++		npages = 1;
+ 	}
++	*pfn = page_to_pfn(page[0]);
++	return npages;
++}
++
++static pfn_t hva_to_pfn(unsigned long addr, bool atomic, bool *async,
++			bool write_fault, bool *writable)
++{
++	struct vm_area_struct *vma;
++	pfn_t pfn = 0;
++	int npages;
+
+-	if (unlikely(npages != 1)) {
+-		struct vm_area_struct *vma;
++	/* we can do it either atomically or asynchronously, not both */
++	BUG_ON(atomic && async);
+
+-		if (atomic)
+-			return KVM_PFN_ERR_FAULT;
++	BUG_ON(!write_fault && !writable);
+
+-		down_read(&current->mm->mmap_sem);
+-		if (npages == -EHWPOISON ||
+-			(!async && check_user_page_hwpoison(addr))) {
+-			up_read(&current->mm->mmap_sem);
+-			return KVM_PFN_ERR_HWPOISON;
+-		}
++	if (hva_to_pfn_fast(addr, atomic, async, write_fault, writable, &pfn))
++		return pfn;
+
+-		vma = find_vma_intersection(current->mm, addr, addr+1);
+-
+-		if (vma == NULL)
+-			pfn = KVM_PFN_ERR_FAULT;
+-		else if ((vma->vm_flags & VM_PFNMAP)) {
+-			pfn = ((addr - vma->vm_start) >> PAGE_SHIFT) +
+-				vma->vm_pgoff;
+-			BUG_ON(!kvm_is_mmio_pfn(pfn));
+-		} else {
+-			if (async && (vma->vm_flags & VM_WRITE))
+-				*async = true;
+-			pfn = KVM_PFN_ERR_FAULT;
+-		}
+-		up_read(&current->mm->mmap_sem);
+-	} else
+-		pfn = page_to_pfn(page[0]);
++	if (atomic)
++		return KVM_PFN_ERR_FAULT;
+
++	npages = hva_to_pfn_slow(addr, async, write_fault, writable, &pfn);
++	if (npages == 1)
++		return pfn;
++
++	down_read(&current->mm->mmap_sem);
++	if (npages == -EHWPOISON ||
++	      (!async && check_user_page_hwpoison(addr))) {
++		pfn = KVM_PFN_ERR_HWPOISON;
++		goto exit;
++	}
++
++	vma = find_vma_intersection(current->mm, addr, addr + 1);
++
++	if (vma == NULL)
++		pfn = KVM_PFN_ERR_FAULT;
++	else if ((vma->vm_flags & VM_PFNMAP)) {
++		pfn = ((addr - vma->vm_start) >> PAGE_SHIFT) +
++			vma->vm_pgoff;
++		BUG_ON(!kvm_is_mmio_pfn(pfn));
++	} else {
++		if (async && (vma->vm_flags & VM_WRITE))
++			*async = true;
++		pfn = KVM_PFN_ERR_FAULT;
++	}
++exit:
++	up_read(&current->mm->mmap_sem);
+ 	return pfn;
+ }
+
 -- 
 1.7.7.6
 
