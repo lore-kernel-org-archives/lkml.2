@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab2HGUNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:13:54 -0400
-Received: from mail16.primus.ca ([216.254.141.183]:36128 "EHLO
-	mail-02.primus.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755692Ab2HGUNx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 16:13:53 -0400
-X-Greylist: delayed 4370 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 16:13:53 EDT
-Message-ID: <502165EA.4070602@bell.net>
-Date: Tue, 07 Aug 2012 15:00:58 -0400
-From: John David Anglin <dave.anglin@bell.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1756419Ab2HGUYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:24:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50506 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752290Ab2HGUYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 16:24:21 -0400
+Message-ID: <5021795A.6030902@zytor.com>
+Date: Tue, 07 Aug 2012 13:23:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: James.Bottomley@hansenpartnership.com, linux-parisc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.4-rc7
-References: <CA+55aFzsygnrJwLUPV8Vg4RPmwxXLuY-uo70fBLEZR8+barT5A@mail.gmail.com> <4FB011E7.1000604@linux.vnet.ibm.com> <BLU0-SMTP22F4864AE1F54838C150D797150@phx.gbl> <4FB0197F.6010000@linux.vnet.ibm.com> <BLU0-SMTP85D30AAA2BF2CF07B1039897150@phx.gbl> <BLU0-SMTP4CED805E93EF3D8DA2198971A0@phx.gbl> <Pine.LNX.4.64.1208012054450.6361@file.rdu.redhat.com> <BLU0-SMTP1253492C7F871CBBDAC05297CB0@phx.gbl> <Pine.LNX.4.64.1208071439090.6535@file.rdu.redhat.com>
-In-Reply-To: <Pine.LNX.4.64.1208071439090.6535@file.rdu.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC PATCH 0/4] ftrace: Add use of -mfentry for x86_64
+References: <20120807193845.146666357@goodmis.org>
+In-Reply-To: <20120807193845.146666357@goodmis.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated: danglin-lux@magma.ca - 216-58-40-249.cpe.distributel.net ([192.168.0.181]) [216.58.40.249]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/7/2012 2:41 PM, Mikulas Patocka wrote:
-> Which restart patch do you mean?
-http://www.spinics.net/lists/linux-parisc/msg04229.html
+On 08/07/2012 12:38 PM, Steven Rostedt wrote:
+>
+> This is an RFC patch set that makes gcc use the -mfentry option with
+> -pg. This will set the ftrace 'hook' to the beginning of the function
+> and also remove the requirement that -pg enables frame pointers.
+>
+> This has a couple of benefits (and probably more).
+>
+> 1) removal of the frame pointer requirement makes for smaller and faster code.
+>
+> 2) Having the function trace hook at the beginning of the function instead
+>   of after the frame is set up, gives the function tracing callbacks access
+>   to the parameters. This means that kprobes can take advantage of this.
+>   When a kprobe is set on top of a ftrace hook (nop), it will automatically
+>   use the function tracing callback. This makes it into an 'optimized' probe
+>   as there's no need to hit a breakpoint and trigger the probe that way.
+>   The function tracing code can do the work for it. Note, optimized probes
+>   are only allowed with !PREEMPT, but a ftrace optimize probe is allowed
+>   in any context (another benefit).
+>
+> This only implements fentry for x86_64.
+>
 
-Dave
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+
+	-hpa
+
 
 -- 
-John David Anglin    dave.anglin@bell.net
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
