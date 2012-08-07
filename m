@@ -1,90 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab2HGM4P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 08:56:15 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:25011 "EHLO relay.sw.ru"
+	id S1754643Ab2HGM4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:56:13 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:41798 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752307Ab2HGM4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752959Ab2HGM4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 08:56:09 -0400
 From: Andrew Vagin <avagin@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 0/4] perf: Teach perf tool to profile sleep times (v2)
-Date: Tue,  7 Aug 2012 16:56:01 +0400
-Message-Id: <1344344165-369636-1-git-send-email-avagin@openvz.org>
+Subject: [PATCH 1/4] perf: teach "perf inject" to work with files (v2)
+Date: Tue,  7 Aug 2012 16:56:02 +0400
+Message-Id: <1344344165-369636-2-git-send-email-avagin@openvz.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1344344165-369636-1-git-send-email-avagin@openvz.org>
+References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This functionality helps to analize where a task sleeps or waits locks.
-This feature can help to investigate a scalability problems.
+Before this patch "perf inject" can only handle data from pipe.
 
-The main idea is that we can combine sched_switch and sched_stat_sleep events.
-sched_switch contains a callchain, when a task starts sleeping.
-sched_stat_sleep contains a time period for which a task slept.
+I want to use "perf inject" for reworking events. Look at my following patch.
 
-This series teaches "perf inject" to combine this events.
+v2: add information about new options in tools/perf/Documentation/
 
-All kernel related patches were committed committed in 3.6-rc1.
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ tools/perf/Documentation/perf-inject.txt |    6 +++++
+ tools/perf/builtin-inject.c              |   33 ++++++++++++++++++++++++++++-
+ 2 files changed, 37 insertions(+), 2 deletions(-)
 
-Here is an example of a report:
-$ cat ~/foo.c
-....
-          for (i = 0; i <  10; i++) {
-                  ts1.tv_sec = 0;
-                  ts1.tv_nsec = 10000000;
-                  nanosleep(&ts1, NULL);
-
-                  tv1.tv_sec = 0;
-                  tv1.tv_usec = 40000;
-                  select(0, NULL, NULL, NULL,&tv1);
-          }
-...
-
-$ ./perf record -e sched:sched_stat_sleep -e sched:sched_switch \
-		-e sched:sched_process_exit -gP -o ~/perf.data.raw ~/foo
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.015 MB /root/perf.data.raw (~661 samples) ]
-$ ./perf inject -v -s -i ~/perf.data.raw -o ~/perf.data
-$ ./perf report -i ~/perf.data
-# Samples: 40  of event 'sched:sched_switch'
-# Event count (approx.): 1005527702
-#
-# Overhead  Command      Shared Object          Symbol
-# ........  .......  .................  ..............
-#
-   100.00%      foo  [kernel.kallsyms]  [k] __schedule
-                |
-                --- __schedule
-                    schedule
-                   |          
-                   |--79.81%-- schedule_hrtimeout_range_clock
-                   |          schedule_hrtimeout_range
-                   |          poll_schedule_timeout
-                   |          do_select
-                   |          core_sys_select
-                   |          sys_select
-                   |          system_call_fastpath
-                   |          __select
-                   |          __libc_start_main
-                   |          
-                    --20.19%-- do_nanosleep
-                              hrtimer_nanosleep
-                              sys_nanosleep
-                              system_call_fastpath
-                              __GI___libc_nanosleep
-                              __libc_start_main
-
-Andrew Vagin (3):
-  perf: teach "perf inject" to work with files
-  perf: teach perf inject to merge sched_stat_* and sched_switch events
-  perf: mark a dso if it's used
-
- tools/perf/builtin-inject.c |  139 ++++++++++++++++++++++++++++++++++++++++---
- tools/perf/util/build-id.c  |    2 +-
- tools/perf/util/build-id.h  |    5 ++
- 3 files changed, 137 insertions(+), 9 deletions(-)
+diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
+index 025630d..6be2101 100644
+--- a/tools/perf/Documentation/perf-inject.txt
++++ b/tools/perf/Documentation/perf-inject.txt
+@@ -29,6 +29,12 @@ OPTIONS
+ -v::
+ --verbose::
+ 	Be more verbose.
++-i::
++--input=::
++        Input file name. (default: stdin)
++-o::
++--output=::
++        Output file name. (default: stdout)
+ 
+ SEE ALSO
+ --------
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 3beab48..4c9cdbb 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -14,7 +14,12 @@
+ 
+ #include "util/parse-options.h"
+ 
+-static char		const *input_name = "-";
++static const char	*input_name	= "-";
++static const char	*output_name	= "-";
++static int		pipe_output;
++static int		output;
++static u64		bytes_written;
++
+ static bool		inject_build_ids;
+ 
+ static int perf_event__repipe_synth(struct perf_tool *tool __used,
+@@ -27,12 +32,14 @@ static int perf_event__repipe_synth(struct perf_tool *tool __used,
+ 	size = event->header.size;
+ 
+ 	while (size) {
+-		int ret = write(STDOUT_FILENO, buf, size);
++		int ret = write(output, buf, size);
+ 		if (ret < 0)
+ 			return -errno;
+ 
+ 		size -= ret;
+ 		buf += ret;
++
++		bytes_written += ret;
+ 	}
+ 
+ 	return 0;
+@@ -244,8 +251,14 @@ static int __cmd_inject(void)
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
++	if (!pipe_output)
++		lseek(output, session->header.data_offset, SEEK_SET);
+ 	ret = perf_session__process_events(session, &perf_inject);
+ 
++	if (!pipe_output) {
++		session->header.data_size = bytes_written;
++		perf_session__write_header(session, session->evlist, output, true);
++	}
+ 	perf_session__delete(session);
+ 
+ 	return ret;
+@@ -259,6 +272,10 @@ static const char * const report_usage[] = {
+ static const struct option options[] = {
+ 	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
+ 		    "Inject build-ids into the output stream"),
++	OPT_STRING('i', "input", &input_name, "file",
++		    "input file name"),
++	OPT_STRING('o', "output", &output_name, "file",
++		    "output file name"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		 "be more verbose (show build ids, etc)"),
+ 	OPT_END()
+@@ -274,6 +291,18 @@ int cmd_inject(int argc, const char **argv, const char *prefix __used)
+ 	if (argc)
+ 		usage_with_options(report_usage, options);
+ 
++	if (!strcmp(output_name, "-")) {
++		pipe_output = 1;
++		output = STDOUT_FILENO;
++	} else {
++		output = open(output_name, O_CREAT | O_WRONLY | O_TRUNC,
++							S_IRUSR | S_IWUSR);
++		if (output < 0) {
++			perror("failed to create output file");
++			exit(-1);
++		}
++	}
++
+ 	if (symbol__init() < 0)
+ 		return -1;
+ 
+-- 
+1.7.1
 
