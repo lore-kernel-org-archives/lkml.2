@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab2HGLHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 07:07:42 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50984 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab2HGLHk (ORCPT
+	id S1754077Ab2HGLIu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 07:08:50 -0400
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:50964 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab2HGLIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 07:07:40 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 7 Aug 2012 04:07:48 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Christopher Sacchi <chris.sacchi@gmail.com>,
-        linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]: Autosleep patch.
-Message-ID: <20120807110748.GA12534@roeck-us.net>
-References: <CAGh4K3L_nY5B22g5oMBuoY=a1OB7U10yH1ZJvn0dG_O5TVz6+Q@mail.gmail.com>
- <501FE4E9.3080004@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501FE4E9.3080004@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 7 Aug 2012 07:08:48 -0400
+Date: Tue, 7 Aug 2012 20:07:59 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: akpm@linux-foundation.org
+Cc: bhutchings@solarflare.com, grundler@parisc-linux.org, arnd@arndb.de,
+        benh@kernel.crashing.org, avi@redhat.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        takuya.yoshikawa@gmail.com
+Subject: [PATCH 0/5 - RESEND] Introduce generic set_bit_le()
+Message-Id: <20120807200759.26ca8faa.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 08:38:17AM -0700, Randy Dunlap wrote:
-> On 08/06/2012 08:13 AM, Christopher Sacchi wrote:
-> 
-> > This patch (listed below), changes an old function in autosleep.c in
-> > kernel version 3.5. It's code is listed from the first -- line to the
-> > 2nd to last -- line.
-> > This patch was checked with checkpatch.pl with no errors:
-> > --
-> > --- power/autosleep.c	2012-07-21 20:58:29.000000000 +0000
-> > +++ power/autosleepnew.c	2012-08-06 10:52:26.000000000 +0000
-> 
-> 
-> The file names should include the full path from the top level of the
-> kernel source tree.  E.g.:
-> 
-> --- linux.orig/kernel/power/autosleep.c
-> +++ linux/kernel/power/autosleep.c
-> 
-> This patch uses the name autosleepnew.c, which is not what is
-> required/expected.
-> 
-> Your previous patches were for wireless (mac80211) components, so they
-> needed to go to the linux-wireless mailing list.  This patch is not
-> about wireless, so don't send it to that mailing list, although you
-> could send it to the linux-pm@vger.kernel.org mailing list.
-> Please see the MAINTAINERS file for where to send patches.
-> 
-> 
-> > @@ -30,7 +30,7 @@ static void try_to_suspend(struct work_s
-> >  	if (!pm_get_wakeup_count(&initial_count, true))
-> >  		goto out;
-> > 
-> > -	mutex_lock(&autosleep_lock);
-> > +	mutex_lock_interruptable();
-> > 
+This is against today's linux-next.
 
-Plus, this code obviously never compiled. Nor does the submitter ever explain
-what he actually tries to accomplish.
+KVM is using test_and_set_bit_le() for this missing function; this patch
+series corrects this usage.
 
-Guenter
+As some drivers have their own definitions of set_bit_le(), a bit of
+preparation is also needed.
 
-> >  	if (!pm_save_wakeup_count(initial_count)) {
-> >  		mutex_unlock(&autosleep_lock);
-> > Signed-off-by: Christopher P. Sacchi <chris.sacchi@gmail.com>
-> > --
-> 
-> Signed-off-by: line is not part of the patch.  It should be near the
-> end of the patch description, before the actual patch.
-> 
-> Again, please read and follow Documentation/SubmittingPatches.
-> 
-> thanks.
-> 
-> -- 
-> ~Randy
-> 
+  Although these are differently implemented, especially for big-endian
+  case, than the generic __set_bit_le(), it should not be a problem to
+  use the latter since both maintainers prefer it.
+
+Ben Hutchings (1):
+  sfc: Use standard __{clear,set}_bit_le() functions
+
+Takuya Yoshikawa (4):
+  drivers/net/ethernet/dec/tulip: Use standard __set_bit_le() function
+  bitops: Introduce generic {clear,set}_bit_le()
+  powerpc: bitops: Introduce {clear,set}_bit_le()
+  KVM: Replace test_and_set_bit_le() in mark_page_dirty_in_slot() with set_bit_le()
+
+ arch/powerpc/include/asm/bitops.h           |   10 ++++++++++
+ drivers/net/ethernet/dec/tulip/de2104x.c    |    7 ++-----
+ drivers/net/ethernet/dec/tulip/tulip_core.c |    7 ++-----
+ drivers/net/ethernet/sfc/efx.c              |    4 ++--
+ drivers/net/ethernet/sfc/net_driver.h       |   12 ------------
+ drivers/net/ethernet/sfc/nic.c              |    4 ++--
+ include/asm-generic/bitops/le.h             |   10 ++++++++++
+ virt/kvm/kvm_main.c                         |    3 +--
+ 8 files changed, 29 insertions(+), 28 deletions(-)
+
+-- 
+1.7.5.4
+
