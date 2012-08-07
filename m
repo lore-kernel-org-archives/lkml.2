@@ -1,125 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab2HGT4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:56:16 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:36268 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756305Ab2HGT4M (ORCPT
+	id S1756396Ab2HGT4o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:56:44 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:49889 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756114Ab2HGT4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:56:12 -0400
-Message-ID: <1344369417.24990.6.camel@footlong>
-Subject: [PATCH 2/3] PPC64: Add support for instantiating SML from Open
- Firmware
-From: Ashley Lai <adlai@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
-        adlai@linux.vnet.ibm.com
-Date: Tue, 07 Aug 2012 14:56:57 -0500
-In-Reply-To: <1344367748.24990.1.camel@footlong>
-References: <1344367748.24990.1.camel@footlong>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080719-4242-0000-0000-00000289A485
+	Tue, 7 Aug 2012 15:56:43 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 24/41] TTY: tty_port, add some documentation
+Date: Tue,  7 Aug 2012 21:47:49 +0200
+Message-Id: <1344368886-24033-25-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
+References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch instantiate Stored Measurement Log (SML) and put the
-log address and size in the device tree.
+I forgot to document tty_port_register_device and tty_port_install
+when they were added. Fix it now.
 
-Signed-off-by: Ashley Lai <adlai@us.ibm.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/powerpc/kernel/prom_init.c |   64 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 64 insertions(+), 0 deletions(-)
+ drivers/tty/tty_port.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/arch/powerpc/kernel/prom_init.c b/arch/powerpc/kernel/prom_init.c
-index 1b488e5..3f54bd4 100644
---- a/arch/powerpc/kernel/prom_init.c
-+++ b/arch/powerpc/kernel/prom_init.c
-@@ -1624,6 +1624,65 @@ static void __init prom_instantiate_rtas(void)
+diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+index edcb827..b36b33a 100644
+--- a/drivers/tty/tty_port.c
++++ b/drivers/tty/tty_port.c
+@@ -33,6 +33,17 @@ void tty_port_init(struct tty_port *port)
+ }
+ EXPORT_SYMBOL(tty_port_init);
  
- #ifdef CONFIG_PPC64
- /*
-+ * Allocate room for and instantiate Stored Measurement Log (SML)
++/**
++ * tty_port_register_device - register tty device
++ * @port: tty_port of the device
++ * @driver: tty_driver for this device
++ * @index: index of the tty
++ * @device: parent if exists, otherwise NULL
++ *
++ * It is the same as tty_register_device except the provided @port is linked to
++ * a concrete tty specified by @index. Use this or tty_port_install (or both).
++ * Call tty_port_link_device as a last resort.
 + */
-+static void __init prom_instantiate_sml(void)
-+{
-+	phandle ibmvtpm_node;
-+	ihandle ibmvtpm_inst;
-+	u32 entry = 0, size = 0;
-+	u64 base;
-+
-+	prom_debug("prom_instantiate_sml: start...\n");
-+
-+	ibmvtpm_node = call_prom("finddevice", 1, 1, ADDR("/ibm,vtpm"));
-+	prom_debug("ibmvtpm_node: %x\n", ibmvtpm_node);
-+	if (!PHANDLE_VALID(ibmvtpm_node))
-+		return;
-+
-+	ibmvtpm_inst = call_prom("open", 1, 1, ADDR("/ibm,vtpm"));
-+	if (!IHANDLE_VALID(ibmvtpm_inst)) {
-+		prom_printf("opening vtpm package failed (%x)\n", ibmvtpm_inst);
-+		return;
-+	}
-+
-+	if (call_prom_ret("call-method", 2, 2, &size,
-+			  ADDR("sml-get-handover-size"),
-+			  ibmvtpm_inst) != 0) {
-+		prom_printf("SML get handover size failed\n");
-+		return;
-+	}
-+	if (size == 0)
-+		return;
-+
-+	base = alloc_down(size, PAGE_SIZE, 0);
-+	if (base == 0)
-+		prom_panic("Could not allocate memory for sml\n");
-+
-+	prom_printf("instantiating sml at 0x%x...", base);
-+
-+	if (call_prom_ret("call-method", 4, 2, &entry,
-+			  ADDR("sml-handover"),
-+			  ibmvtpm_inst, size, base) != 0 || entry == 0) {
-+		prom_printf("SML handover failed\n");
-+		return;
-+	}
-+	prom_printf(" done\n");
-+
-+	reserve_mem(base, size);
-+
-+	prom_setprop(ibmvtpm_node, "/ibm,vtpm", "linux,sml-base",
-+		     &base, sizeof(base));
-+	prom_setprop(ibmvtpm_node, "/ibm,vtpm", "linux,sml-size",
-+		     &size, sizeof(size));
-+
-+	prom_debug("sml base     = 0x%x\n", base);
-+	prom_debug("sml size     = 0x%x\n", (long)size);
-+
-+	prom_debug("prom_instantiate_sml: end...\n");
-+}
-+
-+/*
-  * Allocate room for and initialize TCE tables
-  */
- static void __init prom_initialize_tce_table(void)
-@@ -2916,6 +2975,11 @@ unsigned long __init prom_init(unsigned long r3, unsigned long r4,
- 		prom_instantiate_opal();
- #endif
+ struct device *tty_port_register_device(struct tty_port *port,
+ 		struct tty_driver *driver, unsigned index,
+ 		struct device *device)
+@@ -422,6 +433,16 @@ void tty_port_close(struct tty_port *port, struct tty_struct *tty,
+ }
+ EXPORT_SYMBOL(tty_port_close);
  
-+#ifdef CONFIG_PPC64
-+	/* instantiate sml */
-+	prom_instantiate_sml();
-+#endif
-+
- 	/*
- 	 * On non-powermacs, put all CPUs in spin-loops.
- 	 *
++/**
++ * tty_port_install - generic tty->ops->install handler
++ * @port: tty_port of the device
++ * @driver: tty_driver for this device
++ * @tty: tty to be installed
++ *
++ * It is the same as tty_standard_install except the provided @port is linked
++ * to a concrete tty specified by @tty. Use this or tty_port_register_device
++ * (or both). Call tty_port_link_device as a last resort.
++ */
+ int tty_port_install(struct tty_port *port, struct tty_driver *driver,
+ 		struct tty_struct *tty)
+ {
 -- 
-1.7.1
+1.7.10.4
 
 
