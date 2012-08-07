@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030637Ab2HGWkD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:40:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	id S1030696Ab2HGXFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:05:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030585Ab2HGWj4 (ORCPT
+	with ESMTP id S1030674Ab2HGWkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:56 -0400
+	Tue, 7 Aug 2012 18:40:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 072/109] ext4: pass a char * to ext4_count_free() instead of a buffer_head ptr
-Date: Tue,  7 Aug 2012 15:35:31 -0700
-Message-Id: <20120807222049.410233054@linuxfoundation.org>
+        Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Lukas Czerner <lczerner@redhat.com>
+Subject: [ 074/109] ext4: fix hole punch failure when depth is greater than 0
+Date: Tue,  7 Aug 2012 15:35:33 -0700
+Message-Id: <20120807222049.602774620@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,78 +31,124 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
 
-commit f6fb99cadcd44660c68e13f6eab28333653621e6 upstream.
+commit 968dee77220768a5f52cf8b21d0bdb73486febef upstream.
 
-Make it possible for ext4_count_free to operate on buffers and not
-just data in buffer_heads.
+Whether to continue removing extents or not is decided by the return
+value of function ext4_ext_more_to_rm() which checks 2 conditions:
+a) if there are no more indexes to process.
+b) if the number of entries are decreased in the header of "depth -1".
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+In case of hole punch, if the last block to be removed is not part of
+the last extent index than this index will not be deleted, hence the
+number of valid entries in the extent header of "depth - 1" will
+remain as it is and ext4_ext_more_to_rm will return 0 although the
+required blocks are not yet removed.
+
+This patch fixes the above mentioned problem as instead of removing
+the extents from the end of file, it starts removing the blocks from
+the particular extent from which removing blocks is actually required
+and continue backward until done.
+
+Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/balloc.c |    3 ++-
- fs/ext4/bitmap.c |    8 +++-----
- fs/ext4/ext4.h   |    2 +-
- fs/ext4/ialloc.c |    3 ++-
- 4 files changed, 8 insertions(+), 8 deletions(-)
+ fs/ext4/extents.c |   48 ++++++++++++++++++++++++++++++------------------
+ 1 file changed, 30 insertions(+), 18 deletions(-)
 
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -584,7 +584,8 @@ ext4_fsblk_t ext4_count_free_clusters(st
- 		if (bitmap_bh == NULL)
- 			continue;
- 
--		x = ext4_count_free(bitmap_bh, sb->s_blocksize);
-+		x = ext4_count_free(bitmap_bh->b_data,
-+				    EXT4_BLOCKS_PER_GROUP(sb) / 8);
- 		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
- 			i, ext4_free_group_clusters(sb, gdp), x);
- 		bitmap_count += x;
---- a/fs/ext4/bitmap.c
-+++ b/fs/ext4/bitmap.c
-@@ -15,15 +15,13 @@
- 
- static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
- 
--unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
-+unsigned int ext4_count_free(char *bitmap, unsigned int numchars)
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2503,10 +2503,10 @@ static int ext4_ext_remove_space(struct
  {
- 	unsigned int i, sum = 0;
+ 	struct super_block *sb = inode->i_sb;
+ 	int depth = ext_depth(inode);
+-	struct ext4_ext_path *path;
++	struct ext4_ext_path *path = NULL;
+ 	ext4_fsblk_t partial_cluster = 0;
+ 	handle_t *handle;
+-	int i, err;
++	int i = 0, err;
  
--	if (!map)
--		return 0;
- 	for (i = 0; i < numchars; i++)
--		sum += nibblemap[map->b_data[i] & 0xf] +
--			nibblemap[(map->b_data[i] >> 4) & 0xf];
-+		sum += nibblemap[bitmap[i] & 0xf] +
-+			nibblemap[(bitmap[i] >> 4) & 0xf];
- 	return sum;
- }
+ 	ext_debug("truncate since %u to %u\n", start, end);
  
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1783,7 +1783,7 @@ struct mmpd_data {
- # define NORET_AND	noreturn,
+@@ -2539,8 +2539,12 @@ again:
+ 		}
+ 		depth = ext_depth(inode);
+ 		ex = path[depth].p_ext;
+-		if (!ex)
++		if (!ex) {
++			ext4_ext_drop_refs(path);
++			kfree(path);
++			path = NULL;
+ 			goto cont;
++		}
  
- /* bitmap.c */
--extern unsigned int ext4_count_free(struct buffer_head *, unsigned);
-+extern unsigned int ext4_count_free(char *bitmap, unsigned numchars);
+ 		ee_block = le32_to_cpu(ex->ee_block);
  
- /* balloc.c */
- extern unsigned int ext4_block_group(struct super_block *sb,
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -1013,7 +1013,8 @@ unsigned long ext4_count_free_inodes(str
- 		if (!bitmap_bh)
- 			continue;
+@@ -2570,8 +2574,6 @@ again:
+ 			if (err < 0)
+ 				goto out;
+ 		}
+-		ext4_ext_drop_refs(path);
+-		kfree(path);
+ 	}
+ cont:
  
--		x = ext4_count_free(bitmap_bh, EXT4_INODES_PER_GROUP(sb) / 8);
-+		x = ext4_count_free(bitmap_bh->b_data,
-+				    EXT4_INODES_PER_GROUP(sb) / 8);
- 		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
- 			(unsigned long) i, ext4_free_inodes_count(sb, gdp), x);
- 		bitmap_count += x;
+@@ -2580,19 +2582,27 @@ cont:
+ 	 * after i_size and walking into the tree depth-wise.
+ 	 */
+ 	depth = ext_depth(inode);
+-	path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1), GFP_NOFS);
+-	if (path == NULL) {
+-		ext4_journal_stop(handle);
+-		return -ENOMEM;
+-	}
+-	path[0].p_depth = depth;
+-	path[0].p_hdr = ext_inode_hdr(inode);
+-
+-	if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
+-		err = -EIO;
+-		goto out;
++	if (path) {
++		int k = i = depth;
++		while (--k > 0)
++			path[k].p_block =
++				le16_to_cpu(path[k].p_hdr->eh_entries)+1;
++	} else {
++		path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1),
++			       GFP_NOFS);
++		if (path == NULL) {
++			ext4_journal_stop(handle);
++			return -ENOMEM;
++		}
++		path[0].p_depth = depth;
++		path[0].p_hdr = ext_inode_hdr(inode);
++
++		if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
++			err = -EIO;
++			goto out;
++		}
+ 	}
+-	i = err = 0;
++	err = 0;
+ 
+ 	while (i >= 0 && err == 0) {
+ 		if (i == depth) {
+@@ -2706,8 +2716,10 @@ cont:
+ out:
+ 	ext4_ext_drop_refs(path);
+ 	kfree(path);
+-	if (err == -EAGAIN)
++	if (err == -EAGAIN) {
++		path = NULL;
+ 		goto again;
++	}
+ 	ext4_journal_stop(handle);
+ 
+ 	return err;
 
 
