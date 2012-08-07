@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909Ab2HGWiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:38:04 -0400
+	id S933003Ab2HGWiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:38:09 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932972Ab2HGWh5 (ORCPT
+	with ESMTP id S932989Ab2HGWiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:37:57 -0400
+	Tue, 7 Aug 2012 18:38:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eliad Peller <eliad@wizery.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 034/109] mac80211: fail authentication when AP denied authentication
-Date: Tue,  7 Aug 2012 15:34:53 -0700
-Message-Id: <20120807222046.088009383@linuxfoundation.org>
+Subject: [ 036/109] rtlwifi: rtl8192cu: Change buffer allocation for synchronous reads
+Date: Tue,  7 Aug 2012 15:34:55 -0700
+Message-Id: <20120807222046.271339876@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -31,44 +30,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit dac211ec10d268b9d09000093a9fa2ac1773894f upstream.
+commit 3ce4d85b76010525adedcc2555fa164bf706a2f3 upstream.
 
-ieee80211_rx_mgmt_auth() doesn't handle denied authentication
-properly - it authenticates the station and waits for association
-(for 5 seconds) instead of failing the authentication.
+In commit a7959c1, the USB part of rtlwifi was switched to convert
+_usb_read_sync() to using a preallocated buffer rather than one
+that has been acquired using kmalloc. Although this routine is named
+as though it were synchronous, there seem to be simultaneous users,
+and the selection of the index to the data buffer is not multi-user
+safe. This situation is addressed by adding a new spinlock. The routine
+cannot sleep, thus a mutex is not allowed.
 
-Fix it by destroying auth_data and bailing out instead.
-
-Signed-off-by: Eliad Peller <eliad@wizery.com>
-Acked-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/usb.c  |   14 +++++++++++---
+ drivers/net/wireless/rtlwifi/wifi.h |    1 +
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -1813,7 +1813,8 @@ ieee80211_rx_mgmt_auth(struct ieee80211_
- 	if (status_code != WLAN_STATUS_SUCCESS) {
- 		printk(KERN_DEBUG "%s: %pM denied authentication (status %d)\n",
- 		       sdata->name, mgmt->sa, status_code);
--		goto out;
-+		ieee80211_destroy_auth_data(sdata, false);
-+		return RX_MGMT_CFG80211_RX_AUTH;
- 	}
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -131,15 +131,19 @@ static u32 _usb_read_sync(struct rtl_pri
+ 	u8 request;
+ 	u16 wvalue;
+ 	u16 index;
+-	__le32 *data = &rtlpriv->usb_data[rtlpriv->usb_data_index];
++	__le32 *data;
++	unsigned long flags;
  
- 	switch (ifmgd->auth_data->algorithm) {
-@@ -1835,7 +1836,6 @@ ieee80211_rx_mgmt_auth(struct ieee80211_
- 	}
++	spin_lock_irqsave(&rtlpriv->locks.usb_lock, flags);
++	if (++rtlpriv->usb_data_index >= RTL_USB_MAX_RX_COUNT)
++		rtlpriv->usb_data_index = 0;
++	data = &rtlpriv->usb_data[rtlpriv->usb_data_index];
++	spin_unlock_irqrestore(&rtlpriv->locks.usb_lock, flags);
+ 	request = REALTEK_USB_VENQT_CMD_REQ;
+ 	index = REALTEK_USB_VENQT_CMD_IDX; /* n/a */
  
- 	printk(KERN_DEBUG "%s: authenticated\n", sdata->name);
-- out:
- 	ifmgd->auth_data->done = true;
- 	ifmgd->auth_data->timeout = jiffies + IEEE80211_AUTH_WAIT_ASSOC;
- 	run_again(ifmgd, ifmgd->auth_data->timeout);
+ 	wvalue = (u16)addr;
+ 	_usbctrl_vendorreq_sync_read(udev, request, wvalue, index, data, len);
+-	if (++rtlpriv->usb_data_index >= RTL_USB_MAX_RX_COUNT)
+-		rtlpriv->usb_data_index = 0;
+ 	return le32_to_cpu(*data);
+ }
+ 
+@@ -951,6 +955,10 @@ int __devinit rtl_usb_probe(struct usb_i
+ 				    GFP_KERNEL);
+ 	if (!rtlpriv->usb_data)
+ 		return -ENOMEM;
++
++	/* this spin lock must be initialized early */
++	spin_lock_init(&rtlpriv->locks.usb_lock);
++
+ 	rtlpriv->usb_data_index = 0;
+ 	init_completion(&rtlpriv->firmware_loading_complete);
+ 	SET_IEEE80211_DEV(hw, &intf->dev);
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -1555,6 +1555,7 @@ struct rtl_locks {
+ 	spinlock_t rf_ps_lock;
+ 	spinlock_t rf_lock;
+ 	spinlock_t waitq_lock;
++	spinlock_t usb_lock;
+ 
+ 	/*Dual mac*/
+ 	spinlock_t cck_and_rw_pagea_lock;
 
 
