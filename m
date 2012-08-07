@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2HGPWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:22:54 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:60528 "EHLO lobo.ruivo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753130Ab2HGPWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:22:50 -0400
-Date: Tue, 7 Aug 2012 11:22:30 -0400
-From: Aristeu Rozanski <aris@ruivo.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>, Aristeu Rozanski <aris@redhat.com>,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Hillf Danton <dhillf@gmail.com>, lennart@poettering.net
-Subject: Re: [PATCH v3 0/3] cgroup: add xattr support
-Message-ID: <20120807152230.GE20962@cathedrallabs.org>
-References: <20120702142925.795007114@napanee.usersys.redhat.com>
- <20120717204126.GE24336@google.com>
- <alpine.LSU.2.00.1207181237010.2160@eggly.anvils>
- <20120718221044.GJ24336@google.com>
- <alpine.LSU.2.00.1207181736020.3323@eggly.anvils>
- <20120720175959.GA32741@cathedrallabs.org>
- <20120720180459.GJ32763@google.com>
+	id S1752809Ab2HGP37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:29:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52871 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab2HGP36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 11:29:58 -0400
+Message-ID: <50213462.5040304@linutronix.de>
+Date: Tue, 07 Aug 2012 17:29:38 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720180459.GJ32763@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ptrace: fix set_task_blockstep()->update_debugctlmsr()
+ logic
+References: <20120803162954.GA19806@redhat.com> <5020E2E4.3090104@linutronix.de> <20120807151531.GC13476@redhat.com>
+In-Reply-To: <20120807151531.GC13476@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Added Lennart to the discussion so he can help explaining how systemd will
-use the xattrs)
+On 08/07/2012 05:15 PM, Oleg Nesterov wrote:
+> It turns out, original code is even more buggy than I thought.
+>
+> Ironically, "task != current" case is more difficult and so far
+> I do not see how we can handle this case correctly. I'll return
+> to this a bit later, currently I am working on other patches.
 
-On Fri, Jul 20, 2012 at 11:04:59AM -0700, Tejun Heo wrote:
-> Hello, Hugh, Aristeu.
-> 
-> On Fri, Jul 20, 2012 at 01:59:59PM -0400, Aristeu Rozanski wrote:
-> > hm, not sure that's what Tejun meant. tmpfs uses anonymous memory for the file
-> > contents, so reuse that infrastructure to allocate space for the extended
-> > attributes the same way, instead of using kmem.
-> > 
-> > First thing I can think of is to use whole pages for it to prevent further
-> > complexity. Shouldn't make much difference considering the usecases we have
-> > now (systemd and containers), right?
-> 
-> Yeah, that's what I meant.  The internal fragmentation is ugly but I
-> think that should do for now at least.
+maybe you could remove the autodectect mode and add helper for uprobe
+which disables it.
 
-while talking to Lennart, it seems there're a lot of ways the xattrs can be
-used in systemd. If we're concerned with the amount of memory used, why not
-create a new namespace just for this, limiting by definition the maximum value
-size?
+>> For uprobes we never set the bit, we only need it cleared.
+>
+> Yes, at least at first step, and probably we will never need more.
+>
+>> We get here
+>> via int 3 and do_debug() already clears TIF_BLOCKSTEP
+>
+> No, we get here via do_int3(), TIF_BLOCKSTEP is not cleared,
 
--- 
-Aristeu
+Yes, Sorry. my fault.
 
+>> because the
+>> CPU clears the bit in CPU.
+>
+> I am not sure. The manual says:
+>
+> 	 If the BTF flag is set when the processor generates a debug
+> 	 exception, the processor clears the BTF flag along with the
+> 	 TF flag.
+>
+> but I am not sure "debug exception" also means "breakpoint exception".
+>
+>
+>
+> do_debug() does clear TIF_BLOCKSTEP, and "The processor cleared BTF"
+> is true in this case. But it is called after single-step.
+
+I was wrong here in regard to do_debug() since do_int3() is correct.
+Anyway, I checked it on real hardware and I saw the CPU in do_int3()
+with BTF set after executing int3 with TF flag set and the BTF bit.
+
+>
+> Oleg.
+
+Sebastian
