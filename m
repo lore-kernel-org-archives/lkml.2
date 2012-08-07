@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab2HGWh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:37:58 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:65028 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932945Ab2HGWht (ORCPT
+	id S932909Ab2HGWiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:38:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932972Ab2HGWh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:37:49 -0400
+	Tue, 7 Aug 2012 18:37:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Colin Cross <ccross@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 031/109] PM / Sleep: call early resume handlers when suspend_noirq fails
-Date: Tue,  7 Aug 2012 15:34:50 -0700
-Message-Id: <20120807222045.835898036@linuxfoundation.org>
+        Eliad Peller <eliad@wizery.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 034/109] mac80211: fail authentication when AP denied authentication
+Date: Tue,  7 Aug 2012 15:34:53 -0700
+Message-Id: <20120807222046.088009383@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,47 +31,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Eliad Peller <eliad@wizery.com>
 
-commit 064b021fbe470ecc9ca10f9f87af48c0fc0865fb upstream.
+commit dac211ec10d268b9d09000093a9fa2ac1773894f upstream.
 
-Commit cf579dfb82550e34de7ccf3ef090d8b834ccd3a9 (PM / Sleep: Introduce
-"late suspend" and "early resume" of devices) introduced a bug where
-suspend_late handlers would be called, but if dpm_suspend_noirq returned
-an error the early_resume handlers would never be called.  All devices
-would end up on the dpm_late_early_list, and would never be resumed
-again.
+ieee80211_rx_mgmt_auth() doesn't handle denied authentication
+properly - it authenticates the station and waits for association
+(for 5 seconds) instead of failing the authentication.
 
-Fix it by calling dpm_resume_early when dpm_suspend_noirq returns
-an error.
+Fix it by destroying auth_data and bailing out instead.
 
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Acked-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/power/main.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ net/mac80211/mlme.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -979,8 +979,16 @@ static int dpm_suspend_late(pm_message_t
- int dpm_suspend_end(pm_message_t state)
- {
- 	int error = dpm_suspend_late(state);
-+	if (error)
-+		return error;
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1813,7 +1813,8 @@ ieee80211_rx_mgmt_auth(struct ieee80211_
+ 	if (status_code != WLAN_STATUS_SUCCESS) {
+ 		printk(KERN_DEBUG "%s: %pM denied authentication (status %d)\n",
+ 		       sdata->name, mgmt->sa, status_code);
+-		goto out;
++		ieee80211_destroy_auth_data(sdata, false);
++		return RX_MGMT_CFG80211_RX_AUTH;
+ 	}
  
--	return error ? : dpm_suspend_noirq(state);
-+	error = dpm_suspend_noirq(state);
-+	if (error) {
-+		dpm_resume_early(state);
-+		return error;
-+	}
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(dpm_suspend_end);
+ 	switch (ifmgd->auth_data->algorithm) {
+@@ -1835,7 +1836,6 @@ ieee80211_rx_mgmt_auth(struct ieee80211_
+ 	}
  
+ 	printk(KERN_DEBUG "%s: authenticated\n", sdata->name);
+- out:
+ 	ifmgd->auth_data->done = true;
+ 	ifmgd->auth_data->timeout = jiffies + IEEE80211_AUTH_WAIT_ASSOC;
+ 	run_again(ifmgd, ifmgd->auth_data->timeout);
 
 
