@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030450Ab2HGWdE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:33:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54025 "EHLO
+	id S1757335Ab2HGWfx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:35:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030434Ab2HGWc6 (ORCPT
+	with ESMTP id S1030419Ab2HGWcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:58 -0400
+	Tue, 7 Aug 2012 18:32:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 114/122] ALSA: hda - Fix polarity of mute LED on HP Mini 210
-Date: Tue,  7 Aug 2012 15:26:42 -0700
-Message-Id: <20120807222000.326125448@linuxfoundation.org>
+Subject: [ 113/122] ALSA: hda - Fix mute-LED GPIO setup for HP Mini 210
+Date: Tue,  7 Aug 2012 15:26:41 -0700
+Message-Id: <20120807222000.214086000@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -31,11 +31,15 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit ff8a1e274cbc11da6b57849f925b895a212b56c9 upstream.
+commit a3e199732b8e2b272e82cc1ccc49c35239ed6c5a upstream.
 
-The commit a3e199732b made the LED working again on HP Mini 210 but
-with a wrong polarity.  This patch fixes the polarity for this
-machine, and also introduce a new model string "hp-inv-led".
+BIOS on HP Mini 210 doesn't provide the proper "HP_Mute_LED" DMI
+string, thus the driver doesn't initialize the GPIO, too.  In the
+earlier kernel, the driver falls back to GPIO1, but since 3.3 we've
+stopped this due to other wrongly advertised machines.
+
+For fixing this particular case, add a new model type to specify the
+default polarity explicitly so that the fallback to GPIO1 is handled.
 
 Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=772923
 
@@ -43,36 +47,57 @@ Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ sound/pci/hda/patch_sigmatel.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
 --- a/sound/pci/hda/patch_sigmatel.c
 +++ b/sound/pci/hda/patch_sigmatel.c
-@@ -102,6 +102,7 @@ enum {
+@@ -101,6 +101,7 @@ enum {
+ 	STAC_92HD83XXX_HP_cNB11_INTQUAD,
  	STAC_HP_DV7_4000,
  	STAC_HP_ZEPHYR,
- 	STAC_92HD83XXX_HP_LED,
-+	STAC_92HD83XXX_HP_INV_LED,
++	STAC_92HD83XXX_HP_LED,
  	STAC_92HD83XXX_MODELS
  };
  
-@@ -1677,6 +1678,7 @@ static const char * const stac92hd83xxx_
+@@ -1675,6 +1676,7 @@ static const char * const stac92hd83xxx_
+ 	[STAC_92HD83XXX_HP_cNB11_INTQUAD] = "hp_cNB11_intquad",
  	[STAC_HP_DV7_4000] = "hp-dv7-4000",
  	[STAC_HP_ZEPHYR] = "hp-zephyr",
- 	[STAC_92HD83XXX_HP_LED] = "hp-led",
-+	[STAC_92HD83XXX_HP_INV_LED] = "hp-inv-led",
++	[STAC_92HD83XXX_HP_LED] = "hp-led",
  };
  
  static const struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
-@@ -5561,6 +5563,9 @@ again:
+@@ -1729,6 +1731,8 @@ static const struct snd_pci_quirk stac92
+ 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3561,
+ 			  "HP", STAC_HP_ZEPHYR),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3660,
++			  "HP Mini", STAC_92HD83XXX_HP_LED),
+ 	{} /* terminator */
+ };
+ 
+@@ -5507,6 +5511,7 @@ static void stac92hd8x_fill_auto_spec(st
+ static int patch_stac92hd83xxx(struct hda_codec *codec)
+ {
+ 	struct sigmatel_spec *spec;
++	int default_polarity = -1; /* no default cfg */
+ 	int err;
+ 
+ 	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
+@@ -5555,9 +5560,12 @@ again:
+ 	case STAC_HP_ZEPHYR:
  		spec->init = stac92hd83xxx_hp_zephyr_init;
  		break;
- 	case STAC_92HD83XXX_HP_LED:
-+		default_polarity = 0;
++	case STAC_92HD83XXX_HP_LED:
++		default_polarity = 1;
 +		break;
-+	case STAC_92HD83XXX_HP_INV_LED:
- 		default_polarity = 1;
- 		break;
  	}
+ 
+-	if (find_mute_led_cfg(codec, -1/*no default cfg*/))
++	if (find_mute_led_cfg(codec, default_polarity))
+ 		snd_printd("mute LED gpio %d polarity %d\n",
+ 				spec->gpio_led,
+ 				spec->gpio_led_polarity);
 
 
