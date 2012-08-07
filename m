@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933027Ab2HGXCc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:02:32 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51755 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030768Ab2HGWko (ORCPT
+	id S1030794Ab2HGXDC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:03:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030739Ab2HGWkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:40:44 -0400
+	Tue, 7 Aug 2012 18:40:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Josh Boyer <jwboyer@redhat.com>, Hayes Wang <hayeswang@realtek.com>,
+        =?UTF-8?q?Sjur=20Br=E6ndeland?= <sjur.brandeland@stericsson.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: =?UTF-8?q?=5B=20087/109=5D=20r8169=3A=20revert=20=22add=20byte=20queue=20limit=20support=22=2E?=
-Date: Tue,  7 Aug 2012 15:35:46 -0700
-Message-Id: <20120807222050.728741700@linuxfoundation.org>
+Subject: =?UTF-8?q?=5B=20084/109=5D=20caif=3A=20Fix=20access=20to=20freed=20pernet=20memory?=
+Date: Tue,  7 Aug 2012 15:35:43 -0700
+Message-Id: <20120807222050.458354249@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -35,91 +35,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-[ Upstream commit 17bcb684f08649a2ab6a7dcd8288332e72d208f1 ]
+[ Upstream commit 96f80d123eff05c3cd4701463786b87952a6c3ac ]
 
-This reverts commit 036dafa28da1e2565a8529de2ae663c37b7a0060.
+unregister_netdevice_notifier() must be called before
+unregister_pernet_subsys() to avoid accessing already freed
+pernet memory. This fixes the following oops when doing rmmod:
 
-First it appears in bisection, then reverting it solves the usual
-netdev watchdog problem for different people. I don't have a proper
-fix yet so get rid of it.
+Call Trace:
+ [<ffffffffa0f802bd>] caif_device_notify+0x4d/0x5a0 [caif]
+ [<ffffffff81552ba9>] unregister_netdevice_notifier+0xb9/0x100
+ [<ffffffffa0f86dcc>] caif_device_exit+0x1c/0x250 [caif]
+ [<ffffffff810e7734>] sys_delete_module+0x1a4/0x300
+ [<ffffffff810da82d>] ? trace_hardirqs_on_caller+0x15d/0x1e0
+ [<ffffffff813517de>] ? trace_hardirqs_on_thunk+0x3a/0x3
+ [<ffffffff81696bad>] system_call_fastpath+0x1a/0x1f
 
-Bisected-and-reported-by: Alex Villacís Lasso <a_villacis@palosanto.com>
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Hayes Wang <hayeswang@realtek.com>
+RIP
+ [<ffffffffa0f7f561>] caif_get+0x51/0xb0 [caif]
+
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/realtek/r8169.c |   27 +++++----------------------
- 1 file changed, 5 insertions(+), 22 deletions(-)
+ net/caif/caif_dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5000,7 +5000,6 @@ static void rtl8169_tx_clear(struct rtl8
+--- a/net/caif/caif_dev.c
++++ b/net/caif/caif_dev.c
+@@ -562,9 +562,9 @@ static int __init caif_device_init(void)
+ 
+ static void __exit caif_device_exit(void)
  {
- 	rtl8169_tx_clear_range(tp, tp->dirty_tx, NUM_TX_DESC);
- 	tp->cur_tx = tp->dirty_tx = 0;
--	netdev_reset_queue(tp->dev);
+-	unregister_pernet_subsys(&caif_net_ops);
+ 	unregister_netdevice_notifier(&caif_device_notifier);
+ 	dev_remove_pack(&caif_packet_type);
++	unregister_pernet_subsys(&caif_net_ops);
  }
  
- static void rtl_reset_work(struct rtl8169_private *tp)
-@@ -5155,8 +5154,6 @@ static netdev_tx_t rtl8169_start_xmit(st
- 
- 	txd->opts2 = cpu_to_le32(opts[1]);
- 
--	netdev_sent_queue(dev, skb->len);
--
- 	skb_tx_timestamp(skb);
- 
- 	wmb();
-@@ -5253,16 +5250,9 @@ static void rtl8169_pcierr_interrupt(str
- 	rtl_schedule_task(tp, RTL_FLAG_TASK_RESET_PENDING);
- }
- 
--struct rtl_txc {
--	int packets;
--	int bytes;
--};
--
- static void rtl_tx(struct net_device *dev, struct rtl8169_private *tp)
- {
--	struct rtl8169_stats *tx_stats = &tp->tx_stats;
- 	unsigned int dirty_tx, tx_left;
--	struct rtl_txc txc = { 0, 0 };
- 
- 	dirty_tx = tp->dirty_tx;
- 	smp_rmb();
-@@ -5281,24 +5271,17 @@ static void rtl_tx(struct net_device *de
- 		rtl8169_unmap_tx_skb(&tp->pci_dev->dev, tx_skb,
- 				     tp->TxDescArray + entry);
- 		if (status & LastFrag) {
--			struct sk_buff *skb = tx_skb->skb;
--
--			txc.packets++;
--			txc.bytes += skb->len;
--			dev_kfree_skb(skb);
-+			u64_stats_update_begin(&tp->tx_stats.syncp);
-+			tp->tx_stats.packets++;
-+			tp->tx_stats.bytes += tx_skb->skb->len;
-+			u64_stats_update_end(&tp->tx_stats.syncp);
-+			dev_kfree_skb(tx_skb->skb);
- 			tx_skb->skb = NULL;
- 		}
- 		dirty_tx++;
- 		tx_left--;
- 	}
- 
--	u64_stats_update_begin(&tx_stats->syncp);
--	tx_stats->packets += txc.packets;
--	tx_stats->bytes += txc.bytes;
--	u64_stats_update_end(&tx_stats->syncp);
--
--	netdev_completed_queue(dev, txc.packets, txc.bytes);
--
- 	if (tp->dirty_tx != dirty_tx) {
- 		tp->dirty_tx = dirty_tx;
- 		/* Sync with rtl8169_start_xmit:
+ module_init(caif_device_init);
 
 
