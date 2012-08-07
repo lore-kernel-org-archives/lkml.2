@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab2HGQVB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:21:01 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:58061 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704Ab2HGQU6 (ORCPT
+	id S1755735Ab2HGQVK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:21:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51364 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755573Ab2HGQVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:20:58 -0400
+	Tue, 7 Aug 2012 12:21:05 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
         Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
@@ -16,9 +16,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v1 16/22] PCI/asus-wmi: use PCI bus lock to avoid race conditions
-Date: Wed,  8 Aug 2012 00:10:56 +0800
-Message-Id: <1344355862-2726-17-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v1 17/22] PCI/pciehp: use PCI bus lock to avoid race conditions
+Date: Wed,  8 Aug 2012 00:10:57 +0800
+Message-Id: <1344355862-2726-18-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
 References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
@@ -27,96 +27,71 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch uses PCI bus lock mechanism to avoid race conditions when doing
-PCI device hotplug by asum-wmi driver.
+PCI device hotplug by pciehp driver.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/platform/x86/asus-wmi.c |   23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+ drivers/pci/hotplug/pciehp_pci.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index 77aadde..9972bc7 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -533,15 +533,20 @@ static void asus_rfkill_hotplug(struct asus_wmi *asus)
- 		rfkill_set_sw_state(asus->wlan.rfkill, blocked);
+diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
+index 09cecaf..9536a9e 100644
+--- a/drivers/pci/hotplug/pciehp_pci.c
++++ b/drivers/pci/hotplug/pciehp_pci.c
+@@ -42,18 +42,25 @@ int pciehp_configure_device(struct slot *p_slot)
+ 	int num, fn;
+ 	struct controller *ctrl = p_slot->ctrl;
  
- 	if (asus->hotplug_slot) {
--		bus = pci_find_bus(0, 1);
-+		bus = pci_get_bus(0, 1);
- 		if (!bus) {
- 			pr_warn("Unable to find PCI bus 1?\n");
- 			goto out_unlock;
- 		}
- 
-+		if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING)) {
-+			pr_warn("Unable to lock PCI bus 1?\n");
-+			goto out_put_bus;
-+		}
++	if (pci_bus_lock_states(parent, PCI_BUS_STATE_WORKING) < 0) {
++		ctrl_dbg(ctrl, "Port has been removed\n");
++		return -EINVAL;
++	}
 +
- 		if (pci_bus_read_config_dword(bus, 0, PCI_VENDOR_ID, &l)) {
- 			pr_err("Unable to read PCI config space?\n");
--			goto out_unlock;
-+			goto out_unlock_bus;
- 		}
- 		absent = (l == 0xffffffff);
- 
-@@ -552,7 +557,7 @@ static void asus_rfkill_hotplug(struct asus_wmi *asus)
- 				absent ? "absent" : "present");
- 			pr_warn("skipped wireless hotplug as probably "
- 				"inappropriate for this model\n");
--			goto out_unlock;
-+			goto out_unlock_bus;
- 		}
- 
- 		if (!blocked) {
-@@ -560,7 +565,7 @@ static void asus_rfkill_hotplug(struct asus_wmi *asus)
- 			if (dev) {
- 				/* Device already present */
- 				pci_dev_put(dev);
--				goto out_unlock;
-+				goto out_unlock_bus;
- 			}
- 			dev = pci_scan_single_device(bus, 0);
- 			if (dev) {
-@@ -575,6 +580,11 @@ static void asus_rfkill_hotplug(struct asus_wmi *asus)
- 				pci_dev_put(dev);
- 			}
- 		}
-+
-+out_unlock_bus:
-+		pci_bus_unlock(bus);
-+out_put_bus:
-+		pci_bus_put(bus);
+ 	dev = pci_get_slot(parent, PCI_DEVFN(0, 0));
+ 	if (dev) {
+ 		ctrl_err(ctrl, "Device %s already exists "
+ 			 "at %04x:%02x:00, cannot hot-add\n", pci_name(dev),
+ 			 pci_domain_nr(parent), parent->number);
+ 		pci_dev_put(dev);
++		pci_bus_unlock(parent);
+ 		return -EINVAL;
  	}
  
- out_unlock:
-@@ -670,7 +680,7 @@ static void asus_hotplug_work(struct work_struct *work)
- static int asus_setup_pci_hotplug(struct asus_wmi *asus)
- {
- 	int ret = -ENOMEM;
--	struct pci_bus *bus = pci_find_bus(0, 1);
-+	struct pci_bus *bus = pci_get_bus(0, 1);
- 
- 	if (!bus) {
- 		pr_err("Unable to find wifi PCI bus\n");
-@@ -705,6 +715,8 @@ static int asus_setup_pci_hotplug(struct asus_wmi *asus)
- 		goto error_register;
+ 	num = pci_scan_slot(parent, PCI_DEVFN(0, 0));
+ 	if (num == 0) {
+ 		ctrl_err(ctrl, "No new device found\n");
++		pci_bus_unlock(parent);
+ 		return -ENODEV;
  	}
  
-+	pci_bus_put(bus);
-+
+@@ -82,6 +89,7 @@ int pciehp_configure_device(struct slot *p_slot)
+ 	}
+ 
+ 	pci_bus_add_devices(parent);
++	pci_bus_unlock(parent);
+ 
  	return 0;
- 
- error_register:
-@@ -715,6 +727,7 @@ error_info:
- error_slot:
- 	destroy_workqueue(asus->hotplug_workqueue);
- error_workqueue:
-+	pci_bus_put(bus);
- 	return ret;
  }
+@@ -96,6 +104,11 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+ 	u16 command;
+ 	struct controller *ctrl = p_slot->ctrl;
  
++	if (pci_bus_lock_states(parent, PCI_BUS_STATE_WORKING) < 0) {
++		ctrl_dbg(ctrl, "Port has been removed\n");
++		return -EINVAL;
++	}
++
+ 	ctrl_dbg(ctrl, "%s: domain:bus:dev = %04x:%02x:00\n",
+ 		 __func__, pci_domain_nr(parent), parent->number);
+ 	ret = pciehp_get_adapter_status(p_slot, &presence);
+@@ -131,5 +144,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+ 		pci_dev_put(temp);
+ 	}
+ 
++	pci_bus_unlock(parent);
++
+ 	return rc;
+ }
 -- 
 1.7.9.5
 
