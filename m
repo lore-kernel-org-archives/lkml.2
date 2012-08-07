@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab2HGDyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:54:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59631 "EHLO
+	id S1757307Ab2HGDyh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:54:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59636 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757284Ab2HGDiL (ORCPT
+	by vger.kernel.org with ESMTP id S1757260Ab2HGDiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Aug 2012 23:38:11 -0400
-Message-Id: <20120807032757.853527625@decadent.org.uk>
+Message-Id: <20120807032758.679038817@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:07 +0100
+Date: Tue, 07 Aug 2012 04:28:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Theodore Tso <tytso@mit.edu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 12/70] random: Use arch-specific RNG to initialize the entropy store
+        David Miller <davem@davemloft.net>
+Subject: [ 18/70] net: feed /dev/random with the MAC address when registering a device
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,45 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Theodore Ts'o <tytso@mit.edu>
 
-commit 3e88bdff1c65145f7ba297ccec69c774afe4c785 upstream.
+commit 7bf2357524408b97fec58344caf7397f8140c3fd upstream.
 
-If there is an architecture-specific random number generator (such as
-RDRAND for Intel architectures), use it to initialize /dev/random's
-entropy stores.  Even in the worst case, if RDRAND is something like
-AES(NSA_KEY, counter++), it won't hurt, and it will definitely help
-against any other adversaries.
-
+Cc: David Miller <davem@davemloft.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Link: http://lkml.kernel.org/r/1324589281-31931-1-git-send-email-tytso@mit.edu
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/random.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/core/dev.c       |    3 +++
+ net/core/rtnetlink.c |    1 +
+ 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 85da874..3079477 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -965,6 +965,7 @@ EXPORT_SYMBOL(get_random_bytes);
-  */
- static void init_std_data(struct entropy_store *r)
- {
-+	int i;
- 	ktime_t now;
- 	unsigned long flags;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 6df2140..bdd1e88 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1172,6 +1172,7 @@ static int __dev_open(struct net_device *dev)
+ 		net_dmaengine_get();
+ 		dev_set_rx_mode(dev);
+ 		dev_activate(dev);
++		add_device_randomness(dev->dev_addr, dev->addr_len);
+ 	}
  
-@@ -974,6 +975,11 @@ static void init_std_data(struct entropy_store *r)
- 
- 	now = ktime_get_real();
- 	mix_pool_bytes(r, &now, sizeof(now));
-+	for (i = r->poolinfo->poolwords; i; i--) {
-+		if (!arch_get_random_long(&flags))
-+			break;
-+		mix_pool_bytes(r, &flags, sizeof(flags));
-+	}
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
+ 	return ret;
+@@ -4763,6 +4764,7 @@ int dev_set_mac_address(struct net_device *dev, struct sockaddr *sa)
+ 	err = ops->ndo_set_mac_address(dev, sa);
+ 	if (!err)
+ 		call_netdevice_notifiers(NETDEV_CHANGEADDR, dev);
++	add_device_randomness(dev->dev_addr, dev->addr_len);
+ 	return err;
  }
+ EXPORT_SYMBOL(dev_set_mac_address);
+@@ -5541,6 +5543,7 @@ int register_netdevice(struct net_device *dev)
+ 	dev_init_scheduler(dev);
+ 	dev_hold(dev);
+ 	list_netdevice(dev);
++	add_device_randomness(dev->dev_addr, dev->addr_len);
  
+ 	/* Notify protocols, that a new device appeared. */
+ 	ret = call_netdevice_notifiers(NETDEV_REGISTER, dev);
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 21318d1..f058e59 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1378,6 +1378,7 @@ static int do_setlink(struct net_device *dev, struct ifinfomsg *ifm,
+ 			goto errout;
+ 		send_addr_notify = 1;
+ 		modified = 1;
++		add_device_randomness(dev->dev_addr, dev->addr_len);
+ 	}
+ 
+ 	if (tb[IFLA_MTU]) {
 
 
