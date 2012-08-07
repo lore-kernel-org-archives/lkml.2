@@ -1,77 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab2HFX7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 19:59:25 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:63247 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161Ab2HFX7X (ORCPT
+	id S1757037Ab2HGAAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 20:00:20 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51633 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756938Ab2HGAAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 19:59:23 -0400
+	Mon, 6 Aug 2012 20:00:18 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50205A83.2050509@jp.fujitsu.com>
+Date: Tue, 7 Aug 2012 09:00:03 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <87hasfinik.fsf@xmission.com>
-References: <1343262548-21743-1-git-send-email-keescook@chromium.org>
-	<1343262548-21743-2-git-send-email-keescook@chromium.org>
-	<alpine.LRH.2.02.1208031425530.25196@tundra.namei.org>
-	<CAGXu5jKFm3uxwF3hhhzkUJcxJ0zOH89_bAgQGLCEf=g3CpXuHw@mail.gmail.com>
-	<87hasfinik.fsf@xmission.com>
-Date: Mon, 6 Aug 2012 16:59:22 -0700
-X-Google-Sender-Auth: f70TWWLHlPhGEmmYXmyQU8U0L4g
-Message-ID: <CAGXu5j+8mY1Rr5Uw5BYAhwhKVV_CvT5yu8YDJ1RqOta2NbVfQQ@mail.gmail.com>
-Subject: Re: [kernel-hardening] [PATCH 1/2] fs: add link restrictions
-From: Kees Cook <keescook@chromium.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Doug Ledford <dledford@redhat.com>, Joe Korty <joe.korty@ccur.com>,
-        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Jiang Liu <liuj97@gmail.com>
+CC: <lenb@kernel.org>, <toshi.kani@hp.com>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] create sun sysfs file
+References: <5015DC4B.2000802@jp.fujitsu.com> <5016A939.9050600@gmail.com>
+In-Reply-To: <5016A939.9050600@gmail.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[resend: MUA tricked me into sending HTML email...]
+Hi Jiang,
 
-On Mon, Aug 6, 2012 at 4:55 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->
-> Kees Cook <keescook@chromium.org> writes:
->
-> > On Thu, Aug 2, 2012 at 9:26 PM, James Morris <jmorris@namei.org> wrote:
-> >> On Wed, 25 Jul 2012, Kees Cook wrote:
-> >>
-> >>> This adds symlink and hardlink restrictions to the Linux VFS.
-> >>
-> >> Is Al happy with this now?
-> >
-> > Looks like it; thanks for checking. It's in mainline now:
-> >
-> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=800179c9b8a1e796e441674776d11cd4c05d61d7
->
-> So there was one trivial little issue with your patch.  You were
-> directly comparing kuids instead of using uid_eq.  This only practically
-> matters when user namespaces are enabled which is currently impossible
-> in 3.6-rc1 :(
->
-> I have added the following fixup patch to my for-next branch of
-> user-namespace.git
->
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> Date: Fri, 3 Aug 2012 09:38:08 -0700
-> Subject: [PATCH] userns:  Fix link restrictions to use uid_eq
->
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Sorry for late reply.  I could not work by private reason.
 
-Ah-ha! Thanks for fixing this.
+2012/07/31 0:33, Jiang Liu wrote:
+> On 07/30/2012 08:58 AM, Yasuaki Ishimatsu wrote:
+>> Even if a device has _SUN method, there is no way to know the slot unique-ID.
+>> Thus the patch creates "sun" file in sysfs so that we can recognize it.
+>>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> ---
+>>   drivers/acpi/scan.c     |   25 +++++++++++++++++++++++++
+>>   include/acpi/acpi_bus.h |    1 +
+>>   2 files changed, 26 insertions(+)
+>>
+>> Index: linux-3.5/include/acpi/acpi_bus.h
+>> ===================================================================
+>> --- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-27 10:20:22.722553439 +0900
+>> +++ linux-3.5/include/acpi/acpi_bus.h	2012-07-27 10:20:25.741555954 +0900
+>> @@ -209,6 +209,7 @@ struct acpi_device_pnp {
+>>   	struct list_head ids;		/* _HID and _CIDs */
+>>   	acpi_device_name device_name;	/* Driver-determined */
+>>   	acpi_device_class device_class;	/*        "          */
+>> +	unsigned long sun;		/* _SUN */
+>>   };
+>>   
+>>   #define acpi_device_bid(d)	((d)->pnp.bus_id)
+>> Index: linux-3.5/drivers/acpi/scan.c
+>> ===================================================================
+>> --- linux-3.5.orig/drivers/acpi/scan.c	2012-07-27 10:20:22.721522499 +0900
+>> +++ linux-3.5/drivers/acpi/scan.c	2012-07-30 09:52:32.581887304 +0900
+>> @@ -192,10 +192,21 @@ end:
+>>   }
+>>   static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
+>>   
+>> +static ssize_t
+>> +acpi_device_sun_show(struct device *dev, struct device_attribute *attr, char *buf) {
+> The above line is more than 80 characters.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+I'll update it soon.
 
--Kees
+> 
+>> +	struct acpi_device *acpi_dev = to_acpi_device(dev);
+>> +	int result;
+>> +
+>> +	result = sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
+>> +	return result;
+> How about just
+> return sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
 
---
-Kees Cook
-Chrome OS Security
+I'll update it soon.
+
+Thanks,
+Yasuaki Ishimatsu
+
+> 
+>> +}
+>> +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
+>> +
+>>   static int acpi_device_setup_files(struct acpi_device *dev)
+>>   {
+>>   	acpi_status status;
+>>   	acpi_handle temp;
+>> +	unsigned long long sun;
+>>   	int result = 0;
+>>   
+>>   	/*
+>> @@ -217,6 +228,16 @@ static int acpi_device_setup_files(struc
+>>   			goto end;
+>>   	}
+>>   
+>> +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
+>> +	if (ACPI_SUCCESS(status)) {
+>> +		dev->pnp.sun = (unsigned long)sun;
+>> +		result = device_create_file(&dev->dev, &dev_attr_sun);
+>> +		if (result)
+>> +			goto end;
+>> +	} else {
+>> +		dev->pnp.sun = (unsigned long)-1;
+>> +	}
+>> +
+>>           /*
+>>            * If device has _EJ0, 'eject' file is created that is used to trigger
+>>            * hot-removal function from userland.
+>> @@ -241,6 +262,10 @@ static void acpi_device_remove_files(str
+>>   	if (ACPI_SUCCESS(status))
+>>   		device_remove_file(&dev->dev, &dev_attr_eject);
+>>   
+>> +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
+>> +	if (ACPI_SUCCESS(status))
+>> +		device_remove_file(&dev->dev, &dev_attr_sun);
+>> +
+>>   	device_remove_file(&dev->dev, &dev_attr_modalias);
+>>   	device_remove_file(&dev->dev, &dev_attr_hid);
+>>   	if (dev->handle)
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+
+
