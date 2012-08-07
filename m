@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab2HGJhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:37:20 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54144 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170Ab2HGJhS (ORCPT
+	id S1753865Ab2HGJmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:42:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50825 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab2HGJmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:37:18 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] fuse updates for 3.6 
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Date: Tue, 07 Aug 2012 11:38:34 +0200
-Message-ID: <87zk6759et.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 7 Aug 2012 05:42:15 -0400
+Message-ID: <5020E2E4.3090104@linutronix.de>
+Date: Tue, 07 Aug 2012 11:41:56 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ptrace: fix set_task_blockstep()->update_debugctlmsr()
+ logic
+References: <20120803162954.GA19806@redhat.com>
+In-Reply-To: <20120803162954.GA19806@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 08/03/2012 06:29 PM, Oleg Nesterov wrote:
+> --- a/arch/x86/kernel/step.c
+> +++ b/arch/x86/kernel/step.c
+> @@ -166,12 +166,18 @@ static void set_task_blockstep(struct task_struct *task, bool on)
+>   	else
+>   		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
+>
+> +	if (task != current)
+> +		return;
+> +
+> +	/* ensure irq/preemption can't change debugctl in between */
+> +	local_irq_disable();
+>   	debugctl = get_debugctlmsr();
+>   	if (on)
+>   		debugctl |= DEBUGCTLMSR_BTF;
+>   	else
+>   		debugctl&= ~DEBUGCTLMSR_BTF;
+>   	update_debugctlmsr(debugctl);
+> +	local_irq_enable();
+>   }
 
-Please pull from
+I would say that you can remove this chunk. For task != current we
+leave.
+For uprobes we never set the bit, we only need it cleared. We get here
+via int 3 and do_debug() already clears TIF_BLOCKSTEP because the
+CPU clears the bit in CPU. So both, TIF_BLOCKSTEP and DEBUGCTLMSR_BTF
+are never set.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
-
-to receive the following changes.
-
-Thanks,
-Miklos
-
----
-Brian Foster (3):
-      fuse: add FUSE_AUTO_INVAL_DATA init flag
-      fuse: invalidate inode mapping if mtime changes
-      fuse: update attributes on aio_read
-
-Miklos Szeredi (2):
-      fuse: add missing INIT flags
-      fuse: add missing INIT flag descriptions
-
-Zach Brown (1):
-      fuse: verify all ioctl retry iov elements
-
----
- fs/fuse/file.c       |   15 +++++++++------
- fs/fuse/fuse_i.h     |    3 +++
- fs/fuse/inode.c      |   32 ++++++++++++++++++++++++++++----
- include/linux/fuse.h |   19 ++++++++++++++++++-
- 4 files changed, 58 insertions(+), 11 deletions(-)
+Sebastian
