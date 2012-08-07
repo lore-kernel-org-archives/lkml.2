@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030210Ab2HGDnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:43:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59856 "EHLO
+	id S964960Ab2HGDnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:43:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59848 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964816Ab2HGDi5 (ORCPT
+	by vger.kernel.org with ESMTP id S964813Ab2HGDi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:57 -0400
-Message-Id: <20120807032802.505007051@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:56 -0400
+Message-Id: <20120807032801.663389478@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:39 +0100
+Date: Tue, 07 Aug 2012 04:28:33 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-Subject: [ 44/70] nilfs2: fix deadlock issue between chcp and thaw ioctls
+        alan@lxorguk.ukuu.org.uk, Asias He <asias@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 38/70] virtio-blk: Use block layer provided spinlock
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,134 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Asias He <asias@redhat.com>
 
-commit 572d8b3945a31bee7c40d21556803e4807fd9141 upstream.
+commit 2c95a3290919541b846bee3e0fbaa75860929f53 upstream.
 
-An fs-thaw ioctl causes deadlock with a chcp or mkcp -s command:
+Block layer will allocate a spinlock for the queue if the driver does
+not provide one in blk_init_queue().
 
- chcp            D ffff88013870f3d0     0  1325   1324 0x00000004
- ...
- Call Trace:
-   nilfs_transaction_begin+0x11c/0x1a0 [nilfs2]
-   wake_up_bit+0x20/0x20
-   copy_from_user+0x18/0x30 [nilfs2]
-   nilfs_ioctl_change_cpmode+0x7d/0xcf [nilfs2]
-   nilfs_ioctl+0x252/0x61a [nilfs2]
-   do_page_fault+0x311/0x34c
-   get_unmapped_area+0x132/0x14e
-   do_vfs_ioctl+0x44b/0x490
-   __set_task_blocked+0x5a/0x61
-   vm_mmap_pgoff+0x76/0x87
-   __set_current_blocked+0x30/0x4a
-   sys_ioctl+0x4b/0x6f
-   system_call_fastpath+0x16/0x1b
- thaw            D ffff88013870d890     0  1352   1351 0x00000004
- ...
- Call Trace:
-   rwsem_down_failed_common+0xdb/0x10f
-   call_rwsem_down_write_failed+0x13/0x20
-   down_write+0x25/0x27
-   thaw_super+0x13/0x9e
-   do_vfs_ioctl+0x1f5/0x490
-   vm_mmap_pgoff+0x76/0x87
-   sys_ioctl+0x4b/0x6f
-   filp_close+0x64/0x6c
-   system_call_fastpath+0x16/0x1b
+The reason to use the internal spinlock is that blk_cleanup_queue() will
+switch to use the internal spinlock in the cleanup code path.
 
-where the thaw ioctl deadlocked at thaw_super() when called while chcp was
-waiting at nilfs_transaction_begin() called from
-nilfs_ioctl_change_cpmode().  This deadlock is 100% reproducible.
+        if (q->queue_lock != &q->__queue_lock)
+                q->queue_lock = &q->__queue_lock;
 
-This is because nilfs_ioctl_change_cpmode() first locks sb->s_umount in
-read mode and then waits for unfreezing in nilfs_transaction_begin(),
-whereas thaw_super() locks sb->s_umount in write mode.  The locking of
-sb->s_umount here was intended to make snapshot mounts and the downgrade
-of snapshots to checkpoints exclusive.
+However, processes which are in D state might have taken the driver
+provided spinlock, when the processes wake up, they would release the
+block provided spinlock.
 
-This fixes the deadlock issue by replacing the sb->s_umount usage in
-nilfs_ioctl_change_cpmode() with a dedicated mutex which protects snapshot
-mounts.
+=====================================
+[ BUG: bad unlock balance detected! ]
+3.4.0-rc7+ #238 Not tainted
+-------------------------------------
+fio/3587 is trying to release lock (&(&q->__queue_lock)->rlock) at:
+[<ffffffff813274d2>] blk_queue_bio+0x2a2/0x380
+but there are no more locks to release!
 
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+other info that might help us debug this:
+1 lock held by fio/3587:
+ #0:  (&(&vblk->lock)->rlock){......}, at:
+[<ffffffff8132661a>] get_request_wait+0x19a/0x250
+
+Other drivers use block layer provided spinlock as well, e.g. SCSI.
+
+Switching to the block layer provided spinlock saves a bit of memory and
+does not increase lock contention. Performance test shows no real
+difference is observed before and after this patch.
+
+Changes in v2: Improve commit log as Michael suggested.
+
+Cc: virtualization@lists.linux-foundation.org
+Cc: kvm@vger.kernel.org
+Signed-off-by: Asias He <asias@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nilfs2/ioctl.c     |    4 ++--
- fs/nilfs2/super.c     |    3 +++
- fs/nilfs2/the_nilfs.c |    1 +
- fs/nilfs2/the_nilfs.h |    2 ++
- 4 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/block/virtio_blk.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -182,7 +182,7 @@ static int nilfs_ioctl_change_cpmode(str
- 	if (copy_from_user(&cpmode, argp, sizeof(cpmode)))
- 		goto out;
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -20,8 +20,6 @@ struct workqueue_struct *virtblk_wq;
  
--	down_read(&inode->i_sb->s_umount);
-+	mutex_lock(&nilfs->ns_snapshot_mount_mutex);
+ struct virtio_blk
+ {
+-	spinlock_t lock;
+-
+ 	struct virtio_device *vdev;
+ 	struct virtqueue *vq;
  
- 	nilfs_transaction_begin(inode->i_sb, &ti, 0);
- 	ret = nilfs_cpfile_change_cpmode(
-@@ -192,7 +192,7 @@ static int nilfs_ioctl_change_cpmode(str
- 	else
- 		nilfs_transaction_commit(inode->i_sb); /* never fails */
+@@ -62,7 +60,7 @@ static void blk_done(struct virtqueue *v
+ 	unsigned int len;
+ 	unsigned long flags;
  
--	up_read(&inode->i_sb->s_umount);
-+	mutex_unlock(&nilfs->ns_snapshot_mount_mutex);
- out:
- 	mnt_drop_write(filp->f_path.mnt);
- 	return ret;
---- a/fs/nilfs2/super.c
-+++ b/fs/nilfs2/super.c
-@@ -951,6 +951,8 @@ static int nilfs_attach_snapshot(struct
- 	struct nilfs_root *root;
- 	int ret;
+-	spin_lock_irqsave(&vblk->lock, flags);
++	spin_lock_irqsave(vblk->disk->queue->queue_lock, flags);
+ 	while ((vbr = virtqueue_get_buf(vblk->vq, &len)) != NULL) {
+ 		int error;
  
-+	mutex_lock(&nilfs->ns_snapshot_mount_mutex);
-+
- 	down_read(&nilfs->ns_segctor_sem);
- 	ret = nilfs_cpfile_is_snapshot(nilfs->ns_cpfile, cno);
- 	up_read(&nilfs->ns_segctor_sem);
-@@ -975,6 +977,7 @@ static int nilfs_attach_snapshot(struct
- 	ret = nilfs_get_root_dentry(s, root, root_dentry);
- 	nilfs_put_root(root);
-  out:
-+	mutex_unlock(&nilfs->ns_snapshot_mount_mutex);
- 	return ret;
+@@ -97,7 +95,7 @@ static void blk_done(struct virtqueue *v
+ 	}
+ 	/* In case queue is stopped waiting for more buffers. */
+ 	blk_start_queue(vblk->disk->queue);
+-	spin_unlock_irqrestore(&vblk->lock, flags);
++	spin_unlock_irqrestore(vblk->disk->queue->queue_lock, flags);
  }
  
---- a/fs/nilfs2/the_nilfs.c
-+++ b/fs/nilfs2/the_nilfs.c
-@@ -76,6 +76,7 @@ struct the_nilfs *alloc_nilfs(struct blo
- 	nilfs->ns_bdev = bdev;
- 	atomic_set(&nilfs->ns_ndirtyblks, 0);
- 	init_rwsem(&nilfs->ns_sem);
-+	mutex_init(&nilfs->ns_snapshot_mount_mutex);
- 	INIT_LIST_HEAD(&nilfs->ns_dirty_files);
- 	INIT_LIST_HEAD(&nilfs->ns_gc_inodes);
- 	spin_lock_init(&nilfs->ns_inode_lock);
---- a/fs/nilfs2/the_nilfs.h
-+++ b/fs/nilfs2/the_nilfs.h
-@@ -47,6 +47,7 @@ enum {
-  * @ns_flags: flags
-  * @ns_bdev: block device
-  * @ns_sem: semaphore for shared states
-+ * @ns_snapshot_mount_mutex: mutex to protect snapshot mounts
-  * @ns_sbh: buffer heads of on-disk super blocks
-  * @ns_sbp: pointers to super block data
-  * @ns_sbwtime: previous write time of super block
-@@ -99,6 +100,7 @@ struct the_nilfs {
+ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
+@@ -384,7 +382,6 @@ static int __devinit virtblk_probe(struc
+ 	}
  
- 	struct block_device    *ns_bdev;
- 	struct rw_semaphore	ns_sem;
-+	struct mutex		ns_snapshot_mount_mutex;
+ 	INIT_LIST_HEAD(&vblk->reqs);
+-	spin_lock_init(&vblk->lock);
+ 	vblk->vdev = vdev;
+ 	vblk->sg_elems = sg_elems;
+ 	sg_init_table(vblk->sg, vblk->sg_elems);
+@@ -410,7 +407,7 @@ static int __devinit virtblk_probe(struc
+ 		goto out_mempool;
+ 	}
  
- 	/*
- 	 * used for
+-	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, &vblk->lock);
++	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, NULL);
+ 	if (!q) {
+ 		err = -ENOMEM;
+ 		goto out_put_disk;
 
 
