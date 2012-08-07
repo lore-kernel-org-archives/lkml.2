@@ -1,48 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab2HGRXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:23:46 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60542 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab2HGRXo convert rfc822-to-8bit (ORCPT
+	id S1755052Ab2HGRYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:24:13 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:44500 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab2HGRYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:23:44 -0400
-Subject: Re: [PATCH] driver: misc: bmp085: remove "of_match_table" property.
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Warner Losh <imp@bsdimp.com>
-In-Reply-To: <20120807105225.GT16861@opensource.wolfsonmicro.com>
-Date: Tue, 7 Aug 2012 11:23:40 -0600
-Cc: Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Sourav Poddar <sourav.poddar@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4CEA7FE1-B4B7-4702-BD94-C04154014763@bsdimp.com>
-References: <1344245324-16704-1-git-send-email-sourav.poddar@ti.com> <20120806093033.GH17551@arwen.pp.htv.fi> <20120806154214.GC29272@sirena.org.uk> <20120807054342.GF8468@arwen.pp.htv.fi> <20120807105225.GT16861@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-X-Mailer: Apple Mail (2.1084)
+	Tue, 7 Aug 2012 13:24:09 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Miller <davem@davemloft.net>
+Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Ariyasu <jan.ariyasu@hp.com>, Jan Ariyasu <jan.ariyasu@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@infradead.org>,
+        Xi Wang <xi.wang@gmail.com>
+References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
+	<87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com>
+	<87ipcud3ld.fsf_-_@xmission.com>
+Date: Tue, 07 Aug 2012 10:23:59 -0700
+In-Reply-To: <87ipcud3ld.fsf_-_@xmission.com> (Eric W. Biederman's message of
+	"Tue, 07 Aug 2012 10:17:02 -0700")
+Message-ID: <87d332d39s.fsf_-_@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+/pfVIV2yaBFr3L+xclfJwgiyjuQWMhM4=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;David Miller <davem@davemloft.net>
+X-Spam-Relay-Country: 
+Subject: [PATCH net-next 1/7] sctp: Add infrastructure for per net sysctls
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Aug 7, 2012, at 4:52 AM, Mark Brown wrote:
+Start with an empty sctp_net_table that will be populated as the various
+tunable sysctls are made per net.
 
-> On Tue, Aug 07, 2012 at 08:43:44AM +0300, Felipe Balbi wrote:
->> On Mon, Aug 06, 2012 at 04:42:14PM +0100, Mark Brown wrote:
-> 
->>> It's good practice to have an explict compatible string even if the
->>> default happens to work in order to avoid any name clashes.
-> 
->> of_i2c.c makes no use whatsoever of the compatible string. See that it
->> will build an i2c_boardinfo and register a new device. That compatible
-> 
-> If that's all that's done it seems like a bug frankly, certainly based
-> on previous discussions it ought to be.  There are collisions out there,
-> they've just happened to not bite us yet
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ include/net/netns/sctp.h |    6 +++++-
+ include/net/sctp/sctp.h  |    4 ++++
+ net/sctp/protocol.c      |    7 +++++++
+ net/sctp/sysctl.c        |   21 +++++++++++++++++++++
+ 4 files changed, 37 insertions(+), 1 deletions(-)
 
-Also keep in mind that the device tree is supposed to be a description of the hardware, and different implementations of the device tree may use the compatible string.
-
-Warner
+diff --git a/include/net/netns/sctp.h b/include/net/netns/sctp.h
+index 06ccddf..9576b60 100644
+--- a/include/net/netns/sctp.h
++++ b/include/net/netns/sctp.h
+@@ -4,6 +4,7 @@
+ struct sock;
+ struct proc_dir_entry;
+ struct sctp_mib;
++struct ctl_table_header;
+ 
+ struct netns_sctp {
+ 	DEFINE_SNMP_STAT(struct sctp_mib, sctp_statistics);
+@@ -11,7 +12,9 @@ struct netns_sctp {
+ #ifdef CONFIG_PROC_FS
+ 	struct proc_dir_entry *proc_net_sctp;
+ #endif
+-
++#ifdef CONFIG_SYSCTL
++	struct ctl_table_header *sysctl_header;
++#endif
+ 	/* This is the global socket data structure used for responding to
+ 	 * the Out-of-the-blue (OOTB) packets.  A control sock will be created
+ 	 * for this socket at the initialization time.
+@@ -32,6 +35,7 @@ struct netns_sctp {
+ 
+ 	/* Lock that protects the local_addr_list writers */
+ 	spinlock_t local_addr_lock;
++
+ };
+ 
+ #endif /* __NETNS_SCTP_H__ */
+diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
+index b0e6fe5..15037e7 100644
+--- a/include/net/sctp/sctp.h
++++ b/include/net/sctp/sctp.h
+@@ -375,9 +375,13 @@ static inline void sctp_dbg_objcnt_exit(void) { return; }
+ #if defined CONFIG_SYSCTL
+ void sctp_sysctl_register(void);
+ void sctp_sysctl_unregister(void);
++int sctp_sysctl_net_register(struct net *net);
++void sctp_sysctl_net_unregister(struct net *net);
+ #else
+ static inline void sctp_sysctl_register(void) { return; }
+ static inline void sctp_sysctl_unregister(void) { return; }
++static inline int sctp_sysctl_net_register(struct net *net) { return 0; }
++static inline void sctp_sysctl_net_unregister(struct net *net) { return; }
+ #endif
+ 
+ /* Size of Supported Address Parameter for 'x' address types. */
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index 69bdc72..de25d9c 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -1169,6 +1169,10 @@ static int sctp_net_init(struct net *net)
+ {
+ 	int status;
+ 
++	status = sctp_sysctl_net_register(net);
++	if (status)
++		goto err_sysctl_register;
++
+ 	/* Allocate and initialise sctp mibs.  */
+ 	status = init_sctp_mibs(net);
+ 	if (status)
+@@ -1205,6 +1209,8 @@ err_ctl_sock_init:
+ err_init_proc:
+ 	cleanup_sctp_mibs(net);
+ err_init_mibs:
++	sctp_sysctl_net_unregister(net);
++err_sysctl_register:
+ 	return status;
+ }
+ 
+@@ -1219,6 +1225,7 @@ static void sctp_net_exit(struct net *net)
+ 
+ 	sctp_proc_exit(net);
+ 	cleanup_sctp_mibs(net);
++	sctp_sysctl_net_unregister(net);
+ }
+ 
+ static struct pernet_operations sctp_net_ops = {
+diff --git a/net/sctp/sysctl.c b/net/sctp/sysctl.c
+index 2b2bfe9..7528d59 100644
+--- a/net/sctp/sysctl.c
++++ b/net/sctp/sysctl.c
+@@ -284,6 +284,27 @@ static ctl_table sctp_table[] = {
+ 	{ /* sentinel */ }
+ };
+ 
++static ctl_table sctp_net_table[] = {
++	{ /* sentinel */ }	
++};
++
++int sctp_sysctl_net_register(struct net *net)
++{
++	struct ctl_table *table;
++
++	table = kmemdup(sctp_net_table, sizeof(sctp_net_table), GFP_KERNEL);
++	if (!table)
++		return -ENOMEM;
++
++	net->sctp.sysctl_header = register_net_sysctl(net, "net/sctp", table);
++	return 0;
++}
++
++void sctp_sysctl_net_unregister(struct net *net)
++{
++	unregister_net_sysctl_table(net->sctp.sysctl_header);
++}
++
+ static struct ctl_table_header * sctp_sysctl_header;
+ 
+ /* Sysctl registration.  */
+-- 
+1.7.5.4
 
