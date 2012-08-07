@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239Ab2HGL23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 07:28:29 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:3835 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab2HGL20 (ORCPT
+	id S1754296Ab2HGL2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 07:28:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55947 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab2HGL2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 07:28:26 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6795"; a="221814470"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Jeff Moyer'" <jmoyer@redhat.com>
-Cc: <axboe@kernel.dk>, <linux-mmc@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>,
-        "'open list:DOCUMENTATION'" <linux-doc@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1344166241-18708-1-git-send-email-tlinder@codeaurora.org>	<1344166241-18708-3-git-send-email-tlinder@codeaurora.org> <x49wr1cdlmg.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49wr1cdlmg.fsf@segfault.boston.devel.redhat.com>
-Subject: RE: [RFC/PATCH 2/2] block: Adding ROW scheduling algorithm
-Date: Tue, 7 Aug 2012 14:28:22 +0300
-Message-ID: <004001cd748f$c2a12b20$47e38160$@codeaurora.org>
+	Tue, 7 Aug 2012 07:28:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King <rmk@arm.linux.org.uk>
+Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
+Date: Tue, 7 Aug 2012 11:28:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
+        rpurdie@rpsys.net, bryan.wu@canonical.com,
+        linux-kernel@vger.kernel.org
+References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com> <1344327742.2698.15.camel@pasglop> <20120807082813.GB24257@flint.arm.linux.org.uk>
+In-Reply-To: <20120807082813.GB24257@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQDJuLehQ41MV6PNI9g9xYZZQALMCAF/d/PIAjSnSN2ZOAhNsA==
-Content-language: he
+Message-Id: <201208071128.27616.arnd@arndb.de>
+X-Provags-ID: V02:K0:bZMfZI3mXFJXmooZxU+CIhshSQrfUoRW23hh4/7CVys
+ x/XWyA7/QZfA3exzZJ+G9GNdLjFNtHAZp6HGM/58CkF/vonKwB
+ FhY34UJb3NBddWGgPRckBIysUmihOnrsEkFsDjnCG2XgseRca+
+ jTKmsISkC+VN/Bc7xgbMydGu/fB2HLZ+dgEH2U7YzZmMqqCALL
+ X6Ceq9w7Yhs5SBVY73Xl+e0VkcEwl9LpE8WPmLJdHQO8tAN/bo
+ l9ARJbFpuj4E3KicsG86JvbdWLMgblzqCMP7Uj+hUTtKsDd1Y5
+ f5QWZCTZL4a+Cl5cklwejk42vsA8MVBAZeJ1AdPTEXHI6R6zKN
+ uBLQsA2TpVdOSLCEM9BY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff
+On Tuesday 07 August 2012, Russell King wrote:
+> On Tue, Aug 07, 2012 at 06:22:22PM +1000, Benjamin Herrenschmidt wrote:
+> > On Mon, 2012-08-06 at 22:31 +0100, Russell King wrote:
+> > > 
+> > > So, if we made this a numeric index, then we have 32 resource types
+> > > to deal with, and no need to bugger around with re-using an existing
+> > > type for something else.
+> > > 
+> > > This makes sense, MEM, IRQ and DMA are all mutually exclusive, as
+> > > should be MEM and IO (because they can't coexist in two resource trees
+> > > at the same time.)  BUS only gets used in a hand-full of places and
+> > > not with any other flags.
+> > > 
+> > > So, looks like we can have 27 new resource types fairly easily.
+> > 
+> > Besides we can easily use a single IORESOURCE_OTHER for most things
+> > really, if we prefer, make it IORESOURCE_IO | IORESOURCE_MEM and have
+> > platform device avoid that combo...
+> 
+> That will work just the same way that I'm suggesting.  We can keep
+> the existing bit-based numbers, and:
+> 
+> #define IORESOURCE_OTHER        0x00000300
+> 
+> and the platform code will avoid using the standard resource trees,
+> because it does things correctly here:
+> 
+>                         if (resource_type(r) == IORESOURCE_MEM)
+>                                 p = &iomem_resource;
+>                         else if (resource_type(r) == IORESOURCE_IO)
+>                                 p = &ioport_resource;
+> 
 
-First of all - thank you for your input! I think I did address at least some
-of the issues you mentioned. But allow me to elaborate
+I had not realized that we did this in platform_device_add(), which
+means using IORESOURCE_IO in mfd is even more broken than I thought
+previously.
 
-> Perhaps you could start off by describing the workload, and describing why
-> the existing I/O schedulers do not perform well.
+I've looked through the code some more and your solution sounds
+like the best option to get this sorted quickly. The entire
+resource logic will probably come back to haunt us with ACPI 5.0
+which adds region types for a number of new things (i2c, gpio,
+ipmi, cmos, ...) and we might end up representing them
+as resource. Or we might not.
 
- In mobile devices we won't have AS much parallel threads as on desktops.
-Usually it's a single thread or at most 2 simultaneous working threads for
-read & write.
-The existing I/O schedulers add unnecessary complexity (CFQ) or don't give
-read requests as much priority over write as we would like them to get.
+If we introduce a new IORESOURCE_OTHER, I would actually prefer to
+define it to 0x00000000 for purely aesthetic reasons, the effect
+should be the same as using 0x00000300.
 
->  Then, you could go on to
-> say why you feel that the existing I/O schedulers could not be modified to
-> perform better under your workload, 
-
-We ran tests with existing I/O schedulers and tried tuning them to serve our
-purposes better but it didn't give us the results we were able to achieve
-with ROW.
-
->and wrap the whole thing up with
-> some convincing performance numbers (including your testing procedures
-> so others could verify your work independently).
-
-Aren't the test results I published convincing? It shows that ROW has the
-best READ throughput and the lowest READ latency. Actually, when playing
-with ROW tunable the READ throughput  can go up to 34 mb/sec and READ
-latency down to 70 msec (with WRITE throughput at ~15 mb/sec). The downside
-is that in such configuration the write latency is ~13 sec which is a bit
-too much.
-
-I was testing on our Android based device. I don't know what numbers will
-ROW produce if you run it on a PC because as I mentioned, ROW was developed
-to run on mobile devices.
-As I mentioned, the test I performed was parallel READ and WRITE using lmdd.
-I'm not sure I understand what info is missing in order for others to
-reproduce it...
-
-Thanks,
-Tanya Brokhman
----
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+	Arnd
