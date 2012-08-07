@@ -1,81 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab2HGNfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 09:35:08 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:24622 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab2HGNfG convert rfc822-to-8bit (ORCPT
+	id S1754542Ab2HGNmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 09:42:12 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:50058
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752360Ab2HGNmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 09:35:06 -0400
+	Tue, 7 Aug 2012 09:42:10 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zzzz1202hzz15d4Iz2dh668h839h944hd25he5bhf0ah)
+X-WSS-ID: 0M8E0Q2-01-7WG-02
+X-M-MSG: 
+Date: Tue, 7 Aug 2012 15:41:56 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <joro@8bytes.org>
+Subject: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+Message-ID: <20120807134156.GP1996@amd.com>
 MIME-Version: 1.0
-Message-ID: <b16eb976-6b02-4ba5-b0b8-219f25c99c0d@default>
-Date: Tue, 7 Aug 2012 06:34:30 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: RE: [RFC/PATCH] zcache/ramster rewrite and promotion
-References: <c31aaed4-9d50-4cdf-b794-367fc5850483@default>
- <CAOJsxLEhW=b3En737d5751xufW2BLehPc2ZGGG1NEtRVSo3=jg@mail.gmail.com>
- <b9bee363-321e-409a-bc8e-65ffed8a1dc5@default>
- <CAOJsxLHe6egmMWdEAGj7DGHHX-hqYMhVWDggny9CsT0H-DOL-g@mail.gmail.com>
- <f54214e7-cee4-4cbf-aad1-6c1f91867879@default>
- <CAOJsxLHyPj6KrVkB5nj-9vFBXKmn5BN4ArN_7MDmTeVEG3N3Gw@mail.gmail.com>
- <ad942d93-489f-4bf4-96bc-8f65b1a23ea1@default>
- <CAOJsxLHwFqjFC8BqfCHA_6OPFbvNfaFkQEjfPTw=_6QsPKweNw@mail.gmail.com>
-In-Reply-To: <CAOJsxLHwFqjFC8BqfCHA_6OPFbvNfaFkQEjfPTw=_6QsPKweNw@mail.gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Pekka Enberg [mailto:penberg@kernel.org]
-> Subject: Re: [RFC/PATCH] zcache/ramster rewrite and promotion
-> 
-> On Mon, Aug 6, 2012 at 7:10 PM, Dan Magenheimer
-> <dan.magenheimer@oracle.com> wrote:
-> > Hmmm.. there's also zbud.c and tmem.c which are critical components
-> > of both zcache and ramster.  And there are header files as well which
-> > will need to either be in mm/ or somewhere in include/linux/
-> >
-> > Is there a reason or rule that mm/ can't have subdirectories?
-> >
-> > Since zcache has at least three .c files plus ramster.c, and
-> > since mm/frontswap.c and mm/cleancache.c are the foundation on
-> > which all of these are built, I was thinking grouping all six
-> > (plus headers) in the same mm/tmem/ subdirectory was a good
-> > way to keep mm/ from continuing to get more cluttered... not counting
-> > new zcache and ramster files, there are now 74 .c files in mm/!
-> > (Personally, I think a directory has too many files in it if
-> > "ls" doesn't fit in a 25x80 window.)
-> >
-> > Thoughts?
-> 
-> There's no reason we can't have subdirectories. That said, I really
-> don't see the point of having a separate directory called 'tmem'. It
-> might make sense to have mm/zcache and/or mm/ramster but I suspect
-> you can just fold the core code in mm/zcache.c and mm/ramster.c by
-> slimming down the weird Solaris-like 'tmem' abstractions.
+Hi,
 
-I'm not sure I understand... what is Solaris-like about tmem?
-And what would you slim down?
+starting with Linux 3.6-rc1 I experience this BUG on one of my test
+machines. Please let me know if you need any additional information.
 
-While I agree one can often glom three separate 1000-line .c files
-into a single 3000-line .c file, I recently spent some time moving
-the other direction to, I thought, improve readability.  Do kernel
-developers have a preference for huge .c files rather than smaller
-logically-separated moderate-sized files in a subdirectory?
+[   20.271810] ------------[ cut here ]------------
+[   20.276869] kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+[   20.284306] invalid opcode: 0000 [#1] SMP
+[   20.288806] Modules linked in: nfs4 auth_rpcgss nfs fscache lockd sunrpc kvm_intel radeon kvm ttm drm_kms_helper i7core_edac drm edac_core joydev hpilo psmouse hid_generic i2c_algo_bit serio_raw usbhid hid bnx2
+[   20.309466] CPU 2
+[   20.311476] Pid: 1073, comm: mount.nfs Not tainted 3.6.0-rc1 #24 HP ProLiant DL360 G7
+[   20.320264] RIP: 0010:[<ffffffffa029108b>]  [<ffffffffa029108b>] nfs_idmap_legacy_upcall+0x34b/0x350 [nfs4]
+[   20.320266] RSP: 0018:ffff880214e333e8  EFLAGS: 00010286
+[   20.320267] RAX: 0000000000000010 RBX: ffff880211f22540 RCX: 0000000000000000
+[   20.320268] RDX: 0000000000000000 RSI: ffff880216ba6ef4 RDI: ffff880211f22552
+[   20.320269] RBP: ffff880214e33428 R08: 000000000000003a R09: ffff880214e33380
+[   20.320270] R10: 000000002e8cc855 R11: 000000001fce9892 R12: ffff8802130c1bc0
+[   20.320271] R13: ffff880216baa0c0 R14: ffff880415b78280 R15: 0000000000000010
+[   20.320273] FS:  00007fe6d4208720(0000) GS:ffff880217c20000(0000) knlGS:0000000000000000
+[   20.320274] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   20.320275] CR2: 00007fa82360f6c0 CR3: 0000000216399000 CR4: 00000000000007e0
+[   20.320276] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   20.320277] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   20.320279] Process mount.nfs (pid: 1073, threadinfo ffff880214e32000, task ffff880213198000)
+[   20.320280] Stack:
+[   20.320282]  ffff880216ba6ee4 ffff880216ba6ef4 ffff880214e33428 ffff880216baa0c0
+[   20.320284]  ffff880211f22b40 ffff880211f226c0 0000000000000000 ffffffffa0296ddc
+[   20.320286]  ffff880214e334c8 ffffffff812a35b7 0000000000000000 ffff880415517080
+[   20.320287] Call Trace:
+[   20.320294]  [<ffffffff812a35b7>] request_key_and_link+0x2e7/0x410
+[   20.320297]  [<ffffffff812a374e>] request_key_with_auxdata+0x1e/0x70
+[   20.320304]  [<ffffffffa0291166>] nfs_idmap_request_key+0xd6/0x1b0 [nfs4]
+[   20.320310]  [<ffffffffa029143b>] nfs_idmap_lookup_id+0xeb/0x110 [nfs4]
+[   20.320316]  [<ffffffffa029166e>] ? nfs_map_string_to_numeric+0x3e/0xb0 [nfs4]
+[   20.320322]  [<ffffffffa0291e5c>] nfs_map_group_to_gid+0x5c/0x80 [nfs4]
+[   20.320327]  [<ffffffffa028bca1>] decode_getfattr_attrs+0xb71/0xb90 [nfs4]
+[   20.320331]  [<ffffffff810135ca>] ? __switch_to+0x17a/0x410
+[   20.320336]  [<ffffffffa028bd41>] decode_getfattr_generic.constprop.71+0x81/0xb0 [nfs4]
+[   20.320341]  [<ffffffffa028bfc0>] ? nfs4_xdr_dec_link+0xd0/0xd0 [nfs4]
+[   20.320346]  [<ffffffffa028bd83>] decode_getfattr+0x13/0x20 [nfs4]
+[   20.320350]  [<ffffffffa028c02b>] nfs4_xdr_dec_lookup_root+0x6b/0x70 [nfs4]
+[   20.320355]  [<ffffffffa028bfc0>] ? nfs4_xdr_dec_link+0xd0/0xd0 [nfs4]
+[   20.320370]  [<ffffffffa020e195>] rpcauth_unwrap_resp+0x65/0x70 [sunrpc]
+[   20.320377]  [<ffffffffa0203918>] call_decode+0x308/0x400 [sunrpc]
+[   20.320381]  [<ffffffff81079a70>] ? autoremove_wake_function+0x40/0x40
+[   20.320391]  [<ffffffffa020c6a0>] __rpc_execute+0x70/0x2c0 [sunrpc]
+[   20.320397]  [<ffffffffa0203610>] ? call_transmit_status+0xd0/0xd0 [sunrpc]
+[   20.320404]  [<ffffffffa0203610>] ? call_transmit_status+0xd0/0xd0 [sunrpc]
+[   20.320413]  [<ffffffffa020cf3f>] rpc_execute+0x4f/0xb0 [sunrpc]
+[   20.320420]  [<ffffffffa0205215>] rpc_run_task+0x75/0x90 [sunrpc]
+[   20.320427]  [<ffffffffa0205333>] rpc_call_sync+0x43/0x70 [sunrpc]
+[   20.320431]  [<ffffffffa027f393>] _nfs4_call_sync+0x13/0x20 [nfs4]
+[   20.320435]  [<ffffffffa028230c>] _nfs4_lookup_root.isra.37+0xac/0xc0 [nfs4]
+[   20.320440]  [<ffffffffa028236f>] nfs4_lookup_root+0x4f/0x90 [nfs4]
+[   20.320444]  [<ffffffffa0285c65>] nfs4_proc_get_rootfh+0x35/0xd0 [nfs4]
+[   20.320450]  [<ffffffffa0293a33>] nfs4_get_rootfh+0x33/0xd0 [nfs4]
+[   20.320459]  [<ffffffffa025cee4>] ? nfs_alloc_fattr+0x24/0x80 [nfs]
+[   20.320465]  [<ffffffffa0293b36>] nfs4_server_common_setup+0x66/0xf0 [nfs4]
+[   20.320471]  [<ffffffffa029432d>] nfs4_create_server+0x1bd/0x2e0 [nfs4]
+[   20.320474]  [<ffffffff8116c81d>] ? __kmalloc_track_caller+0x13d/0x190
+[   20.320480]  [<ffffffffa028f808>] nfs4_remote_mount+0x38/0x70 [nfs4]
+[   20.320483]  [<ffffffff8117abe3>] mount_fs+0x43/0x1b0
+[   20.320485]  [<ffffffff81195156>] vfs_kern_mount+0x76/0x120
+[   20.320491]  [<ffffffffa028f785>] nfs_do_root_mount+0x95/0xe0 [nfs4]
+[   20.320497]  [<ffffffffa028fac0>] nfs4_try_mount+0x40/0x60 [nfs4]
+[   20.320504]  [<ffffffffa0262077>] nfs_fs_mount+0x487/0xa40 [nfs]
+[   20.320512]  [<ffffffffa02619e0>] ? nfs_clone_super+0x140/0x140 [nfs]
+[   20.320519]  [<ffffffffa0260270>] ? nfs_clone_sb_security+0x60/0x60 [nfs]
+[   20.320521]  [<ffffffff8117abe3>] mount_fs+0x43/0x1b0
+[   20.320523]  [<ffffffff811942c3>] ? find_filesystem+0x63/0x80
+[   20.320526]  [<ffffffff81195156>] vfs_kern_mount+0x76/0x120
+[   20.320528]  [<ffffffff811959c4>] do_kern_mount+0x54/0x110
+[   20.320530]  [<ffffffff81197424>] do_mount+0x1a4/0x8a0
+[   20.320533]  [<ffffffff811970fa>] ? copy_mount_options+0x3a/0x170
+[   20.320535]  [<ffffffff81197bb0>] sys_mount+0x90/0xe0
+[   20.320538]  [<ffffffff81620ba9>] system_call_fastpath+0x16/0x1b
+[   20.320559] Code: ff 0f 1f 80 00 00 00 00 66 c7 07 00 00 83 ea 02 48 83 c7 02 e9 5e fd ff ff 0f 1f 80 00 00 00 00 41 bf f4 ff ff ff e9 0b fe ff ff <0f> 0b 0f 1f 00 55 48 89 e5 48 83 ec 60 48 89 5d d8 4c 89 65 e0
+[   20.320565] RIP  [<ffffffffa029108b>] nfs_idmap_legacy_upcall+0x34b/0x350 [nfs4]
+[   20.320566]  RSP <ffff880214e333e8>
+[   20.320635] ---[ end trace 883f5b90b0291611 ]---
 
-Thanks,
-Dan
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
