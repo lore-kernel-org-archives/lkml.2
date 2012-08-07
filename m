@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711Ab2HGDyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:54:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59629 "EHLO
+	id S1757338Ab2HGDyi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:54:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59627 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757283Ab2HGDiM (ORCPT
+	by vger.kernel.org with ESMTP id S1757281Ab2HGDiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:12 -0400
-Message-Id: <20120807032757.155880179@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:11 -0400
+Message-Id: <20120807032758.818646584@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:02 +0100
+Date: Tue, 07 Aug 2012 04:28:14 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Liang Li <liang.li@windriver.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [ 07/70] cfg80211: fix interface combinations check for  ADHOC(IBSS)
+        alan@lxorguk.ukuu.org.uk, Theodore Tso <tytso@mit.edu>
+Subject: [ 19/70] random: use the arch-specific rng in xfer_secondary_pool
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,65 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liang Li <liang.li@windriver.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-partial of commit 8e8b41f9d8c8e63fc92f899ace8da91a490ac573 upstream.
+commit e6d4947b12e8ad947add1032dd754803c6004824 upstream.
 
-As part of commit 463454b5dbd8 ("cfg80211: fix interface
-combinations check"), this extra check was introduced:
+If the CPU supports a hardware random number generator, use it in
+xfer_secondary_pool(), where it will significantly improve things and
+where we can afford it.
 
-       if ((all_iftypes & used_iftypes) != used_iftypes)
-               goto cont;
+Also, remove the use of the arch-specific rng in
+add_timer_randomness(), since the call is significantly slower than
+get_cycles(), and we're much better off using it in
+xfer_secondary_pool() anyway.
 
-However, most wireless NIC drivers did not advertise ADHOC in
-wiphy.iface_combinations[i].limits[] and hence we'll get -EBUSY
-when we bring up a ADHOC wlan with commands similar to:
-
- # iwconfig wlan0 mode ad-hoc && ifconfig wlan0 up
-
-In commit 8e8b41f9d8c8e ("cfg80211: enforce lack of interface
-combinations"), the change below fixes the issue:
-
-       if (total == 1)
-               return 0;
-
-But it also introduces other dependencies for stable. For example,
-a full cherry pick of 8e8b41f9d8c8e would introduce additional
-regressions unless we also start cherry picking driver specific
-fixes like the following:
-
-  9b4760e  ath5k: add possible wiphy interface combinations
-  1ae2fc2  mac80211_hwsim: advertise interface combinations
-  20c8e8d  ath9k: add possible wiphy interface combinations
-
-And the purpose of the 'if (total == 1)' is to cover the specific
-use case (IBSS, adhoc) that was mentioned above. So we just pick
-the specific part out from 8e8b41f9d8c8e here.
-
-Doing so gives stable kernels a way to fix the change introduced
-by 463454b5dbd8, without having to make cherry picks specific to
-various NIC drivers.
-
-Signed-off-by: Liang Li <liang.li@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/wireless/util.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/char/random.c |   25 ++++++++++++++++---------
+ 1 file changed, 16 insertions(+), 9 deletions(-)
 
-diff --git a/net/wireless/util.c b/net/wireless/util.c
-index b5b6890..88bd89e 100644
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -974,6 +974,9 @@ int cfg80211_can_change_interface(struct cfg80211_registered_device *rdev,
- 	}
- 	mutex_unlock(&rdev->devlist_mtx);
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index df3358a..f67ae3e 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -254,6 +254,7 @@
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
+ #include <linux/ptrace.h>
++#include <linux/kmemcheck.h>
  
-+	if (total == 1)
-+		return 0;
-+
- 	for (i = 0; i < rdev->wiphy.n_iface_combinations; i++) {
- 		const struct ieee80211_iface_combination *c;
- 		struct ieee80211_iface_limit *limits;
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ # include <linux/irq.h>
+@@ -702,11 +703,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
+ 		goto out;
+ 
+ 	sample.jiffies = jiffies;
+-
+-	/* Use arch random value, fall back to cycles */
+-	if (!arch_get_random_int(&sample.cycles))
+-		sample.cycles = get_cycles();
+-
++	sample.cycles = get_cycles();
+ 	sample.num = num;
+ 	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
+ 
+@@ -838,7 +835,11 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+  */
+ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ {
+-	__u32 tmp[OUTPUT_POOL_WORDS];
++	union {
++		__u32	tmp[OUTPUT_POOL_WORDS];
++		long	hwrand[4];
++	} u;
++	int	i;
+ 
+ 	if (r->pull && r->entropy_count < nbytes * 8 &&
+ 	    r->entropy_count < r->poolinfo->POOLBITS) {
+@@ -849,17 +850,23 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ 		/* pull at least as many as BYTES as wakeup BITS */
+ 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
+ 		/* but never more than the buffer size */
+-		bytes = min_t(int, bytes, sizeof(tmp));
++		bytes = min_t(int, bytes, sizeof(u.tmp));
+ 
+ 		DEBUG_ENT("going to reseed %s with %d bits "
+ 			  "(%d of %d requested)\n",
+ 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
+ 
+-		bytes = extract_entropy(r->pull, tmp, bytes,
++		bytes = extract_entropy(r->pull, u.tmp, bytes,
+ 					random_read_wakeup_thresh / 8, rsvd);
+-		mix_pool_bytes(r, tmp, bytes, NULL);
++		mix_pool_bytes(r, u.tmp, bytes, NULL);
+ 		credit_entropy_bits(r, bytes*8);
+ 	}
++	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
++	for (i = 0; i < 4; i++)
++		if (arch_get_random_long(&u.hwrand[i]))
++			break;
++	if (i)
++		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
+ }
+ 
+ /*
 
 
