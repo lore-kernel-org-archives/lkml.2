@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab2HGW15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:27:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	id S932386Ab2HGW2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:28:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757060Ab2HGW1x (ORCPT
+	with ESMTP id S932346Ab2HGW2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:27:53 -0400
+	Tue, 7 Aug 2012 18:28:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [ 018/122] ARM: dt: tegra trimslice: enable USB2 port
-Date: Tue,  7 Aug 2012 15:25:06 -0700
-Message-Id: <20120807221949.877322100@linuxfoundation.org>
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Bart Van Assche <bvanassche@acm.org>, Tejun Heo <tj@kernel.org>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 016/122] SCSI: Avoid dangling pointer in scsi_requeue_command()
+Date: Tue,  7 Aug 2012 15:25:04 -0700
+Message-Id: <20120807221949.699930916@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,30 +31,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit a6a3dd1aed31ace7c827236c53d83f4e845dcff2 upstream.
+commit 940f5d47e2f2e1fa00443921a0abf4822335b54d upstream.
 
-This was accidentally disabled by commit 2a5fdc9 "ARM: dt: tegra:
-invert status=disable vs status=okay".
+When we call scsi_unprep_request() the command associated with the request
+gets destroyed and therefore drops its reference on the device.  If this was
+the only reference, the device may get released and we end up with a NULL
+pointer deref when we call blk_requeue_request.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Reported-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+[jejb: enhance commend and add commit log for stable]
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/tegra-trimslice.dts |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/scsi_lib.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/arch/arm/boot/dts/tegra-trimslice.dts
-+++ b/arch/arm/boot/dts/tegra-trimslice.dts
-@@ -279,6 +279,7 @@
- 	};
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -479,15 +479,26 @@ void scsi_requeue_run_queue(struct work_
+  */
+ static void scsi_requeue_command(struct request_queue *q, struct scsi_cmnd *cmd)
+ {
++	struct scsi_device *sdev = cmd->device;
+ 	struct request *req = cmd->request;
+ 	unsigned long flags;
  
- 	usb@c5004000 {
-+		status = "okay";
- 		nvidia,phy-reset-gpio = <&gpio 168 0>; /* gpio PV0 */
- 	};
++	/*
++	 * We need to hold a reference on the device to avoid the queue being
++	 * killed after the unlock and before scsi_run_queue is invoked which
++	 * may happen because scsi_unprep_request() puts the command which
++	 * releases its reference on the device.
++	 */
++	get_device(&sdev->sdev_gendev);
++
+ 	spin_lock_irqsave(q->queue_lock, flags);
+ 	scsi_unprep_request(req);
+ 	blk_requeue_request(q, req);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
  
+ 	scsi_run_queue(q);
++
++	put_device(&sdev->sdev_gendev);
+ }
+ 
+ void scsi_next_command(struct scsi_cmnd *cmd)
 
 
