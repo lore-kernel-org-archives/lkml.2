@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab2HGRol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:44:41 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:19231
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755851Ab2HGRoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:44:37 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M8EBY5-02-019-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 1/6] perf, tools: Fix version file for perf documentation with OUTPUT variable set
-Date: Tue, 7 Aug 2012 19:43:11 +0200
-Message-ID: <1344361396-7237-2-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.8.4
-In-Reply-To: <1344361396-7237-1-git-send-email-robert.richter@amd.com>
-References: <1344361396-7237-1-git-send-email-robert.richter@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	id S1755802Ab2HGRoe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:44:34 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:35600 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755650Ab2HGRo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 13:44:28 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: X86-ML <x86@kernel.org>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH v0 10/12] x86, microcode, AMD: Add reverse equiv table search
+Date: Tue,  7 Aug 2012 19:44:19 +0200
+Message-Id: <1344361461-10076-11-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.11.rc1
+In-Reply-To: <1344361461-10076-1-git-send-email-bp@amd64.org>
+References: <1344361461-10076-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following:
+From: Borislav Petkov <borislav.petkov@amd.com>
 
- + make OUTPUT=/.../.build/perf-user/ DESTDIR=/.../.install/perf-user/ man install-man
- make -C Documentation man
- make[1]: Entering directory `/.../.source/linux.perf/tools/perf/Documentation'
- make[2]: Entering directory `/.../.source/linux.perf/tools/perf'
- make[2]: *** No rule to make target `PERF-VERSION-FILE'.  Stop.
+We search the equivalence table using the CPUID(1) signature of the
+CPU in order to get the equivalence ID of the patch which we need to
+apply. Add a function which does the reverse - it will be needed in
+later patches.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+While at it, pull the other equiv table function up in the file so that
+it can be used by other functionality without forward declarations.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- tools/perf/Documentation/Makefile |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/microcode_amd.c | 46 +++++++++++++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-index ca600e0..9f2e44f 100644
---- a/tools/perf/Documentation/Makefile
-+++ b/tools/perf/Documentation/Makefile
-@@ -195,10 +195,10 @@ install-pdf: pdf
- #install-html: html
- #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index 94ecdaa24052..03ed5af7053d 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -78,6 +78,36 @@ static struct equiv_cpu_entry *equiv_cpu_table;
+ /* page-sized ucode patch buffer */
+ void *patch;
  
--../PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
--	$(QUIET_SUBDIR0)../ $(QUIET_SUBDIR1) PERF-VERSION-FILE
-+$(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
-+	$(QUIET_SUBDIR0)../ $(QUIET_SUBDIR1) $(OUTPUT)PERF-VERSION-FILE
++static u16 find_equiv_id(unsigned int cpu)
++{
++	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
++	int i = 0;
++
++	BUG_ON(equiv_cpu_table == NULL);
++
++	while (equiv_cpu_table[i].installed_cpu != 0) {
++		if (uci->cpu_sig.sig == equiv_cpu_table[i].installed_cpu)
++			return equiv_cpu_table[i].equiv_cpu;
++
++		i++;
++	}
++	return 0;
++}
++
++static u32 find_cpu_family_by_equiv_cpu(u16 equiv_cpu)
++{
++	int i = 0;
++
++	BUG_ON(!equiv_cpu_table);
++
++	while (equiv_cpu_table[i].equiv_cpu != 0) {
++		if (equiv_cpu == equiv_cpu_table[i].equiv_cpu)
++			return equiv_cpu_table[i].installed_cpu;
++		i++;
++	}
++	return 0;
++}
++
+ static int collect_cpu_info_amd(int cpu, struct cpu_signature *csig)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+@@ -119,22 +149,6 @@ static unsigned int verify_ucode_size(int cpu, u32 patch_size,
+ 	return patch_size;
+ }
  
---include ../PERF-VERSION-FILE
-+-include $(OUTPUT)PERF-VERSION-FILE
- 
- #
- # Determine "include::" file references in asciidoc files.
+-static u16 find_equiv_id(unsigned int cpu)
+-{
+-	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+-	int i = 0;
+-
+-	BUG_ON(equiv_cpu_table == NULL);
+-
+-	while (equiv_cpu_table[i].installed_cpu != 0) {
+-		if (uci->cpu_sig.sig == equiv_cpu_table[i].installed_cpu)
+-			return equiv_cpu_table[i].equiv_cpu;
+-
+-		i++;
+-	}
+-	return 0;
+-}
+-
+ /*
+  * we signal a good patch is found by returning its size > 0
+  */
 -- 
-1.7.8.4
-
+1.7.11.rc1
 
