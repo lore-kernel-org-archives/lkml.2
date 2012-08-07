@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab2HGWhJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:37:09 -0400
+	id S932864Ab2HGWhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:37:16 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757360Ab2HGWhB (ORCPT
+	with ESMTP id S932850Ab2HGWhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:37:01 -0400
+	Tue, 7 Aug 2012 18:37:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steve Sakoman <steve@sakoman.com>, Tony Lindgren <tony@atomide.com>,
-        Nishanth Menon <nm@ti.com>, Kevin Hilman <khilman@ti.com>
-Subject: [ 016/109] ARM: OMAP2+: OPP: Fix to ensure check of right oppdef after bad one
-Date: Tue,  7 Aug 2012 15:34:35 -0700
-Message-Id: <20120807222044.512467387@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 019/109] ASoC: wm8962: Redo early init of the part on resume
+Date: Tue,  7 Aug 2012 15:34:38 -0700
+Message-Id: <20120807222044.775555518@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,57 +29,32 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Nishanth Menon <nm@ti.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit b110547e586eb5825bc1d04aa9147bff83b57672 upstream.
+commit e4dd76788c7e5b27165890d712c8c4f6f0abd645 upstream.
 
-Commit 9fa2df6b90786301b175e264f5fa9846aba81a65
-(ARM: OMAP2+: OPP: allow OPP enumeration to continue if device is not present)
-makes the logic:
-for (i = 0; i < opp_def_size; i++) {
-	<snip>
-	if (!oh || !oh->od) {
-		<snip>
-		continue;
-	}
-<snip>
-opp_def++;
-}
+Ensure robust startup of the part by going through the reset procedure
+prior to resyncing the full register cache, avoiding potential intermittent
+faults in some designs.
 
-In short, the moment we hit a "Bad OPP", we end up looping the list
-comparing against the bad opp definition pointer for the rest of the
-iteration count. Instead, increment opp_def in the for loop itself
-and allow continue to be used in code without much thought so that
-we check the next set of OPP definition pointers :)
-
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Cc: Steve Sakoman <steve@sakoman.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Kevin Hilman <khilman@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/opp.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ sound/soc/codecs/wm8962.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/mach-omap2/opp.c
-+++ b/arch/arm/mach-omap2/opp.c
-@@ -53,7 +53,7 @@ int __init omap_init_opp_table(struct om
- 	omap_table_init = 1;
- 
- 	/* Lets now register with OPP library */
--	for (i = 0; i < opp_def_size; i++) {
-+	for (i = 0; i < opp_def_size; i++, opp_def++) {
- 		struct omap_hwmod *oh;
- 		struct device *dev;
- 
-@@ -86,7 +86,6 @@ int __init omap_init_opp_table(struct om
- 					__func__, opp_def->freq,
- 					opp_def->hwmod_name, i, r);
- 		}
--		opp_def++;
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -3710,6 +3710,9 @@ static int wm8962_runtime_resume(struct
  	}
  
- 	return 0;
+ 	regcache_cache_only(wm8962->regmap, false);
++
++	wm8962_reset(wm8962);
++
+ 	regcache_sync(wm8962->regmap);
+ 
+ 	regmap_update_bits(wm8962->regmap, WM8962_ANTI_POP,
 
 
