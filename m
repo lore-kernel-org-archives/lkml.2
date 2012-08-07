@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab2HGHnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 03:43:40 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:46989 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab2HGHnL (ORCPT
+	id S1751590Ab2HGHqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 03:46:18 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57638 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab2HGHqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 03:43:11 -0400
+	Tue, 7 Aug 2012 03:46:16 -0400
+Message-ID: <5020C70B.20604@linux.vnet.ibm.com>
+Date: Tue, 07 Aug 2012 13:13:07 +0530
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Cc: Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        KVM <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, X86 <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 07 Aug 2012 13:10:13 +0530
-Message-Id: <20120807074013.20169.18748.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com>
-References: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH 2/3] Documentation/header : Correct vmrun to vmcall typo
-x-cbid: 12080707-1618-0000-0000-000002364D1C
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Alexander Graf <agraf@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Thomas Gleixner <tglx@linutronix.de>, X86 <x86@kernel.org>
+Subject: Re: [PATCH 3/3] Documentation/ppc: Add ppc hypercall documentation
+References: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com> <20120807074026.20169.93816.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120807074026.20169.93816.sendpatchset@codeblue.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12080707-7014-0000-0000-000001AFE268
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+On 08/07/2012 01:10 PM, Raghavendra K T wrote:
+> From: Alexander Graf<agraf@suse.de>
+>
+> Signed-off-by: Alexander Graf<agraf@suse.de>
+> Signed-off-by: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
+> ---
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
-
- arch/x86/include/asm/kvm_para.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 2f7712e..20f5697 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -116,7 +116,7 @@ static inline bool kvm_check_and_clear_guest_paused(void)
-  */
- #define KVM_HYPERCALL ".byte 0x0f,0x01,0xc1"
- 
--/* For KVM hypercalls, a three-byte sequence of either the vmrun or the vmmrun
-+/* For KVM hypercalls, a three-byte sequence of either the vmcall or the vmmcall
-  * instruction.  The hypervisor may replace it with something else but only the
-  * instructions are guaranteed to be supported.
-  *
+Sorry it meant to be 3/3.
 
