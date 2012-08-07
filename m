@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757199Ab2HGCHu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 22:07:50 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34924 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756810Ab2HGCHt (ORCPT
+	id S1757214Ab2HGCIY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 22:08:24 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:58744
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756926Ab2HGCIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 22:07:49 -0400
+	Mon, 6 Aug 2012 22:08:22 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-SpamScore: 8
+X-BigFish: VS8(zzzz1202hzz8275bh8275dhz2ei87h2a8h668h839hd24he5bhe96h107ahff4o)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Bob Liu <lliubbo@gmail.com>
+To: <davem@davemloft.net>
+CC: <samuel@sortiz.org>, <rmk+kernel@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <kuninori.morimoto.gx@renesas.com>,
+        <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>, <netdev@vger.kernel.org>,
+        Sonic Zhang <sonic.zhang@analog.com>, Bob Liu <lliubbo@gmail.com>
+Subject: [RESEND][PATCH] drivers: net: irda: bfin_sir: fix compile error
+Date: Tue, 7 Aug 2012 10:08:36 +0800
+Message-ID: <1344305316-23916-1-git-send-email-lliubbo@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <1343824834.3859.2.camel@phoenix>
-References: <1343824834.3859.2.camel@phoenix>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Tue, 7 Aug 2012 10:07:27 +0800
-X-Google-Sender-Auth: ktUp9aBYRnYziWiwUYyMJL38kgI
-Message-ID: <CAK5ve-+dvpQqj1q9QF8nfST0Ff=W7WCO=_jYdGi7gOjsWO+93w@mail.gmail.com>
-Subject: Re: [PATCH RFT] leds: lp8788: Fix updating scale configuration bits
-To: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Axel Lin <axel.lin@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 1, 2012 at 8:40 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> We need to do left shift (cfg->num + LP8788_ISINK_SCALE_OFFSET) bits for
-> updating scale configuration.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> Hi Milo,
-> Current code of updating scale configuration bits looks wrong to me
-> because the mask does not match the val.
-> I don't have this hardware, can you test this patch?
->
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-Milo, I think this patch from Axel is reasonable. could you please
-take a look at this?
+Bit IREN is replaced by UMOD_IRDA and UMOD_MASK since blackfin 60x added, but
+this driver didn't update which will cause bfin_sir build error:
 
--Bryan
+drivers/net/irda/bfin_sir.c:161:9: error: 'IREN' undeclared (first use in this
+function)
+drivers/net/irda/bfin_sir.c:435:18: error: 'IREN' undeclared (first use in
+this function)
+drivers/net/irda/bfin_sir.c:521:11: error: 'IREN' undeclared (first use in
+this function)
 
-> Thanks,
-> Axel
->  drivers/leds/leds-lp8788.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/leds/leds-lp8788.c b/drivers/leds/leds-lp8788.c
-> index 53bd136..0ade6eb 100644
-> --- a/drivers/leds/leds-lp8788.c
-> +++ b/drivers/leds/leds-lp8788.c
-> @@ -63,7 +63,7 @@ static int lp8788_led_init_device(struct lp8788_led *led,
->         /* scale configuration */
->         addr = LP8788_ISINK_CTRL;
->         mask = 1 << (cfg->num + LP8788_ISINK_SCALE_OFFSET);
-> -       val = cfg->scale << cfg->num;
-> +       val = cfg->scale << (cfg->num + LP8788_ISINK_SCALE_OFFSET);
->         ret = lp8788_update_bits(led->lp, addr, mask, val);
->         if (ret)
->                 return ret;
-> --
-> 1.7.9.5
->
->
->
+This patch fix it.
 
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Bob Liu <lliubbo@gmail.com>
+Acked-by: Samuel Ortiz <samuel@sortiz.org>
+---
+ drivers/net/irda/bfin_sir.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-
+diff --git a/drivers/net/irda/bfin_sir.c b/drivers/net/irda/bfin_sir.c
+index a561ae4..c6a0299 100644
+--- a/drivers/net/irda/bfin_sir.c
++++ b/drivers/net/irda/bfin_sir.c
+@@ -158,7 +158,7 @@ static int bfin_sir_set_speed(struct bfin_sir_port *port, int speed)
+ 	/* If not add the 'RPOLC', we can't catch the receive interrupt.
+ 	 * It's related with the HW layout and the IR transiver.
+ 	 */
+-	val |= IREN | RPOLC;
++	val |= UMOD_IRDA | RPOLC;
+ 	UART_PUT_GCTL(port, val);
+ 	return ret;
+ }
+@@ -432,7 +432,7 @@ static void bfin_sir_shutdown(struct bfin_sir_port *port, struct net_device *dev
+ 	bfin_sir_stop_rx(port);
+ 
+ 	val = UART_GET_GCTL(port);
+-	val &= ~(UCEN | IREN | RPOLC);
++	val &= ~(UCEN | UMOD_MASK | RPOLC);
+ 	UART_PUT_GCTL(port, val);
+ 
+ #ifdef CONFIG_SIR_BFIN_DMA
+@@ -518,10 +518,10 @@ static void bfin_sir_send_work(struct work_struct *work)
+ 	 * reset all the UART.
+ 	 */
+ 	val = UART_GET_GCTL(port);
+-	val &= ~(IREN | RPOLC);
++	val &= ~(UMOD_MASK | RPOLC);
+ 	UART_PUT_GCTL(port, val);
+ 	SSYNC();
+-	val |= IREN | RPOLC;
++	val |= UMOD_IRDA | RPOLC;
+ 	UART_PUT_GCTL(port, val);
+ 	SSYNC();
+ 	/* bfin_sir_set_speed(port, self->speed); */
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+1.7.9.5
+
+
