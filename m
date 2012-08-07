@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab2HGC2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 22:28:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44572 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243Ab2HGC2E (ORCPT
+	id S932371Ab2HGCbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 22:31:11 -0400
+Received: from zougloub.eu ([188.165.233.99]:36643 "EHLO zougloub.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757168Ab2HGCbJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 22:28:04 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2001:470:1f05:1640:60c9:30:283e:2508]
-In-Reply-To: <A6A3B7488C419F488E5B13FFD03C08AD2F43688D@SN2PRD0510MB370.namprd05.prod.outlook.com>
-References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
-	<CAJuYYwSjnQ6z0iUaLCV9guC7yyKH3_pbd1QZe3ELKF-fYNfaqQ@mail.gmail.com>
-	<A6A3B7488C419F488E5B13FFD03C08AD2F4362EE@SN2PRD0510MB370.namprd05.prod.outlook.com>
-	<CAOesGMh=6QrCmL4EqnSqTxi1nH+8Wn+x=z9BYq8QJCznH3a=zQ@mail.gmail.com>
-	<A6A3B7488C419F488E5B13FFD03C08AD2F43688D@SN2PRD0510MB370.namprd05.prod.outlook.com>
-Date: Mon, 6 Aug 2012 19:28:03 -0700
-Message-ID: <CAOesGMj6BafLCpZjmtyn_ASbpeic_8E0CdYjQGOf3A4_NHfy=Q@mail.gmail.com>
-Subject: =?EUC-KR?B?UmU6IMi4vcU6IMi4vcU6IFtQQVRDSF0gT0RST0lELVg6IGhrZGs0NDEyOiBBZGQg?=
-	=?EUC-KR?B?bmV3IGhhcmR3YXJlIGJhc2VkIG9uIEV4eW5vczQ0MTI=?=
-From: Olof Johansson <olof@lixom.net>
-To: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Dongjin Kim <tobetter@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Jon Medhurst <tixy@yxit.co.uk>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Aug 2012 22:31:09 -0400
+Date: Mon, 6 Aug 2012 22:32:08 -0400
+From: =?UTF-8?B?SsOpcsO0bWU=?= Carretero <cJ-ko@zougloub.eu>
+To: "Jan Beulich" <JBeulich@suse.com>
+Cc: "Matthew Garrett" <mjg59@srcf.ucam.org>, "Ingo Molnar" <mingo@kernel.org>,
+        "Matt Fleming" <matt.fleming@linux.intel.com>,
+        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform wall
+ clock" prevents my machine from booting
+Message-ID: <20120806223208.5301be0d@zougloub.eu>
+In-Reply-To: <20120806091627.2ad5ed2e@zougloub.eu>
+References: <20120805172903.5f8bb24c@zougloub.eu>
+ <501EF3A2.20200@zytor.com>
+ <501F83F20200007800092C1C@nat28.tlf.novell.com>
+ <20120806125216.GA11863@srcf.ucam.org>
+ <501FDDD30200007800092DDE@nat28.tlf.novell.com>
+ <20120806091627.2ad5ed2e@zougloub.eu>
+Organization: none
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 6 Aug 2012 09:16:27 -0400
+Jérôme Carretero <cJ-ko@zougloub.eu> wrote:
 
-On Mon, Aug 6, 2012 at 7:05 PM, Dongjin Kim
-<Dongjin.Kim@agreeyamobility.net> wrote:
-> Hello,
->
-> I am trying to understand what I have to do for device tree.
->
-> In order to create dts file for ODROID-X hardware, it seems I may need dts file of EXYNOS4412 SoC.
-> But maybe exynos4412.dtsi is not merged yet or not exist, like exynos4210.dtsi or exynos5250.dtsi.
-> Obviously it seems not easy to create such a file without SoC datasheet, and I do not have it.
->
-> So do I wait for the file to be merged by Samsung or better to create initial dts file cloned from exynos4210.dtsi and modify to have verified nodes with the source/header files?
+> - I can bisect the patch further down (might be a bit silly because
+>   I don't quite understand it),
 
-Ideally they already have one waiting to be submitted, but that might
-not be the case. Given that the origenboard design with 4412 is not
-yet shipping, I'm guessing the Linaro Samsung engineers might not have
-done much work on 4412 yet. Kukjin? Thomas?
+For troubleshooting purposes I edited over your patch.
+So far:
 
-> What's your suggestion?
+- (in arch/x86/platform/efi/efi.c) when making efi_get_time()
+  return mach_get_cmos_time(), the system boots.
 
-The alternative is to use the data you have available -- i.e. sources
-and patches, and craft the device tree from there. The design of 4412
-is a derivative from 4210, so that's a good start. Next step would be
-to describe the board on top of the SoC, peripherals, etc. Take a look
-at how the origen board support was added, and so on.
+- then I tried to return mach_get_cmos_time() when efi.get_time()
+  fails, ie. if (status != EFI_SUCCESS).
+  The system does not boot: efi.get_time(), aka virt_efi_get_time(),
+  does not return.
 
-I ordered an odroid-x several weeks ago but I haven't have a confirmed
-shipping date yet. :( I'm not sure how long it'll be before I can help
-out, unfortunately.
+Maybe I can get more...
 
-
--Olof
+-- 
+cJ
