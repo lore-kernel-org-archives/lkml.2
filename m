@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab2HGXKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:10:12 -0400
+	id S1030542Ab2HGXKq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:10:46 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030545Ab2HGWiv (ORCPT
+	with ESMTP id S1030525Ab2HGWip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:51 -0400
+	Tue, 7 Aug 2012 18:38:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sachin Prabhu <sprabhu@redhat.com>,
-        =?UTF-8?q?G=C3=BCnter=20Kukkukk?= <linux@kukkukk.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: =?UTF-8?q?=5B=20051/109=5D=20cifs=3A=20reinstate=20sec=3Dntlmv2=20mount=20option?=
-Date: Tue,  7 Aug 2012 15:35:10 -0700
-Message-Id: <20120807222047.559096715@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [ 049/109] ACPI/AC: prevent OOPS on some boxes due to missing check power_supply_register() return value check
+Date: Tue,  7 Aug 2012 15:35:08 -0700
+Message-Id: <20120807222047.386438475@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,54 +29,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 7659624ffb550d69c87f9af9ae63e717daa874bd upstream.
+commit f197ac13f6eeb351b31250b9ab7d0da17434ea36 upstream.
 
-sec=ntlmv2 as a mount option got dropped in the mount option overhaul.
+In the ac.c, power_supply_register()'s return value is not checked.
 
-Cc: Sachin Prabhu <sprabhu@redhat.com>
-Reported-by: Günter Kukkukk <linux@kukkukk.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+As a result, the driver's add() ops may return success
+even though the device failed to initialize.
+
+For example, some BIOS may describe two ACADs in the same DSDT.
+The second ACAD device will fail to register,
+but ACPI driver's add() ops returns sucessfully.
+The ACPI device will receive ACPI notification and cause OOPS.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=772730
+
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/connect.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/acpi/ac.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -238,8 +238,8 @@ static const match_table_t cifs_mount_op
- enum {
- 	Opt_sec_krb5, Opt_sec_krb5i, Opt_sec_krb5p,
- 	Opt_sec_ntlmsspi, Opt_sec_ntlmssp,
--	Opt_ntlm, Opt_sec_ntlmi, Opt_sec_ntlmv2i,
--	Opt_sec_nontlm, Opt_sec_lanman,
-+	Opt_ntlm, Opt_sec_ntlmi, Opt_sec_ntlmv2,
-+	Opt_sec_ntlmv2i, Opt_sec_lanman,
- 	Opt_sec_none,
+--- a/drivers/acpi/ac.c
++++ b/drivers/acpi/ac.c
+@@ -292,7 +292,9 @@ static int acpi_ac_add(struct acpi_devic
+ 	ac->charger.properties = ac_props;
+ 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
+ 	ac->charger.get_property = get_ac_property;
+-	power_supply_register(&ac->device->dev, &ac->charger);
++	result = power_supply_register(&ac->device->dev, &ac->charger);
++	if (result)
++		goto end;
  
- 	Opt_sec_err
-@@ -253,8 +253,9 @@ static const match_table_t cifs_secflavo
- 	{ Opt_sec_ntlmssp, "ntlmssp" },
- 	{ Opt_ntlm, "ntlm" },
- 	{ Opt_sec_ntlmi, "ntlmi" },
-+	{ Opt_sec_ntlmv2, "nontlm" },
-+	{ Opt_sec_ntlmv2, "ntlmv2" },
- 	{ Opt_sec_ntlmv2i, "ntlmv2i" },
--	{ Opt_sec_nontlm, "nontlm" },
- 	{ Opt_sec_lanman, "lanman" },
- 	{ Opt_sec_none, "none" },
- 
-@@ -1163,7 +1164,7 @@ static int cifs_parse_security_flavors(c
- 	case Opt_sec_ntlmi:
- 		vol->secFlg |= CIFSSEC_MAY_NTLM | CIFSSEC_MUST_SIGN;
- 		break;
--	case Opt_sec_nontlm:
-+	case Opt_sec_ntlmv2:
- 		vol->secFlg |= CIFSSEC_MAY_NTLMV2;
- 		break;
- 	case Opt_sec_ntlmv2i:
+ 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
+ 	       acpi_device_name(device), acpi_device_bid(device),
 
 
