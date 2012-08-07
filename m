@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab2HGW1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:27:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	id S1757734Ab2HGXmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:42:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab2HGW1h (ORCPT
+	with ESMTP id S932132Ab2HGW1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:27:37 -0400
+	Tue, 7 Aug 2012 18:27:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tom Jackson <thomas.p.jackson@intel.com>,
+        Dan Melnic <dan.melnic@amd.com>,
         Dan Williams <dan.j.williams@intel.com>,
+        Jack Wang <jack_wang@usish.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 013/122] SCSI: fix eh wakeup (scsi_schedule_eh vs scsi_restart_operations)
-Date: Tue,  7 Aug 2012 15:25:01 -0700
-Message-Id: <20120807221949.437683381@linuxfoundation.org>
+Subject: [ 012/122] SCSI: libsas: fix sas_discover_devices return code handling
+Date: Tue,  7 Aug 2012 15:25:00 -0700
+Message-Id: <20120807221949.348122581@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -33,57 +34,124 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Dan Williams <dan.j.williams@intel.com>
 
-commit 57fc2e335fd3c2f898ee73570dc81426c28dc7b4 upstream.
+commit b17caa174a7e1fd2e17b26e210d4ee91c4c28b37 upstream.
 
-Rapid ata hotplug on a libsas controller results in cases where libsas
-is waiting indefinitely on eh to perform an ata probe.
+commit 198439e4 [SCSI] libsas: do not set res = 0 in sas_ex_discover_dev()
+commit 19252de6 [SCSI] libsas: fix wide port hotplug issues
 
-A race exists between scsi_schedule_eh() and scsi_restart_operations()
-in the case when scsi_restart_operations() issues i/o to other devices
-in the sas domain.  When this happens the host state transitions from
-SHOST_RECOVERY (set by scsi_schedule_eh) back to SHOST_RUNNING and
-->host_busy is non-zero so we put the eh thread to sleep even though
-->host_eh_scheduled is active.
+The above commits seem to have confused the return value of
+sas_ex_discover_dev which is non-zero on failure and
+sas_ex_join_wide_port which just indicates short circuiting discovery on
+already established ports.  The result is random discovery failures
+depending on configuration.
 
-Before putting the error handler to sleep we need to check if the
-host_state needs to return to SHOST_RECOVERY for another trip through
-eh.  Since i/o that is released by scsi_restart_operations has been
-blocked for at least one eh cycle, this implementation allows those
-i/o's to run before another eh cycle starts to discourage hung task
-timeouts.
+Calls to sas_ex_join_wide_port are the source of the trouble as its
+return value is errantly assigned to 'res'.  Convert it to bool and stop
+returning its result up the stack.
 
-Reported-by: Tom Jackson <thomas.p.jackson@intel.com>
-Tested-by: Tom Jackson <thomas.p.jackson@intel.com>
+Tested-by: Dan Melnic <dan.melnic@amd.com>
+Reported-by: Dan Melnic <dan.melnic@amd.com>
 Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Reviewed-by: Jack Wang <jack_wang@usish.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_error.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/scsi/libsas/sas_expander.c |   39 +++++++++++--------------------------
+ 1 file changed, 12 insertions(+), 27 deletions(-)
 
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -1687,6 +1687,20 @@ static void scsi_restart_operations(stru
- 	 * requests are started.
- 	 */
- 	scsi_run_host_queues(shost);
-+
-+	/*
-+	 * if eh is active and host_eh_scheduled is pending we need to re-run
-+	 * recovery.  we do this check after scsi_run_host_queues() to allow
-+	 * everything pent up since the last eh run a chance to make forward
-+	 * progress before we sync again.  Either we'll immediately re-run
-+	 * recovery or scsi_device_unbusy() will wake us again when these
-+	 * pending commands complete.
-+	 */
-+	spin_lock_irqsave(shost->host_lock, flags);
-+	if (shost->host_eh_scheduled)
-+		if (scsi_host_set_state(shost, SHOST_RECOVERY))
-+			WARN_ON(scsi_host_set_state(shost, SHOST_CANCEL_RECOVERY));
-+	spin_unlock_irqrestore(shost->host_lock, flags);
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -868,7 +868,7 @@ static struct domain_device *sas_ex_disc
  }
  
- /**
+ /* See if this phy is part of a wide port */
+-static int sas_ex_join_wide_port(struct domain_device *parent, int phy_id)
++static bool sas_ex_join_wide_port(struct domain_device *parent, int phy_id)
+ {
+ 	struct ex_phy *phy = &parent->ex_dev.ex_phy[phy_id];
+ 	int i;
+@@ -884,11 +884,11 @@ static int sas_ex_join_wide_port(struct
+ 			sas_port_add_phy(ephy->port, phy->phy);
+ 			phy->port = ephy->port;
+ 			phy->phy_state = PHY_DEVICE_DISCOVERED;
+-			return 0;
++			return true;
+ 		}
+ 	}
+ 
+-	return -ENODEV;
++	return false;
+ }
+ 
+ static struct domain_device *sas_ex_discover_expander(
+@@ -1030,8 +1030,7 @@ static int sas_ex_discover_dev(struct do
+ 		return res;
+ 	}
+ 
+-	res = sas_ex_join_wide_port(dev, phy_id);
+-	if (!res) {
++	if (sas_ex_join_wide_port(dev, phy_id)) {
+ 		SAS_DPRINTK("Attaching ex phy%d to wide port %016llx\n",
+ 			    phy_id, SAS_ADDR(ex_phy->attached_sas_addr));
+ 		return res;
+@@ -1077,8 +1076,7 @@ static int sas_ex_discover_dev(struct do
+ 			if (SAS_ADDR(ex->ex_phy[i].attached_sas_addr) ==
+ 			    SAS_ADDR(child->sas_addr)) {
+ 				ex->ex_phy[i].phy_state= PHY_DEVICE_DISCOVERED;
+-				res = sas_ex_join_wide_port(dev, i);
+-				if (!res)
++				if (sas_ex_join_wide_port(dev, i))
+ 					SAS_DPRINTK("Attaching ex phy%d to wide port %016llx\n",
+ 						    i, SAS_ADDR(ex->ex_phy[i].attached_sas_addr));
+ 
+@@ -1943,32 +1941,20 @@ static int sas_discover_new(struct domai
+ {
+ 	struct ex_phy *ex_phy = &dev->ex_dev.ex_phy[phy_id];
+ 	struct domain_device *child;
+-	bool found = false;
+-	int res, i;
++	int res;
+ 
+ 	SAS_DPRINTK("ex %016llx phy%d new device attached\n",
+ 		    SAS_ADDR(dev->sas_addr), phy_id);
+ 	res = sas_ex_phy_discover(dev, phy_id);
+ 	if (res)
+-		goto out;
+-	/* to support the wide port inserted */
+-	for (i = 0; i < dev->ex_dev.num_phys; i++) {
+-		struct ex_phy *ex_phy_temp = &dev->ex_dev.ex_phy[i];
+-		if (i == phy_id)
+-			continue;
+-		if (SAS_ADDR(ex_phy_temp->attached_sas_addr) ==
+-		    SAS_ADDR(ex_phy->attached_sas_addr)) {
+-			found = true;
+-			break;
+-		}
+-	}
+-	if (found) {
+-		sas_ex_join_wide_port(dev, phy_id);
++		return res;
++
++	if (sas_ex_join_wide_port(dev, phy_id))
+ 		return 0;
+-	}
++
+ 	res = sas_ex_discover_devices(dev, phy_id);
+-	if (!res)
+-		goto out;
++	if (res)
++		return res;
+ 	list_for_each_entry(child, &dev->ex_dev.children, siblings) {
+ 		if (SAS_ADDR(child->sas_addr) ==
+ 		    SAS_ADDR(ex_phy->attached_sas_addr)) {
+@@ -1978,7 +1964,6 @@ static int sas_discover_new(struct domai
+ 			break;
+ 		}
+ 	}
+-out:
+ 	return res;
+ }
+ 
 
 
