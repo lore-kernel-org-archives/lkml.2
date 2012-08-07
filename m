@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932785Ab2HGDt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:49:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59751 "EHLO
+	id S932802Ab2HGDuR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:50:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59735 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757362Ab2HGDie (ORCPT
+	by vger.kernel.org with ESMTP id S1757351Ab2HGDid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:34 -0400
-Message-Id: <20120807032803.353647509@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:33 -0400
+Message-Id: <20120807032805.385461541@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:45 +0100
+Date: Tue, 07 Aug 2012 04:28:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Steve Capper <steve.capper@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 50/70] ARM: 7478/1: errata: extend workaround for erratum #720789
+        alan@lxorguk.ukuu.org.uk, Neil Horman <nhorman@tuxdriver.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>
+Subject: [ 64/70] drop_monitor: fix sleeping in invalid context warning
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,60 +29,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 5a783cbc48367cfc7b65afc75430953dfe60098f upstream.
+commit cde2e9a651b76d8db36ae94cd0febc82b637e5dd upstream.
 
-Commit cdf357f1 ("ARM: 6299/1: errata: TLBIASIDIS and TLBIMVAIS
-operations can broadcast a faulty ASID") replaced by-ASID TLB flushing
-operations with all-ASID variants to workaround A9 erratum #720789.
+Eric Dumazet pointed out this warning in the drop_monitor protocol to me:
 
-This patch extends the workaround to include the tlb_range operations,
-which were overlooked by the original patch.
+[   38.352571] BUG: sleeping function called from invalid context at kernel/mutex.c:85
+[   38.352576] in_atomic(): 1, irqs_disabled(): 0, pid: 4415, name: dropwatch
+[   38.352580] Pid: 4415, comm: dropwatch Not tainted 3.4.0-rc2+ #71
+[   38.352582] Call Trace:
+[   38.352592]  [<ffffffff8153aaf0>] ? trace_napi_poll_hit+0xd0/0xd0
+[   38.352599]  [<ffffffff81063f2a>] __might_sleep+0xca/0xf0
+[   38.352606]  [<ffffffff81655b16>] mutex_lock+0x26/0x50
+[   38.352610]  [<ffffffff8153aaf0>] ? trace_napi_poll_hit+0xd0/0xd0
+[   38.352616]  [<ffffffff810b72d9>] tracepoint_probe_register+0x29/0x90
+[   38.352621]  [<ffffffff8153a585>] set_all_monitor_traces+0x105/0x170
+[   38.352625]  [<ffffffff8153a8ca>] net_dm_cmd_trace+0x2a/0x40
+[   38.352630]  [<ffffffff8154a81a>] genl_rcv_msg+0x21a/0x2b0
+[   38.352636]  [<ffffffff810f8029>] ? zone_statistics+0x99/0xc0
+[   38.352640]  [<ffffffff8154a600>] ? genl_rcv+0x30/0x30
+[   38.352645]  [<ffffffff8154a059>] netlink_rcv_skb+0xa9/0xd0
+[   38.352649]  [<ffffffff8154a5f0>] genl_rcv+0x20/0x30
+[   38.352653]  [<ffffffff81549a7e>] netlink_unicast+0x1ae/0x1f0
+[   38.352658]  [<ffffffff81549d76>] netlink_sendmsg+0x2b6/0x310
+[   38.352663]  [<ffffffff8150824f>] sock_sendmsg+0x10f/0x130
+[   38.352668]  [<ffffffff8150abe0>] ? move_addr_to_kernel+0x60/0xb0
+[   38.352673]  [<ffffffff81515f04>] ? verify_iovec+0x64/0xe0
+[   38.352677]  [<ffffffff81509c46>] __sys_sendmsg+0x386/0x390
+[   38.352682]  [<ffffffff810ffaf9>] ? handle_mm_fault+0x139/0x210
+[   38.352687]  [<ffffffff8165b5bc>] ? do_page_fault+0x1ec/0x4f0
+[   38.352693]  [<ffffffff8106ba4d>] ? set_next_entity+0x9d/0xb0
+[   38.352699]  [<ffffffff81310b49>] ? tty_ldisc_deref+0x9/0x10
+[   38.352703]  [<ffffffff8106d363>] ? pick_next_task_fair+0x63/0x140
+[   38.352708]  [<ffffffff8150b8d4>] sys_sendmsg+0x44/0x80
+[   38.352713]  [<ffffffff8165f8e2>] system_call_fastpath+0x16/0x1b
 
-Tested-by: Steve Capper <steve.capper@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+It stems from holding a spinlock (trace_state_lock) while attempting to register
+or unregister tracepoint hooks, making in_atomic() true in this context, leading
+to the warning when the tracepoint calls might_sleep() while its taking a mutex.
+Since we only use the trace_state_lock to prevent trace protocol state races, as
+well as hardware stat list updates on an rcu write side, we can just convert the
+spinlock to a mutex to avoid this problem.
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mm/tlb-v7.S |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ net/core/drop_monitor.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/mm/tlb-v7.S b/arch/arm/mm/tlb-v7.S
-index 845f461..c202113 100644
---- a/arch/arm/mm/tlb-v7.S
-+++ b/arch/arm/mm/tlb-v7.S
-@@ -38,11 +38,19 @@ ENTRY(v7wbi_flush_user_tlb_range)
- 	dsb
- 	mov	r0, r0, lsr #PAGE_SHIFT		@ align address
- 	mov	r1, r1, lsr #PAGE_SHIFT
-+#ifdef CONFIG_ARM_ERRATA_720789
-+	mov	r3, #0
-+#else
- 	asid	r3, r3				@ mask ASID
-+#endif
- 	orr	r0, r3, r0, lsl #PAGE_SHIFT	@ Create initial MVA
- 	mov	r1, r1, lsl #PAGE_SHIFT
- 1:
-+#ifdef CONFIG_ARM_ERRATA_720789
-+	ALT_SMP(mcr	p15, 0, r0, c8, c3, 3)	@ TLB invalidate U MVA all ASID (shareable)
-+#else
- 	ALT_SMP(mcr	p15, 0, r0, c8, c3, 1)	@ TLB invalidate U MVA (shareable)
-+#endif
- 	ALT_UP(mcr	p15, 0, r0, c8, c7, 1)	@ TLB invalidate U MVA
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index 5c3c81a..a221a5b 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -42,7 +42,7 @@ static void send_dm_alert(struct work_struct *unused);
+  * netlink alerts
+  */
+ static int trace_state = TRACE_OFF;
+-static DEFINE_SPINLOCK(trace_state_lock);
++static DEFINE_MUTEX(trace_state_mutex);
  
- 	add	r0, r0, #PAGE_SZ
-@@ -67,7 +75,11 @@ ENTRY(v7wbi_flush_kern_tlb_range)
- 	mov	r0, r0, lsl #PAGE_SHIFT
- 	mov	r1, r1, lsl #PAGE_SHIFT
- 1:
-+#ifdef CONFIG_ARM_ERRATA_720789
-+	ALT_SMP(mcr	p15, 0, r0, c8, c3, 3)	@ TLB invalidate U MVA all ASID (shareable)
-+#else
- 	ALT_SMP(mcr	p15, 0, r0, c8, c3, 1)	@ TLB invalidate U MVA (shareable)
-+#endif
- 	ALT_UP(mcr	p15, 0, r0, c8, c7, 1)	@ TLB invalidate U MVA
- 	add	r0, r0, #PAGE_SZ
- 	cmp	r0, r1
+ struct per_cpu_dm_data {
+ 	struct work_struct dm_alert_work;
+@@ -214,7 +214,7 @@ static int set_all_monitor_traces(int state)
+ 	struct dm_hw_stat_delta *new_stat = NULL;
+ 	struct dm_hw_stat_delta *temp;
+ 
+-	spin_lock(&trace_state_lock);
++	mutex_lock(&trace_state_mutex);
+ 
+ 	if (state == trace_state) {
+ 		rc = -EAGAIN;
+@@ -253,7 +253,7 @@ static int set_all_monitor_traces(int state)
+ 		rc = -EINPROGRESS;
+ 
+ out_unlock:
+-	spin_unlock(&trace_state_lock);
++	mutex_unlock(&trace_state_mutex);
+ 
+ 	return rc;
+ }
+@@ -296,12 +296,12 @@ static int dropmon_net_event(struct notifier_block *ev_block,
+ 
+ 		new_stat->dev = dev;
+ 		new_stat->last_rx = jiffies;
+-		spin_lock(&trace_state_lock);
++		mutex_lock(&trace_state_mutex);
+ 		list_add_rcu(&new_stat->list, &hw_stats_list);
+-		spin_unlock(&trace_state_lock);
++		mutex_unlock(&trace_state_mutex);
+ 		break;
+ 	case NETDEV_UNREGISTER:
+-		spin_lock(&trace_state_lock);
++		mutex_lock(&trace_state_mutex);
+ 		list_for_each_entry_safe(new_stat, tmp, &hw_stats_list, list) {
+ 			if (new_stat->dev == dev) {
+ 				new_stat->dev = NULL;
+@@ -312,7 +312,7 @@ static int dropmon_net_event(struct notifier_block *ev_block,
+ 				}
+ 			}
+ 		}
+-		spin_unlock(&trace_state_lock);
++		mutex_unlock(&trace_state_mutex);
+ 		break;
+ 	}
+ out:
 
 
