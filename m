@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab2HGJVu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:21:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54543 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab2HGJVs (ORCPT
+	id S1753565Ab2HGJXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:23:52 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:24025 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab2HGJXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:21:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Balaji T K <balajitk@ti.com>
-Subject: Re: [PATCH] arm/dts: omap5: Add mmc controller nodes and board data
-Date: Tue, 7 Aug 2012 08:30:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: tony@atomide.com, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rob.herring@calxeda.com, linux-mmc@vger.kernel.org, balbi@ti.com
-References: <1344323901-20342-1-git-send-email-balajitk@ti.com>
-In-Reply-To: <1344323901-20342-1-git-send-email-balajitk@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208070830.01776.arnd@arndb.de>
-X-Provags-ID: V02:K0:916+t0pmZyasybTopeI3Jb0xLWFacTpZsVhzZskgxzJ
- GvrzAQkax0KklgyXEAwt0LJRnL3wYER6lJHomLqXJzKzghW+69
- MaSHaLU+gDSQwMaEaN9O6moyot9er5ZVu53pqoaigVnNpQZaf5
- DP0rP8M6AzSbb1vxr/2aBbVqWN5/v3CEPrLPm/U7IMRZ39o5wm
- kB/dH/uxj2emahbsOsncgfg9QD0R0ORIvyC/eAxJkT2T8VbqNb
- XTuNtRWrzcwtkroXdUkUSaKKoGrMlgX60AkE8XAR9AzNiIwRbg
- flGxIXpywRAtQzkrMVu9HEPEhV4yt+VATXG1V+0SUN0Uborm9s
- jy46Wesq0vLlEpVht0VE=
+	Tue, 7 Aug 2012 05:23:50 -0400
+X-AuditID: cbfee611-b7faf6d000005585-63-5020dea55921
+Date: Tue, 07 Aug 2012 09:23:49 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] extcon: Remove duplicate inclusion of extcon.h header file
+To: Sachin Kamat <sachin.kamat@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>
+Cc: =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>,
+        "patches@linaro.org" <patches@linaro.org>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120807092232081@myungjoo.ham
+Msgkey: 20120807092232081@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120807092232081@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <4608814.101321344331428915.JavaMail.weblogic@epml13>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t/tmbpL7ykEGOyaoGtxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgympv3MRVcYqpouDaBuYHxCFMXIyeHkIC6xKIlJ9lAbAkBE4m9
+	LR+ZIGwxiQv31gPFuYBq5jNKPPj8iRUkwSKgIrHxWz97FyMHB5uAnsTMz8kgYWEBf4neFc9Y
+	QOpFBBYxShyafgCsnlkgS+LOm6+sEMuUJNbse8UCYvMKCEqcnPmEBWKZqsTHh3uh4moSix98
+	hDpIQmLW9AusEDavxIz2p1D1chLTvq5hhrClJc7P2sAIc/Ti74+h4vwSx27vYAK5E6T3yf1g
+	mDG7N3+BGi8gMfXMQahWLYk1y69AtfJJrFn4lgVmzK5Ty5lheu9vmcsE8ZaixJTuh+wQtpbE
+	lx/72NC9xSvgKLGwo5N1AqPcLCSpWUjaZyFpR1azgJFlFaNoakFyQXFSeqq5XnFibnFpXrpe
+	cn7uJkZwnD8T3MG4tMHiEKMAB6MSD6+hiEKAEGtiWXFl7iFGCQ5mJRHewzuBQrwpiZVVqUX5
+	8UWlOanFhxilOViUxHnnvPjiLySQnliSmp2aWpBaBJNl4uCUamA0/LSyteZe1NS2knfZGRke
+	6VN2+qQLTDgwle9Rwy/r/OZ7S9bwlyutcDcuYEqSTkrau8F1gdgCRgvLPTEGR/J6mkRNjHWj
+	bvfztfqmen/+adkqb8z8ILNhtsnLVYduv4gt/2tfzfqf05p7GsvKZ/MSzc5YbJb9vnFNRvzc
+	mK3e316ucnh++bUSS3FGoqEWc1FxIgBBMIwh7wIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q779NvE5011420
 
-On Tuesday 07 August 2012, Balaji T K wrote:
-> 
-> Add OMAP MMC related device tree data for OMAP5.
-> 
-> Signed-off-by: Balaji T K <balajitk@ti.com>
-> ---
+> extcon.h header file was included twice.
+>
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
+Thanks!
+
+MyungJooˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
