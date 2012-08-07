@@ -1,246 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab2HGFmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 01:42:20 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55996 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab2HGFmT (ORCPT
+	id S1751909Ab2HGFrU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 01:47:20 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:45476 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751608Ab2HGFrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 01:42:19 -0400
-Message-ID: <5020AA44.7010107@us.ibm.com>
-Date: Mon, 06 Aug 2012 22:40:20 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 7 Aug 2012 01:47:19 -0400
+Date: Tue, 7 Aug 2012 08:43:44 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Felipe Balbi <balbi@ti.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        arnd@arndb.de, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] driver: misc: bmp085: remove "of_match_table" property.
+Message-ID: <20120807054342.GF8468@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1344245324-16704-1-git-send-email-sourav.poddar@ti.com>
+ <20120806093033.GH17551@arwen.pp.htv.fi>
+ <20120806154214.GC29272@sirena.org.uk>
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, paulmck@linux.vnet.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, prarit@redhat.com,
-        tglx@linutronix.de, Dave Jones <davej@redhat.com>
-Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
-References: <500ED719.2010002@gmail.com> <50112D3B.4020201@redhat.com> <50127B16.5040401@gmail.com> <50153138.4020304@redhat.com> <5015A5A8.7030601@gmail.com> <50161D5E.4030009@redhat.com> <50165046.9020705@gmail.com> <501654D3.7020504@redhat.com> <50168162.4010508@gmail.com> <50168981.3000001@redhat.com> <501EA58D.4090606@gmail.com> <501FFD2A.4010905@us.ibm.com> <50200AEF.5080904@us.ibm.com> <50200CE6.70009@gmail.com>
-In-Reply-To: <50200CE6.70009@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080705-4242-0000-0000-000002881124
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O98KdSgI27dgYlM5"
+Content-Disposition: inline
+In-Reply-To: <20120806154214.GC29272@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2012 11:28 AM, Sasha Levin wrote:
-> On 08/06/2012 08:20 PM, John Stultz wrote:
->> On 08/06/2012 10:21 AM, John Stultz wrote:
->>> On 08/05/2012 09:55 AM, Sasha Levin wrote:
->>>> On 07/30/2012 03:17 PM, Avi Kivity wrote:
->>>>> Possible causes:
->>>>>    - the APIC calibration in the guest failed, so it is programming too
->>>>> low values into the timer
->>>>>    - it actually needs 1 us wakeups and then can't keep up (esp. as kvm
->>>>> interrupt injection is slowing it down)
->>>>>
->>>>> You can try to find out by changing
->>>>> arch/x86/kvm/lapic.c:start_lapic_timer() to impose a minimum wakeup of
->>>>> (say) 20 microseconds which will let the guest live long enough for you
->>>>> to ftrace it and see what kind of timers it is programming.
->>>> I've kept trying to narrow it down, and found out It's triggerable using adjtimex().
->> Sorry, one more question: Could you provide details on how is it trigger-able using adjtimex?
-> It triggers after a while of fuzzing using trinity of just adjtimex ('./trinity --quiet -l off -cadjtimex').
->
-> Trinity is available here: http://git.codemonkey.org.uk/?p=trinity.git .
->
-> Let me know if I can help further with reproducing this, I can probably copy over my testing environment to some other host if you'd like.
 
-Ok. Finally I *think* got it reproduced.  (Had some trouble initially, 
-as I think since the first time I ran it as a normal user, the socket 
-cache isn't the same as if you run it the first time as root? Anyway, 
-after doing a make clean and rebuilding it started to trigger).
+--O98KdSgI27dgYlM5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not seeing the rcu stall message, but I do manage to trigger two 
-other behaviors: a hard hang and a sort of zombie state where memory 
-isn't properly being freed & everything starts segfaulting.   So this 
-may not be the exact same issue, but it triggers quickly as you 
-described (within a few seconds of running trinity as root).
+Hi,
 
-It looks like both of these issues are caused by 
-adjtimex(ADJ_SETOFFSET), which  adds or subtracts a huge offset and that 
-either goes negative or gets clamped to a ktime_t at KTIME_MAX (if you 
-get clamped the system hangs, if it goes negative, the system barely 
-functions, but sort of drags along).
+On Mon, Aug 06, 2012 at 04:42:14PM +0100, Mark Brown wrote:
+> On Mon, Aug 06, 2012 at 12:30:34PM +0300, Felipe Balbi wrote:
+> > On Mon, Aug 06, 2012 at 02:58:44PM +0530, Sourav Poddar wrote:
+> > > There is an automatic binding done for I2C devices in the of_i2c core
+> > > code. So, DT will be able to bind to any I2C device using the
+> > > already existing table: MODULE_DEVICE_TABLE(i2c, bmp085_id).
+>=20
+> > Acked-by: Felipe Balbi <balbi@ti.com>
+>=20
+> It's good practice to have an explict compatible string even if the
+> default happens to work in order to avoid any name clashes.
 
-An updated version of my KTIME_MAX sanity checking patch to handle both 
-of these conditions is below.
+of_i2c.c makes no use whatsoever of the compatible string. See that it
+will build an i2c_boardinfo and register a new device. That compatible
+string is just churn and has no use at all.
 
-Would you mind giving this patch a shot and letting me know if you still 
-see problems?
+--=20
+balbi
 
-thanks
--john
+--O98KdSgI27dgYlM5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- From 7a37a171f8b93ce8f89137d2dfac37fdc45994ba Mon Sep 17 00:00:00 2001
-From: John Stultz <john.stultz@linaro.org>
-Date: Tue, 31 Jul 2012 02:06:14 -0400
-Subject: [PATCH] time: Improve sanity checking of timekeeping inputs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Unexpected behavior could occur if the time is set to
-a value large enough to overflow a 64bit ktime_t
-(which is something larger then the year 2262).
+iQIcBAEBAgAGBQJQIKsOAAoJEIaOsuA1yqREBLMQAJrDHny7JGVaR4QVbKuvklf2
+pe89s2hCyLolbx4ecrgMskcLnN48zfKMaNm6e4lZSuLyFme46XUmlp2Axcd4iM/I
+4xUZxc4mVVq0WoaTsljUywPoEXNMNJ/LlChCIdJVgwzGTYLWBd24JYIoceQo6eJ2
+TKVsv8SZi4OTRBeZjqlUq8t+EdtfPkhBnWTUN83eFkSM6ZJiR0SX8pnQo2hzr5HW
+tR3QrEgsj04lq+NLo3Px+K6HwCdPu0Zew3r7k169yvQTkz+ZdDB09RmaEuqgjd01
+uhFmxr10XY+/rIMa6Yza0JsAgbPwCs1E1sEzVSRSvw5MT7djDA/CeKrUiirbFlL7
+GHOI63hpDaCfYz1pVnWFdBHyh8OAdWfWtwIEEPTDE+BDoLgYhz2N/8JMMhWLbiXU
+llfvw/GEXxenmaYtsUWpIEcGuYDlDeTsZZidSLDif4d3smxsHCOJJZzbjfYdLCfl
+Iz96gzapr+DnOu8sXIf5c9AJtfdK0UbKenKE2ZRh0qWfIpAl3m98NP8r/OoSU+W3
+9n6NwS6AsbMt/U6NYFgYPDzKOzzdq73Fpyzmc/FKsd5l1JNt//6uQTE7nGVtWzYG
+TMnjF+COpnj7WhbjoDK3f2zbdSgw4xL/OR92yC6vabuXKM2IpQVRw3ugKxbwOkSO
+OptlEkXXBansdzQYX6rJ
+=gM5z
+-----END PGP SIGNATURE-----
 
-Also unexpected behavior could occur if large negative
-offsets are injected via adjtimex.
-
-So this patch improves the sanity check timekeeping inputs
-by improving the timespec_valid() check, and then makes better
-use of timespec_valid() to make sure we don't set the time to
-an invalid negative value or one that overflows ktime_t.
-
-Note: This does not protect from setting the time close to
-overflowing ktime_t and then letting natural accumulation
-cause the overflow.
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Zhouping Liu <zliu@redhat.com>
-Cc: CAI Qian <caiqian@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>
-Cc: stable@vger.kernel.org
-Reported-by: CAI Qian <caiqian@redhat.com>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
-  include/linux/ktime.h     |    7 -------
-  include/linux/time.h      |   23 +++++++++++++++++++++--
-  kernel/time/timekeeping.c |   26 ++++++++++++++++++++++++--
-  3 files changed, 45 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/ktime.h b/include/linux/ktime.h
-index 603bec2..06177ba10 100644
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -58,13 +58,6 @@ union ktime {
-  
-  typedef union ktime ktime_t;		/* Kill this */
-  
--#define KTIME_MAX			((s64)~((u64)1 << 63))
--#if (BITS_PER_LONG == 64)
--# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
--#else
--# define KTIME_SEC_MAX			LONG_MAX
--#endif
--
-  /*
-   * ktime_t definitions when using the 64-bit scalar representation:
-   */
-diff --git a/include/linux/time.h b/include/linux/time.h
-index c81c5e4..68e68c5 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -107,11 +107,30 @@ static inline struct timespec timespec_sub(struct timespec lhs,
-  	return ts_delta;
-  }
-  
-+#define KTIME_MAX			((s64)~((u64)1 << 63))
-+#if (BITS_PER_LONG == 64)
-+# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
-+#else
-+# define KTIME_SEC_MAX			LONG_MAX
-+#endif
-+
-  /*
-   * Returns true if the timespec is norm, false if denorm:
-   */
--#define timespec_valid(ts) \
--	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
-+static inline bool timespec_valid(const struct timespec *ts)
-+{
-+	/* Dates before 1970 are bogus */
-+	if (ts->tv_sec < 0)
-+		return false;
-+	/* Can't have more nanoseconds then a second */
-+	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
-+		return false;
-+	/* Disallow values that could overflow ktime_t */
-+	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
-+		return false;
-+	return true;
-+}
-+
-  
-  extern void read_persistent_clock(struct timespec *ts);
-  extern void read_boot_clock(struct timespec *ts);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index e16af19..898bef0 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -427,7 +427,7 @@ int do_settimeofday(const struct timespec *tv)
-  	struct timespec ts_delta, xt;
-  	unsigned long flags;
-  
--	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
-+	if (!timespec_valid(tv))
-  		return -EINVAL;
-  
-  	write_seqlock_irqsave(&tk->lock, flags);
-@@ -463,6 +463,8 @@ int timekeeping_inject_offset(struct timespec *ts)
-  {
-  	struct timekeeper *tk = &timekeeper;
-  	unsigned long flags;
-+	struct timespec tmp;
-+	int ret = 0;
-  
-  	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
-  		return -EINVAL;
-@@ -471,10 +473,17 @@ int timekeeping_inject_offset(struct timespec *ts)
-  
-  	timekeeping_forward_now(tk);
-  
-+	/* Make sure the proposed value is valid */
-+	tmp = timespec_add(tk_xtime(tk),  *ts);
-+	if (!timespec_valid(&tmp)) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
-  
-  	tk_xtime_add(tk, ts);
-  	tk_set_wall_to_mono(tk, timespec_sub(tk->wall_to_monotonic, *ts));
-  
-+error: /* even if we error out, we forwarded the time, so call update */
-  	timekeeping_update(tk, true);
-  
-  	write_sequnlock_irqrestore(&tk->lock, flags);
-@@ -482,7 +491,7 @@ int timekeeping_inject_offset(struct timespec *ts)
-  	/* signal hrtimers about time change */
-  	clock_was_set();
-  
--	return 0;
-+	return ret;
-  }
-  EXPORT_SYMBOL(timekeeping_inject_offset);
-  
-@@ -649,7 +658,20 @@ void __init timekeeping_init(void)
-  	struct timespec now, boot, tmp;
-  
-  	read_persistent_clock(&now);
-+	if (!timespec_valid(&now)) {
-+		pr_warn("WARNING: Persistent clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		now.tv_sec = 0;
-+		now.tv_nsec = 0;
-+	}
-+
-  	read_boot_clock(&boot);
-+	if (!timespec_valid(&boot)) {
-+		pr_warn("WARNING: Boot clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		boot.tv_sec = 0;
-+		boot.tv_nsec = 0;
-+	}
-  
-  	seqlock_init(&tk->lock);
-  
--- 
-1.7.9.5
-
-
+--O98KdSgI27dgYlM5--
