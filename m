@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964860Ab2HGDlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:41:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59909 "EHLO
+	id S1030191Ab2HGDmA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:42:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59904 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964848Ab2HGDjA (ORCPT
+	by vger.kernel.org with ESMTP id S964843Ab2HGDi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:39:00 -0400
-Message-Id: <20120807032800.234837707@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:59 -0400
+Message-Id: <20120807032800.381511317@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:23 +0100
+Date: Tue, 07 Aug 2012 04:28:24 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Seth Forshee <seth.forshee@canonical.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 28/70] Input: synaptics - handle out of bounds values from the hardware
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [ 29/70] ALSA: hda - Fix invalid D3 of headphone DAC on VT202x codecs
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,82 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c0394506e69b37c47d391c2a7bbea3ea236d8ec8 upstream.
+commit 6162552b0de6ba80937c3dd53e084967851cd199 upstream.
 
-The touchpad on the Acer Aspire One D250 will report out of range values
-in the extreme lower portion of the touchpad. These appear as abrupt
-changes in the values reported by the hardware from very low values to
-very high values, which can cause unexpected vertical jumps in the
-position of the mouse pointer.
+We've got a bug report about the silent output from the headphone on a
+mobo with VT2021, and spotted out that this was because of the wrong
+D3 state on the DAC for the headphone output.  The bug is triggered by
+the incomplete check for this DAC in set_widgets_power_state_vt1718S().
+It checks only the connectivity of the primary output (0x27) but
+doesn't consider the path from the headphone pin (0x28).
 
-What seems to be happening is that the value is wrapping to a two's
-compliment negative value of higher resolution than the 13-bit value
-reported by the hardware, with the high-order bits being truncated. This
-patch adds handling for these values by converting them to the
-appropriate negative values.
+Now this patch fixes the problem by checking both pins for DAC 0x0b.
 
-The only tricky part about this is deciding when to treat a number as
-negative. It stands to reason that if out of range values can be
-reported on the low end then it could also happen on the high end, so
-not all out of range values should be treated as negative. The approach
-taken here is to split the difference between the maximum legitimate
-value for the axis and the maximum possible value that the hardware can
-report, treating values greater than this number as negative and all
-other values as positive. This can be tweaked later if hardware is found
-that operates outside of these parameters.
-
-BugLink: http://bugs.launchpad.net/bugs/1001251
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[bwh: Backported to 3.2: keep using snd_hda_codec_write() as
+ update_power_state() is missing]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -40,11 +40,28 @@
-  * Note that newer firmware allows querying device for maximum useable
-  * coordinates.
-  */
-+#define XMIN 0
-+#define XMAX 6143
-+#define YMIN 0
-+#define YMAX 6143
- #define XMIN_NOMINAL 1472
- #define XMAX_NOMINAL 5472
- #define YMIN_NOMINAL 1408
- #define YMAX_NOMINAL 4448
+--- a/sound/pci/hda/patch_via.c
++++ b/sound/pci/hda/patch_via.c
+@@ -3227,7 +3227,7 @@ static void set_widgets_power_state_vt17
+ {
+ 	struct via_spec *spec = codec->spec;
+ 	int imux_is_smixer;
+-	unsigned int parm;
++	unsigned int parm, parm2;
+ 	/* MUX6 (1eh) = stereo mixer */
+ 	imux_is_smixer =
+ 	snd_hda_codec_read(codec, 0x1e, 0, AC_VERB_GET_CONNECT_SEL, 0x00) == 5;
+@@ -3250,7 +3250,7 @@ static void set_widgets_power_state_vt17
+ 	parm = AC_PWRST_D3;
+ 	set_pin_power_state(codec, 0x27, &parm);
+ 	snd_hda_codec_write(codec, 0x1a, 0, AC_VERB_SET_POWER_STATE, parm);
+-	snd_hda_codec_write(codec, 0xb, 0, AC_VERB_SET_POWER_STATE, parm);
++	parm2 = parm; /* for pin 0x0b */
  
-+/* Size in bits of absolute position values reported by the hardware */
-+#define ABS_POS_BITS 13
-+
-+/*
-+ * Any position values from the hardware above the following limits are
-+ * treated as "wrapped around negative" values that have been truncated to
-+ * the 13-bit reporting range of the hardware. These are just reasonable
-+ * guesses and can be adjusted if hardware is found that operates outside
-+ * of these parameters.
-+ */
-+#define X_MAX_POSITIVE (((1 << ABS_POS_BITS) + XMAX) / 2)
-+#define Y_MAX_POSITIVE (((1 << ABS_POS_BITS) + YMAX) / 2)
-+
- /*
-  * Synaptics touchpads report the y coordinate from bottom to top, which is
-  * opposite from what userspace expects.
-@@ -544,6 +561,12 @@ static int synaptics_parse_hw_state(cons
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
- 	}
- 
-+	/* Convert wrap-around values to negative */
-+	if (hw->x > X_MAX_POSITIVE)
-+		hw->x -= 1 << ABS_POS_BITS;
-+	if (hw->y > Y_MAX_POSITIVE)
-+		hw->y -= 1 << ABS_POS_BITS;
-+
- 	return 0;
- }
- 
+ 	/* PW2 (26h), AOW2 (ah) */
+ 	parm = AC_PWRST_D3;
+@@ -3265,6 +3265,9 @@ static void set_widgets_power_state_vt17
+ 	if (!spec->hp_independent_mode) /* check for redirected HP */
+ 		set_pin_power_state(codec, 0x28, &parm);
+ 	snd_hda_codec_write(codec, 0x8, 0, AC_VERB_SET_POWER_STATE, parm);
++	if (!spec->hp_independent_mode && parm2 != AC_PWRST_D3)
++		parm = parm2;
++	snd_hda_codec_write(codec, 0xb, 0, AC_VERB_SET_POWER_STATE, parm);
+ 	/* MW9 (21h), Mw2 (1ah), AOW0 (8h) */
+ 	snd_hda_codec_write(codec, 0x21, 0, AC_VERB_SET_POWER_STATE,
+ 			    imux_is_smixer ? AC_PWRST_D0 : parm);
 
 
