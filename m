@@ -1,74 +1,385 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab2HGSnK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 14:43:10 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21928 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756115Ab2HGSnG (ORCPT
+	id S1756234Ab2HGSm7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 14:42:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54937 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756174Ab2HGSmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 14:43:06 -0400
-Date: Tue, 7 Aug 2012 14:33:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Ian.Campbell@citrix.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        catalin.marinas@arm.com, arnd@arndb.de
-Subject: Re: [PATCH v2 21/23] xen: update xen_add_to_physmap interface
-Message-ID: <20120807183306.GX15053@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
- <1344263246-28036-21-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344263246-28036-21-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 7 Aug 2012 14:42:55 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 5/7] mfd: wm831x: Convert to IORESOURCE_REG
+Date: Tue,  7 Aug 2012 19:42:47 +0100
+Message-Id: <1344364969-32489-5-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 03:27:24PM +0100, Stefano Stabellini wrote:
-> Update struct xen_add_to_physmap to be in sync with Xen's version of the
-> structure.
-> The size field was introduced by:
-> 
-> changeset:   24164:707d27fe03e7
-> user:        Jean Guyader <jean.guyader@eu.citrix.com>
-> date:        Fri Nov 18 13:42:08 2011 +0000
-> summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
-> 
-> According to the comment:
-> 
-> "This new field .size is located in the 16 bits padding between .domid
-> and .space in struct xen_add_to_physmap to stay compatible with older
-> versions."
-> 
-> Changes in v2:
+This was originally written by Russell King who unfortunately found
+himself unable to take the patch futher.
 
-Looks good. Let me take this as in my tree to prep it for Mukesh's patches.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-core.c        |   66 ++++++++++++--------------------------
+ drivers/regulator/wm831x-dcdc.c  |   12 +++----
+ drivers/regulator/wm831x-isink.c |    4 +--
+ drivers/regulator/wm831x-ldo.c   |   12 +++----
+ 4 files changed, 34 insertions(+), 60 deletions(-)
 
-> 
-> - remove erroneous comment in the commit message.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  include/xen/interface/memory.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> index b5c3098..b66d04c 100644
-> --- a/include/xen/interface/memory.h
-> +++ b/include/xen/interface/memory.h
-> @@ -163,6 +163,9 @@ struct xen_add_to_physmap {
->      /* Which domain to change the mapping for. */
->      domid_t domid;
->  
-> +    /* Number of pages to go through for gmfn_range */
-> +    uint16_t    size;
-> +
->      /* Source mapping space. */
->  #define XENMAPSPACE_shared_info 0 /* shared info page */
->  #define XENMAPSPACE_grant_table 1 /* grant table page */
-> -- 
-> 1.7.2.5
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index 946698f..2e5d58e 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -614,18 +614,11 @@ int wm831x_set_bits(struct wm831x *wm831x, unsigned short reg,
+ }
+ EXPORT_SYMBOL_GPL(wm831x_set_bits);
+ 
+-static struct resource wm831x_io_parent = {
+-	.start = 0,
+-	.end   = 0xffffffff,
+-	.flags = IORESOURCE_IO,
+-};
+-
+ static struct resource wm831x_dcdc1_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC1_CONTROL_1,
+ 		.end   = WM831X_DC1_DVS_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -644,10 +637,9 @@ static struct resource wm831x_dcdc1_resources[] = {
+ 
+ static struct resource wm831x_dcdc2_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC2_CONTROL_1,
+ 		.end   = WM831X_DC2_DVS_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -665,10 +657,9 @@ static struct resource wm831x_dcdc2_resources[] = {
+ 
+ static struct resource wm831x_dcdc3_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC3_CONTROL_1,
+ 		.end   = WM831X_DC3_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -680,10 +671,9 @@ static struct resource wm831x_dcdc3_resources[] = {
+ 
+ static struct resource wm831x_dcdc4_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC4_CONTROL,
+ 		.end   = WM831X_DC4_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -695,10 +685,9 @@ static struct resource wm831x_dcdc4_resources[] = {
+ 
+ static struct resource wm8320_dcdc4_buck_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_DC4_CONTROL,
+ 		.end   = WM832X_DC4_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -718,10 +707,9 @@ static struct resource wm831x_gpio_resources[] = {
+ 
+ static struct resource wm831x_isink1_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_CURRENT_SINK_1,
+ 		.end   = WM831X_CURRENT_SINK_1,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.start = WM831X_IRQ_CS1,
+@@ -732,10 +720,9 @@ static struct resource wm831x_isink1_resources[] = {
+ 
+ static struct resource wm831x_isink2_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_CURRENT_SINK_2,
+ 		.end   = WM831X_CURRENT_SINK_2,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.start = WM831X_IRQ_CS2,
+@@ -746,10 +733,9 @@ static struct resource wm831x_isink2_resources[] = {
+ 
+ static struct resource wm831x_ldo1_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO1_CONTROL,
+ 		.end   = WM831X_LDO1_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -761,10 +747,9 @@ static struct resource wm831x_ldo1_resources[] = {
+ 
+ static struct resource wm831x_ldo2_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO2_CONTROL,
+ 		.end   = WM831X_LDO2_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -776,10 +761,9 @@ static struct resource wm831x_ldo2_resources[] = {
+ 
+ static struct resource wm831x_ldo3_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO3_CONTROL,
+ 		.end   = WM831X_LDO3_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -791,10 +775,9 @@ static struct resource wm831x_ldo3_resources[] = {
+ 
+ static struct resource wm831x_ldo4_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO4_CONTROL,
+ 		.end   = WM831X_LDO4_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -806,10 +789,9 @@ static struct resource wm831x_ldo4_resources[] = {
+ 
+ static struct resource wm831x_ldo5_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO5_CONTROL,
+ 		.end   = WM831X_LDO5_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -821,10 +803,9 @@ static struct resource wm831x_ldo5_resources[] = {
+ 
+ static struct resource wm831x_ldo6_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO6_CONTROL,
+ 		.end   = WM831X_LDO6_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -836,10 +817,9 @@ static struct resource wm831x_ldo6_resources[] = {
+ 
+ static struct resource wm831x_ldo7_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO7_CONTROL,
+ 		.end   = WM831X_LDO7_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -851,10 +831,9 @@ static struct resource wm831x_ldo7_resources[] = {
+ 
+ static struct resource wm831x_ldo8_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO8_CONTROL,
+ 		.end   = WM831X_LDO8_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -866,10 +845,9 @@ static struct resource wm831x_ldo8_resources[] = {
+ 
+ static struct resource wm831x_ldo9_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO9_CONTROL,
+ 		.end   = WM831X_LDO9_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -881,10 +859,9 @@ static struct resource wm831x_ldo9_resources[] = {
+ 
+ static struct resource wm831x_ldo10_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO10_CONTROL,
+ 		.end   = WM831X_LDO10_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ 	{
+ 		.name  = "UV",
+@@ -896,10 +873,9 @@ static struct resource wm831x_ldo10_resources[] = {
+ 
+ static struct resource wm831x_ldo11_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_LDO11_ON_CONTROL,
+ 		.end   = WM831X_LDO11_SLEEP_CONTROL,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ };
+ 
+@@ -998,19 +974,17 @@ static struct resource wm831x_rtc_resources[] = {
+ 
+ static struct resource wm831x_status1_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_STATUS_LED_1,
+ 		.end   = WM831X_STATUS_LED_1,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ };
+ 
+ static struct resource wm831x_status2_resources[] = {
+ 	{
+-		.parent = &wm831x_io_parent,
+ 		.start = WM831X_STATUS_LED_2,
+ 		.end   = WM831X_STATUS_LED_2,
+-		.flags = IORESOURCE_IO,
++		.flags = IORESOURCE_REG,
+ 	},
+ };
+ 
+diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
+index 7413885..64111f4 100644
+--- a/drivers/regulator/wm831x-dcdc.c
++++ b/drivers/regulator/wm831x-dcdc.c
+@@ -476,9 +476,9 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
+ 
+ 	dcdc->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+@@ -651,9 +651,9 @@ static __devinit int wm831x_buckp_probe(struct platform_device *pdev)
+ 
+ 	dcdc->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+@@ -795,9 +795,9 @@ static __devinit int wm831x_boostp_probe(struct platform_device *pdev)
+ 
+ 	dcdc->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+diff --git a/drivers/regulator/wm831x-isink.c b/drivers/regulator/wm831x-isink.c
+index 0d207c2..2646a19 100644
+--- a/drivers/regulator/wm831x-isink.c
++++ b/drivers/regulator/wm831x-isink.c
+@@ -172,9 +172,9 @@ static __devinit int wm831x_isink_probe(struct platform_device *pdev)
+ 
+ 	isink->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
+index 56a6de3..f6c81ec 100644
+--- a/drivers/regulator/wm831x-ldo.c
++++ b/drivers/regulator/wm831x-ldo.c
+@@ -271,9 +271,9 @@ static __devinit int wm831x_gp_ldo_probe(struct platform_device *pdev)
+ 
+ 	ldo->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+@@ -524,9 +524,9 @@ static __devinit int wm831x_aldo_probe(struct platform_device *pdev)
+ 
+ 	ldo->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+@@ -679,9 +679,9 @@ static __devinit int wm831x_alive_ldo_probe(struct platform_device *pdev)
+ 
+ 	ldo->wm831x = wm831x;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource\n");
++		dev_err(&pdev->dev, "No REG resource\n");
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+-- 
+1.7.10.4
+
