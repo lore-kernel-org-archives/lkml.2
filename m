@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030503Ab2HGWda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:33:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
+	id S1757274Ab2HGWdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:33:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54025 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030492Ab2HGWd0 (ORCPT
+	with ESMTP id S1030424Ab2HGWdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:33:26 -0400
+	Tue, 7 Aug 2012 18:33:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 116/122] ALSA: hda - Support dock on Lenovo Thinkpad T530 with ALC269VC
-Date: Tue,  7 Aug 2012 15:26:44 -0700
-Message-Id: <20120807222000.601041241@linuxfoundation.org>
+        Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 122/122] futex: Forbid uaddr == uaddr2 in futex_wait_requeue_pi()
+Date: Tue,  7 Aug 2012 15:26:50 -0700
+Message-Id: <20120807222001.338016560@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,31 +30,56 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit 707fba3fa76a4c8855552f5d4c1a12430c09bce8 upstream.
+commit 6f7b0a2a5c0fb03be7c25bd1745baa50582348ef upstream.
 
-Lenovo Thinkpad T530 with ALC269VC codec has a dock port but BIOS
-doesn't set up the pins properly.  Enable the pins as well as on
-Thinkpad X230 Tablet.
+If uaddr == uaddr2, then we have broken the rule of only requeueing
+from a non-pi futex to a pi futex with this call. If we attempt this,
+as the trinity test suite manages to do, we miss early wakeups as
+q.key is equal to key2 (because they are the same uaddr). We will then
+attempt to dereference the pi_mutex (which would exist had the futex_q
+been properly requeued to a pi futex) and trigger a NULL pointer
+dereference.
 
-Reported-and-tested-by: Mario <anyc@hadiko.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/ad82bfe7f7d130247fbe2b5b4275654807774227.1342809673.git.dvhart@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/futex.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6000,6 +6000,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x17aa, 0x21ca, "Thinkpad L412", ALC269_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x17aa, 0x21e9, "Thinkpad Edge 15", ALC269_FIXUP_SKU_IGNORE),
-+	SND_PCI_QUIRK(0x17aa, 0x21f6, "Thinkpad T530", ALC269_FIXUP_LENOVO_DOCK),
- 	SND_PCI_QUIRK(0x17aa, 0x2203, "Thinkpad X230 Tablet", ALC269_FIXUP_LENOVO_DOCK),
- 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_QUANTA_MUTE),
- 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Lenovo Ideapd", ALC269_FIXUP_PCM_44K),
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2231,11 +2231,11 @@ int handle_early_requeue_pi_wakeup(struc
+  * @uaddr2:	the pi futex we will take prior to returning to user-space
+  *
+  * The caller will wait on uaddr and will be requeued by futex_requeue() to
+- * uaddr2 which must be PI aware.  Normal wakeup will wake on uaddr2 and
+- * complete the acquisition of the rt_mutex prior to returning to userspace.
+- * This ensures the rt_mutex maintains an owner when it has waiters; without
+- * one, the pi logic wouldn't know which task to boost/deboost, if there was a
+- * need to.
++ * uaddr2 which must be PI aware and unique from uaddr.  Normal wakeup will wake
++ * on uaddr2 and complete the acquisition of the rt_mutex prior to returning to
++ * userspace.  This ensures the rt_mutex maintains an owner when it has waiters;
++ * without one, the pi logic would not know which task to boost/deboost, if
++ * there was a need to.
+  *
+  * We call schedule in futex_wait_queue_me() when we enqueue and return there
+  * via the following:
+@@ -2272,6 +2272,9 @@ static int futex_wait_requeue_pi(u32 __u
+ 	struct futex_q q = futex_q_init;
+ 	int res, ret;
+ 
++	if (uaddr == uaddr2)
++		return -EINVAL;
++
+ 	if (!bitset)
+ 		return -EINVAL;
+ 
 
 
