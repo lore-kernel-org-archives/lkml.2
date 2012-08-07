@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab2HGR0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:26:25 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:33629 "EHLO
+	id S1755453Ab2HGR1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:27:14 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:33892 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab2HGR0X (ORCPT
+	with ESMTP id S1750698Ab2HGR1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:26:23 -0400
+	Tue, 7 Aug 2012 13:27:11 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: David Miller <davem@davemloft.net>
 Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
@@ -17,29 +17,29 @@ Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
 References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
 	<87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com>
 	<87ipcud3ld.fsf_-_@xmission.com>
-Date: Tue, 07 Aug 2012 10:26:14 -0700
+Date: Tue, 07 Aug 2012 10:27:02 -0700
 In-Reply-To: <87ipcud3ld.fsf_-_@xmission.com> (Eric W. Biederman's message of
 	"Tue, 07 Aug 2012 10:17:02 -0700")
-Message-ID: <87y5lqboll.fsf_-_@xmission.com>
+Message-ID: <87sjbybok9.fsf_-_@xmission.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+KNDlsYvBtXEGLsFF3QxnxJilq5eDJ2Ec=
+X-XM-AID: U2FsdGVkX19uQ/a3w3msVF42+NsrhuHrqa+xS0+NC8s=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  0.1 XMSubLong Long Subject
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2651]
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0041]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
 	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;David Miller <davem@davemloft.net>
 X-Spam-Relay-Country: 
-Subject: [PATCH net-next 3/7] sctp: Push struct net down into sctp_transport_init
+Subject: [PATCH net-next 4/7] sctp: Push struct net down into sctp_in_scope
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -48,94 +48,86 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+struct net will be needed shortly when the tunables are made per network
+namespace.
+
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
  include/net/sctp/structs.h |    2 +-
- net/sctp/associola.c       |    3 ++-
- net/sctp/sm_statefuns.c    |    2 +-
- net/sctp/transport.c       |    8 +++++---
- 4 files changed, 9 insertions(+), 6 deletions(-)
+ net/sctp/bind_addr.c       |    4 ++--
+ net/sctp/protocol.c        |    2 +-
+ net/sctp/sm_make_chunk.c   |    3 ++-
+ 4 files changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
-index 6bdfcab..88d2179 100644
+index 88d2179..b0882f3 100644
 --- a/include/net/sctp/structs.h
 +++ b/include/net/sctp/structs.h
-@@ -1066,7 +1066,7 @@ struct sctp_transport {
- 	__u64 hb_nonce;
- };
+@@ -1248,7 +1248,7 @@ int sctp_raw_to_bind_addrs(struct sctp_bind_addr *bp, __u8 *raw, int len,
+ 			   __u16 port, gfp_t gfp);
  
--struct sctp_transport *sctp_transport_new(const union sctp_addr *,
-+struct sctp_transport *sctp_transport_new(struct net *, const union sctp_addr *,
- 					  gfp_t);
- void sctp_transport_set_owner(struct sctp_transport *,
- 			      struct sctp_association *);
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index 6bcbeca..93a4513 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -641,6 +641,7 @@ struct sctp_transport *sctp_assoc_add_peer(struct sctp_association *asoc,
- 					   const gfp_t gfp,
- 					   const int peer_state)
- {
-+	struct net *net = sock_net(asoc->base.sk);
- 	struct sctp_transport *peer;
- 	struct sctp_sock *sp;
- 	unsigned short port;
-@@ -674,7 +675,7 @@ struct sctp_transport *sctp_assoc_add_peer(struct sctp_association *asoc,
- 		return peer;
- 	}
+ sctp_scope_t sctp_scope(const union sctp_addr *);
+-int sctp_in_scope(const union sctp_addr *addr, const sctp_scope_t scope);
++int sctp_in_scope(struct net *net, const union sctp_addr *addr, const sctp_scope_t scope);
+ int sctp_is_any(struct sock *sk, const union sctp_addr *addr);
+ int sctp_addr_is_valid(const union sctp_addr *addr);
+ int sctp_is_ep_boundall(struct sock *sk);
+diff --git a/net/sctp/bind_addr.c b/net/sctp/bind_addr.c
+index a85ce4b..23389ba 100644
+--- a/net/sctp/bind_addr.c
++++ b/net/sctp/bind_addr.c
+@@ -457,7 +457,7 @@ static int sctp_copy_one_addr(struct net *net, struct sctp_bind_addr *dest,
  
--	peer = sctp_transport_new(addr, gfp);
-+	peer = sctp_transport_new(net, addr, gfp);
- 	if (!peer)
- 		return NULL;
- 
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index bee5e2c..ff2530c 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -5958,7 +5958,7 @@ static struct sctp_packet *sctp_ootb_pkt_new(struct net *net,
- 	}
- 
- 	/* Make a transport for the bucket, Eliza... */
--	transport = sctp_transport_new(sctp_source(chunk), GFP_ATOMIC);
-+	transport = sctp_transport_new(net, sctp_source(chunk), GFP_ATOMIC);
- 	if (!transport)
- 		goto nomem;
- 
-diff --git a/net/sctp/transport.c b/net/sctp/transport.c
-index c97472b..aada963 100644
---- a/net/sctp/transport.c
-+++ b/net/sctp/transport.c
-@@ -59,7 +59,8 @@
- /* 1st Level Abstractions.  */
- 
- /* Initialize a new transport from provided memory.  */
--static struct sctp_transport *sctp_transport_init(struct sctp_transport *peer,
-+static struct sctp_transport *sctp_transport_init(struct net *net,
-+						  struct sctp_transport *peer,
- 						  const union sctp_addr *addr,
- 						  gfp_t gfp)
- {
-@@ -109,7 +110,8 @@ static struct sctp_transport *sctp_transport_init(struct sctp_transport *peer,
+ 	if (sctp_is_any(NULL, addr)) {
+ 		error = sctp_copy_local_addr_list(net, dest, scope, gfp, flags);
+-	} else if (sctp_in_scope(addr, scope)) {
++	} else if (sctp_in_scope(net, addr, scope)) {
+ 		/* Now that the address is in scope, check to see if
+ 		 * the address type is supported by local sock as
+ 		 * well as the remote peer.
+@@ -494,7 +494,7 @@ int sctp_is_any(struct sock *sk, const union sctp_addr *addr)
  }
  
- /* Allocate and initialize a new transport.  */
--struct sctp_transport *sctp_transport_new(const union sctp_addr *addr,
-+struct sctp_transport *sctp_transport_new(struct net *net,
-+					  const union sctp_addr *addr,
- 					  gfp_t gfp)
+ /* Is 'addr' valid for 'scope'?  */
+-int sctp_in_scope(const union sctp_addr *addr, sctp_scope_t scope)
++int sctp_in_scope(struct net *net, const union sctp_addr *addr, sctp_scope_t scope)
  {
- 	struct sctp_transport *transport;
-@@ -118,7 +120,7 @@ struct sctp_transport *sctp_transport_new(const union sctp_addr *addr,
- 	if (!transport)
- 		goto fail;
+ 	sctp_scope_t addr_scope = sctp_scope(addr);
  
--	if (!sctp_transport_init(transport, addr, gfp))
-+	if (!sctp_transport_init(net, transport, addr, gfp))
- 		goto fail_init;
- 
- 	transport->malloced = 1;
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index de25d9c..85f87c3 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -210,7 +210,7 @@ int sctp_copy_local_addr_list(struct net *net, struct sctp_bind_addr *bp,
+ 	list_for_each_entry_rcu(addr, &net->sctp.local_addr_list, list) {
+ 		if (!addr->valid)
+ 			continue;
+-		if (sctp_in_scope(&addr->a, scope)) {
++		if (sctp_in_scope(net, &addr->a, scope)) {
+ 			/* Now that the address is in scope, check to see if
+ 			 * the address type is really supported by the local
+ 			 * sock as well as the remote peer.
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index 479a70e..fb12835 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -2466,6 +2466,7 @@ static int sctp_process_param(struct sctp_association *asoc,
+ 			      const union sctp_addr *peer_addr,
+ 			      gfp_t gfp)
+ {
++	struct net *net = sock_net(asoc->base.sk);
+ 	union sctp_addr addr;
+ 	int i;
+ 	__u16 sat;
+@@ -2494,7 +2495,7 @@ do_addr_param:
+ 		af = sctp_get_af_specific(param_type2af(param.p->type));
+ 		af->from_addr_param(&addr, param.addr, htons(asoc->peer.port), 0);
+ 		scope = sctp_scope(peer_addr);
+-		if (sctp_in_scope(&addr, scope))
++		if (sctp_in_scope(net, &addr, scope))
+ 			if (!sctp_assoc_add_peer(asoc, &addr, gfp, SCTP_UNCONFIRMED))
+ 				return 0;
+ 		break;
 -- 
 1.7.5.4
 
