@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030974Ab2HGWma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:42:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	id S1030987Ab2HGWmq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:42:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030915Ab2HGWmZ (ORCPT
+	with ESMTP id S1030970Ab2HGWmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:42:25 -0400
+	Tue, 7 Aug 2012 18:42:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 108/109] futex: Fix bug in WARN_ON for NULL q.pi_state
-Date: Tue,  7 Aug 2012 15:36:07 -0700
-Message-Id: <20120807222052.552860361@linuxfoundation.org>
+        Lin Ming <mlin@ss.pku.edu.cn>, Paul Moore <pmoore@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 085/109] cipso: dont follow a NULL pointer when setsockopt() is called
+Date: Tue,  7 Aug 2012 15:35:44 -0700
+Message-Id: <20120807222050.547018094@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,34 +30,92 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
 
-commit f27071cb7fe3e1d37a9dbe6c0dfc5395cd40fa43 upstream.
+From: Paul Moore <pmoore@redhat.com>
 
-The WARN_ON in futex_wait_requeue_pi() for a NULL q.pi_state was testing
-the address (&q.pi_state) of the pointer instead of the value
-(q.pi_state) of the pointer. Correct it accordingly.
+[ Upstream commit 89d7ae34cdda4195809a5a987f697a517a2a3177 ]
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/1c85d97f6e5f79ec389a4ead3e367363c74bd09a.1342809673.git.dvhart@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+As reported by Alan Cox, and verified by Lin Ming, when a user
+attempts to add a CIPSO option to a socket using the CIPSO_V4_TAG_LOCAL
+tag the kernel dies a terrible death when it attempts to follow a NULL
+pointer (the skb argument to cipso_v4_validate() is NULL when called via
+the setsockopt() syscall).
+
+This patch fixes this by first checking to ensure that the skb is
+non-NULL before using it to find the incoming network interface.  In
+the unlikely case where the skb is NULL and the user attempts to add
+a CIPSO option with the _TAG_LOCAL tag we return an error as this is
+not something we want to allow.
+
+A simple reproducer, kindly supplied by Lin Ming, although you must
+have the CIPSO DOI #3 configure on the system first or you will be
+caught early in cipso_v4_validate():
+
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <linux/ip.h>
+	#include <linux/in.h>
+	#include <string.h>
+
+	struct local_tag {
+		char type;
+		char length;
+		char info[4];
+	};
+
+	struct cipso {
+		char type;
+		char length;
+		char doi[4];
+		struct local_tag local;
+	};
+
+	int main(int argc, char **argv)
+	{
+		int sockfd;
+		struct cipso cipso = {
+			.type = IPOPT_CIPSO,
+			.length = sizeof(struct cipso),
+			.local = {
+				.type = 128,
+				.length = sizeof(struct local_tag),
+			},
+		};
+
+		memset(cipso.doi, 0, 4);
+		cipso.doi[3] = 3;
+
+		sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+		#define SOL_IP 0
+		setsockopt(sockfd, SOL_IP, IP_OPTIONS,
+			&cipso, sizeof(struct cipso));
+
+		return 0;
+	}
+
+CC: Lin Ming <mlin@ss.pku.edu.cn>
+Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/futex.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/cipso_ipv4.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2343,7 +2343,7 @@ static int futex_wait_requeue_pi(u32 __u
- 		 * signal.  futex_unlock_pi() will not destroy the lock_ptr nor
- 		 * the pi_state.
- 		 */
--		WARN_ON(!&q.pi_state);
-+		WARN_ON(!q.pi_state);
- 		pi_mutex = &q.pi_state->pi_mutex;
- 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
- 		debug_rt_mutex_free_waiter(&rt_waiter);
+--- a/net/ipv4/cipso_ipv4.c
++++ b/net/ipv4/cipso_ipv4.c
+@@ -1725,8 +1725,10 @@ int cipso_v4_validate(const struct sk_bu
+ 		case CIPSO_V4_TAG_LOCAL:
+ 			/* This is a non-standard tag that we only allow for
+ 			 * local connections, so if the incoming interface is
+-			 * not the loopback device drop the packet. */
+-			if (!(skb->dev->flags & IFF_LOOPBACK)) {
++			 * not the loopback device drop the packet. Further,
++			 * there is no legitimate reason for setting this from
++			 * userspace so reject it if skb is NULL. */
++			if (skb == NULL || !(skb->dev->flags & IFF_LOOPBACK)) {
+ 				err_offset = opt_iter;
+ 				goto validate_return_locked;
+ 			}
 
 
