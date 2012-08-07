@@ -1,68 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2HGLSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 07:18:25 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:4795 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab2HGLSY convert rfc822-to-8bit (ORCPT
+	id S1754208Ab2HGLV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 07:21:26 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:45003 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753651Ab2HGLVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 07:18:24 -0400
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: RE: [PATCH] regmap-irq: allow auto-allocated IRQs to be mapped
-Thread-Topic: [PATCH] regmap-irq: allow auto-allocated IRQs to be mapped
-Thread-Index: AQHNckG72kyxY08IiEqTgpBfEDN7qZdONpdA
-Date: Tue, 7 Aug 2012 11:18:20 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB51032C3B7E@NB-EX-MBX02.diasemi.com>
-References: <201208020805.q72858Yj003147@latitude.olech.com>
- <20120804105424.GB10523@opensource.wolfsonmicro.com>
-In-Reply-To: <20120804105424.GB10523@opensource.wolfsonmicro.com>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.23]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Aug 2012 07:21:25 -0400
+Message-ID: <5020FA2C.2020707@ti.com>
+Date: Tue, 07 Aug 2012 16:51:16 +0530
+From: Shubhrajyoti <shubhrajyoti@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: spi-devel-general@lists.sourceforge.net, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi: omap2-mcspi: In case of dma errors fall back to
+ pio
+References: <1343197229-15188-1-git-send-email-shubhrajyoti@ti.com> <20120807074740.GR11011@atomide.com>
+In-Reply-To: <20120807074740.GR11011@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if you don't TOP POST how can you tell who wrote what?
+On Tuesday 07 August 2012 01:17 PM, Tony Lindgren wrote:
+>>  };
+> Don't you need to check separately for rx and tx dma? There's a slight
+> chance that you get a channel for one but not for the other..
+In that case I treat it as non usable and fall back to pio.
 
-see my comments embedded below
-
------Original Message-----
-From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com] 
-Sent: 04 August 2012 11:54
-To: Opensource [Anthony Olech]
-Cc: LKML; Anthony Olech; David Dajun Chen
-Subject: Re: [PATCH] regmap-irq: allow auto-allocated IRQs to be mapped
-
-On Wed, Aug 01, 2012 at 07:05:15PM +0100, Anthony Olech wrote:
-
-> if the irq_base is set to -1 when calling regmap_add_irq_chip() then 
-> allow the IRQ to be mapped even if the allocated irq_base is actually 
-> zero.
-
-> This restores the behaviour seen in v3.4, and I assume that the 
-> tidy-ups just made in v3.5 INADVERTENTLY introduce this change in 
-> behaviour.
-
-Please pay MORE attention to the changelog - obviously there's no problem mapping automatically allocated IRQs, there's only any effect if they happen to GET allocated at zero.
-
-That is the problem - they are allocated at zero, and hence my patch
-
-The only real issue I see with the current code is that if the user explicitly wants to statically allocate an IRQ range at zero they can't.
-
-I don't want to explicitly allocate at zero.
-
-The current intended behaviour is that we use a linear domain unless a positive IRQ base is specified, though we're not quite doing that right now as a transitional measure until drivers are updated.
-
-The fact remains that my patch enables the DA9058 driver to work in v3.5
-
-The current da9052 driver usage seems to have quite a few problems, I do recall having to fix some problems that make me doubt if it ever worked well.  Looking at the code now I see it's using hard coded references to absolute IRQ numbers which is an issue...  It should be being converted to use regmap_irq_get_virq().
+Are you suggesting that let one channel be dma and only the failed one pio?
