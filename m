@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab2HGT4u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:56:50 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:49891 "EHLO
+	id S1756400Ab2HGT5F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:57:05 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:49897 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400Ab2HGT4r (ORCPT
+	with ESMTP id S932138Ab2HGT5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:56:47 -0400
+	Tue, 7 Aug 2012 15:57:01 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Samo Pogacnik <samo_pogacnik@t-2.net>
-Subject: [PATCH 15/41] TTY: ttyprintk, initialize tty_port earlier
-Date: Tue,  7 Aug 2012 21:47:40 +0200
-Message-Id: <1344368886-24033-16-git-send-email-jslaby@suse.cz>
+        J Freyensee <james_p_freyensee@linux.intel.com>
+Subject: [PATCH 08/41] misc: pti, do the opposite of ->probe in ->remove
+Date: Tue,  7 Aug 2012 21:47:33 +0200
+Message-Id: <1344368886-24033-9-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -21,44 +21,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After tty_register_driver is called, it is too late to initialize a
-guy with which we operate in open. When a process already called
-open(2) on that node, the structures may be in use uninitialized.
-
-Move the initialization prior to tty_register_driver.
+Currently, probe initializes some parts. Then, some of them are
+unwound in ->remove, some in module_exit. Let us do the opposite of
+whole ->probe in ->remove.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Samo Pogacnik <samo_pogacnik@t-2.net>
+Cc: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- drivers/char/ttyprintk.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/misc/pti.c |   21 +++++++--------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
-index 08755c5..be1c3fb 100644
---- a/drivers/char/ttyprintk.c
-+++ b/drivers/char/ttyprintk.c
-@@ -180,6 +180,10 @@ static int __init ttyprintk_init(void)
- 	int ret = -ENOMEM;
- 	void *rp;
+diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
+index 4a24421..be6e679 100644
+--- a/drivers/misc/pti.c
++++ b/drivers/misc/pti.c
+@@ -874,11 +874,18 @@ static void __devexit pti_pci_remove(struct pci_dev *pdev)
+ {
+ 	struct pti_dev *drv_data = pci_get_drvdata(pdev);
  
-+	tty_port_init(&tpk_port.port);
-+	tpk_port.port.ops = &null_ops;
-+	mutex_init(&tpk_port.port_write_mutex);
++	unregister_console(&pti_console);
 +
- 	ttyprintk_driver = alloc_tty_driver(1);
- 	if (!ttyprintk_driver)
- 		return ret;
-@@ -210,10 +214,6 @@ static int __init ttyprintk_init(void)
- 		goto error;
++	tty_unregister_device(pti_tty_driver, 0);
++	tty_unregister_device(pti_tty_driver, 1);
++
+ 	iounmap(drv_data->pti_ioaddr);
+ 	pci_set_drvdata(pdev, NULL);
+ 	kfree(drv_data);
+ 	pci_release_region(pdev, 1);
+ 	pci_disable_device(pdev);
++
++	misc_deregister(&pti_char_driver);
+ }
+ 
+ static struct pci_driver pti_pci_driver = {
+@@ -959,9 +966,6 @@ static void __exit pti_exit(void)
+ {
+ 	int retval;
+ 
+-	tty_unregister_device(pti_tty_driver, 0);
+-	tty_unregister_device(pti_tty_driver, 1);
+-
+ 	retval = tty_unregister_driver(pti_tty_driver);
+ 	if (retval) {
+ 		pr_err("%s(%d): TTY unregistration failed of pti driver\n",
+@@ -971,17 +975,6 @@ static void __exit pti_exit(void)
  	}
  
--	tty_port_init(&tpk_port.port);
--	tpk_port.port.ops = &null_ops;
--	mutex_init(&tpk_port.port_write_mutex);
+ 	pci_unregister_driver(&pti_pci_driver);
 -
- 	return 0;
+-	retval = misc_deregister(&pti_char_driver);
+-	if (retval) {
+-		pr_err("%s(%d): CHAR unregistration failed of pti driver\n",
+-			__func__, __LINE__);
+-		pr_err("%s(%d): Error value returned: %d\n",
+-			__func__, __LINE__, retval);
+-	}
+-
+-	unregister_console(&pti_console);
+-	return;
+ }
  
- error:
+ module_init(pti_init);
 -- 
 1.7.10.4
 
