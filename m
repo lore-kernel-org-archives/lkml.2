@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab2HGUAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:00:30 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:36557 "EHLO
+	id S1756612Ab2HGUBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:01:40 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:36551 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756533Ab2HGT7u (ORCPT
+	with ESMTP id S1756499Ab2HGT7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:59:50 -0400
+	Tue, 7 Aug 2012 15:59:46 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        netdev@vger.kernel.org, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-cris-kernel@axis.com
-Subject: [PATCH 23/41] TTY: automatically create nodes for some drivers
-Date: Tue,  7 Aug 2012 21:47:48 +0200
-Message-Id: <1344368886-24033-24-git-send-email-jslaby@suse.cz>
+        Samo Pogacnik <samo_pogacnik@t-2.net>
+Subject: [PATCH 13/41] TTY: ttyprintk, unregister tty driver on failure
+Date: Tue,  7 Aug 2012 21:47:38 +0200
+Message-Id: <1344368886-24033-14-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -22,62 +21,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This looks like it was a mistake not to create device nodes for these
-drivers. Let us create them from now on.
+When the tty_printk driver fails to create a node in sysfs, the system
+crashes. It is because the driver registers a tty driver and frees it
+without deregistering it first. The fix is easy: add a call to
+tty_unregister_driver to the fail path.
 
-It will be necessary to call tty_register_device some way, either by
-tty_register_driver implicitly or to call tty_register_device proper.
+This is very unlikely to happen in usual environment => no need for
+stable.
+
+The crash occurs at some place where we iterate over tty drivers
+first. It may look like this:
+BUG: unable to handle kernel paging request at ffffffffffffff84
+IP: [<ffffffff81278d56>] tty_open+0xd6/0x650
+PGD 1a0d067 PUD 1a0e067 PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in:
+CPU 0
+Pid: 1183, comm: boot.localnet Tainted: G        W    3.5.0-rc7-next-20120716+ #369 Bochs Bochs
+RIP: 0010:[<ffffffff81278d56>]  [<ffffffff81278d56>] tty_open+0xd6/0x650
+RSP: 0018:ffff8800162b3b98  EFLAGS: 00010207
+RAX: 0000000000000000 RBX: ffff880016ba6200 RCX: 0000000000002208
+RDX: 0000000000000000 RSI: 00000000000000d0 RDI: ffffffff81a35080
+RBP: ffff8800162b3c08 R08: ffffffff81276f42 R09: 0000000000400040
+R10: ffff8800161dc005 R11: ffff8800188ee048 R12: 0000000000000000
+R13: ffffffffffffff58 R14: 0000000000400040 R15: 0000000000008000
+FS:  00007f3684abd700(0000) GS:ffff880018e00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffffffffffffff84 CR3: 000000001503e000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process boot.localnet (pid: 1183, threadinfo ffff8800162b2000, task ffff8800188c5880)
+Stack:
+ ffff8800162b3c08 ffffffff81363d63 ffffffff81a62940 ffff8800189b4e88
+ ffff8800188c5880 ffffffff81123180 0000000000000000 ffffffff18b20600
+ 0000000000000000 ffff8800189b4e88 ffff880016ba6200 ffff880018b20600
+Call Trace:
+ [<ffffffff81363d63>] ? kobj_lookup+0x103/0x160
+ [<ffffffff81123180>] ? mount_fs+0x110/0x110
+ [<ffffffff81123a9c>] chrdev_open+0x9c/0x1a0
+ [<ffffffff81123a00>] ? cdev_put+0x30/0x30
+ [<ffffffff8111de76>] do_dentry_open.isra.19+0x1e6/0x270
+ [<ffffffff8111df65>] finish_open+0x65/0xa0
+ [<ffffffff8112dc9e>] do_last.isra.52+0x26e/0xd80
+ [<ffffffff8112b163>] ? inode_permission+0x13/0x50
+ [<ffffffff8112b203>] ? link_path_walk+0x63/0x940
+ [<ffffffff8112e85b>] path_openat+0xab/0x3d0
+ [<ffffffff8112ef5d>] do_filp_open+0x3d/0xa0
+ [<ffffffff8113ba72>] ? alloc_fd+0xd2/0x120
+ [<ffffffff8111eee3>] do_sys_open+0xf3/0x1d0
+ [<ffffffff8111efdc>] sys_open+0x1c/0x20
+ [<ffffffff815b5fe2>] system_call_fastpath+0x16/0x1b
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: netdev@vger.kernel.org
-Cc: linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org
-Cc: linux-cris-kernel@axis.com
+Cc: Samo Pogacnik <samo_pogacnik@t-2.net>
 ---
- drivers/isdn/i4l/isdn_tty.c  |    2 +-
- drivers/s390/char/tty3270.c  |    2 +-
- drivers/tty/serial/crisv10.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/char/ttyprintk.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
-index 7a61ef6..576ce4b 100644
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -1782,7 +1782,7 @@ isdn_tty_modem_init(void)
- 	m->tty_modem->subtype = SERIAL_TYPE_NORMAL;
- 	m->tty_modem->init_termios = tty_std_termios;
- 	m->tty_modem->init_termios.c_cflag = B9600 | CS8 | CREAD | HUPCL | CLOCAL;
--	m->tty_modem->flags = TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
-+	m->tty_modem->flags = TTY_DRIVER_REAL_RAW;
- 	m->tty_modem->driver_name = "isdn_tty";
- 	tty_set_operations(m->tty_modem, &modem_ops);
- 	retval = tty_register_driver(m->tty_modem);
-diff --git a/drivers/s390/char/tty3270.c b/drivers/s390/char/tty3270.c
-index 215037c..f2b8c6c 100644
---- a/drivers/s390/char/tty3270.c
-+++ b/drivers/s390/char/tty3270.c
-@@ -1781,7 +1781,7 @@ static int __init tty3270_init(void)
- 	driver->type = TTY_DRIVER_TYPE_SYSTEM;
- 	driver->subtype = SYSTEM_TYPE_TTY;
- 	driver->init_termios = tty_std_termios;
--	driver->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_DYNAMIC_DEV;
-+	driver->flags = TTY_DRIVER_RESET_TERMIOS;
- 	tty_set_operations(driver, &tty3270_ops);
- 	ret = tty_register_driver(driver);
- 	if (ret) {
-diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
-index 6b705b2..708c3bf 100644
---- a/drivers/tty/serial/crisv10.c
-+++ b/drivers/tty/serial/crisv10.c
-@@ -4443,7 +4443,7 @@ static int __init rs_init(void)
- 		B115200 | CS8 | CREAD | HUPCL | CLOCAL; /* is normally B9600 default... */
- 	driver->init_termios.c_ispeed = 115200;
- 	driver->init_termios.c_ospeed = 115200;
--	driver->flags = TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
-+	driver->flags = TTY_DRIVER_REAL_RAW;
+diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
+index 46b77ed..9b1e5e0 100644
+--- a/drivers/char/ttyprintk.c
++++ b/drivers/char/ttyprintk.c
+@@ -217,6 +217,7 @@ static int __init ttyprintk_init(void)
+ 	return 0;
  
- 	tty_set_operations(driver, &rs_ops);
-         serial_driver = driver;
+ error:
++	tty_unregister_driver(ttyprintk_driver);
+ 	put_tty_driver(ttyprintk_driver);
+ 	ttyprintk_driver = NULL;
+ 	return ret;
 -- 
 1.7.10.4
 
