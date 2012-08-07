@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030987Ab2HGWmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:42:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
+	id S1031003Ab2HGWmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:42:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030970Ab2HGWmm (ORCPT
+	with ESMTP id S1030982Ab2HGWmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:42:42 -0400
+	Tue, 7 Aug 2012 18:42:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lin Ming <mlin@ss.pku.edu.cn>, Paul Moore <pmoore@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 085/109] cipso: dont follow a NULL pointer when setsockopt() is called
-Date: Tue,  7 Aug 2012 15:35:44 -0700
-Message-Id: <20120807222050.547018094@linuxfoundation.org>
+        Daniel Mack <zonque@gmail.com>, Andreas Koch <andreas@akdesigninc.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 096/109] ALSA: snd-usb: fix clock source validity index
+Date: Tue,  7 Aug 2012 15:35:55 -0700
+Message-Id: <20120807222051.505927017@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,92 +30,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Daniel Mack <zonque@gmail.com>
 
-From: Paul Moore <pmoore@redhat.com>
+commit aff252a848ce21b431ba822de3dab9c4c94571cb upstream.
 
-[ Upstream commit 89d7ae34cdda4195809a5a987f697a517a2a3177 ]
+uac_clock_source_is_valid() uses the control selector value to access
+the bmControls bitmap of the clock source unit. This is wrong, as
+control selector values start from 1, while the bitmap uses all
+available bits.
 
-As reported by Alan Cox, and verified by Lin Ming, when a user
-attempts to add a CIPSO option to a socket using the CIPSO_V4_TAG_LOCAL
-tag the kernel dies a terrible death when it attempts to follow a NULL
-pointer (the skb argument to cipso_v4_validate() is NULL when called via
-the setsockopt() syscall).
+In other words, "Clock Validity Control" is stored in D3..2, not D5..4
+of the clock selector unit's bmControls.
 
-This patch fixes this by first checking to ensure that the skb is
-non-NULL before using it to find the incoming network interface.  In
-the unlikely case where the skb is NULL and the user attempts to add
-a CIPSO option with the _TAG_LOCAL tag we return an error as this is
-not something we want to allow.
-
-A simple reproducer, kindly supplied by Lin Ming, although you must
-have the CIPSO DOI #3 configure on the system first or you will be
-caught early in cipso_v4_validate():
-
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <linux/ip.h>
-	#include <linux/in.h>
-	#include <string.h>
-
-	struct local_tag {
-		char type;
-		char length;
-		char info[4];
-	};
-
-	struct cipso {
-		char type;
-		char length;
-		char doi[4];
-		struct local_tag local;
-	};
-
-	int main(int argc, char **argv)
-	{
-		int sockfd;
-		struct cipso cipso = {
-			.type = IPOPT_CIPSO,
-			.length = sizeof(struct cipso),
-			.local = {
-				.type = 128,
-				.length = sizeof(struct local_tag),
-			},
-		};
-
-		memset(cipso.doi, 0, 4);
-		cipso.doi[3] = 3;
-
-		sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-		#define SOL_IP 0
-		setsockopt(sockfd, SOL_IP, IP_OPTIONS,
-			&cipso, sizeof(struct cipso));
-
-		return 0;
-	}
-
-CC: Lin Ming <mlin@ss.pku.edu.cn>
-Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-by: Andreas Koch <andreas@akdesigninc.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/cipso_ipv4.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/cipso_ipv4.c
-+++ b/net/ipv4/cipso_ipv4.c
-@@ -1725,8 +1725,10 @@ int cipso_v4_validate(const struct sk_bu
- 		case CIPSO_V4_TAG_LOCAL:
- 			/* This is a non-standard tag that we only allow for
- 			 * local connections, so if the incoming interface is
--			 * not the loopback device drop the packet. */
--			if (!(skb->dev->flags & IFF_LOOPBACK)) {
-+			 * not the loopback device drop the packet. Further,
-+			 * there is no legitimate reason for setting this from
-+			 * userspace so reject it if skb is NULL. */
-+			if (skb == NULL || !(skb->dev->flags & IFF_LOOPBACK)) {
- 				err_offset = opt_iter;
- 				goto validate_return_locked;
- 			}
+---
+ sound/usb/clock.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/sound/usb/clock.c
++++ b/sound/usb/clock.c
+@@ -111,7 +111,8 @@ static bool uac_clock_source_is_valid(st
+ 		return 0;
+ 
+ 	/* If a clock source can't tell us whether it's valid, we assume it is */
+-	if (!uac2_control_is_readable(cs_desc->bmControls, UAC2_CS_CONTROL_CLOCK_VALID))
++	if (!uac2_control_is_readable(cs_desc->bmControls,
++				      UAC2_CS_CONTROL_CLOCK_VALID - 1))
+ 		return 1;
+ 
+ 	err = snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), UAC2_CS_CUR,
 
 
