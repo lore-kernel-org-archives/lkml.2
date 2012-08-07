@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab2HGXYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:24:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030247Ab2HGWcI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:08 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tao Ma <boyu.mt@taobao.com>, "Theodore Tso" <tytso@mit.edu>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-Subject: [ 098/122] ext4: use proper csum calculation in ext4_rename
-Date: Tue,  7 Aug 2012 15:26:26 -0700
-Message-Id: <20120807221958.306955276@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
-References: <20120807221948.220495155@linuxfoundation.org>
-User-Agent: quilt/0.60-20.4
+	id S1757582Ab2HGXYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:24:16 -0400
+Received: from imp02.mtu.ru ([62.5.255.19]:40916 "EHLO imp02.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757275Ab2HGXYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 19:24:12 -0400
+X-Spam-Flag: NO
+Message-ID: <5021A372.8030409@pavlinux.ru>
+Date: Wed, 08 Aug 2012 03:23:30 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120713 Thunderbird/10.0.6
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Pavel Machek <pavel@ucw.cz>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: Re: [linux-pm] [PATCH] ACPI: replace strlen("string") with sizeof("string")
+ -1
+References: <Pine.LNX.4.44L0.1208071322070.2400-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1208071322070.2400-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
-
-3.5-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Tao Ma <boyu.mt@taobao.com>
-
-commit ef58f69c3c34f6377f1e21d3533c806dbd980ad0 upstream.
-
-In ext4_rename, when the old name is a dir, we need to
-change ".." to its new parent and journal the change, so
-with metadata_csum enabled, we have to re-calc the csum.
-
-As the first block of the dir can be either a htree root
-or a normal directory block and we have different csum
-calculation for these 2 types, we have to choose the right
-one in ext4_rename.
-
-btw, it is found by xfstests 013.
-
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Acked-by: Darrick J. Wong <djwong@us.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/namei.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2918,8 +2918,15 @@ static int ext4_rename(struct inode *old
- 		PARENT_INO(dir_bh->b_data, new_dir->i_sb->s_blocksize) =
- 						cpu_to_le32(new_dir->i_ino);
- 		BUFFER_TRACE(dir_bh, "call ext4_handle_dirty_metadata");
--		retval = ext4_handle_dirty_dirent_node(handle, old_inode,
--						       dir_bh);
-+		if (is_dx(old_inode)) {
-+			retval = ext4_handle_dirty_dx_node(handle,
-+							   old_inode,
-+							   dir_bh);
-+		} else {
-+			retval = ext4_handle_dirty_dirent_node(handle,
-+							       old_inode,
-+							       dir_bh);
-+		}
- 		if (retval) {
- 			ext4_std_error(old_dir->i_sb, retval);
- 			goto end_rename;
+07.08.2012 21:24, Alan Stern пишет:
+> On Tue, 7 Aug 2012, Pavel Vasilyev wrote:
+>
+>> 06.08.2012 23:59, Alan Stern пишет:
+>>> On Mon, 6 Aug 2012, Pavel Vasilyev wrote:
+>>>
+>>>>>> http://www.gossamer-threads.com/lists/engine?do=post_attachment;postatt_id=41157;list=linux
+>>>>>
+>>>>> Interestingly, many (all?) of the changes in that patch are wrong
+>>>>> because they don't try to match the terminating '\0'.  As a result,
+>>>>> they will match against extensions of the target string as well as the
+>>>>> target string itself.
+>>>>>
+>>>>
+>>>> strNcmp compare N bytes - http://lxr.linux.no/#linux+v3.5/lib/string.c#L270
+>>>> memcmp compare N bytes  - http://lxr.linux.no/#linux+v3.5/lib/string.c#L651
+>>>
+>>> Yes.  So if s contains "abcde" then
+>>>
+>>> 	memcmp(s, "abc", 3) and strncmp(s, "abc", 3) will both return 0, and
+>>> 	memcmp(s, "abc", 4) and strncmp(s, "abc", 4) will both return 1.
+>>
+>> No matter what is contained in *s, "abcde" or "abcxxx",
+>> are important first N bytes. The second example, you see,
+>> a little bit stupid, and devoid of logic. :)
+>
+> Maybe yes, maybe no.  It all depends on what you want.
+>
+> For example, if you're looking for "on" or "off", what should you do
+> when the user writes "onoff"?  You could accept it as meaning the same
+> as "on", but if you were being careful then you would want to reject it
+> as a meaningless value.
 
 
+The users should't be allowed to think!
+There is "on" - the size of 2 bytes, or "off" - 3 bytes,
+other variations - user error.
+
+We do not create a kernel with artificial intelligence? ;)
+
+-- 
+                                                          Pavel.
