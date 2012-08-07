@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab2HGFNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 01:13:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14639 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751659Ab2HGFM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 01:12:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="194031299"
-Date: Tue, 7 Aug 2012 13:12:47 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russ Gorby <russ.gorby@intel.com>
-Subject: [PATCH] serial: ifx6x60: fix paging fault on spi_register_driver
-Message-ID: <20120807051247.GA24140@localhost>
+	id S1751704Ab2HGF0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 01:26:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:45330 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750752Ab2HGF0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 01:26:53 -0400
+X-IronPort-AV: E=Sophos;i="4.77,725,1336320000"; 
+   d="scan'208";a="5567650"
+Message-ID: <5020A849.4050209@cn.fujitsu.com>
+Date: Tue, 07 Aug 2012 13:31:53 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: isimatu.yasuaki@jp.fujitsu.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC PATCH V6 13/19] memory-hotplug: check page type in get_page_bootmem
+References: <1343980161-14254-1-git-send-email-wency@cn.fujitsu.com> <1343980161-14254-14-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1343980161-14254-14-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/07 13:27:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/07 13:27:13,
+	Serialize complete at 2012/08/07 13:27:13
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[  117.240866] BUG: unable to handle kernel paging request at 815b627c
-[  117.240866] IP: [<813fe94b>] spi_register_driver+0xb/0x50
-...
-[  117.240866] Call Trace:
-[  117.240866]  [<817de977>] ifx_spi_init+0xbe/0xf0
+At 08/03/2012 03:49 PM, wency@cn.fujitsu.com Wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> There is a possibility that get_page_bootmem() is called to the same page many
+> times. So when get_page_bootmem is called to the same page, the function only
+> increments page->_count.
+> 
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Wen Congyang <wency@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> ---
+>  mm/memory_hotplug.c |   15 +++++++++++----
+>  1 files changed, 11 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 5f9f8c7..710e593 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
+>  static void get_page_bootmem(unsigned long info,  struct page *page,
+>  			     unsigned long type)
+>  {
+> -	page->lru.next = (struct list_head *) type;
+> -	SetPagePrivate(page);
+> -	set_page_private(page, info);
+> -	atomic_inc(&page->_count);
+> +	unsigned long page_type;
+> +
+> +	page_type = (unsigned long) page->lru.next;
+> +	if (type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
+> +	    type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
 
-The root cause is, spi_register_driver() is trying to write into the
-passed *const* struct spi_driver.
+I think it should be page_type not type here.
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- drivers/tty/serial/ifx6x60.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks
+Wen Congyang
 
---- linux.orig/drivers/tty/serial/ifx6x60.c	2012-05-24 19:03:07.408430953 +0800
-+++ linux/drivers/tty/serial/ifx6x60.c	2012-08-07 12:57:05.499312357 +0800
-@@ -1331,7 +1331,7 @@ static const struct spi_device_id ifx_id
- MODULE_DEVICE_TABLE(spi, ifx_id_table);
- 
- /* spi operations */
--static const struct spi_driver ifx_spi_driver = {
-+static struct spi_driver ifx_spi_driver = {
- 	.driver = {
- 		.name = DRVNAME,
- 		.pm = &ifx_spi_pm,
+> +		page->lru.next = (struct list_head *) type;
+> +		SetPagePrivate(page);
+> +		set_page_private(page, info);
+> +		atomic_inc(&page->_count);
+> +	} else
+> +		atomic_inc(&page->_count);
+>  }
+>  
+>  /* reference to __meminit __free_pages_bootmem is valid
+
