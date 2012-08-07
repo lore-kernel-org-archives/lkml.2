@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab2HGWyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:54:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
+	id S1031206Ab2HGWyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:54:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031033Ab2HGWqj (ORCPT
+	with ESMTP id S1031079Ab2HGWqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:39 -0400
+	Tue, 7 Aug 2012 18:46:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 25/49] nfs: skip commit in releasepage if were freeing memory for fs-related reasons
-Date: Tue,  7 Aug 2012 15:44:43 -0700
-Message-Id: <20120807222029.152081230@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 23/49] drm/radeon: on hotplug force link training to happen (v2)
+Date: Tue,  7 Aug 2012 15:44:41 -0700
+Message-Id: <20120807222028.977245067@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -30,173 +31,48 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 5cf02d09b50b1ee1c2d536c9cf64af5a7d433f56 upstream.
+commit ca2ccde5e2f24a792caa4cca919fc5c6f65d1887 upstream.
 
-We've had some reports of a deadlock where rpciod ends up with a stack
-trace like this:
+To have DP behave like VGA/DVI we need to retrain the link
+on hotplug. For this to happen we need to force link
+training to happen by setting connector dpms to off
+before asking it turning it on again.
 
-    PID: 2507   TASK: ffff88103691ab40  CPU: 14  COMMAND: "rpciod/14"
-     #0 [ffff8810343bf2f0] schedule at ffffffff814dabd9
-     #1 [ffff8810343bf3b8] nfs_wait_bit_killable at ffffffffa038fc04 [nfs]
-     #2 [ffff8810343bf3c8] __wait_on_bit at ffffffff814dbc2f
-     #3 [ffff8810343bf418] out_of_line_wait_on_bit at ffffffff814dbcd8
-     #4 [ffff8810343bf488] nfs_commit_inode at ffffffffa039e0c1 [nfs]
-     #5 [ffff8810343bf4f8] nfs_release_page at ffffffffa038bef6 [nfs]
-     #6 [ffff8810343bf528] try_to_release_page at ffffffff8110c670
-     #7 [ffff8810343bf538] shrink_page_list.clone.0 at ffffffff81126271
-     #8 [ffff8810343bf668] shrink_inactive_list at ffffffff81126638
-     #9 [ffff8810343bf818] shrink_zone at ffffffff8112788f
-    #10 [ffff8810343bf8c8] do_try_to_free_pages at ffffffff81127b1e
-    #11 [ffff8810343bf958] try_to_free_pages at ffffffff8112812f
-    #12 [ffff8810343bfa08] __alloc_pages_nodemask at ffffffff8111fdad
-    #13 [ffff8810343bfb28] kmem_getpages at ffffffff81159942
-    #14 [ffff8810343bfb58] fallback_alloc at ffffffff8115a55a
-    #15 [ffff8810343bfbd8] ____cache_alloc_node at ffffffff8115a2d9
-    #16 [ffff8810343bfc38] kmem_cache_alloc at ffffffff8115b09b
-    #17 [ffff8810343bfc78] sk_prot_alloc at ffffffff81411808
-    #18 [ffff8810343bfcb8] sk_alloc at ffffffff8141197c
-    #19 [ffff8810343bfce8] inet_create at ffffffff81483ba6
-    #20 [ffff8810343bfd38] __sock_create at ffffffff8140b4a7
-    #21 [ffff8810343bfd98] xs_create_sock at ffffffffa01f649b [sunrpc]
-    #22 [ffff8810343bfdd8] xs_tcp_setup_socket at ffffffffa01f6965 [sunrpc]
-    #23 [ffff8810343bfe38] worker_thread at ffffffff810887d0
-    #24 [ffff8810343bfee8] kthread at ffffffff8108dd96
-    #25 [ffff8810343bff48] kernel_thread at ffffffff8100c1ca
+v2: agd5f
+- drop the dp_get_link_status() change in atombios_dp.c
+  for now.  We still need the dpms OFF change.
 
-rpciod is trying to allocate memory for a new socket to talk to the
-server. The VM ends up calling ->releasepage to get more memory, and it
-tries to do a blocking commit. That commit can't succeed however without
-a connected socket, so we deadlock.
-
-Fix this by setting PF_FSTRANS on the workqueue task prior to doing the
-socket allocation, and having nfs_release_page check for that flag when
-deciding whether to do a commit call. Also, set PF_FSTRANS
-unconditionally in rpc_async_schedule since that function can also do
-allocations sometimes.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/file.c                   |    7 +++++--
- net/sunrpc/sched.c              |    2 ++
- net/sunrpc/xprtrdma/transport.c |    3 ++-
- net/sunrpc/xprtsock.c           |   10 ++++++++++
- 4 files changed, 19 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -493,8 +493,11 @@ static int nfs_release_page(struct page
- 
- 	dfprintk(PAGECACHE, "NFS: release_page(%p)\n", page);
- 
--	/* Only do I/O if gfp is a superset of GFP_KERNEL */
--	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
-+	/* Only do I/O if gfp is a superset of GFP_KERNEL, and we're not
-+	 * doing this memory reclaim for a fs-related allocation.
-+	 */
-+	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL &&
-+	    !(current->flags & PF_FSTRANS)) {
- 		int how = FLUSH_SYNC;
- 
- 		/* Don't let kswapd deadlock waiting for OOM RPC calls */
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -713,7 +713,9 @@ void rpc_execute(struct rpc_task *task)
- 
- static void rpc_async_schedule(struct work_struct *work)
- {
-+	current->flags |= PF_FSTRANS;
- 	__rpc_execute(container_of(work, struct rpc_task, u.tk_work));
-+	current->flags &= ~PF_FSTRANS;
- }
- 
- /**
---- a/net/sunrpc/xprtrdma/transport.c
-+++ b/net/sunrpc/xprtrdma/transport.c
-@@ -200,6 +200,7 @@ xprt_rdma_connect_worker(struct work_str
- 	int rc = 0;
- 
- 	if (!xprt->shutdown) {
-+		current->flags |= PF_FSTRANS;
- 		xprt_clear_connected(xprt);
- 
- 		dprintk("RPC:       %s: %sconnect\n", __func__,
-@@ -212,10 +213,10 @@ xprt_rdma_connect_worker(struct work_str
- 
- out:
- 	xprt_wake_pending_tasks(xprt, rc);
--
- out_clear:
- 	dprintk("RPC:       %s: exit\n", __func__);
- 	xprt_clear_connecting(xprt);
-+	current->flags &= ~PF_FSTRANS;
- }
- 
- /*
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1882,6 +1882,8 @@ static void xs_local_setup_socket(struct
- 	if (xprt->shutdown)
- 		goto out;
- 
-+	current->flags |= PF_FSTRANS;
-+
- 	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
- 	status = __sock_create(xprt->xprt_net, AF_LOCAL,
- 					SOCK_STREAM, 0, &sock, 1);
-@@ -1915,6 +1917,7 @@ static void xs_local_setup_socket(struct
- out:
- 	xprt_clear_connecting(xprt);
- 	xprt_wake_pending_tasks(xprt, status);
-+	current->flags &= ~PF_FSTRANS;
- }
- 
- static void xs_udp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
-@@ -1957,6 +1960,8 @@ static void xs_udp_setup_socket(struct w
- 	if (xprt->shutdown)
- 		goto out;
- 
-+	current->flags |= PF_FSTRANS;
-+
- 	/* Start by resetting any existing state */
- 	xs_reset_transport(transport);
- 	sock = xs_create_sock(xprt, transport,
-@@ -1975,6 +1980,7 @@ static void xs_udp_setup_socket(struct w
- out:
- 	xprt_clear_connecting(xprt);
- 	xprt_wake_pending_tasks(xprt, status);
-+	current->flags &= ~PF_FSTRANS;
- }
- 
- /*
-@@ -2100,6 +2106,8 @@ static void xs_tcp_setup_socket(struct w
- 	if (xprt->shutdown)
- 		goto out;
- 
-+	current->flags |= PF_FSTRANS;
-+
- 	if (!sock) {
- 		clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
- 		sock = xs_create_sock(xprt, transport,
-@@ -2149,6 +2157,7 @@ static void xs_tcp_setup_socket(struct w
- 	case -EINPROGRESS:
- 	case -EALREADY:
- 		xprt_clear_connecting(xprt);
-+		current->flags &= ~PF_FSTRANS;
- 		return;
- 	case -EINVAL:
- 		/* Happens, for instance, if the user specified a link
-@@ -2161,6 +2170,7 @@ out_eagain:
- out:
- 	xprt_clear_connecting(xprt);
- 	xprt_wake_pending_tasks(xprt, status);
-+	current->flags &= ~PF_FSTRANS;
- }
- 
- /**
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -81,10 +81,16 @@ void radeon_connector_hotplug(struct drm
+ 		if (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
+ 			int saved_dpms = connector->dpms;
+ 			/* Only turn off the display if it's physically disconnected */
+-			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
++			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd)) {
+ 				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
+-			else if (radeon_dp_needs_link_train(radeon_connector))
++			} else if (radeon_dp_needs_link_train(radeon_connector)) {
++				/* set it to OFF so that drm_helper_connector_dpms()
++				 * won't return immediately since the current state
++				 * is ON at this point.
++				 */
++				connector->dpms = DRM_MODE_DPMS_OFF;
+ 				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
++			}
+ 			connector->dpms = saved_dpms;
+ 		}
+ 	}
 
 
