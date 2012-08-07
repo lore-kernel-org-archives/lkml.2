@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234Ab2HGWab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:30:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757209Ab2HGWa0 (ORCPT
+	id S932681Ab2HGWal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:30:41 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:57779 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757238Ab2HGWad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:30:26 -0400
+	Tue, 7 Aug 2012 18:30:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <jdelvare@suse.de>, Huang Ying <ying.huang@intel.com>,
-        Gary Hade <garyhade@us.ibm.com>, Len Brown <len.brown@intel.com>
-Subject: [ 066/122] ACPI, APEI: Fixup common access width firmware bug
-Date: Tue,  7 Aug 2012 15:25:54 -0700
-Message-Id: <20120807221954.356297920@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Kay Sievers <kay@vrfy.org>
+Subject: [ 068/122] kmsg - properly print over-long continuation lines
+Date: Tue,  7 Aug 2012 15:25:56 -0700
+Message-Id: <20120807221954.598022422@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,41 +29,146 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Kay Sievers <kay@vrfy.org>
 
-commit f712c71f7b2b43b894d1e92e1b77385fcad8815f upstream.
+commit 70498253186586e5dca7bc3ebd3415203b059fbc upstream.
 
-Many firmwares have a common register definition bug where 8-bit
-access width is specified for a 32-bit register. Ideally this should
-be fixed in the BIOS, but earlier versions of the kernel did not
-complain, so fix that up silently.
+Reserve PREFIX_MAX bytes in the LOG_LINE_MAX line when buffering a
+continuation line, to be able to properly prefix the LOG_LINE_MAX
+line with the syslog prefix and timestamp when printing it.
 
-This closes kernel bug #43282:
-https://bugzilla.kernel.org/show_bug.cgi?id=43282
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Acked-by: Huang Ying <ying.huang@intel.com>
-Acked-by: Gary Hade <garyhade@us.ibm.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Reported-By: Dave Jones <davej@redhat.com>
+Signed-off-by: Kay Sievers <kay@vrfy.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/apei/apei-base.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/printk.c |   33 +++++++++++++++++++--------------
+ 1 file changed, 19 insertions(+), 14 deletions(-)
 
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -586,6 +586,11 @@ static int apei_check_gar(struct acpi_ge
- 	}
- 	*access_bit_width = 1UL << (access_size_code + 2);
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -235,7 +235,8 @@ static u32 log_next_idx;
+ static u64 clear_seq;
+ static u32 clear_idx;
  
-+	/* Fixup common BIOS bug */
-+	if (bit_width == 32 && bit_offset == 0 && (*paddr & 0x03) == 0 &&
-+	    *access_bit_width < 32)
-+		*access_bit_width = 32;
-+
- 	if ((bit_width + bit_offset) > *access_bit_width) {
- 		pr_warning(FW_BUG APEI_PFX
- 			   "Invalid bit width + offset in GAR [0x%llx/%u/%u/%u/%u]\n",
+-#define LOG_LINE_MAX 1024
++#define PREFIX_MAX		32
++#define LOG_LINE_MAX		1024 - PREFIX_MAX
+ 
+ /* record buffer */
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+@@ -876,7 +877,7 @@ static size_t msg_print_text(const struc
+ 
+ 		if (buf) {
+ 			if (print_prefix(msg, syslog, NULL) +
+-			    text_len + 1>= size - len)
++			    text_len + 1 >= size - len)
+ 				break;
+ 
+ 			if (prefix)
+@@ -907,7 +908,7 @@ static int syslog_print(char __user *buf
+ 	struct log *msg;
+ 	int len = 0;
+ 
+-	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
++	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
+ 	if (!text)
+ 		return -ENOMEM;
+ 
+@@ -930,7 +931,8 @@ static int syslog_print(char __user *buf
+ 
+ 		skip = syslog_partial;
+ 		msg = log_from_idx(syslog_idx);
+-		n = msg_print_text(msg, syslog_prev, true, text, LOG_LINE_MAX);
++		n = msg_print_text(msg, syslog_prev, true, text,
++				   LOG_LINE_MAX + PREFIX_MAX);
+ 		if (n - syslog_partial <= size) {
+ 			/* message fits into buffer, move forward */
+ 			syslog_idx = log_next(syslog_idx);
+@@ -969,7 +971,7 @@ static int syslog_print_all(char __user
+ 	char *text;
+ 	int len = 0;
+ 
+-	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
++	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
+ 	if (!text)
+ 		return -ENOMEM;
+ 
+@@ -1022,7 +1024,8 @@ static int syslog_print_all(char __user
+ 			struct log *msg = log_from_idx(idx);
+ 			int textlen;
+ 
+-			textlen = msg_print_text(msg, prev, true, text, LOG_LINE_MAX);
++			textlen = msg_print_text(msg, prev, true, text,
++						 LOG_LINE_MAX + PREFIX_MAX);
+ 			if (textlen < 0) {
+ 				len = textlen;
+ 				break;
+@@ -1352,15 +1355,15 @@ static struct cont {
+ 	bool flushed:1;			/* buffer sealed and committed */
+ } cont;
+ 
+-static void cont_flush(void)
++static void cont_flush(enum log_flags flags)
+ {
+ 	if (cont.flushed)
+ 		return;
+ 	if (cont.len == 0)
+ 		return;
+ 
+-	log_store(cont.facility, cont.level, LOG_NOCONS, cont.ts_nsec,
+-		  NULL, 0, cont.buf, cont.len);
++	log_store(cont.facility, cont.level, LOG_NOCONS | flags,
++		  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
+ 
+ 	cont.flushed = true;
+ }
+@@ -1371,7 +1374,8 @@ static bool cont_add(int facility, int l
+ 		return false;
+ 
+ 	if (cont.len + len > sizeof(cont.buf)) {
+-		cont_flush();
++		/* the line gets too long, split it up in separate records */
++		cont_flush(LOG_CONT);
+ 		return false;
+ 	}
+ 
+@@ -1507,7 +1511,7 @@ asmlinkage int vprintk_emit(int facility
+ 		 * or another task also prints continuation lines.
+ 		 */
+ 		if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
+-			cont_flush();
++			cont_flush(0);
+ 
+ 		/* buffer line if possible, otherwise store it right away */
+ 		if (!cont_add(facility, level, text, text_len))
+@@ -1525,7 +1529,7 @@ asmlinkage int vprintk_emit(int facility
+ 		if (cont.len && cont.owner == current) {
+ 			if (!(lflags & LOG_PREFIX))
+ 				stored = cont_add(facility, level, text, text_len);
+-			cont_flush();
++			cont_flush(0);
+ 		}
+ 
+ 		if (!stored)
+@@ -1618,7 +1622,8 @@ EXPORT_SYMBOL(printk);
+ 
+ #else
+ 
+-#define LOG_LINE_MAX 0
++#define LOG_LINE_MAX		0
++#define PREFIX_MAX		0
+ static struct cont {
+ 	size_t len;
+ 	size_t cons;
+@@ -1923,7 +1928,7 @@ static enum log_flags console_prev;
+  */
+ void console_unlock(void)
+ {
+-	static char text[LOG_LINE_MAX];
++	static char text[LOG_LINE_MAX + PREFIX_MAX];
+ 	static u64 seen_seq;
+ 	unsigned long flags;
+ 	bool wake_klogd = false;
 
 
