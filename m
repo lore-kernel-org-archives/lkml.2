@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab2HGXIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:08:51 -0400
+	id S1757409Ab2HGXJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:09:10 -0400
 Received: from mail-gh0-f174.google.com ([209.85.160.174]:64842 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab2HGWjQ (ORCPT
+	with ESMTP id S1030546Ab2HGWjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:16 -0400
+	Tue, 7 Aug 2012 18:39:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jerome Glisse <jglisse@redhat.com>,
         =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Dave Airlie <airlied@redhat.com>
-Subject: =?UTF-8?q?=5B=20059/109=5D=20drm/radeon=3A=20Try=20harder=20to=20avoid=20HW=20cursor=20ending=20on=20a=20multiple=20of=20128=20columns=2E?=
-Date: Tue,  7 Aug 2012 15:35:18 -0700
-Message-Id: <20120807222048.276691356@linuxfoundation.org>
+Subject: =?UTF-8?q?=5B=20058/109=5D=20drm/radeon=3A=20fix=20bo=20creation=20retry=20path?=
+Date: Tue,  7 Aug 2012 15:35:17 -0700
+Message-Id: <20120807222048.186074626@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -34,44 +35,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michel Dänzer <michel.daenzer@amd.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit f60ec4c7df043df81e62891ac45383d012afe0da upstream.
+commit d1c7871ddb1f588b8eb35affd9ee1a3d5e11cd0c upstream.
 
-This could previously fail if either of the enabled displays was using a
-horizontal resolution that is a multiple of 128, and only the leftmost column
-of the cursor was (supposed to be) visible at the right edge of that display.
+Retry label was at wrong place in function leading to memory
+leak.
 
-The solution is to move the cursor one pixel to the left in that case.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=33183
-
-Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_cursor.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_object.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_cursor.c
-+++ b/drivers/gpu/drm/radeon/radeon_cursor.c
-@@ -262,8 +262,14 @@ int radeon_crtc_cursor_move(struct drm_c
- 				if (!(cursor_end & 0x7f))
- 					w--;
- 			}
--			if (w <= 0)
-+			if (w <= 0) {
- 				w = 1;
-+				cursor_end = x - xorigin + w;
-+				if (!(cursor_end & 0x7f)) {
-+					x--;
-+					WARN_ON_ONCE(x < 0);
-+				}
-+			}
- 		}
- 	}
+--- a/drivers/gpu/drm/radeon/radeon_object.c
++++ b/drivers/gpu/drm/radeon/radeon_object.c
+@@ -136,7 +136,6 @@ int radeon_bo_create(struct radeon_devic
+ 	acc_size = ttm_bo_dma_acc_size(&rdev->mman.bdev, size,
+ 				       sizeof(struct radeon_bo));
  
+-retry:
+ 	bo = kzalloc(sizeof(struct radeon_bo), GFP_KERNEL);
+ 	if (bo == NULL)
+ 		return -ENOMEM;
+@@ -150,6 +149,8 @@ retry:
+ 	bo->surface_reg = -1;
+ 	INIT_LIST_HEAD(&bo->list);
+ 	INIT_LIST_HEAD(&bo->va);
++
++retry:
+ 	radeon_ttm_placement_from_domain(bo, domain);
+ 	/* Kernel allocation are uninterruptible */
+ 	mutex_lock(&rdev->vram_mutex);
 
 
