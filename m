@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2HGJwF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:52:05 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:34904 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753544Ab2HGJwA (ORCPT
+	id S1754085Ab2HGJwX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:52:23 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35261 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746Ab2HGJwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:52:00 -0400
+	Tue, 7 Aug 2012 05:52:21 -0400
+Message-ID: <5020E54D.9060004@linux.vnet.ibm.com>
+Date: Tue, 07 Aug 2012 17:52:13 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-X-Originating-IP: [202.62.83.106]
-In-Reply-To: <5020DB0B.8070103@suse.cz>
-References: <CANYdXnqCY+Uc=ROvQHv4kRe-g2zoEjfpzV0P83exfXYm-qCBaA@mail.gmail.com>
-	<1344327969.20004.2.camel@localhost>
-	<5020DB0B.8070103@suse.cz>
-Date: Tue, 7 Aug 2012 15:21:56 +0530
-Message-ID: <CANYdXnq1HVpLFZBND=2HextPXCLC5SkewsAqZFhY0KWzWi+rCw@mail.gmail.com>
-Subject: Re: A question on serial driver
-From: Shashidhar Hiremath <shashidharh@vayavyalabs.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Dan Luedtke <mail@danrl.de>, lkml <linux-kernel@vger.kernel.org>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v5 07/12] KVM: introduce KVM_PFN_ERR_RO_FAULT
+References: <5020E423.9080004@linux.vnet.ibm.com>
+In-Reply-To: <5020E423.9080004@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12080709-4790-0000-0000-00000407037C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the code is a bit unclean to send directly. But any information like
-"does driver change modes once it prompts for login"
-can be helpful for debugging since my code does not seem to work after login .
+In the later patch, it indicates failure when we try to get a writable
+pfn from the readonly memslot
 
-Behaviour : Driver prints charecter untill devel login on console. It
-accepts characters before login prompt but doesnot accept the
-charecters after it prompts for login. I enter the username and it is
-not displayed.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ include/linux/kvm_host.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-On Tue, Aug 7, 2012 at 2:38 PM, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 08/07/2012 10:26 AM, Dan Luedtke wrote:
->> On Tue, 2012-08-07 at 13:52 +0530, Shashidhar Hiremath wrote:
->>> The driver for some reason does not
->>> print the content  I type on console after login prompt. Any reason
->>> why this might be happening ?
->>
->> I don't know if it is just me, but a code snippet might help
->> understanding what happens in your driver.
->
-> Yea, without that we can barely help you.
->
-> regards,
-> --
-> js
-> suse labs
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 187c9c8..8306f24 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -60,6 +60,7 @@
+ #define KVM_PFN_ERR_FAULT	(KVM_PFN_ERR_MASK)
+ #define KVM_PFN_ERR_HWPOISON	(KVM_PFN_ERR_MASK + 1)
+ #define KVM_PFN_ERR_BAD		(KVM_PFN_ERR_MASK + 2)
++#define KVM_PFN_ERR_RO_FAULT	(KVM_PFN_ERR_MASK + 3)
 
-
-
+ static inline bool is_error_pfn(pfn_t pfn)
+ {
 -- 
-regards,
-Shashidhar Hiremath
+1.7.7.6
+
