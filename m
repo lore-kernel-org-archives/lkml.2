@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab2HGWJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:09:38 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47104 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab2HGWJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:09:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] cpuidle: coupled: fix sleeping while atomic in cpu notifier
-Date: Wed, 8 Aug 2012 00:15:31 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org
-References: <1343251216-24106-1-git-send-email-ccross@android.com>
-In-Reply-To: <1343251216-24106-1-git-send-email-ccross@android.com>
+	id S1756312Ab2HGWLD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:11:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36005 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840Ab2HGWLC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 18:11:02 -0400
+Message-ID: <5021926E.2070202@gmail.com>
+Date: Tue, 07 Aug 2012 16:10:54 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf tools: Initial bash completion support
+References: <1344358801-16383-1-git-send-email-fweisbec@gmail.com> <1344358801-16383-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1344358801-16383-2-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208080015.31359.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 25, 2012, Colin Cross wrote:
-> The cpu hotplug notifier gets called in both atomic and non-atomic
-> contexts, it is not always safe to lock a mutex.  Filter out all events
-> except the six necessary ones, which are all sleepable, before taking
-> the mutex.
-> 
-> Signed-off-by: Colin Cross <ccross@android.com>
+On 8/7/12 11:00 AM, Frederic Weisbecker wrote:
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 35655c3..ddfb7e5 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -951,6 +951,7 @@ install: all
+>   	$(INSTALL) scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+>   	$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'
+>   	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
+> +	$(INSTALL) -m 755 bash_completion $(DESTDIR_SQ)/etc/bash_completion.d/perf
 
-Has this been applied already?
+still getting an error here:
 
-Rafael
-
-
-> ---
->  drivers/cpuidle/coupled.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-> index 2c9bf26..c24dda0 100644
-> --- a/drivers/cpuidle/coupled.c
-> +++ b/drivers/cpuidle/coupled.c
-> @@ -678,6 +678,18 @@ static int cpuidle_coupled_cpu_notify(struct notifier_block *nb,
->  	int cpu = (unsigned long)hcpu;
->  	struct cpuidle_device *dev;
->  
-> +	switch (action & ~CPU_TASKS_FROZEN) {
-> +	case CPU_UP_PREPARE:
-> +	case CPU_DOWN_PREPARE:
-> +	case CPU_ONLINE:
-> +	case CPU_DEAD:
-> +	case CPU_UP_CANCELED:
-> +	case CPU_DOWN_FAILED:
-> +		break;
-> +	default:
-> +		return NOTIFY_OK;
-> +	}
-> +
->  	mutex_lock(&cpuidle_lock);
->  
->  	dev = per_cpu(cpuidle_devices, cpu);
-> 
-
+$ make DESTDIR=/tmp/junk-perf O=/tmp/pbuild -C tools/perf/ install
+...
+install -m 755 bash_completion /tmp/junk-perf/etc/bash_completion.d/perf
+install: cannot create regular file 
+`/tmp/junk-perf/etc/bash_completion.d/perf': No such file or directory
+make: *** [install] Error 1
+make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
