@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030920Ab2HGWmE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:42:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030846Ab2HGWl4 (ORCPT
+	id S1030933Ab2HGWmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:42:12 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:63163 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030918Ab2HGWmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:41:56 -0400
+	Tue, 7 Aug 2012 18:42:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Max Matveev <makc@redhat.com>, Jiri Benc <jbenc@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 092/109] net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI handling
-Date: Tue,  7 Aug 2012 15:35:51 -0700
-Message-Id: <20120807222051.159352203@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 099/109] ALSA: hda - Fix mute-LED GPIO setup for HP Mini 210
+Date: Tue,  7 Aug 2012 15:35:58 -0700
+Message-Id: <20120807222051.752668201@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,57 +29,75 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Takashi Iwai <tiwai@suse.de>
 
-From: Jiri Benc <jbenc@redhat.com>
+commit a3e199732b8e2b272e82cc1ccc49c35239ed6c5a upstream.
 
-[ Upstream commit b1beb681cba5358f62e6187340660ade226a5fcc ]
+BIOS on HP Mini 210 doesn't provide the proper "HP_Mute_LED" DMI
+string, thus the driver doesn't initialize the GPIO, too.  In the
+earlier kernel, the driver falls back to GPIO1, but since 3.3 we've
+stopped this due to other wrongly advertised machines.
 
-When device flags are set using rtnetlink, IFF_PROMISC and IFF_ALLMULTI
-flags are handled specially. Function dev_change_flags sets IFF_PROMISC and
-IFF_ALLMULTI bits in dev->gflags according to the passed value but
-do_setlink passes a result of rtnl_dev_combine_flags which takes those bits
-from dev->flags.
+For fixing this particular case, add a new model type to specify the
+default polarity explicitly so that the fallback to GPIO1 is handled.
 
-This can be easily trigerred by doing:
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=772923
 
-tcpdump -i eth0 &
-ip l s up eth0
-
-ip sets IFF_UP flag in ifi_flags and ifi_change, which is combined with
-IFF_PROMISC by rtnl_dev_combine_flags, causing __dev_change_flags to set
-IFF_PROMISC in gflags.
-
-Reported-by: Max Matveev <makc@redhat.com>
-Signed-off-by: Jiri Benc <jbenc@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/rtnetlink.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -671,6 +671,12 @@ static void set_operstate(struct net_dev
- 	}
- }
+---
+ sound/pci/hda/patch_sigmatel.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -100,6 +100,7 @@ enum {
+ 	STAC_92HD83XXX_HP_cNB11_INTQUAD,
+ 	STAC_HP_DV7_4000,
+ 	STAC_HP_ZEPHYR,
++	STAC_92HD83XXX_HP_LED,
+ 	STAC_92HD83XXX_MODELS
+ };
  
-+static unsigned int rtnl_dev_get_flags(const struct net_device *dev)
-+{
-+	return (dev->flags & ~(IFF_PROMISC | IFF_ALLMULTI)) |
-+	       (dev->gflags & (IFF_PROMISC | IFF_ALLMULTI));
-+}
-+
- static unsigned int rtnl_dev_combine_flags(const struct net_device *dev,
- 					   const struct ifinfomsg *ifm)
+@@ -1672,6 +1673,7 @@ static const char * const stac92hd83xxx_
+ 	[STAC_92HD83XXX_HP_cNB11_INTQUAD] = "hp_cNB11_intquad",
+ 	[STAC_HP_DV7_4000] = "hp-dv7-4000",
+ 	[STAC_HP_ZEPHYR] = "hp-zephyr",
++	[STAC_92HD83XXX_HP_LED] = "hp-led",
+ };
+ 
+ static const struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
+@@ -1726,6 +1728,8 @@ static const struct snd_pci_quirk stac92
+ 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3561,
+ 			  "HP", STAC_HP_ZEPHYR),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3660,
++			  "HP Mini", STAC_92HD83XXX_HP_LED),
+ 	{} /* terminator */
+ };
+ 
+@@ -5528,6 +5532,7 @@ static void stac92hd8x_fill_auto_spec(st
+ static int patch_stac92hd83xxx(struct hda_codec *codec)
  {
-@@ -679,7 +685,7 @@ static unsigned int rtnl_dev_combine_fla
- 	/* bugwards compatibility: ifi_change == 0 is treated as ~0 */
- 	if (ifm->ifi_change)
- 		flags = (flags & ifm->ifi_change) |
--			(dev->flags & ~ifm->ifi_change);
-+			(rtnl_dev_get_flags(dev) & ~ifm->ifi_change);
+ 	struct sigmatel_spec *spec;
++	int default_polarity = -1; /* no default cfg */
+ 	int err;
  
- 	return flags;
- }
+ 	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
+@@ -5576,9 +5581,12 @@ again:
+ 	case STAC_HP_ZEPHYR:
+ 		spec->init = stac92hd83xxx_hp_zephyr_init;
+ 		break;
++	case STAC_92HD83XXX_HP_LED:
++		default_polarity = 1;
++		break;
+ 	}
+ 
+-	if (find_mute_led_cfg(codec, -1/*no default cfg*/))
++	if (find_mute_led_cfg(codec, default_polarity))
+ 		snd_printd("mute LED gpio %d polarity %d\n",
+ 				spec->gpio_led,
+ 				spec->gpio_led_polarity);
 
 
