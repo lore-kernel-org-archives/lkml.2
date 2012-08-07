@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031359Ab2HGWrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:47:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
+	id S1031394Ab2HGWsx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:48:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41483 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031333Ab2HGWro (ORCPT
+	with ESMTP id S1031333Ab2HGWrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:47:44 -0400
+	Tue, 7 Aug 2012 18:47:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Thorsten Glaser <tg@debian.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [ 45/49] m68k: Make sys_atomic_cmpxchg_32 work on classic m68k
-Date: Tue,  7 Aug 2012 15:45:03 -0700
-Message-Id: <20120807222030.887995969@linuxfoundation.org>
+        Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 47/49] futex: Test for pi_mutex on fault in futex_wait_requeue_pi()
+Date: Tue,  7 Aug 2012 15:45:05 -0700
+Message-Id: <20120807222031.057610717@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -31,39 +31,35 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit 9e2760d18b3cf179534bbc27692c84879c61b97c upstream.
+commit b6070a8d9853eda010a549fa9a09eb8d7269b929 upstream.
 
-User space access must always go through uaccess accessors, since on
-classic m68k user space and kernel space are completely separate.
+If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
+for pi_mutex != NULL before testing the owner against current
+and possibly unlocking it.
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Tested-by: Thorsten Glaser <tg@debian.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Link: http://lkml.kernel.org/r/dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/kernel/sys_m68k.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ kernel/futex.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/m68k/kernel/sys_m68k.c
-+++ b/arch/m68k/kernel/sys_m68k.c
-@@ -479,9 +479,13 @@ sys_atomic_cmpxchg_32(unsigned long newv
- 			goto bad_access;
- 		}
- 
--		mem_value = *mem;
-+		/*
-+		 * No need to check for EFAULT; we know that the page is
-+		 * present and writable.
-+		 */
-+		__get_user(mem_value, mem);
- 		if (mem_value == oldval)
--			*mem = newval;
-+			__put_user(newval, mem);
- 
- 		pte_unmap_unlock(pte, ptl);
- 		up_read(&mm->mmap_sem);
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2370,7 +2370,7 @@ static int futex_wait_requeue_pi(u32 __u
+ 	 * fault, unlock the rt_mutex and return the fault to userspace.
+ 	 */
+ 	if (ret == -EFAULT) {
+-		if (rt_mutex_owner(pi_mutex) == current)
++		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
+ 			rt_mutex_unlock(pi_mutex);
+ 	} else if (ret == -EINTR) {
+ 		/*
 
 
