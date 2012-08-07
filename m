@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030213Ab2HGDwY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:52:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59660 "EHLO
+	id S1030192Ab2HGDwX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:52:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59668 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757303Ab2HGDiO (ORCPT
+	by vger.kernel.org with ESMTP id S1757307Ab2HGDiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:14 -0400
-Message-Id: <20120807032757.293199808@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:17 -0400
+Message-Id: <20120807032756.611792835@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:03 +0100
+Date: Tue, 07 Aug 2012 04:27:58 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mikael Pettersson <mikpe@it.uu.se>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michael Schmitz <schmitzmic@googlemail.com>
-Subject: [ 08/70] m68k: Correct the Atari ALLOWINT definition
+        alan@lxorguk.ukuu.org.uk,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 03/70] xen: mark local pages as FOREIGN in the m2p_override
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,96 +29,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikael Pettersson <mikpe@it.uu.se>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit c663600584a596b5e66258cc10716fb781a5c2c9 upstream.
+commit b9e0d95c041ca2d7ad297ee37c2e9cfab67a188f upstream.
 
-Booting a 3.2, 3.3, or 3.4-rc4 kernel on an Atari using the
-`nfeth' ethernet device triggers a WARN_ONCE() in generic irq
-handling code on the first irq for that device:
+When the frontend and the backend reside on the same domain, even if we
+add pages to the m2p_override, these pages will never be returned by
+mfn_to_pfn because the check "get_phys_to_machine(pfn) != mfn" will
+always fail, so the pfn of the frontend will be returned instead
+(resulting in a deadlock because the frontend pages are already locked).
 
-WARNING: at kernel/irq/handle.c:146 handle_irq_event_percpu+0x134/0x142()
-irq 3 handler nfeth_interrupt+0x0/0x194 enabled interrupts
-Modules linked in:
-Call Trace: [<000299b2>] warn_slowpath_common+0x48/0x6a
- [<000299c0>] warn_slowpath_common+0x56/0x6a
- [<00029a4c>] warn_slowpath_fmt+0x2a/0x32
- [<0005b34c>] handle_irq_event_percpu+0x134/0x142
- [<0005b34c>] handle_irq_event_percpu+0x134/0x142
- [<0000a584>] nfeth_interrupt+0x0/0x194
- [<001ba0a8>] schedule_preempt_disabled+0x0/0xc
- [<0005b37a>] handle_irq_event+0x20/0x2c
- [<0005add4>] generic_handle_irq+0x2c/0x3a
- [<00002ab6>] do_IRQ+0x20/0x32
- [<0000289e>] auto_irqhandler_fixup+0x4/0x6
- [<00003144>] cpu_idle+0x22/0x2e
- [<001b8a78>] printk+0x0/0x18
- [<0024d112>] start_kernel+0x37a/0x386
- [<0003021d>] __do_proc_dointvec+0xb1/0x366
- [<0003021d>] __do_proc_dointvec+0xb1/0x366
- [<0024c31e>] _sinittext+0x31e/0x9c0
+INFO: task qemu-system-i38:1085 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+qemu-system-i38 D ffff8800cfc137c0     0  1085      1 0x00000000
+ ffff8800c47ed898 0000000000000282 ffff8800be4596b0 00000000000137c0
+ ffff8800c47edfd8 ffff8800c47ec010 00000000000137c0 00000000000137c0
+ ffff8800c47edfd8 00000000000137c0 ffffffff82213020 ffff8800be4596b0
+Call Trace:
+ [<ffffffff81101ee0>] ? __lock_page+0x70/0x70
+ [<ffffffff81a0fdd9>] schedule+0x29/0x70
+ [<ffffffff81a0fe80>] io_schedule+0x60/0x80
+ [<ffffffff81101eee>] sleep_on_page+0xe/0x20
+ [<ffffffff81a0e1ca>] __wait_on_bit_lock+0x5a/0xc0
+ [<ffffffff81101ed7>] __lock_page+0x67/0x70
+ [<ffffffff8106f750>] ? autoremove_wake_function+0x40/0x40
+ [<ffffffff811867e6>] ? bio_add_page+0x36/0x40
+ [<ffffffff8110b692>] set_page_dirty_lock+0x52/0x60
+ [<ffffffff81186021>] bio_set_pages_dirty+0x51/0x70
+ [<ffffffff8118c6b4>] do_blockdev_direct_IO+0xb24/0xeb0
+ [<ffffffff811e71a0>] ? ext3_get_blocks_handle+0xe00/0xe00
+ [<ffffffff8118ca95>] __blockdev_direct_IO+0x55/0x60
+ [<ffffffff811e71a0>] ? ext3_get_blocks_handle+0xe00/0xe00
+ [<ffffffff811e91c8>] ext3_direct_IO+0xf8/0x390
+ [<ffffffff811e71a0>] ? ext3_get_blocks_handle+0xe00/0xe00
+ [<ffffffff81004b60>] ? xen_mc_flush+0xb0/0x1b0
+ [<ffffffff81104027>] generic_file_aio_read+0x737/0x780
+ [<ffffffff813bedeb>] ? gnttab_map_refs+0x15b/0x1e0
+ [<ffffffff811038f0>] ? find_get_pages+0x150/0x150
+ [<ffffffff8119736c>] aio_rw_vect_retry+0x7c/0x1d0
+ [<ffffffff811972f0>] ? lookup_ioctx+0x90/0x90
+ [<ffffffff81198856>] aio_run_iocb+0x66/0x1a0
+ [<ffffffff811998b8>] do_io_submit+0x708/0xb90
+ [<ffffffff81199d50>] sys_io_submit+0x10/0x20
+ [<ffffffff81a18d69>] system_call_fastpath+0x16/0x1b
 
-After invoking the irq's handler the kernel sees !irqs_disabled()
-and concludes that the handler erroneously enabled interrupts.
+The explanation is in the comment within the code:
 
-However, debugging shows that !irqs_disabled() is true even before
-the handler is invoked, which indicates a problem in the platform
-code rather than the specific driver.
+We need to do this because the pages shared by the frontend
+(xen-blkfront) can be already locked (lock_page, called by
+do_read_cache_page); when the userspace backend tries to use them
+with direct_IO, mfn_to_pfn returns the pfn of the frontend, so
+do_blockdev_direct_IO is going to try to lock the same pages
+again resulting in a deadlock.
 
-The warning does not occur in 3.1 or older kernels.
+A simplified call graph looks like this:
 
-It turns out that the ALLOWINT definition for Atari is incorrect.
+pygrub                          QEMU
+-----------------------------------------------
+do_read_cache_page              io_submit
+  |                              |
+lock_page                       ext3_direct_IO
+                                 |
+                                bio_add_page
+                                 |
+                                lock_page
 
-The Atari definition of ALLOWINT is ~0x400, the stated purpose of
-that is to avoid taking HSYNC interrupts.  irqs_disabled() returns
-true if the 3-bit ipl & 4 is non-zero.  The nfeth interrupt runs at
-ipl 3 (it's autovector 3), but 3 & 4 is zero so irqs_disabled() is
-false, and the warning above is generated.
+Internally the xen-blkback uses m2p_add_override to swizzle (temporarily)
+a 'struct page' to have a different MFN (so that it can point to another
+guest). It also can easily find out whether another pfn corresponding
+to the mfn exists in the m2p, and can set the FOREIGN bit
+in the p2m, making sure that mfn_to_pfn returns the pfn of the backend.
 
-When interrupts are explicitly disabled, ipl is set to 7.  When they
-are enabled, ipl is masked with ALLOWINT.  On Atari this will result
-in ipl = 3, which blocks interrupts at ipl 3 and below.  So how come
-nfeth interrupts at ipl 3 are received at all?  That's because ipl
-is reset to 2 by Atari-specific code in default_idle(), again with
-the stated purpose of blocking HSYNC interrupts.  This discrepancy
-means that ipl 3 can remain blocked for longer than intended.
+This allows the backend to perform direct_IO on these pages, but as a
+side effect prevents the frontend from using get_user_pages_fast on
+them while they are being shared with the backend.
 
-Both default_idle() and falcon_hblhandler() identify HSYNC with
-ipl 2, and the "Atari ST/.../F030 Hardware Register Listing" agrees,
-but ALLOWINT is defined as if HSYNC was ipl 3.
-
-[As an experiment I modified default_idle() to reset ipl to 3, and
-as expected that resulted in all nfeth interrupts being blocked.]
-
-The fix is simple: define ALLOWINT as ~0x500 instead.  This makes
-arch_local_irq_enable() consistent with default_idle(), and prevents
-the !irqs_disabled() problems for ipl 3 interrupts.
-
-Tested on Atari running in an Aranym VM.
-
-Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
-Tested-by: Michael Schmitz <schmitzmic@googlemail.com> (on Falcon/CT60)
-[Geert Uytterhoeven: This version applies to v3.2..v3.4.]
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/m68k/include/asm/entry.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/xen/p2m.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
-diff --git a/arch/m68k/include/asm/entry.h b/arch/m68k/include/asm/entry.h
-index c3c5a86..8798ebc 100644
---- a/arch/m68k/include/asm/entry.h
-+++ b/arch/m68k/include/asm/entry.h
-@@ -33,8 +33,8 @@
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index ffd08c4..64effdc 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -706,6 +706,7 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
++	int ret = 0;
  
- /* the following macro is used when enabling interrupts */
- #if defined(MACH_ATARI_ONLY)
--	/* block out HSYNC on the atari */
--#define ALLOWINT	(~0x400)
-+	/* block out HSYNC = ipl 2 on the atari */
-+#define ALLOWINT	(~0x500)
- #define	MAX_NOINT_IPL	3
- #else
- 	/* portable version */
+ 	pfn = page_to_pfn(page);
+ 	if (!PageHighMem(page)) {
+@@ -741,6 +742,24 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+ 	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
+ 	spin_unlock_irqrestore(&m2p_override_lock, flags);
+ 
++	/* p2m(m2p(mfn)) == mfn: the mfn is already present somewhere in
++	 * this domain. Set the FOREIGN_FRAME_BIT in the p2m for the other
++	 * pfn so that the following mfn_to_pfn(mfn) calls will return the
++	 * pfn from the m2p_override (the backend pfn) instead.
++	 * We need to do this because the pages shared by the frontend
++	 * (xen-blkfront) can be already locked (lock_page, called by
++	 * do_read_cache_page); when the userspace backend tries to use them
++	 * with direct_IO, mfn_to_pfn returns the pfn of the frontend, so
++	 * do_blockdev_direct_IO is going to try to lock the same pages
++	 * again resulting in a deadlock.
++	 * As a side effect get_user_pages_fast might not be safe on the
++	 * frontend pages while they are being shared with the backend,
++	 * because mfn_to_pfn (that ends up being called by GUPF) will
++	 * return the backend pfn rather than the frontend pfn. */
++	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
++	if (ret == 0 && get_phys_to_machine(pfn) == mfn)
++		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(m2p_add_override);
+@@ -752,6 +771,7 @@ int m2p_remove_override(struct page *page, bool clear_pte)
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
++	int ret = 0;
+ 
+ 	pfn = page_to_pfn(page);
+ 	mfn = get_phys_to_machine(pfn);
+@@ -821,6 +841,22 @@ int m2p_remove_override(struct page *page, bool clear_pte)
+ 	} else
+ 		set_phys_to_machine(pfn, page->index);
+ 
++	/* p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
++	 * somewhere in this domain, even before being added to the
++	 * m2p_override (see comment above in m2p_add_override).
++	 * If there are no other entries in the m2p_override corresponding
++	 * to this mfn, then remove the FOREIGN_FRAME_BIT from the p2m for
++	 * the original pfn (the one shared by the frontend): the backend
++	 * cannot do any IO on this page anymore because it has been
++	 * unshared. Removing the FOREIGN_FRAME_BIT from the p2m entry of
++	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
++	 * pfn again. */
++	mfn &= ~FOREIGN_FRAME_BIT;
++	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
++	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
++			m2p_find_override(mfn) == NULL)
++		set_phys_to_machine(pfn, mfn);
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(m2p_remove_override);
 
 
