@@ -1,99 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab2HGXSn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:18:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59764 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755834Ab2HGXSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 19:18:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="178107309"
-Message-ID: <1344381608.10460.3.camel@ymzhang.sh.intel.com>
-Subject: Re: [PATCH] x86/smp: Fix cpuN startup panic
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: Jiang Liu <liuj97@gmail.com>
-Cc: "Chen, LinX Z" <linx.z.chen@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com
-Date: Wed, 08 Aug 2012 07:20:08 +0800
-In-Reply-To: <5021436D.4040205@gmail.com>
-References: <5020E4F0.5060203@intel.com> <5021436D.4040205@gmail.com>
-Organization: Intel.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757506Ab2HGXTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:19:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964938Ab2HGWgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 18:36:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dariusz Majchrzak <dariusz.majchrzak@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 012/109] SCSI: fix hot unplug vs async scan race
+Date: Tue,  7 Aug 2012 15:34:31 -0700
+Message-Id: <20120807222044.158161519@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
+References: <20120807222043.089735600@linuxfoundation.org>
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-08 at 00:33 +0800, Jiang Liu wrote:
-> On 08/07/2012 05:50 PM, Chen, LinX Z wrote:
-> > From: Lin Chen <linx.z.chen@intel.com>
-> > 
-> > We hit a panic while doing cpu hotplug test.
-> > <0>[  627.982857] Kernel panic - not syncing: smp_callin: CPU1 started up but did not get a callout!
-> > <0>[  627.982864]
-> > <4>[  627.982876] Pid: 0, comm: kworker/0:1 Tainted: G ...
-> > <4>[  627.982883] Call Trace:
-> > <4>[  627.982903]  [<c18f2977>] panic+0x66/0x16c
-> > <4>[  627.982918]  [<c12234cc>] ? default_get_apic_id+0x1c/0x40
-> > <4>[  627.982931]  [<c18ef96d>] start_secondary+0xda/0x252
-> > 
-> > During BSP bootup AP, it is possible that BSP be preempted before
-> > finishing STARTUP sequence of AP(set cpu_callout_mask) which maybe cause
-> > AP busy wait for it. At present, AP will wait for 2 seconds then panic.
-> > 
-> > This patch let AP waits until BSP finish the startup sequence and gives
-> > WARNING when BSP is preempted more than 2 seconds.
-> > 
-> > Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> > Signed-off-by: Lin Chen <linx.z.chen@intel.com>
-> > ---
-> >  arch/x86/kernel/smpboot.c |   11 ++++++-----
-> >  1 files changed, 6 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> > index 7c5a8c3..a9e3379 100644
-> > --- a/arch/x86/kernel/smpboot.c
-> > +++ b/arch/x86/kernel/smpboot.c
-> > @@ -165,19 +165,20 @@ static void __cpuinit smp_callin(void)
-> >       * Waiting 2s total for startup (udelay is not yet working)
-> >       */
-> >      timeout = jiffies + 2*HZ;
-> > -    while (time_before(jiffies, timeout)) {
-> > +    while (1) {
-> Hi Yanmin,
-> 
-> 	Seems a little risky, what if a slave CPU can't be booted due to hardware errors?
-Slave CPU runs the loop. Basically, there is a handshake between BSP and AP.
-The patch doesn't change BSP codes. So when slave CPU fails, BSP still goes ahead
-and kernel still works.
+From: Greg KH <gregkh@linuxfoundation.org>
+
+3.4-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Dan Williams <dan.j.williams@intel.com>
+
+commit 3b661a92e869ebe2358de8f4b3230ad84f7fce51 upstream.
+
+The following crash results from cases where the end_device has been
+removed before scsi_sysfs_add_sdev has had a chance to run.
+
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000098
+ IP: [<ffffffff8115e100>] sysfs_create_dir+0x32/0xb6
+ ...
+ Call Trace:
+  [<ffffffff8125e4a8>] kobject_add_internal+0x120/0x1e3
+  [<ffffffff81075149>] ? trace_hardirqs_on+0xd/0xf
+  [<ffffffff8125e641>] kobject_add_varg+0x41/0x50
+  [<ffffffff8125e70b>] kobject_add+0x64/0x66
+  [<ffffffff8131122b>] device_add+0x12d/0x63a
+  [<ffffffff814b65ea>] ? _raw_spin_unlock_irqrestore+0x47/0x56
+  [<ffffffff8107de15>] ? module_refcount+0x89/0xa0
+  [<ffffffff8132f348>] scsi_sysfs_add_sdev+0x4e/0x28a
+  [<ffffffff8132dcbb>] do_scan_async+0x9c/0x145
+
+...teach scsi_sysfs_add_devices() to check for deleted devices() before
+trying to add them, and teach scsi_remove_target() how to remove targets
+that have not been added via device_add().
+
+Reported-by: Dariusz Majchrzak <dariusz.majchrzak@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/scsi/scsi_scan.c  |    3 +++
+ drivers/scsi/scsi_sysfs.c |   41 ++++++++++++++++++++++++++---------------
+ 2 files changed, 29 insertions(+), 15 deletions(-)
+
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -1714,6 +1714,9 @@ static void scsi_sysfs_add_devices(struc
+ {
+ 	struct scsi_device *sdev;
+ 	shost_for_each_device(sdev, shost) {
++		/* target removed before the device could be added */
++		if (sdev->sdev_state == SDEV_DEL)
++			continue;
+ 		if (!scsi_host_scan_allowed(shost) ||
+ 		    scsi_sysfs_add_sdev(sdev) != 0)
+ 			__scsi_remove_device(sdev);
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -1000,7 +1000,6 @@ static void __scsi_remove_target(struct
+ 	struct scsi_device *sdev;
  
-> 	Regards!
-> 	Gerry
-> 
-> >          /*
-> >           * Has the boot CPU finished it's STARTUP sequence?
-> >           */
-> >          if (cpumask_test_cpu(cpuid, cpu_callout_mask))
-> >              break;
-> >          cpu_relax();
-> > +        if (!time_before(jiffies, timeout)) {
-> > +            WARN(1, "%s: CPU%d started up but did not get a callout!\n",
-> > +                    __func__, cpuid);
-> > +            timeout = jiffies + 2*HZ;
-> > +        }
-> >      }
-> > 
-> > -    if (!time_before(jiffies, timeout)) {
-> > -        panic("%s: CPU%d started up but did not get a callout!\n",
-> > -              __func__, cpuid);
-> > -    }
-> > 
-> >      /*
-> >       * the boot CPU has finished the init stage and is spinning
-> 
+ 	spin_lock_irqsave(shost->host_lock, flags);
+-	starget->reap_ref++;
+  restart:
+ 	list_for_each_entry(sdev, &shost->__devices, siblings) {
+ 		if (sdev->channel != starget->channel ||
+@@ -1014,14 +1013,6 @@ static void __scsi_remove_target(struct
+ 		goto restart;
+ 	}
+ 	spin_unlock_irqrestore(shost->host_lock, flags);
+-	scsi_target_reap(starget);
+-}
+-
+-static int __remove_child (struct device * dev, void * data)
+-{
+-	if (scsi_is_target_device(dev))
+-		__scsi_remove_target(to_scsi_target(dev));
+-	return 0;
+ }
+ 
+ /**
+@@ -1034,14 +1025,34 @@ static int __remove_child (struct device
+  */
+ void scsi_remove_target(struct device *dev)
+ {
+-	if (scsi_is_target_device(dev)) {
+-		__scsi_remove_target(to_scsi_target(dev));
+-		return;
++	struct Scsi_Host *shost = dev_to_shost(dev->parent);
++	struct scsi_target *starget, *found;
++	unsigned long flags;
++
++ restart:
++	found = NULL;
++	spin_lock_irqsave(shost->host_lock, flags);
++	list_for_each_entry(starget, &shost->__targets, siblings) {
++		if (starget->state == STARGET_DEL)
++			continue;
++		if (starget->dev.parent == dev || &starget->dev == dev) {
++			found = starget;
++			found->reap_ref++;
++			break;
++		}
+ 	}
++	spin_unlock_irqrestore(shost->host_lock, flags);
+ 
+-	get_device(dev);
+-	device_for_each_child(dev, NULL, __remove_child);
+-	put_device(dev);
++	if (found) {
++		__scsi_remove_target(found);
++		scsi_target_reap(found);
++		/* in the case where @dev has multiple starget children,
++		 * continue removing.
++		 *
++		 * FIXME: does such a case exist?
++		 */
++		goto restart;
++	}
+ }
+ EXPORT_SYMBOL(scsi_remove_target);
+ 
 
 
