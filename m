@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab2HGQUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:20:45 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:58061 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755666Ab2HGQUm (ORCPT
+	id S1755699Ab2HGQUy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:20:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51364 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755670Ab2HGQUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:20:42 -0400
+	Tue, 7 Aug 2012 12:20:50 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
         Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
@@ -16,9 +16,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v1 14/22] PCI/sysfs: use PCI bus lock to avoid race conditions
-Date: Wed,  8 Aug 2012 00:10:54 +0800
-Message-Id: <1344355862-2726-15-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v1 15/22] PCI/eeepc: use PCI bus lock to avoid race conditions
+Date: Wed,  8 Aug 2012 00:10:55 +0800
+Message-Id: <1344355862-2726-16-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
 References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
@@ -27,104 +27,94 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch uses PCI bus lock mechanism to avoid race conditions when doing
-PCI device/host bridge hotplug through PCI sysfs interfaces.
+PCI device hotplug through eeepc driver. It also fixes a PCI device reference
+count leakage issue because acpi_get_pci_dev() holds a reference to the
+device returned.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/pci/pci-sysfs.c |   26 +++++++++++++++++++++-----
- drivers/pci/probe.c     |   17 +++++++++++------
- 2 files changed, 32 insertions(+), 11 deletions(-)
+ drivers/platform/x86/eeepc-laptop.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index 99fefbe..11043b4 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -298,7 +298,10 @@ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
- 		pci_host_bridge_hotplug_lock();
- 		mutex_lock(&pci_remove_rescan_mutex);
- 		while ((b = pci_find_next_bus(b)) != NULL)
--			pci_rescan_bus(b);
-+			if (pci_bus_lock_states(b, PCI_BUS_STATE_WORKING) > 0) {
-+				pci_rescan_bus(b);
-+				pci_bus_unlock(b);
-+			}
- 		mutex_unlock(&pci_remove_rescan_mutex);
- 		pci_host_bridge_hotplug_unlock();
- 	}
-@@ -321,8 +324,14 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
- 		return -EINVAL;
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index dab91b4..25c4176 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -606,16 +606,16 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+ 			goto out_unlock;
+ 		}
  
- 	if (val) {
-+		struct pci_bus *bus = pdev->bus;
+-		bus = port->subordinate;
++		bus = pci_lock_subordinate(port, PCI_BUS_STATE_WORKING);
+ 
+ 		if (!bus) {
+ 			pr_warn("Unable to find PCI bus 1?\n");
+-			goto out_unlock;
++			goto out_put_dev;
+ 		}
+ 
+ 		if (pci_bus_read_config_dword(bus, 0, PCI_VENDOR_ID, &l)) {
+ 			pr_err("Unable to read PCI config space?\n");
+-			goto out_unlock;
++			goto out_unlock_bus;
+ 		}
+ 
+ 		absent = (l == 0xffffffff);
+@@ -627,7 +627,7 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+ 				absent ? "absent" : "present");
+ 			pr_warn("skipped wireless hotplug as probably "
+ 				"inappropriate for this model\n");
+-			goto out_unlock;
++			goto out_unlock_bus;
+ 		}
+ 
+ 		if (!blocked) {
+@@ -635,7 +635,7 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+ 			if (dev) {
+ 				/* Device already present */
+ 				pci_dev_put(dev);
+-				goto out_unlock;
++				goto out_unlock_bus;
+ 			}
+ 			dev = pci_scan_single_device(bus, 0);
+ 			if (dev) {
+@@ -650,6 +650,11 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+ 				pci_dev_put(dev);
+ 			}
+ 		}
 +
- 		mutex_lock(&pci_remove_rescan_mutex);
--		pci_rescan_bus(pdev->bus);
-+		if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING) > 0) {
-+			if (pdev->is_added)
-+				pci_rescan_bus(bus);
-+			pci_bus_unlock(bus);
-+		}
- 		mutex_unlock(&pci_remove_rescan_mutex);
++out_unlock_bus:
++		pci_bus_unlock(bus);
++out_put_dev:
++		pci_dev_put(port);
  	}
- 	return count;
-@@ -331,9 +340,14 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
- static void remove_callback(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct pci_bus *bus = pdev->bus;
  
- 	mutex_lock(&pci_remove_rescan_mutex);
--	pci_stop_and_remove_bus_device(pdev);
-+	if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING) > 0) {
-+		pci_bus_get(bus);
-+		pci_stop_and_remove_bus_device(pdev);
-+		pci_unlock_and_put_bus(bus);
-+	}
- 	mutex_unlock(&pci_remove_rescan_mutex);
+ out_unlock:
+@@ -757,7 +762,7 @@ static struct hotplug_slot_ops eeepc_hotplug_slot_ops = {
+ static int eeepc_setup_pci_hotplug(struct eeepc_laptop *eeepc)
+ {
+ 	int ret = -ENOMEM;
+-	struct pci_bus *bus = pci_find_bus(0, 1);
++	struct pci_bus *bus = pci_get_bus(0, 1);
+ 
+ 	if (!bus) {
+ 		pr_err("Unable to find wifi PCI bus\n");
+@@ -785,6 +790,8 @@ static int eeepc_setup_pci_hotplug(struct eeepc_laptop *eeepc)
+ 		goto error_register;
+ 	}
+ 
++	pci_bus_put(bus);
++
+ 	return 0;
+ 
+ error_register:
+@@ -793,6 +800,7 @@ error_info:
+ 	kfree(eeepc->hotplug_slot);
+ 	eeepc->hotplug_slot = NULL;
+ error_slot:
++	pci_bus_put(bus);
+ 	return ret;
  }
- 
-@@ -369,10 +383,12 @@ dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
- 
- 	if (val) {
- 		mutex_lock(&pci_remove_rescan_mutex);
--		if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
-+		if (!pci_is_root_bus(bus))
- 			pci_rescan_bus_bridge_resize(bus->self);
--		else
-+		else if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING) > 0) {
- 			pci_rescan_bus(bus);
-+			pci_bus_unlock(bus);
-+		}
- 		mutex_unlock(&pci_remove_rescan_mutex);
- 	}
- 	return count;
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 47bf071..da6f04c 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1919,12 +1919,17 @@ EXPORT_SYMBOL(pci_scan_bus);
- unsigned int __ref pci_rescan_bus_bridge_resize(struct pci_dev *bridge)
- {
- 	unsigned int max = -1;
--	struct pci_bus *bus = bridge->subordinate;
--
--	if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING) > 0) {
--		max = pci_scan_child_bus(bus);
--		pci_assign_unassigned_bridge_resources(bridge);
--		pci_bus_add_devices(bus);
-+	struct pci_bus *bus;
-+
-+	bus = pci_lock_subordinate(bridge, PCI_BUS_STATE_WORKING);
-+	if (bus) {
-+		if (list_empty(&bus->devices)) {
-+			max = pci_scan_child_bus(bus);
-+			pci_assign_unassigned_bridge_resources(bridge);
-+			pci_bus_add_devices(bus);
-+		} else {
-+			pci_rescan_bus(bus);
-+		}
- 		pci_bus_unlock(bus);
- 	}
  
 -- 
 1.7.9.5
