@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab2HGNXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 09:23:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23323 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755039Ab2HGNXs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 09:23:48 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=yskIVUSqD-kA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=uD5RwvtFlGQKrsun4QoA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1344345825.6935.3.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/19] [GIT PULL][v3.6] ftrace: Allow kprobes to work
- with ftace
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1754985Ab2HGNYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 09:24:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3234 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754689Ab2HGNWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 09:22:04 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arun Sharma <asharma@fb.com>,
+        Benjamin Redelings <benjamin.redelings@nescent.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 07 Aug 2012 09:23:45 -0400
-In-Reply-To: <20120731151242.GA20169@gmail.com>
-References: <20120721021943.274162381@goodmis.org>
-	 <1343663487.27983.7.camel@gandalf.stny.rr.com>
-	 <20120731151242.GA20169@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 07/12] perf tools: Adding PERF_ATTR_SIZE_VER2 to the header swap check
+Date: Tue,  7 Aug 2012 15:20:42 +0200
+Message-Id: <1344345647-11536-8-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1344345647-11536-1-git-send-email-jolsa@redhat.com>
+References: <1344345647-11536-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 17:12 +0200, Ingo Molnar wrote:
+Updating attr_file_abi_sizes array with PERF_ATTR_SIZE_VER2 version,
+so we have the swap check complete.
 
-> > Can you pull this in for 3.7, or do you want me to post 
-> > another pull request after the merge window closes?
-> 
-> No need to resend, will pull it once the merge window dust has 
-> settled a bit.
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Ulrich Drepper <drepper@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/header.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Hi Ingo,
-
-Just a friendly reminder. Can you pull this into perf/core.
-
-Thanks!
-
--- Steve
-
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 74ea3c2..db91425 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1829,6 +1829,7 @@ out_free:
+ static const int attr_file_abi_sizes[] = {
+ 	[0] = PERF_ATTR_SIZE_VER0,
+ 	[1] = PERF_ATTR_SIZE_VER1,
++	[2] = PERF_ATTR_SIZE_VER2,
+ 	0,
+ };
+ 
+-- 
+1.7.11.2
 
