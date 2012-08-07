@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab2HGXV1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:21:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	id S1757540Ab2HGXVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:21:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757340Ab2HGWgQ (ORCPT
+	with ESMTP id S1030392Ab2HGWcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:36:16 -0400
+	Tue, 7 Aug 2012 18:32:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 001/109] target: Add generation of LOGICAL BLOCK ADDRESS OUT OF RANGE
-Date: Tue,  7 Aug 2012 15:34:20 -0700
-Message-Id: <20120807222043.211771124@linuxfoundation.org>
+        Colin Ian King <colin.king@canonical.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 109/122] USB: echi-dbgp: increase the controller wait time to come out of halt.
+Date: Tue,  7 Aug 2012 15:26:37 -0700
+Message-Id: <20120807221959.688040696@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
-References: <20120807222043.089735600@linuxfoundation.org>
+In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
+References: <20120807221948.220495155@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,63 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg KH <gregkh@linuxfoundation.org>
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Colin Ian King <colin.king@canonical.com>
 
-commit e2397c704429025bc6b331a970f699e52f34283e upstream.
+commit f96a4216e85050c0a9d41a41ecb0ae9d8e39b509 upstream.
 
-Many SCSI commands are defined to return a CHECK CONDITION / ILLEGAL
-REQUEST with ASC set to LOGICAL BLOCK ADDRESS OUT OF RANGE if the
-initiator sends a command that accesses a too-big LBA.  Add an enum
-value and case entries so that target code can return this status.
+The default 10 microsecond delay for the controller to come out of
+halt in dbgp_ehci_startup is too short, so increase it to 1 millisecond.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+This is based on emperical testing on various USB debug ports on
+modern machines such as a Lenovo X220i and an Ivybridge development
+platform that needed to wait ~450-950 microseconds.
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |   10 ++++++++++
- include/target/target_core_base.h      |    1 +
- 2 files changed, 11 insertions(+)
+ drivers/usb/early/ehci-dbgp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1976,6 +1976,7 @@ void transport_generic_request_failure(s
- 	case TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE:
- 	case TCM_UNKNOWN_MODE_PAGE:
- 	case TCM_WRITE_PROTECTED:
-+	case TCM_ADDRESS_OUT_OF_RANGE:
- 	case TCM_CHECK_CONDITION_ABORT_CMD:
- 	case TCM_CHECK_CONDITION_UNIT_ATTENTION:
- 	case TCM_CHECK_CONDITION_NOT_READY:
-@@ -4656,6 +4657,15 @@ int transport_send_check_condition_and_s
- 		/* WRITE PROTECTED */
- 		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x27;
- 		break;
-+	case TCM_ADDRESS_OUT_OF_RANGE:
-+		/* CURRENT ERROR */
-+		buffer[offset] = 0x70;
-+		buffer[offset+SPC_ADD_SENSE_LEN_OFFSET] = 10;
-+		/* ILLEGAL REQUEST */
-+		buffer[offset+SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
-+		/* LOGICAL BLOCK ADDRESS OUT OF RANGE */
-+		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x21;
-+		break;
- 	case TCM_CHECK_CONDITION_UNIT_ATTENTION:
- 		/* CURRENT ERROR */
- 		buffer[offset] = 0x70;
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -229,6 +229,7 @@ enum tcm_sense_reason_table {
- 	TCM_CHECK_CONDITION_UNIT_ATTENTION	= 0x0e,
- 	TCM_CHECK_CONDITION_NOT_READY		= 0x0f,
- 	TCM_RESERVATION_CONFLICT		= 0x10,
-+	TCM_ADDRESS_OUT_OF_RANGE		= 0x11,
- };
+--- a/drivers/usb/early/ehci-dbgp.c
++++ b/drivers/usb/early/ehci-dbgp.c
+@@ -450,7 +450,7 @@ static int dbgp_ehci_startup(void)
+ 	writel(FLAG_CF, &ehci_regs->configured_flag);
  
- enum target_sc_flags_table {
+ 	/* Wait until the controller is no longer halted */
+-	loop = 10;
++	loop = 1000;
+ 	do {
+ 		status = readl(&ehci_regs->status);
+ 		if (!(status & STS_HALT))
 
 
