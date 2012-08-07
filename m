@@ -1,30 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab2HGXJK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:09:10 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:64842 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030546Ab2HGWjN (ORCPT
+	id S1757448Ab2HGXJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:09:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030567Ab2HGWjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:13 -0400
+	Tue, 7 Aug 2012 18:39:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: =?UTF-8?q?=5B=20058/109=5D=20drm/radeon=3A=20fix=20bo=20creation=20retry=20path?=
-Date: Tue,  7 Aug 2012 15:35:17 -0700
-Message-Id: <20120807222048.186074626@linuxfoundation.org>
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 055/109] tg3: Fix Read DMA workaround for 5719 A0.
+Date: Tue,  7 Aug 2012 15:35:14 -0700
+Message-Id: <20120807222047.913258424@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,41 +30,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Michael Chan <mchan@broadcom.com>
 
-commit d1c7871ddb1f588b8eb35affd9ee1a3d5e11cd0c upstream.
+commit 10ce95d6ef36c65df7dcd3b8fcf86913f8b298bd upstream.
 
-Retry label was at wrong place in function leading to memory
-leak.
+The workaround was mis-applied to all 5719 and 5720 chips.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_object.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_object.c
-+++ b/drivers/gpu/drm/radeon/radeon_object.c
-@@ -136,7 +136,6 @@ int radeon_bo_create(struct radeon_devic
- 	acc_size = ttm_bo_dma_acc_size(&rdev->mman.bdev, size,
- 				       sizeof(struct radeon_bo));
- 
--retry:
- 	bo = kzalloc(sizeof(struct radeon_bo), GFP_KERNEL);
- 	if (bo == NULL)
- 		return -ENOMEM;
-@@ -150,6 +149,8 @@ retry:
- 	bo->surface_reg = -1;
- 	INIT_LIST_HEAD(&bo->list);
- 	INIT_LIST_HEAD(&bo->va);
-+
-+retry:
- 	radeon_ttm_placement_from_domain(bo, domain);
- 	/* Kernel allocation are uninterruptible */
- 	mutex_lock(&rdev->vram_mutex);
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -8949,8 +8949,7 @@ static int tg3_reset_hw(struct tg3 *tp,
+ 	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_57780 ||
+ 	    tg3_flag(tp, 57765_PLUS)) {
+ 		val = tr32(TG3_RDMA_RSRVCTRL_REG);
+-		if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719 ||
+-		    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5720) {
++		if (tp->pci_chip_rev_id == CHIPREV_ID_5719_A0) {
+ 			val &= ~(TG3_RDMA_RSRVCTRL_TXMRGN_MASK |
+ 				 TG3_RDMA_RSRVCTRL_FIFO_LWM_MASK |
+ 				 TG3_RDMA_RSRVCTRL_FIFO_HWM_MASK);
 
 
