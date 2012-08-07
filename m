@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab2HGKwf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 06:52:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37843 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752071Ab2HGKwd (ORCPT
+	id S1753755Ab2HGKxN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 06:53:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51444 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab2HGKxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 06:52:33 -0400
-Date: Tue, 7 Aug 2012 11:52:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>, arnd@arndb.de,
-        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] driver: misc: bmp085: remove "of_match_table" property.
-Message-ID: <20120807105225.GT16861@opensource.wolfsonmicro.com>
-References: <1344245324-16704-1-git-send-email-sourav.poddar@ti.com>
- <20120806093033.GH17551@arwen.pp.htv.fi>
- <20120806154214.GC29272@sirena.org.uk>
- <20120807054342.GF8468@arwen.pp.htv.fi>
+	Tue, 7 Aug 2012 06:53:12 -0400
+Message-ID: <5020F388.3010705@linutronix.de>
+Date: Tue, 07 Aug 2012 12:52:56 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120807054342.GF8468@arwen.pp.htv.fi>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ptrace: fix set_task_blockstep()->update_debugctlmsr()
+ logic
+References: <20120803162954.GA19806@redhat.com> <5020E2E4.3090104@linutronix.de>
+In-Reply-To: <5020E2E4.3090104@linutronix.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 08:43:44AM +0300, Felipe Balbi wrote:
-> On Mon, Aug 06, 2012 at 04:42:14PM +0100, Mark Brown wrote:
+On 08/07/2012 11:41 AM, Sebastian Andrzej Siewior wrote:
+> On 08/03/2012 06:29 PM, Oleg Nesterov wrote:
+> For uprobes we never set the bit, we only need it cleared. We get here
+> via int 3 and do_debug() already clears TIF_BLOCKSTEP because the
+> CPU clears the bit in CPU. So both, TIF_BLOCKSTEP and DEBUGCTLMSR_BTF
+> are never set.
 
-> > It's good practice to have an explict compatible string even if the
-> > default happens to work in order to avoid any name clashes.
+Actually I'm, wrong. Syscalls do clear the DEBUGCTLMSR_BTF bit, int3
+does not. So yes, we need it after all…
 
-> of_i2c.c makes no use whatsoever of the compatible string. See that it
-> will build an i2c_boardinfo and register a new device. That compatible
-
-If that's all that's done it seems like a bug frankly, certainly based
-on previous discussions it ought to be.  There are collisions out there,
-they've just happened to not bite us yet
-
-> string is just churn and has no use at all.
-
-This is device tree we're talking about, there's a lot churn anyway.
+Sebastian
