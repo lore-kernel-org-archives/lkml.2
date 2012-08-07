@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab2HGM4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 08:56:11 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:21160 "EHLO relay.sw.ru"
+	id S1754656Ab2HGM47 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:56:59 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:14211 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750734Ab2HGM4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752630Ab2HGM4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 08:56:09 -0400
 From: Andrew Vagin <avagin@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 3/4] perf: teach perf inject to merge sched_stat_* and sched_switch events (v2)
-Date: Tue,  7 Aug 2012 16:56:04 +0400
-Message-Id: <1344344165-369636-4-git-send-email-avagin@openvz.org>
+Subject: [PATCH 2/4] perf: synthesize_sample gets evsel instead of session
+Date: Tue,  7 Aug 2012 16:56:03 +0400
+Message-Id: <1344344165-369636-3-git-send-email-avagin@openvz.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1344344165-369636-1-git-send-email-avagin@openvz.org>
 References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
@@ -21,169 +21,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You may want to know where and how long a task is sleeping. A callchain
-may be found in sched_switch and a time slice in stat_iowait, so I add
-handler in perf inject for merging this events.
-
-My code saves sched_switch event for each process and when it meets
-stat_iowait, it reports the sched_switch event, because this event
-contains a correct callchain. By another words it replaces all
-stat_iowait events on proper sched_switch events.
-
-v2: - remove the global variable "session"
-    - hadle errors from malloc()
+The same thing was done for perf_evsel__parse_sample
 
 Signed-off-by: Andrew Vagin <avagin@openvz.org>
 ---
- tools/perf/Documentation/perf-inject.txt |    4 ++
- tools/perf/builtin-inject.c              |   86 ++++++++++++++++++++++++++++++
- 2 files changed, 90 insertions(+), 0 deletions(-)
+ tools/perf/util/event.h |    4 ----
+ tools/perf/util/evsel.c |    4 +++-
+ tools/perf/util/evsel.h |    5 +++++
+ 3 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
-index 6be2101..c04e0c6 100644
---- a/tools/perf/Documentation/perf-inject.txt
-+++ b/tools/perf/Documentation/perf-inject.txt
-@@ -35,6 +35,10 @@ OPTIONS
- -o::
- --output=::
-         Output file name. (default: stdout)
-+-s::
-+--sched-stat::
-+	Merge sched_stat and sched_switch for getting events where and how long
-+	tasks slept.
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index d84870b..1ab3141 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -197,10 +197,6 @@ int perf_event__preprocess_sample(const union perf_event *self,
  
- SEE ALSO
- --------
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 4c9cdbb..9b3393a 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -8,11 +8,13 @@
- #include "builtin.h"
+ const char *perf_event__name(unsigned int id);
  
- #include "perf.h"
-+#include "util/evsel.h"
- #include "util/session.h"
- #include "util/tool.h"
- #include "util/debug.h"
- 
- #include "util/parse-options.h"
-+#include "util/trace-event.h"
- 
- static const char	*input_name	= "-";
- static const char	*output_name	= "-";
-@@ -21,6 +23,7 @@ static int		output;
- static u64		bytes_written;
- 
- static bool		inject_build_ids;
-+static bool		inject_sched_stat;
- 
- static int perf_event__repipe_synth(struct perf_tool *tool __used,
- 				    union perf_event *event,
-@@ -210,6 +213,83 @@ repipe:
+-int perf_event__synthesize_sample(union perf_event *event, u64 type,
+-				  const struct perf_sample *sample,
+-				  bool swapped);
+-
+ size_t perf_event__fprintf_comm(union perf_event *event, FILE *fp);
+ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp);
+ size_t perf_event__fprintf_task(union perf_event *event, FILE *fp);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 2eaae14..7547203 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -872,10 +872,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
  	return 0;
  }
  
-+struct event_entry {
-+	struct list_head node;
-+	u32		 pid;
-+	union perf_event event[0];
-+};
-+
-+static LIST_HEAD(samples);
-+
-+static int perf_event__sched_stat(struct perf_tool *tool,
-+				      union perf_event *event,
-+				      struct perf_sample *sample,
-+				      struct perf_evsel *evsel,
-+				      struct machine *machine)
-+{
-+	const char *evname = NULL;
-+	uint32_t size;
-+	struct event_entry *ent;
-+	union perf_event *event_sw = NULL;
-+	struct perf_sample sample_sw;
-+	int sched_process_exit;
-+
-+	size = event->header.size;
-+
-+	evname = evsel->tp_format->name;
-+
-+	sched_process_exit = !strcmp(evname, "sched_process_exit");
-+
-+	if (!strcmp(evname, "sched_switch") ||  sched_process_exit) {
-+		list_for_each_entry(ent, &samples, node)
-+			if (sample->pid == ent->pid)
-+				break;
-+
-+		if (&ent->node != &samples) {
-+			list_del(&ent->node);
-+			free(ent);
-+		}
-+
-+		if (sched_process_exit)
-+			return 0;
-+
-+		ent = malloc(size + sizeof(struct event_entry));
-+		if (ent == NULL)
-+			die("malloc");
-+		ent->pid = sample->pid;
-+		memcpy(&ent->event, event, size);
-+		list_add(&ent->node, &samples);
-+		return 0;
-+
-+	} else if (!strncmp(evname, "sched_stat_", 11)) {
-+		u32 pid;
-+
-+		pid = raw_field_value(evsel->tp_format,
-+					"pid", sample->raw_data);
-+
-+		list_for_each_entry(ent, &samples, node) {
-+			if (pid == ent->pid)
-+				break;
-+		}
-+
-+		if (&ent->node == &samples)
-+			return 0;
-+
-+		event_sw = &ent->event[0];
-+		perf_evsel__parse_sample(evsel, event_sw, &sample_sw, false);
-+
-+		sample_sw.period = sample->period;
-+		sample_sw.time = sample->time;
-+		perf_evsel__synthesize_sample(evsel, event_sw, &sample_sw, false);
-+
-+		perf_event__repipe(tool, event_sw, &sample_sw, machine);
-+		return 0;
-+	}
-+
-+	perf_event__repipe(tool, event, sample, machine);
-+
-+	return 0;
-+}
- struct perf_tool perf_inject = {
- 	.sample		= perf_event__repipe_sample,
- 	.mmap		= perf_event__repipe,
-@@ -245,6 +325,9 @@ static int __cmd_inject(void)
- 		perf_inject.mmap	 = perf_event__repipe_mmap;
- 		perf_inject.fork	 = perf_event__repipe_task;
- 		perf_inject.tracing_data = perf_event__repipe_tracing_data;
-+	} else if (inject_sched_stat) {
-+		perf_inject.sample	 = perf_event__sched_stat;
-+		perf_inject.ordered_samples = true;
- 	}
+-int perf_event__synthesize_sample(union perf_event *event, u64 type,
++int perf_evsel__synthesize_sample(struct perf_evsel *evsel,
++				  union perf_event *event,
+ 				  const struct perf_sample *sample,
+ 				  bool swapped)
+ {
++	u64 type = evsel->attr.sample_type;
+ 	u64 *array;
  
- 	session = perf_session__new(input_name, O_RDONLY, false, true, &perf_inject);
-@@ -272,6 +355,9 @@ static const char * const report_usage[] = {
- static const struct option options[] = {
- 	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
- 		    "Inject build-ids into the output stream"),
-+	OPT_BOOLEAN('s', "sched-stat", &inject_sched_stat,
-+		    "Merge sched-stat and sched-switch for getting events "
-+		    "where and how long tasks slept"),
- 	OPT_STRING('i', "input", &input_name, "file",
- 		    "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file",
+ 	/*
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index a56c457..62cdd5d 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -183,4 +183,9 @@ void hists__init(struct hists *hists);
+ 
+ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			     struct perf_sample *sample, bool swapped);
++
++int perf_evsel__synthesize_sample(struct perf_evsel *evsel,
++				  union perf_event *event,
++				  const struct perf_sample *sample,
++				  bool swapped);
+ #endif /* __PERF_EVSEL_H */
 -- 
 1.7.1
 
