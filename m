@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031151Ab2HGW4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:56:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031123Ab2HGWqL (ORCPT
+	id S1031218Ab2HGW4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:56:40 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:51211 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031092Ab2HGWp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:11 -0400
+	Tue, 7 Aug 2012 18:45:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Rob Landley <rob@landley.net>
-Subject: [ 16/49] stable: update references to older 2.6 versions for 3.x
-Date: Tue,  7 Aug 2012 15:44:34 -0700
-Message-Id: <20120807222028.330778459@linuxfoundation.org>
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [ 04/49] powerpc: Fix wrong divisor in usecs_to_cputime
+Date: Tue,  7 Aug 2012 15:44:22 -0700
+Message-Id: <20120807222027.257644855@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -30,58 +32,84 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-commit 2584f5212d97b664be250ad5700a2d0fee31a10d upstream.
+commit 9f5072d4f63f28d30d343573830ac6c85fc0deff upstream.
 
-Also add information on where the respective trees are.
+Commit d57af9b (taskstats: use real microsecond granularity for CPU times)
+renamed msecs_to_cputime to usecs_to_cputime, but failed to update all
+numbers on the way.  This causes nonsensical cpu idle/iowait values to be
+displayed in /proc/stat (the only user of usecs_to_cputime so far).
 
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Acked-by: Rob Landley <rob@landley.net>
+This also renames __cputime_msec_factor to __cputime_usec_factor, adapting
+its value and using it directly in cputime_to_usecs instead of doing two
+multiplications.
+
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Acked-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/stable_kernel_rules.txt |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ arch/powerpc/include/asm/cputime.h |    6 +++---
+ arch/powerpc/kernel/time.c         |   10 +++++-----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -1,4 +1,4 @@
--Everything you ever wanted to know about Linux 2.6 -stable releases.
-+Everything you ever wanted to know about Linux -stable releases.
+--- a/arch/powerpc/include/asm/cputime.h
++++ b/arch/powerpc/include/asm/cputime.h
+@@ -126,11 +126,11 @@ static inline u64 cputime64_to_jiffies64
+ /*
+  * Convert cputime <-> microseconds
+  */
+-extern u64 __cputime_msec_factor;
++extern u64 __cputime_usec_factor;
  
- Rules on what kind of patches are accepted, and which ones are not, into the
- "-stable" tree:
-@@ -41,10 +41,10 @@ Procedure for submitting patches to the
-    cherry-picked than this can be specified in the following format in
-    the sign-off area:
+ static inline unsigned long cputime_to_usecs(const cputime_t ct)
+ {
+-	return mulhdu(ct, __cputime_msec_factor) * USEC_PER_MSEC;
++	return mulhdu(ct, __cputime_usec_factor);
+ }
  
--     Cc: <stable@vger.kernel.org> # .32.x: a1f84a3: sched: Check for idle
--     Cc: <stable@vger.kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
--     Cc: <stable@vger.kernel.org> # .32.x: fd21073: sched: Fix affinity logic
--     Cc: <stable@vger.kernel.org> # .32.x
-+     Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
-+     Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
-+     Cc: <stable@vger.kernel.org> # 3.3.x: fd21073: sched: Fix affinity logic
-+     Cc: <stable@vger.kernel.org> # 3.3.x
-     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+ static inline cputime_t usecs_to_cputime(const unsigned long us)
+@@ -143,7 +143,7 @@ static inline cputime_t usecs_to_cputime
+ 	sec = us / 1000000;
+ 	if (ct) {
+ 		ct *= tb_ticks_per_sec;
+-		do_div(ct, 1000);
++		do_div(ct, 1000000);
+ 	}
+ 	if (sec)
+ 		ct += (cputime_t) sec * tb_ticks_per_sec;
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -168,13 +168,13 @@ EXPORT_SYMBOL_GPL(ppc_tb_freq);
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING
+ /*
+  * Factors for converting from cputime_t (timebase ticks) to
+- * jiffies, milliseconds, seconds, and clock_t (1/USER_HZ seconds).
++ * jiffies, microseconds, seconds, and clock_t (1/USER_HZ seconds).
+  * These are all stored as 0.64 fixed-point binary fractions.
+  */
+ u64 __cputime_jiffies_factor;
+ EXPORT_SYMBOL(__cputime_jiffies_factor);
+-u64 __cputime_msec_factor;
+-EXPORT_SYMBOL(__cputime_msec_factor);
++u64 __cputime_usec_factor;
++EXPORT_SYMBOL(__cputime_usec_factor);
+ u64 __cputime_sec_factor;
+ EXPORT_SYMBOL(__cputime_sec_factor);
+ u64 __cputime_clockt_factor;
+@@ -192,8 +192,8 @@ static void calc_cputime_factors(void)
  
-    The tag sequence has the meaning of:
-@@ -78,6 +78,15 @@ Review cycle:
-    security kernel team, and not go through the normal review cycle.
-    Contact the kernel security team for more details on this procedure.
- 
-+Trees:
-+
-+ - The queues of patches, for both completed versions and in progress
-+   versions can be found at:
-+	http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
-+ - The finalized and tagged releases of all stable kernels can be found
-+   in separate branches per version at:
-+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
-+
- 
- Review committee:
- 
+ 	div128_by_32(HZ, 0, tb_ticks_per_sec, &res);
+ 	__cputime_jiffies_factor = res.result_low;
+-	div128_by_32(1000, 0, tb_ticks_per_sec, &res);
+-	__cputime_msec_factor = res.result_low;
++	div128_by_32(1000000, 0, tb_ticks_per_sec, &res);
++	__cputime_usec_factor = res.result_low;
+ 	div128_by_32(1, 0, tb_ticks_per_sec, &res);
+ 	__cputime_sec_factor = res.result_low;
+ 	div128_by_32(USER_HZ, 0, tb_ticks_per_sec, &res);
 
 
