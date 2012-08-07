@@ -1,166 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab2HGR3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:29:18 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:34516 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2HGR3Q (ORCPT
+	id S1755597Ab2HGR3b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:29:31 -0400
+Received: from [213.199.154.204] ([213.199.154.204]:28420 "EHLO
+	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753811Ab2HGR32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:29:16 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Miller <davem@davemloft.net>
-Cc: Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Ariyasu <jan.ariyasu@hp.com>, Jan Ariyasu <jan.ariyasu@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Thomas Graf <tgraf@infradead.org>,
-        Xi Wang <xi.wang@gmail.com>
-References: <1344115837-6150-1-git-send-email-jan.ariyasu@hp.com>
-	<87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com>
-	<87ipcud3ld.fsf_-_@xmission.com>
-Date: Tue, 07 Aug 2012 10:29:08 -0700
-In-Reply-To: <87ipcud3ld.fsf_-_@xmission.com> (Eric W. Biederman's message of
-	"Tue, 07 Aug 2012 10:17:02 -0700")
-Message-ID: <87fw7ybogr.fsf_-_@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 7 Aug 2012 13:29:28 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI4015Izz1202hzzz2dh668h839h944hd25hf0ah)
+X-WSS-ID: 0M8EB6X-01-B3N-02
+X-M-MSG: 
+Date: Tue, 7 Aug 2012 19:28:06 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Borislav Petkov <bp@amd64.org>, <mingo@kernel.org>, <hpa@zytor.com>,
+        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <torvalds@linux-foundation.org>, <a.p.zijlstra@chello.nl>,
+        <tglx@linutronix.de>, <linux-tip-commits@vger.kernel.org>,
+        "Petkov, Borislav" <borislav.petkov@amd.com>
+Subject: Re: do_IRQ: 1.55 No irq handler for vector (irq -1)
+Message-ID: <20120807172806.GK3732@erda.amd.com>
+References: <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
+ <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
+ <20120807153149.GI3732@erda.amd.com>
+ <20120807154134.GA7456@aftab.osrc.amd.com>
+ <1344356662.2041.48.camel@sbsiddha-desk.sc.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+U4ykYQTyVYoyY2En4qJhbPZ/MVoVzVRI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  0.1 XMSubLong Long Subject
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0024]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;David Miller <davem@davemloft.net>
-X-Spam-Relay-Country: 
-Subject: [PATCH net-next 6/7] sctp: Push struct net down into sctp_verify_ext_param
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1344356662.2041.48.camel@sbsiddha-desk.sc.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07.08.12 09:24:21, Suresh Siddha wrote:
+> Boris, Robert, Can you please send me the complete dmesg
+> and /proc/interrupts on a successful boot?
 
-Add struct net as a parameter to sctp_verify_param so it can be passed
-to sctp_verify_ext_param where struct net will be needed when the sctp
-tunables become per net tunables.
+Sent to you in private mail.
 
-Add struct net as a parameter to sctp_verify_init so struct net can be
-passed to sctp_verify_param.
+What information are you looking for specifically? Maybe we can
+provide something here on the ml.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- include/net/sctp/structs.h |    6 +++---
- net/sctp/sm_make_chunk.c   |   11 ++++++-----
- net/sctp/sm_statefuns.c    |    6 +++---
- 3 files changed, 12 insertions(+), 11 deletions(-)
+Thanks,
 
-diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
-index b0882f3..18052b4 100644
---- a/include/net/sctp/structs.h
-+++ b/include/net/sctp/structs.h
-@@ -1410,9 +1410,9 @@ struct sctp_endpoint *sctp_endpoint_is_match(struct sctp_endpoint *,
- int sctp_has_association(struct net *net, const union sctp_addr *laddr,
- 			 const union sctp_addr *paddr);
- 
--int sctp_verify_init(const struct sctp_association *asoc, sctp_cid_t,
--		     sctp_init_chunk_t *peer_init, struct sctp_chunk *chunk,
--		     struct sctp_chunk **err_chunk);
-+int sctp_verify_init(struct net *net, const struct sctp_association *asoc,
-+		     sctp_cid_t, sctp_init_chunk_t *peer_init,
-+		     struct sctp_chunk *chunk, struct sctp_chunk **err_chunk);
- int sctp_process_init(struct sctp_association *, struct sctp_chunk *chunk,
- 		      const union sctp_addr *peer,
- 		      sctp_init_chunk_t *init, gfp_t gfp);
-diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
-index fb12835..a4b096f 100644
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -1940,7 +1940,7 @@ static int sctp_process_hn_param(const struct sctp_association *asoc,
- 	return 0;
- }
- 
--static int sctp_verify_ext_param(union sctp_params param)
-+static int sctp_verify_ext_param(struct net *net, union sctp_params param)
- {
- 	__u16 num_ext = ntohs(param.p->length) - sizeof(sctp_paramhdr_t);
- 	int have_auth = 0;
-@@ -2081,7 +2081,8 @@ static sctp_ierror_t sctp_process_unk_param(const struct sctp_association *asoc,
-  *	SCTP_IERROR_ERROR - stop processing, trigger an ERROR
-  * 	SCTP_IERROR_NO_ERROR - continue with the chunk
-  */
--static sctp_ierror_t sctp_verify_param(const struct sctp_association *asoc,
-+static sctp_ierror_t sctp_verify_param(struct net *net,
-+					const struct sctp_association *asoc,
- 					union sctp_params param,
- 					sctp_cid_t cid,
- 					struct sctp_chunk *chunk,
-@@ -2110,7 +2111,7 @@ static sctp_ierror_t sctp_verify_param(const struct sctp_association *asoc,
- 		break;
- 
- 	case SCTP_PARAM_SUPPORTED_EXT:
--		if (!sctp_verify_ext_param(param))
-+		if (!sctp_verify_ext_param(net, param))
- 			return SCTP_IERROR_ABORT;
- 		break;
- 
-@@ -2198,7 +2199,7 @@ fallthrough:
- }
- 
- /* Verify the INIT packet before we process it.  */
--int sctp_verify_init(const struct sctp_association *asoc,
-+int sctp_verify_init(struct net *net, const struct sctp_association *asoc,
- 		     sctp_cid_t cid,
- 		     sctp_init_chunk_t *peer_init,
- 		     struct sctp_chunk *chunk,
-@@ -2245,7 +2246,7 @@ int sctp_verify_init(const struct sctp_association *asoc,
- 	/* Verify all the variable length parameters */
- 	sctp_walk_params(param, peer_init, init_hdr.params) {
- 
--		result = sctp_verify_param(asoc, param, cid, chunk, errp);
-+		result = sctp_verify_param(net, asoc, param, cid, chunk, errp);
- 		switch (result) {
- 		    case SCTP_IERROR_ABORT:
- 		    case SCTP_IERROR_NOMEM:
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 3e5ca61..3722af2 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -364,7 +364,7 @@ sctp_disposition_t sctp_sf_do_5_1B_init(struct net *net,
- 
- 	/* Verify the INIT chunk before processing it. */
- 	err_chunk = NULL;
--	if (!sctp_verify_init(asoc, chunk->chunk_hdr->type,
-+	if (!sctp_verify_init(net, asoc, chunk->chunk_hdr->type,
- 			      (sctp_init_chunk_t *)chunk->chunk_hdr, chunk,
- 			      &err_chunk)) {
- 		/* This chunk contains fatal error. It is to be discarded.
-@@ -531,7 +531,7 @@ sctp_disposition_t sctp_sf_do_5_1C_ack(struct net *net,
- 
- 	/* Verify the INIT chunk before processing it. */
- 	err_chunk = NULL;
--	if (!sctp_verify_init(asoc, chunk->chunk_hdr->type,
-+	if (!sctp_verify_init(net, asoc, chunk->chunk_hdr->type,
- 			      (sctp_init_chunk_t *)chunk->chunk_hdr, chunk,
- 			      &err_chunk)) {
- 
-@@ -1429,7 +1429,7 @@ static sctp_disposition_t sctp_sf_do_unexpected_init(
- 
- 	/* Verify the INIT chunk before processing it. */
- 	err_chunk = NULL;
--	if (!sctp_verify_init(asoc, chunk->chunk_hdr->type,
-+	if (!sctp_verify_init(net, asoc, chunk->chunk_hdr->type,
- 			      (sctp_init_chunk_t *)chunk->chunk_hdr, chunk,
- 			      &err_chunk)) {
- 		/* This chunk contains fatal error. It is to be discarded.
+-Robert
+
 -- 
-1.7.5.4
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
