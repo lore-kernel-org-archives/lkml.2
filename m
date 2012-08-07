@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab2HGQVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:21:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51364 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab2HGQVO (ORCPT
+	id S1755774Ab2HGQV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:21:26 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:58061 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753Ab2HGQVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:21:14 -0400
+	Tue, 7 Aug 2012 12:21:23 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
         Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+Cc: Jiang Liu <jiang.liu@huawei.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         "Rafael J . Wysocki" <rjw@sisk.pl>,
         Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [RFC PATCH v1 18/22] PCI/acpiphp: use PCI bus lock to avoid race conditions
-Date: Wed,  8 Aug 2012 00:10:58 +0800
-Message-Id: <1344355862-2726-19-git-send-email-jiang.liu@huawei.com>
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Subject: [RFC PATCH v1 19/22] PCI/x86: enable PCI bus lock mechanism for x86 platforms
+Date: Wed,  8 Aug 2012 00:10:59 +0800
+Message-Id: <1344355862-2726-20-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
 References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
@@ -25,66 +26,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <liuj97@gmail.com>
-
-This patch uses PCI bus lock mechanism to avoid race conditions when doing
-PCI device/host bridge hotplug by acpiphp driver.
+This patch turns on PCI bus lock mechanism for x86 platforms. It also
+enhances x86 specific PCI implementation to support PCI bus lock.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/pci/acpi.c   |    6 +++++-
+ arch/x86/pci/common.c |   12 ++++++++++++
+ drivers/pci/Kconfig   |    3 +--
+ 3 files changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 73af337..0ea7ab1 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -800,11 +800,14 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 	if (slot->flags & SLOT_ENABLED)
- 		goto err_exit;
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 2bb885a..c68dbdf 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -414,7 +414,8 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	 * Maybe the desired pci bus has been already scanned. In such case
+ 	 * it is unnecessary to scan the pci bus with the given domain,busnum.
+ 	 */
+-	bus = pci_find_bus(domain, busnum);
++	bus = __pci_get_and_lock_bus(domain, busnum,
++				     PCI_BUS_STATE_STOPPING - 1);
+ 	if (bus) {
+ 		/*
+ 		 * If the desired bus exits, the content of bus->sysdata will
+@@ -449,6 +450,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 			pci_free_resource_list(&resources);
+ 			__release_pci_root_info(info);
+ 		}
++		pci_bus_get(bus);
+ 	}
  
-+	if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING) < 0)
-+		return -EINVAL;
+ 	/* After the PCI-E bus has been walked and all devices discovered,
+@@ -475,6 +477,8 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ #endif
+ 	}
+ 
++	pci_unlock_and_put_bus(bus);
 +
- 	num = pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
- 	if (num == 0) {
- 		/* Maybe only part of funcs are added. */
- 		dbg("No new device found\n");
--		goto err_exit;
-+		goto out_unlock;
- 	}
- 
- 	max = acpiphp_max_busnr(bus);
-@@ -862,8 +865,10 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 		pci_dev_put(dev);
- 	}
- 
-+out_unlock:
-+	pci_bus_unlock(bus);
- 
-- err_exit:
-+err_exit:
- 	return retval;
+ 	return bus;
  }
  
-@@ -906,6 +911,9 @@ static int disable_device(struct acpiphp_slot *slot)
- 	struct pci_dev *pdev;
- 	struct pci_bus *bus = slot->bridge->pci_bus;
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 0ad990a..8b7ae63 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -667,6 +667,18 @@ struct pci_bus * __devinit pci_scan_bus_with_sysdata(int busno)
+ 	return pci_scan_bus_on_node(busno, &pci_root_ops, -1);
+ }
  
-+	if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING) < 0)
-+		goto err_exit;
++static DEFINE_MUTEX(pci_root_bus_mutex);
 +
- 	/* The slot will be enabled when func 0 is added, so check
- 	   func 0 before disable the slot. */
- 	pdev = pci_get_slot(bus, PCI_DEVFN(slot->device, 0));
-@@ -943,6 +951,7 @@ static int disable_device(struct acpiphp_slot *slot)
- 	}
++void arch_pci_lock_host_bridge_hotplug(void)
++{
++	mutex_lock(&pci_root_bus_mutex);
++}
++
++void arch_pci_unlock_host_bridge_hotplug(void)
++{
++	mutex_unlock(&pci_root_bus_mutex);
++}
++
+ /*
+  * NUMA info for PCI busses
+  *
+diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+index a6df8b1..1bbe924 100644
+--- a/drivers/pci/Kconfig
++++ b/drivers/pci/Kconfig
+@@ -122,5 +122,4 @@ config PCI_LABEL
+ 	select NLS
  
- 	slot->flags &= (~SLOT_ENABLED);
-+	pci_bus_unlock(bus);
- 
- err_exit:
- 	return 0;
+ config PCI_BUS_LOCK
+-	bool
+-	default n
++	def_bool y if X86
 -- 
 1.7.9.5
 
