@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964774Ab2HGXfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:35:54 -0400
+	id S1757190Ab2HGXgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:36:22 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504Ab2HGW3Z (ORCPT
+	with ESMTP id S932547Ab2HGW3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:29:25 -0400
+	Tue, 7 Aug 2012 18:29:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefan Lippers-Hollmann <s.l-h@gmx.de>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 047/122] b43: fix crash with OpenFWWF
-Date: Tue,  7 Aug 2012 15:25:35 -0700
-Message-Id: <20120807221952.440334699@linuxfoundation.org>
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: [ 044/122] TPM: chip disabled state erronously being reported as error
+Date: Tue,  7 Aug 2012 15:25:32 -0700
+Message-Id: <20120807221952.169487066@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -31,127 +29,62 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 
-commit 097b0e1bf18a00195cd89bb13565ddbc9b0df942 upstream.
+commit 24ebe6670de3d1f0dca11c9eb372134c7ab05503 upstream.
 
-b43 with open firmware crashes mac80211 because
-it changes the number of queues at runtime which,
-while it was never really supported, now crashes
-mac80211 due to the new hardware queue logic.
+tpm_do_selftest() attempts to read a PCR in order to
+decide if one can rely on the TPM being used or not.
+The function that's used by __tpm_pcr_read() does not
+expect the TPM to be disabled or deactivated, and if so,
+reports an error.
 
-Fix this by detecting open vs. proprietary fw
-earlier and registering with mac80211 with the
-right number of queues.
+It's fine if the TPM returns this error when trying to
+use it for the first time after a power cycle, but it's
+definitely not if it already returned success for a
+previous attempt to read one of its PCRs.
 
-Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The tpm_do_selftest() was modified so that the driver only
+reports this return code as an error when it really is.
+
+Reported-and-tested-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/b43.h  |    7 -------
- drivers/net/wireless/b43/main.c |   32 ++++++++++----------------------
- 2 files changed, 10 insertions(+), 29 deletions(-)
+ drivers/char/tpm/tpm.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/b43/b43.h
-+++ b/drivers/net/wireless/b43/b43.h
-@@ -870,13 +870,6 @@ struct b43_wl {
- 	 * handler, only. This basically is just the IRQ mask register. */
- 	spinlock_t hardirq_lock;
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -827,10 +827,10 @@ EXPORT_SYMBOL_GPL(tpm_pcr_extend);
+ int tpm_do_selftest(struct tpm_chip *chip)
+ {
+ 	int rc;
+-	u8 digest[TPM_DIGEST_SIZE];
+ 	unsigned int loops;
+ 	unsigned int delay_msec = 1000;
+ 	unsigned long duration;
++	struct tpm_cmd_t cmd;
  
--	/* The number of queues that were registered with the mac80211 subsystem
--	 * initially. This is a backup copy of hw->queues in case hw->queues has
--	 * to be dynamically lowered at runtime (Firmware does not support QoS).
--	 * hw->queues has to be restored to the original value before unregistering
--	 * from the mac80211 subsystem. */
--	u16 mac80211_initially_registered_queues;
--
- 	/* Set this if we call ieee80211_register_hw() and check if we call
- 	 * ieee80211_unregister_hw(). */
- 	bool hw_registred;
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2359,6 +2359,8 @@ static int b43_try_request_fw(struct b43
- 	if (err)
- 		goto err_load;
+ 	duration = tpm_calc_ordinal_duration(chip,
+ 	                                     TPM_ORD_CONTINUE_SELFTEST);
+@@ -845,7 +845,15 @@ int tpm_do_selftest(struct tpm_chip *chi
+ 		return rc;
  
-+	fw->opensource = (ctx->req_type == B43_FWTYPE_OPENSOURCE);
+ 	do {
+-		rc = __tpm_pcr_read(chip, 0, digest);
++		/* Attempt to read a PCR value */
++		cmd.header.in = pcrread_header;
++		cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
++		rc = tpm_transmit(chip, (u8 *) &cmd, READ_PCR_RESULT_SIZE);
 +
- 	return 0;
- 
- err_no_ucode:
-@@ -2434,6 +2436,10 @@ static void b43_request_firmware(struct
- 	goto out;
- 
- start_ieee80211:
-+	wl->hw->queues = B43_QOS_QUEUE_NUM;
-+	if (!modparam_qos || dev->fw.opensource)
-+		wl->hw->queues = 1;
++		if (rc < TPM_HEADER_SIZE)
++			return -EFAULT;
 +
- 	err = ieee80211_register_hw(wl->hw);
- 	if (err)
- 		goto err_one_core_detach;
-@@ -2537,11 +2543,9 @@ static int b43_upload_microcode(struct b
- 		dev->fw.hdr_format = B43_FW_HDR_410;
- 	else
- 		dev->fw.hdr_format = B43_FW_HDR_351;
--	dev->fw.opensource = (fwdate == 0xFFFF);
-+	WARN_ON(dev->fw.opensource != (fwdate == 0xFFFF));
- 
--	/* Default to use-all-queues. */
--	dev->wl->hw->queues = dev->wl->mac80211_initially_registered_queues;
--	dev->qos_enabled = !!modparam_qos;
-+	dev->qos_enabled = dev->wl->hw->queues > 1;
- 	/* Default to firmware/hardware crypto acceleration. */
- 	dev->hwcrypto_enabled = true;
- 
-@@ -2559,14 +2563,8 @@ static int b43_upload_microcode(struct b
- 			/* Disable hardware crypto and fall back to software crypto. */
- 			dev->hwcrypto_enabled = false;
- 		}
--		if (!(fwcapa & B43_FWCAPA_QOS)) {
--			b43info(dev->wl, "QoS not supported by firmware\n");
--			/* Disable QoS. Tweak hw->queues to 1. It will be restored before
--			 * ieee80211_unregister to make sure the networking core can
--			 * properly free possible resources. */
--			dev->wl->hw->queues = 1;
--			dev->qos_enabled = false;
--		}
-+		/* adding QoS support should use an offline discovery mechanism */
-+		WARN(fwcapa & B43_FWCAPA_QOS, "QoS in OpenFW not supported\n");
- 	} else {
- 		b43info(dev->wl, "Loading firmware version %u.%u "
- 			"(20%.2i-%.2i-%.2i %.2i:%.2i:%.2i)\n",
-@@ -5298,8 +5296,6 @@ static struct b43_wl *b43_wireless_init(
- 
- 	hw->wiphy->flags |= WIPHY_FLAG_IBSS_RSN;
- 
--	hw->queues = modparam_qos ? B43_QOS_QUEUE_NUM : 1;
--	wl->mac80211_initially_registered_queues = hw->queues;
- 	wl->hw_registred = false;
- 	hw->max_rates = 2;
- 	SET_IEEE80211_DEV(hw, dev->dev);
-@@ -5374,10 +5370,6 @@ static void b43_bcma_remove(struct bcma_
- 
- 	B43_WARN_ON(!wl);
- 	if (wl->current_dev == wldev && wl->hw_registred) {
--		/* Restore the queues count before unregistering, because firmware detect
--		 * might have modified it. Restoring is important, so the networking
--		 * stack can properly free resources. */
--		wl->hw->queues = wl->mac80211_initially_registered_queues;
- 		b43_leds_stop(wldev);
- 		ieee80211_unregister_hw(wl->hw);
- 	}
-@@ -5452,10 +5444,6 @@ static void b43_ssb_remove(struct ssb_de
- 
- 	B43_WARN_ON(!wl);
- 	if (wl->current_dev == wldev && wl->hw_registred) {
--		/* Restore the queues count before unregistering, because firmware detect
--		 * might have modified it. Restoring is important, so the networking
--		 * stack can properly free resources. */
--		wl->hw->queues = wl->mac80211_initially_registered_queues;
- 		b43_leds_stop(wldev);
- 		ieee80211_unregister_hw(wl->hw);
- 	}
++		rc = be32_to_cpu(cmd.header.out.return_code);
+ 		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
+ 			dev_info(chip->dev,
+ 				 "TPM is disabled/deactivated (0x%X)\n", rc);
 
 
