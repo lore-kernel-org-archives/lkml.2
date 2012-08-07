@@ -1,162 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030961Ab2HGWmW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:42:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60150 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030918Ab2HGWmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:42:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="194414676"
-Subject: Re: do_IRQ: 1.55 No irq handler for vector (irq -1)
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Robert Richter <robert.richter@amd.com>, mingo@kernel.org,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Date: Tue, 07 Aug 2012 15:39:07 -0700
-In-Reply-To: <20120807205717.GC11226@aftab.osrc.amd.com>
-References: <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
-	 <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
-	 <20120807153149.GI3732@erda.amd.com>
-	 <20120807154134.GA7456@aftab.osrc.amd.com>
-	 <1344356662.2041.48.camel@sbsiddha-desk.sc.intel.com>
-	 <87pq72a951.fsf@xmission.com> <20120807205717.GC11226@aftab.osrc.amd.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1344379147.27383.29.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1030974Ab2HGWma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:42:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030915Ab2HGWmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 18:42:25 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 108/109] futex: Fix bug in WARN_ON for NULL q.pi_state
+Date: Tue,  7 Aug 2012 15:36:07 -0700
+Message-Id: <20120807222052.552860361@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
+References: <20120807222043.089735600@linuxfoundation.org>
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-07 at 22:57 +0200, Borislav Petkov wrote:
-> The funny thing is, they deliver to all CPUs except the BSP.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Looking at your /proc/interrupts below, probably it is using some sort
-of round-robin.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> Or maybe the BSP gets that IRQ too but it actually has a handler
-> registered?
+------------------
 
-from /proc/interrupts you sent, bsp is also getting those.
+From: Darren Hart <dvhart@linux.intel.com>
 
-> 
-> Btw, I'm stabbing in the dark here - I have been purposefully and
-> willfully keeping away from all the APIC debacle until now. I guess that
-> carefree time is over :(.
-> 
-> > Certainly outside of x2apic mode I have seen that happen and that is why
-> > the reservation in lowest priroity delivery mode was for the same vector
-> > across all cpus.
-> > 
-> > This certainly looks like we have one irq going across multiple cpus
-> > and the software simply appears unprepared for the irq to show up where
-> > the irq is showing up.
-> 
-> The interesting thing is that this happens once per core early during
-> boot and not anymore. I dropped the printk_ratelimit() in do_IRQ and
-> still got those lines only once in dmesg.
+commit f27071cb7fe3e1d37a9dbe6c0dfc5395cd40fa43 upstream.
 
-What it says is the interrupts are arriving at the offline cpu's aswell.
-In the pre 3.6-rc1 the vector that is assigned to the legacy irq's are
-fixed (IRQ0_VECTOR, ...).
+The WARN_ON in futex_wait_requeue_pi() for a NULL q.pi_state was testing
+the address (&q.pi_state) of the pointer instead of the value
+(q.pi_state) of the pointer. Correct it accordingly.
 
-For the 3.6-rc1, we allow the vector to change when the IO-APIC starts
-to handle and probably that is a bad idea given that this platform is
-spraying interrupts (mostly timer?) on to the offline cpu's aswell. Pre
-3.6 we handle those interrupts when we come online. Now  in the new
-kernels, as the vector has changed when that irq is handled by the
-io-apic mode we get a spurious no irq handler for vector message.
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/1c85d97f6e5f79ec389a4ead3e367363c74bd09a.1342809673.git.dvhart@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> The other funny thing is, irq 55 is not in /proc/interrupts:
+---
+ kernel/futex.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-'55' is the vector number. You have to add some debug code in the kernel
-to identify what irq it used to belong to.
-
-> 
->            CPU0       CPU1       CPU2       CPU3
->   0:         44          0          0          0   IO-APIC-edge      timer
->   1:          2          1          2          4   IO-APIC-edge      i8042
->   8:          6          7          6          6   IO-APIC-edge      rtc0
->   9:         22         25         24         21   IO-APIC-fasteoi   acpi
->  12:         31         23         30         30   IO-APIC-edge      i8042
->  16:         82         82         81        117   IO-APIC-fasteoi   snd_hda_intel
->  17:          0          1          1          0   IO-APIC-fasteoi   ehci_hcd:usb1, ehci_hcd:usb2
->  18:          3          6          8          8   IO-APIC-fasteoi   ohci_hcd:usb3, ohci_hcd:usb4, ohci_hcd:usb5
->  40:          0          0          0          0   PCI-MSI-edge      PCIe PME
->  41:          0          0          0          0   PCI-MSI-edge      PCIe PME
->  42:          0          0          0          0   PCI-MSI-edge      PCIe PME
->  43:          0          0          0          0   PCI-MSI-edge      PCIe PME
->  44:        675        662        676        690   PCI-MSI-edge      ahci
->  45:         41         44         38         41   PCI-MSI-edge      snd_hda_intel
->  46:      13484      13499      13501      13536   PCI-MSI-edge      eth0
-> NMI:          0          0          0          0   Non-maskable interrupts
-> LOC:      20719      21487      18015      16445   Local timer interrupts
-> SPU:          0          0          0          0   Spurious interrupts
-> PMI:          0          0          0          0   Performance monitoring interrupts
-> IWI:          0          0          0          0   IRQ work interrupts
-> RTR:          0          0          0          0   APIC ICR read retries
-> RES:      13744      12640      13425      12334   Rescheduling interrupts
-> CAL:        571        790        539        801   Function call interrupts
-> TLB:          0          0          0          0   TLB shootdowns
-> TRM:          0          0          0          0   Thermal event interrupts
-> THR:          0          0          0          0   Threshold APIC interrupts
-> MCE:          0          0          0          0   Machine check exceptions
-> MCP:         66         66         66         66   Machine check polls
-> ERR:          0
-> MIS:          0
-> 
-> so what is that thing?
-
-And incase of Robert's SATA hang case, as we modify the vector when the
-irq is handled by the io-apic, it sets cfg->move_in_progress during
-setup_ioapic_irq() and later when we do setup_ioapic_dest() to update
-the SMP affinity, we fail to update the RTE's as the
-cfg->move_in_progress is still set (which gets cleared after the first
-interrupt arrives).
-
-And in case of Robert's system, all the interrupts go only to the last
-cpu (cpu-7). As we fail to update the RTE's with the smp affinity in the
-setup_ioapic_dest(), RTE is still pointing to cpu-0 (but the
-vector_to_irq mapping is set on all the cpu's) and most likely Robert's
-platform for some reason doesn't like it (though we don't see no irq
-handler messages on Robert's platform).
-
-Boris, Robert, can you check if the below patch makes both of your
-systems happy again (essentially not allowing the vector to change for
-legacy irq's, which also allows the RTE to be set correctly in the smp
-case etc)? Based on your results and some more thinking, I will send a
-detailed patch with changelog tomorrow.
-
- arch/x86/kernel/apic/io_apic.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index a6c64aa..4b98610 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1356,6 +1356,15 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
- 	if (!IO_APIC_IRQ(irq))
- 		return;
- 
-+	/*
-+	 * For legacy irqs, cfg->domain starts with cpu 0. Now that IO-APIC
-+	 * can handle this irq and the apic driver is finialized at this point,
-+	 * update the cfg->domain.
-+	 */
-+	if (irq < legacy_pic->nr_legacy_irqs &&
-+	    cpumask_equal(cfg->domain, cpumask_of(0)))
-+		apic->vector_allocation_domain(0, cfg->domain, cpu_online_mask);
-+
- 	if (assign_irq_vector(irq, cfg, apic->target_cpus()))
- 		return;
- 
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2343,7 +2343,7 @@ static int futex_wait_requeue_pi(u32 __u
+ 		 * signal.  futex_unlock_pi() will not destroy the lock_ptr nor
+ 		 * the pi_state.
+ 		 */
+-		WARN_ON(!&q.pi_state);
++		WARN_ON(!q.pi_state);
+ 		pi_mutex = &q.pi_state->pi_mutex;
+ 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+ 		debug_rt_mutex_free_waiter(&rt_waiter);
 
 
