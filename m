@@ -1,117 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab2HGWDI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:03:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2180 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab2HGWDG (ORCPT
+	id S1756356Ab2HGWEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:04:36 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47935 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753965Ab2HGWEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:03:06 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=4zfdXA-DTvgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=qASrxVBPkHghr9_Qt7cA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=kOtm0b_gU3yns-b3:21 a=0KYM3duNxGdMGCC7:21 a=JKcAZs163Lqj66Pk0vcA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120807220304.049053227@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 18:01:09 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Wang Tianhong <wangthbj@linux.vnet.ibm.com>
-Subject: [PATCH 3/3] tracing/trivial: Fix some typos in kernel/trace
-References: <20120807220106.459308722@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-trivial-Fix-some-typos-in-kernel-trace.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Tue, 7 Aug 2012 18:04:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <1344375573-16716-1-git-send-email-seth.forshee@canonical.com>
+References: <20120807210408.GK1917@8bytes.org>
+	<1344375573-16716-1-git-send-email-seth.forshee@canonical.com>
+Date: Tue, 7 Aug 2012 15:04:33 -0700
+X-Google-Sender-Auth: JQ_A1l8pKbEA8F4PU0TgigSUHiE
+Message-ID: <CAE9FiQVEsPisVUKeG0aejKzvS+Csp5Ca2KEQyy6ZJW-MR-VFUA@mail.gmail.com>
+Subject: Re: [PATCH v2] irq_remap: disable IRQ remapping if any IOAPIC lacks
+ an IOMMU
+From: Yinghai Lu <yinghai@kernel.org>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org,
+        Joerg Roedel <joro@8bytes.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Len Brown <lenb@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Aug 7, 2012 at 2:39 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
+> The ACPI tables in the Macbook Air 5,1 define a single IOAPIC with id 2,
+> but the only remapping unit described in the DMAR table matches id 0.
+> Interrupt remapping fails as a result, and the kernel panics with the
+> message "timer doesn't work through Interrupt-remapped IO-APIC."
+>
+> To fix this, check each IOAPIC for a corresponding IOMMU. If an IOMMU is
+> not found, do not allow IRQ remapping to be enabled.
+>
+> v2: Move check to parse_ioapics_under_ir(), raise log level to KERN_ERR,
+>     and add FW_BUG to the log message
+>
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  drivers/iommu/intel_irq_remapping.c |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
+>
+> diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+> index e0b18f3..84e5dc3 100644
+> --- a/drivers/iommu/intel_irq_remapping.c
+> +++ b/drivers/iommu/intel_irq_remapping.c
+> @@ -736,6 +736,7 @@ int __init parse_ioapics_under_ir(void)
+>  {
+>         struct dmar_drhd_unit *drhd;
+>         int ir_supported = 0;
+> +       int ioapic_idx;
+>
+>         for_each_drhd_unit(drhd) {
+>                 struct intel_iommu *iommu = drhd->iommu;
+> @@ -754,6 +755,16 @@ int __init parse_ioapics_under_ir(void)
+>                 return -1;
+>         }
+>
 
-From: Wang Tianhong <wangthbj@linux.vnet.ibm.com>
+need to add
 
-Fix some typos in kernel/trace.
+            if (ir_supported)
 
-Link: http://lkml.kernel.org/r/1343887320.2228.9.camel@louis-ThinkPad-T410
+> +       for (ioapic_idx = 0; ioapic_idx < nr_ioapics; ioapic_idx++) {
+> +               int ioapic_id = mpc_ioapic_id(ioapic_idx);
+> +               if (!map_ioapic_to_ir(ioapic_id)) {
+> +                       pr_err(FW_BUG "ioapic %d has no mapping iommu, "
+> +                              "interrupt remapping will be disabled\n",
+> +                              ioapic_id);
+> +                       return -1;
+> +               }
+> +       }
+> +
 
-Signed-off-by: Wang Tianhong <wangthbj@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ring_buffer.c |    4 ++--
- kernel/trace/trace.c       |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+otherwise may false warning.
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 49491fa..b32ed0e 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2816,7 +2816,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_enable);
-  * to the buffer after this will fail and return NULL.
-  *
-  * This is different than ring_buffer_record_disable() as
-- * it works like an on/off switch, where as the disable() verison
-+ * it works like an on/off switch, where as the disable() version
-  * must be paired with a enable().
-  */
- void ring_buffer_record_off(struct ring_buffer *buffer)
-@@ -2839,7 +2839,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_off);
-  * ring_buffer_record_off().
-  *
-  * This is different than ring_buffer_record_enable() as
-- * it works like an on/off switch, where as the enable() verison
-+ * it works like an on/off switch, where as the enable() version
-  * must be paired with a disable().
-  */
- void ring_buffer_record_on(struct ring_buffer *buffer)
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index a120f98..d1a8d07 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -426,15 +426,15 @@ __setup("trace_buf_size=3D", set_buf_size);
-=20
- static int __init set_tracing_thresh(char *str)
- {
--	unsigned long threshhold;
-+	unsigned long threshold;
- 	int ret;
-=20
- 	if (!str)
- 		return 0;
--	ret =3D strict_strtoul(str, 0, &threshhold);
-+	ret =3D strict_strtoul(str, 0, &threshold);
- 	if (ret < 0)
- 		return 0;
--	tracing_thresh =3D threshhold * 1000;
-+	tracing_thresh =3D threshold * 1000;
- 	return 1;
- }
- __setup("tracing_thresh=3D", set_tracing_thresh);
---=20
-1.7.10.4
+>         return ir_supported;
+>  }
 
+also could remove the ir_ioapic_num == nr_ioapics checking.
 
+Thanks
 
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQIZCYAAoJEIy3vGnGbaoA4JsQAM1MUFjmiFUSGZHfvZeDcaDp
-u2PfyrdofXlxrGZ/Wwh8O4aVf1xw7LVy13HrRWNKfPJsQOIpvqEr/5iaYX2RKfnA
-EBgetZb4FlbU80J7ZiUkZ1CxXrJ4gm2x1HaF1EmLLUNPaqV+cGmWPZKf20MhsmUs
-PY53yWf8UY1KdZ79KUysoCxcPcSGSIx2G9NzAJmmsuSBIZhUfeNt1iX6rDuKAAgZ
-ypg2gApSu7JLgGEGM7OMM2GGzQIPLhckQXMzoqGWUKtUR7mUzYoXrC/W3k1gIfCh
-Kp9eyVg2oJVgX2tmEyXOQwBybosf5n4zTsrj7BzMR9jd3wg6yy/F5OQztamgtrrE
-TpXpk4JqCythIAlDwp/nT2/9qsc9kECg9fWbJHFNekZl+vpmoQlS9OPxTWmeiaJB
-8d6AueLRQL6O4FQauGU7kW4tFPFfVbnLWoeothamE7jwag3yLmpItnN42JLkrjnC
-q+HVeTnegN2EKzxCFrCXCKHbH+JtXsmlw7mZQ9wbXhnr1K7Z3DTh7WqRrnDiWejX
-adOGhcHtoW3muX3wNHMtcHMSRwJNLXc8457dpHFOJS8Vf+PiO1P86yz9HGkxwdNK
-DFYpOSKlWYugXWlJuqajsfcOHVkMFuh0TJm4Z4o/cth1Up+2QAPno5eo+4l/+0HH
-LhfYTK2J0qW92yYbsXbB
-=jOg2
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Yinghai
