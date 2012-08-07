@@ -1,42 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932714Ab2HGXY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:24:29 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51482 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757275Ab2HGXYX (ORCPT
+	id S1757592Ab2HGXY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:24:56 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:37484 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030308Ab2HGWcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 19:24:23 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-45-5021a3a42bc8
-Date: Wed, 8 Aug 2012 08:25:52 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] mm: compaction: Update comment in
- try_to_compact_pages
-Message-ID: <20120807232552.GA4247@bbox>
-References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
- <1344342677-5845-2-git-send-email-mgorman@suse.de>
+	Tue, 7 Aug 2012 18:32:05 -0400
+Message-ID: <50219739.7080505@us.ibm.com>
+Date: Tue, 07 Aug 2012 15:31:21 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344342677-5845-2-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Paul Moore <paul@paul-moore.com>
+CC: lkml <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov
+Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
+References: <50215A7E.8000701@linaro.org> <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com> <50218F7E.1060004@linaro.org> <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com> <50219628.1080909@linaro.org>
+In-Reply-To: <50219628.1080909@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080722-5518-0000-0000-000006A97F43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 01:31:12PM +0100, Mel Gorman wrote:
-> The comment about order applied when the check was
-> order > PAGE_ALLOC_COSTLY_ORDER which has not been the case since
-> [c5a73c3d: thp: use compaction for all allocation orders]. Fixing
-> the comment while I'm in the general area.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+On 08/07/2012 03:26 PM, John Stultz wrote:
+> On 08/07/2012 03:01 PM, Paul Moore wrote:
+>> On Tue, Aug 7, 2012 at 5:58 PM, John Stultz <john.stultz@linaro.org> 
+>> wrote:
+>>> On 08/07/2012 02:50 PM, Paul Moore wrote:
+>>>> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org>
+>>>> wrote:
+>>>>> Hi,
+>>>>>       With my kvm environment using 3.6-rc1+, I'm seeing NULL pointer
+>>>>> dereferences in selinux_ip_postroute_compat(). It looks like the 
+>>>>> sksec
+>>>>> value
+>>>>> is null and we die in the following line:
+>>>>>
+>>>>>       if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
+>>>>>
+>>>>> This triggers every time I shutdown the machine, but has also 
+>>>>> triggered
+>>>>> randomly after a few hours.
+>>>>>
+>>>>> This is on an ubuntu 12.04 image, not using selinux.
+>>>> NOTE: Adding the SELinux list to the CC line
+>>> Thanks!
+>>>
+>>>> Hi,
+>>>>
+>>>> I'm trying to understand this and I was hoping you could you clarify a
+>>>> few things for me:
+>>>>
+>>>> * Is the panic in the Ubuntu 12.04 guest, or the host?  If the host,
+>>>> could you share what distribution you are using?
+>>> Sorry, its a 12.04 guest.  I think the host is Ubuntu 12.04 as well.
+>>>
+>>>
+>>>> * When you say you are not using SELinux, could you be more specific?
+>>>> It seems odd that you are not using SELinux but the panic is happening
+>>>> in a SELinux hook.
+>>> I just mean that, being Ubuntu,  the system (userland) isn't 
+>>> configured to
+>>> use selinux.  SELinux is just enabled in the kernel config.
+>> Thanks for the quick response, I'll setup an Ubuntu guest and see if I
+>> can reproduce this ... something is odd.  Anything non-standard about
+>> your guest install or anything else you think might be helpful?
+> Don't think so.  Just a standard 64bit ubuntu 12.04 install.
+>
+> Since I'm booting kernel/initrd from the commandline, the initrd *may* 
+> be older then 12.04, I can't quite remember when I copied that out of 
+> the image. I'll see if it still triggers if I copy the current initrd 
+> out.
 
--- 
-Kind regards,
-Minchan Kim
+Nope, that's not it, I just triggered the same thing w/ the Ubuntu 12.04 
+initrd on the image.
+
+thanks
+-john
+
