@@ -1,135 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab2HGU5X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:57:23 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:36779 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753390Ab2HGU5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 16:57:21 -0400
-Date: Tue, 7 Aug 2012 22:57:17 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Borislav Petkov <bp@amd64.org>,
-        Robert Richter <robert.richter@amd.com>, mingo@kernel.org,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: do_IRQ: 1.55 No irq handler for vector (irq -1)
-Message-ID: <20120807205717.GC11226@aftab.osrc.amd.com>
-References: <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
- <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
- <20120807153149.GI3732@erda.amd.com>
- <20120807154134.GA7456@aftab.osrc.amd.com>
- <1344356662.2041.48.camel@sbsiddha-desk.sc.intel.com>
- <87pq72a951.fsf@xmission.com>
+	id S1756500Ab2HGU5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:57:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56381 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab2HGU5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 16:57:44 -0400
+Date: Tue, 7 Aug 2012 13:57:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org
+Subject: Re: [PATCH v2] leds: triggers: send uevent when changing triggers
+Message-ID: <20120807205740.GB3889@kroah.com>
+References: <1344369495-21943-1-git-send-email-ccross@android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87pq72a951.fsf@xmission.com>
+In-Reply-To: <1344369495-21943-1-git-send-email-ccross@android.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 10:45:30AM -0700, Eric W. Biederman wrote:
-> >> [    0.170256] AMD PMU driver.
-> >> [    0.170451] ... version:                0
-> >> [    0.170683] ... bit width:              48
-> >> [    0.170906] ... generic registers:      6
-> >> [    0.171125] ... value mask:             0000ffffffffffff
-> >> [    0.171399] ... max period:             00007fffffffffff
-> >> [    0.171673] ... fixed-purpose events:   0
-> >> [    0.171902] ... event mask:             000000000000003f
-> >> [    0.172687] MCE: In-kernel MCE decoding enabled.
-> >> [    0.184214] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support
-> >> [    0.186687] do_IRQ: 1.55 No irq handler for vector (irq -1)				<---
-> >> [    0.198126] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support
-> >> [    0.200579] do_IRQ: 2.55 No irq handler for vector (irq -1)				<---
-> >> [    0.173040] smpboot: Booting Node   0, Processors  #1 #2 #3 OK
-> >> [    0.212083] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support
-> >> [    0.214538] do_IRQ: 3.55 No irq handler for vector (irq -1)				<---
-> >> [    0.214864] Brought up 4 CPUs
-> >> 
-> >> of it now having IRQ handler for vector 55.
-> >> 
-> >> And guess what: reverting those three above make the message go away
-> >> too.
-> >> 
-> >
-> > Boris, Robert, Can you please send me the complete dmesg
-> > and /proc/interrupts on a successful boot?
+On Tue, Aug 07, 2012 at 12:58:15PM -0700, Colin Cross wrote:
+> Some triggers create sysfs files when they are enabled.  Send a uevent
+> "change" notification whenever the trigger is changed to allow userspace
+> processes such as udev to modify permissions on the new files.
 > 
-> Hmm.  I wonder if this is one of those cases where the apics don't honor
-> the masks in lowest priority delivery mode and simply deliver to some
-> cpu in the same die.
-
-The funny thing is, they deliver to all CPUs except the BSP.
-
-Or maybe the BSP gets that IRQ too but it actually has a handler
-registered?
-
-Btw, I'm stabbing in the dark here - I have been purposefully and
-willfully keeping away from all the APIC debacle until now. I guess that
-carefree time is over :(.
-
-> Certainly outside of x2apic mode I have seen that happen and that is why
-> the reservation in lowest priroity delivery mode was for the same vector
-> across all cpus.
+> A change notification will also be sent during registration of led class
+> devices or led triggers if the default trigger of an led class device
+> is found.
 > 
-> This certainly looks like we have one irq going across multiple cpus
-> and the software simply appears unprepared for the irq to show up where
-> the irq is showing up.
+> Signed-off-by: Colin Cross <ccross@android.com>
 
-The interesting thing is that this happens once per core early during
-boot and not anymore. I dropped the printk_ratelimit() in do_IRQ and
-still got those lines only once in dmesg.
-
-The other funny thing is, irq 55 is not in /proc/interrupts:
-
-           CPU0       CPU1       CPU2       CPU3
-  0:         44          0          0          0   IO-APIC-edge      timer
-  1:          2          1          2          4   IO-APIC-edge      i8042
-  8:          6          7          6          6   IO-APIC-edge      rtc0
-  9:         22         25         24         21   IO-APIC-fasteoi   acpi
- 12:         31         23         30         30   IO-APIC-edge      i8042
- 16:         82         82         81        117   IO-APIC-fasteoi   snd_hda_intel
- 17:          0          1          1          0   IO-APIC-fasteoi   ehci_hcd:usb1, ehci_hcd:usb2
- 18:          3          6          8          8   IO-APIC-fasteoi   ohci_hcd:usb3, ohci_hcd:usb4, ohci_hcd:usb5
- 40:          0          0          0          0   PCI-MSI-edge      PCIe PME
- 41:          0          0          0          0   PCI-MSI-edge      PCIe PME
- 42:          0          0          0          0   PCI-MSI-edge      PCIe PME
- 43:          0          0          0          0   PCI-MSI-edge      PCIe PME
- 44:        675        662        676        690   PCI-MSI-edge      ahci
- 45:         41         44         38         41   PCI-MSI-edge      snd_hda_intel
- 46:      13484      13499      13501      13536   PCI-MSI-edge      eth0
-NMI:          0          0          0          0   Non-maskable interrupts
-LOC:      20719      21487      18015      16445   Local timer interrupts
-SPU:          0          0          0          0   Spurious interrupts
-PMI:          0          0          0          0   Performance monitoring interrupts
-IWI:          0          0          0          0   IRQ work interrupts
-RTR:          0          0          0          0   APIC ICR read retries
-RES:      13744      12640      13425      12334   Rescheduling interrupts
-CAL:        571        790        539        801   Function call interrupts
-TLB:          0          0          0          0   TLB shootdowns
-TRM:          0          0          0          0   Thermal event interrupts
-THR:          0          0          0          0   Threshold APIC interrupts
-MCE:          0          0          0          0   Machine check exceptions
-MCP:         66         66         66         66   Machine check polls
-ERR:          0
-MIS:          0
-
-so what is that thing?
-
-I'll read up on lowest prio delivery mode tomorrow.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
