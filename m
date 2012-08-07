@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964931Ab2HGDje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:39:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59930 "EHLO
+	id S964918Ab2HGDjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:39:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59929 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964866Ab2HGDjD (ORCPT
+	by vger.kernel.org with ESMTP id S964864Ab2HGDjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:39:03 -0400
-Message-Id: <20120807032759.091883912@decadent.org.uk>
+	Mon, 6 Aug 2012 23:39:04 -0400
+Message-Id: <20120807032759.521009923@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:16 +0100
+Date: Tue, 07 Aug 2012 04:28:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [ 21/70] rtc: wm831x: Feed the write counter into device_add_randomness()
+        alan@lxorguk.ukuu.org.uk, Darren Hart <dvhart@linux.intel.com>,
+        Dave Jones <davej@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 24/70] futex: Test for pi_mutex on fault in futex_wait_requeue_pi()
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,73 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit 9dccf55f4cb011a7552a8a2749a580662f5ed8ed upstream.
+commit b6070a8d9853eda010a549fa9a09eb8d7269b929 upstream.
 
-The tamper evident features of the RTC include the "write counter" which
-is a pseudo-random number regenerated whenever we set the RTC. Since this
-value is unpredictable it should provide some useful seeding to the random
-number generator.
+If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
+for pi_mutex != NULL before testing the owner against current
+and possibly unlocking it.
 
-Only do this on boot since the goal is to seed the pool rather than add
-useful entropy.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Link: http://lkml.kernel.org/r/dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/rtc/rtc-wm831x.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ kernel/futex.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
-index 59c6245..ea5c6f8 100644
---- a/drivers/rtc/rtc-wm831x.c
-+++ b/drivers/rtc/rtc-wm831x.c
-@@ -24,7 +24,7 @@
- #include <linux/mfd/wm831x/core.h>
- #include <linux/delay.h>
- #include <linux/platform_device.h>
--
-+#include <linux/random.h>
- 
- /*
-  * R16416 (0x4020) - RTC Write Counter
-@@ -96,6 +96,26 @@ struct wm831x_rtc {
- 	unsigned int alarm_enabled:1;
- };
- 
-+static void wm831x_rtc_add_randomness(struct wm831x *wm831x)
-+{
-+	int ret;
-+	u16 reg;
-+
-+	/*
-+	 * The write counter contains a pseudo-random number which is
-+	 * regenerated every time we set the RTC so it should be a
-+	 * useful per-system source of entropy.
-+	 */
-+	ret = wm831x_reg_read(wm831x, WM831X_RTC_WRITE_COUNTER);
-+	if (ret >= 0) {
-+		reg = ret;
-+		add_device_randomness(&reg, sizeof(reg));
-+	} else {
-+		dev_warn(wm831x->dev, "Failed to read RTC write counter: %d\n",
-+			 ret);
-+	}
-+}
-+
- /*
-  * Read current time and date in RTC
-  */
-@@ -431,6 +451,8 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
- 			alm_irq, ret);
- 	}
- 
-+	wm831x_rtc_add_randomness(wm831x);
-+
- 	return 0;
- 
- err:
+diff --git a/kernel/futex.c b/kernel/futex.c
+index e2b0fb9..05018bf 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2370,7 +2370,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	 * fault, unlock the rt_mutex and return the fault to userspace.
+ 	 */
+ 	if (ret == -EFAULT) {
+-		if (rt_mutex_owner(pi_mutex) == current)
++		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
+ 			rt_mutex_unlock(pi_mutex);
+ 	} else if (ret == -EINTR) {
+ 		/*
 
 
