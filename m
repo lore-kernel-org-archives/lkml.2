@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab2HGWQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:16:11 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47120 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751761Ab2HGWQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:16:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [RESEND PATCH] [CPUFREQ] conservative: Initialise the cpu field during governor start
-Date: Wed, 8 Aug 2012 00:22:03 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: cpufreq@vger.kernel.org, amit.kachhap@linaro.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-References: <201207232055.26506.rjw@sisk.pl> <1343121972-9130-1-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1343121972-9130-1-git-send-email-amit.daniel@samsung.com>
+	id S932117Ab2HGWQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:16:21 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41452 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756481Ab2HGWQS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 18:16:18 -0400
+Date: Tue, 7 Aug 2012 22:17:32 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Paul Moore <paul@paul-moore.com>
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov
+Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
+Message-ID: <20120807221731.GA25441@mail.hallyn.com>
+References: <50215A7E.8000701@linaro.org>
+ <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com>
+ <50218F7E.1060004@linaro.org>
+ <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208080022.03731.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 24, 2012, Amit Daniel Kachhap wrote:
-> This change initialises the cpu id field of cs_cpu_dbs_info structure in
-> conservative governor and keep this consistent with other governors.
-> Similar initialisation is present in ondemand governor.
+Quoting Paul Moore (paul@paul-moore.com):
+> On Tue, Aug 7, 2012 at 5:58 PM, John Stultz <john.stultz@linaro.org> wrote:
+> > On 08/07/2012 02:50 PM, Paul Moore wrote:
+> >>
+> >> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org>
+> >> wrote:
+> >>>
+> >>> Hi,
+> >>>      With my kvm environment using 3.6-rc1+, I'm seeing NULL pointer
+> >>> dereferences in selinux_ip_postroute_compat(). It looks like the sksec
+> >>> value
+> >>> is null and we die in the following line:
+> >>>
+> >>>      if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
+> >>>
+> >>> This triggers every time I shutdown the machine, but has also triggered
+> >>> randomly after a few hours.
+> >>>
+> >>> This is on an ubuntu 12.04 image, not using selinux.
+> >>
+> >> NOTE: Adding the SELinux list to the CC line
+> >
+> > Thanks!
+> >
+> >> Hi,
+> >>
+> >> I'm trying to understand this and I was hoping you could you clarify a
+> >> few things for me:
+> >>
+> >> * Is the panic in the Ubuntu 12.04 guest, or the host?  If the host,
+> >> could you share what distribution you are using?
+> >
+> > Sorry, its a 12.04 guest.  I think the host is Ubuntu 12.04 as well.
+> >
+> >
+> >> * When you say you are not using SELinux, could you be more specific?
+> >> It seems odd that you are not using SELinux but the panic is happening
+> >> in a SELinux hook.
+> >
+> > I just mean that, being Ubuntu,  the system (userland) isn't configured to
+> > use selinux.  SELinux is just enabled in the kernel config.
 > 
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Thanks for the quick response, I'll setup an Ubuntu guest and see if I
+> can reproduce this ... something is odd.  Anything non-standard about
+> your guest install or anything else you think might be helpful?
 
-Applied to the linux-next branch of the linux-pm.git tree as v3.7 material.
+The problem seems to be that selinux_nf_ip_init() was called, which
+registers the selinux_ipv4_ops (and ipv6).  Those should not get registered
+if selinux ends up not being loaded (as in, if apparmor is loaded first),
+since as you've found here the selinux lsm hooks won't be called to set
+call selinux_sk_alloc_security().
 
-Thanks,
-Rafael
+I assume what's happening is that CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE was
+set to 1, but selinux ended up being set to disabled after the
+__initcall(selinux_nf_ip_init) ran?  Weird.
 
-
-> ---
->  drivers/cpufreq/cpufreq_conservative.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-> index 235a340..a1563d7 100644
-> --- a/drivers/cpufreq/cpufreq_conservative.c
-> +++ b/drivers/cpufreq/cpufreq_conservative.c
-> @@ -504,6 +504,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  				j_dbs_info->prev_cpu_nice =
->  						kcpustat_cpu(j).cpustat[CPUTIME_NICE];
->  		}
-> +		this_dbs_info->cpu = cpu;
->  		this_dbs_info->down_skip = 0;
->  		this_dbs_info->requested_freq = policy->cur;
->  
-> 
-
+-serge
