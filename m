@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab2HGGRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 02:17:49 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:24722
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751659Ab2HGGRr (ORCPT
+	id S1752894Ab2HGGaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 02:30:15 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:37258 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751523Ab2HGGaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 02:17:47 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VPS-9(zzbb2dI98dI9371Idf9M1432Izz1202hzzz2dh668h839hd25he5bhf0ah107ah)
-X-WSS-ID: 0M8DG5G-01-2ZL-02
-X-M-MSG: 
-Message-ID: <5020B323.4010102@amd.com>
-Date: Tue, 7 Aug 2012 14:18:11 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Jeff Garzik <jgarzik@pobox.com>
-CC: Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        Oliver Neukum <oneukum@suse.de>, Jeff Wu <jeff.wu@amd.com>,
-        Lin Ming <minggr@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>
-Subject: Re: [PATCH v4 4/7] scsi: sr: block events when runtime suspended
-References: <1343379650-2867-1-git-send-email-aaron.lu@amd.com> <1343379650-2867-5-git-send-email-aaron.lu@amd.com> <501B9EE7.1080000@amd.com> <501BE5B2.5040901@pobox.com>
-In-Reply-To: <501BE5B2.5040901@pobox.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 7 Aug 2012 02:30:14 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/nj2xBY/3nKzLhb7GQEz5QnnW12lF19//8WYBUtp
+	Rtv5v6xfirw6zw
+Message-ID: <1344321010.6968.10.camel@marge.simpson.net>
+Subject: Re: [parch] sched: task_times() explosion avoidance for tasks with
+ > 2^32 acrued ticks
+From: Mike Galbraith <efault@gmx.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Tue, 07 Aug 2012 08:30:10 +0200
+In-Reply-To: <1344261539.6853.1.camel@marge.simpson.net>
+References: <1344261539.6853.1.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Aug 2012 06:17:13.0694 (UTC) FILETIME=[492E5FE0:01CD7464]
-X-OriginatorOrg: amd.com
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 10:52 PM, Jeff Garzik wrote:
-> On 08/03/2012 05:50 AM, Aaron Lu wrote:
->> Hello,
->>
->> Not sure if I should use EXPORT_SYMBOL or EXPORT_SYMBOL_GPL, any
->> comments?
->
-> Typically you follow the pattern of similar exports in the file (or in
-> the API, if no others are in the file).
+Wrong xx.
 
-Thanks Jeff for your suggestion, and I'll keep using EXPORT_SYMBOL.
-If anyone thinks this is wrong, please kindly let me know, thanks.
+sched: task_times() explosion avoidance for tasks with > 2^32 accrued ticks
 
--Aaron
+If stime + utime > 2^32, and lower 32 are 0 when user calls getrusage(),
+you've got a dead box.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+
+ kernel/sched/core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 82ad284..b0b0d29 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3155,7 +3155,7 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 		u64 temp = (__force u64) rtime;
+ 
+ 		temp *= (__force u64) utime;
+-		do_div(temp, (__force u32) total);
++		temp = div64_u64(temp, (__force u64) total);
+ 		utime = (__force cputime_t) temp;
+ 	} else
+ 		utime = rtime;
+@@ -3188,7 +3188,7 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 		u64 temp = (__force u64) rtime;
+ 
+ 		temp *= (__force u64) cputime.utime;
+-		do_div(temp, (__force u32) total);
++		temp = div64_u64(temp, (__force u64) total);
+ 		utime = (__force cputime_t) temp;
+ 	} else
+ 		utime = rtime;
+
 
