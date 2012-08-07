@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab2HGXRk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:17:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	id S1757497Ab2HGXSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:18:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932832Ab2HGWhH (ORCPT
+	with ESMTP id S1757373Ab2HGWg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:37:07 -0400
+	Tue, 7 Aug 2012 18:36:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [ 018/109] ASoC: dapm: Fix _PRE and _POST events for DAPM performance improvements
-Date: Tue,  7 Aug 2012 15:34:37 -0700
-Message-Id: <20120807222044.697355149@linuxfoundation.org>
+        Albert Pool <albertpool@solcon.nl>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 015/109] rt2800usb: 2001:3c17 is an RT3370 device
+Date: Tue,  7 Aug 2012 15:34:34 -0700
+Message-Id: <20120807222044.433205230@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,43 +31,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Albert Pool <albertpool@solcon.nl>
 
-commit 0ff97ebf0804d2e519d578fcb4db03f104d2ca8c upstream.
+commit 8fd9d059af12786341dec5a688e607bcdb372238 upstream.
 
-Ever since the DAPM performance improvements we've been marking all widgets
-as not dirty after each DAPM run. Since _PRE and _POST events aren't part
-of the DAPM graph this has rendered them non-functional, they will never be
-marked dirty again and thus will never be run again.
+D-Link DWA-123 rev A1
 
-Fix this by skipping them when marking widgets as not dirty.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
+Signed-off-by: Albert Pool<albertpool@solcon.nl>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-dapm.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -1442,7 +1442,15 @@ static int dapm_power_widgets(struct snd
- 	}
- 
- 	list_for_each_entry(w, &card->widgets, list) {
--		list_del_init(&w->dirty);
-+		switch (w->id) {
-+		case snd_soc_dapm_pre:
-+		case snd_soc_dapm_post:
-+			/* These widgets always need to be powered */
-+			break;
-+		default:
-+			list_del_init(&w->dirty);
-+			break;
-+		}
- 
- 		if (w->power) {
- 			d = w->dapm;
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -1137,6 +1137,8 @@ static struct usb_device_id rt2800usb_de
+ #ifdef CONFIG_RT2800USB_RT33XX
+ 	/* Belkin */
+ 	{ USB_DEVICE(0x050d, 0x945b) },
++	/* D-Link */
++	{ USB_DEVICE(0x2001, 0x3c17) },
+ 	/* Panasonic */
+ 	{ USB_DEVICE(0x083a, 0xb511) },
+ 	/* Philips */
+@@ -1237,7 +1239,6 @@ static struct usb_device_id rt2800usb_de
+ 	/* D-Link */
+ 	{ USB_DEVICE(0x07d1, 0x3c0b) },
+ 	{ USB_DEVICE(0x07d1, 0x3c17) },
+-	{ USB_DEVICE(0x2001, 0x3c17) },
+ 	/* Encore */
+ 	{ USB_DEVICE(0x203d, 0x14a1) },
+ 	/* Gemtek */
 
 
