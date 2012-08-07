@@ -1,84 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab2HGL5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 07:57:25 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59636 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754310Ab2HGL5Y (ORCPT
+	id S1752983Ab2HGMBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:01:36 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:44118 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab2HGMBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 07:57:24 -0400
-Date: Tue, 7 Aug 2012 12:56:47 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Nicolas Pitre <nico@fluxnic.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: RFC: mutex: hung tasks on SMP platforms with asm-generic/mutex-xchg.h
-Message-ID: <20120807115647.GA12828@mudshark.cambridge.arm.com>
+	Tue, 7 Aug 2012 08:01:34 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Hideki EIRAKU <hdk@igel.co.jp>
+Cc: Russell King <linux@arm.linux.org.uk>, Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        alsa-devel@alsa-project.org, Katsuya MATSUBARA <matsu@igel.co.jp>
+Subject: Re: [PATCH v3 4/4] fbdev: sh_mobile_lcdc: use dma_mmap_coherent if available
+Date: Tue, 07 Aug 2012 14:01:43 +0200
+Message-ID: <1854100.yBXTHaXkcr@avalon>
+User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <1344246924-32620-5-git-send-email-hdk@igel.co.jp>
+References: <1344246924-32620-1-git-send-email-hdk@igel.co.jp> <1344246924-32620-5-git-send-email-hdk@igel.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Eiraku-san,
 
-ARM recently moved to asm-generic/mutex-xchg.h for its mutex implementation
-after our previous implementation was found to be missing some crucial
-memory barriers. However, I'm seeing some problems running hackbench on
-SMP platforms due to the way in which the MUTEX_SPIN_ON_OWNER code operates.
+On Monday 06 August 2012 18:55:24 Hideki EIRAKU wrote:
+> fb_mmap() implemented in fbmem.c uses smem_start as the physical
+> address of the frame buffer.  In the sh_mobile_lcdc driver, the
+> smem_start is a dma_addr_t that is not a physical address when IOMMU is
+> enabled.  dma_mmap_coherent() maps the address correctly.  It is
+> available on ARM platforms.
+> 
+> Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
 
-The symptoms are that a bunch of hackbench tasks are left waiting on an
-unlocked mutex and therefore never get woken up to claim it. I think this
-boils down to the following sequence:
+Acked-by: Hideki EIRAKU <hdk@igel.co.jp>
 
+As this patch doesn't depend on any other patch in your series 
+(ARCH_HAS_DMA_MMAP_COHERENT will not be defined without 1/4, so this patch 
+will be a no-op until then), I've applied it to my tree and will push it to 
+avoid merge conflicts, unless you would prefer to push it yourself.
 
-        Task A        Task B        Task C        Lock value
-0                                                     1
-1       lock()                                        0
-2                     lock()                          0
-3                     spin(A)                         0
-4       unlock()                                      1
-5                                   lock()            0
-6                     cmpxchg(1,0)                    0
-7                     contended()                    -1
-8       lock()                                        0
-9       spin(C)                                       0
-10                                  unlock()          1
-11      cmpxchg(1,0)                                  0
-12      unlock()                                      1
+> ---
+>  drivers/video/sh_mobile_lcdcfb.c |   28 ++++++++++++++++++++++++++++
+>  1 files changed, 28 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/video/sh_mobile_lcdcfb.c
+> b/drivers/video/sh_mobile_lcdcfb.c index 8cb653b..c8cba7a 100644
+> --- a/drivers/video/sh_mobile_lcdcfb.c
+> +++ b/drivers/video/sh_mobile_lcdcfb.c
+> @@ -1614,6 +1614,17 @@ static int sh_mobile_lcdc_overlay_blank(int blank,
+> struct fb_info *info) return 1;
+>  }
+> 
+> +#ifdef ARCH_HAS_DMA_MMAP_COHERENT
+> +static int
+> +sh_mobile_lcdc_overlay_mmap(struct fb_info *info, struct vm_area_struct
+> *vma) +{
+> +	struct sh_mobile_lcdc_overlay *ovl = info->par;
+> +
+> +	return dma_mmap_coherent(ovl->channel->lcdc->dev, vma, ovl->fb_mem,
+> +				 ovl->dma_handle, ovl->fb_size);
+> +}
+> +#endif
+> +
+>  static struct fb_ops sh_mobile_lcdc_overlay_ops = {
+>  	.owner          = THIS_MODULE,
+>  	.fb_read        = fb_sys_read,
+> @@ -1626,6 +1637,9 @@ static struct fb_ops sh_mobile_lcdc_overlay_ops = {
+>  	.fb_ioctl       = sh_mobile_lcdc_overlay_ioctl,
+>  	.fb_check_var	= sh_mobile_lcdc_overlay_check_var,
+>  	.fb_set_par	= sh_mobile_lcdc_overlay_set_par,
+> +#ifdef ARCH_HAS_DMA_MMAP_COHERENT
+> +	.fb_mmap	= sh_mobile_lcdc_overlay_mmap,
+> +#endif
+>  };
+> 
+>  static void
+> @@ -2093,6 +2107,17 @@ static int sh_mobile_lcdc_blank(int blank, struct
+> fb_info *info) return 0;
+>  }
+> 
+> +#ifdef ARCH_HAS_DMA_MMAP_COHERENT
+> +static int
+> +sh_mobile_lcdc_mmap(struct fb_info *info, struct vm_area_struct *vma)
+> +{
+> +	struct sh_mobile_lcdc_chan *ch = info->par;
+> +
+> +	return dma_mmap_coherent(ch->lcdc->dev, vma, ch->fb_mem,
+> +				 ch->dma_handle, ch->fb_size);
+> +}
+> +#endif
+> +
+>  static struct fb_ops sh_mobile_lcdc_ops = {
+>  	.owner          = THIS_MODULE,
+>  	.fb_setcolreg	= sh_mobile_lcdc_setcolreg,
+> @@ -2108,6 +2133,9 @@ static struct fb_ops sh_mobile_lcdc_ops = {
+>  	.fb_release	= sh_mobile_lcdc_release,
+>  	.fb_check_var	= sh_mobile_lcdc_check_var,
+>  	.fb_set_par	= sh_mobile_lcdc_set_par,
+> +#ifdef ARCH_HAS_DMA_MMAP_COHERENT
+> +	.fb_mmap	= sh_mobile_lcdc_mmap,
+> +#endif
+>  };
+> 
+>  static void
 
+-- 
+Regards,
 
-At this point, the lock is unlocked, but Task B is in an uninterruptible
-sleep with nobody to wake it up.
+Laurent Pinchart
 
-The following patch fixes the problem by ensuring we put the lock into
-the contended state if we acquire it from the spin loop on the slowpath
-but I'd like to be sure that this won't cause problems with other mutex
-implementations:
-
-
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index a307cc9..27b7887 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -170,7 +170,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-                if (owner && !mutex_spin_on_owner(lock, owner))
-                        break;
- 
--               if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
-+               if (atomic_cmpxchg(&lock->count, 1, -1) == 1) {
-                        lock_acquired(&lock->dep_map, ip);
-                        mutex_set_owner(lock);
-                        preempt_enable();
-
-
-All comments welcome.
-
-Cheers,
-
-Will
