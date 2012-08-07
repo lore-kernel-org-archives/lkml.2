@@ -1,48 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188Ab2HGGkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 02:40:01 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38042 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab2HGGj7 (ORCPT
+	id S1751490Ab2HGGzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 02:55:05 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:36808 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750830Ab2HGGy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 02:39:59 -0400
-Date: Tue, 7 Aug 2012 07:39:55 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Kamal Mostafa <kamal@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Dann Frazier <dann.frazier@canonical.com>,
-        Massimo Morana <massimo.morana@canonical.com>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: mq: INFO: possible circular locking dependency detected
-Message-ID: <20120807063955.GX23464@ZenIV.linux.org.uk>
-References: <501D0093.2090108@gmail.com>
- <20120805170856.GC8954@localhost>
- <20120807050412.GA23960@localhost>
+	Tue, 7 Aug 2012 02:54:57 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <gregkh@linuxfoundation.org>
+Cc: <sjur.brandeland@stericsson.com>, <arun.murthy@stericsson.com>
+Subject: [PATCHv2 2/4] modem_shm: Register u8500 client for MAF
+Date: Tue, 7 Aug 2012 12:24:29 +0530
+Message-ID: <1344322471-3640-3-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.4.3
+In-Reply-To: <1344322471-3640-1-git-send-email-arun.murthy@stericsson.com>
+References: <1344322471-3640-1-git-send-email-arun.murthy@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120807050412.GA23960@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 01:04:12PM +0800, Fengguang Wu wrote:
+Register with Modem Access Framework(MAF) for u8500 platform. This will provide
+interface to enable and disable modem access and also provide the status.
 
-> FYI, here is a different back trace on that commit.
-> 
-> [    3.255043] ======================================================
-> [    3.255052] [ INFO: possible circular locking dependency detected ]
-> [    3.255052] 3.5.0-rc6-bisect-00355-geb04c28 #4 Not tainted         
-> [    3.255052] -------------------------------------------------------
-> [    3.255052] init/1 is trying to acquire lock:
-> [    3.255052]  (&mm->mmap_sem){++++++}, at: [<ffffffff81180d00>] might_fault+0x70/0xe0
-> [    3.255052]
-> [    3.255052] but task is already holding lock:
-> [    3.255052]  (&sb->s_type->i_mutex_key){+.+.+.}, at: [<ffffffff811d191e>] vfs_readdir+0x6e/0x130
+Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/modem_shm/Kconfig       |   11 +++++
+ drivers/modem_shm/Makefile      |    1 +
+ drivers/modem_shm/modem_u8500.c |   96 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 108 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/modem_shm/modem_u8500.c
 
-Do you see any similar with the _next_ commit?
+diff --git a/drivers/modem_shm/Kconfig b/drivers/modem_shm/Kconfig
+index 0e5fc7a..f2b36a9 100644
+--- a/drivers/modem_shm/Kconfig
++++ b/drivers/modem_shm/Kconfig
+@@ -7,3 +7,14 @@ config MODEM_SHM
+ 	 and allows transparent access to modem to the client drivers.
+ 
+ 	 If unsure, say N.
++
++config MODEM_U8500
++	bool "Modem Access driver for STE U8500 platform"
++	depends on MODEM_SHM
++	default n
++	help
++	 Add support for Modem Access driver on STE U8500 platform which
++	 uses Shared Memroy as IPC mechanism between Modem processor and
++	 Application processor.
++
++	 If unsure, say N.
+diff --git a/drivers/modem_shm/Makefile b/drivers/modem_shm/Makefile
+index b77bcc0..a9aac0f 100644
+--- a/drivers/modem_shm/Makefile
++++ b/drivers/modem_shm/Makefile
+@@ -1 +1,2 @@
+ obj-$(CONFIG_MODEM_SHM)		:= modem_access.o
++obj-$(CONFIG_MODEM_U8500)	+= modem_u8500.o
+diff --git a/drivers/modem_shm/modem_u8500.c b/drivers/modem_shm/modem_u8500.c
+new file mode 100644
+index 0000000..86966fc
+--- /dev/null
++++ b/drivers/modem_shm/modem_u8500.c
+@@ -0,0 +1,96 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2011
++ *
++ * License Terms: GNU General Public License v2
++ * Author: Kumar Sanghvi
++ *	Arun Murthy <arun.murthy@stericsson.com>
++ *
++ * Platform driver implementing access mechanisms to modem
++ * on U8500 which uses Shared Memroy as IPC between Application
++ * Processor and Modem processor.
++ */
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/modem_shm/modem.h>
++#include <linux/mfd/dbx500-prcmu.h>
++
++static int u8500_modem_request(struct modem_dev *mdev)
++{
++	return prcmu_ac_wake_req();
++}
++
++static void u8500_modem_release(struct modem_dev *mdev)
++{
++	prcmu_ac_sleep_req();
++}
++
++static int u8500_modem_is_requested(struct modem_dev *mdev)
++{
++	return prcmu_is_ac_wake_requested();
++}
++
++static struct modem_ops u8500_modem_ops = {
++	.request = u8500_modem_request,
++	.release = u8500_modem_release,
++	.is_requested = u8500_modem_is_requested,
++};
++
++static struct modem_desc u8500_modem_desc = {
++	.name   = "u8500-shrm-modem",
++	.id     = 0,
++	.ops    = &u8500_modem_ops,
++	.owner  = THIS_MODULE,
++};
++
++
++static int __devinit u8500_modem_probe(struct platform_device *pdev)
++{
++	struct modem_dev *mdev;
++	int err;
++
++	mdev = modem_register(&u8500_modem_desc, &pdev->dev,
++			NULL);
++	if (IS_ERR(mdev)) {
++		err = PTR_ERR(mdev);
++		pr_err("failed to register %s: err %i\n",
++				u8500_modem_desc.name, err);
++	}
++
++	return 0;
++}
++
++static int __devexit u8500_modem_remove(struct platform_device *pdev)
++{
++
++	return 0;
++}
++
++static struct platform_driver u8500_modem_driver = {
++	.driver = {
++		.name = "u8500-modem",
++		.owner = THIS_MODULE,
++	},
++	.probe = u8500_modem_probe,
++	.remove = __devexit_p(u8500_modem_remove),
++};
++
++static int __init u8500_modem_init(void)
++{
++	int ret;
++
++	ret = platform_driver_register(&u8500_modem_driver);
++	if (ret < 0) {
++		printk(KERN_ERR "u8500_modem: platform driver reg failed\n");
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static void __exit u8500_modem_exit(void)
++{
++	platform_driver_unregister(&u8500_modem_driver);
++}
++
++arch_initcall(u8500_modem_init);
+-- 
+1.7.4.3
+
