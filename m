@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab2HGPrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:47:25 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:48045
+	id S1755353Ab2HGPrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:47:23 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:51427
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754661Ab2HGPoN (ORCPT
+	by vger.kernel.org with ESMTP id S1754664Ab2HGPoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 11:44:13 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M8E6DI-01-1YW-02
+X-WSS-ID: 0M8E6DH-01-1YR-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
 CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 13/19] x86, io-apic: Move CONFIG_IRQ_REMAP code out of x86 core
-Date: Tue, 7 Aug 2012 17:43:43 +0200
-Message-ID: <1344354229-8526-14-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 10/19] x86, io_apic: Introduce function pointer for setup_timer_IRQ0_pin
+Date: Tue, 7 Aug 2012 17:43:40 +0200
+Message-ID: <1344354229-8526-11-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
 References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
@@ -29,228 +29,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move all the code to either to the header file
-asm/irq_remapping.h or to drivers/iommu/.
+This function must be a NOP with interrupt remapping
+enabled. So use a funtion pointer for it which points to an
+empty function when irq_remapping_enabled == true.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/hw_irq.h        |    1 +
- arch/x86/include/asm/io_apic.h       |    2 ++
- arch/x86/include/asm/irq_remapping.h |   17 +++++++++++++
- arch/x86/kernel/apic/io_apic.c       |   44 +---------------------------------
- drivers/iommu/intel_irq_remapping.c  |    4 ++++
- drivers/iommu/irq_remapping.c        |   25 +++++++++++++++++++
- 6 files changed, 50 insertions(+), 43 deletions(-)
+ arch/x86/include/asm/io_apic.h  |    5 +++++
+ arch/x86/include/asm/x86_init.h |    3 +++
+ arch/x86/kernel/apic/io_apic.c  |   11 ++++-------
+ arch/x86/kernel/x86_init.c      |    1 +
+ drivers/iommu/irq_remapping.c   |    7 +++++++
+ 5 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 465c855..58c31f1 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -127,6 +127,7 @@ struct irq_cfg {
- 	u8			vector;
- 	u8			move_in_progress : 1;
- #ifdef CONFIG_IRQ_REMAP
-+	bool			remapped;
- 	union {
- 		struct irq_2_iommu irq_2_iommu;
- 		struct irq_2_irte  irq_2_irte;
 diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index d74d5f4..f294eba 100644
+index 2cefc56..d74d5f4 100644
 --- a/arch/x86/include/asm/io_apic.h
 +++ b/arch/x86/include/asm/io_apic.h
-@@ -144,6 +144,7 @@ extern int timer_through_8259;
- 	(mp_irq_entries && !skip_ioapic_setup && io_apic_irqs)
- 
- struct io_apic_irq_attr;
-+struct irq_cfg;
- extern int io_apic_set_pci_routing(struct device *dev, int irq,
- 		 struct io_apic_irq_attr *irq_attr);
- void setup_IO_APIC_irq_extra(u32 gsi);
-@@ -157,6 +158,7 @@ extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
+@@ -152,6 +152,11 @@ extern void ioapic_insert_resources(void);
+ extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
+ 				     unsigned int, int,
  				     struct io_apic_irq_attr *);
- extern void __init native_setup_timer_pin(unsigned int ioapic_idx,
- 					  unsigned int pin, int vector);
-+extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
++extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
++				     unsigned int, int,
++				     struct io_apic_irq_attr *);
++extern void __init native_setup_timer_pin(unsigned int ioapic_idx,
++					  unsigned int pin, int vector);
  
  int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
  
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index 6f4b48b..1888148 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -45,6 +45,13 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
- extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
- extern void panic_if_irq_remap(const char *msg);
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index bc13022..ffe5860 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -207,6 +207,9 @@ struct x86_io_apic_ops {
+ 	int		(*setup_entry)(int irq, struct IO_APIC_route_entry *entry,
+ 				       unsigned int destination, int vector,
+ 				       struct io_apic_irq_attr *attr);
++	void		(*setup_timer_pin)(unsigned int ioapic_idx,
++					   unsigned int pin, int vector);
++
+ };
  
-+static inline bool irq_remapped(struct irq_cfg *cfg)
-+{
-+	return cfg->remapped;
-+}
-+
-+void irq_remap_modify_chip_defaults(struct irq_chip *chip);
-+
- #else  /* CONFIG_IRQ_REMAP */
- 
- static inline void setup_irq_remapping_ops(void) { }
-@@ -76,6 +83,16 @@ static inline int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
- static inline void panic_if_irq_remap(const char *msg)
- {
- }
-+
-+static inline bool irq_remapped(struct irq_cfg *cfg)
-+{
-+	return false;
-+}
-+
-+static inline void irq_remap_modify_chip_defaults(struct irq_chip *chip)
-+{
-+}
-+
- #endif /* CONFIG_IRQ_REMAP */
- 
- #endif /* __X86_IRQ_REMAPPING_H */
+ extern struct x86_init_ops x86_init;
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index d17ae46..9664919 100644
+index 5e12614..d17ae46 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -68,22 +68,6 @@
- #define for_each_irq_pin(entry, head) \
- 	for (entry = head; entry; entry = entry->next)
- 
--#ifdef CONFIG_IRQ_REMAP
--static void irq_remap_modify_chip_defaults(struct irq_chip *chip);
--static inline bool irq_remapped(struct irq_cfg *cfg)
--{
--	return cfg->irq_2_iommu.iommu != NULL;
--}
--#else
--static inline bool irq_remapped(struct irq_cfg *cfg)
--{
--	return false;
--}
--static inline void irq_remap_modify_chip_defaults(struct irq_chip *chip)
--{
--}
--#endif
--
+@@ -1473,15 +1473,12 @@ void setup_IO_APIC_irq_extra(u32 gsi)
  /*
-  *      Is the SiS APIC rmw bug present ?
-  *      -1 = don't know, 0 = no, 1 = yes
-@@ -606,7 +590,7 @@ static void __eoi_ioapic_pin(int apic, int pin, int vector, struct irq_cfg *cfg)
- 	}
- }
- 
--static void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
-+void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
+  * Set up the timer pin, possibly with the 8259A-master behind.
+  */
+-static void __init setup_timer_IRQ0_pin(unsigned int ioapic_idx,
+-					unsigned int pin, int vector)
++void __init native_setup_timer_pin(unsigned int ioapic_idx,
++				   unsigned int pin, int vector)
  {
- 	struct irq_pin_list *entry;
- 	unsigned long flags;
-@@ -2541,32 +2525,6 @@ static void ack_apic_level(struct irq_data *data)
- 	ioapic_irqd_unmask(data, cfg, masked);
- }
+ 	struct IO_APIC_route_entry entry;
+ 	unsigned int dest;
  
--#ifdef CONFIG_IRQ_REMAP
--static void ir_ack_apic_edge(struct irq_data *data)
--{
--	ack_APIC_irq();
--}
+-	if (irq_remapping_enabled)
+-		return;
 -
--static void ir_ack_apic_level(struct irq_data *data)
--{
--	ack_APIC_irq();
--	eoi_ioapic_irq(data->irq, data->chip_data);
--}
--
--static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
--{
--	seq_printf(p, " IR-%s", data->chip->name);
--}
--
--static void irq_remap_modify_chip_defaults(struct irq_chip *chip)
--{
--	chip->irq_print_chip = ir_print_prefix;
--	chip->irq_ack = ir_ack_apic_edge;
--	chip->irq_eoi = ir_ack_apic_level;
--	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
--}
--#endif /* CONFIG_IRQ_REMAP */
--
- static struct irq_chip ioapic_chip __read_mostly = {
- 	.name			= "IO-APIC",
- 	.irq_startup		= startup_ioapic_irq,
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 321db1a..5299f5b 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -68,6 +68,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- {
- 	struct ir_table *table = iommu->ir_table;
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
- 	u16 index, start_index;
- 	unsigned int mask = 0;
- 	unsigned long flags;
-@@ -115,6 +116,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- 	for (i = index; i < index + count; i++)
- 		table->base[i].present = 1;
+ 	memset(&entry, 0, sizeof(entry));
  
-+	cfg->remapped = true;
- 	irq_iommu->iommu = iommu;
- 	irq_iommu->irte_index =  index;
- 	irq_iommu->sub_handle = 0;
-@@ -155,6 +157,7 @@ static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
- static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
- {
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
- 	unsigned long flags;
- 
- 	if (!irq_iommu)
-@@ -162,6 +165,7 @@ static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subha
- 
- 	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
- 
-+	cfg->remapped = true;
- 	irq_iommu->iommu = iommu;
- 	irq_iommu->irte_index = index;
- 	irq_iommu->sub_handle = subhandle;
+ 	/*
+@@ -2791,7 +2788,7 @@ static inline void __init check_timer(void)
+ 		 */
+ 		if (no_pin1) {
+ 			add_pin_to_irq_node(cfg, node, apic1, pin1);
+-			setup_timer_IRQ0_pin(apic1, pin1, cfg->vector);
++			x86_io_apic_ops.setup_timer_pin(apic1, pin1, cfg->vector);
+ 		} else {
+ 			/* for edge trigger, setup_ioapic_irq already
+ 			 * leave it unmasked.
+@@ -2823,7 +2820,7 @@ static inline void __init check_timer(void)
+ 		 * legacy devices should be connected to IO APIC #0
+ 		 */
+ 		replace_pin_at_irq_node(cfg, node, apic1, pin1, apic2, pin2);
+-		setup_timer_IRQ0_pin(apic2, pin2, cfg->vector);
++		x86_io_apic_ops.setup_timer_pin(apic2, pin2, cfg->vector);
+ 		legacy_pic->unmask(0);
+ 		if (timer_irq_works()) {
+ 			apic_printk(APIC_QUIET, KERN_INFO "....... works.\n");
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 3cd6bf7..eba02e5 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -130,4 +130,5 @@ struct x86_io_apic_ops x86_io_apic_ops = {
+ 	.print_entries		= native_io_apic_print_entries,
+ 	.set_affinity		= native_ioapic_set_affinity,
+ 	.setup_entry		= native_setup_ioapic_entry,
++	.setup_timer_pin	= native_setup_timer_pin,
+ };
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 71824fc..3957fb2 100644
+index 827f8a1..71824fc 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -1,3 +1,4 @@
-+#include <linux/seq_file.h>
- #include <linux/cpumask.h>
- #include <linux/kernel.h>
- #include <linux/string.h>
-@@ -274,3 +275,27 @@ void panic_if_irq_remap(const char *msg)
- 	if (irq_remapping_enabled)
- 		panic(msg);
+@@ -87,11 +87,18 @@ error:
+ 	return ret;
  }
-+
-+static void ir_ack_apic_edge(struct irq_data *data)
+ 
++static void __init irq_remapping_setup_timer_pin(unsigned int ioapic_idx,
++						 unsigned int pin, int vector)
 +{
-+	ack_APIC_irq();
++	/* Not needed with interrupt remapping */
 +}
 +
-+static void ir_ack_apic_level(struct irq_data *data)
-+{
-+	ack_APIC_irq();
-+	eoi_ioapic_irq(data->irq, data->chip_data);
-+}
-+
-+static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
-+{
-+	seq_printf(p, " IR-%s", data->chip->name);
-+}
-+
-+void irq_remap_modify_chip_defaults(struct irq_chip *chip)
-+{
-+	chip->irq_print_chip = ir_print_prefix;
-+	chip->irq_ack = ir_ack_apic_edge;
-+	chip->irq_eoi = ir_ack_apic_level;
-+	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
-+}
+ static void __init irq_remapping_modify_x86_ops(void)
+ {
+ 	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
+ 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
+ 	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
++	x86_io_apic_ops.setup_timer_pin	= irq_remapping_setup_timer_pin;
+ 	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
+ 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+ }
 -- 
 1.7.9.5
 
