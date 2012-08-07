@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab2HGQ4l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:56:41 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56723 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755645Ab2HGQ4i (ORCPT
+	id S1755652Ab2HGQ5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:57:47 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:38942 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab2HGQ5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:56:38 -0400
-Date: Tue, 7 Aug 2012 17:53:50 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH 0/6] ARM: dove: DT support for Marvell Dove
-Message-ID: <20120807165350.GG18957@n2100.arm.linux.org.uk>
-References: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com> <201208061402.22815.arnd@arndb.de> <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com>
+	Tue, 7 Aug 2012 12:57:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABJ1b_S6jRW9P7ygs7LPztbx1zW-u=gD1kk0UYbgBrHdvsaOeA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAMo8BfJMBRq5gBw-5SjS5r4NGsN9-TeGOcZf91-i=sVwM5=Thw@mail.gmail.com>
+References: <50205592.1030205@gmail.com>
+	<5020AA5B.4080407@zankel.net>
+	<CAMuHMdVh_D1yTYiPoRks8-sjoNb_dr5xpRbxv+AJLseUd2Kk0Q@mail.gmail.com>
+	<CAMo8BfLw0Rt8Z-Tn0k40szP1ZPtwGcV27aEp3MOVEBNx+C3tgA@mail.gmail.com>
+	<CAMuHMdU885PUSmqr53-UdJiVBgtMXxPk-pQ27-E=-aw=P=K+_w@mail.gmail.com>
+	<CAMo8BfJMBRq5gBw-5SjS5r4NGsN9-TeGOcZf91-i=sVwM5=Thw@mail.gmail.com>
+Date: Tue, 7 Aug 2012 18:57:44 +0200
+X-Google-Sender-Auth: FmiejWM3ef-EVP4c1lzH79S5cdU
+Message-ID: <CAMuHMdXF+N2A5+=Y79dayffU8SYyhVG7yms_Edrrt388wjjMWA@mail.gmail.com>
+Subject: Re: xtensa port maintenance
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: Chris Zankel <chris@zankel.net>, linux-kernel@vger.kernel.org,
+        linux-xtensa@linux-xtensa.org, linux-next@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Marc Gauthier <marc@tensilica.com>,
+        Kirill Krinkin <kirill.krinkin@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 04:16:57PM +0200, Sebastian Hesselbarth wrote:
-> After that I am definitely fine with removing non-DT support although
-> there is neither DT support in u-boot installed on my CuBox nor
-> mach-dove support in mainline u-boot.
+Hi Max,
 
-As I have a Cubox, this is of interest to me.  However, not related to
-your patches, here's some news I have on the Cubox.
+On Tue, Aug 7, 2012 at 5:34 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
+> On Tue, Aug 7, 2012 at 6:35 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> On Tue, Aug 7, 2012 at 1:56 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
+>>> https://github.com/jcmvbkbc/linux-xtensa/commit/edd7c14132388d5c09c57cf12c76c6631a1e0277
+>>
+>> Thanks, that indeed fixes the link issue for me!
+>>
+>> BTW, how do you export a "commitdiff" from the github web interface?
+>
+> Not sure what you mean... You can get raw commitdiff by adding
+> '.patch' to the URL above:
+>
+> https://github.com/jcmvbkbc/linux-xtensa/commit/edd7c14132388d5c09c57cf12c76c6631a1e0277.patch
 
-Firstly, a big thanks to Nicolas Pitre for sending me this cute little
-box.  Finally, I see my idea of having an ARM based Linux box as a
-media player becoming a reality (I thought maybe the OMAP3430LDP would
-do it, or maybe the OMAP4430SDP, but progress on OMAP platforms is
-dreadfully slow - and complicated...)
+Thanks, that's what I was looking for, but couldn't find, so I had to
+apply it manually.
 
-I've recently pushed a fix into mainline (and stable) for VFP support
-with Thumb instructions.  I noticed that the Cubox kernel had a different
-fix, this "different" fix will need to be removed when Cubox folk update
-to the next kernel from mainline.
+Gr{oetje,eeting}s,
 
-Video support, not great.  The supplied Ubuntu Lucid stuff install
-(including the latest dev kernel from the solid-run folk) doesn't work
-with any of the tree HDMI devices I've tried it with:
+                        Geert
 
-. A Plasma TV refused to recognise the cubox existing.  Works with a PC
-  running Linux.
-. A LCD PC monitor with HDMI input.  If the monitor is disconnected, the
-  Cubox booted, and the monitor connected, you get a picture, but you
-  lose the top, left, bottom and right of the display off the side of the
-  monitor.  No amount of adjusting on the monitor fixes this.
-. A cheap LCD TV with HDMI input, 1080i (but not properly 1080p capable)
-  only works when the Cubox is booted with the TV turned on and HDMI
-  input selected.  If the Cubox is booted with the TV off or HDMI input
-  deselected, it fails.  Even so, like the LCD PC monitor, the image is
-  far too big.  I suspect there's something wrong with the HDMI chip
-  setup.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-What is obvious is that there is no HDMI hotplug support and reconfiguring
-of the display.  So, I've been investigating the Linux DRM/DRI support -
-both the kernel and X11 side, and I have something that is getting close
-to being ready.  Last night I finally disabled the kernel dovefb driver,
-and have X11 using solely my new DRM driver.
-
-This gives us several advantages, not only does the DRM layer generate
-hotplug events, but it also doesn't need such a large amount of "video
-memory" reserved.  It can dynamically allocate objects for graphics
-operations, and such like.  This, along side CMA should allow us to get
-rid of quite a bit of the statically claimed RAM areas.  Another
-advantage is that we can automatically reconfigure the X11 display on
-hotplug to the capabilities of the attached monitor.  This works nicely
-here. :)
-
-	This brings up another off-topic point (not just about the
-	cubox) - I think more people should be looking at the DRM
-	stuff when they're creating video drivers.
-
-The next thing to talk about is video overlay via the X11 Xvideo extension.
-Yuck, this is not nice.  It relies upon using the X11 Xvideo SHM support,
-using the shared memory as a two way buffer.  This buffer which is supposed
-to contain graphic data passed from the app to X is instead used to pass
-control and address pointers between the decoding application and the
-kernel dovefb driver (!) and back again to the decoding application.  Note
-that it doesn't even declare a different format for this kind of thing,
-it merely relies on magic numbers and a checksum.
-
-The side effect of that is applications using the Xvideo extension
-properly do not work very well, partly because the formats they want to
-use aren't presented by the dovefb X11 driver.
-
-Now, when trying vlc on the cubox, it failed totally (the Qt libraries
-from Ubuntu Lucid are built with neon support, and the Armada510 has
-no Neon support - it is VFPv3 with only 16 double registers.)
-Rebuilding libQtGui without Neon support fixes this (the cubox is currently
-rebuilding the Qt package at the moment, which is going to take a while).
-Next problem is there's something up with mpeg audio decoding, but ogg
-decoding in vlc is fine.
-
-With Qt fixed, DRM, and a better X11 driver, I now have vlc able to
-reasonably display full screen video on the Cubox - and like on my PC,
-it appears to play back at a destination resolution of 624x576 (so SD)
-and then scales to the size you want the video to be.  Same for totem
-with the same source material.
-
-However, this won't be using the on-chip mpeg decoding (yet).  CPU
-usage sits at around 30% while vlc playback is running.
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
