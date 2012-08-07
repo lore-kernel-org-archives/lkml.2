@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab2HGMbW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 08:31:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53641 "EHLO mx2.suse.de"
+	id S1754359Ab2HGMc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:32:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53658 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753177Ab2HGMbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 08:31:21 -0400
+	id S1754004Ab2HGMbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 08:31:22 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
         Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [RFC PATCH 0/6] Improve hugepage allocation success rates under load
-Date: Tue,  7 Aug 2012 13:31:11 +0100
-Message-Id: <1344342677-5845-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 3/6] mm: kswapd: Continue reclaiming for reclaim/compaction if the minimum number of pages have not been reclaimed
+Date: Tue,  7 Aug 2012 13:31:14 +0100
+Message-Id: <1344342677-5845-4-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1344342677-5845-1-git-send-email-mgorman@suse.de>
+References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocation success rates have been far lower since 3.4 due to commit
-[fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. This
-commit was introduced for good reasons and it was known in advance that
-the success rates would suffer but it was justified on the grounds that
-the high allocation success rates were achieved by aggressive reclaim.
-Success rates are expected to suffer even more in 3.6 due to commit
-[7db8889a: mm: have order > 0 compaction start off where it left] which
-testing has shown to severely reduce allocation success rates under load -
-to 0% in one case.  There is a proposed change to that patch in this series
-and it would be ideal if Jim Schutt could retest the workload that led to
-commit [7db8889a: mm: have order > 0 compaction start off where it left].
+When direct reclaim is running reclaim/compaction, there is a minimum
+number of pages it reclaims. As it must be under the low watermark to be
+in direct reclaim it has also woken kswapd to do some work. This patch
+has kswapd use the same logic as direct reclaim to reclaim a minimum
+number of pages so compaction can run later.
 
-This series aims to improve the allocation success rates without regressing
-the benefits of commit fe2c2a10. The series is based on 3.5 and includes
-the commit 7db8889a to illustrate what impact it has to success rates.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
-Patch 1 updates a stale comment seeing as I was in the general area.
-
-Patch 2 updates reclaim/compaction to reclaim pages scaled on the number
-	of recent failures.
-
-Patch 3 has kswapd use similar logic to direct reclaim when deciding whether
-	to continue reclaiming for reclaim/compaction or not.
-
-Patch 4 captures suitable high-order pages freed by compaction to reduce
-	races with parallel allocation requests.
-
-Patch 5 is an upstream commit that has compaction restart free page scanning
-	from an old position instead of always starting from the end of the
-	zone
-
-Patch 6 adjusts patch 5 to restores allocation success rates.
-
-STRESS-HIGHALLOC
-		 3.5.0-vanilla	  patches:1-2	    patches:1-3       patches:1-4       patches:1-5       patches:1-6
-Pass 1          36.00 ( 0.00%)    61.00 (25.00%)    49.00 (13.00%)    57.00 (21.00%)     0.00 (-36.00%)    62.00 (26.00%)
-Pass 2          46.00 ( 0.00%)    61.00 (15.00%)    55.00 ( 9.00%)    62.00 (16.00%)     0.00 (-46.00%)    63.00 (17.00%)
-while Rested    84.00 ( 0.00%)    85.00 ( 1.00%)    84.00 ( 0.00%)    86.00 ( 2.00%)    86.00 ( 2.00%)    86.00 ( 2.00%)
-
-From
-http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__stress-highalloc-performance-ext3/hydra/comparison.html
-I know that the allocation success rates in 3.3.6 was 78% in comparison
-to 36% in 3.5. With the full series applied, the success rates are up
-to 62% which is still much less but it does not reclaim excessively.
-Note what patch 5 which is the upstream commit fe2c2a10 did to allocation
-success rates.
-
-MMTests Statistics: vmstat
-Page Ins                                     3037580     3167260     3002720     3120080     2885540     3159024
-Page Outs                                    8026888     8028472     8023292     8031056     8025324     8026676
-Swap Ins                                           0           0           0           0           0           0
-Swap Outs                                          0           0           0           0           0           8
-
-Note that swap in/out rates remain at 0. In 3.3.6 with 78% success rates
-there were 71881 pages swapped out.
-
-Direct pages scanned                           97106       59600       43926      108327        2109      171530
-Kswapd pages scanned                         1231288     1419472     1388888     1443504     1180916     1377362
-Kswapd pages reclaimed                       1231221     1419248     1358130     1427561     1164936     1372875
-Direct pages reclaimed                         97100       59486       24233       88990        2109      171235
-Kswapd efficiency                                99%         99%         97%         98%         98%         99%
-Kswapd velocity                             1001.153    1129.622    1098.647    1080.758     955.967    1084.657
-Direct efficiency                                99%         99%         55%         82%        100%         99%
-Direct velocity                               78.956      47.430      34.747      81.105       1.707     135.078
-
-kswapd velocity stays at around 1000 pages/second which is reasonable. In
-kernel 3.3.6, it was 8140 pages/second.
-
- include/linux/compaction.h |    4 +-
- include/linux/mm.h         |    1 +
- include/linux/mmzone.h     |    4 ++
- mm/compaction.c            |  142 +++++++++++++++++++++++++++++++++++++-------
- mm/internal.h              |    7 +++
- mm/page_alloc.c            |   68 ++++++++++++++++-----
- mm/vmscan.c                |   29 ++++++++-
- 7 files changed, 213 insertions(+), 42 deletions(-)
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 0cb2593..afdec93 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1701,7 +1701,7 @@ static bool in_reclaim_compaction(struct scan_control *sc)
+  * calls try_to_compact_zone() that it will have enough free pages to succeed.
+  * It will give up earlier than that if there is difficulty reclaiming pages.
+  */
+-static inline bool should_continue_reclaim(struct lruvec *lruvec,
++static bool should_continue_reclaim(struct lruvec *lruvec,
+ 					unsigned long nr_reclaimed,
+ 					unsigned long nr_scanned,
+ 					struct scan_control *sc)
+@@ -1768,6 +1768,17 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
+ 	}
+ }
+ 
++static inline bool should_continue_reclaim_zone(struct zone *zone,
++					unsigned long nr_reclaimed,
++					unsigned long nr_scanned,
++					struct scan_control *sc)
++{
++	struct mem_cgroup *memcg = mem_cgroup_iter(NULL, NULL, NULL);
++	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
++
++	return should_continue_reclaim(lruvec, nr_reclaimed, nr_scanned, sc);
++}
++
+ /*
+  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+  */
+@@ -2496,8 +2507,10 @@ loop_again:
+ 			 */
+ 			testorder = order;
+ 			if (COMPACTION_BUILD && order &&
+-					compaction_suitable(zone, order) !=
+-						COMPACT_SKIPPED)
++					!should_continue_reclaim_zone(zone,
++						nr_soft_reclaimed,
++						sc.nr_scanned - nr_soft_scanned,
++						&sc))
+ 				testorder = 0;
+ 
+ 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
 -- 
 1.7.9.2
 
