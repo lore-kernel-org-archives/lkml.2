@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932725Ab2HGDrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:47:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59788 "EHLO
+	id S932761Ab2HGDry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:47:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59782 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757389Ab2HGDil (ORCPT
+	by vger.kernel.org with ESMTP id S1757248Ab2HGDik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:41 -0400
-Message-Id: <20120807032804.072854329@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:40 -0400
+Message-Id: <20120807032804.224482411@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:50 +0100
+Date: Tue, 07 Aug 2012 04:28:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xishi Qiu <qiuxishi@huawei.com>,
-        Jiang Liu <liuj97@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Keping Chen <chenkeping@huawei.com>
-Subject: [ 55/70] mm: setup pageblock_order before its used by sparsemem
+        alan@lxorguk.ukuu.org.uk,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [ 56/70] mm: mmu_notifier: fix freed page still mapped in secondary MMU
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,93 +31,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xishi Qiu <qiuxishi@huawei.com>
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
-commit ca57df79d4f64e1a4886606af4289d40636189c5 upstream.
+commit 3ad3d901bbcfb15a5e4690e55350db0899095a68 upstream.
 
-On architectures with CONFIG_HUGETLB_PAGE_SIZE_VARIABLE set, such as
-Itanium, pageblock_order is a variable with default value of 0.  It's set
-to the right value by set_pageblock_order() in function
-free_area_init_core().
+mmu_notifier_release() is called when the process is exiting.  It will
+delete all the mmu notifiers.  But at this time the page belonging to the
+process is still present in page tables and is present on the LRU list, so
+this race will happen:
 
-But pageblock_order may be used by sparse_init() before free_area_init_core()
-is called along path:
-sparse_init()
-    ->sparse_early_usemaps_alloc_node()
-	->usemap_size()
-	    ->SECTION_BLOCKFLAGS_BITS
-		->((1UL << (PFN_SECTION_SHIFT - pageblock_order)) *
-NR_PAGEBLOCK_BITS)
+      CPU 0                 CPU 1
+mmu_notifier_release:    try_to_unmap:
+   hlist_del_init_rcu(&mn->hlist);
+                            ptep_clear_flush_notify:
+                                  mmu nofifler not found
+                            free page  !!!!!!
+                            /*
+                             * At the point, the page has been
+                             * freed, but it is still mapped in
+                             * the secondary MMU.
+                             */
 
-The uninitialized pageblock_size will cause memory wasting because
-usemap_size() returns a much bigger value then it's really needed.
+  mn->ops->release(mn, mm);
 
-For example, on an Itanium platform,
-sparse_init() pageblock_order=0 usemap_size=24576
-free_area_init_core() before pageblock_order=0, usemap_size=24576
-free_area_init_core() after pageblock_order=12, usemap_size=8
+Then the box is not stable and sometimes we can get this bug:
 
-That means 24K memory has been wasted for each section, so fix it by calling
-set_pageblock_order() from sparse_init().
+[  738.075923] BUG: Bad page state in process migrate-perf  pfn:03bec
+[  738.075931] page:ffffea00000efb00 count:0 mapcount:0 mapping:          (null) index:0x8076
+[  738.075936] page flags: 0x20000000000014(referenced|dirty)
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Keping Chen <chenkeping@huawei.com>
+The same issue is present in mmu_notifier_unregister().
+
+We can call ->release before deleting the notifier to ensure the page has
+been unmapped from the secondary MMU before it is freed.
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/internal.h   |    2 ++
- mm/page_alloc.c |    4 ++--
- mm/sparse.c     |    3 +++
- 3 files changed, 7 insertions(+), 2 deletions(-)
+ mm/mmu_notifier.c |   45 +++++++++++++++++++++++----------------------
+ 1 file changed, 23 insertions(+), 22 deletions(-)
 
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -309,3 +309,5 @@ extern u64 hwpoison_filter_flags_mask;
- extern u64 hwpoison_filter_flags_value;
- extern u64 hwpoison_filter_memcg;
- extern u32 hwpoison_filter_enable;
-+
-+extern void set_pageblock_order(void);
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4282,7 +4282,7 @@ static inline void setup_usemap(struct p
- #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
- 
- /* Initialise the number of pages represented by NR_PAGEBLOCK_BITS */
--static inline void __init set_pageblock_order(void)
-+void __init set_pageblock_order(void)
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+index 9a611d3..862b608 100644
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -33,6 +33,24 @@
+ void __mmu_notifier_release(struct mm_struct *mm)
  {
- 	unsigned int order;
- 
-@@ -4310,7 +4310,7 @@ static inline void __init set_pageblock_
-  * include/linux/pageblock-flags.h for the values of pageblock_order based on
-  * the kernel config
-  */
--static inline void set_pageblock_order(void)
-+void __init set_pageblock_order(void)
- {
- }
- 
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -486,6 +486,9 @@ void __init sparse_init(void)
- 	struct page **map_map;
- #endif
- 
-+	/* Setup pageblock_order for HUGETLB_PAGE_SIZE_VARIABLE */
-+	set_pageblock_order();
+ 	struct mmu_notifier *mn;
++	struct hlist_node *n;
 +
++	/*
++	 * RCU here will block mmu_notifier_unregister until
++	 * ->release returns.
++	 */
++	rcu_read_lock();
++	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist)
++		/*
++		 * if ->release runs before mmu_notifier_unregister it
++		 * must be handled as it's the only way for the driver
++		 * to flush all existing sptes and stop the driver
++		 * from establishing any more sptes before all the
++		 * pages in the mm are freed.
++		 */
++		if (mn->ops->release)
++			mn->ops->release(mn, mm);
++	rcu_read_unlock();
+ 
+ 	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
+@@ -46,23 +64,6 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 		 * mmu_notifier_unregister to return.
+ 		 */
+ 		hlist_del_init_rcu(&mn->hlist);
+-		/*
+-		 * RCU here will block mmu_notifier_unregister until
+-		 * ->release returns.
+-		 */
+-		rcu_read_lock();
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
+-		/*
+-		 * if ->release runs before mmu_notifier_unregister it
+-		 * must be handled as it's the only way for the driver
+-		 * to flush all existing sptes and stop the driver
+-		 * from establishing any more sptes before all the
+-		 * pages in the mm are freed.
+-		 */
+-		if (mn->ops->release)
+-			mn->ops->release(mn, mm);
+-		rcu_read_unlock();
+-		spin_lock(&mm->mmu_notifier_mm->lock);
+ 	}
+ 	spin_unlock(&mm->mmu_notifier_mm->lock);
+ 
+@@ -284,16 +285,13 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ {
+ 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
+ 
+-	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	if (!hlist_unhashed(&mn->hlist)) {
+-		hlist_del_rcu(&mn->hlist);
+-
+ 		/*
+ 		 * RCU here will force exit_mmap to wait ->release to finish
+ 		 * before freeing the pages.
+ 		 */
+ 		rcu_read_lock();
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
++
+ 		/*
+ 		 * exit_mmap will block in mmu_notifier_release to
+ 		 * guarantee ->release is called before freeing the
+@@ -302,8 +300,11 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ 		if (mn->ops->release)
+ 			mn->ops->release(mn, mm);
+ 		rcu_read_unlock();
+-	} else
++
++		spin_lock(&mm->mmu_notifier_mm->lock);
++		hlist_del_rcu(&mn->hlist);
+ 		spin_unlock(&mm->mmu_notifier_mm->lock);
++	}
+ 
  	/*
- 	 * map is using big page (aka 2M in x86 64 bit)
- 	 * usemap is less one page (aka 24 bytes)
+ 	 * Wait any running method to finish, of course including
 
 
