@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab2HGHqS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 03:46:18 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57638 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab2HGHqQ (ORCPT
+	id S1752018Ab2HGHrq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 03:47:46 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20034 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab2HGHro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 03:46:16 -0400
-Message-ID: <5020C70B.20604@linux.vnet.ibm.com>
-Date: Tue, 07 Aug 2012 13:13:07 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Tue, 7 Aug 2012 03:47:44 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ihY/QS7T6WLxRw689n8C4
+Date: Tue, 7 Aug 2012 00:47:40 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi: omap2-mcspi: In case of dma errors fall back to
+ pio
+Message-ID: <20120807074740.GR11011@atomide.com>
+References: <1343197229-15188-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Alexander Graf <agraf@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Thomas Gleixner <tglx@linutronix.de>, X86 <x86@kernel.org>
-Subject: Re: [PATCH 3/3] Documentation/ppc: Add ppc hypercall documentation
-References: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com> <20120807074026.20169.93816.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20120807074026.20169.93816.sendpatchset@codeblue.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12080707-7014-0000-0000-000001AFE268
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343197229-15188-1-git-send-email-shubhrajyoti@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 01:10 PM, Raghavendra K T wrote:
-> From: Alexander Graf<agraf@suse.de>
->
-> Signed-off-by: Alexander Graf<agraf@suse.de>
-> Signed-off-by: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
+* Shubhrajyoti D <shubhrajyoti@ti.com> [120724 23:26]:
+> In case there are dma errors currently the driver exits.
+> Make the spi driver fall back to pio mode in case of dma errors.
+> 
+> If the DMA engine is not selected the driver
+> exits.This patch makes the spi fall back to pio in that case.
+> 
+> Also adds a field dma_unusable to struct omap2_mcspi.
+>  
+> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 > ---
+>  drivers/spi/spi-omap2-mcspi.c |   21 +++++++++++++--------
+>  1 files changed, 13 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+> index bc47781..f243a39 100644
+> --- a/drivers/spi/spi-omap2-mcspi.c
+> +++ b/drivers/spi/spi-omap2-mcspi.c
+> @@ -129,6 +129,7 @@ struct omap2_mcspi {
+>  	struct omap2_mcspi_dma	*dma_channels;
+>  	struct device		*dev;
+>  	struct omap2_mcspi_regs ctx;
+> +	int dma_unusable;
+>  };
 
-Sorry it meant to be 3/3.
+Don't you need to check separately for rx and tx dma? There's a slight
+chance that you get a channel for one but not for the other..
 
+Tony
