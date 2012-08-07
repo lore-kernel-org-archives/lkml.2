@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2HGWFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:05:03 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:19018 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2HGWFA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:05:00 -0400
-Date: Wed, 8 Aug 2012 00:04:59 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, trivial@vger.kernel.org
-Subject: [PATCH] [IA64] aliasing-test: close fd on write error
-Message-ID: <alpine.LNX.2.00.1208080002520.3227@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756269Ab2HGWJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:09:38 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:47104 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab2HGWJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 18:09:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Colin Cross <ccross@android.com>
+Subject: Re: [PATCH] cpuidle: coupled: fix sleeping while atomic in cpu notifier
+Date: Wed, 8 Aug 2012 00:15:31 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-kernel@vger.kernel.org
+References: <1343251216-24106-1-git-send-email-ccross@android.com>
+In-Reply-To: <1343251216-24106-1-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208080015.31359.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If write fails, remember to close(fd) before returning.
+On Wednesday, July 25, 2012, Colin Cross wrote:
+> The cpu hotplug notifier gets called in both atomic and non-atomic
+> contexts, it is not always safe to lock a mutex.  Filter out all events
+> except the six necessary ones, which are all sleepable, before taking
+> the mutex.
+> 
+> Signed-off-by: Colin Cross <ccross@android.com>
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- Documentation/ia64/aliasing-test.c | 1 +
- 1 file changed, 1 insertion(+)
+Has this been applied already?
 
-diff --git a/Documentation/ia64/aliasing-test.c b/Documentation/ia64/aliasing-test.c
-index 5caa2af..62a190d 100644
---- a/Documentation/ia64/aliasing-test.c
-+++ b/Documentation/ia64/aliasing-test.c
-@@ -132,6 +132,7 @@ static int read_rom(char *path)
- 
- 	rc = write(fd, "1", 2);
- 	if (rc <= 0) {
-+		close(fd);
- 		perror("write");
- 		return -1;
- 	}
--- 
-1.7.11.4
+Rafael
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+> ---
+>  drivers/cpuidle/coupled.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+> index 2c9bf26..c24dda0 100644
+> --- a/drivers/cpuidle/coupled.c
+> +++ b/drivers/cpuidle/coupled.c
+> @@ -678,6 +678,18 @@ static int cpuidle_coupled_cpu_notify(struct notifier_block *nb,
+>  	int cpu = (unsigned long)hcpu;
+>  	struct cpuidle_device *dev;
+>  
+> +	switch (action & ~CPU_TASKS_FROZEN) {
+> +	case CPU_UP_PREPARE:
+> +	case CPU_DOWN_PREPARE:
+> +	case CPU_ONLINE:
+> +	case CPU_DEAD:
+> +	case CPU_UP_CANCELED:
+> +	case CPU_DOWN_FAILED:
+> +		break;
+> +	default:
+> +		return NOTIFY_OK;
+> +	}
+> +
+>  	mutex_lock(&cpuidle_lock);
+>  
+>  	dev = per_cpu(cpuidle_devices, cpu);
+> 
 
