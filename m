@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031221Ab2HGWrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:47:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64574 "EHLO
+	id S1031299Ab2HGWr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:47:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60358 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031257Ab2HGWrG (ORCPT
+	with ESMTP id S1031272Ab2HGWrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:47:06 -0400
+	Tue, 7 Aug 2012 18:47:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lin Ming <mlin@ss.pku.edu.cn>, Paul Moore <pmoore@redhat.com>,
+        Hangbin Liu <liuhangbin@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 32/49] cipso: dont follow a NULL pointer when setsockopt() is called
-Date: Tue,  7 Aug 2012 15:44:50 -0700
-Message-Id: <20120807222029.753269031@linuxfoundation.org>
+Subject: [ 35/49] tcp: Add TCP_USER_TIMEOUT negative value check
+Date: Tue,  7 Aug 2012 15:44:53 -0700
+Message-Id: <20120807222030.012580131@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -31,91 +31,36 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Paul Moore <pmoore@redhat.com>
+From: Hangbin Liu <liuhangbin@gmail.com>
 
-[ Upstream commit 89d7ae34cdda4195809a5a987f697a517a2a3177 ]
+[ Upstream commit 42493570100b91ef663c4c6f0c0fdab238f9d3c2 ]
 
-As reported by Alan Cox, and verified by Lin Ming, when a user
-attempts to add a CIPSO option to a socket using the CIPSO_V4_TAG_LOCAL
-tag the kernel dies a terrible death when it attempts to follow a NULL
-pointer (the skb argument to cipso_v4_validate() is NULL when called via
-the setsockopt() syscall).
+TCP_USER_TIMEOUT is a TCP level socket option that takes an unsigned int. But
+patch "tcp: Add TCP_USER_TIMEOUT socket option"(dca43c75) didn't check the negative
+values. If a user assign -1 to it, the socket will set successfully and wait
+for 4294967295 miliseconds. This patch add a negative value check to avoid
+this issue.
 
-This patch fixes this by first checking to ensure that the skb is
-non-NULL before using it to find the incoming network interface.  In
-the unlikely case where the skb is NULL and the user attempts to add
-a CIPSO option with the _TAG_LOCAL tag we return an error as this is
-not something we want to allow.
-
-A simple reproducer, kindly supplied by Lin Ming, although you must
-have the CIPSO DOI #3 configure on the system first or you will be
-caught early in cipso_v4_validate():
-
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <linux/ip.h>
-	#include <linux/in.h>
-	#include <string.h>
-
-	struct local_tag {
-		char type;
-		char length;
-		char info[4];
-	};
-
-	struct cipso {
-		char type;
-		char length;
-		char doi[4];
-		struct local_tag local;
-	};
-
-	int main(int argc, char **argv)
-	{
-		int sockfd;
-		struct cipso cipso = {
-			.type = IPOPT_CIPSO,
-			.length = sizeof(struct cipso),
-			.local = {
-				.type = 128,
-				.length = sizeof(struct local_tag),
-			},
-		};
-
-		memset(cipso.doi, 0, 4);
-		cipso.doi[3] = 3;
-
-		sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-		#define SOL_IP 0
-		setsockopt(sockfd, SOL_IP, IP_OPTIONS,
-			&cipso, sizeof(struct cipso));
-
-		return 0;
-	}
-
-CC: Lin Ming <mlin@ss.pku.edu.cn>
-Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Hangbin Liu <liuhangbin@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/cipso_ipv4.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/ipv4/tcp.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/cipso_ipv4.c
-+++ b/net/ipv4/cipso_ipv4.c
-@@ -1725,8 +1725,10 @@ int cipso_v4_validate(const struct sk_bu
- 		case CIPSO_V4_TAG_LOCAL:
- 			/* This is a non-standard tag that we only allow for
- 			 * local connections, so if the incoming interface is
--			 * not the loopback device drop the packet. */
--			if (!(skb->dev->flags & IFF_LOOPBACK)) {
-+			 * not the loopback device drop the packet. Further,
-+			 * there is no legitimate reason for setting this from
-+			 * userspace so reject it if skb is NULL. */
-+			if (skb == NULL || !(skb->dev->flags & IFF_LOOPBACK)) {
- 				err_offset = opt_iter;
- 				goto validate_return_locked;
- 			}
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2394,7 +2394,10 @@ static int do_tcp_setsockopt(struct sock
+ 		/* Cap the max timeout in ms TCP will retry/retrans
+ 		 * before giving up and aborting (ETIMEDOUT) a connection.
+ 		 */
+-		icsk->icsk_user_timeout = msecs_to_jiffies(val);
++		if (val < 0)
++			err = -EINVAL;
++		else
++			icsk->icsk_user_timeout = msecs_to_jiffies(val);
+ 		break;
+ 	default:
+ 		err = -ENOPROTOOPT;
 
 
