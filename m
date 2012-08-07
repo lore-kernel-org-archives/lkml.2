@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab2HGX2e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:28:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
+	id S932889Ab2HGX25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:28:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030180Ab2HGWbY (ORCPT
+	with ESMTP id S932796Ab2HGWbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:31:24 -0400
+	Tue, 7 Aug 2012 18:31:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Ortwin=20Gl=C3=BCck?= <odi@odi.ch>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: =?UTF-8?q?=5B=20084/122=5D=20drm/nouveau=3A=20init=20vblank=20requests=20list?=
-Date: Tue,  7 Aug 2012 15:26:12 -0700
-Message-Id: <20120807221956.616851050@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 080/122] drm/radeon: fix non revealent error message
+Date: Tue,  7 Aug 2012 15:26:08 -0700
+Message-Id: <20120807221956.132538177@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,61 +29,68 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 715855457e6bc93e148caf8cb3b5dcabbf605b0d upstream.
+commit 8d1c702aa0b2c4b22b0742b72a1149d91690674b upstream.
 
-Fixes kernel panic when vblank interrupt triggers before first sync to
-vblank request.
+We want to print link status query failed only if it's
+an unexepected fail. If we query to see if we need
+link training it might be because there is nothing
+connected and thus link status query have the right
+to fail in that case.
 
-(Besides init, remove some relevant leftovers from vblank rework)
+To avoid printing failure when it's expected, move the
+failure message to proper place.
 
-Reported-by: Ortwin Glück <odi@odi.ch>
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_drv.h      |    2 --
- drivers/gpu/drm/nouveau/nouveau_irq.c      |    4 ----
- drivers/gpu/drm/nouveau/nouveau_software.h |    1 +
- 3 files changed, 1 insertion(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/atombios_dp.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_drv.h
-+++ b/drivers/gpu/drm/nouveau/nouveau_drv.h
-@@ -689,8 +689,6 @@ struct drm_nouveau_private {
- 	void (*irq_handler[32])(struct drm_device *);
- 	bool msi_enabled;
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -22,6 +22,7 @@
+  *
+  * Authors: Dave Airlie
+  *          Alex Deucher
++ *          Jerome Glisse
+  */
+ #include "drmP.h"
+ #include "radeon_drm.h"
+@@ -654,7 +655,6 @@ static bool radeon_dp_get_link_status(st
+ 	ret = radeon_dp_aux_native_read(radeon_connector, DP_LANE0_1_STATUS,
+ 					link_status, DP_LINK_STATUS_SIZE, 100);
+ 	if (ret <= 0) {
+-		DRM_ERROR("displayport link status failed\n");
+ 		return false;
+ 	}
  
--	struct list_head vbl_waiting;
--
- 	struct {
- 		struct drm_global_reference mem_global_ref;
- 		struct ttm_bo_global_ref bo_global_ref;
---- a/drivers/gpu/drm/nouveau/nouveau_irq.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_irq.c
-@@ -41,12 +41,8 @@
- void
- nouveau_irq_preinstall(struct drm_device *dev)
- {
--	struct drm_nouveau_private *dev_priv = dev->dev_private;
--
- 	/* Master disable */
- 	nv_wr32(dev, NV03_PMC_INTR_EN_0, 0);
--
--	INIT_LIST_HEAD(&dev_priv->vbl_waiting);
- }
+@@ -833,8 +833,10 @@ static int radeon_dp_link_train_cr(struc
+ 		else
+ 			mdelay(dp_info->rd_interval * 4);
  
- int
---- a/drivers/gpu/drm/nouveau/nouveau_software.h
-+++ b/drivers/gpu/drm/nouveau/nouveau_software.h
-@@ -38,6 +38,7 @@ static inline void
- nouveau_software_context_new(struct nouveau_software_chan *pch)
- {
- 	INIT_LIST_HEAD(&pch->flip);
-+	INIT_LIST_HEAD(&pch->vblank.list);
- }
+-		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status))
++		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status)) {
++			DRM_ERROR("displayport link status failed\n");
+ 			break;
++		}
  
- static inline void
+ 		if (dp_clock_recovery_ok(dp_info->link_status, dp_info->dp_lane_count)) {
+ 			clock_recovery = true;
+@@ -896,8 +898,10 @@ static int radeon_dp_link_train_ce(struc
+ 		else
+ 			mdelay(dp_info->rd_interval * 4);
+ 
+-		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status))
++		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status)) {
++			DRM_ERROR("displayport link status failed\n");
+ 			break;
++		}
+ 
+ 		if (dp_channel_eq_ok(dp_info->link_status, dp_info->dp_lane_count)) {
+ 			channel_eq = true;
 
 
