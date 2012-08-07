@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031327Ab2HGWri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:47:38 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44605 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031300Ab2HGWre (ORCPT
+	id S1031377Ab2HGWrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:47:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031343Ab2HGWrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:47:34 -0400
+	Tue, 7 Aug 2012 18:47:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 42/49] ALSA: mpu401: Fix missing initialization of irq field
-Date: Tue,  7 Aug 2012 15:45:00 -0700
-Message-Id: <20120807222030.624700755@linuxfoundation.org>
+        Max Matveev <makc@redhat.com>, Jiri Benc <jbenc@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 37/49] net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI handling
+Date: Tue,  7 Aug 2012 15:44:55 -0700
+Message-Id: <20120807222030.184332865@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -29,32 +30,57 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
 
-commit bc733d495267a23ef8660220d696c6e549ce30b3 upstream.
+From: Jiri Benc <jbenc@redhat.com>
 
-The irq field of struct snd_mpu401 is supposed to be initialized to -1.
-Since it's set to zero as of now, a probing error before the irq
-installation results in a kernel warning "Trying to free already-free
-IRQ 0".
+[ Upstream commit b1beb681cba5358f62e6187340660ade226a5fcc ]
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=44821
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+When device flags are set using rtnetlink, IFF_PROMISC and IFF_ALLMULTI
+flags are handled specially. Function dev_change_flags sets IFF_PROMISC and
+IFF_ALLMULTI bits in dev->gflags according to the passed value but
+do_setlink passes a result of rtnl_dev_combine_flags which takes those bits
+from dev->flags.
+
+This can be easily trigerred by doing:
+
+tcpdump -i eth0 &
+ip l s up eth0
+
+ip sets IFF_UP flag in ifi_flags and ifi_change, which is combined with
+IFF_PROMISC by rtnl_dev_combine_flags, causing __dev_change_flags to set
+IFF_PROMISC in gflags.
+
+Reported-by: Max Matveev <makc@redhat.com>
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/drivers/mpu401/mpu401_uart.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/core/rtnetlink.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/sound/drivers/mpu401/mpu401_uart.c
-+++ b/sound/drivers/mpu401/mpu401_uart.c
-@@ -554,6 +554,7 @@ int snd_mpu401_uart_new(struct snd_card
- 	spin_lock_init(&mpu->output_lock);
- 	spin_lock_init(&mpu->timer_lock);
- 	mpu->hardware = hardware;
-+	mpu->irq = -1;
- 	if (! (info_flags & MPU401_INFO_INTEGRATED)) {
- 		int res_size = hardware == MPU401_HW_PC98II ? 4 : 2;
- 		mpu->res = request_region(port, res_size, "MPU401 UART");
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -647,6 +647,12 @@ static void set_operstate(struct net_dev
+ 	}
+ }
+ 
++static unsigned int rtnl_dev_get_flags(const struct net_device *dev)
++{
++	return (dev->flags & ~(IFF_PROMISC | IFF_ALLMULTI)) |
++	       (dev->gflags & (IFF_PROMISC | IFF_ALLMULTI));
++}
++
+ static unsigned int rtnl_dev_combine_flags(const struct net_device *dev,
+ 					   const struct ifinfomsg *ifm)
+ {
+@@ -655,7 +661,7 @@ static unsigned int rtnl_dev_combine_fla
+ 	/* bugwards compatibility: ifi_change == 0 is treated as ~0 */
+ 	if (ifm->ifi_change)
+ 		flags = (flags & ifm->ifi_change) |
+-			(dev->flags & ~ifm->ifi_change);
++			(rtnl_dev_get_flags(dev) & ~ifm->ifi_change);
+ 
+ 	return flags;
+ }
 
 
