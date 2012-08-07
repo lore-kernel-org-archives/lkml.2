@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031119Ab2HGWqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:46:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031104Ab2HGWqB (ORCPT
+	id S1031133Ab2HGWqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:46:13 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38383 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031120Ab2HGWqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:01 -0400
+	Tue, 7 Aug 2012 18:46:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kevin Cernekee <cernekee@gmail.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 13/49] usb: gadget: Fix g_ether interface link status
-Date: Tue,  7 Aug 2012 15:44:31 -0700
-Message-Id: <20120807222028.050350415@linuxfoundation.org>
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 15/49] ftrace: Disable function tracing during suspend/resume and hibernation, again
+Date: Tue,  7 Aug 2012 15:44:33 -0700
+Message-Id: <20120807222028.235905771@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -29,59 +30,108 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Kevin Cernekee <cernekee@gmail.com>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit 31bde1ceaa873bcaecd49e829bfabceacc4c512d upstream.
+commit 443772d408a25af62498793f6f805ce3c559309a upstream.
 
-A "usb0" interface that has never been connected to a host has an unknown
-operstate, and therefore the IFF_RUNNING flag is (incorrectly) asserted
-when queried by ifconfig, ifplugd, etc.  This is a result of calling
-netif_carrier_off() too early in the probe function; it should be called
-after register_netdev().
+If function tracing is enabled for some of the low-level suspend/resume
+functions, it leads to triple fault during resume from suspend, ultimately
+ending up in a reboot instead of a resume (or a total refusal to come out
+of suspended state, on some machines).
 
-Similar problems have been fixed in many other drivers, e.g.:
+This issue was explained in more detail in commit f42ac38c59e0a03d (ftrace:
+disable tracing for suspend to ram). However, the changes made by that commit
+got reverted by commit cbe2f5a6e84eebb (tracing: allow tracing of
+suspend/resume & hibernation code again). So, unfortunately since things are
+not yet robust enough to allow tracing of low-level suspend/resume functions,
+suspend/resume is still broken when ftrace is enabled.
 
-    e826eafa6 (bonding: Call netif_carrier_off after register_netdevice)
-    0d672e9f8 (drivers/net: Call netif_carrier_off at the end of the probe)
-    6a3c869a6 (cxgb4: fix reported state of interfaces without link)
+So fix this by disabling function tracing during suspend/resume & hibernation.
 
-Fix is to move netif_carrier_off() to the end of the function.
-
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/u_ether.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ kernel/power/hibernate.c |    6 ++++++
+ kernel/power/suspend.c   |    3 +++
+ 2 files changed, 9 insertions(+)
 
---- a/drivers/usb/gadget/u_ether.c
-+++ b/drivers/usb/gadget/u_ether.c
-@@ -803,12 +803,6 @@ int gether_setup(struct usb_gadget *g, u
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -344,6 +344,7 @@ int hibernation_snapshot(int platform_mo
+ 		goto Complete_devices;
  
- 	SET_ETHTOOL_OPS(net, &ops);
+ 	suspend_console();
++	ftrace_stop();
+ 	pm_restrict_gfp_mask();
+ 	error = dpm_suspend(PMSG_FREEZE);
+ 	if (error)
+@@ -369,6 +370,7 @@ int hibernation_snapshot(int platform_mo
+ 	if (error || !in_suspend)
+ 		pm_restore_gfp_mask();
  
--	/* two kinds of host-initiated state changes:
--	 *  - iff DATA transfer is active, carrier is "on"
--	 *  - tx queueing enabled if open *and* carrier is "on"
--	 */
--	netif_carrier_off(net);
--
- 	dev->gadget = g;
- 	SET_NETDEV_DEV(net, &g->dev);
- 	SET_NETDEV_DEVTYPE(net, &gadget_type);
-@@ -822,6 +816,12 @@ int gether_setup(struct usb_gadget *g, u
- 		INFO(dev, "HOST MAC %pM\n", dev->host_mac);
++	ftrace_start();
+ 	resume_console();
  
- 		the_dev = dev;
-+
-+		/* two kinds of host-initiated state changes:
-+		 *  - iff DATA transfer is active, carrier is "on"
-+		 *  - tx queueing enabled if open *and* carrier is "on"
-+		 */
-+		netif_carrier_off(net);
+  Complete_devices:
+@@ -471,6 +473,7 @@ int hibernation_restore(int platform_mod
+ 
+ 	pm_prepare_console();
+ 	suspend_console();
++	ftrace_stop();
+ 	pm_restrict_gfp_mask();
+ 	error = dpm_suspend_start(PMSG_QUIESCE);
+ 	if (!error) {
+@@ -478,6 +481,7 @@ int hibernation_restore(int platform_mod
+ 		dpm_resume_end(PMSG_RECOVER);
  	}
+ 	pm_restore_gfp_mask();
++	ftrace_start();
+ 	resume_console();
+ 	pm_restore_console();
+ 	return error;
+@@ -504,6 +508,7 @@ int hibernation_platform_enter(void)
  
- 	return status;
+ 	entering_platform_hibernation = true;
+ 	suspend_console();
++	ftrace_stop();
+ 	error = dpm_suspend_start(PMSG_HIBERNATE);
+ 	if (error) {
+ 		if (hibernation_ops->recover)
+@@ -547,6 +552,7 @@ int hibernation_platform_enter(void)
+  Resume_devices:
+ 	entering_platform_hibernation = false;
+ 	dpm_resume_end(PMSG_RESTORE);
++	ftrace_start();
+ 	resume_console();
+ 
+  Close:
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -23,6 +23,7 @@
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
+ #include <linux/syscore_ops.h>
++#include <linux/ftrace.h>
+ #include <trace/events/power.h>
+ 
+ #include "power.h"
+@@ -210,6 +211,7 @@ int suspend_devices_and_enter(suspend_st
+ 			goto Close;
+ 	}
+ 	suspend_console();
++	ftrace_stop();
+ 	suspend_test_start();
+ 	error = dpm_suspend_start(PMSG_SUSPEND);
+ 	if (error) {
+@@ -226,6 +228,7 @@ int suspend_devices_and_enter(suspend_st
+ 	suspend_test_start();
+ 	dpm_resume_end(PMSG_RESUME);
+ 	suspend_test_finish("resume devices");
++	ftrace_start();
+ 	resume_console();
+  Close:
+ 	if (suspend_ops->end)
 
 
