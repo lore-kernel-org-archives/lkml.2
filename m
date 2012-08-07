@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998Ab2HGXOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:14:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
+	id S932942Ab2HGWhs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:37:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932951Ab2HGWhv (ORCPT
+	with ESMTP id S932916Ab2HGWhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:37:51 -0400
+	Tue, 7 Aug 2012 18:37:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: [ 032/109] TPM: chip disabled state erronously being reported as error
-Date: Tue,  7 Aug 2012 15:34:51 -0700
-Message-Id: <20120807222045.919552904@linuxfoundation.org>
+        Tony Luck <tony.luck@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [ 027/109] x86/mce: Fix siginfo_t->si_addr value for non-recoverable memory faults
+Date: Tue,  7 Aug 2012 15:34:46 -0700
+Message-Id: <20120807222045.479037430@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,62 +30,115 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 24ebe6670de3d1f0dca11c9eb372134c7ab05503 upstream.
+commit 6751ed65dc6642af64f7b8a440a75563c8aab7ae upstream.
 
-tpm_do_selftest() attempts to read a PCR in order to
-decide if one can rely on the TPM being used or not.
-The function that's used by __tpm_pcr_read() does not
-expect the TPM to be disabled or deactivated, and if so,
-reports an error.
+In commit dad1743e5993f1 ("x86/mce: Only restart instruction after machine
+check recovery if it is safe") we fixed mce_notify_process() to force a
+signal to the current process if it was not restartable (RIPV bit not
+set in MCG_STATUS). But doing it here means that the process doesn't
+get told the virtual address of the fault via siginfo_t->si_addr. This
+would prevent application level recovery from the fault.
 
-It's fine if the TPM returns this error when trying to
-use it for the first time after a power cycle, but it's
-definitely not if it already returned success for a
-previous attempt to read one of its PCRs.
+Make a new MF_MUST_KILL flag bit for memory_failure() et al. to use so
+that we will provide the right information with the signal.
 
-The tpm_do_selftest() was modified so that the driver only
-reports this return code as an error when it really is.
-
-Reported-and-tested-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/tpm/tpm.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |    6 ++++--
+ include/linux/mm.h               |    1 +
+ mm/memory-failure.c              |   14 ++++++++------
+ 3 files changed, 13 insertions(+), 8 deletions(-)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -827,10 +827,10 @@ EXPORT_SYMBOL_GPL(tpm_pcr_extend);
- int tpm_do_selftest(struct tpm_chip *chip)
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1180,6 +1180,7 @@ void mce_notify_process(void)
  {
- 	int rc;
--	u8 digest[TPM_DIGEST_SIZE];
- 	unsigned int loops;
- 	unsigned int delay_msec = 1000;
- 	unsigned long duration;
-+	struct tpm_cmd_t cmd;
+ 	unsigned long pfn;
+ 	struct mce_info *mi = mce_find_info();
++	int flags = MF_ACTION_REQUIRED;
  
- 	duration = tpm_calc_ordinal_duration(chip,
- 	                                     TPM_ORD_CONTINUE_SELFTEST);
-@@ -845,7 +845,15 @@ int tpm_do_selftest(struct tpm_chip *chi
- 		return rc;
+ 	if (!mi)
+ 		mce_panic("Lost physical address for unconsumed uncorrectable error", NULL, NULL);
+@@ -1194,8 +1195,9 @@ void mce_notify_process(void)
+ 	 * doomed. We still need to mark the page as poisoned and alert any
+ 	 * other users of the page.
+ 	 */
+-	if (memory_failure(pfn, MCE_VECTOR, MF_ACTION_REQUIRED) < 0 ||
+-			   mi->restartable == 0) {
++	if (!mi->restartable)
++		flags |= MF_MUST_KILL;
++	if (memory_failure(pfn, MCE_VECTOR, flags) < 0) {
+ 		pr_err("Memory error not recovered");
+ 		force_sig(SIGBUS, current);
+ 	}
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1595,6 +1595,7 @@ void vmemmap_populate_print_last(void);
+ enum mf_flags {
+ 	MF_COUNT_INCREASED = 1 << 0,
+ 	MF_ACTION_REQUIRED = 1 << 1,
++	MF_MUST_KILL = 1 << 2,
+ };
+ extern int memory_failure(unsigned long pfn, int trapno, int flags);
+ extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -345,14 +345,14 @@ static void add_to_kill(struct task_stru
+  * Also when FAIL is set do a force kill because something went
+  * wrong earlier.
+  */
+-static void kill_procs(struct list_head *to_kill, int doit, int trapno,
++static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
+ 			  int fail, struct page *page, unsigned long pfn,
+ 			  int flags)
+ {
+ 	struct to_kill *tk, *next;
  
- 	do {
--		rc = __tpm_pcr_read(chip, 0, digest);
-+		/* Attempt to read a PCR value */
-+		cmd.header.in = pcrread_header;
-+		cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
-+		rc = tpm_transmit(chip, (u8 *) &cmd, READ_PCR_RESULT_SIZE);
-+
-+		if (rc < TPM_HEADER_SIZE)
-+			return -EFAULT;
-+
-+		rc = be32_to_cpu(cmd.header.out.return_code);
- 		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
- 			dev_info(chip->dev,
- 				 "TPM is disabled/deactivated (0x%X)\n", rc);
+ 	list_for_each_entry_safe (tk, next, to_kill, nd) {
+-		if (doit) {
++		if (forcekill) {
+ 			/*
+ 			 * In case something went wrong with munmapping
+ 			 * make sure the process doesn't catch the
+@@ -858,7 +858,7 @@ static int hwpoison_user_mappings(struct
+ 	struct address_space *mapping;
+ 	LIST_HEAD(tokill);
+ 	int ret;
+-	int kill = 1;
++	int kill = 1, forcekill;
+ 	struct page *hpage = compound_head(p);
+ 	struct page *ppage;
+ 
+@@ -888,7 +888,7 @@ static int hwpoison_user_mappings(struct
+ 	 * be called inside page lock (it's recommended but not enforced).
+ 	 */
+ 	mapping = page_mapping(hpage);
+-	if (!PageDirty(hpage) && mapping &&
++	if (!(flags & MF_MUST_KILL) && !PageDirty(hpage) && mapping &&
+ 	    mapping_cap_writeback_dirty(mapping)) {
+ 		if (page_mkclean(hpage)) {
+ 			SetPageDirty(hpage);
+@@ -965,12 +965,14 @@ static int hwpoison_user_mappings(struct
+ 	 * Now that the dirty bit has been propagated to the
+ 	 * struct page and all unmaps done we can decide if
+ 	 * killing is needed or not.  Only kill when the page
+-	 * was dirty, otherwise the tokill list is merely
++	 * was dirty or the process is not restartable,
++	 * otherwise the tokill list is merely
+ 	 * freed.  When there was a problem unmapping earlier
+ 	 * use a more force-full uncatchable kill to prevent
+ 	 * any accesses to the poisoned memory.
+ 	 */
+-	kill_procs(&tokill, !!PageDirty(ppage), trapno,
++	forcekill = PageDirty(ppage) || (flags & MF_MUST_KILL);
++	kill_procs(&tokill, forcekill, trapno,
+ 		      ret != SWAP_SUCCESS, p, pfn, flags);
+ 
+ 	return ret;
 
 
