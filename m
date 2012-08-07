@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab2HGPWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:22:21 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:53310 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab2HGPWT (ORCPT
+	id S1753101Ab2HGPWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:22:48 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:53612 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab2HGPWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:22:19 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-79-502132a94491
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: "'Hideki EIRAKU'" <hdk@igel.co.jp>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Pawel Osciak'" <pawel@osciak.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "'Jaroslav Kysela'" <perex@perex.cz>, "'Takashi Iwai'" <tiwai@suse.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        alsa-devel@alsa-project.org, "'Katsuya MATSUBARA'" <matsu@igel.co.jp>
-References: <1344246924-32620-1-git-send-email-hdk@igel.co.jp>
- <1344246924-32620-2-git-send-email-hdk@igel.co.jp>
-In-reply-to: <1344246924-32620-2-git-send-email-hdk@igel.co.jp>
-Subject: RE: [PATCH v3 1/4] ARM: dma-mapping: define ARCH_HAS_DMA_MMAP_COHERENT
-Date: Tue, 07 Aug 2012 17:22:02 +0200
-Organization: SPRC
-Message-id: <013301cd74b0$691eba60$3b5c2f20$%szyprowski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1zubn7BzlhlQ7iQkO5v6TDrJuMCQA9mGLg
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9jQd2VRooBBvcnylmc6PvAanF51xw2
-	i54NW1kdmD0+b5ILYIzisklJzcksSy3St0vgylj1/SZzwU+OisMrLjI2MC5n72Lk5JAQMJE4
-	srSZGcIWk7hwbz0biC0kMJ1RYsVypi5GLiD7J6PErYu3mUASbAKGEl1vu8CKRASuMEkc6iwB
-	KWIWOMkocfXRZ0aI7mKJp7cvgNmcAvYS8z9uZQGxhQX8JV7/+gzWzCKgKvHt6TLWLkYODn4B
-	IYmJsxRAwrwCLhI79jUzQtiCEj8m3wNrZRbQkli/8zgThC0vsXnNW2aQVgkBdYlHf3UhzjGS
-	+H/kISNEiYjE3YbnrBMYhWchmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpe
-	cn7uJkZwyD+T3sG4qsHiEKMAB6MSD+9MFYUAIdbEsuLK3EOMEhzMSiK8h3cChXhTEiurUovy
-	44tKc1KLDzFKc7AoifOaeH/1FxJITyxJzU5NLUgtgskycXBKNTCund374+Eq50+3l7CEFc89
-	y9f2z4xrTueZpKt6M1ZJF5zgZ1i9x0Mz5DuD8wq/yR7J3LHXbl4T/Xtf3vTVlqOfFglIF1X6
-	f55/eM2jpSp2i349LrwcFLrPaKrgxFfPkxiFppYdPXBz0pHpeUdzb35xTnhfq/T28Fzv38He
-	+RY3tux+dZaxZPuLcCWW4oxEQy3mouJEAHGlQmx1AgAA
-X-TM-AS-MML: No
+	Tue, 7 Aug 2012 11:22:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120807115140.GH24257@flint.arm.linux.org.uk>
+References: <20120806195352.GC16199@opensource.wolfsonmicro.com>
+	<20120806213124.GB14594@flint.arm.linux.org.uk>
+	<20120806220032.GD26698@opensource.wolfsonmicro.com>
+	<CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com>
+	<20120807103851.GS16861@opensource.wolfsonmicro.com>
+	<20120807111331.GC24257@flint.arm.linux.org.uk>
+	<20120807112844.GZ16861@opensource.wolfsonmicro.com>
+	<20120807113121.GD24257@flint.arm.linux.org.uk>
+	<20120807113652.GA6282@flint.arm.linux.org.uk>
+	<20120807114556.GC16861@opensource.wolfsonmicro.com>
+	<20120807115140.GH24257@flint.arm.linux.org.uk>
+Date: Tue, 7 Aug 2012 17:22:45 +0200
+X-Google-Sender-Auth: l4slnzWmFor0NNx-QuKBEkInTMI
+Message-ID: <CAMuHMdUezhMNL19JUK9-uSqTr3=bU7yAci0ovFd5dSdksW1etQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
+        rpurdie@rpsys.net, bryan.wu@canonical.com,
+        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hideki,
+On Tue, Aug 7, 2012 at 1:51 PM, Russell King <rmk@arm.linux.org.uk> wrote:
+> How can:
+>
+> #define IORESOURCE_FOO 0x00000300
+>
+> in ioport.h be called "invasive" ?  The best chance of error is that the
+> identifier is already in use.  So learn to use grep to check the whole
+> sodding tree first to make sure that the identifier you're choosing to
+> use isn't already in use somewhere.
 
-On Monday, August 06, 2012 11:55 AM Hideki EIRAKU wrote:
+Perhaps it's not invasive enough? :-)
+Don't you need an extra file in /proc, too (cfr. /proc/ioports and /proc/iomem)?
 
-> ARCH_HAS_DMA_MMAP_COHERENT indicates that there is dma_mmap_coherent() API
-> in this architecture.  The name is already defined in PowerPC.
-> 
-> Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
-> ---
->  arch/arm/include/asm/dma-mapping.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-> index bbef15d..f41cd30 100644
-> --- a/arch/arm/include/asm/dma-mapping.h
-> +++ b/arch/arm/include/asm/dma-mapping.h
-> @@ -187,6 +187,7 @@ extern int arm_dma_mmap(struct device *dev, struct vm_area_struct *vma,
->  			struct dma_attrs *attrs);
-> 
->  #define dma_mmap_coherent(d, v, c, h, s) dma_mmap_attrs(d, v, c, h, s, NULL)
-> +#define ARCH_HAS_DMA_MMAP_COHERENT
-> 
->  static inline int dma_mmap_attrs(struct device *dev, struct vm_area_struct *vma,
->  				  void *cpu_addr, dma_addr_t dma_addr,
-> --
-> 1.7.0.4
+And as Arnd pointed out, if resources will be used for various new buses,
+"IORESOURCE_FOO" or "IORESOURCE_OTHER" is a bit vague.
+What about conflicts where one driver means i2c addresses and another
+one means gpio addresses? The resource system will reject them?
 
-I will take this patch to my dma-mapping kernel tree, to the fixes branch.
+Gr{oetje,eeting}s,
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
