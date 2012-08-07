@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031144Ab2HGWqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:46:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031136Ab2HGWqO (ORCPT
+	id S1757439Ab2HGWze (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:55:34 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61848 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030982Ab2HGWqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:14 -0400
+	Tue, 7 Aug 2012 18:46:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 17/49] workqueue: perform cpu down operations from low priority cpu_notifier()
-Date: Tue,  7 Aug 2012 15:44:35 -0700
-Message-Id: <20120807222028.420360083@linuxfoundation.org>
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [ 19/49] Btrfs: call the ordered free operation without any locks held
+Date: Tue,  7 Aug 2012 15:44:37 -0700
+Message-Id: <20120807222028.606735219@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -29,115 +29,45 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Chris Mason <chris.mason@fusionio.com>
 
-commit 6575820221f7a4dd6eadecf7bf83cdd154335eda upstream.
+commit e9fbcb42201c862fd6ab45c48ead4f47bb2dea9d upstream.
 
-Currently, all workqueue cpu hotplug operations run off
-CPU_PRI_WORKQUEUE which is higher than normal notifiers.  This is to
-ensure that workqueue is up and running while bringing up a CPU before
-other notifiers try to use workqueue on the CPU.
+Each ordered operation has a free callback, and this was called with the
+worker spinlock held.  Josef made the free callback also call iput,
+which we can't do with the spinlock.
 
-Per-cpu workqueues are supposed to remain working and bound to the CPU
-for normal CPU_DOWN_PREPARE notifiers.  This holds mostly true even
-with workqueue offlining running with higher priority because
-workqueue CPU_DOWN_PREPARE only creates a bound trustee thread which
-runs the per-cpu workqueue without concurrency management without
-explicitly detaching the existing workers.
+This drops the spinlock for the free operation and grabs it again before
+moving through the rest of the list.  We'll circle back around to this
+and find a cleaner way that doesn't bounce the lock around so much.
 
-However, if the trustee needs to create new workers, it creates
-unbound workers which may wander off to other CPUs while
-CPU_DOWN_PREPARE notifiers are in progress.  Furthermore, if the CPU
-down is cancelled, the per-CPU workqueue may end up with workers which
-aren't bound to the CPU.
-
-While reliably reproducible with a convoluted artificial test-case
-involving scheduling and flushing CPU burning work items from CPU down
-notifiers, this isn't very likely to happen in the wild, and, even
-when it happens, the effects are likely to be hidden by the following
-successful CPU down.
-
-Fix it by using different priorities for up and down notifiers - high
-priority for up operations and low priority for down operations.
-
-Workqueue cpu hotplug operations will soon go through further cleanup.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/cpu.h |    5 +++--
- kernel/workqueue.c  |   38 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 40 insertions(+), 3 deletions(-)
+ fs/btrfs/async-thread.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -66,8 +66,9 @@ enum {
- 	/* migration should happen before other stuff but after perf */
- 	CPU_PRI_PERF		= 20,
- 	CPU_PRI_MIGRATION	= 10,
--	/* prepare workqueues for other notifiers */
--	CPU_PRI_WORKQUEUE	= 5,
-+	/* bring up workqueues before normal notifiers and down after */
-+	CPU_PRI_WORKQUEUE_UP	= 5,
-+	CPU_PRI_WORKQUEUE_DOWN	= -5,
- };
+--- a/fs/btrfs/async-thread.c
++++ b/fs/btrfs/async-thread.c
+@@ -212,10 +212,17 @@ static noinline int run_ordered_completi
  
- #ifdef CONFIG_SMP
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3561,6 +3561,41 @@ static int __devinit workqueue_cpu_callb
- 	return notifier_from_errno(0);
- }
+ 		work->ordered_func(work);
  
-+/*
-+ * Workqueues should be brought up before normal priority CPU notifiers.
-+ * This will be registered high priority CPU notifier.
-+ */
-+static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
-+					       unsigned long action,
-+					       void *hcpu)
-+{
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_UP_PREPARE:
-+	case CPU_UP_CANCELED:
-+	case CPU_DOWN_FAILED:
-+	case CPU_ONLINE:
-+		return workqueue_cpu_callback(nfb, action, hcpu);
-+	}
-+	return NOTIFY_OK;
-+}
+-		/* now take the lock again and call the freeing code */
++		/* now take the lock again and drop our item from the list */
+ 		spin_lock(&workers->order_lock);
+ 		list_del(&work->order_list);
++		spin_unlock(&workers->order_lock);
 +
-+/*
-+ * Workqueues should be brought down after normal priority CPU notifiers.
-+ * This will be registered as low priority CPU notifier.
-+ */
-+static int __devinit workqueue_cpu_down_callback(struct notifier_block *nfb,
-+						 unsigned long action,
-+						 void *hcpu)
-+{
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_DOWN_PREPARE:
-+	case CPU_DYING:
-+	case CPU_POST_DEAD:
-+		return workqueue_cpu_callback(nfb, action, hcpu);
-+	}
-+	return NOTIFY_OK;
-+}
-+
- #ifdef CONFIG_SMP
++		/*
++		 * we don't want to call the ordered free functions
++		 * with the lock held though
++		 */
+ 		work->ordered_free(work);
++		spin_lock(&workers->order_lock);
+ 	}
  
- struct work_for_cpu {
-@@ -3754,7 +3789,8 @@ static int __init init_workqueues(void)
- 	unsigned int cpu;
- 	int i;
- 
--	cpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
-+	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
-+	cpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
- 
- 	/* initialize gcwqs */
- 	for_each_gcwq_cpu(cpu) {
+ 	spin_unlock(&workers->order_lock);
 
 
