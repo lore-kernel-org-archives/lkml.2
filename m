@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab2HGWfx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:35:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
+	id S964850Ab2HGWgU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:36:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030419Ab2HGWcz (ORCPT
+	with ESMTP id S1757279Ab2HGWgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:55 -0400
+	Tue, 7 Aug 2012 18:36:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 113/122] ALSA: hda - Fix mute-LED GPIO setup for HP Mini 210
-Date: Tue,  7 Aug 2012 15:26:41 -0700
-Message-Id: <20120807222000.214086000@linuxfoundation.org>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [ 000/109] 3.4.8-stable review
+Date: Tue,  7 Aug 2012 15:34:19 -0700
+Message-Id: <20120807222043.089735600@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
-References: <20120807221948.220495155@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,79 +22,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg KH <gregkh@linuxfoundation.org>
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.8 release.
+There are 109 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Aug  9 22:20:39 UTC 2012.
+Anything received after that time might be too late.
 
-From: Takashi Iwai <tiwai@suse.de>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.8-rc1.gz
+and the diffstat can be found below.
 
-commit a3e199732b8e2b272e82cc1ccc49c35239ed6c5a upstream.
+thanks,
 
-BIOS on HP Mini 210 doesn't provide the proper "HP_Mute_LED" DMI
-string, thus the driver doesn't initialize the GPIO, too.  In the
-earlier kernel, the driver falls back to GPIO1, but since 3.3 we've
-stopped this due to other wrongly advertised machines.
+greg k-h
 
-For fixing this particular case, add a new model type to specify the
-default polarity explicitly so that the fallback to GPIO1 is handled.
-
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=772923
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/patch_sigmatel.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -101,6 +101,7 @@ enum {
- 	STAC_92HD83XXX_HP_cNB11_INTQUAD,
- 	STAC_HP_DV7_4000,
- 	STAC_HP_ZEPHYR,
-+	STAC_92HD83XXX_HP_LED,
- 	STAC_92HD83XXX_MODELS
- };
- 
-@@ -1675,6 +1676,7 @@ static const char * const stac92hd83xxx_
- 	[STAC_92HD83XXX_HP_cNB11_INTQUAD] = "hp_cNB11_intquad",
- 	[STAC_HP_DV7_4000] = "hp-dv7-4000",
- 	[STAC_HP_ZEPHYR] = "hp-zephyr",
-+	[STAC_92HD83XXX_HP_LED] = "hp-led",
- };
- 
- static const struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
-@@ -1729,6 +1731,8 @@ static const struct snd_pci_quirk stac92
- 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3561,
- 			  "HP", STAC_HP_ZEPHYR),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3660,
-+			  "HP Mini", STAC_92HD83XXX_HP_LED),
- 	{} /* terminator */
- };
- 
-@@ -5507,6 +5511,7 @@ static void stac92hd8x_fill_auto_spec(st
- static int patch_stac92hd83xxx(struct hda_codec *codec)
- {
- 	struct sigmatel_spec *spec;
-+	int default_polarity = -1; /* no default cfg */
- 	int err;
- 
- 	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
-@@ -5555,9 +5560,12 @@ again:
- 	case STAC_HP_ZEPHYR:
- 		spec->init = stac92hd83xxx_hp_zephyr_init;
- 		break;
-+	case STAC_92HD83XXX_HP_LED:
-+		default_polarity = 1;
-+		break;
- 	}
- 
--	if (find_mute_led_cfg(codec, -1/*no default cfg*/))
-+	if (find_mute_led_cfg(codec, default_polarity))
- 		snd_printd("mute LED gpio %d polarity %d\n",
- 				spec->gpio_led,
- 				spec->gpio_led_polarity);
+-------------
+ Documentation/sound/alsa/HD-Audio-Models.txt    |    3 +-
+ Documentation/stable_kernel_rules.txt           |   19 ++-
+ Makefile                                        |    4 +-
+ arch/arm/mach-omap2/opp.c                       |    3 +-
+ arch/m68k/include/asm/entry.h                   |    4 +-
+ arch/m68k/kernel/sys_m68k.c                     |    8 +-
+ arch/mips/kernel/kspd.c                         |    2 +-
+ arch/powerpc/boot/dts/p1022ds.dtsi              |   16 ---
+ arch/powerpc/include/asm/reg.h                  |    3 +-
+ arch/powerpc/kernel/ftrace.c                    |   12 +-
+ arch/powerpc/platforms/85xx/p1022_ds.c          |  106 ++++++++++++--
+ arch/powerpc/platforms/pseries/eeh_event.c      |    6 +-
+ arch/s390/include/asm/mmu_context.h             |   14 +-
+ arch/s390/include/asm/processor.h               |    2 +
+ arch/s390/kernel/processor.c                    |    2 +
+ arch/s390/kernel/smp.c                          |    3 -
+ arch/s390/mm/fault.c                            |   13 +-
+ arch/s390/mm/mmap.c                             |   12 +-
+ arch/s390/mm/pgtable.c                          |    5 -
+ arch/x86/kernel/cpu/mcheck/mce.c                |    6 +-
+ drivers/acpi/ac.c                               |    4 +-
+ drivers/acpi/apei/apei-base.c                   |    5 +
+ drivers/base/power/main.c                       |   10 +-
+ drivers/char/tpm/tpm.c                          |   12 +-
+ drivers/gpu/drm/nouveau/nva3_copy.fuc           |    4 +-
+ drivers/gpu/drm/nouveau/nva3_copy.fuc.h         |   94 +++++++++++-
+ drivers/gpu/drm/nouveau/nvc0_copy.fuc.h         |   87 +++++++++++-
+ drivers/gpu/drm/radeon/atombios_dp.c            |   10 +-
+ drivers/gpu/drm/radeon/atombios_encoders.c      |   12 +-
+ drivers/gpu/drm/radeon/radeon_connectors.c      |   35 +++--
+ drivers/gpu/drm/radeon/radeon_cs.c              |    2 +-
+ drivers/gpu/drm/radeon/radeon_cursor.c          |    8 +-
+ drivers/gpu/drm/radeon/radeon_object.c          |    3 +-
+ drivers/iommu/amd_iommu.c                       |   17 ++-
+ drivers/iommu/amd_iommu_v2.c                    |    2 +
+ drivers/md/dm-thin.c                            |    7 +-
+ drivers/mmc/host/sdhci-pci.c                    |    1 +
+ drivers/mmc/host/sdhci.c                        |    8 +-
+ drivers/net/caif/caif_serial.c                  |    3 +
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    1 -
+ drivers/net/ethernet/broadcom/bnx2.c            |    6 +-
+ drivers/net/ethernet/broadcom/tg3.c             |   10 +-
+ drivers/net/ethernet/freescale/gianfar.c        |    7 +-
+ drivers/net/ethernet/realtek/r8169.c            |   27 +---
+ drivers/net/tun.c                               |    9 +-
+ drivers/net/usb/kaweth.c                        |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c      |    1 +
+ drivers/net/wireless/mwifiex/cfg80211.c         |    4 +-
+ drivers/net/wireless/rt2x00/rt2800usb.c         |    3 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c    |    6 +-
+ drivers/net/wireless/rtlwifi/usb.c              |   14 +-
+ drivers/net/wireless/rtlwifi/wifi.h             |    1 +
+ drivers/s390/net/qeth_l3_main.c                 |    4 +
+ drivers/scsi/hosts.c                            |    7 +-
+ drivers/scsi/libsas/sas_expander.c              |   47 +++---
+ drivers/scsi/scsi_error.c                       |   14 ++
+ drivers/scsi/scsi_lib.c                         |   43 ++----
+ drivers/scsi/scsi_priv.h                        |    1 -
+ drivers/scsi/scsi_scan.c                        |    3 +
+ drivers/scsi/scsi_sysfs.c                       |   46 +++---
+ drivers/spi/spi-pl022.c                         |    5 +
+ drivers/staging/zsmalloc/zsmalloc-main.c        |   33 +----
+ drivers/target/iscsi/iscsi_target.c             |   22 +--
+ drivers/target/iscsi/iscsi_target_core.h        |    2 -
+ drivers/target/iscsi/iscsi_target_login.c       |   60 +-------
+ drivers/target/target_core_transport.c          |   10 ++
+ drivers/usb/core/devio.c                        |   10 +-
+ drivers/usb/early/ehci-dbgp.c                   |    2 +-
+ drivers/usb/gadget/u_ether.c                    |   12 +-
+ drivers/usb/serial/option.c                     |    2 +
+ drivers/usb/storage/uas.c                       |   90 ++----------
+ fs/btrfs/async-thread.c                         |    9 +-
+ fs/cifs/connect.c                               |    9 +-
+ fs/exec.c                                       |    2 +-
+ fs/ext4/balloc.c                                |    3 +-
+ fs/ext4/bitmap.c                                |   12 +-
+ fs/ext4/ext4.h                                  |    6 +-
+ fs/ext4/extents.c                               |   46 +++---
+ fs/ext4/ialloc.c                                |    3 +-
+ fs/ext4/inode.c                                 |   41 ++++--
+ fs/ext4/resize.c                                |    7 +-
+ fs/ext4/super.c                                 |  174 ++++++++++++++++-------
+ fs/locks.c                                      |    6 +-
+ fs/nfs/file.c                                   |    7 +-
+ fs/nfs/idmap.c                                  |   26 +++-
+ fs/nfs/objlayout/objio_osd.c                    |   16 ++-
+ fs/nfsd/nfs4xdr.c                               |    2 +-
+ fs/select.c                                     |   10 +-
+ fs/udf/super.c                                  |    2 +-
+ include/linux/cpu.h                             |    5 +-
+ include/linux/mm.h                              |    1 +
+ include/linux/net.h                             |    1 +
+ include/linux/posix_types.h                     |   18 +--
+ include/linux/time.h                            |    8 --
+ include/target/target_core_base.h               |    1 +
+ kernel/exit.c                                   |    2 +-
+ kernel/futex.c                                  |   17 ++-
+ kernel/power/hibernate.c                        |    6 +
+ kernel/power/suspend.c                          |    3 +
+ kernel/workqueue.c                              |   38 ++++-
+ mm/memory-failure.c                             |   14 +-
+ net/8021q/vlan.c                                |    3 +
+ net/batman-adv/routing.c                        |    2 +
+ net/caif/caif_dev.c                             |    2 +-
+ net/compat.c                                    |    4 +-
+ net/core/rtnetlink.c                            |    8 +-
+ net/ipv4/cipso_ipv4.c                           |    6 +-
+ net/ipv4/tcp.c                                  |    5 +-
+ net/ipv4/tcp_input.c                            |    4 +-
+ net/mac80211/mlme.c                             |    4 +-
+ net/sched/sch_netem.c                           |   42 ++----
+ net/sched/sch_sfb.c                             |    2 +
+ net/sctp/input.c                                |    7 +-
+ net/sctp/socket.c                               |   12 +-
+ net/socket.c                                    |    3 +
+ net/sunrpc/sched.c                              |    2 +
+ net/sunrpc/xprtrdma/transport.c                 |    3 +-
+ net/sunrpc/xprtsock.c                           |   10 ++
+ net/wanrouter/wanmain.c                         |   51 +++----
+ security/selinux/hooks.c                        |    2 +-
+ sound/drivers/mpu401/mpu401_uart.c              |    1 +
+ sound/pci/hda/patch_hdmi.c                      |   12 +-
+ sound/pci/hda/patch_realtek.c                   |   29 ++++
+ sound/pci/hda/patch_sigmatel.c                  |   23 ++-
+ sound/pci/hda/patch_via.c                       |    7 +-
+ sound/soc/codecs/wm8962.c                       |    6 +
+ sound/soc/codecs/wm8994.c                       |    2 +-
+ sound/soc/soc-dapm.c                            |   15 +-
+ sound/usb/clock.c                               |    3 +-
+ 129 files changed, 1162 insertions(+), 674 deletions(-)
 
 
