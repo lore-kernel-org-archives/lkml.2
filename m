@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031213Ab2HGWqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:46:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64574 "EHLO
+	id S1031240Ab2HGWq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:46:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031187Ab2HGWqn (ORCPT
+	with ESMTP id S1031227Ab2HGWq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:43 -0400
+	Tue, 7 Aug 2012 18:46:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 26/49] ext4: pass a char * to ext4_count_free() instead of a buffer_head ptr
-Date: Tue,  7 Aug 2012 15:44:44 -0700
-Message-Id: <20120807222029.243721453@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 29/49] sch_sfb: Fix missing NULL check
+Date: Tue,  7 Aug 2012 15:44:47 -0700
+Message-Id: <20120807222029.497996532@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -29,78 +30,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
 
-commit f6fb99cadcd44660c68e13f6eab28333653621e6 upstream.
+From: Alan Cox <alan@linux.intel.com>
 
-Make it possible for ext4_count_free to operate on buffers and not
-just data in buffer_heads.
+[ Upstream commit 7ac2908e4b2edaec60e9090ddb4d9ceb76c05e7d ]
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44461
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ext4/balloc.c |    3 ++-
- fs/ext4/bitmap.c |    8 +++-----
- fs/ext4/ext4.h   |    2 +-
- fs/ext4/ialloc.c |    3 ++-
- 4 files changed, 8 insertions(+), 8 deletions(-)
+ net/sched/sch_sfb.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -514,7 +514,8 @@ ext4_fsblk_t ext4_count_free_blocks(stru
- 		if (bitmap_bh == NULL)
- 			continue;
+--- a/net/sched/sch_sfb.c
++++ b/net/sched/sch_sfb.c
+@@ -556,6 +556,8 @@ static int sfb_dump(struct Qdisc *sch, s
  
--		x = ext4_count_free(bitmap_bh, sb->s_blocksize);
-+		x = ext4_count_free(bitmap_bh->b_data,
-+				    EXT4_BLOCKS_PER_GROUP(sb) / 8);
- 		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
- 			i, ext4_free_blks_count(sb, gdp), x);
- 		bitmap_count += x;
---- a/fs/ext4/bitmap.c
-+++ b/fs/ext4/bitmap.c
-@@ -15,15 +15,13 @@
+ 	sch->qstats.backlog = q->qdisc->qstats.backlog;
+ 	opts = nla_nest_start(skb, TCA_OPTIONS);
++	if (opts == NULL)
++		goto nla_put_failure;
+ 	NLA_PUT(skb, TCA_SFB_PARMS, sizeof(opt), &opt);
+ 	return nla_nest_end(skb, opts);
  
- static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
- 
--unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
-+unsigned int ext4_count_free(char *bitmap, unsigned int numchars)
- {
- 	unsigned int i, sum = 0;
- 
--	if (!map)
--		return 0;
- 	for (i = 0; i < numchars; i++)
--		sum += nibblemap[map->b_data[i] & 0xf] +
--			nibblemap[(map->b_data[i] >> 4) & 0xf];
-+		sum += nibblemap[bitmap[i] & 0xf] +
-+			nibblemap[(bitmap[i] >> 4) & 0xf];
- 	return sum;
- }
- 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1713,7 +1713,7 @@ struct mmpd_data {
- # define NORET_AND	noreturn,
- 
- /* bitmap.c */
--extern unsigned int ext4_count_free(struct buffer_head *, unsigned);
-+extern unsigned int ext4_count_free(char *bitmap, unsigned numchars);
- 
- /* balloc.c */
- extern unsigned int ext4_block_group(struct super_block *sb,
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -1193,7 +1193,8 @@ unsigned long ext4_count_free_inodes(str
- 		if (!bitmap_bh)
- 			continue;
- 
--		x = ext4_count_free(bitmap_bh, EXT4_INODES_PER_GROUP(sb) / 8);
-+		x = ext4_count_free(bitmap_bh->b_data,
-+				    EXT4_INODES_PER_GROUP(sb) / 8);
- 		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
- 			(unsigned long) i, ext4_free_inodes_count(sb, gdp), x);
- 		bitmap_count += x;
 
 
