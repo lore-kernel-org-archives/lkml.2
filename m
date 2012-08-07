@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab2HGTy3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:54:29 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:49823 "EHLO
+	id S1756378Ab2HGTyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:54:35 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:49824 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756269Ab2HGTy0 (ORCPT
+	with ESMTP id S1756271Ab2HGTyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:54:26 -0400
+	Tue, 7 Aug 2012 15:54:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 26/41] TTY: use tty_port_link_device
-Date: Tue,  7 Aug 2012 21:47:51 +0200
-Message-Id: <1344368886-24033-27-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 30/41] TTY: moxa, convert to dynamic device
+Date: Tue,  7 Aug 2012 21:47:55 +0200
+Message-Id: <1344368886-24033-31-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -20,230 +20,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So now for those drivers that can use neither tty_port_install nor
-tty_port_register_driver but still have tty_port available before
-tty_register_driver we use newly added tty_port_link_device.
+This allows us to provide the tty layer with information about
+tty_port for each link.
 
-The rest of the drivers that still do not provide tty_struct <->
-tty_port link will have to be converted to implement
-tty->ops->install.
+We also provide a tty_port for the service port. For this one we allow
+only ioctl, so this is pretty ugly.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/alpha/kernel/srmcons.c         |    1 +
- arch/ia64/hp/sim/simserial.c        |    1 +
- arch/parisc/kernel/pdc_cons.c       |    1 +
- arch/xtensa/platforms/iss/console.c |    1 +
- drivers/char/ttyprintk.c            |    1 +
- drivers/s390/char/sclp_tty.c        |    1 +
- drivers/s390/char/sclp_vt220.c      |    1 +
- drivers/tty/amiserial.c             |    9 +++++----
- drivers/tty/bfin_jtag_comm.c        |    1 +
- drivers/tty/hvc/hvsi.c              |    2 ++
- drivers/tty/serial/68328serial.c    |   15 +++++++++------
- drivers/tty/serial/crisv10.c        |    9 ++++++---
- 12 files changed, 30 insertions(+), 13 deletions(-)
+ drivers/tty/moxa.c |   24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
 
-diff --git a/arch/alpha/kernel/srmcons.c b/arch/alpha/kernel/srmcons.c
-index 3ea8094..5d58652 100644
---- a/arch/alpha/kernel/srmcons.c
-+++ b/arch/alpha/kernel/srmcons.c
-@@ -223,6 +223,7 @@ srmcons_init(void)
- 		driver->subtype = SYSTEM_TYPE_SYSCONS;
- 		driver->init_termios = tty_std_termios;
- 		tty_set_operations(driver, &srmcons_ops);
-+		tty_port_link_device(&srmcons_singleton.port, driver, 0);
- 		err = tty_register_driver(driver);
- 		if (err) {
- 			put_tty_driver(driver);
-diff --git a/arch/ia64/hp/sim/simserial.c b/arch/ia64/hp/sim/simserial.c
-index 1ce97f4..ec536e4 100644
---- a/arch/ia64/hp/sim/simserial.c
-+++ b/arch/ia64/hp/sim/simserial.c
-@@ -545,6 +545,7 @@ static int __init simrs_init(void)
- 	/* the port is imaginary */
- 	printk(KERN_INFO "ttyS0 at 0x03f8 (irq = %d) is a 16550\n", state->irq);
+diff --git a/drivers/tty/moxa.c b/drivers/tty/moxa.c
+index 89cc934..9dffc72 100644
+--- a/drivers/tty/moxa.c
++++ b/drivers/tty/moxa.c
+@@ -169,6 +169,7 @@ static DEFINE_SPINLOCK(moxa_lock);
+ static unsigned long baseaddr[MAX_BOARDS];
+ static unsigned int type[MAX_BOARDS];
+ static unsigned int numports[MAX_BOARDS];
++static struct tty_port moxa_service_port;
  
-+	tty_port_link_device(&state->port, hp_simserial_driver, 0);
- 	retval = tty_register_driver(hp_simserial_driver);
- 	if (retval) {
- 		printk(KERN_ERR "Couldn't register simserial driver\n");
-diff --git a/arch/parisc/kernel/pdc_cons.c b/arch/parisc/kernel/pdc_cons.c
-index 47341aa..8823863 100644
---- a/arch/parisc/kernel/pdc_cons.c
-+++ b/arch/parisc/kernel/pdc_cons.c
-@@ -202,6 +202,7 @@ static int __init pdc_console_tty_driver_init(void)
- 	pdc_console_tty_driver->flags = TTY_DRIVER_REAL_RAW |
- 		TTY_DRIVER_RESET_TERMIOS;
- 	tty_set_operations(pdc_console_tty_driver, &pdc_console_tty_ops);
-+	tty_port_link_device(&tty_port, pdc_console_tty_driver, 0);
+ MODULE_AUTHOR("William Chen");
+ MODULE_DESCRIPTION("MOXA Intellio Family Multiport Board Device Driver");
+@@ -834,7 +835,7 @@ static int moxa_init_board(struct moxa_board_conf *brd, struct device *dev)
+ 	const struct firmware *fw;
+ 	const char *file;
+ 	struct moxa_port *p;
+-	unsigned int i;
++	unsigned int i, first_idx;
+ 	int ret;
  
- 	err = tty_register_driver(pdc_console_tty_driver);
- 	if (err) {
-diff --git a/arch/xtensa/platforms/iss/console.c b/arch/xtensa/platforms/iss/console.c
-index f9726f6..2cd3d3a 100644
---- a/arch/xtensa/platforms/iss/console.c
-+++ b/arch/xtensa/platforms/iss/console.c
-@@ -223,6 +223,7 @@ int __init rs_init(void)
- 	serial_driver->flags = TTY_DRIVER_REAL_RAW;
+ 	brd->ports = kcalloc(MAX_PORTS_PER_BOARD, sizeof(*brd->ports),
+@@ -887,6 +888,11 @@ static int moxa_init_board(struct moxa_board_conf *brd, struct device *dev)
+ 		mod_timer(&moxaTimer, jiffies + HZ / 50);
+ 	spin_unlock_bh(&moxa_lock);
  
- 	tty_set_operations(serial_driver, &serial_ops);
-+	tty_port_link_device(&serial_port, serial_driver, 0);
- 
- 	if (tty_register_driver(serial_driver))
- 		panic("Couldn't register serial driver\n");
-diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
-index 9e6272f..561f8aa 100644
---- a/drivers/char/ttyprintk.c
-+++ b/drivers/char/ttyprintk.c
-@@ -198,6 +198,7 @@ static int __init ttyprintk_init(void)
- 	ttyprintk_driver->init_termios = tty_std_termios;
- 	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;
- 	tty_set_operations(ttyprintk_driver, &ttyprintk_ops);
-+	tty_port_link_device(&tpk_port.port, ttyprintk_driver, 0);
- 
- 	ret = tty_register_driver(ttyprintk_driver);
- 	if (ret < 0) {
-diff --git a/drivers/s390/char/sclp_tty.c b/drivers/s390/char/sclp_tty.c
-index 0792c85..30ec09e 100644
---- a/drivers/s390/char/sclp_tty.c
-+++ b/drivers/s390/char/sclp_tty.c
-@@ -567,6 +567,7 @@ sclp_tty_init(void)
- 	driver->init_termios.c_lflag = ISIG | ECHO;
- 	driver->flags = TTY_DRIVER_REAL_RAW;
- 	tty_set_operations(driver, &sclp_ops);
-+	tty_port_link_device(&sclp_port, driver, 0);
- 	rc = tty_register_driver(driver);
- 	if (rc) {
- 		put_tty_driver(driver);
-diff --git a/drivers/s390/char/sclp_vt220.c b/drivers/s390/char/sclp_vt220.c
-index edfc0fd..7e60f3d 100644
---- a/drivers/s390/char/sclp_vt220.c
-+++ b/drivers/s390/char/sclp_vt220.c
-@@ -691,6 +691,7 @@ static int __init sclp_vt220_tty_init(void)
- 	driver->init_termios = tty_std_termios;
- 	driver->flags = TTY_DRIVER_REAL_RAW;
- 	tty_set_operations(driver, &sclp_vt220_ops);
-+	tty_port_link_device(&sclp_vt220_port, driver, 0);
- 
- 	rc = tty_register_driver(driver);
- 	if (rc)
-diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
-index 0e8441e..2acf199 100644
---- a/drivers/tty/amiserial.c
-+++ b/drivers/tty/amiserial.c
-@@ -1710,10 +1710,6 @@ static int __init amiga_serial_probe(struct platform_device *pdev)
- 	serial_driver->flags = TTY_DRIVER_REAL_RAW;
- 	tty_set_operations(serial_driver, &serial_ops);
- 
--	error = tty_register_driver(serial_driver);
--	if (error)
--		goto fail_put_tty_driver;
--
- 	state = rs_table;
- 	state->port = (int)&custom.serdatr; /* Just to give it a value */
- 	state->custom_divisor = 0;
-@@ -1724,6 +1720,11 @@ static int __init amiga_serial_probe(struct platform_device *pdev)
- 	state->icount.overrun = state->icount.brk = 0;
- 	tty_port_init(&state->tport);
- 	state->tport.ops = &amiga_port_ops;
-+	tty_port_link_device(&state->tport, serial_driver, 0);
-+
-+	error = tty_register_driver(serial_driver);
-+	if (error)
-+		goto fail_put_tty_driver;
- 
- 	printk(KERN_INFO "ttyS0 is the amiga builtin serial port\n");
- 
-diff --git a/drivers/tty/bfin_jtag_comm.c b/drivers/tty/bfin_jtag_comm.c
-index 61fc74f..02b7d3a 100644
---- a/drivers/tty/bfin_jtag_comm.c
-+++ b/drivers/tty/bfin_jtag_comm.c
-@@ -263,6 +263,7 @@ static int __init bfin_jc_init(void)
- 	bfin_jc_driver->subtype      = SERIAL_TYPE_NORMAL;
- 	bfin_jc_driver->init_termios = tty_std_termios;
- 	tty_set_operations(bfin_jc_driver, &bfin_jc_ops);
-+	tty_port_link_device(&port, bfin_jc_driver, 0);
- 
- 	ret = tty_register_driver(bfin_jc_driver);
- 	if (ret)
-diff --git a/drivers/tty/hvc/hvsi.c b/drivers/tty/hvc/hvsi.c
-index 6f5bc49..0083bc1 100644
---- a/drivers/tty/hvc/hvsi.c
-+++ b/drivers/tty/hvc/hvsi.c
-@@ -1080,6 +1080,8 @@ static int __init hvsi_init(void)
- 		struct hvsi_struct *hp = &hvsi_ports[i];
- 		int ret = 1;
- 
-+		tty_port_link_device(&hp->port, hvsi_driver, i);
-+
- 		ret = request_irq(hp->virq, hvsi_interrupt, 0, "hvsi", hp);
- 		if (ret)
- 			printk(KERN_ERR "HVSI: couldn't reserve irq 0x%x (error %i)\n",
-diff --git a/drivers/tty/serial/68328serial.c b/drivers/tty/serial/68328serial.c
-index cc4c092..66c38a3 100644
---- a/drivers/tty/serial/68328serial.c
-+++ b/drivers/tty/serial/68328serial.c
-@@ -1189,12 +1189,6 @@ rs68328_init(void)
- 	serial_driver->flags = TTY_DRIVER_REAL_RAW;
- 	tty_set_operations(serial_driver, &rs_ops);
- 
--	if (tty_register_driver(serial_driver)) {
--		put_tty_driver(serial_driver);
--		printk(KERN_ERR "Couldn't register serial driver\n");
--		return -ENOMEM;
--	}
--
- 	local_irq_save(flags);
- 
- 	for(i=0;i<NR_PORTS;i++) {
-@@ -1224,8 +1218,17 @@ rs68328_init(void)
- 			    0,
- 			    "M68328_UART", info))
-                 panic("Unable to attach 68328 serial interrupt\n");
-+
-+	    tty_port_link_device(&info->tport, serial_driver, i);
- 	}
- 	local_irq_restore(flags);
-+
-+	if (tty_register_driver(serial_driver)) {
-+		put_tty_driver(serial_driver);
-+		printk(KERN_ERR "Couldn't register serial driver\n");
-+		return -ENOMEM;
-+	}
++	first_idx = (brd - moxa_boards) * MAX_PORTS_PER_BOARD;
++	for (i = 0; i < brd->numPorts; i++)
++		tty_port_register_device(&brd->ports[i].port, moxaDriver,
++				first_idx + i, dev);
 +
  	return 0;
- }
+ err_free:
+ 	kfree(brd->ports);
+@@ -896,7 +902,7 @@ err:
  
-diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
-index 708c3bf..8ea2081 100644
---- a/drivers/tty/serial/crisv10.c
-+++ b/drivers/tty/serial/crisv10.c
-@@ -4447,10 +4447,8 @@ static int __init rs_init(void)
+ static void moxa_board_deinit(struct moxa_board_conf *brd)
+ {
+-	unsigned int a, opened;
++	unsigned int a, opened, first_idx;
  
- 	tty_set_operations(driver, &rs_ops);
-         serial_driver = driver;
--	if (tty_register_driver(driver))
--		panic("Couldn't register serial driver\n");
--	/* do some initializing for the separate ports */
- 
-+	/* do some initializing for the separate ports */
- 	for (i = 0, info = rs_table; i < NR_PORTS; i++,info++) {
- 		if (info->enabled) {
- 			if (cris_request_io_interface(info->io_if,
-@@ -4502,7 +4500,12 @@ static int __init rs_init(void)
- 			printk(KERN_INFO "%s%d at %p is a builtin UART with DMA\n",
- 			       serial_driver->name, info->line, info->ioport);
- 		}
-+		tty_port_link_device(&info->port, driver, i);
+ 	mutex_lock(&moxa_openlock);
+ 	spin_lock_bh(&moxa_lock);
+@@ -925,6 +931,10 @@ static void moxa_board_deinit(struct moxa_board_conf *brd)
+ 		mutex_lock(&moxa_openlock);
  	}
+ 
++	first_idx = (brd - moxa_boards) * MAX_PORTS_PER_BOARD;
++	for (a = 0; a < brd->numPorts; a++)
++		tty_unregister_device(moxaDriver, first_idx + a);
 +
-+	if (tty_register_driver(driver))
-+		panic("Couldn't register serial driver\n");
+ 	iounmap(brd->basemem);
+ 	brd->basemem = NULL;
+ 	kfree(brd->ports);
+@@ -1031,7 +1041,12 @@ static int __init moxa_init(void)
+ 
+ 	printk(KERN_INFO "MOXA Intellio family driver version %s\n",
+ 			MOXA_VERSION);
+-	moxaDriver = alloc_tty_driver(MAX_PORTS + 1);
 +
- #ifdef CONFIG_ETRAX_FAST_TIMER
- #ifdef CONFIG_ETRAX_SERIAL_FAST_TIMER
- 	memset(fast_timers, 0, sizeof(fast_timers));
++	tty_port_init(&moxa_service_port);
++
++	moxaDriver = tty_alloc_driver(MAX_PORTS + 1,
++			TTY_DRIVER_REAL_RAW |
++			TTY_DRIVER_DYNAMIC_DEV);
+ 	if (!moxaDriver)
+ 		return -ENOMEM;
+ 
+@@ -1044,8 +1059,9 @@ static int __init moxa_init(void)
+ 	moxaDriver->init_termios.c_cflag = B9600 | CS8 | CREAD | CLOCAL | HUPCL;
+ 	moxaDriver->init_termios.c_ispeed = 9600;
+ 	moxaDriver->init_termios.c_ospeed = 9600;
+-	moxaDriver->flags = TTY_DRIVER_REAL_RAW;
+ 	tty_set_operations(moxaDriver, &moxa_ops);
++	/* Having one more port only for ioctls is ugly */
++	tty_port_link_device(&moxa_service_port, moxaDriver, MAX_PORTS);
+ 
+ 	if (tty_register_driver(moxaDriver)) {
+ 		printk(KERN_ERR "can't register MOXA Smartio tty driver!\n");
 -- 
 1.7.10.4
 
