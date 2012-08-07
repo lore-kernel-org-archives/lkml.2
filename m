@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757258Ab2HGDhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:37:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59599 "EHLO
+	id S1757285Ab2HGDiK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:38:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59604 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757215Ab2HGDhw (ORCPT
+	by vger.kernel.org with ESMTP id S1757260Ab2HGDiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:37:52 -0400
-Message-Id: <20120807032755.803571133@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:07 -0400
+Message-Id: <20120807032756.747314608@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:27:55 +0100
+Date: Tue, 07 Aug 2012 04:27:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/70] 3.2.27-stable review
+        alan@lxorguk.ukuu.org.uk, Jarod Wilson <jarod@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 04/70] [media] lirc_sir: make device registration work
+In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
 X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
@@ -22,100 +25,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.2.27 release.
-There are 70 patches in this series, which will be posted as responses
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Thu Aug  9 10:00:00 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-A combined patch relative to 3.2.26 will be posted as an additional
-response to this, and the diffstat can be found below.
+From: Jarod Wilson <jarod@redhat.com>
 
-Ben.
+commit 4b71ca6bce8fab3d08c61bf330e781f957934ae1 upstream.
 
--------------
- Documentation/sound/alsa/HD-Audio-Models.txt |    3 +-
- Documentation/stable_kernel_rules.txt        |   19 +-
- Makefile                                     |    4 +-
- arch/arm/include/asm/mutex.h                 |  119 +----------
- arch/arm/kernel/entry-armv.S                 |  111 +++++++----
- arch/arm/kernel/process.c                    |    2 +
- arch/arm/kernel/traps.c                      |    8 -
- arch/arm/mm/tlb-v7.S                         |   12 ++
- arch/arm/vfp/entry.S                         |   16 +-
- arch/arm/vfp/vfphw.S                         |   19 +-
- arch/arm/vfp/vfpmodule.c                     |    8 +-
- arch/ia64/include/asm/atomic.h               |    4 +-
- arch/m68k/include/asm/entry.h                |    4 +-
- arch/m68k/kernel/sys_m68k.c                  |    8 +-
- arch/s390/include/asm/mmu_context.h          |   14 +-
- arch/s390/include/asm/processor.h            |    2 +
- arch/s390/mm/fault.c                         |   13 +-
- arch/s390/mm/mmap.c                          |   12 +-
- arch/s390/mm/pgtable.c                       |    5 -
- arch/x86/kernel/alternative.c                |    2 +-
- arch/x86/xen/p2m.c                           |   36 ++++
- drivers/block/floppy.c                       |    8 +-
- drivers/block/virtio_blk.c                   |    9 +-
- drivers/char/mspec.c                         |    2 +-
- drivers/char/random.c                        |  273 +++++++++++++++++++-------
- drivers/firmware/pcdp.c                      |    4 +-
- drivers/gpu/drm/i915/intel_dp.c              |    4 +-
- drivers/input/mouse/synaptics.c              |   23 +++
- drivers/md/dm-thin.c                         |    7 +-
- drivers/md/raid1.c                           |    5 +-
- drivers/media/rc/ene_ir.c                    |    3 +-
- drivers/mfd/ab3100-core.c                    |    2 -
- drivers/mfd/wm831x-otp.c                     |    8 +
- drivers/net/wireless/rt2x00/rt2800usb.c      |    1 +
- drivers/platform/x86/asus-wmi.c              |    7 +-
- drivers/rtc/rtc-wm831x.c                     |   24 ++-
- drivers/staging/media/lirc/lirc_sir.c        |   60 +++++-
- drivers/tty/serial/pch_uart.c                |   21 +-
- drivers/usb/core/hub.c                       |    9 +
- drivers/usb/early/ehci-dbgp.c                |    2 +-
- drivers/video/smscufx.c                      |    2 +-
- fs/exofs/ore.c                               |   14 +-
- fs/nfs/file.c                                |    7 +-
- fs/nfsd/nfs4xdr.c                            |    2 +-
- fs/nilfs2/ioctl.c                            |    4 +-
- fs/nilfs2/super.c                            |    3 +
- fs/nilfs2/the_nilfs.c                        |    1 +
- fs/nilfs2/the_nilfs.h                        |    2 +
- include/linux/hugetlb.h                      |   10 +
- include/linux/init_task.h                    |   12 +-
- include/linux/random.h                       |    4 +-
- include/linux/sched.h                        |    5 +-
- kernel/futex.c                               |   17 +-
- kernel/irq/handle.c                          |    7 +-
- kernel/sched.c                               |   32 +--
- lib/vsprintf.c                               |    3 +-
- mm/hugetlb.c                                 |   28 ++-
- mm/internal.h                                |    2 +
- mm/memory.c                                  |    7 +-
- mm/mmu_notifier.c                            |   45 ++---
- mm/page_alloc.c                              |   33 ++--
- mm/sparse.c                                  |    3 +
- net/core/dev.c                               |    3 +
- net/core/drop_monitor.c                      |  113 ++++++-----
- net/core/rtnetlink.c                         |    1 +
- net/sunrpc/rpcb_clnt.c                       |    4 +-
- net/sunrpc/sched.c                           |    2 +
- net/sunrpc/xprtrdma/transport.c              |    3 +-
- net/sunrpc/xprtsock.c                        |   10 +
- net/wireless/util.c                          |    3 +
- sound/drivers/mpu401/mpu401_uart.c           |    1 +
- sound/pci/hda/patch_realtek.c                |   28 +++
- sound/pci/hda/patch_via.c                    |    7 +-
- sound/soc/codecs/wm8962.c                    |    3 +
- sound/soc/codecs/wm8994.c                    |    2 +-
- sound/usb/clock.c                            |    3 +-
- 76 files changed, 863 insertions(+), 456 deletions(-)
+For one, the driver device pointer needs to be filled in, or the lirc core
+will refuse to load the driver. And we really need to wire up all the
+platform_device bits. This has been tested via the lirc sourceforge tree
+and verified to work, been sitting there for months, finally getting
+around to sending it. :\
 
--- 
-Ben Hutchings
-Theory and practice are closer in theory than in practice.
-                                - John Levine, moderator of comp.compilers
+CC: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/staging/media/lirc/lirc_sir.c |   60 +++++++++++++++++++++++++++++++--
+ 1 file changed, 58 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/media/lirc/lirc_sir.c b/drivers/staging/media/lirc/lirc_sir.c
+index 945d962..4afc3b4 100644
+--- a/drivers/staging/media/lirc/lirc_sir.c
++++ b/drivers/staging/media/lirc/lirc_sir.c
+@@ -52,6 +52,7 @@
+ #include <linux/io.h>
+ #include <asm/irq.h>
+ #include <linux/fcntl.h>
++#include <linux/platform_device.h>
+ #ifdef LIRC_ON_SA1100
+ #include <asm/hardware.h>
+ #ifdef CONFIG_SA1100_COLLIE
+@@ -487,9 +488,11 @@ static struct lirc_driver driver = {
+ 	.owner		= THIS_MODULE,
+ };
+ 
++static struct platform_device *lirc_sir_dev;
+ 
+ static int init_chrdev(void)
+ {
++	driver.dev = &lirc_sir_dev->dev;
+ 	driver.minor = lirc_register_driver(&driver);
+ 	if (driver.minor < 0) {
+ 		printk(KERN_ERR LIRC_DRIVER_NAME ": init_chrdev() failed.\n");
+@@ -1215,20 +1218,71 @@ static int init_lirc_sir(void)
+ 	return 0;
+ }
+ 
++static int __devinit lirc_sir_probe(struct platform_device *dev)
++{
++	return 0;
++}
++
++static int __devexit lirc_sir_remove(struct platform_device *dev)
++{
++	return 0;
++}
++
++static struct platform_driver lirc_sir_driver = {
++	.probe		= lirc_sir_probe,
++	.remove		= __devexit_p(lirc_sir_remove),
++	.driver		= {
++		.name	= "lirc_sir",
++		.owner	= THIS_MODULE,
++	},
++};
+ 
+ static int __init lirc_sir_init(void)
+ {
+ 	int retval;
+ 
++	retval = platform_driver_register(&lirc_sir_driver);
++	if (retval) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform driver register "
++		       "failed!\n");
++		return -ENODEV;
++	}
++
++	lirc_sir_dev = platform_device_alloc("lirc_dev", 0);
++	if (!lirc_sir_dev) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device alloc "
++		       "failed!\n");
++		retval = -ENOMEM;
++		goto pdev_alloc_fail;
++	}
++
++	retval = platform_device_add(lirc_sir_dev);
++	if (retval) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device add "
++		       "failed!\n");
++		retval = -ENODEV;
++		goto pdev_add_fail;
++	}
++
+ 	retval = init_chrdev();
+ 	if (retval < 0)
+-		return retval;
++		goto fail;
++
+ 	retval = init_lirc_sir();
+ 	if (retval) {
+ 		drop_chrdev();
+-		return retval;
++		goto fail;
+ 	}
++
+ 	return 0;
++
++fail:
++	platform_device_del(lirc_sir_dev);
++pdev_add_fail:
++	platform_device_put(lirc_sir_dev);
++pdev_alloc_fail:
++	platform_driver_unregister(&lirc_sir_driver);
++	return retval;
+ }
+ 
+ static void __exit lirc_sir_exit(void)
+@@ -1236,6 +1290,8 @@ static void __exit lirc_sir_exit(void)
+ 	drop_hardware();
+ 	drop_chrdev();
+ 	drop_port();
++	platform_device_unregister(lirc_sir_dev);
++	platform_driver_unregister(&lirc_sir_driver);
+ 	printk(KERN_INFO LIRC_DRIVER_NAME ": Uninstalled.\n");
+ }
+ 
+
 
