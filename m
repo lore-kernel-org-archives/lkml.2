@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab2HGXgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:36:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
+	id S1757255Ab2HGXgq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:36:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932547Ab2HGW3Q (ORCPT
+	with ESMTP id S932349Ab2HGW3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:29:16 -0400
+	Tue, 7 Aug 2012 18:29:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: [ 044/122] TPM: chip disabled state erronously being reported as error
-Date: Tue,  7 Aug 2012 15:25:32 -0700
-Message-Id: <20120807221952.169487066@linuxfoundation.org>
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Michael Kerrisk <mtk.man-pages@gmail.com>
+Subject: [ 042/122] PM / Sleep: Require CAP_BLOCK_SUSPEND to use wake_lock/wake_unlock
+Date: Tue,  7 Aug 2012 15:25:30 -0700
+Message-Id: <20120807221951.996747839@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,62 +30,53 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 24ebe6670de3d1f0dca11c9eb372134c7ab05503 upstream.
+commit 11388c87d2abca1f01975ced28ce9eacea239104 upstream.
 
-tpm_do_selftest() attempts to read a PCR in order to
-decide if one can rely on the TPM being used or not.
-The function that's used by __tpm_pcr_read() does not
-expect the TPM to be disabled or deactivated, and if so,
-reports an error.
+Require processes wanting to use the wake_lock/wake_unlock sysfs
+files to have the CAP_BLOCK_SUSPEND capability, which also is
+required for the eventpoll EPOLLWAKEUP flag to be effective, so that
+all interfaces related to blocking autosleep depend on the same
+capability.
 
-It's fine if the TPM returns this error when trying to
-use it for the first time after a power cycle, but it's
-definitely not if it already returned success for a
-previous attempt to read one of its PCRs.
-
-The tpm_do_selftest() was modified so that the driver only
-reports this return code as an error when it really is.
-
-Reported-and-tested-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Michael Kerrisk <mtk.man-pages@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/tpm/tpm.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ kernel/power/wakelock.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -827,10 +827,10 @@ EXPORT_SYMBOL_GPL(tpm_pcr_extend);
- int tpm_do_selftest(struct tpm_chip *chip)
- {
- 	int rc;
--	u8 digest[TPM_DIGEST_SIZE];
- 	unsigned int loops;
- 	unsigned int delay_msec = 1000;
- 	unsigned long duration;
-+	struct tpm_cmd_t cmd;
+--- a/kernel/power/wakelock.c
++++ b/kernel/power/wakelock.c
+@@ -9,6 +9,7 @@
+  * manipulate wakelocks on Android.
+  */
  
- 	duration = tpm_calc_ordinal_duration(chip,
- 	                                     TPM_ORD_CONTINUE_SELFTEST);
-@@ -845,7 +845,15 @@ int tpm_do_selftest(struct tpm_chip *chi
- 		return rc;
++#include <linux/capability.h>
+ #include <linux/ctype.h>
+ #include <linux/device.h>
+ #include <linux/err.h>
+@@ -188,6 +189,9 @@ int pm_wake_lock(const char *buf)
+ 	size_t len;
+ 	int ret = 0;
  
- 	do {
--		rc = __tpm_pcr_read(chip, 0, digest);
-+		/* Attempt to read a PCR value */
-+		cmd.header.in = pcrread_header;
-+		cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
-+		rc = tpm_transmit(chip, (u8 *) &cmd, READ_PCR_RESULT_SIZE);
++	if (!capable(CAP_BLOCK_SUSPEND))
++		return -EPERM;
 +
-+		if (rc < TPM_HEADER_SIZE)
-+			return -EFAULT;
+ 	while (*str && !isspace(*str))
+ 		str++;
+ 
+@@ -231,6 +235,9 @@ int pm_wake_unlock(const char *buf)
+ 	size_t len;
+ 	int ret = 0;
+ 
++	if (!capable(CAP_BLOCK_SUSPEND))
++		return -EPERM;
 +
-+		rc = be32_to_cpu(cmd.header.out.return_code);
- 		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
- 			dev_info(chip->dev,
- 				 "TPM is disabled/deactivated (0x%X)\n", rc);
+ 	len = strlen(buf);
+ 	if (!len)
+ 		return -EINVAL;
 
 
