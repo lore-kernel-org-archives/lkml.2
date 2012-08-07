@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab2HGRsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:48:55 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:35584 "EHLO mail.x86-64.org"
+	id S1755511Ab2HGRus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:50:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48349 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755275Ab2HGRo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:44:27 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: X86-ML <x86@kernel.org>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH v0 06/12] x86, microcode, AMD: Remove useless get_ucode_data wrapper
-Date: Tue,  7 Aug 2012 19:44:15 +0200
-Message-Id: <1344361461-10076-7-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.11.rc1
-In-Reply-To: <1344361461-10076-1-git-send-email-bp@amd64.org>
-References: <1344361461-10076-1-git-send-email-bp@amd64.org>
+	id S1752435Ab2HGRuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 13:50:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="182779197"
+Subject: Re: do_IRQ: 1.55 No irq handler for vector (irq -1)
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Borislav Petkov <bp@amd64.org>, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        "Petkov, Borislav" <borislav.petkov@amd.com>
+Date: Tue, 07 Aug 2012 10:47:40 -0700
+In-Reply-To: <20120807172806.GK3732@erda.amd.com>
+References: <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
+	 <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
+	 <20120807153149.GI3732@erda.amd.com>
+	 <20120807154134.GA7456@aftab.osrc.amd.com>
+	 <1344356662.2041.48.camel@sbsiddha-desk.sc.intel.com>
+	 <20120807172806.GK3732@erda.amd.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1344361660.27383.4.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Tue, 2012-08-07 at 19:28 +0200, Robert Richter wrote:
+> On 07.08.12 09:24:21, Suresh Siddha wrote:
+> > Boris, Robert, Can you please send me the complete dmesg
+> > and /proc/interrupts on a successful boot?
+> 
+> Sent to you in private mail.
 
-get_ucode_data was a trivial memcpy wrapper. Remove it so as not to
-obfuscate code unnecessarily with no obvious gain.
+Thanks.
 
-No functional change.
+> 
+> What information are you looking for specifically? Maybe we can
+> provide something here on the ml.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/include/asm/microcode.h | 6 ------
- arch/x86/kernel/microcode_amd.c  | 4 ++--
- 2 files changed, 2 insertions(+), 8 deletions(-)
+I was looking for what APIC mode and it was a PIC/IO-APIC interrupt.
 
-diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-index 4ebe157bf73d..8813be600995 100644
---- a/arch/x86/include/asm/microcode.h
-+++ b/arch/x86/include/asm/microcode.h
-@@ -49,12 +49,6 @@ static inline struct microcode_ops * __init init_intel_microcode(void)
- #ifdef CONFIG_MICROCODE_AMD
- extern struct microcode_ops * __init init_amd_microcode(void);
- extern void __exit exit_amd_microcode(void);
--
--static inline void get_ucode_data(void *to, const u8 *from, size_t n)
--{
--	memcpy(to, from, n);
--}
--
- #else
- static inline struct microcode_ops * __init init_amd_microcode(void)
- {
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index 82746f942cd8..94213387a3d1 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -183,7 +183,7 @@ static int get_matching_microcode(int cpu, const u8 *ucode_ptr,
- 	memset(patch, 0, PAGE_SIZE);
- 
- 	/* all looks ok, get the binary patch */
--	get_ucode_data(patch, ucode_ptr + SECTION_HDR_SIZE, actual_size);
-+	memcpy(patch, ucode_ptr + SECTION_HDR_SIZE, actual_size);
- 
- 	return actual_size;
- }
-@@ -238,7 +238,7 @@ static int install_equiv_cpu_table(const u8 *buf)
- 		return -ENOMEM;
- 	}
- 
--	get_ucode_data(equiv_cpu_table, buf + CONTAINER_HDR_SZ, size);
-+	memcpy(equiv_cpu_table, buf + CONTAINER_HDR_SZ, size);
- 
- 	/* add header length */
- 	return size + CONTAINER_HDR_SZ;
--- 
-1.7.11.rc1
+So it looks like it is using logical flat mode and the interrupt was
+from IO-APIC.
+
+So most likely on your system after a successful boot, if you manually
+set the affinity of one of those SATA/PATA interrupts to a specific
+logical cpu say 0, I think the interrupt still get routed to other
+logical cpu's. Can you confirm?
+
+thanks,
+suresh
 
