@@ -1,44 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab2HGJSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:18:00 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37305 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab2HGJR7 (ORCPT
+	id S1753423Ab2HGJUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:20:34 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:35277 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab2HGJUc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:17:59 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, sachin.kamat@linaro.org,
-        patches@linaro.org
-Subject: [PATCH] extcon: Remove duplicate inclusion of extcon.h header file
-Date: Tue,  7 Aug 2012 14:46:32 +0530
-Message-Id: <1344330992-20849-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 7 Aug 2012 05:20:32 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Steven Toth <stoth@kernellabs.com>,
+        Michael Krufky <mkrufky@kernellabs.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
+Thread-Topic: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
+Thread-Index: AQHNc6dWK36sDUPHq0CUP2ve8vm2xpdMZZwAgAGtOkA=
+Date: Tue, 7 Aug 2012 09:20:27 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB51032C3B01@NB-EX-MBX02.diasemi.com>
+References: <201208060742.q767gwDA005770@ubuntu>
+ <D958900912E20642BCBC71664EFECE3E6DDCAC4BAA@BGMAIL02.nvidia.com>
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDCAC4BAA@BGMAIL02.nvidia.com>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-extcon.h header file was included twice.
+Thanks Venu for the two comments,
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
----
- drivers/extcon/extcon_gpio.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+(1) the RTC values are not encoded in BCD, I am adding a comment in the header file to that effect
+(2) the "*_REG" naming convention is used for MFD component drivers, see directory include/linux/mfd for numerous examples
 
-diff --git a/drivers/extcon/extcon_gpio.c b/drivers/extcon/extcon_gpio.c
-index fe3db45..25b6c11 100644
---- a/drivers/extcon/extcon_gpio.c
-+++ b/drivers/extcon/extcon_gpio.c
-@@ -26,7 +26,6 @@
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
--#include <linux/extcon.h>
- #include <linux/workqueue.h>
- #include <linux/gpio.h>
- #include <linux/extcon.h>
--- 
-1.7.4.1
+Tony Olech
 
+-----Original Message-----
+From: Venu Byravarasu [mailto:vbyravarasu@nvidia.com] 
+Sent: 06 August 2012 09:38
+To: Opensource [Anthony Olech]; Samuel Ortiz
+Cc: Mark Brown; Arnd Bergmann; Mauro Carvalho Chehab; Steven Toth; Michael Krufky; LKML; David Dajun Chen
+Subject: RE: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel- 
+> owner@vger.kernel.org] On Behalf Of Anthony Olech
+> Sent: Monday, August 06, 2012 2:14 AM
+> To: Samuel Ortiz
+> Cc: Mark Brown; Arnd Bergmann; Mauro Carvalho Chehab; Steven Toth; 
+> Michael Krufky; LKML; David Dajun Chen
+> Subject: [NEW DRIVER V2 1/7] DA9058 MFD core and ADC driver
+> 
+> This is the MFD core driver for the Dialog DA9058 PMIC.
+> This driver, via MFD CELLs, causes all the component drivers to be 
+> loaded, if it is a module, and initialized via their probe methods.
+> It also provides access to the ADC functions on the PMIC.
+> All the other component drivers depend on this one.
+> 
+> +#endif /* __DA9058_PDATA_H */
+> diff --git a/include/linux/mfd/da9058/registers.h
+> b/include/linux/mfd/da9058/registers.h
+> new file mode 100644
+> index 0000000..0fd6aef
+> --- /dev/null
+> +++ b/include/linux/mfd/da9058/registers.h
+> @@ -0,0 +1,480 @@
+> +/*
+> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
+> + *
+> + *  This program is free software; you can redistribute it and/or 
+> +modify
+> + *  it under the terms of the GNU General Public License as published 
+> +by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + */
+> +
+> +#ifndef __DA9058_REGISTERS_H
+> +#define __DA9058_REGISTERS_H
+> +
+> +#define DA9058_PAGECON0_REG			0
+
+You can remove _REG after each register name.
+
+> +#define DA9058_STATUSA_REG			1
+> +#define DA9058_STATUSB_REG			2
+> +#define DA9058_STATUSC_REG			3
+> +#define DA9058_STATUSD_REG			4
+
+ 
+
+> +/* RTC fields */
+> +#define DA9058_RTC_SECS_MASK			0x3F
+
+Usually most of the PMIC RTCs provide RTC time registers in BCD Format. Plz make sure that is not the case with your device, otherwise these masks may not be valid.
+ 
+> +#define DA9058_RTC_MINS_MASK			0x3F
+> +#define DA9058_RTC_HRS_MASK			0x1F
+> +#define DA9058_RTC_DAY_MASK			0x1F
+> +#define DA9058_RTC_MTH_MASK			0x0F
+> +#define DA9058_RTC_YRS_MASK			0x3F
+> +#define DA9058_RTC_ALMSECS_MASK			0x3F
+> +#define DA9058_RTC_ALMMINS_MASK			0x3F
+> +#define DA9058_RTC_ALMHRS_MASK			0x1F
+> +#define DA9058_RTC_ALMDAY_MASK			0x1F
+> +#define DA9058_RTC_ALMMTH_MASK			0x0F
+> +#define DA9058_RTC_ALMYRS_MASK			0x3F
+> +/* RTC TIMER SECONDS REGISTER */
+> +#define DA9058_COUNTS_COUNTSEC			(63<<0)
+> +/* RTC TIMER MINUTES REGISTER */
+> +#define DA9058_COUNTMI_COUNTMIN			(63<<0)
+> +/* RTC TIMER HOUR REGISTER */
+> +#define DA9058_COUNTH_COUNTHOUR			(31<<0)
+> +/* RTC TIMER DAYS REGISTER */
+> +#define DA9058_COUNTD_COUNTDAY			(31<<0)
+> +/* RTC TIMER MONTHS REGISTER */
+> +#define DA9058_COUNTMO_COUNTMONTH		(15<<0)
+> +/* RTC TIMER YEARS REGISTER */
+> +#define DA9058_COUNTY_MONITOR			(1<<6)
+> +#define DA9058_COUNTY_COUNTYEAR			(63<<0)
+> +/* RTC ALARM SECONDS REGISTER */
+> +#define DA9058_ALARMMI_COUNTSEC			(63<<0)
+> +/* RTC ALARM MINUTES REGISTER */
+> +#define DA9058_ALARMMI_TICKTYPE			(1<<7)
+> +#define DA9058_ALARMMI_ALARMMIN			(63<<0)
+> +/* RTC ALARM HOURS REGISTER */
+> +#define DA9058_ALARMH_ALARMHOUR			(31<<0)
+> +/* RTC ALARM DAYS REGISTER */
+> +#define DA9058_ALARMD_ALARMDAY			(31<<0)
+> +/* RTC ALARM MONTHS REGISTER */
+> +#define DA9058_ALARMMO_ALARMMONTH		(15<<0)
+> +/* RTC ALARM YEARS REGISTER */
+> +#define DA9058_ALARMY_TICKON			(1<<7)
+> +#define DA9058_ALARMY_ALARMON			(1<<6)
+> +#define DA9058_ALARMY_ALARMYEAR			(63<<0)
+> +/* CHIP IDENTIFICATION REGISTER */
+> +#define DA9058_CHIPID_MRC			(15<<4)
+> +#define DA9058_CHIPID_TRC			(15<<0)
+> +/* CONFIGURATION IDENTIFICATION REGISTER */
+> +#define DA9058_CONFIGID_CONFID			(7<<0)
+> +/* OTP CONTROL REGISTER */
+> +#define DA9058_OTPCONT_GPWRITEDIS		(1<<7)
+> +#define DA9058_OTPCONT_OTPCONFLOCK		(1<<6)
+> +#define DA9058_OTPCONT_OTPGPLOCK		(1<<5)
+> +#define DA9058_OTPCONT_OTPCONFG			(1<<3)
+> +#define DA9058_OTPCONT_OTPGP			(1<<2)
+> +#define DA9058_OTPCONT_OTPRP			(1<<1)
+> +#define DA9058_OTPCONT_OTPTRANSFER		(1<<0)
+> +/* RTC OSCILLATOR TRIM REGISTER */
+> +#define DA9058_OSCTRIM_TRIM32K			(255<<0)
+> +/* GP ID REGISTERs 0 - 9 */
+> +#define DA9058_GPID0_GP0			(255<<0)
+> +#define DA9058_GPID1_GP1			(255<<0)
+> +#define DA9058_GPID2_GP2			(255<<0)
+> +#define DA9058_GPID3_GP3			(255<<0)
+> +#define DA9058_GPID4_GP4			(255<<0)
+> +#define DA9058_GPID5_GP5			(255<<0)
+> +#define DA9058_GPID6_GP6			(255<<0)
+> +#define DA9058_GPID7_GP7			(255<<0)
+> +#define DA9058_GPID8_GP8			(255<<0)
+> +#define DA9058_GPID9_GP9			(255<<0)
+> +
+> +#endif /* __DA9058_REGISTERS_H */
+> diff --git a/include/linux/mfd/da9058/regulator.h
+> b/include/linux/mfd/da9058/regulator.h
+> new file mode 100644
+> index 0000000..686c607
+> --- /dev/null
+> +++ b/include/linux/mfd/da9058/regulator.h
+> @@ -0,0 +1,33 @@
+> +/*
+> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
+> + *
+> + *  This program is free software; you can redistribute it and/or 
+> +modify
+> + *  it under the terms of the GNU General Public License as published 
+> +by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + */
+> +
+> +#ifndef __DA9058_REGULATOR_H
+> +#define __DA9058_REGULATOR_H
+> +
+> +struct da9058_regulator_pdata {
+> +	char *regulator_name;
+> +	int regulator_id;
+> +	int min_uV;
+> +	int max_uV;
+> +	int control_voltage_step;
+> +	int control_register;
+> +	int control_enable_mask;
+> +	int ramp_register;
+> +	int ramp_enable_mask;
+> +	int fixed_voltage;
+> +	unsigned int valid_ops_mask;
+> +	unsigned int valid_modes_mask;
+> +	unsigned int always_on:1;
+> +	unsigned int boot_on:1;
+> +	int num_consumer_supplies;
+> +	struct regulator_consumer_supply *consumer_supplies; };
+> +
+> +#endif /* __DA9058_REGULATOR_H */
+> diff --git a/include/linux/mfd/da9058/rtc.h 
+> b/include/linux/mfd/da9058/rtc.h new file mode 100644 index 
+> 0000000..aa597df
+> --- /dev/null
+> +++ b/include/linux/mfd/da9058/rtc.h
+> @@ -0,0 +1,17 @@
+> +/*
+> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
+> + *
+> + *  This program is free software; you can redistribute it and/or 
+> +modify
+> + *  it under the terms of the GNU General Public License as published 
+> +by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + */
+> +
+> +#ifndef __DA9058_RTC_H
+> +#define __DA9058_RTC_H
+> +
+> +struct da9058_rtc_pdata {
+> +};
+> +
+> +#endif /* __DA9058_RTC_H */
+> --
+> end-of-patch for NEW DRIVER V2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in the body of a message to majordomo@vger.kernel.org 
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
