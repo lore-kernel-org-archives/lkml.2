@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030758Ab2HGXEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:04:21 -0400
+	id S1030787Ab2HGXEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:04:41 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030706Ab2HGWkQ (ORCPT
+	with ESMTP id S1030692Ab2HGWkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:40:16 -0400
+	Tue, 7 Aug 2012 18:40:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>, Mark Gordon <msg@google.com>,
-        Andreas Terzis <aterzis@google.com>, Yuchung Cheng <ycheng@google.com>,
-        Hagen Paul Pfeifer <hagen@jauu.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 078/109] netem: add limitation to reordered packets
-Date: Tue,  7 Aug 2012 15:35:37 -0700
-Message-Id: <20120807222049.950071291@linuxfoundation.org>
+        Brian Foster <bfoster@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 076/109] ext4: undo ext4_calc_metadata_amount if we fail to claim space
+Date: Tue,  7 Aug 2012 15:35:35 -0700
+Message-Id: <20120807222049.778010006@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -32,118 +29,90 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Theodore Ts'o <tytso@mit.edu>
 
-From: Eric Dumazet <edumazet@google.com>
+commit 03179fe92318e7934c180d96f12eff2cb36ef7b6 upstream.
 
-[ Upstream commit 960fb66e520a405dde39ff883f17ff2669c13d85 ]
+The function ext4_calc_metadata_amount() has side effects, although
+it's not obvious from its function name.  So if we fail to claim
+space, regardless of whether we retry to claim the space again, or
+return an error, we need to undo these side effects.
 
-Fix two netem bugs :
+Otherwise we can end up incorrectly calculating the number of metadata
+blocks needed for the operation, which was responsible for an xfstests
+failure for test #271 when using an ext2 file system with delalloc
+enabled.
 
-1) When a frame was dropped by tfifo_enqueue(), drop counter
-   was incremented twice.
-
-2) When reordering is triggered, we enqueue a packet without
-   checking queue limit. This can OOM pretty fast when this
-   is repeated enough, since skbs are orphaned, no socket limit
-   can help in this situation.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Mark Gordon <msg@google.com>
-Cc: Andreas Terzis <aterzis@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Hagen Paul Pfeifer <hagen@jauu.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Brian Foster <bfoster@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sched/sch_netem.c |   42 +++++++++++++++---------------------------
- 1 file changed, 15 insertions(+), 27 deletions(-)
 
---- a/net/sched/sch_netem.c
-+++ b/net/sched/sch_netem.c
-@@ -329,29 +329,22 @@ static psched_time_t packet_len_2_sched_
- 	return PSCHED_NS2TICKS(ticks);
- }
- 
--static int tfifo_enqueue(struct sk_buff *nskb, struct Qdisc *sch)
-+static void tfifo_enqueue(struct sk_buff *nskb, struct Qdisc *sch)
- {
- 	struct sk_buff_head *list = &sch->q;
- 	psched_time_t tnext = netem_skb_cb(nskb)->time_to_send;
--	struct sk_buff *skb;
-+	struct sk_buff *skb = skb_peek_tail(list);
- 
--	if (likely(skb_queue_len(list) < sch->limit)) {
--		skb = skb_peek_tail(list);
--		/* Optimize for add at tail */
--		if (likely(!skb || tnext >= netem_skb_cb(skb)->time_to_send))
--			return qdisc_enqueue_tail(nskb, sch);
--
--		skb_queue_reverse_walk(list, skb) {
--			if (tnext >= netem_skb_cb(skb)->time_to_send)
--				break;
--		}
-+	/* Optimize for add at tail */
-+	if (likely(!skb || tnext >= netem_skb_cb(skb)->time_to_send))
-+		return __skb_queue_tail(list, nskb);
- 
--		__skb_queue_after(list, skb, nskb);
--		sch->qstats.backlog += qdisc_pkt_len(nskb);
--		return NET_XMIT_SUCCESS;
-+	skb_queue_reverse_walk(list, skb) {
-+		if (tnext >= netem_skb_cb(skb)->time_to_send)
-+			break;
- 	}
- 
--	return qdisc_reshape_fail(nskb, sch);
-+	__skb_queue_after(list, skb, nskb);
- }
- 
- /*
-@@ -366,7 +359,6 @@ static int netem_enqueue(struct sk_buff
- 	/* We don't fill cb now as skb_unshare() may invalidate it */
- 	struct netem_skb_cb *cb;
- 	struct sk_buff *skb2;
--	int ret;
- 	int count = 1;
- 
- 	/* Random duplication */
-@@ -414,6 +406,11 @@ static int netem_enqueue(struct sk_buff
- 		skb->data[net_random() % skb_headlen(skb)] ^= 1<<(net_random() % 8);
- 	}
- 
-+	if (unlikely(skb_queue_len(&sch->q) >= sch->limit))
-+		return qdisc_reshape_fail(skb, sch);
+---
+ fs/ext4/inode.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
+
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1113,6 +1113,17 @@ static int ext4_da_reserve_space(struct
+ 	struct ext4_inode_info *ei = EXT4_I(inode);
+ 	unsigned int md_needed;
+ 	int ret;
++	ext4_lblk_t save_last_lblock;
++	int save_len;
 +
-+	sch->qstats.backlog += qdisc_pkt_len(skb);
-+
- 	cb = netem_skb_cb(skb);
- 	if (q->gap == 0 ||		/* not doing reordering */
- 	    q->counter < q->gap - 1 ||	/* inside last reordering gap */
-@@ -445,7 +442,7 @@ static int netem_enqueue(struct sk_buff
++	/*
++	 * We will charge metadata quota at writeout time; this saves
++	 * us from metadata over-estimation, though we may go over by
++	 * a small amount in the end.  Here we just reserve for data.
++	 */
++	ret = dquot_reserve_block(inode, EXT4_C2B(sbi, 1));
++	if (ret)
++		return ret;
  
- 		cb->time_to_send = now + delay;
- 		++q->counter;
--		ret = tfifo_enqueue(skb, sch);
-+		tfifo_enqueue(skb, sch);
- 	} else {
- 		/*
- 		 * Do re-ordering by putting one out of N packets at the front
-@@ -455,16 +452,7 @@ static int netem_enqueue(struct sk_buff
- 		q->counter = 0;
+ 	/*
+ 	 * recalculate the amount of metadata blocks to reserve
+@@ -1121,32 +1132,31 @@ static int ext4_da_reserve_space(struct
+ 	 */
+ repeat:
+ 	spin_lock(&ei->i_block_reservation_lock);
++	/*
++	 * ext4_calc_metadata_amount() has side effects, which we have
++	 * to be prepared undo if we fail to claim space.
++	 */
++	save_len = ei->i_da_metadata_calc_len;
++	save_last_lblock = ei->i_da_metadata_calc_last_lblock;
+ 	md_needed = EXT4_NUM_B2C(sbi,
+ 				 ext4_calc_metadata_amount(inode, lblock));
+ 	trace_ext4_da_reserve_space(inode, md_needed);
+-	spin_unlock(&ei->i_block_reservation_lock);
  
- 		__skb_queue_head(&sch->q, skb);
--		sch->qstats.backlog += qdisc_pkt_len(skb);
- 		sch->qstats.requeues++;
--		ret = NET_XMIT_SUCCESS;
--	}
--
--	if (ret != NET_XMIT_SUCCESS) {
--		if (net_xmit_drop_count(ret)) {
--			sch->qstats.drops++;
--			return ret;
--		}
+ 	/*
+-	 * We will charge metadata quota at writeout time; this saves
+-	 * us from metadata over-estimation, though we may go over by
+-	 * a small amount in the end.  Here we just reserve for data.
+-	 */
+-	ret = dquot_reserve_block(inode, EXT4_C2B(sbi, 1));
+-	if (ret)
+-		return ret;
+-	/*
+ 	 * We do still charge estimated metadata to the sb though;
+ 	 * we cannot afford to run out of free blocks.
+ 	 */
+ 	if (ext4_claim_free_clusters(sbi, md_needed + 1, 0)) {
+-		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
++		ei->i_da_metadata_calc_len = save_len;
++		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
++		spin_unlock(&ei->i_block_reservation_lock);
+ 		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
+ 			yield();
+ 			goto repeat;
+ 		}
++		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
+ 		return -ENOSPC;
  	}
- 
- 	return NET_XMIT_SUCCESS;
+-	spin_lock(&ei->i_block_reservation_lock);
+ 	ei->i_reserved_data_blocks++;
+ 	ei->i_reserved_meta_blocks += md_needed;
+ 	spin_unlock(&ei->i_block_reservation_lock);
 
 
