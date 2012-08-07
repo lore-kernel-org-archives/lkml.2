@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030910Ab2HGWly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:41:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	id S1030920Ab2HGWmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:42:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030897Ab2HGWlu (ORCPT
+	with ESMTP id S1030846Ab2HGWl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:41:50 -0400
+	Tue, 7 Aug 2012 18:41:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 109/109] futex: Forbid uaddr == uaddr2 in futex_wait_requeue_pi()
-Date: Tue,  7 Aug 2012 15:36:08 -0700
-Message-Id: <20120807222052.636170866@linuxfoundation.org>
+        Max Matveev <makc@redhat.com>, Jiri Benc <jbenc@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 092/109] net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI handling
+Date: Tue,  7 Aug 2012 15:35:51 -0700
+Message-Id: <20120807222051.159352203@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,56 +30,57 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
 
-commit 6f7b0a2a5c0fb03be7c25bd1745baa50582348ef upstream.
+From: Jiri Benc <jbenc@redhat.com>
 
-If uaddr == uaddr2, then we have broken the rule of only requeueing
-from a non-pi futex to a pi futex with this call. If we attempt this,
-as the trinity test suite manages to do, we miss early wakeups as
-q.key is equal to key2 (because they are the same uaddr). We will then
-attempt to dereference the pi_mutex (which would exist had the futex_q
-been properly requeued to a pi futex) and trigger a NULL pointer
-dereference.
+[ Upstream commit b1beb681cba5358f62e6187340660ade226a5fcc ]
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/ad82bfe7f7d130247fbe2b5b4275654807774227.1342809673.git.dvhart@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+When device flags are set using rtnetlink, IFF_PROMISC and IFF_ALLMULTI
+flags are handled specially. Function dev_change_flags sets IFF_PROMISC and
+IFF_ALLMULTI bits in dev->gflags according to the passed value but
+do_setlink passes a result of rtnl_dev_combine_flags which takes those bits
+from dev->flags.
+
+This can be easily trigerred by doing:
+
+tcpdump -i eth0 &
+ip l s up eth0
+
+ip sets IFF_UP flag in ifi_flags and ifi_change, which is combined with
+IFF_PROMISC by rtnl_dev_combine_flags, causing __dev_change_flags to set
+IFF_PROMISC in gflags.
+
+Reported-by: Max Matveev <makc@redhat.com>
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/futex.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ net/core/rtnetlink.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2231,11 +2231,11 @@ int handle_early_requeue_pi_wakeup(struc
-  * @uaddr2:	the pi futex we will take prior to returning to user-space
-  *
-  * The caller will wait on uaddr and will be requeued by futex_requeue() to
-- * uaddr2 which must be PI aware.  Normal wakeup will wake on uaddr2 and
-- * complete the acquisition of the rt_mutex prior to returning to userspace.
-- * This ensures the rt_mutex maintains an owner when it has waiters; without
-- * one, the pi logic wouldn't know which task to boost/deboost, if there was a
-- * need to.
-+ * uaddr2 which must be PI aware and unique from uaddr.  Normal wakeup will wake
-+ * on uaddr2 and complete the acquisition of the rt_mutex prior to returning to
-+ * userspace.  This ensures the rt_mutex maintains an owner when it has waiters;
-+ * without one, the pi logic would not know which task to boost/deboost, if
-+ * there was a need to.
-  *
-  * We call schedule in futex_wait_queue_me() when we enqueue and return there
-  * via the following:
-@@ -2272,6 +2272,9 @@ static int futex_wait_requeue_pi(u32 __u
- 	struct futex_q q = futex_q_init;
- 	int res, ret;
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -671,6 +671,12 @@ static void set_operstate(struct net_dev
+ 	}
+ }
  
-+	if (uaddr == uaddr2)
-+		return -EINVAL;
++static unsigned int rtnl_dev_get_flags(const struct net_device *dev)
++{
++	return (dev->flags & ~(IFF_PROMISC | IFF_ALLMULTI)) |
++	       (dev->gflags & (IFF_PROMISC | IFF_ALLMULTI));
++}
 +
- 	if (!bitset)
- 		return -EINVAL;
+ static unsigned int rtnl_dev_combine_flags(const struct net_device *dev,
+ 					   const struct ifinfomsg *ifm)
+ {
+@@ -679,7 +685,7 @@ static unsigned int rtnl_dev_combine_fla
+ 	/* bugwards compatibility: ifi_change == 0 is treated as ~0 */
+ 	if (ifm->ifi_change)
+ 		flags = (flags & ifm->ifi_change) |
+-			(dev->flags & ~ifm->ifi_change);
++			(rtnl_dev_get_flags(dev) & ~ifm->ifi_change);
  
+ 	return flags;
+ }
 
 
