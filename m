@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030359Ab2HGWc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:32:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
+	id S1757553Ab2HGXXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:23:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030345Ab2HGWcV (ORCPT
+	with ESMTP id S1030348Ab2HGWcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:21 -0400
+	Tue, 7 Aug 2012 18:32:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        rucsoftsec@gmail.com, Alan Cox <alan@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 102/122] caif: fix NULL pointer check
-Date: Tue,  7 Aug 2012 15:26:30 -0700
-Message-Id: <20120807221958.797893521@linuxfoundation.org>
+Subject: [ 103/122] wanmain: comparing array with NULL
+Date: Tue,  7 Aug 2012 15:26:31 -0700
+Message-Id: <20120807221958.891197156@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -33,28 +33,79 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Alan Cox <alan@linux.intel.com>
 
-[ Upstream commit c66b9b7d365444b433307ebb18734757cb668a02 ]
+[ Upstream commit 8b72ff6484fe303e01498b58621810a114f3cf09 ]
 
-Reported-by: <rucsoftsec@gmail.com>
-Resolves-bug: http://bugzilla.kernel.org/show_bug?44441
+gcc really should warn about these !
+
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/caif/caif_serial.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/wanrouter/wanmain.c |   53 +++++++++++++++++++++---------------------------
+ 1 file changed, 24 insertions(+), 29 deletions(-)
 
---- a/drivers/net/caif/caif_serial.c
-+++ b/drivers/net/caif/caif_serial.c
-@@ -325,6 +325,9 @@ static int ldisc_open(struct tty_struct
+--- a/net/wanrouter/wanmain.c
++++ b/net/wanrouter/wanmain.c
+@@ -602,36 +602,31 @@ static int wanrouter_device_new_if(struc
+ 		 * successfully, add it to the interface list.
+ 		 */
  
- 	sprintf(name, "cf%s", tty->name);
- 	dev = alloc_netdev(sizeof(*ser), name, caifdev_setup);
-+	if (!dev)
-+		return -ENOMEM;
+-		if (dev->name == NULL) {
+-			err = -EINVAL;
+-		} else {
+-
+-			#ifdef WANDEBUG
+-			printk(KERN_INFO "%s: registering interface %s...\n",
+-				wanrouter_modname, dev->name);
+-			#endif
+-
+-			err = register_netdev(dev);
+-			if (!err) {
+-				struct net_device *slave = NULL;
+-				unsigned long smp_flags=0;
+-
+-				lock_adapter_irq(&wandev->lock, &smp_flags);
+-
+-				if (wandev->dev == NULL) {
+-					wandev->dev = dev;
+-				} else {
+-					for (slave=wandev->dev;
+-					     DEV_TO_SLAVE(slave);
+-					     slave = DEV_TO_SLAVE(slave))
+-						DEV_TO_SLAVE(slave) = dev;
+-				}
+-				++wandev->ndev;
+-
+-				unlock_adapter_irq(&wandev->lock, &smp_flags);
+-				err = 0;	/* done !!! */
+-				goto out;
++#ifdef WANDEBUG
++		printk(KERN_INFO "%s: registering interface %s...\n",
++		       wanrouter_modname, dev->name);
++#endif
 +
- 	ser = netdev_priv(dev);
- 	ser->tty = tty_kref_get(tty);
- 	ser->dev = dev;
++		err = register_netdev(dev);
++		if (!err) {
++			struct net_device *slave = NULL;
++			unsigned long smp_flags=0;
++
++			lock_adapter_irq(&wandev->lock, &smp_flags);
++
++			if (wandev->dev == NULL) {
++				wandev->dev = dev;
++			} else {
++				for (slave=wandev->dev;
++				     DEV_TO_SLAVE(slave);
++				     slave = DEV_TO_SLAVE(slave))
++					DEV_TO_SLAVE(slave) = dev;
+ 			}
++			++wandev->ndev;
++
++			unlock_adapter_irq(&wandev->lock, &smp_flags);
++			err = 0;	/* done !!! */
++			goto out;
+ 		}
+ 		if (wandev->del_if)
+ 			wandev->del_if(wandev, dev);
 
 
