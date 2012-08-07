@@ -1,275 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab2HGD6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:58:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62307 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909Ab2HGD57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:57:59 -0400
-X-IronPort-AV: E=Sophos;i="4.77,724,1336320000"; 
-   d="scan'208";a="5566702"
-Message-ID: <50209003.2090809@cn.fujitsu.com>
-Date: Tue, 07 Aug 2012 11:48:19 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1750909Ab2HGEOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 00:14:19 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40422 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2HGEOR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 00:14:17 -0400
 MIME-Version: 1.0
-To: isimatu.yasuaki@jp.fujitsu.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH V6 15/19] memory-hotplug: implement register_page_bootmem_info_section
- of sparse-vmemmap
-References: <1343980161-14254-1-git-send-email-wency@cn.fujitsu.com> <1343980161-14254-16-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1343980161-14254-16-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/07 11:43:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/07 11:43:51,
-	Serialize complete at 2012/08/07 11:43:51
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAOesGMj6BafLCpZjmtyn_ASbpeic_8E0CdYjQGOf3A4_NHfy=Q@mail.gmail.com>
+References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
+	<CAJuYYwSjnQ6z0iUaLCV9guC7yyKH3_pbd1QZe3ELKF-fYNfaqQ@mail.gmail.com>
+	<A6A3B7488C419F488E5B13FFD03C08AD2F4362EE@SN2PRD0510MB370.namprd05.prod.outlook.com>
+	<CAOesGMh=6QrCmL4EqnSqTxi1nH+8Wn+x=z9BYq8QJCznH3a=zQ@mail.gmail.com>
+	<A6A3B7488C419F488E5B13FFD03C08AD2F43688D@SN2PRD0510MB370.namprd05.prod.outlook.com>
+	<CAOesGMj6BafLCpZjmtyn_ASbpeic_8E0CdYjQGOf3A4_NHfy=Q@mail.gmail.com>
+Date: Tue, 7 Aug 2012 09:44:15 +0530
+Message-ID: <CAJuYYwT2rrJkrkOSekV+DjpVAHas33_gUGULTjzsYtcq1UAyoQ@mail.gmail.com>
+Subject: =?EUC-KR?B?UmU6IMi4vcU6IMi4vcU6IFtQQVRDSF0gT0RST0lELVg6IGhrZGs0NDEyOiBBZGQg?=
+	=?EUC-KR?B?bmV3IGhhcmR3YXJlIGJhc2VkIG9uIEV4eW5vczQ0MTI=?=
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>,
+        Dongjin Kim <tobetter@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Jon Medhurst <tixy@yxit.co.uk>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 08/03/2012 03:49 PM, wency@cn.fujitsu.com Wrote:
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> For removing memmap region of sparse-vmemmap which is allocated bootmem,
-> memmap region of sparse-vmemmap needs to be registered by get_page_bootmem().
-> So the patch searches pages of virtual mapping and registers the pages by
-> get_page_bootmem().
-> 
-> Note: register_page_bootmem_memmap() is not implemented for ia64, ppc, s390,
-> and sparc.
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
->  arch/ia64/mm/discontig.c       |    6 ++++
->  arch/powerpc/mm/init_64.c      |    6 ++++
->  arch/s390/mm/vmem.c            |    6 ++++
->  arch/sparc/mm/init_64.c        |    6 ++++
->  arch/x86/mm/init_64.c          |   52 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/memory_hotplug.h |    2 +
->  include/linux/mm.h             |    3 +-
->  mm/memory_hotplug.c            |   23 +++++++++++++++--
->  8 files changed, 100 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
-> index c641333..33943db 100644
-> --- a/arch/ia64/mm/discontig.c
-> +++ b/arch/ia64/mm/discontig.c
-> @@ -822,4 +822,10 @@ int __meminit vmemmap_populate(struct page *start_page,
->  {
->  	return vmemmap_populate_basepages(start_page, size, node);
->  }
-> +
-> +void register_page_bootmem_memmap(unsigned long section_nr,
-> +				  struct page *start_page, unsigned long size)
-> +{
-> +	/* TODO */
-> +}
->  #endif
-> diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-> index 620b7ac..3690c44 100644
-> --- a/arch/powerpc/mm/init_64.c
-> +++ b/arch/powerpc/mm/init_64.c
-> @@ -298,5 +298,11 @@ int __meminit vmemmap_populate(struct page *start_page,
->  
->  	return 0;
->  }
-> +
-> +void register_page_bootmem_memmap(unsigned long section_nr,
-> +				  struct page *start_page, unsigned long size)
-> +{
-> +	/* TODO */
-> +}
->  #endif /* CONFIG_SPARSEMEM_VMEMMAP */
->  
-> diff --git a/arch/s390/mm/vmem.c b/arch/s390/mm/vmem.c
-> index 6f896e7..eda55cd 100644
-> --- a/arch/s390/mm/vmem.c
-> +++ b/arch/s390/mm/vmem.c
-> @@ -227,6 +227,12 @@ out:
->  	return ret;
->  }
->  
-> +void register_page_bootmem_memmap(unsigned long section_nr,
-> +				  struct page *start_page, unsigned long size)
-> +{
-> +	/* TODO */
-> +}
-> +
->  /*
->   * Add memory segment to the segment list if it doesn't overlap with
->   * an already present segment.
-> diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-> index 6026fdd..53f7604 100644
-> --- a/arch/sparc/mm/init_64.c
-> +++ b/arch/sparc/mm/init_64.c
-> @@ -2059,6 +2059,12 @@ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
->  	}
->  	return 0;
->  }
-> +
-> +void register_page_bootmem_memmap(unsigned long section_nr,
-> +				  struct page *start_page, unsigned long size)
-> +{
-> +	/* TODO */
-> +}
->  #endif /* CONFIG_SPARSEMEM_VMEMMAP */
->  
->  static void prot_init_common(unsigned long page_none,
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index e0d88ba..0075592 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -1138,6 +1138,58 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
->  	return 0;
->  }
->  
-> +void register_page_bootmem_memmap(unsigned long section_nr,
-> +				  struct page *start_page, unsigned long size)
-> +{
-> +	unsigned long addr = (unsigned long)start_page;
-> +	unsigned long end = (unsigned long)(start_page + size);
-> +	unsigned long next;
-> +	pgd_t *pgd;
-> +	pud_t *pud;
-> +	pmd_t *pmd;
-> +
-> +	for (; addr < end; addr = next) {
-> +		pte_t *pte = NULL;
-> +
-> +		pgd = pgd_offset_k(addr);
-> +		if (pgd_none(*pgd)) {
-> +			next = (addr + PAGE_SIZE) & PAGE_MASK;
-> +			continue;
-> +		}
-> +		get_page_bootmem(section_nr, pgd_page(*pgd), MIX_SECTION_INFO);
-> +
-> +		pud = pud_offset(pgd, addr);
-> +		if (pud_none(*pud)) {
-> +			next = (addr + PAGE_SIZE) & PAGE_MASK;
-> +			continue;
-> +		}
-> +		get_page_bootmem(section_nr, pud_page(*pud), MIX_SECTION_INFO);
-> +
-> +		if (!cpu_has_pse) {
-> +			next = (addr + PAGE_SIZE) & PAGE_MASK;
-> +			pmd = pmd_offset(pud, addr);
-> +			if (pmd_none(*pmd))
-> +				continue;
-> +			get_page_bootmem(section_nr, pmd_page(*pmd),
-> +					 MIX_SECTION_INFO);
-> +
-> +			pte = pte_offset_kernel(pmd, addr);
-> +			if (pte_none(*pte))
-> +				continue;
-> +			get_page_bootmem(section_nr, pte_page(*pte),
-> +					 SECTION_INFO);
-> +		} else {
-> +			next = pmd_addr_end(addr, end);
-> +
-> +			pmd = pmd_offset(pud, addr);
-> +			if (pmd_none(*pmd))
-> +				continue;
-> +			get_page_bootmem(section_nr, pmd_page(*pmd),
-> +					 SECTION_INFO);
-> +		}
-> +	}
-> +}
-> +
->  void __meminit vmemmap_populate_print_last(void)
->  {
->  	if (p_start) {
-> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-> index 1133e63..2d18235 100644
-> --- a/include/linux/memory_hotplug.h
-> +++ b/include/linux/memory_hotplug.h
-> @@ -164,6 +164,8 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
->  
->  extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
->  extern void put_page_bootmem(struct page *page);
-> +extern void get_page_bootmem(unsigned long ingo, struct page *page,
-> +			     unsigned long type);
->  
->  /*
->   * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 311be90..c607913 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1618,7 +1618,8 @@ int vmemmap_populate_basepages(struct page *start_page,
->  						unsigned long pages, int node);
->  int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
->  void vmemmap_populate_print_last(void);
-> -
-> +void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
-> +				  unsigned long size);
->  
->  enum mf_flags {
->  	MF_COUNT_INCREASED = 1 << 0,
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 3a264a5..4589f5b 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -91,8 +91,8 @@ static void release_memory_resource(struct resource *res)
->  }
->  
->  #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
-> -static void get_page_bootmem(unsigned long info,  struct page *page,
-> -			     unsigned long type)
-> +void get_page_bootmem(unsigned long info,  struct page *page,
-> +		      unsigned long type)
->  {
->  	unsigned long page_type;
->  
-> @@ -164,8 +164,25 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
->  
->  }
->  #else
-> -static inline void register_page_bootmem_info_section(unsigned long start_pfn)
-> +static void register_page_bootmem_info_section(unsigned long start_pfn)
->  {
-> +	unsigned long mapsize, section_nr;
-> +	struct mem_section *ms;
-> +	struct page *page, *memmap;
-> +
-> +	if (!pfn_valid(start_pfn))
-> +		return;
-> +
-> +	section_nr = pfn_to_section_nr(start_pfn);
-> +	ms = __nr_to_section(section_nr);
-> +
-> +	memmap = sparse_decode_mem_map(ms->section_mem_map, section_nr);
-> +
-> +	page = virt_to_page(memmap);
-> +	mapsize = sizeof(struct page) * PAGES_PER_SECTION;
-> +	mapsize = PAGE_ALIGN(mapsize) >> PAGE_SHIFT;
-> +
-> +	register_page_bootmem_memmap(section_nr, memmap, PAGES_PER_SECTION);
+On 7 August 2012 07:58, Olof Johansson <olof@lixom.net> wrote:
+> Hi,
+>
+> On Mon, Aug 6, 2012 at 7:05 PM, Dongjin Kim
+> <Dongjin.Kim@agreeyamobility.net> wrote:
+>> Hello,
+>>
+>> I am trying to understand what I have to do for device tree.
+>>
+>> In order to create dts file for ODROID-X hardware, it seems I may need dts file of EXYNOS4412 SoC.
+>> But maybe exynos4412.dtsi is not merged yet or not exist, like exynos4210.dtsi or exynos5250.dtsi.
+>> Obviously it seems not easy to create such a file without SoC datasheet, and I do not have it.
+>>
+>> So do I wait for the file to be merged by Samsung or better to create initial dts file cloned from exynos4210.dtsi and modify to have verified nodes with the source/header files?
+>
+> Ideally they already have one waiting to be submitted, but that might
+> not be the case. Given that the origenboard design with 4412 is not
+> yet shipping, I'm guessing the Linaro Samsung engineers might not have
+> done much work on 4412 yet. Kukjin? Thomas?
+>
+>> What's your suggestion?
+>
+> The alternative is to use the data you have available -- i.e. sources
+> and patches, and craft the device tree from there. The design of 4412
+> is a derivative from 4210, so that's a good start. Next step would be
+> to describe the board on top of the SoC, peripherals, etc. Take a look
+> at how the origen board support was added, and so on.
+>
+> I ordered an odroid-x several weeks ago but I haven't have a confirmed
+> shipping date yet. :( I'm not sure how long it'll be before I can help
+> out, unfortunately.
+>
+>
+> -Olof
 
-You only handle memmap here. I think usemap should be also handled here.
+Most of the Exynos4210 device tree support can be reused for
+Exynos4412 as well. Looking at the hardware differences between the
+two, it might be better to create a new exynos4.dtsi file (kind of
+creating it out of the existing exynos4210.dtsi) which will have all
+the common bits across all SoC's in the Exynos4 family.
 
-Thanks
-Wen Congyang
+Further, there can be exynos4210.dtsi and exynos4412.dtsi which would
+specify SoC specific differences such as the GIC cpu-offset property
+and the additional groups available in the interrupt combiner.
 
->  }
->  #endif
->  
+There are differences in the gpio/pinmux controllers as well which
+have to be described using device tree. The current gpio/pinmux device
+tree support depends entirely on the gpio-samsung driver which handles
+both gpio and pinmux but requires listing all the banks available in
+Exynos4412. I would prefer not to do that since we are switching over
+to using a pin controller driver and I am currently working on this
+driver.
 
+The pin controller driver is important without which the
+gpio/pinmux/pinconf setting for devices such as i2c and sdhci
+controller cannot be setup. The basic pinctrl driver for Exynos4 has
+already been posted and now I am working on adding gpio and wakeup
+interrupt support into that driver (hoping to complete it this week).
+
+So the probable steps in getting started with using device tree for
+Exynos4412 would be
+
+1. Create a new exynos4.dtsi file with all the Exynos4 common
+properties for all dt supported controllers.
+2. Update the exynos4210.dtsi file accordingly and add the new
+exynos4412.dtsi file.
+3. With this, it will be possible to boot the kernel and test
+peripherals that do not depend on gpio/pinmux (rtc, wdt, etc).
+4. When the Exynos4 pinctrl driver is available, start adding device
+nodes for i2c and sdhci controllers.
+5. Incrementally add device tree coverage for the board and other
+peripherals on Exynos4412.
+
+Thanks,
+Thomas.
