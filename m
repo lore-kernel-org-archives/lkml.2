@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031015Ab2HGWm7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:42:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030964Ab2HGWmz (ORCPT
+	id S1031029Ab2HGWnS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:43:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41393 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030864Ab2HGWnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:42:55 -0400
+	Tue, 7 Aug 2012 18:43:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 107/109] futex: Test for pi_mutex on fault in futex_wait_requeue_pi()
-Date: Tue,  7 Aug 2012 15:36:06 -0700
-Message-Id: <20120807222052.456416861@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 097/109] ALSA: mpu401: Fix missing initialization of irq field
+Date: Tue,  7 Aug 2012 15:35:56 -0700
+Message-Id: <20120807222051.588033120@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -31,35 +29,32 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit b6070a8d9853eda010a549fa9a09eb8d7269b929 upstream.
+commit bc733d495267a23ef8660220d696c6e549ce30b3 upstream.
 
-If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
-for pi_mutex != NULL before testing the owner against current
-and possibly unlocking it.
+The irq field of struct snd_mpu401 is supposed to be initialized to -1.
+Since it's set to zero as of now, a probing error before the irq
+installation results in a kernel warning "Trying to free already-free
+IRQ 0".
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Link: http://lkml.kernel.org/r/dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=44821
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/futex.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/drivers/mpu401/mpu401_uart.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2370,7 +2370,7 @@ static int futex_wait_requeue_pi(u32 __u
- 	 * fault, unlock the rt_mutex and return the fault to userspace.
- 	 */
- 	if (ret == -EFAULT) {
--		if (rt_mutex_owner(pi_mutex) == current)
-+		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
- 			rt_mutex_unlock(pi_mutex);
- 	} else if (ret == -EINTR) {
- 		/*
+--- a/sound/drivers/mpu401/mpu401_uart.c
++++ b/sound/drivers/mpu401/mpu401_uart.c
+@@ -554,6 +554,7 @@ int snd_mpu401_uart_new(struct snd_card
+ 	spin_lock_init(&mpu->output_lock);
+ 	spin_lock_init(&mpu->timer_lock);
+ 	mpu->hardware = hardware;
++	mpu->irq = -1;
+ 	if (! (info_flags & MPU401_INFO_INTEGRATED)) {
+ 		int res_size = hardware == MPU401_HW_PC98II ? 4 : 2;
+ 		mpu->res = request_region(port, res_size, "MPU401 UART");
 
 
