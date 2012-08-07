@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab2HGXkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:40:14 -0400
+	id S932342Ab2HGW2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:28:11 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932359Ab2HGW2Q (ORCPT
+	with ESMTP id S932286Ab2HGW14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:28:16 -0400
+	Tue, 7 Aug 2012 18:27:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dylan Reid <dgreid@chromium.org>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 025/122] ALSA: hda - Turn on PIN_OUT from hdmi playback prepare.
-Date: Tue,  7 Aug 2012 15:25:13 -0700
-Message-Id: <20120807221950.486091359@linuxfoundation.org>
+        Steve Sakoman <steve@sakoman.com>, Tony Lindgren <tony@atomide.com>,
+        Nishanth Menon <nm@ti.com>, Kevin Hilman <khilman@ti.com>
+Subject: [ 019/122] ARM: OMAP2+: OPP: Fix to ensure check of right oppdef after bad one
+Date: Tue,  7 Aug 2012 15:25:07 -0700
+Message-Id: <20120807221949.963296638@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,63 +30,57 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dylan Reid <dgreid@chromium.org>
+From: Nishanth Menon <nm@ti.com>
 
-commit 9e76e6d031482194a5b24d8e9ab88063fbd6b4b5 upstream.
+commit b110547e586eb5825bc1d04aa9147bff83b57672 upstream.
 
-Turn on the pin widget's PIN_OUT bit from playback prepare. The pin is
-enabled in open, but is disabled in hdmi_init_pin which is called during
-system resume.  This causes a system suspend/resume during playback to
-mute HDMI/DP. Enabling the pin in prepare instead of open allows calling
-snd_pcm_prepare after a system resume to restore audio.
+Commit 9fa2df6b90786301b175e264f5fa9846aba81a65
+(ARM: OMAP2+: OPP: allow OPP enumeration to continue if device is not present)
+makes the logic:
+for (i = 0; i < opp_def_size; i++) {
+	<snip>
+	if (!oh || !oh->od) {
+		<snip>
+		continue;
+	}
+<snip>
+opp_def++;
+}
 
-Signed-off-by: Dylan Reid <dgreid@chromium.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+In short, the moment we hit a "Bad OPP", we end up looping the list
+comparing against the bad opp definition pointer for the rest of the
+iteration count. Instead, increment opp_def in the for loop itself
+and allow continue to be used in code without much thought so that
+we check the next set of OPP definition pointers :)
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Cc: Steve Sakoman <steve@sakoman.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Kevin Hilman <khilman@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/arm/mach-omap2/opp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -876,7 +876,6 @@ static int hdmi_pcm_open(struct hda_pcm_
- 	struct hdmi_spec_per_pin *per_pin;
- 	struct hdmi_eld *eld;
- 	struct hdmi_spec_per_cvt *per_cvt = NULL;
--	int pinctl;
+--- a/arch/arm/mach-omap2/opp.c
++++ b/arch/arm/mach-omap2/opp.c
+@@ -53,7 +53,7 @@ int __init omap_init_opp_table(struct om
+ 	omap_table_init = 1;
  
- 	/* Validate hinfo */
- 	pin_idx = hinfo_to_pin_index(spec, hinfo);
-@@ -912,11 +911,6 @@ static int hdmi_pcm_open(struct hda_pcm_
- 	snd_hda_codec_write(codec, per_pin->pin_nid, 0,
- 			    AC_VERB_SET_CONNECT_SEL,
- 			    mux_idx);
--	pinctl = snd_hda_codec_read(codec, per_pin->pin_nid, 0,
--				    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
--	snd_hda_codec_write(codec, per_pin->pin_nid, 0,
--			    AC_VERB_SET_PIN_WIDGET_CONTROL,
--			    pinctl | PIN_OUT);
- 	snd_hda_spdif_ctls_assign(codec, pin_idx, per_cvt->cvt_nid);
+ 	/* Lets now register with OPP library */
+-	for (i = 0; i < opp_def_size; i++) {
++	for (i = 0; i < opp_def_size; i++, opp_def++) {
+ 		struct omap_hwmod *oh;
+ 		struct device *dev;
  
- 	/* Initially set the converter's capabilities */
-@@ -1153,11 +1147,17 @@ static int generic_hdmi_playback_pcm_pre
- 	struct hdmi_spec *spec = codec->spec;
- 	int pin_idx = hinfo_to_pin_index(spec, hinfo);
- 	hda_nid_t pin_nid = spec->pins[pin_idx].pin_nid;
-+	int pinctl;
+@@ -86,7 +86,6 @@ int __init omap_init_opp_table(struct om
+ 					__func__, opp_def->freq,
+ 					opp_def->hwmod_name, i, r);
+ 		}
+-		opp_def++;
+ 	}
  
- 	hdmi_set_channel_count(codec, cvt_nid, substream->runtime->channels);
- 
- 	hdmi_setup_audio_infoframe(codec, pin_idx, substream);
- 
-+	pinctl = snd_hda_codec_read(codec, pin_nid, 0,
-+				    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
-+	snd_hda_codec_write(codec, pin_nid, 0,
-+			    AC_VERB_SET_PIN_WIDGET_CONTROL, pinctl | PIN_OUT);
-+
- 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
- }
- 
+ 	return 0;
 
 
