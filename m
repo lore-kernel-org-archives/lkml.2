@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab2HGWa0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:30:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	id S964882Ab2HGXcU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:32:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757163Ab2HGWaU (ORCPT
+	with ESMTP id S1757190Ab2HGWaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:30:20 -0400
+	Tue, 7 Aug 2012 18:30:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christian Ohm <chr.ohm@gmx.net>, Ben Hutchings <ben@decadent.org.uk>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 064/122] staging: zsmalloc: Finish conversion to a separate module
-Date: Tue,  7 Aug 2012 15:25:52 -0700
-Message-Id: <20120807221954.113402511@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 065/122] workqueue: perform cpu down operations from low priority cpu_notifier()
+Date: Tue,  7 Aug 2012 15:25:53 -0700
+Message-Id: <20120807221954.223825322@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,91 +29,115 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Tejun Heo <tj@kernel.org>
 
-commit 069f101fa463351f528773d73b74e9b606b3f66a upstream.
+commit 6575820221f7a4dd6eadecf7bf83cdd154335eda upstream.
 
-ZSMALLOC is tristate, but the code has no MODULE_LICENSE and since it
-depends on GPL-only symbols it cannot be loaded as a module.  This in
-turn breaks zram which now depends on it.  I assume it's meant to be
-Dual BSD/GPL like the other z-stuff.
+Currently, all workqueue cpu hotplug operations run off
+CPU_PRI_WORKQUEUE which is higher than normal notifiers.  This is to
+ensure that workqueue is up and running while bringing up a CPU before
+other notifiers try to use workqueue on the CPU.
 
-There is also no module_exit, which will make it impossible to unload.
-Add the appropriate module_init and module_exit declarations suggested
-by comments.
+Per-cpu workqueues are supposed to remain working and bound to the CPU
+for normal CPU_DOWN_PREPARE notifiers.  This holds mostly true even
+with workqueue offlining running with higher priority because
+workqueue CPU_DOWN_PREPARE only creates a bound trustee thread which
+runs the per-cpu workqueue without concurrency management without
+explicitly detaching the existing workers.
 
-Reported-by: Christian Ohm <chr.ohm@gmx.net>
-References: http://bugs.debian.org/677273
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
+However, if the trustee needs to create new workers, it creates
+unbound workers which may wander off to other CPUs while
+CPU_DOWN_PREPARE notifiers are in progress.  Furthermore, if the CPU
+down is cancelled, the per-CPU workqueue may end up with workers which
+aren't bound to the CPU.
+
+While reliably reproducible with a convoluted artificial test-case
+involving scheduling and flushing CPU burning work items from CPU down
+notifiers, this isn't very likely to happen in the wild, and, even
+when it happens, the effects are likely to be hidden by the following
+successful CPU down.
+
+Fix it by using different priorities for up and down notifiers - high
+priority for up operations and low priority for down operations.
+
+Workqueue cpu hotplug operations will soon go through further cleanup.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: "Rafael J. Wysocki" <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zsmalloc/zsmalloc-main.c |   33 ++++++-------------------------
- 1 file changed, 7 insertions(+), 26 deletions(-)
+ include/linux/cpu.h |    5 +++--
+ kernel/workqueue.c  |   38 +++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 40 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -425,12 +425,6 @@ static struct page *find_get_zspage(stru
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -73,8 +73,9 @@ enum {
+ 	/* migration should happen before other stuff but after perf */
+ 	CPU_PRI_PERF		= 20,
+ 	CPU_PRI_MIGRATION	= 10,
+-	/* prepare workqueues for other notifiers */
+-	CPU_PRI_WORKQUEUE	= 5,
++	/* bring up workqueues before normal notifiers and down after */
++	CPU_PRI_WORKQUEUE_UP	= 5,
++	CPU_PRI_WORKQUEUE_DOWN	= -5,
+ };
+ 
+ #define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3590,6 +3590,41 @@ static int __devinit workqueue_cpu_callb
+ 	return notifier_from_errno(0);
  }
  
- 
--/*
-- * If this becomes a separate module, register zs_init() with
-- * module_init(), zs_exit with module_exit(), and remove zs_initialized
--*/
--static int zs_initialized;
--
- static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
- 				void *pcpu)
- {
-@@ -489,7 +483,7 @@ fail:
- 
- struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
- {
--	int i, error, ovhd_size;
-+	int i, ovhd_size;
- 	struct zs_pool *pool;
- 
- 	if (!name)
-@@ -516,28 +510,9 @@ struct zs_pool *zs_create_pool(const cha
- 
- 	}
- 
--	/*
--	 * If this becomes a separate module, register zs_init with
--	 * module_init, and remove this block
--	*/
--	if (!zs_initialized) {
--		error = zs_init();
--		if (error)
--			goto cleanup;
--		zs_initialized = 1;
--	}
--
- 	pool->flags = flags;
- 	pool->name = name;
- 
--	error = 0; /* Success */
--
--cleanup:
--	if (error) {
--		zs_destroy_pool(pool);
--		pool = NULL;
--	}
--
- 	return pool;
- }
- EXPORT_SYMBOL_GPL(zs_create_pool);
-@@ -753,3 +728,9 @@ u64 zs_get_total_size_bytes(struct zs_po
- 	return npages << PAGE_SHIFT;
- }
- EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
++/*
++ * Workqueues should be brought up before normal priority CPU notifiers.
++ * This will be registered high priority CPU notifier.
++ */
++static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
++					       unsigned long action,
++					       void *hcpu)
++{
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_UP_PREPARE:
++	case CPU_UP_CANCELED:
++	case CPU_DOWN_FAILED:
++	case CPU_ONLINE:
++		return workqueue_cpu_callback(nfb, action, hcpu);
++	}
++	return NOTIFY_OK;
++}
 +
-+module_init(zs_init);
-+module_exit(zs_exit);
++/*
++ * Workqueues should be brought down after normal priority CPU notifiers.
++ * This will be registered as low priority CPU notifier.
++ */
++static int __devinit workqueue_cpu_down_callback(struct notifier_block *nfb,
++						 unsigned long action,
++						 void *hcpu)
++{
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_DOWN_PREPARE:
++	case CPU_DYING:
++	case CPU_POST_DEAD:
++		return workqueue_cpu_callback(nfb, action, hcpu);
++	}
++	return NOTIFY_OK;
++}
 +
-+MODULE_LICENSE("Dual BSD/GPL");
-+MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
+ #ifdef CONFIG_SMP
+ 
+ struct work_for_cpu {
+@@ -3783,7 +3818,8 @@ static int __init init_workqueues(void)
+ 	unsigned int cpu;
+ 	int i;
+ 
+-	cpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
++	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
++	cpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
+ 
+ 	/* initialize gcwqs */
+ 	for_each_gcwq_cpu(cpu) {
 
 
