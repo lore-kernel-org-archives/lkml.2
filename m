@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab2HGOFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 10:05:23 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64190 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750734Ab2HGOFW (ORCPT
+	id S1754548Ab2HGOLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 10:11:51 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62745 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab2HGOLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 10:05:22 -0400
-Date: Tue, 7 Aug 2012 15:04:55 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Nicolas Pitre <nico@fluxnic.net>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RFC: mutex: hung tasks on SMP platforms with
- asm-generic/mutex-xchg.h
-Message-ID: <20120807140455.GB12828@mudshark.cambridge.arm.com>
-References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
- <1344347322.27828.120.camel@twins>
+	Tue, 7 Aug 2012 10:11:50 -0400
+Message-ID: <50212222.2000509@gmail.com>
+Date: Tue, 07 Aug 2012 08:11:46 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344347322.27828.120.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf tools: Initial bash completion support
+References: <1344345586-15068-1-git-send-email-fweisbec@gmail.com> <1344345586-15068-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1344345586-15068-2-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 02:48:42PM +0100, Peter Zijlstra wrote:
-> On Tue, 2012-08-07 at 12:56 +0100, Will Deacon wrote:
-> > ARM recently moved to asm-generic/mutex-xchg.h for its mutex implementation
-> > after our previous implementation was found to be missing some crucial
-> > memory barriers. 
-> 
-> 
-> This is a76d7bd96d ("ARM: 7467/1: mutex: use generic xchg-based
-> implementation for ARMv6+"), right? Why do you use xchg and not dec
-> based? The changelog mumbles something about shorter critical sections,
-> but me not knowing anything about ARM wonders about the why of that.
+On 8/7/12 7:19 AM, Frederic Weisbecker wrote:
+> This implements bash completion for perf subcommands such
+> as record, report, script, probe, etc...
 
-Correct, that's the patch. We don't have atomic add/sub instructions on ARM,
-so instead we have to do:
+Love it!
 
-1:	ldrex	...	@ Exclusive load
-	add/sub ...     @ Do the arithmetic
-	strex	...	@ Exclusive store
-	cmp	...	@ Check the store succeeded
-	bne	1b	@ Retry if we weren't atomic
+>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>   tools/perf/Makefile        |    1 +
+>   tools/perf/bash_completion |   20 +++++++++++++
+>   tools/perf/perf.c          |   69 +++++++++++++++++++++++++-------------------
+>   3 files changed, 60 insertions(+), 30 deletions(-)
+>   create mode 100644 tools/perf/bash_completion
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 35655c3..4000d72 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -951,6 +951,7 @@ install: all
+>   	$(INSTALL) scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+>   	$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'
+>   	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
+> +	$(INSTALL) -m 755 bash_completion /etc/bash_completion.d/perf
 
-So using dec adds a sub where we wouldn't need an instruction there for xchg.
-I suspect there's no measurable difference between the two, but we use the
-xchg-based implementation for CPUs prior to ARMv6 so it saves an ifdef as
-well. Some discussion on the original patch here:
+$(DESTDIR_SQ) is need in front of the destination.
 
-  http://lists.infradead.org/pipermail/linux-arm-kernel/2012-July/109333.html
-
-> >         Task A        Task B        Task C        Lock value
-> > 0                                                     1
-> > 1       lock()                                        0
-> > 2                     lock()                          0
-> > 3                     spin(A)                         0
-> > 4       unlock()                                      1
-> > 5                                   lock()            0
-> > 6                     cmpxchg(1,0)                    0
-> > 7                     contended()                    -1
-> > 8       lock()                                        0
-> > 9       spin(C)                                       0
-> > 10                                  unlock()          1
-> > 11      cmpxchg(1,0)                                  0
-> > 12      unlock()                                      1
-> > 
-> > 
-> > At this point, the lock is unlocked, but Task B is in an uninterruptible
-> > sleep with nobody to wake it up.
-
-[...]
-
-> But in this case, either B is still spinning in our spin-loop, or it has
-> already passed the atomic_xchg(&lock->count, -1) when we fell out.
-
-Yes, it does that xchg on line 7 (see the lock value of -1)...
-
-> Since you say B is in UNINTERRUPTIBLE state, we'll assume it fell
-> through and so the lock count should be -1 (or less) to mark it
-> contended.
-
-... but then A sets it straight back to 0 in __mutex_fastpath_lock and falls
-down the slowpath due to it being contended. The problem is that it doesn't
-restore the -1 when it acquires the lock on line 11, so B is never woken up.
-
-Will
+David
