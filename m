@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030343Ab2HGWcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:32:19 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:57899 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030310Ab2HGWcM (ORCPT
+	id S1030328Ab2HGWcL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:32:11 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41377 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030310Ab2HGWcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:12 -0400
+	Tue, 7 Aug 2012 18:32:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tao Ma <boyu.mt@taobao.com>, "Theodore Tso" <tytso@mit.edu>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-Subject: [ 099/122] ext4: use s_csum_seed instead of i_csum_seed for xattr block
-Date: Tue,  7 Aug 2012 15:26:27 -0700
-Message-Id: <20120807221958.408099265@linuxfoundation.org>
+        Brian Foster <bfoster@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 097/122] ext4: undo ext4_calc_metadata_amount if we fail to claim space
+Date: Tue,  7 Aug 2012 15:26:25 -0700
+Message-Id: <20120807221958.198071238@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,62 +29,90 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tao Ma <boyu.mt@taobao.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 41eb70dde42b2360074a559a6f1fc49860a50179 upstream.
+commit 03179fe92318e7934c180d96f12eff2cb36ef7b6 upstream.
 
-In xattr block operation, we use h_refcount to indicate whether the
-xattr block is shared among many inodes. And xattr block csum uses
-s_csum_seed if it is shared and i_csum_seed if it belongs to
-one inode. But this has a problem. So consider the block is shared
-first bewteen inode A and B, and B has some xattr update and CoW
-the xattr block. When it updates the *old* xattr block(because
-of the h_refcount change) and calls ext4_xattr_release_block, we
-has no idea that inode A is the real owner of the *old* xattr
-block and we can't use the i_csum_seed of inode A either in xattr
-block csum calculation. And I don't think we have an easy way to
-find inode A.
+The function ext4_calc_metadata_amount() has side effects, although
+it's not obvious from its function name.  So if we fail to claim
+space, regardless of whether we retry to claim the space again, or
+return an error, we need to undo these side effects.
 
-So this patch just removes the tricky i_csum_seed and we now uses
-s_csum_seed every time for the xattr block csum. The corresponding
-patch for the e2fsprogs will be sent in another patch.
+Otherwise we can end up incorrectly calculating the number of metadata
+blocks needed for the operation, which was responsible for an xfstests
+failure for test #271 when using an ext2 file system with delalloc
+enabled.
 
-This is spotted by xfstests 117.
-
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Reported-by: Brian Foster <bfoster@redhat.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Acked-by: Darrick J. Wong <djwong@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/xattr.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ fs/ext4/inode.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -127,19 +127,16 @@ static __le32 ext4_xattr_block_csum(stru
- 				    struct ext4_xattr_header *hdr)
- {
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
--	struct ext4_inode_info *ei = EXT4_I(inode);
- 	__u32 csum, old;
- 
- 	old = hdr->h_checksum;
- 	hdr->h_checksum = 0;
--	if (le32_to_cpu(hdr->h_refcount) != 1) {
--		block_nr = cpu_to_le64(block_nr);
--		csum = ext4_chksum(sbi, sbi->s_csum_seed, (__u8 *)&block_nr,
--				   sizeof(block_nr));
--	} else
--		csum = ei->i_csum_seed;
-+	block_nr = cpu_to_le64(block_nr);
-+	csum = ext4_chksum(sbi, sbi->s_csum_seed, (__u8 *)&block_nr,
-+			   sizeof(block_nr));
- 	csum = ext4_chksum(sbi, csum, (__u8 *)hdr,
- 			   EXT4_BLOCK_SIZE(inode->i_sb));
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1180,6 +1180,17 @@ static int ext4_da_reserve_space(struct
+ 	struct ext4_inode_info *ei = EXT4_I(inode);
+ 	unsigned int md_needed;
+ 	int ret;
++	ext4_lblk_t save_last_lblock;
++	int save_len;
 +
- 	hdr->h_checksum = old;
- 	return cpu_to_le32(csum);
- }
++	/*
++	 * We will charge metadata quota at writeout time; this saves
++	 * us from metadata over-estimation, though we may go over by
++	 * a small amount in the end.  Here we just reserve for data.
++	 */
++	ret = dquot_reserve_block(inode, EXT4_C2B(sbi, 1));
++	if (ret)
++		return ret;
+ 
+ 	/*
+ 	 * recalculate the amount of metadata blocks to reserve
+@@ -1188,32 +1199,31 @@ static int ext4_da_reserve_space(struct
+ 	 */
+ repeat:
+ 	spin_lock(&ei->i_block_reservation_lock);
++	/*
++	 * ext4_calc_metadata_amount() has side effects, which we have
++	 * to be prepared undo if we fail to claim space.
++	 */
++	save_len = ei->i_da_metadata_calc_len;
++	save_last_lblock = ei->i_da_metadata_calc_last_lblock;
+ 	md_needed = EXT4_NUM_B2C(sbi,
+ 				 ext4_calc_metadata_amount(inode, lblock));
+ 	trace_ext4_da_reserve_space(inode, md_needed);
+-	spin_unlock(&ei->i_block_reservation_lock);
+ 
+ 	/*
+-	 * We will charge metadata quota at writeout time; this saves
+-	 * us from metadata over-estimation, though we may go over by
+-	 * a small amount in the end.  Here we just reserve for data.
+-	 */
+-	ret = dquot_reserve_block(inode, EXT4_C2B(sbi, 1));
+-	if (ret)
+-		return ret;
+-	/*
+ 	 * We do still charge estimated metadata to the sb though;
+ 	 * we cannot afford to run out of free blocks.
+ 	 */
+ 	if (ext4_claim_free_clusters(sbi, md_needed + 1, 0)) {
+-		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
++		ei->i_da_metadata_calc_len = save_len;
++		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
++		spin_unlock(&ei->i_block_reservation_lock);
+ 		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
+ 			yield();
+ 			goto repeat;
+ 		}
++		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
+ 		return -ENOSPC;
+ 	}
+-	spin_lock(&ei->i_block_reservation_lock);
+ 	ei->i_reserved_data_blocks++;
+ 	ei->i_reserved_meta_blocks += md_needed;
+ 	spin_unlock(&ei->i_block_reservation_lock);
 
 
