@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964780Ab2HGW3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:29:52 -0400
+	id S1757149Ab2HGWaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:30:11 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932667Ab2HGW3s (ORCPT
+	with ESMTP id S964824Ab2HGWaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:29:48 -0400
+	Tue, 7 Aug 2012 18:30:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Forest Bond <forest.bond@rapidrollout.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 054/122] rtlwifi: rtl8192de: Fix phy-based version calculation
-Date: Tue,  7 Aug 2012 15:25:42 -0700
-Message-Id: <20120807221953.117247523@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 058/122] s390/mm: fix fault handling for page table walk case
+Date: Tue,  7 Aug 2012 15:25:46 -0700
+Message-Id: <20120807221953.518580471@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -31,59 +30,69 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Forest Bond <forest.bond@rapidrollout.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit f1b00f4dab29b57bdf1bc03ef12020b280fd2a72 upstream.
+commit 008c2e8f247f0a8db1e8e26139da12f3a3abcda0 upstream.
 
-Commit d83579e2a50ac68389e6b4c58b845c702cf37516 incorporated some
-changes from the vendor driver that made it newly important that the
-calculated hardware version correctly include the CHIP_92D bit, as all
-of the IS_92D_* macros were changed to depend on it.  However, this bit
-was being unset for dual-mac, dual-phy devices.  The vendor driver
-behavior was modified to not do this, but unfortunately this change was
-not picked up along with the others.  This caused scanning in the 2.4GHz
-band to be broken, and possibly other bugs as well.
+Make sure the kernel does not incorrectly create a SIGBUS signal during
+user space accesses:
 
-This patch brings the version calculation logic in parity with the
-vendor driver in this regard, and in doing so fixes the regression.
-However, the version calculation code in general continues to be largely
-incoherent and messy, and needs to be cleaned up.
+For user space accesses in the switched addressing mode case the kernel
+may walk page tables and access user address space via the kernel
+mapping. If a page table entry is invalid the function __handle_fault()
+gets called in order to emulate a page fault and trigger all the usual
+actions like paging in a missing page etc. by calling handle_mm_fault().
 
-Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+If handle_mm_fault() returns with an error fixup handling is necessary.
+For the switched addressing mode case all errors need to be mapped to
+-EFAULT, so that the calling uaccess function can return -EFAULT to
+user space.
+
+Unfortunately the __handle_fault() incorrectly calls do_sigbus() if
+VM_FAULT_SIGBUS is set. This however should only happen if a page fault
+was triggered by a user space instruction. For kernel mode uaccesses
+the correct action is to only return -EFAULT.
+So user space may incorrectly see SIGBUS signals because of this bug.
+
+For current machines this would only be possible for the switched
+addressing mode case in conjunction with futex operations.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192de/phy.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/s390/mm/fault.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
-@@ -3345,21 +3345,21 @@ void rtl92d_phy_config_macphymode_info(s
- 	switch (rtlhal->macphymode) {
- 	case DUALMAC_SINGLEPHY:
- 		rtlphy->rf_type = RF_2T2R;
--		rtlhal->version |= CHIP_92D_SINGLEPHY;
-+		rtlhal->version |= RF_TYPE_2T2R;
- 		rtlhal->bandset = BAND_ON_BOTH;
- 		rtlhal->current_bandtype = BAND_ON_2_4G;
- 		break;
+--- a/arch/s390/mm/fault.c
++++ b/arch/s390/mm/fault.c
+@@ -443,6 +443,7 @@ int __handle_fault(unsigned long uaddr,
+ 	struct pt_regs regs;
+ 	int access, fault;
  
- 	case SINGLEMAC_SINGLEPHY:
- 		rtlphy->rf_type = RF_2T2R;
--		rtlhal->version |= CHIP_92D_SINGLEPHY;
-+		rtlhal->version |= RF_TYPE_2T2R;
- 		rtlhal->bandset = BAND_ON_BOTH;
- 		rtlhal->current_bandtype = BAND_ON_2_4G;
- 		break;
++	/* Emulate a uaccess fault from kernel mode. */
+ 	regs.psw.mask = psw_kernel_bits | PSW_MASK_DAT | PSW_MASK_MCHECK;
+ 	if (!irqs_disabled())
+ 		regs.psw.mask |= PSW_MASK_IO | PSW_MASK_EXT;
+@@ -452,12 +453,12 @@ int __handle_fault(unsigned long uaddr,
+ 	regs.int_parm_long = (uaddr & PAGE_MASK) | 2;
+ 	access = write ? VM_WRITE : VM_READ;
+ 	fault = do_exception(&regs, access);
+-	if (unlikely(fault)) {
+-		if (fault & VM_FAULT_OOM)
+-			return -EFAULT;
+-		else if (fault & VM_FAULT_SIGBUS)
+-			do_sigbus(&regs);
+-	}
++	/*
++	 * Since the fault happened in kernel mode while performing a uaccess
++	 * all we need to do now is emulating a fixup in case "fault" is not
++	 * zero.
++	 * For the calling uaccess functions this results always in -EFAULT.
++	 */
+ 	return fault ? -EFAULT : 0;
+ }
  
- 	case DUALMAC_DUALPHY:
- 		rtlphy->rf_type = RF_1T1R;
--		rtlhal->version &= (~CHIP_92D_SINGLEPHY);
-+		rtlhal->version &= RF_TYPE_1T1R;
- 		/* Now we let MAC0 run on 5G band. */
- 		if (rtlhal->interfaceindex == 0) {
- 			rtlhal->bandset = BAND_ON_5G;
 
 
