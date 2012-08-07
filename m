@@ -1,122 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab2HGTlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:41:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9433 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756146Ab2HGTlD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:41:03 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=0gQNBUTSjgEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=WfulkdPnAAAA:8 a=PbXrVSnWgJJwXRCFfZkA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=l29vjEC0CZ8A:10 a=jeBq3FmKZ4MA:10 a=fTc_Iu9svt2MSiqdBIAA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120807194059.392617243@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 15:38:47 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
+	id S1756078Ab2HGTmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:42:06 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39642 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753607Ab2HGTmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 15:42:01 -0400
+Message-ID: <1344367748.24990.1.camel@footlong>
+Subject: [PATCH 0/3] tpm: Add new vTPM device driver for PPC64
+From: Ashley Lai <adlai@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Michal Marek <mmarek@suse.cz>
-Subject: [RFC PATCH 2/4] ftrace: Add -mfentry to Makefile on function tracer
-References: <20120807193845.146666357@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-Add-mfentry-to-Makefile-on-function-tracer.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
+        adlai@linux.vnet.ibm.com
+Date: Tue, 07 Aug 2012 14:29:08 -0500
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080719-7182-0000-0000-00000234EDE1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+These patches add support for IBM vTPM for PPC64.  This new device driver
+works on firmware that supports vTPM (firmware release 740 or higher).
 
-From: Steven Rostedt <srostedt@redhat.com>
+Tested on Power7+ system with firmware level ZM770_001.
 
-Thanks to Andi Kleen, gcc 4.6.0 now supports -mfentry for x86
-(and hopefully soon for other archs). What this does is to have
-the function profiler start at the beginning of the function
-instead of after the stack is set up. As plain -pg (mcount) is
-called after the stack is set up, and in some cases can have issues
-with the function graph tracer. It also requires frame pointers to
-be enabled.
+Applied to Kent Yoder patch to modularize event log located at:
+https://github.com/shpedoikal/linux/tree/tpmdd-next
 
-The -mfentry now calls __fentry__ at the beginning of the function.
-This allows for compiling without frame pointers and even has the
-ability to access parameters if needed.
+Ashley Lai (3):
+  drivers/char/tpm: Add new device driver to support IBM vTPM
+  PPC64: Add support for instantiating SML from Open Firmware
+  drivers/char/tpm: Add securityfs support for event log
 
-If the architecture and the compiler both support -mfentry then
-use that instead.
-
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- Makefile             |    6 +++++-
- kernel/trace/Kconfig |    5 +++++
- 2 files changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/Makefile b/Makefile
-index aa8e315..eeb634f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -609,7 +609,11 @@ KBUILD_CFLAGS 	+=3D $(call cc-option, -femit-struct-de=
-bug-baseonly)
- endif
-=20
- ifdef CONFIG_FUNCTION_TRACER
--KBUILD_CFLAGS	+=3D -pg
-+ifdef CONFIG_HAVE_FENTRY
-+CC_USING_FENTRY	:=3D $(call cc-option, -mfentry -DCC_USING_FENTRY)
-+endif
-+KBUILD_CFLAGS	+=3D -pg $(CC_USING_FENTRY)
-+KBUILD_AFLAGS	+=3D $(CC_USING_FENTRY)
- ifdef CONFIG_DYNAMIC_FTRACE
- 	ifdef CONFIG_HAVE_C_RECORDMCOUNT
- 		BUILD_C_RECORDMCOUNT :=3D y
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 8c4c070..9301a0e 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -49,6 +49,11 @@ config HAVE_SYSCALL_TRACEPOINTS
- 	help
- 	  See Documentation/trace/ftrace-design.txt
-=20
-+config HAVE_FENTRY
-+	bool
-+	help
-+	  Arch supports the gcc options -pg with -mfentry
-+
- config HAVE_C_RECORDMCOUNT
- 	bool
- 	help
---=20
-1.7.10.4
+ arch/powerpc/kernel/prom_init.c   |   64 ++++
+ drivers/char/tpm/Kconfig          |    8 +
+ drivers/char/tpm/Makefile         |    9 +-
+ drivers/char/tpm/tpm.h            |   13 +-
+ drivers/char/tpm/tpm_eventlog.c   |    7 +
+ drivers/char/tpm/tpm_eventlog.h   |   24 ++
+ drivers/char/tpm/tpm_ibmvtpm.c    |  750 +++++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm_ibmvtpm.h    |   83 ++++
+ drivers/char/tpm/tpm_noeventlog.c |   21 +
+ drivers/char/tpm/tpm_of.c         |   68 ++++
+ 10 files changed, 1034 insertions(+), 13 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm_ibmvtpm.c
+ create mode 100644 drivers/char/tpm/tpm_ibmvtpm.h
+ create mode 100644 drivers/char/tpm/tpm_noeventlog.c
+ create mode 100644 drivers/char/tpm/tpm_of.c
 
 
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQIW9LAAoJEIy3vGnGbaoArvIP+QG+EQKrhT6WvKFL40x4fb8i
-MCfsgWKYmQRm0mJqcPngDeItFXY/+bTsyp4roeC0ceeCrpwwZUiIzytjm8Bda2/f
-e68J/M4GM3UFr+CPolIP4F8dlvRchx2mYOi4yNFDZN2j2mJU6mO0njse8raijFUX
-VCCfc83ch/bllfqwgcH2K4lg5+In4e1mHCrNnu266wiB+dLM+K1vevUZI0SUPOXh
-Vv2frMKzhtrKjFmIgDtRje7QanValAUjZckVYbxCwpbKC2cbJZE0BnOkRKOjqLE3
-Z7H9jdXMmUtCmWZusOrBgx6CDAmzFalZthhOMJ94idZMp/5iS7GxNl4/Qy9s2JEZ
-FKjlplEg6Q3rszy2vJrJznDFJLbwkfmtarm3kpgy54m/+Q0uwKj6UHm2x2yEjGzx
-ZX6BnPJwBoXy5980Ng7AgNcRe4QDhMw19QWHNtb+faymz7PBVj2aCN74gbEgK250
-lOzXKkoI7iBtlKlGe3PDDxrxYB41oLwURarb3mSAzoLAr7OkWO9Xi2e8Tv5kZnrY
-kK2UJfKe4nLDylTFO22EGCdtro36pqxEQDBNvyTnw0vveoSJK/gQvVQ226BTlBK1
-Gt0s/GnC0stNp4Z1sOuuw9HmDi1P0TmFJPh5/jxAAfgZJBe3xgRxHykrPfcoRLuF
-6xoQNz7jgNIh073X0pYG
-=FphF
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
