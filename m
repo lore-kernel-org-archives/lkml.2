@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688Ab2HGGhI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 02:37:08 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:49920 "EHLO
+	id S1751106Ab2HGGi2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 02:38:28 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:51599 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab2HGGhF (ORCPT
+	with ESMTP id S1750721Ab2HGGi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 02:37:05 -0400
+	Tue, 7 Aug 2012 02:38:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <F45880696056844FA6A73F415B568C695B0E6E71EE@EXDCVYMBSTM006.EQ1STM.local>
-References: <1343651301-5526-1-git-send-email-arun.murthy@stericsson.com>
-	<F45880696056844FA6A73F415B568C695B0E6E71EE@EXDCVYMBSTM006.EQ1STM.local>
-Date: Tue, 7 Aug 2012 08:37:04 +0200
-Message-ID: <CACRpkdaeHfKg3v_Xe-08iVn5W=GTKuNJo1Gw=FO4xSBPvoUR6w@mail.gmail.com>
-Subject: Re: [PATCH 0/4] modem_shm: U8500 SHaRed Memory driver(SHRM)
+In-Reply-To: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
+References: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
+Date: Tue, 7 Aug 2012 08:38:26 +0200
+Message-ID: <CACRpkdbe95qj1hpZCNRZsLjC7s_N8NgLKrXk=p6gXZDDrj_P8g@mail.gmail.com>
+Subject: Re: [PATCH] ARM: EXYNOS: Add gpio functions for Exynos4412
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Arun MURTHY <arun.murthy@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Dongjin Kim <tobetter@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Dongjin Kim <dongjin.kim@agreeyamobility.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 6:36 AM, Arun MURTHY <arun.murthy@stericsson.com> wrote:
+On Mon, Aug 6, 2012 at 3:57 PM, Dongjin Kim <tobetter@gmail.com> wrote:
 
-> Any Comments?
+> GPIO functions are not registered for Exynos4412 yet,
+> therefore exynos4_gpiolib_init() is added to initialize Exynos4412 SoC.
+>
+> Change-Id: I5945d94c6fbfc309ccf882eba067864a338c04ca
 
-Since the modem is quite close to the networking stack, maybe it should be
-cross-posted to the netdev list on next iteration:
-http://vger.kernel.org/vger-lists.html#netdev
+Gerrit change ID:s are not used in the kernel.
 
-The code itself I think I've read so many times that I'm now unable to
-see any remaining mistakes...
+> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
+
+I'd like to have some Samsung feedback on this patch...
 
 Yours,
 Linus Walleij
