@@ -1,114 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab2HGTyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:54:35 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:49824 "EHLO
+	id S1756389Ab2HGTzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:55:18 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:49863 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271Ab2HGTyc (ORCPT
+	with ESMTP id S1756332Ab2HGTzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:54:32 -0400
+	Tue, 7 Aug 2012 15:55:13 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 30/41] TTY: moxa, convert to dynamic device
-Date: Tue,  7 Aug 2012 21:47:55 +0200
-Message-Id: <1344368886-24033-31-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 00/41] TTY buffer in tty_port -- prep no. 4
+Date: Tue,  7 Aug 2012 21:47:25 +0200
+Message-Id: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
-References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows us to provide the tty layer with information about
-tty_port for each link.
+Hi,
 
-We also provide a tty_port for the service port. For this one we allow
-only ioctl, so this is pretty ugly.
+this is the fourth, and hopefully the last, series of patches which
+allow tty buffers to be moved from tty_struct (present from open to
+close/hangup) to tty_port (present as long as the device). This will
+allow us to get rid of the tty refcounting in the interrupt service
+routines and other hot paths after we are done. This is because we
+will not need to handle races among ISRs, timers, hangups and others,
+because tty_port lives as long as an interrupt/timer tick may occur.
+Unlike tty_struct.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/tty/moxa.c |   24 ++++++++++++++++++++----
- 1 file changed, 20 insertions(+), 4 deletions(-)
+In this series, the fourth batch of drivers is converted to use
+tty_port. Last time I promised that all drivers have a tty_port. It
+was not really true. Now it should be. Here we also continued
+assigning tty_port to tty_struct->port. And we should be done with
+that here too. I.e. for all in-kernel drivers we have tty->port set
+after driver->ops->install returns. So the TTY layer now finally has
+an access to a tty_port in all of the drivers.
 
-diff --git a/drivers/tty/moxa.c b/drivers/tty/moxa.c
-index 89cc934..9dffc72 100644
---- a/drivers/tty/moxa.c
-+++ b/drivers/tty/moxa.c
-@@ -169,6 +169,7 @@ static DEFINE_SPINLOCK(moxa_lock);
- static unsigned long baseaddr[MAX_BOARDS];
- static unsigned int type[MAX_BOARDS];
- static unsigned int numports[MAX_BOARDS];
-+static struct tty_port moxa_service_port;
- 
- MODULE_AUTHOR("William Chen");
- MODULE_DESCRIPTION("MOXA Intellio Family Multiport Board Device Driver");
-@@ -834,7 +835,7 @@ static int moxa_init_board(struct moxa_board_conf *brd, struct device *dev)
- 	const struct firmware *fw;
- 	const char *file;
- 	struct moxa_port *p;
--	unsigned int i;
-+	unsigned int i, first_idx;
- 	int ret;
- 
- 	brd->ports = kcalloc(MAX_PORTS_PER_BOARD, sizeof(*brd->ports),
-@@ -887,6 +888,11 @@ static int moxa_init_board(struct moxa_board_conf *brd, struct device *dev)
- 		mod_timer(&moxaTimer, jiffies + HZ / 50);
- 	spin_unlock_bh(&moxa_lock);
- 
-+	first_idx = (brd - moxa_boards) * MAX_PORTS_PER_BOARD;
-+	for (i = 0; i < brd->numPorts; i++)
-+		tty_port_register_device(&brd->ports[i].port, moxaDriver,
-+				first_idx + i, dev);
-+
- 	return 0;
- err_free:
- 	kfree(brd->ports);
-@@ -896,7 +902,7 @@ err:
- 
- static void moxa_board_deinit(struct moxa_board_conf *brd)
- {
--	unsigned int a, opened;
-+	unsigned int a, opened, first_idx;
- 
- 	mutex_lock(&moxa_openlock);
- 	spin_lock_bh(&moxa_lock);
-@@ -925,6 +931,10 @@ static void moxa_board_deinit(struct moxa_board_conf *brd)
- 		mutex_lock(&moxa_openlock);
- 	}
- 
-+	first_idx = (brd - moxa_boards) * MAX_PORTS_PER_BOARD;
-+	for (a = 0; a < brd->numPorts; a++)
-+		tty_unregister_device(moxaDriver, first_idx + a);
-+
- 	iounmap(brd->basemem);
- 	brd->basemem = NULL;
- 	kfree(brd->ports);
-@@ -1031,7 +1041,12 @@ static int __init moxa_init(void)
- 
- 	printk(KERN_INFO "MOXA Intellio family driver version %s\n",
- 			MOXA_VERSION);
--	moxaDriver = alloc_tty_driver(MAX_PORTS + 1);
-+
-+	tty_port_init(&moxa_service_port);
-+
-+	moxaDriver = tty_alloc_driver(MAX_PORTS + 1,
-+			TTY_DRIVER_REAL_RAW |
-+			TTY_DRIVER_DYNAMIC_DEV);
- 	if (!moxaDriver)
- 		return -ENOMEM;
- 
-@@ -1044,8 +1059,9 @@ static int __init moxa_init(void)
- 	moxaDriver->init_termios.c_cflag = B9600 | CS8 | CREAD | CLOCAL | HUPCL;
- 	moxaDriver->init_termios.c_ispeed = 9600;
- 	moxaDriver->init_termios.c_ospeed = 9600;
--	moxaDriver->flags = TTY_DRIVER_REAL_RAW;
- 	tty_set_operations(moxaDriver, &moxa_ops);
-+	/* Having one more port only for ioctls is ugly */
-+	tty_port_link_device(&moxa_service_port, moxaDriver, MAX_PORTS);
- 
- 	if (tty_register_driver(moxaDriver)) {
- 		printk(KERN_ERR "can't register MOXA Smartio tty driver!\n");
+Now we can start moving tty buffers to tty_port and get rid of all the
+refcounting as was mentioned above.
+
+As usual, standard x86 stuff was runtime-tested. The rest is only
+checked to be compilation-errors free.
+
+Jiri Slaby (41):
+  TTY: pty, stop passing NULL to free_tty_struct
+  TTY: 68328serial, fix compilation
+  TTY: n_gsm, use tty_port_install
+  misc: pti, add const to pci_device_id table
+  misc: pti, pci drvdata cannot be NULL in ->remove
+  misc: pti, stop using iomap's unmap on ioremap space
+  misc: pti, move ->remove to the PCI code
+  misc: pti, do the opposite of ->probe in ->remove
+  misc: pti, fix fail paths
+  misc: pti, fix tty_port count
+  misc: pti, use tty_port_register_device
+  mxser: allow overlapping vector
+  TTY: ttyprintk, unregister tty driver on failure
+  TTY: ttyprintk, don't touch behind tty->write_buf
+  TTY: ttyprintk, initialize tty_port earlier
+  TTY: tty3270, free tty driver properly
+  TTY: pass flags to alloc_tty_driver
+  TTY: pty, switch to tty_alloc_driver
+  TTY: move allocations to tty_alloc_driver
+  TTY: add support for unnumbered device nodes
+  TTY: move cdev_add to tty_register_device
+  TTY: use tty_port_register_device
+  TTY: automatically create nodes for some drivers
+  TTY: tty_port, add some documentation
+  TTY: add tty_port_link_device
+  TTY: use tty_port_link_device
+  TTY: synclink_cs, sanitize fail paths
+  TTY: synclink_cs, use dynamic tty devices
+  TTY: synclink_cs, final cleanup in synclink_cs_init
+  TTY: moxa, convert to dynamic device
+  TTY: nfcon, add tty_port and link it
+  TTY: con3215, unset raw3215[line]
+  TTY: con3215, add tty install
+  TTY: i4l, add tty install
+  TTY: synclink, add tty install
+  TTY: synclinkmp, add tty install
+  TTY: ircomm_tty, add tty install
+  TTY: tty3270, add tty install
+  TTY: hvc_console, add tty install
+  TTY: hvcs, clean hvcs_open a bit
+  TTY: hvcs, add tty install
+
+ arch/alpha/kernel/srmcons.c             |    1 +
+ arch/ia64/hp/sim/simserial.c            |    1 +
+ arch/m68k/emu/nfcon.c                   |    4 +
+ arch/parisc/kernel/pdc_cons.c           |    1 +
+ arch/um/drivers/line.c                  |    3 +-
+ arch/xtensa/platforms/iss/console.c     |    1 +
+ drivers/char/pcmcia/synclink_cs.c       |  105 ++++++++++-----------
+ drivers/char/ttyprintk.c                |   29 +++---
+ drivers/isdn/capi/capi.c                |    3 +-
+ drivers/isdn/gigaset/interface.c        |    3 +-
+ drivers/isdn/i4l/isdn_tty.c             |   25 +++--
+ drivers/misc/pti.c                      |  128 ++++++++++++-------------
+ drivers/mmc/card/sdio_uart.c            |    4 +-
+ drivers/net/usb/hso.c                   |    7 +-
+ drivers/s390/char/con3215.c             |   28 ++++--
+ drivers/s390/char/sclp_tty.c            |    1 +
+ drivers/s390/char/sclp_vt220.c          |    1 +
+ drivers/s390/char/tty3270.c             |   34 +++++--
+ drivers/staging/ipack/devices/ipoctal.c |    2 +-
+ drivers/tty/amiserial.c                 |    9 +-
+ drivers/tty/bfin_jtag_comm.c            |    1 +
+ drivers/tty/cyclades.c                  |   16 ++--
+ drivers/tty/ehv_bytechan.c              |    9 +-
+ drivers/tty/hvc/hvc_console.c           |   31 +++++--
+ drivers/tty/hvc/hvcs.c                  |   82 +++++++++-------
+ drivers/tty/hvc/hvsi.c                  |    2 +
+ drivers/tty/ipwireless/tty.c            |    2 +-
+ drivers/tty/isicom.c                    |    3 +-
+ drivers/tty/moxa.c                      |   24 ++++-
+ drivers/tty/mxser.c                     |   41 ++++++--
+ drivers/tty/n_gsm.c                     |   30 ++++--
+ drivers/tty/nozomi.c                    |    4 +-
+ drivers/tty/pty.c                       |   36 +++++---
+ drivers/tty/rocket.c                    |    4 +-
+ drivers/tty/serial/68328serial.c        |   23 +++--
+ drivers/tty/serial/crisv10.c            |   11 ++-
+ drivers/tty/serial/ifx6x60.c            |    4 +-
+ drivers/tty/serial/msm_smd_tty.c        |    8 +-
+ drivers/tty/serial/serial_core.c        |    3 +-
+ drivers/tty/synclink.c                  |   44 +++++----
+ drivers/tty/synclink_gt.c               |    7 +-
+ drivers/tty/synclinkmp.c                |   28 ++++--
+ drivers/tty/tty_io.c                    |  154 ++++++++++++++++++++-----------
+ drivers/tty/tty_port.c                  |   43 ++++++++-
+ drivers/usb/class/cdc-acm.c             |    3 +-
+ drivers/usb/gadget/u_serial.c           |    3 +-
+ include/linux/tty.h                     |    2 +
+ include/linux/tty_driver.h              |   35 ++++++-
+ net/bluetooth/rfcomm/tty.c              |    4 +-
+ net/irda/ircomm/ircomm_tty.c            |   41 ++++----
+ 50 files changed, 692 insertions(+), 396 deletions(-)
+
 -- 
 1.7.10.4
 
