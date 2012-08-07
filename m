@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab2HGIt5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 04:49:57 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:42120 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab2HGItz (ORCPT
+	id S1753154Ab2HGIxx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 04:53:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39603 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab2HGIxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 04:49:55 -0400
+	Tue, 7 Aug 2012 04:53:51 -0400
 MIME-Version: 1.0
-X-Originating-IP: [202.62.83.106]
-In-Reply-To: <CAFLxGvy_X0r4njVMdUe1jnGciZYmcQr6d_ZpqOkZzQGc72yW2g@mail.gmail.com>
-References: <CANYdXnqCY+Uc=ROvQHv4kRe-g2zoEjfpzV0P83exfXYm-qCBaA@mail.gmail.com>
-	<CAFLxGvy_X0r4njVMdUe1jnGciZYmcQr6d_ZpqOkZzQGc72yW2g@mail.gmail.com>
-Date: Tue, 7 Aug 2012 14:19:54 +0530
-Message-ID: <CANYdXnr4B_EtvPcYXvqqgttK3w5y-+ABD-bdYEwAzbJRNnxqrg@mail.gmail.com>
-Subject: Re: A question on serial driver
-From: Shashidhar Hiremath <shashidharh@vayavyalabs.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <50200561.4020100@acm.org>
+References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com>
+	<501CE4E5.20604@acm.org>
+	<501D51D1.2010806@cs.wisc.edu>
+	<501D83A1.7040900@acm.org>
+	<501DA3F0.4090009@cs.wisc.edu>
+	<50200561.4020100@acm.org>
+Date: Tue, 7 Aug 2012 17:53:49 +0900
+Message-ID: <CAOAMb1BWWzYPSode-6Y9+O5eNhMc-bYofCNwMRmzeC9-nhRb4g@mail.gmail.com>
+Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
+From: Chanho Min <chanho0207@gmail.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Mike Christie <michaelc@cs.wisc.edu>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
-   I am new to serial framework. Can you please elaborate on what you
-mean by implementing a hangup ?
-On Tue, Aug 7, 2012 at 2:06 PM, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Tue, Aug 7, 2012 at 10:22 AM, Shashidhar Hiremath
-> <shashidharh@vayavyalabs.com> wrote:
->> Hi,
->>  I have written a console driver where I also do the serial driver
->> registration and handling. The driver seems to work fine till the
->> login point(reads and writes). The driver for some reason does not
->> print the content  I type on console after login prompt. Any reason
->> why this might be happening ?
->
-> login and getty do a lot of TTY black magic, maybe you forgot to implement
-> something like hangup()...
-> Use strace to find out what the login programs are doing.
->
-> --
-> Thanks,
-> //richard
+On Tue, Aug 7, 2012 at 2:56 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> Indeed. How about the patch below ? Scsi devices are removed from
+> starved_list after blk_cleanup_queue() and before put_device(). That
+> guarantees that inside scsi_run_queue() get_device() under host lock
+> will succeed.
+Thanks, IMHO, it's harmless and the simple way to solve this issue.
+But, I think the second half of your patches are not required, extra
+referecne is might suffice?
 
+In addition, Is it ironic that we are careful to use put_device at
+scsi_request_fn?. If we trigger the ->remove(),
+It occur a oops. What about the removal of unlock/lock as patch bellow?
 
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 4037fd5..8d9eccd 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1608,11 +1608,7 @@ out_delay:
+        if (sdev->device_busy == 0)
+                blk_delay_queue(q, SCSI_QUEUE_DELAY);
+ out:
+-       /* must be careful here...if we trigger the ->remove() function
+-        * we cannot be holding the q lock */
+-       spin_unlock_irq(q->queue_lock);
+        put_device(&sdev->sdev_gendev);
+-       spin_lock_irq(q->queue_lock);
+ }
 
--- 
-regards,
-Shashidhar Hiremath
+ u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
