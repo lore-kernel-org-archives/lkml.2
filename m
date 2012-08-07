@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab2HGBtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 21:49:25 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:48188 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932086Ab2HGBtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 21:49:24 -0400
-X-IronPort-AV: E=Sophos;i="4.77,724,1336320000"; 
-   d="scan'208";a="5565278"
-Message-ID: <502073E9.8050205@cn.fujitsu.com>
-Date: Tue, 07 Aug 2012 09:48:25 +0800
-From: Li Wei <lw@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932320Ab2HGBxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 21:53:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46271 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932086Ab2HGBxm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 21:53:42 -0400
+Message-ID: <5020754A.6090906@gmail.com>
+Date: Tue, 07 Aug 2012 03:54:18 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
+To: Li Wei <lw@cn.fujitsu.com>
 CC: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
@@ -21,117 +20,32 @@ CC: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
         ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
         eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com
 Subject: Re: [RFC v3 1/7] hashtable: introduce a small and naive hashtable
-References: <1344300317-23189-1-git-send-email-levinsasha928@gmail.com> <1344300317-23189-2-git-send-email-levinsasha928@gmail.com>
-In-Reply-To: <1344300317-23189-2-git-send-email-levinsasha928@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/07 09:49:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/07 09:49:46,
-	Serialize complete at 2012/08/07 09:49:46
-Content-Transfer-Encoding: 7bit
+References: <1344300317-23189-1-git-send-email-levinsasha928@gmail.com> <1344300317-23189-2-git-send-email-levinsasha928@gmail.com> <502073E9.8050205@cn.fujitsu.com>
+In-Reply-To: <502073E9.8050205@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 08:45 AM, Sasha Levin wrote:
-> This hashtable implementation is using hlist buckets to provide a simple
-> hashtable to prevent it from getting reimplemented all over the kernel.
+On 08/07/2012 03:48 AM, Li Wei wrote:
+> On 08/07/2012 08:45 AM, Sasha Levin wrote:
+>> +/**
+>> + * hash_for_each - iterate over a hashtable
+>> + * @name: hashtable to iterate
+>> + * @bits: bit count of hashing function of the hashtable
+>> + * @bkt: integer to use as bucket loop cursor
+>> + * @node: the &struct list_head to use as a loop cursor for each bucket
+>> + * @obj: the type * to use as a loop cursor for each bucket
+>> + * @member: the name of the hlist_node within the struct
+>> + */
+>> +#define hash_for_each(name, bits, bkt, node, obj, member)		\
+>> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)			\
+>> +		hlist_for_each_entry(obj, node, &name[i], member)
 > 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  include/linux/hashtable.h |   82 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 82 insertions(+), 0 deletions(-)
->  create mode 100644 include/linux/hashtable.h
-> 
-> diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
-> new file mode 100644
-> index 0000000..394652b
-> --- /dev/null
-> +++ b/include/linux/hashtable.h
-> @@ -0,0 +1,82 @@
-> +/*
-> + * Hash table implementation
-> + * (C) 2012  Sasha Levin <levinsasha928@gmail.com>
-> + */
-> +
-> +#ifndef _LINUX_HASHTABLE_H
-> +#define _LINUX_HASHTABLE_H
-> +
-> +#include <linux/list.h>
-> +#include <linux/types.h>
-> +#include <linux/kernel.h>
-> +#include <linux/hash.h>
-> +
-> +#define DEFINE_HASHTABLE(name, bits)					\
-> +	struct hlist_head name[HASH_SIZE(bits)];
-> +
-> +#define HASH_SIZE(bits) (1 << (bits))
-> +
-> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
-> +#define hash_min(val, bits) ((sizeof(val)==4)?hash_32((val), (bits)):hash_long((val), (bits)))
-> +
-> +/**
-> + * hash_init - initialize a hash table
-> + * @hashtable: hashtable to be initialized
-> + * @bits: bit count of hashing function
-> + *
-> + * Initializes a hash table with 2**bits buckets.
-> + */
-> +static inline void hash_init(struct hlist_head *hashtable, int bits)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < HASH_SIZE(bits); i++)
-> +		INIT_HLIST_HEAD(hashtable + i);
-> +}
-> +
-> +/**
-> + * hash_add - add an object to a hashtable
-> + * @hashtable: hashtable to add to
-> + * @bits: bit count used for hashing
-> + * @node: the &struct hlist_node of the object to be added
-> + * @key: the key of the object to be added
-> + */
-> +#define hash_add(hashtable, bits, node, key)				\
-> +	hlist_add_head(node, &hashtable[hash_min(key, bits)]);
-> +
-> +/**
-> + * hash_del - remove an object from a hashtable
-> + * @node: &struct hlist_node of the object to remove
-> + */
-> +static inline void hash_del(struct hlist_node *node)
-> +{
-> +	hlist_del_init(node);
-> +}
-> +
-> +/**
-> + * hash_for_each - iterate over a hashtable
-> + * @name: hashtable to iterate
-> + * @bits: bit count of hashing function of the hashtable
-> + * @bkt: integer to use as bucket loop cursor
-> + * @node: the &struct list_head to use as a loop cursor for each bucket
-> + * @obj: the type * to use as a loop cursor for each bucket
-> + * @member: the name of the hlist_node within the struct
-> + */
-> +#define hash_for_each(name, bits, bkt, node, obj, member)		\
-> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)			\
-> +		hlist_for_each_entry(obj, node, &name[i], member)
+> Where is the 'i' coming from? maybe &name[bkt]?
 
-Where is the 'i' coming from? maybe &name[bkt]?
+Heh, yeah. And the only place that uses this macro had 'i' declared as the loop counter, so it didn't trigger any issues during testing.
 
-> +
-> +/**
-> + * hash_for_each_possible - iterate over all possible objects for a giver key
-> + * @name: hashtable to iterate
-> + * @obj: the type * to use as a loop cursor for each bucke
-> + * @bits: bit count of hashing function of the hashtable
-> + * @node: the &struct list_head to use as a loop cursor for each bucket
-> + * @member: the name of the hlist_node within the struct
-> + * @key: the key of the objects to iterate over
-> + */
-> +#define hash_for_each_possible(name, obj, bits, node, member, key)	\
-> +	hlist_for_each_entry(obj, node,					\
-> +		&name[hash_min(key, bits)], member)
-> +
-> +#endif
+Thanks!
+
