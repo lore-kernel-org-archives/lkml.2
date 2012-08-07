@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2HGJ7j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:59:39 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:57102 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab2HGJ7h (ORCPT
+	id S1754136Ab2HGKAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 06:00:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49629 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752973Ab2HGKAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:59:37 -0400
-X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 05:59:37 EDT
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 42CB082073
-From: Andrea Righi <andrea@betterlinux.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] audit: fix wrong timeout value in audit_log_start
-Date: Tue,  7 Aug 2012 11:51:42 +0200
-Message-Id: <1344333102-8419-1-git-send-email-andrea@betterlinux.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 7 Aug 2012 06:00:34 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, s.hauer@pengutronix.de, patches@linaro.org
+Subject: [PATCH] ARM: SAMSUNG: Fix compilation error with s3c2410_defconfig
+Date: Tue,  7 Aug 2012 15:29:06 +0530
+Message-Id: <1344333546-16995-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-audit_log_start() does not properly check timeout values when
-audit_backlog_limit is exceeded, for example it is possible to use
-negative timeout values with schedule_timeout() triggering error
-messages like this:
+Commit 2663e766c56a "ARM Samsung: Move s3c pwm driver to pwm framework"
+moved Samsung PWM driver to drivers/pwm and the config option to select
+this driver has changed.
 
-  schedule_timeout: wrong timeout value ffffffffffff54e4
+This patch fixes following build-error with s3c2410_defconfig.
+arch/arm/mach-s3c24xx/mach-rx1950.c:430: undefined reference to `pwm_config'
 
-Be sure to never set negative values for the timeout.
-
-Also, do a small refactoring to improve code readability.
-
-Reported-by: Sean Jenkins <sean@bluehost.com>
-Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- kernel/audit.c |   46 ++++++++++++++++++++++++++++++----------------
- 1 file changed, 30 insertions(+), 16 deletions(-)
+ arch/arm/mach-s3c24xx/Kconfig |    4 ++--
+ arch/arm/plat-samsung/Kconfig |    3 ++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index ea3b7b6..362d9b4 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1123,6 +1123,28 @@ static inline void audit_get_stamp(struct audit_context *ctx,
- 	}
- }
+diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
+index e249611..d56b0f7 100644
+--- a/arch/arm/mach-s3c24xx/Kconfig
++++ b/arch/arm/mach-s3c24xx/Kconfig
+@@ -483,7 +483,7 @@ config MACH_NEO1973_GTA02
+ 	select I2C
+ 	select POWER_SUPPLY
+ 	select MACH_NEO1973
+-	select S3C2410_PWM
++	select S3C24XX_PWM
+ 	select S3C_DEV_USB_HOST
+ 	help
+ 	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM Phone
+@@ -493,7 +493,7 @@ config MACH_RX1950
+ 	select S3C24XX_DCLK
+ 	select PM_H1940 if PM
+ 	select I2C
+-	select S3C2410_PWM
++	select S3C24XX_PWM
+ 	select S3C_DEV_NAND
+ 	select S3C2410_IOTIMING if S3C2440_CPUFREQ
+ 	select S3C2440_XTAL_16934400
+diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
+index 7aca31c..9c3b90c 100644
+--- a/arch/arm/plat-samsung/Kconfig
++++ b/arch/arm/plat-samsung/Kconfig
+@@ -403,7 +403,8 @@ config S5P_DEV_USB_EHCI
  
-+/* Wait for auditd to drain the queue a little */
-+static void audit_log_congestion_wait(unsigned long timeout_start)
-+{
-+	DECLARE_WAITQUEUE(wait, current);
-+
-+	set_current_state(TASK_INTERRUPTIBLE);
-+	add_wait_queue(&audit_backlog_wait, &wait);
-+
-+	if (audit_backlog_limit &&
-+	    skb_queue_len(&audit_skb_queue) > audit_backlog_limit) {
-+		unsigned long deadline, now = ACCESS_ONCE(jiffies);
-+
-+		WARN_ON(time_after(timeout_start, now));
-+		deadline = timeout_start + audit_backlog_wait_time;
-+		if (time_before(now, deadline))
-+			schedule_timeout(deadline - now);
-+	}
-+
-+	__set_current_state(TASK_RUNNING);
-+	remove_wait_queue(&audit_backlog_wait, &wait);
-+}
-+
- /* Obtain an audit buffer.  This routine does locking to obtain the
-  * audit buffer, but then no locking is required for calls to
-  * audit_log_*format.  If the tsk is a task that is currently in a
-@@ -1166,22 +1188,14 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 		reserve = 5; /* Allow atomic callers to go up to five
- 				entries over the normal backlog limit */
- 
--	while (audit_backlog_limit
--	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
--		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time
--		    && time_before(jiffies, timeout_start + audit_backlog_wait_time)) {
--
--			/* Wait for auditd to drain the queue a little */
--			DECLARE_WAITQUEUE(wait, current);
--			set_current_state(TASK_INTERRUPTIBLE);
--			add_wait_queue(&audit_backlog_wait, &wait);
--
--			if (audit_backlog_limit &&
--			    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
--				schedule_timeout(timeout_start + audit_backlog_wait_time - jiffies);
--
--			__set_current_state(TASK_RUNNING);
--			remove_wait_queue(&audit_backlog_wait, &wait);
-+	while (audit_backlog_limit &&
-+	       skb_queue_len(&audit_skb_queue) >
-+				audit_backlog_limit + reserve) {
-+		if ((gfp_mask & __GFP_WAIT) &&
-+		    audit_backlog_wait_time &&
-+		    time_is_after_jiffies(timeout_start +
-+					audit_backlog_wait_time)) {
-+			audit_log_congestion_wait(timeout_start);
- 			continue;
- 		}
- 		if (audit_rate_check() && printk_ratelimit())
+ config S3C24XX_PWM
+ 	bool "PWM device support"
+-	select HAVE_PWM
++	select PWM
++	select PWM_SAMSUNG
+ 	help
+ 	  Support for exporting the PWM timer blocks via the pwm device
+ 	  system
 -- 
-1.7.9.5
+1.7.4.1
 
