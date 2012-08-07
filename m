@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab2HGTo5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:44:57 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:14624 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab2HGToz (ORCPT
+	id S1756195Ab2HGTrC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:47:02 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56758 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857Ab2HGTq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:44:55 -0400
-Date: Tue, 7 Aug 2012 21:44:54 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: William Hubbs <w.d.hubbs@gmail.com>,
-        Chris Brannon <chris@the-brannons.com>,
-        Kirk Reiser <kirk@braille.uwo.ca>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        "Justin P. Mattock" <justinmattock@gmail.com>, speakup@braille.uwo.ca,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: speakup: i18n.c: Fix leak in msg_set()
-Message-ID: <alpine.LNX.2.00.1208072142510.3227@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 7 Aug 2012 15:46:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 1/7] mfd: max8925: Move _IO resources out of ioport_ioresource
+Date: Tue, 7 Aug 2012 19:46:52 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King <rmk@arm.linux.org.uk>, "v3.4+" <stable@vger.kernel.org>
+References: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208071946.52211.arnd@arndb.de>
+X-Provags-ID: V02:K0:I39EVw7cNUoWFNo8F3115TuLBcMCRul6jmjZD1j3757
+ kZQtJ904VesBoRII8g44NJwSfK2NFJQOArtez7CWaBbq7+Fn1r
+ Gd0qcqU7+Svy+X8b4VsU3/jJYKmYv+AlKpFXLX+K0wG519A9MZ
+ 16GBDNY2cEmpJw4aRh88V41C93PV+KxN1okkdKiwek1m+329i4
+ oqWt6f/YVocY+JgesoBSzWO2/J35SvHWRe6zNgJx8PKMSc6iLa
+ qBYz5KblY+i4kBVcqniYW6/9UcMP1cYs6atSlVUUZMgfWagCJJ
+ h8ZKNY1MZrfpyF3GoX+JDjrVeXufqTjc3EY1y8AdHM9k2iwKaB
+ DWOXocUzPo8CNcW/z+XQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we end up returning -EINVAL from the function we will leak the
-memory allocated to 'newstr' which has been allocated but not yet
-assigned to anything.
-Fix the leak by properly freeing the memory again before we return.
+On Tuesday 07 August 2012, Mark Brown wrote:
+> The removal of mach/io.h from most ARM platforms also set the range of
+> valid IO ports to be empty for most platforms when previously any 32
+> bit integer had been valid. This makes it impossible to add IO resources
+> as the added range is smaller than that of the root resource for IO ports.
+> 
+> Since we're not really using IO memory at all fix this by defining our
+> own root resource outside the normal tree and make that the parent of
+> all IO resources. This also ensures we won't conflict with read IO ports
+> if we ever run on a platform which happens to use them.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: stable@vger.kernel.org (v3.4+)
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/speakup/i18n.c | 1 +
- 1 file changed, 1 insertion(+)
+(whole series)
 
- Compile tested only.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-diff --git a/drivers/staging/speakup/i18n.c b/drivers/staging/speakup/i18n.c
-index ca01734..7c1658b 100644
---- a/drivers/staging/speakup/i18n.c
-+++ b/drivers/staging/speakup/i18n.c
-@@ -555,6 +555,7 @@ ssize_t msg_set(enum msg_index_t index, char *text, size_t length)
- 			&& index <= MSG_FORMATTED_END)
- 				&& !fmt_validate(speakup_default_msgs[index],
- 				newstr)) {
-+				kfree(newstr);
- 				return -EINVAL;
- 			}
- 			spk_lock(flags);
--- 
-1.7.11.4
+Thanks a lot for following through with this series! I would have
+preferred to have the second step in stable as Russell suggested,
+but since you did all the work, I'm not going to complain about it ;-)
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+	Arnd
