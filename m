@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab2HGH01 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 03:26:27 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55830 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab2HGH0H (ORCPT
+	id S1753237Ab2HGH0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 03:26:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65126 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab2HGH0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 03:26:07 -0400
+	Tue, 7 Aug 2012 03:26:03 -0400
 From: Michel Lespinasse <walken@google.com>
 To: riel@redhat.com, peterz@infradead.org, vrajesh@umich.edu,
         daniel.santos@pobox.com, aarcange@redhat.com, dwmw2@infradead.org,
         akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org
-Subject: [PATCH 5/5] rbtree: move augmented rbtree functionality to rbtree_augmented.h
-Date: Tue,  7 Aug 2012 00:25:43 -0700
-Message-Id: <1344324343-3817-6-git-send-email-walken@google.com>
+Subject: [PATCH 3/5] kmemleak: use rbtree instead of prio tree
+Date: Tue,  7 Aug 2012 00:25:41 -0700
+Message-Id: <1344324343-3817-4-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1344324343-3817-1-git-send-email-walken@google.com>
 References: <1344324343-3817-1-git-send-email-walken@google.com>
@@ -23,658 +23,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide rb_insert_augmented() and rb_erase_augmented through
-a new rbtree_augmented.h include file. rb_erase_augmented() is defined
-there as an __always_inline function, in order to allow inlining of
-augmented rbtree callbacks into it. Since this generates a relatively
-large function, each augmented rbtree users should make sure to
-have a single call site.
+kmemleak uses a tree where each node represents an allocated memory object
+in order to quickly find out what object a given address is part of.
+However, the objects don't overlap, so rbtrees are a better choice than
+prio tree for this use. They are both faster and have lower memory overhead.
+
+Tested by booting a kernel with kmemleak enabled, loading the kmemleak_test
+module, and looking for the expected messages.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- Documentation/rbtree.txt           |   13 ++
- arch/x86/mm/pat_rbtree.c           |    2 +-
- include/linux/interval_tree_tmpl.h |    8 +-
- include/linux/rbtree.h             |   48 --------
- include/linux/rbtree_augmented.h   |  223 ++++++++++++++++++++++++++++++++++++
- lib/rbtree.c                       |  162 ++------------------------
- lib/rbtree_test.c                  |    2 +-
- 7 files changed, 255 insertions(+), 203 deletions(-)
- create mode 100644 include/linux/rbtree_augmented.h
+ mm/kmemleak.c |   98 +++++++++++++++++++++++++++++----------------------------
+ 1 files changed, 50 insertions(+), 48 deletions(-)
 
-diff --git a/Documentation/rbtree.txt b/Documentation/rbtree.txt
-index 0a0b6dc..61b6c48 100644
---- a/Documentation/rbtree.txt
-+++ b/Documentation/rbtree.txt
-@@ -202,6 +202,14 @@ An rbtree user who wants this feature will have to call the augmentation
- functions with the user provided augmentation callback when inserting
- and erasing nodes.
- 
-+C files implementing augmented rbtree manipulation must include
-+<linux/rbtree_augmented.h> instead of <linus/rbtree.h>. Note that
-+linux/rbtree_augmented.h exposes some rbtree implementations details
-+you are not expected to rely on; please stick to the documented APIs
-+there and do not include <linux/rbtree_augmented.h> from header files
-+either so as to minimize chances of your users accidentally relying on
-+such implementation details.
-+
- On insertion, the user must update the augmented information on the path
- leading to the inserted node, then call rb_link_node() as usual and
- rb_augment_inserted() instead of the usual rb_insert_color() call.
-@@ -227,6 +235,11 @@ In both cases, the callbacks are provided through struct rb_augment_callbacks.
-   subtree to a newly assigned subtree root AND recomputes the augmented
-   information for the former subtree root.
- 
-+The compiled code for rb_erase_augmented() may inline the propagation and
-+copy callbacks, which results in a large function, so each augmented rbtree
-+user should have a single rb_erase_augmented() call site in order to limit
-+compiled code size.
-+
- 
- Sample usage:
- 
-diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
-index 4d11695..415f6c4 100644
---- a/arch/x86/mm/pat_rbtree.c
-+++ b/arch/x86/mm/pat_rbtree.c
-@@ -12,7 +12,7 @@
- #include <linux/debugfs.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/rbtree.h>
-+#include <linux/rbtree_augmented.h>
- #include <linux/sched.h>
- #include <linux/gfp.h>
- 
-diff --git a/include/linux/interval_tree_tmpl.h b/include/linux/interval_tree_tmpl.h
-index c65deda..c1aeb92 100644
---- a/include/linux/interval_tree_tmpl.h
-+++ b/include/linux/interval_tree_tmpl.h
-@@ -19,6 +19,8 @@
-   include/linux/interval_tree_tmpl.h
- */
- 
-+#include <linux/rbtree_augmented.h>
-+
- /*
-  * Template for implementing interval trees
-  *
-@@ -57,7 +59,8 @@ static inline ITTYPE IT(compute_subtree_last)(ITSTRUCT *node)
- 	return max;
- }
- 
--static void IT(augment_propagate)(struct rb_node *rb, struct rb_node *stop)
-+static inline void
-+IT(augment_propagate)(struct rb_node *rb, struct rb_node *stop)
- {
- 	while (rb != stop) {
- 		ITSTRUCT *node = rb_entry(rb, ITSTRUCT, ITRB);
-@@ -69,7 +72,8 @@ static void IT(augment_propagate)(struct rb_node *rb, struct rb_node *stop)
- 	}
- }
- 
--static void IT(augment_copy)(struct rb_node *rb_old, struct rb_node *rb_new)
-+static inline void
-+IT(augment_copy)(struct rb_node *rb_old, struct rb_node *rb_new)
- {
- 	ITSTRUCT *old = rb_entry(rb_old, ITSTRUCT, ITRB);
- 	ITSTRUCT *new = rb_entry(rb_new, ITSTRUCT, ITRB);
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index 8d1e83b..0022c1b 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -62,54 +62,6 @@ extern void rb_insert_color(struct rb_node *, struct rb_root *);
- extern void rb_erase(struct rb_node *, struct rb_root *);
- 
- 
--struct rb_augment_callbacks {
--	void (*propagate)(struct rb_node *node, struct rb_node *stop);
--	void (*copy)(struct rb_node *old, struct rb_node *new);
--	void (*rotate)(struct rb_node *old, struct rb_node *new);
--};
--
--extern void __rb_insert_augmented(struct rb_node *node, struct rb_root *root,
--	void (*augment_rotate)(struct rb_node *old, struct rb_node *new));
--extern void rb_erase_augmented(struct rb_node *node, struct rb_root *root,
--			       const struct rb_augment_callbacks *augment);
--static inline void
--rb_insert_augmented(struct rb_node *node, struct rb_root *root,
--		    const struct rb_augment_callbacks *augment)
--{
--	__rb_insert_augmented(node, root, augment->rotate);
--}
--
--#define RB_DECLARE_CALLBACKS(rbstatic, rbname, rbstruct, rbfield,	      \
--			     rbtype, rbaugmented, rbcompute)		      \
--static void rbname ## _propagate(struct rb_node *rb, struct rb_node *stop)    \
--{									      \
--	while (rb != stop) {						      \
--		rbstruct *node = rb_entry(rb, rbstruct, rbfield);	      \
--		rbtype augmented = rbcompute(node);			      \
--		if (node->rbaugmented == augmented)			      \
--			break;						      \
--		node->rbaugmented = augmented;				      \
--		rb = rb_parent(&node->rbfield);				      \
--	}								      \
--}									      \
--static void rbname ## _copy(struct rb_node *rb_old, struct rb_node *rb_new)   \
--{									      \
--	rbstruct *old = rb_entry(rb_old, rbstruct, rbfield);		      \
--	rbstruct *new = rb_entry(rb_new, rbstruct, rbfield);		      \
--	new->rbaugmented = old->rbaugmented;				      \
--}									      \
--static void rbname ## _rotate(struct rb_node *rb_old, struct rb_node *rb_new) \
--{									      \
--	rbstruct *old = rb_entry(rb_old, rbstruct, rbfield);		      \
--	rbstruct *new = rb_entry(rb_new, rbstruct, rbfield);		      \
--	new->rbaugmented = old->rbaugmented;				      \
--	old->rbaugmented = rbcompute(old);				      \
--}									      \
--rbstatic const struct rb_augment_callbacks rbname = {			      \
--	rbname ## _propagate, rbname ## _copy, rbname ## _rotate	      \
--};
--
--
- /* Find logical next and previous nodes in a tree */
- extern struct rb_node *rb_next(const struct rb_node *);
- extern struct rb_node *rb_prev(const struct rb_node *);
-diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
-new file mode 100644
-index 0000000..214caa3
---- /dev/null
-+++ b/include/linux/rbtree_augmented.h
-@@ -0,0 +1,223 @@
-+/*
-+  Red Black Trees
-+  (C) 1999  Andrea Arcangeli <andrea@suse.de>
-+  (C) 2002  David Woodhouse <dwmw2@infradead.org>
-+  (C) 2012  Michel Lespinasse <walken@google.com>
-+
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of the GNU General Public License as published by
-+  the Free Software Foundation; either version 2 of the License, or
-+  (at your option) any later version.
-+
-+  This program is distributed in the hope that it will be useful,
-+  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+  GNU General Public License for more details.
-+
-+  You should have received a copy of the GNU General Public License
-+  along with this program; if not, write to the Free Software
-+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+
-+  linux/include/linux/rbtree_augmented.h
-+*/
-+
-+#ifndef _LINUX_RBTREE_AUGMENTED_H
-+#define _LINUX_RBTREE_AUGMENTED_H
-+
-+#include <linux/rbtree.h>
-+
-+/*
-+ * Please note - only struct rb_augment_callbacks and the prototypes for
-+ * rb_insert_augmented() and rb_erase_augmented() are intended to be public.
-+ * The rest are implementation details you are not expected to depend on.
-+ *
-+ * See Documentation/rbtree.txt for documentation and samples.
-+ */
-+
-+struct rb_augment_callbacks {
-+	void (*propagate)(struct rb_node *node, struct rb_node *stop);
-+	void (*copy)(struct rb_node *old, struct rb_node *new);
-+	void (*rotate)(struct rb_node *old, struct rb_node *new);
-+};
-+
-+extern void __rb_insert_augmented(struct rb_node *node, struct rb_root *root,
-+	void (*augment_rotate)(struct rb_node *old, struct rb_node *new));
-+static inline void
-+rb_insert_augmented(struct rb_node *node, struct rb_root *root,
-+		    const struct rb_augment_callbacks *augment)
-+{
-+	__rb_insert_augmented(node, root, augment->rotate);
-+}
-+
-+#define RB_DECLARE_CALLBACKS(rbstatic, rbname, rbstruct, rbfield,	\
-+			     rbtype, rbaugmented, rbcompute)		\
-+static inline void							\
-+rbname ## _propagate(struct rb_node *rb, struct rb_node *stop)		\
-+{									\
-+	while (rb != stop) {						\
-+		rbstruct *node = rb_entry(rb, rbstruct, rbfield);	\
-+		rbtype augmented = rbcompute(node);			\
-+		if (node->rbaugmented == augmented)			\
-+			break;						\
-+		node->rbaugmented = augmented;				\
-+		rb = rb_parent(&node->rbfield);				\
-+	}								\
-+}									\
-+static inline void							\
-+rbname ## _copy(struct rb_node *rb_old, struct rb_node *rb_new)		\
-+{									\
-+	rbstruct *old = rb_entry(rb_old, rbstruct, rbfield);		\
-+	rbstruct *new = rb_entry(rb_new, rbstruct, rbfield);		\
-+	new->rbaugmented = old->rbaugmented;				\
-+}									\
-+static void								\
-+rbname ## _rotate(struct rb_node *rb_old, struct rb_node *rb_new)	\
-+{									\
-+	rbstruct *old = rb_entry(rb_old, rbstruct, rbfield);		\
-+	rbstruct *new = rb_entry(rb_new, rbstruct, rbfield);		\
-+	new->rbaugmented = old->rbaugmented;				\
-+	old->rbaugmented = rbcompute(old);				\
-+}									\
-+rbstatic const struct rb_augment_callbacks rbname = {			\
-+	rbname ## _propagate, rbname ## _copy, rbname ## _rotate	\
-+};
-+
-+
-+#define	RB_RED		0
-+#define	RB_BLACK	1
-+
-+#define __rb_parent(pc)    ((struct rb_node *)(pc & ~3))
-+
-+#define __rb_color(pc)     ((pc) & 1)
-+#define __rb_is_black(pc)  __rb_color(pc)
-+#define __rb_is_red(pc)    (!__rb_color(pc))
-+#define rb_color(rb)       __rb_color((rb)->__rb_parent_color)
-+#define rb_is_red(rb)      __rb_is_red((rb)->__rb_parent_color)
-+#define rb_is_black(rb)    __rb_is_black((rb)->__rb_parent_color)
-+
-+static inline void rb_set_parent(struct rb_node *rb, struct rb_node *p)
-+{
-+	rb->__rb_parent_color = rb_color(rb) | (unsigned long)p;
-+}
-+
-+static inline void rb_set_parent_color(struct rb_node *rb,
-+				       struct rb_node *p, int color)
-+{
-+	rb->__rb_parent_color = (unsigned long)p | color;
-+}
-+
-+static inline void
-+__rb_change_child(struct rb_node *old, struct rb_node *new,
-+		  struct rb_node *parent, struct rb_root *root)
-+{
-+	if (parent) {
-+		if (parent->rb_left == old)
-+			parent->rb_left = new;
-+		else
-+			parent->rb_right = new;
-+	} else
-+		root->rb_node = new;
-+}
-+
-+extern void __rb_erase_color(struct rb_node *parent, struct rb_root *root,
-+	void (*augment_rotate)(struct rb_node *old, struct rb_node *new));
-+
-+static __always_inline void
-+rb_erase_augmented(struct rb_node *node, struct rb_root *root,
-+		   const struct rb_augment_callbacks *augment)
-+{
-+	struct rb_node *child = node->rb_right, *tmp = node->rb_left;
-+	struct rb_node *parent, *rebalance;
-+	unsigned long pc;
-+
-+	if (!tmp) {
-+		/*
-+		 * Case 1: node to erase has no more than 1 child (easy!)
-+		 *
-+		 * Note that if there is one child it must be red due to 5)
-+		 * and node must be black due to 4). We adjust colors locally
-+		 * so as to bypass __rb_erase_color() later on.
-+		 */
-+		pc = node->__rb_parent_color;
-+		parent = __rb_parent(pc);
-+		__rb_change_child(node, child, parent, root);
-+		if (child) {
-+			child->__rb_parent_color = pc;
-+			rebalance = NULL;
-+		} else
-+			rebalance = __rb_is_black(pc) ? parent : NULL;
-+		tmp = parent;
-+	} else if (!child) {
-+		/* Still case 1, but this time the child is node->rb_left */
-+		tmp->__rb_parent_color = pc = node->__rb_parent_color;
-+		parent = __rb_parent(pc);
-+		__rb_change_child(node, tmp, parent, root);
-+		rebalance = NULL;
-+		tmp = parent;
-+	} else {
-+		struct rb_node *successor = child, *child2;
-+		tmp = child->rb_left;
-+		if (!tmp) {
-+			/*
-+			 * Case 2: node's successor is its right child
-+			 *
-+			 *    (n)          (s)
-+			 *    / \          / \
-+			 *  (x) (s)  ->  (x) (c)
-+			 *        \
-+			 *        (c)
-+			 */
-+			parent = successor;
-+			child2 = successor->rb_right;
-+			augment->copy(node, successor);
-+		} else {
-+			/*
-+			 * Case 3: node's successor is leftmost under
-+			 * node's right child subtree
-+			 *
-+			 *    (n)          (s)
-+			 *    / \          / \
-+			 *  (x) (y)  ->  (x) (y)
-+			 *      /            /
-+			 *    (p)          (p)
-+			 *    /            /
-+			 *  (s)          (c)
-+			 *    \
-+			 *    (c)
-+			 */
-+			do {
-+				parent = successor;
-+				successor = tmp;
-+				tmp = tmp->rb_left;
-+			} while (tmp);
-+			parent->rb_left = child2 = successor->rb_right;
-+			successor->rb_right = child;
-+			rb_set_parent(child, successor);
-+			augment->copy(node, successor);
-+			augment->propagate(parent, successor);
-+		}
-+
-+		successor->rb_left = tmp = node->rb_left;
-+		rb_set_parent(tmp, successor);
-+
-+		pc = node->__rb_parent_color;
-+		tmp = __rb_parent(pc);
-+		__rb_change_child(node, successor, tmp, root);
-+		if (child2) {
-+			successor->__rb_parent_color = pc;
-+			rb_set_parent_color(child2, parent, RB_BLACK);
-+			rebalance = NULL;
-+		} else {
-+			unsigned long pc2 = successor->__rb_parent_color;
-+			successor->__rb_parent_color = pc;
-+			rebalance = __rb_is_black(pc2) ? parent : NULL;
-+		}
-+		tmp = successor;
-+	}
-+
-+	augment->propagate(tmp, NULL);
-+	if (rebalance)
-+		__rb_erase_color(rebalance, root, augment->rotate);
-+}
-+
-+#endif	/* _LINUX_RBTREE_AUGMENTED_H */
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index c0088ca..4f56a11 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -21,7 +21,7 @@
-   linux/lib/rbtree.c
- */
- 
--#include <linux/rbtree.h>
-+#include <linux/rbtree_augmented.h>
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 45eb621..8de1b09 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -29,7 +29,7 @@
+  * - kmemleak_lock (rwlock): protects the object_list modifications and
+  *   accesses to the object_tree_root. The object_list is the main list
+  *   holding the metadata (struct kmemleak_object) for the allocated memory
+- *   blocks. The object_tree_root is a priority search tree used to look-up
++ *   blocks. The object_tree_root is a red black tree used to look-up
+  *   metadata based on a pointer to the corresponding memory block.  The
+  *   kmemleak_object structures are added to the object_list and
+  *   object_tree_root in the create_object() function called from the
+@@ -71,7 +71,7 @@
+ #include <linux/delay.h>
  #include <linux/export.h>
- 
- /*
-@@ -44,52 +44,16 @@
-  *  parentheses and have some accompanying text comment.
+ #include <linux/kthread.h>
+-#include <linux/prio_tree.h>
++#include <linux/rbtree.h>
+ #include <linux/fs.h>
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+@@ -132,7 +132,7 @@ struct kmemleak_scan_area {
+  * Structure holding the metadata for each allocated memory block.
+  * Modifications to such objects should be made while holding the
+  * object->lock. Insertions or deletions from object_list, gray_list or
+- * tree_node are already protected by the corresponding locks or mutex (see
++ * rb_node are already protected by the corresponding locks or mutex (see
+  * the notes on locking above). These objects are reference-counted
+  * (use_count) and freed using the RCU mechanism.
   */
+@@ -141,7 +141,7 @@ struct kmemleak_object {
+ 	unsigned long flags;		/* object status flags */
+ 	struct list_head object_list;
+ 	struct list_head gray_list;
+-	struct prio_tree_node tree_node;
++	struct rb_node rb_node;
+ 	struct rcu_head rcu;		/* object_list lockless traversal */
+ 	/* object usage count; object freed when use_count == 0 */
+ 	atomic_t use_count;
+@@ -182,9 +182,9 @@ struct kmemleak_object {
+ static LIST_HEAD(object_list);
+ /* the list of gray-colored objects (see color_gray comment below) */
+ static LIST_HEAD(gray_list);
+-/* prio search tree for object boundaries */
+-static struct prio_tree_root object_tree_root;
+-/* rw_lock protecting the access to object_list and prio_tree_root */
++/* search tree for object boundaries */
++static struct rb_root object_tree_root = RB_ROOT;
++/* rw_lock protecting the access to object_list and object_tree_root */
+ static DEFINE_RWLOCK(kmemleak_lock);
  
--#define	RB_RED		0
--#define	RB_BLACK	1
--
--#define __rb_parent(pc)    ((struct rb_node *)(pc & ~3))
--
--#define __rb_color(pc)     ((pc) & 1)
--#define __rb_is_black(pc)  __rb_color(pc)
--#define __rb_is_red(pc)    (!__rb_color(pc))
--#define rb_color(rb)       __rb_color((rb)->__rb_parent_color)
--#define rb_is_red(rb)      __rb_is_red((rb)->__rb_parent_color)
--#define rb_is_black(rb)    __rb_is_black((rb)->__rb_parent_color)
--
- static inline void rb_set_black(struct rb_node *rb)
- {
- 	rb->__rb_parent_color |= RB_BLACK;
+ /* allocation caches for kmemleak internal data */
+@@ -380,7 +380,7 @@ static void dump_object_info(struct kmemleak_object *object)
+ 	trace.entries = object->trace;
+ 
+ 	pr_notice("Object 0x%08lx (size %zu):\n",
+-		  object->tree_node.start, object->size);
++		  object->pointer, object->size);
+ 	pr_notice("  comm \"%s\", pid %d, jiffies %lu\n",
+ 		  object->comm, object->pid, object->jiffies);
+ 	pr_notice("  min_count = %d\n", object->min_count);
+@@ -392,32 +392,32 @@ static void dump_object_info(struct kmemleak_object *object)
  }
  
--static inline void rb_set_parent(struct rb_node *rb, struct rb_node *p)
--{
--	rb->__rb_parent_color = rb_color(rb) | (unsigned long)p;
--}
--
--static inline void rb_set_parent_color(struct rb_node *rb,
--				       struct rb_node *p, int color)
--{
--	rb->__rb_parent_color = (unsigned long)p | color;
--}
--
- static inline struct rb_node *rb_red_parent(struct rb_node *red)
- {
- 	return (struct rb_node *)red->__rb_parent_color;
- }
- 
--static inline void
--__rb_change_child(struct rb_node *old, struct rb_node *new,
--		  struct rb_node *parent, struct rb_root *root)
--{
--	if (parent) {
--		if (parent->rb_left == old)
--			parent->rb_left = new;
--		else
--			parent->rb_right = new;
--	} else
--		root->rb_node = new;
--}
--
  /*
-  * Helper function for rotations:
-  * - old's parent and color get assigned to new
-@@ -230,9 +194,9 @@ __rb_insert(struct rb_node *node, struct rb_root *root,
- 	}
- }
- 
--static __always_inline void
-+__always_inline void
- __rb_erase_color(struct rb_node *parent, struct rb_root *root,
--		 const struct rb_augment_callbacks *augment)
-+	void (*augment_rotate)(struct rb_node *old, struct rb_node *new))
+- * Look-up a memory block metadata (kmemleak_object) in the priority search
++ * Look-up a memory block metadata (kmemleak_object) in the object search
+  * tree based on a pointer value. If alias is 0, only values pointing to the
+  * beginning of the memory block are allowed. The kmemleak_lock must be held
+  * when calling this function.
+  */
+ static struct kmemleak_object *lookup_object(unsigned long ptr, int alias)
  {
- 	struct rb_node *node = NULL, *sibling, *tmp1, *tmp2;
- 
-@@ -261,7 +225,7 @@ __rb_erase_color(struct rb_node *parent, struct rb_root *root,
- 				rb_set_parent_color(tmp1, parent, RB_BLACK);
- 				__rb_rotate_set_parents(parent, sibling, root,
- 							RB_RED);
--				augment->rotate(parent, sibling);
-+				augment_rotate(parent, sibling);
- 				sibling = tmp1;
- 			}
- 			tmp1 = sibling->rb_right;
-@@ -313,7 +277,7 @@ __rb_erase_color(struct rb_node *parent, struct rb_root *root,
- 				if (tmp1)
- 					rb_set_parent_color(tmp1, sibling,
- 							    RB_BLACK);
--				augment->rotate(sibling, tmp2);
-+				augment_rotate(sibling, tmp2);
- 				tmp1 = sibling;
- 				sibling = tmp2;
- 			}
-@@ -336,7 +300,7 @@ __rb_erase_color(struct rb_node *parent, struct rb_root *root,
- 				rb_set_parent(tmp2, parent);
- 			__rb_rotate_set_parents(parent, sibling, root,
- 						RB_BLACK);
--			augment->rotate(parent, sibling);
-+			augment_rotate(parent, sibling);
- 			break;
- 		} else {
- 			sibling = parent->rb_left;
-@@ -347,7 +311,7 @@ __rb_erase_color(struct rb_node *parent, struct rb_root *root,
- 				rb_set_parent_color(tmp1, parent, RB_BLACK);
- 				__rb_rotate_set_parents(parent, sibling, root,
- 							RB_RED);
--				augment->rotate(parent, sibling);
-+				augment_rotate(parent, sibling);
- 				sibling = tmp1;
- 			}
- 			tmp1 = sibling->rb_left;
-@@ -374,7 +338,7 @@ __rb_erase_color(struct rb_node *parent, struct rb_root *root,
- 				if (tmp1)
- 					rb_set_parent_color(tmp1, sibling,
- 							    RB_BLACK);
--				augment->rotate(sibling, tmp2);
-+				augment_rotate(sibling, tmp2);
- 				tmp1 = sibling;
- 				sibling = tmp2;
- 			}
-@@ -386,109 +350,12 @@ __rb_erase_color(struct rb_node *parent, struct rb_root *root,
- 				rb_set_parent(tmp2, parent);
- 			__rb_rotate_set_parents(parent, sibling, root,
- 						RB_BLACK);
--			augment->rotate(parent, sibling);
-+			augment_rotate(parent, sibling);
- 			break;
+-	struct prio_tree_node *node;
+-	struct prio_tree_iter iter;
+-	struct kmemleak_object *object;
+-
+-	prio_tree_iter_init(&iter, &object_tree_root, ptr, ptr);
+-	node = prio_tree_next(&iter);
+-	if (node) {
+-		object = prio_tree_entry(node, struct kmemleak_object,
+-					 tree_node);
+-		if (!alias && object->pointer != ptr) {
++	struct rb_node *rb = object_tree_root.rb_node;
++
++	while (rb) {
++		struct kmemleak_object *object =
++			rb_entry(rb, struct kmemleak_object, rb_node);
++		if (ptr < object->pointer)
++			rb = object->rb_node.rb_left;
++		else if (object->pointer + object->size <= ptr)
++			rb = object->rb_node.rb_right;
++		else if (object->pointer == ptr || alias)
++			return object;
++		else {
+ 			kmemleak_warn("Found object by alias at 0x%08lx\n",
+ 				      ptr);
+ 			dump_object_info(object);
+-			object = NULL;
++			break;
  		}
- 	}
+-	} else
+-		object = NULL;
+-
+-	return object;
++	}
++	return NULL;
  }
--
--static __always_inline void
--__rb_erase(struct rb_node *node, struct rb_root *root,
--	   const struct rb_augment_callbacks *augment)
--{
--	struct rb_node *child = node->rb_right, *tmp = node->rb_left;
--	struct rb_node *parent, *rebalance;
--	unsigned long pc;
--
--	if (!tmp) {
--		/*
--		 * Case 1: node to erase has no more than 1 child (easy!)
--		 *
--		 * Note that if there is one child it must be red due to 5)
--		 * and node must be black due to 4). We adjust colors locally
--		 * so as to bypass __rb_erase_color() later on.
--		 */
--		pc = node->__rb_parent_color;
--		parent = __rb_parent(pc);
--		__rb_change_child(node, child, parent, root);
--		if (child) {
--			child->__rb_parent_color = pc;
--			rebalance = NULL;
--		} else
--			rebalance = __rb_is_black(pc) ? parent : NULL;
--		tmp = parent;
--	} else if (!child) {
--		/* Still case 1, but this time the child is node->rb_left */
--		tmp->__rb_parent_color = pc = node->__rb_parent_color;
--		parent = __rb_parent(pc);
--		__rb_change_child(node, tmp, parent, root);
--		rebalance = NULL;
--		tmp = parent;
--	} else {
--		struct rb_node *successor = child, *child2;
--		tmp = child->rb_left;
--		if (!tmp) {
--			/*
--			 * Case 2: node's successor is its right child
--			 *
--			 *    (n)          (s)
--			 *    / \          / \
--			 *  (x) (s)  ->  (x) (c)
--			 *        \
--			 *        (c)
--			 */
--			parent = successor;
--			child2 = successor->rb_right;
--			augment->copy(node, successor);
--		} else {
--			/*
--			 * Case 3: node's successor is leftmost under
--			 * node's right child subtree
--			 *
--			 *    (n)          (s)
--			 *    / \          / \
--			 *  (x) (y)  ->  (x) (y)
--			 *      /            /
--			 *    (p)          (p)
--			 *    /            /
--			 *  (s)          (c)
--			 *    \
--			 *    (c)
--			 */
--			do {
--				parent = successor;
--				successor = tmp;
--				tmp = tmp->rb_left;
--			} while (tmp);
--			parent->rb_left = child2 = successor->rb_right;
--			successor->rb_right = child;
--			rb_set_parent(child, successor);
--			augment->copy(node, successor);
--			augment->propagate(parent, successor);
--		}
--
--		successor->rb_left = tmp = node->rb_left;
--		rb_set_parent(tmp, successor);
--
--		pc = node->__rb_parent_color;
--		tmp = __rb_parent(pc);
--		__rb_change_child(node, successor, tmp, root);
--		if (child2) {
--			successor->__rb_parent_color = pc;
--			rb_set_parent_color(child2, parent, RB_BLACK);
--			rebalance = NULL;
--		} else {
--			unsigned long pc2 = successor->__rb_parent_color;
--			successor->__rb_parent_color = pc;
--			rebalance = __rb_is_black(pc2) ? parent : NULL;
--		}
--		tmp = successor;
--	}
--
--	augment->propagate(tmp, NULL);
--	if (rebalance)
--		__rb_erase_color(rebalance, root, augment);
--}
-+EXPORT_SYMBOL(__rb_erase_color);
  
  /*
-  * Non-augmented rbtree manipulation functions.
-@@ -513,7 +380,7 @@ EXPORT_SYMBOL(rb_insert_color);
- 
- void rb_erase(struct rb_node *node, struct rb_root *root)
- {
--	__rb_erase(node, root, &dummy_callbacks);
-+	rb_erase_augmented(node, root, &dummy_callbacks);
+@@ -471,7 +471,7 @@ static void put_object(struct kmemleak_object *object)
  }
- EXPORT_SYMBOL(rb_erase);
  
-@@ -531,13 +398,6 @@ void __rb_insert_augmented(struct rb_node *node, struct rb_root *root,
- }
- EXPORT_SYMBOL(__rb_insert_augmented);
- 
--void rb_erase_augmented(struct rb_node *node, struct rb_root *root,
--			const struct rb_augment_callbacks *augment)
--{
--	__rb_erase(node, root, augment);
--}
--EXPORT_SYMBOL(rb_erase_augmented);
--
  /*
-  * This function returns the first node (in sort order) of the tree.
+- * Look up an object in the prio search tree and increase its use_count.
++ * Look up an object in the object search tree and increase its use_count.
   */
-diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
-index b20e999..268b239 100644
---- a/lib/rbtree_test.c
-+++ b/lib/rbtree_test.c
-@@ -1,5 +1,5 @@
- #include <linux/module.h>
--#include <linux/rbtree.h>
-+#include <linux/rbtree_augmented.h>
- #include <linux/random.h>
- #include <asm/timex.h>
+ static struct kmemleak_object *find_and_get_object(unsigned long ptr, int alias)
+ {
+@@ -516,8 +516,8 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
+ 					     int min_count, gfp_t gfp)
+ {
+ 	unsigned long flags;
+-	struct kmemleak_object *object;
+-	struct prio_tree_node *node;
++	struct kmemleak_object *object, *parent;
++	struct rb_node **link, *rb_parent;
  
+ 	object = kmem_cache_alloc(object_cache, gfp_kmemleak_mask(gfp));
+ 	if (!object) {
+@@ -560,31 +560,34 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
+ 	/* kernel backtrace */
+ 	object->trace_len = __save_stack_trace(object->trace);
+ 
+-	INIT_PRIO_TREE_NODE(&object->tree_node);
+-	object->tree_node.start = ptr;
+-	object->tree_node.last = ptr + size - 1;
+-
+ 	write_lock_irqsave(&kmemleak_lock, flags);
+ 
+ 	min_addr = min(min_addr, ptr);
+ 	max_addr = max(max_addr, ptr + size);
+-	node = prio_tree_insert(&object_tree_root, &object->tree_node);
+-	/*
+-	 * The code calling the kernel does not yet have the pointer to the
+-	 * memory block to be able to free it.  However, we still hold the
+-	 * kmemleak_lock here in case parts of the kernel started freeing
+-	 * random memory blocks.
+-	 */
+-	if (node != &object->tree_node) {
+-		kmemleak_stop("Cannot insert 0x%lx into the object search tree "
+-			      "(already existing)\n", ptr);
+-		object = lookup_object(ptr, 1);
+-		spin_lock(&object->lock);
+-		dump_object_info(object);
+-		spin_unlock(&object->lock);
+ 
+-		goto out;
++	link = &object_tree_root.rb_node;
++	rb_parent = NULL;
++	while (*link) {
++		rb_parent = *link;
++		parent = rb_entry(rb_parent, struct kmemleak_object, rb_node);
++		if (ptr + size <= parent->pointer)
++			link = &parent->rb_node.rb_left;
++		else if (parent->pointer + parent->size <= ptr)
++			link = &parent->rb_node.rb_right;
++		else {
++			kmemleak_stop("Cannot insert 0x%lx into the object "
++				      "search tree (overlaps existing)\n",
++				      ptr);
++			object = parent;
++			spin_lock(&object->lock);
++			dump_object_info(object);
++			spin_unlock(&object->lock);
++			goto out;
++		}
+ 	}
++	rb_link_node(&object->rb_node, rb_parent, link);
++	rb_insert_color(&object->rb_node, &object_tree_root);
++
+ 	list_add_tail_rcu(&object->object_list, &object_list);
+ out:
+ 	write_unlock_irqrestore(&kmemleak_lock, flags);
+@@ -600,7 +603,7 @@ static void __delete_object(struct kmemleak_object *object)
+ 	unsigned long flags;
+ 
+ 	write_lock_irqsave(&kmemleak_lock, flags);
+-	prio_tree_remove(&object_tree_root, &object->tree_node);
++	rb_erase(&object->rb_node, &object_tree_root);
+ 	list_del_rcu(&object->object_list);
+ 	write_unlock_irqrestore(&kmemleak_lock, flags);
+ 
+@@ -1768,7 +1771,6 @@ void __init kmemleak_init(void)
+ 
+ 	object_cache = KMEM_CACHE(kmemleak_object, SLAB_NOLEAKTRACE);
+ 	scan_area_cache = KMEM_CACHE(kmemleak_scan_area, SLAB_NOLEAKTRACE);
+-	INIT_PRIO_TREE_ROOT(&object_tree_root);
+ 
+ 	if (crt_early_log >= ARRAY_SIZE(early_log))
+ 		pr_warning("Early log buffer exceeded (%d), please increase "
 -- 
 1.7.7.3
