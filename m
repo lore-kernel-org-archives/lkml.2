@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab2HGT7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:59:53 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:36547 "EHLO
+	id S1756555Ab2HGT7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:59:51 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:36544 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756478Ab2HGT7o (ORCPT
+	with ESMTP id S1751370Ab2HGT7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 15:59:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 18/41] TTY: pty, switch to tty_alloc_driver
-Date: Tue,  7 Aug 2012 21:47:43 +0200
-Message-Id: <1344368886-24033-19-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        J Freyensee <james_p_freyensee@linux.intel.com>
+Subject: [PATCH 11/41] misc: pti, use tty_port_register_device
+Date: Tue,  7 Aug 2012 21:47:36 +0200
+Message-Id: <1344368886-24033-12-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -20,122 +21,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to the new driver allocation interface, as this is one of the
-special call-sites. Here, we need TTY_DRIVER_EXCESSIVE_LINES to not
-allocate tty_driver->ports, cdevs and potentially other structures
-because we reserve too many lines in pty. Instead, it provides the
-tty_port<->tty_struct link in tty->ops->install already.
+So now we have enough of tty_ports, so we can signal the TTY layer to
+use them by tty_port_register_device.
+
+The upside is that we look like we can introduce tty_port_easy_open
+and put it directly as tty_operations->open to drivers doing nothing
+in open and using tty_port_register_device. Because the easy open can
+obtain a tty_port rather easily from a tty now. Heh, what a nice
+by-product.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- drivers/tty/pty.c          |   31 ++++++++++++++++++++-----------
- include/linux/tty_driver.h |    4 ++++
- 2 files changed, 24 insertions(+), 11 deletions(-)
+ drivers/misc/pti.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index b726c8b..e44a11d 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -443,11 +443,17 @@ static void __init legacy_pty_init(void)
- 	if (legacy_count <= 0)
- 		return;
+diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
+index fe76f9d..4999b34 100644
+--- a/drivers/misc/pti.c
++++ b/drivers/misc/pti.c
+@@ -427,7 +427,7 @@ static int pti_tty_driver_open(struct tty_struct *tty, struct file *filp)
+ 	 * also removes a locking requirement for the actual write
+ 	 * procedure.
+ 	 */
+-	return tty_port_open(&drv_data->port[tty->index], tty, filp);
++	return tty_port_open(tty->port, tty, filp);
+ }
  
--	pty_driver = alloc_tty_driver(legacy_count);
-+	pty_driver = tty_alloc_driver(legacy_count,
-+			TTY_DRIVER_RESET_TERMIOS |
-+			TTY_DRIVER_REAL_RAW |
-+			TTY_DRIVER_EXCESSIVE_LINES);
- 	if (!pty_driver)
- 		panic("Couldn't allocate pty driver");
- 
--	pty_slave_driver = alloc_tty_driver(legacy_count);
-+	pty_slave_driver = tty_alloc_driver(legacy_count,
-+			TTY_DRIVER_RESET_TERMIOS |
-+			TTY_DRIVER_REAL_RAW |
-+			TTY_DRIVER_EXCESSIVE_LINES);
- 	if (!pty_slave_driver)
- 		panic("Couldn't allocate pty slave driver");
- 
-@@ -464,7 +470,6 @@ static void __init legacy_pty_init(void)
- 	pty_driver->init_termios.c_lflag = 0;
- 	pty_driver->init_termios.c_ispeed = 38400;
- 	pty_driver->init_termios.c_ospeed = 38400;
--	pty_driver->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_REAL_RAW;
- 	pty_driver->other = pty_slave_driver;
- 	tty_set_operations(pty_driver, &master_pty_ops_bsd);
- 
-@@ -478,8 +483,6 @@ static void __init legacy_pty_init(void)
- 	pty_slave_driver->init_termios.c_cflag = B38400 | CS8 | CREAD;
- 	pty_slave_driver->init_termios.c_ispeed = 38400;
- 	pty_slave_driver->init_termios.c_ospeed = 38400;
--	pty_slave_driver->flags = TTY_DRIVER_RESET_TERMIOS |
--					TTY_DRIVER_REAL_RAW;
- 	pty_slave_driver->other = pty_driver;
- 	tty_set_operations(pty_slave_driver, &slave_pty_ops_bsd);
- 
-@@ -670,10 +673,20 @@ static struct file_operations ptmx_fops;
- 
- static void __init unix98_pty_init(void)
- {
--	ptm_driver = alloc_tty_driver(NR_UNIX98_PTY_MAX);
-+	ptm_driver = tty_alloc_driver(NR_UNIX98_PTY_MAX,
-+			TTY_DRIVER_RESET_TERMIOS |
-+			TTY_DRIVER_REAL_RAW |
-+			TTY_DRIVER_DYNAMIC_DEV |
-+			TTY_DRIVER_DEVPTS_MEM |
-+			TTY_DRIVER_EXCESSIVE_LINES);
- 	if (!ptm_driver)
- 		panic("Couldn't allocate Unix98 ptm driver");
--	pts_driver = alloc_tty_driver(NR_UNIX98_PTY_MAX);
-+	pts_driver = tty_alloc_driver(NR_UNIX98_PTY_MAX,
-+			TTY_DRIVER_RESET_TERMIOS |
-+			TTY_DRIVER_REAL_RAW |
-+			TTY_DRIVER_DYNAMIC_DEV |
-+			TTY_DRIVER_DEVPTS_MEM |
-+			TTY_DRIVER_EXCESSIVE_LINES);
- 	if (!pts_driver)
- 		panic("Couldn't allocate Unix98 pts driver");
- 
-@@ -690,8 +703,6 @@ static void __init unix98_pty_init(void)
- 	ptm_driver->init_termios.c_lflag = 0;
- 	ptm_driver->init_termios.c_ispeed = 38400;
- 	ptm_driver->init_termios.c_ospeed = 38400;
--	ptm_driver->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_REAL_RAW |
--		TTY_DRIVER_DYNAMIC_DEV | TTY_DRIVER_DEVPTS_MEM;
- 	ptm_driver->other = pts_driver;
- 	tty_set_operations(ptm_driver, &ptm_unix98_ops);
- 
-@@ -705,8 +716,6 @@ static void __init unix98_pty_init(void)
- 	pts_driver->init_termios.c_cflag = B38400 | CS8 | CREAD;
- 	pts_driver->init_termios.c_ispeed = 38400;
- 	pts_driver->init_termios.c_ospeed = 38400;
--	pts_driver->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_REAL_RAW |
--		TTY_DRIVER_DYNAMIC_DEV | TTY_DRIVER_DEVPTS_MEM;
- 	pts_driver->other = ptm_driver;
- 	tty_set_operations(pts_driver, &pty_unix98_ops);
- 
-diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
-index 3adc362..bea95ca 100644
---- a/include/linux/tty_driver.h
-+++ b/include/linux/tty_driver.h
-@@ -391,6 +391,9 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
-  *	the requested timeout to the caller instead of using a simple
-  *	on/off interface.
-  *
-+ * TTY_DRIVER_EXCESSIVE_LINES -- do not allocate structures which are
-+ *	needed per line for this driver as it would waste memory.
-+ *	Applicable only to pty.
+ /**
+@@ -443,7 +443,7 @@ static int pti_tty_driver_open(struct tty_struct *tty, struct file *filp)
   */
- #define TTY_DRIVER_INSTALLED		0x0001
- #define TTY_DRIVER_RESET_TERMIOS	0x0002
-@@ -398,6 +401,7 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
- #define TTY_DRIVER_DYNAMIC_DEV		0x0008
- #define TTY_DRIVER_DEVPTS_MEM		0x0010
- #define TTY_DRIVER_HARDWARE_BREAK	0x0020
-+#define TTY_DRIVER_EXCESSIVE_LINES	0x0040
+ static void pti_tty_driver_close(struct tty_struct *tty, struct file *filp)
+ {
+-	tty_port_close(&drv_data->port[tty->index], tty, filp);
++	tty_port_close(tty->port, tty, filp);
+ }
  
- /* tty driver types */
- #define TTY_DRIVER_TYPE_SYSTEM		0x0001
+ /**
+@@ -856,7 +856,7 @@ static int __devinit pti_pci_probe(struct pci_dev *pdev,
+ 		tty_port_init(port);
+ 		port->ops = &tty_port_ops;
+ 
+-		tty_register_device(pti_tty_driver, a, &pdev->dev);
++		tty_port_register_device(port, pti_tty_driver, a, &pdev->dev);
+ 	}
+ 
+ 	register_console(&pti_console);
 -- 
 1.7.10.4
 
