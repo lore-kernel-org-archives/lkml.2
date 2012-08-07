@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab2HGKr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 06:47:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21161 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab2HGKr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 06:47:57 -0400
-Date: Tue, 7 Aug 2012 06:47:52 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Frediano Ziglio <frediano.ziglio@citrix.com>
-Cc: "sfrench@samba.org" <sfrench@samba.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        "samba-technical@lists.samba.org" <samba-technical@lists.samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] Convert properly UTF-8 to UTF-16
-Message-ID: <20120807064752.22e0da81@corrin.poochiereds.net>
-In-Reply-To: <7CE799CC0E4DE04B88D5FDF226E18AC2CDFFB08D16@LONPMAILBOX01.citrite.net>
-References: <7CE799CC0E4DE04B88D5FDF226E18AC2CDFFB08D16@LONPMAILBOX01.citrite.net>
+	id S1753591Ab2HGKuV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 06:50:21 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:46342 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab2HGKuU convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:2>);
+	Tue, 7 Aug 2012 06:50:20 -0400
+Message-Id: <50210F0702000078000932EB@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 07 Aug 2012 11:50:15 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Matt Fleming" <matt.fleming@intel.com>
+Cc: "Ingo Molnar" <mingo@kernel.org>, "Matthew Garrett" <mjg59@srcf.ucam.org>,
+        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <cJ-ko@zougloub.eu>, "H. PeterAnvin" <hpa@zytor.com>
+Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform
+ wall clock" prevents my machine from booting
+References: <20120805172903.5f8bb24c@zougloub.eu>
+ <501EF3A2.20200@zytor.com> <501F83F20200007800092C1C@nat28.tlf.novell.com>
+ <20120806125216.GA11863@srcf.ucam.org>
+ <501FDDD30200007800092DDE@nat28.tlf.novell.com>
+ <20120806091627.2ad5ed2e@zougloub.eu>
+ <20120806223208.5301be0d@zougloub.eu>
+ <20120806230629.153d33bd@zougloub.eu>
+ <5020DC5F02000078000931C2@nat28.tlf.novell.com>
+ <1344331830.7208.6.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1344331830.7208.6.camel@mfleming-mobl1.ger.corp.intel.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Aug 2012 10:33:03 +0100
-Frediano Ziglio <frediano.ziglio@citrix.com> wrote:
-
+>>> On 07.08.12 at 11:30, Matt Fleming <matt.fleming@intel.com> wrote:
+> On Tue, 2012-08-07 at 08:14 +0100, Jan Beulich wrote:
+>> That's not surprising. The question really is what goes wrong
+>> when the call is being made - page fault, some other fault, or
+>> silent hang. A page fault would point to an incorrect memory
+>> map as the prime candidate for causing the problem. My
+>> primary suspect would be #NM, i.e. the implementation using
+>> floating point (SSE to be precise) instructions when they're
+>> unavailable.
 > 
-> wchar_t is currently 16bit so converting a utf8 encoded characters not
-> in plane 0 (>= 0x10000) to wchar_t (that is calling char2uni) lead to a
-> -EINVAL return. This patch detect utf8 in cifs_strtoUTF16 and add special
-> code calling utf8s_to_utf16s.
-> 
-> Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
-> ---
->  fs/cifs/cifs_unicode.c |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
-> index 7dab9c0..1166b95 100644
-> --- a/fs/cifs/cifs_unicode.c
-> +++ b/fs/cifs/cifs_unicode.c
-> @@ -203,6 +203,27 @@ cifs_strtoUTF16(__le16 *to, const char *from, int len,
->  	int i;
->  	wchar_t wchar_to; /* needed to quiet sparse */
->  
-> +	/* special case for utf8 to handle no plane0 chars */
-> +	if (!strcmp(codepage->charset, "utf8")) {
-> +		/*
-> +		 * convert utf8 -> utf16, we assume we have enough space
-> +		 * as caller should have assumed conversion does not overflow
-> +		 * in destination len is length in wchar_t units (16bits)
-> +		 */
-> +		i  = utf8s_to_utf16s(from, len, UTF16_LITTLE_ENDIAN,
-> +				       (wchar_t *) to, len);
-> +
-> +		/* if success terminate and exit */
-> +		if (i >= 0)
-> +			goto success;
-> +		/*
-> +		 * if fails fall back to UCS encoding as this
-> +		 * function should not return negative values
-> +		 * currently can fail only if source contains
-> +		 * invalid encoded characters
-> +		 */
-> +	}
-> +
->  	for (i = 0; len && *from; i++, from += charlen, len -= charlen) {
->  		charlen = codepage->char2uni(from, len, &wchar_to);
->  		if (charlen < 1) {
-> @@ -215,6 +236,7 @@ cifs_strtoUTF16(__le16 *to, const char *from, int len,
->  		put_unaligned_le16(wchar_to, &to[i]);
->  	}
->  
-> +success:
->  	put_unaligned_le16(0, &to[i]);
->  	return i;
->  }
+> I managed to find a machine to reproduce this on and it looks like the
+> ASUS firmware engineers are upto their old tricks of referencing
+> physical addresses after we've taken control of the memory map,
 
-Looks reasonable...
+Yippie. On such systems we simply can't do any runtime calls.
+Should we add a command line option forcing efi_native to false,
+thus suppressing all runtime calls? Or would the "noefi" one be
+enough already?
 
-Acked-by: Jeff Layton <jlayton@redhat.com>
+Jan
+
