@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab2HGRo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:44:28 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:35562 "EHLO mail.x86-64.org"
+	id S1755843Ab2HGRog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:44:36 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:35598 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693Ab2HGRo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:44:26 -0400
+	id S1755642Ab2HGRo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 13:44:28 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: X86-ML <x86@kernel.org>
 Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
         Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH v0 02/12] x86, microcode: Save an indentation level in reload_for_cpu
-Date: Tue,  7 Aug 2012 19:44:11 +0200
-Message-Id: <1344361461-10076-3-git-send-email-bp@amd64.org>
+Subject: [PATCH v0 08/12] x86, microcode, AMD: Read CPUID(1).EAX on the correct cpu
+Date: Tue,  7 Aug 2012 19:44:17 +0200
+Message-Id: <1344361461-10076-9-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.11.rc1
 In-Reply-To: <1344361461-10076-1-git-send-email-bp@amd64.org>
 References: <1344361461-10076-1-git-send-email-bp@amd64.org>
@@ -24,46 +24,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Invert the uci->valid check so that the later block can be aligned on
-the first indentation level of the function. No functional change.
+Read the CPUID(1).EAX leaf at the correct cpu and use it to search the
+equivalence table for matching microcode patch. No functionality change.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/kernel/microcode_core.c | 19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ arch/x86/kernel/microcode_amd.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index 4873e62db6a1..63a956865022 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -276,19 +276,18 @@ static struct platform_device	*microcode_pdev;
- static int reload_for_cpu(int cpu)
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index 8fdf7d99b804..25d34b177482 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -82,6 +82,7 @@ static int collect_cpu_info_amd(int cpu, struct cpu_signature *csig)
  {
- 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
-+	enum ucode_state ustate;
- 	int err = 0;
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
  
--	if (uci->valid) {
--		enum ucode_state ustate;
--
--		ustate = microcode_ops->request_microcode_fw(cpu, &microcode_pdev->dev);
--		if (ustate == UCODE_OK)
--			apply_microcode_on_target(cpu);
--		else
--			if (ustate == UCODE_ERROR)
--				err = -EINVAL;
--	}
-+	if (!uci->valid)
-+		return err;
++	csig->sig = cpuid_eax(0x00000001);
+ 	csig->rev = c->microcode;
+ 	pr_info("CPU%d: patch_level=0x%08x\n", cpu, csig->rev);
  
-+	ustate = microcode_ops->request_microcode_fw(cpu, &microcode_pdev->dev);
-+	if (ustate == UCODE_OK)
-+		apply_microcode_on_target(cpu);
-+	else
-+		if (ustate == UCODE_ERROR)
-+			err = -EINVAL;
- 	return err;
+@@ -118,16 +119,15 @@ static unsigned int verify_ucode_size(int cpu, u32 patch_size,
+ 	return patch_size;
  }
+ 
+-static u16 find_equiv_id(void)
++static u16 find_equiv_id(unsigned int cpu)
+ {
+-	unsigned int current_cpu_id, i = 0;
++	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
++	int i = 0;
+ 
+ 	BUG_ON(equiv_cpu_table == NULL);
+ 
+-	current_cpu_id = cpuid_eax(0x00000001);
+-
+ 	while (equiv_cpu_table[i].installed_cpu != 0) {
+-		if (current_cpu_id == equiv_cpu_table[i].installed_cpu)
++		if (uci->cpu_sig.sig == equiv_cpu_table[i].installed_cpu)
+ 			return equiv_cpu_table[i].equiv_cpu;
+ 
+ 		i++;
+@@ -150,7 +150,7 @@ static int get_matching_microcode(int cpu, const u8 *ucode_ptr,
+ 	patch_size = *(u32 *)(ucode_ptr + 4);
+ 	*current_size = patch_size + SECTION_HDR_SIZE;
+ 
+-	equiv_cpu_id = find_equiv_id();
++	equiv_cpu_id = find_equiv_id(cpu);
+ 	if (!equiv_cpu_id)
+ 		return 0;
  
 -- 
 1.7.11.rc1
