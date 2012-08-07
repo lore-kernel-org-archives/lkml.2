@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab2HGXhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:37:43 -0400
+	id S1757607Ab2HGXh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:37:59 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab2HGW25 (ORCPT
+	with ESMTP id S932465Ab2HGW2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:28:57 -0400
+	Tue, 7 Aug 2012 18:28:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 037/122] x86, microcode: Sanitize per-cpu microcode reloading interface
-Date: Tue,  7 Aug 2012 15:25:25 -0700
-Message-Id: <20120807221951.571903107@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 035/122] USB: Fix LPM disable count mismatch on driver unbind.
+Date: Tue,  7 Aug 2012 15:25:23 -0700
+Message-Id: <20120807221951.387855906@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -32,89 +29,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit c9fc3f778a6a215ace14ee556067c73982b6d40f upstream.
+commit 249719121bc2b841bdfcab5eb21b10d8b871743b upstream.
 
-Microcode reloading in a per-core manner is a very bad idea for both
-major x86 vendors. And the thing is, we have such interface with which
-we can end up with different microcode versions applied on different
-cores of an otherwise homogeneous wrt (family,model,stepping) system.
+When a user runs `echo 0 > bConfigurationValue` for a USB 3.0 device,
+usb_disable_device() is called.  This function disables all drivers,
+deallocates interfaces, and sets the device configuration value to 0
+(unconfigured).
 
-So turn off the possibility of doing that per core and allow it only
-system-wide.
+With the new scheme to ensure that unconfigured devices have LPM
+disabled, usb_disable_device() must call usb_unlocked_disable_lpm() once
+it unconfigures the device.
 
-This is a minimal fix which we'd like to see in stable too thus the
-more-or-less arbitrary decision to allow system-wide reloading only on
-the BSP:
+This commit should be backported to kernels as old as 3.5, that contain
+the commit 8306095fd2c1100e8244c09bf560f97aca5a311d "USB: Disable USB
+3.0 LPM in critical sections."
 
-$ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
-...
-
-and disable the interface on the other cores:
-
-$ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
--bash: echo: write error: Invalid argument
-
-Also, allowing the reload only from one CPU (the BSP in
-that case) doesn't allow the reload procedure to degenerate
-into an O(n^2) deal when triggering reloads from all
-/sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
-simultaneously.
-
-A more generic fix will follow.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1340280437-7718-2-git-send-email-bp@amd64.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/microcode_core.c |   26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ drivers/usb/core/message.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -298,19 +298,31 @@ static ssize_t reload_store(struct devic
- 			    const char *buf, size_t size)
- {
- 	unsigned long val;
--	int cpu = dev->id;
--	ssize_t ret = 0;
-+	int cpu;
-+	ssize_t ret = 0, tmp_ret;
-+
-+	/* allow reload only from the BSP */
-+	if (boot_cpu_data.cpu_index != dev->id)
-+		return -EINVAL;
- 
- 	ret = kstrtoul(buf, 0, &val);
- 	if (ret)
- 		return ret;
- 
--	if (val == 1) {
--		get_online_cpus();
--		if (cpu_online(cpu))
--			ret = reload_for_cpu(cpu);
--		put_online_cpus();
-+	if (val != 1)
-+		return size;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu) {
-+		tmp_ret = reload_for_cpu(cpu);
-+		if (tmp_ret != 0)
-+			pr_warn("Error reloading microcode on CPU %d\n", cpu);
-+
-+		/* save retval of the first encountered reload error */
-+		if (!ret)
-+			ret = tmp_ret;
- 	}
-+	put_online_cpus();
- 
- 	if (!ret)
- 		ret = size;
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1174,6 +1174,7 @@ void usb_disable_device(struct usb_devic
+ 			put_device(&dev->actconfig->interface[i]->dev);
+ 			dev->actconfig->interface[i] = NULL;
+ 		}
++		usb_unlocked_disable_lpm(dev);
+ 		dev->actconfig = NULL;
+ 		if (dev->state == USB_STATE_CONFIGURED)
+ 			usb_set_device_state(dev, USB_STATE_ADDRESS);
 
 
