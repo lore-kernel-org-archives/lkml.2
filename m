@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964934Ab2HGDnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:43:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59855 "EHLO
+	id S932686Ab2HGDpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:45:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59842 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964815Ab2HGDi4 (ORCPT
+	by vger.kernel.org with ESMTP id S964810Ab2HGDiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:56 -0400
-Message-Id: <20120807032801.944203053@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:55 -0400
+Message-Id: <20120807032802.781020919@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:35 +0100
+Date: Tue, 07 Aug 2012 04:28:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 40/70] nfs: skip commit in releasepage if were freeing memory for
- fs-related reasons
+        alan@lxorguk.ukuu.org.uk, Shawn Guo <shawn.guo@linaro.org>,
+        Marek Vasut <marex@denx.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 46/70] ARM: 7466/1: disable interrupt before spinning endlessly
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,180 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 5cf02d09b50b1ee1c2d536c9cf64af5a7d433f56 upstream.
+commit 98bd8b96b26db3399a48202318dca4aaa2515355 upstream.
 
-We've had some reports of a deadlock where rpciod ends up with a stack
-trace like this:
+The CPU will endlessly spin at the end of machine_halt and
+machine_restart calls.  However, this will lead to a soft lockup
+warning after about 20 seconds, if CONFIG_LOCKUP_DETECTOR is enabled,
+as system timer is still alive.
 
-    PID: 2507   TASK: ffff88103691ab40  CPU: 14  COMMAND: "rpciod/14"
-     #0 [ffff8810343bf2f0] schedule at ffffffff814dabd9
-     #1 [ffff8810343bf3b8] nfs_wait_bit_killable at ffffffffa038fc04 [nfs]
-     #2 [ffff8810343bf3c8] __wait_on_bit at ffffffff814dbc2f
-     #3 [ffff8810343bf418] out_of_line_wait_on_bit at ffffffff814dbcd8
-     #4 [ffff8810343bf488] nfs_commit_inode at ffffffffa039e0c1 [nfs]
-     #5 [ffff8810343bf4f8] nfs_release_page at ffffffffa038bef6 [nfs]
-     #6 [ffff8810343bf528] try_to_release_page at ffffffff8110c670
-     #7 [ffff8810343bf538] shrink_page_list.clone.0 at ffffffff81126271
-     #8 [ffff8810343bf668] shrink_inactive_list at ffffffff81126638
-     #9 [ffff8810343bf818] shrink_zone at ffffffff8112788f
-    #10 [ffff8810343bf8c8] do_try_to_free_pages at ffffffff81127b1e
-    #11 [ffff8810343bf958] try_to_free_pages at ffffffff8112812f
-    #12 [ffff8810343bfa08] __alloc_pages_nodemask at ffffffff8111fdad
-    #13 [ffff8810343bfb28] kmem_getpages at ffffffff81159942
-    #14 [ffff8810343bfb58] fallback_alloc at ffffffff8115a55a
-    #15 [ffff8810343bfbd8] ____cache_alloc_node at ffffffff8115a2d9
-    #16 [ffff8810343bfc38] kmem_cache_alloc at ffffffff8115b09b
-    #17 [ffff8810343bfc78] sk_prot_alloc at ffffffff81411808
-    #18 [ffff8810343bfcb8] sk_alloc at ffffffff8141197c
-    #19 [ffff8810343bfce8] inet_create at ffffffff81483ba6
-    #20 [ffff8810343bfd38] __sock_create at ffffffff8140b4a7
-    #21 [ffff8810343bfd98] xs_create_sock at ffffffffa01f649b [sunrpc]
-    #22 [ffff8810343bfdd8] xs_tcp_setup_socket at ffffffffa01f6965 [sunrpc]
-    #23 [ffff8810343bfe38] worker_thread at ffffffff810887d0
-    #24 [ffff8810343bfee8] kthread at ffffffff8108dd96
-    #25 [ffff8810343bff48] kernel_thread at ffffffff8100c1ca
+Disable interrupt before going to spin endlessly, so that the lockup
+warning will never be seen.
 
-rpciod is trying to allocate memory for a new socket to talk to the
-server. The VM ends up calling ->releasepage to get more memory, and it
-tries to do a blocking commit. That commit can't succeed however without
-a connected socket, so we deadlock.
-
-Fix this by setting PF_FSTRANS on the workqueue task prior to doing the
-socket allocation, and having nfs_release_page check for that flag when
-deciding whether to do a commit call. Also, set PF_FSTRANS
-unconditionally in rpc_async_schedule since that function can also do
-allocations sometimes.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/file.c                   |    7 +++++--
- net/sunrpc/sched.c              |    2 ++
- net/sunrpc/xprtrdma/transport.c |    3 ++-
- net/sunrpc/xprtsock.c           |   10 ++++++++++
- 4 files changed, 19 insertions(+), 3 deletions(-)
+ arch/arm/kernel/process.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 70d124a..1b39254 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -447,8 +447,11 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -125,6 +125,7 @@ void arm_machine_restart(char mode, cons
+ 	 */
+ 	mdelay(1000);
+ 	printk("Reboot failed -- System halted\n");
++	local_irq_disable();
+ 	while (1);
+ }
  
- 	dfprintk(PAGECACHE, "NFS: release_page(%p)\n", page);
- 
--	/* Only do I/O if gfp is a superset of GFP_KERNEL */
--	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
-+	/* Only do I/O if gfp is a superset of GFP_KERNEL, and we're not
-+	 * doing this memory reclaim for a fs-related allocation.
-+	 */
-+	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL &&
-+	    !(current->flags & PF_FSTRANS)) {
- 		int how = FLUSH_SYNC;
- 
- 		/* Don't let kswapd deadlock waiting for OOM RPC calls */
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index ada1e2c..1f19aa1 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -791,7 +791,9 @@ void rpc_execute(struct rpc_task *task)
- 
- static void rpc_async_schedule(struct work_struct *work)
+@@ -240,6 +241,7 @@ void machine_shutdown(void)
+ void machine_halt(void)
  {
-+	current->flags |= PF_FSTRANS;
- 	__rpc_execute(container_of(work, struct rpc_task, u.tk_work));
-+	current->flags &= ~PF_FSTRANS;
+ 	machine_shutdown();
++	local_irq_disable();
+ 	while (1);
  }
  
- /**
-diff --git a/net/sunrpc/xprtrdma/transport.c b/net/sunrpc/xprtrdma/transport.c
-index b446e10..06cdbff 100644
---- a/net/sunrpc/xprtrdma/transport.c
-+++ b/net/sunrpc/xprtrdma/transport.c
-@@ -200,6 +200,7 @@ xprt_rdma_connect_worker(struct work_struct *work)
- 	int rc = 0;
- 
- 	if (!xprt->shutdown) {
-+		current->flags |= PF_FSTRANS;
- 		xprt_clear_connected(xprt);
- 
- 		dprintk("RPC:       %s: %sconnect\n", __func__,
-@@ -212,10 +213,10 @@ xprt_rdma_connect_worker(struct work_struct *work)
- 
- out:
- 	xprt_wake_pending_tasks(xprt, rc);
--
- out_clear:
- 	dprintk("RPC:       %s: exit\n", __func__);
- 	xprt_clear_connecting(xprt);
-+	current->flags &= ~PF_FSTRANS;
- }
- 
- /*
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 890b03f..b88c6bf 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1895,6 +1895,8 @@ static void xs_local_setup_socket(struct work_struct *work)
- 	if (xprt->shutdown)
- 		goto out;
- 
-+	current->flags |= PF_FSTRANS;
-+
- 	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
- 	status = __sock_create(xprt->xprt_net, AF_LOCAL,
- 					SOCK_STREAM, 0, &sock, 1);
-@@ -1928,6 +1930,7 @@ static void xs_local_setup_socket(struct work_struct *work)
- out:
- 	xprt_clear_connecting(xprt);
- 	xprt_wake_pending_tasks(xprt, status);
-+	current->flags &= ~PF_FSTRANS;
- }
- 
- static void xs_udp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
-@@ -1970,6 +1973,8 @@ static void xs_udp_setup_socket(struct work_struct *work)
- 	if (xprt->shutdown)
- 		goto out;
- 
-+	current->flags |= PF_FSTRANS;
-+
- 	/* Start by resetting any existing state */
- 	xs_reset_transport(transport);
- 	sock = xs_create_sock(xprt, transport,
-@@ -1988,6 +1993,7 @@ static void xs_udp_setup_socket(struct work_struct *work)
- out:
- 	xprt_clear_connecting(xprt);
- 	xprt_wake_pending_tasks(xprt, status);
-+	current->flags &= ~PF_FSTRANS;
- }
- 
- /*
-@@ -2113,6 +2119,8 @@ static void xs_tcp_setup_socket(struct work_struct *work)
- 	if (xprt->shutdown)
- 		goto out;
- 
-+	current->flags |= PF_FSTRANS;
-+
- 	if (!sock) {
- 		clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
- 		sock = xs_create_sock(xprt, transport,
-@@ -2162,6 +2170,7 @@ static void xs_tcp_setup_socket(struct work_struct *work)
- 	case -EINPROGRESS:
- 	case -EALREADY:
- 		xprt_clear_connecting(xprt);
-+		current->flags &= ~PF_FSTRANS;
- 		return;
- 	case -EINVAL:
- 		/* Happens, for instance, if the user specified a link
-@@ -2174,6 +2183,7 @@ out_eagain:
- out:
- 	xprt_clear_connecting(xprt);
- 	xprt_wake_pending_tasks(xprt, status);
-+	current->flags &= ~PF_FSTRANS;
- }
- 
- /**
 
 
