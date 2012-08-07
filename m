@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964867Ab2HGDxF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:53:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59635 "EHLO
+	id S964837Ab2HGDxE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:53:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59624 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757290Ab2HGDiM (ORCPT
+	by vger.kernel.org with ESMTP id S1757279Ab2HGDiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Aug 2012 23:38:12 -0400
-Message-Id: <20120807032757.992864060@decadent.org.uk>
+Message-Id: <20120807032758.406509328@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:08 +0100
+Date: Tue, 07 Aug 2012 04:28:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 13/70] random: Adjust the number of loops when initializing
+        alan@lxorguk.ukuu.org.uk, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 16/70] random: create add_device_randomness() interface
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 2dac8e54f988ab58525505d7ef982493374433c3 upstream.
+commit a2080a67abe9e314f9e9c2cc3a4a176e8a8f8793 upstream.
 
-When we are initializing using arch_get_random_long() we only need to
-loop enough times to touch all the bytes in the buffer; using
-poolwords for that does twice the number of operations necessary on a
-64-bit machine, since in the random number generator code "word" means
-32 bits.
+Add a new interface, add_device_randomness() for adding data to the
+random pool that is likely to differ between two devices (or possibly
+even per boot).  This would be things like MAC addresses or serial
+numbers, or the read-out of the RTC. This does *not* add any actual
+entropy to the pool, but it initializes the pool to different values
+for devices that might otherwise be identical and have very little
+entropy available to them (particularly common in the embedded world).
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Link: http://lkml.kernel.org/r/1324589281-31931-1-git-send-email-tytso@mit.edu
+[ Modified by tytso to mix in a timestamp, since there may be some
+  variability caused by the time needed to detect/configure the hardware
+  in question. ]
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/random.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/random.c  |   28 ++++++++++++++++++++++++++++
+ include/linux/random.h |    1 +
+ 2 files changed, 29 insertions(+)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 3079477..9a2156d 100644
+index 315feb1..df3358a 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -975,7 +975,7 @@ static void init_std_data(struct entropy_store *r)
+@@ -125,11 +125,20 @@
+  * The current exported interfaces for gathering environmental noise
+  * from the devices are:
+  *
++ *	void add_device_randomness(const void *buf, unsigned int size);
+  * 	void add_input_randomness(unsigned int type, unsigned int code,
+  *                                unsigned int value);
+  *	void add_interrupt_randomness(int irq, int irq_flags);
+  * 	void add_disk_randomness(struct gendisk *disk);
+  *
++ * add_device_randomness() is for adding data to the random pool that
++ * is likely to differ between two devices (or possibly even per boot).
++ * This would be things like MAC addresses or serial numbers, or the
++ * read-out of the RTC. This does *not* add any actual entropy to the
++ * pool, but it initializes the pool to different values for devices
++ * that might otherwise be identical and have very little entropy
++ * available to them (particularly common in the embedded world).
++ *
+  * add_input_randomness() uses the input layer interrupt timing, as well as
+  * the event type information from the hardware.
+  *
+@@ -646,6 +655,25 @@ static void set_timer_rand_state(unsigned int irq,
+ }
+ #endif
  
- 	now = ktime_get_real();
- 	mix_pool_bytes(r, &now, sizeof(now));
--	for (i = r->poolinfo->poolwords; i; i--) {
-+	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof flags) {
- 		if (!arch_get_random_long(&flags))
- 			break;
- 		mix_pool_bytes(r, &flags, sizeof(flags));
++/*
++ * Add device- or boot-specific data to the input and nonblocking
++ * pools to help initialize them to unique values.
++ *
++ * None of this adds any entropy, it is meant to avoid the
++ * problem of the nonblocking pool having similar initial state
++ * across largely identical devices.
++ */
++void add_device_randomness(const void *buf, unsigned int size)
++{
++	unsigned long time = get_cycles() ^ jiffies;
++
++	mix_pool_bytes(&input_pool, buf, size, NULL);
++	mix_pool_bytes(&input_pool, &time, sizeof(time), NULL);
++	mix_pool_bytes(&nonblocking_pool, buf, size, NULL);
++	mix_pool_bytes(&nonblocking_pool, &time, sizeof(time), NULL);
++}
++EXPORT_SYMBOL(add_device_randomness);
++
+ static struct timer_rand_state input_timer_state;
+ 
+ /*
+diff --git a/include/linux/random.h b/include/linux/random.h
+index 6ef39d7..e14b438 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -50,6 +50,7 @@ struct rnd_state {
+ 
+ extern void rand_initialize_irq(int irq);
+ 
++extern void add_device_randomness(const void *, unsigned int);
+ extern void add_input_randomness(unsigned int type, unsigned int code,
+ 				 unsigned int value);
+ extern void add_interrupt_randomness(int irq, int irq_flags);
 
 
