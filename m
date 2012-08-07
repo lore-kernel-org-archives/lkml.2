@@ -1,238 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076Ab2HGFHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 01:07:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45242 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab2HGFHQ (ORCPT
+	id S1751441Ab2HGFIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 01:08:19 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18548 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab2HGFIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 01:07:16 -0400
-Date: Mon, 6 Aug 2012 22:05:02 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Tony Luck <tony.luck@intel.com>,
-        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>
-Subject: [GIT PULL] linux-pstore.git
-Message-ID: <20120807050501.GA21435@lizard>
+	Tue, 7 Aug 2012 01:08:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 06 Aug 2012 22:08:16 -0700
+Message-ID: <5020A332.3010206@nvidia.com>
+Date: Tue, 7 Aug 2012 14:10:10 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
+References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <50170EA0.1010408@wwwdotorg.org> <501A338D.7080105@nvidia.com> <20120802082157.GA14866@avionic-0098.adnet.avionic-design.de> <20120802181111.GM4537@opensource.wolfsonmicro.com> <501B2642.4080805@nvidia.com> <20120804141155.GJ10523@opensource.wolfsonmicro.com> <501F2BAA.8000808@nvidia.com> <501FEDE7.1060202@wwwdotorg.org>
+In-Reply-To: <501FEDE7.1060202@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On 08/07/2012 01:16 AM, Stephen Warren wrote:
+> On 08/05/2012 08:27 PM, Alex Courbot wrote:
+>> On 08/04/2012 11:12 PM, Mark Brown wrote:
+>>> On Fri, Aug 03, 2012 at 10:15:46AM +0900, Alex Courbot wrote:
+>>>> On Fri 03 Aug 2012 03:11:12 AM JST, Mark Brown wrote:
+>>>
+>>>>> I missed some of the earlier bits of the thread here but why can't
+>>>>> we do
+>>>>> device based lookups?
+> ...
+>> I think we only have two choices for this:
+>>
+>> 1) Stick to the scheme where resources are declared at the device level,
+>> such as they can be referenced by name in the sub-nodes (basically what
+>> I did in this patch):
+>>
+>> backlight {
+>>       compatible = "pwm-backlight";
+>>       ...
+>>       backlight-supply = <&backlight_reg>;
+>>
+>>       power-on-sequence {
+>>           step@0 {
+>>               regulator = "backlight";
+>>               enable;
+>>           };
+>>
+>> This would translate by a get_regulator(dev, "backlight") in the code
+>> which would be properly resolved.
+>
+> Yes, upon reflection, that scheme does make sense. I withdraw the
+> comments I made re: whether it'd be better to just stick the phandles
+> into the steps.
 
-This pull request includes a few fixes for pstore that I posted some time
-ago, plus Randy's printk format fix. Also, now pstore has a dedicated git
-tree, and a few people (including me) ready to review any further changes
-to the code, the fact is now reflected in the maintainers file.
+Right - having the phandles directly in the sequences has its merits, 
+but logically speaking resources are related to a device, so this 
+declarative approach is probably closer to reality anyway.
 
-Since the fixes are pretty small, for convenience I include all of them
-in the end of this email.
+I will revise the patch according to all the feedback received and 
+submit a new version soon.
 
-Thanks!
-
-
-The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
-
-  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/cbou/linux-pstore.git tags/v3.6-rc1-fixes
-
-for you to fetch changes up to 8defe59969cb8d863fe46867809316350ec0fc8f:
-
-  MAINTAINERS: Add pstore maintainers (2012-08-06 21:16:19 -0700)
-
-----------------------------------------------------------------
-Just a few fixes for v3.6-rc1, plus added maintainers for pstore.
-
-----------------------------------------------------------------
-Anton Vorontsov (3):
-      pstore/ram: Fix possible NULL dereference
-      pstore/ram: Mark ramoops_pstore_write_buf() as notrace
-      MAINTAINERS: Add pstore maintainers
-
-Randy Dunlap (1):
-      pstore/ram: Fix printk format warning
-
- MAINTAINERS     |   12 ++++++++++++
- fs/pstore/ram.c |   27 ++++++++++++++-------------
- 2 files changed, 26 insertions(+), 13 deletions(-)
-
-
-commit 8defe59969cb8d863fe46867809316350ec0fc8f
-Author: Anton Vorontsov <anton.vorontsov@linaro.org>
-Date:   Fri Aug 3 18:07:20 2012 -0700
-
-    MAINTAINERS: Add pstore maintainers
-    
-    Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-    Acked-by: Tony Luck <tony.luck@intel.com>
-    Acked-by: Kees Cook <keescook@chromium.org>
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 94b823f..9aa40c1 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5496,6 +5496,18 @@ L:	cbe-oss-dev@lists.ozlabs.org
- S:	Maintained
- F:	drivers/block/ps3vram.c
- 
-+PSTORE FILESYSTEM
-+M:	Anton Vorontsov <cbouatmailru@gmail.com>
-+M:	Colin Cross <ccross@android.com>
-+M:	Kees Cook <keescook@chromium.org>
-+M:	Tony Luck <tony.luck@intel.com>
-+S:	Maintained
-+T:	git git://git.infradead.org/users/cbou/linux-pstore.git
-+F:	fs/pstore/
-+F:	include/linux/pstore*
-+F:	drivers/firmware/efivars.c
-+F:	drivers/acpi/apei/erst.c
-+
- PTP HARDWARE CLOCK SUPPORT
- M:	Richard Cochran <richardcochran@gmail.com>
- S:	Maintained
-
-commit 242030365eacb649161023a3a024373198c34d59
-Author: Anton Vorontsov <anton.vorontsov@linaro.org>
-Date:   Tue Jul 17 19:49:37 2012 -0700
-
-    pstore/ram: Mark ramoops_pstore_write_buf() as notrace
-    
-    write_buf() should be marked as notrace, otherwise it is prone to
-    recursion.
-    
-    Though, yet the issue is never triggered in real life, because we run
-    inside the function tracer, where ftrace does its own recurse protection.
-    
-    But it's still no good, plus soon we might switch to our own tracer ops,
-    and then the issue will be fatal. So, let's fix it.
-    
-    Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index fba8c72..9101604 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -32,6 +32,7 @@
- #include <linux/ioport.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
-+#include <linux/compiler.h>
- #include <linux/pstore_ram.h>
- 
- #define RAMOOPS_KERNMSG_HDR "===="
-@@ -181,12 +182,11 @@ static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
- 	return len;
- }
- 
--
--static int ramoops_pstore_write_buf(enum pstore_type_id type,
--				    enum kmsg_dump_reason reason,
--				    u64 *id, unsigned int part,
--				    const char *buf, size_t size,
--				    struct pstore_info *psi)
-+static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
-+					    enum kmsg_dump_reason reason,
-+					    u64 *id, unsigned int part,
-+					    const char *buf, size_t size,
-+					    struct pstore_info *psi)
- {
- 	struct ramoops_context *cxt = psi->data;
- 	struct persistent_ram_zone *prz = cxt->przs[cxt->dump_write_cnt];
-
-commit 0427193b691edc81c846c7d0ebd2561cae8709d8
-Author: Randy Dunlap <rdunlap@xenotime.net>
-Date:   Fri Aug 3 17:02:48 2012 -0700
-
-    pstore/ram: Fix printk format warning
-    
-    Fix printk format warning (on i386) in pstore:
-    
-    fs/pstore/ram.c:409:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
-    
-    Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-    Acked-by: Kees Cook <keescook@chromium.org>
-    Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index bcd1bbd..fba8c72 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -406,7 +406,7 @@ static int __devinit ramoops_probe(struct platform_device *pdev)
- 		goto fail_init_fprz;
- 
- 	if (!cxt->przs && !cxt->cprz && !cxt->fprz) {
--		pr_err("memory size too small, minimum is %lu\n",
-+		pr_err("memory size too small, minimum is %zu\n",
- 			cxt->console_size + cxt->record_size +
- 			cxt->ftrace_size);
- 		goto fail_cnt;
-
-commit a384f6411734e763daa4bae30e8ff170d7d4c3e2
-Author: Anton Vorontsov <anton.vorontsov@linaro.org>
-Date:   Thu Jul 19 15:47:11 2012 -0700
-
-    pstore/ram: Fix possible NULL dereference
-    
-    We can dereference 'cxt->cprz' if console and dump logging are disabled
-    (which is unlikely, but still possible to do). This patch fixes the issue
-    by changing the code so that we don't dereference przs at all, we can
-    just calculate bufsize from console_size and record_size values.
-    
-    Plus, while at it, the patch improves the buffer size calculation.
-    
-    After Kay's printk rework, we know the optimal buffer size for console
-    logging -- it is LOG_LINE_MAX (defined privately in printk.c). Previously,
-    if only console logging was enabled, we would allocate unnecessary large
-    buffer in pstore, while we only need LOG_LINE_MAX. (Pstore console logging
-    is still capable of handling buffers > LOG_LINE_MAX, it will just do
-    multiple calls to psinfo->write).
-    
-    Note that I don't export the constant, since we will do even a better
-    thing soon: we will switch console logging to a new write_buf API, which
-    will eliminate the need for the additional buffer; and so we won't need
-    the constant.
-    
-    Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-    Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-    Acked-by: Kees Cook <keescook@chromium.org>
-
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 0b311bc..bcd1bbd 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -414,13 +414,14 @@ static int __devinit ramoops_probe(struct platform_device *pdev)
- 
- 	cxt->pstore.data = cxt;
- 	/*
--	 * Console can handle any buffer size, so prefer dumps buffer
--	 * size since usually it is smaller.
-+	 * Console can handle any buffer size, so prefer LOG_LINE_MAX. If we
-+	 * have to handle dumps, we must have at least record_size buffer. And
-+	 * for ftrace, bufsize is irrelevant (if bufsize is 0, buf will be
-+	 * ZERO_SIZE_PTR).
- 	 */
--	if (cxt->przs)
--		cxt->pstore.bufsize = cxt->przs[0]->buffer_size;
--	else
--		cxt->pstore.bufsize = cxt->cprz->buffer_size;
-+	if (cxt->console_size)
-+		cxt->pstore.bufsize = 1024; /* LOG_LINE_MAX */
-+	cxt->pstore.bufsize = max(cxt->record_size, cxt->pstore.bufsize);
- 	cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
- 	spin_lock_init(&cxt->pstore.buf_lock);
- 	if (!cxt->pstore.buf) {
+Thanks,
+Alex.
 
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
