@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab2HGAQU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 20:16:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2757 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486Ab2HGAQT (ORCPT
+	id S1757028Ab2HGAYl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 20:24:41 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:15604 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060Ab2HGAYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 20:16:19 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=I9JLrDqlJYReBIvojkcA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1344298576.6935.2.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.2.26-rt39
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Mon, 06 Aug 2012 20:16:16 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Aug 2012 20:24:39 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-13-50206045a534
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Dongjin Kim'" <tobetter@gmail.com>
+Cc: "'Dongjin Kim'" <dongjin.kim@agreeyamobility.net>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1344261462-14183-1-git-send-email-dongjin.kim@agreeyamobility.net>
+ <1344261462-14183-5-git-send-email-dongjin.kim@agreeyamobility.net>
+In-reply-to: <1344261462-14183-5-git-send-email-dongjin.kim@agreeyamobility.net>
+Subject: Re: [PATCH] video: s3c-fb: Fix compile error/warning if CONFIG_OF is
+ not selected
+Date: Tue, 07 Aug 2012 09:24:37 +0900
+Message-id: <000a01cd7433$07555780$16000680$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1z25zXI16PJR25RMC/i2JGQmyb0gAVtKzw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jQV3XBIUAgztLdC1O9H1gtbi8aw6b
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBk/l/xmLTjKUbHz8VO2BsaPbF2MnBwSAiYSpybeYIew
+	xSQu3FsPFOfiEBKYzihxZMt+RgjnF6PE7rmnwTrYBNQkvnw5DNYhAmQ3/u1kBSliFrjAKDFl
+	2lwWkISQwFRGiRe3KkBsToEAidXvDjKC2MICMRJHelvBalgEVCWmL9kCFucVsJVobG1mhbAF
+	JX5MvgdWwyygJbF+53EmCFteYvOat8xdjBxAp6pLPPqrC3GDkcTmK1egSkQk9r14xziBUWgW
+	kkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEB/Uz6R2MqxosDjEK
+	cDAq8fDOVFEIEGJNLCuuzD3EKMHBrCTCe8cXKMSbklhZlVqUH19UmpNafIhRmoNFSZzXxPur
+	v5BAemJJanZqakFqEUyWiYNTqoExp+a1wNSCGVxBSx/+sfE8XHunfWelzd4HfIftHpxS2Vd9
+	z+lXVv9lvc5LlpeWSCowi/Vsmrjl3puI7e6LbD9svHVQYjLLXeMb52Mmz1bPm/Wn+Kw8g+52
+	d66QqTcPlyiK+67XnnxYZs1b/dlK7tI3pII6Eqpu+l8J7j/2UlvfbN6SJWecfbb7KbEUZyQa
+	ajEXFScCAJjY0iFmAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Dear RT Folks,
-
-I'm pleased to announce the 3.2.26-rt39 stable release.
-
-
-This release is just an update to the new stable 3.2.26 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 69ebd1210e5fc6535320c9da4c6196b95fa0668c
-
-
-Or to build 3.2.26-rt39 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.26.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.26-rt39.patch.xz
-
-
-
-Enjoy,
-
--- Steve
+On Monday, August 06, 2012 10:58 PM Dongjin Kim wrote:
+> 
+> Change-Id: I5d7ff6f0070a10225d5b064b362d3d8f214787fd
+> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
+> ---
+>  drivers/video/s3c-fb.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
+> index 8c8adb5..268be0c 100644
+> --- a/drivers/video/s3c-fb.c
+> +++ b/drivers/video/s3c-fb.c
+> @@ -1527,13 +1527,11 @@ static int s3c_fb_dt_parse_gpios(struct device *dev, struct s3c_fb *sfb,
+> 
+>  static void s3c_fb_dt_free_gpios(struct s3c_fb *sfb)
+>  {
+> -	return 0;
+>  }
+> 
+> -static int s3c_fb_dt_parse_pdata(struct device *dev,
+> -					struct s3c_fb_platdata **pdata)
+> +static struct s3c_fb_platdata *s3c_fb_dt_parse_pdata(struct device *dev)
+>  {
+> -	return 0;
+> +	return NULL;
+>  }
+>  #endif /* CONFIG_OF */
 
 
+Um, DT is not yet merged to s3c-fb driver.
+s3c_fb_dt_parse_pdata() and s3c_fb_dt_free_gpios() are not available.
+
+So, this patch is unnecessary.
+
+Best regards,
+Jingoo Han
+
+
+> 
+> --
+> 1.7.9.5
 
