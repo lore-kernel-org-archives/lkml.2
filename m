@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab2HGRfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:35:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:45924 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755499Ab2HGRfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:35:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="204234916"
-Date: Tue, 7 Aug 2012 10:35:32 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Denis Turischev <denis@compulab.co.il>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 2/2] xhci: EHCI/XHCI ports switching on Intense-PC.
-Message-ID: <20120807173532.GD10298@xanatos>
-References: <5004454E.9030903@compulab.co.il>
- <20120717045416.GJ7599@xanatos>
- <50065E5A.2040103@compulab.co.il>
- <20120718165916.GA30828@xanatos>
- <500D3998.7010705@compulab.co.il>
+	id S1754859Ab2HGRiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:38:25 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39351 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751184Ab2HGRiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 13:38:24 -0400
+Date: Tue, 7 Aug 2012 18:38:10 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Chris Mason <chris.mason@fusionio.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: RFC: mutex: hung tasks on SMP platforms with
+ asm-generic/mutex-xchg.h
+Message-ID: <20120807173810.GE16877@mudshark.cambridge.arm.com>
+References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
+ <alpine.LFD.2.02.1208071259270.5231@xanadu.home>
+ <20120807173344.GD16877@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <500D3998.7010705@compulab.co.il>
+In-Reply-To: <20120807173344.GD16877@mudshark.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Denis,
-
-I found a couple issues with your second patch.  There are non-PCI xHCI
-host controllers, so we can't assume the xHCI host is a PCI host.  So
-this code can't run in the generic xHCI shutdown method:
-
->  void xhci_shutdown(struct usb_hcd *hcd)
->  {
-> +	struct pci_dev *pdev;
-> +	const char *brd_name;
->  	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+On Tue, Aug 07, 2012 at 06:33:44PM +0100, Will Deacon wrote:
+> What I think is happening is that B writes the -1 in __mutex_lock_common
+> and, after seeing a NULL owner (C may not have set that yet), drops through
+> to the:
 > 
-> +	pdev = to_pci_dev(hcd->self.controller);
-> +
-> +	if (usb_is_intel_switchable_xhci(pdev)) {
-> +		brd_name = dmi_get_system_info(DMI_BOARD_NAME);
-> +
-> +		/* quirk for Compulab's Intense-PC board */
-> +		if (brd_name && strstr(brd_name, "Intense-PC"))
-> +			usb_disable_xhci_ports(pdev);
-> +	}
-> +
->  	spin_lock_irq(&xhci->lock);
->  	xhci_halt(xhci);
->  	spin_unlock_irq(&xhci->lock);
+> 	if (atomic_xchg(&lock->count, -1) == 1)
+> 		goto done;
 
-I think the to_pci_dev call will oops if this isn't a PCI host.  Plus,
-I've found out from the BIOS and chipset folks that this quirk needs to
-be more broadly applied.  I'll send you a revised patch.  Can you test
-it and make sure it works for you?
+Sorry, should have proofread that. I meant to say:
 
-Sarah Sharp
+ What I think is happening is that B writes the -1 in __mutex_lock_common
+ after seeing a NULL owner (C may not have set that yet) and dropping through
+ to the:
+ 
+ 	if (atomic_xchg(&lock->count, -1) == 1)
+ 		goto done;
+ 
+
+Will
