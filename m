@@ -1,62 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab2HGXPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:15:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42716 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932887Ab2HGWh1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:37:27 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: =?UTF-8?q?=5B=20024/109=5D=20USB=3A=20option=3A=20add=20ZTE=20MF821D?=
-Date: Tue,  7 Aug 2012 15:34:43 -0700
-Message-Id: <20120807222045.221287960@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
-References: <20120807222043.089735600@linuxfoundation.org>
-User-Agent: quilt/0.60-20.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1757388Ab2HGXQG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:16:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32941 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932899Ab2HGXPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 19:15:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="178106485"
+Message-Id: <2afe0125e4a9724f9cf22f03b0a1747ce67cdc8c.1344379657.git.tony.luck@intel.com>
+In-Reply-To: <20120806214336.GA11726@gchen.bj.intel.com>
+From: Tony Luck <tony.luck@intel.com>
+Date: Tue, 7 Aug 2012 13:46:56 -0700
+Subject: [PATCH 5/6] x86/mce: Provide an option to keep cmci_reenable() quiet
+To: Chen Gong <gong.chen@linux.intel.com>
+Cc: bp@amd64.org, x86@kernel.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+cmci_reenable() calls cmci_discover() to look at which machine check
+banks are shared between processors. It ensure that only one cpu takes
+ownership of each shared bank. At boot time cmci_discover() is muted,
+but during hot add events it provides some output which may be helpful
+to ensure that all banks have an owner.
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+We want to use cmci_reenable() when a CMCI storm subsides. In this case
+the topology has not changed, so we do not need any commentary as it
+goes about its business.
 
-------------------
+Add a "quiet" argument to cmci_reenable() that it passes to cmci_discover().
 
-From: Bjørn Mork <bjorn@mork.no>
-
-commit 09110529780890804b22e997ae6b4fe3f0b3b158 upstream.
-
-Sold by O2 (telefonica germany) under the name "LTE4G"
-
-Tested-by: Thomas Schäfer <tschaefer@t-online.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -936,6 +936,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0165, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0167, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0326, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1008, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 0xff),
+[Patches 1-4 remain as previously posted. This is a new patch to
+ help tidy console messages. Old patch 5 becomes patch 6 (and has
+ a few cleanups]
 
+ arch/x86/include/asm/mce.h             |  4 ++--
+ arch/x86/kernel/cpu/mcheck/mce.c       |  4 ++--
+ arch/x86/kernel/cpu/mcheck/mce_intel.c | 10 +++++-----
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index 441520e..bf79a0f 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -165,13 +165,13 @@ extern int mce_cmci_disabled;
+ extern int mce_ignore_ce;
+ void mce_intel_feature_init(struct cpuinfo_x86 *c);
+ void cmci_clear(void);
+-void cmci_reenable(void);
++void cmci_reenable(int quiet);
+ void cmci_rediscover(int dying);
+ void cmci_recheck(void);
+ #else
+ static inline void mce_intel_feature_init(struct cpuinfo_x86 *c) { }
+ static inline void cmci_clear(void) {}
+-static inline void cmci_reenable(void) {}
++static inline void cmci_reenable(int quiet) {}
+ static inline void cmci_rediscover(int dying) {}
+ static inline void cmci_recheck(void) {}
+ #endif
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index b4dde15..826dd21 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1994,7 +1994,7 @@ static void mce_enable_ce(void *all)
+ {
+ 	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+ 		return;
+-	cmci_reenable();
++	cmci_reenable(0);
+ 	cmci_recheck();
+ 	if (all)
+ 		__mcheck_cpu_init_timer();
+@@ -2246,7 +2246,7 @@ static void __cpuinit mce_reenable_cpu(void *h)
+ 		return;
+ 
+ 	if (!(action & CPU_TASKS_FROZEN))
+-		cmci_reenable();
++		cmci_reenable(0);
+ 	for (i = 0; i < banks; i++) {
+ 		struct mce_bank *b = &mce_banks[i];
+ 
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+index 38e49bc..e652cde 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -78,7 +78,7 @@ static void print_update(char *type, int *hdr, int num)
+  * on this CPU. Use the algorithm recommended in the SDM to discover shared
+  * banks.
+  */
+-static void cmci_discover(int banks, int boot)
++static void cmci_discover(int banks, int quiet)
+ {
+ 	unsigned long *owned = (void *)&__get_cpu_var(mce_banks_owned);
+ 	unsigned long flags;
+@@ -96,7 +96,7 @@ static void cmci_discover(int banks, int boot)
+ 
+ 		/* Already owned by someone else? */
+ 		if (val & MCI_CTL2_CMCI_EN) {
+-			if (test_and_clear_bit(i, owned) && !boot)
++			if (test_and_clear_bit(i, owned) && !quiet)
+ 				print_update("SHD", &hdr, i);
+ 			__clear_bit(i, __get_cpu_var(mce_poll_banks));
+ 			continue;
+@@ -109,7 +109,7 @@ static void cmci_discover(int banks, int boot)
+ 
+ 		/* Did the enable bit stick? -- the bank supports CMCI */
+ 		if (val & MCI_CTL2_CMCI_EN) {
+-			if (!test_and_set_bit(i, owned) && !boot)
++			if (!test_and_set_bit(i, owned) && !quiet)
+ 				print_update("CMCI", &hdr, i);
+ 			__clear_bit(i, __get_cpu_var(mce_poll_banks));
+ 		} else {
+@@ -196,11 +196,11 @@ void cmci_rediscover(int dying)
+ /*
+  * Reenable CMCI on this CPU in case a CPU down failed.
+  */
+-void cmci_reenable(void)
++void cmci_reenable(int quiet)
+ {
+ 	int banks;
+ 	if (cmci_supported(&banks))
+-		cmci_discover(banks, 0);
++		cmci_discover(banks, quiet);
+ }
+ 
+ static void intel_init_cmci(void)
+-- 
+1.7.10.2.552.gaa3bb87
 
