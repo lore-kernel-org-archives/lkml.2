@@ -1,115 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750909Ab2HGEOT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 00:14:19 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40422 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab2HGEOR (ORCPT
+	id S1750991Ab2HGEVZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 00:21:25 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:65202 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab2HGEVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 00:14:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOesGMj6BafLCpZjmtyn_ASbpeic_8E0CdYjQGOf3A4_NHfy=Q@mail.gmail.com>
-References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
-	<CAJuYYwSjnQ6z0iUaLCV9guC7yyKH3_pbd1QZe3ELKF-fYNfaqQ@mail.gmail.com>
-	<A6A3B7488C419F488E5B13FFD03C08AD2F4362EE@SN2PRD0510MB370.namprd05.prod.outlook.com>
-	<CAOesGMh=6QrCmL4EqnSqTxi1nH+8Wn+x=z9BYq8QJCznH3a=zQ@mail.gmail.com>
-	<A6A3B7488C419F488E5B13FFD03C08AD2F43688D@SN2PRD0510MB370.namprd05.prod.outlook.com>
-	<CAOesGMj6BafLCpZjmtyn_ASbpeic_8E0CdYjQGOf3A4_NHfy=Q@mail.gmail.com>
-Date: Tue, 7 Aug 2012 09:44:15 +0530
-Message-ID: <CAJuYYwT2rrJkrkOSekV+DjpVAHas33_gUGULTjzsYtcq1UAyoQ@mail.gmail.com>
-Subject: =?EUC-KR?B?UmU6IMi4vcU6IMi4vcU6IFtQQVRDSF0gT0RST0lELVg6IGhrZGs0NDEyOiBBZGQg?=
-	=?EUC-KR?B?bmV3IGhhcmR3YXJlIGJhc2VkIG9uIEV4eW5vczQ0MTI=?=
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>,
-        Dongjin Kim <tobetter@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Jon Medhurst <tixy@yxit.co.uk>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Aug 2012 00:21:23 -0400
+Message-ID: <1344313269.1865.2.camel@kyv>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: artem.bityutskiy@linux.intel.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
+        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
+        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
+        Marius.Mazarel@ugal.ro, nyoushchenko@mvista.com
+Date: Tue, 07 Aug 2012 07:21:09 +0300
+In-Reply-To: <50200096.1070002@nod.at>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	 <1343919530.25013.116.camel@sauron.fi.intel.com> <50200096.1070002@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-Nn58eDGVPtk4M2H+25t4"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 August 2012 07:58, Olof Johansson <olof@lixom.net> wrote:
-> Hi,
->
-> On Mon, Aug 6, 2012 at 7:05 PM, Dongjin Kim
-> <Dongjin.Kim@agreeyamobility.net> wrote:
->> Hello,
->>
->> I am trying to understand what I have to do for device tree.
->>
->> In order to create dts file for ODROID-X hardware, it seems I may need dts file of EXYNOS4412 SoC.
->> But maybe exynos4412.dtsi is not merged yet or not exist, like exynos4210.dtsi or exynos5250.dtsi.
->> Obviously it seems not easy to create such a file without SoC datasheet, and I do not have it.
->>
->> So do I wait for the file to be merged by Samsung or better to create initial dts file cloned from exynos4210.dtsi and modify to have verified nodes with the source/header files?
->
-> Ideally they already have one waiting to be submitted, but that might
-> not be the case. Given that the origenboard design with 4412 is not
-> yet shipping, I'm guessing the Linaro Samsung engineers might not have
-> done much work on 4412 yet. Kukjin? Thomas?
->
->> What's your suggestion?
->
-> The alternative is to use the data you have available -- i.e. sources
-> and patches, and craft the device tree from there. The design of 4412
-> is a derivative from 4210, so that's a good start. Next step would be
-> to describe the board on top of the SoC, peripherals, etc. Take a look
-> at how the origen board support was added, and so on.
->
-> I ordered an odroid-x several weeks ago but I haven't have a confirmed
-> shipping date yet. :( I'm not sure how long it'll be before I can help
-> out, unfortunately.
->
->
-> -Olof
 
-Most of the Exynos4210 device tree support can be reused for
-Exynos4412 as well. Looking at the hardware differences between the
-two, it might be better to create a new exynos4.dtsi file (kind of
-creating it out of the existing exynos4210.dtsi) which will have all
-the common bits across all SoC's in the Exynos4 family.
+--=-Nn58eDGVPtk4M2H+25t4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Further, there can be exynos4210.dtsi and exynos4412.dtsi which would
-specify SoC specific differences such as the GIC cpu-offset property
-and the additional groups available in the interrupt combiner.
+On Mon, 2012-08-06 at 19:36 +0200, Richard Weinberger wrote:
+> I think we enable fastmap only if a MTD device has more than
+> UBI_FM_MAX_START*2 PEBs.
+> Any comments?
 
-There are differences in the gpio/pinmux controllers as well which
-have to be described using device tree. The current gpio/pinmux device
-tree support depends entirely on the gpio-samsung driver which handles
-both gpio and pinmux but requires listing all the banks available in
-Exynos4412. I would prefer not to do that since we are switching over
-to using a pin controller driver and I am currently working on this
-driver.
+With double space one can make it power-cut tolerant, because you should
+be able to have either old or new fastmap at any point of time.
 
-The pin controller driver is important without which the
-gpio/pinmux/pinconf setting for devices such as i2c and sdhci
-controller cannot be setup. The basic pinctrl driver for Exynos4 has
-already been posted and now I am working on adding gpio and wakeup
-interrupt support into that driver (hoping to complete it this week).
+--=20
+Best Regards,
+Artem Bityutskiy
 
-So the probable steps in getting started with using device tree for
-Exynos4412 would be
+--=-Nn58eDGVPtk4M2H+25t4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-1. Create a new exynos4.dtsi file with all the Exynos4 common
-properties for all dt supported controllers.
-2. Update the exynos4210.dtsi file accordingly and add the new
-exynos4412.dtsi file.
-3. With this, it will be possible to boot the kernel and test
-peripherals that do not depend on gpio/pinmux (rtc, wdt, etc).
-4. When the Exynos4 pinctrl driver is available, start adding device
-nodes for i2c and sdhci controllers.
-5. Incrementally add device tree coverage for the board and other
-peripherals on Exynos4412.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks,
-Thomas.
+iQIcBAABAgAGBQJQIJe1AAoJECmIfjd9wqK08GIP/iejXLF9PCHFiNCFKTdc6hvO
+Z1ltsQLsSC1cdY0GjL7724hHWdzY++TW+tEB52NjklWWGJ2mYMIRa0mZEJJqO9sM
+hAwI2i8RaAMPfCUl6NBNR3VggR0uo7D47WCkaNCrCnMshhKzF4mkUz6We3otYxoG
+8t2GgrAGfy47168UuGUGawpnszLwG7HUF9KsqOcfE0Kv07uxc3D6xxLCZ6r5VwOM
+8AQ5GEpWQD8NHg59p64zCxrPy51H+Z4kzAkbzVODPVvZYxXu8UBU+UGNGZa7rEYO
+eUIhWqp+8Vn5ji5ZklrXWr97P1My9jrkchtPHZvT46RZqpmXzK/5o06q2+zQuVBm
+lYkzczRcq0ZHLz6v9Ss5Fq/oSIW3eoZt8ou2Jp3jhgrPPNb/cZofH5JCDopTyJ+/
++2cuqLkqrC8A7Ux3SsjWmCheqEclx0rLJB6+rJuYF7WvHa0aVlZP4PEWqzr8YUlb
+78Xqwj//OupvF/9Z9UK/UHkJeK+sTgPkum3dgekWGdxdKdD//zdSACa/ssk7xZpm
+h8Z1SKIEku1LP+0Bt4dChxSdh3N4Ts74VdCZjT1CpmkMBIOVck1Fbsi5M1oUUhes
+RU3ZS3nfy7Ryr1Gkx8XJQSlC82rQ5aMwn4YZ+5WeOKnOiEulEoEj7zy8vAHCgdPE
+T5st5wJS5vbD/FI/epVr
+=ctYu
+-----END PGP SIGNATURE-----
+
+--=-Nn58eDGVPtk4M2H+25t4--
+
