@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757561Ab2HGXhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:37:13 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:56716 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab2HGW3F (ORCPT
+	id S1757596Ab2HGXhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:37:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932339Ab2HGW25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:29:05 -0400
+	Tue, 7 Aug 2012 18:28:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 039/122] locks: fix checking of fcntl_setlease argument
-Date: Tue,  7 Aug 2012 15:25:27 -0700
-Message-Id: <20120807221951.744022489@linuxfoundation.org>
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 037/122] x86, microcode: Sanitize per-cpu microcode reloading interface
+Date: Tue,  7 Aug 2012 15:25:25 -0700
+Message-Id: <20120807221951.571903107@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,55 +32,89 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@fieldses.org>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit 0ec4f431eb56d633da3a55da67d5c4b88886ccc7 upstream.
+commit c9fc3f778a6a215ace14ee556067c73982b6d40f upstream.
 
-The only checks of the long argument passed to fcntl(fd,F_SETLEASE,.)
-are done after converting the long to an int.  Thus some illegal values
-may be let through and cause problems in later code.
+Microcode reloading in a per-core manner is a very bad idea for both
+major x86 vendors. And the thing is, we have such interface with which
+we can end up with different microcode versions applied on different
+cores of an otherwise homogeneous wrt (family,model,stepping) system.
 
-[ They actually *don't* cause problems in mainline, as of Dave Jones's
-  commit 8d657eb3b438 "Remove easily user-triggerable BUG from
-  generic_setlease", but we should fix this anyway.  And this patch will
-  be necessary to fix real bugs on earlier kernels. ]
+So turn off the possibility of doing that per core and allow it only
+system-wide.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This is a minimal fix which we'd like to see in stable too thus the
+more-or-less arbitrary decision to allow system-wide reloading only on
+the BSP:
+
+$ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
+...
+
+and disable the interface on the other cores:
+
+$ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
+-bash: echo: write error: Invalid argument
+
+Also, allowing the reload only from one CPU (the BSP in
+that case) doesn't allow the reload procedure to degenerate
+into an O(n^2) deal when triggering reloads from all
+/sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
+simultaneously.
+
+A more generic fix will follow.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1340280437-7718-2-git-send-email-bp@amd64.org
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/locks.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/microcode_core.c |   26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -308,7 +308,7 @@ static int flock_make_lock(struct file *
- 	return 0;
- }
- 
--static int assign_type(struct file_lock *fl, int type)
-+static int assign_type(struct file_lock *fl, long type)
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -298,19 +298,31 @@ static ssize_t reload_store(struct devic
+ 			    const char *buf, size_t size)
  {
- 	switch (type) {
- 	case F_RDLCK:
-@@ -445,7 +445,7 @@ static const struct lock_manager_operati
- /*
-  * Initialize a lease, use the default lock manager operations
-  */
--static int lease_init(struct file *filp, int type, struct file_lock *fl)
-+static int lease_init(struct file *filp, long type, struct file_lock *fl)
-  {
- 	if (assign_type(fl, type) != 0)
- 		return -EINVAL;
-@@ -463,7 +463,7 @@ static int lease_init(struct file *filp,
- }
+ 	unsigned long val;
+-	int cpu = dev->id;
+-	ssize_t ret = 0;
++	int cpu;
++	ssize_t ret = 0, tmp_ret;
++
++	/* allow reload only from the BSP */
++	if (boot_cpu_data.cpu_index != dev->id)
++		return -EINVAL;
  
- /* Allocate a file_lock initialised to this type of lease */
--static struct file_lock *lease_alloc(struct file *filp, int type)
-+static struct file_lock *lease_alloc(struct file *filp, long type)
- {
- 	struct file_lock *fl = locks_alloc_lock();
- 	int error = -ENOMEM;
+ 	ret = kstrtoul(buf, 0, &val);
+ 	if (ret)
+ 		return ret;
+ 
+-	if (val == 1) {
+-		get_online_cpus();
+-		if (cpu_online(cpu))
+-			ret = reload_for_cpu(cpu);
+-		put_online_cpus();
++	if (val != 1)
++		return size;
++
++	get_online_cpus();
++	for_each_online_cpu(cpu) {
++		tmp_ret = reload_for_cpu(cpu);
++		if (tmp_ret != 0)
++			pr_warn("Error reloading microcode on CPU %d\n", cpu);
++
++		/* save retval of the first encountered reload error */
++		if (!ret)
++			ret = tmp_ret;
+ 	}
++	put_online_cpus();
+ 
+ 	if (!ret)
+ 		ret = size;
 
 
