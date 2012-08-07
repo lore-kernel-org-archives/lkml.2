@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031218Ab2HGW4k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:56:40 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:51211 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031092Ab2HGWp6 (ORCPT
+	id S1031166Ab2HGW4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:56:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031106Ab2HGWqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:45:58 -0400
+	Tue, 7 Aug 2012 18:46:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: [ 04/49] powerpc: Fix wrong divisor in usecs_to_cputime
-Date: Tue,  7 Aug 2012 15:44:22 -0700
-Message-Id: <20120807222027.257644855@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 14/49] locks: fix checking of fcntl_setlease argument
+Date: Tue,  7 Aug 2012 15:44:32 -0700
+Message-Id: <20120807222028.144240974@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -32,84 +29,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: "J. Bruce Fields" <bfields@fieldses.org>
 
-commit 9f5072d4f63f28d30d343573830ac6c85fc0deff upstream.
+commit 0ec4f431eb56d633da3a55da67d5c4b88886ccc7 upstream.
 
-Commit d57af9b (taskstats: use real microsecond granularity for CPU times)
-renamed msecs_to_cputime to usecs_to_cputime, but failed to update all
-numbers on the way.  This causes nonsensical cpu idle/iowait values to be
-displayed in /proc/stat (the only user of usecs_to_cputime so far).
+The only checks of the long argument passed to fcntl(fd,F_SETLEASE,.)
+are done after converting the long to an int.  Thus some illegal values
+may be let through and cause problems in later code.
 
-This also renames __cputime_msec_factor to __cputime_usec_factor, adapting
-its value and using it directly in cputime_to_usecs instead of doing two
-multiplications.
+[ They actually *don't* cause problems in mainline, as of Dave Jones's
+  commit 8d657eb3b438 "Remove easily user-triggerable BUG from
+  generic_setlease", but we should fix this anyway.  And this patch will
+  be necessary to fix real bugs on earlier kernels. ]
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Acked-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/cputime.h |    6 +++---
- arch/powerpc/kernel/time.c         |   10 +++++-----
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ fs/locks.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/include/asm/cputime.h
-+++ b/arch/powerpc/include/asm/cputime.h
-@@ -126,11 +126,11 @@ static inline u64 cputime64_to_jiffies64
- /*
-  * Convert cputime <-> microseconds
-  */
--extern u64 __cputime_msec_factor;
-+extern u64 __cputime_usec_factor;
- 
- static inline unsigned long cputime_to_usecs(const cputime_t ct)
- {
--	return mulhdu(ct, __cputime_msec_factor) * USEC_PER_MSEC;
-+	return mulhdu(ct, __cputime_usec_factor);
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -315,7 +315,7 @@ static int flock_make_lock(struct file *
+ 	return 0;
  }
  
- static inline cputime_t usecs_to_cputime(const unsigned long us)
-@@ -143,7 +143,7 @@ static inline cputime_t usecs_to_cputime
- 	sec = us / 1000000;
- 	if (ct) {
- 		ct *= tb_ticks_per_sec;
--		do_div(ct, 1000);
-+		do_div(ct, 1000000);
- 	}
- 	if (sec)
- 		ct += (cputime_t) sec * tb_ticks_per_sec;
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -168,13 +168,13 @@ EXPORT_SYMBOL_GPL(ppc_tb_freq);
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING
+-static int assign_type(struct file_lock *fl, int type)
++static int assign_type(struct file_lock *fl, long type)
+ {
+ 	switch (type) {
+ 	case F_RDLCK:
+@@ -452,7 +452,7 @@ static const struct lock_manager_operati
  /*
-  * Factors for converting from cputime_t (timebase ticks) to
-- * jiffies, milliseconds, seconds, and clock_t (1/USER_HZ seconds).
-+ * jiffies, microseconds, seconds, and clock_t (1/USER_HZ seconds).
-  * These are all stored as 0.64 fixed-point binary fractions.
+  * Initialize a lease, use the default lock manager operations
   */
- u64 __cputime_jiffies_factor;
- EXPORT_SYMBOL(__cputime_jiffies_factor);
--u64 __cputime_msec_factor;
--EXPORT_SYMBOL(__cputime_msec_factor);
-+u64 __cputime_usec_factor;
-+EXPORT_SYMBOL(__cputime_usec_factor);
- u64 __cputime_sec_factor;
- EXPORT_SYMBOL(__cputime_sec_factor);
- u64 __cputime_clockt_factor;
-@@ -192,8 +192,8 @@ static void calc_cputime_factors(void)
+-static int lease_init(struct file *filp, int type, struct file_lock *fl)
++static int lease_init(struct file *filp, long type, struct file_lock *fl)
+  {
+ 	if (assign_type(fl, type) != 0)
+ 		return -EINVAL;
+@@ -470,7 +470,7 @@ static int lease_init(struct file *filp,
+ }
  
- 	div128_by_32(HZ, 0, tb_ticks_per_sec, &res);
- 	__cputime_jiffies_factor = res.result_low;
--	div128_by_32(1000, 0, tb_ticks_per_sec, &res);
--	__cputime_msec_factor = res.result_low;
-+	div128_by_32(1000000, 0, tb_ticks_per_sec, &res);
-+	__cputime_usec_factor = res.result_low;
- 	div128_by_32(1, 0, tb_ticks_per_sec, &res);
- 	__cputime_sec_factor = res.result_low;
- 	div128_by_32(USER_HZ, 0, tb_ticks_per_sec, &res);
+ /* Allocate a file_lock initialised to this type of lease */
+-static struct file_lock *lease_alloc(struct file *filp, int type)
++static struct file_lock *lease_alloc(struct file *filp, long type)
+ {
+ 	struct file_lock *fl = locks_alloc_lock();
+ 	int error = -ENOMEM;
 
 
