@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab2HGMyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 08:54:08 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45940 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690Ab2HGMyG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 08:54:06 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.0 \(1485\))
-Subject: Re: [PATCH 3/4] arm/dts: omap5-evm: Add keypad data
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <1343997486-710-4-git-send-email-sourav.poddar@ti.com>
-Date: Tue, 7 Aug 2012 14:54:22 +0200
-Cc: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2AE404CF-E456-408A-B7A2-D9B3D331C58E@dominion.thruhere.net>
-References: <1343997486-710-1-git-send-email-sourav.poddar@ti.com> <1343997486-710-4-git-send-email-sourav.poddar@ti.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-X-Mailer: Apple Mail (2.1485)
+	id S1754669Ab2HGM4P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 08:56:15 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:25011 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752307Ab2HGM4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 08:56:09 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 0/4] perf: Teach perf tool to profile sleep times (v2)
+Date: Tue,  7 Aug 2012 16:56:01 +0400
+Message-Id: <1344344165-369636-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This functionality helps to analize where a task sleeps or waits locks.
+This feature can help to investigate a scalability problems.
 
-Op 3 aug. 2012, om 14:38 heeft Sourav Poddar <sourav.poddar@ti.com> het volgende geschreven:
+The main idea is that we can combine sched_switch and sched_stat_sleep events.
+sched_switch contains a callchain, when a task starts sleeping.
+sched_stat_sleep contains a time period for which a task slept.
 
-> Add keypad data node in omap5 device tree file.
-> Also fill the device tree binding parameters
-> with the required value in "omap5-evm" dts file.
-> 
-> Tested on omap5430 evm with 3.5 custom kernel.
-> 
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Acked-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
-> arch/arm/boot/dts/omap5-evm.dts |   12 ++++++++++++
-> arch/arm/boot/dts/omap5.dtsi    |    5 +++++
-> 2 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
-> index 45a8aeb..09fe941 100644
-> --- a/arch/arm/boot/dts/omap5-evm.dts
-> +++ b/arch/arm/boot/dts/omap5-evm.dts
-> @@ -17,6 +17,18 @@
-> 		device_type = "memory";
-> 		reg = <0x80000000 0x40000000>; /* 1 GB */
-> 	};
-> +
-> +	keypad {
-> +		keypad,num-rows = <8>;
-> +		keypad,num-columns = <8>;
-> +		linux,keymap = < 0x02020073
-> +			0x02030072
-> +			0x020400e7
-> +			0x02050066
-> +			0x0206006b
-> +			0x020700d9 >;
-> +		linux,input-no-autorepeat;
-> +	};
+This series teaches "perf inject" to combine this events.
 
-Again not a coment on your patch, but on DT:
+All kernel related patches were committed committed in 3.6-rc1.
 
-If DT bindings must be OS independent, what then, is that linux keycode doing there?
+Here is an example of a report:
+$ cat ~/foo.c
+....
+          for (i = 0; i <  10; i++) {
+                  ts1.tv_sec = 0;
+                  ts1.tv_nsec = 10000000;
+                  nanosleep(&ts1, NULL);
 
-regards,
+                  tv1.tv_sec = 0;
+                  tv1.tv_usec = 40000;
+                  select(0, NULL, NULL, NULL,&tv1);
+          }
+...
 
-Koen
+$ ./perf record -e sched:sched_stat_sleep -e sched:sched_switch \
+		-e sched:sched_process_exit -gP -o ~/perf.data.raw ~/foo
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.015 MB /root/perf.data.raw (~661 samples) ]
+$ ./perf inject -v -s -i ~/perf.data.raw -o ~/perf.data
+$ ./perf report -i ~/perf.data
+# Samples: 40  of event 'sched:sched_switch'
+# Event count (approx.): 1005527702
+#
+# Overhead  Command      Shared Object          Symbol
+# ........  .......  .................  ..............
+#
+   100.00%      foo  [kernel.kallsyms]  [k] __schedule
+                |
+                --- __schedule
+                    schedule
+                   |          
+                   |--79.81%-- schedule_hrtimeout_range_clock
+                   |          schedule_hrtimeout_range
+                   |          poll_schedule_timeout
+                   |          do_select
+                   |          core_sys_select
+                   |          sys_select
+                   |          system_call_fastpath
+                   |          __select
+                   |          __libc_start_main
+                   |          
+                    --20.19%-- do_nanosleep
+                              hrtimer_nanosleep
+                              sys_nanosleep
+                              system_call_fastpath
+                              __GI___libc_nanosleep
+                              __libc_start_main
+
+Andrew Vagin (3):
+  perf: teach "perf inject" to work with files
+  perf: teach perf inject to merge sched_stat_* and sched_switch events
+  perf: mark a dso if it's used
+
+ tools/perf/builtin-inject.c |  139 ++++++++++++++++++++++++++++++++++++++++---
+ tools/perf/util/build-id.c  |    2 +-
+ tools/perf/util/build-id.h  |    5 ++
+ 3 files changed, 137 insertions(+), 9 deletions(-)
 
