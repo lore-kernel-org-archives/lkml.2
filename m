@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031163Ab2HGW7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:59:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56461 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031020Ab2HGWpb (ORCPT
+	id S1031047Ab2HGXAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:00:12 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:63163 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030900Ab2HGWmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:45:31 -0400
-From: Matt Sealey <matt@genesi-usa.com>
-To: Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: Steev Klimaszewski <steev@genesi-usa.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Sealey <matt@genesi-usa.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: [PATCH 1/2] ARM: build ssi-fiq.S in ARM mode to prevent CONFIG_THUMB2_KERNEL build breakage
-Date: Tue,  7 Aug 2012 17:45:13 -0500
-Message-Id: <1344379514-30076-2-git-send-email-matt@genesi-usa.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344379514-30076-1-git-send-email-matt@genesi-usa.com>
-References: <1344379514-30076-1-git-send-email-matt@genesi-usa.com>
+	Tue, 7 Aug 2012 18:42:08 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mikael Pettersson <mikpe@it.uu.se>,
+        Michael Schmitz <schmitzmic@googlemail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 106/109] m68k: Correct the Atari ALLOWINT definition
+Date: Tue,  7 Aug 2012 15:36:05 -0700
+Message-Id: <20120807222052.373780867@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
+References: <20120807222043.089735600@linuxfoundation.org>
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If i.MX SSI FIQ support is enabled then it is impossible to build a Thumb2
-kernel image due to the code not being written with Thumb2 in mind (over-use
-of registers). In order not to break Thumb2 kernels, compile this as ARM. All
-the processors which require this support will run ARM code so there is no
-problem at runtime in doing this, even if it does produce a strange mix of
-code that may not be desired.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-In theory this should only be needed on configs based on imx_v4_v5_defconfig
-where CONFIG_THUMB2_KERNEL cannot be selected anyway since these SoCs do not
-have ARM cores capable of running Thumb2 code. This also makes rewriting the
-code as Thumb-compatible kind of redundant. But since one Eukrea board audio
-driver needs it, and there is an i.MX51 CPU module for this board, it gets
-pulled in for imx_v6_v7_defconfig too, making this a necessity.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Matt Sealey <matt@genesi-usa.com>
+------------------
+
+From: Mikael Pettersson <mikpe@it.uu.se>
+
+commit c663600584a596b5e66258cc10716fb781a5c2c9 upstream.
+
+Booting a 3.2, 3.3, or 3.4-rc4 kernel on an Atari using the
+`nfeth' ethernet device triggers a WARN_ONCE() in generic irq
+handling code on the first irq for that device:
+
+WARNING: at kernel/irq/handle.c:146 handle_irq_event_percpu+0x134/0x142()
+irq 3 handler nfeth_interrupt+0x0/0x194 enabled interrupts
+Modules linked in:
+Call Trace: [<000299b2>] warn_slowpath_common+0x48/0x6a
+ [<000299c0>] warn_slowpath_common+0x56/0x6a
+ [<00029a4c>] warn_slowpath_fmt+0x2a/0x32
+ [<0005b34c>] handle_irq_event_percpu+0x134/0x142
+ [<0005b34c>] handle_irq_event_percpu+0x134/0x142
+ [<0000a584>] nfeth_interrupt+0x0/0x194
+ [<001ba0a8>] schedule_preempt_disabled+0x0/0xc
+ [<0005b37a>] handle_irq_event+0x20/0x2c
+ [<0005add4>] generic_handle_irq+0x2c/0x3a
+ [<00002ab6>] do_IRQ+0x20/0x32
+ [<0000289e>] auto_irqhandler_fixup+0x4/0x6
+ [<00003144>] cpu_idle+0x22/0x2e
+ [<001b8a78>] printk+0x0/0x18
+ [<0024d112>] start_kernel+0x37a/0x386
+ [<0003021d>] __do_proc_dointvec+0xb1/0x366
+ [<0003021d>] __do_proc_dointvec+0xb1/0x366
+ [<0024c31e>] _sinittext+0x31e/0x9c0
+
+After invoking the irq's handler the kernel sees !irqs_disabled()
+and concludes that the handler erroneously enabled interrupts.
+
+However, debugging shows that !irqs_disabled() is true even before
+the handler is invoked, which indicates a problem in the platform
+code rather than the specific driver.
+
+The warning does not occur in 3.1 or older kernels.
+
+It turns out that the ALLOWINT definition for Atari is incorrect.
+
+The Atari definition of ALLOWINT is ~0x400, the stated purpose of
+that is to avoid taking HSYNC interrupts.  irqs_disabled() returns
+true if the 3-bit ipl & 4 is non-zero.  The nfeth interrupt runs at
+ipl 3 (it's autovector 3), but 3 & 4 is zero so irqs_disabled() is
+false, and the warning above is generated.
+
+When interrupts are explicitly disabled, ipl is set to 7.  When they
+are enabled, ipl is masked with ALLOWINT.  On Atari this will result
+in ipl = 3, which blocks interrupts at ipl 3 and below.  So how come
+nfeth interrupts at ipl 3 are received at all?  That's because ipl
+is reset to 2 by Atari-specific code in default_idle(), again with
+the stated purpose of blocking HSYNC interrupts.  This discrepancy
+means that ipl 3 can remain blocked for longer than intended.
+
+Both default_idle() and falcon_hblhandler() identify HSYNC with
+ipl 2, and the "Atari ST/.../F030 Hardware Register Listing" agrees,
+but ALLOWINT is defined as if HSYNC was ipl 3.
+
+[As an experiment I modified default_idle() to reset ipl to 3, and
+as expected that resulted in all nfeth interrupts being blocked.]
+
+The fix is simple: define ALLOWINT as ~0x500 instead.  This makes
+arch_local_irq_enable() consistent with default_idle(), and prevents
+the !irqs_disabled() problems for ipl 3 interrupts.
+
+Tested on Atari running in an Aranym VM.
+
+Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+Tested-by: Michael Schmitz <schmitzmic@googlemail.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
 ---
- arch/arm/plat-mxc/ssi-fiq.S |    1 +
- 1 file changed, 1 insertion(+)
+ arch/m68k/include/asm/entry.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/plat-mxc/ssi-fiq.S b/arch/arm/plat-mxc/ssi-fiq.S
-index 8397a2d..ac09af8 100644
---- a/arch/arm/plat-mxc/ssi-fiq.S
-+++ b/arch/arm/plat-mxc/ssi-fiq.S
-@@ -28,6 +28,7 @@
- #define SSI_SIER_RFF0_EN	(1 << 2)
+--- a/arch/m68k/include/asm/entry.h
++++ b/arch/m68k/include/asm/entry.h
+@@ -33,8 +33,8 @@
  
- 		.text
-+		.arm
- 		.global	imx_ssi_fiq_start
- 		.global	imx_ssi_fiq_end
- 		.global imx_ssi_fiq_base
--- 
-1.7.9.5
+ /* the following macro is used when enabling interrupts */
+ #if defined(MACH_ATARI_ONLY)
+-	/* block out HSYNC on the atari */
+-#define ALLOWINT	(~0x400)
++	/* block out HSYNC = ipl 2 on the atari */
++#define ALLOWINT	(~0x500)
+ #define	MAX_NOINT_IPL	3
+ #else
+ 	/* portable version */
+
 
