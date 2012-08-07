@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab2HGPM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:12:59 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:5660 "EHLO mx2.netapp.com"
+	id S1751706Ab2HGPO0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:14:26 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:63302 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225Ab2HGPM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:12:57 -0400
+	id S1750852Ab2HGPOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 11:14:24 -0400
 X-IronPort-AV: E=Sophos;i="4.77,727,1336374000"; 
-   d="scan'208";a="674177552"
-Message-ID: <50213076.7060003@netapp.com>
-Date: Tue, 07 Aug 2012 11:12:54 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wdauchy@gmail.com
+   d="scan'208";a="674178154"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>
+CC: Joerg Roedel <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "wdauchy@gmail.com" <wdauchy@gmail.com>
 Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-References: <20120807134156.GP1996@amd.com> <50211E42.6040808@netapp.com> <20120807141548.GG1917@8bytes.org> <5021237D.1010107@netapp.com> <20120807142707.GH1917@8bytes.org> <502127EF.3030209@netapp.com> <20120807145019.GI1917@8bytes.org>
-In-Reply-To: <20120807145019.GI1917@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Thread-Topic: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
+Thread-Index: AQHNdKJvypEw9t3CEUmeaLKAlM+spZdO1J0AgAAFvwCAAAB9gIAAAqyAgAACoYCAAAqOAA==
+Date: Tue, 7 Aug 2012 15:14:22 +0000
+Message-ID: <1344352458.5781.8.camel@lade.trondhjem.org>
+References: <20120807134156.GP1996@amd.com> <50211E42.6040808@netapp.com>
+	 <20120807141548.GG1917@8bytes.org> <5021237D.1010107@netapp.com>
+	 <20120807142707.GH1917@8bytes.org> <502127EF.3030209@netapp.com>
+In-Reply-To: <502127EF.3030209@netapp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <43611456F413BA489CE8E3B105FAE4D9@tahoe.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q77FEU6B012932
 
-On 08/07/2012 10:50 AM, Joerg Roedel wrote:
-> On Tue, Aug 07, 2012 at 10:36:31AM -0400, Bryan Schumaker wrote:
->> Your stack trace is showing v4 calls on the failing box, those
->> definitely shouldn't be happening if you're using v3.  Can you double
->> check /etc/fstab and /proc/mounts on a working kernel to be sure?
+On Tue, 2012-08-07 at 10:36 -0400, Bryan Schumaker wrote:
+> On 08/07/2012 10:27 AM, Joerg Roedel wrote:
+> > On Tue, Aug 07, 2012 at 10:17:33AM -0400, Bryan Schumaker wrote:
+> >> On 08/07/2012 10:15 AM, Joerg Roedel wrote:
+> >>> Yes, it reproduces pretty reliable here with Ubuntu 11.10 Server on an
+> >>> Intel box with an NFSv3 directory mounted at boot. This is the only box
+> >>> I have seen this so far, probably it depends on the config. I attach the
+> >>> config of the failing box.
+> >>
+> >> Interesting.  Are you mounting v4, too?  This code shouldn't be
+> >> running for v3... maybe that's why I haven't been able to hit it.
+> > 
+> > No, I am not using NFSv4 on the box where the BUG happens. I have
+> > another box mounting the same directory where the BUG does not trigger
+> > with v3.6-rc1. A difference I spotted between the kernels is, that on
+> > the failing box NFS is compiled as a module whereas it is compiled into
+> > the kernel on the box that works fine. Not sure if that has anything to
+> > do with the problem...
+> > 
 > 
-> So the bug is probably (for whatever reason) that the nfs4 path is
-> called for an nfs3 mount :)
-
-That's what I'm thinking.  If you're not using v4, what happens if you turn CONFIG_NFS_V4 off in your .config for the broken machine?  I still haven't been able to trigger the bug, even with your .config, so I'm going to keep poking at it.
-
-- Bryan
-
-> Anyway, I attach /proc/mounts and /etc/fstab from that box running a
-> v3.5-rc5 kernel (where it works).
-
-Thanks.  I don't see anything weird in there.  You're using the same settings for the other machine, too?
-
+> Your stack trace is showing v4 calls on the failing box, those definitely shouldn't be happening if you're using v3.  Can you double check /etc/fstab and /proc/mounts on a working kernel to be sure?
 > 
-> 
-> 	Joerg
-> 
+> My VM has nfs as a module, so I don't think that's the issue... I just started compiling your config to test on my own.
 
+Joerg,
+
+The stack trace definitely shows that the NFS client is attempting an
+NFSv4 mount. Are you supplying a 'vers=3' mount option? If not, then
+note that recent versions of nfs-utils can be configured to try NFSv4 as
+the default mount option, so I'd guess this is why you are hitting an
+NFSv4 path.
+
+Bryan,
+
+That said, when looking at the legacy upcall, it seems that if
+rpc_queue_upcall fails, then we don't do anything to clear
+idmap->idmap_key_cons. Ditto if the call times out, or if the pipe is
+closed before the downcall.
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
