@@ -1,79 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab2HGRrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:47:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45355 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755824Ab2HGRrR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:47:17 -0400
-Date: Tue, 7 Aug 2012 13:47:16 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <praveen.nadahally@stericsson.com>, <ragupathy.rajaram@stericsson.com>,
-        <vikrant.bapat@stericsson.com>
-Subject: Re: [PATCH v2] usb:musb:musb_host: Handle highmem in PIO mode
-In-Reply-To: <1344330980-9064-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
-Message-ID: <Pine.LNX.4.44L0.1208071342410.2400-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755933Ab2HGRru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:47:50 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:35604 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755669Ab2HGRo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 13:44:28 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: X86-ML <x86@kernel.org>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH v0 12/12] x86, microcode, AMD: Rewrite patch application procedure
+Date: Tue,  7 Aug 2012 19:44:21 +0200
+Message-Id: <1344361461-10076-13-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.11.rc1
+In-Reply-To: <1344361461-10076-1-git-send-email-bp@amd64.org>
+References: <1344361461-10076-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Aug 2012, Virupax Sadashivpetimath wrote:
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-> In case of USB bulk transfer, when himem page
-> is received, the usb_sg_init function sets the
-> urb transfer buffer to NULL. When such URB
-> transfer is handled, kernel crashes in PIO mode.
-> Handle this by mapping the highmem buffer in PIO mode.
+Limit the access to userspace only on the BSP where we load the
+container, verify the patches in it and put them in the patch cache.
+Then, at application time, we lookup the correct patch in the cache and
+use it.
 
-...
+When we need to reload the userspace container, we do that over the
+reload interface:
 
-> @@ -1332,9 +1353,38 @@ void musb_host_tx(struct musb *musb, u8 epnum)
->  		length = qh->maxpacket;
->  	/* Unmap the buffer so that CPU can use it */
->  	usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
-> -	musb_write_fifo(hw_ep, length, urb->transfer_buffer + offset);
-> +
-> +	/*
-> +	 * We need to map sg if the transfer_buffer is
-> +	 * NULL.
-> +	 */
-> +	if (!urb->transfer_buffer)
-> +		use_sg = true;
+echo 1 > /sys/devices/system/cpu/microcode/reload
 
-Here you test urb->transfer_buffer.
+which reloads (a possibly newer) container from userspace and applies
+then the newest patches from there.
 
-> +	if (use_sg) {
-> +		/* sg_miter_start is already done in musb_ep_program */
-> +		if (!sg_miter_next(&qh->sg_miter)) {
-> +			dev_err(musb->controller, "error: sg list empty\n");
-> +			sg_miter_stop(&qh->sg_miter);
-> +			status = -EINVAL;
-> +			goto done;
-> +		}
-> +		urb->transfer_buffer = qh->sg_miter.addr;
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/microcode_amd.c | 236 ++++++++++++++++++++--------------------
+ 1 file changed, 121 insertions(+), 115 deletions(-)
 
-And here you set it.  As a result, on the next iteration of this
-routine the test above won't work right.  (This function gets invoked
-once for each entry in the sg list, right?)
-
-Is there any reason to set urb->transfer_buffer here?  You could just
-use qh->sg_miter.addr directly in the musb_write_fifo() call two lines
-below.
-
-> +		length = min_t(u32, length, qh->sg_miter.length);
-> +		musb_write_fifo(hw_ep, length, urb->transfer_buffer);
-> +		qh->sg_miter.consumed = length;
-> +		sg_miter_stop(&qh->sg_miter);
-> +	} else {
-> +		musb_write_fifo(hw_ep, length, urb->transfer_buffer + offset);
-> +	}
-
-Alan Stern
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index cacdc9a5ee49..5511216b4434 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -75,9 +75,6 @@ struct microcode_amd {
+ 
+ static struct equiv_cpu_entry *equiv_cpu_table;
+ 
+-/* page-sized ucode patch buffer */
+-void *patch;
+-
+ struct ucode_patch {
+ 	struct list_head plist;
+ 	void *data;
+@@ -184,7 +181,7 @@ static int collect_cpu_info_amd(int cpu, struct cpu_signature *csig)
+ 	return 0;
+ }
+ 
+-static unsigned int verify_ucode_size(int cpu, u32 patch_size,
++static unsigned int verify_patch_size(int cpu, u32 patch_size,
+ 				      unsigned int size)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+@@ -214,73 +211,25 @@ static unsigned int verify_ucode_size(int cpu, u32 patch_size,
+ 	return patch_size;
+ }
+ 
+-/*
+- * we signal a good patch is found by returning its size > 0
+- */
+-static int get_matching_microcode(int cpu, const u8 *ucode_ptr,
+-				  unsigned int leftover_size, int rev,
+-				  unsigned int *current_size)
+-{
+-	struct microcode_header_amd *mc_hdr;
+-	unsigned int actual_size, patch_size;
+-	u16 equiv_cpu_id;
+-
+-	/* size of the current patch we're staring at */
+-	patch_size = *(u32 *)(ucode_ptr + 4);
+-	*current_size = patch_size + SECTION_HDR_SIZE;
+-
+-	equiv_cpu_id = find_equiv_id(cpu);
+-	if (!equiv_cpu_id)
+-		return 0;
+-
+-	/*
+-	 * let's look at the patch header itself now
+-	 */
+-	mc_hdr = (struct microcode_header_amd *)(ucode_ptr + SECTION_HDR_SIZE);
+-
+-	if (mc_hdr->processor_rev_id != equiv_cpu_id)
+-		return 0;
+-
+-	/* ucode might be chipset specific -- currently we don't support this */
+-	if (mc_hdr->nb_dev_id || mc_hdr->sb_dev_id) {
+-		pr_err("CPU%d: chipset specific code not yet supported\n",
+-		       cpu);
+-		return 0;
+-	}
+-
+-	if (mc_hdr->patch_id <= rev)
+-		return 0;
+-
+-	/*
+-	 * now that the header looks sane, verify its size
+-	 */
+-	actual_size = verify_ucode_size(cpu, patch_size, leftover_size);
+-	if (!actual_size)
+-		return 0;
+-
+-	/* clear the patch buffer */
+-	memset(patch, 0, PAGE_SIZE);
+-
+-	/* all looks ok, get the binary patch */
+-	memcpy(patch, ucode_ptr + SECTION_HDR_SIZE, actual_size);
+-
+-	return actual_size;
+-}
+-
+ static int apply_microcode_amd(int cpu)
+ {
+-	u32 rev, dummy;
+-	int cpu_num = raw_smp_processor_id();
+-	struct ucode_cpu_info *uci = ucode_cpu_info + cpu_num;
+-	struct microcode_amd *mc_amd = uci->mc;
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	struct microcode_amd *mc_amd;
++	struct ucode_cpu_info *uci;
++	struct ucode_patch *p;
++	u32 rev, dummy;
++
++	BUG_ON(raw_smp_processor_id() != cpu);
+ 
+-	/* We should bind the task to the CPU */
+-	BUG_ON(cpu_num != cpu);
++	uci = ucode_cpu_info + cpu;
+ 
+-	if (mc_amd == NULL)
++	p = find_patch(cpu);
++	if (!p)
+ 		return 0;
+ 
++	mc_amd  = p->data;
++	uci->mc = p->data;
++
+ 	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
+ 
+ 	/* need to apply patch? */
+@@ -336,61 +285,113 @@ static void free_equiv_cpu_table(void)
+ 	equiv_cpu_table = NULL;
+ }
+ 
+-static enum ucode_state
+-generic_load_microcode(int cpu, const u8 *data, size_t size)
++static void cleanup(void)
+ {
+-	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+-	struct microcode_header_amd *mc_hdr = NULL;
+-	unsigned int mc_size, leftover, current_size = 0;
++	free_equiv_cpu_table();
++	free_cache();
++}
++
++/*
++ * We return the current size even if some of the checks failed so that
++ * we can skip over the next patch. If we return a negative value, we
++ * signal a grave error like a memory allocation has failed and the
++ * driver cannot continue functioning normally. In such cases, we tear
++ * down everything we've used up so far and exit.
++ */
++static int verify_and_add_patch(unsigned int cpu, u8 *fw, unsigned int leftover)
++{
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	struct microcode_header_amd *mc_hdr;
++	struct ucode_patch *patch;
++	unsigned int patch_size, crnt_size, ret;
++	u32 proc_fam;
++	u16 proc_id;
++
++	patch_size  = *(u32 *)(fw + 4);
++	crnt_size   = patch_size + SECTION_HDR_SIZE;
++	mc_hdr	    = (struct microcode_header_amd *)(fw + SECTION_HDR_SIZE);
++	proc_id	    = mc_hdr->processor_rev_id;
++
++	proc_fam = find_cpu_family_by_equiv_cpu(proc_id);
++	if (!proc_fam) {
++		pr_err("No patch family for equiv ID: 0x%04x\n", proc_id);
++		return crnt_size;
++	}
++
++	/* check if patch is for the current family */
++	proc_fam = ((proc_fam >> 8) & 0xf) + ((proc_fam >> 20) & 0xff);
++	if (proc_fam != c->x86)
++		return crnt_size;
++
++	if (mc_hdr->nb_dev_id || mc_hdr->sb_dev_id) {
++		pr_err("Patch-ID 0x%08x: chipset-specific code unsupported.\n",
++			mc_hdr->patch_id);
++		return crnt_size;
++	}
++
++	ret = verify_patch_size(cpu, patch_size, leftover);
++	if (!ret) {
++		pr_err("Patch-ID 0x%08x: size mismatch.\n", mc_hdr->patch_id);
++		return crnt_size;
++	}
++
++	patch = kzalloc(sizeof(*patch), GFP_KERNEL);
++	if (!patch) {
++		pr_err("Patch allocation failure.\n");
++		return -EINVAL;
++	}
++
++	patch->data = kzalloc(patch_size, GFP_KERNEL);
++	if (!patch->data) {
++		pr_err("Patch data allocation failure.\n");
++		kfree(patch);
++		return -EINVAL;
++	}
++
++	/* All looks ok, copy patch... */
++	memcpy(patch->data, fw + SECTION_HDR_SIZE, patch_size);
++	INIT_LIST_HEAD(&patch->plist);
++	patch->patch_id  = mc_hdr->patch_id;
++	patch->equiv_cpu = proc_id;
++
++	/* ... and add to cache. */
++	update_cache(patch);
++
++	return crnt_size;
++}
++
++static enum ucode_state load_microcode_amd(int cpu, const u8 *data, size_t size)
++{
++	enum ucode_state ret = UCODE_ERROR;
++	unsigned int leftover;
++	u8 *fw = (u8 *)data;
++	int crnt_size = 0;
+ 	int offset;
+-	const u8 *ucode_ptr = data;
+-	void *new_mc = NULL;
+-	unsigned int new_rev = uci->cpu_sig.rev;
+-	enum ucode_state state = UCODE_ERROR;
+ 
+-	offset = install_equiv_cpu_table(ucode_ptr);
++	offset = install_equiv_cpu_table(data);
+ 	if (offset < 0) {
+ 		pr_err("failed to create equivalent cpu table\n");
+-		goto out;
++		return ret;
+ 	}
+-	ucode_ptr += offset;
++	fw += offset;
+ 	leftover = size - offset;
+ 
+-	if (*(u32 *)ucode_ptr != UCODE_UCODE_TYPE) {
++	if (*(u32 *)fw != UCODE_UCODE_TYPE) {
+ 		pr_err("invalid type field in container file section header\n");
+-		goto free_table;
++		free_equiv_cpu_table();
++		return ret;
+ 	}
+ 
+ 	while (leftover) {
+-		mc_size = get_matching_microcode(cpu, ucode_ptr, leftover,
+-						 new_rev, &current_size);
+-		if (mc_size) {
+-			mc_hdr  = patch;
+-			new_mc  = patch;
+-			new_rev = mc_hdr->patch_id;
+-			goto out_ok;
+-		}
++		crnt_size = verify_and_add_patch(cpu, fw, leftover);
++		if (crnt_size < 0)
++			return ret;
+ 
+-		ucode_ptr += current_size;
+-		leftover  -= current_size;
++		fw	 += crnt_size;
++		leftover -= crnt_size;
+ 	}
+ 
+-	if (!new_mc) {
+-		state = UCODE_NFOUND;
+-		goto free_table;
+-	}
+-
+-out_ok:
+-	uci->mc = new_mc;
+-	state = UCODE_OK;
+-	pr_debug("CPU%d update ucode (0x%08x -> 0x%08x)\n",
+-		 cpu, uci->cpu_sig.rev, new_rev);
+-
+-free_table:
+-	free_equiv_cpu_table();
+-
+-out:
+-	return state;
++	return UCODE_OK;
+ }
+ 
+ /*
+@@ -401,7 +402,7 @@ out:
+  *
+  * This legacy file is always smaller than 2K in size.
+  *
+- * Starting at family 15h they are in family specific firmware files:
++ * Beginning with family 15h, they are in family-specific firmware files:
+  *
+  *    amd-ucode/microcode_amd_fam15h.bin
+  *    amd-ucode/microcode_amd_fam16h.bin
+@@ -413,9 +414,13 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device,
+ 					      bool refresh_fw)
+ {
+ 	char fw_name[36] = "amd-ucode/microcode_amd.bin";
+-	const struct firmware *fw;
+-	enum ucode_state ret = UCODE_NFOUND;
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	enum ucode_state ret = UCODE_NFOUND;
++	const struct firmware *fw;
++
++	/* reload ucode container only on the boot cpu */
++	if (!refresh_fw || c->cpu_index != boot_cpu_data.cpu_index)
++		return UCODE_OK;
+ 
+ 	if (c->x86 >= 0x15)
+ 		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+@@ -431,12 +436,17 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device,
+ 		goto fw_release;
+ 	}
+ 
+-	ret = generic_load_microcode(cpu, fw->data, fw->size);
++	/* free old equiv table */
++	free_equiv_cpu_table();
++
++	ret = load_microcode_amd(cpu, fw->data, fw->size);
++	if (ret != UCODE_OK)
++		cleanup();
+ 
+-fw_release:
++ fw_release:
+ 	release_firmware(fw);
+ 
+-out:
++ out:
+ 	return ret;
+ }
+ 
+@@ -470,14 +480,10 @@ struct microcode_ops * __init init_amd_microcode(void)
+ 		return NULL;
+ 	}
+ 
+-	patch = (void *)get_zeroed_page(GFP_KERNEL);
+-	if (!patch)
+-		return NULL;
+-
+ 	return &microcode_amd_ops;
+ }
+ 
+ void __exit exit_amd_microcode(void)
+ {
+-	free_page((unsigned long)patch);
++	cleanup();
+ }
+-- 
+1.7.11.rc1
 
