@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab2HGT52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:57:28 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:49901 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168Ab2HGT5Z (ORCPT
+	id S932220Ab2HGT5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:57:45 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:49431
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932125Ab2HGT5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:57:25 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 03/41] TTY: n_gsm, use tty_port_install
-Date: Tue,  7 Aug 2012 21:47:28 +0200
-Message-Id: <1344368886-24033-4-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
-References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
+	Tue, 7 Aug 2012 15:57:40 -0400
+X-Forefront-Antispam-Report: CIP:157.56.234.117;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: PS-5(z5109hz98dIc89bh1432Ic540Kzz1202hzz8275ch8275dhz2fh2a8h668h839hd25hf0ah107ah)
+From: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>
+To: Arnd Bergmann <arnd@arndb.de>, Dongjin Kim <tobetter@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: =?ks_c_5601-1987?B?yLi9xTogW1BBVENIIDIvNF0gYXJtL2R0czogZXh5bm9zNDogQWRk?=
+ =?ks_c_5601-1987?Q?_DTS_files_derived_from_common_Exynos4?=
+Thread-Topic: [PATCH 2/4] arm/dts: exynos4: Add DTS files derived from
+ common Exynos4
+Thread-Index: AQHNdM/8uScTd8hIxUuwQF+02jXET5dOvs0AgAAEiVY=
+Date: Tue, 7 Aug 2012 19:57:33 +0000
+Message-ID: <A6A3B7488C419F488E5B13FFD03C08AD2F4372EB@SN2PRD0510MB370.namprd05.prod.outlook.com>
+References: <1344366398-19022-1-git-send-email-dongjin.kim@agreeyamobility.net>,<201208071938.26507.arnd@arndb.de>
+In-Reply-To: <201208071938.26507.arnd@arndb.de>
+Accept-Language: ko-KR, en-US
+Content-Language: ko-KR
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [125.177.223.193]
+Content-Type: text/plain; charset="ks_c_5601-1987"
+MIME-Version: 1.0
+X-OriginatorOrg: agreeyamobility.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q77JvpAq014979
 
-We need to link a port to a tty in install. And since dlci is
-allocated even in open, we need to create gsmtty_install, allocate
-dlci there and create also the link.
+Hi,
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/tty/n_gsm.c |   30 ++++++++++++++++++++++++------
- 1 file changed, 24 insertions(+), 6 deletions(-)
+I didn't use -M and I couldn't see any difference with the it.
+Did I make something wrong on that patch?
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index 7a4bf30..3778687 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2868,14 +2868,14 @@ static const struct tty_port_operations gsm_port_ops = {
- 	.dtr_rts = gsm_dtr_rts,
- };
- 
--
--static int gsmtty_open(struct tty_struct *tty, struct file *filp)
-+static int gsmtty_install(struct tty_driver *driver, struct tty_struct *tty)
- {
- 	struct gsm_mux *gsm;
- 	struct gsm_dlci *dlci;
--	struct tty_port *port;
- 	unsigned int line = tty->index;
- 	unsigned int mux = line >> 6;
-+	bool alloc = false;
-+	int ret;
- 
- 	line = line & 0x3F;
- 
-@@ -2890,13 +2890,30 @@ static int gsmtty_open(struct tty_struct *tty, struct file *filp)
- 	if (gsm->dead)
- 		return -EL2HLT;
- 	dlci = gsm->dlci[line];
--	if (dlci == NULL)
-+	if (dlci == NULL) {
-+		alloc = true;
- 		dlci = gsm_dlci_alloc(gsm, line);
-+	}
- 	if (dlci == NULL)
- 		return -ENOMEM;
--	port = &dlci->port;
--	port->count++;
-+	ret = tty_port_install(&dlci->port, driver, tty);
-+	if (ret) {
-+		if (alloc)
-+			dlci_put(dlci);
-+		return ret;
-+	}
-+
- 	tty->driver_data = dlci;
-+
-+	return 0;
-+}
-+
-+static int gsmtty_open(struct tty_struct *tty, struct file *filp)
-+{
-+	struct gsm_dlci *dlci = tty->driver_data;
-+	struct tty_port *port = &dlci->port;
-+
-+	port->count++;
- 	dlci_get(dlci);
- 	dlci_get(dlci->gsm->dlci[0]);
- 	mux_get(dlci->gsm);
-@@ -3085,6 +3102,7 @@ static int gsmtty_break_ctl(struct tty_struct *tty, int state)
- 
- /* Virtual ttys for the demux */
- static const struct tty_operations gsmtty_ops = {
-+	.install		= gsmtty_install,
- 	.open			= gsmtty_open,
- 	.close			= gsmtty_close,
- 	.write			= gsmtty_write,
--- 
-1.7.10.4
+Thank you in advance.
+Dongjin.
+________________________________________
+º¸³½ »ç¶÷: Arnd Bergmann [arnd@arndb.de]
+º¸³½ ³¯Â¥: 2012³â 8¿ù 8ÀÏ ¼ö¿äÀÏ ¿ÀÀü 4:38
+¹Ş´Â »ç¶÷: Dongjin Kim
+ÂüÁ¶: Dongjin Kim; Russell King; Thomas Abraham; Kukjin Kim; Grant Likely; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org
+Á¦¸ñ: Re: [PATCH 2/4] arm/dts: exynos4: Add DTS files derived from common Exynos4
 
+On Tuesday 07 August 2012, Dongjin Kim wrote:
+>
+> This patch creates a DTS file, exynos4.dtsi, for Exynos4210/4x12 and it
+> describes common device nodes. SoC specific device nodes are described in
+> another DTS file derived from this, exynos4210.dtsi and exynos4412.dtsi.
+>
+> exynos4412.dtsi is added new for Exynos4412 as well as exynos4210 is modified
+> for Exynos4210 specific device nodes.
+>
+> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
+> ---
+>  arch/arm/boot/dts/exynos4.dtsi    |  404 +++++++++++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/exynos4210.dtsi |  374 +---------------------------------
+>  arch/arm/boot/dts/exynos4412.dtsi |  104 ++++++++++
+>  3 files changed, 510 insertions(+), 372 deletions(-)
 
+Looks good in principle. I would hope that "git format-patch -M" can detect this
+mostly-moved filed. Did you use that?
+
+        Arnd
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
