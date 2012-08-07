@@ -1,80 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab2HGP37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:29:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52871 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab2HGP36 (ORCPT
+	id S1753231Ab2HGPbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:31:19 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53059 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab2HGPbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:29:58 -0400
-Message-ID: <50213462.5040304@linutronix.de>
-Date: Tue, 07 Aug 2012 17:29:38 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Tue, 7 Aug 2012 11:31:17 -0400
+Date: Tue, 7 Aug 2012 16:31:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, w.sang@pengutronix.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 1/1 v2] i2c: Add default configuration into the Nomadik
+ I2C driver.
+Message-ID: <20120807153112.GF10719@gmail.com>
+References: <1344266253-14050-1-git-send-email-lee.jones@linaro.org>
+ <20120806153503.GH10524@gmail.com>
+ <CACRpkdZjbyQbht+UpXrrVGhAzGYPjb=HRZhJ+TvsEXhGeviJLA@mail.gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ptrace: fix set_task_blockstep()->update_debugctlmsr()
- logic
-References: <20120803162954.GA19806@redhat.com> <5020E2E4.3090104@linutronix.de> <20120807151531.GC13476@redhat.com>
-In-Reply-To: <20120807151531.GC13476@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZjbyQbht+UpXrrVGhAzGYPjb=HRZhJ+TvsEXhGeviJLA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 05:15 PM, Oleg Nesterov wrote:
-> It turns out, original code is even more buggy than I thought.
->
-> Ironically, "task != current" case is more difficult and so far
-> I do not see how we can handle this case correctly. I'll return
-> to this a bit later, currently I am working on other patches.
+From: Lee Jones <lee.jones@linaro.org>
+Date: Tue, 7 Aug 2012 12:27:24 +0100
+Subject: [PATCH 1/1 v3] i2c: Add default configuration into the Nomadik I2C
+ driver.
 
-maybe you could remove the autodectect mode and add helper for uprobe
-which disables it.
+At this moment in time there is only one known configuration for the
+Nomadik I2C driver. By not holding that configuration in the driver
+adds some unnecessary overhead in platform code. The configuration
+as already been removed from platform code, this patch checks for any
+over-riding configurations. If there aren't any, the default is used.
 
->> For uprobes we never set the bit, we only need it cleared.
->
-> Yes, at least at first step, and probably we will never need more.
->
->> We get here
->> via int 3 and do_debug() already clears TIF_BLOCKSTEP
->
-> No, we get here via do_int3(), TIF_BLOCKSTEP is not cleared,
+Cc: linux-i2c@vger.kernel.org
+Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Yes, Sorry. my fault.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/i2c/busses/i2c-nomadik.c |   28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
->> because the
->> CPU clears the bit in CPU.
->
-> I am not sure. The manual says:
->
-> 	 If the BTF flag is set when the processor generates a debug
-> 	 exception, the processor clears the BTF flag along with the
-> 	 TF flag.
->
-> but I am not sure "debug exception" also means "breakpoint exception".
->
->
->
-> do_debug() does clear TIF_BLOCKSTEP, and "The processor cleared BTF"
-> is true in this case. But it is called after single-step.
-
-I was wrong here in regard to do_debug() since do_int3() is correct.
-Anyway, I checked it on real hardware and I saw the CPU in do_int3()
-with BTF set after executing int3 with TF flag set and the BTF bit.
-
->
-> Oleg.
-
-Sebastian
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index 5e6f1ee..61b00ed 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -350,10 +350,6 @@ static void setup_i2c_controller(struct nmk_i2c_dev *dev)
+ 
+ 	i2c_clk = clk_get_rate(dev->clk);
+ 
+-	/* fallback to std. mode if machine has not provided it */
+-	if (dev->cfg.clk_freq == 0)
+-		dev->cfg.clk_freq = 100000;
+-
+ 	/*
+ 	 * The spec says, in case of std. mode the divider is
+ 	 * 2 whereas it is 3 for fast and fastplus mode of
+@@ -911,20 +907,32 @@ static const struct i2c_algorithm nmk_i2c_algo = {
+ 	.functionality	= nmk_i2c_functionality
+ };
+ 
++static struct nmk_i2c_controller u8500_i2c = {
++	/*
++	 * Slave data setup time; 250ns, 100ns, and 10ns, which
++	 * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
++	 */
++	.slsu           = 0xe,
++	.tft            = 1,      /* Tx FIFO threshold */
++	.rft            = 8,      /* Rx FIFO threshold */
++	.clk_freq       = 400000, /* fast mode operation */
++	.timeout        = 200,    /* Slave response timeout(ms) */
++	.sm             = I2C_FREQ_MODE_FAST,
++};
++
+ static atomic_t adapter_id = ATOMIC_INIT(0);
+ 
+ static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id *id)
+ {
+ 	int ret = 0;
+-	struct nmk_i2c_controller *pdata =
+-			adev->dev.platform_data;
++	struct nmk_i2c_controller *pdata = adev->dev.platform_data;
+ 	struct nmk_i2c_dev	*dev;
+ 	struct i2c_adapter *adap;
+ 
+-	if (!pdata) {
+-		dev_warn(&adev->dev, "no platform data\n");
+-		return -ENODEV;
+-	}
++	if (!pdata)
++		/* No i2c configuration found, using the default. */
++		pdata = &u8500_i2c;
++
+ 	dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
+ 	if (!dev) {
+ 		dev_err(&adev->dev, "cannot allocate memory\n");
+-- 
+1.7.9.5
