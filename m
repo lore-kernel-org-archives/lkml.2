@@ -1,63 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab2HGVuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 17:50:25 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:53880 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755927Ab2HGVuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 17:50:24 -0400
+	id S1756880Ab2HGVuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 17:50:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46681 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756839Ab2HGVut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 17:50:49 -0400
+Message-ID: <50218DB6.2080209@redhat.com>
+Date: Tue, 07 Aug 2012 17:50:46 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
 MIME-Version: 1.0
-X-Originating-IP: [76.119.162.148]
-In-Reply-To: <50215A7E.8000701@linaro.org>
-References: <50215A7E.8000701@linaro.org>
-Date: Tue, 7 Aug 2012 17:50:23 -0400
-Message-ID: <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com>
-Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
-From: Paul Moore <paul@paul-moore.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dsahern@gmail.com
+Subject: Re: [PATCH] pci: Account for virtual buses in pci_acs_path_enabled
+References: <20120804181445.6598.6505.stgit@bling.home> <CAErSpo42VMnfzDP6t5eCFfE-5=yPNmNGLs6a2D0KwGMhe71DbQ@mail.gmail.com> <1344232549.3441.7.camel@ul30vt.home> <CAErSpo756PXBNjwEMEX8DKGcEu0R+UuQ+rg9NG8k1c+TZ=j2Gw@mail.gmail.com>
+In-Reply-To: <CAErSpo756PXBNjwEMEX8DKGcEu0R+UuQ+rg9NG8k1c+TZ=j2Gw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org> wrote:
-> Hi,
->     With my kvm environment using 3.6-rc1+, I'm seeing NULL pointer
-> dereferences in selinux_ip_postroute_compat(). It looks like the sksec value
-> is null and we die in the following line:
+On 08/06/2012 04:47 PM, Bjorn Helgaas wrote:
+> On Sun, Aug 5, 2012 at 11:55 PM, Alex Williamson
+> <alex.williamson@redhat.com>  wrote:
+>> On Sun, 2012-08-05 at 23:30 -0600, Bjorn Helgaas wrote:
+>>> On Sat, Aug 4, 2012 at 12:19 PM, Alex Williamson
+>>> <alex.williamson@redhat.com>  wrote:
+>>>> It's possible to have buses without an associated bridge
+>>>> (bus->self == NULL).  SR-IOV can generate such buses.  When
+>>>> we find these, skip to the parent bus to look for the next
+>>>> ACS test.
+>>>
+>>> To make sure I understand the problem here, I think you're referring
+>>> to the situation where an SR-IOV device can span several bus numbers,
+>>> e.g., the "VFs Spanning Multiple Bus Numbers" implementation note in
+>>> the SR-IOV 1.1 spec, sec. 2.1.2.
+>>>
+>>> It says "All PFs must be located on the Device's captured Bus Number"
+>>> -- I think that means every PF will be directly on a bridge's
+>>> secondary bus and hence will have a valid dev->bus->self pointer.
+>>>
+>>> However, VFs need not be on the same bus number.  If a VF is on
+>>> (captured Bus Number plus 1), I think we allocate a new struct pci_bus
+>>> for it, but there's no P2P bridge that leads to that bus, so the
+>>> bus->self pointer is probably NULL.
+>>
+>> Yes, exactly.  virtfn_add_bus() is where we're creating this new bus.
+>>
+>>> This makes me quite nervous, because I bet there are many places that
+>>> assume every non-root bus has a valid bus->self pointer  -- I know I
+>>> certainly had that assumption.
+>>>
+>>> I looked at callers of pci_is_root_bus(), and at first glance, it seems like
+>>> iommu_init_device(), intel_iommu_add_device(), pci_acs_path_enabled(),
+>>
+>>
+>> These 3 are handled by this patch, plus the intel and amd iommu patches
+>> I sent.
+>>
+>>> pci_get_interrupt_pin(), pci_common_swizzle(),
+>>
+>> If sr-iov is the only source of these virtual buses, these are probably
+>> ok since VFs don't support INTx.
+>>
+>>> pci_find_upstream_pcie_bridge(), and
+>>
+>> Here the pci_is_root_bus() is after a pci_is_pcie() check, so again if
+>> sr-iov only (and assuming VFs properly report PCIe capability), we
+>> shouldn't stumble on it.
+>>
+>>> pci_bus_release_bridge_resources() all might have similar problems.
+>>
+>> This one might deserve further investigation.  Thanks,
 >
->     if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
+> We can fix all these places piecemeal, but that doesn't feel like a
+> very satisfying solution.  It makes it much harder to know that each
+> place is correct, and this oddity of a bus with no upstream bridge is
+> still lying around, waiting to bite us again later.
 >
-> This triggers every time I shutdown the machine, but has also triggered
-> randomly after a few hours.
+> What other possible ways of fixing this do we have?  Could we set
+> bus->self (multiple buses would then point to the same bridge, and I
+> don't know if that would break something)?  Add something like a
+> pci_upstream_p2p_bridge() interface that would encapsulate traversing
+   ^^^ and this name will reduce the confusion? :)
+
+> the bus->parent and bus->self links?
 >
-> This is on an ubuntu 12.04 image, not using selinux.
+> Since these fake VF buses don't have a bridge that points to them, I
+Well, they aren't fake busses, just ARI-identifiers, which translate the B:D.F/8:5.3
+format to simply a 16-bit i.d.
+So, VF devices should be attached to same bus->devices list as it's PF.
+pci_dev->bus should be same bus ptr as PF's pci_dev as well, since the
+VF uses all that's busses resources, support functions (cfg, dma-ops, etc.) as well.
+Searching the driver/pci area, support of functions like AER want the
+bus struct that's receiving/handling the PCIe error, associated (hw) port, etc.,
+so another reason the VF's pci-dev bus ptr should be the same as the PF's.
+Logically, ARI-based VFs with a 'bus-num' value != PF bus-num value make
+a point-to-point PCIe link look more like a parallel-bus with a different
+identifier parsing -- diff. interpretation of a 16-bit field.
 
-NOTE: Adding the SELinux list to the CC line
+> think the only place we keep a pointer to them is in the parent bus's
+> "children" list (updated in pci_add_new_bus()).  And now I'm confused
+> about when we should use bus->children and when we should use
+> bus->devices and why we should have both.
+well, children are child busses; devices are all devices, bus-bridge & endpt devices.
+As for use.... seems like children should be traversed when doing bus ops.
 
-Hi,
-
-I'm trying to understand this and I was hoping you could you clarify a
-few things for me:
-
-* Is the panic in the Ubuntu 12.04 guest, or the host?  If the host,
-could you share what distribution you are using?
-* When you say you are not using SELinux, could you be more specific?
-It seems odd that you are not using SELinux but the panic is happening
-in a SELinux hook.
-
-Thanks.
-
-> Running with the following kvm line:
-> kvm -nographic -smp 4 -m 1G -hda disk.img -net user -net nic,model=virtio
-> -redir tcp:4400::22 -kernel ./bzImage -initrd initrd.img-1-jstultz  -append
-> "root=UUID=b08aa86a-4b16-488f-a3de-33c2cf335bf0 ro console=ttyS0,115200n8"
 >
-> Two different traces below. Config attached.
+> Does pci_walk_bus() work correctly with these VFs on fake buses?  It
+> doesn't use "children", so I can't see how it would ever find them.
+>
+as I read pci_walk_bus(), it won't work for VFs attached to a bus-num-id
+that doesn't match the PF's bus-num.
+sure glad the VFs don't use/need pci_walk_bus()! :o !
+Seems like a bug in that algorithm....
 
--- 
-paul moore
-www.paul-moore.com
+> Aren't you sorry you opened this can of worms?  :)
+>
+yeah, aw has a tendency to step in it (worms would be too clean an analogy for Alex!).
+
+
+>>>> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+>>>> ---
+>>>>
+>>>> David Ahern reported an oops from iommu drivers passing NULL into
+>>>> this function for the same mistake.  Harden this function against
+>>>> assuming bus->self is valid as well.  David, please include this
+>>>> patch as well as the iommu patches in your testing.
+>>>>
+>>>>   drivers/pci/pci.c |   22 +++++++++++++++++-----
+>>>>   1 file changed, 17 insertions(+), 5 deletions(-)
+>>>>
+>>>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>>>> index f3ea977..e11a49c 100644
+>>>> --- a/drivers/pci/pci.c
+>>>> +++ b/drivers/pci/pci.c
+>>>> @@ -2486,18 +2486,30 @@ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
+>>>>   bool pci_acs_path_enabled(struct pci_dev *start,
+>>>>                            struct pci_dev *end, u16 acs_flags)
+>>>>   {
+>>>> -       struct pci_dev *pdev, *parent = start;
+>>>> +       struct pci_dev *pdev = start;
+>>>> +       struct pci_bus *bus;
+>>>>
+>>>>          do {
+>>>> -               pdev = parent;
+>>>> -
+>>>>                  if (!pci_acs_enabled(pdev, acs_flags))
+>>>>                          return false;
+>>>>
+>>>> -               if (pci_is_root_bus(pdev->bus))
+>>>> +               bus = pdev->bus;
+>>>> +
+>>>> +               if (pci_is_root_bus(bus))
+>>>>                          return (end == NULL);
+>>>>
+>>>> -               parent = pdev->bus->self;
+>>>> +               /*
+>>>> +                * Skip buses without an associated bridge.  In this
+>>>> +                * case move to the parent and continue.
+>>>> +                */
+>>>> +               while (!bus->self) {
+>>>> +                       if (!pci_is_root_bus(bus))
+>>>> +                               bus = bus->parent;
+>>>> +                       else
+>>>> +                               return (end == NULL);
+>>>> +               }
+>>>> +
+>>>> +               pdev = bus->self;
+>>>>          } while (pdev != end);
+>>>>
+>>>>          return true;
+>>>>
+>>
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
