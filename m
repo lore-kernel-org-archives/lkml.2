@@ -1,131 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab2HGSYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 14:24:41 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21877 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab2HGSYk (ORCPT
+	id S1756112Ab2HGSZw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 14:25:52 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41418 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab2HGSZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 14:24:40 -0400
-Date: Tue, 7 Aug 2012 14:14:57 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Ian.Campbell@citrix.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        catalin.marinas@arm.com, arnd@arndb.de
-Subject: Re: [PATCH v2 06/23] xen: missing includes
-Message-ID: <20120807181457.GJ15053@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
- <1344263246-28036-6-git-send-email-stefano.stabellini@eu.citrix.com>
+	Tue, 7 Aug 2012 14:25:51 -0400
+Date: Tue, 7 Aug 2012 19:25:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Borislav Petkov <bp@alien8.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: awful kconfig help texts.
+Message-ID: <20120807182542.GC14711@sirena.org.uk>
+References: <20120731151600.GA19412@redhat.com>
+ <20120731170741.GA4735@x1.osrc.amd.com>
+ <20120731172638.GE16873@home.goodmis.org>
+ <20120731174249.GB4735@x1.osrc.amd.com>
+ <20120801074742.GH29673@avionic-0098.adnet.avionic-design.de>
+ <20120801085644.GA21303@liondog.tnic>
+ <5018F537.209@metafoo.de>
+ <20120801092625.GB21303@liondog.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344263246-28036-6-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20120801092625.GB21303@liondog.tnic>
+X-Cookie: Now, let's SEND OUT for QUICHE!!
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 03:27:09PM +0100, Stefano Stabellini wrote:
-> Changes in v2:
-> - remove pvclock hack;
-> - remove include linux/types.h from xen/interface/xen.h.
+On Wed, Aug 01, 2012 at 11:26:25AM +0200, Borislav Petkov wrote:
 
-I think I can take in my tree now right by itself right? Or do
-you want to keep this in your patchqueue? If so, Ack from me.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/x86/include/asm/xen/interface.h       |    2 ++
->  drivers/tty/hvc/hvc_xen.c                  |    2 ++
->  drivers/xen/grant-table.c                  |    1 +
->  drivers/xen/xenbus/xenbus_probe_frontend.c |    1 +
->  include/xen/interface/xen.h                |    1 -
->  include/xen/privcmd.h                      |    1 +
->  6 files changed, 7 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/xen/interface.h b/arch/x86/include/asm/xen/interface.h
-> index cbf0c9d..a93db16 100644
-> --- a/arch/x86/include/asm/xen/interface.h
-> +++ b/arch/x86/include/asm/xen/interface.h
-> @@ -121,6 +121,8 @@ struct arch_shared_info {
->  #include "interface_64.h"
->  #endif
->  
-> +#include <asm/pvclock-abi.h>
-> +
->  #ifndef __ASSEMBLY__
->  /*
->   * The following is all CPU context. Note that the fpu_ctxt block is filled
-> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-> index 944eaeb..dc07f56 100644
-> --- a/drivers/tty/hvc/hvc_xen.c
-> +++ b/drivers/tty/hvc/hvc_xen.c
-> @@ -21,6 +21,7 @@
->  #include <linux/console.h>
->  #include <linux/delay.h>
->  #include <linux/err.h>
-> +#include <linux/irq.h>
->  #include <linux/init.h>
->  #include <linux/types.h>
->  #include <linux/list.h>
-> @@ -35,6 +36,7 @@
->  #include <xen/page.h>
->  #include <xen/events.h>
->  #include <xen/interface/io/console.h>
-> +#include <xen/interface/sched.h>
->  #include <xen/hvc-console.h>
->  #include <xen/xenbus.h>
->  
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index 0bfc1ef..1d0d95e 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -47,6 +47,7 @@
->  #include <xen/interface/memory.h>
->  #include <xen/hvc-console.h>
->  #include <asm/xen/hypercall.h>
-> +#include <asm/xen/interface.h>
->  
->  #include <asm/pgtable.h>
->  #include <asm/sync_bitops.h>
-> diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
-> index a31b54d..3159a37 100644
-> --- a/drivers/xen/xenbus/xenbus_probe_frontend.c
-> +++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
-> @@ -21,6 +21,7 @@
->  #include <xen/xenbus.h>
->  #include <xen/events.h>
->  #include <xen/page.h>
-> +#include <xen/xen.h>
->  
->  #include <xen/platform_pci.h>
->  
-> diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
-> index a890804..3871e47 100644
-> --- a/include/xen/interface/xen.h
-> +++ b/include/xen/interface/xen.h
-> @@ -10,7 +10,6 @@
->  #define __XEN_PUBLIC_XEN_H__
->  
->  #include <asm/xen/interface.h>
-> -#include <asm/pvclock-abi.h>
->  
->  /*
->   * XEN "SYSTEM CALLS" (a.k.a. HYPERCALLS).
-> diff --git a/include/xen/privcmd.h b/include/xen/privcmd.h
-> index 17857fb..4d58881 100644
-> --- a/include/xen/privcmd.h
-> +++ b/include/xen/privcmd.h
-> @@ -35,6 +35,7 @@
->  
->  #include <linux/types.h>
->  #include <linux/compiler.h>
-> +#include <xen/interface/xen.h>
->  
->  typedef unsigned long xen_pfn_t;
->  
-> -- 
-> 1.7.2.5
+> but when I enable the CONFIG_PWM option on x86, I don't see any drivers
+> there. So the logical thing to do would be to hide that option on arches
+> which don't have such chips.
+
+That's because the subsystem was only just added.  As soon as we get
+support for platform independant devices the situation will change
+(though you may need to turn on some MFD cores).  This is an issue in
+general, Kconfig could perhaps be smarter about checking if the submenu
+is empty.
