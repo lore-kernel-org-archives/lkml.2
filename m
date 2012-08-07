@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031206Ab2HGWyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:54:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
+	id S1031230Ab2HGWyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:54:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031079Ab2HGWqd (ORCPT
+	with ESMTP id S1031162Ab2HGWq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:33 -0400
+	Tue, 7 Aug 2012 18:46:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 23/49] drm/radeon: on hotplug force link training to happen (v2)
-Date: Tue,  7 Aug 2012 15:44:41 -0700
-Message-Id: <20120807222028.977245067@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 21/49] drm/radeon: fix non revealent error message
+Date: Tue,  7 Aug 2012 15:44:39 -0700
+Message-Id: <20120807222028.784368693@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -33,46 +31,66 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Jerome Glisse <jglisse@redhat.com>
 
-commit ca2ccde5e2f24a792caa4cca919fc5c6f65d1887 upstream.
+commit 8d1c702aa0b2c4b22b0742b72a1149d91690674b upstream.
 
-To have DP behave like VGA/DVI we need to retrain the link
-on hotplug. For this to happen we need to force link
-training to happen by setting connector dpms to off
-before asking it turning it on again.
+We want to print link status query failed only if it's
+an unexepected fail. If we query to see if we need
+link training it might be because there is nothing
+connected and thus link status query have the right
+to fail in that case.
 
-v2: agd5f
-- drop the dp_get_link_status() change in atombios_dp.c
-  for now.  We still need the dpms OFF change.
+To avoid printing failure when it's expected, move the
+failure message to proper place.
 
 Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/atombios_dp.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -81,10 +81,16 @@ void radeon_connector_hotplug(struct drm
- 		if (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
- 			int saved_dpms = connector->dpms;
- 			/* Only turn off the display if it's physically disconnected */
--			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
-+			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd)) {
- 				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
--			else if (radeon_dp_needs_link_train(radeon_connector))
-+			} else if (radeon_dp_needs_link_train(radeon_connector)) {
-+				/* set it to OFF so that drm_helper_connector_dpms()
-+				 * won't return immediately since the current state
-+				 * is ON at this point.
-+				 */
-+				connector->dpms = DRM_MODE_DPMS_OFF;
- 				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
-+			}
- 			connector->dpms = saved_dpms;
- 		}
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -22,6 +22,7 @@
+  *
+  * Authors: Dave Airlie
+  *          Alex Deucher
++ *          Jerome Glisse
+  */
+ #include "drmP.h"
+ #include "radeon_drm.h"
+@@ -624,7 +625,6 @@ static bool radeon_dp_get_link_status(st
+ 	ret = radeon_dp_aux_native_read(radeon_connector, DP_LANE0_1_STATUS,
+ 					link_status, DP_LINK_STATUS_SIZE, 100);
+ 	if (ret <= 0) {
+-		DRM_ERROR("displayport link status failed\n");
+ 		return false;
  	}
+ 
+@@ -797,8 +797,10 @@ static int radeon_dp_link_train_cr(struc
+ 		else
+ 			mdelay(dp_info->rd_interval * 4);
+ 
+-		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status))
++		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status)) {
++			DRM_ERROR("displayport link status failed\n");
+ 			break;
++		}
+ 
+ 		if (dp_clock_recovery_ok(dp_info->link_status, dp_info->dp_lane_count)) {
+ 			clock_recovery = true;
+@@ -860,8 +862,10 @@ static int radeon_dp_link_train_ce(struc
+ 		else
+ 			mdelay(dp_info->rd_interval * 4);
+ 
+-		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status))
++		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status)) {
++			DRM_ERROR("displayport link status failed\n");
+ 			break;
++		}
+ 
+ 		if (dp_channel_eq_ok(dp_info->link_status, dp_info->dp_lane_count)) {
+ 			channel_eq = true;
 
 
