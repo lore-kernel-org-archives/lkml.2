@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab2HGXBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:01:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47761 "EHLO
+	id S1030769Ab2HGWko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:40:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030814Ab2HGWlH (ORCPT
+	with ESMTP id S1030749Ab2HGWki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:41:07 -0400
+	Tue, 7 Aug 2012 18:40:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Kosina <jkosina@suse.cz>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 093/109] tcp: perform DMA to userspace only if there is a task waiting for it
-Date: Tue,  7 Aug 2012 15:35:52 -0700
-Message-Id: <20120807222051.244473678@linuxfoundation.org>
+        xiong <xiong@qca.qualcomm.com>, Cloud Ren <cjren@qca.qualcomm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 077/109] atl1c: fix issue of transmit queue 0 timed out
+Date: Tue,  7 Aug 2012 15:35:36 -0700
+Message-Id: <20120807222049.862670411@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,53 +31,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Cloud Ren <cjren@qca.qualcomm.com>
 
-[ Upstream commit 59ea33a68a9083ac98515e4861c00e71efdc49a1 ]
+[ Upstream commit b94e52f62683dc0b00c6d1b58b80929a078c0fd5 ]
 
-Back in 2006, commit 1a2449a87b ("[I/OAT]: TCP recv offload to I/OAT")
-added support for receive offloading to IOAT dma engine if available.
+some people report atl1c could cause system hang with following
+kernel trace info:
+---------------------------------------
+WARNING: at.../net/sched/sch_generic.c:258 dev_watchdog+0x1db/0x1d0()
+...
+NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+...
+---------------------------------------
+This is caused by netif_stop_queue calling when cable Link is down.
+So remove netif_stop_queue, because link_watch will take it over.
 
-The code in tcp_rcv_established() tries to perform early DMA copy if
-applicable. It however does so without checking whether the userspace
-task is actually expecting the data in the buffer.
-
-This is not a problem under normal circumstances, but there is a corner
-case where this doesn't work -- and that's when MSG_TRUNC flag to
-recvmsg() is used.
-
-If the IOAT dma engine is not used, the code properly checks whether
-there is a valid ucopy.task and the socket is owned by userspace, but
-misses the check in the dmaengine case.
-
-This problem can be observed in real trivially -- for example 'tbench' is a
-good reproducer, as it makes a heavy use of MSG_TRUNC. On systems utilizing
-IOAT, you will soon find tbench waiting indefinitely in sk_wait_data(), as they
-have been already early-copied in tcp_rcv_established() using dma engine.
-
-This patch introduces the same check we are performing in the simple
-iovec copy case to the IOAT case as well. It fixes the indefinite
-recvmsg(MSG_TRUNC) hangs.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: xiong <xiong@qca.qualcomm.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5441,7 +5441,9 @@ int tcp_rcv_established(struct sock *sk,
- 			if (tp->copied_seq == tp->rcv_nxt &&
- 			    len - tcp_header_len <= tp->ucopy.len) {
- #ifdef CONFIG_NET_DMA
--				if (tcp_dma_try_early_copy(sk, skb, tcp_header_len)) {
-+				if (tp->ucopy.task == current &&
-+				    sock_owned_by_user(sk) &&
-+				    tcp_dma_try_early_copy(sk, skb, tcp_header_len)) {
- 					copied_early = 1;
- 					eaten = 1;
- 				}
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -267,7 +267,6 @@ static void atl1c_check_link_status(stru
+ 				dev_warn(&pdev->dev, "stop mac failed\n");
+ 		atl1c_set_aspm(hw, false);
+ 		netif_carrier_off(netdev);
+-		netif_stop_queue(netdev);
+ 		atl1c_phy_reset(hw);
+ 		atl1c_phy_init(&adapter->hw);
+ 	} else {
 
 
