@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab2HGRus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:50:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48349 "EHLO mga02.intel.com"
+	id S1755688Ab2HGRvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:51:45 -0400
+Received: from gate.crashing.org ([63.228.1.57]:40770 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435Ab2HGRuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:50:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="182779197"
-Subject: Re: do_IRQ: 1.55 No irq handler for vector (irq -1)
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Borislav Petkov <bp@amd64.org>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
-        "Petkov, Borislav" <borislav.petkov@amd.com>
-Date: Tue, 07 Aug 2012 10:47:40 -0700
-In-Reply-To: <20120807172806.GK3732@erda.amd.com>
-References: <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
-	 <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
-	 <20120807153149.GI3732@erda.amd.com>
-	 <20120807154134.GA7456@aftab.osrc.amd.com>
-	 <1344356662.2041.48.camel@sbsiddha-desk.sc.intel.com>
-	 <20120807172806.GK3732@erda.amd.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1344361660.27383.4.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1751184Ab2HGRvo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 13:51:44 -0400
+Subject: Re: [PATCH 3/4] cpu: export cpu hotplug disable/enable functions as global functions
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1344329006-10645-3-git-send-email-chenhui.zhao@freescale.com>
+Date: Tue, 7 Aug 2012 12:51:13 -0500
+Cc: Zhao Chenhui <chenhui.zhao@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        Li Yang <leoli@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B4FC7F5E-EA8F-4FCA-B206-353FE4481DCE@kernel.crashing.org>
+References: <1344329006-10645-1-git-send-email-chenhui.zhao@freescale.com> <1344329006-10645-3-git-send-email-chenhui.zhao@freescale.com>
+To: srivatsa.bhat@linux.vnet.ibm.com, rjw@sisk.pl
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-07 at 19:28 +0200, Robert Richter wrote:
-> On 07.08.12 09:24:21, Suresh Siddha wrote:
-> > Boris, Robert, Can you please send me the complete dmesg
-> > and /proc/interrupts on a successful boot?
+
+On Aug 7, 2012, at 3:43 AM, Zhao Chenhui wrote:
+
+> The cpufreq driver of mpc85xx will disable/enable cpu hotplug temporarily.
+> Therefore, the related functions should be exported.
 > 
-> Sent to you in private mail.
+> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> ---
+> include/linux/cpu.h |    4 ++++
+> 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Thanks.
+Rafael, Srivatsa,
+
+Wanted to get your ack on export these functions for direct calling by arch code.
+
+- k
 
 > 
-> What information are you looking for specifically? Maybe we can
-> provide something here on the ml.
-
-I was looking for what APIC mode and it was a PIC/IO-APIC interrupt.
-
-So it looks like it is using logical flat mode and the interrupt was
-from IO-APIC.
-
-So most likely on your system after a successful boot, if you manually
-set the affinity of one of those SATA/PATA interrupts to a specific
-logical cpu say 0, I think the interrupt still get routed to other
-logical cpu's. Can you confirm?
-
-thanks,
-suresh
+> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+> index ce7a074..df8f73d 100644
+> --- a/include/linux/cpu.h
+> +++ b/include/linux/cpu.h
+> @@ -146,6 +146,8 @@ void notify_cpu_starting(unsigned int cpu);
+> extern void cpu_maps_update_begin(void);
+> extern void cpu_maps_update_done(void);
+> 
+> +extern void cpu_hotplug_disable_before_freeze(void);
+> +extern void cpu_hotplug_enable_after_thaw(void);
+> #else	/* CONFIG_SMP */
+> 
+> #define cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+> @@ -167,6 +169,8 @@ static inline void cpu_maps_update_done(void)
+> {
+> }
+> 
+> +static inline void cpu_hotplug_disable_before_freeze(void)	{}
+> +static inline void cpu_hotplug_enable_after_thaw(void)	{}
+> #endif /* CONFIG_SMP */
+> extern struct bus_type cpu_subsys;
+> 
+> -- 
+> 1.6.4.1
+> 
 
