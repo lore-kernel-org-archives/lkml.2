@@ -1,96 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964984Ab2HGDnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:43:52 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42277 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964967Ab2HGDnr (ORCPT
+	id S964991Ab2HGDoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:44:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60055 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964788Ab2HGDnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:43:47 -0400
-Date: Mon, 6 Aug 2012 20:43:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] leds: triggers: send uevent when changing triggers
-Message-ID: <20120807034341.GA2390@kroah.com>
-References: <CAMbhsRS-TiBE92nL0Cwc-ssZAMaHE2ET0UE8h7RU3VG6F6+Xtw@mail.gmail.com>
- <CAK5ve-+11J4HRepAmK-Y0Pq55XhAwa8Ehpw8=KvRdu4Cy90FDQ@mail.gmail.com>
- <20120726035958.GB7235@kroah.com>
- <CAK5ve-LbNeJngQPE=893-ChJXEWJHg9km1Ev6GZYx4=Zrrxg9g@mail.gmail.com>
- <20120726165112.GA23857@kroah.com>
- <CAK5ve-KFsFwnvd3TwAvTuBfEdTV8PeNBkVpdQT9NYXH2sN+mBA@mail.gmail.com>
- <CAMbhsRS82FM90sD52qTTdOFJCoR4GyP+v6bwv+4NKhjn-sqh-Q@mail.gmail.com>
- <CAK5ve-KvdokobzjmuXSsEZxrJcr7i4xHOXJGvMqCSOZ69G_5zw@mail.gmail.com>
- <20120807033413.GA2261@kroah.com>
- <CAK5ve-KLdwEqW6MLbusMRkaHBQkxTqOGLoVWzSmiuo2qxwtwmA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK5ve-KLdwEqW6MLbusMRkaHBQkxTqOGLoVWzSmiuo2qxwtwmA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Aug 2012 23:43:45 -0400
+Message-Id: <20120807032804.367122826@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Tue, 07 Aug 2012 04:28:52 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>
+Subject: [ 57/70] mm: hugetlbfs: close race during teardown of hugetlbfs shared page
+ tables
+In-Reply-To: <20120807032755.803571133@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 11:38:10AM +0800, Bryan Wu wrote:
-> 
-> 在 2012-8-7 上午11:34，"Greg KH" <gregkh@linuxfoundation.org>写道：
-> >
-> > On Tue, Aug 07, 2012 at 10:57:29AM +0800, Bryan Wu wrote:
-> > > On Wed, Aug 1, 2012 at 2:28 AM, Colin Cross <ccross@android.com> wrote:
-> > > > On Thu, Jul 26, 2012 at 9:04 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
-> > > >> On Fri, Jul 27, 2012 at 12:51 AM, Greg KH <gregkh@linuxfoundation.org>
-> wrote:
-> > > >>> On Thu, Jul 26, 2012 at 01:03:11PM +0800, Bryan Wu wrote:
-> > > >>>> Just one quick patch for my idea: emitting a uevent in
-> sysfs_create_file().
-> > > >>>>
-> > > >>>> --
-> > > >>>> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-> > > >>>> index 00012e3..04da869 100644
-> > > >>>> --- a/fs/sysfs/file.c
-> > > >>>> +++ b/fs/sysfs/file.c
-> > > >>>> @@ -570,10 +570,14 @@ int sysfs_add_file(struct sysfs_dirent *dir_sd,
-> > > >>>> const struct attribute *attr,
-> > > >>>>
-> > > >>>>  int sysfs_create_file(struct kobject * kobj, const struct attribute *
-> attr)
-> > > >>>>  {
-> > > >>>> +       int err = 0;
-> > > >>>> +
-> > > >>>>         BUG_ON(!kobj || !kobj->sd || !attr);
-> > > >>>>
-> > > >>>> -       return sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
-> > > >>>> +       err = sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
-> > > >>>> +       kobject_uevent(kobj, KOBJ_CHANGE);
-> > > >>>
-> > > >>> That's a veritable flood of change events when a new kobject is
-> created,
-> > > >>> right?  It also created uevents for a device that has not told
-> userspace
-> > > >>> that it is even present, which could cause massive confusion, don't you
-> > > >>> think?
-> > > >>>
-> > > >>
-> > > >> Indeed, this is unacceptable. I reworked a new patchset and just sent
-> > > >> our for you review.
-> > > >>
-> > > >> Thanks,
-> > > >> -Bryan
-> > > >
-> > > > Given the rejection of the other solutions to this problem, and chance
-> > > > of getting this acked?
-> > >
-> > > Greg, Richard and Henrique, can I take you guys' Ack here?
-> >
-> > Ack for what specific patch are you referring to?
-> >
-> 
-> For Colin's patch in the first email of this loop.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-I have no idea what that patch contained anymore, that was 1000+ emails
-ago...
+------------------
+
+From: Mel Gorman <mgorman@suse.de>
+
+commit d833352a4338dc31295ed832a30c9ccff5c7a183 upstream.
+
+If a process creates a large hugetlbfs mapping that is eligible for page
+table sharing and forks heavily with children some of whom fault and
+others which destroy the mapping then it is possible for page tables to
+get corrupted.  Some teardowns of the mapping encounter a "bad pmd" and
+output a message to the kernel log.  The final teardown will trigger a
+BUG_ON in mm/filemap.c.
+
+This was reproduced in 3.4 but is known to have existed for a long time
+and goes back at least as far as 2.6.37.  It was probably was introduced
+in 2.6.20 by [39dde65c: shared page table for hugetlb page].  The messages
+look like this;
+
+[  ..........] Lots of bad pmd messages followed by this
+[  127.164256] mm/memory.c:391: bad pmd ffff880412e04fe8(80000003de4000e7).
+[  127.164257] mm/memory.c:391: bad pmd ffff880412e04ff0(80000003de6000e7).
+[  127.164258] mm/memory.c:391: bad pmd ffff880412e04ff8(80000003de0000e7).
+[  127.186778] ------------[ cut here ]------------
+[  127.186781] kernel BUG at mm/filemap.c:134!
+[  127.186782] invalid opcode: 0000 [#1] SMP
+[  127.186783] CPU 7
+[  127.186784] Modules linked in: af_packet cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf ext3 jbd dm_mod coretemp crc32c_intel usb_storage ghash_clmulni_intel aesni_intel i2c_i801 r8169 mii uas sr_mod cdrom sg iTCO_wdt iTCO_vendor_support shpchp serio_raw cryptd aes_x86_64 e1000e pci_hotplug dcdbas aes_generic container microcode ext4 mbcache jbd2 crc16 sd_mod crc_t10dif i915 drm_kms_helper drm i2c_algo_bit ehci_hcd ahci libahci usbcore rtc_cmos usb_common button i2c_core intel_agp video intel_gtt fan processor thermal thermal_sys hwmon ata_generic pata_atiixp libata scsi_mod
+[  127.186801]
+[  127.186802] Pid: 9017, comm: hugetlbfs-test Not tainted 3.4.0-autobuild #53 Dell Inc. OptiPlex 990/06D7TR
+[  127.186804] RIP: 0010:[<ffffffff810ed6ce>]  [<ffffffff810ed6ce>] __delete_from_page_cache+0x15e/0x160
+[  127.186809] RSP: 0000:ffff8804144b5c08  EFLAGS: 00010002
+[  127.186810] RAX: 0000000000000001 RBX: ffffea000a5c9000 RCX: 00000000ffffffc0
+[  127.186811] RDX: 0000000000000000 RSI: 0000000000000009 RDI: ffff88042dfdad00
+[  127.186812] RBP: ffff8804144b5c18 R08: 0000000000000009 R09: 0000000000000003
+[  127.186813] R10: 0000000000000000 R11: 000000000000002d R12: ffff880412ff83d8
+[  127.186814] R13: ffff880412ff83d8 R14: 0000000000000000 R15: ffff880412ff83d8
+[  127.186815] FS:  00007fe18ed2c700(0000) GS:ffff88042dce0000(0000) knlGS:0000000000000000
+[  127.186816] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  127.186817] CR2: 00007fe340000503 CR3: 0000000417a14000 CR4: 00000000000407e0
+[  127.186818] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  127.186819] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  127.186820] Process hugetlbfs-test (pid: 9017, threadinfo ffff8804144b4000, task ffff880417f803c0)
+[  127.186821] Stack:
+[  127.186822]  ffffea000a5c9000 0000000000000000 ffff8804144b5c48 ffffffff810ed83b
+[  127.186824]  ffff8804144b5c48 000000000000138a 0000000000001387 ffff8804144b5c98
+[  127.186825]  ffff8804144b5d48 ffffffff811bc925 ffff8804144b5cb8 0000000000000000
+[  127.186827] Call Trace:
+[  127.186829]  [<ffffffff810ed83b>] delete_from_page_cache+0x3b/0x80
+[  127.186832]  [<ffffffff811bc925>] truncate_hugepages+0x115/0x220
+[  127.186834]  [<ffffffff811bca43>] hugetlbfs_evict_inode+0x13/0x30
+[  127.186837]  [<ffffffff811655c7>] evict+0xa7/0x1b0
+[  127.186839]  [<ffffffff811657a3>] iput_final+0xd3/0x1f0
+[  127.186840]  [<ffffffff811658f9>] iput+0x39/0x50
+[  127.186842]  [<ffffffff81162708>] d_kill+0xf8/0x130
+[  127.186843]  [<ffffffff81162812>] dput+0xd2/0x1a0
+[  127.186845]  [<ffffffff8114e2d0>] __fput+0x170/0x230
+[  127.186848]  [<ffffffff81236e0e>] ? rb_erase+0xce/0x150
+[  127.186849]  [<ffffffff8114e3ad>] fput+0x1d/0x30
+[  127.186851]  [<ffffffff81117db7>] remove_vma+0x37/0x80
+[  127.186853]  [<ffffffff81119182>] do_munmap+0x2d2/0x360
+[  127.186855]  [<ffffffff811cc639>] sys_shmdt+0xc9/0x170
+[  127.186857]  [<ffffffff81410a39>] system_call_fastpath+0x16/0x1b
+[  127.186858] Code: 0f 1f 44 00 00 48 8b 43 08 48 8b 00 48 8b 40 28 8b b0 40 03 00 00 85 f6 0f 88 df fe ff ff 48 89 df e8 e7 cb 05 00 e9 d2 fe ff ff <0f> 0b 55 83 e2 fd 48 89 e5 48 83 ec 30 48 89 5d d8 4c 89 65 e0
+[  127.186868] RIP  [<ffffffff810ed6ce>] __delete_from_page_cache+0x15e/0x160
+[  127.186870]  RSP <ffff8804144b5c08>
+[  127.186871] ---[ end trace 7cbac5d1db69f426 ]---
+
+The bug is a race and not always easy to reproduce.  To reproduce it I was
+doing the following on a single socket I7-based machine with 16G of RAM.
+
+$ hugeadm --pool-pages-max DEFAULT:13G
+$ echo $((18*1048576*1024)) > /proc/sys/kernel/shmmax
+$ echo $((18*1048576*1024)) > /proc/sys/kernel/shmall
+$ for i in `seq 1 9000`; do ./hugetlbfs-test; done
+
+On my particular machine, it usually triggers within 10 minutes but
+enabling debug options can change the timing such that it never hits.
+Once the bug is triggered, the machine is in trouble and needs to be
+rebooted.  The machine will respond but processes accessing proc like "ps
+aux" will hang due to the BUG_ON.  shutdown will also hang and needs a
+hard reset or a sysrq-b.
+
+The basic problem is a race between page table sharing and teardown.  For
+the most part page table sharing depends on i_mmap_mutex.  In some cases,
+it is also taking the mm->page_table_lock for the PTE updates but with
+shared page tables, it is the i_mmap_mutex that is more important.
+
+Unfortunately it appears to be also insufficient. Consider the following
+situation
+
+Process A					Process B
+---------					---------
+hugetlb_fault					shmdt
+  						LockWrite(mmap_sem)
+    						  do_munmap
+						    unmap_region
+						      unmap_vmas
+						        unmap_single_vma
+						          unmap_hugepage_range
+      						            Lock(i_mmap_mutex)
+							    Lock(mm->page_table_lock)
+							    huge_pmd_unshare/unmap tables <--- (1)
+							    Unlock(mm->page_table_lock)
+      						            Unlock(i_mmap_mutex)
+  huge_pte_alloc				      ...
+    Lock(i_mmap_mutex)				      ...
+    vma_prio_walk, find svma, spte		      ...
+    Lock(mm->page_table_lock)			      ...
+    share spte					      ...
+    Unlock(mm->page_table_lock)			      ...
+    Unlock(i_mmap_mutex)			      ...
+  hugetlb_no_page									  <--- (2)
+						      free_pgtables
+						        unlink_file_vma
+							hugetlb_free_pgd_range
+						    remove_vma_list
+
+In this scenario, it is possible for Process A to share page tables with
+Process B that is trying to tear them down.  The i_mmap_mutex on its own
+does not prevent Process A walking Process B's page tables.  At (1) above,
+the page tables are not shared yet so it unmaps the PMDs.  Process A sets
+up page table sharing and at (2) faults a new entry.  Process B then trips
+up on it in free_pgtables.
+
+This patch fixes the problem by adding a new function
+__unmap_hugepage_range_final that is only called when the VMA is about to
+be destroyed.  This function clears VM_MAYSHARE during
+unmap_hugepage_range() under the i_mmap_mutex.  This makes the VMA
+ineligible for sharing and avoids the race.  Superficially this looks like
+it would then be vunerable to truncate and madvise issues but hugetlbfs
+has its own truncate handlers so does not use unmap_mapping_range() and
+does not support madvise(DONTNEED).
+
+This should be treated as a -stable candidate if it is merged.
+
+Test program is as follows. The test case was mostly written by Michal
+Hocko with a few minor changes to reproduce this bug.
+
+==== CUT HERE ====
+
+static size_t huge_page_size = (2UL << 20);
+static size_t nr_huge_page_A = 512;
+static size_t nr_huge_page_B = 5632;
+
+unsigned int get_random(unsigned int max)
+{
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	srandom(tv.tv_usec);
+	return random() % max;
+}
+
+static void play(void *addr, size_t size)
+{
+	unsigned char *start = addr,
+		      *end = start + size,
+		      *a;
+	start += get_random(size/2);
+
+	/* we could itterate on huge pages but let's give it more time. */
+	for (a = start; a < end; a += 4096)
+		*a = 0;
+}
+
+int main(int argc, char **argv)
+{
+	key_t key = IPC_PRIVATE;
+	size_t sizeA = nr_huge_page_A * huge_page_size;
+	size_t sizeB = nr_huge_page_B * huge_page_size;
+	int shmidA, shmidB;
+	void *addrA = NULL, *addrB = NULL;
+	int nr_children = 300, n = 0;
+
+	if ((shmidA = shmget(key, sizeA, IPC_CREAT|SHM_HUGETLB|0660)) == -1) {
+		perror("shmget:");
+		return 1;
+	}
+
+	if ((addrA = shmat(shmidA, addrA, SHM_R|SHM_W)) == (void *)-1UL) {
+		perror("shmat");
+		return 1;
+	}
+	if ((shmidB = shmget(key, sizeB, IPC_CREAT|SHM_HUGETLB|0660)) == -1) {
+		perror("shmget:");
+		return 1;
+	}
+
+	if ((addrB = shmat(shmidB, addrB, SHM_R|SHM_W)) == (void *)-1UL) {
+		perror("shmat");
+		return 1;
+	}
+
+fork_child:
+	switch(fork()) {
+		case 0:
+			switch (n%3) {
+			case 0:
+				play(addrA, sizeA);
+				break;
+			case 1:
+				play(addrB, sizeB);
+				break;
+			case 2:
+				break;
+			}
+			break;
+		case -1:
+			perror("fork:");
+			break;
+		default:
+			if (++n < nr_children)
+				goto fork_child;
+			play(addrA, sizeA);
+			break;
+	}
+	shmdt(addrA);
+	shmdt(addrB);
+	do {
+		wait(NULL);
+	} while (--n > 0);
+	shmctl(shmidA, IPC_RMID, NULL);
+	shmctl(shmidB, IPC_RMID, NULL);
+	return 0;
+}
+
+[akpm@linux-foundation.org: name the declaration's args, fix CONFIG_HUGETLBFS=n build]
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop the mmu_gather * parameters]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -41,6 +41,9 @@ int follow_hugetlb_page(struct mm_struct
+ 			unsigned long *, int *, int, unsigned int flags);
+ void unmap_hugepage_range(struct vm_area_struct *,
+ 			unsigned long, unsigned long, struct page *);
++void __unmap_hugepage_range_final(struct vm_area_struct *vma,
++			  unsigned long start, unsigned long end,
++			  struct page *ref_page);
+ void __unmap_hugepage_range(struct vm_area_struct *,
+ 			unsigned long, unsigned long, struct page *);
+ int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
+@@ -99,6 +102,13 @@ static inline unsigned long hugetlb_tota
+ #define copy_hugetlb_page_range(src, dst, vma)	({ BUG(); 0; })
+ #define hugetlb_prefault(mapping, vma)		({ BUG(); 0; })
+ #define unmap_hugepage_range(vma, start, end, page)	BUG()
++static inline void __unmap_hugepage_range_final(struct vm_area_struct *vma,
++			unsigned long start, unsigned long end,
++			struct page *ref_page)
++{
++	BUG();
++}
++
+ static inline void hugetlb_report_meminfo(struct seq_file *m)
+ {
+ }
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2382,6 +2382,25 @@ void __unmap_hugepage_range(struct vm_ar
+ 	}
+ }
+ 
++void __unmap_hugepage_range_final(struct vm_area_struct *vma,
++			  unsigned long start, unsigned long end,
++			  struct page *ref_page)
++{
++	__unmap_hugepage_range(vma, start, end, ref_page);
++
++	/*
++	 * Clear this flag so that x86's huge_pmd_share page_table_shareable
++	 * test will fail on a vma being torn down, and not grab a page table
++	 * on its way out.  We're lucky that the flag has such an appropriate
++	 * name, and can in fact be safely cleared here. We could clear it
++	 * before the __unmap_hugepage_range above, but all that's necessary
++	 * is to clear it before releasing the i_mmap_mutex. This works
++	 * because in the context this is called, the VMA is about to be
++	 * destroyed and the i_mmap_mutex is held.
++	 */
++	vma->vm_flags &= ~VM_MAYSHARE;
++}
++
+ void unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+ 			  unsigned long end, struct page *ref_page)
+ {
+@@ -2939,9 +2958,14 @@ void hugetlb_change_protection(struct vm
+ 		}
+ 	}
+ 	spin_unlock(&mm->page_table_lock);
+-	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+-
++	/*
++	 * Must flush TLB before releasing i_mmap_mutex: x86's huge_pmd_unshare
++	 * may have cleared our pud entry and done put_page on the page table:
++	 * once we release i_mmap_mutex, another task can do the final put_page
++	 * and that page table be reused and filled with junk.
++	 */
+ 	flush_tlb_range(vma, start, end);
++	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+ }
+ 
+ int hugetlb_reserve_pages(struct inode *inode,
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1358,8 +1358,11 @@ unsigned long unmap_vmas(struct mmu_gath
+ 				 * Since no pte has actually been setup, it is
+ 				 * safe to do nothing in this case.
+ 				 */
+-				if (vma->vm_file)
+-					unmap_hugepage_range(vma, start, end, NULL);
++				if (vma->vm_file) {
++					mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
++					__unmap_hugepage_range_final(vma, start, end, NULL);
++					mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
++				}
+ 
+ 				start = end;
+ 			} else
+
+
