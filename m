@@ -1,84 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638Ab2HGDK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:10:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43184 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932599Ab2HGDKz (ORCPT
+	id S1757222Ab2HGDSC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:18:02 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:64022 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757182Ab2HGDSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:10:55 -0400
-Date: Mon, 6 Aug 2012 20:10:43 -0700
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <tip-057237bb35a605d795fd787868a1088705f26ee5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, borislav.petkov@amd.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, borislav.petkov@amd.com
-In-Reply-To: <1344272439-29080-5-git-send-email-bp@amd64.org>
-References: <1344272439-29080-5-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, cpu: Preset default tlb_flushall_shift on AMD
-Git-Commit-ID: 057237bb35a605d795fd787868a1088705f26ee5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 6 Aug 2012 23:18:00 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 06 Aug 2012 20:10:49 -0700 (PDT)
+In-Reply-To: <1343160689-12378-13-git-send-email-koverstreet@google.com>
+References: <1343160689-12378-1-git-send-email-koverstreet@google.com>
+	<1343160689-12378-13-git-send-email-koverstreet@google.com>
+Date: Mon, 6 Aug 2012 20:17:58 -0700
+Message-ID: <CAFR8ued4XmZUAL9RVnmdSspRom14u6rCZmhohJGChPqwfPOdfQ@mail.gmail.com>
+Subject: Re: [PATCH v4 12/12] block: Only clone bio vecs that are in use
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tj@kernel.org, axboe@kernel.dk, agk@redhat.com,
+        neilb@suse.de, drbd-dev@lists.linbit.com, bharrosh@panasas.com,
+        vgoyal@redhat.com, mpatocka@redhat.com, sage@newdream.net,
+        yehuda@hq.newdream.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  057237bb35a605d795fd787868a1088705f26ee5
-Gitweb:     http://git.kernel.org/tip/057237bb35a605d795fd787868a1088705f26ee5
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Mon, 6 Aug 2012 19:00:39 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 6 Aug 2012 19:18:39 -0700
+Hi,
 
-x86, cpu: Preset default tlb_flushall_shift on AMD
+On Tue, Jul 24, 2012 at 1:11 PM, Kent Overstreet <koverstreet@google.com> wrote:
+> bcache creates large bios internally, and then splits them according to
+> the device requirements before it sends them down. If a lower level
+> device tries to clone the bio, and the original bio had more than
+> BIO_MAX_PAGES, the clone will fail unecessarily.
+>
+> We can fix this by only cloning the bio vecs that are actually in use.
+>
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
 
-Run the mprotect.c microbenchmark on all our families >= K8 and preset
-the flushall shift variable accordingly.
+<snip>
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Link: http://lkml.kernel.org/r/1344272439-29080-5-git-send-email-bp@amd64.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/cpu/amd.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+> index 3f3c26e..193fb19 100644
+> --- a/drivers/md/dm.c
+> +++ b/drivers/md/dm.c
+> @@ -1057,11 +1057,10 @@ static struct bio *clone_bio(struct bio *bio, sector_t sector,
+>  {
+>         struct bio *clone;
+>
+> -       clone = bio_alloc_bioset(GFP_NOIO, bio->bi_max_vecs, bs);
+> +       clone = bio_alloc_bioset(GFP_NOIO, bv_count, bs);
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index bcd2008..f7e98a2 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -737,6 +737,17 @@ static unsigned int __cpuinit amd_size_cache(struct cpuinfo_x86 *c,
- }
- #endif
- 
-+static void __cpuinit cpu_set_tlb_flushall_shift(struct cpuinfo_x86 *c)
-+{
-+	if (!cpu_has_invlpg)
-+		return;
-+
-+	tlb_flushall_shift = 5;
-+
-+	if (c->x86 <= 0x11)
-+		tlb_flushall_shift = 4;
-+}
-+
- static void __cpuinit cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
- {
- 	u32 ebx, eax, ecx, edx;
-@@ -788,6 +799,8 @@ static void __cpuinit cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
- 		tlb_lli_2m[ENTRIES] = eax & mask;
- 
- 	tlb_lli_4m[ENTRIES] = tlb_lli_2m[ENTRIES] >> 1;
-+
-+	cpu_set_tlb_flushall_shift(c);
- }
- 
- static const struct cpu_dev __cpuinitconst amd_cpu_dev = {
+Number of io_vecs allocated in clone is different. Please see my comment below.
+
+>         __bio_clone(clone, bio);
+>         clone->bi_sector = sector;
+> -       clone->bi_idx = idx;
+> -       clone->bi_vcnt = idx + bv_count;
+> +       clone->bi_vcnt = bv_count;
+>         clone->bi_size = to_bytes(len);
+>         clone->bi_flags &= ~(1 << BIO_SEG_VALID);
+>
+> diff --git a/fs/bio.c b/fs/bio.c
+> index 7a0801d..ec6a357 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
+> @@ -451,8 +451,9 @@ EXPORT_SYMBOL(bio_phys_segments);
+>   */
+>  void __bio_clone(struct bio *bio, struct bio *bio_src)
+>  {
+> -       memcpy(bio->bi_io_vec, bio_src->bi_io_vec,
+> -               bio_src->bi_max_vecs * sizeof(struct bio_vec));
+> +       memcpy(bio->bi_io_vec,
+> +              bio_iovec(bio_src),
+> +              bio_segments(bio_src) * sizeof(struct bio_vec));
+>
+
+
+You are changing the meaning of __bio_clone() here. In old code, the
+number of io_vecs, bi_idx, bi_vcnt are preserved. But in this modified
+code, you are mapping bio_src's bi_iovec[bi_idx] to bio_dests
+bi_iovec[0] and also restricting the number of allocated io_vecs of
+the clone. It may be useful for cases were we would like a identical
+copy of the original bio (may not be in current code base, but this
+implementation is definitely not what one would expect from the name
+"clone").
+
+May be, call this new implementation some thing else (and use it for bcache)?
+
+Regards,
+Muthu
+
+
+
+>         /*
+>          * most users will be overriding ->bi_bdev with a new target,
+> @@ -461,10 +462,10 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
+>         bio->bi_sector = bio_src->bi_sector;
+>         bio->bi_bdev = bio_src->bi_bdev;
+>         bio->bi_flags |= 1 << BIO_CLONED;
+> +       bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+>         bio->bi_rw = bio_src->bi_rw;
+> -       bio->bi_vcnt = bio_src->bi_vcnt;
+> +       bio->bi_vcnt = bio_segments(bio_src);
+>         bio->bi_size = bio_src->bi_size;
+> -       bio->bi_idx = bio_src->bi_idx;
+>  }
+>  EXPORT_SYMBOL(__bio_clone);
+>
+> @@ -479,7 +480,7 @@ EXPORT_SYMBOL(__bio_clone);
+>  struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
+>                              struct bio_set *bs)
+>  {
+> -       struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
+> +       struct bio *b = bio_alloc_bioset(gfp_mask, bio_segments(bio), bs);
+>
+>         if (!b)
+>                 return NULL;
+> @@ -509,7 +510,7 @@ EXPORT_SYMBOL(bio_clone);
+>
+>  struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
+>  {
+> -       struct bio *b = bio_kmalloc(gfp_mask, bio->bi_max_vecs);
+> +       struct bio *b = bio_kmalloc(gfp_mask, bio_segments(bio));
+>
+>         if (!b)
+>                 return NULL;
+> --
+> 1.7.7.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
