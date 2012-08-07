@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031141Ab2HGW50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:57:26 -0400
+	id S1031245Ab2HGW5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:57:43 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031081Ab2HGWpv (ORCPT
+	with ESMTP id S1031049Ab2HGWps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:45:51 -0400
+	Tue, 7 Aug 2012 18:45:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steve Sakoman <steve@sakoman.com>, Tony Lindgren <tony@atomide.com>,
-        Nishanth Menon <nm@ti.com>, Kevin Hilman <khilman@ti.com>
-Subject: [ 10/49] ARM: OMAP2+: OPP: Fix to ensure check of right oppdef after bad one
-Date: Tue,  7 Aug 2012 15:44:28 -0700
-Message-Id: <20120807222027.791813362@linuxfoundation.org>
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Bart Van Assche <bvanassche@acm.org>, Tejun Heo <tj@kernel.org>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 09/49] SCSI: Avoid dangling pointer in scsi_requeue_command()
+Date: Tue,  7 Aug 2012 15:44:27 -0700
+Message-Id: <20120807222027.701673149@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -30,57 +31,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Nishanth Menon <nm@ti.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit b110547e586eb5825bc1d04aa9147bff83b57672 upstream.
+commit 940f5d47e2f2e1fa00443921a0abf4822335b54d upstream.
 
-Commit 9fa2df6b90786301b175e264f5fa9846aba81a65
-(ARM: OMAP2+: OPP: allow OPP enumeration to continue if device is not present)
-makes the logic:
-for (i = 0; i < opp_def_size; i++) {
-	<snip>
-	if (!oh || !oh->od) {
-		<snip>
-		continue;
-	}
-<snip>
-opp_def++;
-}
+When we call scsi_unprep_request() the command associated with the request
+gets destroyed and therefore drops its reference on the device.  If this was
+the only reference, the device may get released and we end up with a NULL
+pointer deref when we call blk_requeue_request.
 
-In short, the moment we hit a "Bad OPP", we end up looping the list
-comparing against the bad opp definition pointer for the rest of the
-iteration count. Instead, increment opp_def in the for loop itself
-and allow continue to be used in code without much thought so that
-we check the next set of OPP definition pointers :)
-
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Cc: Steve Sakoman <steve@sakoman.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Kevin Hilman <khilman@ti.com>
+Reported-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+[jejb: enhance commend and add commit log for stable]
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/opp.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/scsi/scsi_lib.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/arch/arm/mach-omap2/opp.c
-+++ b/arch/arm/mach-omap2/opp.c
-@@ -53,7 +53,7 @@ int __init omap_init_opp_table(struct om
- 	omap_table_init = 1;
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -481,15 +481,26 @@ void scsi_requeue_run_queue(struct work_
+  */
+ static void scsi_requeue_command(struct request_queue *q, struct scsi_cmnd *cmd)
+ {
++	struct scsi_device *sdev = cmd->device;
+ 	struct request *req = cmd->request;
+ 	unsigned long flags;
  
- 	/* Lets now register with OPP library */
--	for (i = 0; i < opp_def_size; i++) {
-+	for (i = 0; i < opp_def_size; i++, opp_def++) {
- 		struct omap_hwmod *oh;
- 		struct device *dev;
++	/*
++	 * We need to hold a reference on the device to avoid the queue being
++	 * killed after the unlock and before scsi_run_queue is invoked which
++	 * may happen because scsi_unprep_request() puts the command which
++	 * releases its reference on the device.
++	 */
++	get_device(&sdev->sdev_gendev);
++
+ 	spin_lock_irqsave(q->queue_lock, flags);
+ 	scsi_unprep_request(req);
+ 	blk_requeue_request(q, req);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
  
-@@ -86,7 +86,6 @@ int __init omap_init_opp_table(struct om
- 					__func__, opp_def->freq,
- 					opp_def->hwmod_name, i, r);
- 		}
--		opp_def++;
- 	}
+ 	scsi_run_queue(q);
++
++	put_device(&sdev->sdev_gendev);
+ }
  
- 	return 0;
+ void scsi_next_command(struct scsi_cmnd *cmd)
 
 
