@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab2HGPlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:41:49 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35483 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab2HGPls (ORCPT
+	id S1753792Ab2HGPoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:44:05 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:33198 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752208Ab2HGPoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:41:48 -0400
-Date: Tue, 7 Aug 2012 16:45:55 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
-        rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-Message-ID: <20120807164555.07c689e1@pyramind.ukuu.org.uk>
-In-Reply-To: <20120807114111.GF24257@flint.arm.linux.org.uk>
-References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
-	<1344327742.2698.15.camel@pasglop>
-	<20120807082813.GB24257@flint.arm.linux.org.uk>
-	<201208071128.27616.arnd@arndb.de>
-	<20120807113521.GA16861@opensource.wolfsonmicro.com>
-	<20120807114111.GF24257@flint.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Aug 2012 11:44:03 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M8E6DA-02-5SM-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <x86@kernel.org>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 02/19] [RFC] x86, apic: Mask IO-APIC and PIC unconditionally on LAPIC resume
+Date: Tue, 7 Aug 2012 17:43:32 +0200
+Message-ID: <1344354229-8526-3-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
+References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  #define IORESOURCE_TYPE_BITS	0x00001f00	/* Resource type */
->  #define IORESOURCE_IO		0x00000100
->  #define IORESOURCE_MEM		0x00000200
-> +#define IORESOURCE_FOO		0x00000300
+IO-APIC and PIC use the same resume routines when IRQ
+remapping is enabled or disabled. So it should be safe to
+mask the other APICs for the IRQ-remapping-disabled case
+too.
 
-These are bit masks and checked as such in many places. This makes no
-sense at all.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/kernel/apic/apic.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 41681b3..109380a 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -2233,16 +2233,15 @@ static void lapic_resume(void)
+ 		return;
+ 
+ 	local_irq_save(flags);
+-	if (irq_remapping_enabled) {
+-		/*
+-		 * IO-APIC and PIC have their own resume routines.
+-		 * We just mask them here to make sure the interrupt
+-		 * subsystem is completely quiet while we enable x2apic
+-		 * and interrupt-remapping.
+-		 */
+-		mask_ioapic_entries();
+-		legacy_pic->mask_all();
+-	}
++
++	/*
++	 * IO-APIC and PIC have their own resume routines.
++	 * We just mask them here to make sure the interrupt
++	 * subsystem is completely quiet while we enable x2apic
++	 * and interrupt-remapping.
++	 */
++	mask_ioapic_entries();
++	legacy_pic->mask_all();
+ 
+ 	if (x2apic_mode)
+ 		enable_x2apic();
+-- 
+1.7.9.5
 
 
-Moving to IO_RESOURCE_TYPE() being 0-31 values might be smart but its a
-massive all kernel change.
-
-Alan
