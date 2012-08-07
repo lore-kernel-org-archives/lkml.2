@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030644Ab2HGWjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:39:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
+	id S1030660Ab2HGWjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:39:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030622Ab2HGWjl (ORCPT
+	with ESMTP id S1030647Ab2HGWjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:41 -0400
+	Tue, 7 Aug 2012 18:39:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 067/109] pnfs-obj: Fix __r4w_get_page when offset is beyond i_size
-Date: Tue,  7 Aug 2012 15:35:26 -0700
-Message-Id: <20120807222048.978084906@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 061/109] drm/radeon: fix hotplug of DP to DVI|HDMI passive adapters (v2)
+Date: Tue,  7 Aug 2012 15:35:20 -0700
+Message-Id: <20120807222048.448990466@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -30,68 +31,64 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit c999ff68029ebd0f56ccae75444f640f6d5a27d2 upstream.
+commit 266dcba541a1ef7e5d82d9e67c67fde2910636e8 upstream.
 
-It is very common for the end of the file to be unaligned on
-stripe size. But since we know it's beyond file's end then
-the XOR should be preformed with all zeros.
+No need to retrain the link for passive adapters.
 
-Old code used to just read zeros out of the OSD devices, which is a great
-waist. But what scares me more about this situation is that, we now have
-pages attached to the file's mapping that are beyond i_size. I don't
-like the kind of bugs this calls for.
+v2: agd5f
+- no passive DP to VGA adapters, update comments
+- assign radeon_connector_atom_dig after we are sure
+  we have a digital connector as analog connectors
+  have different private data.
+- get new sink type before checking for retrain.  No
+  need to check if it's no longer a DP connection.
 
-Fix both birds, by returning a global zero_page, if offset is beyond
-i_size.
-
-TODO:
-	Change the API to ->__r4w_get_page() so a NULL can be
-	returned without being considered as error, since XOR API
-	treats NULL entries as zero_pages.
-
-[Bug since 3.2. Should apply the same way to all Kernels since]
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-[bwh: Backported to 3.2: adjust for lack of wdata->header]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/objlayout/objio_osd.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
---- a/fs/nfs/objlayout/objio_osd.c
-+++ b/fs/nfs/objlayout/objio_osd.c
-@@ -487,8 +487,16 @@ static struct page *__r4w_get_page(void
- 	struct objio_state *objios = priv;
- 	struct nfs_write_data *wdata = objios->oir.rpcdata;
- 	pgoff_t index = offset / PAGE_SIZE;
--	struct page *page = find_get_page(wdata->inode->i_mapping, index);
-+	struct page *page;
-+	loff_t i_size = i_size_read(wdata->inode);
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -64,14 +64,27 @@ void radeon_connector_hotplug(struct drm
  
-+	if (offset >= i_size) {
-+		*uptodate = true;
-+		dprintk("%s: g_zero_page index=0x%lx\n", __func__, index);
-+		return ZERO_PAGE(0);
-+	}
+ 	/* just deal with DP (not eDP) here. */
+ 	if (connector->connector_type == DRM_MODE_CONNECTOR_DisplayPort) {
+-		int saved_dpms = connector->dpms;
++		struct radeon_connector_atom_dig *dig_connector =
++			radeon_connector->con_priv;
+ 
+-		/* Only turn off the display it it's physically disconnected */
+-		if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
+-			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
+-		else if (radeon_dp_needs_link_train(radeon_connector))
+-			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
+-		connector->dpms = saved_dpms;
++		/* if existing sink type was not DP no need to retrain */
++		if (dig_connector->dp_sink_type != CONNECTOR_OBJECT_ID_DISPLAYPORT)
++			return;
 +
-+	page = find_get_page(wdata->inode->i_mapping, index);
- 	if (!page) {
- 		page = find_or_create_page(wdata->inode->i_mapping,
- 						index, GFP_NOFS);
-@@ -509,8 +517,10 @@ static struct page *__r4w_get_page(void
- 
- static void __r4w_put_page(void *priv, struct page *page)
- {
--	dprintk("%s: index=0x%lx\n", __func__, page->index);
--	page_cache_release(page);
-+	dprintk("%s: index=0x%lx\n", __func__,
-+		(page == ZERO_PAGE(0)) ? -1UL : page->index);
-+	if (ZERO_PAGE(0) != page)
-+		page_cache_release(page);
- 	return;
++		/* first get sink type as it may be reset after (un)plug */
++		dig_connector->dp_sink_type = radeon_dp_getsinktype(radeon_connector);
++		/* don't do anything if sink is not display port, i.e.,
++		 * passive dp->(dvi|hdmi) adaptor
++		 */
++		if (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
++			int saved_dpms = connector->dpms;
++			/* Only turn off the display if it's physically disconnected */
++			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
++				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
++			else if (radeon_dp_needs_link_train(radeon_connector))
++				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
++			connector->dpms = saved_dpms;
++		}
+ 	}
  }
  
 
