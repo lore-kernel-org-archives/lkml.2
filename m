@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab2HGC1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 22:27:20 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:55164 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243Ab2HGCZ1 (ORCPT
+	id S932541Ab2HGC2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 22:28:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44572 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243Ab2HGC2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 22:25:27 -0400
-From: Palmer Cox <p@lmercox.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Thomas Renninger <trenn@suse.de>
-Cc: linux-kernel@vger.kernel.org, Palmer Cox <p@lmercox.com>
-Subject: [PATCH 5/6] cpupower tools: Fix malloc of cpu_info structure
-Date: Mon,  6 Aug 2012 22:24:47 -0400
-Message-Id: <1344306288-12369-6-git-send-email-p@lmercox.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344306288-12369-1-git-send-email-p@lmercox.com>
-References: <1344306288-12369-1-git-send-email-p@lmercox.com>
+	Mon, 6 Aug 2012 22:28:04 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2001:470:1f05:1640:60c9:30:283e:2508]
+In-Reply-To: <A6A3B7488C419F488E5B13FFD03C08AD2F43688D@SN2PRD0510MB370.namprd05.prod.outlook.com>
+References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
+	<CAJuYYwSjnQ6z0iUaLCV9guC7yyKH3_pbd1QZe3ELKF-fYNfaqQ@mail.gmail.com>
+	<A6A3B7488C419F488E5B13FFD03C08AD2F4362EE@SN2PRD0510MB370.namprd05.prod.outlook.com>
+	<CAOesGMh=6QrCmL4EqnSqTxi1nH+8Wn+x=z9BYq8QJCznH3a=zQ@mail.gmail.com>
+	<A6A3B7488C419F488E5B13FFD03C08AD2F43688D@SN2PRD0510MB370.namprd05.prod.outlook.com>
+Date: Mon, 6 Aug 2012 19:28:03 -0700
+Message-ID: <CAOesGMj6BafLCpZjmtyn_ASbpeic_8E0CdYjQGOf3A4_NHfy=Q@mail.gmail.com>
+Subject: =?EUC-KR?B?UmU6IMi4vcU6IMi4vcU6IFtQQVRDSF0gT0RST0lELVg6IGhrZGs0NDEyOiBBZGQg?=
+	=?EUC-KR?B?bmV3IGhhcmR3YXJlIGJhc2VkIG9uIEV4eW5vczQ0MTI=?=
+From: Olof Johansson <olof@lixom.net>
+To: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>,
+        Dongjin Kim <tobetter@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Jon Medhurst <tixy@yxit.co.uk>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpu_info member of cpupower_topology was being declared as an unnamed
-structure. This member was then being malloced using the size of the
-parent cpupower_topology * the number of cpus. This works
-because cpu_info is smaller than cpupower_topology. However, there is
-no guarantee that will always be the case. Making cpu_info its own
-top level structure (named cpuid_core_info) allows for mallocing the actual
-size of this structure. This also lets us get rid of a redefinition of
-the structure in topology.c with slightly different field names.
----
- tools/power/cpupower/utils/helpers/helpers.h  |   17 +++++++++--------
- tools/power/cpupower/utils/helpers/topology.c |   14 +++-----------
- 2 files changed, 12 insertions(+), 19 deletions(-)
+Hi,
 
-diff --git a/tools/power/cpupower/utils/helpers/helpers.h b/tools/power/cpupower/utils/helpers/helpers.h
-index 2eb584c..f84985f 100644
---- a/tools/power/cpupower/utils/helpers/helpers.h
-+++ b/tools/power/cpupower/utils/helpers/helpers.h
-@@ -92,6 +92,14 @@ extern int get_cpu_info(unsigned int cpu, struct cpupower_cpu_info *cpu_info);
- extern struct cpupower_cpu_info cpupower_cpu_info;
- /* cpuid and cpuinfo helpers  **************************/
- 
-+struct cpuid_core_info {
-+	int pkg;
-+	int core;
-+	int cpu;
-+
-+	/* flags */
-+	unsigned int is_online:1;
-+};
- 
- /* CPU topology/hierarchy parsing ******************/
- struct cpupower_topology {
-@@ -101,14 +109,7 @@ struct cpupower_topology {
- 	unsigned int threads; /* per core */
- 
- 	/* Array gets mallocated with cores entries, holding per core info */
--	struct {
--		int pkg;
--		int core;
--		int cpu;
--
--		/* flags */
--		unsigned int is_online:1;
--	} *core_info;
-+	struct cpuid_core_info *core_info;
- };
- 
- extern int get_cpu_topology(struct cpupower_topology *cpu_top);
-diff --git a/tools/power/cpupower/utils/helpers/topology.c b/tools/power/cpupower/utils/helpers/topology.c
-index 216f3e3..4e2b583 100644
---- a/tools/power/cpupower/utils/helpers/topology.c
-+++ b/tools/power/cpupower/utils/helpers/topology.c
-@@ -36,14 +36,6 @@ static int sysfs_topology_read_file(unsigned int cpu, const char *fname, int *re
- 	return 0;
- }
- 
--struct cpuid_core_info {
--	unsigned int pkg;
--	unsigned int thread;
--	unsigned int cpu;
--	/* flags */
--	unsigned int is_online:1;
--};
--
- static int __compare(const void *t1, const void *t2)
- {
- 	struct cpuid_core_info *top1 = (struct cpuid_core_info *)t1;
-@@ -52,9 +44,9 @@ static int __compare(const void *t1, const void *t2)
- 		return -1;
- 	else if (top1->pkg > top2->pkg)
- 		return 1;
--	else if (top1->thread < top2->thread)
-+	else if (top1->core < top2->core)
- 		return -1;
--	else if (top1->thread > top2->thread)
-+	else if (top1->core > top2->core)
- 		return 1;
- 	else if (top1->cpu < top2->cpu)
- 		return -1;
-@@ -74,7 +66,7 @@ int get_cpu_topology(struct cpupower_topology *cpu_top)
- {
- 	int cpu, cpus = sysconf(_SC_NPROCESSORS_CONF);
- 
--	cpu_top->core_info = malloc(sizeof(struct cpupower_topology) * cpus);
-+	cpu_top->core_info = malloc(sizeof(struct cpuid_core_info) * cpus);
- 	if (cpu_top->core_info == NULL)
- 		return -ENOMEM;
- 	cpu_top->pkgs = cpu_top->cores = 0;
--- 
-1.7.9.5
+On Mon, Aug 6, 2012 at 7:05 PM, Dongjin Kim
+<Dongjin.Kim@agreeyamobility.net> wrote:
+> Hello,
+>
+> I am trying to understand what I have to do for device tree.
+>
+> In order to create dts file for ODROID-X hardware, it seems I may need dts file of EXYNOS4412 SoC.
+> But maybe exynos4412.dtsi is not merged yet or not exist, like exynos4210.dtsi or exynos5250.dtsi.
+> Obviously it seems not easy to create such a file without SoC datasheet, and I do not have it.
+>
+> So do I wait for the file to be merged by Samsung or better to create initial dts file cloned from exynos4210.dtsi and modify to have verified nodes with the source/header files?
 
+Ideally they already have one waiting to be submitted, but that might
+not be the case. Given that the origenboard design with 4412 is not
+yet shipping, I'm guessing the Linaro Samsung engineers might not have
+done much work on 4412 yet. Kukjin? Thomas?
+
+> What's your suggestion?
+
+The alternative is to use the data you have available -- i.e. sources
+and patches, and craft the device tree from there. The design of 4412
+is a derivative from 4210, so that's a good start. Next step would be
+to describe the board on top of the SoC, peripherals, etc. Take a look
+at how the origen board support was added, and so on.
+
+I ordered an odroid-x several weeks ago but I haven't have a confirmed
+shipping date yet. :( I'm not sure how long it'll be before I can help
+out, unfortunately.
+
+
+-Olof
