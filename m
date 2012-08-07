@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964960Ab2HGDnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:43:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59848 "EHLO
+	id S964973Ab2HGDnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:43:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60053 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964813Ab2HGDi4 (ORCPT
+	by vger.kernel.org with ESMTP id S964813Ab2HGDnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:56 -0400
-Message-Id: <20120807032801.663389478@decadent.org.uk>
+	Mon, 6 Aug 2012 23:43:43 -0400
+Message-Id: <20120807032805.677985191@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:33 +0100
+Date: Tue, 07 Aug 2012 04:29:01 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Asias He <asias@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 38/70] virtio-blk: Use block layer provided spinlock
+        alan@lxorguk.ukuu.org.uk, Neil Horman <nhorman@tuxdriver.com>,
+        David Miller <davem@davemloft.net>
+Subject: [ 66/70] drop_monitor: prevent init path from scheduling on the wrong cpu
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,100 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asias He <asias@redhat.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 2c95a3290919541b846bee3e0fbaa75860929f53 upstream.
+commit 4fdcfa12843bca38d0c9deff70c8720e4e8f515f upstream.
 
-Block layer will allocate a spinlock for the queue if the driver does
-not provide one in blk_init_queue().
+I just noticed after some recent updates, that the init path for the drop
+monitor protocol has a minor error.  drop monitor maintains a per cpu structure,
+that gets initalized from a single cpu.  Normally this is fine, as the protocol
+isn't in use yet, but I recently made a change that causes a failed skb
+allocation to reschedule itself .  Given the current code, the implication is
+that this workqueue reschedule will take place on the wrong cpu.  If drop
+monitor is used early during the boot process, its possible that two cpus will
+access a single per-cpu structure in parallel, possibly leading to data
+corruption.
 
-The reason to use the internal spinlock is that blk_cleanup_queue() will
-switch to use the internal spinlock in the cleanup code path.
+This patch fixes the situation, by storing the cpu number that a given instance
+of this per-cpu data should be accessed from.  In the case of a need for a
+reschedule, the cpu stored in the struct is assigned the rescheule, rather than
+the currently executing cpu
 
-        if (q->queue_lock != &q->__queue_lock)
-                q->queue_lock = &q->__queue_lock;
+Tested successfully by myself.
 
-However, processes which are in D state might have taken the driver
-provided spinlock, when the processes wake up, they would release the
-block provided spinlock.
-
-=====================================
-[ BUG: bad unlock balance detected! ]
-3.4.0-rc7+ #238 Not tainted
--------------------------------------
-fio/3587 is trying to release lock (&(&q->__queue_lock)->rlock) at:
-[<ffffffff813274d2>] blk_queue_bio+0x2a2/0x380
-but there are no more locks to release!
-
-other info that might help us debug this:
-1 lock held by fio/3587:
- #0:  (&(&vblk->lock)->rlock){......}, at:
-[<ffffffff8132661a>] get_request_wait+0x19a/0x250
-
-Other drivers use block layer provided spinlock as well, e.g. SCSI.
-
-Switching to the block layer provided spinlock saves a bit of memory and
-does not increase lock contention. Performance test shows no real
-difference is observed before and after this patch.
-
-Changes in v2: Improve commit log as Michael suggested.
-
-Cc: virtualization@lists.linux-foundation.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Asias He <asias@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: David Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/virtio_blk.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ net/core/drop_monitor.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -20,8 +20,6 @@ struct workqueue_struct *virtblk_wq;
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index 7592943..a7cad74 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -49,6 +49,7 @@ struct per_cpu_dm_data {
+ 	struct sk_buff __rcu *skb;
+ 	atomic_t dm_hit_count;
+ 	struct timer_list send_timer;
++	int cpu;
+ };
  
- struct virtio_blk
+ struct dm_hw_stat_delta {
+@@ -73,7 +74,6 @@ static int dm_hit_limit = 64;
+ static int dm_delay = 1;
+ static unsigned long dm_hw_check_delta = 2*HZ;
+ static LIST_HEAD(hw_stats_list);
+-static int initialized = 0;
+ 
+ static void reset_per_cpu_data(struct per_cpu_dm_data *data)
  {
--	spinlock_t lock;
--
- 	struct virtio_device *vdev;
- 	struct virtqueue *vq;
+@@ -96,8 +96,8 @@ static void reset_per_cpu_data(struct per_cpu_dm_data *data)
+ 				  sizeof(struct net_dm_alert_msg));
+ 		msg = nla_data(nla);
+ 		memset(msg, 0, al);
+-	} else if (initialized)
+-		schedule_work_on(smp_processor_id(), &data->dm_alert_work);
++	} else
++		schedule_work_on(data->cpu, &data->dm_alert_work);
  
-@@ -62,7 +60,7 @@ static void blk_done(struct virtqueue *v
- 	unsigned int len;
- 	unsigned long flags;
+ 	/*
+ 	 * Don't need to lock this, since we are guaranteed to only
+@@ -121,6 +121,8 @@ static void send_dm_alert(struct work_struct *unused)
+ 	struct sk_buff *skb;
+ 	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
  
--	spin_lock_irqsave(&vblk->lock, flags);
-+	spin_lock_irqsave(vblk->disk->queue->queue_lock, flags);
- 	while ((vbr = virtqueue_get_buf(vblk->vq, &len)) != NULL) {
- 		int error;
++	WARN_ON_ONCE(data->cpu != smp_processor_id());
++
+ 	/*
+ 	 * Grab the skb we're about to send
+ 	 */
+@@ -404,14 +406,14 @@ static int __init init_net_drop_monitor(void)
  
-@@ -97,7 +95,7 @@ static void blk_done(struct virtqueue *v
- 	}
- 	/* In case queue is stopped waiting for more buffers. */
- 	blk_start_queue(vblk->disk->queue);
--	spin_unlock_irqrestore(&vblk->lock, flags);
-+	spin_unlock_irqrestore(vblk->disk->queue->queue_lock, flags);
- }
- 
- static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
-@@ -384,7 +382,6 @@ static int __devinit virtblk_probe(struc
- 	}
- 
- 	INIT_LIST_HEAD(&vblk->reqs);
--	spin_lock_init(&vblk->lock);
- 	vblk->vdev = vdev;
- 	vblk->sg_elems = sg_elems;
- 	sg_init_table(vblk->sg, vblk->sg_elems);
-@@ -410,7 +407,7 @@ static int __devinit virtblk_probe(struc
- 		goto out_mempool;
+ 	for_each_present_cpu(cpu) {
+ 		data = &per_cpu(dm_cpu_data, cpu);
+-		reset_per_cpu_data(data);
++		data->cpu = cpu;
+ 		INIT_WORK(&data->dm_alert_work, send_dm_alert);
+ 		init_timer(&data->send_timer);
+ 		data->send_timer.data = cpu;
+ 		data->send_timer.function = sched_send_work;
++		reset_per_cpu_data(data);
  	}
  
--	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, &vblk->lock);
-+	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, NULL);
- 	if (!q) {
- 		err = -ENOMEM;
- 		goto out_put_disk;
+-	initialized = 1;
+ 
+ 	goto out;
+ 
 
 
