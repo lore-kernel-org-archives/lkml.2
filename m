@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab2HGXfP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:35:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	id S964774Ab2HGXfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:35:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932600Ab2HGW3c (ORCPT
+	with ESMTP id S932504Ab2HGW3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:29:32 -0400
+	Tue, 7 Aug 2012 18:29:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 041/122] ftrace: Disable function tracing during suspend/resume and hibernation, again
-Date: Tue,  7 Aug 2012 15:25:29 -0700
-Message-Id: <20120807221951.913722024@linuxfoundation.org>
+        Stefan Lippers-Hollmann <s.l-h@gmx.de>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 047/122] b43: fix crash with OpenFWWF
+Date: Tue,  7 Aug 2012 15:25:35 -0700
+Message-Id: <20120807221952.440334699@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,108 +31,127 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 443772d408a25af62498793f6f805ce3c559309a upstream.
+commit 097b0e1bf18a00195cd89bb13565ddbc9b0df942 upstream.
 
-If function tracing is enabled for some of the low-level suspend/resume
-functions, it leads to triple fault during resume from suspend, ultimately
-ending up in a reboot instead of a resume (or a total refusal to come out
-of suspended state, on some machines).
+b43 with open firmware crashes mac80211 because
+it changes the number of queues at runtime which,
+while it was never really supported, now crashes
+mac80211 due to the new hardware queue logic.
 
-This issue was explained in more detail in commit f42ac38c59e0a03d (ftrace:
-disable tracing for suspend to ram). However, the changes made by that commit
-got reverted by commit cbe2f5a6e84eebb (tracing: allow tracing of
-suspend/resume & hibernation code again). So, unfortunately since things are
-not yet robust enough to allow tracing of low-level suspend/resume functions,
-suspend/resume is still broken when ftrace is enabled.
+Fix this by detecting open vs. proprietary fw
+earlier and registering with mac80211 with the
+right number of queues.
 
-So fix this by disabling function tracing during suspend/resume & hibernation.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
 ---
- kernel/power/hibernate.c |    6 ++++++
- kernel/power/suspend.c   |    3 +++
- 2 files changed, 9 insertions(+)
+ drivers/net/wireless/b43/b43.h  |    7 -------
+ drivers/net/wireless/b43/main.c |   32 ++++++++++----------------------
+ 2 files changed, 10 insertions(+), 29 deletions(-)
 
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -353,6 +353,7 @@ int hibernation_snapshot(int platform_mo
+--- a/drivers/net/wireless/b43/b43.h
++++ b/drivers/net/wireless/b43/b43.h
+@@ -870,13 +870,6 @@ struct b43_wl {
+ 	 * handler, only. This basically is just the IRQ mask register. */
+ 	spinlock_t hardirq_lock;
+ 
+-	/* The number of queues that were registered with the mac80211 subsystem
+-	 * initially. This is a backup copy of hw->queues in case hw->queues has
+-	 * to be dynamically lowered at runtime (Firmware does not support QoS).
+-	 * hw->queues has to be restored to the original value before unregistering
+-	 * from the mac80211 subsystem. */
+-	u16 mac80211_initially_registered_queues;
+-
+ 	/* Set this if we call ieee80211_register_hw() and check if we call
+ 	 * ieee80211_unregister_hw(). */
+ 	bool hw_registred;
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2359,6 +2359,8 @@ static int b43_try_request_fw(struct b43
+ 	if (err)
+ 		goto err_load;
+ 
++	fw->opensource = (ctx->req_type == B43_FWTYPE_OPENSOURCE);
++
+ 	return 0;
+ 
+ err_no_ucode:
+@@ -2434,6 +2436,10 @@ static void b43_request_firmware(struct
+ 	goto out;
+ 
+ start_ieee80211:
++	wl->hw->queues = B43_QOS_QUEUE_NUM;
++	if (!modparam_qos || dev->fw.opensource)
++		wl->hw->queues = 1;
++
+ 	err = ieee80211_register_hw(wl->hw);
+ 	if (err)
+ 		goto err_one_core_detach;
+@@ -2537,11 +2543,9 @@ static int b43_upload_microcode(struct b
+ 		dev->fw.hdr_format = B43_FW_HDR_410;
+ 	else
+ 		dev->fw.hdr_format = B43_FW_HDR_351;
+-	dev->fw.opensource = (fwdate == 0xFFFF);
++	WARN_ON(dev->fw.opensource != (fwdate == 0xFFFF));
+ 
+-	/* Default to use-all-queues. */
+-	dev->wl->hw->queues = dev->wl->mac80211_initially_registered_queues;
+-	dev->qos_enabled = !!modparam_qos;
++	dev->qos_enabled = dev->wl->hw->queues > 1;
+ 	/* Default to firmware/hardware crypto acceleration. */
+ 	dev->hwcrypto_enabled = true;
+ 
+@@ -2559,14 +2563,8 @@ static int b43_upload_microcode(struct b
+ 			/* Disable hardware crypto and fall back to software crypto. */
+ 			dev->hwcrypto_enabled = false;
+ 		}
+-		if (!(fwcapa & B43_FWCAPA_QOS)) {
+-			b43info(dev->wl, "QoS not supported by firmware\n");
+-			/* Disable QoS. Tweak hw->queues to 1. It will be restored before
+-			 * ieee80211_unregister to make sure the networking core can
+-			 * properly free possible resources. */
+-			dev->wl->hw->queues = 1;
+-			dev->qos_enabled = false;
+-		}
++		/* adding QoS support should use an offline discovery mechanism */
++		WARN(fwcapa & B43_FWCAPA_QOS, "QoS in OpenFW not supported\n");
+ 	} else {
+ 		b43info(dev->wl, "Loading firmware version %u.%u "
+ 			"(20%.2i-%.2i-%.2i %.2i:%.2i:%.2i)\n",
+@@ -5298,8 +5296,6 @@ static struct b43_wl *b43_wireless_init(
+ 
+ 	hw->wiphy->flags |= WIPHY_FLAG_IBSS_RSN;
+ 
+-	hw->queues = modparam_qos ? B43_QOS_QUEUE_NUM : 1;
+-	wl->mac80211_initially_registered_queues = hw->queues;
+ 	wl->hw_registred = false;
+ 	hw->max_rates = 2;
+ 	SET_IEEE80211_DEV(hw, dev->dev);
+@@ -5374,10 +5370,6 @@ static void b43_bcma_remove(struct bcma_
+ 
+ 	B43_WARN_ON(!wl);
+ 	if (wl->current_dev == wldev && wl->hw_registred) {
+-		/* Restore the queues count before unregistering, because firmware detect
+-		 * might have modified it. Restoring is important, so the networking
+-		 * stack can properly free resources. */
+-		wl->hw->queues = wl->mac80211_initially_registered_queues;
+ 		b43_leds_stop(wldev);
+ 		ieee80211_unregister_hw(wl->hw);
  	}
+@@ -5452,10 +5444,6 @@ static void b43_ssb_remove(struct ssb_de
  
- 	suspend_console();
-+	ftrace_stop();
- 	pm_restrict_gfp_mask();
- 
- 	error = dpm_suspend(PMSG_FREEZE);
-@@ -378,6 +379,7 @@ int hibernation_snapshot(int platform_mo
- 	if (error || !in_suspend)
- 		pm_restore_gfp_mask();
- 
-+	ftrace_start();
- 	resume_console();
- 	dpm_complete(msg);
- 
-@@ -480,6 +482,7 @@ int hibernation_restore(int platform_mod
- 
- 	pm_prepare_console();
- 	suspend_console();
-+	ftrace_stop();
- 	pm_restrict_gfp_mask();
- 	error = dpm_suspend_start(PMSG_QUIESCE);
- 	if (!error) {
-@@ -487,6 +490,7 @@ int hibernation_restore(int platform_mod
- 		dpm_resume_end(PMSG_RECOVER);
+ 	B43_WARN_ON(!wl);
+ 	if (wl->current_dev == wldev && wl->hw_registred) {
+-		/* Restore the queues count before unregistering, because firmware detect
+-		 * might have modified it. Restoring is important, so the networking
+-		 * stack can properly free resources. */
+-		wl->hw->queues = wl->mac80211_initially_registered_queues;
+ 		b43_leds_stop(wldev);
+ 		ieee80211_unregister_hw(wl->hw);
  	}
- 	pm_restore_gfp_mask();
-+	ftrace_start();
- 	resume_console();
- 	pm_restore_console();
- 	return error;
-@@ -513,6 +517,7 @@ int hibernation_platform_enter(void)
- 
- 	entering_platform_hibernation = true;
- 	suspend_console();
-+	ftrace_stop();
- 	error = dpm_suspend_start(PMSG_HIBERNATE);
- 	if (error) {
- 		if (hibernation_ops->recover)
-@@ -556,6 +561,7 @@ int hibernation_platform_enter(void)
-  Resume_devices:
- 	entering_platform_hibernation = false;
- 	dpm_resume_end(PMSG_RESTORE);
-+	ftrace_start();
- 	resume_console();
- 
-  Close:
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -24,6 +24,7 @@
- #include <linux/export.h>
- #include <linux/suspend.h>
- #include <linux/syscore_ops.h>
-+#include <linux/ftrace.h>
- #include <trace/events/power.h>
- 
- #include "power.h"
-@@ -212,6 +213,7 @@ int suspend_devices_and_enter(suspend_st
- 			goto Close;
- 	}
- 	suspend_console();
-+	ftrace_stop();
- 	suspend_test_start();
- 	error = dpm_suspend_start(PMSG_SUSPEND);
- 	if (error) {
-@@ -231,6 +233,7 @@ int suspend_devices_and_enter(suspend_st
- 	suspend_test_start();
- 	dpm_resume_end(PMSG_RESUME);
- 	suspend_test_finish("resume devices");
-+	ftrace_start();
- 	resume_console();
-  Close:
- 	if (suspend_ops->end)
 
 
