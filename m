@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab2HGKiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 06:38:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48670 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752663Ab2HGKiy (ORCPT
+	id S1753490Ab2HGKmi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 06:42:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60539 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab2HGKmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 06:38:54 -0400
-Date: Tue, 7 Aug 2012 11:38:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Russell King <rmk@arm.linux.org.uk>, sameo@linux.intel.com,
-        rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-Message-ID: <20120807103851.GS16861@opensource.wolfsonmicro.com>
-References: <20120806143016.GK16861@opensource.wolfsonmicro.com>
- <CAN1soZwCr=L3Xdi7HS9dQMxo4DzzbQv2kXo9R_U6QAf7v=B10Q@mail.gmail.com>
- <20120806154619.GO16861@opensource.wolfsonmicro.com>
- <CAN1soZzytOwxnS8oNMhFs1rfwVPwFnZoVsXeaMUc4Kf_TnunkA@mail.gmail.com>
- <20120806155805.GR16861@opensource.wolfsonmicro.com>
- <20120806192209.GA14594@flint.arm.linux.org.uk>
- <20120806195352.GC16199@opensource.wolfsonmicro.com>
- <20120806213124.GB14594@flint.arm.linux.org.uk>
- <20120806220032.GD26698@opensource.wolfsonmicro.com>
- <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com>
+	Tue, 7 Aug 2012 06:42:37 -0400
+Message-ID: <5020F119.80900@suse.cz>
+Date: Tue, 07 Aug 2012 12:42:33 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120718 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Shashidhar Hiremath <shashidharh@vayavyalabs.com>
+CC: Dan Luedtke <mail@danrl.de>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: A question on serial driver
+References: <CANYdXnqCY+Uc=ROvQHv4kRe-g2zoEjfpzV0P83exfXYm-qCBaA@mail.gmail.com> <1344327969.20004.2.camel@localhost> <5020DB0B.8070103@suse.cz> <CANYdXnq1HVpLFZBND=2HextPXCLC5SkewsAqZFhY0KWzWi+rCw@mail.gmail.com>
+In-Reply-To: <CANYdXnq1HVpLFZBND=2HextPXCLC5SkewsAqZFhY0KWzWi+rCw@mail.gmail.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 09:47:25AM +0800, Haojian Zhuang wrote:
+A: Because it messes up the order in which people normally read text.
+Q: Why is top-posting such a bad thing?
+A: Top-posting.
+Q: What is the most annoying thing in e-mail?
 
-> It's because IO_SPACE_LIMIT is set as 0 if there's no PCI devices. But
-> IORESOURCE_IO is also used in PMIC mfd drivers to distinguish
-> different components.
+On 08/07/2012 11:51 AM, Shashidhar Hiremath wrote:
+> the code is a bit unclean to send directly.
 
-The change to keep things working here (pending the other changes which
-Russell wants) is to add a dummy resource with a wide enough range of
-registers defined and make it the parent for all the _IO resouces the
-PMIC has.  This will put all the PMIC _IO resources in a separate tree
-to ioport_resource which can have the resorces added.
+Whatever, just send it out. Otherwise sorry, you are on your own.
 
-If nothing else this seems much more suitable for stable and -rc (the
-bug has been there since v3.4).
+regards,
+-- 
+js
+suse labs
