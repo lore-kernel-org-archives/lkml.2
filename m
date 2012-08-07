@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab2HGQTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 12:19:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45249 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab2HGQTG (ORCPT
+	id S1755408Ab2HGQTS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 12:19:18 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:40380 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab2HGQTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 12:19:06 -0400
+	Tue, 7 Aug 2012 12:19:14 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
         Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
@@ -16,9 +16,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v1 03/22] PCI: change PCI device management code to better follow device model
-Date: Wed,  8 Aug 2012 00:10:43 +0800
-Message-Id: <1344355862-2726-4-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v1 04/22] PCI: split PCI bus device registration into two stages
+Date: Wed,  8 Aug 2012 00:10:44 +0800
+Message-Id: <1344355862-2726-5-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
 References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
@@ -26,71 +26,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to device model documentation, the way to add/remove device
-object should be symmetric.
+When handling BUS_NOTIFY_ADD_DEVICE event for a new PCI bridge
+device, the notification handler can't hold reference count
+to the new PCI bus because the device object for the new bus
+(pci_dev->subordinate->dev) hasn't been initialized yet.
 
-/**
- * device_del - delete device from system.
- * @dev: device.
- *
- * This is the first part of the device unregistration
- * sequence. This removes the device from the lists we control
- * from here, has it removed from the other driver model
- * subsystems it was added to in device_add(), and removes it
- * from the kobject hierarchy.
- *
- * NOTE: this should be called manually _iff_ device_add() was
- * also called manually.
- */
+Split the PCI bus device registration into two stages as below,
+so that the event handler could hold reference counts to the new
+PCI bus when handling BUS_NOTIFY_ADD_DEVICE event.
 
-The rule here is to either use
-1) device_register()/device_unregister()
-or
-2) device_initialize()/device_add()/device_del()/put_device().
-
-So change PCI core to follow the rule and get rid of the redundant
-pci_dev_get()/pci_dev_put() pair.
+1) device_initialize(&pci_dev->dev)
+2) device_initialize(&pci_dev->subordinate->dev)
+3) notify BUS_NOTIFY_ADD_DEVICE event for pci_dev
+4) device_add(&pci_dev->dev)
+5) device_add(&pci_dev->subordinate->dev)
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/pci/probe.c  |    1 -
- drivers/pci/remove.c |    4 ++--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/pci/bus.c    |    2 +-
+ drivers/pci/probe.c  |    3 ++-
+ drivers/pci/remove.c |   10 +++++-----
+ 3 files changed, 8 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 4ce5ef2..e2a0c52 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -187,7 +187,7 @@ int pci_bus_add_child(struct pci_bus *bus)
+ 	if (bus->bridge)
+ 		bus->dev.parent = bus->bridge;
+ 
+-	retval = device_register(&bus->dev);
++	retval = device_add(&bus->dev);
+ 	if (retval)
+ 		return retval;
+ 
 diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 0840409..dacca26 100644
+index dacca26..ad77ae5 100644
 --- a/drivers/pci/probe.c
 +++ b/drivers/pci/probe.c
-@@ -1294,7 +1294,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- {
- 	device_initialize(&dev->dev);
- 	dev->dev.release = pci_release_dev;
--	pci_dev_get(dev);
+@@ -456,6 +456,7 @@ static struct pci_bus * pci_alloc_bus(void)
+ 		INIT_LIST_HEAD(&b->resources);
+ 		b->max_bus_speed = PCI_SPEED_UNKNOWN;
+ 		b->cur_bus_speed = PCI_SPEED_UNKNOWN;
++		device_initialize(&b->dev);
+ 	}
+ 	return b;
+ }
+@@ -1672,7 +1673,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	b->dev.class = &pcibus_class;
+ 	b->dev.parent = b->bridge;
+ 	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
+-	error = device_register(&b->dev);
++	error = device_add(&b->dev);
+ 	if (error)
+ 		goto class_dev_reg_err;
  
- 	dev->dev.dma_mask = &dev->dma_mask;
- 	dev->dev.dma_parms = &dev->dma_parms;
 diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 33b6318..b9ac765 100644
+index b9ac765..ba03059 100644
 --- a/drivers/pci/remove.c
 +++ b/drivers/pci/remove.c
-@@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
- 	if (dev->is_added) {
- 		pci_proc_detach_device(dev);
- 		pci_remove_sysfs_dev_files(dev);
--		device_unregister(&dev->dev);
-+		device_del(&dev->dev);
- 		dev->is_added = 0;
- 	}
- 
-@@ -40,7 +40,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
+@@ -70,11 +70,11 @@ void pci_remove_bus(struct pci_bus *pci_bus)
+ 	list_del(&pci_bus->node);
+ 	pci_bus_release_busn_res(pci_bus);
  	up_write(&pci_bus_sem);
- 
- 	pci_free_resources(dev);
--	pci_dev_put(dev);
-+	put_device(&dev->dev);
+-	if (!pci_bus->is_added)
+-		return;
+-
+-	pci_remove_legacy_files(pci_bus);
+-	device_unregister(&pci_bus->dev);
++	if (pci_bus->is_added) {
++		pci_remove_legacy_files(pci_bus);
++		device_del(&pci_bus->dev);
++	}
++	put_device(&pci_bus->dev);
  }
+ EXPORT_SYMBOL(pci_remove_bus);
  
- /**
 -- 
 1.7.9.5
 
