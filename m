@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab2HGPb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:31:59 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:14370
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752014Ab2HGPb5 (ORCPT
+	id S1753425Ab2HGPeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:34:31 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:43372 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab2HGPe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:31:57 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1202hzz8275bh8275dhz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M8E5T3-01-0TK-02
-X-M-MSG: 
-Date: Tue, 7 Aug 2012 17:31:49 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: <mingo@kernel.org>, <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <torvalds@linux-foundation.org>,
-        <a.p.zijlstra@chello.nl>, <suresh.b.siddha@intel.com>,
-        <tglx@linutronix.de>
-CC: <linux-tip-commits@vger.kernel.org>,
-        "Petkov, Borislav" <borislav.petkov@amd.com>
-Subject: Re: [tip:x86/apic] x86/irq: Update irq_cfg domain unless the new
- affinity is a subset of the current domain
-Message-ID: <20120807153149.GI3732@erda.amd.com>
-References: <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
- <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
+	Tue, 7 Aug 2012 11:34:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <CAMuHMdU885PUSmqr53-UdJiVBgtMXxPk-pQ27-E=-aw=P=K+_w@mail.gmail.com>
+References: <50205592.1030205@gmail.com>
+	<5020AA5B.4080407@zankel.net>
+	<CAMuHMdVh_D1yTYiPoRks8-sjoNb_dr5xpRbxv+AJLseUd2Kk0Q@mail.gmail.com>
+	<CAMo8BfLw0Rt8Z-Tn0k40szP1ZPtwGcV27aEp3MOVEBNx+C3tgA@mail.gmail.com>
+	<CAMuHMdU885PUSmqr53-UdJiVBgtMXxPk-pQ27-E=-aw=P=K+_w@mail.gmail.com>
+Date: Tue, 7 Aug 2012 19:34:28 +0400
+Message-ID: <CAMo8BfJMBRq5gBw-5SjS5r4NGsN9-TeGOcZf91-i=sVwM5=Thw@mail.gmail.com>
+Subject: Re: xtensa port maintenance
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Chris Zankel <chris@zankel.net>, linux-kernel@vger.kernel.org,
+        linux-xtensa@linux-xtensa.org, linux-next@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Marc Gauthier <marc@tensilica.com>,
+        Kirill Krinkin <kirill.krinkin@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.06.12 08:03:58, tip-bot for Suresh Siddha wrote:
-> Commit-ID:  332afa656e76458ee9cf0f0d123016a0658539e4
-> Gitweb:     http://git.kernel.org/tip/332afa656e76458ee9cf0f0d123016a0658539e4
-> Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-> AuthorDate: Mon, 21 May 2012 16:58:01 -0700
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Wed, 6 Jun 2012 09:51:22 +0200
-> 
-> x86/irq: Update irq_cfg domain unless the new affinity is a subset of the current domain
+On Tue, Aug 7, 2012 at 6:35 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> Hi Max,
+>
+> On Tue, Aug 7, 2012 at 1:56 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
+>> On Tue, Aug 7, 2012 at 3:36 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>> On Tue, Aug 7, 2012 at 7:40 AM, Chris Zankel <chris@zankel.net> wrote:
+>>>> On 08/06/2012 04:38 PM, Max Filippov wrote:
+>>>>> AFAIK xtensa linux port is currently in bad shape: it doesn't work in the
+>>>>> mainline, it fails to build in the linux-next. The latest working kernels
+>>>>> for
+>>>>> xtensa are 2.6.29...31 trees hosted at the git.linux-xtensa.org.
+>>>>
+>>>> I wouldn't say it's in bad shape, I just built an vmlinux image from the
+>>>> latest tree (3.6.0-rc1), but it might not be very stable. One of the major
+>>>> issues is not really the kernel but  there's actually no way to build a
+>>>> fairly recent version of the toolchain. I have been using a somewhat more
+>>>> recent buildroot version than what is on xtensa-linux.org, but even that
+>>>> version of buildroot is rather old now and needed a few patches.
+>>>
+>>> Are the errors
+>>>
+>>> | dangerous relocation: l32r: literal placed after use: .literal.unlikely
+>>> (http://kisskb.ellerman.id.au/kisskb/buildresult/6845615/)
+>>>
+>>> preventing linking of vmlinux toolchain issues?
+>>
+>> They may be considered as such (toolchain now adds *.unlikely sections which
+>> was not the case previously), or may not, depending on what one would expect
+>> from the toolchain. I have a fix for that issue:
+>> https://github.com/jcmvbkbc/linux-xtensa/commit/edd7c14132388d5c09c57cf12c76c6631a1e0277
+>
+> Thanks, that indeed fixes the link issue for me!
+>
+> BTW, how do you export a "commitdiff" from the github web interface?
 
-This commit causes a sata error and thus a boot failure:
+Not sure what you mean... You can get raw commitdiff by adding
+'.patch' to the URL above:
 
- ACPI: Invalid Power Resource to register!ata1: lost interrupt (Status 0x50)
- ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x40000000 action 0x6 frozen
- ata1: SError: { }
- ata1.00: failed command: READ DMA
-
-Reverting it as following helped:
-
- $ git revert d872818dbbeed1bccf58c7f8c7db432154c802f9
- $ git revert 1ac322d0b169c95ce34d55b3ed6d40ce1a5f3a02
- $ git revert 332afa656e76458ee9cf0f0d123016a0658539e4
-
--Robert
+https://github.com/jcmvbkbc/linux-xtensa/commit/edd7c14132388d5c09c57cf12c76c6631a1e0277.patch
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Thanks.
+-- Max
