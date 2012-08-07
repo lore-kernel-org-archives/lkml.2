@@ -1,46 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab2HGROl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:14:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39767 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751933Ab2HGROk (ORCPT
+	id S1755243Ab2HGROx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:14:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42490 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754751Ab2HGROw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 13:14:40 -0400
-Date: Tue, 7 Aug 2012 18:14:38 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [NEW DRIVER V1 5/7] DA9058 GPIO driver
-Message-ID: <20120807171437.GC16861@opensource.wolfsonmicro.com>
-References: <201208020849.q728nhU3007824@latitude.olech.com>
- <20120802101952.GG29157@opensource.wolfsonmicro.com>
- <24DF37198A1E704D9811D8F72B87EB51032C39DE@NB-EX-MBX02.diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <24DF37198A1E704D9811D8F72B87EB51032C39DE@NB-EX-MBX02.diasemi.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 7 Aug 2012 13:14:52 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org, rdunlap@xenotime.net
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH/v2] Fix typo in various Kconfig
+Date: Wed,  8 Aug 2012 02:15:29 +0900
+Message-Id: <1344359729-18887-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.12.rc1.17.g9a7365c
+In-Reply-To: <1344347699-26434-1-git-send-email-standby24x7@gmail.com>
+References: <1344347699-26434-1-git-send-email-standby24x7@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 03:15:17PM +0000, Opensource [Anthony Olech] wrote:
+Correct spelling typo in various Kconfig files.
 
-> I do realize that REGMAP does locking on individual register accesses,
-> however, the each GPIO line is controlled by 4-bits in a register, with
-> the meaning of the most significant bit depending on the GPIO direction,
-> so it is essential that the register be read first before do an update, thus
-> two sequential register accesses must be protected by a mutex to
-> prevent another process changing the register (and hence the meaning
-> of the most-significant bit) in the middle of the two accesses.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ arch/arm/mach-tegra/Kconfig      |  2 +-
+ arch/blackfin/mach-bf609/Kconfig |  2 +-
+ arch/openrisc/Kconfig            |  2 +-
+ crypto/Kconfig                   |  2 +-
+ drivers/media/video/Kconfig      |  2 +-
+ drivers/thermal/Kconfig          |  2 +-
+ drivers/tty/serial/8250/Kconfig  |  2 +-
+ drivers/usb/host/Kconfig         |  4 ++--
+ lib/Kconfig.debug                | 10 +++++-----
+ 9 files changed, 14 insertions(+), 14 deletions(-)
 
-> I hope this explains to your satisfaction why a driver mutex is required
-> in addition to the regmap's register access mutex
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index 9077aaa..453f259 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -56,7 +56,7 @@ config TEGRA_AHB
+ 	help
+ 	  Adds AHB configuration functionality for NVIDIA Tegra SoCs,
+ 	  which controls AHB bus master arbitration and some
+-	  perfomance parameters(priority, prefech size).
++	  performance parameters(priority, prefetch size).
+ 
+ comment "Tegra board type"
+ 
+diff --git a/arch/blackfin/mach-bf609/Kconfig b/arch/blackfin/mach-bf609/Kconfig
+index 101b33e..95a4f1b 100644
+--- a/arch/blackfin/mach-bf609/Kconfig
++++ b/arch/blackfin/mach-bf609/Kconfig
+@@ -56,7 +56,7 @@ config SEC_IRQ_PRIORITY_LEVELS
+ 	default 7
+ 	range 0 7
+ 	help
+-	  Devide the total number of interrupt priority levels into sub-levels.
++	  Divide the total number of interrupt priority levels into sub-levels.
+ 	  There is 2 ^ (SEC_IRQ_PRIORITY_LEVELS + 1) different levels.
+ 
+ endmenu
+diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+index 05f2ba4..0ac66f6 100644
+--- a/arch/openrisc/Kconfig
++++ b/arch/openrisc/Kconfig
+@@ -144,7 +144,7 @@ config DEBUG_STACKOVERFLOW
+ 	help
+ 	  Make extra checks for space available on stack in some
+           critical functions. This will cause kernel to run a bit slower,
+-	  but will catch most of kernel stack overruns and exit gracefuly.
++	  but will catch most of kernel stack overruns and exit gracefully.
+ 
+ 	  Say Y if you are unsure.
+ 
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index cbcc0e2..f8b54bb 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -840,7 +840,7 @@ config CRYPTO_SERPENT_SSE2_X86_64
+ 	  Keys are allowed to be from 0 to 256 bits in length, in steps
+ 	  of 8 bits.
+ 
+-	  This module provides Serpent cipher algorithm that processes eigth
++	  This module provides Serpent cipher algorithm that processes eight
+ 	  blocks parallel using SSE2 instruction set.
+ 
+ 	  See also:
+diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
+index c128fac..ce3972a 100644
+--- a/drivers/media/video/Kconfig
++++ b/drivers/media/video/Kconfig
+@@ -625,7 +625,7 @@ config VIDEO_UPD64083
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called upd64083.
+ 
+-comment "Miscelaneous helper chips"
++comment "Miscellaneous helper chips"
+ 
+ config VIDEO_THS7303
+ 	tristate "THS7303 Video Amplifier"
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index 48c50be..decd7a0 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -51,7 +51,7 @@ config EXYNOS_THERMAL
+ 	tristate "Temperature sensor on Samsung EXYNOS"
+ 	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5) && THERMAL
+ 	help
+-	  If you say yes here you get support for TMU (Thermal Managment
++	  If you say yes here you get support for TMU (Thermal Management
+ 	  Unit) on SAMSUNG EXYNOS series of SoC.
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called exynos4-tmu
+diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
+index a27dd05..9395800 100644
+--- a/drivers/tty/serial/8250/Kconfig
++++ b/drivers/tty/serial/8250/Kconfig
+@@ -271,7 +271,7 @@ config SERIAL_8250_DW
+ 	  present in the Synopsys DesignWare APB UART.
+ 
+ config SERIAL_8250_EM
+-	tristate "Support for Emma Mobile intergrated serial port"
++	tristate "Support for Emma Mobile integrated serial port"
+ 	depends on SERIAL_8250 && ARM && HAVE_CLK
+ 	help
+ 	  Selecting this option will add support for the integrated serial
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 075d2ec..7cac2e8 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -418,7 +418,7 @@ config USB_OHCI_HCD_PLATFORM
+ 	default n
+ 	---help---
+ 	  Adds an OHCI host driver for a generic platform device, which
+-	  provieds a memory space and an irq.
++	  provides a memory space and an irq.
+ 
+ 	  If unsure, say N.
+ 
+@@ -428,7 +428,7 @@ config USB_EHCI_HCD_PLATFORM
+ 	default n
+ 	---help---
+ 	  Adds an EHCI host driver for a generic platform device, which
+-	  provieds a memory space and an irq.
++	  provides a memory space and an irq.
+ 
+ 	  If unsure, say N.
+ 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 290408e..42ba688 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1089,7 +1089,7 @@ config NOTIFIER_ERROR_INJECTION
+ 	depends on DEBUG_KERNEL
+ 	select DEBUG_FS
+ 	help
+-	  This option provides the ability to inject artifical errors to
++	  This option provides the ability to inject artificial errors to
+ 	  specified notifier chain callbacks. It is useful to test the error
+ 	  handling of notifier call chain failures.
+ 
+@@ -1100,7 +1100,7 @@ config CPU_NOTIFIER_ERROR_INJECT
+ 	depends on HOTPLUG_CPU && NOTIFIER_ERROR_INJECTION
+ 	help
+ 	  This option provides a kernel module that can be used to test
+-	  the error handling of the cpu notifiers by injecting artifical
++	  the error handling of the cpu notifiers by injecting artificial
+ 	  errors to CPU notifier chain callbacks.  It is controlled through
+ 	  debugfs interface under /sys/kernel/debug/notifier-error-inject/cpu
+ 
+@@ -1124,7 +1124,7 @@ config PM_NOTIFIER_ERROR_INJECT
+ 	depends on PM && NOTIFIER_ERROR_INJECTION
+ 	default m if PM_DEBUG
+ 	help
+-	  This option provides the ability to inject artifical errors to
++	  This option provides the ability to inject artificial errors to
+ 	  PM notifier chain callbacks.  It is controlled through debugfs
+ 	  interface /sys/kernel/debug/notifier-error-inject/pm
+ 
+@@ -1147,7 +1147,7 @@ config MEMORY_NOTIFIER_ERROR_INJECT
+ 	tristate "Memory hotplug notifier error injection module"
+ 	depends on MEMORY_HOTPLUG_SPARSE && NOTIFIER_ERROR_INJECTION
+ 	help
+-	  This option provides the ability to inject artifical errors to
++	  This option provides the ability to inject artificial errors to
+ 	  memory hotplug notifier chain callbacks.  It is controlled through
+ 	  debugfs interface under /sys/kernel/debug/notifier-error-inject/memory
+ 
+@@ -1170,7 +1170,7 @@ config PSERIES_RECONFIG_NOTIFIER_ERROR_INJECT
+ 	tristate "pSeries reconfig notifier error injection module"
+ 	depends on PPC_PSERIES && NOTIFIER_ERROR_INJECTION
+ 	help
+-	  This option provides the ability to inject artifical errors to
++	  This option provides the ability to inject artificial errors to
+ 	  pSeries reconfig notifier chain callbacks.  It is controlled
+ 	  through debugfs interface under
+ 	  /sys/kernel/debug/notifier-error-inject/pSeries-reconfig/
+-- 
+1.7.12.rc1.17.g9a7365c
 
-This seems a bit excessive and complicated - I'd be inclined to either
-just say that the caller is responsible for avoiding confusion here
-(obviously if you're changing the direction there's a race anyway) or
-store the data in a variable locally rather than having to do I/O on the
-device under lock every time it's interacted with.
