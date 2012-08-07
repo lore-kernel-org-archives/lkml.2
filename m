@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab2HGKuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 06:50:21 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:46342 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab2HGKuU convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:2>);
-	Tue, 7 Aug 2012 06:50:20 -0400
-Message-Id: <50210F0702000078000932EB@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 07 Aug 2012 11:50:15 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matt Fleming" <matt.fleming@intel.com>
-Cc: "Ingo Molnar" <mingo@kernel.org>, "Matthew Garrett" <mjg59@srcf.ucam.org>,
-        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <cJ-ko@zougloub.eu>, "H. PeterAnvin" <hpa@zytor.com>
-Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform
- wall clock" prevents my machine from booting
-References: <20120805172903.5f8bb24c@zougloub.eu>
- <501EF3A2.20200@zytor.com> <501F83F20200007800092C1C@nat28.tlf.novell.com>
- <20120806125216.GA11863@srcf.ucam.org>
- <501FDDD30200007800092DDE@nat28.tlf.novell.com>
- <20120806091627.2ad5ed2e@zougloub.eu>
- <20120806223208.5301be0d@zougloub.eu>
- <20120806230629.153d33bd@zougloub.eu>
- <5020DC5F02000078000931C2@nat28.tlf.novell.com>
- <1344331830.7208.6.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1344331830.7208.6.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753675Ab2HGKwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 06:52:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37843 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752071Ab2HGKwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 06:52:33 -0400
+Date: Tue, 7 Aug 2012 11:52:26 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, arnd@arndb.de,
+        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] driver: misc: bmp085: remove "of_match_table" property.
+Message-ID: <20120807105225.GT16861@opensource.wolfsonmicro.com>
+References: <1344245324-16704-1-git-send-email-sourav.poddar@ti.com>
+ <20120806093033.GH17551@arwen.pp.htv.fi>
+ <20120806154214.GC29272@sirena.org.uk>
+ <20120807054342.GF8468@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120807054342.GF8468@arwen.pp.htv.fi>
+X-Cookie: You will be married within a year.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 07.08.12 at 11:30, Matt Fleming <matt.fleming@intel.com> wrote:
-> On Tue, 2012-08-07 at 08:14 +0100, Jan Beulich wrote:
->> That's not surprising. The question really is what goes wrong
->> when the call is being made - page fault, some other fault, or
->> silent hang. A page fault would point to an incorrect memory
->> map as the prime candidate for causing the problem. My
->> primary suspect would be #NM, i.e. the implementation using
->> floating point (SSE to be precise) instructions when they're
->> unavailable.
-> 
-> I managed to find a machine to reproduce this on and it looks like the
-> ASUS firmware engineers are upto their old tricks of referencing
-> physical addresses after we've taken control of the memory map,
+On Tue, Aug 07, 2012 at 08:43:44AM +0300, Felipe Balbi wrote:
+> On Mon, Aug 06, 2012 at 04:42:14PM +0100, Mark Brown wrote:
 
-Yippie. On such systems we simply can't do any runtime calls.
-Should we add a command line option forcing efi_native to false,
-thus suppressing all runtime calls? Or would the "noefi" one be
-enough already?
+> > It's good practice to have an explict compatible string even if the
+> > default happens to work in order to avoid any name clashes.
 
-Jan
+> of_i2c.c makes no use whatsoever of the compatible string. See that it
+> will build an i2c_boardinfo and register a new device. That compatible
 
+If that's all that's done it seems like a bug frankly, certainly based
+on previous discussions it ought to be.  There are collisions out there,
+they've just happened to not bite us yet
+
+> string is just churn and has no use at all.
+
+This is device tree we're talking about, there's a lot churn anyway.
