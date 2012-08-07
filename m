@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031055Ab2HGWpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:45:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
+	id S1031071Ab2HGWpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:45:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031018Ab2HGWp2 (ORCPT
+	with ESMTP id S1031018Ab2HGWpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:45:28 -0400
+	Tue, 7 Aug 2012 18:45:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roger Blofeld <blofeldus@yahoo.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [ 02/49] powerpc/ftrace: Fix assembly trampoline register usage
-Date: Tue,  7 Aug 2012 15:44:20 -0700
-Message-Id: <20120807222027.072790653@linuxfoundation.org>
+        Dan Melnic <dan.melnic@amd.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Jack Wang <jack_wang@usish.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 06/49] SCSI: libsas: fix sas_discover_devices return code handling
+Date: Tue,  7 Aug 2012 15:44:24 -0700
+Message-Id: <20120807222027.428459581@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -31,49 +32,126 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: roger blofeld <blofeldus@yahoo.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit fd5a42980e1cf327b7240adf5e7b51ea41c23437 upstream.
+commit b17caa174a7e1fd2e17b26e210d4ee91c4c28b37 upstream.
 
-Just like the module loader, ftrace needs to be updated to use r12
-instead of r11 with newer gcc's.
+commit 198439e4 [SCSI] libsas: do not set res = 0 in sas_ex_discover_dev()
+commit 19252de6 [SCSI] libsas: fix wide port hotplug issues
 
-Signed-off-by: Roger Blofeld <blofeldus@yahoo.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+The above commits seem to have confused the return value of
+sas_ex_discover_dev which is non-zero on failure and
+sas_ex_join_wide_port which just indicates short circuiting discovery on
+already established ports.  The result is random discovery failures
+depending on configuration.
+
+Calls to sas_ex_join_wide_port are the source of the trouble as its
+return value is errantly assigned to 'res'.  Convert it to bool and stop
+returning its result up the stack.
+
+Tested-by: Dan Melnic <dan.melnic@amd.com>
+Reported-by: Dan Melnic <dan.melnic@amd.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Reviewed-by: Jack Wang <jack_wang@usish.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/ftrace.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/scsi/libsas/sas_expander.c |   39 +++++++++++--------------------------
+ 1 file changed, 12 insertions(+), 27 deletions(-)
 
---- a/arch/powerpc/kernel/ftrace.c
-+++ b/arch/powerpc/kernel/ftrace.c
-@@ -245,9 +245,9 @@ __ftrace_make_nop(struct module *mod,
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -770,7 +770,7 @@ static struct domain_device *sas_ex_disc
+ }
  
- 	/*
- 	 * On PPC32 the trampoline looks like:
--	 *  0x3d, 0x60, 0x00, 0x00  lis r11,sym@ha
--	 *  0x39, 0x6b, 0x00, 0x00  addi r11,r11,sym@l
--	 *  0x7d, 0x69, 0x03, 0xa6  mtctr r11
-+	 *  0x3d, 0x80, 0x00, 0x00  lis r12,sym@ha
-+	 *  0x39, 0x8c, 0x00, 0x00  addi r12,r12,sym@l
-+	 *  0x7d, 0x89, 0x03, 0xa6  mtctr r12
- 	 *  0x4e, 0x80, 0x04, 0x20  bctr
- 	 */
+ /* See if this phy is part of a wide port */
+-static int sas_ex_join_wide_port(struct domain_device *parent, int phy_id)
++static bool sas_ex_join_wide_port(struct domain_device *parent, int phy_id)
+ {
+ 	struct ex_phy *phy = &parent->ex_dev.ex_phy[phy_id];
+ 	int i;
+@@ -786,11 +786,11 @@ static int sas_ex_join_wide_port(struct
+ 			sas_port_add_phy(ephy->port, phy->phy);
+ 			phy->port = ephy->port;
+ 			phy->phy_state = PHY_DEVICE_DISCOVERED;
+-			return 0;
++			return true;
+ 		}
+ 	}
  
-@@ -262,9 +262,9 @@ __ftrace_make_nop(struct module *mod,
- 	pr_devel(" %08x %08x ", jmp[0], jmp[1]);
+-	return -ENODEV;
++	return false;
+ }
  
- 	/* verify that this is what we expect it to be */
--	if (((jmp[0] & 0xffff0000) != 0x3d600000) ||
--	    ((jmp[1] & 0xffff0000) != 0x396b0000) ||
--	    (jmp[2] != 0x7d6903a6) ||
-+	if (((jmp[0] & 0xffff0000) != 0x3d800000) ||
-+	    ((jmp[1] & 0xffff0000) != 0x398c0000) ||
-+	    (jmp[2] != 0x7d8903a6) ||
- 	    (jmp[3] != 0x4e800420)) {
- 		printk(KERN_ERR "Not a trampoline\n");
- 		return -EINVAL;
+ static struct domain_device *sas_ex_discover_expander(
+@@ -928,8 +928,7 @@ static int sas_ex_discover_dev(struct do
+ 		return res;
+ 	}
+ 
+-	res = sas_ex_join_wide_port(dev, phy_id);
+-	if (!res) {
++	if (sas_ex_join_wide_port(dev, phy_id)) {
+ 		SAS_DPRINTK("Attaching ex phy%d to wide port %016llx\n",
+ 			    phy_id, SAS_ADDR(ex_phy->attached_sas_addr));
+ 		return res;
+@@ -974,8 +973,7 @@ static int sas_ex_discover_dev(struct do
+ 			if (SAS_ADDR(ex->ex_phy[i].attached_sas_addr) ==
+ 			    SAS_ADDR(child->sas_addr)) {
+ 				ex->ex_phy[i].phy_state= PHY_DEVICE_DISCOVERED;
+-				res = sas_ex_join_wide_port(dev, i);
+-				if (!res)
++				if (sas_ex_join_wide_port(dev, i))
+ 					SAS_DPRINTK("Attaching ex phy%d to wide port %016llx\n",
+ 						    i, SAS_ADDR(ex->ex_phy[i].attached_sas_addr));
+ 
+@@ -1838,32 +1836,20 @@ static int sas_discover_new(struct domai
+ {
+ 	struct ex_phy *ex_phy = &dev->ex_dev.ex_phy[phy_id];
+ 	struct domain_device *child;
+-	bool found = false;
+-	int res, i;
++	int res;
+ 
+ 	SAS_DPRINTK("ex %016llx phy%d new device attached\n",
+ 		    SAS_ADDR(dev->sas_addr), phy_id);
+ 	res = sas_ex_phy_discover(dev, phy_id);
+ 	if (res)
+-		goto out;
+-	/* to support the wide port inserted */
+-	for (i = 0; i < dev->ex_dev.num_phys; i++) {
+-		struct ex_phy *ex_phy_temp = &dev->ex_dev.ex_phy[i];
+-		if (i == phy_id)
+-			continue;
+-		if (SAS_ADDR(ex_phy_temp->attached_sas_addr) ==
+-		    SAS_ADDR(ex_phy->attached_sas_addr)) {
+-			found = true;
+-			break;
+-		}
+-	}
+-	if (found) {
+-		sas_ex_join_wide_port(dev, phy_id);
++		return res;
++
++	if (sas_ex_join_wide_port(dev, phy_id))
+ 		return 0;
+-	}
++
+ 	res = sas_ex_discover_devices(dev, phy_id);
+-	if (!res)
+-		goto out;
++	if (res)
++		return res;
+ 	list_for_each_entry(child, &dev->ex_dev.children, siblings) {
+ 		if (SAS_ADDR(child->sas_addr) ==
+ 		    SAS_ADDR(ex_phy->attached_sas_addr)) {
+@@ -1873,7 +1859,6 @@ static int sas_discover_new(struct domai
+ 			break;
+ 		}
+ 	}
+-out:
+ 	return res;
+ }
+ 
 
 
