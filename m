@@ -1,118 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964973Ab2HGDnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:43:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60053 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964813Ab2HGDnn (ORCPT
+	id S964984Ab2HGDnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:43:52 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:42277 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964967Ab2HGDnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:43:43 -0400
-Message-Id: <20120807032805.677985191@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:29:01 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Neil Horman <nhorman@tuxdriver.com>,
-        David Miller <davem@davemloft.net>
-Subject: [ 66/70] drop_monitor: prevent init path from scheduling on the wrong cpu
-In-Reply-To: <20120807032755.803571133@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 6 Aug 2012 23:43:47 -0400
+Date: Mon, 6 Aug 2012 20:43:41 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Colin Cross <ccross@android.com>
+Subject: Re: [PATCH] leds: triggers: send uevent when changing triggers
+Message-ID: <20120807034341.GA2390@kroah.com>
+References: <CAMbhsRS-TiBE92nL0Cwc-ssZAMaHE2ET0UE8h7RU3VG6F6+Xtw@mail.gmail.com>
+ <CAK5ve-+11J4HRepAmK-Y0Pq55XhAwa8Ehpw8=KvRdu4Cy90FDQ@mail.gmail.com>
+ <20120726035958.GB7235@kroah.com>
+ <CAK5ve-LbNeJngQPE=893-ChJXEWJHg9km1Ev6GZYx4=Zrrxg9g@mail.gmail.com>
+ <20120726165112.GA23857@kroah.com>
+ <CAK5ve-KFsFwnvd3TwAvTuBfEdTV8PeNBkVpdQT9NYXH2sN+mBA@mail.gmail.com>
+ <CAMbhsRS82FM90sD52qTTdOFJCoR4GyP+v6bwv+4NKhjn-sqh-Q@mail.gmail.com>
+ <CAK5ve-KvdokobzjmuXSsEZxrJcr7i4xHOXJGvMqCSOZ69G_5zw@mail.gmail.com>
+ <20120807033413.GA2261@kroah.com>
+ <CAK5ve-KLdwEqW6MLbusMRkaHBQkxTqOGLoVWzSmiuo2qxwtwmA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK5ve-KLdwEqW6MLbusMRkaHBQkxTqOGLoVWzSmiuo2qxwtwmA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Aug 07, 2012 at 11:38:10AM +0800, Bryan Wu wrote:
+> 
+> 在 2012-8-7 上午11:34，"Greg KH" <gregkh@linuxfoundation.org>写道：
+> >
+> > On Tue, Aug 07, 2012 at 10:57:29AM +0800, Bryan Wu wrote:
+> > > On Wed, Aug 1, 2012 at 2:28 AM, Colin Cross <ccross@android.com> wrote:
+> > > > On Thu, Jul 26, 2012 at 9:04 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
+> > > >> On Fri, Jul 27, 2012 at 12:51 AM, Greg KH <gregkh@linuxfoundation.org>
+> wrote:
+> > > >>> On Thu, Jul 26, 2012 at 01:03:11PM +0800, Bryan Wu wrote:
+> > > >>>> Just one quick patch for my idea: emitting a uevent in
+> sysfs_create_file().
+> > > >>>>
+> > > >>>> --
+> > > >>>> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+> > > >>>> index 00012e3..04da869 100644
+> > > >>>> --- a/fs/sysfs/file.c
+> > > >>>> +++ b/fs/sysfs/file.c
+> > > >>>> @@ -570,10 +570,14 @@ int sysfs_add_file(struct sysfs_dirent *dir_sd,
+> > > >>>> const struct attribute *attr,
+> > > >>>>
+> > > >>>>  int sysfs_create_file(struct kobject * kobj, const struct attribute *
+> attr)
+> > > >>>>  {
+> > > >>>> +       int err = 0;
+> > > >>>> +
+> > > >>>>         BUG_ON(!kobj || !kobj->sd || !attr);
+> > > >>>>
+> > > >>>> -       return sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
+> > > >>>> +       err = sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
+> > > >>>> +       kobject_uevent(kobj, KOBJ_CHANGE);
+> > > >>>
+> > > >>> That's a veritable flood of change events when a new kobject is
+> created,
+> > > >>> right?  It also created uevents for a device that has not told
+> userspace
+> > > >>> that it is even present, which could cause massive confusion, don't you
+> > > >>> think?
+> > > >>>
+> > > >>
+> > > >> Indeed, this is unacceptable. I reworked a new patchset and just sent
+> > > >> our for you review.
+> > > >>
+> > > >> Thanks,
+> > > >> -Bryan
+> > > >
+> > > > Given the rejection of the other solutions to this problem, and chance
+> > > > of getting this acked?
+> > >
+> > > Greg, Richard and Henrique, can I take you guys' Ack here?
+> >
+> > Ack for what specific patch are you referring to?
+> >
+> 
+> For Colin's patch in the first email of this loop.
 
-------------------
-
-From: Neil Horman <nhorman@tuxdriver.com>
-
-commit 4fdcfa12843bca38d0c9deff70c8720e4e8f515f upstream.
-
-I just noticed after some recent updates, that the init path for the drop
-monitor protocol has a minor error.  drop monitor maintains a per cpu structure,
-that gets initalized from a single cpu.  Normally this is fine, as the protocol
-isn't in use yet, but I recently made a change that causes a failed skb
-allocation to reschedule itself .  Given the current code, the implication is
-that this workqueue reschedule will take place on the wrong cpu.  If drop
-monitor is used early during the boot process, its possible that two cpus will
-access a single per-cpu structure in parallel, possibly leading to data
-corruption.
-
-This patch fixes the situation, by storing the cpu number that a given instance
-of this per-cpu data should be accessed from.  In the case of a need for a
-reschedule, the cpu stored in the struct is assigned the rescheule, rather than
-the currently executing cpu
-
-Tested successfully by myself.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: David Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- net/core/drop_monitor.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
-index 7592943..a7cad74 100644
---- a/net/core/drop_monitor.c
-+++ b/net/core/drop_monitor.c
-@@ -49,6 +49,7 @@ struct per_cpu_dm_data {
- 	struct sk_buff __rcu *skb;
- 	atomic_t dm_hit_count;
- 	struct timer_list send_timer;
-+	int cpu;
- };
- 
- struct dm_hw_stat_delta {
-@@ -73,7 +74,6 @@ static int dm_hit_limit = 64;
- static int dm_delay = 1;
- static unsigned long dm_hw_check_delta = 2*HZ;
- static LIST_HEAD(hw_stats_list);
--static int initialized = 0;
- 
- static void reset_per_cpu_data(struct per_cpu_dm_data *data)
- {
-@@ -96,8 +96,8 @@ static void reset_per_cpu_data(struct per_cpu_dm_data *data)
- 				  sizeof(struct net_dm_alert_msg));
- 		msg = nla_data(nla);
- 		memset(msg, 0, al);
--	} else if (initialized)
--		schedule_work_on(smp_processor_id(), &data->dm_alert_work);
-+	} else
-+		schedule_work_on(data->cpu, &data->dm_alert_work);
- 
- 	/*
- 	 * Don't need to lock this, since we are guaranteed to only
-@@ -121,6 +121,8 @@ static void send_dm_alert(struct work_struct *unused)
- 	struct sk_buff *skb;
- 	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
- 
-+	WARN_ON_ONCE(data->cpu != smp_processor_id());
-+
- 	/*
- 	 * Grab the skb we're about to send
- 	 */
-@@ -404,14 +406,14 @@ static int __init init_net_drop_monitor(void)
- 
- 	for_each_present_cpu(cpu) {
- 		data = &per_cpu(dm_cpu_data, cpu);
--		reset_per_cpu_data(data);
-+		data->cpu = cpu;
- 		INIT_WORK(&data->dm_alert_work, send_dm_alert);
- 		init_timer(&data->send_timer);
- 		data->send_timer.data = cpu;
- 		data->send_timer.function = sched_send_work;
-+		reset_per_cpu_data(data);
- 	}
- 
--	initialized = 1;
- 
- 	goto out;
- 
-
-
+I have no idea what that patch contained anymore, that was 1000+ emails
+ago...
