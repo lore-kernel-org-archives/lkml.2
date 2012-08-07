@@ -1,136 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397Ab2HGD4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:56:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59610 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757266Ab2HGDiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:08 -0400
-Message-Id: <20120807032757.021447235@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:01 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        John McCarron <john.mccarron@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 06/70] ALSA: hda - add dock support for Thinkpad X230 Tablet
-In-Reply-To: <20120807032755.803571133@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1757299Ab2HGD6E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:58:04 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62307 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751909Ab2HGD57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 23:57:59 -0400
+X-IronPort-AV: E=Sophos;i="4.77,724,1336320000"; 
+   d="scan'208";a="5566702"
+Message-ID: <50209003.2090809@cn.fujitsu.com>
+Date: Tue, 07 Aug 2012 11:48:19 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: isimatu.yasuaki@jp.fujitsu.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC PATCH V6 15/19] memory-hotplug: implement register_page_bootmem_info_section
+ of sparse-vmemmap
+References: <1343980161-14254-1-git-send-email-wency@cn.fujitsu.com> <1343980161-14254-16-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1343980161-14254-16-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/07 11:43:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/07 11:43:51,
+	Serialize complete at 2012/08/07 11:43:51
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+At 08/03/2012 03:49 PM, wency@cn.fujitsu.com Wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> For removing memmap region of sparse-vmemmap which is allocated bootmem,
+> memmap region of sparse-vmemmap needs to be registered by get_page_bootmem().
+> So the patch searches pages of virtual mapping and registers the pages by
+> get_page_bootmem().
+> 
+> Note: register_page_bootmem_memmap() is not implemented for ia64, ppc, s390,
+> and sparc.
+> 
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Wen Congyang <wency@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> ---
+>  arch/ia64/mm/discontig.c       |    6 ++++
+>  arch/powerpc/mm/init_64.c      |    6 ++++
+>  arch/s390/mm/vmem.c            |    6 ++++
+>  arch/sparc/mm/init_64.c        |    6 ++++
+>  arch/x86/mm/init_64.c          |   52 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/memory_hotplug.h |    2 +
+>  include/linux/mm.h             |    3 +-
+>  mm/memory_hotplug.c            |   23 +++++++++++++++--
+>  8 files changed, 100 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+> index c641333..33943db 100644
+> --- a/arch/ia64/mm/discontig.c
+> +++ b/arch/ia64/mm/discontig.c
+> @@ -822,4 +822,10 @@ int __meminit vmemmap_populate(struct page *start_page,
+>  {
+>  	return vmemmap_populate_basepages(start_page, size, node);
+>  }
+> +
+> +void register_page_bootmem_memmap(unsigned long section_nr,
+> +				  struct page *start_page, unsigned long size)
+> +{
+> +	/* TODO */
+> +}
+>  #endif
+> diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+> index 620b7ac..3690c44 100644
+> --- a/arch/powerpc/mm/init_64.c
+> +++ b/arch/powerpc/mm/init_64.c
+> @@ -298,5 +298,11 @@ int __meminit vmemmap_populate(struct page *start_page,
+>  
+>  	return 0;
+>  }
+> +
+> +void register_page_bootmem_memmap(unsigned long section_nr,
+> +				  struct page *start_page, unsigned long size)
+> +{
+> +	/* TODO */
+> +}
+>  #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+>  
+> diff --git a/arch/s390/mm/vmem.c b/arch/s390/mm/vmem.c
+> index 6f896e7..eda55cd 100644
+> --- a/arch/s390/mm/vmem.c
+> +++ b/arch/s390/mm/vmem.c
+> @@ -227,6 +227,12 @@ out:
+>  	return ret;
+>  }
+>  
+> +void register_page_bootmem_memmap(unsigned long section_nr,
+> +				  struct page *start_page, unsigned long size)
+> +{
+> +	/* TODO */
+> +}
+> +
+>  /*
+>   * Add memory segment to the segment list if it doesn't overlap with
+>   * an already present segment.
+> diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+> index 6026fdd..53f7604 100644
+> --- a/arch/sparc/mm/init_64.c
+> +++ b/arch/sparc/mm/init_64.c
+> @@ -2059,6 +2059,12 @@ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
+>  	}
+>  	return 0;
+>  }
+> +
+> +void register_page_bootmem_memmap(unsigned long section_nr,
+> +				  struct page *start_page, unsigned long size)
+> +{
+> +	/* TODO */
+> +}
+>  #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+>  
+>  static void prot_init_common(unsigned long page_none,
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index e0d88ba..0075592 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -1138,6 +1138,58 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+>  	return 0;
+>  }
+>  
+> +void register_page_bootmem_memmap(unsigned long section_nr,
+> +				  struct page *start_page, unsigned long size)
+> +{
+> +	unsigned long addr = (unsigned long)start_page;
+> +	unsigned long end = (unsigned long)(start_page + size);
+> +	unsigned long next;
+> +	pgd_t *pgd;
+> +	pud_t *pud;
+> +	pmd_t *pmd;
+> +
+> +	for (; addr < end; addr = next) {
+> +		pte_t *pte = NULL;
+> +
+> +		pgd = pgd_offset_k(addr);
+> +		if (pgd_none(*pgd)) {
+> +			next = (addr + PAGE_SIZE) & PAGE_MASK;
+> +			continue;
+> +		}
+> +		get_page_bootmem(section_nr, pgd_page(*pgd), MIX_SECTION_INFO);
+> +
+> +		pud = pud_offset(pgd, addr);
+> +		if (pud_none(*pud)) {
+> +			next = (addr + PAGE_SIZE) & PAGE_MASK;
+> +			continue;
+> +		}
+> +		get_page_bootmem(section_nr, pud_page(*pud), MIX_SECTION_INFO);
+> +
+> +		if (!cpu_has_pse) {
+> +			next = (addr + PAGE_SIZE) & PAGE_MASK;
+> +			pmd = pmd_offset(pud, addr);
+> +			if (pmd_none(*pmd))
+> +				continue;
+> +			get_page_bootmem(section_nr, pmd_page(*pmd),
+> +					 MIX_SECTION_INFO);
+> +
+> +			pte = pte_offset_kernel(pmd, addr);
+> +			if (pte_none(*pte))
+> +				continue;
+> +			get_page_bootmem(section_nr, pte_page(*pte),
+> +					 SECTION_INFO);
+> +		} else {
+> +			next = pmd_addr_end(addr, end);
+> +
+> +			pmd = pmd_offset(pud, addr);
+> +			if (pmd_none(*pmd))
+> +				continue;
+> +			get_page_bootmem(section_nr, pmd_page(*pmd),
+> +					 SECTION_INFO);
+> +		}
+> +	}
+> +}
+> +
+>  void __meminit vmemmap_populate_print_last(void)
+>  {
+>  	if (p_start) {
+> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+> index 1133e63..2d18235 100644
+> --- a/include/linux/memory_hotplug.h
+> +++ b/include/linux/memory_hotplug.h
+> @@ -164,6 +164,8 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
+>  
+>  extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
+>  extern void put_page_bootmem(struct page *page);
+> +extern void get_page_bootmem(unsigned long ingo, struct page *page,
+> +			     unsigned long type);
+>  
+>  /*
+>   * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 311be90..c607913 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1618,7 +1618,8 @@ int vmemmap_populate_basepages(struct page *start_page,
+>  						unsigned long pages, int node);
+>  int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
+>  void vmemmap_populate_print_last(void);
+> -
+> +void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
+> +				  unsigned long size);
+>  
+>  enum mf_flags {
+>  	MF_COUNT_INCREASED = 1 << 0,
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 3a264a5..4589f5b 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -91,8 +91,8 @@ static void release_memory_resource(struct resource *res)
+>  }
+>  
+>  #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
+> -static void get_page_bootmem(unsigned long info,  struct page *page,
+> -			     unsigned long type)
+> +void get_page_bootmem(unsigned long info,  struct page *page,
+> +		      unsigned long type)
+>  {
+>  	unsigned long page_type;
+>  
+> @@ -164,8 +164,25 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
+>  
+>  }
+>  #else
+> -static inline void register_page_bootmem_info_section(unsigned long start_pfn)
+> +static void register_page_bootmem_info_section(unsigned long start_pfn)
+>  {
+> +	unsigned long mapsize, section_nr;
+> +	struct mem_section *ms;
+> +	struct page *page, *memmap;
+> +
+> +	if (!pfn_valid(start_pfn))
+> +		return;
+> +
+> +	section_nr = pfn_to_section_nr(start_pfn);
+> +	ms = __nr_to_section(section_nr);
+> +
+> +	memmap = sparse_decode_mem_map(ms->section_mem_map, section_nr);
+> +
+> +	page = virt_to_page(memmap);
+> +	mapsize = sizeof(struct page) * PAGES_PER_SECTION;
+> +	mapsize = PAGE_ALIGN(mapsize) >> PAGE_SHIFT;
+> +
+> +	register_page_bootmem_memmap(section_nr, memmap, PAGES_PER_SECTION);
 
-------------------
+You only handle memmap here. I think usemap should be also handled here.
 
-From: David Henningsson <david.henningsson@canonical.com>
+Thanks
+Wen Congyang
 
-commit 108cc108a3bb42fe4705df1317ff98e1e29428a6 upstream.
-
-Also add a model/fixup string "lenovo-dock", so that other Thinkpad
-users will be able to test this fixup easily, to see if it enables
-dock I/O for them as well.
-
-BugLink: https://bugs.launchpad.net/bugs/1026953
-Tested-by: John McCarron <john.mccarron@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- Documentation/sound/alsa/HD-Audio-Models.txt |    3 ++-
- sound/pci/hda/patch_realtek.c                |   27 ++++++++++++++++++++++++++
- 2 files changed, 29 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/sound/alsa/HD-Audio-Models.txt b/Documentation/sound/alsa/HD-Audio-Models.txt
-index edad99a..69820b2 100644
---- a/Documentation/sound/alsa/HD-Audio-Models.txt
-+++ b/Documentation/sound/alsa/HD-Audio-Models.txt
-@@ -60,10 +60,11 @@ ALC267/268
- ==========
-   N/A
- 
--ALC269
-+ALC269/270/275/276/280/282
- ======
-   laptop-amic	Laptops with analog-mic input
-   laptop-dmic	Laptops with digital-mic input
-+  lenovo-dock   Enables docking station I/O for some Lenovos
- 
- ALC662/663/272
- ==============
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 5f096a5..0f7fd50 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4809,6 +4809,15 @@ static int alc269_resume(struct hda_codec *codec)
- }
- #endif /* CONFIG_PM */
- 
-+static void alc269_fixup_pincfg_no_hp_to_lineout(struct hda_codec *codec,
-+						 const struct alc_fixup *fix, int action)
-+{
-+	struct alc_spec *spec = codec->spec;
-+
-+	if (action == ALC_FIXUP_ACT_PRE_PROBE)
-+		spec->parse_flags = HDA_PINCFG_NO_HP_FIXUP;
-+}
-+
- static void alc269_fixup_hweq(struct hda_codec *codec,
- 			       const struct alc_fixup *fix, int action)
- {
-@@ -4909,6 +4918,8 @@ enum {
- 	ALC269_FIXUP_DMIC,
- 	ALC269VB_FIXUP_AMIC,
- 	ALC269VB_FIXUP_DMIC,
-+	ALC269_FIXUP_LENOVO_DOCK,
-+	ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT,
- };
- 
- static const struct alc_fixup alc269_fixups[] = {
-@@ -5029,6 +5040,20 @@ static const struct alc_fixup alc269_fixups[] = {
- 			{ }
- 		},
- 	},
-+	[ALC269_FIXUP_LENOVO_DOCK] = {
-+		.type = ALC_FIXUP_PINS,
-+		.v.pins = (const struct alc_pincfg[]) {
-+			{ 0x19, 0x23a11040 }, /* dock mic */
-+			{ 0x1b, 0x2121103f }, /* dock headphone */
-+			{ }
-+		},
-+		.chained = true,
-+		.chain_id = ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT
-+	},
-+	[ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT] = {
-+		.type = ALC_FIXUP_FUNC,
-+		.v.func = alc269_fixup_pincfg_no_hp_to_lineout,
-+	},
- };
- 
- static const struct snd_pci_quirk alc269_fixup_tbl[] = {
-@@ -5051,6 +5076,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x17aa, 0x21ca, "Thinkpad L412", ALC269_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x17aa, 0x21e9, "Thinkpad Edge 15", ALC269_FIXUP_SKU_IGNORE),
-+	SND_PCI_QUIRK(0x17aa, 0x2203, "Thinkpad X230 Tablet", ALC269_FIXUP_LENOVO_DOCK),
- 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_QUANTA_MUTE),
- 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Lenovo Ideapd", ALC269_FIXUP_PCM_44K),
- 	SND_PCI_QUIRK(0x17aa, 0x9e54, "LENOVO NB", ALC269_FIXUP_LENOVO_EAPD),
-@@ -5109,6 +5135,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- static const struct alc_model_fixup alc269_fixup_models[] = {
- 	{.id = ALC269_FIXUP_AMIC, .name = "laptop-amic"},
- 	{.id = ALC269_FIXUP_DMIC, .name = "laptop-dmic"},
-+	{.id = ALC269_FIXUP_LENOVO_DOCK, .name = "lenovo-dock"},
- 	{}
- };
- 
-
-
+>  }
+>  #endif
+>  
 
