@@ -1,81 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab2HGBr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 21:47:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54396 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086Ab2HGBr0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 21:47:26 -0400
+	id S932317Ab2HGBtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 21:49:25 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:48188 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932086Ab2HGBtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 21:49:24 -0400
+X-IronPort-AV: E=Sophos;i="4.77,724,1336320000"; 
+   d="scan'208";a="5565278"
+Message-ID: <502073E9.8050205@cn.fujitsu.com>
+Date: Tue, 07 Aug 2012 09:48:25 +0800
+From: Li Wei <lw@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120806220032.GD26698@opensource.wolfsonmicro.com>
-References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com>
-	<20120806143016.GK16861@opensource.wolfsonmicro.com>
-	<CAN1soZwCr=L3Xdi7HS9dQMxo4DzzbQv2kXo9R_U6QAf7v=B10Q@mail.gmail.com>
-	<20120806154619.GO16861@opensource.wolfsonmicro.com>
-	<CAN1soZzytOwxnS8oNMhFs1rfwVPwFnZoVsXeaMUc4Kf_TnunkA@mail.gmail.com>
-	<20120806155805.GR16861@opensource.wolfsonmicro.com>
-	<20120806192209.GA14594@flint.arm.linux.org.uk>
-	<20120806195352.GC16199@opensource.wolfsonmicro.com>
-	<20120806213124.GB14594@flint.arm.linux.org.uk>
-	<20120806220032.GD26698@opensource.wolfsonmicro.com>
-Date: Tue, 7 Aug 2012 09:47:25 +0800
-Message-ID: <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com>
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Russell King <rmk@arm.linux.org.uk>, sameo@linux.intel.com,
-        rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com
+Subject: Re: [RFC v3 1/7] hashtable: introduce a small and naive hashtable
+References: <1344300317-23189-1-git-send-email-levinsasha928@gmail.com> <1344300317-23189-2-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <1344300317-23189-2-git-send-email-levinsasha928@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/07 09:49:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/07 09:49:46,
+	Serialize complete at 2012/08/07 09:49:46
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 6:00 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Aug 06, 2012 at 10:31:24PM +0100, Russell King wrote:
->
->> Anyway, given that this thread is broken, there's no way for me to find
->> out what the _original_ issue is that you're talking about.  So I'm going
->> to guess that it's come up because we're out of IORESOURCE bits.
->
-> No, that's not it.  What's happened is that Haojian has posted some
-> patching changing all the _IO resources to _MEM in the Marvell PMIC
-> drivers, I think because you yelled at him for using _IO when he
-> reported that the changes in ioport_resource broke things a few releases
-> ago.  Obviously this doesn't achieve a huge amount, it's a misplaced
-> cleanup.
->
-It's because IO_SPACE_LIMIT is set as 0 if there's no PCI devices. But
-IORESOURCE_IO is also used in PMIC mfd drivers to distinguish
-different components.
+On 08/07/2012 08:45 AM, Sasha Levin wrote:
+> This hashtable implementation is using hlist buckets to provide a simple
+> hashtable to prevent it from getting reimplemented all over the kernel.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  include/linux/hashtable.h |   82 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 82 insertions(+), 0 deletions(-)
+>  create mode 100644 include/linux/hashtable.h
+> 
+> diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
+> new file mode 100644
+> index 0000000..394652b
+> --- /dev/null
+> +++ b/include/linux/hashtable.h
+> @@ -0,0 +1,82 @@
+> +/*
+> + * Hash table implementation
+> + * (C) 2012  Sasha Levin <levinsasha928@gmail.com>
+> + */
+> +
+> +#ifndef _LINUX_HASHTABLE_H
+> +#define _LINUX_HASHTABLE_H
+> +
+> +#include <linux/list.h>
+> +#include <linux/types.h>
+> +#include <linux/kernel.h>
+> +#include <linux/hash.h>
+> +
+> +#define DEFINE_HASHTABLE(name, bits)					\
+> +	struct hlist_head name[HASH_SIZE(bits)];
+> +
+> +#define HASH_SIZE(bits) (1 << (bits))
+> +
+> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
+> +#define hash_min(val, bits) ((sizeof(val)==4)?hash_32((val), (bits)):hash_long((val), (bits)))
+> +
+> +/**
+> + * hash_init - initialize a hash table
+> + * @hashtable: hashtable to be initialized
+> + * @bits: bit count of hashing function
+> + *
+> + * Initializes a hash table with 2**bits buckets.
+> + */
+> +static inline void hash_init(struct hlist_head *hashtable, int bits)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < HASH_SIZE(bits); i++)
+> +		INIT_HLIST_HEAD(hashtable + i);
+> +}
+> +
+> +/**
+> + * hash_add - add an object to a hashtable
+> + * @hashtable: hashtable to add to
+> + * @bits: bit count used for hashing
+> + * @node: the &struct hlist_node of the object to be added
+> + * @key: the key of the object to be added
+> + */
+> +#define hash_add(hashtable, bits, node, key)				\
+> +	hlist_add_head(node, &hashtable[hash_min(key, bits)]);
+> +
+> +/**
+> + * hash_del - remove an object from a hashtable
+> + * @node: &struct hlist_node of the object to remove
+> + */
+> +static inline void hash_del(struct hlist_node *node)
+> +{
+> +	hlist_del_init(node);
+> +}
+> +
+> +/**
+> + * hash_for_each - iterate over a hashtable
+> + * @name: hashtable to iterate
+> + * @bits: bit count of hashing function of the hashtable
+> + * @bkt: integer to use as bucket loop cursor
+> + * @node: the &struct list_head to use as a loop cursor for each bucket
+> + * @obj: the type * to use as a loop cursor for each bucket
+> + * @member: the name of the hlist_node within the struct
+> + */
+> +#define hash_for_each(name, bits, bkt, node, obj, member)		\
+> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)			\
+> +		hlist_for_each_entry(obj, node, &name[i], member)
 
-commit 04e1c83806e30ae339fc45def595960c7fef1697
-Author: Russell King <rmk+kernel@arm.linux.org.uk>
-Date:   Wed Jul 6 12:49:59 2011 +0100
+Where is the 'i' coming from? maybe &name[bkt]?
 
-    ARM: io: add a default IO_SPACE_LIMIT definition
-
-    Add a default IO_SPACE_LIMIT definition.  Explain the chosen value and
-    suggest why platforms would want to make it larger.
-
-    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-
->> So, if we made this a numeric index, then we have 32 resource types
->> to deal with, and no need to bugger around with re-using an existing
->> type for something else.
->
-> This seems sensible, and I'm sure if that change were made people would
-> be delighed to use new resource types, but like I say nobody who's
-> motivated to do anything here seems to have the time to do anything
-> about it.
->
-> Whoever looks at this would need to do some detective work, it does seem
-> like there must have been a reason to use a bitmask here...
-
-Changing bitmask to a value for IORESOURCE type is a risk. I agree on Mark
-that someone will complain on this.
-
-Could we consider to expand the usage of IORESOURCE_IO? Maybe we can
-use it for both ISA/PCI and IO related in chip.
+> +
+> +/**
+> + * hash_for_each_possible - iterate over all possible objects for a giver key
+> + * @name: hashtable to iterate
+> + * @obj: the type * to use as a loop cursor for each bucke
+> + * @bits: bit count of hashing function of the hashtable
+> + * @node: the &struct list_head to use as a loop cursor for each bucket
+> + * @member: the name of the hlist_node within the struct
+> + * @key: the key of the objects to iterate over
+> + */
+> +#define hash_for_each_possible(name, obj, bits, node, member, key)	\
+> +	hlist_for_each_entry(obj, node,					\
+> +		&name[hash_min(key, bits)], member)
+> +
+> +#endif
