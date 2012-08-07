@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab2HGDip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:38:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59721 "EHLO
+	id S1757400Ab2HGDin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:38:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59715 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757341Ab2HGDib (ORCPT
+	by vger.kernel.org with ESMTP id S1757337Ab2HGDia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:31 -0400
-Message-Id: <20120807032805.943189866@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:30 -0400
+Message-Id: <20120807032803.781098237@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:29:03 +0100
+Date: Tue, 07 Aug 2012 04:28:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
-        <dcb314@hotmail.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 68/70] pch_uart: Fix missing break for 16 byte fifo
+        alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 53/70] ASoC: wm8962: Allow VMID time to fully ramp
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,32 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 9bc03743fff0770dc5a5324ba92e67cc377f16ca upstream.
+commit 9d40e5582c9c4cfb6977ba2a0ca9c2ed82c56f21 upstream.
 
-Otherwise we fall back to the wrong value.
+Required for reliable power up from cold.
 
-Reported-by: <dcb314@hotmail.com>
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44091
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/pch_uart.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/wm8962.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index d291518..c5bc23d 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -1266,6 +1266,7 @@ static int pch_uart_startup(struct uart_port *port)
+diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
+index eaf6586..aa9ce9d 100644
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -2501,6 +2501,9 @@ static int wm8962_set_bias_level(struct snd_soc_codec *codec,
+ 		/* VMID 2*250k */
+ 		snd_soc_update_bits(codec, WM8962_PWR_MGMT_1,
+ 				    WM8962_VMID_SEL_MASK, 0x100);
++
++		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF)
++			msleep(100);
  		break;
- 	case 16:
- 		fifo_size = PCH_UART_HAL_FIFO16;
-+		break;
- 	case 1:
- 	default:
- 		fifo_size = PCH_UART_HAL_FIFO_DIS;
+ 
+ 	case SND_SOC_BIAS_OFF:
 
 
