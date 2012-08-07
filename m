@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab2HGN7p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 09:59:45 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:53614 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab2HGN7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 09:59:43 -0400
-Message-ID: <50211F3D.2000008@parallels.com>
-Date: Tue, 7 Aug 2012 17:59:25 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Rientjes <rientjes@google.com>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kir Kolyshkin <kir@parallels.com>
-Subject: Re: Fork bomb limitation in memcg WAS: Re: [PATCH 00/11] kmem controller
- for memcg: stripped down version
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org> <4FE9621D.2050002@parallels.com> <20120626145539.eeeab909.akpm@linux-foundation.org> <4FEAD260.4000603@parallels.com> <alpine.DEB.2.00.1206271233080.22162@chino.kir.corp.google.com> <4FEC1D63.6000903@parallels.com> <20120628152540.cc13a735.akpm@linux-foundation.org>
-In-Reply-To: <20120628152540.cc13a735.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1754956Ab2HGOAH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 10:00:07 -0400
+Received: from nm21-vm6.bullet.mail.sg3.yahoo.com ([106.10.151.37]:31157 "HELO
+	nm21-vm6.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751982Ab2HGOAF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 10:00:05 -0400
+X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 10:00:05 EDT
+X-Yahoo-Newman-Id: 152365.46462.bm@smtp161.mail.sg3.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: kZehevkVM1mPpn7FM48qUIIFJU9ze9O23fscGjYpbP.Nta1
+ epWpmOkLkPPZxiAMl0abdSHO1o7ORFcZCp8rt_O5ko4FfGVf3q_DQhhnaZwE
+ 2xMG.HrtgoC9uMhaBGTc1GARSOzfjJs7ZFSmpVJSAOrdhL5e9mIm7B27ryrf
+ hdzgsgZD1H_LreEwsldQ9Lps7Hf0NfCw9U7.v7V_Rc3f25eJpLEL9s7txM9R
+ 9j_MShyrKtDvCZeqAG9LqLfUbX8XSZON6Mnzmv0H3GhCCDy7a7T9rLoSH.Vj
+ Us1cdW1mm3zGd.CyKA5wz25qsGMv7Eotaf7qMbI0FSaOMf3ewkVkRScHQarR
+ 1ln4umvGfaOIaafbghSneBbk4zESMqahwGPQLrTKKIy0REetM8Zr0U8Hvz4_
+ 5x.SEL7K3_NAbdGwHYFK5_kyx7Ux.I7l_15esU51nVr52zfdCnYd6i48tTBg
+ S1VJyJdHjy8VrR2iDju_z3DRvVauO
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: acme@ghostprotocols.net, davem@davemloft.net, bhutchings@solarflare.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeffrin Jose <ahiliation@yahoo.co.in>
+Subject: [PATCH] net:appletalk:ddp:fixed coding style issue again relating to
+Date: Tue,  7 Aug 2012 19:30:20 +0530
+Message-Id: <1344348020-4966-1-git-send-email-ahiliation@yahoo.co.in>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 02:25 AM, Andrew Morton wrote:
-> On Thu, 28 Jun 2012 13:01:23 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
-> 
->>
->> ...
->>
-> 
-> OK, that all sounds convincing ;) Please summarise and capture this
-> discussion in the [patch 0/n] changelog so we (or others) don't have to
-> go through this all again.  And let's remember this in the next
-> patchset!
-> 
->> Last, but not least, note that it is totally within my interests to
->> merge the slab tracking as fast as we can. it'll be a matter of going
->> back to it, and agreeing in the final form.
-> 
-> Yes, I'd very much like to have the whole slab implementation in a
-> reasonably mature state before proceeding too far with this base
-> patchset.
-> 
-So, that was posted separately as well.
+Fixed coding style issue relating to indentation in
+net/appletalk/ddp.c found by checkpatch.pl tool
 
-Although there is a thing to fix here and there - all of them I am
-working on already - I believe that to be mature enough.
+Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+---
+ net/appletalk/ddp.c |   42 +++++++++++++++++++++---------------------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
 
-Do you have any comments on that? Would you be willing to take this
-first part (modified with the comments on this thread itself) and let it
-start sitting in the tree?
+diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
+index 4023fca..2cf1054 100644
+--- a/net/appletalk/ddp.c
++++ b/net/appletalk/ddp.c
+@@ -1797,39 +1797,39 @@ static int atalk_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
+ 	switch (cmd) {
+ 		/* Protocol layer */
+ 	case TIOCOUTQ: {
+-			long amount = sk->sk_sndbuf - sk_wmem_alloc_get(sk);
++		long amount = sk->sk_sndbuf - sk_wmem_alloc_get(sk);
+ 
+-			if (amount < 0)
+-				amount = 0;
+-			rc = put_user(amount, (int __user *)argp);
+-			break;
++		if (amount < 0)
++			amount = 0;
++		rc = put_user(amount, (int __user *)argp);
++		break;
+ 		}
+ 	case TIOCINQ: {
+ 			/*
+ 			 * These two are safe on a single CPU system as only
+ 			 * user tasks fiddle here
+ 			 */
+-			struct sk_buff *skb = skb_peek(&sk->sk_receive_queue);
+-			long amount = 0;
++		struct sk_buff *skb = skb_peek(&sk->sk_receive_queue);
++		long amount = 0;
+ 
+-			if (skb)
+-				amount = skb->len - sizeof(struct ddpehdr);
++		if (skb)
++			amount = skb->len - sizeof(struct ddpehdr);
+ 			rc = put_user(amount, (int __user *)argp);
+ 			break;
+ 		}
+ 	case SIOCGSTAMP:
+-			rc = sock_get_timestamp(sk, argp);
+-			break;
++		rc = sock_get_timestamp(sk, argp);
++		break;
+ 	case SIOCGSTAMPNS:
+-			rc = sock_get_timestampns(sk, argp);
+-			break;
++		rc = sock_get_timestampns(sk, argp);
++		break;
+ 		/* Routing */
+ 	case SIOCADDRT:
+ 	case SIOCDELRT:
+-			rc = -EPERM;
+-			if (capable(CAP_NET_ADMIN))
+-				rc = atrtr_ioctl(cmd, argp);
+-			break;
++		rc = -EPERM;
++		if (capable(CAP_NET_ADMIN))
++			rc = atrtr_ioctl(cmd, argp);
++		break;
+ 		/* Interface */
+ 	case SIOCGIFADDR:
+ 	case SIOCSIFADDR:
+@@ -1838,10 +1838,10 @@ static int atalk_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
+ 	case SIOCDIFADDR:
+ 	case SIOCSARP:		/* proxy AARP */
+ 	case SIOCDARP:		/* proxy AARP */
+-			rtnl_lock();
+-			rc = atif_ioctl(cmd, argp);
+-			rtnl_unlock();
+-			break;
++		rtnl_lock();
++		rc = atif_ioctl(cmd, argp);
++		rtnl_unlock();
++		break;
+ 	}
+ 
+ 	return rc;
+-- 
+1.7.10
 
-Thanks!
