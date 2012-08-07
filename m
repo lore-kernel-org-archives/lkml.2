@@ -1,85 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab2HGSdz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 14:33:55 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:42696 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2HGSdy (ORCPT
+	id S1755861Ab2HGSiR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 14:38:17 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:65422 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607Ab2HGSiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 14:33:54 -0400
-Date: Tue, 7 Aug 2012 14:24:14 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Ian.Campbell@citrix.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        catalin.marinas@arm.com, arnd@arndb.de
-Subject: Re: [PATCH v2 13/23] xen/arm: get privilege status
-Message-ID: <20120807182414.GQ15053@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com>
- <1344263246-28036-13-git-send-email-stefano.stabellini@eu.citrix.com>
+	Tue, 7 Aug 2012 14:38:14 -0400
+Date: Tue, 7 Aug 2012 11:38:09 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Arun Murthy <arun.murthy@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, sjur.brandeland@stericsson.com
+Subject: Re: [PATCHv2 1/4] modem_shm: Add Modem Access Framework
+Message-ID: <20120807183809.GC26990@kroah.com>
+References: <1344322471-3640-1-git-send-email-arun.murthy@stericsson.com>
+ <1344322471-3640-2-git-send-email-arun.murthy@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344263246-28036-13-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1344322471-3640-2-git-send-email-arun.murthy@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 03:27:16PM +0100, Stefano Stabellini wrote:
-> Use Xen features to figure out if we are privileged.
-> 
-> XENFEAT_dom0 was introduced by 23735 in xen-unstable.hg.
+On Tue, Aug 07, 2012 at 12:24:28PM +0530, Arun Murthy wrote:
+> Adds Modem Access Framework, which allows for registering platform specific
+> modem access mechanisms. The framework also exposes APIs for client drivers
+> for getting and releasing access to modem, regardless of the underlying
+> platform specific access mechanism.
 
-Looks good.
+The term "modems" here has a lot of legacy connotations.  First of which
+is, userspace handles this today as tty devices, why aren't you doing
+the same here?  Why does this have to be something "special"?
 
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
 > ---
->  arch/arm/xen/enlighten.c         |    7 +++++++
->  include/xen/interface/features.h |    3 +++
->  2 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index 102d823..ac3a2d6 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -1,6 +1,7 @@
->  #include <xen/xen.h>
->  #include <xen/interface/xen.h>
->  #include <xen/interface/memory.h>
-> +#include <xen/features.h>
->  #include <xen/platform_pci.h>
->  #include <asm/xen/hypervisor.h>
->  #include <asm/xen/hypercall.h>
-> @@ -57,6 +58,12 @@ static int __init xen_guest_init(void)
->  	}
->  	xen_domain_type = XEN_HVM_DOMAIN;
->  
-> +	xen_setup_features();
-> +	if (xen_feature(XENFEAT_dom0))
-> +		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
+>  drivers/Kconfig                        |    2 +
+>  drivers/Makefile                       |    1 +
+>  drivers/modem_shm/Kconfig              |    9 +
+>  drivers/modem_shm/Makefile             |    1 +
+>  drivers/modem_shm/modem_access.c       |  419 ++++++++++++++++++++++++++++++++
+
+Any reason why this can't be under drivers/tty/ ?
+
+>  include/linux/modem_shm/modem.h        |   64 +++++
+>  include/linux/modem_shm/modem_client.h |   55 +++++
+
+Why are both of these "public" like this?  Why not just make one file?
+Would someone ever only need to include one of these?
+
+> +config MODEM_SHM
+> +        bool "Modem Access Framework"
+> +        default y
+
+Unless it is needed to boot your machine, NEVER make the default y.
+
+> +struct modem {
+> +	struct device *dev;
+> +	struct list_head list;
+> +	char *modem_name;
+
+You already have a name in the struct device, why do you need another
+one?
+
+> +	struct device_attribute dev_attr;
+
+Why is this in the structure?
+
+> +	struct modem_dev *mdev;
+> +	atomic_t use;
+
+What is this variable for?
+
+Why isn't this a 'struct device' itself?
+
+> +/**
+> + * modem_is_requested - check if modem access is requested
+> + * @modem: modem device
+> + *
+> + * Checks whether modem is accessed or not by querying
+> + * the underlying platform specific modem access
+> + * implementation.
+> + */
+> +int modem_is_requested(struct modem *modem)
+> +{
+> +	int ret;
+> +
+> +	mutex_lock(&modem->mdev->mutex);
+> +	ret = _modem_is_requested(modem->mdev);
+> +	mutex_unlock(&modem->mdev->mutex);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(modem_is_requested);
+
+EXPORT_SYMBOL_GPL() for this, and the other apis perhaps?
+
+> +static struct modem *_modem_get(struct device *dev, const char *id,
+> +		int exclusive)
+> +{
+> +	struct modem_dev *mdev_ptr;
+> +	struct modem *modem = ERR_PTR(-ENODEV);
+> +	int ret;
+> +
+> +	if (id == NULL) {
+> +		pr_err("modem_get with no identifier\n");
+> +		return modem;
+> +	}
+> +
+> +	mutex_lock(&modem_list_mutex);
+> +	list_for_each_entry(mdev_ptr, &modem_list, modem_list) {
+> +		if (strcmp(mdev_get_name(mdev_ptr), id) == 0)
+> +			goto found;
+> +	}
+> +
+> +	goto out;
+> +
+> +found:
+> +	if (!try_module_get(mdev_ptr->owner))
+> +		goto out;
+> +
+> +	modem = create_modem(mdev_ptr, dev, id);
+> +	if (modem == NULL) {
+> +		modem = ERR_PTR(-ENOMEM);
+> +		module_put(mdev_ptr->owner);
+> +	}
+> +
+> +	mdev_ptr->open_count++;
+> +	ret = _modem_is_requested(mdev_ptr);
+> +	if (ret)
+> +		mdev_ptr->use_count = 1;
 > +	else
-> +		xen_start_info->flags &= ~(SIF_INITDOMAIN|SIF_PRIVILEGED);
+> +		mdev_ptr->use_count = 0;
 > +
->  	if (!shared_info_page)
->  		shared_info_page = (struct shared_info *)
->  			get_zeroed_page(GFP_KERNEL);
-> diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
-> index b6ca39a..131a6cc 100644
-> --- a/include/xen/interface/features.h
-> +++ b/include/xen/interface/features.h
-> @@ -50,6 +50,9 @@
->  /* x86: pirq can be used by HVM guests */
->  #define XENFEAT_hvm_pirqs           10
->  
-> +/* operation as Dom0 is supported */
-> +#define XENFEAT_dom0                      11
+> +out:
+> +	mutex_unlock(&modem_list_mutex);
+> +	return modem;
 > +
->  #define XENFEAT_NR_SUBMAPS 1
->  
->  #endif /* __XEN_PUBLIC_FEATURES_H__ */
-> -- 
-> 1.7.2.5
+> +}
+
+Calling this function does a lot more than just incrementing the
+reference count of an object.  It sets it up, and creates things.  That
+should be way more documented than this one line says:
+
+> +/**
+> + * modem_get - Get reference to a particular platform specific modem
+> + * @dev: device
+> + * @id: modem device name
+> + *
+> + * Get reference to a particular modem device.
+> + */
+
+See, that's really not true.
+
+> +static ssize_t modem_print_state(char *buf, int state)
+> +{
+> +	if (state > 0)
+> +		return sprintf(buf, "accessed\n");
+> +	else if (state == 0)
+> +		return sprintf(buf, "released\n");
+> +	else
+> +		return sprintf(buf, "unknown\n");
+> +}
+
+Why not use an enumerated type for your state, to make it easier to
+understand than 0, -, and +?
+
+> +static ssize_t modem_state_show(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	struct modem_dev *mdev = dev_get_drvdata(dev);
+> +	ssize_t ret;
+> +
+> +	mutex_lock(&mdev->mutex);
+> +	ret = modem_print_state(buf, _modem_is_requested(mdev));
+
+Why not just embed the function here?  It's only ever called once.
+
+> +	mutex_unlock(&mdev->mutex);
+> +
+> +	return ret;
+> +}
+> +static DEVICE_ATTR(state, 0444, modem_state_show, NULL);
+> +
+> +static ssize_t modem_use_show(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	struct modem_dev *mdev = dev_get_drvdata(dev);
+> +	struct modem *mod;
+> +	size_t size = 0;
+> +
+> +	list_for_each_entry(mod, &mdev->client_list, list) {
+> +		if (mod->dev != NULL)
+> +			size += sprintf((buf + size), "%s (%d)\n",
+> +				dev_name(mod->dev), atomic_read(&mod->use));
+> +		else
+> +			size += sprintf((buf + size), "unknown (%d)\n",
+> +				atomic_read(&mod->use));
+> +	}
+> +	size += sprintf((buf + size), "\n");
+> +
+> +	return size;
+> +}
+> +static DEVICE_ATTR(use, 0444, modem_use_show, NULL);
+
+You have sysfs files with no matching Documentation/ABI entries showing
+how they are to be used, and what they contain, in this patch.  Please
+fix this.
+
+And why are you reporting an atomic value, that's 2 values per sysfs
+file, not acceptable.
+
+> +static ssize_t modem_name_show(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	struct modem_dev *mdev = dev_get_drvdata(dev);
+> +
+> +	return sprintf(buf, "%s\n", mdev_get_name(mdev));
+> +}
+> +static DEVICE_ATTR(name, 0444, modem_name_show, NULL);
+
+The name is in the struct device, which is the directory in sysfs, don't
+include it again in a sysfs file, that's redundant.
+
+> +static int add_modem_attributes(struct modem_dev *mdev)
+> +{
+> +	struct device      *dev = &mdev->dev;
+> +	struct modem_ops   *ops = mdev->desc->ops;
+> +	int                status = 0;
+> +
+> +	status = device_create_file(dev, &dev_attr_use);
+> +	if (status < 0)
+> +		return status;
+> +
+> +	status = device_create_file(dev, &dev_attr_name);
+> +	if (status < 0)
+> +		return status;
+> +
+> +	status = device_create_file(dev, &dev_attr_num_active_users);
+> +	if (status < 0)
+> +		return status;
+> +
+> +	if (ops->is_requested) {
+> +		status = device_create_file(dev, &dev_attr_state);
+> +		if (status < 0)
+> +			return status;
+> +	}
+> +
+> +	return 0;
+> +}
+
+Please use a default attribute group, as you just raced with userspace,
+and now userspace tried to look for these files when the device was
+created, yet they were not present yet, causing all sorts of problems
+with your tools.  This must be fixed.
+
+that's enough for now...
+
+greg k-h
