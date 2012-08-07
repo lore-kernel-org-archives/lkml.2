@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab2HGPbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:31:19 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53059 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab2HGPbR (ORCPT
+	id S1753489Ab2HGPb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:31:59 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:14370
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752014Ab2HGPb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:31:17 -0400
-Date: Tue, 7 Aug 2012 16:31:13 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, w.sang@pengutronix.de, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 1/1 v2] i2c: Add default configuration into the Nomadik
- I2C driver.
-Message-ID: <20120807153112.GF10719@gmail.com>
-References: <1344266253-14050-1-git-send-email-lee.jones@linaro.org>
- <20120806153503.GH10524@gmail.com>
- <CACRpkdZjbyQbht+UpXrrVGhAzGYPjb=HRZhJ+TvsEXhGeviJLA@mail.gmail.com>
+	Tue, 7 Aug 2012 11:31:57 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1202hzz8275bh8275dhz2dh668h839h944hd25hf0ah)
+X-WSS-ID: 0M8E5T3-01-0TK-02
+X-M-MSG: 
+Date: Tue, 7 Aug 2012 17:31:49 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: <mingo@kernel.org>, <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <torvalds@linux-foundation.org>,
+        <a.p.zijlstra@chello.nl>, <suresh.b.siddha@intel.com>,
+        <tglx@linutronix.de>
+CC: <linux-tip-commits@vger.kernel.org>,
+        "Petkov, Borislav" <borislav.petkov@amd.com>
+Subject: Re: [tip:x86/apic] x86/irq: Update irq_cfg domain unless the new
+ affinity is a subset of the current domain
+Message-ID: <20120807153149.GI3732@erda.amd.com>
+References: <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
+ <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZjbyQbht+UpXrrVGhAzGYPjb=HRZhJ+TvsEXhGeviJLA@mail.gmail.com>
+In-Reply-To: <tip-332afa656e76458ee9cf0f0d123016a0658539e4@git.kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Jones <lee.jones@linaro.org>
-Date: Tue, 7 Aug 2012 12:27:24 +0100
-Subject: [PATCH 1/1 v3] i2c: Add default configuration into the Nomadik I2C
- driver.
+On 06.06.12 08:03:58, tip-bot for Suresh Siddha wrote:
+> Commit-ID:  332afa656e76458ee9cf0f0d123016a0658539e4
+> Gitweb:     http://git.kernel.org/tip/332afa656e76458ee9cf0f0d123016a0658539e4
+> Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+> AuthorDate: Mon, 21 May 2012 16:58:01 -0700
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 6 Jun 2012 09:51:22 +0200
+> 
+> x86/irq: Update irq_cfg domain unless the new affinity is a subset of the current domain
 
-At this moment in time there is only one known configuration for the
-Nomadik I2C driver. By not holding that configuration in the driver
-adds some unnecessary overhead in platform code. The configuration
-as already been removed from platform code, this patch checks for any
-over-riding configurations. If there aren't any, the default is used.
+This commit causes a sata error and thus a boot failure:
 
-Cc: linux-i2c@vger.kernel.org
-Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+ ACPI: Invalid Power Resource to register!ata1: lost interrupt (Status 0x50)
+ ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x40000000 action 0x6 frozen
+ ata1: SError: { }
+ ata1.00: failed command: READ DMA
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/i2c/busses/i2c-nomadik.c |   28 ++++++++++++++++++----------
- 1 file changed, 18 insertions(+), 10 deletions(-)
+Reverting it as following helped:
 
-diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
-index 5e6f1ee..61b00ed 100644
---- a/drivers/i2c/busses/i2c-nomadik.c
-+++ b/drivers/i2c/busses/i2c-nomadik.c
-@@ -350,10 +350,6 @@ static void setup_i2c_controller(struct nmk_i2c_dev *dev)
- 
- 	i2c_clk = clk_get_rate(dev->clk);
- 
--	/* fallback to std. mode if machine has not provided it */
--	if (dev->cfg.clk_freq == 0)
--		dev->cfg.clk_freq = 100000;
--
- 	/*
- 	 * The spec says, in case of std. mode the divider is
- 	 * 2 whereas it is 3 for fast and fastplus mode of
-@@ -911,20 +907,32 @@ static const struct i2c_algorithm nmk_i2c_algo = {
- 	.functionality	= nmk_i2c_functionality
- };
- 
-+static struct nmk_i2c_controller u8500_i2c = {
-+	/*
-+	 * Slave data setup time; 250ns, 100ns, and 10ns, which
-+	 * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
-+	 */
-+	.slsu           = 0xe,
-+	.tft            = 1,      /* Tx FIFO threshold */
-+	.rft            = 8,      /* Rx FIFO threshold */
-+	.clk_freq       = 400000, /* fast mode operation */
-+	.timeout        = 200,    /* Slave response timeout(ms) */
-+	.sm             = I2C_FREQ_MODE_FAST,
-+};
-+
- static atomic_t adapter_id = ATOMIC_INIT(0);
- 
- static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id *id)
- {
- 	int ret = 0;
--	struct nmk_i2c_controller *pdata =
--			adev->dev.platform_data;
-+	struct nmk_i2c_controller *pdata = adev->dev.platform_data;
- 	struct nmk_i2c_dev	*dev;
- 	struct i2c_adapter *adap;
- 
--	if (!pdata) {
--		dev_warn(&adev->dev, "no platform data\n");
--		return -ENODEV;
--	}
-+	if (!pdata)
-+		/* No i2c configuration found, using the default. */
-+		pdata = &u8500_i2c;
-+
- 	dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
- 	if (!dev) {
- 		dev_err(&adev->dev, "cannot allocate memory\n");
+ $ git revert d872818dbbeed1bccf58c7f8c7db432154c802f9
+ $ git revert 1ac322d0b169c95ce34d55b3ed6d40ce1a5f3a02
+ $ git revert 332afa656e76458ee9cf0f0d123016a0658539e4
+
+-Robert
+
 -- 
-1.7.9.5
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
