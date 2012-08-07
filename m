@@ -1,318 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab2HGVqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 17:46:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:32886 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756839Ab2HGVq3 (ORCPT
+	id S932146Ab2HGVrj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 17:47:39 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:46307 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070Ab2HGVri convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 17:46:29 -0400
-From: Matt Sealey <matt@genesi-usa.com>
-To: Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: Steev Klimaszewski <steev@genesi-usa.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Sealey <matt@genesi-usa.com>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH] efikamx: reintroduce Genesi Efika MX Smarttop via device tree
-Date: Tue,  7 Aug 2012 16:46:18 -0500
-Message-Id: <1344375978-29981-1-git-send-email-matt@genesi-usa.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 7 Aug 2012 17:47:38 -0400
+MIME-Version: 1.0
+Message-ID: <3f8dfac9-2b92-442c-800a-f0bfef8a90cb@default>
+Date: Tue, 7 Aug 2012 14:47:05 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Kurt Hackel <kurt.hackel@oracle.com>
+Subject: RE: [PATCH 0/4] promote zcache from staging
+References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <5021795A.5000509@linux.vnet.ibm.com>
+In-Reply-To: <5021795A.5000509@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6661.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This device tree only supports the final retail board ("TO3").
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [PATCH 0/4] promote zcache from staging
+> 
+> On 07/27/2012 01:18 PM, Seth Jennings wrote:
+> > Some benchmarking numbers demonstrating the I/O saving that can be had
+> > with zcache:
+> >
+> > https://lkml.org/lkml/2012/3/22/383
+> 
+> There was concern that kernel changes external to zcache since v3.3 may
+> have mitigated the benefit of zcache.  So I re-ran my kernel building
+> benchmark and confirmed that zcache is still providing I/O and runtime
+> savings.
 
-It is currently feature equivalent to the MX51 Babbage device tree. The
-following features have been tested and work as well as can be expected:
+Hi Seth --
 
-* Serial port
-* SD card support
-* I2C bus
-* SGTL5000 audio support via the internal speaker
-* SDMA support (via audio)
-* SPI bus
-* NOR flash (at 25MHz bus speed)
-* MC13892 PMIC Regulator and Realtime clock functions
+Thanks for re-running your tests.  I have a couple of concerns and
+hope that you, and other interested parties, will read all the
+way through my lengthy response.
 
-Since the board requires some extra work on the PMIC to power off, the system
-will instead just halt, however reboot works. Other missing features are due
-to a lack of drivers or device tree bindings currently.
+The zcache issues I have seen in recent kernels arise when zcache
+gets "full".  I notice your original published benchmarks [1] include
+N=24, N=28, and N=32, but these updated results do not.  Are you planning
+on completing the runs?  Second, I now see the numbers I originally
+published for what I thought was the same benchmark as yours are actually
+an order of magnitude larger (in sec) than yours.  I didn't notice
+this in March because we were focused on the percent improvement, not
+the raw measurements.  Since the hardware is highly similar, I suspect
+it is not a hardware difference but instead that you are compiling
+a much smaller kernel.  In other words, your test case is much
+smaller, and so exercises zcache much less.  My test case compiles
+a full enterprise kernel... what is yours doing?
 
-Signed-off-by: Matt Sealey <matt@genesi-usa.com>
-Signed-off-by: Steev Klimaszewski <steev@genesi-usa.com>
----
- arch/arm/boot/dts/imx51-efikamx.dts |  247 +++++++++++++++++++++++++++++++++++
- arch/arm/mach-imx/Makefile.boot     |    2 +-
- 2 files changed, 248 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/imx51-efikamx.dts
+IMHO, any cache in computer science needs to be measured both
+when it is not-yet-full and when it is full.  The "demo" zcache in
+staging works very well before it is full and I think our benchmarking
+in March and your re-run benchmarks demonstrate that.  At LSFMM, Andrea
+Arcangeli pointed out that zcache, for frontswap pages, has no "writeback"
+capabilities and, when it is full, it simply rejects further attempts
+to put data in its cache.  He said this is unacceptable for KVM and I
+agreed that it was a flaw that needed to be fixed before zcache should
+be promoted.  When I tested zcache for this, I found that not only was
+he right, but that zcache could not be fixed without a major rewrite.
 
-diff --git a/arch/arm/boot/dts/imx51-efikamx.dts b/arch/arm/boot/dts/imx51-efikamx.dts
-new file mode 100644
-index 0000000..dd14f77
---- /dev/null
-+++ b/arch/arm/boot/dts/imx51-efikamx.dts
-@@ -0,0 +1,247 @@
-+/*
-+ * Copyright 2011 Freescale Semiconductor, Inc.
-+ * Copyright 2011 Linaro Ltd.
-+ * Copyright 2012 Genesi USA, Inc.
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+/dts-v1/;
-+/include/ "imx51.dtsi"
-+
-+/ {
-+	model = "Genesi Efika MX (Smarttop)";
-+	compatible = "genesi,imx51-efikamx", "fsl,imx51";
-+
-+	memory {
-+		reg = <0x90000000 0x20000000>;
-+	};
-+
-+	soc {
-+		aips@70000000 {
-+			spba@70000000 {
-+				esdhc@70004000 {
-+					cd-gpios = <&gpio1 0 0>;
-+					wp-gpios = <&gpio1 1 0>;
-+					status = "okay";
-+				};
-+
-+				ssi2: ssi@70014000 {
-+				    fsl,mode = "i2s-slave";
-+				    status = "okay";
-+				};
-+
-+				ecspi@70010000 {
-+					fsl,spi-num-chipselects = <2>;
-+					cs-gpios = <&gpio4 24 0>, <&gpio4 25 0>;
-+					status = "okay";
-+
-+					pmic: mc13892@0 {
-+						#address-cells = <1>;
-+						#size-cells = <0>;
-+						compatible = "fsl,mc13892";
-+						spi-max-frequency = <6000000>;
-+						reg = <0>;
-+						interrupt-parent = <&gpio1>;
-+						interrupts = <6 0x4>;
-+						fsl,mc13xxx-uses-rtc;
-+
-+						regulators {
-+							sw1_reg: sw1 {
-+								regulator-min-microvolt = <600000>;
-+								regulator-max-microvolt = <1375000>;
-+								regulator-boot-on;
-+								regulator-always-on;
-+							};
-+
-+							sw2_reg: sw2 {
-+								regulator-min-microvolt = <900000>;
-+								regulator-max-microvolt = <1850000>;
-+								regulator-boot-on;
-+								regulator-always-on;
-+							};
-+
-+							sw3_reg: sw3 {
-+								regulator-min-microvolt = <1100000>;
-+								regulator-max-microvolt = <1850000>;
-+								regulator-boot-on;
-+								regulator-always-on;
-+							};
-+
-+							sw4_reg: sw4 {
-+								regulator-min-microvolt = <1100000>;
-+								regulator-max-microvolt = <1850000>;
-+								regulator-boot-on;
-+								regulator-always-on;
-+							};
-+
-+							vpll_reg: vpll {
-+								regulator-min-microvolt = <1050000>;
-+								regulator-max-microvolt = <1800000>;
-+								regulator-boot-on;
-+								regulator-always-on;
-+							};
-+
-+							vdig_reg: vdig {
-+								regulator-min-microvolt = <1650000>;
-+								regulator-max-microvolt = <1650000>;
-+								regulator-boot-on;
-+							};
-+
-+							vsd_reg: vsd {
-+								regulator-min-microvolt = <3150000>;
-+								regulator-max-microvolt = <3150000>;
-+							};
-+
-+							vusb2_reg: vusb2 {
-+								regulator-min-microvolt = <2400000>;
-+								regulator-max-microvolt = <2775000>;
-+								regulator-boot-on;
-+								regulator-always-on;
-+							};
-+
-+							vvideo_reg: vvideo {
-+								regulator-min-microvolt = <2775000>;
-+								regulator-max-microvolt = <2775000>;
-+								regulator-boot-on;
-+							};
-+
-+							vaudio_reg: vaudio {
-+								regulator-min-microvolt = <2300000>;
-+								regulator-max-microvolt = <3000000>;
-+							};
-+
-+							vcam_reg: vcam {
-+								regulator-min-microvolt = <2500000>;
-+								regulator-max-microvolt = <3000000>;
-+							};
-+
-+							vgen1_reg: vgen1 {
-+								regulator-min-microvolt = <1200000>;
-+								regulator-max-microvolt = <3150000>;
-+							};
-+
-+							vgen2_reg: vgen2 {
-+								regulator-min-microvolt = <3150000>;
-+								regulator-max-microvolt = <3150000>;
-+								regulator-always-on;
-+							};
-+
-+							vgen3_reg: vgen3 {
-+								regulator-min-microvolt = <1800000>;
-+								regulator-max-microvolt = <2900000>;
-+								regulator-always-on;
-+							};
-+						};
-+					};
-+
-+					flash: sst25vf032b@1 {
-+						#address-cells = <1>;
-+						#size-cells = <1>;
-+						compatible = "sst,sst25vf032b";
-+						spi-max-frequency = <25000000>;
-+						reg = <1>;
-+
-+						partition@0 {
-+							label = "firmware";
-+							reg = <0x0 0x200000>;
-+						};
-+
-+						partition@200000 {
-+							label = "user";
-+							reg = <0x200000 0x200000>;
-+						};
-+					};
-+				};
-+			};
-+
-+			wdog@73f98000 {
-+				status = "okay";
-+			};
-+
-+			iomuxc@73fa8000 {
-+				compatible = "fsl,imx51-iomuxc";
-+				reg = <0x73fa8000 0x4000>;
-+			};
-+
-+			uart1: serial@73fbc000 {
-+				fsl,uart-has-rtscts;
-+				status = "okay";
-+			};
-+
-+		};
-+
-+		aips@80000000 {
-+			sdma@83fb0000 {
-+				fsl,sdma-ram-script-name = "imx/sdma/sdma-imx51.bin";
-+			};
-+
-+			i2c@83fc4000 {
-+				status = "okay";
-+
-+				codec: sgtl5000@0a {
-+					compatible = "fsl,sgtl5000";
-+					reg = <0x0a>;
-+					clock-frequency = <12288000>;
-+					VDDA-supply = <&vdig_reg>;
-+					VDDIO-supply = <&vvideo_reg>;
-+				};
-+			};
-+
-+			audmux@83fd0000 {
-+				status = "okay";
-+			};
-+		};
-+	};
-+
-+	gpio-keys {
-+		compatible = "gpio-keys";
-+
-+		power {
-+			label = "Power Button";
-+			gpios = <&gpio2 31 0>;
-+			linux,code = <116>; /* KEY_POWER */
-+			gpio-key,wakeup;
-+		};
-+	};
-+
-+	gpio-leds {
-+		compatible = "gpio-leds";
-+
-+		red {
-+			label = "red";
-+			gpios = <&gpio3 13>;
-+			linux,default-trigger = "ide-disk";
-+		};
-+
-+		green {
-+			label = "green";
-+			gpios = <&gpio3 14>;
-+			linux,default-trigger = "default-on";
-+		};
-+
-+		blue {
-+			label = "blue";
-+			gpios = <&gpio3 15>;
-+			linux,default-trigger = "mmc0";
-+		};
-+	};
-+
-+	sound {
-+		compatible = "fsl,imx-audio-sgtl5000";
-+		model = "efikamx-sgtl5000";
-+		ssi-controller = <&ssi2>;
-+		audio-routing =
-+			"MIC_IN", "Mic Jack",
-+			"Mic Jack", "Mic Bias",
-+			"Ext Spk", "LINE_OUT";
-+		audio-codec = <&codec>;
-+		mux-int-port = <2>;
-+		mux-ext-port = <3>;
-+	};
-+};
-diff --git a/arch/arm/mach-imx/Makefile.boot b/arch/arm/mach-imx/Makefile.boot
-index 05541cf..3ed7c9d 100644
---- a/arch/arm/mach-imx/Makefile.boot
-+++ b/arch/arm/mach-imx/Makefile.boot
-@@ -38,7 +38,7 @@ zreladdr-$(CONFIG_SOC_IMX6Q)	+= 0x10008000
- params_phys-$(CONFIG_SOC_IMX6Q)	:= 0x10000100
- initrd_phys-$(CONFIG_SOC_IMX6Q)	:= 0x10800000
+This is one of the "fundamental flaws" of the "demo" zcache, but the new
+code base allows for this to be fixed.
+
+A second flaw is that the "demo" zcache has no concept of LRU for
+either cleancache or frontswap pages, or ability to reclaim pageframes
+at all for frontswap pages.  (And for cleancache, pageframe reclaim
+is semi-random).  As I've noted in other threads, this may be impossible
+to implement/fix with zsmalloc, and zsmalloc's author Nitin Gupta has
+agreed, but the new code base implements all of this with zbud.  One
+can argue that LRU is not a requirement for zcache, but a long history
+of operating systems theory would suggest otherwise.
+
+A third flaw is that the "demo" version has a very poor policy to
+determine what pages are "admitted".  The demo policy does take into
+account the total RAM in the system, but not current memory load
+conditions.  The new code base IMHO does a better job but discussion
+will be in a refereed presentation at the upcoming Plumber's meeting.
+The fix for this flaw might be back-portable to the "demo" version
+so is not a showstopper in the "demo" version, but fixing it is
+not just a cosmetic fix.
+
+I can add more issues to the list, but will stop here.  IMHO
+the "demo" zcache is not suitable for promotion from staging,
+which is why I spent over two months generating a new code base.
+I, perhaps more than anyone else, would like to see zcache used,
+by default, by real distros and customers, but I think it is
+premature to promote it, especially the old "demo" code.
+
+I do realize, however, that this decision is not mine alone so
+defer to the community to decide.
+
+Dan
+
+[1] https://lkml.org/lkml/2012/3/22/383 
+[2] http://lkml.indiana.edu/hypermail/linux/kernel/1203.2/02842.html 
  
--dtb-$(CONFIG_MACH_IMX51_DT) += imx51-babbage.dtb
-+dtb-$(CONFIG_MACH_IMX51_DT) += imx51-babbage.dtb imx51-efikamx.dtb
- dtb-$(CONFIG_MACH_IMX53_DT) += imx53-ard.dtb imx53-evk.dtb \
- 			       imx53-qsb.dtb imx53-smd.dtb
- dtb-$(CONFIG_SOC_IMX6Q)	+= imx6q-arm2.dtb \
--- 
-1.7.9.5
-
