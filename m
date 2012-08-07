@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab2HGUBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:01:38 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:36552 "EHLO
+	id S1756582Ab2HGUBh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:01:37 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:36555 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab2HGT7q (ORCPT
+	with ESMTP id S1756531Ab2HGT7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:59:46 -0400
-X-Greylist: delayed 692 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 15:59:46 EDT
+	Tue, 7 Aug 2012 15:59:47 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        stable@vger.kernel.org (everything maintained past v2.6.37),
-        Samo Pogacnik <samo_pogacnik@t-2.net>
-Subject: [PATCH 14/41] TTY: ttyprintk, don't touch behind tty->write_buf
-Date: Tue,  7 Aug 2012 21:47:39 +0200
-Message-Id: <1344368886-24033-15-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 25/41] TTY: add tty_port_link_device
+Date: Tue,  7 Aug 2012 21:47:50 +0200
+Message-Id: <1344368886-24033-26-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -23,31 +20,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a user provides a buffer larger than a tty->write_buf chunk and
-passes '\r' at the end of the buffer, we touch an out-of-bound memory.
+This is for those drivers which do not have dynamic device creation
+(do not call tty_port_register_device) and do not want to implement
+tty->ops->install (will not call tty_port_install). They still have to
+provide the link somehow though.
 
-Add a check there to prevent this.
+And this newly added function is exactly to serve that purpose.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: stable@vger.kernel.org (everything maintained past v2.6.37)
-Cc: Samo Pogacnik <samo_pogacnik@t-2.net>
 ---
- drivers/char/ttyprintk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/tty_port.c |   22 +++++++++++++++++++++-
+ include/linux/tty.h    |    2 ++
+ 2 files changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
-index 9b1e5e0..08755c5 100644
---- a/drivers/char/ttyprintk.c
-+++ b/drivers/char/ttyprintk.c
-@@ -67,7 +67,7 @@ static int tpk_printk(const unsigned char *buf, int count)
- 				tmp[tpk_curr + 1] = '\0';
- 				printk(KERN_INFO "%s%s", tpk_tag, tmp);
- 				tpk_curr = 0;
--				if (buf[i + 1] == '\n')
-+				if ((i + 1) < count && buf[i + 1] == '\n')
- 					i++;
- 				break;
- 			case '\n':
+diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+index b36b33a..b4be732 100644
+--- a/drivers/tty/tty_port.c
++++ b/drivers/tty/tty_port.c
+@@ -34,6 +34,26 @@ void tty_port_init(struct tty_port *port)
+ EXPORT_SYMBOL(tty_port_init);
+ 
+ /**
++ * tty_port_link_device - link tty and tty_port
++ * @port: tty_port of the device
++ * @driver: tty_driver for this device
++ * @index: index of the tty
++ *
++ * Provide the tty layer wit ha link from a tty (specified by @index) to a
++ * tty_port (@port). Use this only if neither tty_port_register_device nor
++ * tty_port_install is used in the driver. If used, this has to be called before
++ * tty_register_driver.
++ */
++void tty_port_link_device(struct tty_port *port,
++		struct tty_driver *driver, unsigned index)
++{
++	if (WARN_ON(index >= driver->num))
++		return;
++	driver->ports[index] = port;
++}
++EXPORT_SYMBOL_GPL(tty_port_link_device);
++
++/**
+  * tty_port_register_device - register tty device
+  * @port: tty_port of the device
+  * @driver: tty_driver for this device
+@@ -48,7 +68,7 @@ struct device *tty_port_register_device(struct tty_port *port,
+ 		struct tty_driver *driver, unsigned index,
+ 		struct device *device)
+ {
+-	driver->ports[index] = port;
++	tty_port_link_device(port, driver, index);
+ 	return tty_register_device(driver, index, device);
+ }
+ EXPORT_SYMBOL_GPL(tty_port_register_device);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index a39e723..aebf2ab 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -496,6 +496,8 @@ extern int tty_write_lock(struct tty_struct *tty, int ndelay);
+ #define tty_is_writelocked(tty)  (mutex_is_locked(&tty->atomic_write_lock))
+ 
+ extern void tty_port_init(struct tty_port *port);
++extern void tty_port_link_device(struct tty_port *port,
++		struct tty_driver *driver, unsigned index);
+ extern struct device *tty_port_register_device(struct tty_port *port,
+ 		struct tty_driver *driver, unsigned index,
+ 		struct device *device);
 -- 
 1.7.10.4
 
