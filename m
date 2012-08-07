@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab2HGXZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:25:18 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:57899 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030302Ab2HGWcD (ORCPT
+	id S1030298Ab2HGWcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:32:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030236Ab2HGWbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:03 -0400
+	Tue, 7 Aug 2012 18:31:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Brian Foster <bfoster@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 096/122] ext4: dont let i_reserved_meta_blocks go negative
-Date: Tue,  7 Aug 2012 15:26:24 -0700
-Message-Id: <20120807221958.066559165@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 093/122] ext4: pass a char * to ext4_count_free() instead of a buffer_head ptr
+Date: Tue,  7 Aug 2012 15:26:21 -0700
+Message-Id: <20120807221957.723138285@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,53 +29,78 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Brian Foster <bfoster@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 97795d2a5b8d3c8dc4365d4bd3404191840453ba upstream.
+commit f6fb99cadcd44660c68e13f6eab28333653621e6 upstream.
 
-If we hit a condition where we have allocated metadata blocks that
-were not appropriately reserved, we risk underflow of
-ei->i_reserved_meta_blocks.  In turn, this can throw
-sbi->s_dirtyclusters_counter significantly out of whack and undermine
-the nondelalloc fallback logic in ext4_nonda_switch().  Warn if this
-occurs and set i_allocated_meta_blocks to avoid this problem.
+Make it possible for ext4_count_free to operate on buffers and not
+just data in buffer_heads.
 
-This condition is reproduced by xfstests 270 against ext2 with
-delalloc enabled:
-
-Mar 28 08:58:02 localhost kernel: [  171.526344] EXT4-fs (loop1): delayed block allocation failed for inode 14 at logical offset 64486 with max blocks 64 with error -28
-Mar 28 08:58:02 localhost kernel: [  171.526346] EXT4-fs (loop1): This should not happen!! Data will be lost
-
-270 ultimately fails with an inconsistent filesystem and requires an
-fsck to repair.  The cause of the error is an underflow in
-ext4_da_update_reserve_space() due to an unreserved meta block
-allocation.
-
-Signed-off-by: Brian Foster <bfoster@redhat.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/ext4/balloc.c |    3 ++-
+ fs/ext4/bitmap.c |    8 +++-----
+ fs/ext4/ext4.h   |    2 +-
+ fs/ext4/ialloc.c |    3 ++-
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -346,6 +346,15 @@ void ext4_da_update_reserve_space(struct
- 		used = ei->i_reserved_data_blocks;
- 	}
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -609,7 +609,8 @@ ext4_fsblk_t ext4_count_free_clusters(st
+ 		if (bitmap_bh == NULL)
+ 			continue;
  
-+	if (unlikely(ei->i_allocated_meta_blocks > ei->i_reserved_meta_blocks)) {
-+		ext4_msg(inode->i_sb, KERN_NOTICE, "%s: ino %lu, allocated %d "
-+			 "with only %d reserved metadata blocks\n", __func__,
-+			 inode->i_ino, ei->i_allocated_meta_blocks,
-+			 ei->i_reserved_meta_blocks);
-+		WARN_ON(1);
-+		ei->i_allocated_meta_blocks = ei->i_reserved_meta_blocks;
-+	}
-+
- 	/* Update per-inode reservations */
- 	ei->i_reserved_data_blocks -= used;
- 	ei->i_reserved_meta_blocks -= ei->i_allocated_meta_blocks;
+-		x = ext4_count_free(bitmap_bh, sb->s_blocksize);
++		x = ext4_count_free(bitmap_bh->b_data,
++				    EXT4_BLOCKS_PER_GROUP(sb) / 8);
+ 		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
+ 			i, ext4_free_group_clusters(sb, gdp), x);
+ 		bitmap_count += x;
+--- a/fs/ext4/bitmap.c
++++ b/fs/ext4/bitmap.c
+@@ -15,15 +15,13 @@
+ 
+ static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
+ 
+-unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
++unsigned int ext4_count_free(char *bitmap, unsigned int numchars)
+ {
+ 	unsigned int i, sum = 0;
+ 
+-	if (!map)
+-		return 0;
+ 	for (i = 0; i < numchars; i++)
+-		sum += nibblemap[map->b_data[i] & 0xf] +
+-			nibblemap[(map->b_data[i] >> 4) & 0xf];
++		sum += nibblemap[bitmap[i] & 0xf] +
++			nibblemap[(bitmap[i] >> 4) & 0xf];
+ 	return sum;
+ }
+ 
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1852,7 +1852,7 @@ struct mmpd_data {
+ # define NORET_AND	noreturn,
+ 
+ /* bitmap.c */
+-extern unsigned int ext4_count_free(struct buffer_head *, unsigned);
++extern unsigned int ext4_count_free(char *bitmap, unsigned numchars);
+ void ext4_inode_bitmap_csum_set(struct super_block *sb, ext4_group_t group,
+ 				struct ext4_group_desc *gdp,
+ 				struct buffer_head *bh, int sz);
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -1054,7 +1054,8 @@ unsigned long ext4_count_free_inodes(str
+ 		if (!bitmap_bh)
+ 			continue;
+ 
+-		x = ext4_count_free(bitmap_bh, EXT4_INODES_PER_GROUP(sb) / 8);
++		x = ext4_count_free(bitmap_bh->b_data,
++				    EXT4_INODES_PER_GROUP(sb) / 8);
+ 		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
+ 			(unsigned long) i, ext4_free_inodes_count(sb, gdp), x);
+ 		bitmap_count += x;
 
 
