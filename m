@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2HGRsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 13:48:12 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:35592 "EHLO mail.x86-64.org"
+	id S1755885Ab2HGRsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 13:48:11 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:35591 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755369Ab2HGRo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755424Ab2HGRo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 13:44:27 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: X86-ML <x86@kernel.org>
@@ -12,9 +12,9 @@ Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
         Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH v0 07/12] x86, microcode, AMD: Check before applying a patch
-Date: Tue,  7 Aug 2012 19:44:16 +0200
-Message-Id: <1344361461-10076-8-git-send-email-bp@amd64.org>
+Subject: [PATCH v0 05/12] x86, microcode: Straighten out Kconfig text
+Date: Tue,  7 Aug 2012 19:44:14 +0200
+Message-Id: <1344361461-10076-6-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.11.rc1
 In-Reply-To: <1344361461-10076-1-git-send-email-bp@amd64.org>
 References: <1344361461-10076-1-git-send-email-bp@amd64.org>
@@ -24,50 +24,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Make sure we're actually applying a microcode patch to a core which
-really needs it.
-
-This brings only a very very very minor slowdown on F10:
-
-0.032218828 sec vs 0.056010626 sec with this patch.
-
-And small speedup on F15:
-
-0.487089449 sec vs 0.180551162 sec (from perf output).
-
-Also, fixup comments while at it.
+Update and clarify Kconfig help text along with menu names.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/kernel/microcode_amd.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ arch/x86/Kconfig | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index 94213387a3d1..8fdf7d99b804 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -202,11 +202,18 @@ static int apply_microcode_amd(int cpu)
- 	if (mc_amd == NULL)
- 		return 0;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 8ec3a1aa4abd..1ccccc6efb37 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -982,25 +982,25 @@ config X86_REBOOTFIXUPS
+ 	  Say N otherwise.
  
--	wrmsrl(MSR_AMD64_PATCH_LOADER, (u64)(long)&mc_amd->hdr.data_code);
--	/* get patch id after patching */
- 	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
+ config MICROCODE
+-	tristate "/dev/cpu/microcode - microcode support"
++	tristate "CPU microcode loading support"
+ 	select FW_LOADER
+ 	---help---
++
+ 	  If you say Y here, you will be able to update the microcode on
+ 	  certain Intel and AMD processors. The Intel support is for the
+-	  IA32 family, e.g. Pentium Pro, Pentium II, Pentium III,
+-	  Pentium 4, Xeon etc. The AMD support is for family 0x10 and
+-	  0x11 processors, e.g. Opteron, Phenom and Turion 64 Ultra.
+-	  You will obviously need the actual microcode binary data itself
+-	  which is not shipped with the Linux kernel.
++	  IA32 family, e.g. Pentium Pro, Pentium II, Pentium III, Pentium 4,
++	  Xeon etc. The AMD support is for families 0x10 and later. You will
++	  obviously need the actual microcode binary data itself which is not
++	  shipped with the Linux kernel.
  
--	/* check current patch id and patch's id for match */
-+	/* need to apply patch? */
-+	if (rev >= mc_amd->hdr.patch_id) {
-+		c->microcode = rev;
-+		return 0;
-+	}
-+
-+	wrmsrl(MSR_AMD64_PATCH_LOADER, (u64)(long)&mc_amd->hdr.data_code);
-+
-+	/* verify patch application was successful */
-+	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
- 	if (rev != mc_amd->hdr.patch_id) {
- 		pr_err("CPU%d: update failed for patch_level=0x%08x\n",
- 		       cpu, mc_amd->hdr.patch_id);
+ 	  This option selects the general module only, you need to select
+ 	  at least one vendor specific module as well.
+ 
+-	  To compile this driver as a module, choose M here: the
+-	  module will be called microcode.
++	  To compile this driver as a module, choose M here: the module
++	  will be called microcode.
+ 
+ config MICROCODE_INTEL
+-	bool "Intel microcode patch loading support"
++	bool "Intel microcode loading support"
+ 	depends on MICROCODE
+ 	default MICROCODE
+ 	select FW_LOADER
+@@ -1013,7 +1013,7 @@ config MICROCODE_INTEL
+ 	  <http://www.urbanmyth.org/microcode/>.
+ 
+ config MICROCODE_AMD
+-	bool "AMD microcode patch loading support"
++	bool "AMD microcode loading support"
+ 	depends on MICROCODE
+ 	select FW_LOADER
+ 	---help---
 -- 
 1.7.11.rc1
 
