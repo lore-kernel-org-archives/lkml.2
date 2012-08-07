@@ -1,114 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab2HGPoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:44:17 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:25614 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754478Ab2HGPoK (ORCPT
+	id S1755288Ab2HGPqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:46:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42778 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755155Ab2HGPqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:44:10 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M8E6DG-01-1YM-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <x86@kernel.org>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 11/19] x86, irq: Move irq_remapping_enabled declaration to iommu code
-Date: Tue, 7 Aug 2012 17:43:41 +0200
-Message-ID: <1344354229-8526-12-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
-References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
+	Tue, 7 Aug 2012 11:46:03 -0400
+Date: Tue, 7 Aug 2012 17:45:58 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/2] perf tools: Basic bash completion support
+Message-ID: <20120807154555.GB12858@somewhere.redhat.com>
+References: <1344345586-15068-1-git-send-email-fweisbec@gmail.com>
+ <20120807132252.GA12858@somewhere.redhat.com>
+ <502123A4.8040007@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502123A4.8040007@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the last left-over from this flag from x86 code.
+On Tue, Aug 07, 2012 at 08:18:12AM -0600, David Ahern wrote:
+> On 8/7/12 7:22 AM, Frederic Weisbecker wrote:
+> >On Tue, Aug 07, 2012 at 03:19:44PM +0200, Frederic Weisbecker wrote:
+> >>Hey,
+> >>
+> >>Basic bash completion support. Only support perf subcommands and most -e basic
+> >>event descriptor (no grouping).
+> >>
+> >>I just have a small issue with tracepoints because of their ":" in the middle.
+> >>It auto completes as long as we haven't yet reached the semicolon. Otherwise
+> >>we need to add a double quote in the beginning of the expression. I'm quite
+> >>a newbie in bash completion though, so I might find a subtelty later to solve
+> >>this.
+> >
+> >Tips: for testing, you need to "make install" and update the bash completion
+> >scripts:
+> >
+> >	# make install
+> >	$ . /etc/bash_completion
+> >
+> 
+> ANd you need to make sure the PATH hits the updated binary and not
+> the default other wise you end up with:
+> 
+> /tmp/pbuild/perf recUnknown option: --list-cmds
+> 
+>  Usage: perf [--version] [--help] COMMAND [ARGS]
+> Unknown option: --list-cmds
+> 
+> It's calling /usr/bin/perf with --list-cmds, versus the perf command
+> I am running (/tmp/pbuild/perf). Any way to teach the completion to
+> use the perf binary that the user is running?
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/include/asm/irq_remapping.h |    4 ----
- drivers/iommu/dmar.c                 |    2 ++
- drivers/iommu/intel-iommu.c          |    2 ++
- drivers/iommu/irq_remapping.h        |    3 +++
- 4 files changed, 7 insertions(+), 4 deletions(-)
+Ah good point.
 
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index fb99a73..6f4b48b 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -26,8 +26,6 @@
+Does the below work for you? I'll respin with that change.
+
+diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
+index 25f4d99..cba72a9 100644
+--- a/tools/perf/bash_completion
++++ b/tools/perf/bash_completion
+@@ -3,18 +3,20 @@
+ have perf &&
+ _perf()
+ {
+-	local cur
++	local cur cmd
  
- #ifdef CONFIG_IRQ_REMAP
+ 	COMPREPLY=()
+ 	_get_comp_words_by_ref cur prev
  
--extern int irq_remapping_enabled;
--
- extern void setup_irq_remapping_ops(void);
- extern int irq_remapping_supported(void);
- extern int irq_remapping_prepare(void);
-@@ -49,8 +47,6 @@ extern void panic_if_irq_remap(const char *msg);
- 
- #else  /* CONFIG_IRQ_REMAP */
- 
--#define irq_remapping_enabled	0
--
- static inline void setup_irq_remapping_ops(void) { }
- static inline int irq_remapping_supported(void) { return 0; }
- static inline int irq_remapping_prepare(void) { return -ENODEV; }
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 86e2f4a..174bb65 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -41,6 +41,8 @@
- #include <asm/irq_remapping.h>
- #include <asm/iommu_table.h>
- 
-+#include "irq_remapping.h"
++	cmd=${COMP_WORDS[0]}
 +
- /* No locks are needed as DMA remapping hardware unit
-  * list is constructed at boot time and hotplug of
-  * these units are not supported by the architecture.
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 7469b53..28c944c 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -46,6 +46,8 @@
- #include <asm/cacheflush.h>
- #include <asm/iommu.h>
- 
-+#include "irq_remapping.h"
-+
- #define ROOT_SIZE		VTD_PAGE_SIZE
- #define CONTEXT_SIZE		VTD_PAGE_SIZE
- 
-diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
-index b12974c..1003297 100644
---- a/drivers/iommu/irq_remapping.h
-+++ b/drivers/iommu/irq_remapping.h
-@@ -34,6 +34,7 @@ struct msi_msg;
- extern int disable_irq_remap;
- extern int disable_sourceid_checking;
- extern int no_x2apic_optout;
-+extern int irq_remapping_enabled;
- 
- struct irq_remap_ops {
- 	/* Check whether Interrupt Remapping is supported */
-@@ -83,6 +84,8 @@ struct irq_remap_ops {
- 
- extern struct irq_remap_ops intel_irq_remap_ops;
- 
-+#else  /* CONFIG_IRQ_REMAP */
-+#define irq_remapping_enabled 0
- #endif /* CONFIG_IRQ_REMAP */
- 
- #endif /* __IRQ_REMAPPING_H */
--- 
-1.7.9.5
-
+ 	# List perf subcommands
+ 	if [ $COMP_CWORD -eq 1 ]; then
+-		cmds=$(perf --list-cmds)
++		cmds=$($cmd --list-cmds)
+ 		COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
+ 	# List possible events for -e option
+ 	elif [[ $prev == "-e" && "${COMP_WORDS[1]}" == @(record|stat|top) ]]; then
+-		cmds=$(perf list --raw-dump)
++		cmds=$($cmd list --raw-dump)
+ 		COMPREPLY=( $( compgen -W '$cmds' -- $cur ) )
+ 	# Fall down to list regular files
+ 	else
 
