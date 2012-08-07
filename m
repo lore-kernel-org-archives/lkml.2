@@ -1,80 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab2HGT5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:57:45 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:49431
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932125Ab2HGT5k (ORCPT
+	id S932205Ab2HGT5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:57:33 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:49902 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168Ab2HGT5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:57:40 -0400
-X-Forefront-Antispam-Report: CIP:157.56.234.117;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: PS-5(z5109hz98dIc89bh1432Ic540Kzz1202hzz8275ch8275dhz2fh2a8h668h839hd25hf0ah107ah)
-From: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>
-To: Arnd Bergmann <arnd@arndb.de>, Dongjin Kim <tobetter@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: =?ks_c_5601-1987?B?yLi9xTogW1BBVENIIDIvNF0gYXJtL2R0czogZXh5bm9zNDogQWRk?=
- =?ks_c_5601-1987?Q?_DTS_files_derived_from_common_Exynos4?=
-Thread-Topic: [PATCH 2/4] arm/dts: exynos4: Add DTS files derived from
- common Exynos4
-Thread-Index: AQHNdM/8uScTd8hIxUuwQF+02jXET5dOvs0AgAAEiVY=
-Date: Tue, 7 Aug 2012 19:57:33 +0000
-Message-ID: <A6A3B7488C419F488E5B13FFD03C08AD2F4372EB@SN2PRD0510MB370.namprd05.prod.outlook.com>
-References: <1344366398-19022-1-git-send-email-dongjin.kim@agreeyamobility.net>,<201208071938.26507.arnd@arndb.de>
-In-Reply-To: <201208071938.26507.arnd@arndb.de>
-Accept-Language: ko-KR, en-US
-Content-Language: ko-KR
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [125.177.223.193]
-Content-Type: text/plain; charset="ks_c_5601-1987"
-MIME-Version: 1.0
-X-OriginatorOrg: agreeyamobility.net
+	Tue, 7 Aug 2012 15:57:30 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 40/41] TTY: hvcs, clean hvcs_open a bit
+Date: Tue,  7 Aug 2012 21:48:05 +0200
+Message-Id: <1344368886-24033-41-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
+References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q77JvpAq014979
 
-Hi,
+Make the code of hvcs_open a bit more readable by:
+- moving all assignments out of if's
+- redoing fail paths so that corresponding pieces are nearby
+- we need only one of retval and rc
 
-I didn't use -M and I couldn't see any difference with the it.
-Did I make something wrong on that patch?
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/hvc/hvcs.c |   32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
 
-Thank you in advance.
-Dongjin.
-________________________________________
-º¸³½ »ç¶÷: Arnd Bergmann [arnd@arndb.de]
-º¸³½ ³¯Â¥: 2012³â 8¿ù 8ÀÏ ¼ö¿äÀÏ ¿ÀÀü 4:38
-¹Ş´Â »ç¶÷: Dongjin Kim
-ÂüÁ¶: Dongjin Kim; Russell King; Thomas Abraham; Kukjin Kim; Grant Likely; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org
-Á¦¸ñ: Re: [PATCH 2/4] arm/dts: exynos4: Add DTS files derived from common Exynos4
+diff --git a/drivers/tty/hvc/hvcs.c b/drivers/tty/hvc/hvcs.c
+index d56788c..6f5c3be 100644
+--- a/drivers/tty/hvc/hvcs.c
++++ b/drivers/tty/hvc/hvcs.c
+@@ -1109,11 +1109,10 @@ static struct hvcs_struct *hvcs_get_by_index(int index)
+ static int hvcs_open(struct tty_struct *tty, struct file *filp)
+ {
+ 	struct hvcs_struct *hvcsd;
+-	int rc, retval = 0;
+-	unsigned long flags;
+-	unsigned int irq;
+ 	struct vio_dev *vdev;
+-	unsigned long unit_address;
++	unsigned long unit_address, flags;
++	unsigned int irq;
++	int retval;
+ 
+ 	if (tty->driver_data)
+ 		goto fast_open;
+@@ -1122,7 +1121,8 @@ static int hvcs_open(struct tty_struct *tty, struct file *filp)
+ 	 * Is there a vty-server that shares the same index?
+ 	 * This function increments the kref index.
+ 	 */
+-	if (!(hvcsd = hvcs_get_by_index(tty->index))) {
++	hvcsd = hvcs_get_by_index(tty->index);
++	if (!hvcsd) {
+ 		printk(KERN_WARNING "HVCS: open failed, no device associated"
+ 				" with tty->index %d.\n", tty->index);
+ 		return -ENODEV;
+@@ -1130,9 +1130,14 @@ static int hvcs_open(struct tty_struct *tty, struct file *filp)
+ 
+ 	spin_lock_irqsave(&hvcsd->lock, flags);
+ 
+-	if (hvcsd->connected == 0)
+-		if ((retval = hvcs_partner_connect(hvcsd)))
+-			goto error_release;
++	if (hvcsd->connected == 0) {
++		retval = hvcs_partner_connect(hvcsd);
++		if (retval) {
++			spin_unlock_irqrestore(&hvcsd->lock, flags);
++			printk(KERN_WARNING "HVCS: partner connect failed.\n");
++			goto err_put;
++		}
++	}
+ 
+ 	hvcsd->port.count = 1;
+ 	hvcsd->port.tty = tty;
+@@ -1155,10 +1160,10 @@ static int hvcs_open(struct tty_struct *tty, struct file *filp)
+ 	 * This must be done outside of the spinlock because it requests irqs
+ 	 * and will grab the spinlock and free the connection if it fails.
+ 	 */
+-	if (((rc = hvcs_enable_device(hvcsd, unit_address, irq, vdev)))) {
+-		tty_port_put(&hvcsd->port);
++	retval = hvcs_enable_device(hvcsd, unit_address, irq, vdev);
++	if (retval) {
+ 		printk(KERN_WARNING "HVCS: enable device failed.\n");
+-		return rc;
++		goto err_put;
+ 	}
+ 
+ 	goto open_success;
+@@ -1179,12 +1184,9 @@ open_success:
+ 		hvcsd->vdev->unit_address );
+ 
+ 	return 0;
+-
+-error_release:
+-	spin_unlock_irqrestore(&hvcsd->lock, flags);
++err_put:
+ 	tty_port_put(&hvcsd->port);
+ 
+-	printk(KERN_WARNING "HVCS: partner connect failed.\n");
+ 	return retval;
+ }
+ 
+-- 
+1.7.10.4
 
-On Tuesday 07 August 2012, Dongjin Kim wrote:
->
-> This patch creates a DTS file, exynos4.dtsi, for Exynos4210/4x12 and it
-> describes common device nodes. SoC specific device nodes are described in
-> another DTS file derived from this, exynos4210.dtsi and exynos4412.dtsi.
->
-> exynos4412.dtsi is added new for Exynos4412 as well as exynos4210 is modified
-> for Exynos4210 specific device nodes.
->
-> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
-> ---
->  arch/arm/boot/dts/exynos4.dtsi    |  404 +++++++++++++++++++++++++++++++++++++
->  arch/arm/boot/dts/exynos4210.dtsi |  374 +---------------------------------
->  arch/arm/boot/dts/exynos4412.dtsi |  104 ++++++++++
->  3 files changed, 510 insertions(+), 372 deletions(-)
 
-Looks good in principle. I would hope that "git format-patch -M" can detect this
-mostly-moved filed. Did you use that?
-
-        Arnd
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
