@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab2HGUCc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:02:32 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:36550 "EHLO
+	id S932260Ab2HGUDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:03:05 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:36548 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756447Ab2HGT7p (ORCPT
+	with ESMTP id S1756480Ab2HGT7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:59:45 -0400
+	Tue, 7 Aug 2012 15:59:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        J Freyensee <james_p_freyensee@linux.intel.com>
-Subject: [PATCH 10/41] misc: pti, fix tty_port count
-Date: Tue,  7 Aug 2012 21:47:35 +0200
-Message-Id: <1344368886-24033-11-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 21/41] TTY: move cdev_add to tty_register_device
+Date: Tue,  7 Aug 2012 21:47:46 +0200
+Message-Id: <1344368886-24033-22-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -21,72 +20,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We now have *one* tty_port for both TTYs. How this was supposed to
-work? Change it to have a tty_port for each of TTYs.
+We need the /dev/ node not to be available before we call
+tty_register_device. Otherwise we might race with open and
+tty_struct->port might not be available at that time.
+
+This is not an issue now, but would be a problem after "TTY: use
+tty_port_register_device" is applied.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- drivers/misc/pti.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ drivers/tty/tty_io.c       |   48 +++++++++++++++++++++++++++++++++++++-------
+ include/linux/tty_driver.h |    2 +-
+ 2 files changed, 42 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
-index 90de855..fe76f9d 100644
---- a/drivers/misc/pti.c
-+++ b/drivers/misc/pti.c
-@@ -60,7 +60,7 @@ struct pti_tty {
- };
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 135e0e4..35a24e6 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -2991,6 +2991,15 @@ EXPORT_SYMBOL_GPL(tty_put_char);
  
- struct pti_dev {
--	struct tty_port port;
-+	struct tty_port port[PTITTY_MINOR_NUM];
- 	unsigned long pti_addr;
- 	unsigned long aperture_base;
- 	void __iomem *pti_ioaddr;
-@@ -427,7 +427,7 @@ static int pti_tty_driver_open(struct tty_struct *tty, struct file *filp)
- 	 * also removes a locking requirement for the actual write
- 	 * procedure.
- 	 */
--	return tty_port_open(&drv_data->port, tty, filp);
-+	return tty_port_open(&drv_data->port[tty->index], tty, filp);
- }
+ struct class *tty_class;
  
++static int tty_cdev_add(struct tty_driver *driver, dev_t dev,
++		unsigned int index, unsigned int count)
++{
++	/* init here, since reused cdevs cause crashes */
++	cdev_init(&driver->cdevs[index], &tty_fops);
++	driver->cdevs[index].owner = driver->owner;
++	return cdev_add(&driver->cdevs[index], dev, count);
++}
++
  /**
-@@ -443,7 +443,7 @@ static int pti_tty_driver_open(struct tty_struct *tty, struct file *filp)
-  */
- static void pti_tty_driver_close(struct tty_struct *tty, struct file *filp)
+  *	tty_register_device - register a tty device
+  *	@driver: the tty driver that describes the tty device
+@@ -3013,8 +3022,10 @@ struct class *tty_class;
+ struct device *tty_register_device(struct tty_driver *driver, unsigned index,
+ 				   struct device *device)
  {
--	tty_port_close(&drv_data->port, tty, filp);
-+	tty_port_close(&drv_data->port[tty->index], tty, filp);
++	struct device *ret;
+ 	char name[64];
+ 	dev_t dev = MKDEV(driver->major, driver->minor_start) + index;
++	bool cdev = false;
+ 
+ 	if (index >= driver->num) {
+ 		printk(KERN_ERR "Attempt to register invalid tty line number "
+@@ -3027,7 +3038,18 @@ struct device *tty_register_device(struct tty_driver *driver, unsigned index,
+ 	else
+ 		tty_line_name(driver, index, name);
+ 
+-	return device_create(tty_class, device, dev, NULL, name);
++	if (!(driver->flags & TTY_DRIVER_EXCESSIVE_LINES)) {
++		int error = tty_cdev_add(driver, dev, index, 1);
++		if (error)
++			return ERR_PTR(error);
++		cdev = true;
++	}
++
++	ret = device_create(tty_class, device, dev, NULL, name);
++	if (IS_ERR(ret) && cdev)
++		cdev_del(&driver->cdevs[index]);
++
++	return ret;
  }
+ EXPORT_SYMBOL(tty_register_device);
  
- /**
-@@ -799,6 +799,7 @@ static const struct tty_port_operations tty_port_ops = {
- static int __devinit pti_pci_probe(struct pci_dev *pdev,
- 		const struct pci_device_id *ent)
+@@ -3046,6 +3068,8 @@ void tty_unregister_device(struct tty_driver *driver, unsigned index)
  {
-+	unsigned int a;
- 	int retval = -EINVAL;
- 	int pci_bar = 1;
+ 	device_destroy(tty_class,
+ 		MKDEV(driver->major, driver->minor_start) + index);
++	if (!(driver->flags & TTY_DRIVER_EXCESSIVE_LINES))
++		cdev_del(&driver->cdevs[index]);
+ }
+ EXPORT_SYMBOL(tty_unregister_device);
  
-@@ -850,11 +851,13 @@ static int __devinit pti_pci_probe(struct pci_dev *pdev,
+@@ -3062,6 +3086,7 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
+ 		unsigned long flags)
+ {
+ 	struct tty_driver *driver;
++	unsigned int cdevs = 1;
+ 	int err;
  
- 	pci_set_drvdata(pdev, drv_data);
+ 	if (!lines || (flags & TTY_DRIVER_UNNUMBERED_NODE && lines > 1))
+@@ -3095,6 +3120,13 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
+ 			err = -ENOMEM;
+ 			goto err_free_all;
+ 		}
++		cdevs = lines;
++	}
++
++	driver->cdevs = kcalloc(cdevs, sizeof(*driver->cdevs), GFP_KERNEL);
++	if (!driver->cdevs) {
++		err = -ENOMEM;
++		goto err_free_all;
+ 	}
  
--	tty_port_init(&drv_data->port);
--	drv_data->port.ops = &tty_port_ops;
-+	for (a = 0; a < PTITTY_MINOR_NUM; a++) {
-+		struct tty_port *port = &drv_data->port[a];
-+		tty_port_init(port);
-+		port->ops = &tty_port_ops;
+ 	return driver;
+@@ -3129,8 +3161,10 @@ static void destruct_tty_driver(struct kref *kref)
+ 				tty_unregister_device(driver, i);
+ 		}
+ 		proc_tty_unregister_driver(driver);
+-		cdev_del(&driver->cdev);
++		if (driver->flags & TTY_DRIVER_EXCESSIVE_LINES)
++			cdev_del(&driver->cdevs[0]);
+ 	}
++	kfree(driver->cdevs);
+ 	kfree(driver->ports);
+ 	kfree(driver->termios);
+ 	kfree(driver->ttys);
+@@ -3180,11 +3214,11 @@ int tty_register_driver(struct tty_driver *driver)
+ 	if (error < 0)
+ 		goto err;
  
--	tty_register_device(pti_tty_driver, 0, &pdev->dev);
--	tty_register_device(pti_tty_driver, 1, &pdev->dev);
-+		tty_register_device(pti_tty_driver, a, &pdev->dev);
+-	cdev_init(&driver->cdev, &tty_fops);
+-	driver->cdev.owner = driver->owner;
+-	error = cdev_add(&driver->cdev, dev, driver->num);
+-	if (error)
+-		goto err_unreg_char;
++	if (driver->flags & TTY_DRIVER_EXCESSIVE_LINES) {
++		error = tty_cdev_add(driver, dev, 0, driver->num);
++		if (error)
++			goto err_unreg_char;
 +	}
  
- 	register_console(&pti_console);
- 
+ 	mutex_lock(&tty_mutex);
+ 	list_add(&driver->tty_drivers, &tty_drivers);
+diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+index ca8eb54..d2ba0e4 100644
+--- a/include/linux/tty_driver.h
++++ b/include/linux/tty_driver.h
+@@ -289,7 +289,7 @@ struct tty_operations {
+ struct tty_driver {
+ 	int	magic;		/* magic number for this structure */
+ 	struct kref kref;	/* Reference management */
+-	struct cdev cdev;
++	struct cdev *cdevs;
+ 	struct module	*owner;
+ 	const char	*driver_name;
+ 	const char	*name;
 -- 
 1.7.10.4
 
