@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab2HGTBo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:01:44 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38692 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641Ab2HGTBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:01:43 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: kernel@pengutronix.de, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] regulator: make the dummy regulator's print_constraint more helpful
-Date: Tue,  7 Aug 2012 21:01:37 +0200
-Message-Id: <1344366097-23775-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20120807181642.GF16861@opensource.wolfsonmicro.com>
-References: <20120807181642.GF16861@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1755959Ab2HGTFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:05:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45545 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755748Ab2HGTFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 15:05:51 -0400
+Message-ID: <1344366349.3441.86.camel@ul30vt.home>
+Subject: [GIT PULL] VFIO update for 3.6-rc1
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Date: Tue, 07 Aug 2012 13:05:49 -0600
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This prevents the output of just
+Hi Linus,
 
-	dummy:
+The following changes since commit 42a579a0f960081cd16fc945036e4780c3ad3202:
 
-in the boot log. Now it says:
+  Merge branches 'timers-urgent-for-linus' and 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2012-08-05 22:28:49 +0300)
 
-	regulator-dummy: no parameters
+are available in the git repository at:
 
-which at least doesn't make it look like an accidental printk and also doesn't
-only use "dummy" which could mean anything.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/regulator/core.c  |    3 +++
- drivers/regulator/dummy.c |    2 +-
- 2 files changed, 4 insertions(+), 1 deletion(-)
+  git://github.com/awilliam/linux-vfio.git tags/vfio-for-v3.6-rc1
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 8b4b382..1ca21cb 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -808,6 +808,9 @@ static void print_constraints(struct regulator_dev *rdev)
- 	if (constraints->valid_modes_mask & REGULATOR_MODE_STANDBY)
- 		count += sprintf(buf + count, "standby");
- 
-+	if (!count)
-+		sprintf(buf, "no parameters");
-+
- 	rdev_info(rdev, "%s\n", buf);
- 
- 	if ((constraints->min_uV != constraints->max_uV) &&
-diff --git a/drivers/regulator/dummy.c b/drivers/regulator/dummy.c
-index 86f655c..03a1d7c 100644
---- a/drivers/regulator/dummy.c
-+++ b/drivers/regulator/dummy.c
-@@ -30,7 +30,7 @@ static struct regulator_init_data dummy_initdata;
- static struct regulator_ops dummy_ops;
- 
- static struct regulator_desc dummy_desc = {
--	.name = "dummy",
-+	.name = "regulator-dummy",
- 	.id = -1,
- 	.type = REGULATOR_VOLTAGE,
- 	.owner = THIS_MODULE,
--- 
-1.7.10.4
+for you to fetch changes up to 817fea2df3c24b22f6123dc0106eb063b7132883:
+
+  vfio: Include vfio.h in installed headers (2012-08-07 11:48:33 -0600)
+
+----------------------------------------------------------------
+VFIO for v3.6-rc1
+
+Just a trivial patch to include vfio.h in the installed headers
+so we can complete userspace integration into QEMU.  Thanks!
+
+----------------------------------------------------------------
+Alex Williamson (1):
+      vfio: Include vfio.h in installed headers
+
+ include/linux/Kbuild | 1 +
+ 1 file changed, 1 insertion(+)
+
 
