@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab2HGWDN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:03:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2180 "EHLO
+	id S1756921Ab2HGWDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:03:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12035 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755746Ab2HGWDG (ORCPT
+	with ESMTP id S1753090Ab2HGWDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 18:03:06 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=ISOGykE_-WwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=Riw51vTmaxRSkVkzproA:9 a=QEXdDO2ut3YA:10 a=YTw0oxLd7MoA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=sJ8EIqf13u-BO86J3RYA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=WljEw9WqRFgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=_klPS0fu4QH-n4FdAu0A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=pRiKuOgoGWEpPTmsHH0A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120807220303.733846871@goodmis.org>
+Message-Id: <20120807220303.380504263@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 18:01:08 -0400
+Date: Tue, 07 Aug 2012 18:01:07 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/3] tracing/filter: Add missing initialization
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH 1/3] tracing: Fix wakeup_rt self test on virtual machines
 References: <20120807220106.459308722@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-filter-Add-missing-initialization.patch
+Content-Disposition: inline; filename=0001-tracing-Fix-wakeup_rt-self-test-on-virtual-machines.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,39 +29,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Add missing initialization for ret variable. Its initialization
-is based on the re_cnt variable, which is being set deep down
-in the ftrace_function_filter_re function.
+The warkeup_rt self test used msleep() calls to wait for real time
+tasks to wake up and run. On bare-metal hardware, this was enough as
+the scheduler should let the RT task run way before the non-RT task
+wakes up from the msleep(). If it did not, then that would mean the
+scheduler was broken.
 
-I'm not sure compilers would be smart enough to see this in near
-future, so killing the warning this way.
+But when dealing with virtual machines, this is a different story.
+If the RT task wakes up on a VCPU, it's up to the host to decide when
+that task gets to schedule, which can be far behind the time that the
+non-RT task wakes up. In this case, the test would fail incorrectly.
 
-Link: http://lkml.kernel.org/r/1340120894-9465-2-git-send-email-jolsa@redha=
-t.com
+As we are not testing the scheduler, but instead the wake up tracing,
+we can use completions to wait and not depend on scheduler timings
+to see if events happen on time.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1343663105.3847.7.camel@fedora
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_events_filter.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace_selftest.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
-_filter.c
-index 431dba8..c154797 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -2002,7 +2002,7 @@ static int ftrace_function_set_regexp(struct ftrace_o=
-ps *ops, int filter,
- static int __ftrace_function_set_filter(int filter, char *buf, int len,
- 					struct function_filter_data *data)
- {
--	int i, re_cnt, ret;
-+	int i, re_cnt, ret =3D -EINVAL;
- 	int *reset;
- 	char **re;
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 1003a4d..2c00a69 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -1041,6 +1041,8 @@ static int trace_wakeup_test_thread(void *data)
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	schedule();
 =20
++	complete(x);
++
+ 	/* we are awake, now wait to disappear */
+ 	while (!kthread_should_stop()) {
+ 		/*
+@@ -1084,24 +1086,21 @@ trace_selftest_startup_wakeup(struct tracer *trace,=
+ struct trace_array *tr)
+ 	/* reset the max latency */
+ 	tracing_max_latency =3D 0;
+=20
+-	/* sleep to let the RT thread sleep too */
+-	msleep(100);
++	while (p->on_rq) {
++		/*
++		 * Sleep to make sure the RT thread is asleep too.
++		 * On virtual machines we can't rely on timings,
++		 * but we want to make sure this test still works.
++		 */
++		msleep(100);
++	}
+=20
+-	/*
+-	 * Yes this is slightly racy. It is possible that for some
+-	 * strange reason that the RT thread we created, did not
+-	 * call schedule for 100ms after doing the completion,
+-	 * and we do a wakeup on a task that already is awake.
+-	 * But that is extremely unlikely, and the worst thing that
+-	 * happens in such a case, is that we disable tracing.
+-	 * Honestly, if this race does happen something is horrible
+-	 * wrong with the system.
+-	 */
++	init_completion(&isrt);
+=20
+ 	wake_up_process(p);
+=20
+-	/* give a little time to let the thread wake up */
+-	msleep(100);
++	/* Wait for the task to wake up */
++	wait_for_completion(&isrt);
+=20
+ 	/* stop the tracing. */
+ 	tracing_stop();
 --=20
 1.7.10.4
 
@@ -74,19 +117,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQIZCXAAoJEIy3vGnGbaoAVbAP/2QfCYK/oHWzcRsXmGtKjP4m
-kTElyJQdUAS9KraSBOjFLvtYyn72k40kBpdQkj/h25I8uj4ZniTJCHX3Tf19icvz
-CZtu8sUQOmvC0ou9/x3BVzBfBgFmOXTZKVFm3I0uP+e8u/PjBobUAN+l1LJdQj89
-g+IkPCfbgfpd+XMtRJ7DamI9+1mXRUVN/FiVPmp8BTi6MIUbeDpehYLc7OfRrXzr
-6ihEQrKBT7RiuW8LS1vtK7zdKiDWJqJGRNsWSEnOuaWQgz2ieAZ3E5jPHVX63Lih
-LZX7wBtAzS0dk2a+nfLgenHw8LA/EwG/ikmnW1ahcJhVkeKm18rH0XRIuGP1BAsX
-A/dUz6a8adC+71EhG6f6XxktbgOw2L6KOGiAU5Ru/3Ne55Cz277owhNLpt7gupav
-CMl21kBX+0+GsrmoLCbKxq1Prj8dEMfqgt/JSEVvTBu6eXfOhcm96tN+/MwI0/X+
-Ig8xgxbl5O6ymswV4HKUBCWMr10MCl5BwJ32/HnnuBwaMKUKCW5SrRmZI9sBv7bY
-e4v6YJJSubd/8K31IZSrFM2kHwxLznC3zWq82A0QEuAAvahXoE8mFKdVW8Y2pPnh
-qhkP7O49O8QzGi6Uth7H1bhLR62L9IWALQhEFwlIz3prTIeTnrNysd/y8L0FzJYo
-7b5lf90N8FsgWK7zN/g9
-=IeCU
+iQIcBAABAgAGBQJQIZCXAAoJEIy3vGnGbaoAnAoP/jqJFuSdkFXbc3eU7UzmLczZ
+7dBFrwWlOU3NPY4w5ZXLBCZhkdExHq05sYIiDNHFD+y1afI0pVk/Q4zHyn7o1Wsm
+CC00KcAaAA85pUJmkb2F0Gm7bhqAjnxcCUBJxLbpb4dmsh3QTiiHK1hxxGTuTpDF
+93xpvpiq/RNaf9ZkD+Rmm94EMus7tKGVyHsnxorb1FOmVJ0CeSkn4bD3ihJzkV5K
+2afhH2DPFJwmZ+wSTbLtyaN7MK/Z+hnLRiDMDYPe4iPoNlu2jM25bL/ltiuPvYOW
+pYcnQ75mW7rEQdYPKhuyYkYssLpQX/WstbIqR+FEnG9NAjdocSubo6pOsSU/NEQr
+rg9/9P6kmI3eNiuHZA1uufp8VewaFUPAu6y7dg/WTOYW9eZDLu+jNXtYmmUoQGyF
+w1EbwOTt4CAIh+ERJZtgwPYYdMvSz5bRYRJzHgaPNmEai+90jJFIdoaRPgkGV8mn
+uXqNVHzMvRwHmToN0SXC5dTxS03W7DD8/5WFpduduIbIiygsVqqg6+dXVmb+6uE/
+dngebLUpuXYGAcFTStaoDalVsVHCPfeuaCfGONiY1aQ2plopb6DJqLByBKaecFW9
+UTkmlECbsSef3qvrOUaQx0N9QWP8xLQSsyQqtCwVYebjZdxtFnE+Jd5UxoOHnGvk
+p/g/Tpctfi6k6moiPyFG
+=0eGR
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
