@@ -1,55 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab2HGJae (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 05:30:34 -0400
-Received: from relay03ant.iops.be ([212.53.5.218]:54022 "EHLO
-	relay03ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425Ab2HGJac (ORCPT
+	id S1753844Ab2HGJam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 05:30:42 -0400
+Received: from mga06.intel.com ([134.134.136.21]:29590 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753766Ab2HGJai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 05:30:32 -0400
-Message-ID: <5020E031.9080406@acm.org>
-Date: Tue, 07 Aug 2012 09:30:25 +0000
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Chanho Min <chanho0207@gmail.com>
-CC: Mike Christie <michaelc@cs.wisc.edu>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
-References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com> <501CE4E5.20604@acm.org> <501D51D1.2010806@cs.wisc.edu> <501D83A1.7040900@acm.org> <501DA3F0.4090009@cs.wisc.edu> <50200561.4020100@acm.org> <CAOAMb1BWWzYPSode-6Y9+O5eNhMc-bYofCNwMRmzeC9-nhRb4g@mail.gmail.com>
-In-Reply-To: <CAOAMb1BWWzYPSode-6Y9+O5eNhMc-bYofCNwMRmzeC9-nhRb4g@mail.gmail.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Aug 2012 05:30:38 -0400
+Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform wall
+ clock" prevents my machine from booting
+From: Matt Fleming <matt.fleming@intel.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: =?ISO-8859-1?Q?J=E9r=F4meCarretero?= <cJ-ko@zougloub.eu>,
+        Ingo Molnar <mingo@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "H. PeterAnvin" <hpa@zytor.com>
+In-Reply-To: <5020DC5F02000078000931C2@nat28.tlf.novell.com>
+References: <20120805172903.5f8bb24c@zougloub.eu> <501EF3A2.20200@zytor.com>
+	 <501F83F20200007800092C1C@nat28.tlf.novell.com>
+	 <20120806125216.GA11863@srcf.ucam.org>
+	 <501FDDD30200007800092DDE@nat28.tlf.novell.com>
+	 <20120806091627.2ad5ed2e@zougloub.eu> <20120806223208.5301be0d@zougloub.eu>
+	 <20120806230629.153d33bd@zougloub.eu>
+	 <5020DC5F02000078000931C2@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Tue, 07 Aug 2012 10:30:30 +0100
+Message-ID: <1344331830.7208.6.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/12 08:53, Chanho Min wrote:
-> On Tue, Aug 7, 2012 at 2:56 AM, Bart Van Assche <bvanassche@acm.org> wrote:
->> Indeed. How about the patch below ? Scsi devices are removed from
->> starved_list after blk_cleanup_queue() and before put_device(). That
->> guarantees that inside scsi_run_queue() get_device() under host lock
->> will succeed.
->
-> Thanks, IMHO, it's harmless and the simple way to solve this issue.
-> But, I think the second half of your patches are not required, extra
-> referecne is might suffice?
+On Tue, 2012-08-07 at 08:14 +0100, Jan Beulich wrote:
+> That's not surprising. The question really is what goes wrong
+> when the call is being made - page fault, some other fault, or
+> silent hang. A page fault would point to an incorrect memory
+> map as the prime candidate for causing the problem. My
+> primary suspect would be #NM, i.e. the implementation using
+> floating point (SSE to be precise) instructions when they're
+> unavailable.
 
-I'm afraid that without the second half of that patch the following race
-is still possible:
-- sdev reference count drops to zero while scsi_run_queue() is in
-  progress and while that sdev is on the starved_list of its SCSI host;
-  scsi_device_dev_release_usercontext() call is scheduled but not yet
-  executed.
-- scsi_run_queue() takes that sdev off the local starved_list.
-- scsi_run_queue() calls get_device() and that call fails since the
-  sdev reference count is zero.
-- scsi_device_dev_release_usercontext() gets scheduled and frees the
-  sdev.
-- scsi_run_queue() proceeds and calls __blk_run_queue() on a freed
-  queue, which is what we were trying to avoid.
+I managed to find a machine to reproduce this on and it looks like the
+ASUS firmware engineers are upto their old tricks of referencing
+physical addresses after we've taken control of the memory map,
 
-Bart.
+[   20.740414] BUG: unable to handle kernel paging request at 00000000fed1f410
+[   20.740426] IP: [<ffff8800badf2134>] 0xffff8800badf2133
+[   20.740436] PGD 138a81067 PUD 0 
+[   20.740443] Oops: 0000 [#1] PREEMPT SMP 
+[   20.740452] Modules linked in:
+[   20.740457] CPU 1 
+[   20.740464] Pid: 1051, comm: bash Not tainted 3.5.0-1.2-desktop+ #82 System manufacturer System Product Name/P8H67-M LE
+[   20.740475] RIP: 0010:[<ffff8800badf2134>]  [<ffff8800badf2134>] 0xffff8800badf2133
+[   20.740485] RSP: 0018:ffff880138bc5c48  EFLAGS: 00010002
+[   20.740491] RAX: ffff880138bc0000 RBX: ffff880138bc5e0b RCX: 00000000fed1f410
+[   20.740499] RDX: 0000000000000010 RSI: ffff880138bc5e00 RDI: ffff880138bc5e18
+[   20.740506] RBP: ffff880138bc5df8 R08: 0000000000000000 R09: 0000000000000000
+[   20.740514] R10: 0000000000000001 R11: 0000000000000001 R12: 00000000fed1f410
+[   20.740521] R13: 0000000000000000 R14: ffff880138bc5e18 R15: 0000000000000002
+[   20.740529] FS:  00007fe8f1f5a700(0000) GS:ffff88013fa80000(0000) knlGS:0000000000000000
+[   20.740538] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   20.740544] CR2: 00000000fed1f410 CR3: 0000000138b54000 CR4: 00000000000407e0
+[   20.740552] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   20.740560] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   20.740568] Process bash (pid: 1051, threadinfo ffff880138bc4000, task ffff880137d60040)
+[   20.740576] Stack:
+[   20.740579]  ffff8800badf139d ffffffff00000000 ffffffff81c1f360 0000000000000086
+[   20.740591]  ffffffff81c1f2d8 0000000000000007 ffff880138bc5e08 ffff880138bc5e18
+[   20.740603]  ffff880138bc5e08 ffff880138bc5e00 ffff8800badf16f3 00000000000003ad
+[   20.740615] Call Trace:
+[   20.740624]  [<ffffffff8109f35d>] ? trace_hardirqs_off+0xd/0x10
+[   20.740636]  [<ffffffff81037740>] ? efi_call2+0x40/0x70
+[   20.740645]  [<ffffffff810374e7>] ? virt_efi_get_time+0x57/0x90
+[   20.740654]  [<ffffffff8103716a>] efi_get_time+0x4a/0x50
+[   20.740664]  [<ffffffff8100ab22>] read_persistent_clock+0x12/0x30
+[   20.740674]  [<ffffffff81048a0f>] mjf_proc_dointvec+0x3f/0x50
+[   20.740683]  [<ffffffff810478e0>] ? iomem_is_exclusive+0xb0/0xb0
+[   20.740694]  [<ffffffff811d1972>] ? sysctl_perm+0x32/0x90
+[   20.740704]  [<ffffffff811d1a8c>] proc_sys_call_handler+0xbc/0xd0
+[   20.740715]  [<ffffffff811d1aaf>] proc_sys_write+0xf/0x20
+[   20.740724]  [<ffffffff81162a76>] vfs_write+0xc6/0x180
+[   20.740732]  [<ffffffff81162d8c>] sys_write+0x4c/0x90
+[   20.740743]  [<ffffffff8173e8a2>] system_call_fastpath+0x16/0x1b
+
+Relevant bits of the dmesg for the offending address,
+
+[    0.000000] BIOS-e820: [mem 0x00000000fed1c000-0x00000000fed1ffff] reserved
+[    0.000000] efi: mem140: type=11, attr=0x8000000000000001, range=[0x00000000fed1c000-0x00000000fed20000) (0MB)
+[    0.000000] ACPI: HPET id: 0x8086a701 base: 0xfed00000
+[    0.000000] PM: Registered nosave memory: 00000000fed1c000 - 00000000fed20000
+[    0.251154] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0, 0, 0, 0, 0, 0
+[    0.251163] hpet0: 8 comparators, 64-bit 14.318180 MHz counter
+[    0.265436] pnp 00:08: [mem 0xfed1c000-0xfed1ffff]
+[    0.265523] system 00:08: [mem 0xfed1c000-0xfed1ffff] has been reserved
+
+
