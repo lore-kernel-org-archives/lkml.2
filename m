@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab2HGXjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:39:16 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59838 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab2HGW2c (ORCPT
+	id S1757671Ab2HGXje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:39:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932394Ab2HGW2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:28:32 -0400
+	Tue, 7 Aug 2012 18:28:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: =?UTF-8?q?=5B=20030/122=5D=20USB=3A=20option=3A=20add=20ZTE=20MF821D?=
-Date: Tue,  7 Aug 2012 15:25:18 -0700
-Message-Id: <20120807221950.945638218@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 028/122] usbdevfs: Correct amount of data copied to user in processcompl_compat
+Date: Tue,  7 Aug 2012 15:25:16 -0700
+Message-Id: <20120807221950.762314927@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,30 +30,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 09110529780890804b22e997ae6b4fe3f0b3b158 upstream.
+commit 2102e06a5f2e414694921f23591f072a5ba7db9f upstream.
 
-Sold by O2 (telefonica germany) under the name "LTE4G"
+iso data buffers may have holes in them if some packets were short, so for
+iso urbs we should always copy the entire buffer, just like the regular
+processcompl does.
 
-Tested-by: Thomas Schäfer <tschaefer@t-online.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/core/devio.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -936,6 +936,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0165, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0167, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0326, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1008, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 0xff),
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -1604,10 +1604,14 @@ static int processcompl_compat(struct as
+ 	void __user *addr = as->userurb;
+ 	unsigned int i;
+ 
+-	if (as->userbuffer && urb->actual_length)
+-		if (copy_to_user(as->userbuffer, urb->transfer_buffer,
+-				 urb->actual_length))
++	if (as->userbuffer && urb->actual_length) {
++		if (urb->number_of_packets > 0)		/* Isochronous */
++			i = urb->transfer_buffer_length;
++		else					/* Non-Isoc */
++			i = urb->actual_length;
++		if (copy_to_user(as->userbuffer, urb->transfer_buffer, i))
+ 			return -EFAULT;
++	}
+ 	if (put_user(as->status, &userurb->status))
+ 		return -EFAULT;
+ 	if (put_user(urb->actual_length, &userurb->actual_length))
 
 
