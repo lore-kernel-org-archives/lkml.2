@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab2HGORi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 10:17:38 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:52884 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab2HGORh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 10:17:37 -0400
-X-IronPort-AV: E=Sophos;i="4.77,727,1336374000"; 
-   d="scan'208";a="674151241"
-Message-ID: <5021237D.1010107@netapp.com>
-Date: Tue, 07 Aug 2012 10:17:33 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754747Ab2HGOSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 10:18:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42156 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380Ab2HGOSP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 10:18:15 -0400
+Message-ID: <502123A4.8040007@gmail.com>
+Date: Tue, 07 Aug 2012 08:18:12 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wdauchy@gmail.com
-Subject: Re: kernel BUG at /data/lemmy/linux.trees.git/fs/nfs/idmap.c:681!
-References: <20120807134156.GP1996@amd.com> <50211E42.6040808@netapp.com> <20120807141548.GG1917@8bytes.org>
-In-Reply-To: <20120807141548.GG1917@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/2] perf tools: Basic bash completion support
+References: <1344345586-15068-1-git-send-email-fweisbec@gmail.com> <20120807132252.GA12858@somewhere.redhat.com>
+In-Reply-To: <20120807132252.GA12858@somewhere.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 10:15 AM, Joerg Roedel wrote:
-> On Tue, Aug 07, 2012 at 09:55:14AM -0400, Bryan Schumaker wrote:
->> On 08/07/2012 09:41 AM, Joerg Roedel wrote:
->>> starting with Linux 3.6-rc1 I experience this BUG on one of my test
->>> machines. Please let me know if you need any additional information.
+On 8/7/12 7:22 AM, Frederic Weisbecker wrote:
+> On Tue, Aug 07, 2012 at 03:19:44PM +0200, Frederic Weisbecker wrote:
+>> Hey,
 >>
->> I think this is the same bug that William Dauchy has been hitting.  Do
->> you have a reproducer for this?  I haven't been able to trigger it on
->> my own :(.
-> 
-> Yes, it reproduces pretty reliable here with Ubuntu 11.10 Server on an
-> Intel box with an NFSv3 directory mounted at boot. This is the only box
-> I have seen this so far, probably it depends on the config. I attach the
-> config of the failing box.
+>> Basic bash completion support. Only support perf subcommands and most -e basic
+>> event descriptor (no grouping).
+>>
+>> I just have a small issue with tracepoints because of their ":" in the middle.
+>> It auto completes as long as we haven't yet reached the semicolon. Otherwise
+>> we need to add a double quote in the beginning of the expression. I'm quite
+>> a newbie in bash completion though, so I might find a subtelty later to solve
+>> this.
+>
+> Tips: for testing, you need to "make install" and update the bash completion
+> scripts:
+>
+> 	# make install
+> 	$ . /etc/bash_completion
+>
 
-Interesting.  Are you mounting v4, too?  This code shouldn't be running for v3... maybe that's why I haven't been able to hit it.
+ANd you need to make sure the PATH hits the updated binary and not the 
+default other wise you end up with:
 
-- Bryan
+/tmp/pbuild/perf recUnknown option: --list-cmds
 
-> 
-> HTH,
-> 
-> 	Joerg
-> 
+  Usage: perf [--version] [--help] COMMAND [ARGS]
+Unknown option: --list-cmds
 
+It's calling /usr/bin/perf with --list-cmds, versus the perf command I 
+am running (/tmp/pbuild/perf). Any way to teach the completion to use 
+the perf binary that the user is running?
+
+David
