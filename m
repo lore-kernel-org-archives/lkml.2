@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab2HGDz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:55:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59620 "EHLO
+	id S1757379Ab2HGDzu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:55:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59617 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757274Ab2HGDiK (ORCPT
+	by vger.kernel.org with ESMTP id S1757270Ab2HGDiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:10 -0400
-Message-Id: <20120807032758.271670182@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:09 -0400
+Message-Id: <20120807032756.313313678@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:10 +0100
+Date: Tue, 07 Aug 2012 04:27:56 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Theodore Tso <tytso@mit.edu>
-Subject: [ 15/70] random: use lockless techniques in the interrupt path
+        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <peterz@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Stefan Bader <stefan.bader@canonical.com>
+Subject: [ 01/70] sched: Fix race in task_group()
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,244 +30,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 902c098a3663de3fa18639efbb71b6080f0bcd3c upstream.
+commit 8323f26ce3425460769605a6aece7a174edaa7d1 upstream
 
-The real-time Linux folks don't like add_interrupt_randomness() taking
-a spinlock since it is called in the low-level interrupt routine.
-This also allows us to reduce the overhead in the fast path, for the
-random driver, which is the interrupt collection path.
+Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
+Don't call task_group() too many times in set_task_rq()"), he
+found the reason to be that the multiple task_group()
+invocations in set_task_rq() returned different values.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Looking at all that I found a lack of serialization and plain
+wrong comments.
+
+The below tries to fix it using an extra pointer which is
+updated under the appropriate scheduler locks. Its not pretty,
+but I can't really see another way given how all the cgroup
+stuff works.
+
+Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
+(backported to previous file names and layout)
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/random.c |   78 ++++++++++++++++++++++++-------------------------
- 1 file changed, 39 insertions(+), 39 deletions(-)
+ include/linux/init_task.h |   12 +++++++++++-
+ include/linux/sched.h     |    5 ++++-
+ kernel/sched.c            |   32 ++++++++++++++++++--------------
+ 3 files changed, 33 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 9fcceac..315feb1 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -418,9 +418,9 @@ struct entropy_store {
- 	/* read-write data: */
- 	spinlock_t lock;
- 	unsigned add_ptr;
-+	unsigned input_rotate;
- 	int entropy_count;
- 	int entropy_total;
--	int input_rotate;
- 	unsigned int initialized:1;
- 	__u8 last_data[EXTRACT_SIZE];
- };
-@@ -468,26 +468,24 @@ static __u32 const twist_table[8] = {
-  * it's cheap to do so and helps slightly in the expected case where
-  * the entropy is concentrated in the low-order bits.
-  */
--static void mix_pool_bytes_extract(struct entropy_store *r, const void *in,
--				   int nbytes, __u8 out[64])
-+static void __mix_pool_bytes(struct entropy_store *r, const void *in,
-+			     int nbytes, __u8 out[64])
- {
- 	unsigned long i, j, tap1, tap2, tap3, tap4, tap5;
- 	int input_rotate;
- 	int wordmask = r->poolinfo->poolwords - 1;
- 	const char *bytes = in;
- 	__u32 w;
--	unsigned long flags;
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 32574ee..13b2684 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -117,8 +117,17 @@ extern struct group_info init_groups;
  
--	/* Taps are constant, so we can load them without holding r->lock.  */
- 	tap1 = r->poolinfo->tap1;
- 	tap2 = r->poolinfo->tap2;
- 	tap3 = r->poolinfo->tap3;
- 	tap4 = r->poolinfo->tap4;
- 	tap5 = r->poolinfo->tap5;
+ extern struct cred init_cred;
  
--	spin_lock_irqsave(&r->lock, flags);
--	input_rotate = r->input_rotate;
--	i = r->add_ptr;
-+	smp_rmb();
-+	input_rotate = ACCESS_ONCE(r->input_rotate);
-+	i = ACCESS_ONCE(r->add_ptr);
- 
- 	/* mix one byte at a time to simplify size handling and churn faster */
- 	while (nbytes--) {
-@@ -514,19 +512,23 @@ static void mix_pool_bytes_extract(struct entropy_store *r, const void *in,
- 		input_rotate += i ? 7 : 14;
- 	}
- 
--	r->input_rotate = input_rotate;
--	r->add_ptr = i;
-+	ACCESS_ONCE(r->input_rotate) = input_rotate;
-+	ACCESS_ONCE(r->add_ptr) = i;
-+	smp_wmb();
- 
- 	if (out)
- 		for (j = 0; j < 16; j++)
- 			((__u32 *)out)[j] = r->pool[(i - j) & wordmask];
--
--	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
--static void mix_pool_bytes(struct entropy_store *r, const void *in, int bytes)
-+static void mix_pool_bytes(struct entropy_store *r, const void *in,
-+			     int nbytes, __u8 out[64])
- {
--       mix_pool_bytes_extract(r, in, bytes, NULL);
-+	unsigned long flags;
++extern struct task_group root_task_group;
 +
-+	spin_lock_irqsave(&r->lock, flags);
-+	__mix_pool_bytes(r, in, nbytes, out);
-+	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
- struct fast_pool {
-@@ -564,23 +566,22 @@ static void fast_mix(struct fast_pool *f, const void *in, int nbytes)
-  */
- static void credit_entropy_bits(struct entropy_store *r, int nbits)
- {
--	unsigned long flags;
--	int entropy_count;
-+	int entropy_count, orig;
- 
- 	if (!nbits)
- 		return;
- 
--	spin_lock_irqsave(&r->lock, flags);
--
- 	DEBUG_ENT("added %d entropy credits to %s\n", nbits, r->name);
--	entropy_count = r->entropy_count;
-+retry:
-+	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
- 	entropy_count += nbits;
- 	if (entropy_count < 0) {
- 		DEBUG_ENT("negative entropy/overflow\n");
- 		entropy_count = 0;
- 	} else if (entropy_count > r->poolinfo->POOLBITS)
- 		entropy_count = r->poolinfo->POOLBITS;
--	r->entropy_count = entropy_count;
-+	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+		goto retry;
- 
- 	if (!r->initialized && nbits > 0) {
- 		r->entropy_total += nbits;
-@@ -593,7 +594,6 @@ static void credit_entropy_bits(struct entropy_store *r, int nbits)
- 		wake_up_interruptible(&random_read_wait);
- 		kill_fasync(&fasync, SIGIO, POLL_IN);
- 	}
--	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
- /*********************************************************************
-@@ -680,7 +680,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 		sample.cycles = get_cycles();
- 
- 	sample.num = num;
--	mix_pool_bytes(&input_pool, &sample, sizeof(sample));
-+	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
- 
- 	/*
- 	 * Calculate number of bits of randomness we probably added.
-@@ -764,7 +764,7 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 	fast_pool->last = now;
- 
- 	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
--	mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool));
-+	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
- 	/*
- 	 * If we don't have a valid cycle counter, and we see
- 	 * back-to-back timer interrupts, then skip giving credit for
-@@ -829,7 +829,7 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 
- 		bytes = extract_entropy(r->pull, tmp, bytes,
- 					random_read_wakeup_thresh / 8, rsvd);
--		mix_pool_bytes(r, tmp, bytes);
-+		mix_pool_bytes(r, tmp, bytes, NULL);
- 		credit_entropy_bits(r, bytes*8);
- 	}
- }
-@@ -890,9 +890,11 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	int i;
- 	__u32 hash[5], workspace[SHA_WORKSPACE_WORDS];
- 	__u8 extract[64];
-+	unsigned long flags;
- 
- 	/* Generate a hash across the pool, 16 words (512 bits) at a time */
- 	sha_init(hash);
-+	spin_lock_irqsave(&r->lock, flags);
- 	for (i = 0; i < r->poolinfo->poolwords; i += 16)
- 		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
- 
-@@ -905,7 +907,8 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	 * brute-forcing the feedback as hard as brute-forcing the
- 	 * hash.
- 	 */
--	mix_pool_bytes_extract(r, hash, sizeof(hash), extract);
-+	__mix_pool_bytes(r, hash, sizeof(hash), extract);
-+	spin_unlock_irqrestore(&r->lock, flags);
- 
- 	/*
- 	 * To avoid duplicates, we atomically extract a portion of the
-@@ -928,11 +931,10 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- }
- 
- static ssize_t extract_entropy(struct entropy_store *r, void *buf,
--			       size_t nbytes, int min, int reserved)
-+				 size_t nbytes, int min, int reserved)
- {
- 	ssize_t ret = 0, i;
- 	__u8 tmp[EXTRACT_SIZE];
--	unsigned long flags;
- 
- 	xfer_secondary_pool(r, nbytes);
- 	nbytes = account(r, nbytes, min, reserved);
-@@ -941,6 +943,8 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- 		extract_buf(r, tmp);
- 
- 		if (fips_enabled) {
-+			unsigned long flags;
++#ifdef CONFIG_CGROUP_SCHED
++# define INIT_CGROUP_SCHED(tsk)						\
++	.sched_task_group = &root_task_group,
++#else
++# define INIT_CGROUP_SCHED(tsk)
++#endif
 +
- 			spin_lock_irqsave(&r->lock, flags);
- 			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
- 				panic("Hardware RNG duplicated output!\n");
-@@ -1034,22 +1038,18 @@ EXPORT_SYMBOL(get_random_bytes);
- static void init_std_data(struct entropy_store *r)
- {
- 	int i;
--	ktime_t now;
--	unsigned long flags;
-+	ktime_t now = ktime_get_real();
-+	unsigned long rv;
+ #ifdef CONFIG_PERF_EVENTS
+-# define INIT_PERF_EVENTS(tsk)					\
++# define INIT_PERF_EVENTS(tsk)						\
+ 	.perf_event_mutex = 						\
+ 		 __MUTEX_INITIALIZER(tsk.perf_event_mutex),		\
+ 	.perf_event_list = LIST_HEAD_INIT(tsk.perf_event_list),
+@@ -155,6 +164,7 @@ extern struct cred init_cred;
+ 	},								\
+ 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
+ 	INIT_PUSHABLE_TASKS(tsk)					\
++	INIT_CGROUP_SCHED(tsk)						\
+ 	.ptraced	= LIST_HEAD_INIT(tsk.ptraced),			\
+ 	.ptrace_entry	= LIST_HEAD_INIT(tsk.ptrace_entry),		\
+ 	.real_parent	= &tsk,						\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5afa2a3..d404c12 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1235,6 +1235,9 @@ struct task_struct {
+ 	const struct sched_class *sched_class;
+ 	struct sched_entity se;
+ 	struct sched_rt_entity rt;
++#ifdef CONFIG_CGROUP_SCHED
++	struct task_group *sched_task_group;
++#endif
  
--	spin_lock_irqsave(&r->lock, flags);
- 	r->entropy_count = 0;
- 	r->entropy_total = 0;
--	spin_unlock_irqrestore(&r->lock, flags);
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 	/* list of struct preempt_notifier: */
+@@ -2645,7 +2648,7 @@ extern int sched_group_set_rt_period(struct task_group *tg,
+ extern long sched_group_rt_period(struct task_group *tg);
+ extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
+ #endif
+-#endif
++#endif /* CONFIG_CGROUP_SCHED */
+ 
+ extern int task_can_switch_user(struct user_struct *up,
+ 					struct task_struct *tsk);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 52ac69b..cd9c72e 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -746,22 +746,19 @@ static inline int cpu_of(struct rq *rq)
+ /*
+  * Return the group to which this tasks belongs.
+  *
+- * We use task_subsys_state_check() and extend the RCU verification with
+- * pi->lock and rq->lock because cpu_cgroup_attach() holds those locks for each
+- * task it moves into the cgroup. Therefore by holding either of those locks,
+- * we pin the task to the current cgroup.
++ * We cannot use task_subsys_state() and friends because the cgroup
++ * subsystem changes that value before the cgroup_subsys::attach() method
++ * is called, therefore we cannot pin it and might observe the wrong value.
++ *
++ * The same is true for autogroup's p->signal->autogroup->tg, the autogroup
++ * core changes this before calling sched_move_task().
++ *
++ * Instead we use a 'copy' which is updated from sched_move_task() while
++ * holding both task_struct::pi_lock and rq::lock.
+  */
+ static inline struct task_group *task_group(struct task_struct *p)
+ {
+-	struct task_group *tg;
+-	struct cgroup_subsys_state *css;
 -
--	now = ktime_get_real();
--	mix_pool_bytes(r, &now, sizeof(now));
--	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof flags) {
--		if (!arch_get_random_long(&flags))
-+	mix_pool_bytes(r, &now, sizeof(now), NULL);
-+	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof(rv)) {
-+		if (!arch_get_random_long(&rv))
- 			break;
--		mix_pool_bytes(r, &flags, sizeof(flags));
-+		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
- 	}
--	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
-+	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
+-	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
+-			lockdep_is_held(&p->pi_lock) ||
+-			lockdep_is_held(&task_rq(p)->lock));
+-	tg = container_of(css, struct task_group, css);
+-
+-	return autogroup_task_group(p, tg);
++	return p->sched_task_group;
  }
  
- static int rand_initialize(void)
-@@ -1186,7 +1186,7 @@ write_pool(struct entropy_store *r, const char __user *buffer, size_t count)
- 		count -= bytes;
- 		p += bytes;
+ /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
+@@ -2372,7 +2369,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 	 * a task's CPU. ->pi_lock for waking tasks, rq->lock for runnable tasks.
+ 	 *
+ 	 * sched_move_task() holds both and thus holding either pins the cgroup,
+-	 * see set_task_rq().
++	 * see task_group().
+ 	 *
+ 	 * Furthermore, all task_rq users should acquire both locks, see
+ 	 * task_rq_lock().
+@@ -8892,6 +8889,7 @@ void sched_destroy_group(struct task_group *tg)
+  */
+ void sched_move_task(struct task_struct *tsk)
+ {
++	struct task_group *tg;
+ 	int on_rq, running;
+ 	unsigned long flags;
+ 	struct rq *rq;
+@@ -8906,6 +8904,12 @@ void sched_move_task(struct task_struct *tsk)
+ 	if (unlikely(running))
+ 		tsk->sched_class->put_prev_task(rq, tsk);
  
--		mix_pool_bytes(r, buf, bytes);
-+		mix_pool_bytes(r, buf, bytes, NULL);
- 		cond_resched();
- 	}
- 
++	tg = container_of(task_subsys_state_check(tsk, cpu_cgroup_subsys_id,
++				lockdep_is_held(&tsk->sighand->siglock)),
++			  struct task_group, css);
++	tg = autogroup_task_group(tsk, tg);
++	tsk->sched_task_group = tg;
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	if (tsk->sched_class->task_move_group)
+ 		tsk->sched_class->task_move_group(tsk, on_rq);
+
 
 
