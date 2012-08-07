@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab2HGDu6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:50:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59733 "EHLO
+	id S1757350Ab2HGDvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:51:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59722 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757350Ab2HGDic (ORCPT
+	by vger.kernel.org with ESMTP id S1757343Ab2HGDic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Aug 2012 23:38:32 -0400
-Message-Id: <20120807032804.810686774@decadent.org.uk>
+Message-Id: <20120807032803.636510085@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:55 +0100
+Date: Tue, 07 Aug 2012 04:28:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Boaz Harrosh <bharrosh@panasas.com>
-Subject: [ 60/70] ore: Fix out-of-bounds access in _ios_obj()
+        alan@lxorguk.ukuu.org.uk, Colin Ian King <colin.king@canonical.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 52/70] USB: echi-dbgp: increase the controller wait time to come out of
+ halt.
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,74 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: Colin Ian King <colin.king@canonical.com>
 
-commit 9e62bb4458ad2cf28bd701aa5fab380b846db326 upstream.
+commit f96a4216e85050c0a9d41a41ecb0ae9d8e39b509 upstream.
 
-_ios_obj() is accessed by group_index not device_table index.
+The default 10 microsecond delay for the controller to come out of
+halt in dbgp_ehci_startup is too short, so increase it to 1 millisecond.
 
-The oc->comps array is only a group_full of devices at a time
-it is not like ore_comp_dev() which is indexed by a global
-device_table index.
+This is based on emperical testing on various USB debug ports on
+modern machines such as a Lenovo X220i and an Ivybridge development
+platform that needed to wait ~450-950 microseconds.
 
-This did not BUG until now because exofs only uses a single
-COMP for all devices. But with other FSs like PanFS this is
-not true.
-
-This bug was only in the write_path, all other users were
-using it correctly
-
-[This is a bug since 3.2 Kernel]
-
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/exofs/ore.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/usb/early/ehci-dbgp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
-index 24a49d4..1585db1 100644
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -837,11 +837,11 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
- 				bio->bi_rw |= REQ_WRITE;
- 			}
+diff --git a/drivers/usb/early/ehci-dbgp.c b/drivers/usb/early/ehci-dbgp.c
+index 1fc8f12..347bb05 100644
+--- a/drivers/usb/early/ehci-dbgp.c
++++ b/drivers/usb/early/ehci-dbgp.c
+@@ -450,7 +450,7 @@ static int dbgp_ehci_startup(void)
+ 	writel(FLAG_CF, &ehci_regs->configured_flag);
  
--			osd_req_write(or, _ios_obj(ios, dev), per_dev->offset,
--				      bio, per_dev->length);
-+			osd_req_write(or, _ios_obj(ios, cur_comp),
-+				      per_dev->offset, bio, per_dev->length);
- 			ORE_DBGMSG("write(0x%llx) offset=0x%llx "
- 				      "length=0x%llx dev=%d\n",
--				     _LLU(_ios_obj(ios, dev)->id),
-+				     _LLU(_ios_obj(ios, cur_comp)->id),
- 				     _LLU(per_dev->offset),
- 				     _LLU(per_dev->length), dev);
- 		} else if (ios->kern_buff) {
-@@ -853,20 +853,20 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
- 			       (ios->si.unit_off + ios->length >
- 				ios->layout->stripe_unit));
- 
--			ret = osd_req_write_kern(or, _ios_obj(ios, per_dev->dev),
-+			ret = osd_req_write_kern(or, _ios_obj(ios, cur_comp),
- 						 per_dev->offset,
- 						 ios->kern_buff, ios->length);
- 			if (unlikely(ret))
- 				goto out;
- 			ORE_DBGMSG2("write_kern(0x%llx) offset=0x%llx "
- 				      "length=0x%llx dev=%d\n",
--				     _LLU(_ios_obj(ios, dev)->id),
-+				     _LLU(_ios_obj(ios, cur_comp)->id),
- 				     _LLU(per_dev->offset),
- 				     _LLU(ios->length), per_dev->dev);
- 		} else {
--			osd_req_set_attributes(or, _ios_obj(ios, dev));
-+			osd_req_set_attributes(or, _ios_obj(ios, cur_comp));
- 			ORE_DBGMSG2("obj(0x%llx) set_attributes=%d dev=%d\n",
--				     _LLU(_ios_obj(ios, dev)->id),
-+				     _LLU(_ios_obj(ios, cur_comp)->id),
- 				     ios->out_attr_len, dev);
- 		}
- 
+ 	/* Wait until the controller is no longer halted */
+-	loop = 10;
++	loop = 1000;
+ 	do {
+ 		status = readl(&ehci_regs->status);
+ 		if (!(status & STS_HALT))
 
 
