@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab2HGBHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 21:07:37 -0400
-Received: from imp01.mtu.ru ([62.5.255.10]:46790 "EHLO imp01.mtu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756450Ab2HGBHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 21:07:34 -0400
-X-Spam-Flag: NO
-Message-ID: <50206A3A.8020706@pavlinux.ru>
-Date: Tue, 07 Aug 2012 05:07:06 +0400
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120713 Thunderbird/10.0.6
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Pavel Machek <pavel@ucw.cz>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: Re: [linux-pm] [PATCH] ACPI: replace strlen("string") with sizeof("string")
- -1
-References: <Pine.LNX.4.44L0.1208061556010.1649-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1208061556010.1649-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1757157Ab2HGBTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 21:19:09 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:50110 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756936Ab2HGBTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Aug 2012 21:19:07 -0400
+Message-ID: <1344302346.2026.23.camel@joe2Laptop>
+Subject: Re: [RFC v3 1/7] hashtable: introduce a small and naive hashtable
+From: Joe Perches <joe@perches.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com
+Date: Mon, 06 Aug 2012 18:19:06 -0700
+In-Reply-To: <1344300317-23189-2-git-send-email-levinsasha928@gmail.com>
+References: <1344300317-23189-1-git-send-email-levinsasha928@gmail.com>
+	 <1344300317-23189-2-git-send-email-levinsasha928@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-06.08.2012 23:59, Alan Stern пишет:
-> On Mon, 6 Aug 2012, Pavel Vasilyev wrote:
->
->>>> http://www.gossamer-threads.com/lists/engine?do=post_attachment;postatt_id=41157;list=linux
->>>
->>> Interestingly, many (all?) of the changes in that patch are wrong
->>> because they don't try to match the terminating '\0'.  As a result,
->>> they will match against extensions of the target string as well as the
->>> target string itself.
->>>
->>
->> strNcmp compare N bytes - http://lxr.linux.no/#linux+v3.5/lib/string.c#L270
->> memcmp compare N bytes  - http://lxr.linux.no/#linux+v3.5/lib/string.c#L651
->
-> Yes.  So if s contains "abcde" then
->
-> 	memcmp(s, "abc", 3) and strncmp(s, "abc", 3) will both return 0, and
-> 	memcmp(s, "abc", 4) and strncmp(s, "abc", 4) will both return 1.
+On Tue, 2012-08-07 at 02:45 +0200, Sasha Levin wrote:
+> This hashtable implementation is using hlist buckets to provide a simple
+> hashtable to prevent it from getting reimplemented all over the kernel.
 
-No matter what is contained in *s, "abcde" or "abcxxx",
-are important first N bytes. The second example, you see,
-a little bit stupid, and devoid of logic. :)
+> diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
+
+Just trivial style notes and a typo
+
+> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
+> +#define hash_min(val, bits) ((sizeof(val)==4)?hash_32((val), (bits)):hash_long((val), (bits)))
+
+This is a pretty long line.  It doesn't use normal kernel spacing
+style and it has unnecessary parentheses.
+
+Maybe:
+
+#define hash_min(val, bits)						\
+	(sizeof(val) == 4 ? hash_32(val, bits) : hash_long(val, bits))
+
+> +
+> +/**
+> + * hash_init - initialize a hash table
+> + * @hashtable: hashtable to be initialized
+> + * @bits: bit count of hashing function
+> + *
+> + * Initializes a hash table with 2**bits buckets.
+> + */
+> +static inline void hash_init(struct hlist_head *hashtable, int bits)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < HASH_SIZE(bits); i++)
+> +		INIT_HLIST_HEAD(hashtable + i);
+> +}
+
+Maybe use a struct hlist_head *last_hash_entry as a loop variable
+
+{
+	struct hlist_head *eo_hash = hashtable + HASH_SIZE(bits);
+
+	while (hashtable < eo_hash)
+		INIT_HLIST_HEAD(hashtable++);
+}
+
+The compiler might generate the same code anyway...
+
+[]
+
+> +/**
+> + * hash_for_each_possible - iterate over all possible objects for a giver key
+> + * @name: hashtable to iterate
+> + * @obj: the type * to use as a loop cursor for each bucke
+
+bucket
 
 
--- 
-
-                                                          Pavel.
