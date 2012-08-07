@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab2HGDif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:38:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59712 "EHLO
+	id S932646Ab2HGDsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:48:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59726 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757336Ab2HGDi3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757370Ab2HGDig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:29 -0400
-Message-Id: <20120807032804.958167326@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:36 -0400
+Message-Id: <20120807032805.800353479@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:56 +0100
+Date: Tue, 07 Aug 2012 04:29:02 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andreas Schwab <schwab@linux-m68k.org>,
-        Thorsten Glaser <tg@debian.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [ 61/70] m68k: Make sys_atomic_cmpxchg_32 work on classic m68k
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 67/70] drop_monitor: dont sleep in atomic context
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,40 +29,241 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 9e2760d18b3cf179534bbc27692c84879c61b97c upstream.
+commit bec4596b4e6770c7037f21f6bd27567b152dc0d6 upstream.
 
-User space access must always go through uaccess accessors, since on
-classic m68k user space and kernel space are completely separate.
+drop_monitor calls several sleeping functions while in atomic context.
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Tested-by: Thorsten Glaser <tg@debian.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+ BUG: sleeping function called from invalid context at mm/slub.c:943
+ in_atomic(): 1, irqs_disabled(): 0, pid: 2103, name: kworker/0:2
+ Pid: 2103, comm: kworker/0:2 Not tainted 3.5.0-rc1+ #55
+ Call Trace:
+  [<ffffffff810697ca>] __might_sleep+0xca/0xf0
+  [<ffffffff811345a3>] kmem_cache_alloc_node+0x1b3/0x1c0
+  [<ffffffff8105578c>] ? queue_delayed_work_on+0x11c/0x130
+  [<ffffffff815343fb>] __alloc_skb+0x4b/0x230
+  [<ffffffffa00b0360>] ? reset_per_cpu_data+0x160/0x160 [drop_monitor]
+  [<ffffffffa00b022f>] reset_per_cpu_data+0x2f/0x160 [drop_monitor]
+  [<ffffffffa00b03ab>] send_dm_alert+0x4b/0xb0 [drop_monitor]
+  [<ffffffff810568e0>] process_one_work+0x130/0x4c0
+  [<ffffffff81058249>] worker_thread+0x159/0x360
+  [<ffffffff810580f0>] ? manage_workers.isra.27+0x240/0x240
+  [<ffffffff8105d403>] kthread+0x93/0xa0
+  [<ffffffff816be6d4>] kernel_thread_helper+0x4/0x10
+  [<ffffffff8105d370>] ? kthread_freezable_should_stop+0x80/0x80
+  [<ffffffff816be6d0>] ? gs_change+0xb/0xb
+
+Rework the logic to call the sleeping functions in right context.
+
+Use standard timer/workqueue api to let system chose any cpu to perform
+the allocation and netlink send.
+
+Also avoid a loop if reset_per_cpu_data() cannot allocate memory :
+use mod_timer() to wait 1/10 second before next try.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/m68k/kernel/sys_m68k.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ net/core/drop_monitor.c |  102 +++++++++++++++--------------------------------
+ 1 file changed, 33 insertions(+), 69 deletions(-)
 
-diff --git a/arch/m68k/kernel/sys_m68k.c b/arch/m68k/kernel/sys_m68k.c
-index 8623f8d..9a5932e 100644
---- a/arch/m68k/kernel/sys_m68k.c
-+++ b/arch/m68k/kernel/sys_m68k.c
-@@ -479,9 +479,13 @@ sys_atomic_cmpxchg_32(unsigned long newval, int oldval, int d3, int d4, int d5,
- 			goto bad_access;
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -33,9 +33,6 @@
+ #define TRACE_ON 1
+ #define TRACE_OFF 0
+ 
+-static void send_dm_alert(struct work_struct *unused);
+-
+-
+ /*
+  * Globals, our netlink socket pointer
+  * and the work handle that will send up
+@@ -45,11 +42,10 @@ static int trace_state = TRACE_OFF;
+ static DEFINE_MUTEX(trace_state_mutex);
+ 
+ struct per_cpu_dm_data {
+-	struct work_struct dm_alert_work;
+-	struct sk_buff __rcu *skb;
+-	atomic_t dm_hit_count;
+-	struct timer_list send_timer;
+-	int cpu;
++	spinlock_t		lock;
++	struct sk_buff		*skb;
++	struct work_struct	dm_alert_work;
++	struct timer_list	send_timer;
+ };
+ 
+ struct dm_hw_stat_delta {
+@@ -75,13 +71,13 @@ static int dm_delay = 1;
+ static unsigned long dm_hw_check_delta = 2*HZ;
+ static LIST_HEAD(hw_stats_list);
+ 
+-static void reset_per_cpu_data(struct per_cpu_dm_data *data)
++static struct sk_buff *reset_per_cpu_data(struct per_cpu_dm_data *data)
+ {
+ 	size_t al;
+ 	struct net_dm_alert_msg *msg;
+ 	struct nlattr *nla;
+ 	struct sk_buff *skb;
+-	struct sk_buff *oskb = rcu_dereference_protected(data->skb, 1);
++	unsigned long flags;
+ 
+ 	al = sizeof(struct net_dm_alert_msg);
+ 	al += dm_hit_limit * sizeof(struct net_dm_drop_point);
+@@ -96,65 +92,40 @@ static void reset_per_cpu_data(struct pe
+ 				  sizeof(struct net_dm_alert_msg));
+ 		msg = nla_data(nla);
+ 		memset(msg, 0, al);
+-	} else
+-		schedule_work_on(data->cpu, &data->dm_alert_work);
+-
+-	/*
+-	 * Don't need to lock this, since we are guaranteed to only
+-	 * run this on a single cpu at a time.
+-	 * Note also that we only update data->skb if the old and new skb
+-	 * pointers don't match.  This ensures that we don't continually call
+-	 * synchornize_rcu if we repeatedly fail to alloc a new netlink message.
+-	 */
+-	if (skb != oskb) {
+-		rcu_assign_pointer(data->skb, skb);
+-
+-		synchronize_rcu();
+-
+-		atomic_set(&data->dm_hit_count, dm_hit_limit);
++	} else {
++		mod_timer(&data->send_timer, jiffies + HZ / 10);
+ 	}
+ 
++	spin_lock_irqsave(&data->lock, flags);
++	swap(data->skb, skb);
++	spin_unlock_irqrestore(&data->lock, flags);
++
++	return skb;
+ }
+ 
+-static void send_dm_alert(struct work_struct *unused)
++static void send_dm_alert(struct work_struct *work)
+ {
+ 	struct sk_buff *skb;
+-	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
++	struct per_cpu_dm_data *data;
+ 
+-	WARN_ON_ONCE(data->cpu != smp_processor_id());
++	data = container_of(work, struct per_cpu_dm_data, dm_alert_work);
+ 
+-	/*
+-	 * Grab the skb we're about to send
+-	 */
+-	skb = rcu_dereference_protected(data->skb, 1);
++	skb = reset_per_cpu_data(data);
+ 
+-	/*
+-	 * Replace it with a new one
+-	 */
+-	reset_per_cpu_data(data);
+-
+-	/*
+-	 * Ship it!
+-	 */
+ 	if (skb)
+ 		genlmsg_multicast(skb, 0, NET_DM_GRP_ALERT, GFP_KERNEL);
+-
+-	put_cpu_var(dm_cpu_data);
+ }
+ 
+ /*
+  * This is the timer function to delay the sending of an alert
+  * in the event that more drops will arrive during the
+- * hysteresis period.  Note that it operates under the timer interrupt
+- * so we don't need to disable preemption here
++ * hysteresis period.
+  */
+-static void sched_send_work(unsigned long unused)
++static void sched_send_work(unsigned long _data)
+ {
+-	struct per_cpu_dm_data *data =  &get_cpu_var(dm_cpu_data);
++	struct per_cpu_dm_data *data = (struct per_cpu_dm_data *)_data;
+ 
+-	schedule_work_on(smp_processor_id(), &data->dm_alert_work);
+-
+-	put_cpu_var(dm_cpu_data);
++	schedule_work(&data->dm_alert_work);
+ }
+ 
+ static void trace_drop_common(struct sk_buff *skb, void *location)
+@@ -164,22 +135,17 @@ static void trace_drop_common(struct sk_
+ 	struct nlattr *nla;
+ 	int i;
+ 	struct sk_buff *dskb;
+-	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
+-
++	struct per_cpu_dm_data *data;
++	unsigned long flags;
+ 
+-	rcu_read_lock();
+-	dskb = rcu_dereference(data->skb);
++	local_irq_save(flags);
++	data = &__get_cpu_var(dm_cpu_data);
++	spin_lock(&data->lock);
++	dskb = data->skb;
+ 
+ 	if (!dskb)
+ 		goto out;
+ 
+-	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
+-		/*
+-		 * we're already at zero, discard this hit
+-		 */
+-		goto out;
+-	}
+-
+ 	nlh = (struct nlmsghdr *)dskb->data;
+ 	nla = genlmsg_data(nlmsg_data(nlh));
+ 	msg = nla_data(nla);
+@@ -189,7 +155,8 @@ static void trace_drop_common(struct sk_
+ 			goto out;
  		}
+ 	}
+-
++	if (msg->entries == dm_hit_limit)
++		goto out;
+ 	/*
+ 	 * We need to create a new entry
+ 	 */
+@@ -201,13 +168,11 @@ static void trace_drop_common(struct sk_
  
--		mem_value = *mem;
-+		/*
-+		 * No need to check for EFAULT; we know that the page is
-+		 * present and writable.
-+		 */
-+		__get_user(mem_value, mem);
- 		if (mem_value == oldval)
--			*mem = newval;
-+			__put_user(newval, mem);
+ 	if (!timer_pending(&data->send_timer)) {
+ 		data->send_timer.expires = jiffies + dm_delay * HZ;
+-		add_timer_on(&data->send_timer, smp_processor_id());
++		add_timer(&data->send_timer);
+ 	}
  
- 		pte_unmap_unlock(pte, ptl);
- 		up_read(&mm->mmap_sem);
+ out:
+-	rcu_read_unlock();
+-	put_cpu_var(dm_cpu_data);
+-	return;
++	spin_unlock_irqrestore(&data->lock, flags);
+ }
+ 
+ static void trace_kfree_skb_hit(void *ignore, struct sk_buff *skb, void *location)
+@@ -405,11 +370,11 @@ static int __init init_net_drop_monitor(
+ 
+ 	for_each_present_cpu(cpu) {
+ 		data = &per_cpu(dm_cpu_data, cpu);
+-		data->cpu = cpu;
+ 		INIT_WORK(&data->dm_alert_work, send_dm_alert);
+ 		init_timer(&data->send_timer);
+-		data->send_timer.data = cpu;
++		data->send_timer.data = (unsigned long)data;
+ 		data->send_timer.function = sched_send_work;
++		spin_lock_init(&data->lock);
+ 		reset_per_cpu_data(data);
+ 	}
+ 
 
 
