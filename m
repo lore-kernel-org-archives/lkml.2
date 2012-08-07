@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030497Ab2HGWic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:38:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56801 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030417Ab2HGWiX (ORCPT
+	id S1030516Ab2HGWii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:38:38 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:65028 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030495Ab2HGWic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:38:23 -0400
+	Tue, 7 Aug 2012 18:38:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 042/109] iommu/amd: Add missing spin_lock initialization
-Date: Tue,  7 Aug 2012 15:35:01 -0700
-Message-Id: <20120807222046.795181962@linuxfoundation.org>
+        Forest Bond <forest.bond@rapidrollout.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 037/109] rtlwifi: rtl8192de: Fix phy-based version calculation
+Date: Tue,  7 Aug 2012 15:34:56 -0700
+Message-Id: <20120807222046.352712041@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,31 +31,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Forest Bond <forest.bond@rapidrollout.com>
 
-commit 2c13d47a1a7ee8808796016c617aef25fd1d1925 upstream.
+commit f1b00f4dab29b57bdf1bc03ef12020b280fd2a72 upstream.
 
-Add missing spin_lock initialization in
-amd_iommu_bind_pasid() function and make lockdep happy
-again.
+Commit d83579e2a50ac68389e6b4c58b845c702cf37516 incorporated some
+changes from the vendor driver that made it newly important that the
+calculated hardware version correctly include the CHIP_92D bit, as all
+of the IS_92D_* macros were changed to depend on it.  However, this bit
+was being unset for dual-mac, dual-phy devices.  The vendor driver
+behavior was modified to not do this, but unfortunately this change was
+not picked up along with the others.  This caused scanning in the 2.4GHz
+band to be broken, and possibly other bugs as well.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+This patch brings the version calculation logic in parity with the
+vendor driver in this regard, and in doing so fixes the regression.
+However, the version calculation code in general continues to be largely
+incoherent and messy, and needs to be cleaned up.
+
+Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu_v2.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/iommu/amd_iommu_v2.c
-+++ b/drivers/iommu/amd_iommu_v2.c
-@@ -681,6 +681,8 @@ int amd_iommu_bind_pasid(struct pci_dev
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
+@@ -3344,21 +3344,21 @@ void rtl92d_phy_config_macphymode_info(s
+ 	switch (rtlhal->macphymode) {
+ 	case DUALMAC_SINGLEPHY:
+ 		rtlphy->rf_type = RF_2T2R;
+-		rtlhal->version |= CHIP_92D_SINGLEPHY;
++		rtlhal->version |= RF_TYPE_2T2R;
+ 		rtlhal->bandset = BAND_ON_BOTH;
+ 		rtlhal->current_bandtype = BAND_ON_2_4G;
+ 		break;
  
- 	atomic_set(&pasid_state->count, 1);
- 	init_waitqueue_head(&pasid_state->wq);
-+	spin_lock_init(&pasid_state->lock);
-+
- 	pasid_state->task         = task;
- 	pasid_state->mm           = get_task_mm(task);
- 	pasid_state->device_state = dev_state;
+ 	case SINGLEMAC_SINGLEPHY:
+ 		rtlphy->rf_type = RF_2T2R;
+-		rtlhal->version |= CHIP_92D_SINGLEPHY;
++		rtlhal->version |= RF_TYPE_2T2R;
+ 		rtlhal->bandset = BAND_ON_BOTH;
+ 		rtlhal->current_bandtype = BAND_ON_2_4G;
+ 		break;
+ 
+ 	case DUALMAC_DUALPHY:
+ 		rtlphy->rf_type = RF_1T1R;
+-		rtlhal->version &= (~CHIP_92D_SINGLEPHY);
++		rtlhal->version &= RF_TYPE_1T1R;
+ 		/* Now we let MAC0 run on 5G band. */
+ 		if (rtlhal->interfaceindex == 0) {
+ 			rtlhal->bandset = BAND_ON_5G;
 
 
