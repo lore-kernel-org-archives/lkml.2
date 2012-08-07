@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab2HGUsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 16:48:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58071 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756306Ab2HGUsW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 16:48:22 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
+	id S1756544Ab2HGUu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 16:50:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6321 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755857Ab2HGUu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 16:50:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="194378605"
+Subject: Re: IRQ remapping problem on Macbook Air 5,1
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
 To: Joerg Roedel <joro@8bytes.org>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org,
+Cc: Seth Forshee <seth.forshee@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, x86@kernel.org,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] irq_remap: disable IRQ remapping if any IOAPIC lacks an IOMMU
-Date: Tue,  7 Aug 2012 15:48:09 -0500
-Message-Id: <1344372489-14087-1-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+        Joerg Roedel <joerg.roedel@amd.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Tue, 07 Aug 2012 13:47:52 -0700
 In-Reply-To: <20120807201030.GJ1917@8bytes.org>
-References: <20120807201030.GJ1917@8bytes.org>
+References: <20120807194837.GB23829@thinkpad-t410>
+	 <20120807201030.GJ1917@8bytes.org>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1344372472.27383.8.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI tables in the Macbook Air 5,1 define a single IOAPIC with id 2,
-but the only remapping unit described in the DMAR table matches id 0.
-Interrupt remapping fails as a result, and the kernel panics with the
-message "timer doesn't work through Interrupt-remapped IO-APIC."
+On Tue, 2012-08-07 at 22:10 +0200, Joerg Roedel wrote:
+> Hi Seth,
+> 
+> On Tue, Aug 07, 2012 at 02:48:37PM -0500, Seth Forshee wrote:
+> > This machine has a bug in its ACPI tables that's causing it to fail to
+> > boot unless intremap=off is passed to the kernel. The MADT defines a
+> > single IOAPIC with id 2, but the remapping unit defined in DMAR matches
+> > id 0. Thus interrupt remapping fails, and the kernel panics with the
+> > message "timer doesn't work through Interrupt-remapped IO-APIC." If I
+> > force the use of the non-matching ir hardware for the IOAPIC everything
+> > seems to works fine. dmesg for the working boot is below.
+> 
+> There are AMD systems with similar problems. For example I had a system
+> with 2 IO-APICs but only one was described in the IOMMU ACPI table.
 
-To fix this, check each IOAPIC for a corresponding IOMMU. If an IOMMU is
-not found, do not allow IRQ remapping to be enabled.
+This issue should be caught by the current check in
+parse_ioapics_under_ir()
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- drivers/iommu/intel_irq_remapping.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+if (ir_supported && ir_ioapic_num != nr_ioapics) {
+...
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index e0b18f3..ce2c0c6 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -526,6 +526,7 @@ static int __init intel_irq_remapping_supported(void)
- static int __init intel_enable_irq_remapping(void)
- {
- 	struct dmar_drhd_unit *drhd;
-+	int ioapic_idx;
- 	int setup = 0;
- 	int eim = 0;
- 
-@@ -534,6 +535,16 @@ static int __init intel_enable_irq_remapping(void)
- 		return -1;
- 	}
- 
-+	for (ioapic_idx = 0; ioapic_idx < nr_ioapics; ioapic_idx++) {
-+		int ioapic_id = mpc_ioapic_id(ioapic_idx);
-+		if (!map_ioapic_to_ir(ioapic_id)) {
-+			pr_info("ioapic %d has no mapping iommu, "
-+				"interrupt remapping will be disabled\n",
-+				ioapic_id);
-+			return -1;
-+		}
-+	}
-+
- 	if (x2apic_supported()) {
- 		eim = !dmar_x2apic_optout();
- 		WARN(!eim, KERN_WARNING
--- 
-1.7.9.5
+> 
+> > I'm looking at how to make this machine able to boot by default. OS X
+> > obviously boots, and Windows presumably boots as well since Apple
+> > officially supports running Windows on its hardware.
+> 
+> These operating systems probably don't support interrupt remapping, or
+> the IOMMU at all.
+
+Some of them use interrupt-remapping only if the bios has pre-enabled
+x2apic/interrupt-remapping etc. But Linux tries to enable
+x2apic/interrupt-remapping even if bios doesn't.
+
+> 
+> > I've got a patch to leave IRQ remapping disabled whenever any IOAPIC
+> > does not have a matching ir hardware unit. This gets it to boot, but I
+> > thought I'd check and see whether anyone had any better ideas for how to
+> > fix this.
+> 
+> This is exactly how I fixed this issue on the AMD side too. Mind to
+> submit the patch?
+
+yes, we should be able to extend the check in parse_ioapics_under_ir()
+to check for this condition.
+
+thanks,
+suresh
 
