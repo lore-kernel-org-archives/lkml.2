@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031172Ab2HGWq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:46:28 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:51211 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031033Ab2HGWqY (ORCPT
+	id S1031184Ab2HGWqi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:46:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031033Ab2HGWqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:24 -0400
+	Tue, 7 Aug 2012 18:46:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 12/49] usbdevfs: Correct amount of data copied to user in processcompl_compat
-Date: Tue,  7 Aug 2012 15:44:30 -0700
-Message-Id: <20120807222027.967692914@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 22/49] drm/radeon: fix hotplug of DP to DVI|HDMI passive adapters (v2)
+Date: Tue,  7 Aug 2012 15:44:40 -0700
+Message-Id: <20120807222028.877678537@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -30,41 +31,65 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 2102e06a5f2e414694921f23591f072a5ba7db9f upstream.
+commit 266dcba541a1ef7e5d82d9e67c67fde2910636e8 upstream.
 
-iso data buffers may have holes in them if some packets were short, so for
-iso urbs we should always copy the entire buffer, just like the regular
-processcompl does.
+No need to retrain the link for passive adapters.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+v2: agd5f
+- no passive DP to VGA adapters, update comments
+- assign radeon_connector_atom_dig after we are sure
+  we have a digital connector as analog connectors
+  have different private data.
+- get new sink type before checking for retrain.  No
+  need to check if it's no longer a DP connection.
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/devio.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1557,10 +1557,14 @@ static int processcompl_compat(struct as
- 	void __user *addr = as->userurb;
- 	unsigned int i;
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -66,14 +66,27 @@ void radeon_connector_hotplug(struct drm
  
--	if (as->userbuffer && urb->actual_length)
--		if (copy_to_user(as->userbuffer, urb->transfer_buffer,
--				 urb->actual_length))
-+	if (as->userbuffer && urb->actual_length) {
-+		if (urb->number_of_packets > 0)		/* Isochronous */
-+			i = urb->transfer_buffer_length;
-+		else					/* Non-Isoc */
-+			i = urb->actual_length;
-+		if (copy_to_user(as->userbuffer, urb->transfer_buffer, i))
- 			return -EFAULT;
-+	}
- 	if (put_user(as->status, &userurb->status))
- 		return -EFAULT;
- 	if (put_user(urb->actual_length, &userurb->actual_length))
+ 	/* just deal with DP (not eDP) here. */
+ 	if (connector->connector_type == DRM_MODE_CONNECTOR_DisplayPort) {
+-		int saved_dpms = connector->dpms;
++		struct radeon_connector_atom_dig *dig_connector =
++			radeon_connector->con_priv;
+ 
+-		/* Only turn off the display it it's physically disconnected */
+-		if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
+-			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
+-		else if (radeon_dp_needs_link_train(radeon_connector))
+-			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
+-		connector->dpms = saved_dpms;
++		/* if existing sink type was not DP no need to retrain */
++		if (dig_connector->dp_sink_type != CONNECTOR_OBJECT_ID_DISPLAYPORT)
++			return;
++
++		/* first get sink type as it may be reset after (un)plug */
++		dig_connector->dp_sink_type = radeon_dp_getsinktype(radeon_connector);
++		/* don't do anything if sink is not display port, i.e.,
++		 * passive dp->(dvi|hdmi) adaptor
++		 */
++		if (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
++			int saved_dpms = connector->dpms;
++			/* Only turn off the display if it's physically disconnected */
++			if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
++				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
++			else if (radeon_dp_needs_link_train(radeon_connector))
++				drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
++			connector->dpms = saved_dpms;
++		}
+ 	}
+ }
+ 
 
 
