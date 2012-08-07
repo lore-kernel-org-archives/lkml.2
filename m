@@ -1,100 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab2HGPpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:45:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34773 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755080Ab2HGPpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:45:31 -0400
-Date: Tue, 7 Aug 2012 16:45:26 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jim Schutt <jaschut@sandia.gov>
-Cc: Rik van Riel <riel@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Minchan Kim <minchan@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] mm: have order > 0 compaction start near a pageblock
- with free pages
-Message-ID: <20120807154526.GH29814@suse.de>
-References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
- <1344342677-5845-7-git-send-email-mgorman@suse.de>
- <50212A05.2070503@redhat.com>
- <20120807145233.GG29814@suse.de>
- <50213228.1030107@sandia.gov>
+	id S1754923Ab2HGPoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:44:17 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:25614 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754478Ab2HGPoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 11:44:10 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M8E6DG-01-1YM-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <x86@kernel.org>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 11/19] x86, irq: Move irq_remapping_enabled declaration to iommu code
+Date: Tue, 7 Aug 2012 17:43:41 +0200
+Message-ID: <1344354229-8526-12-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
+References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <50213228.1030107@sandia.gov>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 09:20:08AM -0600, Jim Schutt wrote:
-> On 08/07/2012 08:52 AM, Mel Gorman wrote:
-> >On Tue, Aug 07, 2012 at 10:45:25AM -0400, Rik van Riel wrote:
-> >>On 08/07/2012 08:31 AM, Mel Gorman wrote:
-> >>>commit [7db8889a: mm: have order>   0 compaction start off where it left]
-> >>>introduced a caching mechanism to reduce the amount work the free page
-> >>>scanner does in compaction. However, it has a problem. Consider two process
-> >>>simultaneously scanning free pages
-> >>>
-> >>>				    			C
-> >>>Process A		M     S     			F
-> >>>		|---------------------------------------|
-> >>>Process B		M 	FS
-> >>
-> >>Argh. Good spotting.
-> >>
-> >>>This is not optimal and it can still race but the compact_cached_free_pfn
-> >>>will be pointing to or very near a pageblock with free pages.
-> >>
-> >>Agreed on the "not optimal", but I also cannot think of a better
-> >>idea right now. Getting this fixed for 3.6 is important, we can
-> >>think of future optimizations in San Diego.
-> >>
-> >
-> >Sounds like a plan.
-> >
-> >>>Signed-off-by: Mel Gorman<mgorman@suse.de>
-> >>
-> >>Reviewed-by: Rik van Riel<riel@redhat.com>
-> >>
-> >
-> >Thanks very much.
-> >
-> >Jim, what are the chances of getting this series tested with your large
-> >data workload? As it's on top of 3.5, it should be less scary than
-> >testing 3.6-rc1 but if you are comfortable testing 3.6-rc1 then please
-> >test with just this patch on top.
-> >
-> 
-> As it turns out I'm already testing 3.6-rc1, as I'm on
-> the trail of a Ceph client messaging bug.  I think I've
-> about got that figured out, and am working on a patch, but
-> I need it fixed in order to generate enough load to trigger
-> the problem that your patch addresses.
-> 
+Remove the last left-over from this flag from x86 code.
 
-Grand, good luck with the Ceph bug.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/include/asm/irq_remapping.h |    4 ----
+ drivers/iommu/dmar.c                 |    2 ++
+ drivers/iommu/intel-iommu.c          |    2 ++
+ drivers/iommu/irq_remapping.h        |    3 +++
+ 4 files changed, 7 insertions(+), 4 deletions(-)
 
-> Which is a long-winded way of saying:  no problem, I'll
-> roll this into my current testing, but I'll need another
-> day or two before I'm likely to be able to generate a
-> high enough load to test effectively.  OK?
-> 
-
-That is perfectly reasonable, thanks.
-
-> Also FWIW, it occurs to me that you might be interested
-> to know that my load also involves lots of network load
-> where I'm using jumbo frames.  I suspect that puts even
-> more stress on higher page order allocations, right?
-> 
-
-It might. It depends on whether the underlying driver needs contiguous
-pages to handle jumbo frame, if it can do scatter/gather IO or some
-combination like trying for a contiguous page but using scatter/gather as
-a fallback. Certainly it is interesting and I will keep it in mind.
-
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index fb99a73..6f4b48b 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -26,8 +26,6 @@
+ 
+ #ifdef CONFIG_IRQ_REMAP
+ 
+-extern int irq_remapping_enabled;
+-
+ extern void setup_irq_remapping_ops(void);
+ extern int irq_remapping_supported(void);
+ extern int irq_remapping_prepare(void);
+@@ -49,8 +47,6 @@ extern void panic_if_irq_remap(const char *msg);
+ 
+ #else  /* CONFIG_IRQ_REMAP */
+ 
+-#define irq_remapping_enabled	0
+-
+ static inline void setup_irq_remapping_ops(void) { }
+ static inline int irq_remapping_supported(void) { return 0; }
+ static inline int irq_remapping_prepare(void) { return -ENODEV; }
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 86e2f4a..174bb65 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -41,6 +41,8 @@
+ #include <asm/irq_remapping.h>
+ #include <asm/iommu_table.h>
+ 
++#include "irq_remapping.h"
++
+ /* No locks are needed as DMA remapping hardware unit
+  * list is constructed at boot time and hotplug of
+  * these units are not supported by the architecture.
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 7469b53..28c944c 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -46,6 +46,8 @@
+ #include <asm/cacheflush.h>
+ #include <asm/iommu.h>
+ 
++#include "irq_remapping.h"
++
+ #define ROOT_SIZE		VTD_PAGE_SIZE
+ #define CONTEXT_SIZE		VTD_PAGE_SIZE
+ 
+diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+index b12974c..1003297 100644
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -34,6 +34,7 @@ struct msi_msg;
+ extern int disable_irq_remap;
+ extern int disable_sourceid_checking;
+ extern int no_x2apic_optout;
++extern int irq_remapping_enabled;
+ 
+ struct irq_remap_ops {
+ 	/* Check whether Interrupt Remapping is supported */
+@@ -83,6 +84,8 @@ struct irq_remap_ops {
+ 
+ extern struct irq_remap_ops intel_irq_remap_ops;
+ 
++#else  /* CONFIG_IRQ_REMAP */
++#define irq_remapping_enabled 0
+ #endif /* CONFIG_IRQ_REMAP */
+ 
+ #endif /* __IRQ_REMAPPING_H */
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
+
