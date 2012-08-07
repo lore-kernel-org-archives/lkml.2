@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab2HGT6Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:58:24 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:49935 "EHLO
+	id S1756506Ab2HGT6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:58:36 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:36535 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756466Ab2HGT6V (ORCPT
+	with ESMTP id S1756492Ab2HGT6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:58:21 -0400
+	Tue, 7 Aug 2012 15:58:34 -0400
+X-Greylist: delayed 619 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 15:58:33 EDT
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 28/41] TTY: synclink_cs, use dynamic tty devices
-Date: Tue,  7 Aug 2012 21:47:53 +0200
-Message-Id: <1344368886-24033-29-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org
+Subject: [PATCH 34/41] TTY: i4l, add tty install
+Date: Tue,  7 Aug 2012 21:47:59 +0200
+Message-Id: <1344368886-24033-35-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -20,100 +22,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows us to provide the tty layer with information about
-tty_port for each link. And it also allows us to get rid of the
-remove_device loop in synclink_cs_exit because we had to reorder
-pcmcia and tty driver registration in init. This was because we need
-to have serial_driver initialized when calling
-tty_port_register_device from pcmcia ->probe.
+This has two outcomes:
+* we give the TTY layer a tty_port
+* we do not find the info structure every time open is called on that
+  tty
+
+The "tty->port = port" assignment is not needed anymore since it
+happens in tty_port_install implicitly.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Karsten Keil <isdn@linux-pingi.de>
+Cc: netdev@vger.kernel.org
 ---
- drivers/char/pcmcia/synclink_cs.c |   27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
+ drivers/isdn/i4l/isdn_tty.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
-index 0606586..ce277f7 100644
---- a/drivers/char/pcmcia/synclink_cs.c
-+++ b/drivers/char/pcmcia/synclink_cs.c
-@@ -2731,6 +2731,8 @@ static void mgslpc_add_device(MGSLPC_INFO *info)
- #if SYNCLINK_GENERIC_HDLC
- 	hdlcdev_init(info);
- #endif
-+	tty_port_register_device(&info->port, serial_driver, info->line,
-+			&info->p_dev.dev);
- }
+diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
+index 576ce4b..b817809 100644
+--- a/drivers/isdn/i4l/isdn_tty.c
++++ b/drivers/isdn/i4l/isdn_tty.c
+@@ -1486,6 +1486,18 @@ isdn_tty_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+  * ------------------------------------------------------------
+  */
  
- static void mgslpc_remove_device(MGSLPC_INFO *remove_info)
-@@ -2744,6 +2746,7 @@ static void mgslpc_remove_device(MGSLPC_INFO *remove_info)
- 				last->next_device = info->next_device;
- 			else
- 				mgslpc_device_list = info->next_device;
-+			tty_unregister_device(serial_driver, info->line);
- #if SYNCLINK_GENERIC_HDLC
- 			hdlcdev_exit(info);
- #endif
-@@ -2807,13 +2810,12 @@ static int __init synclink_cs_init(void)
- 	    BREAKPOINT();
-     }
- 
--    if ((rc = pcmcia_register_driver(&mgslpc_driver)) < 0)
--	    return rc;
--
--    serial_driver = alloc_tty_driver(MAX_DEVICE_COUNT);
-+    serial_driver = tty_alloc_driver(MAX_DEVICE_COUNT,
-+		    TTY_DRIVER_REAL_RAW |
-+		    TTY_DRIVER_DYNAMIC_DEV);
-     if (!serial_driver) {
- 	    rc = -ENOMEM;
--	    goto err_pcmcia_drv;
-+	    goto err;
-     }
- 
-     /* Initialize the tty_driver structure */
-@@ -2827,7 +2829,6 @@ static int __init synclink_cs_init(void)
-     serial_driver->init_termios = tty_std_termios;
-     serial_driver->init_termios.c_cflag =
- 	    B9600 | CS8 | CREAD | HUPCL | CLOCAL;
--    serial_driver->flags = TTY_DRIVER_REAL_RAW;
-     tty_set_operations(serial_driver, &mgslpc_ops);
- 
-     if ((rc = tty_register_driver(serial_driver)) < 0) {
-@@ -2836,26 +2837,28 @@ static int __init synclink_cs_init(void)
- 	    goto err_put_tty;
-     }
- 
-+	rc = pcmcia_register_driver(&mgslpc_driver);
-+	if (rc < 0)
-+		goto err_unreg_tty;
++static int isdn_tty_install(struct tty_driver *driver, struct tty_struct *tty)
++{
++	modem_info *info = &dev->mdm.info[tty->index];
 +
-     printk("%s %s, tty major#%d\n",
- 	   driver_name, driver_version,
- 	   serial_driver->major);
- 
- 	return 0;
-+err_unreg_tty:
-+	tty_unregister_driver(serial_driver);
- err_put_tty:
- 	put_tty_driver(serial_driver);
--err_pcmcia_drv:
--	pcmcia_unregister_driver(&mgslpc_driver);
-+err:
- 	return rc;
- }
- 
- static void __exit synclink_cs_exit(void)
++	if (isdn_tty_paranoia_check(info, tty->name, __func__))
++		return -ENODEV;
++
++	tty->driver_data = info;
++
++	return tty_port_install(&info->port, driver, tty);
++}
++
+ /*
+  * This routine is called whenever a serial port is opened.  It
+  * enables interrupts for a serial port, linking in its async structure into
+@@ -1495,22 +1507,16 @@ isdn_tty_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+ static int
+ isdn_tty_open(struct tty_struct *tty, struct file *filp)
  {
--	while (mgslpc_device_list)
--		mgslpc_remove_device(mgslpc_device_list);
--
-+	pcmcia_unregister_driver(&mgslpc_driver);
- 	tty_unregister_driver(serial_driver);
- 	put_tty_driver(serial_driver);
--	pcmcia_unregister_driver(&mgslpc_driver);
+-	struct tty_port *port;
+-	modem_info *info;
++	modem_info *info = tty->driver_data;
++	struct tty_port *port = &info->port;
+ 	int retval;
+ 
+-	info = &dev->mdm.info[tty->index];
+-	if (isdn_tty_paranoia_check(info, tty->name, "isdn_tty_open"))
+-		return -ENODEV;
+-	port = &info->port;
+ #ifdef ISDN_DEBUG_MODEM_OPEN
+ 	printk(KERN_DEBUG "isdn_tty_open %s, count = %d\n", tty->name,
+ 	       port->count);
+ #endif
+ 	port->count++;
+-	tty->driver_data = info;
+ 	port->tty = tty;
+-	tty->port = port;
+ 	/*
+ 	 * Start up serial port
+ 	 */
+@@ -1738,6 +1744,7 @@ modem_write_profile(atemu *m)
  }
  
- module_init(synclink_cs_init);
+ static const struct tty_operations modem_ops = {
++	.install = isdn_tty_install,
+ 	.open = isdn_tty_open,
+ 	.close = isdn_tty_close,
+ 	.write = isdn_tty_write,
 -- 
 1.7.10.4
 
