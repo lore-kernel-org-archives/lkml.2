@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab2HGSm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 14:42:58 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54938 "EHLO
+	id S1756253Ab2HGSoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 14:44:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54918 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756117Ab2HGSm4 (ORCPT
+	by vger.kernel.org with ESMTP id S1756183Ab2HGSmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 14:42:56 -0400
+	Tue, 7 Aug 2012 14:42:53 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@gmail.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 4/7] resources: Document IORESOURCE_IO
-Date: Tue,  7 Aug 2012 19:42:46 +0100
-Message-Id: <1344364969-32489-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        stable@vger.kernel.org (v3.4+)
+Subject: [PATCH 2/7] mfd: 88pm860x: Move _IO resources out of ioport_ioresource
+Date: Tue,  7 Aug 2012 19:42:44 +0100
+Message-Id: <1344364969-32489-2-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
@@ -23,27 +24,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Help clarify that this is specifically for PCI/ISA I/O ports and not for
-any other similar thing.
+The removal of mach/io.h from most ARM platforms also set the range of
+valid IO ports to be empty for most platforms when previously any 32
+bit integer had been valid. This makes it impossible to add IO resources
+as the added range is smaller than that of the root resource for IO ports.
+
+Since we're not really using IO memory at all fix this by defining our
+own root resource outside the normal tree and make that the parent of
+all IO resources. This also ensures we won't conflict with read IO ports
+if we ever run on a platform which happens to use them.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: stable@vger.kernel.org (v3.4+)
 ---
- include/linux/ioport.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/88pm860x-core.c |   92 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 63 insertions(+), 29 deletions(-)
 
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index bfee885..85ac9b9b 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -29,7 +29,7 @@ struct resource {
- #define IORESOURCE_BITS		0x000000ff	/* Bus-specific bits */
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index d09918c..220c79a 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -21,40 +21,73 @@
  
- #define IORESOURCE_TYPE_BITS	0x00001f00	/* Resource type */
--#define IORESOURCE_IO		0x00000100
-+#define IORESOURCE_IO		0x00000100	/* PCI/ISA I/O ports */
- #define IORESOURCE_MEM		0x00000200
- #define IORESOURCE_REG		0x00000300	/* Register offsets */
- #define IORESOURCE_IRQ		0x00000400
+ #define INT_STATUS_NUM			3
+ 
++static struct resource io_parent = {
++	.start = 0,
++	.end   = 0xffffffff,
++	.flags = IORESOURCE_IO,
++};
++
+ static struct resource bk_resources[] __devinitdata = {
+-	{PM8606_BACKLIGHT1, PM8606_BACKLIGHT1, "backlight-0", IORESOURCE_IO,},
+-	{PM8606_BACKLIGHT2, PM8606_BACKLIGHT2, "backlight-1", IORESOURCE_IO,},
+-	{PM8606_BACKLIGHT3, PM8606_BACKLIGHT3, "backlight-2", IORESOURCE_IO,},
++	{PM8606_BACKLIGHT1, PM8606_BACKLIGHT1, "backlight-0", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8606_BACKLIGHT2, PM8606_BACKLIGHT2, "backlight-1", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8606_BACKLIGHT3, PM8606_BACKLIGHT3, "backlight-2", IORESOURCE_IO,
++	 &io_parent,},
+ };
+ 
+ static struct resource led_resources[] __devinitdata = {
+-	{PM8606_LED1_RED,   PM8606_LED1_RED,   "led0-red",   IORESOURCE_IO,},
+-	{PM8606_LED1_GREEN, PM8606_LED1_GREEN, "led0-green", IORESOURCE_IO,},
+-	{PM8606_LED1_BLUE,  PM8606_LED1_BLUE,  "led0-blue",  IORESOURCE_IO,},
+-	{PM8606_LED2_RED,   PM8606_LED2_RED,   "led1-red",   IORESOURCE_IO,},
+-	{PM8606_LED2_GREEN, PM8606_LED2_GREEN, "led1-green", IORESOURCE_IO,},
+-	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,},
++	{PM8606_LED1_RED,   PM8606_LED1_RED,   "led0-red",   IORESOURCE_IO,
++	 &io_parent,},
++	{PM8606_LED1_GREEN, PM8606_LED1_GREEN, "led0-green", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8606_LED1_BLUE,  PM8606_LED1_BLUE,  "led0-blue",  IORESOURCE_IO,
++	 &io_parent,},
++	{PM8606_LED2_RED,   PM8606_LED2_RED,   "led1-red",   IORESOURCE_IO,
++	 &io_parent,},
++	{PM8606_LED2_GREEN, PM8606_LED2_GREEN, "led1-green", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,
++	 &io_parent,},
+ };
+ 
+ static struct resource regulator_resources[] __devinitdata = {
+-	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_IO,},
+-	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_IO,},
+-	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_IO,},
+-	{PM8607_ID_LDO1,  PM8607_ID_LDO1,  "ldo-01", IORESOURCE_IO,},
+-	{PM8607_ID_LDO2,  PM8607_ID_LDO2,  "ldo-02", IORESOURCE_IO,},
+-	{PM8607_ID_LDO3,  PM8607_ID_LDO3,  "ldo-03", IORESOURCE_IO,},
+-	{PM8607_ID_LDO4,  PM8607_ID_LDO4,  "ldo-04", IORESOURCE_IO,},
+-	{PM8607_ID_LDO5,  PM8607_ID_LDO5,  "ldo-05", IORESOURCE_IO,},
+-	{PM8607_ID_LDO6,  PM8607_ID_LDO6,  "ldo-06", IORESOURCE_IO,},
+-	{PM8607_ID_LDO7,  PM8607_ID_LDO7,  "ldo-07", IORESOURCE_IO,},
+-	{PM8607_ID_LDO8,  PM8607_ID_LDO8,  "ldo-08", IORESOURCE_IO,},
+-	{PM8607_ID_LDO9,  PM8607_ID_LDO9,  "ldo-09", IORESOURCE_IO,},
+-	{PM8607_ID_LDO10, PM8607_ID_LDO10, "ldo-10", IORESOURCE_IO,},
+-	{PM8607_ID_LDO11, PM8607_ID_LDO11, "ldo-11", IORESOURCE_IO,},
+-	{PM8607_ID_LDO12, PM8607_ID_LDO12, "ldo-12", IORESOURCE_IO,},
+-	{PM8607_ID_LDO13, PM8607_ID_LDO13, "ldo-13", IORESOURCE_IO,},
+-	{PM8607_ID_LDO14, PM8607_ID_LDO14, "ldo-14", IORESOURCE_IO,},
+-	{PM8607_ID_LDO15, PM8607_ID_LDO15, "ldo-15", IORESOURCE_IO,},
++	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO1,  PM8607_ID_LDO1,  "ldo-01", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO2,  PM8607_ID_LDO2,  "ldo-02", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO3,  PM8607_ID_LDO3,  "ldo-03", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO4,  PM8607_ID_LDO4,  "ldo-04", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO5,  PM8607_ID_LDO5,  "ldo-05", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO6,  PM8607_ID_LDO6,  "ldo-06", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO7,  PM8607_ID_LDO7,  "ldo-07", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO8,  PM8607_ID_LDO8,  "ldo-08", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO9,  PM8607_ID_LDO9,  "ldo-09", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO10, PM8607_ID_LDO10, "ldo-10", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO11, PM8607_ID_LDO11, "ldo-11", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO12, PM8607_ID_LDO12, "ldo-12", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO13, PM8607_ID_LDO13, "ldo-13", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO14, PM8607_ID_LDO14, "ldo-14", IORESOURCE_IO,
++	 &io_parent,},
++	{PM8607_ID_LDO15, PM8607_ID_LDO15, "ldo-15", IORESOURCE_IO,
++	 &io_parent,},
+ };
+ 
+ static struct resource touch_resources[] __devinitdata = {
+@@ -91,11 +124,12 @@ static struct resource charger_resources[] __devinitdata = {
+ };
+ 
+ static struct resource preg_resources[] __devinitdata = {
+-	{PM8606_ID_PREG,  PM8606_ID_PREG,  "preg",   IORESOURCE_IO,},
++	{PM8606_ID_PREG,  PM8606_ID_PREG,  "preg",   IORESOURCE_IO,
++	 &io_parent,},
+ };
+ 
+ static struct resource rtc_resources[] __devinitdata = {
+-	{PM8607_IRQ_RTC, PM8607_IRQ_RTC, "rtc", IORESOURCE_IRQ,},
++	{PM8607_IRQ_RTC, PM8607_IRQ_RTC, "rtc", IORESOURCE_IRQ, &io_parent,},
+ };
+ 
+ static struct mfd_cell bk_devs[] = {
 -- 
 1.7.10.4
 
