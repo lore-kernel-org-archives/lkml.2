@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386Ab2HGW2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:28:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
+	id S932407Ab2HGW21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:28:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932346Ab2HGW2N (ORCPT
+	with ESMTP id S932379Ab2HGW2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:28:13 -0400
+	Tue, 7 Aug 2012 18:28:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Bart Van Assche <bvanassche@acm.org>, Tejun Heo <tj@kernel.org>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 016/122] SCSI: Avoid dangling pointer in scsi_requeue_command()
-Date: Tue,  7 Aug 2012 15:25:04 -0700
-Message-Id: <20120807221949.699930916@linuxfoundation.org>
+        Dylan Reid <dgreid@chromium.org>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 026/122] ALSA: hda - Dont power up when not powered down.
+Date: Tue,  7 Aug 2012 15:25:14 -0700
+Message-Id: <20120807221950.574861686@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -31,55 +29,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Dylan Reid <dgreid@chromium.org>
 
-commit 940f5d47e2f2e1fa00443921a0abf4822335b54d upstream.
+commit b43d224767e426cf1a8b6622d1d172f2b2b0e857 upstream.
 
-When we call scsi_unprep_request() the command associated with the request
-gets destroyed and therefore drops its reference on the device.  If this was
-the only reference, the device may get released and we end up with a NULL
-pointer deref when we call blk_requeue_request.
+After cancel_delayed_work_sync returns, the power down work either never
+started (power_on == 1) or finished (power_on == 0).  In the former case
+there is no need to power up again.
 
-Reported-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-[jejb: enhance commend and add commit log for stable]
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_lib.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ sound/pci/hda/hda_codec.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -479,15 +479,26 @@ void scsi_requeue_run_queue(struct work_
-  */
- static void scsi_requeue_command(struct request_queue *q, struct scsi_cmnd *cmd)
- {
-+	struct scsi_device *sdev = cmd->device;
- 	struct request *req = cmd->request;
- 	unsigned long flags;
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -4418,6 +4418,13 @@ static void __snd_hda_power_up(struct hd
+ 	cancel_delayed_work_sync(&codec->power_work);
  
-+	/*
-+	 * We need to hold a reference on the device to avoid the queue being
-+	 * killed after the unlock and before scsi_run_queue is invoked which
-+	 * may happen because scsi_unprep_request() puts the command which
-+	 * releases its reference on the device.
+ 	spin_lock(&codec->power_lock);
++	/* If the power down delayed work was cancelled above before starting,
++	 * then there is no need to go through power up here.
 +	 */
-+	get_device(&sdev->sdev_gendev);
-+
- 	spin_lock_irqsave(q->queue_lock, flags);
- 	scsi_unprep_request(req);
- 	blk_requeue_request(q, req);
- 	spin_unlock_irqrestore(q->queue_lock, flags);
- 
- 	scsi_run_queue(q);
-+
-+	put_device(&sdev->sdev_gendev);
- }
- 
- void scsi_next_command(struct scsi_cmnd *cmd)
++	if (codec->power_on) {
++		spin_unlock(&codec->power_lock);
++		return;
++	}
+ 	trace_hda_power_up(codec);
+ 	snd_hda_update_power_acct(codec);
+ 	codec->power_on = 1;
 
 
