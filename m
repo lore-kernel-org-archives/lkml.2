@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab2HGPoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 11:44:20 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:51255
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754513Ab2HGPoK (ORCPT
+	id S1755204Ab2HGPpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 11:45:24 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56590 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086Ab2HGPpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 11:44:10 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M8E6DI-01-1YV-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <x86@kernel.org>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 12/19] x86, irq: Add data structure to keep AMD specific irq remapping information
-Date: Tue, 7 Aug 2012 17:43:42 +0200
-Message-ID: <1344354229-8526-13-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
-References: <1344354229-8526-1-git-send-email-joerg.roedel@amd.com>
+	Tue, 7 Aug 2012 11:45:19 -0400
+Date: Tue, 7 Aug 2012 16:44:58 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
+        rpurdie@rpsys.net, bryan.wu@canonical.com,
+        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
+Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
+Message-ID: <20120807154458.GK24257@flint.arm.linux.org.uk>
+References: <20120806220032.GD26698@opensource.wolfsonmicro.com> <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com> <20120807103851.GS16861@opensource.wolfsonmicro.com> <20120807111331.GC24257@flint.arm.linux.org.uk> <20120807112844.GZ16861@opensource.wolfsonmicro.com> <20120807113121.GD24257@flint.arm.linux.org.uk> <20120807113652.GA6282@flint.arm.linux.org.uk> <20120807114556.GC16861@opensource.wolfsonmicro.com> <20120807115140.GH24257@flint.arm.linux.org.uk> <CAMuHMdUezhMNL19JUK9-uSqTr3=bU7yAci0ovFd5dSdksW1etQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdUezhMNL19JUK9-uSqTr3=bU7yAci0ovFd5dSdksW1etQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a data structure to store information the IOMMU driver
-can use to get from a 'struct irq_cfg' to the remapping
-entry.
+On Tue, Aug 07, 2012 at 05:22:45PM +0200, Geert Uytterhoeven wrote:
+> And as Arnd pointed out, if resources will be used for various new buses,
+> "IORESOURCE_FOO" or "IORESOURCE_OTHER" is a bit vague.
+> What about conflicts where one driver means i2c addresses and another
+> one means gpio addresses? The resource system will reject them?
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/include/asm/hw_irq.h |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+I changed the subsequent patch to use IORESOURCE_REG - at least that
+better describes what it's for.  Maybe IORESOURCE_REGRANGE would be
+better (so it can be used for any register range resource on any bus
+type) ?
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 669db90..465c855 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -101,6 +101,7 @@ static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
- 	irq_attr->polarity	= polarity;
- }
- 
-+/* Intel specific interrupt remapping information */
- struct irq_2_iommu {
- 	struct intel_iommu *iommu;
- 	u16 irte_index;
-@@ -108,6 +109,12 @@ struct irq_2_iommu {
- 	u8  irte_mask;
- };
- 
-+/* AMD specific interrupt remapping information */
-+struct irq_2_irte {
-+	u16 devid; /* Device ID for IRTE table */
-+	u16 index; /* Index into IRTE table*/
-+};
-+
- /*
-  * This is performance-critical, we want to do it O(1)
-  *
-@@ -120,7 +127,10 @@ struct irq_cfg {
- 	u8			vector;
- 	u8			move_in_progress : 1;
- #ifdef CONFIG_IRQ_REMAP
--	struct irq_2_iommu	irq_2_iommu;
-+	union {
-+		struct irq_2_iommu irq_2_iommu;
-+		struct irq_2_irte  irq_2_irte;
-+	};
- #endif
- };
- 
+However, one issue that I hope has already been addressed is what space
+the ranges are in, and how does a sub-driver get to know that.  To put
+it another way, how does a sub-driver get to know about the 'base' for
+these register ranges.  I hope that problem has been thought about in
+MFD land _before_ the approach of passing around register ranges
+through resources was allowed to happen.
+
 -- 
-1.7.9.5
-
-
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
