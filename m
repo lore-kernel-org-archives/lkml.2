@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031228Ab2HGWq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:46:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60358 "EHLO
+	id S1031236Ab2HGWxD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:53:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031215Ab2HGWqw (ORCPT
+	with ESMTP id S1031207Ab2HGWqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:52 -0400
+	Tue, 7 Aug 2012 18:46:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zongyun Lai <zlai@vmware.com>, Jeffrey Huang <huangjw@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 28/49] bnx2: Fix bug in bnx2_free_tx_skbs().
-Date: Tue,  7 Aug 2012 15:44:46 -0700
-Message-Id: <20120807222029.403713301@linuxfoundation.org>
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: =?UTF-8?q?=5B=2020/49=5D=20drm/radeon=3A=20Try=20harder=20to=20avoid=20HW=20cursor=20ending=20on=20a=20multiple=20of=20128=20columns=2E?=
+Date: Tue,  7 Aug 2012 15:44:38 -0700
+Message-Id: <20120807222028.698155941@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,45 +34,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Michel Dänzer <michel.daenzer@amd.com>
 
-From: Michael Chan <mchan@broadcom.com>
+commit f60ec4c7df043df81e62891ac45383d012afe0da upstream.
 
-[ Upstream commit c1f5163de417dab01fa9daaf09a74bbb19303f3c ]
+This could previously fail if either of the enabled displays was using a
+horizontal resolution that is a multiple of 128, and only the leftmost column
+of the cursor was (supposed to be) visible at the right edge of that display.
 
-In rare cases, bnx2x_free_tx_skbs() can unmap the wrong DMA address
-when it gets to the last entry of the tx ring.  We were not using
-the proper macro to skip the last entry when advancing the tx index.
+The solution is to move the cursor one pixel to the left in that case.
 
-Reported-by: Zongyun Lai <zlai@vmware.com>
-Reviewed-by: Jeffrey Huang <huangjw@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=33183
+
+Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/bnx2.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/bnx2.c
-+++ b/drivers/net/bnx2.c
-@@ -5310,7 +5310,7 @@ bnx2_free_tx_skbs(struct bnx2 *bp)
- 			int k, last;
- 
- 			if (skb == NULL) {
--				j++;
-+				j = NEXT_TX_BD(j);
- 				continue;
+---
+ drivers/gpu/drm/radeon/radeon_cursor.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/radeon/radeon_cursor.c
++++ b/drivers/gpu/drm/radeon/radeon_cursor.c
+@@ -257,8 +257,14 @@ int radeon_crtc_cursor_move(struct drm_c
+ 				if (!(cursor_end & 0x7f))
+ 					w--;
  			}
+-			if (w <= 0)
++			if (w <= 0) {
+ 				w = 1;
++				cursor_end = x - xorigin + w;
++				if (!(cursor_end & 0x7f)) {
++					x--;
++					WARN_ON_ONCE(x < 0);
++				}
++			}
+ 		}
+ 	}
  
-@@ -5322,8 +5322,8 @@ bnx2_free_tx_skbs(struct bnx2 *bp)
- 			tx_buf->skb = NULL;
- 
- 			last = tx_buf->nr_frags;
--			j++;
--			for (k = 0; k < last; k++, j++) {
-+			j = NEXT_TX_BD(j);
-+			for (k = 0; k < last; k++, j = NEXT_TX_BD(j)) {
- 				tx_buf = &txr->tx_buf_ring[TX_RING_IDX(j)];
- 				dma_unmap_page(&bp->pdev->dev,
- 					dma_unmap_addr(tx_buf, mapping),
 
 
