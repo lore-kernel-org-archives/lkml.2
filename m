@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab2HGTxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 15:53:39 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:49817 "EHLO
+	id S1756318Ab2HGTxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 15:53:47 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:49819 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755369Ab2HGTxh (ORCPT
+	with ESMTP id S1756301Ab2HGTxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 15:53:37 -0400
+	Tue, 7 Aug 2012 15:53:46 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        J Freyensee <james_p_freyensee@linux.intel.com>
-Subject: [PATCH 04/41] misc: pti, add const to pci_device_id table
-Date: Tue,  7 Aug 2012 21:47:29 +0200
-Message-Id: <1344368886-24033-5-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 17/41] TTY: pass flags to alloc_tty_driver
+Date: Tue,  7 Aug 2012 21:47:42 +0200
+Message-Id: <1344368886-24033-18-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -21,29 +20,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is annotated as __devinitconst. Despite the annotation is useless
-in most cases, const keyword is misssing there. So we are placing
-non-const data into rodata section. Fix that now.
+We need to allow drivers that use neither tty_port_install nor
+tty_port_register_device to link a tty_port to a tty somehow.  To
+avoid a race with open, this has to be performed before
+tty_register_device. But currently tty_driver->ports is allocated even
+in tty_register_device because we do not know whether this is the PTY
+driver. The PTY driver is special here due to an excessive count of
+lines it declares to handle. We cannot handle tty_ports there this
+way.
+
+To circumvent this, we start passing tty_driver flags to
+alloc_tty_driver already and we create tty_alloc_driver for this
+purpose. There we can allocate tty_driver->ports and do all the magic
+between tty_alloc_driver and tty_register_device. Later we will
+introduce tty_port_link_device function for that purpose.
+
+All drivers should eventually switch to this new tty driver allocation
+interface.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- drivers/misc/pti.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/tty_io.c       |   34 +++++++++++++++++++++++++---------
+ include/linux/tty_driver.h |   23 +++++++++++++++++++----
+ 2 files changed, 44 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
-index b7eb545..5cb61f7 100644
---- a/drivers/misc/pti.c
-+++ b/drivers/misc/pti.c
-@@ -76,7 +76,7 @@ struct pti_dev {
-  */
- static DEFINE_MUTEX(alloclock);
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index c6f4d71..e024521 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -3046,21 +3046,37 @@ void tty_unregister_device(struct tty_driver *driver, unsigned index)
+ }
+ EXPORT_SYMBOL(tty_unregister_device);
  
--static struct pci_device_id pci_ids[] __devinitconst = {
-+static const struct pci_device_id pci_ids[] __devinitconst = {
- 		{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x82B)},
- 		{0}
- };
+-struct tty_driver *__alloc_tty_driver(int lines, struct module *owner)
++/**
++ * __tty_alloc_driver -- allocate tty driver
++ * @lines: count of lines this driver can handle at most
++ * @owner: module which is repsonsible for this driver
++ * @flags: some of TTY_DRIVER_* flags, will be set in driver->flags
++ *
++ * This should not be called directly, some of the provided macros should be
++ * used instead. Use IS_ERR and friends on @retval.
++ */
++struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
++		unsigned long flags)
+ {
+ 	struct tty_driver *driver;
+ 
++	if (!lines)
++		return ERR_PTR(-EINVAL);
++
+ 	driver = kzalloc(sizeof(struct tty_driver), GFP_KERNEL);
+-	if (driver) {
+-		kref_init(&driver->kref);
+-		driver->magic = TTY_DRIVER_MAGIC;
+-		driver->num = lines;
+-		driver->owner = owner;
+-		/* later we'll move allocation of tables here */
+-	}
++	if (!driver)
++		return ERR_PTR(-ENOMEM);
++
++	kref_init(&driver->kref);
++	driver->magic = TTY_DRIVER_MAGIC;
++	driver->num = lines;
++	driver->owner = owner;
++	driver->flags = flags;
++	/* later we'll move allocation of tables here */
++
+ 	return driver;
+ }
+-EXPORT_SYMBOL(__alloc_tty_driver);
++EXPORT_SYMBOL(__tty_alloc_driver);
+ 
+ static void destruct_tty_driver(struct kref *kref)
+ {
+diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+index 80e72dc..3adc362 100644
+--- a/include/linux/tty_driver.h
++++ b/include/linux/tty_driver.h
+@@ -296,11 +296,11 @@ struct tty_driver {
+ 	int	name_base;	/* offset of printed name */
+ 	int	major;		/* major device number */
+ 	int	minor_start;	/* start of minor device number */
+-	int	num;		/* number of devices allocated */
++	unsigned int	num;	/* number of devices allocated */
+ 	short	type;		/* type of tty driver */
+ 	short	subtype;	/* subtype of tty driver */
+ 	struct ktermios init_termios; /* Initial termios */
+-	int	flags;		/* tty driver flags */
++	unsigned long	flags;		/* tty driver flags */
+ 	struct proc_dir_entry *proc_entry; /* /proc fs entry */
+ 	struct tty_driver *other; /* only used for the PTY driver */
+ 
+@@ -322,7 +322,8 @@ struct tty_driver {
+ 
+ extern struct list_head tty_drivers;
+ 
+-extern struct tty_driver *__alloc_tty_driver(int lines, struct module *owner);
++extern struct tty_driver *__tty_alloc_driver(unsigned int lines,
++		struct module *owner, unsigned long flags);
+ extern void put_tty_driver(struct tty_driver *driver);
+ extern void tty_set_operations(struct tty_driver *driver,
+ 			const struct tty_operations *op);
+@@ -330,7 +331,21 @@ extern struct tty_driver *tty_find_polling_driver(char *name, int *line);
+ 
+ extern void tty_driver_kref_put(struct tty_driver *driver);
+ 
+-#define alloc_tty_driver(lines) __alloc_tty_driver(lines, THIS_MODULE)
++/* Use TTY_DRIVER_* flags below */
++#define tty_alloc_driver(lines, flags) \
++		__tty_alloc_driver(lines, THIS_MODULE, flags)
++
++/*
++ * DEPRECATED Do not use this in new code, use tty_alloc_driver instead.
++ * (And change the return value checks.)
++ */
++static inline struct tty_driver *alloc_tty_driver(unsigned int lines)
++{
++	struct tty_driver *ret = tty_alloc_driver(lines, 0);
++	if (IS_ERR(ret))
++		return NULL;
++	return ret;
++}
+ 
+ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
+ {
 -- 
 1.7.10.4
 
