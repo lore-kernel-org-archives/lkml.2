@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab2HGL2n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 07:28:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55947 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab2HGL2l (ORCPT
+	id S1754325Ab2HGL2u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 07:28:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59506 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754303Ab2HGL2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 07:28:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
+	Tue, 7 Aug 2012 07:28:46 -0400
+Date: Tue, 7 Aug 2012 12:28:44 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
-Date: Tue, 7 Aug 2012 11:28:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, sameo@linux.intel.com,
         rpurdie@rpsys.net, bryan.wu@canonical.com,
-        linux-kernel@vger.kernel.org
-References: <1344184373-9670-1-git-send-email-haojian.zhuang@gmail.com> <1344327742.2698.15.camel@pasglop> <20120807082813.GB24257@flint.arm.linux.org.uk>
-In-Reply-To: <20120807082813.GB24257@flint.arm.linux.org.uk>
+        linux-kernel@vger.kernel.org, Bergmann Arnd <arnd@arndb.de>
+Subject: Re: [PATCH 0/5] mfd: replace IORESOURCE_IO by IORESOURCE_MEM
+Message-ID: <20120807112844.GZ16861@opensource.wolfsonmicro.com>
+References: <20120806154619.GO16861@opensource.wolfsonmicro.com>
+ <CAN1soZzytOwxnS8oNMhFs1rfwVPwFnZoVsXeaMUc4Kf_TnunkA@mail.gmail.com>
+ <20120806155805.GR16861@opensource.wolfsonmicro.com>
+ <20120806192209.GA14594@flint.arm.linux.org.uk>
+ <20120806195352.GC16199@opensource.wolfsonmicro.com>
+ <20120806213124.GB14594@flint.arm.linux.org.uk>
+ <20120806220032.GD26698@opensource.wolfsonmicro.com>
+ <CAN1soZzSz9Gs_SsTd_5BOFNjUviZgBjBiGCjt1EsAtkS5XquQA@mail.gmail.com>
+ <20120807103851.GS16861@opensource.wolfsonmicro.com>
+ <20120807111331.GC24257@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208071128.27616.arnd@arndb.de>
-X-Provags-ID: V02:K0:bZMfZI3mXFJXmooZxU+CIhshSQrfUoRW23hh4/7CVys
- x/XWyA7/QZfA3exzZJ+G9GNdLjFNtHAZp6HGM/58CkF/vonKwB
- FhY34UJb3NBddWGgPRckBIysUmihOnrsEkFsDjnCG2XgseRca+
- jTKmsISkC+VN/Bc7xgbMydGu/fB2HLZ+dgEH2U7YzZmMqqCALL
- X6Ceq9w7Yhs5SBVY73Xl+e0VkcEwl9LpE8WPmLJdHQO8tAN/bo
- l9ARJbFpuj4E3KicsG86JvbdWLMgblzqCMP7Uj+hUTtKsDd1Y5
- f5QWZCTZL4a+Cl5cklwejk42vsA8MVBAZeJ1AdPTEXHI6R6zKN
- uBLQsA2TpVdOSLCEM9BY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120807111331.GC24257@flint.arm.linux.org.uk>
+X-Cookie: You will be married within a year.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 August 2012, Russell King wrote:
-> On Tue, Aug 07, 2012 at 06:22:22PM +1000, Benjamin Herrenschmidt wrote:
-> > On Mon, 2012-08-06 at 22:31 +0100, Russell King wrote:
-> > > 
-> > > So, if we made this a numeric index, then we have 32 resource types
-> > > to deal with, and no need to bugger around with re-using an existing
-> > > type for something else.
-> > > 
-> > > This makes sense, MEM, IRQ and DMA are all mutually exclusive, as
-> > > should be MEM and IO (because they can't coexist in two resource trees
-> > > at the same time.)  BUS only gets used in a hand-full of places and
-> > > not with any other flags.
-> > > 
-> > > So, looks like we can have 27 new resource types fairly easily.
-> > 
-> > Besides we can easily use a single IORESOURCE_OTHER for most things
-> > really, if we prefer, make it IORESOURCE_IO | IORESOURCE_MEM and have
-> > platform device avoid that combo...
-> 
-> That will work just the same way that I'm suggesting.  We can keep
-> the existing bit-based numbers, and:
-> 
-> #define IORESOURCE_OTHER        0x00000300
-> 
-> and the platform code will avoid using the standard resource trees,
-> because it does things correctly here:
-> 
->                         if (resource_type(r) == IORESOURCE_MEM)
->                                 p = &iomem_resource;
->                         else if (resource_type(r) == IORESOURCE_IO)
->                                 p = &ioport_resource;
-> 
+On Tue, Aug 07, 2012 at 12:13:31PM +0100, Russell King wrote:
+> On Tue, Aug 07, 2012 at 11:38:51AM +0100, Mark Brown wrote:
 
-I had not realized that we did this in platform_device_add(), which
-means using IORESOURCE_IO in mfd is even more broken than I thought
-previously.
+> > If nothing else this seems much more suitable for stable and -rc (the
+> > bug has been there since v3.4).
 
-I've looked through the code some more and your solution sounds
-like the best option to get this sorted quickly. The entire
-resource logic will probably come back to haunt us with ACPI 5.0
-which adds region types for a number of new things (i2c, gpio,
-ipmi, cmos, ...) and we might end up representing them
-as resource. Or we might not.
+> There is no need for such hacks.
 
-If we introduce a new IORESOURCE_OTHER, I would actually prefer to
-define it to 0x00000000 for purely aesthetic reasons, the effect
-should be the same as using 0x00000300.
+Please read the text you quoted above.
 
-	Arnd
+> There's no need to botch this in any way what so ever, or invent some
+> other solution only to have to (probably never) rework it.
+
+The changes you're suggesting are extremely invasive for stable
+especially given that we have a simple, driver local, fix available
+which is already deployed and used in other drivers in the same kernels
+(at least in v3.5 anyway, the change introducing the issue got pushed
+into v3.4 unexpectedly so the fix didn't make it).  It would be worrying
+if such changes were being accepted into stable.
+
+I agree that the changes you're suggeting seem sensible for v3.7 if
+someone wants to work on them, possibly even v3.6 if people are willing
+to do something like that after the merge window, but we've got an issue
+in stable here which is the most urgent thing.
