@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030583Ab2HGWjJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:39:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41610 "EHLO
+	id S1757415Ab2HGWjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:39:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030566Ab2HGWjA (ORCPT
+	with ESMTP id S1030586Ab2HGWjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:00 -0400
+	Tue, 7 Aug 2012 18:39:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 054/109] tg3: add device id of Apple Thunderbolt Ethernet device
-Date: Tue,  7 Aug 2012 15:35:13 -0700
-Message-Id: <20120807222047.827215694@linuxfoundation.org>
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <deathsimple@vodafone.de>,
+        Jerome Glisse <jglisse@redhat.com>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: =?UTF-8?q?=5B=20057/109=5D=20drm/radeon=3A=20fix=20fence=20related=20segfault=20in=20CS?=
+Date: Tue,  7 Aug 2012 15:35:16 -0700
+Message-Id: <20120807222048.101526832@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,31 +35,33 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Greg KH <gregkh@linuxfoundation.org>
+From: Christian König <deathsimple@vodafone.de>
 
-commit 02eca3f5f5e458c3a5d7b772bc8042ee2a4ebedf upstream.
+commit 93bf888c5c730605e3470f5d2381f296eda88d79 upstream.
 
-The Apple Thunderbolt ethernet device is already listed in the driver,
-but not hooked up in the MODULE_DEVICE_TABLE().  This fixes that and
-allows it to work properly.
+Don't return success if scheduling the IB fails, otherwise
+we end up with an oops in ttm_eu_fence_buffer_objects.
 
+Signed-off-by: Christian König <deathsimple@vodafone.de>
+Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Acked-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/radeon_cs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -298,6 +298,7 @@ static DEFINE_PCI_DEVICE_TABLE(tg3_pci_t
- 	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_57795)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_5719)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_5720)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_57762)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, PCI_DEVICE_ID_SYSKONNECT_9DXX)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, PCI_DEVICE_ID_SYSKONNECT_9MXX)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC1000)},
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -377,7 +377,7 @@ static int radeon_cs_ib_chunk(struct rad
+ 	if (r) {
+ 		DRM_ERROR("Failed to schedule IB !\n");
+ 	}
+-	return 0;
++	return r;
+ }
+ 
+ static int radeon_bo_vm_update_pte(struct radeon_cs_parser *parser,
 
 
