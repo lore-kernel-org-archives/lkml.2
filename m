@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab2HGXje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:39:34 -0400
+	id S1757692Ab2HGXju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:39:50 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394Ab2HGW2Z (ORCPT
+	with ESMTP id S932285Ab2HGW2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:28:25 -0400
+	Tue, 7 Aug 2012 18:28:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 028/122] usbdevfs: Correct amount of data copied to user in processcompl_compat
-Date: Tue,  7 Aug 2012 15:25:16 -0700
-Message-Id: <20120807221950.762314927@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Simon Farnsworth <simon.farnsworth@onelan.co.uk>
+Subject: [ 027/122] HID: hid-multitouch: fix input mode feature command
+Date: Tue,  7 Aug 2012 15:25:15 -0700
+Message-Id: <20120807221950.667219464@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -30,41 +31,67 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 
-commit 2102e06a5f2e414694921f23591f072a5ba7db9f upstream.
+commit 4aceed37e315e8eaa26cb4c8dfd619a32fa24669 upstream.
 
-iso data buffers may have holes in them if some packets were short, so for
-iso urbs we should always copy the entire buffer, just like the regular
-processcompl does.
+Zytronic panels shows a new way of setting the Input Mode feature.
+This feature is put in the second usage in the HID feature, instead
+of the first, as the majority of the multitouch devices.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+This patch adds a detection step when the feature is presented to know
+where the feature is located in the report. We can then trigger the right
+command to the device. This removes the magic number "0" in the function
+mt_set_input_mode.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/devio.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/hid/hid-multitouch.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1604,10 +1604,14 @@ static int processcompl_compat(struct as
- 	void __user *addr = as->userurb;
- 	unsigned int i;
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -83,6 +83,7 @@ struct mt_device {
+ 	unsigned last_field_index;	/* last field index of the report */
+ 	unsigned last_slot_field;	/* the last field of a slot */
+ 	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
++	__s8 inputmode_index;	/* InputMode HID feature index in the report */
+ 	__s8 maxcontact_report_id;	/* Maximum Contact Number HID feature,
+ 				   -1 if non-existent */
+ 	__u8 num_received;	/* how many contacts we received */
+@@ -260,10 +261,20 @@ static void mt_feature_mapping(struct hi
+ 		struct hid_field *field, struct hid_usage *usage)
+ {
+ 	struct mt_device *td = hid_get_drvdata(hdev);
++	int i;
  
--	if (as->userbuffer && urb->actual_length)
--		if (copy_to_user(as->userbuffer, urb->transfer_buffer,
--				 urb->actual_length))
-+	if (as->userbuffer && urb->actual_length) {
-+		if (urb->number_of_packets > 0)		/* Isochronous */
-+			i = urb->transfer_buffer_length;
-+		else					/* Non-Isoc */
-+			i = urb->actual_length;
-+		if (copy_to_user(as->userbuffer, urb->transfer_buffer, i))
- 			return -EFAULT;
-+	}
- 	if (put_user(as->status, &userurb->status))
- 		return -EFAULT;
- 	if (put_user(urb->actual_length, &userurb->actual_length))
+ 	switch (usage->hid) {
+ 	case HID_DG_INPUTMODE:
+ 		td->inputmode = field->report->id;
++		td->inputmode_index = 0; /* has to be updated below */
++
++		for (i=0; i < field->maxusage; i++) {
++			if (field->usage[i].hid == usage->hid) {
++				td->inputmode_index = i;
++				break;
++			}
++		}
++
+ 		break;
+ 	case HID_DG_CONTACTMAX:
+ 		td->maxcontact_report_id = field->report->id;
+@@ -618,7 +629,7 @@ static void mt_set_input_mode(struct hid
+ 	re = &(hdev->report_enum[HID_FEATURE_REPORT]);
+ 	r = re->report_id_hash[td->inputmode];
+ 	if (r) {
+-		r->field[0]->value[0] = 0x02;
++		r->field[0]->value[td->inputmode_index] = 0x02;
+ 		usbhid_submit_report(hdev, r, USB_DIR_OUT);
+ 	}
+ }
 
 
