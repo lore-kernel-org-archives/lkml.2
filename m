@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab2HGOhF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 10:37:05 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:59301 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755143Ab2HGOhA (ORCPT
+	id S1755145Ab2HGOhl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 10:37:41 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:53585 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754996Ab2HGOhk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 10:37:00 -0400
-X-Sasl-enc: 8/m/Es5w1wf7x1cdhsqxPx2oDdbgNybKLhK6Ll84nh+r 1344350219
-Date: Tue, 7 Aug 2012 11:36:56 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH] leds: triggers: send uevent when changing triggers
-Message-ID: <20120807143656.GA22791@khazad-dum.debian.net>
-References: <1343176370-5856-1-git-send-email-ccross@android.com>
- <CAK5ve-LY1iw7CanrMSZ0PtK=Fk9Au9tXnmaOuZ5P7vnP+5VAgA@mail.gmail.com>
- <CAMbhsRS-TiBE92nL0Cwc-ssZAMaHE2ET0UE8h7RU3VG6F6+Xtw@mail.gmail.com>
- <CAK5ve-+11J4HRepAmK-Y0Pq55XhAwa8Ehpw8=KvRdu4Cy90FDQ@mail.gmail.com>
- <20120726035958.GB7235@kroah.com>
- <CAK5ve-LbNeJngQPE=893-ChJXEWJHg9km1Ev6GZYx4=Zrrxg9g@mail.gmail.com>
- <20120726165112.GA23857@kroah.com>
- <CAK5ve-KFsFwnvd3TwAvTuBfEdTV8PeNBkVpdQT9NYXH2sN+mBA@mail.gmail.com>
- <CAMbhsRS82FM90sD52qTTdOFJCoR4GyP+v6bwv+4NKhjn-sqh-Q@mail.gmail.com>
- <CAK5ve-KvdokobzjmuXSsEZxrJcr7i4xHOXJGvMqCSOZ69G_5zw@mail.gmail.com>
+	Tue, 7 Aug 2012 10:37:40 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [PATCH] regmap-irq: allow auto-allocated IRQs to be mapped
+Thread-Topic: [PATCH] regmap-irq: allow auto-allocated IRQs to be mapped
+Thread-Index: AQHNckG72kyxY08IiEqTgpBfEDN7qZdONpdAgAAe5ICAABLO8A==
+Date: Tue, 7 Aug 2012 14:37:37 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB51032C3C2A@NB-EX-MBX02.diasemi.com>
+References: <201208020805.q72858Yj003147@latitude.olech.com>
+ <20120804105424.GB10523@opensource.wolfsonmicro.com>
+ <24DF37198A1E704D9811D8F72B87EB51032C3B7E@NB-EX-MBX02.diasemi.com>
+ <20120807140311.GH16861@opensource.wolfsonmicro.com>
+In-Reply-To: <20120807140311.GH16861@opensource.wolfsonmicro.com>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-KvdokobzjmuXSsEZxrJcr7i4xHOXJGvMqCSOZ69G_5zw@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Aug 2012, Bryan Wu wrote:
-> On Wed, Aug 1, 2012 at 2:28 AM, Colin Cross <ccross@android.com> wrote:
-> > On Thu, Jul 26, 2012 at 9:04 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
-> >> On Fri, Jul 27, 2012 at 12:51 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >>> On Thu, Jul 26, 2012 at 01:03:11PM +0800, Bryan Wu wrote:
-> >>>> Just one quick patch for my idea: emitting a uevent in sysfs_create_file().
-> >>>>
-> >>>> --
-> >>>> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-> >>>> index 00012e3..04da869 100644
-> >>>> --- a/fs/sysfs/file.c
-> >>>> +++ b/fs/sysfs/file.c
-> >>>> @@ -570,10 +570,14 @@ int sysfs_add_file(struct sysfs_dirent *dir_sd,
-> >>>> const struct attribute *attr,
-> >>>>
-> >>>>  int sysfs_create_file(struct kobject * kobj, const struct attribute * attr)
-> >>>>  {
-> >>>> +       int err = 0;
-> >>>> +
-> >>>>         BUG_ON(!kobj || !kobj->sd || !attr);
-> >>>>
-> >>>> -       return sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
-> >>>> +       err = sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
-> >>>> +       kobject_uevent(kobj, KOBJ_CHANGE);
-> >>>
-> >>> That's a veritable flood of change events when a new kobject is created,
-> >>> right?  It also created uevents for a device that has not told userspace
-> >>> that it is even present, which could cause massive confusion, don't you
-> >>> think?
-> >>>
-> >>
-> >> Indeed, this is unacceptable. I reworked a new patchset and just sent
-> >> our for you review.
-> >>
-> >> Thanks,
-> >> -Bryan
-> >
-> > Given the rejection of the other solutions to this problem, and chance
-> > of getting this acked?
-> 
-> Greg, Richard and Henrique, can I take you guys' Ack here?
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: 07 August 2012 15:03
+> On Tue, Aug 07, 2012 at 11:18:20AM +0000, Opensource [Anthony Olech]
+> wrote:
+> > if you don't TOP POST how can you tell who wrote what?
+> Well, it's not clear who wrote what in your current e-mail since there's no
+> indication of what's quoted and what's new text...  Take a look at all the other
+> mails on the list - your mail should be in a similar style to them.  There's some
+> advice for common e-mail clients in email-clients.txt under Documentation.
 
-Yes, you have my Acked-by, provided that the uevent is NOT sent before
-the led is fully registered (I cannot check right now if the patch does
-this right or not.  I apologise in advance if this was an unecessary
-question).
+I found the option to quote/indent the email original, sorry about that but we
+are forced to use Microsoft Outlook and the default were set up strangely.
+ 
+> The bottom line here is that if your driver requires a dynamically allocated
+> legacy domain it is broken.
 
-I don't care whether the uevent gets sent right after registration, or
-only when the trigger *changes* after registering.  But someone might,
-so it would be nice to document this.
+I am trying to use the latest REGMAP API, and I do not understand why you
+say the DSA9058 driver "requires" a dynamically allocated legacy domain.
+Surely the virtual IRQs that the PMIC component drivers use must be
+dynamically allocated. It is only the single GPIO line designated as an
+interrupt line in the machne drivert that is fixed by the hardware. That
+surely means the "irq_base" parameter to regmap_add_irq_chip() must
+be set to "-1". What else could it be set to??
 
-Considering Greg's answer, maybe it would be best to resend the patch
-with the point above clarified in the commit message or in the in-tree
-documentation of the LED class?
+I am beginning to suspect that I have misunderstood something. The
+regmap-irq API seemed taylor-made for our PMIC with one real h/w
+interrupt line with several PMIC chip irq sources controlled by a set
+of registers that seemed to slot into the "regmap_add_irq_chip" struct
+perfectly. Why should that set of virtual irqs be given a specific base??
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+I really hope that you can help me clear this issue up, as there are not
+many examples of drivers that use the regmap-irq API in linux-release
+GIT repository.
+
+Tony Olech
+
+
+
+
