@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933053Ab2HGXGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:06:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56573 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030632Ab2HGWjo (ORCPT
+	id S1757459Ab2HGXHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 19:07:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35146 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030620Ab2HGWjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:39:44 -0400
+	Tue, 7 Aug 2012 18:39:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 068/109] nfsd4: our filesystems are normally case sensitive
-Date: Tue,  7 Aug 2012 15:35:27 -0700
-Message-Id: <20120807222049.063060776@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 066/109] dm thin: fix memory leak in process_prepared_mapping error paths
+Date: Tue,  7 Aug 2012 15:35:25 -0700
+Message-Id: <20120807222048.896079401@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222043.089735600@linuxfoundation.org>
 References: <20120807222043.089735600@linuxfoundation.org>
@@ -29,30 +30,50 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 2930d381d22b9c56f40dd4c63a8fa59719ca2c3c upstream.
+commit 905386f82d08f66726912f303f3e6605248c60a3 upstream.
 
-Actually, xfs and jfs can optionally be case insensitive; we'll handle
-that case in later patches.
+Fix memory leak in process_prepared_mapping by always freeing
+the dm_thin_new_mapping structs from the mapping_pool mempool on
+the error paths.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-thin.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2233,7 +2233,7 @@ out_acl:
- 	if (bmval0 & FATTR4_WORD0_CASE_INSENSITIVE) {
- 		if ((buflen -= 4) < 0)
- 			goto out_resource;
--		WRITE32(1);
-+		WRITE32(0);
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -855,7 +855,7 @@ static void process_prepared_mapping(str
+ 
+ 	if (m->err) {
+ 		cell_error(m->cell);
+-		return;
++		goto out;
  	}
- 	if (bmval0 & FATTR4_WORD0_CASE_PRESERVING) {
- 		if ((buflen -= 4) < 0)
+ 
+ 	/*
+@@ -867,7 +867,7 @@ static void process_prepared_mapping(str
+ 	if (r) {
+ 		DMERR("dm_thin_insert_block() failed");
+ 		cell_error(m->cell);
+-		return;
++		goto out;
+ 	}
+ 
+ 	/*
+@@ -882,6 +882,7 @@ static void process_prepared_mapping(str
+ 	} else
+ 		cell_defer(tc, m->cell, m->data_block);
+ 
++out:
+ 	list_del(&m->list);
+ 	mempool_free(m, tc->pool->mapping_pool);
+ }
 
 
