@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab2HGWeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:34:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54025 "EHLO
+	id S1757316Ab2HGWfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:35:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030469Ab2HGWdK (ORCPT
+	with ESMTP id S1030446Ab2HGWdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:33:10 -0400
+	Tue, 7 Aug 2012 18:33:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 118/122] ASoC: wm8994: Ensure there are enough BCLKs for four channels
-Date: Tue,  7 Aug 2012 15:26:46 -0700
-Message-Id: <20120807222000.809542960@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 108/122] net/tun: fix ioctl() based info leaks
+Date: Tue,  7 Aug 2012 15:26:36 -0700
+Message-Id: <20120807221959.546088423@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -29,30 +30,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit b8edf3e5522735c8ce78b81845f7a1a2d4a08626 upstream.
+From: Mathias Krause <minipli@googlemail.com>
 
-Otherwise if someone tries to use all four channels on AIF1 with the
-device in master mode we won't be able to clock out all the data.
+[ Upstream commits a117dacde0288f3ec60b6e5bcedae8fa37ee0dfc
+  and 8bbb181308bc348e02bfdbebdedd4e4ec9d452ce ]
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+The tun module leaks up to 36 bytes of memory by not fully initializing
+a structure located on the stack that gets copied to user memory by the
+TUNGETIFF and SIOCGIFHWADDR ioctl()s.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/soc/codecs/wm8994.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/tun.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -2649,7 +2649,7 @@ static int wm8994_hw_params(struct snd_p
- 		return -EINVAL;
- 	}
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1255,10 +1255,12 @@ static long __tun_chr_ioctl(struct file
+ 	int vnet_hdr_sz;
+ 	int ret;
  
--	bclk_rate = params_rate(params) * 2;
-+	bclk_rate = params_rate(params) * 4;
- 	switch (params_format(params)) {
- 	case SNDRV_PCM_FORMAT_S16_LE:
- 		bclk_rate *= 16;
+-	if (cmd == TUNSETIFF || _IOC_TYPE(cmd) == 0x89)
++	if (cmd == TUNSETIFF || _IOC_TYPE(cmd) == 0x89) {
+ 		if (copy_from_user(&ifr, argp, ifreq_len))
+ 			return -EFAULT;
+-
++	} else {
++		memset(&ifr, 0, sizeof(ifr));
++	}
+ 	if (cmd == TUNGETFEATURES) {
+ 		/* Currently this just means: "what IFF flags are valid?".
+ 		 * This is needed because we never checked for invalid flags on
 
 
