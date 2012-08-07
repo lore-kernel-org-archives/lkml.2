@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031304Ab2HGWsB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:48:01 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:62912 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031388Ab2HGWr5 (ORCPT
+	id S1031406Ab2HGWsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:48:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41483 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031392Ab2HGWsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:47:57 -0400
+	Tue, 7 Aug 2012 18:48:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 49/49] futex: Forbid uaddr == uaddr2 in futex_wait_requeue_pi()
-Date: Tue,  7 Aug 2012 15:45:07 -0700
-Message-Id: <20120807222031.235187617@linuxfoundation.org>
+        Mikael Pettersson <mikpe@it.uu.se>,
+        Michael Schmitz <schmitzmic@googlemail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 46/49] m68k: Correct the Atari ALLOWINT definition
+Date: Tue,  7 Aug 2012 15:45:04 -0700
+Message-Id: <20120807222030.976846784@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -30,56 +31,95 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Mikael Pettersson <mikpe@it.uu.se>
 
-commit 6f7b0a2a5c0fb03be7c25bd1745baa50582348ef upstream.
+commit c663600584a596b5e66258cc10716fb781a5c2c9 upstream.
 
-If uaddr == uaddr2, then we have broken the rule of only requeueing
-from a non-pi futex to a pi futex with this call. If we attempt this,
-as the trinity test suite manages to do, we miss early wakeups as
-q.key is equal to key2 (because they are the same uaddr). We will then
-attempt to dereference the pi_mutex (which would exist had the futex_q
-been properly requeued to a pi futex) and trigger a NULL pointer
-dereference.
+Booting a 3.2, 3.3, or 3.4-rc4 kernel on an Atari using the
+`nfeth' ethernet device triggers a WARN_ONCE() in generic irq
+handling code on the first irq for that device:
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/ad82bfe7f7d130247fbe2b5b4275654807774227.1342809673.git.dvhart@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+WARNING: at kernel/irq/handle.c:146 handle_irq_event_percpu+0x134/0x142()
+irq 3 handler nfeth_interrupt+0x0/0x194 enabled interrupts
+Modules linked in:
+Call Trace: [<000299b2>] warn_slowpath_common+0x48/0x6a
+ [<000299c0>] warn_slowpath_common+0x56/0x6a
+ [<00029a4c>] warn_slowpath_fmt+0x2a/0x32
+ [<0005b34c>] handle_irq_event_percpu+0x134/0x142
+ [<0005b34c>] handle_irq_event_percpu+0x134/0x142
+ [<0000a584>] nfeth_interrupt+0x0/0x194
+ [<001ba0a8>] schedule_preempt_disabled+0x0/0xc
+ [<0005b37a>] handle_irq_event+0x20/0x2c
+ [<0005add4>] generic_handle_irq+0x2c/0x3a
+ [<00002ab6>] do_IRQ+0x20/0x32
+ [<0000289e>] auto_irqhandler_fixup+0x4/0x6
+ [<00003144>] cpu_idle+0x22/0x2e
+ [<001b8a78>] printk+0x0/0x18
+ [<0024d112>] start_kernel+0x37a/0x386
+ [<0003021d>] __do_proc_dointvec+0xb1/0x366
+ [<0003021d>] __do_proc_dointvec+0xb1/0x366
+ [<0024c31e>] _sinittext+0x31e/0x9c0
+
+After invoking the irq's handler the kernel sees !irqs_disabled()
+and concludes that the handler erroneously enabled interrupts.
+
+However, debugging shows that !irqs_disabled() is true even before
+the handler is invoked, which indicates a problem in the platform
+code rather than the specific driver.
+
+The warning does not occur in 3.1 or older kernels.
+
+It turns out that the ALLOWINT definition for Atari is incorrect.
+
+The Atari definition of ALLOWINT is ~0x400, the stated purpose of
+that is to avoid taking HSYNC interrupts.  irqs_disabled() returns
+true if the 3-bit ipl & 4 is non-zero.  The nfeth interrupt runs at
+ipl 3 (it's autovector 3), but 3 & 4 is zero so irqs_disabled() is
+false, and the warning above is generated.
+
+When interrupts are explicitly disabled, ipl is set to 7.  When they
+are enabled, ipl is masked with ALLOWINT.  On Atari this will result
+in ipl = 3, which blocks interrupts at ipl 3 and below.  So how come
+nfeth interrupts at ipl 3 are received at all?  That's because ipl
+is reset to 2 by Atari-specific code in default_idle(), again with
+the stated purpose of blocking HSYNC interrupts.  This discrepancy
+means that ipl 3 can remain blocked for longer than intended.
+
+Both default_idle() and falcon_hblhandler() identify HSYNC with
+ipl 2, and the "Atari ST/.../F030 Hardware Register Listing" agrees,
+but ALLOWINT is defined as if HSYNC was ipl 3.
+
+[As an experiment I modified default_idle() to reset ipl to 3, and
+as expected that resulted in all nfeth interrupts being blocked.]
+
+The fix is simple: define ALLOWINT as ~0x500 instead.  This makes
+arch_local_irq_enable() consistent with default_idle(), and prevents
+the !irqs_disabled() problems for ipl 3 interrupts.
+
+Tested on Atari running in an Aranym VM.
+
+Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+Tested-by: Michael Schmitz <schmitzmic@googlemail.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- kernel/futex.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2231,11 +2231,11 @@ int handle_early_requeue_pi_wakeup(struc
-  * @uaddr2:	the pi futex we will take prior to returning to user-space
-  *
-  * The caller will wait on uaddr and will be requeued by futex_requeue() to
-- * uaddr2 which must be PI aware.  Normal wakeup will wake on uaddr2 and
-- * complete the acquisition of the rt_mutex prior to returning to userspace.
-- * This ensures the rt_mutex maintains an owner when it has waiters; without
-- * one, the pi logic wouldn't know which task to boost/deboost, if there was a
-- * need to.
-+ * uaddr2 which must be PI aware and unique from uaddr.  Normal wakeup will wake
-+ * on uaddr2 and complete the acquisition of the rt_mutex prior to returning to
-+ * userspace.  This ensures the rt_mutex maintains an owner when it has waiters;
-+ * without one, the pi logic would not know which task to boost/deboost, if
-+ * there was a need to.
-  *
-  * We call schedule in futex_wait_queue_me() when we enqueue and return there
-  * via the following:
-@@ -2272,6 +2272,9 @@ static int futex_wait_requeue_pi(u32 __u
- 	struct futex_q q = futex_q_init;
- 	int res, ret;
+---
+ arch/m68k/include/asm/entry_mm.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/arch/m68k/include/asm/entry_mm.h
++++ b/arch/m68k/include/asm/entry_mm.h
+@@ -35,8 +35,8 @@
  
-+	if (uaddr == uaddr2)
-+		return -EINVAL;
-+
- 	if (!bitset)
- 		return -EINVAL;
- 
+ /* the following macro is used when enabling interrupts */
+ #if defined(MACH_ATARI_ONLY)
+-	/* block out HSYNC on the atari */
+-#define ALLOWINT	(~0x400)
++	/* block out HSYNC = ipl 2 on the atari */
++#define ALLOWINT	(~0x500)
+ #define	MAX_NOINT_IPL	3
+ #else
+ 	/* portable version */
 
 
