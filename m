@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031166Ab2HGW4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:56:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36543 "EHLO
+	id S1031141Ab2HGW50 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:57:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53839 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031106Ab2HGWqE (ORCPT
+	with ESMTP id S1031081Ab2HGWpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:46:04 -0400
+	Tue, 7 Aug 2012 18:45:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 14/49] locks: fix checking of fcntl_setlease argument
-Date: Tue,  7 Aug 2012 15:44:32 -0700
-Message-Id: <20120807222028.144240974@linuxfoundation.org>
+        Steve Sakoman <steve@sakoman.com>, Tony Lindgren <tony@atomide.com>,
+        Nishanth Menon <nm@ti.com>, Kevin Hilman <khilman@ti.com>
+Subject: [ 10/49] ARM: OMAP2+: OPP: Fix to ensure check of right oppdef after bad one
+Date: Tue,  7 Aug 2012 15:44:28 -0700
+Message-Id: <20120807222027.791813362@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807222026.848194739@linuxfoundation.org>
 References: <20120807222026.848194739@linuxfoundation.org>
@@ -29,55 +30,57 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@fieldses.org>
+From: Nishanth Menon <nm@ti.com>
 
-commit 0ec4f431eb56d633da3a55da67d5c4b88886ccc7 upstream.
+commit b110547e586eb5825bc1d04aa9147bff83b57672 upstream.
 
-The only checks of the long argument passed to fcntl(fd,F_SETLEASE,.)
-are done after converting the long to an int.  Thus some illegal values
-may be let through and cause problems in later code.
+Commit 9fa2df6b90786301b175e264f5fa9846aba81a65
+(ARM: OMAP2+: OPP: allow OPP enumeration to continue if device is not present)
+makes the logic:
+for (i = 0; i < opp_def_size; i++) {
+	<snip>
+	if (!oh || !oh->od) {
+		<snip>
+		continue;
+	}
+<snip>
+opp_def++;
+}
 
-[ They actually *don't* cause problems in mainline, as of Dave Jones's
-  commit 8d657eb3b438 "Remove easily user-triggerable BUG from
-  generic_setlease", but we should fix this anyway.  And this patch will
-  be necessary to fix real bugs on earlier kernels. ]
+In short, the moment we hit a "Bad OPP", we end up looping the list
+comparing against the bad opp definition pointer for the rest of the
+iteration count. Instead, increment opp_def in the for loop itself
+and allow continue to be used in code without much thought so that
+we check the next set of OPP definition pointers :)
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Cc: Steve Sakoman <steve@sakoman.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Kevin Hilman <khilman@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/locks.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/mach-omap2/opp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -315,7 +315,7 @@ static int flock_make_lock(struct file *
+--- a/arch/arm/mach-omap2/opp.c
++++ b/arch/arm/mach-omap2/opp.c
+@@ -53,7 +53,7 @@ int __init omap_init_opp_table(struct om
+ 	omap_table_init = 1;
+ 
+ 	/* Lets now register with OPP library */
+-	for (i = 0; i < opp_def_size; i++) {
++	for (i = 0; i < opp_def_size; i++, opp_def++) {
+ 		struct omap_hwmod *oh;
+ 		struct device *dev;
+ 
+@@ -86,7 +86,6 @@ int __init omap_init_opp_table(struct om
+ 					__func__, opp_def->freq,
+ 					opp_def->hwmod_name, i, r);
+ 		}
+-		opp_def++;
+ 	}
+ 
  	return 0;
- }
- 
--static int assign_type(struct file_lock *fl, int type)
-+static int assign_type(struct file_lock *fl, long type)
- {
- 	switch (type) {
- 	case F_RDLCK:
-@@ -452,7 +452,7 @@ static const struct lock_manager_operati
- /*
-  * Initialize a lease, use the default lock manager operations
-  */
--static int lease_init(struct file *filp, int type, struct file_lock *fl)
-+static int lease_init(struct file *filp, long type, struct file_lock *fl)
-  {
- 	if (assign_type(fl, type) != 0)
- 		return -EINVAL;
-@@ -470,7 +470,7 @@ static int lease_init(struct file *filp,
- }
- 
- /* Allocate a file_lock initialised to this type of lease */
--static struct file_lock *lease_alloc(struct file *filp, int type)
-+static struct file_lock *lease_alloc(struct file *filp, long type)
- {
- 	struct file_lock *fl = locks_alloc_lock();
- 	int error = -ENOMEM;
 
 
