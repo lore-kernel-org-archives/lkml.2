@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964801Ab2HGDiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Aug 2012 23:38:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59813 "EHLO
+	id S964874Ab2HGDjG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Aug 2012 23:39:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59830 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757341Ab2HGDir (ORCPT
+	by vger.kernel.org with ESMTP id S964804Ab2HGDix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Aug 2012 23:38:47 -0400
-Message-Id: <20120807032803.199659142@decadent.org.uk>
+	Mon, 6 Aug 2012 23:38:53 -0400
+Message-Id: <20120807032802.080640518@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Tue, 07 Aug 2012 04:28:44 +0100
+Date: Tue, 07 Aug 2012 04:28:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Colin Cross <ccross@android.com>,
-        Barry Song <bs14@csr.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Ido Yariv <ido@wizery.com>, Daniel Drake <dsd@laptop.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 49/70] ARM: 7477/1: vfp: Always save VFP state in vfp_pm_suspend on UP
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
+        Alexander Lyakas <alex.bolshoy@gmail.com>
+Subject: [ 41/70] md/raid1: dont abort a resync on the first badblock.
 In-Reply-To: <20120807032755.803571133@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,56 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 24b35521b8ddf088531258f06f681bb7b227bf47 upstream.
+commit b7219ccb33aa0df9949a60c68b5e9f712615e56f upstream.
 
-vfp_pm_suspend should save the VFP state in suspend after
-any lazy context switch.  If it only saves when the VFP is enabled,
-the state can get lost when, on a UP system:
-  Thread 1 uses the VFP
-  Context switch occurs to thread 2, VFP is disabled but the
-     VFP context is not saved
-  Thread 2 initiates suspend
-  vfp_pm_suspend is called with the VFP disabled, and the unsaved
-     VFP context of Thread 1 in the registers
+If a resync of a RAID1 array with 2 devices finds a known bad block
+one device it will neither read from, or write to, that device for
+this block offset.
+So there will be one read_target (The other device) and zero write
+targets.
+This condition causes md/raid1 to abort the resync assuming that it
+has finished - without known bad blocks this would be true.
 
-Modify vfp_pm_suspend to save the VFP context whenever
-vfp_current_hw_state is not NULL.
+When there are no write targets because of the presence of bad blocks
+we should only skip over the area covered by the bad block.
+RAID10 already gets this right, raid1 doesn't.  Or didn't.
 
-Includes a fix from Ido Yariv <ido@wizery.com>, who pointed out that on
-SMP systems, the state pointer can be pointing to a freed task struct if
-a task exited on another cpu, fixed by using #ifndef CONFIG_SMP in the
-new if clause.
+As this can cause a 'sync' to abort early and appear to have succeeded
+it could lead to some data corruption, so it suitable for -stable.
 
-Cc: Barry Song <bs14@csr.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ido Yariv <ido@wizery.com>
-Cc: Daniel Drake <dsd@laptop.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/vfp/vfpmodule.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/md/raid1.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
-index 9428006..fb849d0 100644
---- a/arch/arm/vfp/vfpmodule.c
-+++ b/arch/arm/vfp/vfpmodule.c
-@@ -457,6 +457,12 @@ static int vfp_pm_suspend(void)
- 
- 		/* disable, just in case */
- 		fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
-+	} else if (vfp_current_hw_state[ti->cpu]) {
-+#ifndef CONFIG_SMP
-+		fmxr(FPEXC, fpexc | FPEXC_EN);
-+		vfp_save_state(vfp_current_hw_state[ti->cpu], fpexc);
-+		fmxr(FPEXC, fpexc);
-+#endif
- 	}
- 
- 	/* clear any information we had about last context state */
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 7aa958e..d2361b1 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2502,7 +2502,10 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr, int *skipp
+ 		/* There is nowhere to write, so all non-sync
+ 		 * drives must be failed - so we are finished
+ 		 */
+-		sector_t rv = max_sector - sector_nr;
++		sector_t rv;
++		if (min_bad > 0)
++			max_sector = sector_nr + min_bad;
++		rv = max_sector - sector_nr;
+ 		*skipped = 1;
+ 		put_buf(r1_bio);
+ 		return rv;
 
 
