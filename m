@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030387Ab2HGWcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 18:32:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52951 "EHLO
+	id S1030400Ab2HGWco (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 18:32:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030290Ab2HGWcd (ORCPT
+	with ESMTP id S1030389Ab2HGWck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:32:33 -0400
+	Tue, 7 Aug 2012 18:32:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Max Matveev <makc@redhat.com>, Jiri Benc <jbenc@redhat.com>,
+        Jesper Juhl <jj@chaosbits.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 106/122] net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI handling
-Date: Tue,  7 Aug 2012 15:26:34 -0700
-Message-Id: <20120807221959.307047294@linuxfoundation.org>
+Subject: [ 100/122] net: Fix references to out-of-scope variables in put_cmsg_compat()
+Date: Tue,  7 Aug 2012 15:26:28 -0700
+Message-Id: <20120807221958.533537902@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
 References: <20120807221948.220495155@linuxfoundation.org>
@@ -31,56 +31,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Jiri Benc <jbenc@redhat.com>
+From: Jesper Juhl <jj@chaosbits.net>
 
-[ Upstream commit b1beb681cba5358f62e6187340660ade226a5fcc ]
+[ Upstream commit 818810472b129004c16fc51bf0a570b60776bfb7 ]
 
-When device flags are set using rtnetlink, IFF_PROMISC and IFF_ALLMULTI
-flags are handled specially. Function dev_change_flags sets IFF_PROMISC and
-IFF_ALLMULTI bits in dev->gflags according to the passed value but
-do_setlink passes a result of rtnl_dev_combine_flags which takes those bits
-from dev->flags.
+In net/compat.c::put_cmsg_compat() we may assign 'data' the address of
+either the 'ctv' or 'cts' local variables inside the 'if
+(!COMPAT_USE_64BIT_TIME)' branch.
 
-This can be easily trigerred by doing:
+Those variables go out of scope at the end of the 'if' statement, so
+when we use 'data' further down in 'copy_to_user(CMSG_COMPAT_DATA(cm),
+data, cmlen - sizeof(struct compat_cmsghdr))' there's no telling what
+it may be refering to - not good.
 
-tcpdump -i eth0 &
-ip l s up eth0
+Fix the problem by simply giving 'ctv' and 'cts' function scope.
 
-ip sets IFF_UP flag in ifi_flags and ifi_change, which is combined with
-IFF_PROMISC by rtnl_dev_combine_flags, causing __dev_change_flags to set
-IFF_PROMISC in gflags.
-
-Reported-by: Max Matveev <makc@redhat.com>
-Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ net/compat.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -674,6 +674,12 @@ static void set_operstate(struct net_dev
- 	}
- }
- 
-+static unsigned int rtnl_dev_get_flags(const struct net_device *dev)
-+{
-+	return (dev->flags & ~(IFF_PROMISC | IFF_ALLMULTI)) |
-+	       (dev->gflags & (IFF_PROMISC | IFF_ALLMULTI));
-+}
-+
- static unsigned int rtnl_dev_combine_flags(const struct net_device *dev,
- 					   const struct ifinfomsg *ifm)
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -221,6 +221,8 @@ int put_cmsg_compat(struct msghdr *kmsg,
  {
-@@ -682,7 +688,7 @@ static unsigned int rtnl_dev_combine_fla
- 	/* bugwards compatibility: ifi_change == 0 is treated as ~0 */
- 	if (ifm->ifi_change)
- 		flags = (flags & ifm->ifi_change) |
--			(dev->flags & ~ifm->ifi_change);
-+			(rtnl_dev_get_flags(dev) & ~ifm->ifi_change);
+ 	struct compat_cmsghdr __user *cm = (struct compat_cmsghdr __user *) kmsg->msg_control;
+ 	struct compat_cmsghdr cmhdr;
++	struct compat_timeval ctv;
++	struct compat_timespec cts[3];
+ 	int cmlen;
  
- 	return flags;
- }
+ 	if (cm == NULL || kmsg->msg_controllen < sizeof(*cm)) {
+@@ -229,8 +231,6 @@ int put_cmsg_compat(struct msghdr *kmsg,
+ 	}
+ 
+ 	if (!COMPAT_USE_64BIT_TIME) {
+-		struct compat_timeval ctv;
+-		struct compat_timespec cts[3];
+ 		if (level == SOL_SOCKET && type == SCM_TIMESTAMP) {
+ 			struct timeval *tv = (struct timeval *)data;
+ 			ctv.tv_sec = tv->tv_sec;
 
 
