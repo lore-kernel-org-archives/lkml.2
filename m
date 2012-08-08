@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758856Ab2HHQay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 12:30:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52426 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab2HHQaw (ORCPT
+	id S1758870Ab2HHQbC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 12:31:02 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:42989 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758808Ab2HHQa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 12:30:52 -0400
-Message-ID: <50229439.3090401@wwwdotorg.org>
-Date: Wed, 08 Aug 2012 10:30:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 8 Aug 2012 12:30:59 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: linux-fsdevel@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        kernel-team@lists.ubuntu.com
+Subject: Re: [overlayfs/bug] LXC ephemeral containers have "/rootfs" prefix in /proc/self/maps entries
+References: <CAK5ve-LaEXC56iYAc+hCFen2x9Lfscy6Q-z1cCE21UypqpaK3g@mail.gmail.com>
+Date: Wed, 08 Aug 2012 18:32:18 +0200
+In-Reply-To: <CAK5ve-LaEXC56iYAc+hCFen2x9Lfscy6Q-z1cCE21UypqpaK3g@mail.gmail.com>
+	(Bryan Wu's message of "Thu, 2 Aug 2012 21:14:46 +0800")
+Message-ID: <87vcgtibu5.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: olof@lixom.net, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: dt: tegra: cardhu: split dts file for support
- multiple board versions
-References: <1344408527-32051-1-git-send-email-ldewangan@nvidia.com> <1344408527-32051-3-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1344408527-32051-3-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 12:48 AM, Laxman Dewangan wrote:
-> There is multiple version of cardhu starting from A01 to A07.
-> Cardhu A01 and A03 are not supported. Cardhu A02 will have
-> different sets of GPIOs for fixed regulator compare to
-> cardhu A04. The Cardhu A05, A06, A07 are compatibe with A04.
-> Based on cardhu version, the related dts file need to be chosen
-> like for cardhu A02, use tegra30-cardhu-a02.dts, cardhu A04 and
-> more, use tegra30-cardhu-a04.dts.
-> This patch create the DTS file A02 and A04 and convert tegra30-cardhu.dts
-> as dts include file.
-> 
+Bryan Wu <bryan.wu@canonical.com> writes:
 
-> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dts b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+> Miklos,
+>
+> We met a LXC issue [1] with overlayfs in Ubuntu, but with aufs it is gone.
+>
+> I suspect it's related to the issue you mentioned in Documentation of overlayfs:
+> --
+> Symlinks in /proc/PID/ and /proc/PID/fd which point to a non-directory
+> object in overlayfs will not contain vaid absolute paths, only
+> relative paths leading up to the filesystem's root.  This will be
+> fixed in the future.
+> --
+>
+> Could you please help to take a look at this? or point me out some hints.
+>
+> [1], https://bugs.launchpad.net/ubuntu/+source/linux/+bug/959352
 
-> +/**
-> + * This file contains common DT entry for all fab version of Cardhu.
-> + * There is multiple fab version of Cardhu starting from A01 to A07.
-> + * Cardhu fab version A01 and A03 are not supported. Cardhu fab version
-> + * A02 will have different sets of GPIOs for fixed regulator compare to
-> + * Cardhu fab version A04. The Cardhu fab version A05, A06, A07 are
-> + * compatible with fab version A04. Based on Cardhu fab version, the
-> + * related dts file need to be chosen like for Cardhu fab version A02,
-> + * use tegra30-cardhu-a02.dts, Cardhu fab version A04 and later, use
-> + * tegra30-cardhu-a04.dts.
-> + * The identification of board is done in two ways, by looking the sticker
-> + * on PCB and by reading board id eeprom.
-> + * The stciker will have number like 600-81291-1000-002 C.3. In this 4th
-> + * number is the fab version like here it is 002 and hence fab version A02.
-> + * The The (downstream internal) U-Boot of Cardhu display the board-id as
+To explain this a little background is needed about how overlayfs works.
 
-"The The"
+Unlike a "true" union filesystem like AUFS, the overlayfs filesystem
+doesn't actually contain any non-directory files.  So when you open a
+regular file, for example, what you get is actually the real file on the
+upper or lower filesystems, not a file in the overlayfs.  This is the
+most important difference between overlayfs and aufs.
 
-> + * follows:
-> + * BoardID: 0C5B, SKU: 0A01, Fab: 02, Rev: 45.00
-> + * In this Fab version is 02 i.e. A02.
-> + * The BoardID eeprom is interfaced through i2c5 (pwr_i2c). The location 0x8
-> + * contains the Fab version. It is 1 byte wide.
+Currently overlayfs creates private clones of the lower and upper mounts
+and uses those internally when opening a file.  This results in
+/proc/PID/fd showing not the expected path.
 
-That should also mention the Board ID EEPROM's I2C address (0x56).
+Instead of using private mount clones, overlayfs could add these mounts
+to the same mountpoint as the overlayfs itself (under the overlayfs)
+which would result in the correct path being printed.  But to make this
+consistent new logic would need to be added to namespace.c so that these
+auxillary mounts are properly cleaned up on umount, and they are
+properly copied/moved during mount binding/moving or namespace cloning.
 
-I can fix up these two issues when I apply the patches.
+Thanks,
+Miklos
