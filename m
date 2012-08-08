@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758982Ab2HHRXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:23:52 -0400
-Received: from 209.248.170.90.nw.nuvox.net ([209.248.170.90]:57524 "EHLO
-	GVL-MAIL.koe-americas.local" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030440Ab2HHRXv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:23:51 -0400
-From: David Cullen <David.Cullen@koe-americas.com>
-To: Michal Marek <mmarek@suse.cz>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCHv2] QEMU Fix /usr/bin/xargs: etags: Argument list too long
-Thread-Topic: [RFC PATCHv2] QEMU Fix /usr/bin/xargs: etags: Argument list
- too long
-Thread-Index: AQHNdYqTlWZJi87DW0SCm1n02aLGOQ==
-Date: Wed, 8 Aug 2012 17:23:49 +0000
-Message-ID: <5022A0A5.6090809@koe-americas.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713
- Thunderbird/14.0
-x-originating-ip: [10.1.5.28]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <84DB408EA9C41A4BA6698EF01D232B22@koe-americas.com>
-Content-Transfer-Encoding: 7BIT
+	id S1030477Ab2HHR3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:29:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56046 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964822Ab2HHR3B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:29:01 -0400
+Message-ID: <5022A1DA.5000203@wwwdotorg.org>
+Date: Wed, 08 Aug 2012 11:28:58 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: olof@lixom.net, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 0/3] ARM: dt: tegra: cardhu: add entry for regulators
+References: <1344408527-32051-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1344408527-32051-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch applies to
+On 08/08/2012 12:48 AM, Laxman Dewangan wrote:
+> This patch series add the PMIC and fixed regulators for 
+> cardhu board. There is multiple versions of cardhu baord named
+> as A01, A02, A03..and so on. Cardhu A01 and A03 are not supported.
+> Cardhu A02 and A04 have different sets of GPIO for regualtors.
+> The cardhu A04 is compatible for A05, A06 and A07 in GPIOs.
+> This patch series split the cardhu dts file to cardhu-a02 and 
+> carchu-a04 and then add entry for different fixed regualtors.
 
-    commit 42a579a0f960081cd16fc945036e4780c3ad3202
+Two more comments on this patch, sorry for the noise...
 
-When running "make ARCH=arm TAGS" in a cross chroot using
-qemu-arm-static, the following message is emitted:
+1) With this patch, running "reboot" or "shutdown -r now" no longer
+works; the system hangs. Reboot works fine without this patch, in
+next-20120708.
 
-    [user@host:/home/work/linux]: make ARCH=arm TAGS
-      GEN     TAGS
-    /usr/bin/xargs: etags: Argument list too long
-
-This can be fixed by by passing "-s $((120 * 1024))" to xargs in
-scripts/tags.sh when QEMU matches .*qemu-.*-static$.
-
-This limits the xargs command line to 120KiB characters to provide
-headroom for people running inside a cross chroot using
-qemu-.*-static.
-
-Signed-off-by: David Cullen <david.cullen@koe-americas.com>
----
- scripts/tags.sh |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index cff8faa..02947c5 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -5,12 +5,19 @@
- # mode may be any of: tags, TAGS, cscope
- #
- # Uses the following environment variables:
--# ARCH, SUBARCH, SRCARCH, srctree, src, obj
-+# ARCH, SUBARCH, SRCARCH, srctree, src, obj, QEMU
-
- if [ "$KBUILD_VERBOSE" = "1" ]; then
-        set -x
- fi
-
-+# If the user is running in a cross chroot using qemu-.*-static,
-+# limit xargs to 120KiB of characters per command line.
-+XARGS_MAX_CHARS=
-+if [ -n "$QEMU" ] && [[ "$QEMU" =~ .*qemu-.*-static$ ]] ; then
-+       XARGS_MAX_CHARS="-s $(( 120 * 1024 ))"
-+fi
-+
- # This is a duplicate of RCS_FIND_IGNORE without escaped '()'
- ignore="( -name SCCS -o -name BitKeeper -o -name .svn -o \
-           -name CVS  -o -name .pc       -o -name .hg  -o \
-@@ -121,7 +128,7 @@ dogtags()
-
- exuberant()
- {
--       all_sources | xargs $1 -a                               \
-+       all_sources | xargs $XARGS_MAX_CHARS $1 -a              \
-        -I __initdata,__exitdata,__acquires,__releases          \
-        -I __read_mostly,____cacheline_aligned                  \
-        -I ____cacheline_aligned_in_smp                         \
---
-1.7.9.5
+2) U-Boot initializes the LCD, and prints to it. This is left running
+when the kernel is booted, and the kernel doesn't reprogram the HW, so
+the LCD continues to scan out some "random" area of memory. Typically,
+this then gets used and so the LCD shows random patterns. In today's
+linux-next it seems to be turned black though; not sure why that's
+happening. Either way, this patch turns the whole LCD completely white.
+Is that an expected change?
