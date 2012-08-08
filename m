@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759081Ab2HHRlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:41:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62247 "EHLO mx1.redhat.com"
+	id S1759129Ab2HHRlj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:41:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38414 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759051Ab2HHRlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:41:02 -0400
-Date: Wed, 8 Aug 2012 19:37:44 +0200
+	id S1759065Ab2HHRlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:41:06 -0400
+Date: Wed, 8 Aug 2012 19:37:47 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7] uprobes: do not use -EEXIST in install_breakpoint()
-	paths
-Message-ID: <20120808173744.GA13269@redhat.com>
+Subject: [PATCH 5/7] uprobes: introduce MMF_HAS_UPROBES
+Message-ID: <20120808173747.GA13272@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,58 +23,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--EEXIST from install_breakpoint() no longer makes sense, all
-callers should simply treat it as "success". Change the code
-to return zero and simplify register_for_each_vma().
+Add the new MMF_HAS_UPROBES flag. It is set by install_breakpoint()
+and it is copied by dup_mmap(), uprobe_pre_sstep_notifier() checks
+it to avoid the slow path if the task was never probed. Perhaps it
+makes sense to check it in valid_vma(is_register => false) as well.
+
+This needs the new dup_mmap()->uprobe_dup_mmap() hook. We can't use
+uprobe_reset_state() or put MMF_HAS_UPROBES into MMF_INIT_MASK, we
+need oldmm->mmap_sem to avoid the race with uprobe_register() or
+mmap() from another thread.
+
+Currently we never clear this bit, it can be false-positive after
+uprobe_unregister() or uprobe_munmap() or if dup_mmap() hits the
+probed VM_DONTCOPY vma. But this is fine correctness-wise and has
+no effect unless the task hits the non-uprobe breakpoint.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   16 +++++-----------
- 1 files changed, 5 insertions(+), 11 deletions(-)
+ include/linux/sched.h   |    2 ++
+ include/linux/uprobes.h |    5 +++++
+ kernel/events/uprobes.c |   22 +++++++++++++++++++++-
+ kernel/fork.c           |    1 +
+ 4 files changed, 29 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index cbf3a71..c0fcfb7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -441,6 +441,8 @@ extern int get_dumpable(struct mm_struct *mm);
+ #define MMF_VM_HUGEPAGE		17	/* set when VM_HUGEPAGE is set on vma */
+ #define MMF_EXE_FILE_CHANGED	18	/* see prctl_set_mm_exe_file() */
+ 
++#define MMF_HAS_UPROBES		19	/* might have uprobes */
++
+ #define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
+ 
+ struct sighand_struct {
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 03ae547..4a37ab1 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -108,6 +108,7 @@ extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_con
+ extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern int uprobe_mmap(struct vm_area_struct *vma);
+ extern void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end);
++extern void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm);
+ extern void uprobe_free_utask(struct task_struct *t);
+ extern void uprobe_copy_process(struct task_struct *t);
+ extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
+@@ -138,6 +139,10 @@ static inline void
+ uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+ {
+ }
++static inline void
++uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm)
++{
++}
+ static inline void uprobe_notify_resume(struct pt_regs *regs)
+ {
+ }
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 2e269d1..309309e 100644
+index 309309e..2a42319 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -334,7 +334,7 @@ int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned
- 	 */
- 	result = is_swbp_at_addr(mm, vaddr);
- 	if (result == 1)
--		return -EEXIST;
-+		return 0;
+@@ -649,6 +649,7 @@ static int
+ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 			struct vm_area_struct *vma, unsigned long vaddr)
+ {
++	bool first_uprobe;
+ 	int ret;
  
- 	if (result)
- 		return result;
-@@ -659,7 +659,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 	 * Hence behave as if probe already existed.
- 	 */
- 	if (!uprobe->consumers)
--		return -EEXIST;
-+		return 0;
+ 	/*
+@@ -680,7 +681,17 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 		uprobe->flags |= UPROBE_COPY_INSN;
+ 	}
  
- 	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
- 		ret = copy_insn(uprobe, vma->vm_file);
-@@ -819,17 +819,11 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 		    vaddr_to_offset(vma, info->vaddr) != uprobe->offset)
- 			goto unlock;
- 
--		if (is_register) {
-+		if (is_register)
- 			err = install_breakpoint(uprobe, mm, vma, info->vaddr);
--			/*
--			 * We can race against uprobe_mmap(), see the
--			 * comment near uprobe_hash().
--			 */
--			if (err == -EEXIST)
--				err = 0;
--		} else {
-+		else
- 			remove_breakpoint(uprobe, mm, info->vaddr);
--		}
++	/*
++	 * set MMF_HAS_UPROBES in advance for uprobe_pre_sstep_notifier(),
++	 * the task can hit this breakpoint right after __replace_page().
++	 */
++	first_uprobe = !test_bit(MMF_HAS_UPROBES, &mm->flags);
++	if (first_uprobe)
++		set_bit(MMF_HAS_UPROBES, &mm->flags);
 +
-  unlock:
- 		up_write(&mm->mmap_sem);
-  free:
+ 	ret = set_swbp(&uprobe->arch, mm, vaddr);
++	if (ret && first_uprobe)
++		clear_bit(MMF_HAS_UPROBES, &mm->flags);
+ 
+ 	return ret;
+ }
+@@ -1034,6 +1045,9 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+ 	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
+ 		return;
+ 
++	if (!test_bit(MMF_HAS_UPROBES, &vma->vm_mm->flags))
++		return;
++
+ 	/* TODO: unmapping uprobe(s) will need more work */
+ }
+ 
+@@ -1144,6 +1158,12 @@ void uprobe_reset_state(struct mm_struct *mm)
+ 	mm->uprobes_state.xol_area = NULL;
+ }
+ 
++void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm)
++{
++	if (test_bit(MMF_HAS_UPROBES, &oldmm->flags))
++		set_bit(MMF_HAS_UPROBES, &newmm->flags);
++}
++
+ /*
+  *  - search for a free slot.
+  */
+@@ -1511,7 +1531,7 @@ int uprobe_pre_sstep_notifier(struct pt_regs *regs)
+ {
+ 	struct uprobe_task *utask;
+ 
+-	if (!current->mm)
++	if (!current->mm || !test_bit(MMF_HAS_UPROBES, &current->mm->flags))
+ 		return 0;
+ 
+ 	utask = current->utask;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 0e419ab..ab970c3 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -350,6 +350,7 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ 
+ 	down_write(&oldmm->mmap_sem);
+ 	flush_cache_dup_mm(oldmm);
++	uprobe_dup_mmap(oldmm, mm);
+ 	/*
+ 	 * Not linked in yet - no deadlock potential:
+ 	 */
 -- 
 1.5.5.1
 
