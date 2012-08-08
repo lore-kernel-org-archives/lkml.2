@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab2HHGiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:38:18 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15568 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab2HHGiQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:38:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 07 Aug 2012 23:33:07 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 8 Aug 2012 12:08:10 +0530
-Subject: RE: question on devm_kfree
-Thread-Topic: question on devm_kfree
-Thread-Index: Ac11Lvlx79APrLJiSYWzVCoSaQUXTgAAMvOw
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDD254A76@BGMAIL02.nvidia.com>
-References: <5021FF92.8030904@nvidia.com> <50220779.9000206@metafoo.de>
-In-Reply-To: <50220779.9000206@metafoo.de>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756372Ab2HHGi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:38:26 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:41562 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755748Ab2HHGiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 02:38:24 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Peter Meerwald <pmeerw@pmeerw.net>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] iio/adjd_s311: Fix potential memory leak in adjd_s311_update_scan_mode()
+Date: Wed,  8 Aug 2012 10:36:56 +0400
+Message-Id: <1344407816-13480-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
-> Sent: Wednesday, August 08, 2012 12:00 PM
-> To: Venu Byravarasu
-> Cc: linux-kernel@vger.kernel.org
-> Subject: Re: question on devm_kfree
-> 
-> On 08/08/2012 07:56 AM, Venu Byravarasu wrote:
-> > As per comments related to devm_kzalloc, memory allocated using it is
-> > freed automatically.
-> > However there is a function called devm_kfree, comment section of which
-> > says that it is used to free memory allocated using devm_kzalloc().
-> > If memory allocated by devm_kzalloc is freed automatically, what's the
-> > need & significance of devm_kfree?
-> >
-> > Thanks,
-> > Venu
-> >
-> 
-> Hi,
-> 
-> Memory allocated with devm_kzalloc is freed at the end of the lifetime of the
-> device it is attached to. If you for some reason want to free allocated with
-> memory devm_kzalloc before that of the lifetime of the device can use
-> devm_kfree.
-> 
-> 
-> - Lars
+Do not leak memory by updating pointer with potentially
+NULL realloc return value.
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/iio/light/adjd_s311.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/iio/light/adjd_s311.c b/drivers/iio/light/adjd_s311.c
+index 1cbb449..0adda5b 100644
+--- a/drivers/iio/light/adjd_s311.c
++++ b/drivers/iio/light/adjd_s311.c
+@@ -271,12 +271,18 @@ static int adjd_s311_update_scan_mode(struct iio_dev *indio_dev,
+ 	const unsigned long *scan_mask)
+ {
+ 	struct adjd_s311_data *data = iio_priv(indio_dev);
+-	data->buffer = krealloc(data->buffer, indio_dev->scan_bytes,
++	u16 *new_buffer;
++	int ret = 0;
++
++	new_buffer = krealloc(data->buffer, indio_dev->scan_bytes,
+ 				GFP_KERNEL);
+-	if (!data->buffer)
+-		return -ENOMEM;
++	if (new_buffer == NULL) {
++		kfree(data->buffer);
++		ret = -ENOMEM;
++	}
++	data->buffer = new_buffer;
  
-Thanks Lars.
+-	return 0;
++	return ret;
+ }
+ 
+ static const struct iio_info adjd_s311_info = {
+-- 
+1.7.9.5
+
