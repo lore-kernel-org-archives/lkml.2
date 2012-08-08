@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab2HHV2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:28:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58710 "EHLO
+	id S932979Ab2HHV20 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:28:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59167 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932213Ab2HHV2R (ORCPT
+	with ESMTP id S932580Ab2HHV2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:28:17 -0400
+	Wed, 8 Aug 2012 17:28:20 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>, Andrey Porodko <panda@chelcom.ru>
-Subject: [PATCH 06/10] ARM: davinci: don't use broken ntosd2_init_i2c
-Date: Wed,  8 Aug 2012 23:27:54 +0200
-Message-Id: <1344461278-28245-7-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 07/10] ARM: rpc: check device_register return code in ecard_probe
+Date: Wed,  8 Aug 2012 23:27:55 +0200
+Message-Id: <1344461278-28245-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344461278-28245-1-git-send-email-arnd@arndb.de>
 References: <1344461278-28245-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:DHPFueg9/b7qP9mdSCUBD6q5epGLauS8DIZySwx+Dqs
- pUgFVHv9W14euzKZhHCF7M+bNpKnrrgWPODEjJVgDu4vmS7zH5
- wH+r1AKWDF8ad2kMb+2s8G4/b7wjQ4ANr7zlYIIbRqwn5yybLS
- u9hlHLmVvqy1LYdkBO4sGSxdDsQyhPtFDoTdd/LBk4Fkecvv+P
- ji8DU7wL06IE3zk9xb7cifpV7/8MYjLn1i4glFnNhJgtZI17ww
- nTY73BgEJzKTP/CiZs8TAWInKFTJvj8eWxN5MBYJkft5IPasDG
- +KsLY9U69rq3ReUllWSjAyl1eu4lpTOjFklLbAp4Mota9O7fnz
- lVMikcJujuaNAhYoED6JfQ56p2xSHOZQb5GRlzbsAjs20YICdV
- AOtLwhyVs4cYA==
+X-Provags-ID: V02:K0:E9fjT7aUzpuo9qEZjxj6x6irjR8/HAzod7dp9OIVp4H
+ llmGJxbTQaXjRrBiwU8Y+nH6QAroUGOiRYhgETi6zGifW/M7WE
+ 8JKWYJ3iqsuTxHBbe2YIj40k6m5/MIIkWLjrcz6qeaFnbOR9Ft
+ cwCQ2sVvBIXnSHJmZqD3bkNruRtaktH0Bq5EVwl4N45HPfu64H
+ okfz+1pEcybHDvhK/72yQGZgApRUdgxvtIm9+Uuv91zogwU8p7
+ clQo4HU6Um5wDP4EjdgJMsYpaiwTQ4fAnHAfCcLIqGwcbzOBN8
+ A93+mfArEO4sOv9v4/sgCKrXe6g/+Ym1YBQwteZksBN3gv0xL6
+ 5jvpjNJUxZHq+gwcGuSNMrNW2CCXoceAj2oQPjtA5gf2JPOl6P
+ 0VjTUPHcBI10A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ntosd2_init_i2c walks the ntosd2_i2c_info array, which it expects to
-be populated with at least one member. gcc correctly warns about
-the out-of-bounds access here.
+device_register is marked __must_check, so we better propagate the error
+value by returning it from ecard_probe.
 
-Without this patch, building davinci_all_defconfig results in:
+Without this patch, building rpc_defconfig results in:
 
-arch/arm/mach-davinci/board-neuros-osd2.c: In function 'davinci_ntosd2_init':
-arch/arm/mach-davinci/board-neuros-osd2.c:187:20: warning: array subscript is above array bounds [-Warray-bounds]
+arch/arm/mach-rpc/ecard.c: In function 'ecard_probe':
+arch/arm/mach-rpc/ecard.c:963:17: warning: ignoring return value of 'device_register', declared with attribute warn_unused_result [-Wunused-result]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Andrey Porodko <panda@chelcom.ru>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- arch/arm/mach-davinci/board-neuros-osd2.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm/mach-rpc/ecard.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
-index 5de69f2..9d40df9 100644
---- a/arch/arm/mach-davinci/board-neuros-osd2.c
-+++ b/arch/arm/mach-davinci/board-neuros-osd2.c
-@@ -162,6 +162,7 @@ static void __init davinci_ntosd2_map_io(void)
- 	dm644x_init();
- }
+diff --git a/arch/arm/mach-rpc/ecard.c b/arch/arm/mach-rpc/ecard.c
+index b91bc87..fcb1d59 100644
+--- a/arch/arm/mach-rpc/ecard.c
++++ b/arch/arm/mach-rpc/ecard.c
+@@ -960,7 +960,9 @@ static int __init ecard_probe(int slot, unsigned irq, card_type_t type)
+ 	*ecp = ec;
+ 	slot_to_expcard[slot] = ec;
  
-+#if 0
- /*
-  I2C initialization
- */
-@@ -193,6 +194,12 @@ static	int ntosd2_init_i2c(void)
- 	}
- 	return status;
- }
-+#else
-+static  int ntosd2_init_i2c(void)
-+{
-+	return 0;
-+}
-+#endif
+-	device_register(&ec->dev);
++	rc = device_register(&ec->dev);
++	if (rc)
++		goto nodev;
  
- static struct davinci_mmc_config davinci_ntosd2_mmc_config = {
- 	.wires		= 4,
+ 	return 0;
+ 
 -- 
 1.7.10
 
