@@ -1,79 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab2HHKSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 06:18:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52560 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964910Ab2HHKS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 06:18:28 -0400
-Date: Wed, 8 Aug 2012 11:18:22 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] mm: have order > 0 compaction start near a pageblock
- with free pages
-Message-ID: <20120808101822.GM29814@suse.de>
-References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
- <1344342677-5845-7-git-send-email-mgorman@suse.de>
- <20120808043600.GD4247@bbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120808043600.GD4247@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964875Ab2HHKRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 06:17:49 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:26875 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab2HHKRq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 06:17:46 -0400
+Message-id: <50223CC5.9060007@samsung.com>
+Date: Wed, 08 Aug 2012 12:17:41 +0200
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
+ Thunderbird/14.0
+MIME-version: 1.0
+To: linaro-mm-sig@lists.linaro.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: Sumit Semwal <sumit.semwal@linaro.org>, Pawel Osciak <pawel@osciak.com>,
+        Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>, Rob Clark <rob@ti.com>,
+        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH] dma-buf: add reference counting for exporter module
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 01:36:00PM +0900, Minchan Kim wrote:
-> > 
-> > Second, it updates compact_cached_free_pfn in a more limited set of
-> > circumstances.
-> > 
-> > If a scanner has wrapped, it updates compact_cached_free_pfn to the end
-> > 	of the zone. Each time a wrapped scanner isoaltes a page, it
-> > 	updates compact_cached_free_pfn. The intention is that after
-> > 	wrapping, the compact_cached_free_pfn will be at the highest
-> > 	pageblock with free pages when compaction completes.
-> 
-> Okay.
-> 
-> > 
-> > If a scanner has not wrapped when compaction completes and
-> 
-> Compaction complete?
-> Your code seem to do it in isolate_freepages.
-> Isn't it compaction complete?
-> 
+This patch adds reference counting on a module that exports dma-buf and
+implements its operations. This prevents the module from being unloaded while
+DMABUF file is in use.
 
-s/compaction/free page isolation/
+Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+---
+ Documentation/dma-buf-sharing.txt          |    3 ++-
+ drivers/base/dma-buf.c                     |   10 +++++++++-
+ drivers/gpu/drm/exynos/exynos_drm_dmabuf.c |    1 +
+ drivers/gpu/drm/i915/i915_gem_dmabuf.c     |    1 +
+ drivers/gpu/drm/nouveau/nouveau_prime.c    |    1 +
+ drivers/gpu/drm/radeon/radeon_prime.c      |    1 +
+ drivers/staging/omapdrm/omap_gem_dmabuf.c  |    1 +
+ include/linux/dma-buf.h                    |    2 ++
+ 8 files changed, 18 insertions(+), 2 deletions(-)
 
-> > 	compact_cached_free_pfn is set the end of the the zone, initialise
-> > 	it once.
-> 
+diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
+index ad86fb8..2613057 100644
+--- a/Documentation/dma-buf-sharing.txt
++++ b/Documentation/dma-buf-sharing.txt
+@@ -49,7 +49,8 @@ The dma_buf buffer sharing API usage contains the following steps:
+    The buffer exporter announces its wish to export a buffer. In this, it
+    connects its own private buffer data, provides implementation for operations
+    that can be performed on the exported dma_buf, and flags for the file
+-   associated with this buffer.
++   associated with this buffer. The operations structure has owner field.
++   You should initialize this to THIS_MODULE in most cases.
 
-> I can't understad this part.
-> Could you elaborate a bit more?
-> 
+    Interface:
+       struct dma_buf *dma_buf_export(void *priv, struct dma_buf_ops *ops,
+diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+index c30f3e1..d14b2f5 100644
+--- a/drivers/base/dma-buf.c
++++ b/drivers/base/dma-buf.c
+@@ -27,6 +27,7 @@
+ #include <linux/dma-buf.h>
+ #include <linux/anon_inodes.h>
+ #include <linux/export.h>
++#include <linux/module.h>
 
-Is this better?
+ static inline int is_dma_buf_file(struct file *);
 
-If a scanner has wrapped, it updates compact_cached_free_pfn to the end
-        of the zone. When a wrapped scanner isolates a page, it updates
-        compact_cached_free_pfn to point to the highest pageblock it
-        can isolate pages from. 
+@@ -40,6 +41,7 @@ static int dma_buf_release(struct inode *inode, struct file *file)
+ 	dmabuf = file->private_data;
 
-If a scanner has not wrapped when it has finished isolated pages it 
-        checks if compact_cached_free_pfn is pointing to the end of the
-        zone. If so, the value is updated to point to the highest 
-        pageblock that pages were isolated from. This value will not
-        be updated again until a free page scanner wraps and resets
-        compact_cached_free_pfn.
+ 	dmabuf->ops->release(dmabuf);
++	module_put(dmabuf->ops->owner);
+ 	kfree(dmabuf);
+ 	return 0;
+ }
+@@ -96,6 +98,7 @@ struct dma_buf *dma_buf_export(void *priv, const struct dma_buf_ops *ops,
+ 	struct file *file;
 
-This is not optimal and it can still race but the compact_cached_free_pfn
-will be pointing to or very near a pageblock with free pages.
+ 	if (WARN_ON(!priv || !ops
++			  || !ops->owner
+ 			  || !ops->map_dma_buf
+ 			  || !ops->unmap_dma_buf
+ 			  || !ops->release
+@@ -105,9 +108,14 @@ struct dma_buf *dma_buf_export(void *priv, const struct dma_buf_ops *ops,
+ 		return ERR_PTR(-EINVAL);
+ 	}
+
++	if (!try_module_get(ops->owner))
++		return ERR_PTR(-ENOENT);
++
+ 	dmabuf = kzalloc(sizeof(struct dma_buf), GFP_KERNEL);
+-	if (dmabuf == NULL)
++	if (dmabuf == NULL) {
++		module_put(ops->owner);
+ 		return ERR_PTR(-ENOMEM);
++	}
+
+ 	dmabuf->priv = priv;
+ 	dmabuf->ops = ops;
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
+index 613bf8a..cf3bc6d 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
+@@ -164,6 +164,7 @@ static void exynos_gem_dmabuf_kunmap(struct dma_buf *dma_buf,
+ }
+
+ static struct dma_buf_ops exynos_dmabuf_ops = {
++	.owner			= THIS_MODULE,
+ 	.map_dma_buf		= exynos_gem_map_dma_buf,
+ 	.unmap_dma_buf		= exynos_gem_unmap_dma_buf,
+ 	.kmap			= exynos_gem_dmabuf_kmap,
+diff --git a/drivers/gpu/drm/i915/i915_gem_dmabuf.c b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
+index aa308e1..07ff03b 100644
+--- a/drivers/gpu/drm/i915/i915_gem_dmabuf.c
++++ b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
+@@ -152,6 +152,7 @@ static int i915_gem_dmabuf_mmap(struct dma_buf *dma_buf, struct vm_area_struct *
+ }
+
+ static const struct dma_buf_ops i915_dmabuf_ops =  {
++	.owner = THIS_MODULE,
+ 	.map_dma_buf = i915_gem_map_dma_buf,
+ 	.unmap_dma_buf = i915_gem_unmap_dma_buf,
+ 	.release = i915_gem_dmabuf_release,
+diff --git a/drivers/gpu/drm/nouveau/nouveau_prime.c b/drivers/gpu/drm/nouveau/nouveau_prime.c
+index a25cf2c..8605033 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_prime.c
++++ b/drivers/gpu/drm/nouveau/nouveau_prime.c
+@@ -127,6 +127,7 @@ static void nouveau_gem_prime_vunmap(struct dma_buf *dma_buf, void *vaddr)
+ }
+
+ static const struct dma_buf_ops nouveau_dmabuf_ops =  {
++	.owner = THIS_MODULE,
+ 	.map_dma_buf = nouveau_gem_map_dma_buf,
+ 	.unmap_dma_buf = nouveau_gem_unmap_dma_buf,
+ 	.release = nouveau_gem_dmabuf_release,
+diff --git a/drivers/gpu/drm/radeon/radeon_prime.c b/drivers/gpu/drm/radeon/radeon_prime.c
+index 6bef46a..4061fd3 100644
+--- a/drivers/gpu/drm/radeon/radeon_prime.c
++++ b/drivers/gpu/drm/radeon/radeon_prime.c
+@@ -127,6 +127,7 @@ static void radeon_gem_prime_vunmap(struct dma_buf *dma_buf, void *vaddr)
+ 	mutex_unlock(&dev->struct_mutex);
+ }
+ const static struct dma_buf_ops radeon_dmabuf_ops =  {
++	.owner = THIS_MODULE,
+ 	.map_dma_buf = radeon_gem_map_dma_buf,
+ 	.unmap_dma_buf = radeon_gem_unmap_dma_buf,
+ 	.release = radeon_gem_dmabuf_release,
+diff --git a/drivers/staging/omapdrm/omap_gem_dmabuf.c b/drivers/staging/omapdrm/omap_gem_dmabuf.c
+index 42728e0..6a4dd67 100644
+--- a/drivers/staging/omapdrm/omap_gem_dmabuf.c
++++ b/drivers/staging/omapdrm/omap_gem_dmabuf.c
+@@ -179,6 +179,7 @@ out_unlock:
+ }
+
+ struct dma_buf_ops omap_dmabuf_ops = {
++		.owner = THIS_MODULE,
+ 		.map_dma_buf = omap_gem_map_dma_buf,
+ 		.unmap_dma_buf = omap_gem_unmap_dma_buf,
+ 		.release = omap_gem_dmabuf_release,
+diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+index eb48f38..22953de 100644
+--- a/include/linux/dma-buf.h
++++ b/include/linux/dma-buf.h
+@@ -37,6 +37,7 @@ struct dma_buf_attachment;
+
+ /**
+  * struct dma_buf_ops - operations possible on struct dma_buf
++ * @owner: the module that implements dma_buf operations
+  * @attach: [optional] allows different devices to 'attach' themselves to the
+  *	    given buffer. It might return -EBUSY to signal that backing storage
+  *	    is already allocated and incompatible with the requirements
+@@ -70,6 +71,7 @@ struct dma_buf_attachment;
+  * @vunmap: [optional] unmaps a vmap from the buffer
+  */
+ struct dma_buf_ops {
++	struct module *owner;
+ 	int (*attach)(struct dma_buf *, struct device *,
+ 			struct dma_buf_attachment *);
 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
