@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab2HHCXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 22:23:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58007 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab2HHCX3 (ORCPT
+	id S1756062Ab2HHCXg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 22:23:36 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:30162 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587Ab2HHCXc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 22:23:29 -0400
-Message-ID: <5021CD9E.7060903@gmail.com>
-Date: Tue, 07 Aug 2012 20:23:26 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf tools: Initial bash completion support
-References: <1344358801-16383-1-git-send-email-fweisbec@gmail.com> <1344358801-16383-2-git-send-email-fweisbec@gmail.com> <5021926E.2070202@gmail.com> <87ipcuyys5.fsf@sejong.aot.lge.com>
-In-Reply-To: <87ipcuyys5.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Aug 2012 22:23:32 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-14-5021cda25191
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Dongjin Kim'" <tobetter@gmail.com>
+Cc: "'Dongjin Kim'" <dongjin.kim@agreeyamobility.net>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Tony Lindgren'" <tony@atomide.com>,
+        "'Jon Medhurst'" <tixy@yxit.co.uk>,
+        "'Shawn Guo'" <shawn.guo@linaro.org>,
+        "=?UTF-8?Q?'Uwe_Kleine-K=C3=B6nig'?=" 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
+ <1344365401-18591-1-git-send-email-dongjin.kim@agreeyamobility.net>
+In-reply-to: <1344365401-18591-1-git-send-email-dongjin.kim@agreeyamobility.net>
+Subject: RE: [PATCH v2] ODROID-X: hkdk4412: Add new hardware based on Exynos4412
+Date: Wed, 08 Aug 2012 11:23:30 +0900
+Message-id: <0a4301cd750c$cd29d2e0$677d78a0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac10zb9JqQEhWSiIQ42y7kDR89yfggAPSF8g
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAd1FZxUDDL6817W4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mo4Mq2bpWArd8W1Y1tZGhjbOLsYOTkkBEwkHn+aygJh
+	i0lcuLeerYuRi0NIYBGjxK9JD6Ccv4wSuzZdZgWpYhPQkDj8/hk7iC0ioCbR+LeTFaSIWeAv
+	k8SR/4uhOqYySmx6OJ2xi5GDg1MgQOLCXw4QUxjIvLFcFaSXRUBV4uyjSWwgNq+ArcS8o+uZ
+	IGxBiR+T74FdxCygLjFp3iJmCFtb4sm7C6wgYySA4o/+6kKcYCRx7XIzVImIxL4X7xgnMArN
+	QjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4JB+JrWDcWWDxSFG
+	AQ5GJR7eqGTFACHWxLLiytxDjBIczEoivHsOAoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzGnt/
+	9RcSSE8sSc1OTS1ILYLJMnFwSjUwCvBveG94bNLJk3ZTVk9nZglJjXx/y6fyuJPhXzvnykD7
+	sCsfe68Xdk5Mm3I0/OYvhQ8r5gufWPs6vG9LxKfcONmV/9Ytm711+Yk/4n0B+twHVyrxL9hc
+	lh0wZ1/H8VObec85nUsJ0d21bKZR96rvp3X5/RewH4tj0pxxoqpaUFn6rGpy0OUiLSWW4oxE
+	Qy3mouJEAOKTV7RlAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/7/12 7:10 PM, Namhyung Kim wrote:
-> On Tue, 07 Aug 2012 16:10:54 -0600, David Ahern wrote:
->> On 8/7/12 11:00 AM, Frederic Weisbecker wrote:
->>> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
->>> index 35655c3..ddfb7e5 100644
->>> --- a/tools/perf/Makefile
->>> +++ b/tools/perf/Makefile
->>> @@ -951,6 +951,7 @@ install: all
->>>    	$(INSTALL) scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
->>>    	$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'
->>>    	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
->>> +	$(INSTALL) -m 755 bash_completion $(DESTDIR_SQ)/etc/bash_completion.d/perf
->>
->> still getting an error here:
->>
->> $ make DESTDIR=/tmp/junk-perf O=/tmp/pbuild -C tools/perf/ install
->> ...
->> install -m 755 bash_completion /tmp/junk-perf/etc/bash_completion.d/perf
->> install: cannot create regular file
->> /tmp/junk-perf/etc/bash_completion.d/perf': No such file or directory
->> make: *** [install] Error 1
->> make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
->
-> Does patch below fix it?
+Dongjin Kim wrote:
+> 
+Hi,
 
-Of course. I was too lazy to do that; one liner for Frederic to add - 
-though the sysconfdir integration is nice.
+Basically, we don't add more board file for non-DT for EXYNOS SoCs...
 
-David
+> The HKDK4412 is the CPU module developed by Hardkernel which is based on
+> Exynos 4412.  mach_hkdk4412.c is to run on ODROID-X hardware and Machine
+> ID
+> (4289) is registered.
+> 
+This should be done at the link: http://www.arm.linux.org.uk/developer/machines/ by Russell King.
+
+But I'm not sure whether it is worth to you without this patch for board file in mainline.
+
+> Changes in v2:
+>   -. Change regulator's display names
+> 
+> Change-Id: Iea6825a17b2e13f96bc6d892dd5135cad899b5df
+
+No need gerrit Change-Id here.
+
+> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
+
+If there is no reason, please use same e-mail address in the field of author and sign-off.
+
+Note, if you want to use e-mail 'agreeyamobility.net', just add 'From: Dongjin Kim <dongjin.kim@agreeyamobility.net>', it's ok.
+
+> ---
+>  arch/arm/mach-exynos/Kconfig         |   23 +
+>  arch/arm/mach-exynos/Makefile        |    1 +
+>  arch/arm/mach-exynos/mach-hkdk4412.c |  964
+> ++++++++++++++++++++++++++++++++++
+>  arch/arm/tools/mach-types            |    1 +
+>  4 files changed, 989 insertions(+)
+>  create mode 100644 arch/arm/mach-exynos/mach-hkdk4412.c
+> 
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
