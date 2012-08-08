@@ -1,204 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964910Ab2HHNK0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:10:26 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:11038 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758065Ab2HHNKW (ORCPT
+	id S1758263Ab2HHNMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:12:07 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46584 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758212Ab2HHNME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:10:22 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-ef-5022653c9689
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org
-References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
- <1344430493-5304-5-git-send-email-arnd@arndb.de>
-In-reply-to: <1344430493-5304-5-git-send-email-arnd@arndb.de>
-Subject: RE: [PATCH 4/6] ARM: s3c24xx: use new PWM driver
-Date: Wed, 08 Aug 2012 22:10:20 +0900
-Message-id: <0b6801cd7567$29be48b0$7d3ada10$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac11ZTCIFuro9VLBT+C+N6NNY1PMMAAARB5Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jAV2bVKUAg5WvdCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGmt+9rAUNWhXru76yNTA2KncxcnJICJhItHfuZ4WwxSQu3FvP
-	1sXIxSEksIhR4uOn1cwgCSGBeUwSa5dzgNhsAhoSh98/YwexRQQ8Jc6cXMACYjMLGEi8nDyD
-	HaI+X+LJ8yNsIDangK3E5P1XGbsYOTiEBSwl7jQIgYRZBFQlDsy5DLaXF6ikq3sJI4QtKPFj
-	8j2okVoS63ceZ4Kw5SU2r3nLDDJGQkBd4tFfXYgLjCQ2rv3BDFEiIrHvxTvGCYxCs5BMmoVk
-	0iwkk2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIziIn0nvYFzVYHGIUYCDUYmH
-	d1OqYoAQa2JZcWXuIUYJDmYlEd63wUoBQrwpiZVVqUX58UWlOanFhxilOViUxHlNvL/6Cwmk
-	J5akZqemFqQWwWSZODilGhilHbY6q3684G/TMvlbv+Sq6TGv3fj+v3j53Mj/gPCjlsROybsm
-	M3z+bjc+rHqPUVNud8ceZa8mCZO8JV/WHI754jl99WuJrk7TZwdia823MHDMOfcw4jrHvu5a
-	qbzDjjPDag9tFStPn/nAuDmNKz3zJutS9VwfBuYUsU2Kcp7/zy7aIlWj/lKJpTgj0VCLuag4
-	EQCncYh9XgIAAA==
-X-TM-AS-MML: No
+	Wed, 8 Aug 2012 09:12:04 -0400
+Date: Wed, 8 Aug 2012 14:11:59 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, w.sang@pengutronix.de, linux-i2c@vger.kernel.org
+Subject: [PATCH 1/1 v4] i2c: Add default configuration into the Nomadik I2C
+ driver.
+Message-ID: <20120808131158.GD8227@gmail.com>
+References: <1344266253-14050-1-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344266253-14050-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> 
-> The samsung PWM driver has moved to the new PWM subsystem, which
-> changed the Kconfig symbol for that driver, but the rx1950 and
-> gta02 boards still uses the old one.
-> 
-> Without this patch, building s3c2410_defconfig results in:
-> 
-> arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_lcd_power':
-> arch/arm/mach-s3c24xx/mach-rx1950.c:430: undefined reference to
-> `pwm_config'
-> arch/arm/mach-s3c24xx/mach-rx1950.c:431: undefined reference to
-> `pwm_disable'
-> arch/arm/mach-s3c24xx/mach-rx1950.c:437: undefined reference to
-> `pwm_config'
-> arch/arm/mach-s3c24xx/mach-rx1950.c:438: undefined reference to
-> `pwm_enable'
-> arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_exit':
-> arch/arm/mach-s3c24xx/mach-rx1950.c:504: undefined reference to `pwm_free'
-> arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_init':
-> arch/arm/mach-s3c24xx/mach-rx1950.c:487: undefined reference to
-> `pwm_request'
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/mach-s3c24xx/Kconfig |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-> index e249611..422133a 100644
-> --- a/arch/arm/mach-s3c24xx/Kconfig
-> +++ b/arch/arm/mach-s3c24xx/Kconfig
-> @@ -483,7 +483,8 @@ config MACH_NEO1973_GTA02
->  	select I2C
->  	select POWER_SUPPLY
->  	select MACH_NEO1973
-> -	select S3C2410_PWM
-> +	select PWM
-> +	select PWM_SAMSUNG
->  	select S3C_DEV_USB_HOST
->  	help
->  	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM
-> Phone
-> @@ -493,7 +494,8 @@ config MACH_RX1950
->  	select S3C24XX_DCLK
->  	select PM_H1940 if PM
->  	select I2C
-> -	select S3C2410_PWM
-> +	select PWM
-> +	select PWM_SAMSUNG
->  	select S3C_DEV_NAND
->  	select S3C2410_IOTIMING if S3C2440_CPUFREQ
->  	select S3C2440_XTAL_16934400
-> --
-> 1.7.10
-> 
-Hi Arnd,
+From: Lee Jones <lee.jones@linaro.org>
+Date: Tue, 7 Aug 2012 12:27:24 +0100
+Subject: [PATCH 1/1 v4] i2c/nomadik: Add default configuration into the Nomadik I2C driver
 
-There is following patch for fixing it in my tree now, its reference:
+At this moment in time there is only one known configuration for the
+Nomadik I2C driver. By not holding that configuration in the driver
+adds some unnecessary overhead in platform code. The configuration
+as already been removed from platform code, this patch checks for any
+over-riding configurations. If there aren't any, the default is used.
 
-https://lkml.org/lkml/2012/8/8/185
-
-So...?
-
-From: Tushar Behera <tushar.behera@linaro.org>
-Subject: [PATCH] ARM: SAMSUNG: Fix compilation error with s3c2410_defconfig
-
-Commit 215c29d3d0e9 ("ARM Samsung: Move s3c pwm driver to pwm framework")
-moved Samsung PWM driver to drivers/pwm and the config option to select
-this driver has changed.
-
-This patch fixes following build-error with s3c2410_defconfig.
-
-arch/arm/mach-s3c24xx/built-in.o: In function 'rx1950_lcd_power':
-arch/arm/mach-s3c24xx/mach-rx1950.c:430: undefined reference to 'pwm_config'
-arch/arm/mach-s3c24xx/mach-rx1950.c:431: undefined reference to
-'pwm_disable'
-arch/arm/mach-s3c24xx/mach-rx1950.c:437: undefined reference to 'pwm_config'
-arch/arm/mach-s3c24xx/mach-rx1950.c:438: undefined reference to 'pwm_enable'
-arch/arm/mach-s3c24xx/built-in.o: In function 'rx1950_backlight_exit':
-arch/arm/mach-s3c24xx/mach-rx1950.c:504: undefined reference to 'pwm_free'
-arch/arm/mach-s3c24xx/built-in.o: In function 'rx1950_backlight_init':
-arch/arm/mach-s3c24xx/mach-rx1950.c:487: undefined reference to
-'pwm_request'
-
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-[kgene.kim@samsung.com: re-worked as per review comments]
-Acked-by: Thierry Reding <thierry.reding@avionic-design.de>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-i2c@vger.kernel.org
+Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-s3c24xx/Kconfig |    4 ++--
- arch/arm/plat-samsung/Kconfig |    2 +-
- drivers/pwm/Kconfig           |    6 ++----
- 3 files changed, 5 insertions(+), 7 deletions(-)
+ drivers/i2c/busses/i2c-nomadik.c |   28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-index e249611..d56b0f7 100644
---- a/arch/arm/mach-s3c24xx/Kconfig
-+++ b/arch/arm/mach-s3c24xx/Kconfig
-@@ -483,7 +483,7 @@ config MACH_NEO1973_GTA02
- 	select I2C
- 	select POWER_SUPPLY
- 	select MACH_NEO1973
--	select S3C2410_PWM
-+	select S3C24XX_PWM
- 	select S3C_DEV_USB_HOST
- 	help
- 	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM
-Phone
-@@ -493,7 +493,7 @@ config MACH_RX1950
- 	select S3C24XX_DCLK
- 	select PM_H1940 if PM
- 	select I2C
--	select S3C2410_PWM
-+	select S3C24XX_PWM
- 	select S3C_DEV_NAND
- 	select S3C2410_IOTIMING if S3C2440_CPUFREQ
- 	select S3C2440_XTAL_16934400
-diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
-index 7aca31c..dcdfb77 100644
---- a/arch/arm/plat-samsung/Kconfig
-+++ b/arch/arm/plat-samsung/Kconfig
-@@ -403,7 +403,7 @@ config S5P_DEV_USB_EHCI
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index 5e6f1ee..61b00ed 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -350,10 +350,6 @@ static void setup_i2c_controller(struct nmk_i2c_dev *dev)
  
- config S3C24XX_PWM
- 	bool "PWM device support"
--	select HAVE_PWM
-+	select PWM
- 	help
- 	  Support for exporting the PWM timer blocks via the pwm device
- 	  system
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 8fc3808..c74d055 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -58,14 +58,12 @@ config PWM_PXA
- 	  will be called pwm-pxa.
+ 	i2c_clk = clk_get_rate(dev->clk);
  
- config PWM_SAMSUNG
--	tristate "Samsung pwm support"
-+	bool "Samsung PWM support"
- 	depends on PLAT_SAMSUNG
-+	default y
- 	help
- 	  Generic PWM framework driver for Samsung.
- 
--	  To compile this driver as a module, choose M here: the module
--	  will be called pwm-samsung.
+-	/* fallback to std. mode if machine has not provided it */
+-	if (dev->cfg.clk_freq == 0)
+-		dev->cfg.clk_freq = 100000;
 -
- config PWM_TEGRA
- 	tristate "NVIDIA Tegra PWM support"
- 	depends on ARCH_TEGRA
+ 	/*
+ 	 * The spec says, in case of std. mode the divider is
+ 	 * 2 whereas it is 3 for fast and fastplus mode of
+@@ -911,20 +907,32 @@ static const struct i2c_algorithm nmk_i2c_algo = {
+ 	.functionality	= nmk_i2c_functionality
+ };
+ 
++static struct nmk_i2c_controller u8500_i2c = {
++	/*
++	 * Slave data setup time; 250ns, 100ns, and 10ns, which
++	 * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
++	 */
++	.slsu           = 0xe,
++	.tft            = 1,      /* Tx FIFO threshold */
++	.rft            = 8,      /* Rx FIFO threshold */
++	.clk_freq       = 400000, /* fast mode operation */
++	.timeout        = 200,    /* Slave response timeout(ms) */
++	.sm             = I2C_FREQ_MODE_FAST,
++};
++
+ static atomic_t adapter_id = ATOMIC_INIT(0);
+ 
+ static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id *id)
+ {
+ 	int ret = 0;
+-	struct nmk_i2c_controller *pdata =
+-			adev->dev.platform_data;
++	struct nmk_i2c_controller *pdata = adev->dev.platform_data;
+ 	struct nmk_i2c_dev	*dev;
+ 	struct i2c_adapter *adap;
+ 
+-	if (!pdata) {
+-		dev_warn(&adev->dev, "no platform data\n");
+-		return -ENODEV;
+-	}
++	if (!pdata)
++		/* No i2c configuration found, using the default. */
++		pdata = &u8500_i2c;
++
+ 	dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
+ 	if (!dev) {
+ 		dev_err(&adev->dev, "cannot allocate memory\n");
 -- 
-1.7.4.1
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+1.7.9.5
