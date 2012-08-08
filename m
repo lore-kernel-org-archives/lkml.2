@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab2HHG7I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:59:08 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:59402 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756131Ab2HHG7G (ORCPT
+	id S1757303Ab2HHHAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 03:00:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49431 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab2HHHA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:59:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120808081317.40c883f9@amdc308.digital.local>
-References: <CAN_1RdsTX5ZGSx7T6X0t70Q6k5_M1zgizL-KzPYrnHOnZ_nfSg@mail.gmail.com>
-	<20120806101200.GJ17551@arwen.pp.htv.fi>
-	<20120806151436.4761cd4d@amdc308.digital.local>
-	<CAN_1RdsFh5-xZ7ijL-Cwf4cDzWYthFfMOM7dPdRUub2rQ_RMDw@mail.gmail.com>
-	<20120807113416.57b03f4f@amdc308.digital.local>
-	<CAN_1Rdu+xy9EzmHty+wT4GYUGADmNMOxk2_FcG9jJ6R2nO-iBQ@mail.gmail.com>
-	<20120808081317.40c883f9@amdc308.digital.local>
-Date: Wed, 8 Aug 2012 14:59:05 +0800
-Message-ID: <CAN_1Rdvd=gZUn0GovPVQsVTzEUrUzjMFp9hnhZDEc1utHu3e5Q@mail.gmail.com>
-Subject: Re: [BUG] Kernel panic when try s3c-hsotg.c with kernel 3.5
-From: Peiyong Feng <peiyong.feng.kernel@gmail.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Aug 2012 03:00:29 -0400
+Subject: Re: [PATCH] bnx2: update bnx2-mips-09 firmware to
+ bnx2-mips-09-6.2.1b
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: David Miller <davem@davemloft.net>, albcamus@gmail.com, chris@arachsys.com,
+        mchan@broadcom.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+In-Reply-To: <20120808064959.GB15255@1wt.eu>
+References: <20120713130405.GS13885@arachsys.com>
+	 <CANE52KgHpmR7qCUUf3ZiMeskCitcAiMzzdARzy3a4RpKb73_Gg@mail.gmail.com>
+	 <20120807.225800.1450928472652058111.davem@davemloft.net>
+	 <20120808061758.GA15255@1wt.eu>
+	 <1344407272.28967.214.camel@edumazet-glaptop>
+	 <20120808064959.GB15255@1wt.eu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Aug 2012 09:00:23 +0200
+Message-ID: <1344409223.28967.217.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/8 Lukasz Majewski <l.majewski@samsung.com>:
-> Dear Peiyong Feng,
->
->> > Please enable the debug at s3c-hsotg.c driver and then paste the
->> > dmesg/debug output.
->> I have defined DEGUG in s3c-hsotg.c
->
-> Thank you for 2.6.36 log.
-> I'd also need the log from 3.6-rc1 kernel with DEBUG enabled.
-I have made a define like:
-#define DEBUG
-in s3c-hsotg.c of 3.6-rc1 kernel and the patch:
-======================================
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index b13e0bb..b35d275 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -36,6 +36,7 @@
+On Wed, 2012-08-08 at 08:49 +0200, Willy Tarreau wrote:
+> Hi Eric,
+> 
+> On Wed, Aug 08, 2012 at 08:27:52AM +0200, Eric Dumazet wrote:
+> > On Wed, 2012-08-08 at 08:17 +0200, Willy Tarreau wrote:
+> > 
+> > > 
+> > > Well, if the drivers provided with the kernel don't work out of the box
+> > > anymore, maybe we should also move them to a separate repository. All it
+> > > is going to do otherwise is to cause invalid bug reports because users
+> > > don't understand why using the latest driver does not work.
+> > > 
+> > > That way it would be clear that an in-kernel driver has to be self-sustaining
+> > > to be maintainable, otherwise it has nothing to do there.
+> > 
+> > People compiling their own kernels are supposed to be able to handle
+> > this problem themselves.
+> > 
+> > If not, they can use a distro.
+> 
+> But similarly, people who compile their own kernels are also supposed to
+> be able to retrieve up-to-date drivers from another tree. I know many
+> people who use the intel NIC drivers from sf.net and (less) other ones
+> using myricom's drivers for instance.
+> 
+> I don't really see the value of keeping in the tree drivers that don't
+> work out of the box, if it's only causing issues and bug reports.
 
- #include <mach/map.h>
+Only the firmware is in a separate git tree, called linux-firmware, that
+about all kernel developers are aware of.
 
-+#define DEBUG
- #include "s3c-hsotg.h"
-
- #define DMA_ADDR_INVALID (~((dma_addr_t)0))
-=-========================================
-
-And the output is just the same as I have posted.
-
-If that is not the way you want, please let me know.
+The drivers themselves are in linux tree, and they are generally in
+quite good shape, because of that.
 
 
->
-> --
-> Best regards,
->
-> Lukasz Majewski
->
-> Samsung Poland R&D Center | Linux Platform Group
+
