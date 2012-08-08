@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031Ab2HHMR2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 08:17:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40410 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757976Ab2HHMR1 (ORCPT
+	id S1758044Ab2HHMSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 08:18:44 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:46464 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758010Ab2HHMSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 08:17:27 -0400
-Message-ID: <1344428238.3199.1.camel@phoenix>
-Subject: [PATCH 1/7] regulator: Update comment for set_current_limit
- callback of struct regulator_ops
+	Wed, 8 Aug 2012 08:18:43 -0400
+Message-ID: <1344428317.3199.2.camel@phoenix>
+Subject: [PATCH 2/7] regulator: wm8350: set_current_limit should select the
+ maximum current in specific range
 From: Axel Lin <axel.lin@gmail.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Cyril Chemparathy <cyril@ti.com>, "Milo(Woogyom) Kim" <milo.kim@ti.com>,
-        David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Date: Wed, 08 Aug 2012 20:17:18 +0800
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Date: Wed, 08 Aug 2012 20:18:37 +0800
+In-Reply-To: <1344428238.3199.1.camel@phoenix>
+References: <1344428238.3199.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -25,26 +24,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulators should be tending to the maximum in the available range and
-consumers should specify the widest range possible.
-
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- include/linux/regulator/driver.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/regulator/wm8350-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index bac4c87..c10012f 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -58,6 +58,7 @@ enum regulator_status {
-  *	regulator_desc.n_voltages.  Voltages may be reported in any order.
-  *
-  * @set_current_limit: Configure a limit for a current-limited regulator.
-+ *                     The driver should select the current closest to max_uA.
-  * @get_current_limit: Get the configured limit for a current-limited regulator.
-  *
-  * @set_mode: Set the configured operating mode for the regulator.
+diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
+index 7f0fa22..1e4f69e 100644
+--- a/drivers/regulator/wm8350-regulator.c
++++ b/drivers/regulator/wm8350-regulator.c
+@@ -99,7 +99,7 @@ static int get_isink_val(int min_uA, int max_uA, u16 *setting)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(isink_cur); i++) {
++	for (i = ARRAY_SIZE(isink_cur) - 1; i >= 0; i--) {
+ 		if (min_uA <= isink_cur[i] && max_uA >= isink_cur[i]) {
+ 			*setting = i;
+ 			return 0;
 -- 
 1.7.9.5
 
