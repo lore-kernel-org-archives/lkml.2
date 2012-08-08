@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030706Ab2HHRO1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:14:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54207 "EHLO
+	id S1030684Ab2HHROY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:14:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54216 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030663Ab2HHROP (ORCPT
+	with ESMTP id S1030673Ab2HHROQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:14:15 -0400
+	Wed, 8 Aug 2012 13:14:16 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
         Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/11] perf script: Replace "struct thread" with "struct addr_location" as a parameter for "process_event()"
-Date: Wed,  8 Aug 2012 14:13:45 -0300
-Message-Id: <1344446028-21381-9-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/11] perf scripts python: Add event_analyzing_sample.py as a sample for general event handling
+Date: Wed,  8 Aug 2012 14:13:48 -0300
+Message-Id: <1344446028-21381-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344446028-21381-1-git-send-email-acme@infradead.org>
 References: <1344446028-21381-1-git-send-email-acme@infradead.org>
@@ -30,206 +30,274 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Feng Tang <feng.tang@intel.com>
 
-Both perl and python script start processing events other than trace
-points, and it's useful to pass the resolved symbol and the dso info to
-the event handler in script for better analysis and statistics.
+Currently only trace point events are supported in perf/python script,
+the first 3 patches of this serie add the support for all types of
+events. This script is just a simple sample to show how to gather the
+basic information of the events and analyze them.
 
-Struct thread is already a member of struct addr_location, using
-addr_location will keep the thread info, while providing additional
-symbol and dso info if exist, so that the script itself doesn't need to
-bother to do the symbol resolving and dso searching work.
+This script will create one object for each event sample and insert them
+into a table in a database, then leverage the simple SQL commands to
+sort/group them. User can modify or write their brand new functions
+according to their specific requirment.
 
-Tested-by: David Ahern <dsahern@gmail.com>
+Here is the sample of how to use the script:
+
+ $ perf record -a tree
+ $ perf script -s process_event.py
+
+There is 100 records in gen_events table
+Statistics about the general events grouped by thread/symbol/dso:
+
+            comm   number         histgram
+==========================================
+         swapper       56     ######
+            tree       20     #####
+            perf       10     ####
+            sshd        8     ####
+     kworker/7:2        4     ###
+     ksoftirqd/7        1     #
+ plugin-containe        1     #
+
+                          symbol   number         histgram
+==========================================================
+           native_write_msr_safe       40     ######
+                  __lock_acquire        8     ####
+             ftrace_graph_caller        4     ###
+           prepare_ftrace_return        4     ###
+                      intel_idle        3     ##
+              native_sched_clock        3     ##
+                  Unknown_symbol        2     ##
+                      do_softirq        2     ##
+                    lock_release        2     ##
+           lock_release_holdtime        2     ##
+               trace_graph_entry        2     ##
+                        _IO_putc        1     #
+                  __d_lookup_rcu        1     #
+                      __do_fault        1     #
+                      __schedule        1     #
+                  _raw_spin_lock        1     #
+                       delay_tsc        1     #
+             generic_exec_single        1     #
+                generic_fillattr        1     #
+
+                                     dso   number         histgram
+==================================================================
+                       [kernel.kallsyms]       95     #######
+                     /lib/libc-2.12.1.so        5     ###
+
 Signed-off-by: Feng Tang <feng.tang@intel.com>
-Acked-by: David Ahern <dsahern@gmail.com>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1344419875-21665-3-git-send-email-feng.tang@intel.com
+Link: http://lkml.kernel.org/r/1344419875-21665-6-git-send-email-feng.tang@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c                        |    5 +++--
- .../perf/util/scripting-engines/trace-event-perl.c |   11 ++++++-----
- .../util/scripting-engines/trace-event-python.c    |   13 +++++++------
- tools/perf/util/trace-event-scripting.c            |    2 +-
- tools/perf/util/trace-event.h                      |    5 +++--
- 5 files changed, 20 insertions(+), 16 deletions(-)
+ .../perf/scripts/python/event_analyzing_sample.py  |  193 ++++++++++++++++++++
+ 1 file changed, 193 insertions(+)
+ create mode 100644 tools/perf/scripts/python/event_analyzing_sample.py
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 6425612..30a9cb8 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -396,9 +396,10 @@ static void print_sample_bts(union perf_event *event,
- 
- static void process_event(union perf_event *event, struct perf_sample *sample,
- 			  struct perf_evsel *evsel, struct machine *machine,
--			  struct thread *thread)
-+			  struct addr_location *al)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
-+	struct thread *thread = al->thread;
- 
- 	if (output[attr->type].fields == 0)
- 		return;
-@@ -511,7 +512,7 @@ static int process_sample_event(struct perf_tool *tool __used,
- 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
- 		return 0;
- 
--	scripting_ops->process_event(event, sample, evsel, machine, thread);
-+	scripting_ops->process_event(event, sample, evsel, machine, &al);
- 
- 	evsel->hists.stats.total_period += sample->period;
- 	return 0;
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index 52580d0..d280010 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -261,7 +261,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
- 				    struct perf_sample *sample,
- 				    struct perf_evsel *evsel,
- 				    struct machine *machine __unused,
--				    struct thread *thread)
-+				    struct addr_location *al)
- {
- 	struct format_field *field;
- 	static char handler[256];
-@@ -272,6 +272,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
- 	unsigned long long nsecs = sample->time;
-+	struct thread *thread = al->thread;
- 	char *comm = thread->comm;
- 
- 	dSP;
-@@ -349,7 +350,7 @@ static void perl_process_event_generic(union perf_event *event,
- 				       struct perf_sample *sample,
- 				       struct perf_evsel *evsel,
- 				       struct machine *machine __unused,
--				       struct thread *thread __unused)
-+				       struct addr_location *al __unused)
- {
- 	dSP;
- 
-@@ -375,10 +376,10 @@ static void perl_process_event(union perf_event *event,
- 			       struct perf_sample *sample,
- 			       struct perf_evsel *evsel,
- 			       struct machine *machine,
--			       struct thread *thread)
-+			       struct addr_location *al)
- {
--	perl_process_tracepoint(event, sample, evsel, machine, thread);
--	perl_process_event_generic(event, sample, evsel, machine, thread);
-+	perl_process_tracepoint(event, sample, evsel, machine, al);
-+	perl_process_event_generic(event, sample, evsel, machine, al);
- }
- 
- static void run_start_sub(void)
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index b9010d8..24711b3 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -225,7 +225,7 @@ static void python_process_tracepoint(union perf_event *perf_event __unused,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
- 				 struct machine *machine __unused,
--				 struct thread *thread)
-+				 struct addr_location *al)
- {
- 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
- 	static char handler_name[256];
-@@ -238,6 +238,7 @@ static void python_process_tracepoint(union perf_event *perf_event __unused,
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
- 	unsigned long long nsecs = sample->time;
-+	struct thread *thread = al->thread;
- 	char *comm = thread->comm;
- 
- 	t = PyTuple_New(MAX_FIELDS);
-@@ -342,7 +343,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 					 struct perf_sample *sample,
- 					 struct perf_evsel *evsel,
- 					 struct machine *machine __unused,
--					 struct thread *thread __unused)
-+					 struct addr_location *al __unused)
- {
- 	PyObject *handler, *retval, *t;
- 	static char handler_name[64];
-@@ -361,7 +362,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 		goto exit;
- 	}
- 
--	/* Pass 3 parameters: event_attr, perf_sample, raw data */
-+	/* Pass 4 parameters: event_attr, perf_sample, raw data, thread name */
- 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)&evsel->attr, sizeof(evsel->attr)));
- 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)sample, sizeof(*sample)));
- 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(data, sample->raw_size));
-@@ -380,17 +381,17 @@ static void python_process_event(union perf_event *perf_event,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
- 				 struct machine *machine,
--				 struct thread *thread)
-+				 struct addr_location *al)
- {
- 	switch (evsel->attr.type) {
- 	case PERF_TYPE_TRACEPOINT:
- 		python_process_tracepoint(perf_event, sample, evsel,
--					  machine, thread);
-+					  machine, al);
- 		break;
- 	/* Reserve for future process_hw/sw/raw APIs */
- 	default:
- 		python_process_general_event(perf_event, sample, evsel,
--					     machine, thread);
-+					     machine, al);
- 	}
- }
- 
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index aceb8ee..302ff26 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -39,7 +39,7 @@ static void process_event_unsupported(union perf_event *event __unused,
- 				      struct perf_sample *sample __unused,
- 				      struct perf_evsel *evsel __unused,
- 				      struct machine *machine __unused,
--				      struct thread *thread __unused)
-+				      struct addr_location *al __unused)
- {
- }
- 
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index cee1635..7575dfd 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -9,7 +9,6 @@ struct machine;
- struct perf_sample;
- union perf_event;
- struct perf_tool;
--struct thread;
- 
- extern int header_page_size_size;
- extern int header_page_ts_size;
-@@ -76,6 +75,8 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- void tracing_data_put(struct tracing_data *tdata);
- 
- 
-+struct addr_location;
+diff --git a/tools/perf/scripts/python/event_analyzing_sample.py b/tools/perf/scripts/python/event_analyzing_sample.py
+new file mode 100644
+index 0000000..46f05aa
+--- /dev/null
++++ b/tools/perf/scripts/python/event_analyzing_sample.py
+@@ -0,0 +1,193 @@
++# process_event.py: general event handler in python
++#
++# Current perf report is alreay very powerful with the anotation integrated,
++# and this script is not trying to be as powerful as perf report, but
++# providing end user/developer a flexible way to analyze the events other
++# than trace points.
++#
++# The 2 database related functions in this script just show how to gather
++# the basic information, and users can modify and write their own functions
++# according to their specific requirment.
++#
++# The first sample "show_general_events" just does a baisc grouping for all
++# generic events with the help of sqlite, and the 2nd one "show_pebs_ll" is
++# for a x86 HW PMU event: PEBS with load latency data.
++#
 +
- struct scripting_ops {
- 	const char *name;
- 	int (*start_script) (const char *script, int argc, const char **argv);
-@@ -84,7 +85,7 @@ struct scripting_ops {
- 			       struct perf_sample *sample,
- 			       struct perf_evsel *evsel,
- 			       struct machine *machine,
--			       struct thread *thread);
-+			       struct addr_location *al);
- 	int (*generate_script) (struct pevent *pevent, const char *outfile);
- };
- 
++import os
++import sys
++import math
++import struct
++import sqlite3
++
++sys.path.append(os.environ['PERF_EXEC_PATH'] + \
++        '/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
++
++from perf_trace_context import *
++from EventClass import *
++
++#
++# If the perf.data has a big number of samples, then the insert operation
++# will be very time consuming (about 10+ minutes for 10000 samples) if the
++# .db database is on disk. Move the .db file to RAM based FS to speedup
++# the handling, which will cut the time down to several seconds.
++#
++con = sqlite3.connect("/dev/shm/perf.db")
++con.isolation_level = None
++
++def trace_begin():
++	print "In trace_begin:\n"
++
++        #
++        # Will create several tables at the start, pebs_ll is for PEBS data with
++        # load latency info, while gen_events is for general event.
++        #
++        con.execute("""
++                create table if not exists gen_events (
++                        name text,
++                        symbol text,
++                        comm text,
++                        dso text
++                );""")
++        con.execute("""
++                create table if not exists pebs_ll (
++                        name text,
++                        symbol text,
++                        comm text,
++                        dso text,
++                        flags integer,
++                        ip integer,
++                        status integer,
++                        dse integer,
++                        dla integer,
++                        lat integer
++                );""")
++
++#
++# Create and insert event object to a database so that user could
++# do more analysis with simple database commands.
++#
++def process_event(param_dict):
++        event_attr = param_dict["attr"]
++        sample     = param_dict["sample"]
++        raw_buf    = param_dict["raw_buf"]
++        comm       = param_dict["comm"]
++        name       = param_dict["ev_name"]
++
++        # Symbol and dso info are not always resolved
++        if (param_dict.has_key("dso")):
++                dso = param_dict["dso"]
++        else:
++                dso = "Unknown_dso"
++
++        if (param_dict.has_key("symbol")):
++                symbol = param_dict["symbol"]
++        else:
++                symbol = "Unknown_symbol"
++
++        # Creat the event object and insert it to the right table in database
++        event = create_event(name, comm, dso, symbol, raw_buf)
++        insert_db(event)
++
++def insert_db(event):
++        if event.ev_type == EVTYPE_GENERIC:
++                con.execute("insert into gen_events values(?, ?, ?, ?)",
++                                (event.name, event.symbol, event.comm, event.dso))
++        elif event.ev_type == EVTYPE_PEBS_LL:
++                event.ip &= 0x7fffffffffffffff
++                event.dla &= 0x7fffffffffffffff
++                con.execute("insert into pebs_ll values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
++                        (event.name, event.symbol, event.comm, event.dso, event.flags,
++                                event.ip, event.status, event.dse, event.dla, event.lat))
++
++def trace_end():
++	print "In trace_end:\n"
++        # We show the basic info for the 2 type of event classes
++        show_general_events()
++        show_pebs_ll()
++        con.close()
++
++#
++# As the event number may be very big, so we can't use linear way
++# to show the histgram in real number, but use a log2 algorithm.
++#
++
++def num2sym(num):
++        # Each number will have at least one '#'
++        snum = '#' * (int)(math.log(num, 2) + 1)
++        return snum
++
++def show_general_events():
++
++        # Check the total record number in the table
++        count = con.execute("select count(*) from gen_events")
++        for t in count:
++                print "There is %d records in gen_events table" % t[0]
++                if t[0] == 0:
++                        return
++
++        print "Statistics about the general events grouped by thread/symbol/dso: \n"
++
++         # Group by thread
++        commq = con.execute("select comm, count(comm) from gen_events group by comm order by -count(comm)")
++        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
++        for row in commq:
++             print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
++
++        # Group by symbol
++        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
++        symbolq = con.execute("select symbol, count(symbol) from gen_events group by symbol order by -count(symbol)")
++        for row in symbolq:
++             print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
++
++        # Group by dso
++        print "\n%40s %8s %16s\n%s" % ("dso", "number", "histgram", "="*74)
++        dsoq = con.execute("select dso, count(dso) from gen_events group by dso order by -count(dso)")
++        for row in dsoq:
++             print "%40s %8d     %s" % (row[0], row[1], num2sym(row[1]))
++
++#
++# This function just shows the basic info, and we could do more with the
++# data in the tables, like checking the function parameters when some
++# big latency events happen.
++#
++def show_pebs_ll():
++
++        count = con.execute("select count(*) from pebs_ll")
++        for t in count:
++                print "There is %d records in pebs_ll table" % t[0]
++                if t[0] == 0:
++                        return
++
++        print "Statistics about the PEBS Load Latency events grouped by thread/symbol/dse/latency: \n"
++
++        # Group by thread
++        commq = con.execute("select comm, count(comm) from pebs_ll group by comm order by -count(comm)")
++        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
++        for row in commq:
++             print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
++
++        # Group by symbol
++        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
++        symbolq = con.execute("select symbol, count(symbol) from pebs_ll group by symbol order by -count(symbol)")
++        for row in symbolq:
++             print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
++
++        # Group by dse
++        dseq = con.execute("select dse, count(dse) from pebs_ll group by dse order by -count(dse)")
++        print "\n%32s %8s %16s\n%s" % ("dse", "number", "histgram", "="*58)
++        for row in dseq:
++             print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
++
++        # Group by latency
++        latq = con.execute("select lat, count(lat) from pebs_ll group by lat order by lat")
++        print "\n%32s %8s %16s\n%s" % ("latency", "number", "histgram", "="*58)
++        for row in latq:
++             print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
++
++def trace_unhandled(event_name, context, event_fields_dict):
++		print ' '.join(['%s=%s'%(k,str(v))for k,v in sorted(event_fields_dict.items())])
++
++def print_header(event_name, cpu, secs, nsecs, pid, comm):
++	print "%-20s %5u %05u.%09u %8u %-20s " % \
++	(event_name, cpu, secs, nsecs, pid, comm),
 -- 
 1.7.9.2.358.g22243
 
