@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197Ab2HHMzR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 08:55:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64708 "EHLO
+	id S1758215Ab2HHMz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 08:55:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53799 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab2HHMzH (ORCPT
+	with ESMTP id S1758202Ab2HHMzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 08:55:07 -0400
+	Wed, 8 Aug 2012 08:55:25 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 4/6] ARM: s3c24xx: use new PWM driver
-Date: Wed,  8 Aug 2012 14:54:51 +0200
-Message-Id: <1344430493-5304-5-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Daniel Mack <zonque@gmail.com>,
+        Daniel Ribeiro <drwyrm@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 0/6] ARM: defconfig build errors
+Date: Wed,  8 Aug 2012 14:54:47 +0200
+Message-Id: <1344430493-5304-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1344430493-5304-1-git-send-email-arnd@arndb.de>
-References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:POko7GIRep7E2oYi05Tlpyq7QEAQ1SVA6agmasVvt6i
- C4fmIIcAIq+OONOQgOk4lOlMRrpIABAAiGtZfGKh0Dq712On01
- +5a9X6ufNvOXyvOBjECyWKULYxeUPKEkJMPlJar4PQPgJ2NJQv
- KKcqUiMD9k8Gl+uSg2mjt6kIK4lEHqnuREkdqWR7g7ed5aZrW2
- 1zzhmWMrdDAbhE3CZWyFg3dUNitmNw65Yy44knS2hkenA1oEKc
- hi8ZW31TjhEUccJuBNnVEpw59n1zPZN9ei/c/Cr1KPIpuK1vEp
- 3vlEaewZvP25/nJ3oC1M3nz70PaRyraqIqeu701jvnA1J1R0Kg
- i4J6FRytptMi4R4r5MjkigZVPKqnywy3MC8UWltV8S1xVuEE2f
- V3UeE/gVLlYzw==
+X-Provags-ID: V02:K0:l/ER3jgavssIxuCeenXT7WkSz0ImE4icFEVDvT4vylM
+ xnXtW+Cf5hIfhmidLxlxqOjIAB6Qt22dLtZ49qfgY9LcLd4mgO
+ cw6sIqLV6KpTmkPBi5I32gXNXxC62Za/YXNlbEmmi3QUiiOjB2
+ e1opbzPMFDJofky1tag1yYbOkUhrr3PHUcaUJ2utdgKzV+ILNP
+ eAHmt9n+budLxU0cOvt/udzCKUKeVojz5YU4r12OuEdOZG4w3F
+ hFkVnlarwhKAU9gckDC/xVCRRb/0zZOkpyVg9qPizJnfLo28Ql
+ /HlpYo5SzXfRT6taeCXnDlDzCihhcQmMsJdcunnZNUTsekkDHF
+ H6YiYDt8abIHV1tRDq2MNwfPNrzaIPU18NAC+rd6717Vwl9t8E
+ ZZWEyHXx6W4Ug==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The samsung PWM driver has moved to the new PWM subsystem, which
-changed the Kconfig symbol for that driver, but the rx1950 and
-gta02 boards still uses the old one.
+I'm dusting off my defconfig warning fixes. This is the most important
+bunch as these are actual build failures that happen in one of the
+defconfigs. I've put these into the "fixes" branch of the arm-soc
+tree already and will send them out for -r2 unless I hear objections.
 
-Without this patch, building s3c2410_defconfig results in:
+Please take a look.
 
-arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_lcd_power':
-arch/arm/mach-s3c24xx/mach-rx1950.c:430: undefined reference to `pwm_config'
-arch/arm/mach-s3c24xx/mach-rx1950.c:431: undefined reference to `pwm_disable'
-arch/arm/mach-s3c24xx/mach-rx1950.c:437: undefined reference to `pwm_config'
-arch/arm/mach-s3c24xx/mach-rx1950.c:438: undefined reference to `pwm_enable'
-arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_exit':
-arch/arm/mach-s3c24xx/mach-rx1950.c:504: undefined reference to `pwm_free'
-arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_init':
-arch/arm/mach-s3c24xx/mach-rx1950.c:487: undefined reference to `pwm_request'
+	Arnd
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/mach-s3c24xx/Kconfig |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Cc: Daniel Mack <zonque@gmail.com>
+Cc: Daniel Ribeiro <drwyrm@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>
 
-diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-index e249611..422133a 100644
---- a/arch/arm/mach-s3c24xx/Kconfig
-+++ b/arch/arm/mach-s3c24xx/Kconfig
-@@ -483,7 +483,8 @@ config MACH_NEO1973_GTA02
- 	select I2C
- 	select POWER_SUPPLY
- 	select MACH_NEO1973
--	select S3C2410_PWM
-+	select PWM
-+	select PWM_SAMSUNG
- 	select S3C_DEV_USB_HOST
- 	help
- 	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM Phone
-@@ -493,7 +494,8 @@ config MACH_RX1950
- 	select S3C24XX_DCLK
- 	select PM_H1940 if PM
- 	select I2C
--	select S3C2410_PWM
-+	select PWM
-+	select PWM_SAMSUNG
- 	select S3C_DEV_NAND
- 	select S3C2410_IOTIMING if S3C2440_CPUFREQ
- 	select S3C2440_XTAL_16934400
+Arnd Bergmann (6):
+  ARM: pxa: remove irq_to_gpio from ezx-pcap driver
+  ARM: pxa remove irq_to_gpio from eeti_ts driver
+  ARM: sa1100: include asm/io.h in hackkit leds code
+  ARM: s3c24xx: use new PWM driver
+  ARM: integrator: include <linux/export.h
+  ARM: imx: gpmi-nand depends on mxs-dma
+
+ arch/arm/configs/imx_v6_v7_defconfig |    1 +
+ arch/arm/mach-integrator/core.c      |    1 +
+ arch/arm/mach-pxa/raumfeld.c         |    1 +
+ arch/arm/mach-s3c24xx/Kconfig        |    6 ++++--
+ arch/arm/mach-sa1100/leds-hackkit.c  |    1 +
+ drivers/input/touchscreen/eeti_ts.c  |    8 +++++---
+ drivers/mfd/ezx-pcap.c               |    2 +-
+ drivers/mtd/nand/Kconfig             |    2 +-
+ include/linux/input/eeti_ts.h        |    1 +
+ include/linux/mfd/ezx-pcap.h         |    1 +
+ 10 files changed, 17 insertions(+), 7 deletions(-)
+
 -- 
 1.7.10
 
