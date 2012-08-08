@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758584Ab2HHN1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:27:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36554 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758437Ab2HHNV4 (ORCPT
+	id S1758458Ab2HHN1Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:27:16 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34627 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758429Ab2HHNVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:21:56 -0400
+	Wed, 8 Aug 2012 09:21:55 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v5 06/19] vfs: turn "empty" arg in getname_flags into a bool
-Date: Wed,  8 Aug 2012 09:21:29 -0400
-Message-Id: <1344432102-22312-7-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v5 05/19] vfs: remove user_path_at_empty
+Date: Wed,  8 Aug 2012 09:21:28 -0400
+Message-Id: <1344432102-22312-6-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
 References: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
@@ -22,63 +22,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...it's just used as a flag.
+...there are no more callers.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c         | 4 ++--
- fs/stat.c          | 2 +-
- include/linux/fs.h | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ fs/namei.c            | 12 +++---------
+ include/linux/namei.h |  1 -
+ 2 files changed, 3 insertions(+), 10 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index dc58de9..f0463bc 100644
+index e66161f..dc58de9 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -117,7 +117,7 @@
-  * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
-  * PATH_MAX includes the nul terminator --RR.
-  */
--char *getname_flags(const char __user *filename, int flags, int *empty)
-+char *getname_flags(const char __user *filename, int flags, bool *empty)
+@@ -2106,10 +2106,10 @@ int kern_path_at(int dfd, const char *name, unsigned flags, struct path *path)
+ 	return err;
+ }
+ 
+-int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
+-		 struct path *path, int *empty)
++int user_path_at(int dfd, const char __user *name, unsigned flags,
++		 struct path *path)
  {
- 	char *result = __getname(), *err;
- 	int len;
-@@ -133,7 +133,7 @@ char *getname_flags(const char __user *filename, int flags, int *empty)
- 	/* The empty path is special. */
- 	if (unlikely(!len)) {
- 		if (empty)
--			*empty = 1;
-+			*empty = true;
- 		err = ERR_PTR(-ENOENT);
- 		if (!(flags & LOOKUP_EMPTY))
- 			goto error;
-diff --git a/fs/stat.c b/fs/stat.c
-index c9d88f7..4f8b6bc 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -306,7 +306,7 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+-	char *tmp = getname_flags(name, flags, empty);
++	char *tmp = getname_flags(name, flags, NULL);
+ 	int err;
+ 
+ 	if (IS_ERR(tmp)) {
+@@ -2121,12 +2121,6 @@ int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
+ 	return err;
+ }
+ 
+-int user_path_at(int dfd, const char __user *name, unsigned flags,
+-		 struct path *path)
+-{
+-	return user_path_at_empty(dfd, name, flags, path, NULL);
+-}
+-
+ static int user_path_parent(int dfd, const char __user *path,
+ 			struct nameidata *nd, char **name)
  {
- 	struct path path;
- 	int error;
--	int empty = 0;
-+	bool empty = false;
- 	char *name;
- 	unsigned int try = 0;
- 	unsigned int lookup_flags = LOOKUP_EMPTY;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index f2e7371..55b3cc3 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2201,7 +2201,7 @@ extern struct file *file_open_root(struct dentry *, struct vfsmount *,
- 				   const char *, int);
- extern struct file * dentry_open(const struct path *, int, const struct cred *);
- extern int filp_close(struct file *, fl_owner_t id);
--extern char *getname_flags(const char __user *, int, int *);
-+extern char *getname_flags(const char __user *, int, bool *);
- extern char * getname(const char __user *);
- enum {
- 	FILE_CREATED = 1,
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 482f87f..491fb48 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -57,7 +57,6 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+ 
+ extern int kern_path_at(int, const char *, unsigned, struct path *);
+ extern int user_path_at(int, const char __user *, unsigned, struct path *);
+-extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
+ 
+ #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
+ #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
 -- 
 1.7.11.2
 
