@@ -1,507 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343Ab2HHVTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:19:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46723 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757380Ab2HHVTF (ORCPT
+	id S932214Ab2HHV2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:28:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60365 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127Ab2HHV2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:19:05 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-kernel@vger.kernel.org,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2 3/3] regulator: add MAX8907 driver
-Date: Wed,  8 Aug 2012 15:18:47 -0600
-Message-Id: <1344460727-6243-3-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1344460727-6243-1-git-send-email-swarren@wwwdotorg.org>
-References: <1344460727-6243-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Wed, 8 Aug 2012 17:28:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Bryan Wu <bryan.wu@canonical.com>,
+        Magnus Damm <damm@opensource.se>
+Subject: [PATCH 10/10] leds: renesas: fix error handling
+Date: Wed,  8 Aug 2012 23:27:58 +0200
+Message-Id: <1344461278-28245-11-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1344461278-28245-1-git-send-email-arnd@arndb.de>
+References: <1344461278-28245-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:hvY4z4/xOwgaWQ46rzB4M5c4tk704IPNMqqJ68+eJgh
+ +qtdefototO85SwJJeZZfZcwRSgIvySgOQC7o4JYaJKsZwPQ3t
+ TcxEX4KWq3c/sYl9dcvHuvjTI7Rfh2COLlmJtxzUuHET96yErV
+ ghT0N2rv+V6q6wvRXhmziuBBhWfbL1PoOBoHvdSjwKka74lcW8
+ 8wLFjgeI2lLhX9LO+TbQlXoQCbEAr3RHiweVo2uB4qIcvlkfKx
+ P3eDM7L560+XjiC2L8w9zpjC7p+w9jzF589mEA/RlECewKf5+q
+ M011trnYOgUkOnSmTOJw9lPyAT7kPFw8MottF6kmnGDDSXAezi
+ qdTykJnMXMn4PZHXcmRw7w36Bo4HM9/Zca/KPt9nSVwzBs6eIt
+ vIb16MvYjpYtQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gyungoh Yoo <jack.yoo@maxim-ic.com>
+bfe4c041 "leds: convert Renesas TPU LED driver to devm_kzalloc() and
+cleanup error exit path" introduced a possible case in which r_tpu_probe
+calls iounmap on a wild pointer. This changes the one case that was
+missed in the same way as the other error paths.
 
-The MAX8907 is an I2C-based power-management IC containing voltage
-regulators, a reset controller, a real-time clock, and a touch-screen
-controller.
+Without this patch, building kota2_defconfig results in:
 
-The original driver was written by:
-* Gyungoh Yoo <jack.yoo@maxim-ic.com>
+drivers/leds/leds-renesas-tpu.c: In function 'r_tpu_probe':
+drivers/leds/leds-renesas-tpu.c:246:6: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]
+drivers/leds/leds-renesas-tpu.c:308:17: warning: 'p' may be used uninitialized in this function [-Wuninitialized]
 
-Various fixes and enhancements by:
-* Jin Park <jinyoungp@nvidia.com>
-* Tom Cherry <tcherry@nvidia.com>
-* Prashant Gaikwad <pgaikwad@nvidia.com>
-* Dan Willemsen <dwillemsen@nvidia.com>
-* Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Bryan Wu <bryan.wu@canonical.com>
+Cc: Magnus Damm <damm@opensource.se>
 
-During upstreaming, I (swarren):
-* Converted to regmap.
-* Allowed probing from device tree.
-* Reworked the regulator driver to be represented as a single device that
-  provides multiple regulators, rather than as a device per regulator.
-* Replaced many regulator ops with standard functions.
-* Added ability to specify supplies for each regulator.
-* Removed the WLED regulator. If/when we expose this in the driver, it
-  should be a backlight object not a regulator object.
-* Renamed from max8907c->max8907, since the driver covers at least the
-  C and B revisions.
-* General cleanup.
+--- a/drivers/leds/leds-renesas-tpu.c
++++ b/drivers/leds/leds-renesas-tpu.c
+@@ -247,7 +247,7 @@ static int __devinit r_tpu_probe(struct platform_device *pdev)
 
-Signed-off-by: Gyungoh Yoo <jack.yoo@maxim-ic.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+        if (!cfg) {
+                dev_err(&pdev->dev, "missing platform data\n");
+-               goto err0;
++               return -ENODEV;
+        }
+
+        p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
 ---
-v2:
-* Removed WLED regulator.
-* Replaced list_voltage, set_voltage(_sel), get_voltage(_sel), enable,
-  disable ops with standard regulator core functions.
-* Got rid of struct max8907_regulator_info; everything we need now is
-  part of the standard struct regulator_desc.
----
- drivers/regulator/Kconfig             |    8 +
- drivers/regulator/Makefile            |    1 +
- drivers/regulator/max8907-regulator.c |  396 +++++++++++++++++++++++++++++++++
- 3 files changed, 405 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/max8907-regulator.c
+ drivers/leds/leds-renesas-tpu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 9bc7749..129c827 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -171,6 +171,14 @@ config REGULATOR_MAX8660
- 	  This driver controls a Maxim 8660/8661 voltage output
- 	  regulator via I2C bus.
+diff --git a/drivers/leds/leds-renesas-tpu.c b/drivers/leds/leds-renesas-tpu.c
+index 9ee12c2..771ea06 100644
+--- a/drivers/leds/leds-renesas-tpu.c
++++ b/drivers/leds/leds-renesas-tpu.c
+@@ -247,7 +247,7 @@ static int __devinit r_tpu_probe(struct platform_device *pdev)
  
-+config REGULATOR_MAX8907
-+	tristate "Maxim 8907 voltage regulator"
-+	depends on MFD_MAX8907
-+	help
-+	  This driver controls a Maxim 8907 voltage output regulator
-+	  via I2C bus. The provided regulator is suitable for Tegra
-+	  chip to control Step-Down DC-DC and LDOs.
-+
- config REGULATOR_MAX8925
- 	tristate "Maxim MAX8925 Power Management IC"
- 	depends on MFD_MAX8925
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 3342615..3a0dbc5 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_REGULATOR_LP8788) += lp8788-ldo.o
- obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
- obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
- obj-$(CONFIG_REGULATOR_MAX8660) += max8660.o
-+obj-$(CONFIG_REGULATOR_MAX8907) += max8907-regulator.o
- obj-$(CONFIG_REGULATOR_MAX8925) += max8925-regulator.o
- obj-$(CONFIG_REGULATOR_MAX8952) += max8952.o
- obj-$(CONFIG_REGULATOR_MAX8997) += max8997.o
-diff --git a/drivers/regulator/max8907-regulator.c b/drivers/regulator/max8907-regulator.c
-new file mode 100644
-index 0000000..713bc7b
---- /dev/null
-+++ b/drivers/regulator/max8907-regulator.c
-@@ -0,0 +1,396 @@
-+/*
-+ * max8907-regulator.c -- support regulators in max8907
-+ *
-+ * Copyright (C) 2010 Gyungoh Yoo <jack.yoo@maxim-ic.com>
-+ * Copyright (C) 2010-2012, NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * Portions based on drivers/regulator/tps65910-regulator.c,
-+ *     Copyright 2010 Texas Instruments Inc.
-+ *     Author: Graeme Gregory <gg@slimlogic.co.uk>
-+ *     Author: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/max8907.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/of_regulator.h>
-+#include <linux/regmap.h>
-+#include <linux/slab.h>
-+
-+#define MAX8907_II2RR_VERSION_MASK	0xF0
-+#define MAX8907_II2RR_VERSION_REV_A	0x00
-+#define MAX8907_II2RR_VERSION_REV_B	0x10
-+#define MAX8907_II2RR_VERSION_REV_C	0x30
-+
-+struct max8907_regulator {
-+	struct regulator_desc desc[MAX8907_NUM_REGULATORS];
-+	struct regulator_dev *rdev[MAX8907_NUM_REGULATORS];
-+};
-+
-+#define REG_MBATT() \
-+	{ \
-+		.name = "MBATT", \
-+		.supply_name = "mbatt", \
-+		.id = MAX8907_MBATT, \
-+		.ops = &max8907_mbatt_ops, \
-+		.type = REGULATOR_VOLTAGE, \
-+		.owner = THIS_MODULE, \
-+	}
-+
-+#define REG_LDO(ids, supply, base, min, max, step) \
-+	{ \
-+		.name = #ids, \
-+		.supply_name = supply, \
-+		.id = MAX8907_##ids, \
-+		.n_voltages = ((max) - (min)) / (step) + 1, \
-+		.ops = &max8907_ldo_ops, \
-+		.type = REGULATOR_VOLTAGE, \
-+		.owner = THIS_MODULE, \
-+		.min_uV = (min), \
-+		.uV_step = (step), \
-+		.vsel_reg = (base) + MAX8907_VOUT, \
-+		.vsel_mask = 0x3f, \
-+		.enable_reg = (base) + MAX8907_CTL, \
-+		.enable_mask = MAX8907_MASK_LDO_EN, \
-+		.en_dis_set_mask = MAX8907_MASK_LDO_SEQ, \
-+	}
-+
-+#define REG_FIXED(ids, supply, voltage) \
-+	{ \
-+		.name = #ids, \
-+		.supply_name = supply, \
-+		.id = MAX8907_##ids, \
-+		.n_voltages = 1, \
-+		.ops = &max8907_fixed_ops, \
-+		.type = REGULATOR_VOLTAGE, \
-+		.owner = THIS_MODULE, \
-+		.min_uV = (voltage), \
-+	}
-+
-+#define REG_OUT5V(ids, supply, base, voltage) \
-+	{ \
-+		.name = #ids, \
-+		.supply_name = supply, \
-+		.id = MAX8907_##ids, \
-+		.n_voltages = 1, \
-+		.ops = &max8907_out5v_ops, \
-+		.type = REGULATOR_VOLTAGE, \
-+		.owner = THIS_MODULE, \
-+		.min_uV = (voltage), \
-+		.enable_reg = (base), \
-+		.enable_mask = MAX8907_MASK_OUT5V_EN, \
-+		.en_dis_set_mask = MAX8907_MASK_OUT5V_ENSRC, \
-+		.en_dis_clr_mask = MAX8907_MASK_OUT5V_VINEN, \
-+	}
-+
-+#define REG_BBAT(ids, supply, base, min, max, step) \
-+	{ \
-+		.name = #ids, \
-+		.supply_name = supply, \
-+		.id = MAX8907_##ids, \
-+		.n_voltages = ((max) - (min)) / (step) + 1, \
-+		.ops = &max8907_bbat_ops, \
-+		.type = REGULATOR_VOLTAGE, \
-+		.owner = THIS_MODULE, \
-+		.min_uV = (min), \
-+		.uV_step = (step), \
-+		.vsel_reg = (base), \
-+		.vsel_mask = MAX8907_MASK_VBBATTCV, \
-+	}
-+
-+#define LDO_750_50(id, supply, base) REG_LDO(id, supply, (base), \
-+			750000, 3900000, 50000)
-+#define LDO_650_25(id, supply, base) REG_LDO(id, supply, (base), \
-+			650000, 2225000, 25000)
-+
-+static int max8907_regulator_ldo_is_enabled(struct regulator_dev *dev);
-+static int max8907_regulator_out5v_is_enabled(struct regulator_dev *dev);
-+
-+static struct regulator_ops max8907_mbatt_ops = {
-+};
-+
-+static struct regulator_ops max8907_ldo_ops = {
-+	.list_voltage = regulator_list_voltage_linear,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = max8907_regulator_ldo_is_enabled,
-+};
-+
-+static struct regulator_ops max8907_fixed_ops = {
-+	.list_voltage = regulator_list_voltage_linear,
-+	.get_voltage = regulator_get_voltage_fixed,
-+};
-+
-+static struct regulator_ops max8907_out5v_ops = {
-+	.list_voltage = regulator_list_voltage_linear,
-+	.get_voltage = regulator_get_voltage_fixed,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = max8907_regulator_out5v_is_enabled,
-+};
-+
-+static struct regulator_ops max8907_bbat_ops = {
-+	.list_voltage = regulator_list_voltage_linear,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+};
-+
-+static struct regulator_desc max8907_regulators[] = {
-+	REG_MBATT(),
-+	REG_LDO(SD1, "in-v1", MAX8907_REG_SDCTL1, 650000, 2225000, 25000),
-+	REG_LDO(SD2, "in-v2", MAX8907_REG_SDCTL2, 637500, 1425000, 12500),
-+	REG_LDO(SD3, "in-v3", MAX8907_REG_SDCTL3, 750000, 3900000, 50000),
-+	LDO_750_50(LDO1, "in1", MAX8907_REG_LDOCTL1),
-+	LDO_650_25(LDO2, "in2", MAX8907_REG_LDOCTL2),
-+	LDO_650_25(LDO3, "in3", MAX8907_REG_LDOCTL3),
-+	LDO_750_50(LDO4, "in4", MAX8907_REG_LDOCTL4),
-+	LDO_750_50(LDO5, "in5", MAX8907_REG_LDOCTL5),
-+	LDO_750_50(LDO6, "in6", MAX8907_REG_LDOCTL6),
-+	LDO_750_50(LDO7, "in7", MAX8907_REG_LDOCTL7),
-+	LDO_750_50(LDO8, "in8", MAX8907_REG_LDOCTL8),
-+	LDO_750_50(LDO9, "in9", MAX8907_REG_LDOCTL9),
-+	LDO_750_50(LDO10, "in10", MAX8907_REG_LDOCTL10),
-+	LDO_750_50(LDO11, "in11", MAX8907_REG_LDOCTL11),
-+	LDO_750_50(LDO12, "in12", MAX8907_REG_LDOCTL12),
-+	LDO_750_50(LDO13, "in13", MAX8907_REG_LDOCTL13),
-+	LDO_750_50(LDO14, "in14", MAX8907_REG_LDOCTL14),
-+	LDO_750_50(LDO15, "in15", MAX8907_REG_LDOCTL15),
-+	LDO_750_50(LDO16, "in16", MAX8907_REG_LDOCTL16),
-+	LDO_650_25(LDO17, "in17", MAX8907_REG_LDOCTL17),
-+	LDO_650_25(LDO18, "in18", MAX8907_REG_LDOCTL18),
-+	LDO_750_50(LDO19, "in19", MAX8907_REG_LDOCTL19),
-+	LDO_750_50(LDO20, "in20", MAX8907_REG_LDOCTL20),
-+	REG_OUT5V(OUT5V, "mbatt", MAX8907_REG_OUT5VEN, 5000000),
-+	REG_OUT5V(OUT33V, "mbatt",  MAX8907_REG_OUT33VEN, 3300000),
-+	REG_BBAT(BBAT, "MBATT", MAX8907_REG_BBAT_CNFG,
-+						2400000, 3000000, 200000),
-+	REG_FIXED(SDBY, "MBATT", 1200000),
-+	REG_FIXED(VRTC, "MBATT", 3300000),
-+};
-+
-+static int max8907_regulator_ldo_is_enabled(struct regulator_dev *rdev)
-+{
-+	unsigned int val;
-+	int ret;
-+
-+	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &val);
-+	if (ret < 0)
-+		return -EDOM;
-+
-+	return (val & MAX8907_MASK_LDO_EN) || !(val & MAX8907_MASK_LDO_SEQ);
-+}
-+
-+static int max8907_regulator_out5v_is_enabled(struct regulator_dev *rdev)
-+{
-+	unsigned int val;
-+	int ret;
-+
-+	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &val);
-+	if (ret < 0)
-+		return -EDOM;
-+
-+	if ((val &
-+	     (MAX8907_MASK_OUT5V_VINEN | MAX8907_MASK_OUT5V_ENSRC |
-+	      MAX8907_MASK_OUT5V_EN))
-+	    == MAX8907_MASK_OUT5V_ENSRC)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_OF
-+
-+#define MATCH(_name, _id) \
-+	{ \
-+		.name = #_name, \
-+		.driver_data = (void *)&max8907_regulators[MAX8907_##_id], \
-+	}
-+
-+static struct of_regulator_match max8907_matches[] = {
-+	MATCH(mbatt, MBATT),
-+	MATCH(sd1, SD1),
-+	MATCH(sd2, SD2),
-+	MATCH(sd3, SD3),
-+	MATCH(ldo1, LDO1),
-+	MATCH(ldo2, LDO2),
-+	MATCH(ldo3, LDO3),
-+	MATCH(ldo4, LDO4),
-+	MATCH(ldo5, LDO5),
-+	MATCH(ldo6, LDO6),
-+	MATCH(ldo7, LDO7),
-+	MATCH(ldo8, LDO8),
-+	MATCH(ldo9, LDO9),
-+	MATCH(ldo10, LDO10),
-+	MATCH(ldo11, LDO11),
-+	MATCH(ldo12, LDO12),
-+	MATCH(ldo13, LDO13),
-+	MATCH(ldo14, LDO14),
-+	MATCH(ldo15, LDO15),
-+	MATCH(ldo16, LDO16),
-+	MATCH(ldo17, LDO17),
-+	MATCH(ldo18, LDO18),
-+	MATCH(ldo19, LDO19),
-+	MATCH(ldo20, LDO20),
-+	MATCH(out5v, OUT5V),
-+	MATCH(out33v, OUT33V),
-+	MATCH(bbat, BBAT),
-+	MATCH(sdby, SDBY),
-+	MATCH(vrtc, VRTC),
-+};
-+
-+static int max8907_regulator_parse_dt(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.parent->of_node;
-+	struct device_node *regulators;
-+	int ret;
-+
-+	if (!pdev->dev.parent->of_node)
-+		return 0;
-+
-+	regulators = of_find_node_by_name(np, "regulators");
-+	if (!regulators) {
-+		dev_err(&pdev->dev, "regulators node not found\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = of_regulator_match(pdev->dev.parent, regulators,
-+				 max8907_matches,
-+				 ARRAY_SIZE(max8907_matches));
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+#else
-+static int max8907_regulator_parse_dt(struct platform_device *pdev)
-+{
-+	return 0;
-+}
-+#endif
-+
-+static __devinit int max8907_regulator_probe(struct platform_device *pdev)
-+{
-+	struct max8907 *max8907 = dev_get_drvdata(pdev->dev.parent);
-+	struct max8907_platform_data *pdata = dev_get_platdata(max8907->dev);
-+	int ret;
-+	struct max8907_regulator *pmic;
-+	unsigned int version;
-+	int i;
-+	struct regulator_config config = {};
-+	struct regulator_init_data *idata;
-+	const char *mbatt_rail_name = NULL;
-+
-+	ret = max8907_regulator_parse_dt(pdev);
-+	if (ret)
-+		return ret;
-+
-+	pmic = devm_kzalloc(&pdev->dev, sizeof(*pmic), GFP_KERNEL);
-+	if (!pmic) {
-+		dev_err(&pdev->dev, "Failed to alloc pmic\n");
-+		return -ENOMEM;
-+	}
-+	platform_set_drvdata(pdev, pmic);
-+
-+	memcpy(pmic->desc, max8907_regulators, sizeof(pmic->desc));
-+
-+	/* Backwards compatibility with MAX8907B; SD1 uses different voltages */
-+	regmap_read(max8907->regmap_gen, MAX8907_REG_II2RR, &version);
-+	if ((version & MAX8907_II2RR_VERSION_MASK) ==
-+	    MAX8907_II2RR_VERSION_REV_B) {
-+		pmic->desc[MAX8907_SD1].min_uV = 637500;
-+		pmic->desc[MAX8907_SD1].uV_step = 12500;
-+		pmic->desc[MAX8907_SD1].n_voltages = (1425000 - 637500) / 12500;
-+	}
-+
-+	for (i = 0; i < MAX8907_NUM_REGULATORS; i++) {
-+		config.dev = pdev->dev.parent;
-+		if (pdata)
-+			idata = pdata->init_data[i];
-+		else
-+			idata = max8907_matches[i].init_data;
-+		config.init_data = idata;
-+		config.driver_data = pmic;
-+		config.regmap = max8907->regmap_gen;
-+		config.of_node = max8907_matches[i].of_node;
-+
-+		switch (pmic->desc[i].id) {
-+		case MAX8907_MBATT:
-+			mbatt_rail_name = idata->constraints.name;
-+			break;
-+		case MAX8907_BBAT:
-+		case MAX8907_SDBY:
-+		case MAX8907_VRTC:
-+			idata->supply_regulator = mbatt_rail_name;
-+			break;
-+		}
-+
-+		pmic->rdev[i] = regulator_register(&pmic->desc[i], &config);
-+		if (IS_ERR(pmic->rdev[i])) {
-+			dev_err(&pdev->dev,
-+				"failed to register %s regulator\n",
-+				pmic->desc[i].name);
-+			ret = PTR_ERR(pmic->rdev[i]);
-+			goto err_unregister_regulator;
-+		}
-+	}
-+
-+	return 0;
-+
-+err_unregister_regulator:
-+	while (--i >= 0)
-+		regulator_unregister(pmic->rdev[i]);
-+	return ret;
-+}
-+
-+static __devexit int max8907_regulator_remove(struct platform_device *pdev)
-+{
-+	struct max8907_regulator *pmic;
-+	int i;
-+
-+	for (i = 0; i < MAX8907_NUM_REGULATORS; i++)
-+		regulator_unregister(pmic->rdev[i]);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver max8907_regulator_driver = {
-+	.driver = {
-+		   .name = "max8907-regulator",
-+		   .owner = THIS_MODULE,
-+		   },
-+	.probe = max8907_regulator_probe,
-+	.remove = __devexit_p(max8907_regulator_remove),
-+};
-+
-+static int __init max8907_regulator_init(void)
-+{
-+	return platform_driver_register(&max8907_regulator_driver);
-+}
-+
-+subsys_initcall(max8907_regulator_init);
-+
-+static void __exit max8907_reg_exit(void)
-+{
-+	platform_driver_unregister(&max8907_regulator_driver);
-+}
-+
-+module_exit(max8907_reg_exit);
-+
-+MODULE_DESCRIPTION("MAX8907 regulator driver");
-+MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@maxim-ic.com>");
-+MODULE_LICENSE("GPL v2");
+ 	if (!cfg) {
+ 		dev_err(&pdev->dev, "missing platform data\n");
+-		goto err0;
++		return -ENODEV;
+ 	}
+ 
+ 	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
 -- 
-1.7.0.4
+1.7.10
 
