@@ -1,85 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353Ab2HHGlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:41:10 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:50840 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753114Ab2HHGlI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:41:08 -0400
-From: Virupax SADASHIVPETIMATH <virupax.sadashivpetimath@stericsson.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Praveena NADAHALLY <praveen.nadahally@stericsson.com>,
-        Rajaram REGUPATHY <ragupathy.rajaram@stericsson.com>,
-        Vikrant BAPAT <vikrant.bapat@stericsson.com>
-Date: Wed, 8 Aug 2012 08:40:04 +0200
-Subject: RE: [PATCH v2] usb:musb:musb_host: Handle highmem in PIO mode
-Thread-Topic: [PATCH v2] usb:musb:musb_host: Handle highmem in PIO mode
-Thread-Index: Ac10xLEUMQGO1YJGRliYZ6gSOaIyDwAZi58g
-Message-ID: <A3217089E06965468FCEC60ADC3A8F925C21652138@EXDCVYMBSTM006.EQ1STM.local>
-References: <1344330980-9064-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
- <Pine.LNX.4.44L0.1208071342410.2400-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1208071342410.2400-100000@iolanthe.rowland.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755644Ab2HHGmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:42:36 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:41230 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751502Ab2HHGmf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 02:42:35 -0400
+From: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+To: <stern@rowland.harvard.edu>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linus.walleij@linaro.org>, <praveen.nadahally@stericsson.com>,
+        <ragupathy.rajaram@stericsson.com>, <vikrant.bapat@stericsson.com>
+Subject: [PATCH v3] usb:musb:musb_host: Handle highmem in PIO mode
+Date: Wed, 8 Aug 2012 12:12:04 +0530
+Message-ID: <1344408124-21509-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
+X-Mailer: git-send-email 1.7.4.3
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In case of USB bulk transfer, when himem page
+is received, the usb_sg_init function sets the
+urb transfer buffer to NULL. When such URB
+transfer is handled, kernel crashes in PIO mode.
+Handle this by mapping the highmem buffer in PIO mode.
 
+Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+Signed-off-by: Praveena NADAHALLY <praveen.nadahally@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/usb/musb/musb_host.c |   97 +++++++++++++++++++++++++++++++++++++++--
+ drivers/usb/musb/musb_host.h |    3 +
+ 2 files changed, 95 insertions(+), 5 deletions(-)
 
-> -----Original Message-----
-> From: Alan Stern [mailto:stern@rowland.harvard.edu]
-> Sent: Tuesday, August 07, 2012 11:17 PM
-> To: Virupax SADASHIVPETIMATH
-> Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org; linux-
-> kernel@vger.kernel.org; linus.walleij@linaro.org; Praveena NADAHALLY; Rajaram
-> REGUPATHY; Vikrant BAPAT
-> Subject: Re: [PATCH v2] usb:musb:musb_host: Handle highmem in PIO mode
-> 
-> 
-> > +	 */
-> > +	if (!urb->transfer_buffer)
-> > +		use_sg = true;
-> 
-> Here you test urb->transfer_buffer.
-
-I will make the test as 
-	if (!use_sg && !urb->transfer_buffer)
-		use_sg = true;
-
-> > +	if (use_sg) {
-> > +		/* sg_miter_start is already done in musb_ep_program */
-> > +		if (!sg_miter_next(&qh->sg_miter)) {
-> > +			dev_err(musb->controller, "error: sg list empty\n");
-> > +			sg_miter_stop(&qh->sg_miter);
-> > +			status = -EINVAL;
-> > +			goto done;
-> > +		}
-> > +		urb->transfer_buffer = qh->sg_miter.addr;
-> 
-> And here you set it.  As a result, on the next iteration of this
-> routine the test above won't work right.  (This function gets invoked
-> once for each entry in the sg list, right?)
-> 
-> Is there any reason to set urb->transfer_buffer here?  You could just
-> use qh->sg_miter.addr directly in the musb_write_fifo() call two lines
-> below.
-
-I will change it. 
-
-Thanks 
-Virupax S 
-
+diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+index 4bb717d..3ba9a4b 100644
+--- a/drivers/usb/musb/musb_host.c
++++ b/drivers/usb/musb/musb_host.c
+@@ -813,9 +813,28 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
+ 		if (load_count) {
+ 			/* PIO to load FIFO */
+ 			qh->segsize = load_count;
+-			musb_write_fifo(hw_ep, load_count, buf);
++			if (!buf) {
++				sg_miter_start(&qh->sg_miter, urb->sg, 1,
++						SG_MITER_ATOMIC
++						| SG_MITER_FROM_SG);
++				if (!sg_miter_next(&qh->sg_miter)) {
++					dev_err(musb->controller,
++							"error: sg"
++							"list empty\n");
++					sg_miter_stop(&qh->sg_miter);
++					goto finish;
++				}
++				buf = qh->sg_miter.addr + urb->sg->offset +
++					urb->actual_length;
++				load_count = min_t(u32, load_count,
++						qh->sg_miter.length);
++				musb_write_fifo(hw_ep, load_count, buf);
++				qh->sg_miter.consumed = load_count;
++				sg_miter_stop(&qh->sg_miter);
++			} else
++				musb_write_fifo(hw_ep, load_count, buf);
+ 		}
+-
++finish:
+ 		/* re-enable interrupt */
+ 		musb_writew(mbase, MUSB_INTRTXE, int_txe);
+ 
+@@ -1116,6 +1135,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
+ 	void __iomem		*mbase = musb->mregs;
+ 	struct dma_channel	*dma;
+ 	bool			transfer_pending = false;
++	static bool use_sg;
+ 
+ 	musb_ep_select(mbase, epnum);
+ 	tx_csr = musb_readw(epio, MUSB_TXCSR);
+@@ -1163,6 +1183,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
+ 		return;
+ 	}
+ 
++done:
+ 	if (status) {
+ 		if (dma_channel_status(dma) == MUSB_DMA_STATUS_BUSY) {
+ 			dma->status = MUSB_DMA_STATUS_CORE_ABORT;
+@@ -1332,9 +1353,37 @@ void musb_host_tx(struct musb *musb, u8 epnum)
+ 		length = qh->maxpacket;
+ 	/* Unmap the buffer so that CPU can use it */
+ 	usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
+-	musb_write_fifo(hw_ep, length, urb->transfer_buffer + offset);
++
++	/*
++	 * We need to map sg if the transfer_buffer is
++	 * NULL.
++	 */
++	if (!use_sg && !urb->transfer_buffer)
++		use_sg = true;
++
++	if (use_sg) {
++		/* sg_miter_start is already done in musb_ep_program */
++		if (!sg_miter_next(&qh->sg_miter)) {
++			dev_err(musb->controller, "error: sg list empty\n");
++			sg_miter_stop(&qh->sg_miter);
++			status = -EINVAL;
++			goto done;
++		}
++		length = min_t(u32, length, qh->sg_miter.length);
++		musb_write_fifo(hw_ep, length, qh->sg_miter.addr);
++		qh->sg_miter.consumed = length;
++		sg_miter_stop(&qh->sg_miter);
++	} else {
++		musb_write_fifo(hw_ep, length, urb->transfer_buffer + offset);
++	}
++
+ 	qh->segsize = length;
+ 
++	if (use_sg) {
++		if (offset + length >= urb->transfer_buffer_length)
++			use_sg = false;
++	}
++
+ 	musb_ep_select(mbase, epnum);
+ 	musb_writew(epio, MUSB_TXCSR,
+ 			MUSB_TXCSR_H_WZC_BITS | MUSB_TXCSR_TXPKTRDY);
+@@ -1442,6 +1491,8 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 	bool			done = false;
+ 	u32			status;
+ 	struct dma_channel	*dma;
++	static bool use_sg;
++	unsigned int sg_flags = SG_MITER_ATOMIC | SG_MITER_TO_SG;
+ 
+ 	musb_ep_select(mbase, epnum);
+ 
+@@ -1756,10 +1807,43 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ #endif	/* Mentor DMA */
+ 
+ 		if (!dma) {
++			unsigned int received_len;
++
+ 			/* Unmap the buffer so that CPU can use it */
+ 			usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
+-			done = musb_host_packet_rx(musb, urb,
+-					epnum, iso_err);
++
++			/*
++			 * We need to map sg if the transfer_buffer is
++			 * NULL.
++			 */
++			if (!urb->transfer_buffer) {
++				use_sg = true;
++				sg_miter_start(&qh->sg_miter, urb->sg, 1,
++						sg_flags);
++			}
++
++			if (use_sg) {
++				if (!sg_miter_next(&qh->sg_miter)) {
++					dev_err(musb->controller, "error: sg list empty\n");
++					sg_miter_stop(&qh->sg_miter);
++					status = -EINVAL;
++					done = true;
++					goto finish;
++				}
++				urb->transfer_buffer = qh->sg_miter.addr;
++				received_len = urb->actual_length;
++				qh->offset = 0x0;
++				done = musb_host_packet_rx(musb, urb, epnum,
++						iso_err);
++				/* Calculate the number of bytes received */
++				received_len = urb->actual_length -
++					received_len;
++				qh->sg_miter.consumed = received_len;
++				sg_miter_stop(&qh->sg_miter);
++			} else {
++				done = musb_host_packet_rx(musb, urb,
++						epnum, iso_err);
++			}
+ 			dev_dbg(musb->controller, "read %spacket\n", done ? "last " : "");
+ 		}
+ 	}
+@@ -1768,6 +1852,9 @@ finish:
+ 	urb->actual_length += xfer_len;
+ 	qh->offset += xfer_len;
+ 	if (done) {
++		if (use_sg)
++			use_sg = false;
++
+ 		if (urb->status == -EINPROGRESS)
+ 			urb->status = status;
+ 		musb_advance_schedule(musb, urb, hw_ep, USB_DIR_IN);
+diff --git a/drivers/usb/musb/musb_host.h b/drivers/usb/musb/musb_host.h
+index 622d09f..5a9c8fe 100644
+--- a/drivers/usb/musb/musb_host.h
++++ b/drivers/usb/musb/musb_host.h
+@@ -35,6 +35,8 @@
+ #ifndef _MUSB_HOST_H
+ #define _MUSB_HOST_H
+ 
++#include <linux/scatterlist.h>
++
+ static inline struct usb_hcd *musb_to_hcd(struct musb *musb)
+ {
+ 	return container_of((void *) musb, struct usb_hcd, hcd_priv);
+@@ -71,6 +73,7 @@ struct musb_qh {
+ 	u16			maxpacket;
+ 	u16			frame;		/* for periodic schedule */
+ 	unsigned		iso_idx;	/* in urb->iso_frame_desc[] */
++	struct sg_mapping_iter sg_miter;	/* for highmem in PIO mode */
+ };
+ 
+ /* map from control or bulk queue head to the first qh on that ring */
+-- 
+1.7.4.3
 
