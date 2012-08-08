@@ -1,163 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab2HHU0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 16:26:53 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:60049 "EHLO
+	id S1030836Ab2HHU1h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 16:27:37 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:60051 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759161Ab2HHU0w (ORCPT
+	with ESMTP id S1759218Ab2HHU0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 16:26:52 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH v2 21/41] TTY: move cdev_add to tty_register_device
-Date: Wed,  8 Aug 2012 22:26:44 +0200
-Message-Id: <1344457604-12823-4-git-send-email-jslaby@suse.cz>
+Subject: [PATCH v2 18/41] TTY: pty, switch to tty_alloc_driver
+Date: Wed,  8 Aug 2012 22:26:41 +0200
+Message-Id: <1344457604-12823-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344457604-12823-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
- <1344457604-12823-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need the /dev/ node not to be available before we call
-tty_register_device. Otherwise we might race with open and
-tty_struct->port might not be available at that time.
-
-This is not an issue now, but would be a problem after "TTY: use
-tty_port_register_device" is applied.
+Switch to the new driver allocation interface, as this is one of the
+special call-sites. Here, we need TTY_DRIVER_DYNAMIC_ALLOC to not
+allocate tty_driver->ports, cdevs and potentially other structures
+because we reserve too many lines in pty. Instead, it provides the
+tty_port<->tty_struct link in tty->ops->install already.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/tty_io.c       |   48 +++++++++++++++++++++++++++++++++++++-------
- include/linux/tty_driver.h |    2 +-
- 2 files changed, 42 insertions(+), 8 deletions(-)
+ drivers/tty/pty.c          |   31 ++++++++++++++++++++-----------
+ include/linux/tty_driver.h |    4 ++++
+ 2 files changed, 24 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 59a73af..f83d450 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -2991,6 +2991,15 @@ EXPORT_SYMBOL_GPL(tty_put_char);
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index b726c8b..db7c6f9 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -443,11 +443,17 @@ static void __init legacy_pty_init(void)
+ 	if (legacy_count <= 0)
+ 		return;
  
- struct class *tty_class;
+-	pty_driver = alloc_tty_driver(legacy_count);
++	pty_driver = tty_alloc_driver(legacy_count,
++			TTY_DRIVER_RESET_TERMIOS |
++			TTY_DRIVER_REAL_RAW |
++			TTY_DRIVER_DYNAMIC_ALLOC);
+ 	if (!pty_driver)
+ 		panic("Couldn't allocate pty driver");
  
-+static int tty_cdev_add(struct tty_driver *driver, dev_t dev,
-+		unsigned int index, unsigned int count)
-+{
-+	/* init here, since reused cdevs cause crashes */
-+	cdev_init(&driver->cdevs[index], &tty_fops);
-+	driver->cdevs[index].owner = driver->owner;
-+	return cdev_add(&driver->cdevs[index], dev, count);
-+}
-+
- /**
-  *	tty_register_device - register a tty device
-  *	@driver: the tty driver that describes the tty device
-@@ -3013,8 +3022,10 @@ struct class *tty_class;
- struct device *tty_register_device(struct tty_driver *driver, unsigned index,
- 				   struct device *device)
+-	pty_slave_driver = alloc_tty_driver(legacy_count);
++	pty_slave_driver = tty_alloc_driver(legacy_count,
++			TTY_DRIVER_RESET_TERMIOS |
++			TTY_DRIVER_REAL_RAW |
++			TTY_DRIVER_DYNAMIC_ALLOC);
+ 	if (!pty_slave_driver)
+ 		panic("Couldn't allocate pty slave driver");
+ 
+@@ -464,7 +470,6 @@ static void __init legacy_pty_init(void)
+ 	pty_driver->init_termios.c_lflag = 0;
+ 	pty_driver->init_termios.c_ispeed = 38400;
+ 	pty_driver->init_termios.c_ospeed = 38400;
+-	pty_driver->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_REAL_RAW;
+ 	pty_driver->other = pty_slave_driver;
+ 	tty_set_operations(pty_driver, &master_pty_ops_bsd);
+ 
+@@ -478,8 +483,6 @@ static void __init legacy_pty_init(void)
+ 	pty_slave_driver->init_termios.c_cflag = B38400 | CS8 | CREAD;
+ 	pty_slave_driver->init_termios.c_ispeed = 38400;
+ 	pty_slave_driver->init_termios.c_ospeed = 38400;
+-	pty_slave_driver->flags = TTY_DRIVER_RESET_TERMIOS |
+-					TTY_DRIVER_REAL_RAW;
+ 	pty_slave_driver->other = pty_driver;
+ 	tty_set_operations(pty_slave_driver, &slave_pty_ops_bsd);
+ 
+@@ -670,10 +673,20 @@ static struct file_operations ptmx_fops;
+ 
+ static void __init unix98_pty_init(void)
  {
-+	struct device *ret;
- 	char name[64];
- 	dev_t dev = MKDEV(driver->major, driver->minor_start) + index;
-+	bool cdev = false;
+-	ptm_driver = alloc_tty_driver(NR_UNIX98_PTY_MAX);
++	ptm_driver = tty_alloc_driver(NR_UNIX98_PTY_MAX,
++			TTY_DRIVER_RESET_TERMIOS |
++			TTY_DRIVER_REAL_RAW |
++			TTY_DRIVER_DYNAMIC_DEV |
++			TTY_DRIVER_DEVPTS_MEM |
++			TTY_DRIVER_DYNAMIC_ALLOC);
+ 	if (!ptm_driver)
+ 		panic("Couldn't allocate Unix98 ptm driver");
+-	pts_driver = alloc_tty_driver(NR_UNIX98_PTY_MAX);
++	pts_driver = tty_alloc_driver(NR_UNIX98_PTY_MAX,
++			TTY_DRIVER_RESET_TERMIOS |
++			TTY_DRIVER_REAL_RAW |
++			TTY_DRIVER_DYNAMIC_DEV |
++			TTY_DRIVER_DEVPTS_MEM |
++			TTY_DRIVER_DYNAMIC_ALLOC);
+ 	if (!pts_driver)
+ 		panic("Couldn't allocate Unix98 pts driver");
  
- 	if (index >= driver->num) {
- 		printk(KERN_ERR "Attempt to register invalid tty line number "
-@@ -3027,7 +3038,18 @@ struct device *tty_register_device(struct tty_driver *driver, unsigned index,
- 	else
- 		tty_line_name(driver, index, name);
+@@ -690,8 +703,6 @@ static void __init unix98_pty_init(void)
+ 	ptm_driver->init_termios.c_lflag = 0;
+ 	ptm_driver->init_termios.c_ispeed = 38400;
+ 	ptm_driver->init_termios.c_ospeed = 38400;
+-	ptm_driver->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_REAL_RAW |
+-		TTY_DRIVER_DYNAMIC_DEV | TTY_DRIVER_DEVPTS_MEM;
+ 	ptm_driver->other = pts_driver;
+ 	tty_set_operations(ptm_driver, &ptm_unix98_ops);
  
--	return device_create(tty_class, device, dev, NULL, name);
-+	if (!(driver->flags & TTY_DRIVER_DYNAMIC_ALLOC)) {
-+		int error = tty_cdev_add(driver, dev, index, 1);
-+		if (error)
-+			return ERR_PTR(error);
-+		cdev = true;
-+	}
-+
-+	ret = device_create(tty_class, device, dev, NULL, name);
-+	if (IS_ERR(ret) && cdev)
-+		cdev_del(&driver->cdevs[index]);
-+
-+	return ret;
- }
- EXPORT_SYMBOL(tty_register_device);
+@@ -705,8 +716,6 @@ static void __init unix98_pty_init(void)
+ 	pts_driver->init_termios.c_cflag = B38400 | CS8 | CREAD;
+ 	pts_driver->init_termios.c_ispeed = 38400;
+ 	pts_driver->init_termios.c_ospeed = 38400;
+-	pts_driver->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_REAL_RAW |
+-		TTY_DRIVER_DYNAMIC_DEV | TTY_DRIVER_DEVPTS_MEM;
+ 	pts_driver->other = ptm_driver;
+ 	tty_set_operations(pts_driver, &pty_unix98_ops);
  
-@@ -3046,6 +3068,8 @@ void tty_unregister_device(struct tty_driver *driver, unsigned index)
- {
- 	device_destroy(tty_class,
- 		MKDEV(driver->major, driver->minor_start) + index);
-+	if (!(driver->flags & TTY_DRIVER_DYNAMIC_ALLOC))
-+		cdev_del(&driver->cdevs[index]);
- }
- EXPORT_SYMBOL(tty_unregister_device);
- 
-@@ -3062,6 +3086,7 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
- 		unsigned long flags)
- {
- 	struct tty_driver *driver;
-+	unsigned int cdevs = 1;
- 	int err;
- 
- 	if (!lines || (flags & TTY_DRIVER_UNNUMBERED_NODE && lines > 1))
-@@ -3095,6 +3120,13 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
- 			err = -ENOMEM;
- 			goto err_free_all;
- 		}
-+		cdevs = lines;
-+	}
-+
-+	driver->cdevs = kcalloc(cdevs, sizeof(*driver->cdevs), GFP_KERNEL);
-+	if (!driver->cdevs) {
-+		err = -ENOMEM;
-+		goto err_free_all;
- 	}
- 
- 	return driver;
-@@ -3129,8 +3161,10 @@ static void destruct_tty_driver(struct kref *kref)
- 				tty_unregister_device(driver, i);
- 		}
- 		proc_tty_unregister_driver(driver);
--		cdev_del(&driver->cdev);
-+		if (driver->flags & TTY_DRIVER_DYNAMIC_ALLOC)
-+			cdev_del(&driver->cdevs[0]);
- 	}
-+	kfree(driver->cdevs);
- 	kfree(driver->ports);
- 	kfree(driver->termios);
- 	kfree(driver->ttys);
-@@ -3180,11 +3214,11 @@ int tty_register_driver(struct tty_driver *driver)
- 	if (error < 0)
- 		goto err;
- 
--	cdev_init(&driver->cdev, &tty_fops);
--	driver->cdev.owner = driver->owner;
--	error = cdev_add(&driver->cdev, dev, driver->num);
--	if (error)
--		goto err_unreg_char;
-+	if (driver->flags & TTY_DRIVER_DYNAMIC_ALLOC) {
-+		error = tty_cdev_add(driver, dev, 0, driver->num);
-+		if (error)
-+			goto err_unreg_char;
-+	}
- 
- 	mutex_lock(&tty_mutex);
- 	list_add(&driver->tty_drivers, &tty_drivers);
 diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
-index 44e05b7..dd976cf 100644
+index 3adc362..1a85f00 100644
 --- a/include/linux/tty_driver.h
 +++ b/include/linux/tty_driver.h
-@@ -289,7 +289,7 @@ struct tty_operations {
- struct tty_driver {
- 	int	magic;		/* magic number for this structure */
- 	struct kref kref;	/* Reference management */
--	struct cdev cdev;
-+	struct cdev *cdevs;
- 	struct module	*owner;
- 	const char	*driver_name;
- 	const char	*name;
+@@ -391,6 +391,9 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
+  *	the requested timeout to the caller instead of using a simple
+  *	on/off interface.
+  *
++ * TTY_DRIVER_DYNAMIC_ALLOC -- do not allocate structures which are
++ *	needed per line for this driver as it would waste memory.
++ *	The driver will take care.
+  */
+ #define TTY_DRIVER_INSTALLED		0x0001
+ #define TTY_DRIVER_RESET_TERMIOS	0x0002
+@@ -398,6 +401,7 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
+ #define TTY_DRIVER_DYNAMIC_DEV		0x0008
+ #define TTY_DRIVER_DEVPTS_MEM		0x0010
+ #define TTY_DRIVER_HARDWARE_BREAK	0x0020
++#define TTY_DRIVER_DYNAMIC_ALLOC	0x0040
+ 
+ /* tty driver types */
+ #define TTY_DRIVER_TYPE_SYSTEM		0x0001
 -- 
 1.7.10.4
 
