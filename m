@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab2HHKDM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 06:03:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64865 "EHLO mga02.intel.com"
+	id S1758000Ab2HHKDQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 06:03:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64899 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751992Ab2HHKDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 06:03:08 -0400
+	id S1757982Ab2HHKDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 06:03:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,732,1336374000"; 
-   d="scan'208";a="177396339"
+   d="scan'208";a="177396405"
 From: Feng Tang <feng.tang@intel.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
         Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
 Cc: Robert Richter <robert.richter@amd.com>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>, Feng Tang <feng.tang@intel.com>,
-        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH v5 2/5] perf script: Replace "struct thread" with "struct addr_location" as a parameter for "process_event()"
-Date: Wed,  8 Aug 2012 17:57:52 +0800
-Message-Id: <1344419875-21665-3-git-send-email-feng.tang@intel.com>
+        Stephane Eranian <eranian@google.com>, Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v5 4/5] perf script: Add a python library EventClass.py
+Date: Wed,  8 Aug 2012 17:57:54 +0800
+Message-Id: <1344419875-21665-5-git-send-email-feng.tang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1344419875-21665-1-git-send-email-feng.tang@intel.com>
 References: <1344419875-21665-1-git-send-email-feng.tang@intel.com>
@@ -27,205 +25,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both perl and python script start processing events other than trace
-points, and it's useful to pass the resolved symbol and the dso info to
-the event handler in script for better analysis and statistics.
-
-Struct thread is already a member of struct addr_location, using
-addr_location will keep the thread info, while providing additional
-symbol and dso info if exist, so that the script itself doesn't need to
-bother to do the symbol resolving and dso searching work.
+This library defines several class types for perf events which could
+help to better analyze the event samples. Currently there are just a
+few classes, PerfEvent is the base class for all perf events,  PebsEvent
+is a HW base Intel x86 PEBS event, and user could add more SW/HW event
+classes based on requriements.
 
 Signed-off-by: Feng Tang <feng.tang@intel.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Tested-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1339999839-14007-3-git-send-email-feng.tang@intel.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c                        |    5 +++--
- .../perf/util/scripting-engines/trace-event-perl.c |   11 ++++++-----
- .../util/scripting-engines/trace-event-python.c    |   13 +++++++------
- tools/perf/util/trace-event-scripting.c            |    2 +-
- tools/perf/util/trace-event.h                      |    5 +++--
- 5 files changed, 20 insertions(+), 16 deletions(-)
+ .../Perf-Trace-Util/lib/Perf/Trace/EventClass.py   |   95 ++++++++++++++++++++
+ 1 files changed, 95 insertions(+), 0 deletions(-)
+ create mode 100755 tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 6425612..30a9cb8 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -396,9 +396,10 @@ static void print_sample_bts(union perf_event *event,
- 
- static void process_event(union perf_event *event, struct perf_sample *sample,
- 			  struct perf_evsel *evsel, struct machine *machine,
--			  struct thread *thread)
-+			  struct addr_location *al)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
-+	struct thread *thread = al->thread;
- 
- 	if (output[attr->type].fields == 0)
- 		return;
-@@ -511,7 +512,7 @@ static int process_sample_event(struct perf_tool *tool __used,
- 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
- 		return 0;
- 
--	scripting_ops->process_event(event, sample, evsel, machine, thread);
-+	scripting_ops->process_event(event, sample, evsel, machine, &al);
- 
- 	evsel->hists.stats.total_period += sample->period;
- 	return 0;
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index 20cefeb..1cde6aa 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -261,7 +261,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
- 				    struct perf_sample *sample,
- 				    struct perf_evsel *evsel,
- 				    struct machine *machine __unused,
--				    struct thread *thread)
-+				    struct addr_location *al)
- {
- 	struct format_field *field;
- 	static char handler[256];
-@@ -272,6 +272,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
- 	unsigned long long nsecs = sample->time;
-+	struct thread *thread = al->thread;
- 	char *comm = thread->comm;
- 
- 	dSP;
-@@ -349,7 +350,7 @@ static void perl_process_event_generic(union perf_event *event,
- 				       struct perf_sample *sample,
- 				       struct perf_evsel *evsel,
- 				       struct machine *machine __unused,
--				       struct thread *thread __unused)
-+				       struct addr_location *al __unused)
- {
- 	dSP;
- 
-@@ -375,10 +376,10 @@ static void perl_process_event(union perf_event *event,
- 			       struct perf_sample *sample,
- 			       struct perf_evsel *evsel,
- 			       struct machine *machine,
--			       struct thread *thread)
-+			       struct addr_location *al)
- {
--	perl_process_tracepoint(event, sample, evsel, machine, thread);
--	perl_process_event_generic(event, sample, evsel, machine, thread);
-+	perl_process_tracepoint(event, sample, evsel, machine, al);
-+	perl_process_event_generic(event, sample, evsel, machine, al);
- }
- 
- static void run_start_sub(void)
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index b9010d8..24711b3 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -225,7 +225,7 @@ static void python_process_tracepoint(union perf_event *perf_event __unused,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
- 				 struct machine *machine __unused,
--				 struct thread *thread)
-+				 struct addr_location *al)
- {
- 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
- 	static char handler_name[256];
-@@ -238,6 +238,7 @@ static void python_process_tracepoint(union perf_event *perf_event __unused,
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
- 	unsigned long long nsecs = sample->time;
-+	struct thread *thread = al->thread;
- 	char *comm = thread->comm;
- 
- 	t = PyTuple_New(MAX_FIELDS);
-@@ -342,7 +343,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 					 struct perf_sample *sample,
- 					 struct perf_evsel *evsel,
- 					 struct machine *machine __unused,
--					 struct thread *thread __unused)
-+					 struct addr_location *al __unused)
- {
- 	PyObject *handler, *retval, *t;
- 	static char handler_name[64];
-@@ -361,7 +362,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 		goto exit;
- 	}
- 
--	/* Pass 3 parameters: event_attr, perf_sample, raw data */
-+	/* Pass 4 parameters: event_attr, perf_sample, raw data, thread name */
- 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)&evsel->attr, sizeof(evsel->attr)));
- 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)sample, sizeof(*sample)));
- 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(data, sample->raw_size));
-@@ -380,17 +381,17 @@ static void python_process_event(union perf_event *perf_event,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
- 				 struct machine *machine,
--				 struct thread *thread)
-+				 struct addr_location *al)
- {
- 	switch (evsel->attr.type) {
- 	case PERF_TYPE_TRACEPOINT:
- 		python_process_tracepoint(perf_event, sample, evsel,
--					  machine, thread);
-+					  machine, al);
- 		break;
- 	/* Reserve for future process_hw/sw/raw APIs */
- 	default:
- 		python_process_general_event(perf_event, sample, evsel,
--					     machine, thread);
-+					     machine, al);
- 	}
- }
- 
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index aceb8ee..302ff26 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -39,7 +39,7 @@ static void process_event_unsupported(union perf_event *event __unused,
- 				      struct perf_sample *sample __unused,
- 				      struct perf_evsel *evsel __unused,
- 				      struct machine *machine __unused,
--				      struct thread *thread __unused)
-+				      struct addr_location *al __unused)
- {
- }
- 
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index cee1635..7575dfd 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -9,7 +9,6 @@ struct machine;
- struct perf_sample;
- union perf_event;
- struct perf_tool;
--struct thread;
- 
- extern int header_page_size_size;
- extern int header_page_ts_size;
-@@ -76,6 +75,8 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- void tracing_data_put(struct tracing_data *tdata);
- 
- 
-+struct addr_location;
+diff --git a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
+new file mode 100755
+index 0000000..12cd773
+--- /dev/null
++++ b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
+@@ -0,0 +1,95 @@
++# EventClass.py
++#
++# This is a libray defining some events typs classes, which could
++# be used by other scripts to analyzing the perf samples.
++#
++# Currently there are just a few classes defined for examples,
++# PerfEvent is the base class for all perf event sample, PebsEvent
++# is a HW base Intel x86 PEBS event, and user could add more SW/HW
++# event classes based on requriements.
 +
- struct scripting_ops {
- 	const char *name;
- 	int (*start_script) (const char *script, int argc, const char **argv);
-@@ -84,7 +85,7 @@ struct scripting_ops {
- 			       struct perf_sample *sample,
- 			       struct perf_evsel *evsel,
- 			       struct machine *machine,
--			       struct thread *thread);
-+			       struct addr_location *al);
- 	int (*generate_script) (struct pevent *pevent, const char *outfile);
- };
- 
++import struct
++
++# Event types, user could add more here
++EVTYPE_GENERIC  = 0
++EVTYPE_PEBS     = 1     # Basic PEBS event
++EVTYPE_PEBS_LL  = 2     # PEBS event with load latency info
++EVTYPE_IBS      = 3
++
++#
++# Currently we don't have good way to tell the event type, but by
++# the size of raw buffer, raw PEBS event with load latency data's
++# size is 176 bytes, while the pure PEBS event's size is 144 bytes.
++#
++def create_event(name, comm, dso, symbol, raw_buf):
++        if (len(raw_buf) == 144):
++                event = PebsEvent(name, comm, dso, symbol, raw_buf)
++        elif (len(raw_buf) == 176):
++                event = PebsNHM(name, comm, dso, symbol, raw_buf)
++        else:
++                event = PerfEvent(name, comm, dso, symbol, raw_buf)
++
++        return event
++
++class PerfEvent(object):
++        event_num = 0
++        def __init__(self, name, comm, dso, symbol, raw_buf, ev_type=EVTYPE_GENERIC):
++                self.name       = name
++                self.comm       = comm
++                self.dso        = dso
++                self.symbol     = symbol
++                self.raw_buf    = raw_buf
++                self.ev_type    = ev_type
++                PerfEvent.event_num += 1
++
++        def show(self):
++                print "PMU event: name=%12s, symbol=%24s, comm=%8s, dso=%12s" % (self.name, self.symbol, self.comm, self.dso)
++
++#
++# Basic Intel PEBS (Precise Event-based Sampling) event, whose raw buffer
++# contains the context info when that event happened: the EFLAGS and
++# linear IP info, as well as all the registers.
++#
++class PebsEvent(PerfEvent):
++        pebs_num = 0
++        def __init__(self, name, comm, dso, symbol, raw_buf, ev_type=EVTYPE_PEBS):
++                tmp_buf=raw_buf[0:80]
++                flags, ip, ax, bx, cx, dx, si, di, bp, sp = struct.unpack('QQQQQQQQQQ', tmp_buf)
++                self.flags = flags
++                self.ip    = ip
++                self.ax    = ax
++                self.bx    = bx
++                self.cx    = cx
++                self.dx    = dx
++                self.si    = si
++                self.di    = di
++                self.bp    = bp
++                self.sp    = sp
++
++                PerfEvent.__init__(self, name, comm, dso, symbol, raw_buf, ev_type)
++                PebsEvent.pebs_num += 1
++                del tmp_buf
++
++#
++# Intel Nehalem and Westmere support PEBS plus Load Latency info which lie
++# in the four 64 bit words write after the PEBS data:
++#       Status: records the IA32_PERF_GLOBAL_STATUS register value
++#       DLA:    Data Linear Address (EIP)
++#       DSE:    Data Source Encoding, where the latency happens, hit or miss
++#               in L1/L2/L3 or IO operations
++#       LAT:    the actual latency in cycles
++#
++class PebsNHM(PebsEvent):
++        pebs_nhm_num = 0
++        def __init__(self, name, comm, dso, symbol, raw_buf, ev_type=EVTYPE_PEBS_LL):
++                tmp_buf=raw_buf[144:176]
++                status, dla, dse, lat = struct.unpack('QQQQ', tmp_buf)
++                self.status = status
++                self.dla = dla
++                self.dse = dse
++                self.lat = lat
++
++                PebsEvent.__init__(self, name, comm, dso, symbol, raw_buf, ev_type)
++                PebsNHM.pebs_nhm_num += 1
++                del tmp_buf
++
 -- 
 1.7.1
 
