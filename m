@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956Ab2HHTR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 15:17:27 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:59975 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932896Ab2HHTRZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 15:17:25 -0400
-Message-ID: <5022BB0E.8050706@fb.com>
-Date: Wed, 8 Aug 2012 12:16:30 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1030632Ab2HHTRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 15:17:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7219 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932896Ab2HHTRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 15:17:32 -0400
+Message-ID: <5022BAA9.7090604@redhat.com>
+Date: Wed, 08 Aug 2012 15:14:49 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
-        <linux-perf-users@vger.kernel.org>
-Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v6)
-References: <1333172421-6775-2-git-send-email-asharma@fb.com> <4F769976.3070203@fb.com>
-In-Reply-To: <4F769976.3070203@fb.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Mel Gorman <mgorman@suse.de>
+CC: David Miller <davem@davemloft.net>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Xen-devel <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] netvm: check for page == NULL when propogating the skb->pfmemalloc
+ flag
+References: <20120807085554.GF29814@suse.de>
+In-Reply-To: <20120807085554.GF29814@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.254]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-08-08_07:2012-08-08,2012-08-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/30/12 10:43 PM, Arun Sharma wrote:
-> [ Meant to include v6 ChangeLog as well. Technical difficulties.. ]
+On 08/07/2012 04:55 AM, Mel Gorman wrote:
+> Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
+> for the following bug triggered by a xen network driver
 >
-> v6 ChangeLog:
+> [    1.908592] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+> [    1.908643] IP: [<ffffffffa0037750>] xennet_poll+0x980/0xec0 [xen_netfront]
+> [    1.908703] PGD ea1df067 PUD e8ada067 PMD 0
+> [    1.908774] Oops: 0000 [#1] SMP
+> [    1.908797] Modules linked in: fbcon tileblit font radeon bitblit softcursor ttm drm_kms_helper crc32c_intel xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea +xen_kbdfront xenfs xen_privcmd
+> [    1.908938] CPU 0
+> [    1.908950] Pid: 2165, comm: ip Not tainted 3.5.0upstream-08854-g444fa66 #1
+> [    1.908983] RIP: e030:[<ffffffffa0037750>]  [<ffffffffa0037750>] xennet_poll+0x980/0xec0 [xen_netfront]
+> [    1.909029] RSP: e02b:ffff8800ffc03db8  EFLAGS: 00010282
+> [    1.909055] RAX: ffff8800ea010140 RBX: ffff8800f00e86c0 RCX: 000000000000009a
+> [    1.909055] RDX: 0000000000000040 RSI: 000000000000005a RDI: ffff8800fa7dee80
+> [    1.909055] RBP: ffff8800ffc03ee8 R08: ffff8800f00e86d8 R09: ffff8800ea010000
+> [    1.909055] R10: dead000000200200 R11: dead000000100100 R12: ffff8800fa7dee80
+> [    1.909055] R13: 000000000000005a R14: ffff8800fa7dee80 R15: 0000000000000200
+> [    1.909055] FS:  00007fbafc188700(0000) GS:ffff8800ffc00000(0000) knlGS:0000000000000000
+> [    1.909055] CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [    1.909055] CR2: 0000000000000010 CR3: 00000000ea108000 CR4: 0000000000002660
+> [    1.909055] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [    1.909055] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [    1.909055] Process ip (pid: 2165, threadinfo ffff8800ea0f2000, task ffff8800fa783040)
+> [    1.909055] Stack:
+> [    1.909055]  ffff8800e27e5040 ffff8800ffc03e88 ffff8800ffc03e68 ffff8800ffc03e48
+> [    1.909055]  7fffffffffffffff ffff8800ffc03e00 ffff8800e27e5040 ffff8800f00e86d8
+> [    1.909055]  ffff8800ffc03eb0 00000040ffffffff ffff8800f00e8000 00000000ffc03e30
+> [    1.909055] Call Trace:
+> [    1.909055]  <IRQ>
+> [    1.909055]  [<ffffffff81066028>] ?  pvclock_clocksource_read+0x58/0xd0
+> [    1.909055]  [<ffffffff81486352>] net_rx_action+0x112/0x240
+> [    1.909055]  [<ffffffff8107f319>] __do_softirq+0xb9/0x190
+> [    1.909055]  [<ffffffff815d8d7c>] call_softirq+0x1c/0x30
 >
-> rebased to tip:perf/core and fixed a minor problem in computing
-> the total period in hists__remove_entry_filter(). Needed to
-> use period_self instead of period.
+> The problem is that the xenfront driver is passing a NULL page to
+> __skb_fill_page_desc() which was unexpected. This patch checks that
+> there is a page before dereferencing.
+>
+> Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-This patch breaks perf top (symptom: percentages > 100%). Fixed by the 
-following patch.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Namhyung: if you're still working on forward porting this, please add 
-this fix to your queue.
 
-  -Arun
-
-commit 75a1c409a529c9741f8a2f493868d1fc7ce7e06d
-Author: Arun Sharma <asharma@fb.com>
-Date:   Wed Aug 8 11:47:02 2012 -0700
-
-    perf: update period_self as well on collapsing
-       When running perf top, we have a series of incoming samples,
-    which get aggregated in various user specified ways.
-       Suppose function "foo" had the following samples:
-    101, 103, 99, 105, ...
-       ->period for the corresponding entry looks as follows:
-    101, 204, 303, 408, ...
-       However, due to this bug, ->period_self contains:
-    101, 103, 99, 105, ...
-       and therefore breaks the invariant period == period_self
-    in the default mode (no sort inclusive).
-       Since total_period is computed by summing up period_self,
-       period/total_period can be > 100%
-       Fix the bug by updating period_self as well.
-       Signed-off-by: Arun Sharma <asharma@fb.com>
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index a2a8d91..adc891e 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -462,6 +462,7 @@ static bool hists__collapse_insert_entry(struct 
-hists *hists,
-
-		if (!cmp) {
-			iter->period += he->period;
-+			iter->period_self += he->period_self;
-			iter->nr_events += he->nr_events;
-			if (symbol_conf.use_callchain) {
-				callchain_cursor_reset(&hists->callchain_cursor);
