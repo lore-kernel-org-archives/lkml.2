@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964834Ab2HHJBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 05:01:53 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:48333 "EHLO ogre.sisk.pl"
+	id S964857Ab2HHJC2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 05:02:28 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:42239 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757894Ab2HHJBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 05:01:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [PATCH 3/4] PM / shmobile: Specify device latencies for SH7372 devices directly
-Date: Wed, 8 Aug 2012 00:28:36 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-References: <201207212349.18294.rjw@sisk.pl> <201208080026.01738.rjw@sisk.pl>
-In-Reply-To: <201208080026.01738.rjw@sisk.pl>
+	id S1757906Ab2HHJCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 05:02:22 -0400
+Message-ID: <50222AE9.600@ispras.ru>
+Date: Wed, 08 Aug 2012 13:01:29 +0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Peter Meerwald <pmeerw@pmeerw.net>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH] iio/adjd_s311: Fix potential memory leak in adjd_s311_update_scan_mode()
+References: <1344407816-13480-1-git-send-email-khoroshilov@ispras.ru> <alpine.DEB.2.01.1208080911260.9959@pmeerw.net>
+In-Reply-To: <alpine.DEB.2.01.1208080911260.9959@pmeerw.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208080028.36688.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/08/2012 11:17 AM, Peter Meerwald wrote:
+>> Do not leak memory by updating pointer with potentially
+>> NULL realloc return value.
+> I agree
+>
+> use of krealloc() was suggested in driver review (see 
+> http://www.spinics.net/lists/linux-iio/msg05930.html) to shorten the code; 
+> unfortunately, I misunderstood the semantics of krealloc() in case 
+> allocation fails
+>
+> this is the original code:
+>
+> 	kfree(data->buffer);
+> 	data->buffer = kmalloc(indio_dev->scan_bytes, GFP_KERNEL);
+> 	if (!data->buffer)
+> 		return -ENOMEM;
+>
+> I suggest to switch back to that original code, there is no need preserve 
+> the data in the buffer as krealloc does
+That is fine.
 
-The results of adaptive latency computations in
-GENPD_DEV_TIMED_CALLBACK() show that the start/stop and save/restore
-state latencies of all devices on SH7372 I have tried are a little
-below 250 us.  Therefore, if the 250 us is used as the common initial
-value of the latency fields in struct gpd_timing_data for all devices
-on SH7372, the latency values will never have to change at run time
-and there won't be any overhead related to re-computation of the
-corresponding PM QoS data.
+>> Found by Linux Driver Verification project (linuxtesting.org).
+>>
+>> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+>> ---
+>>  drivers/iio/light/adjd_s311.c |   14 ++++++++++----
+>>  1 file changed, 10 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/iio/light/adjd_s311.c b/drivers/iio/light/adjd_s311.c
+>> index 1cbb449..0adda5b 100644
+>> --- a/drivers/iio/light/adjd_s311.c
+>> +++ b/drivers/iio/light/adjd_s311.c
+>> @@ -271,12 +271,18 @@ static int adjd_s311_update_scan_mode(struct iio_dev *indio_dev,
+>>  	const unsigned long *scan_mask)
+>>  {
+>>  	struct adjd_s311_data *data = iio_priv(indio_dev);
+>> -	data->buffer = krealloc(data->buffer, indio_dev->scan_bytes,
+>> +	u16 *new_buffer;
+>> +	int ret = 0;
+>> +
+>> +	new_buffer = krealloc(data->buffer, indio_dev->scan_bytes,
+>>  				GFP_KERNEL);
+>> -	if (!data->buffer)
+>> -		return -ENOMEM;
+>> +	if (new_buffer == NULL) {
+>> +		kfree(data->buffer);
+>> +		ret = -ENOMEM;
+>> +	}
+>> +	data->buffer = new_buffer;
+>>  
+>> -	return 0;
+>> +	return ret;
+>>  }
+>>  
+>>  static const struct iio_info adjd_s311_info = {
+>>
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- arch/arm/mach-shmobile/setup-sh7372.c |   57 +++++++++++++++++++---------------
- 1 file changed, 33 insertions(+), 24 deletions(-)
-
-Index: linux/arch/arm/mach-shmobile/setup-sh7372.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/setup-sh7372.c
-+++ linux/arch/arm/mach-shmobile/setup-sh7372.c
-@@ -999,8 +999,17 @@ static struct platform_device *sh7372_la
- 	&spu1_device,
- };
- 
-+#define DEV_LATENCY_NS	250000
-+
- void __init sh7372_add_standard_devices(void)
- {
-+	struct gpd_timing_data latencies = {
-+		.stop_latency_ns = DEV_LATENCY_NS,
-+		.start_latency_ns = DEV_LATENCY_NS,
-+		.save_state_latency_ns = DEV_LATENCY_NS,
-+		.restore_state_latency_ns = DEV_LATENCY_NS,
-+	};
-+
- 	sh7372_init_pm_domains();
- 
- 	platform_add_devices(sh7372_early_devices,
-@@ -1009,30 +1018,30 @@ void __init sh7372_add_standard_devices(
- 	platform_add_devices(sh7372_late_devices,
- 			    ARRAY_SIZE(sh7372_late_devices));
- 
--	rmobile_add_device_to_domain("A3RV", &vpu_device);
--	rmobile_add_device_to_domain("A4MP", &spu0_device);
--	rmobile_add_device_to_domain("A4MP", &spu1_device);
--	rmobile_add_device_to_domain("A3SP", &scif0_device);
--	rmobile_add_device_to_domain("A3SP", &scif1_device);
--	rmobile_add_device_to_domain("A3SP", &scif2_device);
--	rmobile_add_device_to_domain("A3SP", &scif3_device);
--	rmobile_add_device_to_domain("A3SP", &scif4_device);
--	rmobile_add_device_to_domain("A3SP", &scif5_device);
--	rmobile_add_device_to_domain("A3SP", &scif6_device);
--	rmobile_add_device_to_domain("A3SP", &iic1_device);
--	rmobile_add_device_to_domain("A3SP", &dma0_device);
--	rmobile_add_device_to_domain("A3SP", &dma1_device);
--	rmobile_add_device_to_domain("A3SP", &dma2_device);
--	rmobile_add_device_to_domain("A3SP", &usb_dma0_device);
--	rmobile_add_device_to_domain("A3SP", &usb_dma1_device);
--	rmobile_add_device_to_domain("A4R", &iic0_device);
--	rmobile_add_device_to_domain("A4R", &veu0_device);
--	rmobile_add_device_to_domain("A4R", &veu1_device);
--	rmobile_add_device_to_domain("A4R", &veu2_device);
--	rmobile_add_device_to_domain("A4R", &veu3_device);
--	rmobile_add_device_to_domain("A4R", &jpu_device);
--	rmobile_add_device_to_domain("A4R", &tmu00_device);
--	rmobile_add_device_to_domain("A4R", &tmu01_device);
-+	rmobile_add_device_to_domain_td("A3RV", &vpu_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4MP", &spu0_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4MP", &spu1_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &scif0_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &scif1_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &scif2_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &scif3_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &scif4_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &scif5_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &scif6_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &iic1_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &dma0_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &dma1_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &dma2_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &usb_dma0_device, &latencies);
-+	rmobile_add_device_to_domain_td("A3SP", &usb_dma1_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4R", &iic0_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4R", &veu0_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4R", &veu1_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4R", &veu2_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4R", &veu3_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4R", &jpu_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4R", &tmu00_device, &latencies);
-+	rmobile_add_device_to_domain_td("A4R", &tmu01_device, &latencies);
- }
- 
- static void __init sh7372_earlytimer_init(void)
 
