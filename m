@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030307Ab2HHNh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:37:56 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:59816 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758393Ab2HHNhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:37:53 -0400
-Date: Wed, 8 Aug 2012 06:37:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arun MURTHY <arun.murthy@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Subject: Re: [PATCHv2 1/4] modem_shm: Add Modem Access Framework
-Message-ID: <20120808133748.GA14459@kroah.com>
-References: <1344322471-3640-1-git-send-email-arun.murthy@stericsson.com>
- <1344322471-3640-2-git-send-email-arun.murthy@stericsson.com>
- <20120807183809.GC26990@kroah.com>
- <F45880696056844FA6A73F415B568C695B0E796A03@EXDCVYMBSTM006.EQ1STM.local>
+	id S1758445Ab2HHNmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:42:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42127 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758211Ab2HHNmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 09:42:21 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <mtd@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCH] mtd: nand: omap: Trivial warn fix
+Date: Wed, 8 Aug 2012 19:12:14 +0530
+Message-ID: <1344433334-10313-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F45880696056844FA6A73F415B568C695B0E796A03@EXDCVYMBSTM006.EQ1STM.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 05:36:05AM +0200, Arun MURTHY wrote:
-> > On Tue, Aug 07, 2012 at 12:24:28PM +0530, Arun Murthy wrote:
-> > > Adds Modem Access Framework, which allows for registering platform
-> > specific
-> > > modem access mechanisms. The framework also exposes APIs for client
-> > drivers
-> > > for getting and releasing access to modem, regardless of the
-> > underlying
-> > > platform specific access mechanism.
-> > 
-> > The term "modems" here has a lot of legacy connotations.  First of
-> > which
-> > is, userspace handles this today as tty devices, why aren't you doing
-> > the same here?  Why does this have to be something "special"?
-> > 
-> 
-> The main focus over there the modem IPC.
+The return value is not propagated in some of the error
+paths. Fix the same by passing the value to err.
 
-Over where?
+  CC      drivers/mtd/nand/omap2.o
+drivers/mtd/nand/omap2.c: In function 'omap_nand_probe':
+drivers/mtd/nand/omap2.c:1154: warning: 'err' may be used uninitialized in this function
+  LD      drivers/mtd/nand/built-in.o
 
-What "modem IPC"?
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+---
+ drivers/mtd/nand/omap2.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-You need to really explain what you are doing here, as I have no idea.
-And I have no idea why you still can't just use a tty device, why can't
-you?
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index e9309b3..29a32e5 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1258,6 +1258,7 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
+ 			if (rc) {
+ 				dev_err(&pdev->dev, "DMA engine slave config failed: %d\n",
+ 					rc);
++				err = rc;
+ 				goto out_release_mem_region;
+ 			}
+ 			info->nand.read_buf   = omap_read_buf_dma_pref;
+-- 
+1.7.5.4
 
-> In doing so, there are some functionality like waking the modem, or
-> releasing the modem etc. These will be used by the modem IPC drivers
-> and also few others like sim driver and security drivers.
-
-What's a "sim driver", and what type of "security drivers" are you
-referring to?
-
-> Since this is a shared call and hence has to be synchronized. Hence so a
-> small framework like is being done to monitor the modem access related only
-> operations.
-
-Again, why can't the tty layer do this for you?
-
-greg k-h
