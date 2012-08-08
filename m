@@ -1,118 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab2HHViS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:38:18 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:39611 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab2HHViQ (ORCPT
+	id S1751871Ab2HHVi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:38:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59235 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab2HHViZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:38:16 -0400
+	Wed, 8 Aug 2012 17:38:25 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, mingo@redhat.com, akpm@linux-foundation.org,
         tglx@linutronix.de, peterz@infradead.org, davem@davemloft.net,
-        tomi.valkeinen@ti.com
-Subject: [PATCHSET] workqueue: use irqsafe timer in delayed_work
-Date: Wed,  8 Aug 2012 14:37:55 -0700
-Message-Id: <1344461882-10149-1-git-send-email-tj@kernel.org>
+        tomi.valkeinen@ti.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/7] workqueue: cosmetic whitespace updates for macro definitions
+Date: Wed,  8 Aug 2012 14:37:56 -0700
+Message-Id: <1344461882-10149-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1344461882-10149-1-git-send-email-tj@kernel.org>
+References: <1344461882-10149-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Consistently use the last tab position for '\' line continuation in
+complex macro definitions.  This is to help the following patches.
 
-Because IRQs can happen between delayed_work->timer being dispatched
-and delayed_work_timer_fn() actually queueing delayed_work->work,
-try_to_grab_pending() couldn't be used from IRQ handlers.  If it hits
-the window, it will return -EAGAIN perpetually.  This makes it
-impossible to steal PENDING from IRQ handlers using
-try_to_grab_pending() leading to the following issues.
+This patch is cosmetic.
 
-* mod_delayed_work() can't be used from IRQ handlers.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/workqueue.h |  126 ++++++++++++++++++++++----------------------
+ 1 files changed, 63 insertions(+), 63 deletions(-)
 
-* __cancel_delayed_work() can't use the usual try_to_grab_pending()
-  which handles all three states but instead only deals with the first
-  state using a separate implementation.  There's no way to make a
-  delayed_work not pending from IRQ handlers.
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index b14d5d5..0b94714 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -126,43 +126,43 @@ struct execute_work {
+ #define __WORK_INIT_LOCKDEP_MAP(n, k)
+ #endif
+ 
+-#define __WORK_INITIALIZER(n, f) {				\
+-	.data = WORK_DATA_STATIC_INIT(),			\
+-	.entry	= { &(n).entry, &(n).entry },			\
+-	.func = (f),						\
+-	__WORK_INIT_LOCKDEP_MAP(#n, &(n))			\
++#define __WORK_INITIALIZER(n, f) {					\
++	.data = WORK_DATA_STATIC_INIT(),				\
++	.entry	= { &(n).entry, &(n).entry },				\
++	.func = (f),							\
++	__WORK_INIT_LOCKDEP_MAP(#n, &(n))				\
+ 	}
+ 
+-#define __DELAYED_WORK_INITIALIZER(n, f) {			\
+-	.work = __WORK_INITIALIZER((n).work, (f)),		\
+-	.timer = TIMER_INITIALIZER(delayed_work_timer_fn,	\
+-				0, (unsigned long)&(n)),	\
++#define __DELAYED_WORK_INITIALIZER(n, f) {				\
++	.work = __WORK_INITIALIZER((n).work, (f)),			\
++	.timer = TIMER_INITIALIZER(delayed_work_timer_fn,		\
++				0, (unsigned long)&(n)),		\
+ 	}
+ 
+-#define __DEFERRED_WORK_INITIALIZER(n, f) {			\
+-	.work = __WORK_INITIALIZER((n).work, (f)),		\
+-	.timer = TIMER_DEFERRED_INITIALIZER(delayed_work_timer_fn, \
+-				0, (unsigned long)&(n)),	\
++#define __DEFERRED_WORK_INITIALIZER(n, f) {				\
++	.work = __WORK_INITIALIZER((n).work, (f)),			\
++	.timer = TIMER_DEFERRED_INITIALIZER(delayed_work_timer_fn,	\
++				0, (unsigned long)&(n)),		\
+ 	}
+ 
+-#define DECLARE_WORK(n, f)					\
++#define DECLARE_WORK(n, f)						\
+ 	struct work_struct n = __WORK_INITIALIZER(n, f)
+ 
+-#define DECLARE_DELAYED_WORK(n, f)				\
++#define DECLARE_DELAYED_WORK(n, f)					\
+ 	struct delayed_work n = __DELAYED_WORK_INITIALIZER(n, f)
+ 
+-#define DECLARE_DEFERRED_WORK(n, f)				\
++#define DECLARE_DEFERRED_WORK(n, f)					\
+ 	struct delayed_work n = __DEFERRED_WORK_INITIALIZER(n, f)
+ 
+ /*
+  * initialize a work item's function pointer
+  */
+-#define PREPARE_WORK(_work, _func)				\
+-	do {							\
+-		(_work)->func = (_func);			\
++#define PREPARE_WORK(_work, _func)					\
++	do {								\
++		(_work)->func = (_func);				\
+ 	} while (0)
+ 
+-#define PREPARE_DELAYED_WORK(_work, _func)			\
++#define PREPARE_DELAYED_WORK(_work, _func)				\
+ 	PREPARE_WORK(&(_work)->work, (_func))
+ 
+ #ifdef CONFIG_DEBUG_OBJECTS_WORK
+@@ -192,7 +192,7 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
+ 									\
+ 		__init_work((_work), _onstack);				\
+ 		(_work)->data = (atomic_long_t) WORK_DATA_INIT();	\
+-		lockdep_init_map(&(_work)->lockdep_map, #_work, &__key, 0);\
++		lockdep_init_map(&(_work)->lockdep_map, #_work, &__key, 0); \
+ 		INIT_LIST_HEAD(&(_work)->entry);			\
+ 		PREPARE_WORK((_work), (_func));				\
+ 	} while (0)
+@@ -206,38 +206,38 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
+ 	} while (0)
+ #endif
+ 
+-#define INIT_WORK(_work, _func)					\
+-	do {							\
+-		__INIT_WORK((_work), (_func), 0);		\
++#define INIT_WORK(_work, _func)						\
++	do {								\
++		__INIT_WORK((_work), (_func), 0);			\
+ 	} while (0)
+ 
+-#define INIT_WORK_ONSTACK(_work, _func)				\
+-	do {							\
+-		__INIT_WORK((_work), (_func), 1);		\
++#define INIT_WORK_ONSTACK(_work, _func)					\
++	do {								\
++		__INIT_WORK((_work), (_func), 1);			\
+ 	} while (0)
+ 
+-#define INIT_DELAYED_WORK(_work, _func)				\
+-	do {							\
+-		INIT_WORK(&(_work)->work, (_func));		\
+-		init_timer(&(_work)->timer);			\
+-		(_work)->timer.function = delayed_work_timer_fn;\
+-		(_work)->timer.data = (unsigned long)(_work);	\
++#define INIT_DELAYED_WORK(_work, _func)					\
++	do {								\
++		INIT_WORK(&(_work)->work, (_func));			\
++		init_timer(&(_work)->timer);				\
++		(_work)->timer.function = delayed_work_timer_fn;	\
++		(_work)->timer.data = (unsigned long)(_work);		\
+ 	} while (0)
+ 
+-#define INIT_DELAYED_WORK_ONSTACK(_work, _func)			\
+-	do {							\
+-		INIT_WORK_ONSTACK(&(_work)->work, (_func));	\
+-		init_timer_on_stack(&(_work)->timer);		\
+-		(_work)->timer.function = delayed_work_timer_fn;\
+-		(_work)->timer.data = (unsigned long)(_work);	\
++#define INIT_DELAYED_WORK_ONSTACK(_work, _func)				\
++	do {								\
++		INIT_WORK_ONSTACK(&(_work)->work, (_func));		\
++		init_timer_on_stack(&(_work)->timer);			\
++		(_work)->timer.function = delayed_work_timer_fn;	\
++		(_work)->timer.data = (unsigned long)(_work);		\
+ 	} while (0)
+ 
+-#define INIT_DELAYED_WORK_DEFERRABLE(_work, _func)		\
+-	do {							\
+-		INIT_WORK(&(_work)->work, (_func));		\
+-		init_timer_deferrable(&(_work)->timer);		\
+-		(_work)->timer.function = delayed_work_timer_fn;\
+-		(_work)->timer.data = (unsigned long)(_work);	\
++#define INIT_DELAYED_WORK_DEFERRABLE(_work, _func)			\
++	do {								\
++		INIT_WORK(&(_work)->work, (_func));			\
++		init_timer_deferrable(&(_work)->timer);			\
++		(_work)->timer.function = delayed_work_timer_fn;	\
++		(_work)->timer.data = (unsigned long)(_work);		\
+ 	} while (0)
+ 
+ /**
+@@ -340,22 +340,22 @@ __alloc_workqueue_key(const char *fmt, unsigned int flags, int max_active,
+  * Pointer to the allocated workqueue on success, %NULL on failure.
+  */
+ #ifdef CONFIG_LOCKDEP
+-#define alloc_workqueue(fmt, flags, max_active, args...)	\
+-({								\
+-	static struct lock_class_key __key;			\
+-	const char *__lock_name;				\
+-								\
+-	if (__builtin_constant_p(fmt))				\
+-		__lock_name = (fmt);				\
+-	else							\
+-		__lock_name = #fmt;				\
+-								\
+-	__alloc_workqueue_key((fmt), (flags), (max_active),	\
+-			      &__key, __lock_name, ##args);	\
++#define alloc_workqueue(fmt, flags, max_active, args...)		\
++({									\
++	static struct lock_class_key __key;				\
++	const char *__lock_name;					\
++									\
++	if (__builtin_constant_p(fmt))					\
++		__lock_name = (fmt);					\
++	else								\
++		__lock_name = #fmt;					\
++									\
++	__alloc_workqueue_key((fmt), (flags), (max_active),		\
++			      &__key, __lock_name, ##args);		\
+ })
+ #else
+-#define alloc_workqueue(fmt, flags, max_active, args...)	\
+-	__alloc_workqueue_key((fmt), (flags), (max_active),	\
++#define alloc_workqueue(fmt, flags, max_active, args...)		\
++	__alloc_workqueue_key((fmt), (flags), (max_active),		\
+ 			      NULL, NULL, ##args)
+ #endif
+ 
+@@ -372,14 +372,14 @@ __alloc_workqueue_key(const char *fmt, unsigned int flags, int max_active,
+  * RETURNS:
+  * Pointer to the allocated workqueue on success, %NULL on failure.
+  */
+-#define alloc_ordered_workqueue(fmt, flags, args...)		\
++#define alloc_ordered_workqueue(fmt, flags, args...)			\
+ 	alloc_workqueue(fmt, WQ_UNBOUND | (flags), 1, ##args)
+ 
+-#define create_workqueue(name)					\
++#define create_workqueue(name)						\
+ 	alloc_workqueue((name), WQ_MEM_RECLAIM, 1)
+-#define create_freezable_workqueue(name)			\
++#define create_freezable_workqueue(name)				\
+ 	alloc_workqueue((name), WQ_FREEZABLE | WQ_UNBOUND | WQ_MEM_RECLAIM, 1)
+-#define create_singlethread_workqueue(name)			\
++#define create_singlethread_workqueue(name)				\
+ 	alloc_workqueue((name), WQ_UNBOUND | WQ_MEM_RECLAIM, 1)
+ 
+ extern void destroy_workqueue(struct workqueue_struct *wq);
+-- 
+1.7.7.3
 
-* The context / behavior differences among cancel_delayed_work(),
-  __cancel_delayed_work(), cancel_delayed_work_sync() are subtle and
-  confusing (the first two are mostly historical tho).
-
-This patchset makes delayed_work use the irqsafe timer added by the
-pending "timer: clean up initializers and implement irqsafe timers"
-patchset[1].  This enables try_to_grab_pending() to be used from any
-context which in turn makes mod_delayed_work() usable from IRQ
-handlers.  cancel_delayed_work() is reimplemented using
-try_to_grab_pending() so that it also can be used from IRQ handlers
-and its behavior is consitent with other canceling operations.
-__cancel_delayed_work() is no longer necessary and deprecated.
-
- 0001-workqueue-cosmetic-whitespace-updates-for-macro-defi.patch
- 0002-workqueue-make-deferrable-delayed_work-initializer-n.patch
- 0003-workqueue-clean-up-delayed_work-initializers-and-add.patch
- 0004-workqueue-use-irqsafe-timer-for-delayed_work.patch
- 0005-workqueue-use-mod_delayed_work-instead-of-__cancel-q.patch
- 0006-workqueue-reimplement-cancel_delayed_work-using-try_.patch
- 0007-workqueue-deprecate-__cancel_delayed_work.patch
-
-0001-0003 are prep patches.
-
-0004 makes delayed_work use irqsafe timers.  This makes
-try_to_grab_pending() and mod_delayed_work() safe to use from any
-context.
-
-0005 converts all __cancel_delayed_work() + queue_delayed_work()
-sequences to mod_delayed_work().  The link_watch conversion needs
-David's ack.
-
-0006 reimplements cancel_delayed_work() using try_to_grab_pending().
-
-0007 replaces __cancel_delayed_work() calls with cancel_delayed_work()
-and deprecates the underscored one.
-
-This patchset is on top of
-
-  [2] wq/for-3.7 (8fcd63664f "workqueue: fix CPU binding of flush_delayed...")
-+ [1] timer: clean up initializers and implement irqsafe timers
-
-and available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-delayed_work-irqsafe
-
-diffstat follows.
-
- arch/powerpc/platforms/cell/cpufreq_spudemand.c |    2 
- block/blk-core.c                                |    8 -
- block/blk-throttle.c                            |    7 -
- drivers/block/floppy.c                          |    5 
- drivers/cpufreq/cpufreq_conservative.c          |    2 
- drivers/cpufreq/cpufreq_ondemand.c              |    2 
- drivers/devfreq/devfreq.c                       |    2 
- drivers/infiniband/core/mad.c                   |   16 --
- drivers/input/keyboard/qt2160.c                 |    3 
- drivers/input/mouse/synaptics_i2c.c             |    7 -
- drivers/net/ethernet/mellanox/mlx4/sense.c      |    2 
- drivers/power/ab8500_btemp.c                    |    2 
- drivers/power/ab8500_charger.c                  |    8 -
- drivers/power/ab8500_fg.c                       |    8 -
- drivers/power/abx500_chargalg.c                 |    4 
- drivers/power/max17040_battery.c                |    2 
- drivers/video/omap2/displays/panel-taal.c       |    6 
- drivers/video/omap2/dss/dsi.c                   |    6 
- include/linux/workqueue.h                       |  155 ++++++++++--------------
- kernel/workqueue.c                              |   50 ++++++-
- mm/slab.c                                       |    2 
- mm/vmstat.c                                     |    2 
- net/core/link_watch.c                           |   21 ---
- net/core/neighbour.c                            |    2 
- net/ipv4/inetpeer.c                             |    2 
- net/sunrpc/cache.c                              |    2 
- 26 files changed, 159 insertions(+), 169 deletions(-)
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1340224
-[2] git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.7
