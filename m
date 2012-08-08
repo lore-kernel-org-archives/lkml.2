@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758863Ab2HHQdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 12:33:36 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:54383 "EHLO
+	id S1758867Ab2HHQin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 12:38:43 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:47021 "EHLO
 	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab2HHQde (ORCPT
+	with ESMTP id S1752037Ab2HHQim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 12:33:34 -0400
+	Wed, 8 Aug 2012 12:38:42 -0400
 X-IronPort-AV: E=Sophos;i="4.77,733,1336348800"; 
-   d="scan'208";a="13914251"
-Date: Wed, 8 Aug 2012 17:33:09 +0100
+   d="scan'208";a="13914324"
+Date: Wed, 8 Aug 2012 17:38:17 +0100
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -22,10 +22,10 @@ CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
         "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
         "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH v2 03/23] xen/arm: page.h definitions
-In-Reply-To: <20120807181322.GG15053@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1208081732590.21096@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-3-git-send-email-stefano.stabellini@eu.citrix.com> <20120807181322.GG15053@phenom.dumpdata.com>
+Subject: Re: [PATCH v2 06/23] xen: missing includes
+In-Reply-To: <20120807181457.GJ15053@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1208081737330.21096@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-6-git-send-email-stefano.stabellini@eu.citrix.com> <20120807181457.GJ15053@phenom.dumpdata.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
@@ -34,46 +34,108 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 7 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> On Mon, Aug 06, 2012 at 03:27:06PM +0100, Stefano Stabellini wrote:
-> > ARM Xen guests always use paging in hardware, like PV on HVM guests in
-> > the X86 world.
-> > 
+> On Mon, Aug 06, 2012 at 03:27:09PM +0100, Stefano Stabellini wrote:
+> > Changes in v2:
+> > - remove pvclock hack;
+> > - remove include linux/types.h from xen/interface/xen.h.
+> 
+> I think I can take in my tree now right by itself right? Or do
+> you want to keep this in your patchqueue? If so, Ack from me.
+
+Yep, just go ahead and take the patch, thanks.
+
+
 > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> Ack.. with one nitpick
-> 
-> > +/* XXX: this shouldn't be here */
-> 
-> .. but its here b/c the frontend drivers are using it (its rolled in
-> headers)- even though we won't hit the code path. So for right now
-> just punt with this.
-
-Yep, I'll do that.
-
-
-> > +static inline pte_t *lookup_address(unsigned long address, unsigned int *level)
-> > +{
-> > +	BUG();
-> > +	return NULL;
-> > +}
+> > ---
+> >  arch/x86/include/asm/xen/interface.h       |    2 ++
+> >  drivers/tty/hvc/hvc_xen.c                  |    2 ++
+> >  drivers/xen/grant-table.c                  |    1 +
+> >  drivers/xen/xenbus/xenbus_probe_frontend.c |    1 +
+> >  include/xen/interface/xen.h                |    1 -
+> >  include/xen/privcmd.h                      |    1 +
+> >  6 files changed, 7 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/x86/include/asm/xen/interface.h b/arch/x86/include/asm/xen/interface.h
+> > index cbf0c9d..a93db16 100644
+> > --- a/arch/x86/include/asm/xen/interface.h
+> > +++ b/arch/x86/include/asm/xen/interface.h
+> > @@ -121,6 +121,8 @@ struct arch_shared_info {
+> >  #include "interface_64.h"
+> >  #endif
+> >  
+> > +#include <asm/pvclock-abi.h>
 > > +
-> > +static inline int m2p_add_override(unsigned long mfn, struct page *page,
-> > +		struct gnttab_map_grant_ref *kmap_op)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> > +static inline int m2p_remove_override(struct page *page, bool clear_pte)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> > +static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-> > +{
-> > +	BUG();
-> > +	return false;
-> > +}
-> > +#endif /* _ASM_ARM_XEN_PAGE_H */
+> >  #ifndef __ASSEMBLY__
+> >  /*
+> >   * The following is all CPU context. Note that the fpu_ctxt block is filled
+> > diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+> > index 944eaeb..dc07f56 100644
+> > --- a/drivers/tty/hvc/hvc_xen.c
+> > +++ b/drivers/tty/hvc/hvc_xen.c
+> > @@ -21,6 +21,7 @@
+> >  #include <linux/console.h>
+> >  #include <linux/delay.h>
+> >  #include <linux/err.h>
+> > +#include <linux/irq.h>
+> >  #include <linux/init.h>
+> >  #include <linux/types.h>
+> >  #include <linux/list.h>
+> > @@ -35,6 +36,7 @@
+> >  #include <xen/page.h>
+> >  #include <xen/events.h>
+> >  #include <xen/interface/io/console.h>
+> > +#include <xen/interface/sched.h>
+> >  #include <xen/hvc-console.h>
+> >  #include <xen/xenbus.h>
+> >  
+> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> > index 0bfc1ef..1d0d95e 100644
+> > --- a/drivers/xen/grant-table.c
+> > +++ b/drivers/xen/grant-table.c
+> > @@ -47,6 +47,7 @@
+> >  #include <xen/interface/memory.h>
+> >  #include <xen/hvc-console.h>
+> >  #include <asm/xen/hypercall.h>
+> > +#include <asm/xen/interface.h>
+> >  
+> >  #include <asm/pgtable.h>
+> >  #include <asm/sync_bitops.h>
+> > diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
+> > index a31b54d..3159a37 100644
+> > --- a/drivers/xen/xenbus/xenbus_probe_frontend.c
+> > +++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
+> > @@ -21,6 +21,7 @@
+> >  #include <xen/xenbus.h>
+> >  #include <xen/events.h>
+> >  #include <xen/page.h>
+> > +#include <xen/xen.h>
+> >  
+> >  #include <xen/platform_pci.h>
+> >  
+> > diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
+> > index a890804..3871e47 100644
+> > --- a/include/xen/interface/xen.h
+> > +++ b/include/xen/interface/xen.h
+> > @@ -10,7 +10,6 @@
+> >  #define __XEN_PUBLIC_XEN_H__
+> >  
+> >  #include <asm/xen/interface.h>
+> > -#include <asm/pvclock-abi.h>
+> >  
+> >  /*
+> >   * XEN "SYSTEM CALLS" (a.k.a. HYPERCALLS).
+> > diff --git a/include/xen/privcmd.h b/include/xen/privcmd.h
+> > index 17857fb..4d58881 100644
+> > --- a/include/xen/privcmd.h
+> > +++ b/include/xen/privcmd.h
+> > @@ -35,6 +35,7 @@
+> >  
+> >  #include <linux/types.h>
+> >  #include <linux/compiler.h>
+> > +#include <xen/interface/xen.h>
+> >  
+> >  typedef unsigned long xen_pfn_t;
+> >  
 > > -- 
 > > 1.7.2.5
 > 
