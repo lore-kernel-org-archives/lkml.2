@@ -1,43 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964941Ab2HHNY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:24:27 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:49202 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758496Ab2HHNYY (ORCPT
+	id S964961Ab2HHNYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:24:45 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:53416 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758482Ab2HHNWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:24:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344430493-5304-6-git-send-email-arnd@arndb.de>
-References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
-	<1344430493-5304-6-git-send-email-arnd@arndb.de>
-Date: Wed, 8 Aug 2012 15:24:23 +0200
-Message-ID: <CACRpkdYbHTtOg6inbemD2SG+XT9ZYN3pcFQjEPv7mbyecagawg@mail.gmail.com>
-Subject: Re: [PATCH 5/6] ARM: integrator: include <linux/export.h
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Aug 2012 09:22:07 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
+        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
+Subject: [PATCH v5 14/19] vfs: fix renameat to retry on ESTALE errors
+Date: Wed,  8 Aug 2012 09:21:37 -0400
+Message-Id: <1344432102-22312-15-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
+References: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 2:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+...as always, rename is the messiest of the bunch. We have to track
+whether to retry or not via a separate flag since the error handling
+is already quite complex.
 
-> Without this patch, building integrator_defconfig results in:
->
-> arch/arm/mach-integrator/core.c:150:1: warning: data definition has no type or storage class [enabled by default]
-> arch/arm/mach-integrator/core.c:150:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
-> arch/arm/mach-integrator/core.c:150:1: warning: parameter names (without types) in function declaration [enabled by default]
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c | 31 ++++++++++++++++++++++++++-----
+ 1 file changed, 26 insertions(+), 5 deletions(-)
 
-Missing a ">" at the end of the subject line, but whatever.
+diff --git a/fs/namei.c b/fs/namei.c
+index 0c112c3..936591f 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3817,12 +3817,25 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	char *from;
+ 	char *to;
+ 	int error;
++	unsigned int try = 0;
++	bool should_retry = false;
++	unsigned int lookup_flags = LOOKUP_PARENT;
+ 
+-	error = user_path_parent(olddfd, oldname, &oldnd, &from);
+-	if (error)
++	from = getname(oldname);
++	if (IS_ERR(from))
++		return PTR_ERR(from);
++
++	to = getname(newname);
++	if (IS_ERR(to)) {
++		error = PTR_ERR(to);
+ 		goto exit;
++	}
++retry:
++	error = do_path_lookup(olddfd, from, lookup_flags, &oldnd);
++	if (error)
++		goto exit0;
+ 
+-	error = user_path_parent(newdfd, newname, &newnd, &to);
++	error = do_path_lookup(newdfd, to, lookup_flags, &newnd);
+ 	if (error)
+ 		goto exit1;
+ 
+@@ -3891,13 +3904,21 @@ exit4:
+ exit3:
+ 	unlock_rename(new_dir, old_dir);
+ 	mnt_drop_write(oldnd.path.mnt);
++	if (retry_estale(error, try++))
++		should_retry = true;
+ exit2:
+ 	path_put(&newnd.path);
+-	putname(to);
+ exit1:
+ 	path_put(&oldnd.path);
+-	putname(from);
++	if (should_retry) {
++		should_retry = false;
++		lookup_flags |= LOOKUP_REVAL;
++		goto retry;
++	}
++exit0:
++	putname(to);
+ exit:
++	putname(from);
+ 	return error;
+ }
+ 
+-- 
+1.7.11.2
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
