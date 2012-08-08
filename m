@@ -1,68 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758658Ab2HHOrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:47:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57875 "EHLO
+	id S932429Ab2HHOtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:49:15 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59060 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758638Ab2HHOrn (ORCPT
+	with ESMTP id S1757872Ab2HHOrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:47:43 -0400
+	Wed, 8 Aug 2012 10:47:41 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 05/11] ARM: exynos: exynos_pm_add_dev_to_genpd may be unused
-Date: Wed,  8 Aug 2012 16:47:22 +0200
-Message-Id: <1344437248-20560-6-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Takashi Iwai <tiwai@suse.de>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 11/11] pm/drivers: fix use of SIMPLE_DEV_PM_OPS
+Date: Wed,  8 Aug 2012 16:47:28 +0200
+Message-Id: <1344437248-20560-12-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344437248-20560-1-git-send-email-arnd@arndb.de>
 References: <1344437248-20560-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:/Yt2Wi6sNF2Lyg1hNWx1mU08J0YMfc2U7mxrp+kthul
- 1wr6iHxKGBU8rj58GgyrNjF1gWsHDlMBgNQhqyE6WK0H7cl719
- uiH40E0+nHjIsHn2l5fQWCJnBF5z0p+LloZhBaO99Is+W8GV5T
- c6M0U8Q1byckfhqoWt+yGqq+XB9NramsfWtbxzPbDT1J5qPF7K
- Nt9pp8rfZ9KkbJHXC7o4TYGN97gf9CS22nIzhm6kFyUUD+k23y
- Cr+DshbyfXEH3QQUoNEVR6ZuRY1bDraboTp9HgybhF2eXknmkz
- uJYMd6sbNBKBG8OHcYfUvcfz41Ul9mrMe1ZmtplndwA19zifB3
- wo3ifomW66l1zTO67Oy4r4jSk0dRuhksE5kHKhBbFa/b/IdKXc
- fUJTz5kPdz2qEO1VSc+Juu543RLBGxnVBI=
+X-Provags-ID: V02:K0:MOhDXT9K+NWIEE/E9QfxE8RuabvaXvWwG/MsLf5HY4K
+ 2t7bBzwlmg1roKjs7YaF8Tbq8osJBIHYeAu/OFzvh+XxT3ajto
+ gT42mvevW/n/ANfKZvseGBfUv7/aZYYlxragBLlzEgQv/uA/V1
+ zZmbZqX61qEsNdg1m23pCL4gY28d0AvoQvgx045zycsZ6B6XaA
+ htopzx2QexPmU5UzAR2ydoTjlXJL8Wampq73C0d+P8jeYJvTtm
+ tKcjwSVAqlzgllUN9CNp6SJX7tS37c/s6ain/yaXs4XwRYr1KW
+ w/8KH2ztW3NJA7NdptHYi/GObYzydX4Ks5jfKfHlMN31NM+jFN
+ nw4hFpqKPEPJ/XPpRQHY61CNZnLZaDaOtmE9NiU/rDZ98qzeGc
+ V0kHYScyfMTHWlsGNuxrDrKWAlVDXT56tE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-exynos_pm_add_dev_to_genpd is used if one or more out of a large
-number of Kconfig symbols are enabled. However the new
-exynos_defconfig selects none of those, so the function becomes
-unused. Marking it so lets the compiler automatically discard
-it.
+A few drivers use a construct like
 
-Without this patch, building exynos_defconfig results in:
+ #ifdef CONFIG_PM
+ static int foo_suspend(struct device *pdev)
+ {
+    ...
+ }
+ static int foo_resume struct device *pdev)
+ {
+    ...
+ }
+ #endif
+ static SIMPLE_DEV_PM_OPS(foo_pm, foo_suspend, foo_resume);
 
-arch/arm/mach-exynos/pm_domains.c:118:123: warning: 'exynos_pm_add_dev_to_genpd' defined but not used [-Wunused-function]
+which leaves the two functions unused if CONFIG_PM is enabled
+but CONFIG_PM_SLEEP is disabled. I found this while building
+all defconfig files on ARM. It's not clear to me if this is
+the right solution, but at least it makes the code consistent
+again.
+
+Without this patch, building omap1_defconfig results in:
+
+drivers/char/hw_random/omap-rng.c:165:12: warning: 'omap_rng_suspend' defined but not used [-Wunused-function]
+drivers/char/hw_random/omap-rng.c:171:12: warning: 'omap_rng_resume' defined but not used [-Wunused-function]
+sound/drivers/dummy.c:1068:12: warning: 'snd_dummy_suspend' defined but not used [-Wunused-function]
+sound/drivers/dummy.c:1078:12: warning: 'snd_dummy_resume' defined but not used [-Wunused-function]
+
+and building tegra_defconfig results in:
+
+drivers/i2c/busses/i2c-tegra.c:716:12: warning: 'tegra_i2c_suspend' defined but not used [-Wunused-function]
+drivers/i2c/busses/i2c-tegra.c:727:12: warning: 'tegra_i2c_resume' defined but not used [-Wunused-function]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>
 Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- arch/arm/mach-exynos/pm_domains.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/hw_random/omap-rng.c |    2 +-
+ drivers/i2c/busses/i2c-tegra.c    |    2 +-
+ sound/drivers/dummy.c             |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
-index 373c3c0..c0bc83a 100644
---- a/arch/arm/mach-exynos/pm_domains.c
-+++ b/arch/arm/mach-exynos/pm_domains.c
-@@ -115,7 +115,7 @@ static __init int exynos_pm_dt_parse_domains(void)
+diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
+index d706bd0e..4fbdceb 100644
+--- a/drivers/char/hw_random/omap-rng.c
++++ b/drivers/char/hw_random/omap-rng.c
+@@ -160,7 +160,7 @@ static int __exit omap_rng_remove(struct platform_device *pdev)
+ 	return 0;
  }
- #endif /* CONFIG_OF */
  
--static __init void exynos_pm_add_dev_to_genpd(struct platform_device *pdev,
-+static __init __maybe_unused void exynos_pm_add_dev_to_genpd(struct platform_device *pdev,
- 						struct exynos_pm_domain *pd)
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ 
+ static int omap_rng_suspend(struct device *dev)
  {
- 	if (pdev->dev.bus) {
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index 66eb53f..9a08c57 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -712,7 +712,7 @@ static int __devexit tegra_i2c_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int tegra_i2c_suspend(struct device *dev)
+ {
+ 	struct tegra_i2c_dev *i2c_dev = dev_get_drvdata(dev);
+diff --git a/sound/drivers/dummy.c b/sound/drivers/dummy.c
+index f7d3bfc..54bb664 100644
+--- a/sound/drivers/dummy.c
++++ b/sound/drivers/dummy.c
+@@ -1064,7 +1064,7 @@ static int __devexit snd_dummy_remove(struct platform_device *devptr)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int snd_dummy_suspend(struct device *pdev)
+ {
+ 	struct snd_card *card = dev_get_drvdata(pdev);
 -- 
 1.7.10
 
