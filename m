@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab2HHWdZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 18:33:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53486 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab2HHWdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 18:33:23 -0400
-Date: Thu, 9 Aug 2012 08:33:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
-Subject: Re: linux-next: removal of some trees
-Message-Id: <20120809083312.cd9cd8f19cf2f329c8758288@canb.auug.org.au>
-In-Reply-To: <097401cd7473$ce075320$6a15f960$%kim@samsung.com>
-References: <20120802084154.875a13db0ec1ebd3f5a4dab3@canb.auug.org.au>
-	<097401cd7473$ce075320$6a15f960$%kim@samsung.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__9_Aug_2012_08_33_12_+1000_WaEK7169T8i=lw1Z"
+	id S1757621Ab2HHWeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 18:34:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33304 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756117Ab2HHWeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 18:34:14 -0400
+Message-ID: <5022E963.9020809@zytor.com>
+Date: Wed, 08 Aug 2012 15:34:11 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [tip:x86:fpu 2/2] arch/x86/kernel/signal.c:626:4: error: implicit
+ declaration of function '__setup_frame'
+References: <20120725232716.GB5758@localhost> <1343324885.3696.527.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1343324885.3696.527.camel@sbsiddha-desk.sc.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__9_Aug_2012_08_33_12_+1000_WaEK7169T8i=lw1Z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Tue, 07 Aug 2012 17:08:18 +0900 Kukjin Kim <kgene.kim@samsung.com> wrote:
+On 07/26/2012 10:48 AM, Suresh Siddha wrote:
 >
-> I think, now, the 'samsung' can be removed from linux-next but I'm not su=
-re
-> about 'bjdooks-i2c'. If so, please change the name of my tree 's5p' to
-> 'samsung'.
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-> #for-next
+> Appended the patch for this. Thanks!
+> ---
+> From: Suresh Siddha <suresh.b.siddha@intel.com>
+> Subject: x86, fpu: fix x86_64 build without CONFIG_IA32_EMULATION
+>
+> Fengguang's automated build reported some compilation failures:
+>> arch/x86/kernel/signal.c: In function 'setup_rt_frame':
+>> arch/x86/kernel/signal.c:626:4: error: implicit declaration of function '__setup_frame'
+>> arch/x86/kernel/xsave.c: In function 'save_fsave_header':
+>> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+>> ...
+>
+> Fix x86_64 kernel build without CONFIG_IA32_EMULATION.
+>
+> Code saving fsave prefix is applicable only for CONFIG_X86_32 or
+> CONFIG_IA32_EMULATION. Use config_enabled() checks to remove the unnecessary
+> code compile-time for x86_64 kernels build without CONFIG_IA32_EMULATION.
+>
+> Also while we are at this, fix a spurious warning:
+>> arch/x86/kernel/xsave.c:209:15: warning: ignoring return value of ‘__clear_user’, declared with attribute warn_unused_result
+>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-Done.
+With this patch applied I get an error at:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+/home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:792:12: error: 
+static declaration of ‘x32_setup_rt_frame’ follows non-static declaration
+In file included from 
+/home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:29:0:
+/home/hpa/kernel/tip.x86-fpu/arch/x86/include/asm/fpu-internal.h:62:5: 
+note: previous declaration of ‘x32_setup_rt_frame’ was here
+/home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:792:12: warning: 
+‘x32_setup_rt_frame’ defined but not used [-Wunused-function]
+make[4]: *** [arch/x86/kernel/signal.o] Error 1
+make[3]: *** [arch/x86/kernel] Error 2
+make[2]: *** [arch/x86] Error 2
+make[1]: *** [sub-make] Error 2
+make[1]: Leaving directory `/home/hpa/kernel/tip.x86-fpu'
 
---Signature=_Thu__9_Aug_2012_08_33_12_+1000_WaEK7169T8i=lw1Z
-Content-Type: application/pgp-signature
+... for an x86-64 allyesconfig.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+	-hpa
 
-iQIcBAEBCAAGBQJQIukoAAoJEECxmPOUX5FEuJcP/RgQIWFpEcqxEWpFGo6ymOHX
-7sw0Y0YVtYNb/ckIUz+/NU0MvV3DsQfCONh3aJWF3plZN+161Yif6DpmgmW+YKiT
-JCVnlBZmR7LQLPUiD13wQpc+yblChGPqpakcRJ1JsJAqAUuEKc+guSq2o656x4cC
-F9a7/NsaWh8DDdQzYEEuqjtwc5l0sgbkfpllLDL8NwPYXo9uMRf6FJQa39s4APj9
-LGP5rMmvzVa99AnP1++YfxU8CDW54fJkvd659ceNgx+GyCUx7/JwAhyBg9hDNLff
-e6N7a1TQ6cXBnftOUeeEQmgOaz7yshAyLgXTbJEb3jNh2415HEIGfjD7FwCHwOHf
-adpHTXviB7SOv4eSMfYfT+rVvAWD/Pu0Sq75XOvqsND52tIRpR/Y+xOcCsFGbUWS
-LExlEhraOtixSL8WIGJNgylCdzz9keKPYN7+W8DzlLOkwVn8+uphJCMpJZ9l1dEz
-4dAnQ6fWzb01YaMeLupYoibx9ZG/cSuEuDaPuvoCLRaNDUa9ooAD90vKdrbfsfSh
-3IcqFSmg9h8otAejUp5dNvPp2Z6ZTBezl8NvjqUmr3BTNOPTnC6ZFtKoOM0bwBUQ
-LRkEIdrKFh6WFt07E14Prmwul5bSPmuEIpjim/z8sm1mSmeMsJ3GE3SspvXkoGUQ
-GwlxH3VizdZqln2VvS3n
-=IqGX
------END PGP SIGNATURE-----
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
---Signature=_Thu__9_Aug_2012_08_33_12_+1000_WaEK7169T8i=lw1Z--
