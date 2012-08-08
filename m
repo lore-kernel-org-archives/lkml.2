@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348Ab2HHNSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:18:18 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:55177 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758335Ab2HHNSQ (ORCPT
+	id S1758330Ab2HHNTG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:19:06 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39166 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758270Ab2HHNTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:18:16 -0400
+	Wed, 8 Aug 2012 09:19:04 -0400
+Message-ID: <5022673A.7060407@ti.com>
+Date: Wed, 8 Aug 2012 09:18:50 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+Reply-To: <cyril@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <50226409.1060800@de.bosch.com>
-References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
-	<1344430493-5304-7-git-send-email-arnd@arndb.de>
-	<CAOMZO5CZ7mJd89cN_S0KBS74mc5qTzvrfRbmHVX3nmEakx19ow@mail.gmail.com>
-	<50226409.1060800@de.bosch.com>
-Date: Wed, 8 Aug 2012 10:18:15 -0300
-Message-ID: <CAOMZO5BtStkEWGRWi7LcVT_DK0C2WnjPiCOh2ZriVzrP+1NW3g@mail.gmail.com>
-Subject: Re: [PATCH 6/6] ARM: imx: gpmi-nand depends on mxs-dma
-From: Fabio Estevam <festevam@gmail.com>
-To: Dirk Behme <dirk.behme@de.bosch.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        artem.bityutskiy@linux.intel.com
-Content-Type: text/plain; charset=UTF-8
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 01/22] ARM: add mechanism for late code patching
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-2-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208040045360.5231@xanadu.home> <50219C45.7030601@ti.com> <alpine.LFD.2.02.1208080106500.5231@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1208080106500.5231@xanadu.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 10:05 AM, Dirk Behme <dirk.behme@de.bosch.com> wrote:
+On 08/08/12 01:56, Nicolas Pitre wrote:
+> On Tue, 7 Aug 2012, Cyril Chemparathy wrote:
+[...]
+>> u32 arm_check[] = {
+>> 	0xe2810041, 0xe2810082, 0xe2810f41, 0xe2810f82, 0xe2810e41,
+>> 	0xe2810e82, 0xe2810d41, 0xe2810d82, 0xe2810c41, 0xe2810c82,
+>> 	0xe2810b41, 0xe2810b82, 0xe2810a41, 0xe2810a82, 0xe2810941,
+>> 	0xe2810982, 0xe2810841, 0xe2810882, 0xe2810741, 0xe2810782,
+>> 	0xe2810641, 0xe2810682, 0xe2810541, 0xe2810582, 0xe2810441,
+>> };
+>
+> Instead of using this array you could let the assembler do it for you
+> like this:
+>
+> asm (" \n\
+> 	.arm \n\
+> arm_check: \n\
+>          .set shft, 0 \n\
+>          .rep 12 \n\
+>          add     r1, r2, #0x81 << \shft \n\
+>          .set shft, \shft + 2 \n\
+>          .endr \n\
+> ");
+>
 
-> Yes. But it seems it's not handled there? I'm trying since ~2 weeks to get
-> something like your patch applied to get the broken mainline fixed, but
-> unfortunately without success so far.
+Neat macro magic.  Are you thinking that we build this in as a self test 
+in the code?
 
-Let's try once again.
-
-Artem,
-
-Could https://patchwork.kernel.org/patch/1236551/ be applied?
-
-Thanks,
-
-Fabio Estevam
+Thanks
+-- Cyril.
