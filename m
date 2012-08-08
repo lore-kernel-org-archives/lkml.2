@@ -1,127 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab2HHWRi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 18:17:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53825 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750962Ab2HHWRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 18:17:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,735,1336374000"; 
-   d="scan'208";a="177721384"
-From: Andi Kleen <andi@firstfloor.org>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] x86, pci: Fix all early PCI scans to check the vendor ID first
-Date: Wed,  8 Aug 2012 15:17:26 -0700
-Message-Id: <1344464246-14618-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1756351Ab2HHWWa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 18:22:30 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41526 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab2HHWW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 18:22:29 -0400
+Date: Wed, 8 Aug 2012 15:22:23 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v5 05/12] block: Kill bi_destructor
+Message-ID: <20120808222223.GD6983@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
+ <1344290921-25154-6-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344290921-25154-6-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hello,
 
-According to the Intel PCI experts it's not safe to check any
-other field than vendor ID for 0xffff when doing PCI scans
-to see if the device exists.
+On Mon, Aug 06, 2012 at 03:08:34PM -0700, Kent Overstreet wrote:
+> Now that we've got generic code for freeing bios allocated from bio
+> pools, this isn't needed anymore.
+> 
+> This also changes the semantics of bio_free() a bit - it now also frees
+> bios allocated by bio_kmalloc(). It's also no longer exported, as
+> without bi_destructor there should be no need for it to be called
+> anywhere else.
+> 
+> v5: Switch to BIO_KMALLOC_POOL ((void *)~0), per Boaz
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> ---
+> diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+> index 920ede2..19bf632 100644
+> --- a/drivers/block/drbd/drbd_main.c
+> +++ b/drivers/block/drbd/drbd_main.c
+> @@ -161,23 +161,12 @@ static const struct block_device_operations drbd_ops = {
+>  	.release = drbd_release,
+>  };
+>  
+> -static void bio_destructor_drbd(struct bio *bio)
+> -{
+> -	bio_free(bio, drbd_md_io_bio_set);
+> -}
+> -
+>  struct bio *bio_alloc_drbd(gfp_t gfp_mask)
+>  {
+> -	struct bio *bio;
+> -
+>  	if (!drbd_md_io_bio_set)
+>  		return bio_alloc(gfp_mask, 1);
+>  
+> -	bio = bio_alloc_bioset(gfp_mask, 1, drbd_md_io_bio_set);
+> -	if (!bio)
+> -		return NULL;
+> -	bio->bi_destructor = bio_destructor_drbd;
+> -	return bio;
+> +	return bio_alloc_bioset(gfp_mask, 1, drbd_md_io_bio_set);
+>  }
 
-Several of the early PCI scans violated this. I changed
-them all to always check the vendor ID first.
+Does this chunk belong to this patch?
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/aperture_64.c        |    5 +++++
- arch/x86/kernel/early-quirks.c       |    3 +++
- arch/x86/kernel/pci-calgary_64.c     |    8 ++++++--
- arch/x86/pci/early.c                 |    3 +++
- drivers/firewire/init_ohci1394_dma.c |    3 +++
- 5 files changed, 20 insertions(+), 2 deletions(-)
+> @@ -56,6 +56,8 @@ static struct biovec_slab bvec_slabs[BIOVEC_NR_POOLS] __read_mostly = {
+>   */
+>  struct bio_set *fs_bio_set;
+>  
+> +#define BIO_KMALLOC_POOL ((void *) ~0)
 
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index d5fd66f..e1ca7cd 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -206,6 +206,11 @@ static u32 __init search_agp_bridge(u32 *order, int *valid_agp)
- 			for (func = 0; func < 8; func++) {
- 				u32 class, cap;
- 				u8 type;
-+
-+				if (read_pci_config_16(bus, slot, func, PCI_VENDOR_ID) 
-+				    == 0xffff)
-+					continue;
-+
- 				class = read_pci_config(bus, slot, func,
- 							PCI_CLASS_REVISION);
- 				if (class == 0xffffffff)
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 3755ef4..f76b930 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -250,6 +250,9 @@ static int __init check_dev_quirk(int num, int slot, int func)
- 
- 	vendor = read_pci_config_16(num, slot, func, PCI_VENDOR_ID);
- 
-+	if (vendor == 0xffff)
-+		return -1;
-+
- 	device = read_pci_config_16(num, slot, func, PCI_DEVICE_ID);
- 
- 	for (i = 0; early_qrk[i].f != NULL; i++) {
-diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
-index 299d493..05798a0 100644
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -1324,8 +1324,9 @@ static void __init get_tce_space_from_tar(void)
- 		unsigned short pci_device;
- 		u32 val;
- 
--		val = read_pci_config(bus, 0, 0, 0);
--		pci_device = (val & 0xFFFF0000) >> 16;
-+		if (read_pci_config_16(bus, 0, 0, PCI_VENDOR_ID) == 0xffff)
-+			continue;
-+		pci_device = read_pci_config_16(bus, 0, 0, PCI_DEVICE_ID);
- 
- 		if (!is_cal_pci_dev(pci_device))
- 			continue;
-@@ -1426,6 +1427,9 @@ int __init detect_calgary(void)
- 		unsigned short pci_device;
- 		u32 val;
- 
-+		if (read_pci_config_16(bus, 0, 0, PCI_VENDOR_ID) == 0xffff)
-+			continue;
-+
- 		val = read_pci_config(bus, 0, 0, 0);
- 		pci_device = (val & 0xFFFF0000) >> 16;
- 
-diff --git a/arch/x86/pci/early.c b/arch/x86/pci/early.c
-index d1067d5..4fb6847 100644
---- a/arch/x86/pci/early.c
-+++ b/arch/x86/pci/early.c
-@@ -91,6 +91,9 @@ void early_dump_pci_devices(void)
- 				u32 class;
- 				u8 type;
- 
-+				if (read_pci_config_16(bus, slot, func, PCI_VENDOR_ID) == 0xffff)
-+					continue;
-+
- 				class = read_pci_config(bus, slot, func,
- 							PCI_CLASS_REVISION);
- 				if (class == 0xffffffff)
-diff --git a/drivers/firewire/init_ohci1394_dma.c b/drivers/firewire/init_ohci1394_dma.c
-index a9a347a..dd3bd84 100644
---- a/drivers/firewire/init_ohci1394_dma.c
-+++ b/drivers/firewire/init_ohci1394_dma.c
-@@ -279,6 +279,9 @@ void __init init_ohci1394_dma_on_all_controllers(void)
- 	for (num = 0; num < 32; num++) {
- 		for (slot = 0; slot < 32; slot++) {
- 			for (func = 0; func < 8; func++) {
-+				if (read_pci_config_16(num, slot, func, PCI_VENDOR_ID) == 0xffff)
-+					continue;
-+
- 				class = read_pci_config(num, slot, func,
- 							PCI_CLASS_REVISION);
- 				if (class == 0xffffffff)
+What's wrong with good ol' NULL?
+
+Thanks.
+
 -- 
-1.7.7.6
-
+tejun
