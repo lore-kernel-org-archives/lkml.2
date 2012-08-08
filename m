@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758757Ab2HHPPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 11:15:54 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:50847 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758663Ab2HHPPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 11:15:52 -0400
-Date: Wed, 8 Aug 2012 18:11:29 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: iommu@lists.linux-foundation.org, linux-tegra@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Joerg Roedel <joerg.roedel@amd.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] iommu/tegra: smmu: Use __debugfs_create_dir
-Message-ID: <20120808151128.GC9091@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1344407073-12030-1-git-send-email-hdoyu@nvidia.com>
- <1344407073-12030-3-git-send-email-hdoyu@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bAmEntskrkuBymla"
-Content-Disposition: inline
-In-Reply-To: <1344407073-12030-3-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758767Ab2HHPQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 11:16:20 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:44344 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758663Ab2HHPQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 11:16:18 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Kurt Van Dijck <kurt.van.dijck@eia.be>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: [PATCH] can/softing: Fix potential memory leak in softing_load_fw()
+Date: Wed,  8 Aug 2012 19:15:01 +0400
+Message-Id: <1344438901-25005-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Do not leak memory by updating pointer with potentially NULL realloc return value.
 
---bAmEntskrkuBymla
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Hi,
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/net/can/softing/softing_fw.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-On Wed, Aug 08, 2012 at 09:24:33AM +0300, Hiroshi Doyu wrote:
-> The commit c3b1a35 "debugfs: make sure that debugfs_create_file() gets
-> used only for regulars" doesn't allow to use debugfs_create_file() for
-> dir. Use the version with "data", __debugfs_create_dir().
->=20
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> Reported-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/iommu/tegra-smmu.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-> index 5e51fb7..41aff7a 100644
-> --- a/drivers/iommu/tegra-smmu.c
-> +++ b/drivers/iommu/tegra-smmu.c
-> @@ -1035,9 +1035,7 @@ static void smmu_debugfs_create(struct smmu_device =
-*smmu)
->  	int i;
->  	struct dentry *root;
-> =20
-> -	root =3D debugfs_create_file(dev_name(smmu->dev),
-> -				   S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
-> -				   NULL, smmu, NULL);
-> +	root =3D __debugfs_create_dir(dev_name(smmu->dev), NULL, smmu);
+diff --git a/drivers/net/can/softing/softing_fw.c b/drivers/net/can/softing/softing_fw.c
+index 3105961..b595d34 100644
+--- a/drivers/net/can/softing/softing_fw.c
++++ b/drivers/net/can/softing/softing_fw.c
+@@ -150,7 +150,7 @@ int softing_load_fw(const char *file, struct softing *card,
+ 	const uint8_t *mem, *end, *dat;
+ 	uint16_t type, len;
+ 	uint32_t addr;
+-	uint8_t *buf = NULL;
++	uint8_t *buf = NULL, *new_buf;
+ 	int buflen = 0;
+ 	int8_t type_end = 0;
+ 
+@@ -199,11 +199,12 @@ int softing_load_fw(const char *file, struct softing *card,
+ 		if (len > buflen) {
+ 			/* align buflen */
+ 			buflen = (len + (1024-1)) & ~(1024-1);
+-			buf = krealloc(buf, buflen, GFP_KERNEL);
+-			if (!buf) {
++			new_buf = krealloc(buf, buflen, GFP_KERNEL);
++			if (!new_buf) {
+ 				ret = -ENOMEM;
+ 				goto failed;
+ 			}
++			buf = new_buf;
+ 		}
+ 		/* verify record data */
+ 		memcpy_fromio(buf, &dpram[addr + offset], len);
+-- 
+1.7.9.5
 
-why would the directory need extra data ? Looking in mainline,
-tegra-smmu.c doesn't have any debugfs support, where can I see the
-patches adding debugfs to tegra-smmu ? It doesn't look correct that the
-directory will have a data field.
-
---=20
-balbi
-
---bAmEntskrkuBymla
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQIoGgAAoJEIaOsuA1yqREoO4P/3IGJvcLfa5Uv9B/cTujVivE
-pfCLPj9x6+MXNKl+J5Qkqw6PuSDC011vRd8rdWL0SX7bpVYpR7ES9BTr0ryPlvFj
-Yy/UboqL5YxMFqLiDOO5xzb6YFXmjXixvnPAZ/CngudVqrXeXv5aPUQBxwNBFPDV
-QL1svrcFBEtgdOqfvspBHF4lLnTJGOe2Z7U2k/cqbWsKbunvxUDrDtXcciRXHuNs
-+QDHzNS6PH7q4Qv+oqTI01pKAniTVzrCGKYBeX7fZipAZbIgcEyLIsx562i4hzzA
-7IEaX9ugpEw+p3pilGGIAFxXbiao+EUalP8M1D0dg8296YctjmPa8Lna7986mVH3
-5w7zHL65RnbvIQKRHZgbn9+CLUrBSz5hASbHDyIif0huADnIrcTOc+oSjFkqLRL+
-R2N6YSQxEgdkVRZOWyUXJrSOC2Eu607Pj3+bUS5FcOx9gn0c8oC03ohLxgTQxIdu
-bJEHiD5TpsJplDczXlVcZ/qaMaCtO4Ggp7xtzlZzQroVtG75q9YeZDCfehtaq3oo
-0J4jbyph/T3wh/cSm7iI7VaXLo09ogfS9J1TQM1AUmZ44Dip4kNBpWgKbMj6fT8e
-xaUFbQA69WjpHw1D+NZai0SHvoNFJpZhyQI0yQR8P7WswfQZ4xc5XuUAK953xncQ
-yTM7Zx/Msoz/T0rJgQth
-=b59e
------END PGP SIGNATURE-----
-
---bAmEntskrkuBymla--
