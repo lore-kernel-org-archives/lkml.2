@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964778Ab2HHIvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 04:51:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48432 "EHLO mx2.suse.de"
+	id S932557Ab2HHIyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 04:54:18 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:42197 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757854Ab2HHIvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 04:51:16 -0400
-Date: Wed, 8 Aug 2012 09:51:12 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] mm: vmscan: Scale number of pages reclaimed by
- reclaim/compaction based on failures
-Message-ID: <20120808085112.GJ29814@suse.de>
-References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
- <1344342677-5845-3-git-send-email-mgorman@suse.de>
- <20120808014824.GB4247@bbox>
- <20120808075526.GI29814@suse.de>
- <20120808082738.GF4247@bbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120808082738.GF4247@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932391Ab2HHIyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 04:54:16 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        David Vrabel <david.vrabel@csr.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] USB: whci-hcd: Fix potential memory leak in qset_add_urb_sg()
+Date: Wed,  8 Aug 2012 12:53:07 +0400
+Message-Id: <1344415987-17558-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 05:27:38PM +0900, Minchan Kim wrote:
-> On Wed, Aug 08, 2012 at 08:55:26AM +0100, Mel Gorman wrote:
-> > On Wed, Aug 08, 2012 at 10:48:24AM +0900, Minchan Kim wrote:
-> > > Hi Mel,
-> > > 
-> > > Just out of curiosity.
-> > > What's the problem did you see? (ie, What's the problem do this patch solve?)
-> > 
-> > Everythign in this series is related to the problem in the leader - high
-> > order allocation success rates are lower. This patch increases the success
-> > rates when allocating under load.
-> > 
-> > > AFAIUC, it seem to solve consecutive allocation success ratio through
-> > > getting several free pageblocks all at once in a process/kswapd
-> > > reclaim context. Right?
-> > 
-> > Only pageblocks if it is order-9 on x86, it reclaims an amount that depends
-> > on an allocation size. This only happens during reclaim/compaction context
-> > when we know that a high-order allocation has recently failed. The objective
-> > is to reclaim enough order-0 pages so that compaction can succeed again.
-> 
-> Your patch increases the number of pages to be reclaimed with considering
-> the number of fail case during deferring period and your test proved it's
-> really good. Without your patch, why can't VM reclaim enough pages?
+Do not leak memory by updating pointer with potentially
+NULL realloc return value.
 
-It could reclaim enough pages but it doesn't. nr_to_reclaim is
-SWAP_CLUSTER_MAX and that gets short-cutted in direct reclaim at least
-by 
+By the way remove unused local variable:
+	struct whc_page_list_entry *entry;
+More precisely, it was used to increment uninitialized value within one of cycles.
 
-                if (sc->nr_reclaimed >= sc->nr_to_reclaim)
-                        goto out;
+Found by Linux Driver Verification project (linuxtesting.org).
 
-I could set nr_to_reclaim in try_to_free_pages() of course and drive
-it from there but that's just different, not better. If driven from
-do_try_to_free_pages(), it is also possible that priorities will rise.
-When they reach DEF_PRIORITY-2, it will also start stalling and setting
-pages for immediate reclaim which is more disruptive than not desirable
-in this case. That is a more wide-reaching change than I would expect for
-this problem and could cause another regression related to THP requests
-causing interactive jitter.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/usb/host/whci/qset.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-> Other processes steal the pages reclaimed?
-
-Or the page it reclaimed were in pageblocks that could not be used.
-
-> Why I ask a question is that I want to know what's the problem at current
-> VM.
-> 
-
-We cannot reliably tell in advance whether compaction is going to succeed
-in the future without doing a full scan of the zone which would be both
-very heavy and race with any allocation requests. Compaction needs free
-pages to succeed so the intention is to scale the number of pages reclaimed
-with the number of recent compaction failures.
-
+diff --git a/drivers/usb/host/whci/qset.c b/drivers/usb/host/whci/qset.c
+index 76083ae..dc31c42 100644
+--- a/drivers/usb/host/whci/qset.c
++++ b/drivers/usb/host/whci/qset.c
+@@ -436,7 +436,7 @@ static int qset_add_urb_sg(struct whc *whc, struct whc_qset *qset, struct urb *u
+ 	int i;
+ 	int ntds = 0;
+ 	struct whc_std *std = NULL;
+-	struct whc_page_list_entry *entry;
++	struct whc_page_list_entry *new_pl_virt;
+ 	dma_addr_t prev_end = 0;
+ 	size_t pl_len;
+ 	int p = 0;
+@@ -508,12 +508,15 @@ static int qset_add_urb_sg(struct whc *whc, struct whc_qset *qset, struct urb *u
+ 
+ 			pl_len = std->num_pointers * sizeof(struct whc_page_list_entry);
+ 
+-			std->pl_virt = krealloc(std->pl_virt, pl_len, mem_flags);
+-			if (std->pl_virt == NULL) {
++			new_pl_virt = krealloc(std->pl_virt, pl_len, mem_flags);
++			if (new_pl_virt == NULL) {
++				kfree(std->pl_virt);
++				std->pl_virt = NULL;
+ 				return -ENOMEM;
+ 			}
++			std->pl_virt = new_pl_virt;
+ 
+-			for (;p < std->num_pointers; p++, entry++) {
++			for (;p < std->num_pointers; p++) {
+ 				std->pl_virt[p].buf_ptr = cpu_to_le64(dma_addr);
+ 				dma_addr = (dma_addr + WHCI_PAGE_SIZE) & ~(WHCI_PAGE_SIZE-1);
+ 			}
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
