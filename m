@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab2HGXpG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 19:45:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54583 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab2HGW1C (ORCPT
+	id S1756862Ab2HHAFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 20:05:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20171 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755668Ab2HHAFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 18:27:02 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 001/122] target: Add generation of LOGICAL BLOCK ADDRESS OUT OF RANGE
-Date: Tue,  7 Aug 2012 15:24:49 -0700
-Message-Id: <20120807221948.359768857@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120807221948.220495155@linuxfoundation.org>
-References: <20120807221948.220495155@linuxfoundation.org>
-User-Agent: quilt/0.60-20.4
+	Tue, 7 Aug 2012 20:05:21 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=_9X4mZNrW6gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=SyI_GHdlAAAA:8 a=kz-6L6J5Rigc07B7VOYA:9 a=PUjeQqilurYA:10 a=UQxMgyrMzRwA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344384318.6935.12.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC PATCH 1/4] ftrace: Make recordmcount.c handle __fentry__
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Reiser <jreiser@bitwagon.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Date: Tue, 07 Aug 2012 20:05:18 -0400
+In-Reply-To: <5021AB86.30900@bitwagon.com>
+References: <20120807193845.146666357@goodmis.org>
+	 <20120807194058.990674363@goodmis.org> <5021AB86.30900@bitwagon.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On Tue, 2012-08-07 at 16:57 -0700, John Reiser wrote:
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+> If the user changes compilers (or changes CFLAGS by insert/remove "-mfentry")
+> without doing a "make clean", then recordmcount will omit some calls.
 
-------------------
+The make dependencies of such a change should (hopefully) cause a full
+recompile of the code. Yeah, I expect that we only have "mcount" or
+"fentry" as something that can be called. If we had both mcount and
+fentry, it would fail to link anyway, as we only define mcount or fentry
+in the assembly, never both.
 
-From: Roland Dreier <roland@purestorage.com>
+> 
+> Those restrictions are easy to guess, and recovery is easy.  Therefore,
+> Ack'ed by: John Reiser <jreiser@bitwagon.com>
+> 
 
-commit e2397c704429025bc6b331a970f699e52f34283e upstream.
+Thanks!
 
-Many SCSI commands are defined to return a CHECK CONDITION / ILLEGAL
-REQUEST with ASC set to LOGICAL BLOCK ADDRESS OUT OF RANGE if the
-initiator sends a command that accesses a too-big LBA.  Add an enum
-value and case entries so that target code can return this status.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/target/target_core_transport.c |   10 ++++++++++
- include/target/target_core_base.h      |    1 +
- 2 files changed, 11 insertions(+)
-
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1797,6 +1797,7 @@ void transport_generic_request_failure(s
- 	case TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE:
- 	case TCM_UNKNOWN_MODE_PAGE:
- 	case TCM_WRITE_PROTECTED:
-+	case TCM_ADDRESS_OUT_OF_RANGE:
- 	case TCM_CHECK_CONDITION_ABORT_CMD:
- 	case TCM_CHECK_CONDITION_UNIT_ATTENTION:
- 	case TCM_CHECK_CONDITION_NOT_READY:
-@@ -4212,6 +4213,15 @@ int transport_send_check_condition_and_s
- 		/* WRITE PROTECTED */
- 		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x27;
- 		break;
-+	case TCM_ADDRESS_OUT_OF_RANGE:
-+		/* CURRENT ERROR */
-+		buffer[offset] = 0x70;
-+		buffer[offset+SPC_ADD_SENSE_LEN_OFFSET] = 10;
-+		/* ILLEGAL REQUEST */
-+		buffer[offset+SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
-+		/* LOGICAL BLOCK ADDRESS OUT OF RANGE */
-+		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x21;
-+		break;
- 	case TCM_CHECK_CONDITION_UNIT_ATTENTION:
- 		/* CURRENT ERROR */
- 		buffer[offset] = 0x70;
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -220,6 +220,7 @@ enum tcm_sense_reason_table {
- 	TCM_CHECK_CONDITION_UNIT_ATTENTION	= 0x0e,
- 	TCM_CHECK_CONDITION_NOT_READY		= 0x0f,
- 	TCM_RESERVATION_CONFLICT		= 0x10,
-+	TCM_ADDRESS_OUT_OF_RANGE		= 0x11,
- };
- 
- enum target_sc_flags_table {
+-- Steve
 
 
