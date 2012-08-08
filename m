@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030224Ab2HHPex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 11:34:53 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:52559 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S964822Ab2HHPet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 11:34:49 -0400
-Date: Wed, 8 Aug 2012 11:34:47 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org, <arm@kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 03/11] usb/ohci-omap: remove unused variable
-In-Reply-To: <1344437248-20560-4-git-send-email-arnd@arndb.de>
-Message-ID: <Pine.LNX.4.44L0.1208081134350.1701-100000@iolanthe.rowland.org>
+	id S1758783Ab2HHPfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 11:35:55 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:45906 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752609Ab2HHPfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 11:35:54 -0400
+Message-ID: <50228750.3030108@cs.wisc.edu>
+Date: Wed, 08 Aug 2012 10:35:44 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: manish.rangankar@qlogic.com, open-iscsi@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [SCSI] qla4xxx: support iscsiadm session mgmt
+References: <20120614182745.GA6383@elgon.mountain> <20120808150022.GA3734@mwanda>
+In-Reply-To: <20120808150022.GA3734@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Aug 2012, Arnd Bergmann wrote:
-
-> Commit c2e935a7d "USB: move transceiver from ehci_hcd and ohci_hcd to
-> hcd and rename it as phy" removed the last use of the "ohci" variable
-> in the usb_hcd_omap_remove function, but left the variable in place
-> unused.
-> 
-> Without this patch, building omap1_defconfig results in:
-> 
-> In file included from drivers/usb/host/ohci-hcd.c:1013:0:
-> drivers/usb/host/ohci-omap.c: In function 'usb_hcd_omap_remove':
-> drivers/usb/host/ohci-omap.c:406:19: warning: unused variable 'ohci' [-Wunused-variable]
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Richard Zhao <richard.zhao@freescale.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/usb/host/ohci-omap.c |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ohci-omap.c b/drivers/usb/host/ohci-omap.c
-> index e7d75d2..f8b2d91 100644
-> --- a/drivers/usb/host/ohci-omap.c
-> +++ b/drivers/usb/host/ohci-omap.c
-> @@ -403,8 +403,6 @@ err0:
->  static inline void
->  usb_hcd_omap_remove (struct usb_hcd *hcd, struct platform_device *pdev)
->  {
-> -	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
-> -
->  	usb_remove_hcd(hcd);
->  	if (!IS_ERR_OR_NULL(hcd->phy)) {
->  		(void) otg_set_host(hcd->phy->otg, 0);
+On 08/08/2012 10:00 AM, Dan Carpenter wrote:
+> I never heard back on this.  This buffer overflow is still present
+> in the current code.
 > 
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Qlogic just sent a patch yesterday.
+http://marc.info/?l=linux-scsi&m=134434199930938&w=2
+
+> regards,
+> dan carpenter
+> 
+> On Thu, Jun 14, 2012 at 09:27:45PM +0300, Dan Carpenter wrote:
+>> Hi Manish,
+>>
+>> The patch b3a271a94d00: "[SCSI] qla4xxx: support iscsiadm session 
+>> mgmt" from Jul 25, 2011, leads to the following warning:
+>> drivers/scsi/qla4xxx/ql4_os.c:4479 qla4xxx_get_ep_fwdb()
+>> 	 warn: casting from 16 to 28 bytes
+>>
+>> (Sort of).
+>>
+>> drivers/scsi/qla4xxx/ql4_os.c qla4xxx_ep_connect()
+>>    705          qla_ep = ep->dd_data;
+>>    706          memset(qla_ep, 0, sizeof(struct qla_endpoint));
+>>    707          if (dst_addr->sa_family == AF_INET) {
+>>    708                  memcpy(&qla_ep->dst_addr, dst_addr, sizeof(struct sockaddr_in));
+>>    709                  addr = (struct sockaddr_in *)&qla_ep->dst_addr;
+>>    710                  DEBUG2(ql4_printk(KERN_INFO, ha, "%s: %pI4\n", __func__,
+>>    711                                    (char *)&addr->sin_addr));
+>>    712          } else if (dst_addr->sa_family == AF_INET6) {
+>>    713                  memcpy(&qla_ep->dst_addr, dst_addr,
+>>                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>    714                         sizeof(struct sockaddr_in6));
+>>                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>
+>> Both qla_ep->dst_addr and dst_addr are type struct sockaddr.  We are
+>> copying sizeof(struct sockaddr_in6) bytes which is 12 bytes larger.  I
+>> don't know the actual size of qla_ep->dst_addr but dst_addr is allocated
+>> in qla4xxx_get_ep_fwdb() as a struct sockaddr.  So we are copying past
+>> the end of the struct here and it's possibly an information leak or even
+>> a memory corruption issue depending on how much space ep->dd_data has.
+>>
+>>    715                  addr6 = (struct sockaddr_in6 *)&qla_ep->dst_addr;
+>>    716                  DEBUG2(ql4_printk(KERN_INFO, ha, "%s: %pI6\n", __func__,
+>>    717                                    (char *)&addr6->sin6_addr));
+>>    718          }
+>>
+>> regards,
+>> dan carpenter
 
